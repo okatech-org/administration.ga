@@ -65,15 +65,25 @@ function isPhoneNumber(value: string): boolean {
 	return /^\+\d/.test(value.trim());
 }
 
-/** Map Better Auth English errors → i18n keys + optional target field */
-const AUTH_ERROR_MAP: Record<string, { key: string; field?: keyof SignUpValues }> = {
-	"password too short": { key: "errors.field.password.min", field: "password" },
-	"password is too short": { key: "errors.field.password.min", field: "password" },
-	"user already exists": { key: "errors.auth.emailAlreadyExists", field: "email" },
-	"email already in use": { key: "errors.auth.emailAlreadyExists", field: "email" },
-	"invalid email": { key: "errors.field.email.invalid", field: "email" },
-	"invalid email or password": { key: "errors.auth.invalidCredentials" },
-};
+/** Map Better Auth English errors → i18n keys + optional target field.
+ *  Keys are partial matches (checked with `includes`) against the lowercased message. */
+const AUTH_ERROR_PATTERNS: Array<{
+	pattern: string;
+	key: string;
+	field?: keyof SignUpValues;
+}> = [
+	{ pattern: "password too short", key: "errors.field.password.min", field: "password" },
+	{ pattern: "user already exists", key: "errors.auth.emailAlreadyExists", field: "email" },
+	{ pattern: "email already in use", key: "errors.auth.emailAlreadyExists", field: "email" },
+	{ pattern: "invalid email or password", key: "errors.auth.invalidCredentials" },
+	{ pattern: "invalid email", key: "errors.field.email.invalid", field: "email" },
+];
+
+function matchAuthError(message?: string): { key: string; field?: keyof SignUpValues } | null {
+	if (!message) return null;
+	const lower = message.toLowerCase();
+	return AUTH_ERROR_PATTERNS.find((p) => lower.includes(p.pattern)) ?? null;
+}
 
 interface InlineAuthProps {
 	/** Which form to show first */
@@ -149,8 +159,7 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 				phoneNumber: cleanPhone,
 			});
 			if (result.error) {
-				const msg = (result.error.message ?? "").toLowerCase();
-				const mapped = AUTH_ERROR_MAP[msg];
+				const mapped = matchAuthError(result.error.message);
 				if (mapped?.field) {
 					// Show error on the specific field instead of the generic banner
 					signUpForm.setError(mapped.field, {
@@ -203,8 +212,7 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 				password: data.password,
 			});
 			if (result.error) {
-				const msg = (result.error.message ?? "").toLowerCase();
-				const mapped = AUTH_ERROR_MAP[msg];
+				const mapped = matchAuthError(result.error.message);
 				setError(mapped ? t(mapped.key) : (result.error.message || t("errors.auth.signInFailed")));
 			} else {
 				captureEvent("user_logged_in", { method: "password" });
