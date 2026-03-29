@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { useConvexAuth } from "convex/react";
 import { AlertTriangle, Loader2, UserPlus } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { AIAssistant } from "@/components/ai";
 import { MySpaceWrapper } from "@/components/my-space/my-space-wrapper";
@@ -47,37 +47,8 @@ function MySpaceLayout() {
 		{},
 	);
 
-	const navigate = useNavigate();
-	const [countdown, setCountdown] = useState(5);
-	const redirectStarted = useRef(false);
-
 	const hasNoProfile =
 		!isPending && data?.status === "ready" && data.profile === null;
-
-	const doRedirect = useCallback(() => {
-		if (redirectStarted.current) return;
-		redirectStarted.current = true;
-		navigate({ to: "/register" });
-	}, [navigate]);
-
-	// Countdown + auto-redirect when user has no profile
-	useEffect(() => {
-		if (!hasNoProfile || redirectStarted.current) return;
-
-		const interval = setInterval(() => {
-			setCountdown((prev) => {
-				if (prev <= 1) {
-					clearInterval(interval);
-					// Use setTimeout to avoid setState-during-render warning
-					setTimeout(doRedirect, 0);
-					return 0;
-				}
-				return prev - 1;
-			});
-		}, 1000);
-
-		return () => clearInterval(interval);
-	}, [hasNoProfile, doRedirect]);
 
 	if (isPending) {
 		return (
@@ -114,7 +85,7 @@ function MySpaceLayout() {
 		);
 	}
 
-	// User with no profile — auto-redirect with countdown
+	// User with no profile — show message with link to register
 	if (hasNoProfile) {
 		return (
 			<MySpaceWrapper className="min-h-full flex items-center justify-center">
@@ -129,21 +100,9 @@ function MySpaceLayout() {
 						<p className="text-muted-foreground text-sm leading-relaxed">
 							{t(
 								"mySpace.noProfile.message",
-								"Vous n'avez pas encore de profil. Nous vous redirigeons vers l'espace d'inscription consulaire pour compléter votre profil et vous inscrire.",
+								"Vous n'avez pas encore de profil. Rendez-vous sur l'espace d'inscription consulaire pour compléter votre profil.",
 							)}
 						</p>
-					</div>
-					<div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-						<Loader2 className="h-4 w-4 animate-spin" />
-						<span>
-							{t(
-								"mySpace.noProfile.countdown",
-								"Redirection dans {{seconds}}s...",
-								{
-									seconds: countdown,
-								},
-							)}
-						</span>
 					</div>
 					<Button asChild>
 						<Link to="/register">
