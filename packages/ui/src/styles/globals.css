@@ -317,6 +317,28 @@
     cursor: pointer;
   }
 
+  /* ── Mobile native feel ── */
+  html {
+    overscroll-behavior: none;
+  }
+
+  button,
+  a,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+
   /* Custom Scrollbar - Subtle, blends with UI */
   ::-webkit-scrollbar {
     width: 6px;

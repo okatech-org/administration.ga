@@ -62,7 +62,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
 				</div>
 				<main
 					className={cn(
-						"flex-1 overflow-y-auto px-3 py-3 md:px-6 md:py-6 pb-20 md:pb-6 md:pl-0!",
+						"flex-1 overflow-y-auto px-3 py-3 md:px-6 md:py-6 pb-24 md:pb-6 md:pl-0!",
 						className,
 					)}
 				>

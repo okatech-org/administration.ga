@@ -177,7 +177,6 @@ export function GlobalCallAlert() {
 							</div>
 						</div>
 						<Button
-							size="sm"
 							onClick={handleJoin}
 							className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 shadow-lg shadow-emerald-900/20"
 						>

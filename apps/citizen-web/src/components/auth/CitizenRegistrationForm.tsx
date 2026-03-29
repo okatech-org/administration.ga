@@ -1397,13 +1397,13 @@ export function CitizenRegistrationForm({
 										{currentStep?.label}
 									</span>
 								</div>
-								<span className="text-muted-foreground text-xs">
+								<span className="text-muted-foreground text-sm">
 									{step}/{steps.length}
 								</span>
 							</div>
-							<div className="w-full bg-muted rounded-full h-1.5">
+							<div className="w-full bg-muted rounded-full h-2">
 								<div
-									className="bg-primary h-1.5 rounded-full transition-all duration-300"
+									className="bg-primary h-2 rounded-full transition-all duration-300"
 									style={{ width: `${(step / steps.length) * 100}%` }}
 								/>
 							</div>
@@ -2654,7 +2654,7 @@ export function CitizenRegistrationForm({
 
 						{/* Navigation Buttons */}
 						{step > 0 && (
-							<div className="flex justify-between pt-4">
+							<div className="flex justify-between pt-6 gap-3">
 								{step > 1 && (
 									<Button
 										type="button"
@@ -2665,10 +2665,11 @@ export function CitizenRegistrationForm({
 										{t("common.previous")}
 									</Button>
 								)}
-								<div className="ml-auto">
+								<div className="ml-auto flex-1 md:flex-none">
 									{step < lastStepIndex ? (
 										<Button
 											type="button"
+											className="w-full md:w-auto"
 											onClick={handleNext}
 											disabled={isSubmitting}
 										>
@@ -2677,6 +2678,7 @@ export function CitizenRegistrationForm({
 									) : (
 										<Button
 											type="button"
+											className="w-full md:w-auto"
 											onClick={handleSubmit}
 											disabled={isSubmitting}
 										>
