@@ -4,6 +4,7 @@ import { backofficeQuery, superadminQuery, superadminMutation, backofficeMutatio
 import { error, ErrorCode } from "../lib/errors";
 import { getEffectiveRole } from "../lib/auth";
 import { UserRole } from "../lib/constants";
+import { components } from "../_generated/api";
 import {
   globalCounts,
   requestsByOrg,
@@ -1037,7 +1038,56 @@ export const permanentlyDeleteUser = backofficeMutation({
       await ctx.db.delete(entity._id);
     }
 
-    // 10. Hard delete user
+    // 10. Clean up Better Auth data (user, accounts, sessions, verifications)
+    const baUsersResult = await ctx.runQuery(components.betterAuth.adapter.findMany, {
+      model: "user",
+      where: [{ field: "userId", value: args.userId as unknown as string }],
+      paginationOpts: { numItems: 10, cursor: null },
+    });
+    const baUsers = ((baUsersResult as any)?.page ?? baUsersResult ?? []) as any[];
+
+    for (const baUser of baUsers) {
+      const baUserId = String(baUser._id ?? baUser.id);
+
+      // Delete all accounts (credential, oauth, etc.)
+      await ctx.runMutation(components.betterAuth.adapter.deleteMany, {
+        input: {
+          model: "account",
+          where: [{ field: "userId", value: baUserId }],
+        },
+        paginationOpts: { numItems: 100, cursor: null },
+      } as any);
+
+      // Delete all sessions
+      await ctx.runMutation(components.betterAuth.adapter.deleteMany, {
+        input: {
+          model: "session",
+          where: [{ field: "userId", value: baUserId }],
+        },
+        paginationOpts: { numItems: 100, cursor: null },
+      } as any);
+
+      // Delete the Better Auth user record
+      await ctx.runMutation(components.betterAuth.adapter.deleteOne, {
+        input: {
+          model: "user",
+          where: [{ field: "_id", value: baUserId }],
+        },
+      } as any);
+    }
+
+    // Delete verifications tied to user's email (OTP codes, password reset tokens, etc.)
+    if (target.email) {
+      await ctx.runMutation(components.betterAuth.adapter.deleteMany, {
+        input: {
+          model: "verification",
+          where: [{ field: "identifier", value: target.email }],
+        },
+        paginationOpts: { numItems: 100, cursor: null },
+      } as any);
+    }
+
+    // 11. Hard delete Convex user
     await ctx.db.delete(args.userId);
   },
 });
