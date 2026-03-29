@@ -41,7 +41,7 @@ const signUpSchema = z.object({
 		.min(1, { message: "errors.field.required" })
 		.regex(/^\+\d[\d\s]{6,}$/, { message: "errors.field.phone.invalid" }),
 	email: z.email({ message: "errors.field.email.invalid" }),
-	password: z.string().min(6, { message: "errors.field.password.min" }),
+	password: z.string().min(8, { message: "errors.field.password.min" }),
 });
 
 const signInSchema = z.object({
@@ -64,6 +64,16 @@ type OtpChannel = "email" | "sms";
 function isPhoneNumber(value: string): boolean {
 	return /^\+\d/.test(value.trim());
 }
+
+/** Map Better Auth English errors → i18n keys + optional target field */
+const AUTH_ERROR_MAP: Record<string, { key: string; field?: keyof SignUpValues }> = {
+	"password too short": { key: "errors.field.password.min", field: "password" },
+	"password is too short": { key: "errors.field.password.min", field: "password" },
+	"user already exists": { key: "errors.auth.emailAlreadyExists", field: "email" },
+	"email already in use": { key: "errors.auth.emailAlreadyExists", field: "email" },
+	"invalid email": { key: "errors.field.email.invalid", field: "email" },
+	"invalid email or password": { key: "errors.auth.invalidCredentials" },
+};
 
 interface InlineAuthProps {
 	/** Which form to show first */
@@ -139,7 +149,17 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 				phoneNumber: cleanPhone,
 			});
 			if (result.error) {
-				setError(result.error.message || t("errors.auth.signUpFailed"));
+				const msg = (result.error.message ?? "").toLowerCase();
+				const mapped = AUTH_ERROR_MAP[msg];
+				if (mapped?.field) {
+					// Show error on the specific field instead of the generic banner
+					signUpForm.setError(mapped.field, {
+						type: "server",
+						message: t(mapped.key),
+					});
+				} else {
+					setError(mapped ? t(mapped.key) : (result.error.message || t("errors.auth.signUpFailed")));
+				}
 			} else {
 				// Save firstName, lastName, and phone to user record.
 				// Retry with backoff because ensureUser may not have created
@@ -183,7 +203,9 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 				password: data.password,
 			});
 			if (result.error) {
-				setError(result.error.message || t("errors.auth.signInFailed"));
+				const msg = (result.error.message ?? "").toLowerCase();
+				const mapped = AUTH_ERROR_MAP[msg];
+				setError(mapped ? t(mapped.key) : (result.error.message || t("errors.auth.signInFailed")));
 			} else {
 				captureEvent("user_logged_in", { method: "password" });
 			}

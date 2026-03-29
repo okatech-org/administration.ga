@@ -1201,7 +1201,8 @@
 				"phoneNotFound": "Aucun compte trouvé avec ce numéro.",
 				"expired": "Le code a expiré. Veuillez en demander un nouveau."
 			},
-			"invalidCredentials": "Email ou mot de passe incorrect."
+			"invalidCredentials": "Email ou mot de passe incorrect.",
+			"emailAlreadyExists": "Un compte existe déjà avec cet email."
 		},
 		"appointments": {
 			"notFound": "Rendez-vous introuvable",
@@ -1260,6 +1261,9 @@
 			},
 			"phone": {
 				"invalid": "Format attendu : +33 6 XX XX XX XX"
+			},
+			"password": {
+				"min": "Le mot de passe doit contenir au moins 8 caractères"
 			},
 			"number": {
 				"invalid": "Nombre invalide"

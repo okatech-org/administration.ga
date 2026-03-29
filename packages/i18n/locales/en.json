@@ -516,14 +516,20 @@
 			"signInWithIDN": "Sign in with Identite.ga",
 			"otp": {
 				"sendCode": "Receive a code by email",
+				"sendCodeBySms": "Receive a code by SMS",
 				"signInWithPassword": "Sign in with password",
 				"codeSent": "A verification code has been sent to",
+				"smsCodeSent": "An SMS code has been sent to",
 				"codeLabel": "Verification code",
 				"resendCode": "Resend code",
 				"sendFailed": "Failed to send the code. Please try again.",
 				"invalidCode": "Invalid or expired code. Please try again.",
-				"forgotPassword": "Forgot password?"
-			}
+				"forgotPassword": "Forgot password?",
+				"phoneNotFound": "No account found with this number.",
+				"expired": "The code has expired. Please request a new one."
+			},
+			"invalidCredentials": "Invalid email or password.",
+			"emailAlreadyExists": "An account already exists with this email."
 		},
 		"appointments": {
 			"notFound": "Appointment not found",
@@ -577,6 +583,9 @@
 			},
 			"phone": {
 				"invalid": "Invalid phone number"
+			},
+			"password": {
+				"min": "Password must be at least 8 characters"
 			},
 			"number": {
 				"invalid": "Invalid number"
