@@ -422,7 +422,8 @@
 			"sectionDocuments": "My documents",
 			"sectionNetwork": "My network",
 			"sectionAssistance": "Assistance",
-			"support": "Support"
+			"support": "Support",
+			"more": "More"
 		},
 		"registration": {
 			"cta": "Complete my consular registration",
@@ -529,7 +530,8 @@
 				"expired": "The code has expired. Please request a new one."
 			},
 			"invalidCredentials": "Invalid email or password.",
-			"emailAlreadyExists": "An account already exists with this email."
+			"emailAlreadyExists": "An account already exists with this email.",
+			"phoneAlreadyExists": "This phone number is already associated with an account."
 		},
 		"appointments": {
 			"notFound": "Appointment not found",

@@ -1088,7 +1088,8 @@
 			"sectionDocuments": "Mes documents",
 			"sectionNetwork": "Mon réseau",
 			"sectionAssistance": "Assistance",
-			"support": "Support"
+			"support": "Support",
+			"more": "Plus"
 		},
 		"actions": {
 			"reportTravel": "Signaler mon déplacement",
@@ -1202,7 +1203,8 @@
 				"expired": "Le code a expiré. Veuillez en demander un nouveau."
 			},
 			"invalidCredentials": "Email ou mot de passe incorrect.",
-			"emailAlreadyExists": "Un compte existe déjà avec cet email."
+			"emailAlreadyExists": "Un compte existe déjà avec cet email.",
+			"phoneAlreadyExists": "Ce numéro de téléphone est déjà associé à un compte."
 		},
 		"appointments": {
 			"notFound": "Rendez-vous introuvable",

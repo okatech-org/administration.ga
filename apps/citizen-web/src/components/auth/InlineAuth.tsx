@@ -75,6 +75,8 @@ const AUTH_ERROR_PATTERNS: Array<{
 	{ pattern: "password too short", key: "errors.field.password.min", field: "password" },
 	{ pattern: "user already exists", key: "errors.auth.emailAlreadyExists", field: "email" },
 	{ pattern: "email already in use", key: "errors.auth.emailAlreadyExists", field: "email" },
+	{ pattern: "phonenumber already exists", key: "errors.auth.phoneAlreadyExists", field: "phone" },
+	{ pattern: "failed to create user", key: "errors.auth.signUpFailed" },
 	{ pattern: "invalid email or password", key: "errors.auth.invalidCredentials" },
 	{ pattern: "invalid email", key: "errors.field.email.invalid", field: "email" },
 ];
@@ -336,7 +338,7 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 			<div className="w-full max-w-md mx-auto">
 				<form
 					onSubmit={handleVerifyOtp}
-					className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-sm p-6 space-y-4"
+					className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-sm p-4 md:p-6 space-y-5 md:space-y-4"
 				>
 					{errorBanner}
 
@@ -399,7 +401,7 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 						type="button"
 						onClick={handleSendOtp}
 						disabled={loading}
-						className="w-full text-center text-sm text-muted-foreground hover:text-[#009639] transition-colors disabled:opacity-50"
+						className="w-full text-center text-sm py-2 text-muted-foreground hover:text-[#009639] transition-colors disabled:opacity-50"
 					>
 						{t("errors.auth.otp.resendCode")}
 					</button>
@@ -421,13 +423,13 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 		<div className="w-full max-w-md mx-auto">
 			<form
 				onSubmit={onSubmit}
-				className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-sm p-6 space-y-4"
+				className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-sm p-4 md:p-6 space-y-5 md:space-y-4"
 			>
 				{errorBanner}
 
 				{/* Name fields — sign-up only */}
 				{mode === "sign-up" && (
-					<FieldGroup className="space-y-4">
+					<FieldGroup className="space-y-5 md:space-y-4">
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 							<Controller
 								name="firstName"
@@ -565,7 +567,7 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 									<button
 										type="button"
 										onClick={() => setShowPassword(!showPassword)}
-										className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+										className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center justify-center size-10 md:size-8 rounded-md text-muted-foreground hover:text-foreground transition-colors"
 										tabIndex={-1}
 									>
 										{showPassword ? (
@@ -592,7 +594,7 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 									<button
 										type="button"
 										onClick={handleSendOtp}
-										className="text-sm font-medium text-primary hover:underline"
+										className="text-sm font-medium text-primary hover:underline py-1"
 										disabled={loading || !currentEmail}
 									>
 										{t(
@@ -613,7 +615,7 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 									<button
 										type="button"
 										onClick={() => setShowPassword(!showPassword)}
-										className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+										className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center justify-center size-10 md:size-8 rounded-md text-muted-foreground hover:text-foreground transition-colors"
 										tabIndex={-1}
 									>
 										{showPassword ? (
@@ -682,7 +684,7 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 					<button
 						type="button"
 						onClick={toggleMode}
-						className="text-[#009639] hover:text-[#007a2f] font-medium underline-offset-4 hover:underline"
+						className="text-[#009639] hover:text-[#007a2f] font-medium underline-offset-4 hover:underline py-1 inline-block"
 					>
 						{mode === "sign-up"
 							? t("header.nav.signIn")
