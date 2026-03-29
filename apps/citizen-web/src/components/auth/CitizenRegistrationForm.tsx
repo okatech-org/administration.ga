@@ -71,6 +71,7 @@ import {
 	type RegistrationConfig,
 	type RegistrationStepId,
 } from "@/lib/registrationConfig";
+import { authClient } from "@/lib/auth-client";
 import { AddressWithAutocomplete } from "./AddressWithAutocomplete";
 import { InlineAuth } from "./InlineAuth";
 
@@ -294,6 +295,7 @@ export function CitizenRegistrationForm({
 }: CitizenRegistrationFormProps) {
 	const { t } = useTranslation();
 	const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+	const { data: betterAuthSession } = authClient.useSession();
 	const { userData } = useCitizenData();
 	const { mutateAsync: createProfile } = useConvexMutationQuery(
 		api.functions.profiles.createFromRegistration,
@@ -1469,9 +1471,21 @@ export function CitizenRegistrationForm({
 					<CardContent className="space-y-6">
 						{/* Step: Account Creation */}
 						{currentStepId === "account" && (
-							<InlineAuth
-								defaultMode={authMode === "sign-in" ? "sign-in" : "sign-up"}
-							/>
+							betterAuthSession?.user && !isAuthenticated ? (
+								<div className="flex flex-col items-center justify-center gap-4 py-12">
+									<Loader2 className="h-8 w-8 animate-spin text-primary" />
+									<p className="text-base font-medium text-foreground">
+										{t("register.accountCreating", "Votre compte est en cours de création...")}
+									</p>
+									<p className="text-sm text-muted-foreground text-center">
+										{t("register.accountCreatingHint", "Veuillez patienter quelques instants.")}
+									</p>
+								</div>
+							) : (
+								<InlineAuth
+									defaultMode={authMode === "sign-in" ? "sign-in" : "sign-up"}
+								/>
+							)
 						)}
 
 						{/* Step: Documents */}

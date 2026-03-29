@@ -172,9 +172,10 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 					setError(mapped ? t(mapped.key) : (result.error.message || t("errors.auth.signUpFailed")));
 				}
 			} else {
+				captureEvent("user_signed_up", { method: "email" });
 				// Save firstName, lastName, and phone to user record.
-				// Retry with backoff because ensureUser may not have created
-				// the user record yet right after sign-up.
+				// Fire-and-forget with retries — don't block the UI.
+				// The parent component will detect isAuthenticated and advance.
 				const updateData = {
 					name: fullName,
 					firstName: data.firstName.trim(),
@@ -182,18 +183,19 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 					phone: cleanPhone,
 				};
 				const maxRetries = 3;
-				for (let attempt = 0; attempt < maxRetries; attempt++) {
-					try {
-						await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
-						await updateMe(updateData);
-						break;
-					} catch {
-						if (attempt === maxRetries - 1) {
-							// All retries exhausted — non-blocking
+				(async () => {
+					for (let attempt = 0; attempt < maxRetries; attempt++) {
+						try {
+							await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+							await updateMe(updateData);
+							break;
+						} catch {
+							if (attempt === maxRetries - 1) {
+								// All retries exhausted — non-blocking
+							}
 						}
 					}
-				}
-				captureEvent("user_signed_up", { method: "email" });
+				})();
 			}
 		} catch {
 			setError(t("errors.auth.signUpFailed"));

@@ -589,6 +589,8 @@
 			}
 		},
 		"submit": "Soumettre le dossier",
+		"accountCreating": "Votre compte est en cours de création...",
+		"accountCreatingHint": "Veuillez patienter quelques instants.",
 		"progress": {
 			"uploadingDocuments": "Envoi de vos documents...",
 			"creatingProfile": "Création de votre profil...",

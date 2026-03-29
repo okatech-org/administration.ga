@@ -2133,6 +2133,8 @@
 			"profession": "Professional situation"
 		},
 		"submit": "Submit application",
+		"accountCreating": "Your account is being created...",
+		"accountCreatingHint": "Please wait a moment.",
 		"progress": {
 			"uploadingDocuments": "Uploading documents...",
 			"creatingProfile": "Creating your profile...",
