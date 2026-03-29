@@ -116,9 +116,9 @@ function declareAll() {
     evolis_version: l.func("const char* evolis_version()"),
     evolis_get_error_name: l.func("const char* evolis_get_error_name(int r)"),
 
-    // Device enumeration
+    // Device enumeration — variadic: takes model filter list ending with 0
     evolis_get_devices: l.func(
-      "int evolis_get_devices(void** devices, ...)"
+      "int evolis_get_devices(_Out_ void** devices, ...)"
     ),
     evolis_free_devices: l.func("void evolis_free_devices(void* devices)"),
 
@@ -238,29 +238,41 @@ export function evolisGetErrorName(code: number): string {
 
 export function evolisListDevices(): NativeEvolisDevice[] {
   const f = getFns()
-  const devicesPtr = [null]
-  const count = f.evolis_get_devices(devicesPtr, 0)
+  const devicesPtr = [null] as [unknown]
+
+  // evolis_get_devices is variadic: pass model filters ending with 0.
+  // Passing just 0 means "all models".
+  const count = f.evolis_get_devices(devicesPtr, "int", 0)
 
   if (count <= 0 || !devicesPtr[0]) {
     return []
   }
 
   const devices: NativeEvolisDevice[] = []
-  const rawDevices = koffi.decode(devicesPtr[0], koffi.array(evolis_device_t, count))
+
+  // Decode the array of evolis_device_t structs
+  const rawDevices = koffi.decode(
+    devicesPtr[0],
+    koffi.pointer(evolis_device_t),
+    count
+  )
 
   for (let i = 0; i < count; i++) {
     const d = rawDevices[i]
     devices.push({
-      id: koffi.decode(d.id, "string"),
-      name: koffi.decode(d.name, "string"),
-      displayName: koffi.decode(d.displayName, "string"),
-      uri: koffi.decode(d.uri, "string"),
+      id: String.fromCharCode(...d.id).replace(/\0.*/, ""),
+      name: String.fromCharCode(...d.name).replace(/\0.*/, ""),
+      displayName: String.fromCharCode(...d.displayName).replace(/\0.*/, ""),
+      uri: String.fromCharCode(...d.uri).replace(/\0.*/, ""),
       mark: d.mark,
       model: d.model,
       isSupervised: d.isSupervised,
       isOnline: d.isOnline,
       link: d.link,
-      driverVersion: koffi.decode(d.driverVersion, "string"),
+      driverVersion: String.fromCharCode(...d.driverVersion).replace(
+        /\0.*/,
+        ""
+      ),
     })
   }
 
@@ -310,26 +322,29 @@ export interface NativeEvolisInfo {
   hasLock: boolean
 }
 
+function charArrayToString(arr: number[]): string {
+  return String.fromCharCode(...arr).replace(/\0.*/, "")
+}
+
 export function evolisGetInfo(printer: unknown): NativeEvolisInfo {
-  const info = {} as Record<string, unknown>
+  const info: Record<string, unknown> = {}
   const rc = getFns().evolis_get_info(printer, info)
   if (rc !== 0) {
     throw new Error(`evolis_get_info failed: ${evolisGetErrorName(rc)} (${rc})`)
   }
-  const i = info as Record<string, unknown>
   return {
-    name: koffi.decode((i as Record<string, unknown>).name, "string"),
-    model: i.model as number,
-    modelName: koffi.decode(i.modelName, "string"),
-    serialNumber: koffi.decode(i.serialNumber, "string"),
-    fwVersion: koffi.decode(i.fwVersion, "string"),
-    hasFlip: i.hasFlip as boolean,
-    hasMagEnc: i.hasMagEnc as boolean,
-    hasContactLessEnc: i.hasContactLessEnc as boolean,
-    hasSmartEnc: i.hasSmartEnc as boolean,
-    hasLaminator: i.hasLaminator as boolean,
-    hasScanner: i.hasScanner as boolean,
-    hasLock: i.hasLock as boolean,
+    name: charArrayToString(info.name as number[]),
+    model: info.model as number,
+    modelName: charArrayToString(info.modelName as number[]),
+    serialNumber: charArrayToString(info.serialNumber as number[]),
+    fwVersion: charArrayToString(info.fwVersion as number[]),
+    hasFlip: info.hasFlip as boolean,
+    hasMagEnc: info.hasMagEnc as boolean,
+    hasContactLessEnc: info.hasContactLessEnc as boolean,
+    hasSmartEnc: info.hasSmartEnc as boolean,
+    hasLaminator: info.hasLaminator as boolean,
+    hasScanner: info.hasScanner as boolean,
+    hasLock: info.hasLock as boolean,
   }
 }
 
@@ -342,21 +357,20 @@ export interface NativeEvolisRibbon {
 }
 
 export function evolisGetRibbon(printer: unknown): NativeEvolisRibbon {
-  const ribbon = {} as Record<string, unknown>
+  const ribbon: Record<string, unknown> = {}
   const rc = getFns().evolis_get_ribbon(printer, ribbon)
   if (rc !== 0) {
     throw new Error(
       `evolis_get_ribbon failed: ${evolisGetErrorName(rc)} (${rc})`
     )
   }
-  const r = ribbon as Record<string, unknown>
-  const ribbonType = r.type as number
+  const ribbonType = ribbon.type as number
   return {
     type: ribbonType,
     typeName: getFns().evolis_get_ribbon_name(ribbonType),
-    description: koffi.decode(r.description, "string"),
-    remaining: r.remaining as number,
-    capacity: r.capacity as number,
+    description: charArrayToString(ribbon.description as number[]),
+    remaining: ribbon.remaining as number,
+    capacity: ribbon.capacity as number,
   }
 }
 
