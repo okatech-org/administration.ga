@@ -5,6 +5,7 @@ import {
 	type ReactNode,
 	useContext,
 	useEffect,
+	useRef,
 	useState,
 } from "react";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
@@ -65,12 +66,21 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 		localStorage.setItem("consulat-active-org", orgId);
 	};
 
+	// Track whether we've completed the initial load at least once.
+	// After initial load, we keep the previous data visible during re-fetches
+	// so the entire app doesn't flash a full-screen spinner.
+	const hasLoadedOnce = useRef(false);
+	if (memberships !== undefined) {
+		hasLoadedOnce.current = true;
+	}
+
 	const activeMember =
 		memberships?.find((m) => m.orgId === activeOrgId) || null;
 	const activeMembershipId = (activeMember?._id as Id<"memberships">) || null;
 	const activePositionGrade = (activeMember as any)?.positionGrade || null;
 	const activeOrg = activeMember?.org || null;
-	const isLoading = isRestoring || memberships === undefined;
+	// Only show loading on the very first load. Subsequent re-fetches keep stale data visible.
+	const isLoading = isRestoring || (!hasLoadedOnce.current && memberships === undefined);
 
 	return (
 		<OrgContext.Provider
