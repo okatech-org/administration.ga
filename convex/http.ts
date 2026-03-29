@@ -9,8 +9,33 @@ import { WAREHOUSE_TABLES } from "./functions/warehouse";
 
 const http = httpRouter();
 
-// Better Auth route handlers
-authComponent.registerRoutes(http, createAuth);
+// ============================================================================
+// Better Auth route handlers (manual registration for dynamic crossDomain)
+// ============================================================================
+// We register routes manually instead of using `authComponent.registerRoutes`
+// so we can pass the request Origin to `createAuth`, allowing crossDomain's
+// `siteUrl` to match the calling app (citizen, agent, or backoffice).
+
+const AUTH_PATH = "/api/auth";
+
+// OIDC well-known redirect (required for Convex JWT validation)
+http.route({
+  path: "/.well-known/openid-configuration",
+  method: "GET",
+  handler: httpAction(async () => {
+    const url = `${process.env.CONVEX_SITE_URL}${AUTH_PATH}/convex/.well-known/openid-configuration`;
+    return Response.redirect(url);
+  }),
+});
+
+const authRequestHandler = httpAction(async (ctx, request) => {
+  const origin = request.headers.get("origin");
+  const auth = createAuth(ctx, origin);
+  return auth.handler(request);
+});
+
+http.route({ pathPrefix: `${AUTH_PATH}/`, method: "GET", handler: authRequestHandler });
+http.route({ pathPrefix: `${AUTH_PATH}/`, method: "POST", handler: authRequestHandler });
 
 // ============================================================================
 // DEV-ONLY: Passwordless sign-in for the Dev Account Switcher
@@ -104,7 +129,7 @@ http.route({
       }
 
       // 3. Call Better Auth's sign-in handler with the temp password
-      const auth = createAuth(ctx);
+      const auth = createAuth(ctx, origin);
       const siteUrl = process.env.SITE_URL ?? "https://localhost:3000";
       const signInRequest = new Request(`${siteUrl}/api/auth/sign-in/email`, {
         method: "POST",
@@ -188,7 +213,8 @@ http.route({
   path: "/desktop/generate-ott",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
-    const auth = createAuth(ctx);
+    const origin = request.headers.get("origin");
+    const auth = createAuth(ctx, origin);
 
     // Validate the user's session via Better Auth
     const session = await auth.api.getSession({

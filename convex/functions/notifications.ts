@@ -8,6 +8,7 @@ import { authQuery, authMutation } from "../lib/customFunctions";
 import { notificationTypeValidator } from "../lib/validators";
 import { getPlatformConfig, fromEmail } from "../lib/platform";
 import type { PlatformConfig } from "../lib/platform";
+import { emailLayout } from "../lib/emailTemplates";
 
 // Initialize Resend with test mode off for production
 export const resend = new Resend(components.resend, {
@@ -16,50 +17,6 @@ export const resend = new Resend(components.resend, {
 
 // Default platform config (citizen) — overridden per-call when platform is known
 const DEFAULT_PLATFORM = getPlatformConfig("citizen");
-
-// ============================================================================
-// EMAIL TEMPLATES
-// ============================================================================
-
-const getBaseStyles = () => `
-	<style>
-		body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-		.container { max-width: 600px; margin: 0 auto; padding: 20px; }
-		.header { background: linear-gradient(135deg, #009639 0%, #006b2b 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-		.header h1 { margin: 0; font-size: 24px; }
-		.content { background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-		.footer { background: #f9fafb; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
-		.button { display: inline-block; background: #009639; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; }
-		.info-box { background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 15px; margin: 15px 0; }
-		.warning-box { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 6px; padding: 15px; margin: 15px 0; }
-	</style>
-`;
-
-const emailLayout = (title: string, content: string, platform: PlatformConfig = DEFAULT_PLATFORM) => `
-<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	${getBaseStyles()}
-</head>
-<body>
-	<div class="container">
-		<div class="header">
-			<h1>${platform.headerTitle}</h1>
-			<p style="margin: 5px 0 0 0; opacity: 0.9;">${title}</p>
-		</div>
-		<div class="content">
-			${content}
-		</div>
-		<div class="footer">
-			<p>${platform.footerText}</p>
-			<p>Ce message a été envoyé automatiquement, merci de ne pas répondre.</p>
-		</div>
-	</div>
-</body>
-</html>
-`;
 
 // ============================================================================
 // EMAIL TEMPLATES CONTENT

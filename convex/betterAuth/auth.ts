@@ -1,90 +1,61 @@
 import { betterAuth } from "better-auth/minimal";
 import { emailOTP, genericOAuth, phoneNumber } from "better-auth/plugins";
-import { v } from "convex/values";
 import { createClient } from "@convex-dev/better-auth";
 import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
-import { Resend } from "@convex-dev/resend";
 import authConfig from "../auth.config";
 import { components } from "../_generated/api";
 import { mutation, query } from "../_generated/server";
+import { resend } from "../functions/notifications";
 import { sendSms } from "../lib/bird";
 import { detectPlatform, fromEmail } from "../lib/platform";
-import type { PlatformConfig } from "../lib/platform";
+import { otpEmail, detectLangFromHeaders } from "../lib/emailTemplates";
 import type { GenericCtx } from "@convex-dev/better-auth";
 import type { DataModel } from "../_generated/dataModel";
 
 // Better Auth Component Client
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
-// Resend Component — same instance pattern as notifications.ts
-const resend = new Resend(components.resend, {
-  testMode: process.env.NODE_ENV !== "production" ? true : false,
-});
-
-// ============================================================================
-// OTP Email Template (platform-aware)
-// ============================================================================
-
-const otpEmailTemplate = (otp: string, platform: PlatformConfig) => `
-<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<style>
-		body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
-		.container { max-width: 600px; margin: 0 auto; padding: 20px; }
-		.header { background: linear-gradient(135deg, #009639 0%, #006b2b 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-		.header h1 { margin: 0; font-size: 24px; }
-		.content { background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-		.footer { background: #f9fafb; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
-		.otp-box { font-size: 36px; letter-spacing: 10px; font-weight: 700; text-align: center; padding: 24px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #86efac; border-radius: 12px; margin: 20px 0; color: #166534; font-family: 'Courier New', monospace; }
-	</style>
-</head>
-<body>
-	<div class="container">
-		<div class="header">
-			<h1>${platform.headerTitle}</h1>
-			<p style="margin: 5px 0 0 0; opacity: 0.9;">Code de connexion</p>
-		</div>
-		<div class="content">
-			<p>Bonjour,</p>
-			<p>Voici votre code de connexion :</p>
-			<div class="otp-box">${otp}</div>
-			<p style="text-align: center; color: #6b7280; font-size: 14px;">
-				Ce code est valable <strong>5 minutes</strong>.<br>
-				Si vous n'avez pas demandé ce code, ignorez cet email.
-			</p>
-		</div>
-		<div class="footer">
-			<p>${platform.footerText}</p>
-			<p>Ce message a été envoyé automatiquement, merci de ne pas répondre.</p>
-		</div>
-	</div>
-</body>
-</html>`;
-
 // ============================================================================
 // Better Auth Instance Factory
 // ============================================================================
 
-export const createAuth = (ctx: GenericCtx<DataModel>) => {
-  // Detect if running in dev — disable Secure cookies so HTTP localhost works
+/** Trusted origins parsed once from the environment. */
+const parseTrustedOrigins = () =>
+  (process.env.TRUSTED_ORIGINS ?? "")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+/**
+ * Derive the crossDomain `siteUrl` from the request Origin header.
+ *
+ * The crossDomain plugin uses siteUrl to rewrite relative callback URLs
+ * (e.g. OAuth redirects). By deriving it from the requester's origin,
+ * each app (citizen, agent, backoffice) gets redirected back to itself.
+ *
+ * Falls back to SITE_URL env → "https://consulat.ga" (citizen).
+ */
+function resolveSiteUrl(origin?: string | null): string {
+  if (origin) {
+    try {
+      const url = new URL(origin);
+      return url.origin; // e.g. "https://admin.consulat.ga"
+    } catch { /* invalid origin, use fallback */ }
+  }
+  return process.env.SITE_URL ?? "https://consulat.ga";
+}
+
+export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | null) => {
   const isDev = process.env.DEV_SIGNIN_ENABLED === "true";
 
   return betterAuth({
     appName: "Consulat.ga",
-    // Use the Convex HTTP endpoint as the auth server's base URL.
     // CONVEX_SITE_URL is automatically provided by Convex in all environments.
     baseURL: process.env.CONVEX_SITE_URL,
     secret: process.env.BETTER_AUTH_SECRET,
     trustedOrigins: isDev
       ? (request) => {
-          const origins = (process.env.TRUSTED_ORIGINS ?? "")
-            .split(",")
-            .map((o) => o.trim())
-            .filter(Boolean);
-          // In dev, trust any localhost/127.0.0.1 origin regardless of port
+          const origins = parseTrustedOrigins();
           const reqOrigin = request?.headers?.get("origin");
           if (reqOrigin) {
             try {
@@ -92,52 +63,48 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
               if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
                 origins.push(reqOrigin);
               }
-            } catch { /* ignore invalid origin */ }
+            } catch { /* ignore */ }
           }
           return origins;
         }
-      : (process.env.TRUSTED_ORIGINS ?? "")
-          .split(",")
-          .map((o) => o.trim())
-          .filter(Boolean),
+      : parseTrustedOrigins(),
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
     },
     advanced: {
-      // Convex always runs on HTTPS, so Better Auth infers Secure cookies.
-      // But dev clients connect via http://localhost proxy, which rejects
-      // __Secure- cookies. Force non-secure cookies in dev.
+      // Convex always runs on HTTPS → Better Auth infers Secure cookies.
+      // Dev clients connect via http://localhost proxy → force non-secure.
       useSecureCookies: isDev ? false : undefined,
     },
     plugins: [
       convex({ authConfig }),
       crossDomain({
-        siteUrl: process.env.SITE_URL ?? "https://diplomate.ga",
+        // Dynamic per-request: each app gets redirected to its own origin
+        siteUrl: resolveSiteUrl(requestOrigin),
       }),
+
+      // ── Email OTP ──────────────────────────────────────────────────
       emailOTP({
         otpLength: 6,
         expiresIn: 300, // 5 minutes
         async sendVerificationOTP({ email, otp, type }, reqCtx) {
-          // Detect platform from the Origin header
           const origin = reqCtx?.request?.headers?.get("origin") ?? null;
           const platform = detectPlatform(origin);
-
-          const subject =
-            type === "sign-in" ? `Votre code de connexion : ${otp}`
-            : type === "email-verification" ?
-              `Vérification de votre email : ${otp}`
-            : `Réinitialisation de mot de passe : ${otp}`;
+          const lang = detectLangFromHeaders(reqCtx?.request?.headers as Headers | undefined);
+          const { subject, html } = otpEmail({ otp, type, platform, lang });
 
           await resend.sendEmail(ctx as any, {
             from: fromEmail(platform),
             to: email,
             subject,
-            html: otpEmailTemplate(otp, platform),
+            html,
           });
         },
       }),
+
+      // ── IDN OAuth ──────────────────────────────────────────────────
       genericOAuth({
         config: [
           {
@@ -149,15 +116,14 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
           },
         ],
       }),
+
+      // ── Phone OTP (SMS via Bird) ───────────────────────────────────
       phoneNumber({
         sendOTP: async ({ phoneNumber: phone, code }) => {
           if (!process.env.BIRD_API_KEY) {
-            console.log(
-              "[Auth SMS] BIRD_API_KEY not configured, skipping OTP SMS",
-            );
+            console.log("[Auth SMS] BIRD_API_KEY not configured, skipping");
             return;
           }
-          // Fire-and-forget to avoid slowing down the request
           try {
             await sendSms(
               phone,
@@ -172,7 +138,11 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
   });
 };
 
-// Query: Get current authenticated user
+// ============================================================================
+// Exported queries / mutations
+// ============================================================================
+
+/** Get the current authenticated user (for client-side checks). */
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
@@ -194,10 +164,7 @@ export const resetAllPasswords = mutation({
     })) as any;
     const accounts = (result?.page ?? result ?? []) as any[];
 
-    // Only process accounts that still have a password
     const withPassword = accounts.filter((a: any) => a.password);
-
-    // Process up to 50 per call
     const batch = withPassword.slice(0, 50);
     let reset = 0;
 

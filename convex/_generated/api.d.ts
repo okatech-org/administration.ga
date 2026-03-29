@@ -88,6 +88,7 @@ import type * as lib_bird from "../lib/bird.js";
 import type * as lib_constants from "../lib/constants.js";
 import type * as lib_countryCodeValidator from "../lib/countryCodeValidator.js";
 import type * as lib_customFunctions from "../lib/customFunctions.js";
+import type * as lib_emailTemplates from "../lib/emailTemplates.js";
 import type * as lib_errors from "../lib/errors.js";
 import type * as lib_legacyProfilesMap from "../lib/legacyProfilesMap.js";
 import type * as lib_moduleCodes from "../lib/moduleCodes.js";
@@ -264,6 +265,7 @@ declare const fullApi: ApiFromModules<{
   "lib/constants": typeof lib_constants;
   "lib/countryCodeValidator": typeof lib_countryCodeValidator;
   "lib/customFunctions": typeof lib_customFunctions;
+  "lib/emailTemplates": typeof lib_emailTemplates;
   "lib/errors": typeof lib_errors;
   "lib/legacyProfilesMap": typeof lib_legacyProfilesMap;
   "lib/moduleCodes": typeof lib_moduleCodes;
