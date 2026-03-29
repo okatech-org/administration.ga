@@ -10,6 +10,7 @@
 
 import { api } from "@convex/_generated/api";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "convex/react";
 import { ArrowLeft, Eye, EyeOff, Loader2, Mail, Smartphone } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -108,6 +109,7 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 	const [showPassword, setShowPassword] = useState(false);
 	const [otpChannel, setOtpChannel] = useState<OtpChannel>("email");
 	const otpInputRef = useRef<HTMLInputElement>(null);
+	const ensureUser = useMutation(api.functions.users.ensureUser);
 	const { mutateAsync: updateMe } = useConvexMutationQuery(
 		api.functions.users.updateMe,
 	);
@@ -173,29 +175,36 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 				}
 			} else {
 				captureEvent("user_signed_up", { method: "email" });
-				// Save firstName, lastName, and phone to user record.
-				// Fire-and-forget with retries — don't block the UI.
-				// The parent component will detect isAuthenticated and advance.
-				const updateData = {
-					name: fullName,
-					firstName: data.firstName.trim(),
-					lastName: data.lastName.trim(),
-					phone: cleanPhone,
-				};
-				const maxRetries = 3;
-				(async () => {
-					for (let attempt = 0; attempt < maxRetries; attempt++) {
-						try {
-							await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
-							await updateMe(updateData);
+				// Create user record in Convex immediately, then update profile fields.
+				// ensureUser waits for the auth token to propagate, then creates/links the user.
+				// We retry ensureUser a few times with short delays to handle token propagation.
+				const maxRetries = 5;
+				let userCreated = false;
+				for (let attempt = 0; attempt < maxRetries; attempt++) {
+					try {
+						await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+						const userId = await ensureUser();
+						if (userId) {
+							userCreated = true;
 							break;
-						} catch {
-							if (attempt === maxRetries - 1) {
-								// All retries exhausted — non-blocking
-							}
 						}
+					} catch {
+						// Token not yet propagated — retry
 					}
-				})();
+				}
+				// Now update with profile fields from the form
+				if (userCreated) {
+					try {
+						await updateMe({
+							name: fullName,
+							firstName: data.firstName.trim(),
+							lastName: data.lastName.trim(),
+							phone: cleanPhone,
+						});
+					} catch {
+						// Non-blocking — profile fields will be captured in registration form
+					}
+				}
 			}
 		} catch {
 			setError(t("errors.auth.signUpFailed"));
