@@ -11,7 +11,6 @@ import {
   evolisClose,
   evolisReserve,
   evolisRelease,
-  evolisClearErrors,
   evolisGetInfo,
   evolisGetRibbon,
   evolisGetState,
@@ -25,6 +24,14 @@ const LINK_NAMES: Record<number, "tcp" | "usb" | "file"> = {
   3: "file",
 }
 
+const MODEL_NAMES: Record<number, string> = {
+  7: "Primacy",
+  13: "Elypso",
+  15: "Zenius",
+  33: "Primacy 2",
+  43: "Agilia",
+}
+
 export class PrinterService {
   private printerHandle: unknown = null
   private printerName: string | null = null
@@ -33,18 +40,22 @@ export class PrinterService {
     try {
       console.log(`[PrinterService] SDK version: ${evolisVersion()}`)
       const nativeDevices = evolisListDevices()
-      return nativeDevices.map((d) => ({
-        id: d.id,
-        name: d.name,
-        displayName: d.displayName || d.name,
-        uri: d.uri,
-        mark: d.mark.toString(),
-        model: d.model.toString(),
-        isSupervised: d.isSupervised,
-        isOnline: d.isOnline,
-        link: LINK_NAMES[d.link] ?? "usb",
-        driverVersion: d.driverVersion,
-      }))
+      console.log(`[PrinterService] Found ${nativeDevices.length} device(s)`)
+      return nativeDevices.map((d) => {
+        console.log(`[PrinterService] Device: name="${d.name}" displayName="${d.displayName}" model=${d.model}`)
+        return {
+          id: d.id || d.name,
+          name: d.name,
+          displayName: d.displayName || d.name || MODEL_NAMES[d.model] || `Evolis (${d.model})`,
+          uri: d.uri,
+          mark: d.mark.toString(),
+          model: MODEL_NAMES[d.model] || `Model ${d.model}`,
+          isSupervised: d.isSupervised,
+          isOnline: d.isOnline,
+          link: LINK_NAMES[d.link] ?? "usb",
+          driverVersion: d.driverVersion,
+        }
+      })
     } catch (err) {
       console.error("[PrinterService] listDevices error:", err)
       throw err
@@ -53,21 +64,29 @@ export class PrinterService {
 
   async connect(name: string): Promise<EvolisInfo> {
     try {
-      console.log(`[PrinterService] Opening: ${name}`)
+      console.log(`[PrinterService] Opening printer with name: "${name}"`)
+      if (!name) {
+        throw new Error("Printer name is empty")
+      }
       this.printerHandle = evolisOpen(name)
       this.printerName = name
 
       console.log("[PrinterService] Reserving printer...")
       const session = evolisReserve(this.printerHandle, 5000)
-      console.log(`[PrinterService] Session: ${session}`)
+      console.log(`[PrinterService] Session result: ${session}`)
+
+      // Session -11 = EBUSY (printer supervised by EPS2), but we can still query info
+      if (session < 0 && session !== -11) {
+        console.warn(`[PrinterService] Reserve warning: ${evolisGetErrorName(session)} (${session})`)
+      }
 
       const info = evolisGetInfo(this.printerHandle)
-      console.log("[PrinterService] Info:", info)
+      console.log("[PrinterService] Info:", JSON.stringify(info))
 
       return {
-        name: info.name,
-        model: info.model.toString(),
-        modelName: info.modelName,
+        name: info.name || name,
+        model: String(info.model ?? ""),
+        modelName: info.modelName || MODEL_NAMES[info.model] || name,
         serialNumber: info.serialNumber,
         fwVersion: info.fwVersion,
         hasFlip: info.hasFlip,

@@ -138,13 +138,13 @@ function declareAll() {
 
     // Device info
     evolis_get_info: l.func(
-      "int evolis_get_info(void* printer, evolis_info_t* info)"
+      "int evolis_get_info(void* printer, _Out_ evolis_info_t* info)"
     ),
     evolis_get_ribbon: l.func(
-      "int evolis_get_ribbon(void* printer, evolis_ribbon_t* ribbon)"
+      "int evolis_get_ribbon(void* printer, _Out_ evolis_ribbon_t* ribbon)"
     ),
     evolis_get_state: l.func(
-      "int evolis_get_state(void* printer, int* major, int* minor)"
+      "int evolis_get_state(void* printer, _Out_ int* major, _Out_ int* minor)"
     ),
     evolis_get_model_name: l.func(
       "const char* evolis_get_model_name(int model)"
@@ -248,33 +248,25 @@ export function evolisListDevices(): NativeEvolisDevice[] {
     return []
   }
 
-  const devices: NativeEvolisDevice[] = []
+  const rawArray = koffi.decode(devicesPtr[0], evolis_device_t, count)
+  const items = Array.isArray(rawArray) ? rawArray : [rawArray]
 
-  // Decode the array of evolis_device_t structs
-  const rawDevices = koffi.decode(
-    devicesPtr[0],
-    koffi.pointer(evolis_device_t),
-    count
-  )
-
-  for (let i = 0; i < count; i++) {
-    const d = rawDevices[i]
-    devices.push({
-      id: String.fromCharCode(...d.id).replace(/\0.*/, ""),
-      name: String.fromCharCode(...d.name).replace(/\0.*/, ""),
-      displayName: String.fromCharCode(...d.displayName).replace(/\0.*/, ""),
-      uri: String.fromCharCode(...d.uri).replace(/\0.*/, ""),
+  const devices: NativeEvolisDevice[] = items.map((d) => {
+    const dev = {
+      id: charArrayToString(d.id),
+      name: charArrayToString(d.name),
+      displayName: charArrayToString(d.displayName),
+      uri: charArrayToString(d.uri),
       mark: d.mark,
       model: d.model,
       isSupervised: d.isSupervised,
       isOnline: d.isOnline,
       link: d.link,
-      driverVersion: String.fromCharCode(...d.driverVersion).replace(
-        /\0.*/,
-        ""
-      ),
-    })
-  }
+      driverVersion: charArrayToString(d.driverVersion),
+    }
+    console.log("[evolis] Device found:", dev.name, "displayName:", dev.displayName)
+    return dev
+  })
 
   f.evolis_free_devices(devicesPtr[0])
   return devices
@@ -322,8 +314,13 @@ export interface NativeEvolisInfo {
   hasLock: boolean
 }
 
-function charArrayToString(arr: number[]): string {
-  return String.fromCharCode(...arr).replace(/\0.*/, "")
+function charArrayToString(val: unknown): string {
+  // koffi may return char[] as string directly or as number array
+  if (typeof val === "string") return val
+  if (Array.isArray(val)) {
+    return String.fromCharCode(...val).replace(/\0.*/, "")
+  }
+  return String(val ?? "")
 }
 
 export function evolisGetInfo(printer: unknown): NativeEvolisInfo {
@@ -332,19 +329,20 @@ export function evolisGetInfo(printer: unknown): NativeEvolisInfo {
   if (rc !== 0) {
     throw new Error(`evolis_get_info failed: ${evolisGetErrorName(rc)} (${rc})`)
   }
+  console.log("[evolis] getInfo raw:", JSON.stringify(info).substring(0, 300))
   return {
-    name: charArrayToString(info.name as number[]),
+    name: charArrayToString(info.name),
     model: info.model as number,
-    modelName: charArrayToString(info.modelName as number[]),
-    serialNumber: charArrayToString(info.serialNumber as number[]),
-    fwVersion: charArrayToString(info.fwVersion as number[]),
-    hasFlip: info.hasFlip as boolean,
-    hasMagEnc: info.hasMagEnc as boolean,
-    hasContactLessEnc: info.hasContactLessEnc as boolean,
-    hasSmartEnc: info.hasSmartEnc as boolean,
-    hasLaminator: info.hasLaminator as boolean,
-    hasScanner: info.hasScanner as boolean,
-    hasLock: info.hasLock as boolean,
+    modelName: charArrayToString(info.modelName),
+    serialNumber: charArrayToString(info.serialNumber),
+    fwVersion: charArrayToString(info.fwVersion),
+    hasFlip: !!info.hasFlip,
+    hasMagEnc: !!info.hasMagEnc,
+    hasContactLessEnc: !!info.hasContactLessEnc,
+    hasSmartEnc: !!info.hasSmartEnc,
+    hasLaminator: !!info.hasLaminator,
+    hasScanner: !!info.hasScanner,
+    hasLock: !!info.hasLock,
   }
 }
 
@@ -368,7 +366,7 @@ export function evolisGetRibbon(printer: unknown): NativeEvolisRibbon {
   return {
     type: ribbonType,
     typeName: getFns().evolis_get_ribbon_name(ribbonType),
-    description: charArrayToString(ribbon.description as number[]),
+    description: charArrayToString(ribbon.description),
     remaining: ribbon.remaining as number,
     capacity: ribbon.capacity as number,
   }
