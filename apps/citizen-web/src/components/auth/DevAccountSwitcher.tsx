@@ -26,39 +26,10 @@ interface OrgGroup {
 /* ─── Real accounts, hardcoded for dev switcher ─── */
 const DEV_ACCOUNTS: OrgGroup[] = [
 	{
-		org: "👑 Back-Office",
+		org: "👤 Ressortissants & Citoyens",
 		accounts: [
-			{ label: "Gueylord A. PELLEN-LAKOUMBA — Super Admin", email: "iasted@me.com", org: "👑 Back-Office" },
-			{ label: "Berny ITOUTOU — Admin Système", email: "itoutouberny@gmail.com", org: "👑 Back-Office" },
-			{ label: "Annabelle P. KASSA DI SCALA — Admin", email: "annabelle.gabao@gmail.com", org: "👑 Back-Office" },
-		],
-	},
-	{
-		org: "🇬🇦 Consulat Général — Paris",
-		accounts: [
-			{ label: "Consul Général", email: "consul-general@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "Gwenaëlle NTSAGA — Consul", email: "consul@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "Christiane MOUELE — Vice-Consul", email: "vice-consul1@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "ANDJAYI KEITA Madina — Vice-Consul", email: "vice-consul2@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "Léa Marcelle ASSEH AKORE — Secrétaire", email: "secretaire1@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "Nelly CALAMEPAT — Secrétaire", email: "secretaire2@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "Jacqueline MPEMBA — Secrétaire", email: "secretaire3@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "Carmel L. KINGA MIHINDOU — Agent", email: "assistant-admin1@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "NGOMONDAMI Ray P. — Agent", email: "assistant-admin2@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-		],
-	},
-	{
-		org: "🇫🇷 Ambassade — France",
-		accounts: [
-			{ label: "Marc Ngoubou — Ambassadeur", email: "ambassadeur@ambassadedugabon.fr", org: "🇫🇷 Ambassade — France" },
-			{ label: "Isaac Koumba — Agent", email: "agent@ambassadedugabon.fr", org: "🇫🇷 Ambassade — France" },
-		],
-	},
-	{
-		org: "🇨🇦 Ambassade — Canada",
-		accounts: [
-			{ label: "Henri Mboumba — Ambassadeur", email: "ambassadeur@ambagabon.ca", org: "🇨🇦 Ambassade — Canada" },
-			{ label: "Éric Mouiri — Agent", email: "agent@ambagabon.ca", org: "🇨🇦 Ambassade — Canada" },
+			{ label: "Berny ITOUTOU — Ressortissant (Longue Durée)", email: "itoutouberny@gmail.com", org: "👤 Ressortissants & Citoyens" },
+			{ label: "Kama UITOUTOU — Citoyen (Courte Durée)", email: "kamauitoutou@gmail.com", org: "👤 Ressortissants & Citoyens" },
 		],
 	},
 ];

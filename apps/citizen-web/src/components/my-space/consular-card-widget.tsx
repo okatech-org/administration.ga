@@ -2,29 +2,22 @@
 
 import { api } from "@convex/_generated/api";
 import type { Doc } from "@convex/_generated/dataModel";
+import { CountryCode } from "@convex/lib/constants";
 import { Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
 	ArrowRight,
-	CheckCircle,
 	Clock,
 	CreditCard,
-	QrCode,
 	RotateCcw,
+	FileText,
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	Sheet,
-	SheetContent,
-	SheetHeader,
-	SheetTitle,
-	SheetTrigger,
-} from "@/components/ui/sheet";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +34,6 @@ interface ConsularCardWidgetProps {
 export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 	const { t } = useTranslation();
 	const [isFlipped, setIsFlipped] = useState(false);
-	const [isOpen, setIsOpen] = useState(false);
 
 	// Query consular registrations for this profile
 	const { data: registrations } = useAuthenticatedConvexQuery(
@@ -77,203 +69,153 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 		const consularCard = profile.consularCard;
 		const identity = profile.identity;
 		return (
-			<Card className="bg-gradient-to-br from-green-900/20 to-green-800/10 border-green-800/30">
-				<CardHeader className="pb-2">
-					<CardTitle className="text-sm font-medium flex items-center gap-2">
-						<CreditCard className="h-4 w-4 text-green-500" />
+			<div className="bg-card rounded-2xl border border-border p-3 flex flex-col gap-3 shrink-0">
+				{/* 1. Header: Titre + Bouton de bascule */}
+				<div className="flex items-center justify-between">
+					<span className="text-xs font-bold flex items-center gap-1.5">
+						<div className="p-1 rounded-md bg-green-500/10">
+							<CreditCard className="h-3 w-3 text-green-600 dark:text-green-400" />
+						</div>
 						{t("mySpace.consularCard.title")}
-						<Badge className="ml-auto bg-green-100 text-green-700 border-green-200">
-							<CheckCircle className="h-3 w-3 mr-1" />
-							{t("mySpace.consularCard.active")}
-						</Badge>
-					</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-3">
-					<div className="space-y-1">
-						<p className="font-mono text-sm font-semibold">
-							{consularCard.cardNumber}
-						</p>
-						<p className="text-xs text-muted-foreground">
-							{t("mySpace.consularCard.validUntil")}{" "}
-							{formatDate(consularCard.cardExpiresAt)}
-						</p>
-					</div>
+					</span>
+					<Button
+						variant="ghost"
+						size="sm"
+						className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+						onClick={(e) => {
+							e.stopPropagation();
+							handleFlip();
+						}}
+					>
+						<RotateCcw className="h-3 w-3 mr-1.5" />
+						{isFlipped ? "Voir le recto" : "Voir le verso"}
+					</Button>
+				</div>
 
-					<Sheet open={isOpen} onOpenChange={setIsOpen}>
-						<SheetTrigger asChild>
-							<Button variant="outline" size="sm" className="w-full gap-2">
-								<QrCode className="h-4 w-4" />
-								{t("mySpace.consularCard.viewCard")}
-							</Button>
-						</SheetTrigger>
-
-						<SheetContent
-							side="bottom"
-							className="w-full max-w-[600px] mx-auto h-auto max-h-[85vh] rounded-t-xl"
+				{/* 2. Visualisation de la carte (Flip 3D) */}
+				<div className="w-full flex justify-center perspective-[1000px]">
+					<button
+						type="button"
+						className="relative w-full aspect-[1.6/1] max-w-[400px] cursor-pointer bg-transparent border-0 p-0 group"
+						onClick={handleFlip}
+					>
+						<div
+							className={cn(
+								"relative w-full h-full transition-transform duration-500",
+								"transform-3d",
+								isFlipped && "transform-[rotateY(180deg)]",
+							)}
 						>
-							<SheetHeader className="pb-4">
-								<SheetTitle className="text-center">
-									{t("mySpace.consularCard.title")}
-								</SheetTitle>
-							</SheetHeader>
-
-							<div className="flex flex-col items-center gap-6 pb-6 overflow-y-auto">
-								{/* Card with flip animation */}
-								<button
-									type="button"
-									className="relative w-full max-w-[400px] cursor-pointer bg-transparent border-0 p-0"
-									style={{ perspective: "1000px" }}
-									onClick={handleFlip}
-								>
-									<div
-										className={cn(
-											"relative w-full transition-transform duration-500",
-											"[transform-style:preserve-3d]",
-											isFlipped && "[transform:rotateY(180deg)]",
-										)}
-									>
-										{/* Front */}
-										<div className="relative aspect-[1.6/1] w-full [backface-visibility:hidden] rounded-xl overflow-hidden shadow-lg bg-gradient-to-br from-green-800 to-green-900">
-											<img
-												src={CARD_RECTO_URL}
-												alt="Card front"
-												className="absolute inset-0 w-full h-full object-cover"
-											/>
-											<div className="absolute inset-0 p-4 flex flex-col justify-between">
-												<div className="text-center">
-													<p className="text-xs text-gray-800/80 font-medium uppercase tracking-wider">
-														République Gabonaise
-													</p>
-													<p className="text-[10px] text-gray-800/60">
-														Consulat Général du Gabon en France
-													</p>
-												</div>
-												<div className="flex items-center gap-4">
-													<div className="w-20 h-24 bg-white/20 rounded-lg flex items-center justify-center border-2 border-white/30">
-														<span className="text-gray-800/50 text-xs">
-															Photo
-														</span>
-													</div>
-													<div className="flex-1 text-gray-800 space-y-1">
-														<p className="font-bold text-lg uppercase truncate">
-															{identity?.lastName || "NOM"}
-														</p>
-														<p className="text-sm">
-															{identity?.firstName || "Prénom"}
-														</p>
-														<p className="text-xs text-gray-800/70">
-															N° {consularCard.cardNumber}
-														</p>
-													</div>
-												</div>
-												<div className="flex justify-between text-xs text-gray-800/80">
-													<div>
-														<p className="text-[10px] text-gray-800/50">
-															Délivrée le
-														</p>
-														<p>{formatDate(consularCard.cardIssuedAt)}</p>
-													</div>
-													<div className="text-right">
-														<p className="text-[10px] text-gray-800/50">
-															Expire le
-														</p>
-														<p>{formatDate(consularCard.cardExpiresAt)}</p>
-													</div>
-												</div>
-											</div>
-											<div className="absolute bottom-3 right-3 w-12 h-12 bg-white rounded p-1">
-												<div className="w-full h-full bg-gray-800 rounded-sm" />
-											</div>
+							{/* Front */}
+							<div className="absolute inset-0 w-full h-full backface-hidden rounded-xl overflow-hidden shadow-lg border border-border/20">
+								<img
+									src={CARD_RECTO_URL}
+									alt="Card front"
+									className="absolute inset-0 w-full h-full object-cover"
+								/>
+								<div className="absolute inset-0 p-3.5 flex flex-col justify-between">
+									<div className="text-center">
+										<p className="text-[10px] text-gray-800/80 font-medium uppercase tracking-wider">
+											République Gabonaise
+										</p>
+										<p className="text-[8px] text-gray-800/60 leading-tight">
+											Consulat Général du Gabon en France
+										</p>
+									</div>
+									<div className="flex items-center gap-3">
+										<div className="w-16 h-20 bg-white/20 rounded-md flex items-center justify-center border-2 border-white/30 shrink-0">
+											<span className="text-gray-800/50 text-[9px] font-semibold">
+												Photo
+											</span>
 										</div>
-
-										{/* Back */}
-										<div
-											className={cn(
-												"absolute inset-0 aspect-[1.6/1] w-full [backface-visibility:hidden] [transform:rotateY(180deg)]",
-												"rounded-xl overflow-hidden shadow-lg bg-gradient-to-br from-green-700 to-green-800",
-											)}
-										>
-											<img
-												src={CARD_VERSO_URL}
-												alt="Card back"
-												className="absolute inset-0 w-full h-full object-cover"
-											/>
-											<div className="absolute inset-0 p-4 flex flex-col justify-center items-center">
-												<div className="bg-white/90 rounded-lg p-4 text-center max-w-[80%]">
-													<p className="text-xs text-gray-600 mb-2">
-														Cette carte est la propriété du Consulat Général du
-														Gabon
-													</p>
-													<p className="text-[10px] text-gray-500">
-														En cas de perte, merci de la retourner à l'adresse
-														ci-dessous
-													</p>
-													<div className="mt-3 pt-3 border-t border-gray-200">
-														<p className="text-[10px] text-gray-600">
-															Consulat Général du Gabon
-														</p>
-														<p className="text-[10px] text-gray-500">
-															26 bis, avenue Raphaël - 75016 Paris
-														</p>
-													</div>
-												</div>
-											</div>
+										<div className="flex-1 text-gray-800 space-y-0.5 text-left min-w-0">
+											<p className="font-bold text-sm uppercase truncate">
+												{identity?.lastName || "NOM"}
+											</p>
+											<p className="text-xs truncate">
+												{identity?.firstName || "Prénom"}
+											</p>
+											<p className="text-[10px] font-mono text-gray-800/70 pt-0.5">
+												N° {consularCard.cardNumber}
+											</p>
 										</div>
 									</div>
-								</button>
-
-								<div className="flex items-center gap-2 text-sm text-muted-foreground">
-									<RotateCcw className="h-4 w-4" />
-									<span>
-										{t(
-											"mySpace.consularCard.clickToFlip",
-											"Cliquez pour retourner",
-										)}
-									</span>
+									<div className="flex justify-between text-[10px] text-gray-800/80">
+										<div className="text-left">
+											<p className="text-[8px] text-gray-800/50 uppercase font-semibold">
+												Délivrée le
+											</p>
+											<p className="font-mono">{formatDate(consularCard.cardIssuedAt)}</p>
+										</div>
+										<div className="text-right">
+											<p className="text-[8px] text-gray-800/50 uppercase font-semibold">
+												Expire le
+											</p>
+											<p className="font-mono">{formatDate(consularCard.cardExpiresAt)}</p>
+										</div>
+									</div>
 								</div>
-
-								{/* Card details */}
-								<div className="w-full max-w-[400px] grid grid-cols-2 gap-4 text-sm">
-									<div>
-										<p className="text-muted-foreground text-xs">
-											{t("mySpace.consularCard.cardNumber")}
-										</p>
-										<p className="font-mono font-medium">
-											{consularCard.cardNumber}
-										</p>
-									</div>
-									<div>
-										<p className="text-muted-foreground text-xs">
-											{t("mySpace.consularCard.holder")}
-										</p>
-										<p className="font-medium">
-											{[identity?.firstName, identity?.lastName]
-												.filter(Boolean)
-												.join(" ") || "—"}
-										</p>
-									</div>
-									<div>
-										<p className="text-muted-foreground text-xs">
-											{t("mySpace.consularCard.issuedAt")}
-										</p>
-										<p className="font-medium">
-											{formatDate(consularCard.cardIssuedAt)}
-										</p>
-									</div>
-									<div>
-										<p className="text-muted-foreground text-xs">
-											{t("mySpace.consularCard.expiresAt")}
-										</p>
-										<p className="font-medium">
-											{formatDate(consularCard.cardExpiresAt)}
-										</p>
+								
+								{/* Flip hint overlay */}
+								<div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+									<div className="flex flex-col items-center gap-2 text-white">
+										<RotateCcw className="h-6 w-6" />
+										<span className="text-xs font-medium">Voir le verso</span>
 									</div>
 								</div>
 							</div>
-						</SheetContent>
-					</Sheet>
-				</CardContent>
-			</Card>
+
+							{/* Back */}
+							<div
+								className={cn(
+									"absolute inset-0 w-full h-full backface-hidden transform-[rotateY(180deg)]",
+									"rounded-xl overflow-hidden shadow-lg border border-border/20",
+								)}
+							>
+								<img
+									src={CARD_VERSO_URL}
+									alt="Card back"
+									className="absolute inset-0 w-full h-full object-cover"
+								/>
+								<div className="absolute inset-0 p-4 flex flex-col justify-center items-center">
+									<div className="bg-white/95 rounded-lg p-3 text-center max-w-[80%] shadow-sm">
+										<p className="text-[10px] text-gray-700 font-medium mb-2 leading-tight">
+											Cette carte est la propriété du Consulat Général du Gabon
+										</p>
+										<p className="text-[9px] text-gray-500 leading-snug">
+											En cas de perte, merci de la retourner à l'adresse ci-dessous
+										</p>
+										<div className="mt-2.5 pt-2.5 border-t border-gray-200">
+											<p className="text-[9px] font-bold text-gray-700 uppercase">
+												Consulat Général du Gabon
+											</p>
+											<p className="text-[9px] text-gray-600 mt-0.5">
+												26 bis, avenue Raphaël<br/>75016 Paris
+											</p>
+										</div>
+									</div>
+								</div>
+
+								{/* Flip hint overlay */}
+								<div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+									<div className="flex flex-col items-center gap-2 text-white">
+										<RotateCcw className="h-6 w-6" />
+										<span className="text-xs font-medium">Voir le recto</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</button>
+				</div>
+
+				{/* 3. Bouton Attestation */}
+				<Button asChild variant="outline" className="w-full h-8 text-[11px] border-border gap-2">
+					<Link to="/services/$slug" params={{ slug: "attestation-carte-consulaire" }}>
+						<FileText className="h-3.5 w-3.5" />
+						Attestation de Carte Consulaire
+					</Link>
+				</Button>
+			</div>
 		);
 	}
 
@@ -300,7 +242,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 					</p>
 					<Button asChild variant="outline" size="sm">
 						<Link
-							to="/services/$slug/new"
+							to="/services/$slug"
 							params={{ slug: "consular-card-registration" }}
 						>
 							{t("mySpace.consularCard.renew")}
@@ -345,7 +287,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 	}
 
 	// Not a national - not eligible
-	if (!profile?.isNational) {
+	if (profile?.identity?.nationality !== CountryCode.GA) {
 		return (
 			<Card className="flex flex-col">
 				<CardHeader className="pb-2">
@@ -389,7 +331,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 				</p>
 				<Button asChild variant="outline" size="sm">
 					<Link
-						to="/services/$slug/new"
+						to="/services/$slug"
 						params={{ slug: "consular-card-registration" }}
 					>
 						{t("mySpace.consularCard.request")}

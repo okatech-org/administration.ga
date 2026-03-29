@@ -50,6 +50,16 @@ import {
   gcpMetricsCacheTable,
   cardDesignsTable,
   printJobsTable,
+  correspondanceFoldersTable,
+  correspondanceItemsTable,
+  correspondanceWorkflowStepsTable,
+  correspondanceRecipientsTable,
+  typeDemarchesTable,
+  dossierProceduresTable,
+  dossierPiecesTable,
+  dossierTransitionsTable,
+  copiesPassageTable,
+  journalActionsTable,
 } from "./schemas";
 
 export default defineSchema({
@@ -103,4 +113,14 @@ export default defineSchema({
   gcpMetricsCache: gcpMetricsCacheTable,
   cardDesigns: cardDesignsTable,
   printJobs: printJobsTable,
+  correspondanceFolders: correspondanceFoldersTable,
+  correspondanceItems: correspondanceItemsTable,
+  correspondanceWorkflowSteps: correspondanceWorkflowStepsTable,
+  correspondanceRecipients: correspondanceRecipientsTable,
+  typeDemarches: typeDemarchesTable,
+  dossierProcedures: dossierProceduresTable,
+  dossierPieces: dossierPiecesTable,
+  dossierTransitions: dossierTransitionsTable,
+  copiesPassage: copiesPassageTable,
+  journalActions: journalActionsTable,
 });

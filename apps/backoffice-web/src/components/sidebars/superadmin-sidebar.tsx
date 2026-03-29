@@ -3,7 +3,9 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
 	Activity,
+	Archive,
 	BookOpen,
+	Bot,
 	Building2,
 	Calendar,
 	ChevronsLeft,
@@ -11,10 +13,14 @@ import {
 	ClipboardList,
 	Cog,
 	Crown,
+	FileText,
+	FolderOpen,
 	Globe,
 	Layers,
 	LayoutDashboard,
 	LifeBuoy,
+	Mail,
+	MessageSquare,
 	Moon,
 	Newspaper,
 	ScrollText,
@@ -164,7 +170,58 @@ export function SuperadminSidebar({
 		},
 
 		// ═══════════════════════════════════════════════════
-		// 🔒 AXE 3 — SÉCURITÉ & SYSTÈME
+		// 📡 AXE 3 — COMMUNICATION & MODULES
+		// ═══════════════════════════════════════════════════
+		{
+			label: "📡 Communication",
+			items: [
+				{
+					title: "iAsted",
+					url: "/iasted",
+					icon: Bot,
+					moduleCode: "iasted",
+				},
+				{
+					title: "iCom",
+					url: "/icom",
+					icon: MessageSquare,
+					moduleCode: "icom",
+				},
+				{
+					title: "iBoîte",
+					url: "/iboite",
+					icon: Mail,
+					moduleCode: "iboite",
+				},
+				{
+					title: "iCorrespondance",
+					url: "/icorrespondance",
+					icon: FolderOpen,
+					moduleCode: "icorrespondance",
+				},
+				{
+					title: "iDocument",
+					url: "/idocument",
+					icon: FileText,
+					moduleCode: "idocument",
+				},
+				{
+					title: "iAgenda",
+					url: "/iagenda",
+					icon: Calendar,
+					moduleCode: "iagenda",
+				},
+				{
+					title: "iArchive",
+					url: "/iarchive",
+					icon: Archive,
+					moduleCode: "iarchive",
+				},
+			],
+		},
+
+		// ═══════════════════════════════════════════════════
+		// 🔒 AXE 4 — SÉCURITÉ & SYSTÈME
 		// ═══════════════════════════════════════════════════
 		{
 			label: "🔒 Sécurité & Système",
@@ -191,7 +248,7 @@ export function SuperadminSidebar({
 		},
 
 		// ═══════════════════════════════════════════════════
-		// ⚙️ AXE 4 — CONTRÔLE (Gouvernance)
+		// ⚙️ AXE 5 — CONTRÔLE (Gouvernance)
 		// ═══════════════════════════════════════════════════
 		{
 			label: "⚙️ Contrôle",

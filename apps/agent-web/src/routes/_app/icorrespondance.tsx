@@ -1,0 +1,1425 @@
+"use client";
+
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { createFileRoute } from "@tanstack/react-router";
+import React, { useState, useMemo, useCallback } from "react";
+import { toast } from "sonner";
+import { useOrg } from "@/components/org/org-provider";
+import {
+	useAuthenticatedConvexQuery,
+	useConvexMutationQuery,
+} from "@/integrations/convex/hooks";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+	Mail, Search, Upload, Shield, Clock, Lock, Landmark, Users2, Scale,
+	Building2, FileText, Folder, FolderOpen, FolderPlus, Hash,
+	CheckCircle2, AlertTriangle, XCircle, Loader2, X, Download,
+	MoreHorizontal, Share2, Send, Edit3, Info, KeyRound, Tag,
+	Trash2, CalendarClock, GitBranch, Sparkles, User, AlertOctagon,
+	LayoutGrid, List, Columns3, ChevronRight, GripVertical,
+	FileSpreadsheet, ImageIcon, Plus, Filter, BarChart3,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+// ─── Dossier Procédure Components ────────────────────────────
+import { DossierList } from "@/components/dossierProcedure/DossierList";
+import { DossierDetail } from "@/components/dossierProcedure/DossierDetail";
+import { DossierCreateWizard } from "@/components/dossierProcedure/DossierCreateWizard";
+import { Dashboard } from "@/components/correspondance/Dashboard";
+import { NewCorrespondanceWizard } from "@/components/correspondance/NewCorrespondanceWizard";
+
+type ActiveTab = "correspondance" | "dossiers" | "dashboard";
+
+export const Route = createFileRoute("/_app/icorrespondance")({
+	component: ICorrespondancePage,
+});
+
+// ═══════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════
+
+type CorrStatus = "draft" | "pending" | "approved" | "sent" | "received" | "archived";
+type ViewMode = "grid" | "list" | "column";
+type CorrespondenceType = "note_verbale" | "lettre_officielle" | "circulaire" | "telegramme" | "memorandum" | "communique";
+type Priority = "normal" | "urgent" | "confidentiel";
+
+interface CorrespondenceItem {
+	id: string;
+	reference: string;
+	title: string;
+	type: CorrespondenceType;
+	sender: string;
+	senderInitials: string;
+	recipient: string;
+	updatedAt: string;
+	updatedAtTs: number;
+	status: CorrStatus;
+	tags: string[];
+	priority: Priority;
+	folderId: string;
+	attachments: number;
+}
+
+interface FolderItem {
+	id: string;
+	name: string;
+	parentFolderId: string | null;
+	tags: string[];
+	fileCount: number;
+	subfolderCount: number;
+	updatedAt: string;
+	createdBy: string;
+	isSystem: boolean;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════
+
+const STATUS_CFG: Record<CorrStatus, { label: string; class: string; dot: string }> = {
+	draft: { label: "Brouillon", class: "bg-zinc-500/15 text-zinc-400 border-zinc-500/20", dot: "bg-zinc-400" },
+	pending: { label: "En attente", class: "bg-blue-500/15 text-blue-400 border-blue-500/20", dot: "bg-blue-400" },
+	approved: { label: "Approuvé", class: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20", dot: "bg-emerald-400" },
+	sent: { label: "Envoyé", class: "bg-violet-500/15 text-violet-400 border-violet-500/20", dot: "bg-violet-400" },
+	received: { label: "Reçu", class: "bg-indigo-500/15 text-indigo-400 border-indigo-500/20", dot: "bg-indigo-400" },
+	archived: { label: "Archivé", class: "bg-amber-500/15 text-amber-400 border-amber-500/20", dot: "bg-amber-400" },
+};
+
+const STATUS_FILTERS: { value: CorrStatus | "all"; label: string }[] = [
+	{ value: "all", label: "Tous" },
+	{ value: "draft", label: "Brouillons" },
+	{ value: "pending", label: "En attente" },
+	{ value: "approved", label: "Approuvés" },
+	{ value: "sent", label: "Envoyés" },
+	{ value: "received", label: "Reçus" },
+	{ value: "archived", label: "Archivés" },
+];
+
+const CORRESPONDENCE_TYPE_CONFIG: Record<CorrespondenceType, { label: string; color: string; icon: string }> = {
+	note_verbale: { label: "Note Verbale", color: "text-cyan-400 bg-cyan-500/15", icon: "Mail" },
+	lettre_officielle: { label: "Lettre Officielle", color: "text-violet-400 bg-violet-500/15", icon: "Mail" },
+	circulaire: { label: "Circulaire", color: "text-amber-400 bg-amber-500/15", icon: "Mail" },
+	telegramme: { label: "Télégramme", color: "text-red-400 bg-red-500/15", icon: "Mail" },
+	memorandum: { label: "Mémorandum", color: "text-emerald-400 bg-emerald-500/15", icon: "Mail" },
+	communique: { label: "Communiqué", color: "text-blue-400 bg-blue-500/15", icon: "Mail" },
+};
+
+const PRIORITY_CONFIG: Record<Priority, { label: string; color: string }> = {
+	normal: { label: "Normal", color: "text-muted-foreground" },
+	urgent: { label: "Urgent", color: "text-red-400" },
+	confidentiel: { label: "Confidentiel", color: "text-amber-400" },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// MOCK DATA
+// ═══════════════════════════════════════════════════════════════
+
+const DEFAULT_FOLDERS: FolderItem[] = [
+	{ id: "__toutes-correspondances", name: "Toutes les correspondances", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
+	{ id: "__brouillons", name: "Brouillons", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
+	{ id: "__corbeille", name: "Corbeille", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
+	{ id: "f-notes-verbales", name: "Notes Verbales", parentFolderId: null, tags: ["diplomatique", "officiel"], fileCount: 3, subfolderCount: 0, updatedAt: "25/03/2026", createdBy: "MAE", isSystem: false },
+	{ id: "f-lettres-officielles", name: "Lettres Officielles", parentFolderId: null, tags: ["diplomatique", "lettres"], fileCount: 4, subfolderCount: 0, updatedAt: "24/03/2026", createdBy: "Ambassade", isSystem: false },
+	{ id: "f-circulaires", name: "Circulaires", parentFolderId: null, tags: ["administration", "circulaires"], fileCount: 2, subfolderCount: 0, updatedAt: "23/03/2026", createdBy: "MAE", isSystem: false },
+	{ id: "f-telegrammes", name: "Télégrammes", parentFolderId: null, tags: ["urgent", "diplomatique"], fileCount: 5, subfolderCount: 0, updatedAt: "26/03/2026", createdBy: "Service Diplomatique", isSystem: false },
+	{ id: "f-memorandums", name: "Mémorandums", parentFolderId: null, tags: ["accords", "cooperation"], fileCount: 3, subfolderCount: 0, updatedAt: "22/03/2026", createdBy: "Ambassade", isSystem: false },
+	{ id: "f-communiques", name: "Communiqués", parentFolderId: null, tags: ["presse", "public"], fileCount: 4, subfolderCount: 0, updatedAt: "21/03/2026", createdBy: "Communication", isSystem: false },
+	{ id: "f-france", name: "France", parentFolderId: null, tags: ["geographic", "france"], fileCount: 6, subfolderCount: 0, updatedAt: "25/03/2026", createdBy: "Ambassade Paris", isSystem: false },
+	{ id: "f-usa", name: "USA", parentFolderId: null, tags: ["geographic", "usa"], fileCount: 4, subfolderCount: 0, updatedAt: "24/03/2026", createdBy: "Ambassade Washington", isSystem: false },
+	{ id: "f-organisations-internationales", name: "Organisations Internationales", parentFolderId: null, tags: ["international", "organisations"], fileCount: 3, subfolderCount: 0, updatedAt: "23/03/2026", createdBy: "MAE", isSystem: false },
+];
+
+const MOCK_CORRESPONDENCES: CorrespondenceItem[] = [
+	{ id: "corr-1", reference: "NV/2026/GAB-FR/001", title: "Note Verbale — Protestation re: Incident diplomatique", type: "note_verbale", sender: "Ambassade de France", senderInitials: "AF", recipient: "Ministère des Affaires Étrangères du Gabon", updatedAt: "25/03/2026", updatedAtTs: 1774567200000, status: "approved", tags: ["protocole", "incident"], priority: "urgent", folderId: "f-notes-verbales", attachments: 2 },
+	{ id: "corr-2", reference: "LO/2026/GAB-EU/042", title: "Lettre de créance — Nouvel Ambassadeur", type: "lettre_officielle", sender: "Ministre des Affaires Étrangères", senderInitials: "MAE", recipient: "Union Européenne", updatedAt: "24/03/2026", updatedAtTs: 1774480800000, status: "sent", tags: ["accréditation", "ambassadeur"], priority: "normal", folderId: "f-lettres-officielles", attachments: 1 },
+	{ id: "corr-3", reference: "CIRC/2026-05", title: "Circulaire N°2026-05 — Procédures consulaires", type: "circulaire", sender: "Ministère des Affaires Étrangères", senderInitials: "MAE", recipient: "Tous les consulats", updatedAt: "23/03/2026", updatedAtTs: 1774394400000, status: "draft", tags: ["procedures", "consulaire"], priority: "normal", folderId: "f-circulaires", attachments: 3 },
+	{ id: "corr-4", reference: "TLG/2026/SEC/015", title: "Télégramme diplomatique — Alerte sécurité", type: "telegramme", sender: "Direction de la Sécurité", senderInitials: "DS", recipient: "Tous les postes diplomatiques", updatedAt: "26/03/2026", updatedAtTs: 1774653600000, status: "sent", tags: ["securite", "alerte"], priority: "urgent", folderId: "f-telegrammes", attachments: 0 },
+	{ id: "corr-5", reference: "MEM/2026/GAB-UE/003", title: "Mémorandum d'entente Gabon-UE", type: "memorandum", sender: "Ambassade auprès de l'UE", senderInitials: "AU", recipient: "Commission Européenne", updatedAt: "22/03/2026", updatedAtTs: 1774308000000, status: "pending", tags: ["accord", "cooperation"], priority: "normal", folderId: "f-memorandums", attachments: 5 },
+	{ id: "corr-6", reference: "COMM/2026/003", title: "Communiqué conjoint — Sommet UA", type: "communique", sender: "Bureau du Porte-parole", senderInitials: "BP", recipient: "Médias et Agences de presse", updatedAt: "21/03/2026", updatedAtTs: 1774221600000, status: "archived", tags: ["presse", "sommet"], priority: "normal", folderId: "f-communiques", attachments: 1 },
+	{ id: "corr-7", reference: "NV/2026/GAB-CN/008", title: "Note Verbale — Demande de visas pour délégation", type: "note_verbale", sender: "Ambassade de Chine", senderInitials: "AC", recipient: "Ministère des Affaires Étrangères du Gabon", updatedAt: "20/03/2026", updatedAtTs: 1774135200000, status: "received", tags: ["visas", "delegation"], priority: "normal", folderId: "f-notes-verbales", attachments: 1 },
+	{ id: "corr-8", reference: "LO/2026/GAB-BR/089", title: "Lettre officielle — Invitation au forum économique", type: "lettre_officielle", sender: "Ambassade du Brésil", senderInitials: "AB", recipient: "Ministère du Commerce du Gabon", updatedAt: "19/03/2026", updatedAtTs: 1774048800000, status: "approved", tags: ["economie", "forum"], priority: "normal", folderId: "f-lettres-officielles", attachments: 2 },
+	{ id: "corr-9", reference: "TLG/2026/ONU/042", title: "Télégramme — Résolution du Conseil de Sécurité", type: "telegramme", sender: "Mission permanente auprès de l'ONU", senderInitials: "MO", recipient: "MAE Gabon", updatedAt: "18/03/2026", updatedAtTs: 1773962400000, status: "received", tags: ["onu", "resolution"], priority: "urgent", folderId: "f-telegrammes", attachments: 0 },
+	{ id: "corr-10", reference: "MEM/2026/GAB-ZA/001", title: "Mémorandum de coopération Gabon-Afrique du Sud", type: "memorandum", sender: "Ambassade en Afrique du Sud", senderInitials: "AS", recipient: "Gouvernement de l'Afrique du Sud", updatedAt: "17/03/2026", updatedAtTs: 1773876000000, status: "draft", tags: ["bilateral", "cooperation"], priority: "normal", folderId: "f-memorandums", attachments: 4 },
+	{ id: "corr-11", reference: "CIRC/2026-04", title: "Circulaire — Nouvelle politique de congés", type: "circulaire", sender: "Ressources Humaines", senderInitials: "RH", recipient: "Personnel diplomatique", updatedAt: "16/03/2026", updatedAtTs: 1773789600000, status: "sent", tags: ["ressources-humaines", "politique"], priority: "normal", folderId: "f-circulaires", attachments: 1 },
+	{ id: "corr-12", reference: "COMM/2026/002", title: "Communiqué — Visite présidentielle en France", type: "communique", sender: "Porte-parole du Gouvernement", senderInitials: "PG", recipient: "Médias internationaux", updatedAt: "15/03/2026", updatedAtTs: 1773703200000, status: "sent", tags: ["presse", "presidentiellement"], priority: "normal", folderId: "f-france", attachments: 0 },
+	{ id: "corr-13", reference: "NV/2026/GAB-USA/005", title: "Note Verbale — Demande d'extradition", type: "note_verbale", sender: "Ambassade des USA", senderInitials: "AU", recipient: "Ministère de la Justice du Gabon", updatedAt: "14/03/2026", updatedAtTs: 1773616800000, status: "pending", tags: ["juridique", "extradition"], priority: "confidentiel", folderId: "f-usa", attachments: 3 },
+];
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMATIONS
+// ═══════════════════════════════════════════════════════════════
+
+const fadeUp = {
+	hidden: { opacity: 0, y: 16 },
+	visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } },
+};
+const stagger = {
+	hidden: {},
+	visible: { transition: { staggerChildren: 0.04 } },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SUB-COMPONENTS
+// ═══════════════════════════════════════════════════════════════
+
+/* ── DynamicFolderIcon — yellow macOS folder with animated sheets ── */
+
+function DynamicFolderIcon({ count, size = 64, hovered = false, className = "" }: { count: number; size?: number; className?: string; hovered?: boolean }) {
+	const sheets = Math.min(Math.max(count, 0), 3);
+	const sheetConfigs = [
+		{ x: 62, y: 148, w: 300, h: 200, rx: 15, rotate: -3, fill: "#ffeac5", hoverY: -18 },
+		{ x: 42, y: 168, w: 300, h: 200, rx: 15, rotate: 0, fill: "#fff7e6", hoverY: -14 },
+		{ x: 52, y: 158, w: 290, h: 195, rx: 15, rotate: 3, fill: "#ffffff", hoverY: -22 },
+	];
+	const visibleSheets = sheets === 0 ? [] : sheets === 1 ? [sheetConfigs[1]] : sheets === 2 ? [sheetConfigs[0], sheetConfigs[1]] : [sheetConfigs[0], sheetConfigs[1], sheetConfigs[2]];
+
+	return (
+		<motion.svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" width={size} height={size} className={className} initial={{ scale: 1 }} whileHover={{ scale: 1.08 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
+			<path d="m214.2 107-40.2-29.9c-9.5-7-20.9-10.8-32.7-10.8h-110.2c-16.6 0-30 13.4-30 30v349.5h404.1c15.2 0 27.4-12.3 27.4-27.4v-270.6c0-16.6-13.4-30-30-30h-155.6c-11.8 0-23.3-3.8-32.8-10.8z" fill="#f6c012" />
+			{visibleSheets.map((sheet, i) => (
+				<motion.rect key={i} x={sheet.x} y={sheet.y} width={sheet.w} height={sheet.h} rx={sheet.rx} fill={sheet.fill} style={{ transformOrigin: `${sheet.x + sheet.w / 2}px ${sheet.y + sheet.h}px` }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: hovered ? sheet.hoverY : 0, rotate: sheet.rotate + (hovered ? sheet.rotate * 0.5 : 0) }} transition={{ opacity: { duration: 0.3, delay: i * 0.08 }, y: { type: "spring", stiffness: 300, damping: 20 }, rotate: { type: "spring", stiffness: 300, damping: 20 } }} />
+			))}
+			<path d="m85.2 220.1-84.1 225.6h410.8c12.5 0 23.7-7.8 28.1-19.5l69-185.2c7.3-19.6-7.2-40.5-28.1-40.5h-367.6c-12.5.1-23.7 7.8-28.1 19.6z" fill="#fbd87c" />
+		</motion.svg>
+	);
+}
+
+/* ── VaultFolderCard — folder card with yellow icon ── */
+
+function VaultFolderCard({ label, count, subfolderCount = 0, onClick, className, contextMenu, badges, tags, isDragOver, isSelected = false }: {
+	label: string; count: number; subfolderCount?: number; onClick?: () => void; className?: string; contextMenu?: React.ReactNode; badges?: React.ReactNode; tags?: React.ReactNode; isDragOver?: boolean; isSelected?: boolean;
+}) {
+	const [isHovered, setIsHovered] = useState(false);
+	return (
+		<div className={cn("group relative flex flex-col items-center justify-center p-2 rounded-2xl w-full h-full", isDragOver ? "bg-primary/10 ring-2 ring-primary/50" : "", isSelected && !isDragOver && "ring-2 ring-violet-500 bg-violet-500/10", className)}>
+			<motion.div role="button" tabIndex={0} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} onClick={onClick} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} className="relative flex flex-col items-center justify-center cursor-pointer outline-none rounded-xl p-3 hover:bg-muted/40 transition-colors w-[140px]">
+				<div className="absolute top-1 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none z-10 w-full text-center">
+					<div className="flex flex-col gap-0.5 items-center justify-center pointer-events-auto scale-90 -mt-2">{badges}</div>
+				</div>
+				<div className="relative mt-1 w-full flex justify-center">
+					<DynamicFolderIcon count={count + subfolderCount} size={96} hovered={isHovered} className="drop-shadow-lg" />
+					<div className="absolute -top-1 right-1 flex flex-col gap-0.5 items-end z-10">
+						{subfolderCount > 0 && (
+							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="min-w-5 h-5 px-1 flex items-center justify-center gap-0.5 rounded-full bg-violet-500 text-white text-[9px] font-bold shadow-sm">
+								<Folder className="h-2.5 w-2.5" />{subfolderCount}
+							</motion.span>
+						)}
+						{count > 0 && (
+							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="min-w-5 h-5 px-1 flex items-center justify-center gap-0.5 rounded-full bg-blue-500 text-white text-[9px] font-bold shadow-sm">
+								<Mail className="h-2.5 w-2.5" />{count}
+							</motion.span>
+						)}
+					</div>
+					{contextMenu && (
+						<div className="absolute -bottom-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all hover:scale-125 pointer-events-auto z-10" onClick={(e) => e.stopPropagation()}>
+							{contextMenu}
+						</div>
+					)}
+				</div>
+				<div className="flex flex-col items-center mt-3 w-full">
+					<span className="text-sm font-semibold text-foreground text-center leading-tight line-clamp-2 w-full px-1">{label}</span>
+					{tags && <div className="flex flex-wrap items-center justify-center gap-1 mt-1.5 w-full">{tags}</div>}
+				</div>
+			</motion.div>
+		</div>
+	);
+}
+
+/* ── VaultFileCard — correspondence card with A4 preview ── */
+
+function VaultFileCard({ title, reference, iconColor = "text-stone-600", sender, senderInitials, date, statusBadge, typeBadge, priorityBadge, contextMenu, badges, tags = [], onClick, isSelected = false }: {
+	title: string; reference?: string; iconColor?: string; sender?: string; senderInitials?: string; date?: string; statusBadge?: React.ReactNode; typeBadge?: React.ReactNode; priorityBadge?: React.ReactNode; contextMenu?: React.ReactNode; badges?: React.ReactNode; tags?: string[]; onClick?: () => void; isSelected?: boolean;
+}) {
+	return (
+		<div className={cn("group hover:shadow-lg transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-card rounded-xl", isSelected && "ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/5")} onClick={onClick}>
+			<div className="relative aspect-[1/1.414] bg-white/3 flex flex-col overflow-hidden">
+				<div className="relative flex items-center px-2.5 pt-2 z-10 min-h-[20px] gap-1">
+					<div className="flex items-center gap-0.5 shrink min-w-0 flex-wrap">{badges}</div>
+				</div>
+				<div className="flex-1 flex items-center justify-center px-3 py-2">
+					<div className="relative w-14 h-[72px] bg-white shadow-sm flex flex-col items-center justify-center rounded-[2px] border border-neutral-200">
+						<div className="absolute top-0 left-0 w-full h-4 bg-neutral-50 border-b border-neutral-100" />
+						<Mail className={cn("h-7 w-7 opacity-50", iconColor)} />
+						<div className="absolute bottom-2 left-2 right-2 space-y-0.5">
+							<div className="h-[2px] bg-neutral-100 rounded-full w-full" />
+							<div className="h-[2px] bg-neutral-100 rounded-full w-3/4" />
+							<div className="h-[2px] bg-neutral-100 rounded-full w-5/6" />
+						</div>
+					</div>
+				</div>
+				<div className="px-2.5 pb-1">
+					<h3 className="font-semibold text-[11px] leading-tight truncate text-foreground/90 group-hover:text-primary transition-colors" title={title}>{title}</h3>
+					{reference && <p className="text-[9px] text-muted-foreground/50 truncate">Ref: {reference}</p>}
+				</div>
+				<div className="flex items-center justify-between px-2.5 pb-2 mt-auto gap-1 flex-wrap">
+					<div className="flex items-center gap-0.5 text-[9px]">
+						{statusBadge}
+						{typeBadge}
+						{priorityBadge}
+					</div>
+					{date && <span className="text-[8px] text-muted-foreground/50 whitespace-nowrap flex items-center gap-0.5"><Clock className="h-2 w-2" />{date}</span>}
+				</div>
+				<div className="absolute top-1.5 right-1.5 z-20 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+					{contextMenu}
+				</div>
+			</div>
+		</div>
+	);
+}
+
+/* ── ViewModeToggle ── */
+
+function ViewModeToggle({ value, onChange }: { value: ViewMode; onChange: (v: ViewMode) => void }) {
+	const modes: { value: ViewMode; icon: React.ElementType; label: string }[] = [
+		{ value: "grid", icon: LayoutGrid, label: "Grille" },
+		{ value: "list", icon: List, label: "Liste" },
+		{ value: "column", icon: Columns3, label: "Colonnes" },
+	];
+	return (
+		<div className="flex items-center rounded-lg border border-border/50 bg-card p-0.5 gap-0.5">
+			{modes.map((m) => (
+				<button key={m.value} onClick={() => onChange(m.value)} className={cn("h-7 w-7 flex items-center justify-center rounded-md transition-all", value === m.value ? "bg-primary/10 text-primary shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted")} title={m.label}>
+					<m.icon className="h-3.5 w-3.5" />
+				</button>
+			))}
+		</div>
+	);
+}
+
+/* ── BreadcrumbPath ── */
+
+function BreadcrumbPath({ path, onNavigate, rootLabel = "Correspondances", rootIcon: RootIcon = Mail }: { path: { id: string; name: string }[]; onNavigate: (id: string | null) => void; rootLabel?: string; rootIcon?: React.ElementType }) {
+	return (
+		<div className="flex items-center gap-1 text-sm flex-wrap">
+			<button onClick={() => onNavigate(null)} className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+				<RootIcon className="h-3.5 w-3.5" />
+				<span className="text-xs font-medium">{rootLabel}</span>
+			</button>
+			{path.map((segment, i) => (
+				<React.Fragment key={segment.id}>
+					<ChevronRight className="h-3 w-3 text-muted-foreground/50" />
+					{i < path.length - 1 ? (
+						<button onClick={() => onNavigate(segment.id)} className="px-2 py-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground text-xs">
+							{segment.name}
+						</button>
+					) : (
+						<span className="px-2 py-1 text-xs font-medium text-foreground">{segment.name}</span>
+					)}
+				</React.Fragment>
+			))}
+		</div>
+	);
+}
+
+/* ── FolderContextMenu ── */
+
+function FolderContextMenu({ itemId, itemName, itemType, onShare, onInfo, onTransmit, onManageAccess, onDelete, isSystem }: {
+	itemId: string; itemName: string; itemType: "folder" | "correspondence"; onShare?: (id: string, type: string) => void; onInfo?: (id: string) => void; onTransmit?: (id: string) => void; onManageAccess?: (id: string) => void; onDelete?: (id: string) => void; isSystem?: boolean;
+}) {
+	const [open, setOpen] = useState(false);
+	return (
+		<div className="relative">
+			<button onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="h-7 w-7 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-muted-foreground hover:text-foreground" title="Actions" aria-label="Actions">
+				<MoreHorizontal className="h-4 w-4" />
+			</button>
+			{open && (
+				<>
+					<div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+					<div className="absolute right-0 top-8 z-50 w-52 bg-popover border border-border rounded-lg shadow-xl py-1" onClick={(e) => e.stopPropagation()}>
+						<div className="px-3 py-1.5 text-[10px] text-muted-foreground/60">{itemType === "folder" ? "Dossier" : "Correspondance"} — Actions</div>
+						{onShare && <button onClick={() => { onShare(itemId, itemType); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors"><Share2 className="h-3.5 w-3.5 text-blue-400" />Partager</button>}
+						{onInfo && <button onClick={() => { onInfo(itemId); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors"><Info className="h-3.5 w-3.5 text-sky-400" />Informations</button>}
+						{onTransmit && <button onClick={() => { onTransmit(itemId); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors"><Send className="h-3.5 w-3.5 text-violet-400" />Transmettre</button>}
+						{itemType === "folder" && onManageAccess && <button onClick={() => { onManageAccess(itemId); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors"><KeyRound className="h-3.5 w-3.5 text-amber-400" />Gérer accès</button>}
+						{!isSystem && onDelete && (
+							<>
+								<div className="my-1 border-t border-border/50" />
+								<button onClick={() => { onDelete(itemId); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors text-red-400"><Trash2 className="h-3.5 w-3.5" />Supprimer</button>
+							</>
+						)}
+					</div>
+				</>
+			)}
+		</div>
+	);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DIALOGS
+// ═══════════════════════════════════════════════════════════════
+
+/* ── ShareDialog ── */
+
+function ShareDialog({ open, onClose, targetName }: { open: boolean; onClose: () => void; targetName: string }) {
+	const [visibility, setVisibility] = useState<"private" | "team" | "shared">("private");
+	const visOptions = [
+		{ value: "private" as const, label: "Privé", desc: "Seul vous pouvez voir ce contenu", icon: Lock, color: "text-zinc-400" },
+		{ value: "team" as const, label: "Équipe / Interne", desc: "Visible par les membres de l'organisme", icon: Users2, color: "text-indigo-400" },
+		{ value: "shared" as const, label: "Partagé / Restreint", desc: "Visible par les personnes sélectionnées", icon: Building2, color: "text-emerald-400" },
+	];
+	if (!open) return null;
+	return (
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+			<div className="w-full max-w-md border border-white/5 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+				<div className="px-5 pt-5 pb-3 border-b border-border/50">
+					<div className="flex items-center gap-2 text-sm font-semibold"><Share2 className="h-4 w-4 text-blue-400" />Partager — {targetName}</div>
+				</div>
+				<div className="p-5 space-y-3">
+					<p className="text-xs text-muted-foreground">Définissez la visibilité de ce contenu.</p>
+					<div className="space-y-2">
+						{visOptions.map((opt) => (
+							<button key={opt.value} onClick={() => setVisibility(opt.value)} className={cn("w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left", visibility === opt.value ? "border-primary/40 bg-primary/10" : "border-border/50 hover:border-border")}>
+								<opt.icon className={cn("h-5 w-5 shrink-0", opt.color)} />
+								<div>
+									<p className="text-xs font-medium">{opt.label}</p>
+									<p className="text-[10px] text-muted-foreground">{opt.desc}</p>
+								</div>
+							</button>
+						))}
+					</div>
+				</div>
+				<div className="px-5 py-3 border-t border-border/50 flex justify-end gap-2">
+					<button onClick={onClose} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Annuler</button>
+					<button onClick={onClose} className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">Appliquer</button>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+/* ── ManageAccessDialog ── */
+
+function ManageAccessDialog({ open, onClose, targetName }: { open: boolean; onClose: () => void; targetName: string }) {
+	const [accessLevel, setAccessLevel] = useState("private");
+	const options = [
+		{ value: "private", label: "Privé Restreint" },
+		{ value: "team", label: "Équipe (Interne)" },
+		{ value: "specific", label: "Accès Spécifique" },
+	];
+	if (!open) return null;
+	return (
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+			<div className="w-full max-w-md border border-amber-500/20 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+				<div className="px-5 pt-5 pb-3 border-b border-border/50">
+					<div className="flex items-center gap-2 text-sm font-semibold"><KeyRound className="h-4 w-4 text-amber-400" />Gérer les accès du dossier (Admin)</div>
+					<p className="text-[10px] text-muted-foreground mt-1">{targetName}</p>
+				</div>
+				<div className="p-5 space-y-3">
+					<div className="space-y-2">
+						{options.map((opt) => (
+							<button key={opt.value} onClick={() => setAccessLevel(opt.value)} className={cn("w-full p-3 rounded-lg border text-left text-xs font-medium transition-all", accessLevel === opt.value ? "bg-amber-500/10 border-amber-500/20 text-amber-300" : "border-border/50 text-muted-foreground hover:border-border")}>
+								{opt.label}
+							</button>
+						))}
+					</div>
+				</div>
+				<div className="px-5 py-3 border-t border-border/50 flex justify-end gap-2">
+					<button onClick={onClose} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Annuler</button>
+					<button onClick={onClose} className="px-3 py-1.5 text-xs rounded-md bg-amber-600 hover:bg-amber-700 text-white transition-colors">Appliquer les accès</button>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+/* ── TransmitDialog ── */
+
+function TransmitDialog({ open, onClose, targetName }: { open: boolean; onClose: () => void; targetName: string }) {
+	const [recipient, setRecipient] = useState("");
+	const recipients = [
+		{ value: "minstry", label: "Ministère des Affaires Étrangères" },
+		{ value: "embassy-paris", label: "Ambassade de France" },
+		{ value: "embassy-washington", label: "Ambassade des USA" },
+		{ value: "onu", label: "Mission Permanente auprès de l'ONU" },
+		{ value: "ue", label: "Ambassade auprès de l'UE" },
+		{ value: "custom", label: "Destinataire personnalisé" },
+	];
+
+	if (!open) return null;
+	return (
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+			<div className="w-full max-w-md border border-violet-500/20 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+				<div className="px-5 pt-5 pb-3 border-b border-border/50">
+					<div className="flex items-center gap-2 text-sm font-semibold"><Send className="h-4 w-4 text-violet-400" />Transmettre — {targetName}</div>
+				</div>
+				<div className="p-5 space-y-3">
+					<p className="text-xs text-muted-foreground">Sélectionnez le destinataire de cette correspondance.</p>
+					<div className="space-y-2">
+						{recipients.map((opt) => (
+							<button key={opt.value} onClick={() => setRecipient(opt.value)} className={cn("w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left", recipient === opt.value ? "border-violet-500/40 bg-violet-500/10" : "border-border/50 hover:border-border")}>
+								<div className={cn("h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center shrink-0", recipient === opt.value ? "border-violet-400" : "border-muted-foreground/20")}>
+									{recipient === opt.value && <div className="h-1.5 w-1.5 rounded-full bg-violet-400" />}
+								</div>
+								<div>
+									<p className="text-xs font-medium">{opt.label}</p>
+								</div>
+							</button>
+						))}
+					</div>
+					{recipient === "custom" && (
+						<input placeholder="Adresse e-mail du destinataire" className="w-full h-9 px-3 text-xs bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/30 mt-2" />
+					)}
+				</div>
+				<div className="px-5 py-3 border-t border-border/50 flex justify-end gap-2">
+					<button onClick={onClose} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Annuler</button>
+					<button onClick={onClose} disabled={!recipient} className="px-3 py-1.5 text-xs rounded-md bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-50 transition-colors flex items-center gap-1.5">
+						<Send className="h-3.5 w-3.5" />Transmettre
+					</button>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+/* ── InfoDialog ── */
+
+function InfoDialog({ open, onClose, item, itemType }: { open: boolean; onClose: () => void; item: any; itemType: "folder" | "correspondence" }) {
+	if (!open) return null;
+	const statusLabel = item.status ? STATUS_CFG[item.status]?.label || "—" : "—";
+
+	return (
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+			<div className="w-full max-w-md border border-border/50 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+				<div className="px-5 pt-5 pb-3 border-b border-border/50">
+					<div className="flex items-center gap-2 text-sm font-semibold">
+						{itemType === "folder" ? <Folder className="h-4 w-4 text-violet-400" /> : <Mail className="h-4 w-4 text-violet-400" />}
+						Informations
+					</div>
+				</div>
+				<div className="px-5 py-4 space-y-4">
+					<div className="rounded-xl bg-card border border-border/50 p-3 space-y-2">
+						<div className="flex items-center justify-between">
+							<p className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-semibold flex items-center gap-1.5">
+								{itemType === "folder" ? <Folder className="h-3 w-3 text-violet-400" /> : <Mail className="h-3 w-3 text-violet-400" />}Titre/Nom
+							</p>
+						</div>
+						<p className="text-sm font-medium truncate">{item.name || item.title}</p>
+						{itemType === "correspondence" && item.reference && <p className="text-[9px] text-muted-foreground/50">Réf: {item.reference}</p>}
+						<div className="flex items-center gap-3 pt-1 flex-wrap">
+							{item.status && (
+								<span className="text-[10px] text-muted-foreground/80 flex items-center gap-1">
+									<span className={cn("h-1.5 w-1.5 rounded-full", STATUS_CFG[item.status]?.dot || "bg-muted-foreground")} />
+									{statusLabel}
+								</span>
+							)}
+							<span className="text-[10px] text-muted-foreground/50 flex items-center gap-1"><User className="h-2.5 w-2.5" />{item.createdBy || item.sender || "—"}</span>
+						</div>
+						<p className="text-[9px] font-mono text-muted-foreground/30 break-all pt-0.5">{item.id}</p>
+					</div>
+
+					{itemType === "correspondence" && item.type && (
+						<div className="rounded-xl bg-card border border-border/50 p-3 space-y-2">
+							<p className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-semibold">Type & Priorité</p>
+							<div className="flex gap-2 flex-wrap">
+								<span className={cn("text-[9px] px-2 py-1 rounded-md font-medium border", CORRESPONDENCE_TYPE_CONFIG[item.type]?.color)}>
+									{CORRESPONDENCE_TYPE_CONFIG[item.type]?.label || item.type}
+								</span>
+								{item.priority && item.priority !== "normal" && (
+									<span className={cn("text-[9px] px-2 py-1 rounded-md font-medium border", item.priority === "urgent" ? "text-red-400 bg-red-500/15 border-red-500/20" : "text-amber-400 bg-amber-500/15 border-amber-500/20")}>
+										{PRIORITY_CONFIG[item.priority]?.label || item.priority}
+									</span>
+								)}
+							</div>
+						</div>
+					)}
+
+					{itemType === "correspondence" && (item.sender || item.recipient) && (
+						<div className="rounded-xl bg-card border border-border/50 p-3 space-y-2">
+							<p className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-semibold">Correspondance</p>
+							{item.sender && <div><p className="text-[9px] text-muted-foreground/60">Expéditeur</p><p className="text-[11px] font-medium">{item.sender}</p></div>}
+							{item.recipient && <div><p className="text-[9px] text-muted-foreground/60">Destinataire</p><p className="text-[11px] font-medium">{item.recipient}</p></div>}
+						</div>
+					)}
+
+					{itemType === "correspondence" && item.attachments !== undefined && (
+						<div className="rounded-xl bg-card border border-border/50 p-3 space-y-2">
+							<p className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-semibold">Pièces jointes</p>
+							<p className="text-sm font-medium">{item.attachments} fichier{item.attachments !== 1 ? 's' : ''}</p>
+						</div>
+					)}
+
+					<div className="rounded-xl bg-card border border-border/50 p-3 space-y-2">
+						<p className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-semibold flex items-center gap-1.5"><Tag className="h-3 w-3 text-emerald-400" />Tags</p>
+						{item.tags && item.tags.length > 0 ? (
+							<div className="flex flex-wrap gap-1">
+								{item.tags.map((tag: string) => (
+									<span key={tag} className="text-[9px] px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-300 border border-violet-500/20">{tag}</span>
+								))}
+							</div>
+						) : (
+							<p className="text-[10px] text-muted-foreground/40 italic">Aucun tag assigné</p>
+						)}
+					</div>
+
+					<div className="rounded-xl bg-card border border-border/50 p-3 space-y-2">
+						<p className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-semibold flex items-center gap-1.5"><Clock className="h-3 w-3 text-amber-400" />Horodatage</p>
+						<div className="grid grid-cols-2 gap-2">
+							<div className="rounded-lg bg-muted/50 border border-border/50 p-2">
+								<p className="text-[8px] text-muted-foreground/50 uppercase tracking-wider mb-0.5">Modifié le</p>
+								<p className="text-[11px] font-medium">{item.updatedAt || "—"}</p>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div className="px-5 py-3 border-t border-border/50 flex justify-end">
+					<button onClick={onClose} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Fermer</button>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════
+
+function ICorrespondancePage() {
+	// ─── Org context ────────────────────────────────────────
+	const { activeOrgId } = useOrg();
+
+	// ─── Active tab ──────────────────────────────────────────
+	const [activeTab, setActiveTab] = useState<ActiveTab>("correspondance");
+
+	// ─── Dossier state ──────────────────────────────────────
+	const [selectedDossierId, setSelectedDossierId] = useState<string | null>(null);
+	const [showDossierWizard, setShowDossierWizard] = useState(false);
+
+	// ─── Dossier queries ────────────────────────────────────
+	const { data: dossiers = [] } = useAuthenticatedConvexQuery(
+		api.functions.dossierProcedure.listDossiers,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+	const { data: typeDemarches = [] } = useAuthenticatedConvexQuery(
+		api.functions.dossierProcedure.listTypeDemarches,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+	const { data: selectedDossier } = useAuthenticatedConvexQuery(
+		api.functions.dossierProcedure.getDossier,
+		selectedDossierId ? { dossierId: selectedDossierId as Id<"dossierProcedures"> } : "skip",
+	);
+	const { data: dossierTransitions = [] } = useAuthenticatedConvexQuery(
+		api.functions.dossierProcedure.getTransitions,
+		selectedDossierId ? { dossierId: selectedDossierId as Id<"dossierProcedures"> } : "skip",
+	);
+
+	// ─── Dashboard queries ──────────────────────────────────
+	const { data: dashboardStats } = useAuthenticatedConvexQuery(
+		api.functions.correspondanceDashboard.getDashboardStats,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+	const { data: recentActivity = [] } = useAuthenticatedConvexQuery(
+		api.functions.correspondanceDashboard.getRecentActivity,
+		activeOrgId ? { orgId: activeOrgId, limit: 20 } : "skip",
+	);
+
+	// ─── Dossier mutations ──────────────────────────────────
+	const createDossierMutation = useConvexMutationQuery(
+		api.functions.dossierProcedure.createDossier,
+	);
+	const advanceStepMutation = useConvexMutationQuery(
+		api.functions.dossierProcedure.advanceStep,
+	);
+	const uploadPieceMutation = useConvexMutationQuery(
+		api.functions.dossierProcedure.uploadPiece,
+	);
+	const validatePieceMutation = useConvexMutationQuery(
+		api.functions.dossierProcedure.validatePiece,
+	);
+	const rejectPieceMutation = useConvexMutationQuery(
+		api.functions.dossierProcedure.rejectPiece,
+	);
+	const generateDossierUploadUrl = useConvexMutationQuery(
+		api.functions.dossierProcedure.generateUploadUrl,
+	);
+	const submitDossierMutation = useConvexMutationQuery(
+		api.functions.dossierProcedure.submitDossier,
+	);
+
+	// ─── Dossier handlers ───────────────────────────────────
+	const handleCreateDossier = useCallback(async (data: {
+		typeDemarcheId: string;
+		metadata?: Record<string, any>;
+		priorite?: string;
+	}) => {
+		if (!activeOrgId) return;
+		try {
+			const id = await createDossierMutation.mutateAsync({
+				orgId: activeOrgId,
+				typeDemarcheId: data.typeDemarcheId as Id<"typeDemarches">,
+				metadata: data.metadata,
+				priorite: data.priorite as any,
+			});
+			setShowDossierWizard(false);
+			setSelectedDossierId(id as string);
+			toast.success("Dossier créé avec succès");
+		} catch {
+			toast.error("Erreur lors de la création du dossier");
+		}
+	}, [activeOrgId, createDossierMutation]);
+
+	const handleDossierAction = useCallback(async (action: string, commentaire?: string) => {
+		if (!selectedDossierId) return;
+		try {
+			if (action === "soumettre") {
+				await submitDossierMutation.mutateAsync({
+					dossierId: selectedDossierId as Id<"dossierProcedures">,
+					commentaire,
+				});
+			} else {
+				await advanceStepMutation.mutateAsync({
+					dossierId: selectedDossierId as Id<"dossierProcedures">,
+					action: action as any,
+					commentaire,
+				});
+			}
+			toast.success("Action effectuée");
+		} catch (e: any) {
+			toast.error(e?.message ?? "Erreur lors de l'action");
+		}
+	}, [selectedDossierId, advanceStepMutation, submitDossierMutation]);
+
+	const handleUploadDossierPiece = useCallback(async (pieceCode: string) => {
+		if (!selectedDossierId) return;
+		// Create a file input and trigger upload
+		const input = document.createElement("input");
+		input.type = "file";
+		input.accept = ".pdf,.jpg,.jpeg,.png";
+		input.onchange = async () => {
+			const file = input.files?.[0];
+			if (!file) return;
+			try {
+				const uploadUrl = await generateDossierUploadUrl.mutateAsync({});
+				const res = await fetch(uploadUrl as string, {
+					method: "POST",
+					headers: { "Content-Type": file.type },
+					body: file,
+				});
+				const { storageId } = await res.json();
+				await uploadPieceMutation.mutateAsync({
+					dossierId: selectedDossierId as Id<"dossierProcedures">,
+					pieceCode,
+					storageId,
+					filename: file.name,
+					mimeType: file.type,
+					sizeBytes: file.size,
+				});
+				toast.success("Pièce déposée");
+			} catch {
+				toast.error("Erreur lors du dépôt de la pièce");
+			}
+		};
+		input.click();
+	}, [selectedDossierId, generateDossierUploadUrl, uploadPieceMutation]);
+
+	const handleValidateDossierPiece = useCallback(async (pieceCode: string) => {
+		if (!selectedDossierId) return;
+		try {
+			await validatePieceMutation.mutateAsync({
+				dossierId: selectedDossierId as Id<"dossierProcedures">,
+				pieceCode,
+			});
+			toast.success("Pièce validée");
+		} catch {
+			toast.error("Erreur lors de la validation");
+		}
+	}, [selectedDossierId, validatePieceMutation]);
+
+	const handleRejectDossierPiece = useCallback(async (pieceCode: string) => {
+		if (!selectedDossierId) return;
+		const reason = prompt("Motif du rejet :");
+		if (!reason) return;
+		try {
+			await rejectPieceMutation.mutateAsync({
+				dossierId: selectedDossierId as Id<"dossierProcedures">,
+				pieceCode,
+				reason,
+			});
+			toast.success("Pièce rejetée");
+		} catch {
+			toast.error("Erreur lors du rejet");
+		}
+	}, [selectedDossierId, rejectPieceMutation]);
+
+	// ─── Convex queries ──────────────────────────────────────
+	const { data: rawFolders = [] } = useAuthenticatedConvexQuery(
+		api.functions.correspondance.getFolders,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+	const { data: rawItems = [] } = useAuthenticatedConvexQuery(
+		api.functions.correspondance.getItems,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+
+	// ─── Convex mutations ────────────────────────────────────
+	const createFolderMutation = useConvexMutationQuery(
+		api.functions.correspondance.createFolder,
+	);
+	const createItemMutation = useConvexMutationQuery(
+		api.functions.correspondance.createItem,
+	);
+	const deleteFolderMutation = useConvexMutationQuery(
+		api.functions.correspondance.deleteFolder,
+	);
+	const deleteItemMutation = useConvexMutationQuery(
+		api.functions.correspondance.deleteItem,
+	);
+	const archiveItemMutation = useConvexMutationQuery(
+		api.functions.correspondance.archiveItem,
+	);
+
+	// ─── Map Convex data → UI types ─────────────────────────
+	const correspondences = useMemo((): CorrespondenceItem[] =>
+		(rawItems as any[]).map((item) => ({
+			id: item._id,
+			reference: item.reference,
+			title: item.title,
+			type: item.type as CorrespondenceType,
+			sender: item.senderName,
+			senderInitials: item.senderName
+				.split(" ")
+				.map((w: string) => w[0] ?? "")
+				.join("")
+				.substring(0, 2)
+				.toUpperCase(),
+			recipient: item.recipientName,
+			updatedAt: new Date(item.updatedAt).toLocaleDateString("fr-FR"),
+			updatedAtTs: item.updatedAt,
+			status: item.status as CorrStatus,
+			tags: item.tags,
+			priority: item.priority as Priority,
+			folderId: item.folderId ?? "__toutes-correspondances",
+			attachments: item.attachments?.length ?? 0,
+		})),
+		[rawItems],
+	);
+
+	const folders = useMemo((): FolderItem[] => [
+		...DEFAULT_FOLDERS.filter((f) => f.isSystem),
+		...(rawFolders as any[]).map((f) => ({
+			id: f._id as string,
+			name: f.name,
+			parentFolderId: f.parentFolderId ?? null,
+			tags: f.tags,
+			fileCount: 0,
+			subfolderCount: 0,
+			updatedAt: new Date(f.updatedAt).toLocaleDateString("fr-FR"),
+			createdBy: "",
+			isSystem: false,
+		})),
+	], [rawFolders]);
+
+	// ─── State ──────────────────────────────────────────────
+	const [viewMode, setViewMode] = useState<ViewMode>("grid");
+	const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+	const [search, setSearch] = useState("");
+	const [statusFilter, setStatusFilter] = useState<CorrStatus | "all">("all");
+	const [sortBy, setSortBy] = useState("date");
+	const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+	// ─── Dialog states ───────────────────────────────────────
+	const [shareDialogOpen, setShareDialogOpen] = useState(false);
+	const [shareTargetName, setShareTargetName] = useState("");
+	const [manageAccessOpen, setManageAccessOpen] = useState(false);
+	const [manageAccessTargetName, setManageAccessTargetName] = useState("");
+	const [transmitDialogOpen, setTransmitDialogOpen] = useState(false);
+	const [transmitTargetName, setTransmitTargetName] = useState("");
+	const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+	const [infoItem, setInfoItem] = useState<any>(null);
+	const [infoItemType, setInfoItemType] = useState<"folder" | "correspondence">("folder");
+
+	// ─── New folder dialog ───────────────────────────────────
+	const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
+	const [newFolderName, setNewFolderName] = useState("");
+	const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+
+	// ─── New correspondance wizard ──────────────────────────
+	const [showNewCorrWizard, setShowNewCorrWizard] = useState(false);
+
+	// ─── Breadcrumb path ────────────────────────────────────
+	const breadcrumbPath = useMemo(() => {
+		if (!currentFolderId) return [];
+		const path: { id: string; name: string }[] = [];
+		let fId: string | null = currentFolderId;
+		while (fId) {
+			const folder = folders.find((f) => f.id === fId);
+			if (folder) {
+				path.unshift({ id: folder.id, name: folder.name });
+				fId = folder.parentFolderId;
+			} else break;
+		}
+		return path;
+	}, [currentFolderId, folders]);
+
+	// ─── Filtered folders at current level ──────────────────
+	const currentFolders = useMemo(() => {
+		return folders.filter((f) => f.parentFolderId === currentFolderId);
+	}, [folders, currentFolderId]);
+
+	// ─── Folder counts ──────────────────────────────────────
+	const foldersWithCounts = useMemo(() => {
+		return currentFolders.map((f) => ({
+			...f,
+			fileCount: correspondences.filter((d) => d.folderId === f.id).length,
+			subfolderCount: folders.filter((sf) => sf.parentFolderId === f.id).length,
+		}));
+	}, [currentFolders, correspondences, folders]);
+
+	// ─── Filtered correspondences at current level ──────────
+	const currentFiles = useMemo(() => {
+		if (currentFolderId === null) return [];
+		let items = correspondences.filter((d) => d.folderId === currentFolderId);
+		if (search) {
+			const q = search.toLowerCase();
+			items = items.filter((d) => d.title.toLowerCase().includes(q) || d.reference.toLowerCase().includes(q) || d.sender.toLowerCase().includes(q) || d.recipient.toLowerCase().includes(q) || d.tags.some((t) => t.toLowerCase().includes(q)));
+		}
+		if (statusFilter !== "all") {
+			items = items.filter((d) => d.status === statusFilter);
+		}
+		items.sort((a, b) => {
+			let cmp = 0;
+			switch (sortBy) {
+				case "name": cmp = a.title.localeCompare(b.title, "fr"); break;
+				case "sender": cmp = a.sender.localeCompare(b.sender, "fr"); break;
+				case "date": cmp = a.updatedAtTs - b.updatedAtTs; break;
+				case "status": cmp = a.status.localeCompare(b.status); break;
+				default: cmp = a.updatedAtTs - b.updatedAtTs;
+			}
+			return sortDir === "asc" ? cmp : -cmp;
+		});
+		return items;
+	}, [correspondences, currentFolderId, search, statusFilter, sortBy, sortDir]);
+
+	// ─── Status counts ──────────────────────────────────────
+	const statusCounts = useMemo(() => {
+		const counts: Record<string, number> = { all: correspondences.length };
+		for (const corr of correspondences) {
+			counts[corr.status] = (counts[corr.status] || 0) + 1;
+		}
+		return counts;
+	}, [correspondences]);
+
+	// ─── Handlers ───────────────────────────────────────────
+	const handleOpenFolder = useCallback((folderId: string) => setCurrentFolderId(folderId), []);
+	const handleNavigate = useCallback((folderId: string | null) => setCurrentFolderId(folderId), []);
+
+	const handleShare = useCallback((id: string, type: string) => {
+		const name = type === "folder" ? folders.find((f) => f.id === id)?.name : correspondences.find((d) => d.id === id)?.title;
+		setShareTargetName(name || "");
+		setShareDialogOpen(true);
+	}, [folders, correspondences]);
+
+	const handleManageAccess = useCallback((id: string) => {
+		const name = folders.find((f) => f.id === id)?.name || "";
+		setManageAccessTargetName(name);
+		setManageAccessOpen(true);
+	}, [folders]);
+
+	const handleOpenTransmit = useCallback((id: string) => {
+		const corr = correspondences.find((d) => d.id === id);
+		setTransmitTargetName(corr?.title || "");
+		setTransmitDialogOpen(true);
+	}, [correspondences]);
+
+	const handleOpenInfo = useCallback((id: string) => {
+		const folder = folders.find((f) => f.id === id);
+		const corr = correspondences.find((d) => d.id === id);
+		if (folder) {
+			setInfoItem({ id: folder.id, name: folder.name, createdBy: folder.createdBy, tags: folder.tags, updatedAt: folder.updatedAt });
+			setInfoItemType("folder");
+		} else if (corr) {
+			setInfoItem({ id: corr.id, title: corr.title, reference: corr.reference, type: corr.type, sender: corr.sender, recipient: corr.recipient, status: corr.status, tags: corr.tags, priority: corr.priority, attachments: corr.attachments, updatedAt: corr.updatedAt });
+			setInfoItemType("correspondence");
+		}
+		setInfoDialogOpen(true);
+	}, [folders, correspondences]);
+
+	// ─── Create folder handler ───────────────────────────────
+	const handleCreateFolder = useCallback(async () => {
+		if (!newFolderName.trim() || !activeOrgId) return;
+		setIsCreatingFolder(true);
+		try {
+			const isRealFolder =
+				currentFolderId !== null &&
+				!DEFAULT_FOLDERS.find((f) => f.id === currentFolderId);
+			await createFolderMutation.mutateAsync({
+				orgId: activeOrgId,
+				name: newFolderName.trim(),
+				parentFolderId: isRealFolder
+					? (currentFolderId as Id<"correspondanceFolders">)
+					: undefined,
+				tags: [],
+			});
+			setNewFolderName("");
+			setShowNewFolderDialog(false);
+			toast.success("Dossier créé");
+		} catch {
+			toast.error("Erreur lors de la création du dossier");
+		} finally {
+			setIsCreatingFolder(false);
+		}
+	}, [newFolderName, activeOrgId, currentFolderId, createFolderMutation]);
+
+	// ─── Delete handler ──────────────────────────────────────
+	const handleDelete = useCallback(
+		async (id: string) => {
+			const isFolder = folders.some((f) => f.id === id && !f.isSystem);
+			try {
+				if (isFolder) {
+					await deleteFolderMutation.mutateAsync({
+						folderId: id as Id<"correspondanceFolders">,
+					});
+					toast.success("Dossier supprimé");
+				} else {
+					await deleteItemMutation.mutateAsync({
+						itemId: id as Id<"correspondanceItems">,
+					});
+					toast.success("Correspondance supprimée");
+				}
+			} catch {
+				toast.error("Erreur lors de la suppression");
+			}
+		},
+		[folders, deleteFolderMutation, deleteItemMutation],
+	);
+
+	// ─── Archive handler ─────────────────────────────────────
+	const handleArchive = useCallback(
+		async (id: string) => {
+			try {
+				await archiveItemMutation.mutateAsync({
+					itemId: id as Id<"correspondanceItems">,
+				});
+				toast.success("Correspondance archivée");
+			} catch {
+				toast.error("Erreur lors de l'archivage");
+			}
+		},
+		[archiveItemMutation],
+	);
+
+	const hasActiveFilters = statusFilter !== "all" || search;
+
+	// ═══════════════════════════════════════════════════════
+	// RENDER
+	// ═══════════════════════════════════════════════════════
+
+	return (
+		<motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-5 max-w-[1400px] mx-auto p-4">
+			{/* ── Header ── */}
+			<motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+				<div className="flex items-center gap-3">
+					<div className="h-11 w-11 rounded-xl bg-linear-to-br from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+						<Mail className="h-5 w-5 text-white" />
+					</div>
+					<div>
+						<h1 className="text-2xl font-bold tracking-tight">iCorrespondance</h1>
+						<p className="text-sm text-muted-foreground">{correspondences.length} correspondances · {dossiers.length} dossiers de procédure</p>
+					</div>
+				</div>
+				<div className="flex items-center gap-2">
+					{activeTab === "correspondance" && (
+						<>
+							<button onClick={() => setShowNewFolderDialog(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-muted transition-colors">
+								<FolderPlus className="h-3.5 w-3.5" />Nouveau dossier
+							</button>
+							<button onClick={() => setShowNewCorrWizard(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-linear-to-r from-indigo-600 to-violet-500 hover:from-indigo-700 hover:to-violet-600 text-white rounded-lg transition-colors">
+								<Plus className="h-3.5 w-3.5" />Nouvelle correspondance
+							</button>
+						</>
+					)}
+					{activeTab === "dossiers" && !selectedDossierId && (
+						<button onClick={() => setShowDossierWizard(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-linear-to-r from-indigo-600 to-violet-500 hover:from-indigo-700 hover:to-violet-600 text-white rounded-lg transition-colors">
+							<Plus className="h-3.5 w-3.5" />Nouveau dossier de procédure
+						</button>
+					)}
+				</div>
+			</motion.div>
+
+			{/* ── Tab Navigation ── */}
+			<motion.div variants={fadeUp}>
+				<div className="flex items-center gap-1 border border-border/50 rounded-xl bg-card p-1">
+					{([
+						{ key: "correspondance" as ActiveTab, label: "Correspondance", icon: Mail },
+						{ key: "dossiers" as ActiveTab, label: "Dossiers", icon: Folder },
+						{ key: "dashboard" as ActiveTab, label: "Tableau de bord", icon: BarChart3 },
+					]).map((tab) => (
+						<button
+							key={tab.key}
+							onClick={() => { setActiveTab(tab.key); setSelectedDossierId(null); }}
+							className={cn(
+								"flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-all flex-1 justify-center",
+								activeTab === tab.key
+									? "bg-violet-500/15 text-violet-300 shadow-sm"
+									: "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+							)}
+						>
+							<tab.icon className="h-3.5 w-3.5" />
+							{tab.label}
+							{tab.key === "dossiers" && dossiers.length > 0 && (
+								<span className="ml-1 text-[9px] opacity-60">({dossiers.length})</span>
+							)}
+						</button>
+					))}
+				</div>
+			</motion.div>
+
+			{/* ═══ TAB: Correspondance ═══ */}
+			{activeTab === "correspondance" && (<>
+
+			{/* ── Toolbar ── */}
+			<motion.div variants={fadeUp}>
+				<div className="border border-border/50 rounded-xl bg-card p-3">
+					<div className="flex flex-wrap items-center gap-2">
+						<div className="relative flex-1 min-w-[200px] max-w-[360px]">
+							<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+							<input placeholder="Rechercher dans les correspondances…" value={search} onChange={(e) => setSearch(e.target.value)} className="w-full h-8 pl-8 text-xs bg-muted/50 border border-border/50 rounded-lg px-3 focus:outline-none focus:ring-1 focus:ring-primary/30" />
+						</div>
+						<div className="h-6 w-px bg-border/50 hidden sm:block" />
+						<div className="flex items-center gap-1">
+							{STATUS_FILTERS.map((f) => (
+								<button key={f.value} onClick={() => setStatusFilter(f.value)} className={cn("px-2.5 py-1 rounded-full text-[11px] font-medium transition-all", statusFilter === f.value ? "bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/30" : "text-muted-foreground hover:bg-muted")}>
+									{f.label}
+									{statusCounts[f.value] !== undefined && <span className="ml-1 text-[9px] opacity-60">({statusCounts[f.value]})</span>}
+								</button>
+							))}
+						</div>
+						{hasActiveFilters && (
+							<>
+								<div className="h-6 w-px bg-border/50 hidden sm:block" />
+								<button className="flex items-center gap-1.5 h-7 text-[11px] text-red-400 hover:text-red-300 px-2" onClick={() => { setSearch(""); setStatusFilter("all"); }}>
+									<X className="h-3 w-3" /> Effacer
+								</button>
+							</>
+						)}
+						<div className="ml-auto">
+							<ViewModeToggle value={viewMode} onChange={setViewMode} />
+						</div>
+					</div>
+				</div>
+			</motion.div>
+
+			{/* ── Breadcrumb ── */}
+			<BreadcrumbPath path={breadcrumbPath} onNavigate={handleNavigate} rootLabel="Correspondances" rootIcon={Mail} />
+
+			{/* ── Content — Grid View ── */}
+			<AnimatePresence mode="wait">
+				{viewMode === "grid" && (
+					<motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+						{/* Folders */}
+						{foldersWithCounts.length > 0 && (
+							<div className="mb-6">
+								<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-3 px-1">Dossiers</p>
+								<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+									{foldersWithCounts.map((folder) => (
+										<VaultFolderCard
+											key={folder.id}
+											label={folder.name}
+											count={folder.fileCount}
+											subfolderCount={folder.subfolderCount}
+											onClick={() => handleOpenFolder(folder.id)}
+											contextMenu={
+												<FolderContextMenu
+													itemId={folder.id}
+													itemName={folder.name}
+													itemType="folder"
+													onShare={handleShare}
+													onInfo={handleOpenInfo}
+													onManageAccess={handleManageAccess}
+													onDelete={!folder.isSystem ? handleDelete : undefined}
+													isSystem={folder.isSystem}
+												/>
+											}
+											badges={
+												folder.isSystem ? (
+													<span className="text-[9px] h-4 px-1.5 rounded-full bg-zinc-500/15 text-zinc-400 inline-flex items-center font-medium">Système</span>
+												) : null
+											}
+											tags={
+												folder.tags.length > 0 ? folder.tags.slice(0, 2).map((t) => (
+													<span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground border">{t}</span>
+												)) : null
+											}
+										/>
+									))}
+								</div>
+							</div>
+						)}
+						{/* Correspondences */}
+						{currentFiles.length > 0 && (
+							<div>
+								<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-3 px-1">Correspondances</p>
+								<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+									{currentFiles.map((corr) => {
+										const st = STATUS_CFG[corr.status];
+										const typeConfig = CORRESPONDENCE_TYPE_CONFIG[corr.type];
+										return (
+											<VaultFileCard
+												key={corr.id}
+												title={corr.title}
+												reference={corr.reference}
+												sender={corr.sender}
+												senderInitials={corr.senderInitials}
+												date={corr.updatedAt}
+												statusBadge={
+													<span className={cn("text-[9px] h-5 border inline-flex items-center gap-1 px-1.5 rounded-full font-medium", st.class)}>
+														<span className={cn("h-1.5 w-1.5 rounded-full", st.dot)} />
+														{st.label}
+													</span>
+												}
+												typeBadge={
+													<span className={cn("text-[9px] h-5 border inline-flex items-center gap-1 px-1.5 rounded-full font-medium", typeConfig.color)}>
+														{typeConfig.label}
+													</span>
+												}
+												priorityBadge={
+													corr.priority !== "normal" && (
+														<span className={cn("text-[9px] h-5 border inline-flex items-center gap-1 px-1.5 rounded-full font-medium", corr.priority === "urgent" ? "text-red-400 bg-red-500/15 border-red-500/20" : "text-amber-400 bg-amber-500/15 border-amber-500/20")}>
+															{PRIORITY_CONFIG[corr.priority].label}
+														</span>
+													)
+												}
+												contextMenu={
+													<FolderContextMenu
+														itemId={corr.id}
+														itemName={corr.title}
+														itemType="correspondence"
+														onShare={handleShare}
+														onInfo={handleOpenInfo}
+														onTransmit={handleOpenTransmit}
+													onDelete={handleDelete}
+													/>
+												}
+												badges={
+													corr.attachments > 0 && (
+														<span className="text-[9px] h-4 px-1.5 rounded-full bg-blue-500/15 text-blue-400 inline-flex items-center font-medium gap-1">
+															<FileText className="h-2.5 w-2.5" />{corr.attachments}
+														</span>
+													)
+												}
+												tags={corr.tags}
+												onClick={() => handleOpenInfo(corr.id)}
+											/>
+										);
+									})}
+								</div>
+							</div>
+						)}
+						{/* Empty state */}
+						{foldersWithCounts.length === 0 && currentFiles.length === 0 && (
+							<div className="flex flex-col items-center py-16 text-center">
+								<div className="h-16 w-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4">
+									<FolderOpen className="h-8 w-8 text-indigo-400/60" />
+								</div>
+								<h3 className="text-lg font-semibold mb-1">Dossier vide</h3>
+								<p className="text-sm text-muted-foreground max-w-sm">Ce dossier ne contient aucune correspondance. Créez une nouvelle correspondance ou importez des fichiers.</p>
+							</div>
+						)}
+					</motion.div>
+				)}
+
+				{/* ── Content — List View ── */}
+				{viewMode === "list" && (
+					<motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+						<div className="border border-border/50 rounded-xl overflow-hidden bg-card">
+							{/* Header */}
+							<div className="grid grid-cols-12 gap-2 px-4 py-2 border-b border-border/50 bg-muted/30 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+								<div className="col-span-4 flex items-center gap-1 cursor-pointer hover:text-foreground" onClick={() => { setSortBy("name"); setSortDir(sortBy === "name" && sortDir === "asc" ? "desc" : "asc"); }}>Titre {sortBy === "name" && (sortDir === "asc" ? "↑" : "↓")}</div>
+								<div className="col-span-2">Type</div>
+								<div className="col-span-2 cursor-pointer hover:text-foreground" onClick={() => { setSortBy("date"); setSortDir(sortBy === "date" && sortDir === "asc" ? "desc" : "asc"); }}>Modifié {sortBy === "date" && (sortDir === "asc" ? "↑" : "↓")}</div>
+								<div className="col-span-2">Statut</div>
+								<div className="col-span-2">Priorité</div>
+							</div>
+							{/* Folders */}
+							{foldersWithCounts.map((folder) => (
+								<div key={folder.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 hover:bg-muted/30 cursor-pointer transition-colors group" onClick={() => handleOpenFolder(folder.id)}>
+									<div className="col-span-4 flex items-center gap-2">
+										<div className="h-6 w-6 rounded-md bg-amber-500/15 flex items-center justify-center shrink-0"><Folder className="h-3 w-3 text-amber-400" /></div>
+										<span className="text-xs font-medium truncate">{folder.name}</span>
+										<span className="text-[9px] text-muted-foreground/50">{folder.fileCount} items</span>
+									</div>
+									<div className="col-span-2" />
+									<div className="col-span-2 text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-2.5 w-2.5" />{folder.updatedAt}</div>
+									<div className="col-span-2" />
+									<div className="col-span-2" />
+								</div>
+							))}
+							{/* Correspondences */}
+							{currentFiles.map((corr) => {
+								const st = STATUS_CFG[corr.status];
+								const typeConfig = CORRESPONDENCE_TYPE_CONFIG[corr.type];
+								return (
+									<div key={corr.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 hover:bg-muted/30 cursor-pointer transition-colors group" onClick={() => handleOpenInfo(corr.id)}>
+										<div className="col-span-4 flex items-center gap-2">
+											<div className="h-6 w-6 rounded-md bg-violet-500/10 flex items-center justify-center shrink-0"><Mail className="h-3 w-3 text-violet-400" /></div>
+											<div className="min-w-0">
+												<span className="text-xs font-medium truncate block">{corr.title}</span>
+												<span className="text-[9px] text-muted-foreground/50 truncate block">{corr.reference}</span>
+											</div>
+										</div>
+										<div className="col-span-2 flex items-center">
+											<span className={cn("text-[9px] px-2 py-1 rounded-md font-medium", typeConfig.color)}>{typeConfig.label}</span>
+										</div>
+										<div className="col-span-2 text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-2.5 w-2.5" />{corr.updatedAt}</div>
+										<div className="col-span-2 flex items-center">
+											<span className={cn("text-[10px] border inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full", st.class)}>
+												<span className={cn("h-1.5 w-1.5 rounded-full", st.dot)} />{st.label}
+											</span>
+										</div>
+										<div className="col-span-2 flex items-center">
+											{corr.priority !== "normal" && (
+												<span className={cn("text-[9px] px-2 py-1 rounded-md font-medium", corr.priority === "urgent" ? "text-red-400" : "text-amber-400")}>
+													{PRIORITY_CONFIG[corr.priority].label}
+												</span>
+											)}
+										</div>
+									</div>
+								);
+							})}
+							{foldersWithCounts.length === 0 && currentFiles.length === 0 && (
+								<div className="py-12 text-center text-sm text-muted-foreground">Aucun contenu dans ce dossier</div>
+							)}
+						</div>
+					</motion.div>
+				)}
+
+				{/* ── Content — Column View ── */}
+				{viewMode === "column" && (
+					<motion.div key="column" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+						<div className="border border-border/50 rounded-xl bg-card overflow-hidden">
+							<div className="flex h-[500px]">
+								{/* Root column */}
+								<div className="w-60 border-r border-border/50 overflow-y-auto">
+									<div className="p-2 text-[10px] font-semibold uppercase text-muted-foreground/60 px-3">Racine</div>
+									{folders.filter((f) => f.parentFolderId === null).map((folder) => (
+										<button key={folder.id} onClick={() => handleOpenFolder(folder.id)} className={cn("w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors text-left", currentFolderId === folder.id && "bg-primary/10 text-primary")}>
+											<Folder className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+											<span className="truncate">{folder.name}</span>
+											<ChevronRight className="h-3 w-3 ml-auto text-muted-foreground/50 shrink-0" />
+										</button>
+									))}
+								</div>
+								{/* Subfolder column */}
+								{currentFolderId && (
+									<div className="w-60 border-r border-border/50 overflow-y-auto">
+										<div className="p-2 text-[10px] font-semibold uppercase text-muted-foreground/60 px-3">{folders.find((f) => f.id === currentFolderId)?.name}</div>
+										{folders.filter((f) => f.parentFolderId === currentFolderId).map((folder) => (
+											<button key={folder.id} onClick={() => handleOpenFolder(folder.id)} className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors text-left">
+												<Folder className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+												<span className="truncate">{folder.name}</span>
+												<ChevronRight className="h-3 w-3 ml-auto text-muted-foreground/50 shrink-0" />
+											</button>
+										))}
+										{currentFiles.map((corr) => (
+											<button key={corr.id} onClick={() => handleOpenInfo(corr.id)} className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors text-left">
+												<Mail className="h-3.5 w-3.5 text-violet-400 shrink-0" />
+												<span className="truncate">{corr.title}</span>
+											</button>
+										))}
+									</div>
+								)}
+								{/* Preview pane */}
+								<div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+									<div className="text-center">
+										<Mail className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+										<p>Sélectionnez une correspondance pour l'aperçu</p>
+									</div>
+								</div>
+							</div>
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
+
+			{/* ── New Folder Dialog ── */}
+			{showNewFolderDialog && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowNewFolderDialog(false)}>
+					<div className="w-full max-w-md border border-border/50 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+						<div className="px-5 pt-5 pb-3 border-b border-border/50">
+							<div className="flex items-center gap-2 text-sm font-semibold"><FolderPlus className="h-5 w-5 text-violet-400" />Nouveau Dossier</div>
+						</div>
+						<div className="p-5 space-y-3">
+							<div className="space-y-2">
+								<label className="text-xs font-medium">Nom du dossier *</label>
+								<input placeholder="Ex: Notes Verbales 2026" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} className="w-full h-9 px-3 text-xs bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/30" autoFocus onKeyDown={(e) => { if (e.key === "Enter" && newFolderName.trim()) setShowNewFolderDialog(false); }} />
+							</div>
+						</div>
+						<div className="px-5 py-3 border-t border-border/50 flex justify-end gap-2">
+							<button onClick={() => setShowNewFolderDialog(false)} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Annuler</button>
+							<button onClick={handleCreateFolder} disabled={!newFolderName.trim() || isCreatingFolder} className="px-3 py-1.5 text-xs rounded-md bg-linear-to-r from-indigo-600 to-violet-500 text-white disabled:opacity-50 transition-colors flex items-center gap-1.5">
+								{isCreatingFolder ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}Créer
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+
+			{/* ── New Correspondance Wizard ── */}
+			{activeOrgId && (
+				<NewCorrespondanceWizard
+					open={showNewCorrWizard}
+					onClose={() => setShowNewCorrWizard(false)}
+					orgId={activeOrgId as string}
+				/>
+			)}
+
+			</>)}
+
+			{/* ═══ TAB: Dossiers de procédure ═══ */}
+			{activeTab === "dossiers" && (
+				<motion.div variants={fadeUp}>
+					{selectedDossierId && selectedDossier ? (
+						<DossierDetail
+							dossier={selectedDossier}
+							transitions={dossierTransitions}
+							onBack={() => setSelectedDossierId(null)}
+							onAction={handleDossierAction}
+							onUploadPiece={handleUploadDossierPiece}
+							onValidatePiece={handleValidateDossierPiece}
+							onRejectPiece={handleRejectDossierPiece}
+							canValidate={true}
+						/>
+					) : (
+						<DossierList
+							dossiers={dossiers}
+							onSelectDossier={(id) => setSelectedDossierId(id)}
+							onCreateDossier={() => setShowDossierWizard(true)}
+						/>
+					)}
+				</motion.div>
+			)}
+
+			{/* ═══ TAB: Tableau de bord ═══ */}
+			{activeTab === "dashboard" && (
+				<motion.div variants={fadeUp}>
+					<Dashboard
+						stats={dashboardStats ?? {
+							correspondance: { total: 0, byStatus: {}, overdue: 0, pendingApprovals: 0 },
+							dossiers: { total: 0, byStatus: {}, overdue: 0, myDossiers: 0 },
+						}}
+						recentActivity={recentActivity}
+						onNavigateCorrespondance={() => setActiveTab("correspondance")}
+						onNavigateDossiers={() => setActiveTab("dossiers")}
+					/>
+				</motion.div>
+			)}
+
+			{/* ── Dossier Create Wizard ── */}
+			{showDossierWizard && (
+				<DossierCreateWizard
+					typeDemarches={typeDemarches as any[]}
+					onClose={() => setShowDossierWizard(false)}
+					onSubmit={handleCreateDossier}
+					isSubmitting={createDossierMutation.isPending}
+				/>
+			)}
+
+			{/* ── Dialogs ── */}
+			<ShareDialog open={shareDialogOpen} onClose={() => setShareDialogOpen(false)} targetName={shareTargetName} />
+			<ManageAccessDialog open={manageAccessOpen} onClose={() => setManageAccessOpen(false)} targetName={manageAccessTargetName} />
+			<TransmitDialog open={transmitDialogOpen} onClose={() => setTransmitDialogOpen(false)} targetName={transmitTargetName} />
+			<InfoDialog open={infoDialogOpen} onClose={() => setInfoDialogOpen(false)} item={infoItem || { id: "", name: "" }} itemType={infoItemType} />
+		</motion.div>
+	);
+}

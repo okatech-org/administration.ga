@@ -259,7 +259,7 @@ function ProfileForm({ profile, updateProfile }: ProfileFormProps) {
 
 						stepErrors.push({
 							path: pathString,
-							message: translatedMessage,
+							message: String(translatedMessage),
 							label: getFieldLabel(pathString),
 						});
 					} else {
@@ -424,7 +424,7 @@ function ProfileForm({ profile, updateProfile }: ProfileFormProps) {
 				transition={{ duration: 0.2 }}
 			>
 				<Button variant="ghost" size="sm" asChild className="mb-4">
-					<Link to="/my-space/profile">
+					<Link to="/my-space">
 						<ArrowLeft className="h-4 w-4 mr-2" />
 						{t("common.back")}
 					</Link>

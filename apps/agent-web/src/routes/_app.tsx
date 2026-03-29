@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useConvexAuth } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { OrgProvider, useOrg } from "@/components/org/org-provider";
 import { OrgSidebar } from "@/components/org/org-sidebar";
 import { AdminAIAssistant } from "@/components/ai/AdminAIAssistant";
+import { HomeLandingSignIn } from "@/components/auth/HomeLandingSignIn";
 import {
   ConsularThemeContext,
   useConsularTheme,
@@ -21,22 +22,18 @@ export const Route = createFileRoute("/_app")({
 
 function DashboardLayoutWrapper() {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
-  const navigate = useNavigate();
   const consularThemeValue = useConsularThemeState();
 
-  // Redirect to sign-in when not authenticated
-  useEffect(() => {
-    if (!isAuthLoading && !isAuthenticated) {
-      navigate({ to: "/sign-in" });
-    }
-  }, [isAuthLoading, isAuthenticated, navigate]);
-
-  if (isAuthLoading || !isAuthenticated) {
+  if (isAuthLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    return <HomeLandingSignIn />;
   }
 
   return (

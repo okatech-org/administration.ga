@@ -331,7 +331,8 @@ function IBoitePage() {
 				<PageHeader
 					title={t("mySpace.screens.iboite.heading")}
 					subtitle={t("mySpace.screens.iboite.subtitle")}
-					icon={<Mail className="size-6" />}
+					icon={<Mail className="h-5 w-5 text-teal-600 dark:text-teal-400" />}
+					iconBgClass="bg-teal-500/10"
 				/>
 			</div>
 

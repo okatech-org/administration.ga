@@ -2,3 +2,110 @@
 
 @source "../src/**/*.{ts,tsx}";
 @source "../../../packages/ui/src/**/*.{ts,tsx}";
+
+/* ============================================================
+   LANDING PAGE — DESIGN TOKENS PREMIUM
+   Ajouts spécifiques à l'espace public de agent-web
+   ============================================================ */
+
+:root {
+  /* Ombre élégante colorée (survol cartes, CTA) */
+  --shadow-elegant: 0 10px 40px -10px oklch(0.5 0.18 145.5 / 0.25);
+  --shadow-elegant-hover: 0 20px 60px -15px oklch(0.5 0.18 145.5 / 0.35);
+
+  /* Gradient hero (fond de la section Hero) */
+  --gradient-hero: linear-gradient(
+    135deg,
+    oklch(0.1 0.01 250) 0%,
+    oklch(0.13 0.02 145) 50%,
+    oklch(0.08 0.01 250) 100%
+  );
+
+  /* Gradient titre (texte principal h1) */
+  --gradient-title: linear-gradient(
+    135deg,
+    oklch(0.72 0.2 145.5) 0%,
+    oklch(0.85 0.15 170) 50%,
+    oklch(0.72 0.2 145.5) 100%
+  );
+
+  /* Fond section alternée claire */
+  --section-alt: oklch(0.97 0.003 250);
+}
+
+.dark {
+  --shadow-elegant: 0 10px 40px -10px oklch(0.55 0.16 145.5 / 0.3);
+  --shadow-elegant-hover: 0 20px 60px -15px oklch(0.55 0.16 145.5 / 0.45);
+  --section-alt: oklch(0.12 0 0);
+}
+
+@layer utilities {
+  /* Ombre colorée élégante */
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+  .hover\:shadow-elegant:hover {
+    box-shadow: var(--shadow-elegant-hover);
+  }
+
+  /* Texte en dégradé (h1 landing) */
+  .text-gradient-primary {
+    background: var(--gradient-title);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  /* Fond de section alternée */
+  .bg-section-alt {
+    background-color: var(--section-alt);
+  }
+
+  /* Card landing avec hover premium */
+  .card-landing {
+    @apply rounded-3xl border border-border bg-card transition-all duration-300 ease-out;
+  }
+  .card-landing:hover {
+    @apply -translate-y-1;
+    box-shadow: var(--shadow-elegant-hover);
+    border-color: oklch(0.5 0.18 145.5 / 0.3);
+  }
+  .dark .card-landing:hover {
+    border-color: oklch(0.55 0.16 145.5 / 0.4);
+  }
+
+  /* Badge pill landing */
+  .badge-pill-landing {
+    @apply inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase;
+    background: oklch(0.5 0.18 145.5 / 0.12);
+    color: oklch(0.65 0.18 145.5);
+    border: 1px solid oklch(0.5 0.18 145.5 / 0.2);
+  }
+  .dark .badge-pill-landing {
+    background: oklch(0.55 0.16 145.5 / 0.15);
+    color: oklch(0.72 0.15 145.5);
+    border-color: oklch(0.55 0.16 145.5 / 0.25);
+  }
+}
+
+@layer components {
+  /* Glassmorphism navbar */
+  .navbar-glass {
+    @apply backdrop-blur-xl border-b;
+    background: oklch(1 0 0 / 0.85);
+    border-color: oklch(0 0 0 / 0.06);
+  }
+  .dark .navbar-glass {
+    background: oklch(0.14 0 0 / 0.88);
+    border-color: oklch(1 0 0 / 0.06);
+  }
+
+  /* Section reveal animation (utilisé avec IntersectionObserver) */
+  .reveal {
+    @apply opacity-0 translate-y-6 transition-all duration-700 ease-out;
+  }
+  .reveal.visible {
+    @apply opacity-100 translate-y-0;
+  }
+}

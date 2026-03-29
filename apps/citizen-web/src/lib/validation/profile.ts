@@ -6,7 +6,7 @@ import {
 	NationalityAcquisition,
 	WorkStatus,
 } from "@convex/lib/constants";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 const inPast = (date: Date) => date < new Date();
 const inFuture = (date: Date) => date > new Date();

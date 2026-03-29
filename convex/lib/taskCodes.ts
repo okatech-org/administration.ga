@@ -129,6 +129,16 @@ export const TaskCode = {
     manage: "meetings.manage",
     view_history: "meetings.view_history",
   },
+  // Correspondance & Dossiers de procédure
+  correspondance: {
+    view: "correspondance.view",
+    create: "correspondance.create",
+    approve: "correspondance.approve",
+    sign: "correspondance.sign",
+    transmit: "correspondance.transmit",
+    configure: "correspondance.configure",
+    admin: "correspondance.admin",
+  },
 } as const;
 
 // ═══════════════════════════════════════════════════════════════
@@ -259,6 +269,14 @@ export const taskCodeValidator = v.union(
   v.literal(TaskCode.meetings.join),
   v.literal(TaskCode.meetings.manage),
   v.literal(TaskCode.meetings.view_history),
+  // Correspondance & Dossiers
+  v.literal(TaskCode.correspondance.view),
+  v.literal(TaskCode.correspondance.create),
+  v.literal(TaskCode.correspondance.approve),
+  v.literal(TaskCode.correspondance.sign),
+  v.literal(TaskCode.correspondance.transmit),
+  v.literal(TaskCode.correspondance.configure),
+  v.literal(TaskCode.correspondance.admin),
 );
 
 // ═══════════════════════════════════════════════════════════════
@@ -361,4 +379,12 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   [TaskCode.meetings.join]: "low",
   [TaskCode.meetings.manage]: "medium",
   [TaskCode.meetings.view_history]: "low",
+  // Correspondance & Dossiers
+  [TaskCode.correspondance.view]: "low",
+  [TaskCode.correspondance.create]: "low",
+  [TaskCode.correspondance.approve]: "high",
+  [TaskCode.correspondance.sign]: "high",
+  [TaskCode.correspondance.transmit]: "medium",
+  [TaskCode.correspondance.configure]: "high",
+  [TaskCode.correspondance.admin]: "critical",
 };

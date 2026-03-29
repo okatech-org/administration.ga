@@ -34,9 +34,14 @@ import { Route as OrgsSlugRouteImport } from './routes/orgs/$slug'
 import { Route as NewsSlugRouteImport } from './routes/news/$slug'
 import { Route as MySpaceVaultRouteImport } from './routes/my-space/vault'
 import { Route as MySpaceSettingsRouteImport } from './routes/my-space/settings'
+import { Route as MySpaceServicesDemarchesRouteImport } from './routes/my-space/services-demarches'
 import { Route as MySpaceRequestsRouteImport } from './routes/my-space/requests'
 import { Route as MySpaceNotificationsRouteImport } from './routes/my-space/notifications'
+import { Route as MySpaceIdocumentRouteImport } from './routes/my-space/idocument'
 import { Route as MySpaceIboiteRouteImport } from './routes/my-space/iboite'
+import { Route as MySpaceIastedRouteImport } from './routes/my-space/iasted'
+import { Route as MySpaceIagendaRouteImport } from './routes/my-space/iagenda'
+import { Route as MySpaceDemarchesRouteImport } from './routes/my-space/demarches'
 import { Route as MySpaceCvRouteImport } from './routes/my-space/cv'
 import { Route as MySpaceCompaniesRouteImport } from './routes/my-space/companies'
 import { Route as MySpaceChildrenRouteImport } from './routes/my-space/children'
@@ -44,18 +49,21 @@ import { Route as MySpaceAssociationsRouteImport } from './routes/my-space/assoc
 import { Route as AcademySlugRouteImport } from './routes/academy/$slug'
 import { Route as MySpaceSupportIndexRouteImport } from './routes/my-space/support/index'
 import { Route as MySpaceServicesIndexRouteImport } from './routes/my-space/services/index'
-import { Route as MySpaceProfileIndexRouteImport } from './routes/my-space/profile/index'
 import { Route as MySpaceAppointmentsIndexRouteImport } from './routes/my-space/appointments/index'
 import { Route as MySpaceSupportNewRouteImport } from './routes/my-space/support/new'
 import { Route as MySpaceSupportTicketIdRouteImport } from './routes/my-space/support/$ticketId'
 import { Route as MySpaceRequestsReferenceRouteImport } from './routes/my-space/requests/$reference'
 import { Route as MySpaceProfileEditRouteImport } from './routes/my-space/profile/edit'
+import { Route as MySpaceDemarchesNewRouteImport } from './routes/my-space/demarches.new'
+import { Route as MySpaceDemarchesDossierIdRouteImport } from './routes/my-space/demarches.$dossierId'
 import { Route as MySpaceCompaniesIdRouteImport } from './routes/my-space/companies_.$id'
+import { Route as MySpaceChildrenChildIdRouteImport } from './routes/my-space/children.$childId'
 import { Route as MySpaceAssociationsSlugRouteImport } from './routes/my-space/associations_.$slug'
 import { Route as MySpaceAppointmentsNewRouteImport } from './routes/my-space/appointments/new'
 import { Route as MySpaceAppointmentsBookRouteImport } from './routes/my-space/appointments/book'
 import { Route as MySpaceAppointmentsAppointmentIdRouteImport } from './routes/my-space/appointments/$appointmentId'
 import { Route as ListingProfilesIdRouteImport } from './routes/listing.profiles.$id'
+import { Route as ApiDevSignInRouteImport } from './routes/api/dev/sign-in'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as MySpaceServicesSlugNewRouteImport } from './routes/my-space/services/$slug.new'
 import { Route as MySpaceRequestsRequestIdAppointmentRouteImport } from './routes/my-space/requests/$requestId_.appointment'
@@ -185,6 +193,12 @@ const MySpaceSettingsRoute = MySpaceSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => MySpaceRoute,
 } as any)
+const MySpaceServicesDemarchesRoute =
+  MySpaceServicesDemarchesRouteImport.update({
+    id: '/services-demarches',
+    path: '/services-demarches',
+    getParentRoute: () => MySpaceRoute,
+  } as any)
 const MySpaceRequestsRoute = MySpaceRequestsRouteImport.update({
   id: '/requests',
   path: '/requests',
@@ -195,9 +209,29 @@ const MySpaceNotificationsRoute = MySpaceNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => MySpaceRoute,
 } as any)
+const MySpaceIdocumentRoute = MySpaceIdocumentRouteImport.update({
+  id: '/idocument',
+  path: '/idocument',
+  getParentRoute: () => MySpaceRoute,
+} as any)
 const MySpaceIboiteRoute = MySpaceIboiteRouteImport.update({
   id: '/iboite',
   path: '/iboite',
+  getParentRoute: () => MySpaceRoute,
+} as any)
+const MySpaceIastedRoute = MySpaceIastedRouteImport.update({
+  id: '/iasted',
+  path: '/iasted',
+  getParentRoute: () => MySpaceRoute,
+} as any)
+const MySpaceIagendaRoute = MySpaceIagendaRouteImport.update({
+  id: '/iagenda',
+  path: '/iagenda',
+  getParentRoute: () => MySpaceRoute,
+} as any)
+const MySpaceDemarchesRoute = MySpaceDemarchesRouteImport.update({
+  id: '/demarches',
+  path: '/demarches',
   getParentRoute: () => MySpaceRoute,
 } as any)
 const MySpaceCvRoute = MySpaceCvRouteImport.update({
@@ -235,11 +269,6 @@ const MySpaceServicesIndexRoute = MySpaceServicesIndexRouteImport.update({
   path: '/services/',
   getParentRoute: () => MySpaceRoute,
 } as any)
-const MySpaceProfileIndexRoute = MySpaceProfileIndexRouteImport.update({
-  id: '/profile/',
-  path: '/profile/',
-  getParentRoute: () => MySpaceRoute,
-} as any)
 const MySpaceAppointmentsIndexRoute =
   MySpaceAppointmentsIndexRouteImport.update({
     id: '/appointments/',
@@ -267,10 +296,26 @@ const MySpaceProfileEditRoute = MySpaceProfileEditRouteImport.update({
   path: '/profile/edit',
   getParentRoute: () => MySpaceRoute,
 } as any)
+const MySpaceDemarchesNewRoute = MySpaceDemarchesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => MySpaceDemarchesRoute,
+} as any)
+const MySpaceDemarchesDossierIdRoute =
+  MySpaceDemarchesDossierIdRouteImport.update({
+    id: '/$dossierId',
+    path: '/$dossierId',
+    getParentRoute: () => MySpaceDemarchesRoute,
+  } as any)
 const MySpaceCompaniesIdRoute = MySpaceCompaniesIdRouteImport.update({
   id: '/companies_/$id',
   path: '/companies/$id',
   getParentRoute: () => MySpaceRoute,
+} as any)
+const MySpaceChildrenChildIdRoute = MySpaceChildrenChildIdRouteImport.update({
+  id: '/$childId',
+  path: '/$childId',
+  getParentRoute: () => MySpaceChildrenRoute,
 } as any)
 const MySpaceAssociationsSlugRoute = MySpaceAssociationsSlugRouteImport.update({
   id: '/associations_/$slug',
@@ -296,6 +341,11 @@ const MySpaceAppointmentsAppointmentIdRoute =
 const ListingProfilesIdRoute = ListingProfilesIdRouteImport.update({
   id: '/listing/profiles/$id',
   path: '/listing/profiles/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDevSignInRoute = ApiDevSignInRouteImport.update({
+  id: '/api/dev/sign-in',
+  path: '/api/dev/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -328,12 +378,17 @@ export interface FileRoutesByFullPath {
   '/tarifs': typeof TarifsRoute
   '/academy/$slug': typeof AcademySlugRoute
   '/my-space/associations': typeof MySpaceAssociationsRoute
-  '/my-space/children': typeof MySpaceChildrenRoute
+  '/my-space/children': typeof MySpaceChildrenRouteWithChildren
   '/my-space/companies': typeof MySpaceCompaniesRoute
   '/my-space/cv': typeof MySpaceCvRoute
+  '/my-space/demarches': typeof MySpaceDemarchesRouteWithChildren
+  '/my-space/iagenda': typeof MySpaceIagendaRoute
+  '/my-space/iasted': typeof MySpaceIastedRoute
   '/my-space/iboite': typeof MySpaceIboiteRoute
+  '/my-space/idocument': typeof MySpaceIdocumentRoute
   '/my-space/notifications': typeof MySpaceNotificationsRoute
   '/my-space/requests': typeof MySpaceRequestsRouteWithChildren
+  '/my-space/services-demarches': typeof MySpaceServicesDemarchesRoute
   '/my-space/settings': typeof MySpaceSettingsRoute
   '/my-space/vault': typeof MySpaceVaultRoute
   '/news/$slug': typeof NewsSlugRoute
@@ -350,18 +405,21 @@ export interface FileRoutesByFullPath {
   '/register/': typeof RegisterIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/dev/sign-in': typeof ApiDevSignInRoute
   '/listing/profiles/$id': typeof ListingProfilesIdRoute
   '/my-space/appointments/$appointmentId': typeof MySpaceAppointmentsAppointmentIdRoute
   '/my-space/appointments/book': typeof MySpaceAppointmentsBookRoute
   '/my-space/appointments/new': typeof MySpaceAppointmentsNewRoute
   '/my-space/associations/$slug': typeof MySpaceAssociationsSlugRoute
+  '/my-space/children/$childId': typeof MySpaceChildrenChildIdRoute
   '/my-space/companies/$id': typeof MySpaceCompaniesIdRoute
+  '/my-space/demarches/$dossierId': typeof MySpaceDemarchesDossierIdRoute
+  '/my-space/demarches/new': typeof MySpaceDemarchesNewRoute
   '/my-space/profile/edit': typeof MySpaceProfileEditRoute
   '/my-space/requests/$reference': typeof MySpaceRequestsReferenceRoute
   '/my-space/support/$ticketId': typeof MySpaceSupportTicketIdRoute
   '/my-space/support/new': typeof MySpaceSupportNewRoute
   '/my-space/appointments/': typeof MySpaceAppointmentsIndexRoute
-  '/my-space/profile/': typeof MySpaceProfileIndexRoute
   '/my-space/services/': typeof MySpaceServicesIndexRoute
   '/my-space/support/': typeof MySpaceSupportIndexRoute
   '/my-space/requests/$requestId/appointment': typeof MySpaceRequestsRequestIdAppointmentRoute
@@ -379,12 +437,17 @@ export interface FileRoutesByTo {
   '/tarifs': typeof TarifsRoute
   '/academy/$slug': typeof AcademySlugRoute
   '/my-space/associations': typeof MySpaceAssociationsRoute
-  '/my-space/children': typeof MySpaceChildrenRoute
+  '/my-space/children': typeof MySpaceChildrenRouteWithChildren
   '/my-space/companies': typeof MySpaceCompaniesRoute
   '/my-space/cv': typeof MySpaceCvRoute
+  '/my-space/demarches': typeof MySpaceDemarchesRouteWithChildren
+  '/my-space/iagenda': typeof MySpaceIagendaRoute
+  '/my-space/iasted': typeof MySpaceIastedRoute
   '/my-space/iboite': typeof MySpaceIboiteRoute
+  '/my-space/idocument': typeof MySpaceIdocumentRoute
   '/my-space/notifications': typeof MySpaceNotificationsRoute
   '/my-space/requests': typeof MySpaceRequestsRouteWithChildren
+  '/my-space/services-demarches': typeof MySpaceServicesDemarchesRoute
   '/my-space/settings': typeof MySpaceSettingsRoute
   '/my-space/vault': typeof MySpaceVaultRoute
   '/news/$slug': typeof NewsSlugRoute
@@ -401,18 +464,21 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterIndexRoute
   '/services': typeof ServicesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/dev/sign-in': typeof ApiDevSignInRoute
   '/listing/profiles/$id': typeof ListingProfilesIdRoute
   '/my-space/appointments/$appointmentId': typeof MySpaceAppointmentsAppointmentIdRoute
   '/my-space/appointments/book': typeof MySpaceAppointmentsBookRoute
   '/my-space/appointments/new': typeof MySpaceAppointmentsNewRoute
   '/my-space/associations/$slug': typeof MySpaceAssociationsSlugRoute
+  '/my-space/children/$childId': typeof MySpaceChildrenChildIdRoute
   '/my-space/companies/$id': typeof MySpaceCompaniesIdRoute
+  '/my-space/demarches/$dossierId': typeof MySpaceDemarchesDossierIdRoute
+  '/my-space/demarches/new': typeof MySpaceDemarchesNewRoute
   '/my-space/profile/edit': typeof MySpaceProfileEditRoute
   '/my-space/requests/$reference': typeof MySpaceRequestsReferenceRoute
   '/my-space/support/$ticketId': typeof MySpaceSupportTicketIdRoute
   '/my-space/support/new': typeof MySpaceSupportNewRoute
   '/my-space/appointments': typeof MySpaceAppointmentsIndexRoute
-  '/my-space/profile': typeof MySpaceProfileIndexRoute
   '/my-space/services': typeof MySpaceServicesIndexRoute
   '/my-space/support': typeof MySpaceSupportIndexRoute
   '/my-space/requests/$requestId/appointment': typeof MySpaceRequestsRequestIdAppointmentRoute
@@ -432,12 +498,17 @@ export interface FileRoutesById {
   '/tarifs': typeof TarifsRoute
   '/academy/$slug': typeof AcademySlugRoute
   '/my-space/associations': typeof MySpaceAssociationsRoute
-  '/my-space/children': typeof MySpaceChildrenRoute
+  '/my-space/children': typeof MySpaceChildrenRouteWithChildren
   '/my-space/companies': typeof MySpaceCompaniesRoute
   '/my-space/cv': typeof MySpaceCvRoute
+  '/my-space/demarches': typeof MySpaceDemarchesRouteWithChildren
+  '/my-space/iagenda': typeof MySpaceIagendaRoute
+  '/my-space/iasted': typeof MySpaceIastedRoute
   '/my-space/iboite': typeof MySpaceIboiteRoute
+  '/my-space/idocument': typeof MySpaceIdocumentRoute
   '/my-space/notifications': typeof MySpaceNotificationsRoute
   '/my-space/requests': typeof MySpaceRequestsRouteWithChildren
+  '/my-space/services-demarches': typeof MySpaceServicesDemarchesRoute
   '/my-space/settings': typeof MySpaceSettingsRoute
   '/my-space/vault': typeof MySpaceVaultRoute
   '/news/$slug': typeof NewsSlugRoute
@@ -454,18 +525,21 @@ export interface FileRoutesById {
   '/register/': typeof RegisterIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/dev/sign-in': typeof ApiDevSignInRoute
   '/listing/profiles/$id': typeof ListingProfilesIdRoute
   '/my-space/appointments/$appointmentId': typeof MySpaceAppointmentsAppointmentIdRoute
   '/my-space/appointments/book': typeof MySpaceAppointmentsBookRoute
   '/my-space/appointments/new': typeof MySpaceAppointmentsNewRoute
   '/my-space/associations_/$slug': typeof MySpaceAssociationsSlugRoute
+  '/my-space/children/$childId': typeof MySpaceChildrenChildIdRoute
   '/my-space/companies_/$id': typeof MySpaceCompaniesIdRoute
+  '/my-space/demarches/$dossierId': typeof MySpaceDemarchesDossierIdRoute
+  '/my-space/demarches/new': typeof MySpaceDemarchesNewRoute
   '/my-space/profile/edit': typeof MySpaceProfileEditRoute
   '/my-space/requests/$reference': typeof MySpaceRequestsReferenceRoute
   '/my-space/support/$ticketId': typeof MySpaceSupportTicketIdRoute
   '/my-space/support/new': typeof MySpaceSupportNewRoute
   '/my-space/appointments/': typeof MySpaceAppointmentsIndexRoute
-  '/my-space/profile/': typeof MySpaceProfileIndexRoute
   '/my-space/services/': typeof MySpaceServicesIndexRoute
   '/my-space/support/': typeof MySpaceSupportIndexRoute
   '/my-space/requests/$requestId_/appointment': typeof MySpaceRequestsRequestIdAppointmentRoute
@@ -489,9 +563,14 @@ export interface FileRouteTypes {
     | '/my-space/children'
     | '/my-space/companies'
     | '/my-space/cv'
+    | '/my-space/demarches'
+    | '/my-space/iagenda'
+    | '/my-space/iasted'
     | '/my-space/iboite'
+    | '/my-space/idocument'
     | '/my-space/notifications'
     | '/my-space/requests'
+    | '/my-space/services-demarches'
     | '/my-space/settings'
     | '/my-space/vault'
     | '/news/$slug'
@@ -508,18 +587,21 @@ export interface FileRouteTypes {
     | '/register/'
     | '/services/'
     | '/api/auth/$'
+    | '/api/dev/sign-in'
     | '/listing/profiles/$id'
     | '/my-space/appointments/$appointmentId'
     | '/my-space/appointments/book'
     | '/my-space/appointments/new'
     | '/my-space/associations/$slug'
+    | '/my-space/children/$childId'
     | '/my-space/companies/$id'
+    | '/my-space/demarches/$dossierId'
+    | '/my-space/demarches/new'
     | '/my-space/profile/edit'
     | '/my-space/requests/$reference'
     | '/my-space/support/$ticketId'
     | '/my-space/support/new'
     | '/my-space/appointments/'
-    | '/my-space/profile/'
     | '/my-space/services/'
     | '/my-space/support/'
     | '/my-space/requests/$requestId/appointment'
@@ -540,9 +622,14 @@ export interface FileRouteTypes {
     | '/my-space/children'
     | '/my-space/companies'
     | '/my-space/cv'
+    | '/my-space/demarches'
+    | '/my-space/iagenda'
+    | '/my-space/iasted'
     | '/my-space/iboite'
+    | '/my-space/idocument'
     | '/my-space/notifications'
     | '/my-space/requests'
+    | '/my-space/services-demarches'
     | '/my-space/settings'
     | '/my-space/vault'
     | '/news/$slug'
@@ -559,18 +646,21 @@ export interface FileRouteTypes {
     | '/register'
     | '/services'
     | '/api/auth/$'
+    | '/api/dev/sign-in'
     | '/listing/profiles/$id'
     | '/my-space/appointments/$appointmentId'
     | '/my-space/appointments/book'
     | '/my-space/appointments/new'
     | '/my-space/associations/$slug'
+    | '/my-space/children/$childId'
     | '/my-space/companies/$id'
+    | '/my-space/demarches/$dossierId'
+    | '/my-space/demarches/new'
     | '/my-space/profile/edit'
     | '/my-space/requests/$reference'
     | '/my-space/support/$ticketId'
     | '/my-space/support/new'
     | '/my-space/appointments'
-    | '/my-space/profile'
     | '/my-space/services'
     | '/my-space/support'
     | '/my-space/requests/$requestId/appointment'
@@ -592,9 +682,14 @@ export interface FileRouteTypes {
     | '/my-space/children'
     | '/my-space/companies'
     | '/my-space/cv'
+    | '/my-space/demarches'
+    | '/my-space/iagenda'
+    | '/my-space/iasted'
     | '/my-space/iboite'
+    | '/my-space/idocument'
     | '/my-space/notifications'
     | '/my-space/requests'
+    | '/my-space/services-demarches'
     | '/my-space/settings'
     | '/my-space/vault'
     | '/news/$slug'
@@ -611,18 +706,21 @@ export interface FileRouteTypes {
     | '/register/'
     | '/services/'
     | '/api/auth/$'
+    | '/api/dev/sign-in'
     | '/listing/profiles/$id'
     | '/my-space/appointments/$appointmentId'
     | '/my-space/appointments/book'
     | '/my-space/appointments/new'
     | '/my-space/associations_/$slug'
+    | '/my-space/children/$childId'
     | '/my-space/companies_/$id'
+    | '/my-space/demarches/$dossierId'
+    | '/my-space/demarches/new'
     | '/my-space/profile/edit'
     | '/my-space/requests/$reference'
     | '/my-space/support/$ticketId'
     | '/my-space/support/new'
     | '/my-space/appointments/'
-    | '/my-space/profile/'
     | '/my-space/services/'
     | '/my-space/support/'
     | '/my-space/requests/$requestId_/appointment'
@@ -654,6 +752,7 @@ export interface RootRouteChildren {
   RegisterIndexRoute: typeof RegisterIndexRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiDevSignInRoute: typeof ApiDevSignInRoute
   ListingProfilesIdRoute: typeof ListingProfilesIdRoute
 }
 
@@ -834,6 +933,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MySpaceSettingsRouteImport
       parentRoute: typeof MySpaceRoute
     }
+    '/my-space/services-demarches': {
+      id: '/my-space/services-demarches'
+      path: '/services-demarches'
+      fullPath: '/my-space/services-demarches'
+      preLoaderRoute: typeof MySpaceServicesDemarchesRouteImport
+      parentRoute: typeof MySpaceRoute
+    }
     '/my-space/requests': {
       id: '/my-space/requests'
       path: '/requests'
@@ -848,11 +954,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MySpaceNotificationsRouteImport
       parentRoute: typeof MySpaceRoute
     }
+    '/my-space/idocument': {
+      id: '/my-space/idocument'
+      path: '/idocument'
+      fullPath: '/my-space/idocument'
+      preLoaderRoute: typeof MySpaceIdocumentRouteImport
+      parentRoute: typeof MySpaceRoute
+    }
     '/my-space/iboite': {
       id: '/my-space/iboite'
       path: '/iboite'
       fullPath: '/my-space/iboite'
       preLoaderRoute: typeof MySpaceIboiteRouteImport
+      parentRoute: typeof MySpaceRoute
+    }
+    '/my-space/iasted': {
+      id: '/my-space/iasted'
+      path: '/iasted'
+      fullPath: '/my-space/iasted'
+      preLoaderRoute: typeof MySpaceIastedRouteImport
+      parentRoute: typeof MySpaceRoute
+    }
+    '/my-space/iagenda': {
+      id: '/my-space/iagenda'
+      path: '/iagenda'
+      fullPath: '/my-space/iagenda'
+      preLoaderRoute: typeof MySpaceIagendaRouteImport
+      parentRoute: typeof MySpaceRoute
+    }
+    '/my-space/demarches': {
+      id: '/my-space/demarches'
+      path: '/demarches'
+      fullPath: '/my-space/demarches'
+      preLoaderRoute: typeof MySpaceDemarchesRouteImport
       parentRoute: typeof MySpaceRoute
     }
     '/my-space/cv': {
@@ -904,13 +1038,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MySpaceServicesIndexRouteImport
       parentRoute: typeof MySpaceRoute
     }
-    '/my-space/profile/': {
-      id: '/my-space/profile/'
-      path: '/profile'
-      fullPath: '/my-space/profile/'
-      preLoaderRoute: typeof MySpaceProfileIndexRouteImport
-      parentRoute: typeof MySpaceRoute
-    }
     '/my-space/appointments/': {
       id: '/my-space/appointments/'
       path: '/appointments'
@@ -946,12 +1073,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MySpaceProfileEditRouteImport
       parentRoute: typeof MySpaceRoute
     }
+    '/my-space/demarches/new': {
+      id: '/my-space/demarches/new'
+      path: '/new'
+      fullPath: '/my-space/demarches/new'
+      preLoaderRoute: typeof MySpaceDemarchesNewRouteImport
+      parentRoute: typeof MySpaceDemarchesRoute
+    }
+    '/my-space/demarches/$dossierId': {
+      id: '/my-space/demarches/$dossierId'
+      path: '/$dossierId'
+      fullPath: '/my-space/demarches/$dossierId'
+      preLoaderRoute: typeof MySpaceDemarchesDossierIdRouteImport
+      parentRoute: typeof MySpaceDemarchesRoute
+    }
     '/my-space/companies_/$id': {
       id: '/my-space/companies_/$id'
       path: '/companies/$id'
       fullPath: '/my-space/companies/$id'
       preLoaderRoute: typeof MySpaceCompaniesIdRouteImport
       parentRoute: typeof MySpaceRoute
+    }
+    '/my-space/children/$childId': {
+      id: '/my-space/children/$childId'
+      path: '/$childId'
+      fullPath: '/my-space/children/$childId'
+      preLoaderRoute: typeof MySpaceChildrenChildIdRouteImport
+      parentRoute: typeof MySpaceChildrenRoute
     }
     '/my-space/associations_/$slug': {
       id: '/my-space/associations_/$slug'
@@ -988,6 +1136,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ListingProfilesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/dev/sign-in': {
+      id: '/api/dev/sign-in'
+      path: '/api/dev/sign-in'
+      fullPath: '/api/dev/sign-in'
+      preLoaderRoute: typeof ApiDevSignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -1012,6 +1167,31 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface MySpaceChildrenRouteChildren {
+  MySpaceChildrenChildIdRoute: typeof MySpaceChildrenChildIdRoute
+}
+
+const MySpaceChildrenRouteChildren: MySpaceChildrenRouteChildren = {
+  MySpaceChildrenChildIdRoute: MySpaceChildrenChildIdRoute,
+}
+
+const MySpaceChildrenRouteWithChildren = MySpaceChildrenRoute._addFileChildren(
+  MySpaceChildrenRouteChildren,
+)
+
+interface MySpaceDemarchesRouteChildren {
+  MySpaceDemarchesDossierIdRoute: typeof MySpaceDemarchesDossierIdRoute
+  MySpaceDemarchesNewRoute: typeof MySpaceDemarchesNewRoute
+}
+
+const MySpaceDemarchesRouteChildren: MySpaceDemarchesRouteChildren = {
+  MySpaceDemarchesDossierIdRoute: MySpaceDemarchesDossierIdRoute,
+  MySpaceDemarchesNewRoute: MySpaceDemarchesNewRoute,
+}
+
+const MySpaceDemarchesRouteWithChildren =
+  MySpaceDemarchesRoute._addFileChildren(MySpaceDemarchesRouteChildren)
+
 interface MySpaceRequestsRouteChildren {
   MySpaceRequestsReferenceRoute: typeof MySpaceRequestsReferenceRoute
   MySpaceRequestsRequestIdAppointmentRoute: typeof MySpaceRequestsRequestIdAppointmentRoute
@@ -1029,12 +1209,17 @@ const MySpaceRequestsRouteWithChildren = MySpaceRequestsRoute._addFileChildren(
 
 interface MySpaceRouteChildren {
   MySpaceAssociationsRoute: typeof MySpaceAssociationsRoute
-  MySpaceChildrenRoute: typeof MySpaceChildrenRoute
+  MySpaceChildrenRoute: typeof MySpaceChildrenRouteWithChildren
   MySpaceCompaniesRoute: typeof MySpaceCompaniesRoute
   MySpaceCvRoute: typeof MySpaceCvRoute
+  MySpaceDemarchesRoute: typeof MySpaceDemarchesRouteWithChildren
+  MySpaceIagendaRoute: typeof MySpaceIagendaRoute
+  MySpaceIastedRoute: typeof MySpaceIastedRoute
   MySpaceIboiteRoute: typeof MySpaceIboiteRoute
+  MySpaceIdocumentRoute: typeof MySpaceIdocumentRoute
   MySpaceNotificationsRoute: typeof MySpaceNotificationsRoute
   MySpaceRequestsRoute: typeof MySpaceRequestsRouteWithChildren
+  MySpaceServicesDemarchesRoute: typeof MySpaceServicesDemarchesRoute
   MySpaceSettingsRoute: typeof MySpaceSettingsRoute
   MySpaceVaultRoute: typeof MySpaceVaultRoute
   MySpaceIndexRoute: typeof MySpaceIndexRoute
@@ -1047,7 +1232,6 @@ interface MySpaceRouteChildren {
   MySpaceSupportTicketIdRoute: typeof MySpaceSupportTicketIdRoute
   MySpaceSupportNewRoute: typeof MySpaceSupportNewRoute
   MySpaceAppointmentsIndexRoute: typeof MySpaceAppointmentsIndexRoute
-  MySpaceProfileIndexRoute: typeof MySpaceProfileIndexRoute
   MySpaceServicesIndexRoute: typeof MySpaceServicesIndexRoute
   MySpaceSupportIndexRoute: typeof MySpaceSupportIndexRoute
   MySpaceServicesSlugNewRoute: typeof MySpaceServicesSlugNewRoute
@@ -1055,12 +1239,17 @@ interface MySpaceRouteChildren {
 
 const MySpaceRouteChildren: MySpaceRouteChildren = {
   MySpaceAssociationsRoute: MySpaceAssociationsRoute,
-  MySpaceChildrenRoute: MySpaceChildrenRoute,
+  MySpaceChildrenRoute: MySpaceChildrenRouteWithChildren,
   MySpaceCompaniesRoute: MySpaceCompaniesRoute,
   MySpaceCvRoute: MySpaceCvRoute,
+  MySpaceDemarchesRoute: MySpaceDemarchesRouteWithChildren,
+  MySpaceIagendaRoute: MySpaceIagendaRoute,
+  MySpaceIastedRoute: MySpaceIastedRoute,
   MySpaceIboiteRoute: MySpaceIboiteRoute,
+  MySpaceIdocumentRoute: MySpaceIdocumentRoute,
   MySpaceNotificationsRoute: MySpaceNotificationsRoute,
   MySpaceRequestsRoute: MySpaceRequestsRouteWithChildren,
+  MySpaceServicesDemarchesRoute: MySpaceServicesDemarchesRoute,
   MySpaceSettingsRoute: MySpaceSettingsRoute,
   MySpaceVaultRoute: MySpaceVaultRoute,
   MySpaceIndexRoute: MySpaceIndexRoute,
@@ -1073,7 +1262,6 @@ const MySpaceRouteChildren: MySpaceRouteChildren = {
   MySpaceSupportTicketIdRoute: MySpaceSupportTicketIdRoute,
   MySpaceSupportNewRoute: MySpaceSupportNewRoute,
   MySpaceAppointmentsIndexRoute: MySpaceAppointmentsIndexRoute,
-  MySpaceProfileIndexRoute: MySpaceProfileIndexRoute,
   MySpaceServicesIndexRoute: MySpaceServicesIndexRoute,
   MySpaceSupportIndexRoute: MySpaceSupportIndexRoute,
   MySpaceServicesSlugNewRoute: MySpaceServicesSlugNewRoute,
@@ -1107,6 +1295,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterIndexRoute: RegisterIndexRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiDevSignInRoute: ApiDevSignInRoute,
   ListingProfilesIdRoute: ListingProfilesIdRoute,
 }
 export const routeTree = rootRouteImport

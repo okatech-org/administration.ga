@@ -2,3 +2,248 @@
 
 @source "../src/**/*.{ts,tsx}";
 @source "../../../packages/ui/src/**/*.{ts,tsx}";
+
+/* ══════════════════════════════════════════════════════════════
+   GABON DIPLOMATIC DESIGN SYSTEM — Citizen Space
+   Inspired by parlement.ga neumorphic design
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Gabon Official Colors */
+  --gabon-green: 153 69% 31%;
+  --gabon-green-hex: #009E60;
+  --gabon-yellow: 45 98% 54%;
+  --gabon-yellow-hex: #FCD116;
+  --gabon-blue: 214 52% 50%;
+  --gabon-blue-hex: #3A75C4;
+
+  /* Neumorphic shadows — light mode */
+  --neu-shadow-light: 6px 6px 12px rgba(0, 0, 0, 0.08), -6px -6px 12px rgba(255, 255, 255, 0.9);
+  --neu-shadow-raised: 4px 4px 8px rgba(0, 0, 0, 0.1), -4px -4px 8px rgba(255, 255, 255, 0.95);
+  --neu-shadow-inset: inset 3px 3px 6px rgba(0, 0, 0, 0.06), inset -3px -3px 6px rgba(255, 255, 255, 0.8);
+  --neu-shadow-pressed: inset 2px 2px 5px rgba(0, 0, 0, 0.08), inset -2px -2px 5px rgba(255, 255, 255, 0.7);
+  --neu-shadow-subtle: 2px 2px 4px rgba(0, 0, 0, 0.05), -2px -2px 4px rgba(255, 255, 255, 0.8);
+
+  /* Surface colors */
+  --neu-surface: #f0f0f3;
+  --neu-surface-card: #f5f5f8;
+  --neu-surface-sidebar: #eaeaef;
+}
+
+.dark {
+  --neu-shadow-light: 6px 6px 12px rgba(0, 0, 0, 0.35), -6px -6px 12px rgba(60, 60, 60, 0.15);
+  --neu-shadow-raised: 4px 4px 8px rgba(0, 0, 0, 0.4), -4px -4px 8px rgba(60, 60, 60, 0.12);
+  --neu-shadow-inset: inset 3px 3px 6px rgba(0, 0, 0, 0.3), inset -3px -3px 6px rgba(60, 60, 60, 0.1);
+  --neu-shadow-pressed: inset 2px 2px 5px rgba(0, 0, 0, 0.35), inset -2px -2px 5px rgba(60, 60, 60, 0.08);
+  --neu-shadow-subtle: 2px 2px 4px rgba(0, 0, 0, 0.3), -2px -2px 4px rgba(60, 60, 60, 0.1);
+
+  --neu-surface: #1e1e1e;
+  --neu-surface-card: #252525;
+  --neu-surface-sidebar: #1a1a1a;
+}
+
+/* ─── Neumorphic Utility Classes ─── */
+
+.neu-card {
+  background: var(--neu-surface-card);
+  box-shadow: var(--neu-shadow-light);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.dark .neu-card {
+  border-color: rgba(255, 255, 255, 0.04);
+}
+
+.neu-card:hover {
+  box-shadow: var(--neu-shadow-raised);
+  transform: translateY(-1px);
+}
+
+.neu-raised {
+  box-shadow: var(--neu-shadow-raised);
+  border-radius: 12px;
+  transition: box-shadow 0.2s ease;
+}
+
+.neu-inset {
+  box-shadow: var(--neu-shadow-inset);
+  border-radius: 12px;
+}
+
+.neu-pressed {
+  box-shadow: var(--neu-shadow-pressed);
+  border-radius: 10px;
+}
+
+.neu-subtle {
+  box-shadow: var(--neu-shadow-subtle);
+  border-radius: 10px;
+}
+
+.neu-sidebar {
+  background: var(--neu-surface-sidebar);
+  box-shadow: var(--neu-shadow-raised);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.dark .neu-sidebar {
+  border-color: rgba(255, 255, 255, 0.03);
+}
+
+.neu-nav-item {
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.neu-nav-item:hover {
+  box-shadow: var(--neu-shadow-subtle);
+  background: rgba(0, 158, 96, 0.06);
+}
+
+.neu-nav-item.active {
+  box-shadow: var(--neu-shadow-inset);
+  background: rgba(0, 158, 96, 0.1);
+}
+
+.dark .neu-nav-item:hover {
+  background: rgba(0, 158, 96, 0.12);
+}
+
+.dark .neu-nav-item.active {
+  background: rgba(0, 158, 96, 0.18);
+}
+
+/* ─── Gabon Color Utilities ─── */
+
+.bg-gabon-green { background-color: var(--gabon-green-hex); }
+.bg-gabon-yellow { background-color: var(--gabon-yellow-hex); }
+.bg-gabon-blue { background-color: var(--gabon-blue-hex); }
+
+.text-gabon-green { color: var(--gabon-green-hex); }
+.text-gabon-yellow { color: var(--gabon-yellow-hex); }
+.text-gabon-blue { color: var(--gabon-blue-hex); }
+
+.border-gabon-green { border-color: var(--gabon-green-hex); }
+.border-gabon-yellow { border-color: var(--gabon-yellow-hex); }
+.border-gabon-blue { border-color: var(--gabon-blue-hex); }
+
+/* Gabon Tricolor gradient */
+.bg-gabon-gradient {
+  background: linear-gradient(135deg, var(--gabon-green-hex) 0%, var(--gabon-yellow-hex) 50%, var(--gabon-blue-hex) 100%);
+}
+
+.bg-gabon-gradient-h {
+  background: linear-gradient(90deg, var(--gabon-green-hex) 0%, var(--gabon-yellow-hex) 50%, var(--gabon-blue-hex) 100%);
+}
+
+/* Text gradient — official tricolor */
+.text-gradient-official {
+  background: linear-gradient(135deg, var(--gabon-green-hex), var(--gabon-yellow-hex), var(--gabon-blue-hex));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Subtle background tints */
+.bg-gabon-green-tint { background-color: rgba(0, 158, 96, 0.08); }
+.bg-gabon-yellow-tint { background-color: rgba(252, 209, 22, 0.08); }
+.bg-gabon-blue-tint { background-color: rgba(58, 117, 196, 0.08); }
+
+.dark .bg-gabon-green-tint { background-color: rgba(0, 158, 96, 0.15); }
+.dark .bg-gabon-yellow-tint { background-color: rgba(252, 209, 22, 0.12); }
+.dark .bg-gabon-blue-tint { background-color: rgba(58, 117, 196, 0.15); }
+
+/* ─── Gabon Flag Stripe (decorative) ─── */
+
+.gabon-stripe {
+  height: 3px;
+  background: linear-gradient(90deg, var(--gabon-green-hex) 33.33%, var(--gabon-yellow-hex) 33.33%, var(--gabon-yellow-hex) 66.66%, var(--gabon-blue-hex) 66.66%);
+  border-radius: 2px;
+}
+
+.gabon-stripe-vertical {
+  width: 3px;
+  background: linear-gradient(180deg, var(--gabon-green-hex) 33.33%, var(--gabon-yellow-hex) 33.33%, var(--gabon-yellow-hex) 66.66%, var(--gabon-blue-hex) 66.66%);
+  border-radius: 2px;
+}
+
+/* ─── Neumorphic Surface ─── */
+
+.neu-surface {
+  background: var(--neu-surface);
+}
+
+/* ─── Citizen Space Layout ─── */
+
+.citizen-layout {
+  background: var(--neu-surface);
+  min-height: 100dvh;
+}
+
+.dark .citizen-layout {
+  background: var(--neu-surface);
+}
+
+/* ─── Animations ─── */
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Staggered children animation */
+.stagger-children > * {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
+
+/* ─── Typography ─── */
+
+.heading-official {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+/* ─── Scrollbar ─── */
+
+.citizen-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.citizen-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.citizen-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+}
+.dark .citizen-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+}

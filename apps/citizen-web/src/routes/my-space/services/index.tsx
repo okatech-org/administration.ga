@@ -4,6 +4,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
 	BookOpen,
 	BookOpenCheck,
+	Building2,
 	Calendar,
 	CheckCircle2,
 	Clock,
@@ -88,6 +89,11 @@ const CATEGORIES: {
 		icon: ShieldAlert,
 		labelKey: "services.category.assistance",
 	},
+	{
+		id: ServiceCategory.Declaration,
+		icon: Building2,
+		labelKey: "services.category.declaration",
+	},
 ];
 
 // Category colors for badges
@@ -120,15 +126,19 @@ const CATEGORY_COLORS: Record<string, { color: string; bgColor: string }> = {
 		color: "text-gray-600 dark:text-gray-400",
 		bgColor: "bg-gray-500/10",
 	},
+	[ServiceCategory.Declaration]: {
+		color: "text-indigo-600 dark:text-indigo-400",
+		bgColor: "bg-indigo-500/10",
+	},
 };
 
 // Type for service from listCatalog
 type CatalogService = {
 	_id: string;
 	slug: string;
-	name: string | { fr: string; en?: string };
-	description: string | { fr: string; en?: string };
-	content?: string | { fr: string; en?: string };
+	name: string | Record<string, string>;
+	description: string | Record<string, string>;
+	content?: string | Record<string, string>;
 	category: string;
 	estimatedDays?: number;
 	requiresAppointment?: boolean;
@@ -247,6 +257,7 @@ function ServicesPage() {
 						<button
 							type="button"
 							onClick={() => setSearchQuery("")}
+							aria-label="Effacer la recherche"
 							className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
 						>
 							<X className="h-4 w-4 text-muted-foreground" />

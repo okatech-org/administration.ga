@@ -4595,5 +4595,108 @@
 				"debug": "DEBUG"
 			}
 		}
+	},
+	"agentLanding": {
+		"navbar": {
+			"home": "Accueil",
+			"missions": "Missions",
+			"values": "Valeurs",
+			"resources": "Ressources",
+			"tutorials": "Tutoriels",
+			"agentSpace": "Espace Agent"
+		},
+		"hero": {
+			"badge": "Portail Agent — Exclusif",
+			"title": "La Doctrine",
+			"titleGradient": "Diplomatique",
+			"titleSuffix": "& Consulaire.",
+			"description": "Édifier, représenter et assister. Dans le respect des Conventions de Vienne, cet espace numérique modernise la mission souveraine du personnel diplomatique et consulaire gabonais à travers le monde.",
+			"stats": {
+				"missions": {
+					"value": "40+",
+					"label": "Missions diplomatiques"
+				},
+				"agents": {
+					"value": "180+",
+					"label": "Agents accrédités"
+				},
+				"conventions": {
+					"value": "3",
+					"label": "Conventions de Vienne"
+				}
+			},
+			"nextPanel": "Missions"
+		},
+		"missions": {
+			"badge": "Nos Piliers",
+			"title": "L'Exercice Numérique",
+			"titleGradient": "de nos Missions",
+			"subtitle": "L'application s'aligne sur les piliers fondamentaux des relations internationales et de l'assistance aux compatriotes.",
+			"items": [
+				{
+					"title": "Représentation & Négociation",
+					"description": "Conformément à la Conv. de Vienne (1961), le module de Correspondance sécurise vos échanges (notes verbales, mémorandums) vers l'État accréditaire ou la Centrale."
+				},
+				{
+					"title": "Protection Consulaire",
+					"description": "La gestion des requêtes et immatriculations (Conv. de Vienne, 1963) assure la protection et le secours rapides de nos ressortissants en détresse."
+				},
+				{
+					"title": "Inviolabilité Archive",
+					"description": "iDocument et iArchive transforment la valise diplomatique en coffre-fort numérique inviolable, garantissant le secret des missions."
+				}
+			]
+		},
+		"values": {
+			"feature1": {
+				"title": "Modernité de l'Administration",
+				"p1": "La transition vers ce portail répond à l'exigence d'une administration moderne, agile et réactive. Le personnel diplomatique n'est plus entravé par les lourdeurs bureaucratiques physiques. Chaque document est numérisé, tracé, et approuvé par une chaîne hiérarchique claire.",
+				"p2": "Le développement des relations amicales, culturelles et économiques exige réactivité : c'est la fonction fondamentale des modules d'agenda et de communication intégrés."
+			},
+			"feature2": {
+				"title": "Le Pôle Consulaire",
+				"description": "Délivrance de visas, renouvellement de passeports, établissement d'actes d'état civil : les postes consulaires sont la première vitrine de l'État gabonais. La numérisation permet une délivrance accélérée.",
+				"points": [
+					"Immatriculation des citoyens résidents",
+					"Légalisation rapide des documents",
+					"Organisation des visas diplomatiques et courtoisie"
+				]
+			}
+		},
+		"resources": {
+			"header": "Base Documentaire",
+			"subtitle": "Cadre juridique international & conformité numérique",
+			"tabs": {
+				"overview": "Vue d'ensemble",
+				"conventions": "Conventions de Vienne",
+				"atouts": "Atouts de la plateforme"
+			},
+			"overview": {
+				"description": "Diplomate.ga est le prolongement numérique des obligations issues des Conventions de Vienne. Chaque module répond à un article précis, garantissant la conformité juridique totale des opérations diplomatiques et consulaires gabonaises.",
+				"conventionsTitle": "Conventions de Vienne",
+				"conventionsDesc": "Textes fondateurs du droit diplomatique et consulaire international",
+				"atoutsTitle": "Atouts de la plateforme",
+				"atoutsDesc": "Comment chaque module implémente les exigences des Conventions",
+				"explore": "Explorer →",
+				"compliance": "Couverture de conformité"
+			}
+		},
+		"tutorials": {
+			"header": "Tutoriels d'utilisation",
+			"subtitle": "Guides pratiques pour maîtriser chaque module",
+			"levels": {
+				"all": "Tous",
+				"beginner": "Débutant",
+				"intermediate": "Intermédiaire",
+				"advanced": "Avancé"
+			},
+			"tutorial": "tutoriel",
+			"tutorials": "tutoriels",
+			"cta": {
+				"title": "Prêt à servir l'État ?",
+				"description": "Connectez-vous à votre espace agent pour accéder aux instruments de souveraineté de la République Gabonaise.",
+				"button": "Se connecter"
+			}
+		}
 	}
 }

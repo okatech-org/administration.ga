@@ -55,3 +55,19 @@ export {
 export { gcpMetricsCacheTable } from "./gcpMetricsCache";
 export { cardDesignsTable } from "./cardDesigns";
 export { printJobsTable } from "./printJobs";
+
+export {
+  correspondanceFoldersTable,
+  correspondanceItemsTable,
+  correspondanceWorkflowStepsTable,
+  correspondanceRecipientsTable,
+} from "./correspondance";
+
+export {
+  typeDemarchesTable,
+  dossierProceduresTable,
+  dossierPiecesTable,
+  dossierTransitionsTable,
+  copiesPassageTable,
+  journalActionsTable,
+} from "./dossierProcedure";

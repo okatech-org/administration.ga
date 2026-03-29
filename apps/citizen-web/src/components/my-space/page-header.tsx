@@ -3,14 +3,17 @@ import { ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
 	/** Page title */
 	title: ReactNode;
 	/** Optional subtitle displayed below the title */
 	subtitle?: ReactNode;
-	/** Optional icon displayed before the title */
+	/** Optional icon displayed before the title — wrapped in a colored box automatically */
 	icon?: ReactNode;
+	/** Background class for the icon box (e.g. "bg-teal-500/10"). Defaults to "bg-primary/10". */
+	iconBgClass?: string;
 	/** Actions to display on the right side */
 	actions?: ReactNode;
 	/** Show a back button that navigates to the previous page */
@@ -22,11 +25,13 @@ interface PageHeaderProps {
 /**
  * Reusable page header component for MySpace pages.
  * Provides consistent styling with animated entry, title, subtitle, and action slots.
+ * Icons are wrapped in a colored box matching the iProfil design language.
  */
 export function PageHeader({
 	title,
 	subtitle,
 	icon,
+	iconBgClass = "bg-primary/10",
 	actions,
 	showBackButton = false,
 	onBack,
@@ -61,7 +66,11 @@ export function PageHeader({
 				)}
 				<div>
 					<h1 className="text-lg md:text-2xl font-bold flex items-center gap-2">
-						{icon}
+						{icon && (
+							<div className={cn("p-1.5 rounded-lg", iconBgClass)}>
+								{icon}
+							</div>
+						)}
 						{title}
 					</h1>
 					{subtitle && (

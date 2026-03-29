@@ -219,6 +219,7 @@ export const serviceCategoryValidator = v.union(
   v.literal(ServiceCategory.Assistance),
   v.literal(ServiceCategory.TravelDocument),
   v.literal(ServiceCategory.Transcript),
+  v.literal(ServiceCategory.Declaration),
   v.literal(ServiceCategory.Other),
 );
 

@@ -11,9 +11,15 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
-import { Route as SignInSplatRouteImport } from './routes/sign-in/$'
 import { Route as AppStatisticsRouteImport } from './routes/_app/statistics'
 import { Route as AppPaymentsRouteImport } from './routes/_app/payments'
+import { Route as AppIdocumentRouteImport } from './routes/_app/idocument'
+import { Route as AppIcorrespondanceRouteImport } from './routes/_app/icorrespondance'
+import { Route as AppIcomRouteImport } from './routes/_app/icom'
+import { Route as AppIboiteRouteImport } from './routes/_app/iboite'
+import { Route as AppIastedRouteImport } from './routes/_app/iasted'
+import { Route as AppIarchiveRouteImport } from './routes/_app/iarchive'
+import { Route as AppIagendaRouteImport } from './routes/_app/iagenda'
 import { Route as AppCallsRouteImport } from './routes/_app/calls'
 import { Route as AppTeamIndexRouteImport } from './routes/_app/team/index'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
@@ -23,6 +29,7 @@ import { Route as AppPostsIndexRouteImport } from './routes/_app/posts/index'
 import { Route as AppMeetingsIndexRouteImport } from './routes/_app/meetings/index'
 import { Route as AppConsularRegistryIndexRouteImport } from './routes/_app/consular-registry/index'
 import { Route as AppAppointmentsIndexRouteImport } from './routes/_app/appointments/index'
+import { Route as ApiDevSignInRouteImport } from './routes/api/dev/sign-in'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AppRequestsReferenceRouteImport } from './routes/_app/requests/$reference'
 import { Route as AppProfilesProfileIdRouteImport } from './routes/_app/profiles/$profileId'
@@ -42,11 +49,6 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
-const SignInSplatRoute = SignInSplatRouteImport.update({
-  id: '/sign-in/$',
-  path: '/sign-in/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AppStatisticsRoute = AppStatisticsRouteImport.update({
   id: '/statistics',
   path: '/statistics',
@@ -55,6 +57,41 @@ const AppStatisticsRoute = AppStatisticsRouteImport.update({
 const AppPaymentsRoute = AppPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIdocumentRoute = AppIdocumentRouteImport.update({
+  id: '/idocument',
+  path: '/idocument',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIcorrespondanceRoute = AppIcorrespondanceRouteImport.update({
+  id: '/icorrespondance',
+  path: '/icorrespondance',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIcomRoute = AppIcomRouteImport.update({
+  id: '/icom',
+  path: '/icom',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIboiteRoute = AppIboiteRouteImport.update({
+  id: '/iboite',
+  path: '/iboite',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIastedRoute = AppIastedRouteImport.update({
+  id: '/iasted',
+  path: '/iasted',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIarchiveRoute = AppIarchiveRouteImport.update({
+  id: '/iarchive',
+  path: '/iarchive',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIagendaRoute = AppIagendaRouteImport.update({
+  id: '/iagenda',
+  path: '/iagenda',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCallsRoute = AppCallsRouteImport.update({
@@ -102,6 +139,11 @@ const AppAppointmentsIndexRoute = AppAppointmentsIndexRouteImport.update({
   id: '/appointments/',
   path: '/appointments/',
   getParentRoute: () => AppRoute,
+} as any)
+const ApiDevSignInRoute = ApiDevSignInRouteImport.update({
+  id: '/api/dev/sign-in',
+  path: '/api/dev/sign-in',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -156,9 +198,15 @@ const AppPostsPostIdEditRoute = AppPostsPostIdEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/calls': typeof AppCallsRoute
+  '/iagenda': typeof AppIagendaRoute
+  '/iarchive': typeof AppIarchiveRoute
+  '/iasted': typeof AppIastedRoute
+  '/iboite': typeof AppIboiteRoute
+  '/icom': typeof AppIcomRoute
+  '/icorrespondance': typeof AppIcorrespondanceRoute
+  '/idocument': typeof AppIdocumentRoute
   '/payments': typeof AppPaymentsRoute
   '/statistics': typeof AppStatisticsRoute
-  '/sign-in/$': typeof SignInSplatRoute
   '/appointments/$appointmentId': typeof AppAppointmentsAppointmentIdRoute
   '/appointments/agent-schedules': typeof AppAppointmentsAgentSchedulesRoute
   '/consular-registry/print-queue': typeof AppConsularRegistryPrintQueueRoute
@@ -166,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/profiles/$profileId': typeof AppProfilesProfileIdRoute
   '/requests/$reference': typeof AppRequestsReferenceRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/dev/sign-in': typeof ApiDevSignInRoute
   '/appointments/': typeof AppAppointmentsIndexRoute
   '/consular-registry/': typeof AppConsularRegistryIndexRoute
   '/meetings/': typeof AppMeetingsIndexRoute
@@ -179,9 +228,15 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/calls': typeof AppCallsRoute
+  '/iagenda': typeof AppIagendaRoute
+  '/iarchive': typeof AppIarchiveRoute
+  '/iasted': typeof AppIastedRoute
+  '/iboite': typeof AppIboiteRoute
+  '/icom': typeof AppIcomRoute
+  '/icorrespondance': typeof AppIcorrespondanceRoute
+  '/idocument': typeof AppIdocumentRoute
   '/payments': typeof AppPaymentsRoute
   '/statistics': typeof AppStatisticsRoute
-  '/sign-in/$': typeof SignInSplatRoute
   '/': typeof AppIndexRoute
   '/appointments/$appointmentId': typeof AppAppointmentsAppointmentIdRoute
   '/appointments/agent-schedules': typeof AppAppointmentsAgentSchedulesRoute
@@ -190,6 +245,7 @@ export interface FileRoutesByTo {
   '/profiles/$profileId': typeof AppProfilesProfileIdRoute
   '/requests/$reference': typeof AppRequestsReferenceRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/dev/sign-in': typeof ApiDevSignInRoute
   '/appointments': typeof AppAppointmentsIndexRoute
   '/consular-registry': typeof AppConsularRegistryIndexRoute
   '/meetings': typeof AppMeetingsIndexRoute
@@ -205,9 +261,15 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/_app/calls': typeof AppCallsRoute
+  '/_app/iagenda': typeof AppIagendaRoute
+  '/_app/iarchive': typeof AppIarchiveRoute
+  '/_app/iasted': typeof AppIastedRoute
+  '/_app/iboite': typeof AppIboiteRoute
+  '/_app/icom': typeof AppIcomRoute
+  '/_app/icorrespondance': typeof AppIcorrespondanceRoute
+  '/_app/idocument': typeof AppIdocumentRoute
   '/_app/payments': typeof AppPaymentsRoute
   '/_app/statistics': typeof AppStatisticsRoute
-  '/sign-in/$': typeof SignInSplatRoute
   '/_app/': typeof AppIndexRoute
   '/_app/appointments/$appointmentId': typeof AppAppointmentsAppointmentIdRoute
   '/_app/appointments/agent-schedules': typeof AppAppointmentsAgentSchedulesRoute
@@ -216,6 +278,7 @@ export interface FileRoutesById {
   '/_app/profiles/$profileId': typeof AppProfilesProfileIdRoute
   '/_app/requests/$reference': typeof AppRequestsReferenceRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/dev/sign-in': typeof ApiDevSignInRoute
   '/_app/appointments/': typeof AppAppointmentsIndexRoute
   '/_app/consular-registry/': typeof AppConsularRegistryIndexRoute
   '/_app/meetings/': typeof AppMeetingsIndexRoute
@@ -232,9 +295,15 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/calls'
+    | '/iagenda'
+    | '/iarchive'
+    | '/iasted'
+    | '/iboite'
+    | '/icom'
+    | '/icorrespondance'
+    | '/idocument'
     | '/payments'
     | '/statistics'
-    | '/sign-in/$'
     | '/appointments/$appointmentId'
     | '/appointments/agent-schedules'
     | '/consular-registry/print-queue'
@@ -242,6 +311,7 @@ export interface FileRouteTypes {
     | '/profiles/$profileId'
     | '/requests/$reference'
     | '/api/auth/$'
+    | '/api/dev/sign-in'
     | '/appointments/'
     | '/consular-registry/'
     | '/meetings/'
@@ -255,9 +325,15 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/calls'
+    | '/iagenda'
+    | '/iarchive'
+    | '/iasted'
+    | '/iboite'
+    | '/icom'
+    | '/icorrespondance'
+    | '/idocument'
     | '/payments'
     | '/statistics'
-    | '/sign-in/$'
     | '/'
     | '/appointments/$appointmentId'
     | '/appointments/agent-schedules'
@@ -266,6 +342,7 @@ export interface FileRouteTypes {
     | '/profiles/$profileId'
     | '/requests/$reference'
     | '/api/auth/$'
+    | '/api/dev/sign-in'
     | '/appointments'
     | '/consular-registry'
     | '/meetings'
@@ -280,9 +357,15 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/_app/calls'
+    | '/_app/iagenda'
+    | '/_app/iarchive'
+    | '/_app/iasted'
+    | '/_app/iboite'
+    | '/_app/icom'
+    | '/_app/icorrespondance'
+    | '/_app/idocument'
     | '/_app/payments'
     | '/_app/statistics'
-    | '/sign-in/$'
     | '/_app/'
     | '/_app/appointments/$appointmentId'
     | '/_app/appointments/agent-schedules'
@@ -291,6 +374,7 @@ export interface FileRouteTypes {
     | '/_app/profiles/$profileId'
     | '/_app/requests/$reference'
     | '/api/auth/$'
+    | '/api/dev/sign-in'
     | '/_app/appointments/'
     | '/_app/consular-registry/'
     | '/_app/meetings/'
@@ -305,8 +389,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
-  SignInSplatRoute: typeof SignInSplatRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiDevSignInRoute: typeof ApiDevSignInRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -325,13 +409,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/sign-in/$': {
-      id: '/sign-in/$'
-      path: '/sign-in/$'
-      fullPath: '/sign-in/$'
-      preLoaderRoute: typeof SignInSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_app/statistics': {
       id: '/_app/statistics'
       path: '/statistics'
@@ -344,6 +421,55 @@ declare module '@tanstack/react-router' {
       path: '/payments'
       fullPath: '/payments'
       preLoaderRoute: typeof AppPaymentsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/idocument': {
+      id: '/_app/idocument'
+      path: '/idocument'
+      fullPath: '/idocument'
+      preLoaderRoute: typeof AppIdocumentRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/icorrespondance': {
+      id: '/_app/icorrespondance'
+      path: '/icorrespondance'
+      fullPath: '/icorrespondance'
+      preLoaderRoute: typeof AppIcorrespondanceRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/icom': {
+      id: '/_app/icom'
+      path: '/icom'
+      fullPath: '/icom'
+      preLoaderRoute: typeof AppIcomRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/iboite': {
+      id: '/_app/iboite'
+      path: '/iboite'
+      fullPath: '/iboite'
+      preLoaderRoute: typeof AppIboiteRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/iasted': {
+      id: '/_app/iasted'
+      path: '/iasted'
+      fullPath: '/iasted'
+      preLoaderRoute: typeof AppIastedRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/iarchive': {
+      id: '/_app/iarchive'
+      path: '/iarchive'
+      fullPath: '/iarchive'
+      preLoaderRoute: typeof AppIarchiveRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/iagenda': {
+      id: '/_app/iagenda'
+      path: '/iagenda'
+      fullPath: '/iagenda'
+      preLoaderRoute: typeof AppIagendaRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/calls': {
@@ -408,6 +534,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/appointments/'
       preLoaderRoute: typeof AppAppointmentsIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/dev/sign-in': {
+      id: '/api/dev/sign-in'
+      path: '/api/dev/sign-in'
+      fullPath: '/api/dev/sign-in'
+      preLoaderRoute: typeof ApiDevSignInRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -477,6 +610,13 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppCallsRoute: typeof AppCallsRoute
+  AppIagendaRoute: typeof AppIagendaRoute
+  AppIarchiveRoute: typeof AppIarchiveRoute
+  AppIastedRoute: typeof AppIastedRoute
+  AppIboiteRoute: typeof AppIboiteRoute
+  AppIcomRoute: typeof AppIcomRoute
+  AppIcorrespondanceRoute: typeof AppIcorrespondanceRoute
+  AppIdocumentRoute: typeof AppIdocumentRoute
   AppPaymentsRoute: typeof AppPaymentsRoute
   AppStatisticsRoute: typeof AppStatisticsRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -500,6 +640,13 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppCallsRoute: AppCallsRoute,
+  AppIagendaRoute: AppIagendaRoute,
+  AppIarchiveRoute: AppIarchiveRoute,
+  AppIastedRoute: AppIastedRoute,
+  AppIboiteRoute: AppIboiteRoute,
+  AppIcomRoute: AppIcomRoute,
+  AppIcorrespondanceRoute: AppIcorrespondanceRoute,
+  AppIdocumentRoute: AppIdocumentRoute,
   AppPaymentsRoute: AppPaymentsRoute,
   AppStatisticsRoute: AppStatisticsRoute,
   AppIndexRoute: AppIndexRoute,
@@ -525,8 +672,8 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
-  SignInSplatRoute: SignInSplatRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiDevSignInRoute: ApiDevSignInRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

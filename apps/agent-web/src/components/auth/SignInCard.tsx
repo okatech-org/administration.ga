@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import {
 	ArrowLeft,
 	KeyRound,
@@ -8,7 +7,6 @@ import {
 } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,14 +14,9 @@ import { captureEvent } from "@/lib/analytics";
 import { authClient } from "@/lib/auth-client";
 import { normalizePhone } from "@convex/lib/phone";
 
-export const Route = createFileRoute("/sign-in/$")({
-	component: SignInPage,
-});
-
 type SignInStep = "identifier" | "password" | "otp-code";
 type LoginMode = "email" | "phone";
 
-/** Map Better Auth English errors → FR translation keys */
 const AUTH_ERROR_MAP: Record<string, string> = {
 	"otp expired": "errors.auth.otp.expired",
 	"invalid otp": "errors.auth.otp.invalidCode",
@@ -34,7 +27,7 @@ const AUTH_ERROR_MAP: Record<string, string> = {
 	"invalid email or password": "errors.auth.invalidCredentials",
 };
 
-function SignInPage() {
+export function SignInCard() {
 	const { t } = useTranslation();
 	const formId = useId();
 
@@ -44,7 +37,10 @@ function SignInPage() {
 		new URLSearchParams(window.location.search).get("from") === "desktop";
 
 	/** Translate a Better Auth error to French */
-	const translateAuthError = (message: string | undefined, fallbackKey: string) => {
+	const translateAuthError = (
+		message: string | undefined,
+		fallbackKey: string,
+	) => {
 		if (!message) return t(fallbackKey);
 		const key = AUTH_ERROR_MAP[message.toLowerCase()];
 		return key ? t(key) : t(fallbackKey);
@@ -96,7 +92,6 @@ function SignInPage() {
 		}
 	}, [step]);
 
-	// ── Send OTP ─────────────────────────────────────────────────────
 	const handleSendOtp = async () => {
 		if (!identifier) return;
 		setError(null);
@@ -109,18 +104,29 @@ function SignInPage() {
 					phoneNumber: cleanPhone,
 				});
 				if (result.error) {
-					setError(translateAuthError(result.error.message, "errors.auth.otp.sendFailed"));
+					setError(
+						translateAuthError(
+							result.error.message,
+							"errors.auth.otp.sendFailed",
+						),
+					);
 				} else {
 					setOtpSent(true);
 					setStep("otp-code");
 				}
 			} else {
-				const result = await authClient.emailOtp.sendVerificationOtp({
-					email,
-					type: "sign-in",
-				});
+				const result =
+					await authClient.emailOtp.sendVerificationOtp({
+						email,
+						type: "sign-in",
+					});
 				if (result.error) {
-					setError(translateAuthError(result.error.message, "errors.auth.otp.sendFailed"));
+					setError(
+						translateAuthError(
+							result.error.message,
+							"errors.auth.otp.sendFailed",
+						),
+					);
 				} else {
 					setOtpSent(true);
 					setStep("otp-code");
@@ -133,7 +139,6 @@ function SignInPage() {
 		}
 	};
 
-	// ── Verify OTP ───────────────────────────────────────────────────
 	const handleVerifyOtp = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!otpCode || !identifier) return;
@@ -148,7 +153,12 @@ function SignInPage() {
 					code: otpCode,
 				});
 				if (result.error) {
-					setError(translateAuthError(result.error.message, "errors.auth.otp.invalidCode"));
+					setError(
+						translateAuthError(
+							result.error.message,
+							"errors.auth.otp.invalidCode",
+						),
+					);
 				} else {
 					captureEvent("user_logged_in", { method: "sms_otp" });
 					await redirectAfterSignIn(result);
@@ -159,7 +169,12 @@ function SignInPage() {
 					otp: otpCode,
 				});
 				if (result.error) {
-					setError(translateAuthError(result.error.message, "errors.auth.otp.invalidCode"));
+					setError(
+						translateAuthError(
+							result.error.message,
+							"errors.auth.otp.invalidCode",
+						),
+					);
 				} else {
 					captureEvent("user_logged_in", { method: "email_otp" });
 					await redirectAfterSignIn(result);
@@ -172,7 +187,6 @@ function SignInPage() {
 		}
 	};
 
-	// ── Password sign-in ─────────────────────────────────────────────
 	const handlePasswordSignIn = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError(null);
@@ -184,7 +198,12 @@ function SignInPage() {
 				password,
 			});
 			if (result.error) {
-				setError(translateAuthError(result.error.message, "errors.auth.signInFailed"));
+				setError(
+					translateAuthError(
+						result.error.message,
+						"errors.auth.signInFailed",
+					),
+				);
 			} else {
 				captureEvent("user_logged_in", { method: "password" });
 				await redirectAfterSignIn(result);
@@ -205,24 +224,19 @@ function SignInPage() {
 	};
 
 	return (
-		<AuthLayout
-			headerButton={{
-				label: t("header.nav.signUp"),
-				to: "/register",
-			}}
-		>
-			<div className="mb-8 space-y-2">
-				<h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+		<div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 lg:p-10 text-slate-900">
+			<div className="mb-6 space-y-1">
+				<h2 className="text-2xl font-bold tracking-tight">
 					{t("errors.auth.welcomeBack")}
-				</h1>
-				<p className="text-muted-foreground">
+				</h2>
+				<p className="text-sm text-slate-500">
 					{t("errors.auth.accessAccount")}
 				</p>
 			</div>
 
-			<div className="w-full space-y-6">
+			<div className="space-y-5">
 				{error && (
-					<div className="rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+					<div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
 						{error}
 					</div>
 				)}
@@ -230,15 +244,14 @@ function SignInPage() {
 				{/* Step 1: Identifier */}
 				{step === "identifier" && (
 					<div className="space-y-4">
-						{/* Toggle Email / Phone */}
-						<div className="flex rounded-lg border border-border/50 overflow-hidden">
+						<div className="flex rounded-lg border border-slate-200 overflow-hidden">
 							<button
 								type="button"
 								onClick={() => setLoginMode("email")}
 								className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
 									loginMode === "email"
-										? "bg-primary text-primary-foreground"
-										: "bg-muted/30 text-muted-foreground hover:text-foreground"
+										? "bg-emerald-600 text-white"
+										: "bg-slate-50 text-slate-500 hover:text-slate-700"
 								}`}
 							>
 								<Mail className="h-4 w-4" />
@@ -249,8 +262,8 @@ function SignInPage() {
 								onClick={() => setLoginMode("phone")}
 								className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
 									loginMode === "phone"
-										? "bg-primary text-primary-foreground"
-										: "bg-muted/30 text-muted-foreground hover:text-foreground"
+										? "bg-emerald-600 text-white"
+										: "bg-slate-50 text-slate-500 hover:text-slate-700"
 								}`}
 							>
 								<Smartphone className="h-4 w-4" />
@@ -258,13 +271,14 @@ function SignInPage() {
 							</button>
 						</div>
 
-						{/* Input field */}
 						<div className="space-y-2">
 							<Label
 								htmlFor={`${formId}-identifier`}
-								className="text-foreground font-medium"
+								className="text-slate-700 font-medium text-sm"
 							>
-								{loginMode === "email" ? t("common.email") : t("profile.fields.phone")}
+								{loginMode === "email"
+									? t("common.email")
+									: t("profile.fields.phone")}
 							</Label>
 							{loginMode === "email" ? (
 								<Input
@@ -276,7 +290,7 @@ function SignInPage() {
 									required
 									autoComplete="email"
 									enterKeyHint="next"
-									className="h-12 bg-muted/50 border-transparent focus-visible:bg-background focus-visible:ring-primary/20"
+									className="h-12 bg-slate-50 border-slate-200 focus-visible:ring-emerald-500/20"
 									onKeyDown={(e) => {
 										if (e.key === "Enter" && email) {
 											e.preventDefault();
@@ -294,7 +308,7 @@ function SignInPage() {
 									required
 									autoComplete="tel"
 									enterKeyHint="next"
-									className="h-12 bg-muted/50 border-transparent focus-visible:bg-background focus-visible:ring-primary/20"
+									className="h-12 bg-slate-50 border-slate-200 focus-visible:ring-emerald-500/20"
 									onKeyDown={(e) => {
 										if (e.key === "Enter" && phone) {
 											e.preventDefault();
@@ -305,15 +319,16 @@ function SignInPage() {
 							)}
 						</div>
 
-						{/* Primary action: send OTP */}
 						<Button
 							type="button"
 							size="lg"
-							className="w-full font-medium"
+							className="w-full font-medium bg-emerald-600 hover:bg-emerald-700 text-white"
 							disabled={loading || !identifier}
 							onClick={handleSendOtp}
 						>
-							{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+							{loading && (
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							)}
 							{loginMode === "phone" ? (
 								<>
 									<Smartphone className="mr-2 h-5 w-5" />
@@ -327,15 +342,14 @@ function SignInPage() {
 							)}
 						</Button>
 
-						{/* Password option — email mode only */}
 						{loginMode === "email" && (
 							<>
 								<div className="relative py-2">
 									<div className="absolute inset-0 flex items-center">
-										<div className="w-full border-t border-border/50" />
+										<div className="w-full border-t border-slate-200" />
 									</div>
 									<div className="relative flex justify-center text-xs uppercase">
-										<span className="bg-background px-4 text-muted-foreground">
+										<span className="bg-white px-4 text-slate-400">
 											{t("errors.auth.orDivider")}
 										</span>
 									</div>
@@ -345,7 +359,7 @@ function SignInPage() {
 									type="button"
 									variant="outline"
 									size="lg"
-									className="w-full font-medium"
+									className="w-full font-medium border-slate-200 text-slate-700 hover:bg-slate-50"
 									disabled={!email}
 									onClick={() => {
 										if (email) setStep("password");
@@ -356,26 +370,19 @@ function SignInPage() {
 								</Button>
 							</>
 						)}
-
-						<div className="text-center text-sm text-muted-foreground pt-4">
-							{t("errors.auth.noAccount")}{" "}
-							<a
-								href="/register"
-								className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline"
-							>
-								{t("errors.auth.createAccount")}
-							</a>
-						</div>
 					</div>
 				)}
 
 				{/* Step 2a: Password */}
 				{step === "password" && (
-					<form onSubmit={handlePasswordSignIn} className="space-y-4">
+					<form
+						onSubmit={handlePasswordSignIn}
+						className="space-y-4"
+					>
 						<button
 							type="button"
 							onClick={handleBack}
-							className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
+							className="flex items-center text-sm text-slate-500 hover:text-slate-700 transition-colors mb-2"
 						>
 							<ArrowLeft className="mr-1 h-4 w-4" />
 							{email}
@@ -385,14 +392,14 @@ function SignInPage() {
 							<div className="flex items-center justify-between">
 								<Label
 									htmlFor={`${formId}-password`}
-									className="text-foreground font-medium"
+									className="text-slate-700 font-medium text-sm"
 								>
 									{t("common.password")}
 								</Label>
 								<button
 									type="button"
 									onClick={handleSendOtp}
-									className="text-sm font-medium text-muted-foreground hover:text-primary hover:underline transition-colors"
+									className="text-sm font-medium text-slate-500 hover:text-emerald-600 hover:underline transition-colors"
 									disabled={loading || !email}
 								>
 									{t("errors.auth.otp.forgotPassword")}
@@ -407,17 +414,19 @@ function SignInPage() {
 								autoComplete="current-password"
 								enterKeyHint="done"
 								autoFocus
-								className="h-12 bg-muted/50 border-transparent focus-visible:bg-background focus-visible:ring-primary/20"
+								className="h-12 bg-slate-50 border-slate-200 focus-visible:ring-emerald-500/20"
 							/>
 						</div>
 
 						<Button
 							type="submit"
 							size="lg"
-							className="w-full font-medium mt-4"
+							className="w-full font-medium bg-emerald-600 hover:bg-emerald-700 text-white mt-4"
 							disabled={loading}
 						>
-							{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+							{loading && (
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							)}
 							{t("header.nav.signIn")}
 						</Button>
 					</form>
@@ -429,23 +438,23 @@ function SignInPage() {
 						<button
 							type="button"
 							onClick={handleBack}
-							className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
+							className="flex items-center text-sm text-slate-500 hover:text-slate-700 transition-colors mb-2"
 						>
 							<ArrowLeft className="mr-1 h-4 w-4" />
 							{identifier}
 						</button>
 
 						{otpSent && (
-							<div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-sm text-foreground mb-4">
+							<div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-slate-700 mb-4">
 								{loginMode === "phone" ? (
 									<>
-										<Smartphone className="inline mr-1.5 h-4 w-4 text-primary" />
+										<Smartphone className="inline mr-1.5 h-4 w-4 text-emerald-600" />
 										{t("errors.auth.otp.smsCodeSent")}{" "}
 										<strong>{phone}</strong>
 									</>
 								) : (
 									<>
-										<Mail className="inline mr-1.5 h-4 w-4 text-primary" />
+										<Mail className="inline mr-1.5 h-4 w-4 text-emerald-600" />
 										{t("errors.auth.otp.codeSent")}{" "}
 										<strong>{email}</strong>
 									</>
@@ -456,7 +465,7 @@ function SignInPage() {
 						<div className="space-y-2">
 							<Label
 								htmlFor={`${formId}-otp`}
-								className="text-foreground font-medium"
+								className="text-slate-700 font-medium text-sm"
 							>
 								{t("errors.auth.otp.codeLabel")}
 							</Label>
@@ -469,23 +478,27 @@ function SignInPage() {
 								maxLength={6}
 								value={otpCode}
 								onChange={(e) =>
-									setOtpCode(e.target.value.replace(/\D/g, ""))
+									setOtpCode(
+										e.target.value.replace(/\D/g, ""),
+									)
 								}
 								placeholder="000000"
 								required
 								autoComplete="one-time-code"
 								enterKeyHint="done"
-								className="h-16 border-transparent focus:ring-2 bg-muted/50 focus:bg-background focus:ring-primary/20 text-center text-3xl tracking-[0.5em] font-mono"
+								className="h-16 bg-slate-50 border-slate-200 focus-visible:ring-emerald-500/20 text-center text-3xl tracking-[0.5em] font-mono"
 							/>
 						</div>
 
 						<Button
 							type="submit"
 							size="lg"
-							className="w-full font-medium mt-6"
+							className="w-full font-medium bg-emerald-600 hover:bg-emerald-700 text-white mt-6"
 							disabled={loading || otpCode.length !== 6}
 						>
-							{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+							{loading && (
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							)}
 							{t("header.nav.signIn")}
 						</Button>
 
@@ -493,13 +506,13 @@ function SignInPage() {
 							type="button"
 							onClick={handleSendOtp}
 							disabled={loading}
-							className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 mt-4"
+							className="w-full text-center text-sm text-slate-500 hover:text-emerald-600 transition-colors disabled:opacity-50 mt-4"
 						>
 							{t("errors.auth.otp.resendCode")}
 						</button>
 					</form>
 				)}
 			</div>
-		</AuthLayout>
+		</div>
 	);
 }

@@ -48,26 +48,37 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
 		<ConsularThemeContext.Provider value={consularThemeValue}>
 			<div
 				className={cn(
-					"relative flex bg-background",
-					"min-h-dvh flex-col md:flex-row md:h-screen md:overflow-hidden md:gap-6",
+					"citizen-layout relative flex",
+					"min-h-dvh flex-col md:flex-row md:h-screen md:overflow-hidden",
 					consularThemeValue.consularTheme === "homeomorphism" &&
 						"theme-homeomorphism",
 				)}
 			>
-				<div className="hidden md:block p-6 pr-0!">
-					<MySpaceSidebar
-						isExpanded={isExpanded}
-						onToggle={() => setIsExpanded((prev) => !prev)}
-					/>
+				{/* Gabon Tricolor Stripe — top decorative bar */}
+				<div className="" />
+
+				{/* Sidebar */}
+				<div className="hidden md:block p-3 pr-0">
+					<div className="h-full rounded-2xl border border-border bg-card overflow-hidden">
+						<MySpaceSidebar
+							isExpanded={isExpanded}
+							onToggle={() => setIsExpanded((prev) => !prev)}
+						/>
+					</div>
 				</div>
+
+				{/* Main Content */}
 				<main
 					className={cn(
-						"flex-1 overflow-y-auto px-3 py-3 md:px-6 md:py-6 pb-24 md:pb-6 md:pl-0!",
+						"flex-1 overflow-y-auto citizen-scrollbar",
+						"px-3 pt-3 pb-20 md:px-5 md:pt-3 md:pb-3 md:pl-3",
 						className,
 					)}
 				>
 					{children}
 				</main>
+
+				{/* Mobile Navigation */}
 				<MobileNavBar />
 			</div>
 		</ConsularThemeContext.Provider>
@@ -116,35 +127,17 @@ export function MySpaceHeader() {
 				<div className="flex w-full items-start justify-between md:w-auto">
 					{/* Left: Greeting + Dossier */}
 					<div className="flex flex-col gap-3">
-						<h1 className="text-lg md:text-2xl font-bold">
+						<h1 className="text-lg md:text-2xl font-bold ">
 							{t("common.greeting", {
 								firstName: userData?.firstName ?? userData?.name ?? "",
 							})}
 						</h1>
-						{latestRegistration && (
-							<div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
-								<span className="font-medium text-foreground">
-									{t("mySpace.header.dossier")} :
-								</span>
-								{requestReference && (
-									<span className="font-mono text-xs font-semibold text-primary">
-										{requestReference}
-									</span>
-								)}
-								{orgName && (
-									<span className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-full">
-										<Building2 className="h-3 w-3" />
-										<span>{t("mySpace.header.managedBy")}:</span>
-										<span className="font-medium">{orgName}</span>
-									</span>
-								)}
-							</div>
-						)}
+
 						{needsRegistration && (
 							<Button
 								variant="outline"
 								size="xs"
-								className="w-max rounded-full border-primary/30 text-primary hover:bg-primary/10 hover:text-primary gap-1.5"
+								className="w-max rounded-full border-teal-500/30 text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 gap-1.5"
 								onClick={() => setShowRegistrationDialog(true)}
 							>
 								<Building2 className="h-3.5 w-3.5" />
@@ -157,31 +150,45 @@ export function MySpaceHeader() {
 					</div>
 
 					{/* Notification Bell - Mobile only (Top Right) */}
-					<NotificationDropdown className="md:hidden h-10 w-10 bg-card rounded-full shrink-0" />
+					<NotificationDropdown className="md:hidden h-10 w-10  bg-card rounded-full shrink-0" />
 				</div>
 
 				{/* Right: Action buttons - Desktop only */}
 				<div className="hidden md:flex items-center gap-3">
+					{/* Organisation consulaire */}
+					{orgName && (
+						<span className="inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20 text-xs font-semibold mr-2">
+							<Building2 className="h-3.5 w-3.5" />
+							{t("mySpace.header.managedBy", "Géré par")} : {orgName}
+						</span>
+					)}
+
 					{/* Signaler mon déplacement */}
 					{canNotify && (
 						<Button
 							variant="outline"
 							size="sm"
+							className="h-8 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 hover:text-amber-800 dark:hover:text-amber-300 border border-amber-500/20 font-semibold"
 							onClick={() => setShowNotificationDialog(true)}
 						>
-							<Plane className="mr-1.5 h-4 w-4" />
-							{t("mySpace.notification.cta")}
+							<Plane className="mr-1.5 h-3.5 w-3.5" />
+							Signaler ma présence
 						</Button>
 					)}
 					{/* Nouvelle demande */}
-					<Button size="sm" asChild>
+					<Button 
+						variant="outline"
+						size="sm" 
+						className="h-8 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 hover:text-blue-700 dark:hover:text-blue-300 border border-blue-500/20 font-semibold" 
+						asChild
+					>
 						<Link to="/services">
-							<Plus className="mr-1.5 h-4 w-4" />
-							{t("mySpace.actions.newRequest")}
+							<Plus className="mr-1.5 h-3.5 w-3.5" />
+							Nouvelle demande
 						</Link>
 					</Button>
 					{/* Notifications - Desktop */}
-					<NotificationDropdown className="h-10 w-10 bg-card rounded-full shrink-0" />
+					<NotificationDropdown className="h-10 w-10  bg-card rounded-full shrink-0" />
 				</div>
 			</header>
 

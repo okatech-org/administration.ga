@@ -5,6 +5,7 @@ import {
 	ArrowLeft,
 	BookOpen,
 	BookOpenCheck,
+	Building2,
 	Calendar,
 	CheckCircle2,
 	Clock,
@@ -82,6 +83,11 @@ const categoryConfig: Record<
 		color: "text-gray-600 dark:text-gray-400",
 		bgColor: "bg-gray-500/10",
 	},
+	[ServiceCategory.Declaration]: {
+		icon: Building2,
+		color: "text-indigo-600 dark:text-indigo-400",
+		bgColor: "bg-indigo-500/10",
+	},
 };
 
 const categoryLabels: Record<string, string> = {
@@ -92,6 +98,7 @@ const categoryLabels: Record<string, string> = {
 	[ServiceCategory.Certification]: "Légalisation",
 	[ServiceCategory.Assistance]: "Assistance d'Urgence",
 	[ServiceCategory.Other]: "Autre",
+	[ServiceCategory.Declaration]: "Déclaration",
 };
 
 function ServiceDetailPage() {
@@ -239,7 +246,7 @@ function ServiceDetailPage() {
 		<div className="min-h-screen bg-background flex flex-col">
 			<div className="flex-1">
 				{/* Header */}
-				<section className="bg-gradient-to-b from-primary/10 to-background py-12 px-6">
+				<section className="bg-linear-to-b from-primary/10 to-background py-12 px-6">
 					<div className="max-w-4xl mx-auto">
 						<Button asChild variant="ghost" size="sm" className="mb-6">
 							<Link to="/services">

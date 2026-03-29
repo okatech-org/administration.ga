@@ -49,6 +49,7 @@ export const ModuleCode = {
 
   // Communication
   communication: "communication",
+  correspondance: "correspondance",
   digital_mail: "digital_mail",
   meetings: "meetings",
   tutorials: "tutorials",
@@ -112,6 +113,7 @@ export const moduleCodeValidator = v.union(
   v.literal(ModuleCode.payments),
   // Communication
   v.literal(ModuleCode.communication),
+  v.literal(ModuleCode.correspondance),
   v.literal(ModuleCode.digital_mail),
   v.literal(ModuleCode.meetings),
   v.literal(ModuleCode.tutorials),
@@ -305,6 +307,15 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     description: { fr: "Publications et notifications", en: "Publications and notifications" },
     icon: "Megaphone",
     color: "text-sky-500",
+    category: "communication",
+    isCore: false,
+  },
+  [ModuleCode.correspondance]: {
+    code: ModuleCode.correspondance,
+    label: { fr: "iCorrespondance", en: "iCorrespondance" },
+    description: { fr: "Gestion des procédures administratives et correspondance officielle", en: "Administrative procedures and official correspondence management" },
+    icon: "Mail",
+    color: "text-cyan-500",
     category: "communication",
     isCore: false,
   },

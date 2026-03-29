@@ -1,7 +1,7 @@
 import { api } from "@convex/_generated/api";
 import type { ParentalRole } from "@convex/lib/constants";
 import { ChildProfileStatus, Gender } from "@convex/lib/constants";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useParams } from "@tanstack/react-router";
 import {
 	Baby,
 	Calendar,
@@ -17,9 +17,11 @@ import { motion } from "motion/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/my-space/empty-state";
+import { FlatCard } from "@/components/my-space/flat-card";
+import { PageHeader } from "@/components/my-space/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Dialog,
 	DialogContent,
@@ -43,8 +45,15 @@ import {
 import { captureEvent } from "@/lib/analytics";
 
 export const Route = createFileRoute("/my-space/children")({
-	component: ChildrenPage,
+	component: ChildrenLayout,
 });
+
+function ChildrenLayout() {
+	const params = useParams({ strict: false });
+	const hasChildRoute = "childId" in params;
+	if (hasChildRoute) return <Outlet />;
+	return <ChildrenPage />;
+}
 
 type ChildProfile = {
 	_id: string;
@@ -85,55 +94,36 @@ function ChildrenPage() {
 
 	return (
 		<div className="space-y-6">
-			{/* Header */}
-			<motion.div
-				initial={{ opacity: 0, y: 10 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.2 }}
-				className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
-			>
-				<div>
-					<h1 className="text-2xl font-bold flex items-center gap-2">
-						<Users className="h-6 w-6 text-primary" />
-						{t("children.title")}
-					</h1>
-					<p className="text-muted-foreground text-sm mt-1">
-						{t("children.subtitle")}
-					</p>
-				</div>
-				<Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-					<DialogTrigger asChild>
-						<Button>
-							<Plus className="h-4 w-4 mr-2" />
-							{t("children.add")}
-						</Button>
-					</DialogTrigger>
-					<AddChildDialog onClose={() => setIsAddDialogOpen(false)} />
-				</Dialog>
-			</motion.div>
+			<PageHeader
+				title={t("children.title")}
+				subtitle={t("children.subtitle")}
+				icon={<Users className="h-5 w-5 text-pink-600 dark:text-pink-400" />}
+				iconBgClass="bg-pink-500/10"
+				actions={
+					<Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+						<DialogTrigger asChild>
+							<Button>
+								<Plus className="h-4 w-4 mr-2" />
+								{t("children.add.button", "Ajouter un enfant")}
+							</Button>
+						</DialogTrigger>
+						<AddChildDialog onClose={() => setIsAddDialogOpen(false)} />
+					</Dialog>
+				}
+			/>
 
 			{/* Children List */}
 			{activeChildren.length === 0 ? (
-				<motion.div
-					initial={{ opacity: 0 }}
-					animate={{ opacity: 1 }}
-					transition={{ duration: 0.2, delay: 0.1 }}
-				>
-					<Card>
-						<CardContent className="flex flex-col items-center justify-center py-12">
-							<Baby className="h-16 w-16 text-muted-foreground/30 mb-4" />
-							<h3 className="text-lg font-medium text-muted-foreground">
-								{t("children.empty.title")}
-							</h3>
-							<p className="text-sm text-muted-foreground text-center mt-1">
-								{t(
-									"children.empty.description",
-									"Ajoutez vos enfants mineurs pour gérer leurs démarches consulaires.",
-								)}
-							</p>
-						</CardContent>
-					</Card>
-				</motion.div>
+				<FlatCard>
+					<EmptyState
+						icon={<Baby />}
+						title={t("children.empty.title")}
+						description={t(
+							"children.empty.description",
+							"Ajoutez vos enfants mineurs pour gérer leurs démarches consulaires.",
+						)}
+					/>
+				</FlatCard>
 			) : (
 				<motion.div
 					initial={{ opacity: 0 }}
@@ -156,6 +146,7 @@ function ChildrenPage() {
 
 function ChildCard({ child, index }: { child: ChildProfile; index: number }) {
 	const { t } = useTranslation();
+	const navigate = useNavigate();
 	const { mutate: remove, isPending: isRemoving } = useConvexMutationQuery(
 		api.functions.childProfiles.remove,
 	);
@@ -170,13 +161,13 @@ function ChildCard({ child, index }: { child: ChildProfile; index: number }) {
 
 	const statusColors: Record<ChildProfileStatus, string> = {
 		[ChildProfileStatus.Draft]:
-			"bg-gray-500/10 text-gray-500 border-gray-500/30",
+			"bg-zinc-500/10 text-zinc-600 border-zinc-500/20",
 		[ChildProfileStatus.Pending]:
-			"bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
+			"bg-amber-500/10 text-amber-600 border-amber-500/20",
 		[ChildProfileStatus.Active]:
-			"bg-green-500/10 text-green-600 border-green-500/30",
+			"bg-green-500/10 text-green-600 border-green-500/20",
 		[ChildProfileStatus.Inactive]:
-			"bg-red-500/10 text-red-600 border-red-500/30",
+			"bg-red-500/10 text-red-600 border-red-500/20",
 	};
 
 	const calculateAge = (birthDate?: number): string => {
@@ -215,17 +206,17 @@ function ChildCard({ child, index }: { child: ChildProfile; index: number }) {
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.2, delay: index * 0.05 }}
 		>
-			<Card className="group hover:shadow-md transition-shadow">
-				<CardHeader className="pb-2">
+			<FlatCard className="group hover:shadow-md transition-shadow">
+				<div className="p-4 pb-2">
 					<div className="flex items-start justify-between">
 						<div className="flex items-center gap-3">
-							<div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-								<User className="h-5 w-5 text-primary" />
+							<div className="h-10 w-10 rounded-full bg-pink-500/10 flex items-center justify-center">
+								<User className="h-5 w-5 text-pink-600 dark:text-pink-400" />
 							</div>
 							<div>
-								<CardTitle className="text-lg">
+								<h3 className="text-lg font-semibold">
 									{child.identity.firstName} {child.identity.lastName}
-								</CardTitle>
+								</h3>
 								<p className="text-sm text-muted-foreground">
 									{calculateAge(child.identity.birthDate)}
 								</p>
@@ -235,8 +226,8 @@ function ChildCard({ child, index }: { child: ChildProfile; index: number }) {
 							{statusLabels[child.status]}
 						</Badge>
 					</div>
-				</CardHeader>
-				<CardContent className="space-y-3">
+				</div>
+				<div className="px-4 pb-4 space-y-3">
 					{/* Birth info */}
 					{child.identity.birthDate && (
 						<div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -274,7 +265,7 @@ function ChildCard({ child, index }: { child: ChildProfile; index: number }) {
 
 					{/* Actions */}
 					<div className="flex gap-2 pt-2">
-						<Button variant="outline" size="sm" className="flex-1">
+						<Button variant="outline" size="sm" className="flex-1" onClick={() => navigate({ to: `/my-space/children/${child._id}` as any })}>
 							<Eye className="h-4 w-4 mr-1" />
 							{t("common.view")}
 						</Button>
@@ -327,8 +318,8 @@ function ChildCard({ child, index }: { child: ChildProfile; index: number }) {
 							</DialogContent>
 						</Dialog>
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 		</motion.div>
 	);
 }

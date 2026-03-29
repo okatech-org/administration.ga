@@ -2,7 +2,9 @@
 
 import { Link, useLocation } from "@tanstack/react-router";
 import {
+	Archive,
 	BarChart3,
+	Bot,
 	Briefcase,
 	Building2,
 	Calendar,
@@ -10,8 +12,11 @@ import {
 	ChevronsRight,
 	CreditCard,
 	FileText,
+	FolderOpen,
 	Home,
 	IdCard,
+	Mail,
+	MessageSquare,
 	Moon,
 	Newspaper,
 	Phone,
@@ -69,7 +74,7 @@ function SidebarText({
 	return (
 		<span
 			className={cn(
-				"truncate text-sm whitespace-nowrap transition-[opacity] duration-200",
+				"truncate text-sm whitespace-nowrap transition-opacity duration-200",
 				isExpanded ? "opacity-100 delay-100" : "opacity-0 w-0 overflow-hidden",
 				className,
 			)}
@@ -147,6 +152,51 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 					url: "/payments",
 					icon: CreditCard,
 					requires: "finance.view",
+				},
+			],
+		},
+		{
+			label: "Communication",
+			items: [
+				{
+					title: "iAsted",
+					url: "/iasted",
+					icon: Bot,
+				},
+				{
+					title: "iCom",
+					url: "/icom",
+					icon: MessageSquare,
+				},
+				{
+					title: "iBoîte",
+					url: "/iboite",
+					icon: Mail,
+				},
+				{
+					title: "iCorrespondance",
+					url: "/icorrespondance",
+					icon: FolderOpen,
+				},
+			],
+		},
+		{
+			label: "Modules Métier",
+			items: [
+				{
+					title: "iDocument",
+					url: "/idocument",
+					icon: FileText,
+				},
+				{
+					title: "iAgenda",
+					url: "/iagenda",
+					icon: Calendar,
+				},
+				{
+					title: "iArchive",
+					url: "/iarchive",
+					icon: Archive,
 				},
 			],
 		},

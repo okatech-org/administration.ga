@@ -4,6 +4,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   BookOpen,
   BookOpenCheck,
+  Building2,
   FileCheck,
   FileText,
   Globe,
@@ -114,6 +115,13 @@ function ServicesPage() {
         label: t(`services.categoriesMap.${ServiceCategory.Other}`),
         slug: ServiceCategory.Other,
       },
+      [ServiceCategory.Declaration]: {
+        icon: Building2,
+        color: "text-indigo-600 dark:text-indigo-400",
+        bgColor: "bg-indigo-500/10",
+        label: t("services.category.declaration", "Déclarations"),
+        slug: ServiceCategory.Declaration,
+      },
     }),
     [ServiceCategory],
   );
@@ -200,7 +208,7 @@ function ServicesPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-primary/10 to-background py-16 px-6">
+      <section className="bg-linear-to-b from-primary/10 to-background py-16 px-6">
         <div className="max-w-7xl mx-auto text-center">
           <Badge
             variant="secondary"

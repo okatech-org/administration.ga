@@ -4124,5 +4124,108 @@
 				"debug": "DEBUG"
 			}
 		}
+	},
+	"agentLanding": {
+		"navbar": {
+			"home": "Home",
+			"missions": "Missions",
+			"values": "Values",
+			"resources": "Resources",
+			"tutorials": "Tutorials",
+			"agentSpace": "Agent Portal"
+		},
+		"hero": {
+			"badge": "Agent Portal — Exclusive",
+			"title": "The",
+			"titleGradient": "Diplomatic",
+			"titleSuffix": "& Consular Doctrine.",
+			"description": "Build, represent, and assist. In accordance with the Vienna Conventions, this digital space modernizes the sovereign mission of Gabonese diplomatic and consular personnel worldwide.",
+			"stats": {
+				"missions": {
+					"value": "40+",
+					"label": "Diplomatic missions"
+				},
+				"agents": {
+					"value": "180+",
+					"label": "Accredited agents"
+				},
+				"conventions": {
+					"value": "3",
+					"label": "Vienna Conventions"
+				}
+			},
+			"nextPanel": "Missions"
+		},
+		"missions": {
+			"badge": "Our Pillars",
+			"title": "The Digital Exercise",
+			"titleGradient": "of our Missions",
+			"subtitle": "The application aligns with the fundamental pillars of international relations and assistance to compatriots.",
+			"items": [
+				{
+					"title": "Representation & Negotiation",
+					"description": "In accordance with the Vienna Convention (1961), the Correspondence module secures your exchanges (verbal notes, memoranda) to the receiving State or Central authority."
+				},
+				{
+					"title": "Consular Protection",
+					"description": "The management of requests and registrations (Vienna Convention, 1963) ensures rapid protection and assistance to our nationals in distress."
+				},
+				{
+					"title": "Archive Inviolability",
+					"description": "iDocument and iArchive transform the diplomatic pouch into an inviolable digital vault, guaranteeing the secrecy of missions."
+				}
+			]
+		},
+		"values": {
+			"feature1": {
+				"title": "Administration Modernization",
+				"p1": "The transition to this portal meets the requirement of a modern, agile and responsive administration. Diplomatic personnel are no longer hampered by physical bureaucratic burdens. Each document is digitized, tracked, and approved through a clear hierarchical chain.",
+				"p2": "The development of friendly, cultural and economic relations requires responsiveness: this is the fundamental function of the integrated agenda and communication modules."
+			},
+			"feature2": {
+				"title": "The Consular Division",
+				"description": "Issuance of visas, passport renewal, establishment of civil status documents: consular posts are the primary showcase of the Gabonese State. Digitization enables accelerated delivery.",
+				"points": [
+					"Registration of resident citizens",
+					"Rapid document legalization",
+					"Organization of diplomatic and courtesy visas"
+				]
+			}
+		},
+		"resources": {
+			"header": "Document Base",
+			"subtitle": "International legal framework & digital compliance",
+			"tabs": {
+				"overview": "Overview",
+				"conventions": "Vienna Conventions",
+				"atouts": "Platform Strengths"
+			},
+			"overview": {
+				"description": "Diplomate.ga is the digital extension of obligations arising from the Vienna Conventions. Each module addresses a specific article, ensuring full legal compliance of Gabonese diplomatic and consular operations.",
+				"conventionsTitle": "Vienna Conventions",
+				"conventionsDesc": "Founding texts of international diplomatic and consular law",
+				"atoutsTitle": "Platform Strengths",
+				"atoutsDesc": "How each module implements the requirements of the Conventions",
+				"explore": "Explore →",
+				"compliance": "Compliance coverage"
+			}
+		},
+		"tutorials": {
+			"header": "Usage Tutorials",
+			"subtitle": "Practical guides to master each module",
+			"levels": {
+				"all": "All",
+				"beginner": "Beginner",
+				"intermediate": "Intermediate",
+				"advanced": "Advanced"
+			},
+			"tutorial": "tutorial",
+			"tutorials": "tutorials",
+			"cta": {
+				"title": "Ready to serve the State?",
+				"description": "Log in to your agent space to access the sovereignty instruments of the Gabonese Republic.",
+				"button": "Sign in"
+			}
+		}
 	}
 }

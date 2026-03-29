@@ -13,6 +13,7 @@ import AppConvexProvider from "@workspace/api/provider";
 import I18nProvider from "@workspace/i18n/provider";
 import { PostHogProvider } from "@/integrations/posthog/provider";
 import { PostHogPageviewTracker } from "@/integrations/posthog/pageview-tracker";
+import { DevAccountSwitcher } from "@/components/auth/DevAccountSwitcher";
 import { api } from "@convex/_generated/api";
 import appCss from "../styles.css?url";
 
@@ -91,6 +92,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 							<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
 								{children}
 								<Toaster richColors />
+								<DevAccountSwitcher />
 							</ThemeProvider>
 						</PostHogProvider>
 					</AppConvexProvider>
