@@ -14,12 +14,13 @@
   "dependencies": {
     "@workspace/desktop-shared": "workspace:*",
     "@workspace/ui": "workspace:*",
+    "clsx": "^2.1.1",
+    "koffi": "^2.15.2",
     "lucide-react": "^1.7.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^3.5.0",
-    "sonner": "^2.0.7"
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4",

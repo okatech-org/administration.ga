@@ -1,90 +1,144 @@
 import type {
   EvolisDevice,
   EvolisInfo,
-  EvolisRibbon,
   PrinterStatus,
   PrintResult,
 } from "@workspace/desktop-shared/printer-types"
+import {
+  evolisVersion,
+  evolisListDevices,
+  evolisOpen,
+  evolisClose,
+  evolisReserve,
+  evolisRelease,
+  evolisClearErrors,
+  evolisGetInfo,
+  evolisGetRibbon,
+  evolisGetState,
+  evolisGetErrorName,
+  evolisPrintFromPath,
+} from "../native/evolis-binding"
 
-/**
- * High-level printer service that wraps the N-API Evolis addon.
- *
- * For Phase 1, this uses a STUB implementation that simulates printer behavior.
- * Once the N-API addon is built, the stub calls will be replaced with real SDK calls.
- */
+const LINK_NAMES: Record<number, "tcp" | "usb" | "file"> = {
+  1: "tcp",
+  2: "usb",
+  3: "file",
+}
+
 export class PrinterService {
-  private connectedPrinter: string | null = null
+  private printerHandle: unknown = null
+  private printerName: string | null = null
 
   async listDevices(): Promise<EvolisDevice[]> {
-    // TODO: Replace with real N-API addon call: evolisAddon.listDevices()
-    console.log("[PrinterService] Listing devices (stub)")
-    return [
-      {
-        id: "stub-primacy2-001",
-        name: "Evolis Primacy 2",
-        displayName: "Evolis Primacy 2 (USB)",
-        uri: "usb://EVOLIS/Primacy%202",
-        mark: "Evolis",
-        model: "Primacy 2",
-        isSupervised: false,
-        isOnline: true,
-        link: "usb",
-        driverVersion: "7.0.0",
-      },
-    ]
+    try {
+      console.log(`[PrinterService] SDK version: ${evolisVersion()}`)
+      const nativeDevices = evolisListDevices()
+      return nativeDevices.map((d) => ({
+        id: d.id,
+        name: d.name,
+        displayName: d.displayName || d.name,
+        uri: d.uri,
+        mark: d.mark.toString(),
+        model: d.model.toString(),
+        isSupervised: d.isSupervised,
+        isOnline: d.isOnline,
+        link: LINK_NAMES[d.link] ?? "usb",
+        driverVersion: d.driverVersion,
+      }))
+    } catch (err) {
+      console.error("[PrinterService] listDevices error:", err)
+      throw err
+    }
   }
 
   async connect(name: string): Promise<EvolisInfo> {
-    // TODO: Replace with real N-API addon call:
-    // const handle = evolisAddon.open(name)
-    // evolisAddon.reserve(handle, 5000)
-    // return evolisAddon.getInfo(handle)
-    console.log(`[PrinterService] Connecting to: ${name} (stub)`)
-    this.connectedPrinter = name
-    return {
-      name,
-      model: "Primacy 2",
-      modelName: "Evolis Primacy 2",
-      serialNumber: "SN-STUB-001",
-      fwVersion: "1.0.0",
-      hasFlip: true,
-      hasMagEnc: true,
-      hasContactLessEnc: false,
-      hasSmartEnc: false,
-      hasLaminator: false,
-      hasScanner: false,
-      hasLock: false,
+    try {
+      console.log(`[PrinterService] Opening: ${name}`)
+      this.printerHandle = evolisOpen(name)
+      this.printerName = name
+
+      console.log("[PrinterService] Reserving printer...")
+      const session = evolisReserve(this.printerHandle, 5000)
+      console.log(`[PrinterService] Session: ${session}`)
+
+      const info = evolisGetInfo(this.printerHandle)
+      console.log("[PrinterService] Info:", info)
+
+      return {
+        name: info.name,
+        model: info.model.toString(),
+        modelName: info.modelName,
+        serialNumber: info.serialNumber,
+        fwVersion: info.fwVersion,
+        hasFlip: info.hasFlip,
+        hasMagEnc: info.hasMagEnc,
+        hasContactLessEnc: info.hasContactLessEnc,
+        hasSmartEnc: info.hasSmartEnc,
+        hasLaminator: info.hasLaminator,
+        hasScanner: info.hasScanner,
+        hasLock: info.hasLock,
+      }
+    } catch (err) {
+      this.printerHandle = null
+      this.printerName = null
+      console.error("[PrinterService] connect error:", err)
+      throw err
     }
   }
 
   async disconnect(): Promise<void> {
-    // TODO: Replace with real N-API addon call:
-    // evolisAddon.release(handle)
-    // evolisAddon.close(handle)
-    console.log("[PrinterService] Disconnecting (stub)")
-    this.connectedPrinter = null
+    if (this.printerHandle) {
+      try {
+        evolisRelease(this.printerHandle)
+      } catch {
+        // Ignore release errors
+      }
+      try {
+        evolisClose(this.printerHandle)
+      } catch {
+        // Ignore close errors
+      }
+      this.printerHandle = null
+      this.printerName = null
+      console.log("[PrinterService] Disconnected")
+    }
   }
 
   async getStatus(): Promise<PrinterStatus> {
-    if (!this.connectedPrinter) {
+    if (!this.printerHandle) {
       return { connected: false, ribbon: null, state: "offline", errors: [] }
     }
 
-    // TODO: Replace with real N-API addon calls:
-    // const ribbon = evolisAddon.getRibbon(handle)
-    // const state = evolisAddon.getState(handle)
-    const ribbon: EvolisRibbon = {
-      type: "YMCKO",
-      description: "Color YMCKO",
-      remaining: 180,
-      capacity: 200,
-    }
+    try {
+      const ribbon = evolisGetRibbon(this.printerHandle)
+      const state = evolisGetState(this.printerHandle)
 
-    return {
-      connected: true,
-      ribbon,
-      state: "ready",
-      errors: [],
+      const stateMap: Record<string, "ready" | "warning" | "error" | "offline"> = {
+        ready: "ready",
+        warning: "warning",
+        error: "error",
+        off: "offline",
+      }
+
+      return {
+        connected: true,
+        ribbon: {
+          type: ribbon.typeName,
+          description: ribbon.description,
+          remaining: ribbon.remaining,
+          capacity: ribbon.capacity,
+        },
+        state: stateMap[state.majorString] ?? "offline",
+        errors: [],
+      }
+    } catch (err) {
+      console.error("[PrinterService] getStatus error:", err)
+      return {
+        connected: true,
+        ribbon: null,
+        state: "error",
+        errors: [String(err)],
+      }
     }
   }
 
@@ -93,30 +147,40 @@ export class PrinterService {
     backImagePath?: string
     duplex?: boolean
   }): Promise<PrintResult> {
-    if (!this.connectedPrinter) {
-      return { success: false, errorCode: -1, errorMessage: "No printer connected" }
+    if (!this.printerHandle) {
+      return {
+        success: false,
+        errorCode: -1,
+        errorMessage: "Aucune imprimante connectee",
+      }
     }
 
-    // TODO: Replace with real N-API addon calls:
-    // evolisAddon.clearErrors(handle)
-    // evolisAddon.setInputTray(handle, 'feeder')
-    // evolisAddon.setOutputTray(handle, 'standard')
-    // evolisAddon.setErrorTray(handle, 'error')
-    // evolisAddon.printInitFromDriver(handle)
-    // evolisAddon.printSetImagePath(handle, 'front', options.frontImagePath)
-    // if (options.duplex && options.backImagePath) {
-    //   evolisAddon.printSetSetting(handle, 'Duplex', 'HORIZONTAL')
-    //   evolisAddon.printSetSetting(handle, 'GDuplexType', 'DUPLEX_CC')
-    //   evolisAddon.printSetImagePath(handle, 'back', options.backImagePath)
-    // }
-    // const rc = evolisAddon.printExec(handle)
+    try {
+      console.log("[PrinterService] Printing:", options)
 
-    console.log(`[PrinterService] Printing (stub):`, options)
+      const rc = evolisPrintFromPath(
+        this.printerHandle,
+        options.frontImagePath,
+        options.duplex ? options.backImagePath : undefined
+      )
 
-    return {
-      success: true,
-      errorCode: 0,
-      errorMessage: null,
+      if (rc !== 0) {
+        const errName = evolisGetErrorName(rc)
+        return {
+          success: false,
+          errorCode: rc,
+          errorMessage: `Erreur impression: ${errName} (code ${rc})`,
+        }
+      }
+
+      return { success: true, errorCode: 0, errorMessage: null }
+    } catch (err) {
+      console.error("[PrinterService] print error:", err)
+      return {
+        success: false,
+        errorCode: -999,
+        errorMessage: String(err),
+      }
     }
   }
 }
