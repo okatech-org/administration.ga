@@ -75,12 +75,26 @@
     border-color: oklch(0.55 0.16 145.5 / 0.4);
   }
 
+  /* Card landing dark — glassmorphism sur fond sombre */
+  .card-landing-dark {
+    @apply rounded-3xl border transition-all duration-300 ease-out;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+  }
+  .card-landing-dark:hover {
+    @apply -translate-y-1;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: oklch(0.55 0.16 145.5 / 0.4);
+    box-shadow: 0 20px 60px -15px oklch(0.55 0.16 145.5 / 0.2);
+  }
+
   /* Badge pill landing */
   .badge-pill-landing {
     @apply inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase;
     background: oklch(0.5 0.18 145.5 / 0.12);
     color: oklch(0.65 0.18 145.5);
-    border: 1px solid oklch(0.5 0.18 145.5 / 0.2);
+    border: 1px solid oklch(0.5 0.18 145.5 / 0.3);
   }
   .dark .badge-pill-landing {
     background: oklch(0.55 0.16 145.5 / 0.15);
@@ -115,11 +129,27 @@
     );
   }
 
-  /* Hero stats bar */
+  /* Hero stats bar — contraste WCAG amélioré */
   .hero-stats-bar {
-    background: rgba(0, 0, 0, 0.45);
+    background: rgba(0, 0, 0, 0.65);
     backdrop-filter: blur(12px);
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+}
+
+@layer utilities {
+  /* ── WCAG 2.1 AA — Accessibilité ─────────────────────────── */
+
+  /* Focus ring global pour les éléments interactifs */
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-xl;
+  }
+
+  /* Lien skip-to-content (visible uniquement au focus clavier) */
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100]
+           focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg
+           focus:shadow-lg focus:text-sm focus:font-semibold;
   }
 }
 
@@ -127,11 +157,11 @@
   /* Glassmorphism navbar */
   .navbar-glass {
     @apply backdrop-blur-xl border-b;
-    background: oklch(1 0 0 / 0.85);
+    background: oklch(1 0 0 / 0.92);
     border-color: oklch(0 0 0 / 0.06);
   }
   .dark .navbar-glass {
-    background: oklch(0.14 0 0 / 0.88);
+    background: oklch(0.14 0 0 / 0.95);
     border-color: oklch(1 0 0 / 0.06);
   }
 

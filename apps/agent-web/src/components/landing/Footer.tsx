@@ -43,13 +43,13 @@ export function Footer() {
 						<ul className="space-y-3">
 							{NAV_LINKS.map((link) => (
 								<li key={link.href}>
-									<button
-										type="button"
-										onClick={() => scrollTo(link.href)}
-										className="text-slate-400 hover:text-white text-sm transition-colors duration-200"
+									<a
+										href={link.href}
+										onClick={(e) => { e.preventDefault(); scrollTo(link.href); }}
+										className="text-slate-400 hover:text-white text-sm transition-colors duration-200 focus-ring inline-block"
 									>
 										{link.label}
-									</button>
+									</a>
 								</li>
 							))}
 						</ul>
@@ -74,7 +74,7 @@ export function Footer() {
 							<li>
 								<a
 									href="mailto:contact@diplomatie.ga"
-									className="hover:text-emerald-400 transition-colors duration-200"
+									className="hover:text-emerald-400 transition-colors duration-200 focus-ring inline-block"
 								>
 									contact@diplomatie.ga
 								</a>

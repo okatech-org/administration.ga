@@ -24,9 +24,9 @@ const LEVEL_I18N_KEY: Record<Level, string> = {
 };
 
 const LEVEL_STYLES: Record<Level, string> = {
-	Débutant: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
-	Intermédiaire: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
-	Avancé: "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20",
+	Débutant: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border-emerald-500/25",
+	Intermédiaire: "bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-500/25",
+	Avancé: "bg-rose-500/15 text-rose-800 dark:text-rose-200 border-rose-500/25",
 };
 
 interface Tutorial {
@@ -56,35 +56,35 @@ function TutorialCard({ tutorial, t }: { tutorial: Tutorial; t: (key: string) =>
 	const Icon = tutorial.icon;
 
 	return (
-		<div className="card-landing p-5 group flex flex-col">
+		<div className="card-landing-dark p-5 group flex flex-col">
 			{/* Top: icon + module */}
 			<div className="flex items-center gap-3 mb-3">
 				<div className={cn("p-2 rounded-xl shrink-0", tutorial.iconBg)}>
-					<Icon className={cn("size-4", tutorial.iconColor)} />
+					<Icon aria-hidden="true" className={cn("size-4", tutorial.iconColor)} />
 				</div>
 				<div className="flex-1 min-w-0">
-					<span className="text-[10px] bg-slate-100 dark:bg-muted text-muted-foreground px-2 py-0.5 rounded-full border border-slate-200 dark:border-border">
+					<span className="text-[10px] bg-white/10 text-slate-300 px-2 py-0.5 rounded-full border border-white/15">
 						{tutorial.module}
 					</span>
 				</div>
 			</div>
 
 			{/* Title */}
-			<h4 className="text-sm font-display font-bold text-foreground mb-1.5 tracking-tight leading-snug">
+			<h4 className="text-sm font-display font-bold text-white mb-1.5 tracking-tight leading-snug">
 				{tutorial.title}
 			</h4>
 
 			{/* Summary */}
-			<p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 flex-1">
+			<p className="text-xs text-slate-400 leading-relaxed line-clamp-2 flex-1">
 				{tutorial.summary}
 			</p>
 
 			{/* Bottom: level + duration */}
-			<div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+			<div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
 				<span className={cn("text-[10px] px-2 py-0.5 rounded-full border font-medium", LEVEL_STYLES[tutorial.level])}>
 					{t(LEVEL_I18N_KEY[tutorial.level])}
 				</span>
-				<span className="flex items-center gap-1 text-[10px] text-muted-foreground ml-auto">
+				<span className="flex items-center gap-1 text-[10px] text-slate-400 ml-auto">
 					<Clock className="size-2.5" />{tutorial.duration}
 				</span>
 			</div>
@@ -108,7 +108,7 @@ export function TutorielsPanel() {
 	};
 
 	return (
-		<section className="h-full flex flex-col bg-slate-50 dark:bg-background/50">
+		<section aria-label="Tutoriels d'utilisation" className="h-full flex flex-col bg-white/3">
 			<div className="container mx-auto px-6 lg:px-12 pt-20 lg:pt-24 flex flex-col flex-1 min-h-0">
 				{/* Header */}
 				<motion.div
@@ -118,11 +118,11 @@ export function TutorielsPanel() {
 					className="text-center mb-6"
 				>
 					<span className="badge-pill-landing mb-4">Tutoriels</span>
-					<h2 className="text-2xl lg:text-3xl font-display font-bold text-foreground tracking-tight">
+					<h2 className="text-2xl lg:text-3xl font-display font-bold text-white tracking-tight">
 						Guides{" "}
 						<span className="text-gradient-primary">Pratiques</span>
 					</h2>
-					<p className="text-muted-foreground text-sm mt-2">
+					<p className="text-slate-400 text-sm mt-2">
 						{t("agentLanding.tutorials.subtitle")}
 					</p>
 				</motion.div>
@@ -135,10 +135,10 @@ export function TutorielsPanel() {
 							type="button"
 							onClick={() => setActiveLevel(level)}
 							className={cn(
-								"px-3 py-1.5 rounded-xl text-xs font-medium border transition-all duration-200",
+								"px-3 py-1.5 rounded-xl text-xs font-medium border transition-all duration-200 focus-ring",
 								activeLevel === level
-									? "bg-foreground text-background border-foreground"
-									: "bg-white dark:bg-card text-muted-foreground border-slate-200 dark:border-border hover:border-slate-300",
+									? "bg-white text-slate-900 border-white"
+									: "bg-white/5 text-slate-400 border-white/10 hover:border-white/25 hover:text-white",
 							)}
 						>
 							{getLevelLabel(level)}
@@ -149,7 +149,7 @@ export function TutorielsPanel() {
 							)}
 						</button>
 					))}
-					<span className="text-xs text-muted-foreground ml-1">
+					<span className="text-xs text-slate-400 ml-1">
 						{filtered.length} {filtered.length > 1 ? t("agentLanding.tutorials.tutorials") : t("agentLanding.tutorials.tutorial")}
 					</span>
 				</div>

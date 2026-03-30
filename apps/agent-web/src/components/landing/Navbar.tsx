@@ -18,8 +18,8 @@ export function Navbar({ activePanel, onNavigate }: NavbarProps) {
 	const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en";
 	const toggleLang = () => i18n.changeLanguage(currentLang === "fr" ? "en" : "fr");
 
-	// Panel 0 = Hero dark → transparent; Panel 1+ = glassmorphism
-	const isDark = activePanel === 0;
+	// Tous les panels ont un fond sombre unifié
+	const isDark = true;
 
 	const NAV_PANELS = [
 		{ label: t("agentLanding.navbar.home"), index: 0 },
@@ -39,10 +39,7 @@ export function Navbar({ activePanel, onNavigate }: NavbarProps) {
 			initial={{ y: -80, opacity: 0 }}
 			animate={{ y: 0, opacity: 1 }}
 			transition={{ duration: 0.5, ease: "easeOut" }}
-			className={cn(
-				"fixed top-0 inset-x-0 z-50 transition-all duration-300",
-				isDark ? "bg-transparent" : "navbar-glass",
-			)}
+			className="fixed top-0 inset-x-0 z-50 transition-all duration-300 bg-transparent"
 		>
 			<div className="container mx-auto px-6 lg:px-12">
 				<div className="flex items-center h-16 lg:h-20 gap-6">
@@ -51,7 +48,7 @@ export function Navbar({ activePanel, onNavigate }: NavbarProps) {
 					<button
 						type="button"
 						onClick={() => handleNavigate(0)}
-						className="flex items-center gap-3 shrink-0 group"
+						className="flex items-center gap-3 shrink-0 group focus-ring"
 					>
 						<div className={cn(
 							"w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm transition-all duration-300",
@@ -62,10 +59,10 @@ export function Navbar({ activePanel, onNavigate }: NavbarProps) {
 							G
 						</div>
 						<span className={cn(
-							"font-display font-bold text-lg tracking-tight transition-colors duration-300",
+							"font-display font-black text-lg tracking-tight transition-colors duration-300",
 							isDark ? "text-white" : "text-foreground",
 						)}>
-							Diplomate<span className={isDark ? "text-emerald-400" : "text-primary"}>.ga</span>
+							DIPLOMATE<span className={isDark ? "text-emerald-400" : "text-primary"}>.GA</span>
 						</span>
 					</button>
 
@@ -79,7 +76,7 @@ export function Navbar({ activePanel, onNavigate }: NavbarProps) {
 									type="button"
 									onClick={() => handleNavigate(panel.index)}
 									className={cn(
-										"relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200",
+										"relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 focus-ring",
 										active
 											? isDark ? "text-white" : "text-primary"
 											: isDark
@@ -110,9 +107,9 @@ export function Navbar({ activePanel, onNavigate }: NavbarProps) {
 							type="button"
 							onClick={toggleLang}
 							className={cn(
-								"hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200",
+								"hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 focus-ring",
 								isDark
-									? "text-white/70 hover:text-white hover:bg-white/10"
+									? "text-white/80 hover:text-white hover:bg-white/10"
 									: "text-muted-foreground hover:text-foreground hover:bg-muted",
 							)}
 							aria-label="Changer la langue"
@@ -126,9 +123,9 @@ export function Navbar({ activePanel, onNavigate }: NavbarProps) {
 							type="button"
 							onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
 							className={cn(
-								"p-2.5 rounded-xl transition-all duration-200",
+								"p-2.5 rounded-xl transition-all duration-200 focus-ring",
 								isDark
-									? "text-white/70 hover:text-white hover:bg-white/10"
+									? "text-white/80 hover:text-white hover:bg-white/10"
 									: "text-muted-foreground hover:text-foreground hover:bg-muted",
 							)}
 							aria-label="Changer le thème"
@@ -141,7 +138,7 @@ export function Navbar({ activePanel, onNavigate }: NavbarProps) {
 							type="button"
 							onClick={() => handleNavigate(0)}
 							className={cn(
-								"hidden md:flex px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300",
+								"hidden md:flex px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 focus-ring",
 								isDark
 									? "bg-white/15 text-white border border-white/25 hover:bg-white/25 backdrop-blur-sm"
 									: "bg-primary text-primary-foreground shadow-elegant hover:shadow-elegant-hover hover:-translate-y-0.5",
@@ -155,7 +152,7 @@ export function Navbar({ activePanel, onNavigate }: NavbarProps) {
 							type="button"
 							onClick={() => setMobileOpen(!mobileOpen)}
 							className={cn(
-								"md:hidden p-2.5 rounded-xl transition-colors",
+								"md:hidden p-2.5 rounded-xl transition-colors focus-ring",
 								isDark ? "text-white hover:bg-white/10" : "text-foreground hover:bg-muted",
 							)}
 							aria-label="Menu"
@@ -174,7 +171,7 @@ export function Navbar({ activePanel, onNavigate }: NavbarProps) {
 						animate={{ opacity: 1, height: "auto" }}
 						exit={{ opacity: 0, height: 0 }}
 						transition={{ duration: 0.25 }}
-						className="md:hidden overflow-hidden navbar-glass border-t border-border/50"
+						className="md:hidden overflow-hidden bg-white/5 backdrop-blur-xl border-t border-white/10"
 					>
 						<div className="container mx-auto px-6 py-4 space-y-1">
 							{NAV_PANELS.map((panel) => {
@@ -186,20 +183,20 @@ export function Navbar({ activePanel, onNavigate }: NavbarProps) {
 										onClick={() => handleNavigate(panel.index)}
 										className={cn(
 											"flex items-center w-full px-4 py-3 rounded-xl text-sm font-medium transition-colors text-left",
-											active ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted",
+											active ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/10 hover:text-white",
 										)}
 									>
-										{active && <span className="w-1.5 h-1.5 rounded-full bg-primary mr-2.5 shrink-0" />}
+										{active && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2.5 shrink-0" />}
 										{panel.label}
 									</button>
 								);
 							})}
 							{/* Mobile controls */}
-							<div className="flex items-center gap-2 pt-2 border-t border-border/50">
+							<div className="flex items-center gap-2 pt-2 border-t border-white/10">
 								<button
 									type="button"
 									onClick={toggleLang}
-									className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+									className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
 								>
 									<Globe className="size-3.5" />
 									<span className="uppercase text-xs font-semibold">{currentLang}</span>
@@ -207,14 +204,14 @@ export function Navbar({ activePanel, onNavigate }: NavbarProps) {
 								<button
 									type="button"
 									onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-									className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+									className="p-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors"
 								>
 									{theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
 								</button>
 								<button
 									type="button"
 									onClick={() => handleNavigate(0)}
-									className="ml-auto px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
+									className="ml-auto px-4 py-2.5 rounded-xl bg-white/15 text-white border border-white/25 text-sm font-semibold"
 								>
 									{t("agentLanding.navbar.agentSpace")}
 								</button>

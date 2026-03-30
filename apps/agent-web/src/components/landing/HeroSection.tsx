@@ -1,15 +1,9 @@
-import { motion, useScroll, useTransform } from "motion/react";
+import { motion } from "motion/react";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { SignInCard } from "@/components/auth/SignInCard";
 
-/** Unsplash hero background — diplomatic meeting */
-const HERO_BG =
-	"https://images.unsplash.com/photo-1541872703-74c5e44368f9?q=80&w=2069&auto=format&fit=crop";
-
 export function HeroSection({ onNext }: { onNext?: () => void }) {
-	const { scrollYProgress } = useScroll();
-	const bgY = useTransform(scrollYProgress, [0, 1], [0, 300]);
 	const { t } = useTranslation();
 
 	const STATS = [
@@ -21,24 +15,12 @@ export function HeroSection({ onNext }: { onNext?: () => void }) {
 	return (
 		<section
 			id="hero"
+			aria-label="Accueil — Portail Agent Diplomatique"
 			className="relative overflow-hidden min-h-screen flex flex-col justify-center pt-20 pb-20 isolate"
 		>
 			{/* Background layer */}
 			<div className="absolute inset-0 overflow-hidden z-0">
-				{/* Dark gradient base */}
 				<div className="absolute inset-0 hero-gradient-base" />
-
-				{/* Parallax image */}
-				<motion.div
-					className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-overlay"
-					style={{
-						y: bgY,
-						backgroundImage: `url('${HERO_BG}')`,
-					}}
-				/>
-
-				{/* Gradient overlay */}
-				<div className="absolute inset-0 hero-gradient-overlay" />
 			</div>
 
 			{/* Content */}
@@ -71,7 +53,7 @@ export function HeroSection({ onNext }: { onNext?: () => void }) {
 							{t("agentLanding.hero.titleSuffix")}
 						</h1>
 
-						<p className="text-base sm:text-lg mb-8 max-w-xl font-light leading-relaxed mx-auto lg:mx-0 text-slate-300/90">
+						<p className="text-base sm:text-lg mb-8 max-w-xl font-light leading-relaxed mx-auto lg:mx-0 text-slate-200">
 							{t("agentLanding.hero.description")}
 						</p>
 					</motion.div>
@@ -107,7 +89,7 @@ export function HeroSection({ onNext }: { onNext?: () => void }) {
 										<div className="text-xl font-bold font-display text-emerald-300">
 											{stat.value}
 										</div>
-										<div className="text-xs tracking-wide text-slate-300/60">
+										<div className="text-xs tracking-wide text-slate-300">
 											{stat.label}
 										</div>
 									</div>
@@ -130,7 +112,7 @@ export function HeroSection({ onNext }: { onNext?: () => void }) {
 					onClick={onNext}
 					animate={{ x: [0, 8, 0] }}
 					transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-					className="text-white/40 hover:text-white/70 transition-colors flex items-center gap-2 text-sm"
+					className="text-white/60 hover:text-white transition-colors flex items-center gap-2 text-sm focus-ring"
 					aria-label="Volet suivant"
 				>
 					<span className="hidden sm:block text-xs tracking-widest uppercase">
