@@ -224,19 +224,19 @@ export function SignInCard() {
 	};
 
 	return (
-		<div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 lg:p-10 text-slate-900">
+		<div className="bg-white/20 dark:bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 lg:p-10 text-foreground border border-white/30 dark:border-white/15">
 			<div className="mb-6 space-y-1">
 				<h2 className="text-2xl font-bold tracking-tight">
 					{t("errors.auth.welcomeBack")}
 				</h2>
-				<p className="text-sm text-slate-500">
+				<p className="text-sm text-muted-foreground">
 					{t("errors.auth.accessAccount")}
 				</p>
 			</div>
 
 			<div className="space-y-5">
 				{error && (
-					<div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+					<div className="rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
 						{error}
 					</div>
 				)}
@@ -244,14 +244,14 @@ export function SignInCard() {
 				{/* Step 1: Identifier */}
 				{step === "identifier" && (
 					<div className="space-y-4">
-						<div className="flex rounded-lg border border-slate-200 overflow-hidden">
+						<div className="flex rounded-lg border border-white/30 dark:border-white/15 overflow-hidden">
 							<button
 								type="button"
 								onClick={() => setLoginMode("email")}
 								className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
 									loginMode === "email"
 										? "bg-emerald-600 text-white"
-										: "bg-slate-50 text-slate-500 hover:text-slate-700"
+										: "bg-white/20 dark:bg-white/5 text-muted-foreground hover:text-foreground"
 								}`}
 							>
 								<Mail className="h-4 w-4" />
@@ -263,7 +263,7 @@ export function SignInCard() {
 								className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
 									loginMode === "phone"
 										? "bg-emerald-600 text-white"
-										: "bg-slate-50 text-slate-500 hover:text-slate-700"
+										: "bg-white/20 dark:bg-white/5 text-muted-foreground hover:text-foreground"
 								}`}
 							>
 								<Smartphone className="h-4 w-4" />
@@ -274,7 +274,7 @@ export function SignInCard() {
 						<div className="space-y-2">
 							<Label
 								htmlFor={`${formId}-identifier`}
-								className="text-slate-700 font-medium text-sm"
+								className="text-foreground font-medium text-sm"
 							>
 								{loginMode === "email"
 									? t("common.email")
@@ -290,7 +290,7 @@ export function SignInCard() {
 									required
 									autoComplete="email"
 									enterKeyHint="next"
-									className="h-12 bg-slate-50 border-slate-200 focus-visible:ring-emerald-500/20"
+									className="h-12 bg-white/20 dark:bg-white/5 border-white/30 dark:border-white/15 focus-visible:ring-emerald-500/20"
 									onKeyDown={(e) => {
 										if (e.key === "Enter" && email) {
 											e.preventDefault();
@@ -308,7 +308,7 @@ export function SignInCard() {
 									required
 									autoComplete="tel"
 									enterKeyHint="next"
-									className="h-12 bg-slate-50 border-slate-200 focus-visible:ring-emerald-500/20"
+									className="h-12 bg-white/20 dark:bg-white/5 border-white/30 dark:border-white/15 focus-visible:ring-emerald-500/20"
 									onKeyDown={(e) => {
 										if (e.key === "Enter" && phone) {
 											e.preventDefault();
@@ -346,10 +346,10 @@ export function SignInCard() {
 							<>
 								<div className="relative py-2">
 									<div className="absolute inset-0 flex items-center">
-										<div className="w-full border-t border-slate-200" />
+										<div className="w-full border-t border-white/30 dark:border-white/15" />
 									</div>
 									<div className="relative flex justify-center text-xs uppercase">
-										<span className="bg-white px-4 text-slate-400">
+										<span className="bg-transparent px-4 text-muted-foreground">
 											{t("errors.auth.orDivider")}
 										</span>
 									</div>
@@ -359,7 +359,7 @@ export function SignInCard() {
 									type="button"
 									variant="outline"
 									size="lg"
-									className="w-full font-medium border-slate-200 text-slate-700 hover:bg-slate-50"
+									className="w-full font-medium border-white/30 dark:border-white/15 text-foreground hover:bg-white/10"
 									disabled={!email}
 									onClick={() => {
 										if (email) setStep("password");
@@ -382,7 +382,7 @@ export function SignInCard() {
 						<button
 							type="button"
 							onClick={handleBack}
-							className="flex items-center text-sm text-slate-500 hover:text-slate-700 transition-colors mb-2"
+							className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
 						>
 							<ArrowLeft className="mr-1 h-4 w-4" />
 							{email}
@@ -392,14 +392,14 @@ export function SignInCard() {
 							<div className="flex items-center justify-between">
 								<Label
 									htmlFor={`${formId}-password`}
-									className="text-slate-700 font-medium text-sm"
+									className="text-foreground font-medium text-sm"
 								>
 									{t("common.password")}
 								</Label>
 								<button
 									type="button"
 									onClick={handleSendOtp}
-									className="text-sm font-medium text-slate-500 hover:text-emerald-600 hover:underline transition-colors"
+									className="text-sm font-medium text-muted-foreground hover:text-emerald-500 hover:underline transition-colors"
 									disabled={loading || !email}
 								>
 									{t("errors.auth.otp.forgotPassword")}
@@ -414,7 +414,7 @@ export function SignInCard() {
 								autoComplete="current-password"
 								enterKeyHint="done"
 								autoFocus
-								className="h-12 bg-slate-50 border-slate-200 focus-visible:ring-emerald-500/20"
+								className="h-12 bg-white/20 dark:bg-white/5 border-white/30 dark:border-white/15 focus-visible:ring-emerald-500/20"
 							/>
 						</div>
 
@@ -438,14 +438,14 @@ export function SignInCard() {
 						<button
 							type="button"
 							onClick={handleBack}
-							className="flex items-center text-sm text-slate-500 hover:text-slate-700 transition-colors mb-2"
+							className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
 						>
 							<ArrowLeft className="mr-1 h-4 w-4" />
 							{identifier}
 						</button>
 
 						{otpSent && (
-							<div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-slate-700 mb-4">
+							<div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-sm text-foreground mb-4">
 								{loginMode === "phone" ? (
 									<>
 										<Smartphone className="inline mr-1.5 h-4 w-4 text-emerald-600" />
@@ -465,7 +465,7 @@ export function SignInCard() {
 						<div className="space-y-2">
 							<Label
 								htmlFor={`${formId}-otp`}
-								className="text-slate-700 font-medium text-sm"
+								className="text-foreground font-medium text-sm"
 							>
 								{t("errors.auth.otp.codeLabel")}
 							</Label>
@@ -486,7 +486,7 @@ export function SignInCard() {
 								required
 								autoComplete="one-time-code"
 								enterKeyHint="done"
-								className="h-16 bg-slate-50 border-slate-200 focus-visible:ring-emerald-500/20 text-center text-3xl tracking-[0.5em] font-mono"
+								className="h-16 bg-white/20 dark:bg-white/5 border-white/30 dark:border-white/15 focus-visible:ring-emerald-500/20 text-center text-3xl tracking-[0.5em] font-mono"
 							/>
 						</div>
 
@@ -506,7 +506,7 @@ export function SignInCard() {
 							type="button"
 							onClick={handleSendOtp}
 							disabled={loading}
-							className="w-full text-center text-sm text-slate-500 hover:text-emerald-600 transition-colors disabled:opacity-50 mt-4"
+							className="w-full text-center text-sm text-muted-foreground hover:text-emerald-500 transition-colors disabled:opacity-50 mt-4"
 						>
 							{t("errors.auth.otp.resendCode")}
 						</button>
