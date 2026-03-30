@@ -30,14 +30,7 @@ export function Footer() {
 							Portail numérique du personnel diplomatique et consulaire
 							gabonais. Modernisation souveraine de la mission diplomatique.
 						</p>
-						<span
-							className="inline-block text-xs px-3 py-1 rounded-full font-medium"
-							style={{
-								background: "rgba(16,185,129,0.12)",
-								color: "#6ee7b7",
-								border: "1px solid rgba(16,185,129,0.2)",
-							}}
-						>
+						<span className="inline-block text-xs px-3 py-1 rounded-full font-medium badge-pill-landing">
 							République Gabonaise
 						</span>
 					</div>

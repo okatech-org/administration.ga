@@ -29,8 +29,7 @@ function Panel({
 	return (
 		<div
 			ref={panelRef}
-			className="w-screen flex-shrink-0 snap-start overflow-y-auto"
-			style={{ height: "100dvh" }}
+			className="w-screen shrink-0 snap-start overflow-y-auto h-dvh"
 		>
 			{children}
 		</div>
@@ -108,16 +107,7 @@ export function HomeLandingSignIn() {
 			{/* Horizontal scroll container */}
 			<div
 				ref={containerRef}
-				className="flex snap-x snap-mandatory"
-				style={{
-					height: "100dvh",
-					overflowX: "scroll",
-					overflowY: "hidden",
-					scrollbarWidth: "none",
-					// @ts-ignore
-					msOverflowStyle: "none",
-					WebkitOverflowScrolling: "touch",
-				} as React.CSSProperties}
+				className="flex snap-x snap-mandatory h-dvh overflow-x-scroll overflow-y-hidden landing-scroll-container"
 			>
 				{/* Panel 1 — Accueil */}
 				<Panel panelRef={p0}>
