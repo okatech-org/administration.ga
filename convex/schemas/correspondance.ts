@@ -68,6 +68,23 @@ const correspondanceAttachmentValidator = v.object({
   uploadedAt: v.number(),
 });
 
+/**
+ * Document enrichi — chaque pièce d'un dossier de correspondance
+ * avec métadonnées (type, label, ordre, document principal vs annexe).
+ */
+export const correspondanceDocumentValidator = v.object({
+  storageId: v.id("_storage"),
+  filename: v.string(),
+  mimeType: v.string(),
+  sizeBytes: v.number(),
+  uploadedAt: v.number(),
+  documentType: v.optional(v.string()),
+  label: v.optional(v.string()),
+  ordre: v.number(),
+  isMainDocument: v.boolean(),
+  copyWatermark: v.optional(v.boolean()),
+});
+
 // ─── Tables ──────────────────────────────────────────────────────────────────
 
 /**
@@ -127,8 +144,11 @@ export const correspondanceItemsTable = defineTable({
   approvedAt: v.optional(v.number()),
   sentAt: v.optional(v.number()),
 
-  // Attachments (Convex storage)
+  // Attachments (legacy — rétrocompatibilité)
   attachments: v.array(correspondanceAttachmentValidator),
+
+  // Documents enrichis (remplace progressivement attachments)
+  documents: v.optional(v.array(correspondanceDocumentValidator)),
 
   // Direction (for register views)
   direction: v.optional(v.union(v.literal("incoming"), v.literal("outgoing"))),

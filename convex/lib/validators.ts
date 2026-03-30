@@ -617,6 +617,27 @@ export const orgSettingsValidator = v.object({
   ), // Default: "manual"
   defaultProcessingDays: v.optional(v.number()), // SLA in days
   aiAnalysisEnabled: v.optional(v.boolean()), // Default: true
+
+  // ── iCorrespondance ──
+  correspondanceConfig: v.optional(v.object({
+    isEnabled: v.boolean(),
+    defaultReferencePattern: v.optional(v.string()),
+    registreCourrier: v.optional(v.object({
+      prefixArrivee: v.string(),
+      prefixDepart: v.string(),
+      numerotationAnnuelle: v.boolean(),
+    })),
+    approbationGlobale: v.optional(v.object({
+      autoRouteByHierarchy: v.boolean(),
+      chefDePosteRequired: v.boolean(),
+    })),
+    typesActifs: v.optional(v.array(v.string())),
+    signatureConfig: v.optional(v.object({
+      signatureElectronique: v.boolean(),
+      cachetOrganisme: v.boolean(),
+      cachetStorageId: v.optional(v.id("_storage")),
+    })),
+  })),
 });
 
 export type OrgSettings = Infer<typeof orgSettingsValidator>;

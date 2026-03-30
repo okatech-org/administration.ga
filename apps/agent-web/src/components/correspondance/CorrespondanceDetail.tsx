@@ -1,0 +1,354 @@
+/**
+ * CorrespondanceDetail — Vue détaillée d'un dossier de correspondance.
+ *
+ * Layout 2 colonnes : [Liste documents | Viewer/Infos]
+ * Barre d'actions à deux niveaux : correspondance (haut) + document (par item)
+ */
+
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import {
+	ArrowLeft,
+	Archive,
+	Download,
+	FileText,
+	FolderOpen,
+	Loader2,
+	MessageSquare,
+	MoreHorizontal,
+	Paperclip,
+	Send,
+	Trash2,
+	UserCheck,
+} from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+	useAuthenticatedConvexQuery,
+	useConvexMutationQuery,
+} from "@/integrations/convex/hooks";
+import { ApprovalPanel } from "./ApprovalPanel";
+import { WorkflowTimeline } from "./WorkflowTimeline";
+import { TrackingTimeline } from "./TrackingTimeline";
+import { cn } from "@/lib/utils";
+
+interface CorrespondanceDetailProps {
+	itemId: Id<"correspondanceItems">;
+	currentUserId: string;
+	currentOrgId: string;
+	onBack: () => void;
+}
+
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+	draft: { label: "Brouillon", color: "text-amber-400 bg-amber-500/15" },
+	pending: { label: "En attente", color: "text-blue-400 bg-blue-500/15" },
+	approved: { label: "Approuvé", color: "text-emerald-400 bg-emerald-500/15" },
+	sent: { label: "Envoyé", color: "text-violet-400 bg-violet-500/15" },
+	received: { label: "Reçu", color: "text-indigo-400 bg-indigo-500/15" },
+	archived: { label: "Archivé", color: "text-zinc-400 bg-zinc-500/15" },
+};
+
+export function CorrespondanceDetail({
+	itemId,
+	currentUserId,
+	currentOrgId,
+	onBack,
+}: CorrespondanceDetailProps) {
+	const [selectedDocIndex, setSelectedDocIndex] = useState(0);
+
+	const { data: item, isPending } = useAuthenticatedConvexQuery(
+		api.functions.correspondance.getItem,
+		{ itemId },
+	);
+
+	const { mutateAsync: sendCorrespondance, isPending: isSending } = useConvexMutationQuery(
+		api.functions.correspondance.sendCorrespondance,
+	);
+
+	const { mutateAsync: deleteItem, isPending: isDeleting } = useConvexMutationQuery(
+		api.functions.correspondance.deleteItem,
+	);
+
+	const { mutateAsync: classerDansIDocument } = useConvexMutationQuery(
+		api.functions.correspondanceDocuments.classerCorrespondanceDansIDocument,
+	);
+
+	const { mutateAsync: removeDocument } = useConvexMutationQuery(
+		api.functions.correspondanceDocuments.removeDocumentFromCorrespondance,
+	);
+
+	if (isPending || !item) {
+		return (
+			<div className="flex items-center justify-center h-96">
+				<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+			</div>
+		);
+	}
+
+	const isCopy = (item as any).isCopy === true;
+	const docs = (item as any).documents ?? [];
+	const attachments = item.attachments ?? [];
+	const allDocs = docs.length > 0 ? docs : attachments.map((a: any, i: number) => ({
+		...a,
+		ordre: i + 1,
+		isMainDocument: i === 0,
+		label: a.filename,
+	}));
+
+	const selectedDoc = allDocs[selectedDocIndex] ?? allDocs[0];
+	const stCfg = STATUS_LABELS[item.status] ?? STATUS_LABELS.draft;
+
+	const handleSend = async () => {
+		try {
+			await sendCorrespondance({ itemId });
+			toast.success("Correspondance envoyée ✓");
+		} catch (e: any) {
+			toast.error(e?.message ?? "Erreur lors de l'envoi");
+		}
+	};
+
+	const handleClasser = async () => {
+		try {
+			await classerDansIDocument({ itemId });
+			toast.success("Dossier classé dans iDocument ✓");
+			onBack();
+		} catch (e: any) {
+			toast.error(e?.message ?? "Erreur lors du classement");
+		}
+	};
+
+	const handleDelete = async () => {
+		try {
+			await deleteItem({ itemId });
+			toast.success("Correspondance supprimée");
+			onBack();
+		} catch (e: any) {
+			toast.error(e?.message ?? "Erreur");
+		}
+	};
+
+	const handleRemoveDoc = async (docIndex: number) => {
+		try {
+			await removeDocument({ itemId, documentIndex: docIndex });
+			toast.success("Document retiré et classé dans iDocument ✓");
+		} catch (e: any) {
+			toast.error(e?.message ?? "Erreur");
+		}
+	};
+
+	return (
+		<div className="space-y-4">
+			{/* ── Barre navigation + actions CORRESPONDANCE ── */}
+			<div className="flex items-center gap-3 flex-wrap">
+				<Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5">
+					<ArrowLeft className="h-3.5 w-3.5" />
+					Retour
+				</Button>
+
+				<div className="flex-1" />
+
+				{/* Actions correspondance selon le contexte */}
+				{item.status === "draft" && !isCopy && (
+					<Button size="sm" onClick={handleSend} disabled={isSending} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+						{isSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+						Envoyer
+					</Button>
+				)}
+
+				{item.status === "received" && !isCopy && (
+					<>
+						<Button variant="outline" size="sm" className="gap-1.5">
+							<MessageSquare className="h-3.5 w-3.5" />
+							Répondre
+						</Button>
+						<Button variant="outline" size="sm" className="gap-1.5">
+							<Send className="h-3.5 w-3.5" />
+							Transmettre
+						</Button>
+					</>
+				)}
+
+				<Button variant="outline" size="sm" onClick={handleClasser} className="gap-1.5">
+					<Archive className="h-3.5 w-3.5" />
+					Classer dans iDocument
+				</Button>
+
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button variant="ghost" size="icon" className="h-8 w-8">
+							<MoreHorizontal className="h-4 w-4" />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end">
+						<DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
+							<Trash2 className="mr-2 h-3.5 w-3.5" />
+							Supprimer
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</div>
+
+			{/* ── En-tête du dossier ── */}
+			<div className={cn("rounded-xl border p-5 space-y-3", isCopy && "opacity-75 bg-muted/20")}>
+				<div className="flex items-start gap-3">
+					<div className={cn("h-12 w-12 rounded-xl flex items-center justify-center shrink-0", isCopy ? "bg-zinc-500/10" : "bg-primary/10")}>
+						<FolderOpen className={cn("h-6 w-6", isCopy ? "text-zinc-400" : "text-primary")} />
+					</div>
+					<div className="flex-1 min-w-0">
+						<div className="flex items-center gap-2 flex-wrap">
+							{isCopy && (
+								<span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/40 bg-muted/40 px-1.5 py-0.5 rounded">Copie</span>
+							)}
+							<span className="text-[10px] font-mono text-muted-foreground">{item.reference}</span>
+							<Badge className={cn("text-[9px]", stCfg.color)}>{stCfg.label}</Badge>
+						</div>
+						<h2 className="text-lg font-semibold mt-1">{item.title}</h2>
+						<div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+							<span><strong>De :</strong> {item.senderName} {item.senderOrg && `(${item.senderOrg})`}</span>
+							<span><strong>À :</strong> {item.recipientName} {item.recipientOrg && `(${item.recipientOrg})`}</span>
+						</div>
+					</div>
+				</div>
+
+				{item.comment && (
+					<p className="text-sm text-muted-foreground border-l-2 border-primary/20 pl-3 italic">
+						{item.comment}
+					</p>
+				)}
+			</div>
+
+			{/* ── Contenu : Documents + Viewer ── */}
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+				{/* Liste des documents */}
+				<div className="space-y-2">
+					<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+						<Paperclip className="h-3 w-3" />
+						Documents ({allDocs.length})
+					</h3>
+					{allDocs.map((doc: any, i: number) => (
+						<div
+							key={doc.storageId ?? i}
+							className={cn(
+								"flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-all",
+								selectedDocIndex === i
+									? "border-primary/30 bg-primary/5"
+									: "border-border/40 hover:bg-muted/30",
+							)}
+							onClick={() => setSelectedDocIndex(i)}
+						>
+							<div className={cn("h-8 w-8 rounded-md flex items-center justify-center shrink-0", doc.isMainDocument ? "bg-primary/10" : "bg-muted")}>
+								<FileText className={cn("h-4 w-4", doc.isMainDocument ? "text-primary" : "text-muted-foreground")} />
+							</div>
+							<div className="flex-1 min-w-0">
+								<p className="text-xs font-medium truncate">{doc.label ?? doc.filename}</p>
+								<p className="text-[9px] text-muted-foreground">
+									{doc.isMainDocument ? "Document principal" : "Annexe"}
+									{doc.copyWatermark && " • COPIE"}
+								</p>
+							</div>
+							{/* Actions par document */}
+							{!isCopy && (
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100">
+											<MoreHorizontal className="h-3 w-3" />
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end">
+										<DropdownMenuItem>
+											<Download className="mr-2 h-3.5 w-3.5" />
+											Télécharger
+										</DropdownMenuItem>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem onClick={() => handleRemoveDoc(i)} className="text-destructive">
+											<Trash2 className="mr-2 h-3.5 w-3.5" />
+											Retirer du dossier
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							)}
+						</div>
+					))}
+				</div>
+
+				{/* Zone viewer / infos */}
+				<div className="lg:col-span-2 space-y-4">
+					{/* Aperçu document sélectionné */}
+					{selectedDoc && (
+						<div className={cn("rounded-xl border bg-card overflow-hidden", isCopy && "relative")}>
+							{/* Filigrane COPIE overlay côté client */}
+							{isCopy && (
+								<div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+									<span className="text-6xl font-black text-muted-foreground/10 rotate-[-30deg] select-none">
+										COPIE
+									</span>
+								</div>
+							)}
+							<div className="p-4 border-b flex items-center justify-between">
+								<div>
+									<p className="text-sm font-medium">{selectedDoc.label ?? selectedDoc.filename}</p>
+									<p className="text-[10px] text-muted-foreground">
+										{(selectedDoc.sizeBytes / 1024).toFixed(0)} Ko • {selectedDoc.mimeType}
+									</p>
+								</div>
+								{!isCopy && selectedDoc.url && (
+									<Button variant="outline" size="sm" asChild className="gap-1.5">
+										<a href={selectedDoc.url} download={selectedDoc.filename} target="_blank" rel="noopener noreferrer">
+											<Download className="h-3.5 w-3.5" />
+											Télécharger
+										</a>
+									</Button>
+								)}
+							</div>
+							{/* Zone d'affichage PDF — placeholder pour le PdfViewer */}
+							<div className="h-[500px] flex items-center justify-center bg-muted/20">
+								<div className="text-center space-y-2">
+									<FileText className="h-12 w-12 text-muted-foreground/30 mx-auto" />
+									<p className="text-sm text-muted-foreground">
+										{selectedDoc.filename}
+									</p>
+									<p className="text-xs text-muted-foreground/60">
+										Cliquez sur "Télécharger" pour ouvrir le document
+									</p>
+								</div>
+							</div>
+						</div>
+					)}
+
+					{/* Approbation (si en attente) */}
+					{item.status === "pending" && (
+						<ApprovalPanel
+							itemId={itemId}
+							currentUserId={currentUserId}
+							status={item.status}
+						/>
+					)}
+
+					{/* Suivi (si copie envoyée) */}
+					{isCopy && (
+						<TrackingTimeline
+							itemId={itemId}
+							sentAt={(item as any).sentAt}
+							recipientStatus={(item as any).recipientStatus}
+							recipientStatusUpdatedAt={(item as any).recipientStatusUpdatedAt}
+							arrivalReference={(item as any).arrivalReference}
+							arrivalDate={(item as any).arrivalDate}
+						/>
+					)}
+
+					{/* Historique workflow */}
+					<WorkflowTimeline itemId={itemId} />
+				</div>
+			</div>
+		</div>
+	);
+}

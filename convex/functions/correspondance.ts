@@ -224,6 +224,12 @@ export const createItem = authMutation({
       primaryRecipientOrgId: args.primaryRecipientOrgId,
       readByIds: [ctx.user._id as string],
       attachments: args.attachments ?? [],
+      // Documents enrichis (convertis depuis attachments)
+      documents: (args.attachments ?? []).map((att, i) => ({
+        ...att,
+        ordre: i + 1,
+        isMainDocument: i === 0,
+      })),
       // Mécanisme de copie — brouillon = original appartenant à l'org
       isCopy: false,
       copyOwnerOrgId: args.orgId,
@@ -821,6 +827,8 @@ export const sendCorrespondance = authMutation({
       tags: item.tags,
       requiresApproval: false,
       attachments: item.attachments,
+      // Documents enrichis (copie vers le destinataire, sans filigrane)
+      documents: (item.documents ?? []).map((d) => ({ ...d, copyWatermark: false })),
       confidentialite: item.confidentialite,
       parentItemId: item.parentItemId,
       dateReponseAttendue: item.dateReponseAttendue,
@@ -831,6 +839,12 @@ export const sendCorrespondance = authMutation({
     });
 
     // ── Étape 2 : Transformer l'item source en COPIE expéditeur ──
+    // Marquer les documents avec copyWatermark: true
+    const copyDocuments = (item.documents ?? []).map((d) => ({
+      ...d,
+      copyWatermark: true,
+    }));
+
     await ctx.db.patch(args.itemId, {
       isCopy: true,
       copyOwnerOrgId: item.orgId,
@@ -839,6 +853,7 @@ export const sendCorrespondance = authMutation({
       sentAt: now,
       recipientStatus: "recu",
       recipientStatusUpdatedAt: now,
+      documents: copyDocuments,
       updatedAt: now,
     });
 
