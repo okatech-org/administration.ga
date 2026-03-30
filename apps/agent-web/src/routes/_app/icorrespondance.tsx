@@ -111,14 +111,23 @@ const PRIORITY_CONFIG: Record<Priority, { label: string; color: string }> = {
 	confidentiel: { label: "Confidentiel", color: "text-amber-400" },
 };
 
+// ─── Recipient status badges (dossier Envoyé) ──────────────
+const RECIPIENT_STATUS_CFG: Record<string, { label: string; class: string; dot: string }> = {
+	en_transit: { label: "En transit", class: "bg-zinc-500/15 text-zinc-400 border-zinc-500/20", dot: "bg-zinc-400" },
+	recu: { label: "Reçu", class: "bg-blue-500/15 text-blue-400 border-blue-500/20", dot: "bg-blue-400" },
+	en_attente: { label: "En attente", class: "bg-orange-500/15 text-orange-400 border-orange-500/20", dot: "bg-orange-400" },
+	approuve: { label: "Approuvé", class: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20", dot: "bg-emerald-400" },
+	repondu: { label: "Répondu", class: "bg-violet-500/15 text-violet-400 border-violet-500/20", dot: "bg-violet-400" },
+};
+
 // ═══════════════════════════════════════════════════════════════
 // MOCK DATA
 // ═══════════════════════════════════════════════════════════════
 
 const DEFAULT_FOLDERS: FolderItem[] = [
-	{ id: "__toutes-correspondances", name: "Toutes les correspondances", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
-	{ id: "__brouillons", name: "Brouillons", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
-	{ id: "__corbeille", name: "Corbeille", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
+	{ id: "__brouillon", name: "Brouillon", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
+	{ id: "__envoye", name: "Envoyé", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
+	{ id: "__recu", name: "Reçu", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
 	{ id: "f-notes-verbales", name: "Notes Verbales", parentFolderId: null, tags: ["diplomatique", "officiel"], fileCount: 3, subfolderCount: 0, updatedAt: "25/03/2026", createdBy: "MAE", isSystem: false },
 	{ id: "f-lettres-officielles", name: "Lettres Officielles", parentFolderId: null, tags: ["diplomatique", "lettres"], fileCount: 4, subfolderCount: 0, updatedAt: "24/03/2026", createdBy: "Ambassade", isSystem: false },
 	{ id: "f-circulaires", name: "Circulaires", parentFolderId: null, tags: ["administration", "circulaires"], fileCount: 2, subfolderCount: 0, updatedAt: "23/03/2026", createdBy: "MAE", isSystem: false },
@@ -788,7 +797,7 @@ function ICorrespondancePage() {
 			status: item.status as CorrStatus,
 			tags: item.tags,
 			priority: item.priority as Priority,
-			folderId: item.folderId ?? "__toutes-correspondances",
+			folderId: item.folderId ?? "__brouillon",
 			attachments: item.attachments?.length ?? 0,
 		})),
 		[rawItems],
@@ -868,7 +877,19 @@ function ICorrespondancePage() {
 	// ─── Filtered correspondences at current level ──────────
 	const currentFiles = useMemo(() => {
 		if (currentFolderId === null) return [];
-		let items = correspondences.filter((d) => d.folderId === currentFolderId);
+
+		let items: CorrespondenceItem[];
+
+		// Dossiers système — filtrage par status/isCopy
+		if (currentFolderId === "__brouillon") {
+			items = correspondences.filter((d) => d.status === "draft");
+		} else if (currentFolderId === "__envoye") {
+			items = correspondences.filter((d) => (d as any).isCopy === true || d.status === "sent");
+		} else if (currentFolderId === "__recu") {
+			items = correspondences.filter((d) => d.status === "received" && (d as any).isCopy !== true);
+		} else {
+			items = correspondences.filter((d) => d.folderId === currentFolderId);
+		}
 		if (search) {
 			const q = search.toLowerCase();
 			items = items.filter((d) => d.title.toLowerCase().includes(q) || d.reference.toLowerCase().includes(q) || d.sender.toLowerCase().includes(q) || d.recipient.toLowerCase().includes(q) || d.tags.some((t) => t.toLowerCase().includes(q)));
@@ -1153,53 +1174,69 @@ function ICorrespondancePage() {
 									{currentFiles.map((corr) => {
 										const st = STATUS_CFG[corr.status];
 										const typeConfig = CORRESPONDENCE_TYPE_CONFIG[corr.type];
+										const isCopyItem = (corr as any).isCopy === true || currentFolderId === "__envoye";
+										const recipientSt = (corr as any).recipientStatus as string | undefined;
+										const rsCfg = recipientSt ? RECIPIENT_STATUS_CFG[recipientSt] : null;
 										return (
-											<VaultFileCard
-												key={corr.id}
-												title={corr.title}
-												reference={corr.reference}
-												sender={corr.sender}
-												senderInitials={corr.senderInitials}
-												date={corr.updatedAt}
-												statusBadge={
-													<span className={cn("text-[9px] h-5 border inline-flex items-center gap-1 px-1.5 rounded-full font-medium", st.class)}>
-														<span className={cn("h-1.5 w-1.5 rounded-full", st.dot)} />
-														{st.label}
-													</span>
-												}
-												typeBadge={
-													<span className={cn("text-[9px] h-5 border inline-flex items-center gap-1 px-1.5 rounded-full font-medium", typeConfig.color)}>
-														{typeConfig.label}
-													</span>
-												}
-												priorityBadge={
-													corr.priority !== "normal" && (
-														<span className={cn("text-[9px] h-5 border inline-flex items-center gap-1 px-1.5 rounded-full font-medium", corr.priority === "urgent" ? "text-red-400 bg-red-500/15 border-red-500/20" : "text-amber-400 bg-amber-500/15 border-amber-500/20")}>
-															{PRIORITY_CONFIG[corr.priority].label}
+											<div key={corr.id} className={cn(isCopyItem && "opacity-70")}>
+												{/* Badge COPIE overlay */}
+												{isCopyItem && (
+													<div className="flex items-center gap-1 mb-1 px-1">
+														<span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 bg-muted/40 px-1.5 py-0.5 rounded">Copie</span>
+														{rsCfg && (
+															<span className={cn("text-[8px] h-4 border inline-flex items-center gap-1 px-1.5 rounded-full font-semibold", rsCfg.class)}>
+																<span className={cn("h-1 w-1 rounded-full", rsCfg.dot)} />
+																{rsCfg.label}
+															</span>
+														)}
+													</div>
+												)}
+												<VaultFileCard
+													title={corr.title}
+													reference={corr.reference}
+													sender={corr.sender}
+													senderInitials={corr.senderInitials}
+													date={corr.updatedAt}
+													statusBadge={
+														<span className={cn("text-[9px] h-5 border inline-flex items-center gap-1 px-1.5 rounded-full font-medium", st.class)}>
+															<span className={cn("h-1.5 w-1.5 rounded-full", st.dot)} />
+															{st.label}
 														</span>
-													)
-												}
-												contextMenu={
-													<FolderContextMenu
-														itemId={corr.id}
-														itemName={corr.title}
-														itemType="correspondence"
-														onShare={handleShare}
-														onInfo={handleOpenInfo}
-														onTransmit={handleOpenTransmit}
-													onDelete={handleDelete}
-													/>
-												}
-												badges={
-													corr.attachments > 0 && (
-														<span className="text-[9px] h-4 px-1.5 rounded-full bg-blue-500/15 text-blue-400 inline-flex items-center font-medium gap-1">
-															<FileText className="h-2.5 w-2.5" />{corr.attachments}
+													}
+													typeBadge={
+														<span className={cn("text-[9px] h-5 border inline-flex items-center gap-1 px-1.5 rounded-full font-medium", typeConfig.color)}>
+															{typeConfig.label}
 														</span>
-													)
-												}
-												tags={corr.tags}
-												onClick={() => handleOpenInfo(corr.id)}
-											/>
+													}
+													priorityBadge={
+														corr.priority !== "normal" && (
+															<span className={cn("text-[9px] h-5 border inline-flex items-center gap-1 px-1.5 rounded-full font-medium", corr.priority === "urgent" ? "text-red-400 bg-red-500/15 border-red-500/20" : "text-amber-400 bg-amber-500/15 border-amber-500/20")}>
+																{PRIORITY_CONFIG[corr.priority].label}
+															</span>
+														)
+													}
+													contextMenu={
+														<FolderContextMenu
+															itemId={corr.id}
+															itemName={corr.title}
+															itemType="correspondence"
+															onShare={handleShare}
+															onInfo={handleOpenInfo}
+															onTransmit={handleOpenTransmit}
+														onDelete={handleDelete}
+														/>
+													}
+													badges={
+														corr.attachments > 0 && (
+															<span className="text-[9px] h-4 px-1.5 rounded-full bg-blue-500/15 text-blue-400 inline-flex items-center font-medium gap-1">
+																<FileText className="h-2.5 w-2.5" />{corr.attachments}
+															</span>
+														)
+													}
+													tags={corr.tags}
+													onClick={() => handleOpenInfo(corr.id)}
+												/>
+											</div>
 										);
 									})}
 								</div>
@@ -1248,12 +1285,20 @@ function ICorrespondancePage() {
 							{currentFiles.map((corr) => {
 								const st = STATUS_CFG[corr.status];
 								const typeConfig = CORRESPONDENCE_TYPE_CONFIG[corr.type];
+								const isCopyItem = (corr as any).isCopy === true || currentFolderId === "__envoye";
+								const recipientSt = (corr as any).recipientStatus as string | undefined;
+								const rsCfg = recipientSt ? RECIPIENT_STATUS_CFG[recipientSt] : null;
 								return (
-									<div key={corr.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 hover:bg-muted/30 cursor-pointer transition-colors group" onClick={() => handleOpenInfo(corr.id)}>
+									<div key={corr.id} className={cn("grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 hover:bg-muted/30 cursor-pointer transition-colors group", isCopyItem && "opacity-70")} onClick={() => handleOpenInfo(corr.id)}>
 										<div className="col-span-4 flex items-center gap-2">
-											<div className="h-6 w-6 rounded-md bg-violet-500/10 flex items-center justify-center shrink-0"><Mail className="h-3 w-3 text-violet-400" /></div>
+											<div className={cn("h-6 w-6 rounded-md flex items-center justify-center shrink-0", isCopyItem ? "bg-zinc-500/10" : "bg-violet-500/10")}>
+												<Mail className={cn("h-3 w-3", isCopyItem ? "text-zinc-400" : "text-violet-400")} />
+											</div>
 											<div className="min-w-0">
-												<span className="text-xs font-medium truncate block">{corr.title}</span>
+												<div className="flex items-center gap-1.5">
+													{isCopyItem && <span className="text-[7px] font-bold uppercase tracking-widest text-muted-foreground/40 bg-muted/40 px-1 rounded">Copie</span>}
+													<span className="text-xs font-medium truncate block">{corr.title}</span>
+												</div>
 												<span className="text-[9px] text-muted-foreground/50 truncate block">{corr.reference}</span>
 											</div>
 										</div>
@@ -1261,10 +1306,16 @@ function ICorrespondancePage() {
 											<span className={cn("text-[9px] px-2 py-1 rounded-md font-medium", typeConfig.color)}>{typeConfig.label}</span>
 										</div>
 										<div className="col-span-2 text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-2.5 w-2.5" />{corr.updatedAt}</div>
-										<div className="col-span-2 flex items-center">
-											<span className={cn("text-[10px] border inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full", st.class)}>
-												<span className={cn("h-1.5 w-1.5 rounded-full", st.dot)} />{st.label}
-											</span>
+										<div className="col-span-2 flex items-center gap-1">
+											{isCopyItem && rsCfg ? (
+												<span className={cn("text-[10px] border inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full", rsCfg.class)}>
+													<span className={cn("h-1.5 w-1.5 rounded-full", rsCfg.dot)} />{rsCfg.label}
+												</span>
+											) : (
+												<span className={cn("text-[10px] border inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full", st.class)}>
+													<span className={cn("h-1.5 w-1.5 rounded-full", st.dot)} />{st.label}
+												</span>
+											)}
 										</div>
 										<div className="col-span-2 flex items-center">
 											{corr.priority !== "normal" && (

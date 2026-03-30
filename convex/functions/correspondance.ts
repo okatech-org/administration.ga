@@ -224,6 +224,9 @@ export const createItem = authMutation({
       primaryRecipientOrgId: args.primaryRecipientOrgId,
       readByIds: [ctx.user._id as string],
       attachments: args.attachments ?? [],
+      // Mécanisme de copie — brouillon = original appartenant à l'org
+      isCopy: false,
+      copyOwnerOrgId: args.orgId,
       createdAt: now,
       updatedAt: now,
     });
@@ -754,5 +757,669 @@ export const getPendingApprovalCount = authQuery({
       .collect();
 
     return pending.length;
+  },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ENVOI — Mécanisme de copie (Phase 1 refonte)
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Envoyer une correspondance — crée l'original chez le destinataire
+ * et transforme l'item source en copie chez l'expéditeur.
+ *
+ * C'est le cœur du modèle "correspondance mobile" :
+ * l'original se déplace, l'expéditeur conserve une copie.
+ */
+export const sendCorrespondance = authMutation({
+  args: {
+    itemId: v.id("correspondanceItems"),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw new Error("Correspondance introuvable");
+    if (item.deletedAt) throw new Error("Correspondance supprimée");
+
+    // Vérifier le status — seuls draft et approved peuvent être envoyés
+    if (item.status !== "draft" && item.status !== "approved") {
+      throw new Error(`Impossible d'envoyer une correspondance en statut "${item.status}"`);
+    }
+
+    // Vérifier que l'expéditeur est le créateur ou a approuvé
+    if (item.createdBy !== ctx.user._id && item.approvedById !== ctx.user._id) {
+      throw new Error("Seul le créateur ou l'approbateur peut envoyer");
+    }
+
+    // Vérifier qu'il y a un destinataire
+    if (!item.primaryRecipientOrgId) {
+      throw new Error("Aucune organisation destinataire définie");
+    }
+
+    // ── Étape 1 : Créer l'item REÇU chez le destinataire ──
+    const receivedItemId = await ctx.db.insert("correspondanceItems", {
+      orgId: item.primaryRecipientOrgId,
+      copyOwnerOrgId: item.primaryRecipientOrgId,
+      isCopy: false,
+      createdBy: item.createdBy,
+      reference: item.reference,
+      title: item.title,
+      type: item.type,
+      priority: item.priority,
+      status: "received",
+      direction: "incoming",
+      senderName: item.senderName,
+      senderOrg: item.senderOrg,
+      senderEmail: item.senderEmail,
+      senderUserId: item.senderUserId,
+      recipientName: item.recipientName,
+      recipientOrg: item.recipientOrg,
+      recipientEmail: item.recipientEmail,
+      primaryRecipientId: item.primaryRecipientId,
+      primaryRecipientOrgId: item.primaryRecipientOrgId,
+      comment: item.comment,
+      tags: item.tags,
+      requiresApproval: false,
+      attachments: item.attachments,
+      confidentialite: item.confidentialite,
+      parentItemId: item.parentItemId,
+      dateReponseAttendue: item.dateReponseAttendue,
+      recipientStatus: "recu",
+      recipientStatusUpdatedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // ── Étape 2 : Transformer l'item source en COPIE expéditeur ──
+    await ctx.db.patch(args.itemId, {
+      isCopy: true,
+      copyOwnerOrgId: item.orgId,
+      originalItemId: receivedItemId,
+      status: "sent",
+      sentAt: now,
+      recipientStatus: "recu",
+      recipientStatusUpdatedAt: now,
+      updatedAt: now,
+    });
+
+    // ── Étape 3 : Log workflow ──
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: args.itemId,
+      stepType: "SENT_EMAIL",
+      actorId: ctx.user._id,
+      actorName: ctx.user.name ?? ctx.user.email,
+      comment: `Correspondance envoyée à ${item.recipientOrg ?? item.recipientName}`,
+      isRead: true,
+      createdAt: now,
+    });
+
+    // Dupliquer les recipients pour l'item reçu
+    const recipients = await ctx.db
+      .query("correspondanceRecipients")
+      .withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+      .collect();
+
+    for (const r of recipients) {
+      await ctx.db.insert("correspondanceRecipients", {
+        itemId: receivedItemId,
+        userId: r.userId,
+        orgId: r.orgId,
+        role: r.role,
+        name: r.name,
+        email: r.email,
+        positionTitle: r.positionTitle,
+        orgName: r.orgName,
+        createdAt: now,
+      });
+    }
+
+    return { sentItemId: args.itemId, receivedItemId };
+  },
+});
+
+/**
+ * Synchroniser le recipientStatus d'une copie expéditeur
+ * quand le destinataire prend une action sur l'original.
+ */
+export const syncRecipientStatus = authMutation({
+  args: {
+    originalItemId: v.id("correspondanceItems"),
+    newStatus: v.union(
+      v.literal("en_transit"),
+      v.literal("recu"),
+      v.literal("en_attente"),
+      v.literal("approuve"),
+      v.literal("repondu"),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    // Trouver la copie de l'expéditeur via l'index by_original
+    const copies = await ctx.db
+      .query("correspondanceItems")
+      .withIndex("by_original", (q) =>
+        q.eq("originalItemId", args.originalItemId),
+      )
+      .collect();
+
+    for (const copy of copies) {
+      if (copy.isCopy) {
+        await ctx.db.patch(copy._id, {
+          recipientStatus: args.newStatus,
+          recipientStatusUpdatedAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+  },
+});
+
+/**
+ * Enregistrer la réception d'une correspondance entrante
+ * (attribue un numéro d'arrivée et met à jour le suivi)
+ */
+export const registerIncoming = authMutation({
+  args: {
+    itemId: v.id("correspondanceItems"),
+    arrivalReference: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw new Error("Correspondance introuvable");
+    if (item.status !== "received") {
+      throw new Error("Seule une correspondance reçue peut être enregistrée");
+    }
+
+    await ctx.db.patch(args.itemId, {
+      arrivalReference: args.arrivalReference ?? `ARR/${new Date().getFullYear()}/${Math.floor(Math.random() * 100000).toString().padStart(5, "0")}`,
+      arrivalDate: now,
+      recipientStatus: "recu",
+      recipientStatusUpdatedAt: now,
+      updatedAt: now,
+    });
+
+    // Synchroniser le recipientStatus vers la copie expéditeur
+    // (chercher les copies qui pointent vers cet item)
+    const copies = await ctx.db
+      .query("correspondanceItems")
+      .withIndex("by_original", (q) => q.eq("originalItemId", args.itemId))
+      .collect();
+    for (const copy of copies) {
+      if (copy.isCopy) {
+        await ctx.db.patch(copy._id, {
+          recipientStatus: "recu",
+          recipientStatusUpdatedAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: args.itemId,
+      stepType: "VIEWED",
+      actorId: ctx.user._id,
+      actorName: ctx.user.name ?? ctx.user.email,
+      comment: "Correspondance enregistrée à l'arrivée",
+      isRead: true,
+      createdAt: now,
+    });
+  },
+});
+
+/**
+ * Assigner une correspondance entrante à un agent traitant
+ */
+export const assignCorrespondance = authMutation({
+  args: {
+    itemId: v.id("correspondanceItems"),
+    assignedToId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw new Error("Correspondance introuvable");
+
+    const assignee = await ctx.db.get(args.assignedToId);
+
+    await ctx.db.patch(args.itemId, {
+      assignedToId: args.assignedToId,
+      recipientStatus: "en_attente",
+      recipientStatusUpdatedAt: now,
+      updatedAt: now,
+    });
+
+    // Synchroniser vers la copie expéditeur
+    const copies = await ctx.db
+      .query("correspondanceItems")
+      .withIndex("by_original", (q) => q.eq("originalItemId", args.itemId))
+      .collect();
+    for (const copy of copies) {
+      if (copy.isCopy) {
+        await ctx.db.patch(copy._id, {
+          recipientStatus: "en_attente",
+          recipientStatusUpdatedAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: args.itemId,
+      stepType: "RETURNED_TO_AGENT",
+      actorId: ctx.user._id,
+      actorName: ctx.user.name ?? ctx.user.email,
+      targetId: args.assignedToId,
+      targetName: assignee?.name ?? assignee?.email ?? "Agent",
+      comment: `Assigné à ${assignee?.name ?? assignee?.email ?? "un agent"}`,
+      isRead: false,
+      createdAt: now,
+    });
+  },
+});
+
+/**
+ * Répondre à une correspondance reçue.
+ * Crée une nouvelle correspondance liée (parentItemId) et met à jour
+ * le recipientStatus → "repondu" sur la copie de l'expéditeur original.
+ */
+export const respondToCorrespondance = authMutation({
+  args: {
+    originalItemId: v.id("correspondanceItems"),
+    title: v.string(),
+    comment: v.optional(v.string()),
+    attachments: v.optional(v.array(v.object({
+      storageId: v.id("_storage"),
+      filename: v.string(),
+      mimeType: v.string(),
+      sizeBytes: v.number(),
+      uploadedAt: v.number(),
+    }))),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const original = await ctx.db.get(args.originalItemId);
+    if (!original) throw new Error("Correspondance originale introuvable");
+
+    // Créer la réponse (nouvelle correspondance sortante liée)
+    const reference = generateReference(original.type);
+    const responseItemId = await ctx.db.insert("correspondanceItems", {
+      orgId: original.orgId,
+      copyOwnerOrgId: original.copyOwnerOrgId ?? original.orgId,
+      isCopy: false,
+      createdBy: ctx.user._id,
+      reference,
+      title: args.title,
+      type: original.type,
+      priority: original.priority,
+      status: "draft",
+      direction: "outgoing",
+      // Inverser expéditeur/destinataire
+      senderName: original.recipientName,
+      senderOrg: original.recipientOrg,
+      senderEmail: original.recipientEmail,
+      senderUserId: ctx.user._id,
+      recipientName: original.senderName,
+      recipientOrg: original.senderOrg,
+      recipientEmail: original.senderEmail,
+      primaryRecipientId: original.senderUserId,
+      primaryRecipientOrgId: original.orgId !== original.copyOwnerOrgId
+        ? original.orgId : undefined,
+      comment: args.comment,
+      tags: ["réponse", ...original.tags.filter((t) => t !== "réponse")],
+      requiresApproval: false,
+      attachments: args.attachments ?? [],
+      confidentialite: original.confidentialite,
+      parentItemId: args.originalItemId,
+      readByIds: [ctx.user._id as string],
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Mettre à jour le recipientStatus de l'original → "repondu"
+    await ctx.db.patch(args.originalItemId, {
+      recipientStatus: "repondu",
+      recipientStatusUpdatedAt: now,
+      updatedAt: now,
+    });
+
+    // Synchroniser vers la copie de l'expéditeur original
+    const copies = await ctx.db
+      .query("correspondanceItems")
+      .withIndex("by_original", (q) => q.eq("originalItemId", args.originalItemId))
+      .collect();
+    for (const copy of copies) {
+      if (copy.isCopy) {
+        await ctx.db.patch(copy._id, {
+          recipientStatus: "repondu",
+          recipientStatusUpdatedAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+
+    // Log workflow
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: args.originalItemId,
+      stepType: "TRANSMITTED",
+      actorId: ctx.user._id,
+      actorName: ctx.user.name ?? ctx.user.email,
+      comment: `Réponse créée : ${args.title}`,
+      isRead: true,
+      createdAt: now,
+    });
+
+    return { responseItemId };
+  },
+});
+
+/**
+ * Résoudre la chaîne d'approbation pour un item donné.
+ * Utilise le typeConfig de l'org et la hiérarchie des positions.
+ */
+export const resolveApprovalChain = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+    typeCode: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Chercher le typeConfig pour cette org
+    const typeConfig = await ctx.db
+      .query("correspondanceTypeConfigs")
+      .withIndex("by_org_type", (q) =>
+        q.eq("orgId", args.orgId).eq("typeCode", args.typeCode),
+      )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .first();
+
+    if (!typeConfig) {
+      return { requiresApproval: false, chain: [], autoRoute: false };
+    }
+
+    const { workflowConfig } = typeConfig;
+
+    if (!workflowConfig.requiresApproval) {
+      return { requiresApproval: false, chain: [], autoRoute: false };
+    }
+
+    // Si autoRouteByHierarchy, construire la chaîne automatiquement
+    if (workflowConfig.autoRouteByHierarchy) {
+      // Trouver le membership de l'utilisateur courant
+      const membership = await ctx.db
+        .query("memberships")
+        .withIndex("by_user_org_deletedAt", (q: any) =>
+          q.eq("userId", ctx.user._id).eq("orgId", args.orgId).eq("deletedAt", undefined),
+        )
+        .first();
+
+      if (!membership || !membership.positionId) {
+        return { requiresApproval: true, chain: workflowConfig.approvalChain, autoRoute: true };
+      }
+
+      const position = await ctx.db.get(membership.positionId);
+      const userGrade = (position as any)?.grade ?? "agent";
+
+      // Trouver les positions supérieures dans l'org
+      const allPositions = await ctx.db
+        .query("positions")
+        .withIndex("by_org", (q: any) => q.eq("orgId", args.orgId).eq("isActive", true))
+        .collect();
+
+      const gradeOrder = ["external", "agent", "counselor", "deputy_chief", "chief"];
+      const userGradeIndex = gradeOrder.indexOf(userGrade);
+
+      // Trouver les supérieurs hiérarchiques
+      const superiors = allPositions
+        .filter((p: any) => {
+          const pGradeIndex = gradeOrder.indexOf(p.grade ?? "agent");
+          return pGradeIndex > userGradeIndex && p.grade !== userGrade;
+        })
+        .sort((a: any, b: any) => {
+          const aIdx = gradeOrder.indexOf(a.grade ?? "agent");
+          const bIdx = gradeOrder.indexOf(b.grade ?? "agent");
+          return aIdx - bIdx; // Du plus proche au plus haut
+        });
+
+      // Trouver les occupants de ces positions
+      const chain: Array<{
+        ordre: number;
+        approverId: string;
+        approverName: string;
+        approverRole: string;
+        positionTitle: string;
+      }> = [];
+
+      for (let i = 0; i < superiors.length; i++) {
+        const sup = superiors[i] as any;
+        // Trouver le membre qui occupe cette position
+        const occupant = await ctx.db
+          .query("memberships")
+          .withIndex("by_user_org_deletedAt", (q: any) =>
+            q.eq("orgId", args.orgId),
+          )
+          .filter((q: any) =>
+            q.and(
+              q.eq(q.field("positionId"), sup._id),
+              q.eq(q.field("deletedAt"), undefined),
+            ),
+          )
+          .first();
+
+        if (occupant) {
+          const user = await ctx.db.get(occupant.userId);
+          chain.push({
+            ordre: i + 1,
+            approverId: occupant.userId as string,
+            approverName: user?.name ?? user?.email ?? "Supérieur",
+            approverRole: sup.grade ?? "agent",
+            positionTitle: sup.title?.fr ?? sup.code,
+          });
+        }
+      }
+
+      return { requiresApproval: true, chain, autoRoute: true };
+    }
+
+    // Sinon utiliser la chaîne statique définie dans le config
+    return {
+      requiresApproval: true,
+      chain: workflowConfig.approvalChain,
+      autoRoute: false,
+    };
+  },
+});
+
+/**
+ * Soumettre pour approbation avec chaîne multi-niveaux.
+ * Crée les ApprovalSteps et route vers le premier approbateur.
+ */
+export const submitForChainApproval = authMutation({
+  args: {
+    itemId: v.id("correspondanceItems"),
+    approvalChain: v.array(v.object({
+      ordre: v.number(),
+      approverId: v.id("users"),
+      approverName: v.optional(v.string()),
+      approverRole: v.optional(v.string()),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw new Error("Correspondance introuvable");
+    if (item.status !== "draft") throw new Error("Seul un brouillon peut être soumis");
+    if (args.approvalChain.length === 0) throw new Error("La chaîne d'approbation est vide");
+
+    // Créer les étapes d'approbation
+    for (const step of args.approvalChain) {
+      await ctx.db.insert("correspondanceApprovalSteps", {
+        itemId: args.itemId,
+        ordre: step.ordre,
+        approverId: step.approverId,
+        approverName: step.approverName,
+        approverRole: step.approverRole,
+        status: step.ordre === 1 ? "pending" : "pending",
+        createdAt: now,
+      });
+    }
+
+    // Mettre à jour l'item
+    const firstApprover = args.approvalChain[0];
+    await ctx.db.patch(args.itemId, {
+      status: "pending",
+      requiresApproval: true,
+      currentHolderId: firstApprover.approverId,
+      updatedAt: now,
+    });
+
+    // Log workflow
+    const firstUser = await ctx.db.get(firstApprover.approverId);
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: args.itemId,
+      stepType: "SENT_FOR_APPROVAL",
+      actorId: ctx.user._id,
+      actorName: ctx.user.name ?? ctx.user.email,
+      targetId: firstApprover.approverId,
+      targetName: firstUser?.name ?? firstUser?.email ?? "Approbateur",
+      comment: `Soumis pour approbation (${args.approvalChain.length} étape${args.approvalChain.length > 1 ? "s" : ""})`,
+      isRead: false,
+      createdAt: now,
+    });
+  },
+});
+
+/**
+ * Approuver à une étape de la chaîne.
+ * Si c'est la dernière étape, envoie automatiquement la correspondance.
+ */
+export const approveChainStep = authMutation({
+  args: {
+    itemId: v.id("correspondanceItems"),
+    comment: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw new Error("Correspondance introuvable");
+    if (item.status !== "pending") throw new Error("Cette correspondance n'est pas en attente d'approbation");
+
+    // Trouver l'étape courante de l'utilisateur
+    const steps = await ctx.db
+      .query("correspondanceApprovalSteps")
+      .withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+      .collect();
+
+    const myStep = steps.find(
+      (s) => s.approverId === ctx.user._id && s.status === "pending",
+    );
+
+    if (!myStep) throw new Error("Vous n'avez pas d'étape d'approbation en attente");
+
+    // Approuver l'étape courante
+    await ctx.db.patch(myStep._id, {
+      status: "approved",
+      comment: args.comment,
+      decidedAt: now,
+    });
+
+    // Log
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: args.itemId,
+      stepType: "APPROVED",
+      actorId: ctx.user._id,
+      actorName: ctx.user.name ?? ctx.user.email,
+      comment: args.comment ?? "Approuvé",
+      isRead: true,
+      createdAt: now,
+    });
+
+    // Trouver l'étape suivante
+    const sortedSteps = steps.sort((a, b) => a.ordre - b.ordre);
+    const myIndex = sortedSteps.findIndex((s) => s._id === myStep._id);
+    const nextStep = sortedSteps[myIndex + 1];
+
+    if (nextStep) {
+      // Passer au prochain approbateur
+      await ctx.db.patch(args.itemId, {
+        currentHolderId: nextStep.approverId,
+        approvedById: ctx.user._id,
+        approvedAt: now,
+        updatedAt: now,
+      });
+    } else {
+      // Dernière étape — marquer comme approuvé
+      await ctx.db.patch(args.itemId, {
+        status: "approved",
+        approvedById: ctx.user._id,
+        approvedAt: now,
+        currentHolderId: item.createdBy,
+        updatedAt: now,
+      });
+    }
+  },
+});
+
+/**
+ * Rejeter à une étape de la chaîne.
+ * Retourne le brouillon au créateur.
+ */
+export const rejectChainStep = authMutation({
+  args: {
+    itemId: v.id("correspondanceItems"),
+    reason: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw new Error("Correspondance introuvable");
+
+    // Trouver l'étape courante
+    const myStep = await ctx.db
+      .query("correspondanceApprovalSteps")
+      .withIndex("by_approver_status", (q) =>
+        q.eq("approverId", ctx.user._id).eq("status", "pending"),
+      )
+      .first();
+
+    if (!myStep || myStep.itemId !== args.itemId) {
+      throw new Error("Vous n'avez pas d'étape d'approbation en attente pour cette correspondance");
+    }
+
+    // Rejeter
+    await ctx.db.patch(myStep._id, {
+      status: "rejected",
+      comment: args.reason,
+      decidedAt: now,
+    });
+
+    // Retourner au créateur
+    await ctx.db.patch(args.itemId, {
+      status: "draft",
+      currentHolderId: item.createdBy,
+      updatedAt: now,
+    });
+
+    // Log
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: args.itemId,
+      stepType: "REJECTED",
+      actorId: ctx.user._id,
+      actorName: ctx.user.name ?? ctx.user.email,
+      comment: args.reason,
+      isRead: false,
+      createdAt: now,
+    });
+  },
+});
+
+/** Obtenir les étapes d'approbation d'un item */
+export const getApprovalSteps = authQuery({
+  args: { itemId: v.id("correspondanceItems") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("correspondanceApprovalSteps")
+      .withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+      .collect();
   },
 });

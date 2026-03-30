@@ -94,6 +94,10 @@ export function NewCorrespondanceWizard({
 		api.functions.correspondance.createItem,
 	);
 
+	const sendCorrespondanceMutation = useConvexMutationQuery(
+		api.functions.correspondance.sendCorrespondance,
+	);
+
 	// ─── Handlers ──────────────────────────────────────────
 
 	const handleGenerateUploadUrl = useCallback(async () => {
@@ -139,7 +143,8 @@ export function NewCorrespondanceWizard({
 				const primary = recipients[0];
 				const cc = recipients.slice(1);
 
-				await createItemMutation.mutateAsync({
+				// Créer le brouillon (toujours en status draft)
+				const itemId = await createItemMutation.mutateAsync({
 					orgId: orgId as Id<"orgs">,
 					title: title.trim(),
 					type: type as any,
@@ -173,6 +178,13 @@ export function NewCorrespondanceWizard({
 					confidentialite:
 						priority === "confidentiel" ? "confidentiel" : "standard",
 				});
+
+				// Si envoi direct (pas brouillon), envoyer immédiatement
+				if (!asDraft && itemId) {
+					await sendCorrespondanceMutation.mutateAsync({
+						itemId: itemId as Id<"correspondanceItems">,
+					});
+				}
 
 				toast.success(
 					asDraft ? "Brouillon enregistré" : "Correspondance envoyée",

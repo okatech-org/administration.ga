@@ -39,6 +39,14 @@ export const correspondanceStatusValidator = v.union(
   v.literal("archived"),
 );
 
+export const recipientStatusValidator = v.union(
+  v.literal("en_transit"),
+  v.literal("recu"),
+  v.literal("en_attente"),
+  v.literal("approuve"),
+  v.literal("repondu"),
+);
+
 export const correspondanceWorkflowStepTypeValidator = v.union(
   v.literal("CREATED"),
   v.literal("SENT_FOR_APPROVAL"),
@@ -141,6 +149,22 @@ export const correspondanceItemsTable = defineTable({
   // Read tracking
   readByIds: v.optional(v.array(v.string())),
 
+  // ── Mécanisme de copie (Phase 1 refonte) ──
+  // Quand une correspondance est envoyée, l'original part au destinataire
+  // et l'expéditeur conserve une copie (isCopy=true).
+  isCopy: v.optional(v.boolean()),
+  originalItemId: v.optional(v.id("correspondanceItems")),
+  copyOwnerOrgId: v.optional(v.id("orgs")),
+
+  // Suivi côté destinataire (mis à jour automatiquement sur la copie)
+  recipientStatus: v.optional(recipientStatusValidator),
+  recipientStatusUpdatedAt: v.optional(v.number()),
+
+  // Réception côté destinataire
+  arrivalReference: v.optional(v.string()),
+  arrivalDate: v.optional(v.number()),
+  assignedToId: v.optional(v.id("users")),
+
   // Timestamps
   createdAt: v.number(),
   updatedAt: v.number(),
@@ -154,6 +178,11 @@ export const correspondanceItemsTable = defineTable({
   .index("by_org_direction", ["orgId", "direction"])
   .index("by_holder", ["currentHolderId"])
   .index("by_parent", ["parentItemId"])
+  // Nouveaux index pour le mécanisme de copie
+  .index("by_owner_org", ["copyOwnerOrgId"])
+  .index("by_owner_org_status", ["copyOwnerOrgId", "status"])
+  .index("by_owner_org_copy", ["copyOwnerOrgId", "isCopy"])
+  .index("by_original", ["originalItemId"])
   .searchIndex("search_title", { searchField: "title", filterFields: ["orgId"] });
 
 /**
@@ -174,6 +203,76 @@ export const correspondanceWorkflowStepsTable = defineTable({
   .index("by_item", ["itemId"])
   .index("by_item_created", ["itemId", "createdAt"])
   .index("by_actor", ["actorId"]);
+
+/**
+ * Type configuration per organization.
+ * Each org can configure its correspondence types, workflows, and templates.
+ * Standard types are seeded on org init; custom types can be added.
+ */
+export const correspondanceTypeConfigsTable = defineTable({
+  orgId: v.id("orgs"),
+  typeCode: v.string(),
+  label: v.object({ fr: v.string(), en: v.optional(v.string()) }),
+  description: v.optional(v.object({ fr: v.string(), en: v.optional(v.string()) })),
+  isCustom: v.boolean(),
+  isActive: v.boolean(),
+  templateStorageId: v.optional(v.id("_storage")),
+  headerConfig: v.optional(v.object({
+    logoStorageId: v.optional(v.id("_storage")),
+    headerText: v.optional(v.string()),
+    footerText: v.optional(v.string()),
+  })),
+  workflowConfig: v.object({
+    requiresApproval: v.boolean(),
+    approvalChain: v.array(v.object({
+      ordre: v.number(),
+      roleMinimum: v.string(),
+      organismeId: v.optional(v.id("orgs")),
+      conditionType: v.union(
+        v.literal("always"),
+        v.literal("if_recipient_rank_above"),
+        v.literal("if_external"),
+      ),
+      conditionValue: v.optional(v.string()),
+    })),
+    autoRouteByHierarchy: v.boolean(),
+  }),
+  referencePattern: v.optional(v.string()),
+  prioriteParDefaut: v.optional(v.string()),
+  confidentialiteParDefaut: v.optional(v.string()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+  deletedAt: v.optional(v.number()),
+})
+  .index("by_org", ["orgId"])
+  .index("by_org_type", ["orgId", "typeCode"])
+  .index("by_org_active", ["orgId", "isActive"]);
+
+/**
+ * Approval chain steps for multi-level hierarchical approval.
+ * Each step represents one approver in the chain.
+ * Steps are processed in order (by `ordre` field).
+ */
+export const correspondanceApprovalStepsTable = defineTable({
+  itemId: v.id("correspondanceItems"),
+  ordre: v.number(),
+  approverId: v.id("users"),
+  approverName: v.optional(v.string()),
+  approverRole: v.optional(v.string()),
+  status: v.union(
+    v.literal("pending"),
+    v.literal("approved"),
+    v.literal("rejected"),
+    v.literal("skipped"),
+  ),
+  comment: v.optional(v.string()),
+  decidedAt: v.optional(v.number()),
+  createdAt: v.number(),
+})
+  .index("by_item", ["itemId"])
+  .index("by_item_ordre", ["itemId", "ordre"])
+  .index("by_approver", ["approverId"])
+  .index("by_approver_status", ["approverId", "status"]);
 
 /**
  * Recipients junction table.

@@ -61,6 +61,8 @@ export {
   correspondanceItemsTable,
   correspondanceWorkflowStepsTable,
   correspondanceRecipientsTable,
+  correspondanceTypeConfigsTable,
+  correspondanceApprovalStepsTable,
 } from "./correspondance";
 
 export {
