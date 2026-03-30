@@ -53,6 +53,13 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
     // CONVEX_SITE_URL is automatically provided by Convex in all environments.
     baseURL: process.env.CONVEX_SITE_URL,
     secret: process.env.BETTER_AUTH_SECRET,
+    session: {
+      // Keep sessions alive for 30 days (default is 7 days).
+      expiresIn: 60 * 60 * 24 * 30, // 30 days in seconds
+      // Refresh the session cookie when 20% of the lifetime has passed,
+      // i.e. every ~6 days of active use.
+      updateAge: 60 * 60 * 24 * 6, // 6 days in seconds
+    },
     trustedOrigins: isDev
       ? (request) => {
           const origins = parseTrustedOrigins();
@@ -79,7 +86,15 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
       useSecureCookies: isDev ? false : undefined,
     },
     plugins: [
-      convex({ authConfig }),
+      convex({
+        authConfig,
+        jwt: {
+          // Convex JWT valid for 1 hour (default 15 min).
+          // The ConvexBetterAuthProvider auto-refreshes before expiry
+          // using the long-lived Better Auth session cookie.
+          expirationSeconds: 60 * 60, // 1 hour
+        },
+      }),
       crossDomain({
         // Dynamic per-request: each app gets redirected to its own origin
         siteUrl: resolveSiteUrl(requestOrigin),
