@@ -28,6 +28,8 @@ import { DossierDetail } from "@/components/dossierProcedure/DossierDetail";
 import { DossierCreateWizard } from "@/components/dossierProcedure/DossierCreateWizard";
 import { Dashboard } from "@/components/correspondance/Dashboard";
 import { NewCorrespondanceWizard } from "@/components/correspondance/NewCorrespondanceWizard";
+import { CorrespondanceDossier } from "@/components/correspondance/CorrespondanceDossier";
+import { CorrespondanceDetail } from "@/components/correspondance/CorrespondanceDetail";
 
 type ActiveTab = "correspondance" | "dossiers" | "dashboard";
 
@@ -124,36 +126,14 @@ const RECIPIENT_STATUS_CFG: Record<string, { label: string; class: string; dot: 
 // MOCK DATA
 // ═══════════════════════════════════════════════════════════════
 
-const DEFAULT_FOLDERS: FolderItem[] = [
-	{ id: "__brouillon", name: "Brouillon", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
-	{ id: "__envoye", name: "Envoyé", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
-	{ id: "__recu", name: "Reçu", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
-	{ id: "f-notes-verbales", name: "Notes Verbales", parentFolderId: null, tags: ["diplomatique", "officiel"], fileCount: 3, subfolderCount: 0, updatedAt: "25/03/2026", createdBy: "MAE", isSystem: false },
-	{ id: "f-lettres-officielles", name: "Lettres Officielles", parentFolderId: null, tags: ["diplomatique", "lettres"], fileCount: 4, subfolderCount: 0, updatedAt: "24/03/2026", createdBy: "Ambassade", isSystem: false },
-	{ id: "f-circulaires", name: "Circulaires", parentFolderId: null, tags: ["administration", "circulaires"], fileCount: 2, subfolderCount: 0, updatedAt: "23/03/2026", createdBy: "MAE", isSystem: false },
-	{ id: "f-telegrammes", name: "Télégrammes", parentFolderId: null, tags: ["urgent", "diplomatique"], fileCount: 5, subfolderCount: 0, updatedAt: "26/03/2026", createdBy: "Service Diplomatique", isSystem: false },
-	{ id: "f-memorandums", name: "Mémorandums", parentFolderId: null, tags: ["accords", "cooperation"], fileCount: 3, subfolderCount: 0, updatedAt: "22/03/2026", createdBy: "Ambassade", isSystem: false },
-	{ id: "f-communiques", name: "Communiqués", parentFolderId: null, tags: ["presse", "public"], fileCount: 4, subfolderCount: 0, updatedAt: "21/03/2026", createdBy: "Communication", isSystem: false },
-	{ id: "f-france", name: "France", parentFolderId: null, tags: ["geographic", "france"], fileCount: 6, subfolderCount: 0, updatedAt: "25/03/2026", createdBy: "Ambassade Paris", isSystem: false },
-	{ id: "f-usa", name: "USA", parentFolderId: null, tags: ["geographic", "usa"], fileCount: 4, subfolderCount: 0, updatedAt: "24/03/2026", createdBy: "Ambassade Washington", isSystem: false },
-	{ id: "f-organisations-internationales", name: "Organisations Internationales", parentFolderId: null, tags: ["international", "organisations"], fileCount: 3, subfolderCount: 0, updatedAt: "23/03/2026", createdBy: "MAE", isSystem: false },
+const SYSTEM_FOLDERS: FolderItem[] = [
+	{ id: "__brouillon", name: "Brouillons", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
+	{ id: "__envoye", name: "Envoyés", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
+	{ id: "__recu", name: "Reçus", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
+	{ id: "__corbeille", name: "Corbeille", parentFolderId: null, tags: [], fileCount: 0, subfolderCount: 0, updatedAt: "", createdBy: "Système", isSystem: true },
 ];
 
-const MOCK_CORRESPONDENCES: CorrespondenceItem[] = [
-	{ id: "corr-1", reference: "NV/2026/GAB-FR/001", title: "Note Verbale — Protestation re: Incident diplomatique", type: "note_verbale", sender: "Ambassade de France", senderInitials: "AF", recipient: "Ministère des Affaires Étrangères du Gabon", updatedAt: "25/03/2026", updatedAtTs: 1774567200000, status: "approved", tags: ["protocole", "incident"], priority: "urgent", folderId: "f-notes-verbales", attachments: 2 },
-	{ id: "corr-2", reference: "LO/2026/GAB-EU/042", title: "Lettre de créance — Nouvel Ambassadeur", type: "lettre_officielle", sender: "Ministre des Affaires Étrangères", senderInitials: "MAE", recipient: "Union Européenne", updatedAt: "24/03/2026", updatedAtTs: 1774480800000, status: "sent", tags: ["accréditation", "ambassadeur"], priority: "normal", folderId: "f-lettres-officielles", attachments: 1 },
-	{ id: "corr-3", reference: "CIRC/2026-05", title: "Circulaire N°2026-05 — Procédures consulaires", type: "circulaire", sender: "Ministère des Affaires Étrangères", senderInitials: "MAE", recipient: "Tous les consulats", updatedAt: "23/03/2026", updatedAtTs: 1774394400000, status: "draft", tags: ["procedures", "consulaire"], priority: "normal", folderId: "f-circulaires", attachments: 3 },
-	{ id: "corr-4", reference: "TLG/2026/SEC/015", title: "Télégramme diplomatique — Alerte sécurité", type: "telegramme", sender: "Direction de la Sécurité", senderInitials: "DS", recipient: "Tous les postes diplomatiques", updatedAt: "26/03/2026", updatedAtTs: 1774653600000, status: "sent", tags: ["securite", "alerte"], priority: "urgent", folderId: "f-telegrammes", attachments: 0 },
-	{ id: "corr-5", reference: "MEM/2026/GAB-UE/003", title: "Mémorandum d'entente Gabon-UE", type: "memorandum", sender: "Ambassade auprès de l'UE", senderInitials: "AU", recipient: "Commission Européenne", updatedAt: "22/03/2026", updatedAtTs: 1774308000000, status: "pending", tags: ["accord", "cooperation"], priority: "normal", folderId: "f-memorandums", attachments: 5 },
-	{ id: "corr-6", reference: "COMM/2026/003", title: "Communiqué conjoint — Sommet UA", type: "communique", sender: "Bureau du Porte-parole", senderInitials: "BP", recipient: "Médias et Agences de presse", updatedAt: "21/03/2026", updatedAtTs: 1774221600000, status: "archived", tags: ["presse", "sommet"], priority: "normal", folderId: "f-communiques", attachments: 1 },
-	{ id: "corr-7", reference: "NV/2026/GAB-CN/008", title: "Note Verbale — Demande de visas pour délégation", type: "note_verbale", sender: "Ambassade de Chine", senderInitials: "AC", recipient: "Ministère des Affaires Étrangères du Gabon", updatedAt: "20/03/2026", updatedAtTs: 1774135200000, status: "received", tags: ["visas", "delegation"], priority: "normal", folderId: "f-notes-verbales", attachments: 1 },
-	{ id: "corr-8", reference: "LO/2026/GAB-BR/089", title: "Lettre officielle — Invitation au forum économique", type: "lettre_officielle", sender: "Ambassade du Brésil", senderInitials: "AB", recipient: "Ministère du Commerce du Gabon", updatedAt: "19/03/2026", updatedAtTs: 1774048800000, status: "approved", tags: ["economie", "forum"], priority: "normal", folderId: "f-lettres-officielles", attachments: 2 },
-	{ id: "corr-9", reference: "TLG/2026/ONU/042", title: "Télégramme — Résolution du Conseil de Sécurité", type: "telegramme", sender: "Mission permanente auprès de l'ONU", senderInitials: "MO", recipient: "MAE Gabon", updatedAt: "18/03/2026", updatedAtTs: 1773962400000, status: "received", tags: ["onu", "resolution"], priority: "urgent", folderId: "f-telegrammes", attachments: 0 },
-	{ id: "corr-10", reference: "MEM/2026/GAB-ZA/001", title: "Mémorandum de coopération Gabon-Afrique du Sud", type: "memorandum", sender: "Ambassade en Afrique du Sud", senderInitials: "AS", recipient: "Gouvernement de l'Afrique du Sud", updatedAt: "17/03/2026", updatedAtTs: 1773876000000, status: "draft", tags: ["bilateral", "cooperation"], priority: "normal", folderId: "f-memorandums", attachments: 4 },
-	{ id: "corr-11", reference: "CIRC/2026-04", title: "Circulaire — Nouvelle politique de congés", type: "circulaire", sender: "Ressources Humaines", senderInitials: "RH", recipient: "Personnel diplomatique", updatedAt: "16/03/2026", updatedAtTs: 1773789600000, status: "sent", tags: ["ressources-humaines", "politique"], priority: "normal", folderId: "f-circulaires", attachments: 1 },
-	{ id: "corr-12", reference: "COMM/2026/002", title: "Communiqué — Visite présidentielle en France", type: "communique", sender: "Porte-parole du Gouvernement", senderInitials: "PG", recipient: "Médias internationaux", updatedAt: "15/03/2026", updatedAtTs: 1773703200000, status: "sent", tags: ["presse", "presidentiellement"], priority: "normal", folderId: "f-france", attachments: 0 },
-	{ id: "corr-13", reference: "NV/2026/GAB-USA/005", title: "Note Verbale — Demande d'extradition", type: "note_verbale", sender: "Ambassade des USA", senderInitials: "AU", recipient: "Ministère de la Justice du Gabon", updatedAt: "14/03/2026", updatedAtTs: 1773616800000, status: "pending", tags: ["juridique", "extradition"], priority: "confidentiel", folderId: "f-usa", attachments: 3 },
-];
+// Mock data supprimé — les données viennent de Convex via getItems()
 
 // ═══════════════════════════════════════════════════════════════
 // ANIMATIONS
@@ -778,9 +758,17 @@ function ICorrespondancePage() {
 	);
 
 	// ─── Map Convex data → UI types ─────────────────────────
-	const correspondences = useMemo((): CorrespondenceItem[] =>
+	const correspondences = useMemo((): (CorrespondenceItem & {
+		isCopy?: boolean;
+		recipientStatus?: string;
+		copyOwnerOrgId?: string;
+		documents?: any[];
+		deletedAt?: number;
+		_id?: string;
+	})[] =>
 		(rawItems as any[]).map((item) => ({
 			id: item._id,
+			_id: item._id,
 			reference: item.reference,
 			title: item.title,
 			type: item.type as CorrespondenceType,
@@ -799,12 +787,18 @@ function ICorrespondancePage() {
 			priority: item.priority as Priority,
 			folderId: item.folderId ?? "__brouillon",
 			attachments: item.attachments?.length ?? 0,
+			// Nouveaux champs Phase 1-2
+			isCopy: item.isCopy ?? false,
+			recipientStatus: item.recipientStatus,
+			copyOwnerOrgId: item.copyOwnerOrgId,
+			documents: item.documents ?? [],
+			deletedAt: item.deletedAt,
 		})),
 		[rawItems],
 	);
 
 	const folders = useMemo((): FolderItem[] => [
-		...DEFAULT_FOLDERS.filter((f) => f.isSystem),
+		...SYSTEM_FOLDERS,
 		...(rawFolders as any[]).map((f) => ({
 			id: f._id as string,
 			name: f.name,
@@ -820,7 +814,8 @@ function ICorrespondancePage() {
 
 	// ─── State ──────────────────────────────────────────────
 	const [viewMode, setViewMode] = useState<ViewMode>("grid");
-	const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+	const [currentFolderId, setCurrentFolderId] = useState<string | null>("__brouillon");
+	const [openDetailId, setOpenDetailId] = useState<string | null>(null);
 	const [search, setSearch] = useState("");
 	const [statusFilter, setStatusFilter] = useState<CorrStatus | "all">("all");
 	const [sortBy, setSortBy] = useState("date");
@@ -880,15 +875,17 @@ function ICorrespondancePage() {
 
 		let items: CorrespondenceItem[];
 
-		// Dossiers système — filtrage par status/isCopy
+		// Dossiers système — filtrage exclusif par status/isCopy/deletedAt
 		if (currentFolderId === "__brouillon") {
-			items = correspondences.filter((d) => d.status === "draft");
+			items = correspondences.filter((d) => d.status === "draft" && !d.isCopy && !d.deletedAt);
 		} else if (currentFolderId === "__envoye") {
-			items = correspondences.filter((d) => (d as any).isCopy === true || d.status === "sent");
+			items = correspondences.filter((d) => d.isCopy === true && !d.deletedAt);
 		} else if (currentFolderId === "__recu") {
-			items = correspondences.filter((d) => d.status === "received" && (d as any).isCopy !== true);
+			items = correspondences.filter((d) => d.status === "received" && !d.isCopy && !d.deletedAt);
+		} else if (currentFolderId === "__corbeille") {
+			items = correspondences.filter((d) => !!d.deletedAt);
 		} else {
-			items = correspondences.filter((d) => d.folderId === currentFolderId);
+			items = correspondences.filter((d) => d.folderId === currentFolderId && !d.deletedAt);
 		}
 		if (search) {
 			const q = search.toLowerCase();
@@ -1088,6 +1085,19 @@ function ICorrespondancePage() {
 			{/* ═══ TAB: Correspondance ═══ */}
 			{activeTab === "correspondance" && (<>
 
+			{/* ── Vue détail dossier ── */}
+			{openDetailId && activeOrgId && (
+				<CorrespondanceDetail
+					itemId={openDetailId as Id<"correspondanceItems">}
+					currentUserId=""
+					currentOrgId={activeOrgId as string}
+					onBack={() => setOpenDetailId(null)}
+				/>
+			)}
+
+			{/* ── Liste (masquée quand détail ouvert) ── */}
+			{!openDetailId && (<>
+
 			{/* ── Toolbar ── */}
 			<motion.div variants={fadeUp}>
 				<div className="border border-border/50 rounded-xl bg-card p-3">
@@ -1166,79 +1176,30 @@ function ICorrespondancePage() {
 								</div>
 							</div>
 						)}
-						{/* Correspondences */}
+						{/* Dossiers de correspondance */}
 						{currentFiles.length > 0 && (
 							<div>
-								<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-3 px-1">Correspondances</p>
-								<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-									{currentFiles.map((corr) => {
-										const st = STATUS_CFG[corr.status];
-										const typeConfig = CORRESPONDENCE_TYPE_CONFIG[corr.type];
-										const isCopyItem = (corr as any).isCopy === true || currentFolderId === "__envoye";
-										const recipientSt = (corr as any).recipientStatus as string | undefined;
-										const rsCfg = recipientSt ? RECIPIENT_STATUS_CFG[recipientSt] : null;
-										return (
-											<div key={corr.id} className={cn(isCopyItem && "opacity-70")}>
-												{/* Badge COPIE overlay */}
-												{isCopyItem && (
-													<div className="flex items-center gap-1 mb-1 px-1">
-														<span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 bg-muted/40 px-1.5 py-0.5 rounded">Copie</span>
-														{rsCfg && (
-															<span className={cn("text-[8px] h-4 border inline-flex items-center gap-1 px-1.5 rounded-full font-semibold", rsCfg.class)}>
-																<span className={cn("h-1 w-1 rounded-full", rsCfg.dot)} />
-																{rsCfg.label}
-															</span>
-														)}
-													</div>
-												)}
-												<VaultFileCard
-													title={corr.title}
-													reference={corr.reference}
-													sender={corr.sender}
-													senderInitials={corr.senderInitials}
-													date={corr.updatedAt}
-													statusBadge={
-														<span className={cn("text-[9px] h-5 border inline-flex items-center gap-1 px-1.5 rounded-full font-medium", st.class)}>
-															<span className={cn("h-1.5 w-1.5 rounded-full", st.dot)} />
-															{st.label}
-														</span>
-													}
-													typeBadge={
-														<span className={cn("text-[9px] h-5 border inline-flex items-center gap-1 px-1.5 rounded-full font-medium", typeConfig.color)}>
-															{typeConfig.label}
-														</span>
-													}
-													priorityBadge={
-														corr.priority !== "normal" && (
-															<span className={cn("text-[9px] h-5 border inline-flex items-center gap-1 px-1.5 rounded-full font-medium", corr.priority === "urgent" ? "text-red-400 bg-red-500/15 border-red-500/20" : "text-amber-400 bg-amber-500/15 border-amber-500/20")}>
-																{PRIORITY_CONFIG[corr.priority].label}
-															</span>
-														)
-													}
-													contextMenu={
-														<FolderContextMenu
-															itemId={corr.id}
-															itemName={corr.title}
-															itemType="correspondence"
-															onShare={handleShare}
-															onInfo={handleOpenInfo}
-															onTransmit={handleOpenTransmit}
-														onDelete={handleDelete}
-														/>
-													}
-													badges={
-														corr.attachments > 0 && (
-															<span className="text-[9px] h-4 px-1.5 rounded-full bg-blue-500/15 text-blue-400 inline-flex items-center font-medium gap-1">
-																<FileText className="h-2.5 w-2.5" />{corr.attachments}
-															</span>
-														)
-													}
-													tags={corr.tags}
-													onClick={() => handleOpenInfo(corr.id)}
-												/>
-											</div>
-										);
-									})}
+								<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-3 px-1">
+									Dossiers de correspondance ({currentFiles.length})
+								</p>
+								<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+									{currentFiles.map((corr) => (
+										<CorrespondanceDossier
+											key={corr.id}
+											reference={corr.reference}
+											title={corr.title}
+											type={corr.type}
+											sender={corr.sender}
+											recipient={corr.recipient}
+											date={corr.updatedAt}
+											status={corr.status}
+											priority={corr.priority}
+											documentCount={corr.documents?.length || corr.attachments}
+											isCopy={corr.isCopy}
+											recipientStatus={corr.recipientStatus}
+											onClick={() => setOpenDetailId(corr.id)}
+										/>
+									))}
 								</div>
 							</div>
 						)}
@@ -1415,6 +1376,7 @@ function ICorrespondancePage() {
 				/>
 			)}
 
+			</>)}
 			</>)}
 
 			{/* ═══ TAB: Dossiers de procédure ═══ */}
