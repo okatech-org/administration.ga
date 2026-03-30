@@ -72,7 +72,7 @@ function getActionConfig(action: string) {
 }
 
 export function WorkflowTimeline({ steps }: WorkflowTimelineProps) {
-  if (steps.length === 0) return null;
+  if (!steps || steps.length === 0) return null;
 
   return (
     <div className="relative flex flex-col gap-0">

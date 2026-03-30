@@ -346,9 +346,30 @@ export function CorrespondanceDetail({
 					)}
 
 					{/* Historique workflow */}
-					<WorkflowTimeline itemId={itemId} />
+					<WorkflowTimelineWrapper itemId={itemId} />
 				</div>
 			</div>
 		</div>
 	);
+}
+
+/** Wrapper qui fetch les workflow steps et les passe au WorkflowTimeline */
+function WorkflowTimelineWrapper({ itemId }: { itemId: Id<"correspondanceItems"> }) {
+	const { data: steps } = useAuthenticatedConvexQuery(
+		api.functions.correspondance.getWorkflowHistory,
+		{ itemId },
+	);
+
+	if (!steps || steps.length === 0) return null;
+
+	const mappedSteps = (steps as any[]).map((s) => ({
+		id: s._id as string,
+		action: s.stepType,
+		actorName: s.actorName,
+		targetName: s.targetName,
+		comment: s.comment,
+		timestamp: s.createdAt,
+	}));
+
+	return <WorkflowTimeline steps={mappedSteps} />;
 }
