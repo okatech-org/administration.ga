@@ -12,6 +12,7 @@ import {
 	Download,
 	FileText,
 	Loader2,
+	Phone,
 	Settings,
 	TrendingDown,
 	TrendingUp,
@@ -209,9 +210,9 @@ function AdminDashboard() {
 			href: "/appointments",
 		},
 		{
-			label: t("admin.quickActions.team"),
-			icon: Users,
-			href: "/team",
+			label: t("admin.nav.calls", "Appels"),
+			icon: Phone,
+			href: "/calls",
 		},
 		{
 			label: t("admin.quickActions.settings"),

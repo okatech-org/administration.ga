@@ -309,18 +309,49 @@ export function CorrespondanceDetail({
 									</Button>
 								)}
 							</div>
-							{/* Zone d'affichage PDF — placeholder pour le PdfViewer */}
-							<div className="h-[500px] flex items-center justify-center bg-muted/20">
-								<div className="text-center space-y-2">
-									<FileText className="h-12 w-12 text-muted-foreground/30 mx-auto" />
-									<p className="text-sm text-muted-foreground">
-										{selectedDoc.filename}
-									</p>
-									<p className="text-xs text-muted-foreground/60">
-										Cliquez sur "Télécharger" pour ouvrir le document
-									</p>
+							{/* Zone d'affichage PDF */}
+							{selectedDoc.url ? (
+								<div className="h-[650px] w-full bg-muted/5 border-t">
+									{selectedDoc.mimeType === "application/pdf" ? (
+										<iframe 
+											src={`${selectedDoc.url}#view=FitH`} 
+											className="w-full h-full border-0" 
+											title={selectedDoc.filename}
+										/>
+									) : selectedDoc.mimeType?.startsWith("image/") ? (
+										<div className="w-full h-full flex items-center justify-center overflow-auto p-4">
+											<img 
+												src={selectedDoc.url} 
+												alt={selectedDoc.filename} 
+												className="max-w-full max-h-[600px] object-contain shadow-md border border-border/50 rounded-sm" 
+											/>
+										</div>
+									) : (
+										<div className="h-full flex items-center justify-center">
+											<div className="text-center space-y-3">
+												<FileText className="h-12 w-12 text-muted-foreground/30 mx-auto" />
+												<p className="text-sm font-medium">{selectedDoc.filename}</p>
+												<p className="text-xs text-muted-foreground/60 max-w-[250px] mx-auto">
+													Aperçu non disponible pour ce format de fichier ({selectedDoc.mimeType}).
+												</p>
+												<Button variant="outline" size="sm" asChild className="mt-4 gap-1.5">
+													<a href={selectedDoc.url} download={selectedDoc.filename} target="_blank" rel="noopener noreferrer">
+														<Download className="h-3.5 w-3.5" />
+														Télécharger
+													</a>
+												</Button>
+											</div>
+										</div>
+									)}
 								</div>
-							</div>
+							) : (
+								<div className="h-[500px] flex items-center justify-center bg-muted/10 border-t">
+									<div className="text-center space-y-2">
+										<Loader2 className="h-8 w-8 text-muted-foreground/30 animate-spin mx-auto" />
+										<p className="text-sm text-muted-foreground">Chargement du document...</p>
+									</div>
+								</div>
+							)}
 						</div>
 					)}
 
