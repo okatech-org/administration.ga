@@ -101,13 +101,25 @@ export function HomeLandingSignIn() {
 
 	return (
 		<div className="relative">
+			{/* WCAG 2.4.1 — Skip link (visible uniquement au focus clavier) */}
+			<a href="#main-content" className="skip-link">
+				Aller au contenu principal
+			</a>
+
 			{/* Fixed Navbar — reçoit le panel actif pour adapter son style */}
 			<Navbar activePanel={activePanel} onNavigate={navigateToPanel} />
 
-			{/* Horizontal scroll container */}
-			<div
+			{/* WCAG — Instructions clavier pour lecteurs d'écran */}
+			<div id="keyboard-help" className="sr-only">
+				Utilisez les flèches gauche et droite pour naviguer entre les volets.
+			</div>
+
+			{/* Horizontal scroll container — <main> pour sémantique */}
+			<main
+				id="main-content"
 				ref={containerRef}
-				className="flex snap-x snap-mandatory h-dvh overflow-x-scroll overflow-y-hidden landing-scroll-container"
+				className="flex snap-x snap-mandatory h-dvh overflow-x-scroll overflow-y-hidden landing-scroll-container hero-gradient-base"
+				aria-describedby="keyboard-help"
 			>
 				{/* Panel 1 — Accueil */}
 				<Panel panelRef={p0}>
@@ -133,22 +145,29 @@ export function HomeLandingSignIn() {
 				<Panel panelRef={p4}>
 					<TutorielsPanel />
 				</Panel>
-			</div>
+			</main>
 
-			{/* Panel progress dots (bottom center) */}
-			<div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2">
+			{/* Panel progress dots (bottom center) — ARIA tablist */}
+			<div
+				className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2"
+				role="tablist"
+				aria-label="Navigation entre les volets"
+			>
 				{Array.from({ length: PANEL_COUNT }).map((_, i) => (
 					<button
 						key={i}
 						type="button"
-						onClick={() => navigateToPanel(i)}
+						role="tab"
+						aria-selected={activePanel === i}
 						aria-label={PANEL_LABELS[i]}
+						onClick={() => navigateToPanel(i)}
+						className="focus-ring p-1"
 					>
 						<div
 							className={`rounded-full transition-all duration-300 ${
 								activePanel === i
-									? "w-6 h-2 bg-primary"
-									: "w-2 h-2 bg-slate-400/40 hover:bg-slate-400/60"
+									? "w-6 h-2 bg-emerald-400"
+									: "w-2 h-2 bg-white/40 hover:bg-white/60"
 							}`}
 						/>
 					</button>
