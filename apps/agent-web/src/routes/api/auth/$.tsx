@@ -16,10 +16,22 @@ async function safeHandler(request: Request): Promise<Response> {
 		// Buffer the body — streaming responses break under Vite's HTTP/2 server
 		const body = await response.arrayBuffer();
 
-		// Clone headers, preserving multi-value Set-Cookie
+		// Clone headers, properly handling multi-value Set-Cookie
 		const headers = new Headers();
+
+		// Set-Cookie MUST be forwarded individually — Headers.entries()
+		// combines them into one comma-separated string which browsers reject.
+		const setCookies = (response.headers as any).getSetCookie?.() as string[] | undefined;
+		if (setCookies && setCookies.length > 0) {
+			for (const cookie of setCookies) {
+				headers.append("set-cookie", cookie);
+			}
+		}
+
 		for (const [key, value] of response.headers.entries()) {
-			if (!FORBIDDEN_H2_HEADERS.includes(key.toLowerCase())) {
+			const lk = key.toLowerCase();
+			if (lk === "set-cookie") continue; // already handled above
+			if (!FORBIDDEN_H2_HEADERS.includes(lk)) {
 				headers.append(key, value);
 			}
 		}
