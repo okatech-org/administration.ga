@@ -161,9 +161,18 @@ http.route({
       responseHeaders.set("Content-Type", "application/json");
 
       // Forward Set-Cookie headers from Better Auth's response
-      const setCookieHeader = authResponse.headers.get("set-cookie");
-      if (setCookieHeader) {
-        responseHeaders.set("Set-Cookie", setCookieHeader);
+      // Use getSetCookie() to properly handle multiple cookies (session + CSRF)
+      const cookies = (authResponse.headers as any).getSetCookie?.() as string[] | undefined;
+      if (cookies && cookies.length > 0) {
+        for (const cookie of cookies) {
+          responseHeaders.append("Set-Cookie", cookie);
+        }
+      } else {
+        // Fallback: single header forwarding
+        const setCookieHeader = authResponse.headers.get("set-cookie");
+        if (setCookieHeader) {
+          responseHeaders.set("Set-Cookie", setCookieHeader);
+        }
       }
 
       // Add CORS headers

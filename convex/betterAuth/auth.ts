@@ -67,7 +67,11 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
           if (reqOrigin) {
             try {
               const url = new URL(reqOrigin);
-              if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+              if (
+                url.hostname === "localhost" ||
+                url.hostname === "127.0.0.1" ||
+                url.hostname.endsWith(".local")
+              ) {
                 origins.push(reqOrigin);
               }
             } catch { /* ignore */ }
