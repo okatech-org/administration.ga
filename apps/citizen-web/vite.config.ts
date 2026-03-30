@@ -22,9 +22,10 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
   ],
-  server: hasLocalCerts
-    ? { https: { cert: certFile, key: keyFile } }
-    : undefined,
+  server: {
+    host: "0.0.0.0",
+    ...(hasLocalCerts ? { https: { cert: certFile, key: keyFile } } : {}),
+  },
 })
 
 export default config

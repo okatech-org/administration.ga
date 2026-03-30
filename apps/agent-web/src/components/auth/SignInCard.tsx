@@ -59,7 +59,15 @@ export function SignInCard() {
 
 	const identifier = loginMode === "email" ? email : phone;
 
-	/** Redirect after successful sign-in — to desktop deep link or home page */
+	/**
+	 * Post sign-in handler.
+	 *
+	 * For desktop auth: redirect to the deep link with a session token.
+	 * For web auth: do nothing — the crossDomainClient plugin sets cookies
+	 * asynchronously, and ConvexBetterAuthProvider will pick them up.
+	 * The _app layout reactively switches from landing to dashboard
+	 * when useConvexAuth() flips to isAuthenticated: true.
+	 */
 	const redirectAfterSignIn = async (signInResult?: { data?: unknown }) => {
 		if (isDesktopAuth) {
 			// Extract session token from sign-in response
@@ -83,7 +91,8 @@ export function SignInCard() {
 				console.error("Failed to generate OTT for desktop:", e);
 			}
 		}
-		window.location.href = "/";
+		// Web auth: no hard reload needed.
+		// ConvexBetterAuthProvider detects the new session reactively.
 	};
 
 	useEffect(() => {

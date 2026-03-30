@@ -49,7 +49,15 @@ export function HomeLandingSignIn() {
 	const p4 = useRef<HTMLDivElement>(null);
 	const panelRefs = [p0, p1, p2, p3, p4];
 
+	// Ref vers la zone de connexion dans le Hero
+	const signInRef = useRef<HTMLDivElement>(null);
+
 	const [activePanel, setActivePanel] = useState(0);
+
+	// Scroll vers le formulaire de connexion
+	const scrollToSignIn = useCallback(() => {
+		signInRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+	}, []);
 
 	// Navigate to a specific panel by index
 	const navigateToPanel = useCallback((index: number) => {
@@ -107,7 +115,7 @@ export function HomeLandingSignIn() {
 			</a>
 
 			{/* Fixed Navbar — reçoit le panel actif pour adapter son style */}
-			<Navbar activePanel={activePanel} onNavigate={navigateToPanel} />
+			<Navbar activePanel={activePanel} onNavigate={navigateToPanel} onScrollToSignIn={scrollToSignIn} />
 
 			{/* WCAG — Instructions clavier pour lecteurs d'écran */}
 			<div id="keyboard-help" className="sr-only">
@@ -123,7 +131,7 @@ export function HomeLandingSignIn() {
 			>
 				{/* Panel 1 — Accueil */}
 				<Panel panelRef={p0}>
-					<HeroSection onNext={() => navigateToPanel(1)} />
+					<HeroSection ref={signInRef} onNext={() => navigateToPanel(1)} />
 				</Panel>
 
 				{/* Panel 2 — Missions */}

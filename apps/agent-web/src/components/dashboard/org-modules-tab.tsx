@@ -32,34 +32,31 @@ interface OrgModulesTabProps {
 	currentModules: string[];
 }
 
-const CATEGORY_ORDER: ModuleCategory[] = [
+const CATEGORY_ORDER: string[] = [
 	"core",
 	"consular",
-	"community",
+	"diplomatic",
+	"tools",
 	"finance",
-	"communication",
 	"admin",
-	"special",
 ];
 
-const CATEGORY_LABELS: Record<ModuleCategory, { fr: string; en: string }> = {
+const CATEGORY_LABELS: Record<string, { fr: string; en: string }> = {
 	core: { fr: "Modules essentiels", en: "Core modules" },
-	consular: { fr: "Services consulaires", en: "Consular services" },
-	community: { fr: "Communauté", en: "Community" },
+	consular: { fr: "Modules consulaires", en: "Consular modules" },
+	diplomatic: { fr: "Modules diplomatiques", en: "Diplomatic modules" },
+	tools: { fr: "Communication & Outils", en: "Communication & Tools" },
 	finance: { fr: "Finance", en: "Finance" },
-	communication: { fr: "Communication", en: "Communication" },
 	admin: { fr: "Administration", en: "Administration" },
-	special: { fr: "Modules spéciaux", en: "Special modules" },
 };
 
-const CATEGORY_STYLE: Record<ModuleCategory, string> = {
+const CATEGORY_STYLE: Record<string, string> = {
 	core: "border-emerald-500/30 bg-emerald-500/5",
 	consular: "border-indigo-500/30 bg-indigo-500/5",
-	community: "border-green-500/30 bg-green-500/5",
+	diplomatic: "border-red-500/30 bg-red-500/5",
+	tools: "border-sky-500/30 bg-sky-500/5",
 	finance: "border-yellow-500/30 bg-yellow-500/5",
-	communication: "border-sky-500/30 bg-sky-500/5",
 	admin: "border-zinc-500/30 bg-zinc-500/5",
-	special: "border-red-500/30 bg-red-500/5",
 };
 
 export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {

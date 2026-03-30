@@ -128,62 +128,18 @@ http.route({
         } as any);
       }
 
-      // 3. Call Better Auth's sign-in handler with the temp password
-      const auth = createAuth(ctx, origin);
-      const siteUrl = process.env.SITE_URL ?? "https://localhost:3000";
-      const signInRequest = new Request(`${siteUrl}/api/auth/sign-in/email`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Origin": origin || siteUrl,
-          "User-Agent": request.headers.get("user-agent") ?? "",
-        },
-        body: JSON.stringify({ email, password: tempPassword }),
+      // 3. Return the temp password to the client.
+      // The client will call authClient.signIn.email() with it,
+      // which goes through the proper crossDomain flow and sets cookies correctly.
+      // The password will be cleared automatically after 30s via scheduler.
+      await ctx.scheduler.runAfter(30_000, internal.functions.roleConfig.clearTempPassword, {
+        accountId: accounts[0]?._id ?? accounts[0]?.id ?? null,
       });
 
-      const authResponse = await auth.handler(signInRequest);
-
-      // 4. Clear the temp password (set back to null)
-      const accountId = accounts[0]?._id ?? accounts[0]?.id;
-      if (accountId) {
-        await ctx.runMutation(components.betterAuth.adapter.updateOne, {
-          input: {
-            model: "account",
-            where: [{ field: "_id", value: accountId }],
-            update: { password: null },
-          },
-        } as any);
-      }
-
-      // 5. Relay the auth response (includes proper Set-Cookie headers)
-      const responseBody = await authResponse.text();
-      const responseHeaders = new Headers();
-      responseHeaders.set("Content-Type", "application/json");
-
-      // Forward Set-Cookie headers from Better Auth's response
-      // Use getSetCookie() to properly handle multiple cookies (session + CSRF)
-      const cookies = (authResponse.headers as any).getSetCookie?.() as string[] | undefined;
-      if (cookies && cookies.length > 0) {
-        for (const cookie of cookies) {
-          responseHeaders.append("Set-Cookie", cookie);
-        }
-      } else {
-        // Fallback: single header forwarding
-        const setCookieHeader = authResponse.headers.get("set-cookie");
-        if (setCookieHeader) {
-          responseHeaders.set("Set-Cookie", setCookieHeader);
-        }
-      }
-
-      // Add CORS headers
-      for (const [key, value] of Object.entries(corsHeaders)) {
-        responseHeaders.set(key, value);
-      }
-
-      return new Response(responseBody, {
-        status: authResponse.status,
-        headers: responseHeaders,
-      });
+      return new Response(
+        JSON.stringify({ email, tempPassword }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
     } catch (error: any) {
       console.error("[dev/sign-in] error:", error);
       return new Response(

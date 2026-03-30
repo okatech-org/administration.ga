@@ -1,9 +1,10 @@
+import { forwardRef } from "react";
 import { motion } from "motion/react";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { SignInCard } from "@/components/auth/SignInCard";
 
-export function HeroSection({ onNext }: { onNext?: () => void }) {
+export const HeroSection = forwardRef<HTMLDivElement, { onNext?: () => void }>(function HeroSection({ onNext }, signInRef) {
 	const { t } = useTranslation();
 
 	const STATS = [
@@ -60,6 +61,7 @@ export function HeroSection({ onNext }: { onNext?: () => void }) {
 
 					{/* Right: Sign-In card */}
 					<motion.div
+						ref={signInRef}
 						initial={{ opacity: 0, y: 40 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.9, delay: 0.2, ease: "easeOut" }}
@@ -123,4 +125,4 @@ export function HeroSection({ onNext }: { onNext?: () => void }) {
 			</motion.div>
 		</section>
 	);
-}
+});

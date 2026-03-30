@@ -239,35 +239,44 @@ export function UserModulesDialog({ user, open, onOpenChange }: UserModulesDialo
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-				<DialogHeader>
-					<DialogTitle className="flex items-center gap-2">
-						<Layers className="h-5 w-5 text-primary" />
-						Attribution intelligente des modules
-					</DialogTitle>
-					<DialogDescription className="flex items-center gap-2 flex-wrap">
-						<span>
-							Configurer les accès de{" "}
-							<strong>{userName}</strong>
-						</span>
-						<Badge variant="outline" className="text-[10px]">
-							{totalEnabled}/{totalModules} modules actifs
-						</Badge>
-						<Badge variant="secondary" className="text-[10px]">
-							{userRole === "admin_system" ? "🛡️ Admin Système" :
-								userRole === "admin" ? "🔧 Admin" : userRole}
-						</Badge>
-					</DialogDescription>
-				</DialogHeader>
+			<DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden p-0 gap-0">
+				{/* ── Fixed Header ── */}
+				<div className="border-b px-6 py-4 shrink-0">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-3 text-lg">
+							<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+								<Layers className="h-5 w-5 text-primary" />
+							</div>
+							<div>
+								<span>Gestion des modules</span>
+								<p className="text-sm font-normal text-muted-foreground mt-0.5">
+									Configurer les accès de <strong className="text-foreground">{userName}</strong>
+								</p>
+							</div>
+						</DialogTitle>
+						<DialogDescription className="flex items-center gap-2 flex-wrap mt-2">
+							<Badge variant="outline" className="text-xs px-2.5 py-0.5">
+								{totalEnabled}/{totalModules} modules actifs
+							</Badge>
+							<Badge variant="secondary" className="text-xs px-2.5 py-0.5">
+								{userRole === "admin_system" ? "🛡️ Admin Système" :
+									userRole === "admin" ? "🔧 Admin" :
+									userRole === "intel_agent" ? "🕵️ Agent Intel" :
+									userRole === "education_agent" ? "📚 Agent Éducation" :
+									"👤 " + userRole}
+							</Badge>
+						</DialogDescription>
+					</DialogHeader>
+				</div>
 
 				{isLoading ? (
-					<div className="space-y-3 py-4">
+					<div className="space-y-3 p-6">
 						{[1, 2, 3].map((i) => (
 							<Skeleton key={i} className="h-20 w-full rounded-xl" />
 						))}
 					</div>
 				) : (
-					<div className="space-y-4 py-2">
+					<div className="space-y-4 p-6 overflow-y-auto flex-1 min-h-0">
 						{/* ─── Context Filter Bar ──────────────────────── */}
 						<div className="rounded-xl border border-primary/20 bg-primary/2">
 							<button
@@ -617,14 +626,21 @@ export function UserModulesDialog({ user, open, onOpenChange }: UserModulesDialo
 					</div>
 				)}
 
-				<DialogFooter>
-					<Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
-						Annuler
-					</Button>
-					<Button onClick={handleSave} disabled={isSaving || isLoading}>
-						{isSaving ? "Enregistrement..." : "Enregistrer"}
-					</Button>
-				</DialogFooter>
+				{/* ── Sticky Footer ── */}
+				<div className="shrink-0 border-t px-6 py-3 flex items-center justify-between bg-background">
+					<div className="text-xs text-muted-foreground flex items-center gap-1.5">
+						<Layers className="h-3 w-3" />
+						{totalEnabled} modules actifs sur {totalModules}
+					</div>
+					<div className="flex items-center gap-2">
+						<Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={isSaving}>
+							Annuler
+						</Button>
+						<Button size="sm" onClick={handleSave} disabled={isSaving || isLoading}>
+							{isSaving ? "Enregistrement..." : "Enregistrer les accès"}
+						</Button>
+					</div>
+				</div>
 			</DialogContent>
 		</Dialog>
 	);

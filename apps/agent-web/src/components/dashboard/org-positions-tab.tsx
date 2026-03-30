@@ -211,16 +211,15 @@ if (!MODULE_TASKS["org"]) MODULE_TASKS["org"] = ["org.view"];
 if (!MODULE_TASKS["schedules"]) MODULE_TASKS["schedules"] = ["schedules.view", "schedules.manage"];
 
 // ─── Module category labels ────────────────────────────────────
-const CATEGORY_LABELS: Record<ModuleCategory, { fr: string; en: string }> = {
+const CATEGORY_LABELS: Record<string, { fr: string; en: string }> = {
 	core: { fr: "Modules fondamentaux", en: "Core modules" },
-	consular: { fr: "Services consulaires", en: "Consular services" },
-	community: { fr: "Communauté", en: "Community" },
+	consular: { fr: "Modules consulaires", en: "Consular modules" },
+	diplomatic: { fr: "Modules diplomatiques", en: "Diplomatic modules" },
+	tools: { fr: "Communication & Outils", en: "Communication & Tools" },
 	finance: { fr: "Finances & Paiements", en: "Finance & Payments" },
-	communication: { fr: "Communication", en: "Communication" },
 	admin: { fr: "Administration", en: "Administration" },
-	special: { fr: "Modules spéciaux", en: "Special modules" },
 };
-const CATEGORY_ORDER: ModuleCategory[] = ["core", "consular", "finance", "communication", "admin", "community", "special"];
+const CATEGORY_ORDER: string[] = ["core", "consular", "diplomatic", "tools", "finance", "admin"];
 
 // ─── Grade icons for position cards ─────────────────────────────
 const GRADE_ICONS: Record<string, string> = {
@@ -357,10 +356,11 @@ function ModulePermissionSelector({
 	lang: string;
 }) {
 	const modulesByCategory = useMemo(() => {
-		const result: Record<ModuleCategory, string[]> = { core: [], consular: [], community: [], finance: [], communication: [], admin: [], special: [] };
+		const result: Record<string, string[]> = { core: [], consular: [], diplomatic: [], tools: [], finance: [], admin: [] };
 		for (const [code, def] of Object.entries(MODULE_REGISTRY)) {
 			const tasks = MODULE_TASKS[code];
 			if (tasks && tasks.length > 0) {
+				if (!result[def.category]) result[def.category] = [];
 				result[def.category].push(code);
 			}
 		}

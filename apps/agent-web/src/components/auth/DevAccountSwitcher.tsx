@@ -53,6 +53,17 @@ const DEV_ACCOUNTS: OrgGroup[] = [
 			{ label: "Éric Mouiri — Agent", email: "agent@ambagabon.ca", org: "🇨🇦 Ambassade — Canada" },
 		],
 	},
+	{
+		org: "🇪🇸 Ambassade — Espagne",
+		accounts: [
+			{ label: "Allegra Pamela BONGO — Ambassadeur", email: "allegra.bongo@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
+			{ label: "Franck Elvis OGNAGNA OCKOGHO — Premier Conseiller", email: "franck.ognagna@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
+			{ label: "Mélanie EKIBA — Conseiller Affaires Consulaires", email: "melanie.ekiba@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
+			{ label: "Chrisalline MOUYAPOU NGOUBOU — Conseiller", email: "chrisalline.mouyapou@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
+			{ label: "Valère Landry MOMBO MOUNDOUGA — Agent Consulaire", email: "valere.mombo@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
+			{ label: "Prisque Euphrasie OWANGA ESSONGUE — Agent Consulaire", email: "prisque.owanga@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
+		],
+	},
 ];
 
 export function DevAccountSwitcher() {
@@ -76,8 +87,10 @@ function DevAccountSwitcherInner() {
 		try {
 			if (session) {
 				await authClient.signOut();
+				await new Promise((r) => setTimeout(r, 300));
 			}
 
+			// Étape 1 : Le backend Convex prépare un mot de passe temporaire
 			const res = await fetch("/api/dev/sign-in", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -91,11 +104,29 @@ function DevAccountSwitcherInner() {
 				const msg = data.error || `Erreur ${res.status}`;
 				setError(msg);
 				toast.error("Échec de connexion", { description: msg });
+				return;
+			}
+
+			// Étape 2 : Sign-in via authClient (flow crossDomain complet).
+			// Le crossDomainClient pose les cookies et le ConvexBetterAuthProvider
+			// détecte le changement d'état automatiquement → redirect vers le dashboard.
+			const signInResult = await authClient.signIn.email({
+				email: data.email,
+				password: data.tempPassword,
+			});
+
+			if (signInResult.error) {
+				const msg = signInResult.error.message || "Échec de connexion";
+				setError(msg);
+				toast.error("Échec de connexion", { description: msg });
 			} else {
 				setOpen(false);
 				toast.success(`Connecté en tant que ${account.label}`, {
 					description: account.email,
 				});
+				// Laisser le crossDomain poser le token, puis reload
+				// pour que useConvexAuth() dans _app.tsx détecte la session
+				await new Promise((r) => setTimeout(r, 1000));
 				window.location.reload();
 			}
 		} catch (err: unknown) {

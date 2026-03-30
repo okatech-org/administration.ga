@@ -55,12 +55,12 @@ function DevAccountSwitcherInner() {
 		setError(null);
 
 		try {
-			// Sign out first if already authenticated
 			if (session) {
 				await authClient.signOut();
+				await new Promise((r) => setTimeout(r, 300));
 			}
 
-			// Call the same-origin proxy → Convex /dev/sign-in (no password needed)
+			// Étape 1 : Préparer les credentials temporaires côté Convex
 			const res = await fetch("/api/dev/sign-in", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -74,13 +74,27 @@ function DevAccountSwitcherInner() {
 				const msg = data.error || `Erreur ${res.status}`;
 				setError(msg);
 				toast.error("Échec de connexion", { description: msg });
+				return;
+			}
+
+			// Étape 2 : Sign-in via authClient (flow crossDomain complet)
+			const signInResult = await authClient.signIn.email({
+				email: data.email,
+				password: data.tempPassword,
+			});
+
+			if (signInResult.error) {
+				const msg = signInResult.error.message || "Échec de connexion";
+				setError(msg);
+				toast.error("Échec de connexion", { description: msg });
 			} else {
 				setOpen(false);
 				toast.success(`Connecté en tant que ${account.label}`, {
 					description: account.email,
 				});
-				// Reload to pick up the new session cookie
-				window.location.reload();
+				// Laisser le crossDomain poser le token, puis naviguer vers l'espace user
+				await new Promise((r) => setTimeout(r, 1000));
+				window.location.href = "/my-space";
 			}
 		} catch (err: unknown) {
 			const message =

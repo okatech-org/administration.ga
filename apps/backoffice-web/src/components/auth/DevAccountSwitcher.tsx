@@ -56,8 +56,10 @@ function DevAccountSwitcherInner() {
 		try {
 			if (session) {
 				await authClient.signOut();
+				await new Promise((r) => setTimeout(r, 300));
 			}
 
+			// Étape 1 : Préparer les credentials temporaires côté Convex
 			const res = await fetch("/api/dev/sign-in", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -71,12 +73,27 @@ function DevAccountSwitcherInner() {
 				const msg = data.error || `Erreur ${res.status}`;
 				setError(msg);
 				toast.error("Échec de connexion", { description: msg });
+				return;
+			}
+
+			// Étape 2 : Sign-in via authClient (flow crossDomain complet)
+			const signInResult = await authClient.signIn.email({
+				email: data.email,
+				password: data.tempPassword,
+			});
+
+			if (signInResult.error) {
+				const msg = signInResult.error.message || "Échec de connexion";
+				setError(msg);
+				toast.error("Échec de connexion", { description: msg });
 			} else {
 				setOpen(false);
 				toast.success(`Connecté en tant que ${account.label}`, {
 					description: account.email,
 				});
-				window.location.reload();
+				// Laisser le crossDomain poser le token, puis hard-navigate
+				await new Promise((r) => setTimeout(r, 1000));
+				window.location.href = "/";
 			}
 		} catch (err: unknown) {
 			const message =

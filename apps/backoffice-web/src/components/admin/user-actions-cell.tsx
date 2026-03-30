@@ -67,6 +67,8 @@ export function UserActionsCell({ user }: UserActionsCellProps) {
   const userRole = (user as any).role as string || "user"
   const isSuperAdmin = userRole === "super_admin" || (user as any).isSuperadmin
   const isBackOfficeOrAgent = ["admin", "admin_system", "intel_agent", "education_agent"].includes(userRole)
+  const hasMembership = !!(user as any).hasMembership
+  const canManageModules = (isBackOfficeOrAgent || hasMembership) && !isSuperAdmin
 
   // Role-based permission: can the current caller manage this user?
   const canManage = canManageUser(userRole)
@@ -145,7 +147,7 @@ export function UserActionsCell({ user }: UserActionsCellProps) {
                 <Shield className="mr-2 h-4 w-4" />
                 {t("superadmin.users.actions.editRole")}
               </DropdownMenuItem>
-              {isBackOfficeOrAgent && !isSuperAdmin && (
+              {canManageModules && (
                 <DropdownMenuItem onClick={() => setShowModulesDialog(true)} className="cursor-pointer focus:bg-muted focus:text-foreground">
                   <Layers className="mr-2 h-4 w-4" />
                   Gérer les modules

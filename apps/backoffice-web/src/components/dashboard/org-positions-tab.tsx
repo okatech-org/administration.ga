@@ -211,16 +211,15 @@ if (!MODULE_TASKS["org"]) MODULE_TASKS["org"] = ["org.view"];
 if (!MODULE_TASKS["schedules"]) MODULE_TASKS["schedules"] = ["schedules.view", "schedules.manage"];
 
 // ─── Module category labels ────────────────────────────────────
-const CATEGORY_LABELS: Record<ModuleCategory, { fr: string; en: string }> = {
+const CATEGORY_LABELS: Record<string, { fr: string; en: string }> = {
 	core: { fr: "Modules fondamentaux", en: "Core modules" },
-	consular: { fr: "Services consulaires", en: "Consular services" },
-	community: { fr: "Communauté", en: "Community" },
+	consular: { fr: "Modules consulaires", en: "Consular modules" },
+	diplomatic: { fr: "Modules diplomatiques", en: "Diplomatic modules" },
+	tools: { fr: "Communication & Outils", en: "Communication & Tools" },
 	finance: { fr: "Finances & Paiements", en: "Finance & Payments" },
-	communication: { fr: "Communication", en: "Communication" },
 	admin: { fr: "Administration", en: "Administration" },
-	special: { fr: "Modules spéciaux", en: "Special modules" },
 };
-const CATEGORY_ORDER: ModuleCategory[] = ["core", "consular", "finance", "communication", "admin", "community", "special"];
+const CATEGORY_ORDER: string[] = ["core", "consular", "diplomatic", "tools", "finance", "admin"];
 
 // ─── Grade icons for position cards ─────────────────────────────
 const GRADE_ICONS: Record<string, string> = {
@@ -321,19 +320,19 @@ function ModulePermissionCard({
 								<label
 									key={code}
 									className={cn(
-										"flex items-center gap-2 rounded-md px-2 py-1 cursor-pointer transition-all text-xs",
+										"flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-all text-xs",
 										isChecked ? "bg-primary/5" : "hover:bg-muted/30",
 									)}
 								>
 									<Checkbox
 										checked={isChecked}
 										onCheckedChange={() => toggleTask(code)}
-										className="h-3.5 w-3.5"
+										className="h-3.5 w-3.5 shrink-0"
 									/>
-									<span className="flex-1 min-w-0 truncate">
+									<span className="flex-1 min-w-0 leading-snug">
 										{label ? label[lang as "fr" | "en"] || label.fr : code}
 									</span>
-									<Badge className={cn("text-[9px] px-1 py-0 h-3.5 shrink-0", style.bg, style.color)}>
+									<Badge className={cn("text-[10px] px-1.5 py-0 h-4 shrink-0 whitespace-nowrap", style.bg, style.color)}>
 										{style.label[lang as "fr" | "en"] || style.label.fr}
 									</Badge>
 								</label>
@@ -357,10 +356,11 @@ function ModulePermissionSelector({
 	lang: string;
 }) {
 	const modulesByCategory = useMemo(() => {
-		const result: Record<ModuleCategory, string[]> = { core: [], consular: [], community: [], finance: [], communication: [], admin: [], special: [] };
+		const result: Record<string, string[]> = { core: [], consular: [], diplomatic: [], tools: [], finance: [], admin: [] };
 		for (const [code, def] of Object.entries(MODULE_REGISTRY)) {
 			const tasks = MODULE_TASKS[code];
 			if (tasks && tasks.length > 0) {
+				if (!result[def.category]) result[def.category] = [];
 				result[def.category].push(code);
 			}
 		}
@@ -517,7 +517,7 @@ function PositionFormSheet({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-[90vw] w-[1200px] max-h-[92vh] overflow-hidden p-0 gap-0">
+			<DialogContent className="max-w-[95vw] w-[1200px] max-h-[92vh] overflow-hidden p-0 gap-0">
 				{/* Header */}
 				<div className="border-b px-6 py-4 shrink-0">
 					<DialogHeader>
@@ -596,7 +596,7 @@ function PositionFormSheet({
 						</div>
 
 						{/* Compact position template grid — 4 columns */}
-						<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-3">
+						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 mb-3">
 							{positionTemplates.map((tpl) => {
 								const gradeInfo = tpl.grade ? POSITION_GRADES[tpl.grade] : null;
 								const taskCount = getPresetTasks(tpl.taskPresets).length;
@@ -676,7 +676,7 @@ function PositionFormSheet({
 					<>
 						<div className="flex flex-col lg:flex-row overflow-hidden flex-1 min-h-0">
 							{/* Left column — Position details */}
-							<div className="lg:w-[380px] lg:border-r overflow-y-auto p-5 space-y-5 shrink-0">
+							<div className="lg:w-[440px] lg:border-r overflow-y-auto p-5 space-y-5 shrink-0">
 								{/* Back button (create mode only) */}
 								{!isEdit && (
 									<button
@@ -732,7 +732,7 @@ function PositionFormSheet({
 														setCode(e.target.value.trim().toLowerCase().replace(/[\s']+/g, "_").replace(/[^a-z0-9_]/g, ""));
 													}}
 													placeholder={lang === "fr" ? "Titre du poste personnalisé" : "Custom position title"}
-													className="h-8"
+													className="h-9"
 												/>
 											) : (
 												<Select
@@ -746,7 +746,7 @@ function PositionFormSheet({
 														}
 													}}
 												>
-													<SelectTrigger id="pos-title" className="h-8">
+													<SelectTrigger id="pos-title" className="h-9">
 														<SelectValue placeholder={lang === "fr" ? "Choisir un poste" : "Select a position"} />
 													</SelectTrigger>
 													<SelectContent>
@@ -773,24 +773,24 @@ function PositionFormSheet({
 													value={code}
 													onChange={(e) => setCode(e.target.value)}
 													placeholder="auto"
-													className="font-mono text-xs h-7 bg-muted/30"
+													className="font-mono text-xs h-8 bg-muted/30"
 													readOnly={!!selectedTemplateCode && selectedTemplateCode !== "__custom__"}
 												/>
 											</div>
 										)}
 										<div className="space-y-1">
 											<Label htmlFor="pos-desc" className="text-xs">{lang === "fr" ? "Description" : "Description"}</Label>
-											<Input id="pos-desc" value={descFr} onChange={(e) => setDescFr(e.target.value)} placeholder={lang === "fr" ? "Description du rôle" : "Role description"} className="h-8" />
+											<Input id="pos-desc" value={descFr} onChange={(e) => setDescFr(e.target.value)} placeholder={lang === "fr" ? "Description du rôle" : "Role description"} className="h-9" />
 										</div>
-										<div className="grid grid-cols-2 gap-2">
-											<div className="space-y-1">
+										<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+											<div className="space-y-1.5">
 												<Label htmlFor="pos-level" className="text-xs">{lang === "fr" ? "Niveau" : "Level"}</Label>
-												<Input id="pos-level" type="number" min={1} max={10} value={level} onChange={(e) => setLevel(Number(e.target.value))} className="h-8" />
+												<Input id="pos-level" type="number" min={1} max={10} value={level} onChange={(e) => setLevel(Number(e.target.value))} className="h-9" />
 											</div>
-											<div className="space-y-1">
+											<div className="space-y-1.5">
 												<Label htmlFor="pos-grade" className="text-xs">{lang === "fr" ? "Grade" : "Grade"}</Label>
 												<Select value={grade} onValueChange={setGrade}>
-													<SelectTrigger id="pos-grade" className="h-8">
+													<SelectTrigger id="pos-grade" className="h-9">
 														<SelectValue placeholder={lang === "fr" ? "Sélectionner" : "Select"} />
 													</SelectTrigger>
 													<SelectContent>
@@ -812,15 +812,15 @@ function PositionFormSheet({
 									</div>
 								</div>
 
-								{/* Summary of permissions */}
-								<div className="rounded-lg border border-border/40 bg-muted/20 p-3 space-y-2">
+								{/* Summary of permissions — sticky en bas */}
+								<div className="sticky bottom-0 rounded-lg border border-border/40 bg-card/95 backdrop-blur-sm p-3 space-y-2 shadow-sm">
 									<h4 className="text-xs font-medium flex items-center gap-1.5">
 										<Shield className="h-3 w-3 text-primary" />
 										{lang === "fr" ? "Résumé des permissions" : "Permission summary"}
 									</h4>
 									<div className="flex items-center gap-3">
 										<div className="text-2xl font-bold text-primary">{selectedTasks.size}</div>
-										<div className="text-[10px] text-muted-foreground leading-tight">
+										<div className="text-[10px] text-muted-foreground leading-tight whitespace-pre-line">
 											{lang === "fr" ? "permissions\nactivées" : "permissions\nenabled"}
 										</div>
 									</div>
@@ -1156,7 +1156,7 @@ export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 												<div className="px-3.5 pt-3 pb-2 flex-1">
 													<div className="flex items-start justify-between gap-2">
 														<div className="min-w-0 flex-1">
-															<p className="text-sm font-semibold leading-tight truncate">
+															<p className="text-sm font-semibold leading-snug">
 																{getLocalizedValue(pos.title, lang)}
 															</p>
 															<p className="text-[11px] text-muted-foreground mt-0.5">
@@ -1166,18 +1166,18 @@ export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 														</div>
 														{/* Action buttons (appear on hover) */}
 														<div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-															<Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleMoveGrade(pos._id, "up")} title={lang === "fr" ? "Monter de grade" : "Move grade up"}>
-																<ArrowUp className="h-3 w-3" />
+															<Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleMoveGrade(pos._id, "up")} title={lang === "fr" ? "Monter de grade" : "Move grade up"}>
+																<ArrowUp className="h-3.5 w-3.5" />
 															</Button>
-															<Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleMoveGrade(pos._id, "down")} title={lang === "fr" ? "Descendre de grade" : "Move grade down"}>
-																<ArrowDown className="h-3 w-3" />
+															<Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleMoveGrade(pos._id, "down")} title={lang === "fr" ? "Descendre de grade" : "Move grade down"}>
+																<ArrowDown className="h-3.5 w-3.5" />
 															</Button>
-															<Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setEditingPosition(pos); setSheetOpen(true); }} title="Modifier">
-																<Edit className="h-3 w-3" />
+															<Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingPosition(pos); setSheetOpen(true); }} title="Modifier">
+																<Edit className="h-3.5 w-3.5" />
 															</Button>
 															{!pos.isRequired && (
-																<Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => handleDelete(pos._id)} disabled={isDeleting} title="Supprimer">
-																	<Trash2 className="h-3 w-3" />
+																<Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(pos._id)} disabled={isDeleting} title="Supprimer">
+																	<Trash2 className="h-3.5 w-3.5" />
 																</Button>
 															)}
 														</div>
@@ -1185,17 +1185,17 @@ export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 													{/* Task tags */}
 													{pos.tasks?.length > 0 && (
 														<div className="flex flex-wrap gap-1 mt-1.5">
-							{pos.tasks.slice(0, 3).map((task: string) => {
+							{pos.tasks.slice(0, 4).map((task: string) => {
 								const tLabel = TASK_LABELS[task];
 								return (
-									<Badge key={task} variant="secondary" className="text-[9px] px-1.5 py-0" title={task}>
+									<Badge key={task} variant="secondary" className="text-[10px] px-1.5 py-0.5 leading-tight" title={task}>
 										{tLabel ? tLabel[lang as "fr" | "en"] || tLabel.fr : task}
 									</Badge>
 								);
 							})}
-															{pos.tasks.length > 3 && (
-																<Badge variant="secondary" className="text-[9px] px-1.5 py-0">
-																	+{pos.tasks.length - 3}
+															{pos.tasks.length > 4 && (
+																<Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
+																	+{pos.tasks.length - 4}
 																</Badge>
 															)}
 														</div>
@@ -1216,7 +1216,7 @@ export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 																		</AvatarFallback>
 																	</Avatar>
 																	<div className="flex-1 min-w-0">
-																		<p className="text-xs font-medium truncate">
+																		<p className="text-xs font-medium leading-snug">
 																			{occ.firstName} {occ.lastName}
 																		</p>
 																		{occ.email && (

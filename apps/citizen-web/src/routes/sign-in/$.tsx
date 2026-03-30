@@ -121,7 +121,9 @@ function SignInPage() {
 					setError(translateAuthError(result.error.message, "errors.auth.otp.invalidCode"));
 				} else {
 					captureEvent("user_logged_in", { method: "sms_otp" });
-					window.location.href = "/";
+					// Attendre que le crossDomain plugin pose les cookies
+					await new Promise((r) => setTimeout(r, 500));
+					navigate({ to: "/" });
 				}
 			} else {
 				const result = await authClient.signIn.emailOtp({
@@ -132,7 +134,8 @@ function SignInPage() {
 					setError(translateAuthError(result.error.message, "errors.auth.otp.invalidCode"));
 				} else {
 					captureEvent("user_logged_in", { method: "email_otp" });
-					window.location.href = "/";
+					await new Promise((r) => setTimeout(r, 500));
+					navigate({ to: "/" });
 				}
 			}
 		} catch {
@@ -157,7 +160,8 @@ function SignInPage() {
 				setError(translateAuthError(result.error.message, "errors.auth.signInFailed"));
 			} else {
 				captureEvent("user_logged_in", { method: "password" });
-				window.location.href = "/";
+				await new Promise((r) => setTimeout(r, 500));
+				navigate({ to: "/" });
 			}
 		} catch {
 			setError(t("errors.auth.signInFailed"));

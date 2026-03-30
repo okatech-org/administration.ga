@@ -8,9 +8,11 @@ import { cn } from "@/lib/utils";
 interface NavbarProps {
 	activePanel: number;
 	onNavigate: (index: number) => void;
+	/** Scroll to the sign-in card on the hero panel */
+	onScrollToSignIn?: () => void;
 }
 
-export function Navbar({ activePanel, onNavigate }: NavbarProps) {
+export function Navbar({ activePanel, onNavigate, onScrollToSignIn }: NavbarProps) {
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const { theme, setTheme } = useTheme();
 	const { t, i18n } = useTranslation();
@@ -133,10 +135,14 @@ export function Navbar({ activePanel, onNavigate }: NavbarProps) {
 							{theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
 						</button>
 
-						{/* CTA Espace Agent */}
+						{/* CTA Espace Agent — scroll vers le formulaire de connexion */}
 						<button
 							type="button"
-							onClick={() => handleNavigate(0)}
+							onClick={() => {
+								handleNavigate(0);
+								// Petit délai pour laisser le scroll au panel 0 s'effectuer
+								setTimeout(() => onScrollToSignIn?.(), 300);
+							}}
 							className={cn(
 								"hidden md:flex px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 focus-ring",
 								isDark
@@ -210,7 +216,10 @@ export function Navbar({ activePanel, onNavigate }: NavbarProps) {
 								</button>
 								<button
 									type="button"
-									onClick={() => handleNavigate(0)}
+									onClick={() => {
+										handleNavigate(0);
+										setTimeout(() => onScrollToSignIn?.(), 300);
+									}}
 									className="ml-auto px-4 py-2.5 rounded-xl bg-white/15 text-white border border-white/25 text-sm font-semibold"
 								>
 									{t("agentLanding.navbar.agentSpace")}

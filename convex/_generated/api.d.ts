@@ -44,6 +44,8 @@ import type * as functions_companies from "../functions/companies.js";
 import type * as functions_consularCard from "../functions/consularCard.js";
 import type * as functions_consularNotifications from "../functions/consularNotifications.js";
 import type * as functions_consularRegistrations from "../functions/consularRegistrations.js";
+import type * as functions_correspondance from "../functions/correspondance.js";
+import type * as functions_correspondanceDashboard from "../functions/correspondanceDashboard.js";
 import type * as functions_cv from "../functions/cv.js";
 import type * as functions_cvAI from "../functions/cvAI.js";
 import type * as functions_deliveryPackages from "../functions/deliveryPackages.js";
@@ -52,6 +54,7 @@ import type * as functions_documentTemplates from "../functions/documentTemplate
 import type * as functions_documentVault from "../functions/documentVault.js";
 import type * as functions_documentVerifications from "../functions/documentVerifications.js";
 import type * as functions_documents from "../functions/documents.js";
+import type * as functions_dossierProcedure from "../functions/dossierProcedure.js";
 import type * as functions_events from "../functions/events.js";
 import type * as functions_formTemplates from "../functions/formTemplates.js";
 import type * as functions_gcpMonitoring from "../functions/gcpMonitoring.js";
@@ -133,6 +136,7 @@ import type * as schemas_companyMembers from "../schemas/companyMembers.js";
 import type * as schemas_consularNotifications from "../schemas/consularNotifications.js";
 import type * as schemas_consularRegistrations from "../schemas/consularRegistrations.js";
 import type * as schemas_conversations from "../schemas/conversations.js";
+import type * as schemas_correspondance from "../schemas/correspondance.js";
 import type * as schemas_counters from "../schemas/counters.js";
 import type * as schemas_cv from "../schemas/cv.js";
 import type * as schemas_deliveryPackages from "../schemas/deliveryPackages.js";
@@ -140,6 +144,7 @@ import type * as schemas_digitalMail from "../schemas/digitalMail.js";
 import type * as schemas_documentTemplates from "../schemas/documentTemplates.js";
 import type * as schemas_documentVerifications from "../schemas/documentVerifications.js";
 import type * as schemas_documents from "../schemas/documents.js";
+import type * as schemas_dossierProcedure from "../schemas/dossierProcedure.js";
 import type * as schemas_events from "../schemas/events.js";
 import type * as schemas_formTemplates from "../schemas/formTemplates.js";
 import type * as schemas_gcpMetricsCache from "../schemas/gcpMetricsCache.js";
@@ -164,6 +169,7 @@ import type * as schemas_tutorials from "../schemas/tutorials.js";
 import type * as schemas_users from "../schemas/users.js";
 import type * as seeds_associations from "../seeds/associations.js";
 import type * as seeds_clearAll from "../seeds/clearAll.js";
+import type * as seeds_declarationServices from "../seeds/declarationServices.js";
 import type * as seeds_diplomatic_network from "../seeds/diplomatic_network.js";
 import type * as seeds_diplomatic_network_dev from "../seeds/diplomatic_network_dev.js";
 import type * as seeds_diplomatic_network_espagne from "../seeds/diplomatic_network_espagne.js";
@@ -221,6 +227,8 @@ declare const fullApi: ApiFromModules<{
   "functions/consularCard": typeof functions_consularCard;
   "functions/consularNotifications": typeof functions_consularNotifications;
   "functions/consularRegistrations": typeof functions_consularRegistrations;
+  "functions/correspondance": typeof functions_correspondance;
+  "functions/correspondanceDashboard": typeof functions_correspondanceDashboard;
   "functions/cv": typeof functions_cv;
   "functions/cvAI": typeof functions_cvAI;
   "functions/deliveryPackages": typeof functions_deliveryPackages;
@@ -229,6 +237,7 @@ declare const fullApi: ApiFromModules<{
   "functions/documentVault": typeof functions_documentVault;
   "functions/documentVerifications": typeof functions_documentVerifications;
   "functions/documents": typeof functions_documents;
+  "functions/dossierProcedure": typeof functions_dossierProcedure;
   "functions/events": typeof functions_events;
   "functions/formTemplates": typeof functions_formTemplates;
   "functions/gcpMonitoring": typeof functions_gcpMonitoring;
@@ -310,6 +319,7 @@ declare const fullApi: ApiFromModules<{
   "schemas/consularNotifications": typeof schemas_consularNotifications;
   "schemas/consularRegistrations": typeof schemas_consularRegistrations;
   "schemas/conversations": typeof schemas_conversations;
+  "schemas/correspondance": typeof schemas_correspondance;
   "schemas/counters": typeof schemas_counters;
   "schemas/cv": typeof schemas_cv;
   "schemas/deliveryPackages": typeof schemas_deliveryPackages;
@@ -317,6 +327,7 @@ declare const fullApi: ApiFromModules<{
   "schemas/documentTemplates": typeof schemas_documentTemplates;
   "schemas/documentVerifications": typeof schemas_documentVerifications;
   "schemas/documents": typeof schemas_documents;
+  "schemas/dossierProcedure": typeof schemas_dossierProcedure;
   "schemas/events": typeof schemas_events;
   "schemas/formTemplates": typeof schemas_formTemplates;
   "schemas/gcpMetricsCache": typeof schemas_gcpMetricsCache;
@@ -341,6 +352,7 @@ declare const fullApi: ApiFromModules<{
   "schemas/users": typeof schemas_users;
   "seeds/associations": typeof seeds_associations;
   "seeds/clearAll": typeof seeds_clearAll;
+  "seeds/declarationServices": typeof seeds_declarationServices;
   "seeds/diplomatic_network": typeof seeds_diplomatic_network;
   "seeds/diplomatic_network_dev": typeof seeds_diplomatic_network_dev;
   "seeds/diplomatic_network_espagne": typeof seeds_diplomatic_network_espagne;
@@ -2179,7 +2191,6 @@ export declare const components: {
       >;
     };
     adapterTest: {
-      runCustomTests: FunctionReference<"action", "internal", any, any>;
       runTests: FunctionReference<"action", "internal", any, any>;
     };
     testProfiles: {

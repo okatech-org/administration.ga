@@ -80,7 +80,71 @@ export const ALL_MODULE_CODES: ModuleCodeValue[] = Object.values(ModuleCode);
 // MODULE CATEGORIES
 // ═══════════════════════════════════════════════════════════════
 
-export type ModuleCategory = "core" | "consular" | "community" | "finance" | "communication" | "admin" | "special";
+export type ModuleCategory = "core" | "consular" | "diplomatic" | "tools" | "finance" | "admin";
+
+// Legacy alias — some frontend files may still reference old categories
+export type LegacyModuleCategory = "core" | "consular" | "community" | "finance" | "communication" | "admin" | "special";
+
+// ═══════════════════════════════════════════════════════════════
+// MODULE ACCESS LEVELS — Granular permission tiers
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Access levels for module attribution:
+ * - reader: Consultation seule (tâches *.view)
+ * - editor: Lecture + actions métier (*.create, *.process, *.manage, etc.)
+ * - admin:  Éditeur + peut attribuer le module à d'autres utilisateurs
+ */
+export type ModuleAccessLevel = "reader" | "editor" | "admin";
+export const ALL_ACCESS_LEVELS: ModuleAccessLevel[] = ["reader", "editor", "admin"];
+
+export const ACCESS_LEVEL_META: Record<ModuleAccessLevel, {
+  label: LocalizedString;
+  description: LocalizedString;
+  icon: string;
+  color: string;
+  level: number; // 1=reader, 2=editor, 3=admin — for comparison
+}> = {
+  reader: {
+    label: { fr: "Lecture", en: "Read" },
+    description: { fr: "Consultation des données uniquement", en: "View data only" },
+    icon: "Eye",
+    color: "text-blue-500",
+    level: 1,
+  },
+  editor: {
+    label: { fr: "Éditeur", en: "Editor" },
+    description: { fr: "Lecture + actions et tâches du module", en: "Read + module actions and tasks" },
+    icon: "PenLine",
+    color: "text-amber-500",
+    level: 2,
+  },
+  admin: {
+    label: { fr: "Admin", en: "Admin" },
+    description: { fr: "Éditeur + peut attribuer le module à d'autres", en: "Editor + can assign module to others" },
+    icon: "ShieldCheck",
+    color: "text-emerald-500",
+    level: 3,
+  },
+};
+
+/** Check if a level includes another (admin includes editor includes reader) */
+export function accessLevelIncludes(userLevel: ModuleAccessLevel, requiredLevel: ModuleAccessLevel): boolean {
+  return ACCESS_LEVEL_META[userLevel].level >= ACCESS_LEVEL_META[requiredLevel].level;
+}
+
+/** Convex validator for access levels */
+export const accessLevelValidator = v.union(
+  v.literal("reader"),
+  v.literal("editor"),
+  v.literal("admin"),
+);
+
+/**
+ * Module access map type — maps module codes to access levels.
+ * Used in orgs.moduleAccess and memberships.moduleAccess.
+ */
+export type ModuleAccessMap = Partial<Record<ModuleCodeValue, ModuleAccessLevel>>;
 
 // ═══════════════════════════════════════════════════════════════
 // CONVEX VALIDATOR
@@ -251,14 +315,14 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     isCore: false,
   },
 
-  // ─── Community ────────────────────────────────────────────
+  // ─── Community (category: tools — outils transversaux) ────
   [ModuleCode.associations]: {
     code: ModuleCode.associations,
     label: { fr: "Associations", en: "Associations" },
     description: { fr: "Gestion des associations de la diaspora", en: "Diaspora association management" },
     icon: "Users",
     color: "text-green-500",
-    category: "community",
+    category: "tools",
     isCore: false,
   },
   [ModuleCode.companies]: {
@@ -267,7 +331,7 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     description: { fr: "Répertoire des entreprises", en: "Company directory" },
     icon: "Building2",
     color: "text-slate-500",
-    category: "community",
+    category: "tools",
     isCore: false,
   },
   [ModuleCode.community_events]: {
@@ -276,7 +340,7 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     description: { fr: "Événements communautaires", en: "Community events" },
     icon: "Calendar",
     color: "text-pink-500",
-    category: "community",
+    category: "tools",
     isCore: false,
   },
 
@@ -300,14 +364,14 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     isCore: false,
   },
 
-  // ─── Communication ────────────────────────────────────────
+  // ─── Communication & Outils (category: tools) ─────────────
   [ModuleCode.communication]: {
     code: ModuleCode.communication,
     label: { fr: "Communication", en: "Communication" },
     description: { fr: "Publications et notifications", en: "Publications and notifications" },
     icon: "Megaphone",
     color: "text-sky-500",
-    category: "communication",
+    category: "tools",
     isCore: false,
   },
   [ModuleCode.correspondance]: {
@@ -316,7 +380,7 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     description: { fr: "Gestion des procédures administratives et correspondance officielle", en: "Administrative procedures and official correspondence management" },
     icon: "Mail",
     color: "text-cyan-500",
-    category: "communication",
+    category: "diplomatic",
     isCore: false,
   },
   [ModuleCode.digital_mail]: {
@@ -325,7 +389,7 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     description: { fr: "Envoi de courrier dématérialisé", en: "Digital mail delivery" },
     icon: "Mail",
     color: "text-blue-400",
-    category: "communication",
+    category: "tools",
     isCore: false,
   },
   [ModuleCode.meetings]: {
@@ -334,7 +398,7 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     description: { fr: "Appels audio/vidéo et réunions en ligne", en: "Audio/video calls and online meetings" },
     icon: "Video",
     color: "text-rose-500",
-    category: "communication",
+    category: "tools",
     isCore: false,
   },
   [ModuleCode.tutorials]: {
@@ -343,7 +407,7 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     description: { fr: "Guides et tutoriels éducatifs", en: "Educational guides and tutorials" },
     icon: "BookOpen",
     color: "text-teal-500",
-    category: "communication",
+    category: "tools",
     isCore: false,
   },
 
@@ -439,23 +503,23 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     isCore: false,
   },
 
-  // ─── Special ──────────────────────────────────────────────
+  // ─── Diplomatique ─────────────────────────────────────────
   [ModuleCode.intelligence]: {
     code: ModuleCode.intelligence,
     label: { fr: "Renseignement", en: "Intelligence" },
-    description: { fr: "Notes de renseignement", en: "Intelligence notes" },
+    description: { fr: "Notes de renseignement diplomatique", en: "Diplomatic intelligence notes" },
     icon: "ShieldAlert",
     color: "text-red-500",
-    category: "special",
+    category: "diplomatic",
     isCore: false,
   },
   [ModuleCode.cv]: {
     code: ModuleCode.cv,
     label: { fr: "CV", en: "CV" },
-    description: { fr: "Gestion des CV", en: "CV management" },
+    description: { fr: "Gestion des CV diplomatiques", en: "Diplomatic CV management" },
     icon: "FileUser",
     color: "text-indigo-400",
-    category: "special",
+    category: "diplomatic",
     isCore: false,
   },
 };
@@ -482,6 +546,158 @@ export function getModuleDefinition(code: string): ModuleDefinition | undefined 
 export function getModulesByCategory(category: ModuleCategory): ModuleDefinition[] {
   return Object.values(MODULE_REGISTRY).filter((m) => m.category === category);
 }
+
+// ═══════════════════════════════════════════════════════════════
+// MODULE ACCESS → TASK MAPPING
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Maps each module × access level to the task codes it grants.
+ *
+ * - reader: tâches *.view uniquement (consultation)
+ * - editor: reader + tâches d'action (*.create, *.process, *.manage, etc.)
+ * - admin:  editor + tâches de gouvernance (*.assign, *.delete, *.configure, *.admin)
+ *
+ * Si un module n'a pas d'entrée ici, toutes ses tâches
+ * sont disponibles à partir du niveau "reader" (backward compat).
+ */
+export const MODULE_ACCESS_TASKS: Partial<Record<string, Record<ModuleAccessLevel, string[]>>> = {
+  requests: {
+    reader: ["requests.view"],
+    editor: ["requests.view", "requests.create", "requests.process", "requests.validate", "requests.complete"],
+    admin: ["requests.view", "requests.create", "requests.process", "requests.validate", "requests.assign", "requests.delete", "requests.complete"],
+  },
+  documents: {
+    reader: ["documents.view"],
+    editor: ["documents.view", "documents.validate", "documents.generate"],
+    admin: ["documents.view", "documents.validate", "documents.generate", "documents.delete"],
+  },
+  appointments: {
+    reader: ["appointments.view"],
+    editor: ["appointments.view", "appointments.manage"],
+    admin: ["appointments.view", "appointments.manage", "appointments.configure"],
+  },
+  profiles: {
+    reader: ["profiles.view"],
+    editor: ["profiles.view", "profiles.manage"],
+    admin: ["profiles.view", "profiles.manage"],
+  },
+  civil_status: {
+    reader: ["civil_status.transcribe"],
+    editor: ["civil_status.transcribe", "civil_status.register"],
+    admin: ["civil_status.transcribe", "civil_status.register", "civil_status.certify"],
+  },
+  passports: {
+    reader: ["passports.process"],
+    editor: ["passports.process", "passports.biometric"],
+    admin: ["passports.process", "passports.biometric", "passports.deliver"],
+  },
+  visas: {
+    reader: ["visas.process"],
+    editor: ["visas.process", "visas.approve"],
+    admin: ["visas.process", "visas.approve", "visas.stamp"],
+  },
+  finance: {
+    reader: ["finance.view"],
+    editor: ["finance.view", "finance.collect"],
+    admin: ["finance.view", "finance.collect", "finance.manage"],
+  },
+  communication: {
+    reader: ["communication.notify"],
+    editor: ["communication.publish", "communication.notify"],
+    admin: ["communication.publish", "communication.notify"],
+  },
+  team: {
+    reader: ["team.view"],
+    editor: ["team.view", "team.manage"],
+    admin: ["team.view", "team.manage", "team.assign_roles"],
+  },
+  settings: {
+    reader: ["settings.view"],
+    editor: ["settings.view", "settings.manage"],
+    admin: ["settings.view", "settings.manage"],
+  },
+  analytics: {
+    reader: ["analytics.view"],
+    editor: ["analytics.view", "analytics.export"],
+    admin: ["analytics.view", "analytics.export"],
+  },
+  intelligence: {
+    reader: ["intelligence.view"],
+    editor: ["intelligence.view", "intelligence.manage"],
+    admin: ["intelligence.view", "intelligence.manage"],
+  },
+  consular_registrations: {
+    reader: ["consular_registrations.view"],
+    editor: ["consular_registrations.view", "consular_registrations.manage"],
+    admin: ["consular_registrations.view", "consular_registrations.manage"],
+  },
+  digital_mail: {
+    reader: ["digital_mail.view"],
+    editor: ["digital_mail.view", "digital_mail.manage"],
+    admin: ["digital_mail.view", "digital_mail.manage"],
+  },
+  meetings: {
+    reader: ["meetings.view_history", "meetings.join"],
+    editor: ["meetings.view_history", "meetings.join", "meetings.create"],
+    admin: ["meetings.view_history", "meetings.join", "meetings.create", "meetings.manage"],
+  },
+  correspondance: {
+    reader: ["correspondance.view"],
+    editor: ["correspondance.view", "correspondance.create", "correspondance.approve", "correspondance.sign", "correspondance.transmit"],
+    admin: ["correspondance.view", "correspondance.create", "correspondance.approve", "correspondance.sign", "correspondance.transmit", "correspondance.configure", "correspondance.admin"],
+  },
+  community_events: {
+    reader: ["community_events.view"],
+    editor: ["community_events.view", "community_events.manage"],
+    admin: ["community_events.view", "community_events.manage"],
+  },
+  payments: {
+    reader: ["payments.view"],
+    editor: ["payments.view"],
+    admin: ["payments.view"],
+  },
+  schedules: {
+    reader: ["schedules.view"],
+    editor: ["schedules.view", "schedules.manage"],
+    admin: ["schedules.view", "schedules.manage"],
+  },
+  statistics: {
+    reader: ["statistics.view"],
+    editor: ["statistics.view"],
+    admin: ["statistics.view"],
+  },
+};
+
+/**
+ * Resolve the task codes a user gets for a given module + access level.
+ * Falls back to all module tasks if no mapping exists.
+ */
+export function getTasksForModuleAccess(
+  moduleCode: string,
+  level: ModuleAccessLevel,
+): string[] {
+  const mapping = MODULE_ACCESS_TASKS[moduleCode];
+  if (!mapping) {
+    // Pas de mapping défini → toutes les tâches du module sont accessibles
+    // (rétrocompatibilité avec les modules sans niveaux)
+    return [];
+  }
+  return mapping[level] ?? [];
+}
+
+/** Category labels for UI */
+export const CATEGORY_LABELS: Record<ModuleCategory, LocalizedString> = {
+  core: { fr: "Modules fondamentaux", en: "Core modules" },
+  consular: { fr: "Modules consulaires", en: "Consular modules" },
+  diplomatic: { fr: "Modules diplomatiques", en: "Diplomatic modules" },
+  tools: { fr: "Communication & Outils", en: "Communication & Tools" },
+  finance: { fr: "Finances & Paiements", en: "Finance & Payments" },
+  admin: { fr: "Administration", en: "Administration" },
+};
+
+/** Category display order */
+export const CATEGORY_ORDER: ModuleCategory[] = ["core", "consular", "diplomatic", "tools", "finance", "admin"];
 
 /** Get all core modules (cannot be disabled) */
 export function getCoreModules(): ModuleDefinition[] {

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { query, mutation } from "../_generated/server";
+import { query, mutation, internalMutation } from "../_generated/server";
+import { components } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { requireAuth, getMembership } from "../lib/auth";
 import { isSuperAdmin, assertCanDoTask } from "../lib/permissions";
@@ -631,5 +632,31 @@ export const updateOrgModules = mutation({
       updatedAt: Date.now(),
     });
     return true;
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
+// INTERNAL — Dev helpers
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Clear a temp password set by the Dev Account Switcher.
+ * Called by the scheduler ~30s after the temp password was created.
+ */
+export const clearTempPassword = internalMutation({
+  args: { accountId: v.union(v.string(), v.null()) },
+  handler: async (ctx, { accountId }) => {
+    if (!accountId) return;
+    try {
+      await ctx.runMutation(components.betterAuth.adapter.updateOne, {
+        input: {
+          model: "account",
+          where: [{ field: "_id", value: accountId }],
+          update: { password: null },
+        },
+      } as any);
+    } catch (err) {
+      console.error("[clearTempPassword] error:", err);
+    }
   },
 });
