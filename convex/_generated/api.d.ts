@@ -73,6 +73,7 @@ import type * as functions_posts from "../functions/posts.js";
 import type * as functions_printJobs from "../functions/printJobs.js";
 import type * as functions_profiles from "../functions/profiles.js";
 import type * as functions_quickActions from "../functions/quickActions.js";
+import type * as functions_representations from "../functions/representations.js";
 import type * as functions_requests from "../functions/requests.js";
 import type * as functions_roleConfig from "../functions/roleConfig.js";
 import type * as functions_security from "../functions/security.js";
@@ -259,6 +260,7 @@ declare const fullApi: ApiFromModules<{
   "functions/printJobs": typeof functions_printJobs;
   "functions/profiles": typeof functions_profiles;
   "functions/quickActions": typeof functions_quickActions;
+  "functions/representations": typeof functions_representations;
   "functions/requests": typeof functions_requests;
   "functions/roleConfig": typeof functions_roleConfig;
   "functions/security": typeof functions_security;
