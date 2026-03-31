@@ -73,3 +73,10 @@ export {
   copiesPassageTable,
   journalActionsTable,
 } from "./dossierProcedure";
+
+export {
+  diplomaticTargetsTable,
+  diplomaticLettersTable,
+  diplomaticPlansTable,
+  diplomaticReportsTable,
+} from "./diplomaticAffairs";

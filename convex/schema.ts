@@ -62,6 +62,10 @@ import {
   dossierTransitionsTable,
   copiesPassageTable,
   journalActionsTable,
+  diplomaticTargetsTable,
+  diplomaticLettersTable,
+  diplomaticPlansTable,
+  diplomaticReportsTable,
 } from "./schemas";
 
 export default defineSchema({
@@ -127,4 +131,9 @@ export default defineSchema({
   dossierTransitions: dossierTransitionsTable,
   copiesPassage: copiesPassageTable,
   journalActions: journalActionsTable,
+  // Affaires Diplomatiques
+  diplomaticTargets: diplomaticTargetsTable,
+  diplomaticLetters: diplomaticLettersTable,
+  diplomaticPlans: diplomaticPlansTable,
+  diplomaticReports: diplomaticReportsTable,
 });

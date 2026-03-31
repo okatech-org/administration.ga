@@ -2,26 +2,19 @@
 
 import { Link, useLocation } from "@tanstack/react-router";
 import {
-	Archive,
-	BarChart3,
-	Bot,
-	Briefcase,
-	Building2,
 	Calendar,
 	ChevronsLeft,
 	ChevronsRight,
-	CreditCard,
 	FileText,
 	FolderOpen,
+	Globe2,
 	Home,
-	IdCard,
 	Mail,
-	MessageSquare,
 	Moon,
 	Newspaper,
-	Phone,
 	Settings2,
 	Sun,
+	Users,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
@@ -107,67 +100,27 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 			label: "Opérations",
 			items: [
 				{
-					title: "Services",
-					url: "/services",
-					icon: Briefcase,
-					requires: "settings.manage",
+					title: "Affaires Diplomatiques",
+					url: "/affaires-diplomatiques",
+					icon: Globe2,
 				},
 				{
-					title: t("admin.nav.requests"),
-					url: "/requests",
-					icon: FileText,
+					title: "Affaires Consulaires",
+					url: "/affaires-consulaires",
+					icon: Users,
 					requires: "requests.view",
 				},
 				{
-					title: t("admin.nav.consularRegistry"),
-					url: "/consular-registry",
-					icon: IdCard,
-					requires: "profiles.view",
-				},
-				{
-					title: t("admin.nav.appointments"),
-					url: "/appointments",
-					icon: Calendar,
-					requires: "appointments.view",
-				},
-				{
-					title: t("admin.nav.calls", "Appels"),
-					url: "/calls",
-					icon: Phone,
-					requires: "meetings.view_history",
+					title: "Gestion Actualités",
+					url: "/posts",
+					icon: Newspaper,
+					requires: "communication.publish",
 				},
 			],
 		},
 		{
-			label: "Suivi & Gestion",
+			label: "iBureau",
 			items: [
-				{
-					title: t("admin.nav.statistics"),
-					url: "/statistics",
-					icon: BarChart3,
-					requires: "analytics.view",
-				},
-				{
-					title: t("admin.nav.payments"),
-					url: "/payments",
-					icon: CreditCard,
-					requires: "finance.view",
-				},
-			],
-		},
-		{
-			label: "Communication",
-			items: [
-				{
-					title: "iAsted",
-					url: "/iasted",
-					icon: Bot,
-				},
-				{
-					title: "iCom",
-					url: "/icom",
-					icon: MessageSquare,
-				},
 				{
 					title: "iBoîte",
 					url: "/iboite",
@@ -178,11 +131,6 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 					url: "/icorrespondance",
 					icon: FolderOpen,
 				},
-			],
-		},
-		{
-			label: "Modules Métier",
-			items: [
 				{
 					title: "iDocument",
 					url: "/idocument",
@@ -193,33 +141,11 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 					url: "/iagenda",
 					icon: Calendar,
 				},
-				{
-					title: "iArchive",
-					url: "/iarchive",
-					icon: Archive,
-				},
-			],
-		},
-		{
-			label: "Contenu",
-			items: [
-				{
-					title: t("admin.nav.posts"),
-					url: "/posts",
-					icon: Newspaper,
-					requires: "communication.publish",
-				},
 			],
 		},
 		{
 			label: "Administration",
 			items: [
-				{
-					title: t("admin.nav.organization", "Organisation"),
-					url: "/team",
-					icon: Building2,
-					requires: "team.view",
-				},
 				{
 					title: t("admin.nav.settings"),
 					url: "/settings",
