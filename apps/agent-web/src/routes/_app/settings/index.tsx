@@ -1,9 +1,10 @@
 import { api } from "@convex/_generated/api";
 import { useForm } from "@tanstack/react-form";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	Bell,
 	Bot,
+	Briefcase,
 	Building2,
 	Check,
 	Clock,
@@ -22,7 +23,7 @@ import {
 	X,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
@@ -32,6 +33,7 @@ import {
 	SettingsRow,
 	SettingsSectionHeader,
 	type SettingsTab,
+	type SettingsTabGroup,
 } from "@/components/shared/settings-layout";
 import {
 	AlertDialog,
@@ -45,6 +47,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 
 import {
 	Field,
@@ -308,40 +318,61 @@ function DashboardSettings() {
 		return types[type] || type;
 	};
 
-	const TABS: SettingsTab[] = [
+	const GROUPS: SettingsTabGroup[] = [
+		// ── 🏛️ ORGANISME (admin seulement) ──
 		...(canViewOrgSettings
-			? [
+			? [{
+				label: "Organisme",
+				tabs: [
 					{
 						id: "profile",
-						label: t("dashboard.settings.orgProfile"),
+						label: "Profil & Identité",
 						icon: <Building2 className="size-4" />,
 					},
 					{
 						id: "hours",
-						label: t("dashboard.settings.workingHours"),
+						label: "Horaires & Accueil",
 						icon: <Clock className="size-4" />,
 					},
 					{
+						id: "services",
+						label: "Services",
+						icon: <Briefcase className="size-4" />,
+					},
+					{
 						id: "requestProcessing",
-						label: t("dashboard.settings.requestProcessing.title"),
+						label: "Traitement",
 						icon: <Settings2 className="size-4" />,
 					},
-				]
+				],
+			}]
 			: []),
+		// ── 👤 MON ESPACE (tous) ──
 		{
-			id: "preferences",
-			label: t("settings.memberPreferences.title"),
-			icon: <Bell className="size-4" />,
+			label: "Mon espace",
+			tabs: [
+				{
+					id: "preferences",
+					label: "Notifications",
+					icon: <Bell className="size-4" />,
+				},
+				{
+					id: "appearance",
+					label: "Apparence",
+					icon: <Palette className="size-4" />,
+				},
+			],
 		},
+		// ── 🔐 COMPTE (tous) ──
 		{
-			id: "appearance",
-			label: t("settings.display.title"),
-			icon: <Palette className="size-4" />,
-		},
-		{
-			id: "accountSecurity",
-			label: t("settings.account.title"),
-			icon: <KeyRound className="size-4" />,
+			label: "Compte",
+			tabs: [
+				{
+					id: "accountSecurity",
+					label: "Sécurité",
+					icon: <KeyRound className="size-4" />,
+				},
+			],
 		},
 	];
 
@@ -350,7 +381,7 @@ function DashboardSettings() {
 			<SettingsLayout
 				title={t("dashboard.settings.title")}
 				description={t("dashboard.settings.description")}
-				tabs={TABS}
+				groups={GROUPS}
 				activeTab={activeTab}
 				onTabChange={setActiveTab}
 			>
@@ -1049,6 +1080,18 @@ function DashboardSettings() {
 					)}
 				</form>
 
+				{/* ─── Services Tab (embedded from services page) ─── */}
+				{canViewOrgSettings && (
+					<div
+						className={cn(
+							"animate-in fade-in duration-300",
+							activeTab !== "services" && "hidden",
+						)}
+					>
+						<ServicesSettingsPanel />
+					</div>
+				)}
+
 				{/* ─── Personal settings (visible to everyone) ─── */}
 
 				<div
@@ -1470,5 +1513,298 @@ function ThemeSwitcher() {
 				onClick={() => setConsularTheme("homeomorphism")}
 			/>
 		</div>
+	);
+}
+
+/* -------------------------------------------------- */
+/*  Services Settings Panel (embedded in Settings)     */
+/* -------------------------------------------------- */
+function ServicesSettingsPanel() {
+	const { t, i18n } = useTranslation();
+	const { activeOrgId } = useOrg();
+
+	const [searchQuery, setSearchQuery] = useState("");
+	const [addDialogOpen, setAddDialogOpen] = useState(false);
+	const [selectedService, setSelectedService] = useState<string>("");
+	const [activationForm, setActivationForm] = useState({
+		fee: 0,
+		currency: "EUR",
+		requiresAppointment: false,
+		requiresAppointmentForPickup: false,
+		instructions: "",
+	});
+
+	// ── Queries ──
+	const { data: catalogServices } = useAuthenticatedConvexQuery(
+		api.functions.services.listCatalog,
+		{},
+	);
+	const { data: orgServices } = useAuthenticatedConvexQuery(
+		api.functions.services.listByOrg,
+		activeOrgId ? { orgId: activeOrgId, activeOnly: false } : "skip",
+	);
+
+	// ── Mutations ──
+	const { mutateAsync: toggleActive } = useConvexMutationQuery(
+		api.functions.services.toggleOrgServiceActive,
+	);
+	const { mutateAsync: activateService } = useConvexMutationQuery(
+		api.functions.services.activateForOrg,
+	);
+
+	// ── Merge catalog + org services ──
+	const mergedServices = useMemo(() => {
+		if (!catalogServices) return [];
+		const orgMap = new Map((orgServices ?? []).map((os: any) => [os.serviceId, os]));
+		return catalogServices.map((cs: any) => {
+			const os = orgMap.get(cs._id) as any;
+			let activationState: "active" | "inactive" | "not_activated" = "not_activated";
+			if (os) {
+				activationState = os.isActive ? "active" : "inactive";
+			}
+			return {
+				catalogId: cs._id,
+				slug: cs.slug,
+				name: cs.name,
+				description: cs.description,
+				category: cs.category,
+				icon: cs.icon,
+				estimatedDays: cs.estimatedDays,
+				requiresAppointment: cs.requiresAppointment,
+				activationState,
+				orgServiceId: os?._id,
+				pricing: os?.pricing as { amount: number; currency: string } | undefined,
+				isActive: os?.isActive,
+			};
+		});
+	}, [catalogServices, orgServices]);
+
+	const availableForActivation = mergedServices.filter(
+		(s: any) => s.activationState === "not_activated",
+	);
+
+	// ── Filtering ──
+	const filteredServices = useMemo(() => {
+		const query = searchQuery.toLowerCase().trim();
+		return mergedServices.filter((service: any) => {
+			const name = typeof service.name === "string" ? service.name : (service.name?.[i18n.language] || service.name?.fr || service.name?.en || "");
+			const desc = typeof service.description === "string" ? service.description : (service.description?.[i18n.language] || service.description?.fr || service.description?.en || "");
+			return !query || name.toLowerCase().includes(query) || desc.toLowerCase().includes(query);
+		});
+	}, [mergedServices, searchQuery, i18n.language]);
+
+	// ── Handlers ──
+	const handleToggle = async (service: any) => {
+		if (!service.orgServiceId) return;
+		try {
+			await toggleActive({ orgServiceId: service.orgServiceId as any });
+			toast.success(t("dashboard.services.statusUpdated"));
+		} catch {
+			toast.error(t("dashboard.services.updateError"));
+		}
+	};
+
+	const handleActivateService = async () => {
+		if (!selectedService || !activeOrgId) return;
+		try {
+			await activateService({
+				orgId: activeOrgId,
+				serviceId: selectedService as any,
+				pricing: { amount: activationForm.fee, currency: activationForm.currency },
+				requiresAppointment: activationForm.requiresAppointment,
+				requiresAppointmentForPickup: activationForm.requiresAppointmentForPickup,
+				instructions: activationForm.instructions || undefined,
+			});
+			toast.success(t("dashboard.services.activated"));
+			setAddDialogOpen(false);
+			setSelectedService("");
+			setActivationForm({ fee: 0, currency: "EUR", requiresAppointment: false, requiresAppointmentForPickup: false, instructions: "" });
+		} catch (error: any) {
+			toast.error(error.message || t("dashboard.services.updateError"));
+		}
+	};
+
+	if (!catalogServices) {
+		return (
+			<div className="flex items-center justify-center py-12">
+				<Loader2 className="size-8 animate-spin text-primary" />
+			</div>
+		);
+	}
+
+	const activeCount = mergedServices.filter((s: any) => s.activationState === "active").length;
+	const totalCount = mergedServices.length;
+
+	return (
+		<>
+			<SettingsSectionHeader
+				title="Services"
+				description={t("dashboard.services.description", "Gérez les services disponibles pour votre organisme. Activez ou désactivez les services du catalogue.")}
+			/>
+
+			{/* Stats row */}
+			<div className="flex items-center gap-4 mb-6">
+				<div className="flex items-center gap-2 text-sm">
+					<div className="size-2 rounded-full bg-green-500" />
+					<span className="text-muted-foreground">{activeCount} {t("dashboard.services.status.active", "actifs")}</span>
+				</div>
+				<div className="flex items-center gap-2 text-sm">
+					<div className="size-2 rounded-full bg-muted-foreground/30" />
+					<span className="text-muted-foreground">{totalCount - activeCount} {t("dashboard.services.status.notActivated", "non activés")}</span>
+				</div>
+			</div>
+
+			{/* Search + Add */}
+			<div className="flex items-center gap-3 mb-4">
+				<div className="relative flex-1">
+					<input
+						type="text"
+						placeholder={t("dashboard.services.searchPlaceholder", "Rechercher un service...")}
+						value={searchQuery}
+						onChange={(e) => setSearchQuery(e.target.value)}
+						className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background outline-none transition-all text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+					/>
+					<Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+				</div>
+				<Button
+					onClick={() => { setSelectedService(""); setActivationForm({ fee: 0, currency: "EUR", requiresAppointment: false, requiresAppointmentForPickup: false, instructions: "" }); setAddDialogOpen(true); }}
+					disabled={availableForActivation.length === 0}
+					size="sm"
+					className="gap-1.5 shrink-0"
+				>
+					<Plus className="size-4" />
+					{t("dashboard.services.activate")}
+				</Button>
+			</div>
+
+			{/* Services list */}
+			<div className="space-y-2">
+				{filteredServices.length === 0 ? (
+					<div className="text-center py-8 text-muted-foreground text-sm">
+						{t("dashboard.services.empty.description", "Aucun service ne correspond à votre recherche.")}
+					</div>
+				) : (
+					filteredServices.map((service: any) => {
+						const name = typeof service.name === "string" ? service.name : (service.name?.[i18n.language] || service.name?.fr || service.name?.en || "");
+						const isActivated = service.activationState !== "not_activated";
+						const isActive = service.activationState === "active";
+
+						return (
+							<div
+								key={service.catalogId}
+								className={cn(
+									"flex items-center justify-between gap-4 px-4 py-3 rounded-xl border transition-colors",
+									isActivated ? "bg-card" : "bg-muted/30 border-dashed",
+								)}
+							>
+								<div className="flex items-center gap-3 min-w-0">
+									<div className={cn(
+										"size-9 rounded-lg flex items-center justify-center shrink-0",
+										isActive ? "bg-green-500/10 text-green-600 dark:text-green-400" :
+											isActivated ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400" :
+												"bg-muted text-muted-foreground",
+									)}>
+										<Briefcase className="size-4" />
+									</div>
+									<div className="min-w-0">
+										<p className="text-sm font-medium truncate">{name}</p>
+										<p className="text-xs text-muted-foreground">
+											{isActive ? t("dashboard.services.status.active") :
+												isActivated ? t("dashboard.services.status.inactive") :
+													t("dashboard.services.status.notActivated")}
+											{service.pricing && isActivated && (
+												<> · {service.pricing.amount === 0 ? t("services.free", "Gratuit") : `${service.pricing.amount} ${service.pricing.currency}`}</>
+											)}
+										</p>
+									</div>
+								</div>
+
+								<div className="flex items-center gap-2 shrink-0">
+									{isActivated ? (
+										<Switch
+											checked={isActive}
+											onCheckedChange={() => handleToggle(service)}
+										/>
+									) : (
+										<Button
+											variant="outline"
+											size="sm"
+											className="text-xs gap-1"
+											onClick={() => { setSelectedService(service.catalogId); setAddDialogOpen(true); }}
+										>
+											<Plus className="size-3" />
+											{t("dashboard.services.activate")}
+										</Button>
+									)}
+								</div>
+							</div>
+						);
+					})
+				)}
+			</div>
+
+			{/* Activation Dialog */}
+			<Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>{t("dashboard.services.dialog.title")}</DialogTitle>
+						<DialogDescription>
+							{t("dashboard.services.dialog.description", "Sélectionnez un service du catalogue à activer pour votre organisme.")}
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label>{t("dashboard.services.dialog.selectService")}</Label>
+							<Select value={selectedService} onValueChange={setSelectedService} disabled={!!selectedService}>
+								<SelectTrigger>
+									<SelectValue placeholder={t("dashboard.services.dialog.selectPlaceholder", "Choisir un service…")} />
+								</SelectTrigger>
+								<SelectContent>
+									{availableForActivation.length === 0 ? (
+										<div className="p-2 text-center text-muted-foreground">
+											{t("dashboard.services.dialog.allActivated", "Tous les services sont déjà activés")}
+										</div>
+									) : (
+										availableForActivation.map((s: any) => {
+											const sName = typeof s.name === "string" ? s.name : (s.name?.[i18n.language] || s.name?.fr || s.name?.en || "");
+											return <SelectItem key={s.catalogId} value={s.catalogId}>{sName}</SelectItem>;
+										})
+									)}
+								</SelectContent>
+							</Select>
+						</div>
+						<div className="grid grid-cols-2 gap-4">
+							<div className="space-y-2">
+								<Label>{t("dashboard.services.dialog.fee")}</Label>
+								<Input type="number" value={activationForm.fee} onChange={(e) => setActivationForm({ ...activationForm, fee: Number(e.target.value) })} min={0} />
+							</div>
+							<div className="space-y-2">
+								<Label>{t("dashboard.services.dialog.currency")}</Label>
+								<Select value={activationForm.currency} onValueChange={(v) => setActivationForm({ ...activationForm, currency: v })}>
+									<SelectTrigger><SelectValue /></SelectTrigger>
+									<SelectContent>
+										<SelectItem value="EUR">EUR (€)</SelectItem>
+										<SelectItem value="USD">USD ($)</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+						<div className="space-y-2">
+							<Label>{t("dashboard.services.dialog.instructions", "Instructions personnalisées")}</Label>
+							<Textarea
+								value={activationForm.instructions}
+								onChange={(e) => setActivationForm({ ...activationForm, instructions: e.target.value })}
+								placeholder={t("dashboard.services.dialog.instructionsPlaceholder", "Instructions spécifiques pour ce service…")}
+								rows={3}
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setAddDialogOpen(false)}>{t("common.cancel")}</Button>
+						<Button onClick={handleActivateService} disabled={!selectedService}>{t("dashboard.services.dialog.submit")}</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		</>
 	);
 }
