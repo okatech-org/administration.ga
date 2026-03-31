@@ -2,19 +2,27 @@
 
 import { Link, useLocation } from "@tanstack/react-router";
 import {
+	Archive,
+	BarChart3,
+	Bot,
 	Calendar,
 	ChevronsLeft,
 	ChevronsRight,
+	CreditCard,
 	FileText,
 	FolderOpen,
 	Globe2,
 	Home,
 	Mail,
+	MessageSquare,
 	Moon,
 	Newspaper,
+	Phone,
 	Settings2,
 	Sun,
 	Users,
+	Video,
+	Wrench,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
@@ -89,68 +97,61 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 		{
 			label: "Commandes",
 			items: [
-				{
-					title: "Dashboard",
-					url: "/",
-					icon: Home,
-				},
+				{ title: "Dashboard", url: "/", icon: Home },
 			],
 		},
 		{
-			label: "Opérations",
+			label: "Affaires Consulaires",
 			items: [
-				{
-					title: "Affaires Diplomatiques",
-					url: "/affaires-diplomatiques",
-					icon: Globe2,
-				},
-				{
-					title: "Affaires Consulaires",
-					url: "/affaires-consulaires",
-					icon: Users,
-					requires: "requests.view",
-				},
-				{
-					title: "Gestion Actualités",
-					url: "/posts",
-					icon: Newspaper,
-					requires: "communication.publish",
-				},
+				{ title: "Demandes", url: "/requests", icon: FileText, requires: "requests.view" },
+				{ title: "Registre Consulaire", url: "/consular-registry", icon: Users, requires: "profiles.view" },
+				{ title: "Rendez-vous", url: "/appointments", icon: Calendar, requires: "appointments.view" },
+				{ title: "Services", url: "/services", icon: Wrench, requires: "settings.view" },
+			],
+		},
+		{
+			label: "Affaires Diplomatiques",
+			items: [
+				{ title: "Cibles & Partenariats", url: "/affaires-diplomatiques", icon: Globe2 },
+				{ title: "Correspondance", url: "/icorrespondance", icon: FolderOpen },
+				{ title: "Événements & Agenda", url: "/iagenda", icon: Calendar },
 			],
 		},
 		{
 			label: "iBureau",
 			items: [
-				{
-					title: "iBoîte",
-					url: "/iboite",
-					icon: Mail,
-				},
-				{
-					title: "iCorrespondance",
-					url: "/icorrespondance",
-					icon: FolderOpen,
-				},
-				{
-					title: "iDocument",
-					url: "/idocument",
-					icon: FileText,
-				},
-				{
-					title: "iAgenda",
-					url: "/iagenda",
-					icon: Calendar,
-				},
+				{ title: "iBoîte", url: "/iboite", icon: Mail },
+				{ title: "iDocument", url: "/idocument", icon: FileText },
+				{ title: "iArchive", url: "/iarchive", icon: Archive },
+				{ title: "iCom", url: "/icom", icon: MessageSquare },
+			],
+		},
+		{
+			label: "Communication",
+			items: [
+				{ title: "Appels", url: "/calls", icon: Phone },
+				{ title: "Réunions", url: "/meetings", icon: Video },
+				{ title: "Actualités", url: "/posts", icon: Newspaper, requires: "communication.publish" },
+			],
+		},
+		{
+			label: "Gestion",
+			items: [
+				{ title: "Équipe", url: "/team", icon: Users, requires: "team.view" },
+				{ title: "Paiements", url: "/payments", icon: CreditCard, requires: "finance.view" },
+				{ title: "Statistiques", url: "/statistics", icon: BarChart3, requires: "analytics.view" },
+			],
+		},
+		{
+			label: "Outils",
+			items: [
+				{ title: "iAsted", url: "/iasted", icon: Bot },
 			],
 		},
 		{
 			label: "Administration",
 			items: [
-				{
-					title: t("admin.nav.settings"),
-					url: "/settings",
-					icon: Settings2,
-				},
+				{ title: "Paramètres", url: "/settings", icon: Settings2 },
 			],
 		},
 	];
