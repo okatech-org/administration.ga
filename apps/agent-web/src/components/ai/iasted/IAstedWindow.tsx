@@ -5,7 +5,7 @@
  * Remplace AdminAIAssistant dans le layout.
  */
 
-import { Bot, MessageSquare, Minus, Phone, Plus, ShieldCheck, Video } from "lucide-react";
+import { Bot, Contact, MessageSquare, Minus, Phone, Plus, ShieldCheck, Video } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,8 @@ import { VoiceButton } from "../VoiceButton";
 
 import { IAstedFAB } from "./IAstedFAB";
 import { IAstedChatTab } from "./IAstedChatTab";
-import { IAstedComTab } from "./IAstedComTab";
+import { IAstedInstantChatTab } from "./IAstedInstantChatTab";
+import { IAstedContactTab } from "./IAstedContactTab";
 import { IAstedCallsTab } from "./IAstedCallsTab";
 import { IAstedMeetingsTab } from "./IAstedMeetingsTab";
 
@@ -88,20 +89,24 @@ export function IAstedWindow() {
 
 						{/* ── Onglets ── */}
 						<Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-							<TabsList className="grid grid-cols-4 rounded-none border-b bg-muted/30 h-10 px-1 shrink-0">
-								<TabsTrigger value="ia" className="text-xs gap-1.5 data-[state=active]:bg-background rounded-lg">
+							<TabsList className="grid grid-cols-5 rounded-none border-b bg-muted/30 h-10 px-0.5 shrink-0">
+								<TabsTrigger value="ia" className="text-[10px] gap-1 data-[state=active]:bg-background rounded-lg px-1">
 									<Bot className="h-3.5 w-3.5" />
 									<span className="hidden sm:inline">IA</span>
 								</TabsTrigger>
-								<TabsTrigger value="icom" className="text-xs gap-1.5 data-[state=active]:bg-background rounded-lg">
+								<TabsTrigger value="ichat" className="text-[10px] gap-1 data-[state=active]:bg-background rounded-lg px-1">
 									<MessageSquare className="h-3.5 w-3.5" />
-									<span className="hidden sm:inline">iCom</span>
+									<span className="hidden sm:inline">iChat</span>
 								</TabsTrigger>
-								<TabsTrigger value="calls" className="text-xs gap-1.5 data-[state=active]:bg-background rounded-lg">
+								<TabsTrigger value="icontact" className="text-[10px] gap-1 data-[state=active]:bg-background rounded-lg px-1">
+									<Contact className="h-3.5 w-3.5" />
+									<span className="hidden sm:inline">iContact</span>
+								</TabsTrigger>
+								<TabsTrigger value="calls" className="text-[10px] gap-1 data-[state=active]:bg-background rounded-lg px-1">
 									<Phone className="h-3.5 w-3.5" />
 									<span className="hidden sm:inline">Appels</span>
 								</TabsTrigger>
-								<TabsTrigger value="meetings" className="text-xs gap-1.5 data-[state=active]:bg-background rounded-lg">
+								<TabsTrigger value="meetings" className="text-[10px] gap-1 data-[state=active]:bg-background rounded-lg px-1">
 									<Video className="h-3.5 w-3.5" />
 									<span className="hidden sm:inline">Réunions</span>
 								</TabsTrigger>
@@ -111,8 +116,12 @@ export function IAstedWindow() {
 								<IAstedChatTab chat={chat} voice={voice} />
 							</TabsContent>
 
-							<TabsContent value="icom" className="flex-1 flex flex-col overflow-hidden mt-0">
-								<IAstedComTab />
+							<TabsContent value="ichat" className="flex-1 flex flex-col overflow-hidden mt-0">
+								<IAstedInstantChatTab />
+							</TabsContent>
+
+							<TabsContent value="icontact" className="flex-1 flex flex-col overflow-hidden mt-0">
+								<IAstedContactTab />
 							</TabsContent>
 
 							<TabsContent value="calls" className="flex-1 flex flex-col overflow-hidden mt-0">

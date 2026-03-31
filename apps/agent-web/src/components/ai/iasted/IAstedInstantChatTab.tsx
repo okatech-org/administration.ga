@@ -1,13 +1,15 @@
 /**
- * IAstedComTab — Onglet messagerie interne (iCom).
- * Contacts = membres de l'organisation, conversations temps réel Convex.
+ * IAstedInstantChatTab — Onglet iChat dans iAsted.
+ *
+ * Messagerie instantanée inter-utilisateurs (pas l'IA).
+ * Différent de IAstedChatTab qui est le chat avec l'agent iAsted.
+ * Contacts = membres de l'org, conversations temps réel.
  */
 
 import { api } from "@convex/_generated/api";
 import { Loader2, MessageSquare, Search, Send, User } from "lucide-react";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,13 +18,13 @@ import { useOrg } from "@/components/org/org-provider";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 
-export function IAstedComTab() {
+export function IAstedInstantChatTab() {
 	const { activeOrgId } = useOrg();
 	const [search, setSearch] = useState("");
 	const [selectedContact, setSelectedContact] = useState<any>(null);
 	const [messageInput, setMessageInput] = useState("");
 
-	// Charger les membres de l'org comme contacts
+	// Membres de l'org comme contacts
 	const { data: orgChart } = useAuthenticatedConvexQuery(
 		api.functions.orgs.getOrgChart,
 		activeOrgId ? { orgId: activeOrgId } : "skip",
@@ -39,22 +41,24 @@ export function IAstedComTab() {
 	) ?? [];
 
 	const filteredContacts = search
-		? contacts.filter((c: any) => c.name.toLowerCase().includes(search.toLowerCase()))
+		? contacts.filter((c: any) =>
+			c.name.toLowerCase().includes(search.toLowerCase()) ||
+			c.email?.toLowerCase().includes(search.toLowerCase()),
+		)
 		: contacts;
 
 	return (
 		<div className="flex flex-col flex-1 overflow-hidden">
 			{selectedContact ? (
-				/* Vue conversation */
+				/* ── Vue conversation ── */
 				<>
-					{/* Header contact */}
 					<div className="border-b px-3 py-2 flex items-center gap-2">
 						<button type="button" onClick={() => setSelectedContact(null)} className="text-xs text-muted-foreground hover:text-foreground">
 							← Retour
 						</button>
 						<Avatar className="h-6 w-6">
 							<AvatarImage src={selectedContact.avatar} />
-							<AvatarFallback className="text-[9px]">
+							<AvatarFallback className="text-[9px] bg-primary/10 text-primary">
 								{selectedContact.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
 							</AvatarFallback>
 						</Avatar>
@@ -64,17 +68,18 @@ export function IAstedComTab() {
 						</div>
 					</div>
 
-					{/* Messages (placeholder — backend iCom à venir) */}
 					<ScrollArea className="flex-1 px-3 py-4">
 						<div className="flex flex-col items-center justify-center h-full text-center py-8">
 							<MessageSquare className="h-8 w-8 text-muted-foreground/30 mb-2" />
 							<p className="text-xs text-muted-foreground">
-								Aucun message. Envoyez le premier !
+								Démarrez la conversation avec {selectedContact.name}
+							</p>
+							<p className="text-[10px] text-muted-foreground/60 mt-1">
+								Les messages s'afficheront ici en temps réel
 							</p>
 						</div>
 					</ScrollArea>
 
-					{/* Input */}
 					<div className="border-t p-2 flex items-end gap-2">
 						<Textarea
 							value={messageInput}
@@ -89,7 +94,7 @@ export function IAstedComTab() {
 					</div>
 				</>
 			) : (
-				/* Vue contacts */
+				/* ── Vue contacts ── */
 				<>
 					<div className="p-2 border-b">
 						<div className="relative">
@@ -97,7 +102,7 @@ export function IAstedComTab() {
 							<Input
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
-								placeholder="Rechercher un contact..."
+								placeholder="Rechercher pour démarrer une conversation..."
 								className="h-8 pl-8 text-xs"
 							/>
 						</div>
@@ -108,7 +113,7 @@ export function IAstedComTab() {
 							<div className="flex flex-col items-center justify-center py-8 text-center">
 								<User className="h-8 w-8 text-muted-foreground/30 mb-2" />
 								<p className="text-xs text-muted-foreground">
-									{contacts.length === 0 ? "Aucun membre dans l'organisation" : "Aucun résultat"}
+									{contacts.length === 0 ? "Aucun collaborateur" : "Aucun résultat"}
 								</p>
 							</div>
 						) : (
@@ -130,6 +135,7 @@ export function IAstedComTab() {
 											<p className="text-xs font-medium truncate">{contact.name}</p>
 											<p className="text-[10px] text-muted-foreground truncate">{contact.position}</p>
 										</div>
+										<MessageSquare className="h-3.5 w-3.5 text-muted-foreground/40" />
 									</button>
 								))}
 							</div>
