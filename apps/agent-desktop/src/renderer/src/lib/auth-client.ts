@@ -6,15 +6,16 @@ import {
 } from "better-auth/client/plugins"
 import { createAuthClient } from "better-auth/react"
 
-// In Electron, window.location.origin is file:// so we must use the explicit URL
-const SITE_URL = (import.meta as any).env.VITE_SITE_URL
+// The desktop app talks directly to Convex Site URL for auth
+// — no need for the agent-web Vite proxy.
+const CONVEX_SITE_URL = (import.meta as any).env.VITE_CONVEX_SITE_URL
 
-if (!SITE_URL) {
-  console.error("[auth] Missing VITE_SITE_URL — auth won't work")
+if (!CONVEX_SITE_URL) {
+  console.error("[auth] Missing VITE_CONVEX_SITE_URL — auth won't work")
 }
 
 export const authClient = createAuthClient({
-  baseURL: SITE_URL || undefined,
+  baseURL: CONVEX_SITE_URL ? `${CONVEX_SITE_URL}/api/auth` : undefined,
   plugins: [
     convexClient(),
     crossDomainClient(),
