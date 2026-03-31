@@ -64,16 +64,18 @@ export function IAstedCallTab() {
 
 	const meetingsArray = Array.isArray(rawMeetings) ? rawMeetings : [];
 
-	const contacts = useMemo(() =>
-		(orgChart as any)?.positions?.flatMap((pos: any) =>
+	const contacts = useMemo(() => {
+		const raw = (orgChart as any)?.positions?.flatMap((pos: any) =>
 			(pos.occupants ?? []).map((occ: any) => ({
 				id: occ.userId,
 				name: `${occ.firstName ?? ""} ${occ.lastName ?? ""}`.trim(),
 				avatar: occ.avatarUrl,
 				position: pos.title?.fr ?? pos.code,
 			})),
-		) ?? [],
-	[orgChart]);
+		) ?? [];
+		// Dédoublonner par userId
+		return raw.filter((c: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.id === c.id) === i);
+	}, [orgChart]);
 
 	const filteredContacts = search
 		? contacts.filter((c: any) => c.name.toLowerCase().includes(search.toLowerCase()))

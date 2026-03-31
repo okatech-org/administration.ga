@@ -62,7 +62,7 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
 
-	const contacts = (orgChart as any)?.positions?.flatMap((pos: any) =>
+	const rawContacts = (orgChart as any)?.positions?.flatMap((pos: any) =>
 		(pos.occupants ?? []).map((occ: any) => ({
 			id: occ.userId,
 			name: `${occ.firstName ?? ""} ${occ.lastName ?? ""}`.trim(),
@@ -72,6 +72,10 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 			isAI: false,
 		})),
 	) ?? [];
+	// Dédoublonner par userId (un utilisateur peut occuper plusieurs postes)
+	const contacts = rawContacts.filter(
+		(c: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.id === c.id) === i,
+	);
 
 	const filteredContacts = search
 		? contacts.filter((c: any) =>

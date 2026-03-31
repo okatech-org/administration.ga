@@ -53,7 +53,7 @@ export function IAstedContactTab() {
 
 	// Fusionner les deux sources
 	const contacts: Contact[] = useMemo(() => {
-		const teamContacts: Contact[] = (orgChart as any)?.positions?.flatMap((pos: any) =>
+		const rawTeam: Contact[] = (orgChart as any)?.positions?.flatMap((pos: any) =>
 			(pos.occupants ?? []).map((occ: any) => ({
 				id: `team-${occ.userId}`,
 				name: `${occ.firstName ?? ""} ${occ.lastName ?? ""}`.trim() || occ.email,
@@ -63,6 +63,10 @@ export function IAstedContactTab() {
 				source: "team" as const,
 			})),
 		) ?? [];
+		// Dédoublonner par userId
+		const teamContacts = rawTeam.filter(
+			(c, i, arr) => arr.findIndex((x) => x.id === c.id) === i,
+		);
 
 		const citizenContacts: Contact[] = ((rawProfiles as any[]) ?? []).map((p) => ({
 			id: `citizen-${p._id}`,
