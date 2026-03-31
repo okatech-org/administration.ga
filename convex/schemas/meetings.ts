@@ -50,6 +50,9 @@ export const meetingsTable = defineTable({
   requestId: v.optional(v.id("requests")),
   appointmentId: v.optional(v.id("appointments")),
 
+  // Media type (audio-only or video allowed)
+  mediaType: v.optional(v.union(v.literal("audio"), v.literal("video"))),
+
   // Config
   maxParticipants: v.optional(v.number()),
   recordingEnabled: v.optional(v.boolean()),

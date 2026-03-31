@@ -206,6 +206,10 @@ export enum NotificationType {
   ActionRequired = "action_required",
   DocumentValidated = "document_validated",
   DocumentRejected = "document_rejected",
+  // Meetings & Calls
+  MeetingInvitation = "meeting_invitation",
+  CallIncoming = "call_incoming",
+  ChatMessage = "chat_message",
 }
 
 export enum ProfileCategory {

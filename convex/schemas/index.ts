@@ -36,6 +36,8 @@ export { companyMembersTable } from "./companyMembers";
 export { ticketsTable } from "./tickets";
 export { meetingsTable } from "./meetings";
 export { callLinesTable } from "./callLines";
+export { chatsTable } from "./chats";
+export { chatMessagesTable } from "./chatMessages";
 
 export {
   positionsTable,

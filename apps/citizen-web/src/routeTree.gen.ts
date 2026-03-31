@@ -37,6 +37,7 @@ import { Route as MySpaceSettingsRouteImport } from './routes/my-space/settings'
 import { Route as MySpaceServicesDemarchesRouteImport } from './routes/my-space/services-demarches'
 import { Route as MySpaceRequestsRouteImport } from './routes/my-space/requests'
 import { Route as MySpaceNotificationsRouteImport } from './routes/my-space/notifications'
+import { Route as MySpaceMeetingsRouteImport } from './routes/my-space/meetings'
 import { Route as MySpaceIdocumentRouteImport } from './routes/my-space/idocument'
 import { Route as MySpaceIboiteRouteImport } from './routes/my-space/iboite'
 import { Route as MySpaceIastedRouteImport } from './routes/my-space/iasted'
@@ -207,6 +208,11 @@ const MySpaceRequestsRoute = MySpaceRequestsRouteImport.update({
 const MySpaceNotificationsRoute = MySpaceNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
+  getParentRoute: () => MySpaceRoute,
+} as any)
+const MySpaceMeetingsRoute = MySpaceMeetingsRouteImport.update({
+  id: '/meetings',
+  path: '/meetings',
   getParentRoute: () => MySpaceRoute,
 } as any)
 const MySpaceIdocumentRoute = MySpaceIdocumentRouteImport.update({
@@ -386,6 +392,7 @@ export interface FileRoutesByFullPath {
   '/my-space/iasted': typeof MySpaceIastedRoute
   '/my-space/iboite': typeof MySpaceIboiteRoute
   '/my-space/idocument': typeof MySpaceIdocumentRoute
+  '/my-space/meetings': typeof MySpaceMeetingsRoute
   '/my-space/notifications': typeof MySpaceNotificationsRoute
   '/my-space/requests': typeof MySpaceRequestsRouteWithChildren
   '/my-space/services-demarches': typeof MySpaceServicesDemarchesRoute
@@ -445,6 +452,7 @@ export interface FileRoutesByTo {
   '/my-space/iasted': typeof MySpaceIastedRoute
   '/my-space/iboite': typeof MySpaceIboiteRoute
   '/my-space/idocument': typeof MySpaceIdocumentRoute
+  '/my-space/meetings': typeof MySpaceMeetingsRoute
   '/my-space/notifications': typeof MySpaceNotificationsRoute
   '/my-space/requests': typeof MySpaceRequestsRouteWithChildren
   '/my-space/services-demarches': typeof MySpaceServicesDemarchesRoute
@@ -506,6 +514,7 @@ export interface FileRoutesById {
   '/my-space/iasted': typeof MySpaceIastedRoute
   '/my-space/iboite': typeof MySpaceIboiteRoute
   '/my-space/idocument': typeof MySpaceIdocumentRoute
+  '/my-space/meetings': typeof MySpaceMeetingsRoute
   '/my-space/notifications': typeof MySpaceNotificationsRoute
   '/my-space/requests': typeof MySpaceRequestsRouteWithChildren
   '/my-space/services-demarches': typeof MySpaceServicesDemarchesRoute
@@ -568,6 +577,7 @@ export interface FileRouteTypes {
     | '/my-space/iasted'
     | '/my-space/iboite'
     | '/my-space/idocument'
+    | '/my-space/meetings'
     | '/my-space/notifications'
     | '/my-space/requests'
     | '/my-space/services-demarches'
@@ -627,6 +637,7 @@ export interface FileRouteTypes {
     | '/my-space/iasted'
     | '/my-space/iboite'
     | '/my-space/idocument'
+    | '/my-space/meetings'
     | '/my-space/notifications'
     | '/my-space/requests'
     | '/my-space/services-demarches'
@@ -687,6 +698,7 @@ export interface FileRouteTypes {
     | '/my-space/iasted'
     | '/my-space/iboite'
     | '/my-space/idocument'
+    | '/my-space/meetings'
     | '/my-space/notifications'
     | '/my-space/requests'
     | '/my-space/services-demarches'
@@ -954,6 +966,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MySpaceNotificationsRouteImport
       parentRoute: typeof MySpaceRoute
     }
+    '/my-space/meetings': {
+      id: '/my-space/meetings'
+      path: '/meetings'
+      fullPath: '/my-space/meetings'
+      preLoaderRoute: typeof MySpaceMeetingsRouteImport
+      parentRoute: typeof MySpaceRoute
+    }
     '/my-space/idocument': {
       id: '/my-space/idocument'
       path: '/idocument'
@@ -1217,6 +1236,7 @@ interface MySpaceRouteChildren {
   MySpaceIastedRoute: typeof MySpaceIastedRoute
   MySpaceIboiteRoute: typeof MySpaceIboiteRoute
   MySpaceIdocumentRoute: typeof MySpaceIdocumentRoute
+  MySpaceMeetingsRoute: typeof MySpaceMeetingsRoute
   MySpaceNotificationsRoute: typeof MySpaceNotificationsRoute
   MySpaceRequestsRoute: typeof MySpaceRequestsRouteWithChildren
   MySpaceServicesDemarchesRoute: typeof MySpaceServicesDemarchesRoute
@@ -1247,6 +1267,7 @@ const MySpaceRouteChildren: MySpaceRouteChildren = {
   MySpaceIastedRoute: MySpaceIastedRoute,
   MySpaceIboiteRoute: MySpaceIboiteRoute,
   MySpaceIdocumentRoute: MySpaceIdocumentRoute,
+  MySpaceMeetingsRoute: MySpaceMeetingsRoute,
   MySpaceNotificationsRoute: MySpaceNotificationsRoute,
   MySpaceRequestsRoute: MySpaceRequestsRouteWithChildren,
   MySpaceServicesDemarchesRoute: MySpaceServicesDemarchesRoute,

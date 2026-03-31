@@ -66,6 +66,8 @@ import {
   diplomaticLettersTable,
   diplomaticPlansTable,
   diplomaticReportsTable,
+  chatsTable,
+  chatMessagesTable,
 } from "./schemas";
 
 export default defineSchema({
@@ -136,4 +138,7 @@ export default defineSchema({
   diplomaticLetters: diplomaticLettersTable,
   diplomaticPlans: diplomaticPlansTable,
   diplomaticReports: diplomaticReportsTable,
+  // Chat peer-to-peer
+  chats: chatsTable,
+  chatMessages: chatMessagesTable,
 });

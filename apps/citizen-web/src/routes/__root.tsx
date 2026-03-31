@@ -8,7 +8,7 @@ import {
 	useMatches,
 	useRouteContext,
 } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DevAccountSwitcher } from "@/components/auth/DevAccountSwitcher";
 import { Footer } from "@/components/Footer";
 import { GlobalCallAlert } from "@/components/meetings/global-call-alert";
@@ -17,8 +17,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { authClient } from "@/lib/auth-client";
-import { AIAssistant } from "../components/ai";
 import { FormFillProvider } from "../components/ai/FormFillContext";
+import { CitizenIAstedWindow, CitizenIAstedFAB } from "../components/ai/iasted/CitizenIAstedWindow";
 import Header from "../components/Header";
 import AppConvexProvider from "@workspace/api/provider";
 import I18nProvider from "@workspace/i18n/provider";
@@ -119,6 +119,7 @@ const routesWithOwnLayout = [
 function RootLayout() {
 	const matches = useMatches();
 	const { data: session } = authClient.useSession();
+	const [iastedOpen, setIastedOpen] = useState(false);
 
 	const hasOwnLayout = matches.some((match) =>
 		routesWithOwnLayout.some((route) => match.fullPath.startsWith(route)),
@@ -190,7 +191,12 @@ function RootLayout() {
 					<Footer />
 				</main>
 
-				{session && <AIAssistant />}
+				{session && (
+						<>
+							{!iastedOpen && <CitizenIAstedFAB onClick={() => setIastedOpen(true)} />}
+							<CitizenIAstedWindow isOpen={iastedOpen} onClose={() => setIastedOpen(false)} />
+						</>
+					)}
 			</div>
 		);
 	}
@@ -208,7 +214,12 @@ function RootLayout() {
 				<Footer />
 			</main>
 
-			{session && <AIAssistant />}
+			{session && (
+						<>
+							{!iastedOpen && <CitizenIAstedFAB onClick={() => setIastedOpen(true)} />}
+							<CitizenIAstedWindow isOpen={iastedOpen} onClose={() => setIastedOpen(false)} />
+						</>
+					)}
 		</div>
 	);
 }

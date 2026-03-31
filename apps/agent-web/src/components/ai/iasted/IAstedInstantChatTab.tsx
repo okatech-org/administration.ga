@@ -5,6 +5,8 @@
  * Clic sur iAsted → chat IA (LLM). Clic sur un autre contact → chat inter-utilisateurs.
  */
 
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
 	Bot,
@@ -19,7 +21,7 @@ import {
 	User,
 	Users,
 } from "lucide-react";
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,7 +30,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { useOrg } from "@/components/org/org-provider";
 import { useContactSearch, type ContactSource } from "@/hooks/useContactSearch";
+import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 import { useAdminAIChat } from "../useAdminAIChat";
 import { VoiceChatContent } from "../VoiceButton";
@@ -56,6 +60,7 @@ const SOURCE_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; icon: t
 ];
 
 export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps) {
+	const { activeOrgId } = useOrg();
 	const location = useLocation();
 	const navigate = useNavigate();
 	const [selectedContact, setSelectedContact] = useState<any>(null);
@@ -75,6 +80,44 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 
 	// Aplatir les groupes pour obtenir la liste des contacts
 	const allContacts = groups.flatMap((g: any) => g.contacts);
+
+	// Chat peer-to-peer — mutations
+	const { mutateAsync: initiateChat } = useConvexMutationQuery(
+		api.functions.chats.initiateChat,
+	);
+	const { mutateAsync: sendChatMessage } = useConvexMutationQuery(
+		api.functions.chats.sendMessage,
+	);
+
+	// Chat actif avec le contact sélectionné
+	const selectedUserId = selectedContact && !selectedContact.isAI ? selectedContact.userId : undefined;
+	const { data: existingChat } = useAuthenticatedConvexQuery(
+		api.functions.chats.findChatWith,
+		selectedUserId ? { targetUserId: selectedUserId as Id<"users"> } : "skip",
+	);
+
+	// ── Envoi message humain ──
+	const handleSendHuman = useCallback(async (text: string) => {
+		const trimmed = text.trim();
+		if (!trimmed || !selectedContact?.userId) return;
+
+		try {
+			if (existingChat) {
+				// Thread existant → sendMessage
+				await sendChatMessage({ chatId: existingChat._id, content: trimmed });
+			} else {
+				// Nouveau thread → initiateChat
+				await initiateChat({
+					targetUserId: selectedContact.userId as Id<"users">,
+					orgId: activeOrgId ?? undefined,
+					initialMessage: trimmed,
+				});
+			}
+			setMessageInput("");
+		} catch (e: any) {
+			toast.error(e?.message ?? "Erreur d'envoi");
+		}
+	}, [selectedContact, existingChat, sendChatMessage, initiateChat, activeOrgId]);
 
 	// Auto-scroll chat IA
 	useEffect(() => {
@@ -210,7 +253,11 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 	const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
-			if (selectedContact?.isAI) handleSendAI();
+			if (selectedContact?.isAI) {
+				handleSendAI();
+			} else if (selectedContact) {
+				handleSendHuman(messageInput);
+			}
 		}
 	};
 
@@ -315,11 +362,8 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 							</div>
 						)
 					) : (
-						/* ── Chat humain (placeholder) ── */
-						<div className="flex flex-col items-center justify-center h-full text-center py-6">
-							<MessageSquare className="h-8 w-8 text-muted-foreground/30 mb-2" />
-							<p className="text-xs text-muted-foreground">Démarrez la conversation</p>
-						</div>
+						/* ── Chat humain temps réel ── */
+						<HumanChatView contact={selectedContact} />
 					)}
 				</ScrollArea>
 
@@ -350,7 +394,7 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 					/>
 					<Button size="icon" className={cn("h-8 w-8 shrink-0", selectedContact.isAI && "bg-emerald-600 hover:bg-emerald-700")}
 						disabled={!messageInput.trim() || (selectedContact.isAI && chat.isLoading)}
-						onClick={selectedContact.isAI ? handleSendAI : undefined}>
+						onClick={selectedContact.isAI ? handleSendAI : () => handleSendHuman(messageInput)}>
 						{selectedContact.isAI && chat.isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
 					</Button>
 				</div>
@@ -497,6 +541,94 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 				<span>{total} contact{total > 1 ? "s" : ""}</span>
 				<span>{groups.length} org{groups.length > 1 ? "s" : ""}</span>
 			</div>
+		</div>
+	);
+}
+
+// ════════════════════════════════════════════════════════════
+// Composant chat humain temps réel (Convex subscription)
+// ════════════════════════════════════════════════════════════
+function HumanChatView({ contact }: { contact: any }) {
+	const chatId = contact._chatId as Id<"chats"> | undefined;
+
+	// Chercher le thread existant
+	const { data: existingChat } = useAuthenticatedConvexQuery(
+		api.functions.chats.findChatWith,
+		contact.userId ? { targetUserId: contact.userId as Id<"users"> } : "skip",
+	);
+
+	const resolvedChatId = chatId ?? existingChat?._id;
+
+	// Messages temps réel (subscription Convex)
+	const { data: messages, isPending: messagesLoading } = useAuthenticatedConvexQuery(
+		api.functions.chats.listMessages,
+		resolvedChatId ? { chatId: resolvedChatId, limit: 50 } : "skip",
+	);
+
+	// Marquer les messages comme lus
+	const { mutateAsync: markRead } = useConvexMutationQuery(
+		api.functions.chats.markRead,
+	);
+
+	// Auto-mark read quand on ouvre la conversation
+	useEffect(() => {
+		if (resolvedChatId) {
+			markRead({ chatId: resolvedChatId }).catch(() => {});
+		}
+	}, [resolvedChatId, markRead, messages?.length]);
+
+	// Scroll en bas
+	const scrollRef = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+	}, [messages]);
+
+	if (messagesLoading) {
+		return (
+			<div className="flex items-center justify-center py-8">
+				<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+			</div>
+		);
+	}
+
+	if (!messages || messages.length === 0) {
+		return (
+			<div className="flex flex-col items-center justify-center h-full text-center py-6">
+				<MessageSquare className="h-8 w-8 text-muted-foreground/30 mb-2" />
+				<p className="text-xs text-muted-foreground">Envoyez le premier message</p>
+			</div>
+		);
+	}
+
+	return (
+		<div className="space-y-2.5">
+			{messages.map((msg: any) => {
+				const isMe = msg.senderId !== contact.userId;
+				return (
+					<div key={msg._id} className={cn("flex gap-2", isMe ? "justify-end" : "justify-start")}>
+						{!isMe && (
+							<Avatar className="h-6 w-6 shrink-0">
+								<AvatarImage src={contact.avatar} />
+								<AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+									{contact.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
+								</AvatarFallback>
+							</Avatar>
+						)}
+						<div className={cn("max-w-[80%] rounded-xl px-3 py-1.5 text-xs",
+							isMe ? "bg-primary text-primary-foreground" : "bg-muted")}>
+							{msg.content}
+						</div>
+						{isMe && (
+							<Avatar className="h-6 w-6 shrink-0">
+								<AvatarFallback className="bg-primary/10 text-primary text-[9px]">
+									<User className="h-3 w-3" />
+								</AvatarFallback>
+							</Avatar>
+						)}
+					</div>
+				);
+			})}
+			<div ref={scrollRef} />
 		</div>
 	);
 }
