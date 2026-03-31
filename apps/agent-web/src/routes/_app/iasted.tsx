@@ -85,6 +85,8 @@ function IAstedFullPage() {
 		const raw = (orgChart as any)?.positions?.flatMap((pos: any) =>
 			(pos.occupants ?? []).map((occ: any) => ({
 				id: occ.userId,
+				lastName: (occ.lastName ?? "").toUpperCase(),
+				firstName: occ.firstName ?? "",
 				name: `${occ.firstName ?? ""} ${occ.lastName ?? ""}`.trim(),
 				email: occ.email,
 				avatar: occ.avatarUrl,
@@ -134,8 +136,29 @@ function IAstedFullPage() {
 	};
 
 	return (
-		<div className="flex h-full overflow-hidden">
-			{/* ── Col 1 : Icônes navigation (comme WhatsApp) ── */}
+		<div className="flex flex-col gap-4 h-full p-4 lg:p-6 overflow-hidden">
+			{/* Header — comme iBoîte */}
+			<div className="flex items-center justify-between shrink-0">
+				<div className="flex items-center gap-3">
+					<div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+						<ShieldCheck className="h-5 w-5 text-emerald-500" />
+					</div>
+					<div>
+						<h1 className="text-xl font-bold">iAsted</h1>
+						<p className="text-sm text-muted-foreground">
+							{activeOrg?.name ?? "Conscience Numérique"}
+						</p>
+					</div>
+				</div>
+				<Button variant="outline" size="sm" onClick={() => navigate({ to: "/" })} className="gap-1.5">
+					<Minimize2 className="h-3.5 w-3.5" />
+					Réduire
+				</Button>
+			</div>
+
+			{/* Card principale — comme iBoîte */}
+			<div className="flex flex-1 min-h-0 overflow-hidden rounded-2xl border shadow-sm bg-card">
+			{/* ── Col 1 : Icônes navigation ── */}
 			<div className="w-14 border-r flex flex-col items-center py-3 gap-1 shrink-0">
 				{/* Logo */}
 				<div className="h-9 w-9 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
@@ -255,8 +278,9 @@ function IAstedFullPage() {
 										</AvatarFallback>
 									</Avatar>
 									<div className="flex-1 min-w-0">
-										<p className="text-sm font-medium truncate">{c.name}</p>
-										<p className="text-xs text-muted-foreground truncate">{c.position}</p>
+										<p className="text-sm font-bold truncate">{c.lastName}</p>
+										<p className="text-xs text-foreground/80 truncate">{c.firstName}</p>
+										<p className="text-[10px] text-muted-foreground truncate">{c.position}</p>
 									</div>
 								</button>
 							))}
@@ -282,10 +306,17 @@ function IAstedFullPage() {
 										)}
 									</Avatar>
 									<div className="flex-1 min-w-0">
-										<p className="text-sm font-semibold">{selectedContact.name}</p>
-										<p className="text-[11px] text-muted-foreground">
-											{selectedContact.isAI ? "Conscience Numérique" : selectedContact.position}
-										</p>
+										{selectedContact.isAI ? (
+											<>
+												<p className="text-sm font-semibold">iAsted</p>
+												<p className="text-[11px] text-muted-foreground">Conscience Numérique</p>
+											</>
+										) : (
+											<>
+												<p className="text-sm font-bold">{selectedContact.lastName} {selectedContact.firstName}</p>
+												<p className="text-[11px] text-muted-foreground">{selectedContact.position}</p>
+											</>
+										)}
 									</div>
 									{selectedContact.isAI && voice.isAvailable && (
 										<VoiceButton
@@ -414,6 +445,7 @@ function IAstedFullPage() {
 					</div>
 				</div>
 			)}
+		</div>
 		</div>
 	);
 }
