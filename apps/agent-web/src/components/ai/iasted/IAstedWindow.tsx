@@ -6,7 +6,7 @@
  */
 
 import { useNavigate } from "@tanstack/react-router";
-import { Bot, Contact, Maximize2, MessageSquare, Minus, Phone, Plus, ShieldCheck, Video } from "lucide-react";
+import { Contact, Maximize2, MessageSquare, Minus, Phone, Plus, Settings, ShieldCheck } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -17,25 +17,23 @@ import { useAdminVoiceChat } from "../useAdminVoiceChat";
 import { VoiceButton } from "../VoiceButton";
 
 import { IAstedFAB } from "./IAstedFAB";
-import { IAstedChatTab } from "./IAstedChatTab";
 import { IAstedInstantChatTab } from "./IAstedInstantChatTab";
 import { IAstedContactTab } from "./IAstedContactTab";
-import { IAstedCallsTab } from "./IAstedCallsTab";
-import { IAstedMeetingsTab } from "./IAstedMeetingsTab";
+import { IAstedCallTab } from "./IAstedCallTab";
+import { IAstedSettingsTab } from "./IAstedSettingsTab";
 
 const TABS = [
-	{ id: "ia", label: "IA", icon: Bot },
 	{ id: "ichat", label: "iChat", icon: MessageSquare },
-	{ id: "icontact", label: "Contact", icon: Contact },
-	{ id: "calls", label: "Appels", icon: Phone },
-	{ id: "meetings", label: "Vidéo", icon: Video },
+	{ id: "icontact", label: "iContact", icon: Contact },
+	{ id: "icall", label: "iAppel", icon: Phone },
+	{ id: "settings", label: "", icon: Settings },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
 
 export function IAstedWindow() {
 	const [open, setOpen] = useState(false);
-	const [activeTab, setActiveTab] = useState<TabId>("ia");
+	const [activeTab, setActiveTab] = useState<TabId>("ichat");
 	const { activeOrg } = useOrg();
 	const navigate = useNavigate();
 
@@ -83,19 +81,6 @@ export function IAstedWindow() {
 								</div>
 							</div>
 							<div className="flex items-center gap-0.5">
-								{activeTab === "ia" && voice.isAvailable && (
-									<VoiceButton
-										isOpen={voice.isOpen}
-										onClick={() => voice.isOpen ? voice.closeOverlay() : voice.openOverlay()}
-										className="h-7 w-7 text-white hover:bg-white/20"
-									/>
-								)}
-								{activeTab === "ia" && (
-									<Button variant="ghost" size="icon" onClick={chat.newConversation}
-										title="Nouvelle conversation" className="h-7 w-7 text-white hover:bg-white/20">
-										<Plus className="h-3.5 w-3.5" />
-									</Button>
-								)}
 								<Button variant="ghost" size="icon" onClick={handleExpand}
 									title="Plein écran" className="h-7 w-7 text-white hover:bg-white/20">
 									<Maximize2 className="h-3.5 w-3.5" />
@@ -109,11 +94,10 @@ export function IAstedWindow() {
 
 						{/* ── Contenu principal ── */}
 						<div className="flex-1 flex flex-col overflow-hidden">
-							{activeTab === "ia" && <IAstedChatTab chat={chat} voice={voice} />}
-							{activeTab === "ichat" && <IAstedInstantChatTab />}
+							{activeTab === "ichat" && <IAstedInstantChatTab chat={chat} voice={voice} />}
 							{activeTab === "icontact" && <IAstedContactTab />}
-							{activeTab === "calls" && <IAstedCallsTab />}
-							{activeTab === "meetings" && <IAstedMeetingsTab />}
+							{activeTab === "icall" && <IAstedCallTab />}
+							{activeTab === "settings" && <IAstedSettingsTab />}
 						</div>
 
 						{/* ── Navigation en bas (style WhatsApp) ── */}
