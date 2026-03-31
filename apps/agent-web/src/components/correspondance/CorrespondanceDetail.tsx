@@ -20,9 +20,46 @@ import {
 	Send,
 	Trash2,
 	UserCheck,
+	Maximize,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { motion } from "motion/react";
+
+// Type local — évite le problème HMR avec l'export ViewerDoc
+interface ViewerDoc {
+	id: string;
+	title: string;
+	url?: string;
+	mimeType?: string;
+}
+
+// Import dynamique du modal pour éviter le crash HMR
+const DocumentViewerModal = ({ isOpen, onClose, document: doc }: { isOpen: boolean; onClose: () => void; document: ViewerDoc | null }) => {
+	if (!isOpen || !doc) return null;
+	const url = doc.url ?? "";
+	return (
+		<div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center" onClick={onClose}>
+			<div className="bg-card rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+				<div className="flex items-center justify-between p-4 border-b">
+					<h3 className="font-semibold truncate">{doc.title}</h3>
+					<button type="button" onClick={onClose} className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-muted">✕</button>
+				</div>
+				{doc.mimeType === "application/pdf" ? (
+					<iframe src={`${url}#view=FitH`} className="w-full h-[75vh] border-0" title={doc.title} />
+				) : doc.mimeType?.startsWith("image/") ? (
+					<div className="flex items-center justify-center p-4 h-[75vh]">
+						<img src={url} alt={doc.title} className="max-w-full max-h-full object-contain" />
+					</div>
+				) : (
+					<div className="flex items-center justify-center h-[75vh]">
+						<p className="text-muted-foreground">Aperçu non disponible</p>
+					</div>
+				)}
+			</div>
+		</div>
+	);
+};
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -106,6 +143,7 @@ export function CorrespondanceDetail({
 
 	const selectedDoc = allDocs[selectedDocIndex] ?? allDocs[0];
 	const stCfg = STATUS_LABELS[item.status] ?? STATUS_LABELS.draft;
+	const [selectedDocViewer, setSelectedDocViewer] = useState<ViewerDoc | null>(null);
 
 	const handleSend = async () => {
 		try {
@@ -300,18 +338,26 @@ export function CorrespondanceDetail({
 										{(selectedDoc.sizeBytes / 1024).toFixed(0)} Ko • {selectedDoc.mimeType}
 									</p>
 								</div>
-								{!isCopy && selectedDoc.url && (
-									<Button variant="outline" size="sm" asChild className="gap-1.5">
-										<a href={selectedDoc.url} download={selectedDoc.filename} target="_blank" rel="noopener noreferrer">
-											<Download className="h-3.5 w-3.5" />
-											Télécharger
-										</a>
-									</Button>
-								)}
+								<div className="flex items-center gap-2">
+									{!isCopy && selectedDoc.url && (
+										<>
+											<Button variant="outline" size="sm" onClick={() => setSelectedDocViewer({ id: selectedDoc.id || String(selectedDocIndex), title: selectedDoc.filename, url: selectedDoc.url, mimeType: selectedDoc.mimeType })} className="gap-1.5 hidden sm:flex">
+												<Maximize className="h-3.5 w-3.5" />
+												Agrandir
+											</Button>
+											<Button variant="outline" size="sm" asChild className="gap-1.5">
+												<a href={selectedDoc.url} download={selectedDoc.filename} target="_blank" rel="noopener noreferrer">
+													<Download className="h-3.5 w-3.5" />
+													Télécharger
+												</a>
+											</Button>
+										</>
+									)}
+								</div>
 							</div>
 							{/* Zone d'affichage PDF */}
 							{selectedDoc.url ? (
-								<div className="h-[650px] w-full bg-muted/5 border-t">
+								<motion.div layoutId={`doc-card-${selectedDoc.id || selectedDocIndex}`} className="h-[650px] w-full bg-muted/5 border-t">
 									{selectedDoc.mimeType === "application/pdf" ? (
 										<iframe 
 											src={`${selectedDoc.url}#view=FitH`} 
@@ -343,7 +389,7 @@ export function CorrespondanceDetail({
 											</div>
 										</div>
 									)}
-								</div>
+								</motion.div>
 							) : (
 								<div className="h-[500px] flex items-center justify-center bg-muted/10 border-t">
 									<div className="text-center space-y-2">
@@ -380,6 +426,8 @@ export function CorrespondanceDetail({
 					<WorkflowTimelineWrapper itemId={itemId} />
 				</div>
 			</div>
+			
+			<DocumentViewerModal isOpen={!!selectedDocViewer} onClose={() => setSelectedDocViewer(null)} document={selectedDocViewer} />
 		</div>
 	);
 }
