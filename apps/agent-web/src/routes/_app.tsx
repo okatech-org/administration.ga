@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { OrgProvider, useOrg } from "@/components/org/org-provider";
 import { OrgSidebar } from "@/components/org/org-sidebar";
-import { AdminAIAssistant } from "@/components/ai/AdminAIAssistant";
+import { IAstedWindow } from "@/components/ai/iasted/IAstedWindow";
 import { HomeLandingSignIn } from "@/components/auth/HomeLandingSignIn";
 import {
   ConsularThemeContext,
@@ -114,7 +114,7 @@ function DashboardLayout() {
       <main className="flex-1 min-h-full overflow-y-auto md:-ml-6">
         <Outlet />
       </main>
-      <AdminAIAssistant />
+      <IAstedWindow />
     </div>
   );
 }
