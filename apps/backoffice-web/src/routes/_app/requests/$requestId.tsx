@@ -286,7 +286,11 @@ function RequestDetailPage() {
 				</div>
 				<div className="flex items-center gap-2">
 					<GenerateDocumentDialog request={request as any} />
-					<RequestActionModal requestId={request._id} />
+					<RequestActionModal
+						requestId={request._id}
+						formSchema={request.service?.formSchema as any}
+						formData={formDataObj}
+					/>
 					<Select value={request.status} onValueChange={handleStatusChange}>
 						<SelectTrigger className="w-[180px]">
 							<SelectValue>{request.status}</SelectValue>

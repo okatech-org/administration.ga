@@ -24,6 +24,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { RequestActionModal } from "@/components/admin/RequestActionModal";
 import { UserProfilePreviewCard } from "@/components/dashboard/UserProfilePreviewCard";
 import { CallButton } from "@/components/meetings/call-button";
 import { PageHeader } from "@/components/my-space/page-header";
@@ -482,6 +483,14 @@ function RequestDetailPage() {
 										</div>
 									),
 								}))}
+							/>
+						)}
+						{/* Request Action */}
+						{canDo("requests.process") && (
+							<RequestActionModal
+								requestId={request._id}
+								formSchema={request.service?.formSchema as any}
+								formData={formDataObj}
 							/>
 						)}
 						{/* Call Button */}
