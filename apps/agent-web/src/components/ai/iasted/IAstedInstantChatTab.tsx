@@ -37,7 +37,7 @@ import { getSuggestions } from "./SpatialAwareness";
 const IASTED_CONTACT = {
 	id: "__iasted__",
 	name: "iAsted",
-	subtitle: "Conscience Numérique",
+	subtitle: "Agent IA Diplomate",
 	isAI: true,
 };
 
@@ -161,7 +161,7 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 							)}
 						</div>
 						<p className="text-[10px] text-muted-foreground truncate">
-							{selectedContact.isAI ? "Conscience Numérique" : selectedContact.position}
+							{selectedContact.isAI ? "Agent IA Diplomate" : selectedContact.position}
 						</p>
 					</div>
 				</div>
@@ -309,7 +309,7 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 							<p className="text-[11px] text-muted-foreground truncate">
 								{chat.messages.length > 0
 									? chat.messages[chat.messages.length - 1].content.slice(0, 50) + "..."
-									: "Conscience Numérique — Posez une question"}
+									: "Agent IA Diplomate — Posez une question"}
 							</p>
 						</div>
 						{chat.messages.length > 0 && (

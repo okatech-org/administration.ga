@@ -76,7 +76,7 @@ export function IAstedWindow() {
 								<div>
 									<h2 className="text-xs font-semibold leading-tight">iAsted</h2>
 									<p className="text-[9px] text-white/60 leading-tight">
-										{activeOrg?.name ?? "Conscience Numérique"}
+										{activeOrg?.name ?? "Agent IA Diplomate"}
 									</p>
 								</div>
 							</div>

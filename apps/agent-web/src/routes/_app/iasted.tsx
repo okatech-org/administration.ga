@@ -50,7 +50,7 @@ export const Route = createFileRoute("/_app/iasted")({
 const IASTED_CONTACT = {
 	id: "__iasted__",
 	name: "iAsted",
-	subtitle: "Conscience Numérique",
+	subtitle: "Agent IA Diplomate",
 	isAI: true,
 };
 
@@ -146,7 +146,7 @@ function IAstedFullPage() {
 					<div>
 						<h1 className="text-xl font-bold">iAsted</h1>
 						<p className="text-sm text-muted-foreground">
-							{activeOrg?.name ?? "Conscience Numérique"}
+							{activeOrg?.name ?? "Agent IA Diplomate"}
 						</p>
 					</div>
 				</div>
@@ -255,7 +255,7 @@ function IAstedFullPage() {
 									<p className="text-xs text-muted-foreground truncate mt-0.5">
 										{chat.messages.length > 0
 											? chat.messages[chat.messages.length - 1].content.slice(0, 45) + "..."
-											: "Conscience Numérique — Posez une question"}
+											: "Agent IA Diplomate — Posez une question"}
 									</p>
 								</div>
 							</button>
@@ -309,7 +309,7 @@ function IAstedFullPage() {
 										{selectedContact.isAI ? (
 											<>
 												<p className="text-sm font-semibold">iAsted</p>
-												<p className="text-[11px] text-muted-foreground">Conscience Numérique</p>
+												<p className="text-[11px] text-muted-foreground">Agent IA Diplomate</p>
 											</>
 										) : (
 											<>

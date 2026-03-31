@@ -103,7 +103,7 @@ export function IAstedSettingsTab() {
 				{/* Info */}
 				<div className="pt-4 border-t text-center">
 					<p className="text-[10px] text-muted-foreground">
-						iAsted v1.0 — Conscience Numérique
+						iAsted v1.0 — Agent IA Diplomate
 					</p>
 					<p className="text-[9px] text-muted-foreground/50 mt-0.5">
 						Digitalium / gabon-diplomatie
