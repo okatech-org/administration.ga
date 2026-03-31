@@ -8,6 +8,7 @@ import {
 	Building2,
 	Check,
 	Clock,
+	CreditCard,
 	Edit,
 	Globe,
 	KeyRound,
@@ -20,6 +21,7 @@ import {
 	Save,
 	Settings2,
 	Trash2,
+	Users,
 	X,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -343,6 +345,16 @@ function DashboardSettings() {
 						id: "requestProcessing",
 						label: "Traitement",
 						icon: <Settings2 className="size-4" />,
+					},
+					{
+						id: "team",
+						label: "Équipe",
+						icon: <Users className="size-4" />,
+					},
+					{
+						id: "payments",
+						label: "Paiements",
+						icon: <CreditCard className="size-4" />,
 					},
 				],
 			}]
@@ -1092,7 +1104,119 @@ function DashboardSettings() {
 					</div>
 				)}
 
+	
+				{/* ─── Équipe Tab ─── */}
+				{canViewOrgSettings && (
+					<div
+						id="settings-tab-team"
+						className={cn(
+							"animate-in fade-in duration-300",
+							activeTab !== "team" && "hidden",
+						)}
+					>
+						<div className="space-y-6">
+							<div>
+								<h3 className="text-lg font-semibold flex items-center gap-2">
+									<Users className="h-5 w-5 text-primary" />
+									Organigramme &amp; Équipe
+								</h3>
+								<p className="text-sm text-muted-foreground mt-1">
+									Gérez les membres de votre équipe, leurs rôles et l&apos;organigramme de votre organisme.
+								</p>
+							</div>
+							<div className="rounded-xl border border-border/50 bg-card p-6 space-y-4">
+								<div className="flex items-center justify-between">
+									<div className="flex items-center gap-3">
+										<div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+											<Users className="h-5 w-5 text-primary" />
+										</div>
+										<div>
+											<p className="font-medium text-sm">Page Équipe complète</p>
+											<p className="text-xs text-muted-foreground">Organigramme interactif, gestion des membres et des rôles</p>
+										</div>
+									</div>
+									<Link
+										to="/team"
+										id="settings-link-team"
+										className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors"
+									>
+										Ouvrir iÉquipe
+									</Link>
+								</div>
+								<div className="grid grid-cols-3 gap-3 pt-2 border-t border-border/50">
+									{[
+										{ label: "Membres actifs", color: "text-emerald-500" },
+										{ label: "Rôles assignés", color: "text-blue-500" },
+										{ label: "En attente", color: "text-amber-500" },
+									].map((item) => (
+										<div key={item.label} className="text-center p-3 rounded-lg bg-muted/30">
+											<p className={`text-2xl font-bold ${item.color}`}>—</p>
+											<p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+										</div>
+									))}
+								</div>
+							</div>
+						</div>
+					</div>
+				)}
+
+				{/* ─── Paiements Tab ─── */}
+				{canViewOrgSettings && (
+					<div
+						id="settings-tab-payments"
+						className={cn(
+							"animate-in fade-in duration-300",
+							activeTab !== "payments" && "hidden",
+						)}
+					>
+						<div className="space-y-6">
+							<div>
+								<h3 className="text-lg font-semibold flex items-center gap-2">
+									<CreditCard className="h-5 w-5 text-primary" />
+									Suivi des Paiements
+								</h3>
+								<p className="text-sm text-muted-foreground mt-1">
+									Consultez l&apos;historique des transactions et configurez les paramètres de paiement.
+								</p>
+							</div>
+							<div className="rounded-xl border border-border/50 bg-card p-6 space-y-4">
+								<div className="flex items-center justify-between">
+									<div className="flex items-center gap-3">
+										<div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+											<CreditCard className="h-5 w-5 text-green-600" />
+										</div>
+										<div>
+											<p className="font-medium text-sm">Tableau de bord Paiements</p>
+											<p className="text-xs text-muted-foreground">Revenus, transactions et répartition des statuts</p>
+										</div>
+									</div>
+									<Link
+										to="/payments"
+										id="settings-link-payments"
+										className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors"
+									>
+										Voir les paiements
+									</Link>
+								</div>
+								<div className="grid grid-cols-3 gap-3 pt-2 border-t border-border/50">
+									{[
+										{ label: "Revenus totaux", color: "text-green-600" },
+										{ label: "Transactions", color: "text-blue-600" },
+										{ label: "Taux de succès", color: "text-emerald-600" },
+									].map((item) => (
+										<div key={item.label} className="text-center p-3 rounded-lg bg-muted/30">
+											<p className={`text-2xl font-bold ${item.color}`}>—</p>
+											<p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+										</div>
+									))}
+								</div>
+							</div>
+						</div>
+					</div>
+				)}
+
 				{/* ─── Personal settings (visible to everyone) ─── */}
+
 
 				<div
 					className={cn(

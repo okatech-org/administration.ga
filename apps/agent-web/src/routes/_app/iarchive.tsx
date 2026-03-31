@@ -1,6 +1,6 @@
 "use client";
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import React, { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -337,6 +337,31 @@ function IArchivePage() {
 					<button className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gradient-to-r from-violet-600 to-indigo-500 hover:from-violet-700 hover:to-indigo-600 text-white rounded-lg transition-colors">
 						<Upload className="h-3.5 w-3.5" />Archiver
 					</button>
+				</div>
+			</motion.div>
+
+			{/* ── Module Tabs: iDocument | iArchive ── */}
+			<motion.div variants={fadeUp} className="flex items-center border-b border-border/50">
+				<div className="flex items-center">
+					{/* iDocument — onglet retour */}
+					<Link
+						to="/idocument"
+						id="iarchive-tab-idocument"
+						className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-foreground/70 hover:text-foreground bg-muted/30 hover:bg-muted/60 border border-border/50 hover:border-border rounded-t-lg transition-all -mb-px"
+					>
+						<FileText className="h-3.5 w-3.5 text-violet-400" />
+						iDocument
+					</Link>
+					{/* iArchive — onglet actif */}
+					<span className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-primary border-b-2 border-primary -mb-px cursor-default ml-1">
+						<Archive className="h-3.5 w-3.5" />
+						iArchive
+					</span>
+				</div>
+				<div className="ml-auto flex items-center gap-1.5 pb-0.5">
+					<span className="text-[10px] text-muted-foreground/40 font-medium px-2 py-0.5 rounded-full bg-muted/40 border border-border/20 tracking-wide">
+						iBureau
+					</span>
 				</div>
 			</motion.div>
 

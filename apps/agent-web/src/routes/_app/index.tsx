@@ -5,10 +5,12 @@ import { fr } from "date-fns/locale";
 import {
 	Activity,
 	ArrowRight,
+	BarChart3,
 	Calendar,
 	CheckCircle2,
 	Clock,
 	ClipboardList,
+	CreditCard,
 	Download,
 	FileText,
 	Loader2,
@@ -218,6 +220,16 @@ function AdminDashboard() {
 			label: t("admin.quickActions.settings"),
 			icon: Settings,
 			href: "/settings",
+		},
+		{
+			label: t("admin.statistics.title", "Statistiques"),
+			icon: BarChart3,
+			href: "/statistics",
+		},
+		{
+			label: t("payments.title", "Paiements"),
+			icon: CreditCard,
+			href: "/payments",
 		},
 	];
 
