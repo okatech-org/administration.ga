@@ -24,7 +24,18 @@ function DashboardLayoutWrapper() {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const consularThemeValue = useConsularThemeState();
 
-  if (isAuthLoading) {
+  // Track whether auth has resolved at least once. Once resolved, we never
+  // go back to the loading screen — this prevents the sign-in form from
+  // being unmounted (and losing OTP state) when the Convex WebSocket
+  // briefly reconnects after a tab switch.
+  const [hasResolved, setHasResolved] = useState(false);
+  useEffect(() => {
+    if (!isAuthLoading && !hasResolved) {
+      setHasResolved(true);
+    }
+  }, [isAuthLoading, hasResolved]);
+
+  if (isAuthLoading && !hasResolved) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
