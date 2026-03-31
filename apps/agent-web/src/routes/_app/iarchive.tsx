@@ -10,6 +10,8 @@ import {
 	LayoutGrid, List, Columns3, ChevronRight, Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DocumentViewerModal } from "@/components/shared/DocumentViewerModal";
+import type { ViewerDoc } from "@/components/shared/DocumentViewerModal";
 
 export const Route = createFileRoute("/_app/iarchive")({
 	component: IArchivePage,
@@ -174,11 +176,11 @@ function VaultFolderCard({ label, count, onClick, badges, tags, isDragOver }: {
 	);
 }
 
-function VaultFileCard({ title, iconColor = "text-stone-600", date, statusBadge, version, onClick }: {
-	title: string; iconColor?: string; date?: string; statusBadge?: React.ReactNode; version?: string; onClick?: () => void;
+function VaultFileCard({ title, iconColor = "text-stone-600", date, statusBadge, version, onClick, layoutId }: {
+	title: string; iconColor?: string; date?: string; statusBadge?: React.ReactNode; version?: string; onClick?: () => void; layoutId?: string;
 }) {
 	return (
-		<div className="group hover:shadow-lg transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-card rounded-xl" onClick={onClick}>
+		<motion.div layoutId={layoutId} className="group hover:shadow-lg transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-card rounded-xl" onClick={onClick}>
 			<div className="relative aspect-[1/1.414] bg-white/[0.03] flex flex-col overflow-hidden">
 				<div className="flex-1 flex items-center justify-center px-3 py-2">
 					<div className="relative w-14 h-[72px] bg-white shadow-sm flex flex-col items-center justify-center rounded-[2px] border border-neutral-200">
@@ -202,7 +204,7 @@ function VaultFileCard({ title, iconColor = "text-stone-600", date, statusBadge,
 					</div>
 				</div>
 			</div>
-		</div>
+		</motion.div>
 	);
 }
 
@@ -256,6 +258,7 @@ function IArchivePage() {
 	const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 	const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
 	const [newFolderName, setNewFolderName] = useState("");
+	const [selectedDocViewer, setSelectedDocViewer] = useState<ViewerDoc | null>(null);
 
 	const archives = MOCK_ARCHIVES;
 	const folders = CATEGORY_FOLDERS;
@@ -389,7 +392,8 @@ function IArchivePage() {
 									{currentFiles.map((item) => {
 										const st = STATUS_CFG[item.status];
 										return (
-											<VaultFileCard key={item.id} title={item.title} iconColor={FOLDER_COLORS[item.folderId] || "text-violet-400"} date={item.archivedAt} version={item.certId}
+											<VaultFileCard key={item.id} layoutId={`doc-card-${item.id}`} title={item.title} iconColor={FOLDER_COLORS[item.folderId] || "text-violet-400"} date={item.archivedAt} version={item.certId}
+												onClick={() => setSelectedDocViewer({ id: item.id, title: item.title, mimeType: "application/pdf" })}
 												statusBadge={<span className={cn("text-[9px] h-5 border inline-flex items-center gap-1 px-1.5 rounded-full font-medium", st.class)}><span className={cn("h-1.5 w-1.5 rounded-full", st.dot)} />{st.label}</span>}
 											/>
 										);
@@ -437,7 +441,7 @@ function IArchivePage() {
 							{currentFiles.map((item) => {
 								const st = STATUS_CFG[item.status];
 								return (
-									<div key={item.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 hover:bg-muted/30 cursor-pointer transition-colors">
+									<motion.div layoutId={`doc-card-${item.id}`} key={item.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 hover:bg-muted/30 cursor-pointer transition-colors" onClick={() => setSelectedDocViewer({ id: item.id, title: item.title })}>
 										<div className="col-span-4 flex items-center gap-2">
 											<div className="h-6 w-6 rounded-md bg-violet-500/10 flex items-center justify-center"><FileText className="h-3 w-3 text-violet-400" /></div>
 											<span className="text-xs font-medium truncate">{item.title}</span>
@@ -450,7 +454,7 @@ function IArchivePage() {
 										<div className="col-span-1 flex items-center"><span className={cn("text-[10px] h-5 border inline-flex items-center gap-1 px-1.5 rounded-full", st.class)}><span className={cn("h-1.5 w-1.5 rounded-full", st.dot)} />{st.label}</span></div>
 										<div className="col-span-1 text-xs text-muted-foreground flex items-center">{item.size}</div>
 										<div className="col-span-2 flex items-center gap-1"><Hash className="h-2.5 w-2.5 text-muted-foreground/50" /><span className="text-[9px] font-mono text-muted-foreground/50">{item.hash}</span></div>
-									</div>
+									</motion.div>
 								);
 							})}
 							{foldersWithCounts.length === 0 && currentFiles.length === 0 && (
@@ -481,10 +485,10 @@ function IArchivePage() {
 									<div className="w-60 border-r border-border/50 overflow-y-auto">
 										<div className="p-2 text-[10px] font-semibold uppercase text-muted-foreground/60 px-3">{folders.find((f) => f.id === currentFolderId)?.name}</div>
 										{currentFiles.map((item) => (
-											<div key={item.id} className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors cursor-pointer">
+											<motion.div layoutId={`doc-card-${item.id}`} key={item.id} className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors cursor-pointer" onClick={() => setSelectedDocViewer({ id: item.id, title: item.title })}>
 												<FileText className="h-3.5 w-3.5 text-violet-400 shrink-0" />
 												<span className="truncate">{item.title}</span>
-											</div>
+											</motion.div>
 										))}
 										{currentFiles.length === 0 && <div className="px-3 py-4 text-xs text-muted-foreground text-center">Aucune archive</div>}
 									</div>
@@ -524,6 +528,8 @@ function IArchivePage() {
 					</div>
 				</div>
 			)}
+			
+			<DocumentViewerModal isOpen={!!selectedDocViewer} onClose={() => setSelectedDocViewer(null)} document={selectedDocViewer} />
 		</motion.div>
 	);
 }

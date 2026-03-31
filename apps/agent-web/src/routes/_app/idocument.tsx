@@ -13,6 +13,8 @@ import {
 	FileSpreadsheet, ImageIcon, Plus, Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DocumentViewerModal } from "@/components/shared/DocumentViewerModal";
+import type { ViewerDoc } from "@/components/shared/DocumentViewerModal";
 
 export const Route = createFileRoute("/_app/idocument")({
 	component: IDocumentPage,
@@ -250,11 +252,11 @@ function VaultFolderCard({ label, count, subfolderCount = 0, onClick, className,
 
 /* ── VaultFileCard — document card with A4 preview ── */
 
-function VaultFileCard({ title, iconColor = "text-stone-600", author, authorInitials, date, statusBadge, version, contextMenu, badges, tags = [], retentionCategory, retentionColor, onClick, isSelected = false }: {
-	title: string; iconColor?: string; author?: string; authorInitials?: string; date?: string; statusBadge?: React.ReactNode; version?: number | string; contextMenu?: React.ReactNode; badges?: React.ReactNode; tags?: string[]; retentionCategory?: string; retentionColor?: string; onClick?: () => void; isSelected?: boolean;
+function VaultFileCard({ title, iconColor = "text-stone-600", author, authorInitials, date, statusBadge, version, contextMenu, badges, tags = [], retentionCategory, retentionColor, onClick, isSelected = false, layoutId }: {
+	title: string; iconColor?: string; author?: string; authorInitials?: string; date?: string; statusBadge?: React.ReactNode; version?: number | string; contextMenu?: React.ReactNode; badges?: React.ReactNode; tags?: string[]; retentionCategory?: string; retentionColor?: string; onClick?: () => void; isSelected?: boolean; layoutId?: string;
 }) {
 	return (
-		<div className={cn("group hover:shadow-lg transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-card rounded-xl", isSelected && "ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/5")} onClick={onClick}>
+		<motion.div layoutId={layoutId} className={cn("group hover:shadow-lg transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-card rounded-xl", isSelected && "ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/5")} onClick={onClick}>
 			<div className="relative aspect-[1/1.414] bg-white/[0.03] flex flex-col overflow-hidden">
 				<div className="relative flex items-center px-2.5 pt-2 z-10 min-h-[20px]">
 					<div className="flex items-center gap-1 shrink min-w-0">{badges}</div>
@@ -291,7 +293,7 @@ function VaultFileCard({ title, iconColor = "text-stone-600", author, authorInit
 					{contextMenu}
 				</div>
 			</div>
-		</div>
+		</motion.div>
 	);
 }
 
@@ -674,6 +676,7 @@ function IDocumentPage() {
 	const [infoItemType, setInfoItemType] = useState<"folder" | "document">("folder");
 	const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
 	const [newFolderName, setNewFolderName] = useState("");
+	const [selectedDocViewer, setSelectedDocViewer] = useState<ViewerDoc | null>(null);
 
 	// ─── Breadcrumb path ────────────────────────────────────
 	const breadcrumbPath = useMemo(() => {
@@ -894,6 +897,7 @@ function IDocumentPage() {
 										return (
 											<VaultFileCard
 												key={doc.id}
+												layoutId={`doc-card-${doc.id}`}
 												title={doc.title}
 												author={doc.author}
 												authorInitials={doc.authorInitials}
@@ -918,7 +922,7 @@ function IDocumentPage() {
 													/>
 												}
 												tags={doc.tags}
-												onClick={() => handleOpenInfo(doc.id)}
+												onClick={() => setSelectedDocViewer({ id: doc.id, title: doc.title, mimeType: doc.mimeType })}
 											/>
 										);
 									})}
@@ -1075,6 +1079,7 @@ function IDocumentPage() {
 			<ManageAccessDialog open={manageAccessOpen} onClose={() => setManageAccessOpen(false)} targetName={manageAccessTargetName} />
 			<ArchivePolicyDialog open={policyDialogOpen} onClose={() => setPolicyDialogOpen(false)} targetName={policyTargetName} itemType={policyItemType} />
 			<InfoDialog open={infoDialogOpen} onClose={() => setInfoDialogOpen(false)} item={infoItem || { id: "", name: "" }} itemType={infoItemType} />
+			<DocumentViewerModal isOpen={!!selectedDocViewer} onClose={() => setSelectedDocViewer(null)} document={selectedDocViewer} />
 		</motion.div>
 	);
 }
