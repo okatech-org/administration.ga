@@ -73,8 +73,8 @@ export function IAstedCallTab() {
 				position: pos.title?.fr ?? pos.code,
 			})),
 		) ?? [];
-		// Dédoublonner par userId
-		return raw.filter((c: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.id === c.id) === i);
+		// Dédoublonner par nom
+		return raw.filter((c: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.name === c.name) === i);
 	}, [orgChart]);
 
 	const filteredContacts = search

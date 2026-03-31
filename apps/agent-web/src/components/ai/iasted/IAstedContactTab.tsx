@@ -63,9 +63,9 @@ export function IAstedContactTab() {
 				source: "team" as const,
 			})),
 		) ?? [];
-		// Dédoublonner par userId
+		// Dédoublonner par nom (un utilisateur peut avoir plusieurs postes/memberships)
 		const teamContacts = rawTeam.filter(
-			(c, i, arr) => arr.findIndex((x) => x.id === c.id) === i,
+			(c, i, arr) => arr.findIndex((x) => x.name === c.name) === i,
 		);
 
 		const citizenContacts: Contact[] = ((rawProfiles as any[]) ?? []).map((p) => ({

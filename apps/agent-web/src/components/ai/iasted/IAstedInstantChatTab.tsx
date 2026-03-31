@@ -72,9 +72,9 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 			isAI: false,
 		})),
 	) ?? [];
-	// Dédoublonner par userId (un utilisateur peut occuper plusieurs postes)
+	// Dédoublonner par nom (un utilisateur peut avoir plusieurs memberships/userId)
 	const contacts = rawContacts.filter(
-		(c: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.id === c.id) === i,
+		(c: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.name === c.name) === i,
 	);
 
 	const filteredContacts = search
