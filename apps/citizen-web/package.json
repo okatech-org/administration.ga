@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@convex-dev/better-auth": "^0.11.3",
@@ -70,6 +72,7 @@
     "zod-form-data": "^3.0.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tanstack/eslint-config": "^0.3.0",
     "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^25.1.0",

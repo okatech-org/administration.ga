@@ -85,11 +85,12 @@ export function ProfileTypeSelector({ onSelect }: ProfileTypeSelectorProps) {
         {profiles.map((profile) => (
           <Card
             key={profile.type}
+            data-testid={`profile-card-${profile.type}`}
             className={`cursor-pointer ${profile.hoverBorder} hover:shadow-lg transition-all group relative overflow-hidden`}
             onClick={() => onSelect(profile.type)}
           >
             <div
-              className={`absolute inset-0 ${profile.hoverBg} opacity-0 group-hover:opacity-100 transition-opacity`}
+              className={`absolute inset-0 ${profile.hoverBg} opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`}
             />
             <CardHeader className="relative">
               <div

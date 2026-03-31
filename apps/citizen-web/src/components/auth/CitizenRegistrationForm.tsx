@@ -1495,6 +1495,7 @@ export function CitizenRegistrationForm({
 									{regConfig.documents.map((docDef) => (
 										<DocumentUploadZone
 											key={docDef.key}
+											data-testid={`doc-upload-${docDef.key}`}
 											documentType={docDef.documentType}
 											category={docDef.category}
 											label={t(docDef.labelKey, docDef.labelFallback)}
@@ -1677,6 +1678,7 @@ export function CitizenRegistrationForm({
 											</FieldLabel>
 											<MultiSelect
 												type="single"
+												data-testid="select-gender"
 												options={Object.values(Gender).map((value) => ({
 													value,
 													label: t(`common.gender.${value}`),
@@ -1829,6 +1831,7 @@ export function CitizenRegistrationForm({
 											</FieldLabel>
 											<MultiSelect
 												type="single"
+												data-testid="select-maritalStatus"
 												options={Object.values(MaritalStatus).map((value) => ({
 													value,
 													label: t(`profile.maritalStatus.${value}`),
@@ -2220,6 +2223,7 @@ export function CitizenRegistrationForm({
 											</FieldLabel>
 											<MultiSelect
 												type="single"
+												data-testid="select-workStatus"
 												options={Object.values(WorkStatus).map((status) => ({
 													value: status,
 													label: t(`profile.workStatus.${status}`),

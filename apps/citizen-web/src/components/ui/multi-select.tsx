@@ -38,6 +38,7 @@ interface MultiSelectMultipleProps<T> {
 	autoComplete?: string;
 	className?: string;
 	showSelected?: boolean;
+	"data-testid"?: string;
 }
 
 interface MultiSelectSingleProps<T> {
@@ -52,6 +53,7 @@ interface MultiSelectSingleProps<T> {
 	autoComplete?: string;
 	className?: string;
 	showSelected?: boolean;
+	"data-testid"?: string;
 }
 
 type MultiSelectProps<T> =
@@ -70,6 +72,7 @@ export function MultiSelect<T>({
 	autoComplete = "off",
 	className = "",
 	showSelected = true,
+	"data-testid": dataTestId,
 }: MultiSelectProps<T>) {
 	const [open, setOpen] = React.useState(false);
 	const [searchValue, setSearchValue] = React.useState("");
@@ -116,7 +119,7 @@ export function MultiSelect<T>({
 	};
 
 	return (
-		<div className="space-y-2">
+		<div className="space-y-2" data-testid={dataTestId}>
 			<Popover open={open} onOpenChange={setOpen}>
 				<PopoverTrigger asChild disabled={disabled}>
 					<Button

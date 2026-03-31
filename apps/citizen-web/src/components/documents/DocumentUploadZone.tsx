@@ -86,6 +86,8 @@ interface DocumentUploadZoneProps {
 	localFile?: { filename: string; mimeType: string } | null;
 	/** External validation error message (set by parent form) */
 	externalError?: string | null;
+	/** Test identifier for E2E tests */
+	"data-testid"?: string;
 }
 
 export interface DocumentUploadZoneRef {
@@ -117,6 +119,7 @@ export const DocumentUploadZone = forwardRef<
 			onLocalFileSelected,
 			localFile,
 			externalError,
+			"data-testid": dataTestId,
 		},
 		ref,
 	) => {
@@ -514,7 +517,7 @@ export const DocumentUploadZone = forwardRef<
 		const canAddMore = multiple && displayFiles.length < maxFiles;
 
 		return (
-			<div className={cn("relative", className)}>
+			<div className={cn("relative", className)} data-testid={dataTestId}>
 				<input
 					ref={inputRef}
 					type="file"
