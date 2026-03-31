@@ -34,6 +34,11 @@ export default defineConfig({
       tailwindcss(),
       react(),
     ],
+    resolve: {
+      alias: {
+        "@convex": resolve(__dirname, "../../convex"),
+      },
+    },
     build: {
       outDir: resolve(__dirname, "out/renderer"),
       rollupOptions: {

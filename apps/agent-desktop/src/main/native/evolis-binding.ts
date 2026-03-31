@@ -164,6 +164,14 @@ function declareAll() {
       "int evolis_set_error_tray(void* printer, int tray)"
     ),
 
+    // Session management
+    evolis_set_session_management: l.func(
+      "void evolis_set_session_management(void* printer, bool on)"
+    ),
+    evolis_get_session_management: l.func(
+      "bool evolis_get_session_management(void* printer)"
+    ),
+
     // Card operations
     evolis_insert: l.func("int evolis_insert(void* printer)"),
     evolis_eject: l.func("int evolis_eject(void* printer)"),
@@ -272,11 +280,25 @@ export function evolisListDevices(): NativeEvolisDevice[] {
   return devices
 }
 
-export function evolisOpen(name: string): unknown {
-  const ptr = getFns().evolis_open(name)
+// Open modes (from evolis_open_mode_e)
+const EVOLIS_OM_AUTO = 0
+const EVOLIS_OM_DIRECT = 1
+const EVOLIS_OM_SUPERVISED = 2
+
+export function evolisOpen(name: string, direct = true): unknown {
+  // Use DIRECT mode (1) to bypass EPS2 supervision and avoid session conflicts (error 1700).
+  // When EPS is running and supervising the printer, AUTO mode routes through EPS
+  // which holds a session and blocks direct print_exec calls.
+  const mode = direct ? EVOLIS_OM_DIRECT : EVOLIS_OM_AUTO
+  console.log(`[evolis] Opening "${name}" with mode ${mode} (${direct ? "DIRECT" : "AUTO"})`)
+  const ptr = getFns().evolis_open_with_mode(name, mode)
   if (!ptr) {
     throw new Error(`Failed to open printer: ${name}`)
   }
+  // Disable session management so reserve/release checks are bypassed.
+  // This prevents conflicts with EPS2 which holds its own session.
+  getFns().evolis_set_session_management(ptr, false)
+  console.log(`[evolis] Session management disabled`)
   return ptr
 }
 
@@ -409,12 +431,21 @@ export function evolisPrintFromPath(
 ): number {
   const f = getFns()
 
+  // Ensure we have a clean session before printing.
+  // Release any stale session, then re-reserve.
+  try { f.evolis_release(printer) } catch { /* ignore */ }
+  const session = f.evolis_reserve(printer, 0, 10000)
+  if (session < 0) {
+    console.warn(`[evolis] Reserve before print: ${evolisGetErrorName(session)} (${session})`)
+    // Continue anyway — some errors like -11 (EPS supervised) are non-fatal in DIRECT mode
+  }
+
   f.evolis_clear_mechanical_errors(printer)
   evolisSetTrays(printer)
 
+  // Initialize print job — try driver settings first, fall back to auto-detect
   const rcInit = f.evolis_print_init_from_driver_settings(printer)
   if (rcInit !== 0) {
-    // Fallback to auto-detect init
     const rcInit2 = f.evolis_print_init(printer)
     if (rcInit2 !== 0) {
       throw new Error(
