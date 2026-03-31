@@ -6,6 +6,7 @@
  */
 
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { Link } from "@tanstack/react-router";
 import {
 	ExternalLink,
@@ -97,7 +98,8 @@ export function IAstedCallTab() {
 			await createMeeting({
 				orgId: activeOrgId,
 				title: newMeetingName.trim() || "Réunion instantanée",
-				type: "meeting",
+				type: "meeting" as const,
+				participantIds: [] as Id<"users">[],
 			});
 			toast.success("Réunion créée ✓");
 			setNewMeetingName("");
