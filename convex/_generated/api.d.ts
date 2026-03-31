@@ -45,6 +45,7 @@ import type * as functions_consularCard from "../functions/consularCard.js";
 import type * as functions_consularCardAttestation from "../functions/consularCardAttestation.js";
 import type * as functions_consularNotifications from "../functions/consularNotifications.js";
 import type * as functions_consularRegistrations from "../functions/consularRegistrations.js";
+import type * as functions_contactSearch from "../functions/contactSearch.js";
 import type * as functions_correspondance from "../functions/correspondance.js";
 import type * as functions_correspondanceConfig from "../functions/correspondanceConfig.js";
 import type * as functions_correspondanceCore from "../functions/correspondanceCore.js";
@@ -236,6 +237,7 @@ declare const fullApi: ApiFromModules<{
   "functions/consularCardAttestation": typeof functions_consularCardAttestation;
   "functions/consularNotifications": typeof functions_consularNotifications;
   "functions/consularRegistrations": typeof functions_consularRegistrations;
+  "functions/contactSearch": typeof functions_contactSearch;
   "functions/correspondance": typeof functions_correspondance;
   "functions/correspondanceConfig": typeof functions_correspondanceConfig;
   "functions/correspondanceCore": typeof functions_correspondanceCore;
