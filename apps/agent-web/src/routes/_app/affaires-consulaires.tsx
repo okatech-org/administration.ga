@@ -1,51 +1,43 @@
 /**
- * Affaires Consulaires — Fusion Demandes + Registre Consulaire
+ * Affaires Consulaires — Hub de navigation
  *
- * Page unique avec 2 tabs horizontaux embarquant les composants existants.
- * Les routes /requests et /consular-registry restent fonctionnelles.
+ * Page avec 4 tabs horizontaux qui redirigent vers les routes existantes.
+ * Chaque onglet navigue vers la route dédiée au lieu d'embarquer le composant.
  */
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useLocation } from "@tanstack/react-router";
 import { Briefcase, Calendar, ClipboardList, IdCard, Users } from "lucide-react";
-import { useState } from "react";
+import { useMemo } from "react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
-
-// Imports lazy des pages existantes
-import { lazy, Suspense } from "react";
-import { Loader2 } from "lucide-react";
-
-const RequestsPage = lazy(() =>
-	import("./requests/index").then((m) => ({ default: m.Route.options.component as React.ComponentType })),
-);
-const ConsularRegistryPage = lazy(() =>
-	import("./consular-registry/index").then((m) => ({ default: m.Route.options.component as React.ComponentType })),
-);
-const AppointmentsPage = lazy(() =>
-	import("./appointments/index").then((m) => ({ default: m.Route.options.component as React.ComponentType })),
-);
-const ServicesPage = lazy(() =>
-	import("./services/index").then((m) => ({ default: m.Route.options.component as React.ComponentType })),
-);
 
 export const Route = createFileRoute("/_app/affaires-consulaires")({
 	component: AffairesConsulairesPage,
 });
 
 const TABS = [
-	{ id: "demandes", label: "Demandes", icon: ClipboardList },
-	{ id: "registre", label: "Registre Consulaire", icon: IdCard },
-	{ id: "rendezvous", label: "Rendez-vous", icon: Calendar },
-	{ id: "services", label: "Services", icon: Briefcase },
+	{ id: "demandes", label: "Demandes", icon: ClipboardList, href: "/requests" },
+	{ id: "registre", label: "Registre Consulaire", icon: IdCard, href: "/consular-registry" },
+	{ id: "rendezvous", label: "Rendez-vous", icon: Calendar, href: "/appointments" },
+	{ id: "services", label: "Services", icon: Briefcase, href: "/services" },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"];
-
 function AffairesConsulairesPage() {
-	const [activeTab, setActiveTab] = useState<TabId>("demandes");
+	const navigate = useNavigate();
+	const location = useLocation();
+
+	// Déterminer l'onglet actif basé sur l'URL courante
+	const activeTab = useMemo(() => {
+		const path = location.pathname;
+		if (path.startsWith("/requests")) return "demandes";
+		if (path.startsWith("/consular-registry")) return "registre";
+		if (path.startsWith("/appointments")) return "rendezvous";
+		if (path.startsWith("/services")) return "services";
+		return null; // On est sur /affaires-consulaires sans sous-route
+	}, [location.pathname]);
 
 	return (
-		<div className="flex flex-col gap-4 p-4 lg:p-6 h-full">
+		<div className="flex flex-col gap-4 p-4 lg:p-6">
 			{/* Header */}
 			<motion.div
 				initial={{ opacity: 0, y: 10 }}
@@ -60,14 +52,14 @@ function AffairesConsulairesPage() {
 					<div>
 						<h1 className="text-xl font-bold">Affaires Consulaires</h1>
 						<p className="text-sm text-muted-foreground">
-							Gestion des demandes et du registre consulaire
+							Gestion des demandes, registre, rendez-vous et services consulaires
 						</p>
 					</div>
 				</div>
 			</motion.div>
 
-			{/* Tabs */}
-			<div className="flex items-center gap-1 border border-border/50 rounded-xl bg-card p-1">
+			{/* Tabs — navigation vers les routes dédiées */}
+			<div className="flex items-center gap-1 border border-border/50 rounded-xl bg-card p-1 overflow-x-auto">
 				{TABS.map((tab) => {
 					const Icon = tab.icon;
 					const isActive = activeTab === tab.id;
@@ -75,9 +67,9 @@ function AffairesConsulairesPage() {
 						<button
 							key={tab.id}
 							type="button"
-							onClick={() => setActiveTab(tab.id)}
+							onClick={() => navigate({ to: tab.href })}
 							className={cn(
-								"flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+								"flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
 								isActive
 									? "bg-primary text-primary-foreground shadow-sm"
 									: "text-muted-foreground hover:text-foreground hover:bg-muted/50",
@@ -90,21 +82,22 @@ function AffairesConsulairesPage() {
 				})}
 			</div>
 
-			{/* Content */}
-			<div className="flex-1 min-h-0">
-				<Suspense
-					fallback={
-						<div className="flex items-center justify-center h-64">
-							<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-						</div>
-					}
+			{/* Message si aucun onglet sélectionné */}
+			{!activeTab && (
+				<motion.div
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					className="flex flex-col items-center justify-center py-16 text-center"
 				>
-					{activeTab === "demandes" && <RequestsPage />}
-					{activeTab === "registre" && <ConsularRegistryPage />}
-					{activeTab === "rendezvous" && <AppointmentsPage />}
-					{activeTab === "services" && <ServicesPage />}
-				</Suspense>
-			</div>
+					<div className="h-16 w-16 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-4">
+						<Users className="h-8 w-8 text-blue-500/60" />
+					</div>
+					<h3 className="text-lg font-semibold mb-1">Sélectionnez un volet</h3>
+					<p className="text-sm text-muted-foreground max-w-md">
+						Choisissez un onglet ci-dessus pour accéder aux demandes, au registre consulaire, aux rendez-vous ou aux services.
+					</p>
+				</motion.div>
+			)}
 		</div>
 	);
 }
