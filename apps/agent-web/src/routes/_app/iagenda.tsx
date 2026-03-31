@@ -1,5 +1,8 @@
+import { api } from "@convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useOrg } from "@/components/org/org-provider";
+import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import {
   Calendar,
   ChevronLeft,
@@ -116,8 +119,33 @@ const EventTypeConfig = {
 };
 
 function IAgendaPage() {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 2, 28));
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  const { activeOrgId } = useOrg();
+
+  // Convex — données réelles d'événements
+  const { data: rawEvents = [] } = useAuthenticatedConvexQuery(
+    api.functions.communityEvents.listAll,
+    {},
+  );
+
+  // Mapper les événements Convex → type Event local
+  const convexEvents: Event[] = useMemo(() =>
+    (rawEvents as any[]).map((e) => ({
+      id: e._id,
+      title: e.title ?? e.name ?? "Événement",
+      type: e.type ?? "reunion_diplomatique",
+      date: e.date ? new Date(e.date).toISOString().split("T")[0] : new Date(e._creationTime).toISOString().split("T")[0],
+      time: e.time ?? e.startTime ?? "09:00",
+      location: e.location ?? e.venue ?? "",
+      attendees: e.attendees ?? [],
+      description: e.description ?? "",
+    })),
+    [rawEvents],
+  );
+
+  // Utiliser les données réelles si disponibles, sinon les mocks
+  const events = convexEvents.length > 0 ? convexEvents : mockEvents;
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -141,7 +169,7 @@ function IAgendaPage() {
 
   const getEventsForDate = (day: number) => {
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    return mockEvents.filter((event) => event.date === dateStr);
+    return events.filter((event) => event.date === dateStr);
   };
 
   const daysInMonth = getDaysInMonth(currentDate);
@@ -309,7 +337,7 @@ function IAgendaPage() {
               <Card className="bg-slate-800 border-slate-700 overflow-hidden flex flex-col max-h-[calc(100vh-250px)]">
                 <ScrollArea className="flex-1">
                   <div className="space-y-3 p-6">
-                    {mockEvents.map((event) => {
+                    {events.map((event) => {
                       const config = EventTypeConfig[event.type];
                       return (
                         <Card
