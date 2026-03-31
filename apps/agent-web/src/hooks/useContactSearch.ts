@@ -6,7 +6,6 @@
  */
 
 import { api } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
 import { useMemo, useState } from "react";
 import { useOrg } from "@/components/org/org-provider";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
@@ -66,7 +65,7 @@ export function useContactSearch(initialSource?: ContactSource | "all") {
 	const setSource = (source: ContactSource | "all") => setFilters((f) => ({ ...f, source }));
 	const setCountry = (country: string) => setFilters((f) => ({ ...f, country }));
 	const setOrgType = (orgType: string) => setFilters((f) => ({ ...f, orgType }));
-	const setPositionGrade = (grade: string) => setFilters((f) => ({ ...f, positionGrade }));
+	const setPositionGrade = (grade: string) => setFilters((f) => ({ ...f, positionGrade: grade }));
 	const resetFilters = () => setFilters({ ...DEFAULT_FILTERS, source: initialSource ?? "all" });
 
 	return {

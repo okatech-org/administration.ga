@@ -5,16 +5,19 @@
  * Clic sur iAsted → chat IA (LLM). Clic sur un autre contact → chat inter-utilisateurs.
  */
 
-import { api } from "@convex/_generated/api";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
 	Bot,
+	Building2,
+	Globe,
 	Loader2,
 	MessageSquare,
 	Pin,
 	Search,
 	Send,
+	Shield,
 	User,
+	Users,
 } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
@@ -25,10 +28,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { useOrg } from "@/components/org/org-provider";
-import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
+import { useContactSearch, type ContactSource } from "@/hooks/useContactSearch";
 import { cn } from "@/lib/utils";
-import { type AdminAIAction, useAdminAIChat } from "../useAdminAIChat";
+import { useAdminAIChat } from "../useAdminAIChat";
 import { VoiceChatContent } from "../VoiceButton";
 import { parseIntent, resolveNavigationTarget } from "./IntentProcessor";
 import { getSuggestions } from "./SpatialAwareness";
@@ -46,43 +48,33 @@ interface IAstedInstantChatTabProps {
 	voice: any;
 }
 
+const SOURCE_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; icon: typeof Users }> = [
+	{ id: "all", label: "Tous", icon: Users },
+	{ id: "team", label: "Équipe", icon: Shield },
+	{ id: "network", label: "Réseau", icon: Globe },
+	{ id: "citizens", label: "Citoyens", icon: Users },
+];
+
 export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps) {
-	const { activeOrgId } = useOrg();
 	const location = useLocation();
 	const navigate = useNavigate();
-	const [search, setSearch] = useState("");
 	const [selectedContact, setSelectedContact] = useState<any>(null);
 	const [messageInput, setMessageInput] = useState("");
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const suggestions = getSuggestions(location.pathname);
 
-	// Membres de l'org comme contacts
-	const { data: orgChart } = useAuthenticatedConvexQuery(
-		api.functions.orgs.getOrgChart,
-		activeOrgId ? { orgId: activeOrgId } : "skip",
-	);
+	// Recherche intelligente cross-org
+	const {
+		groups,
+		total,
+		isPending: contactsLoading,
+		filters,
+		setSearch,
+		setSource,
+	} = useContactSearch();
 
-	const rawContacts = (orgChart as any)?.positions?.flatMap((pos: any) =>
-		(pos.occupants ?? []).map((occ: any) => ({
-			id: occ.userId,
-			name: `${occ.firstName ?? ""} ${occ.lastName ?? ""}`.trim(),
-			email: occ.email,
-			avatar: occ.avatarUrl,
-			position: pos.title?.fr ?? pos.code,
-			isAI: false,
-		})),
-	) ?? [];
-	// Dédoublonner par nom (un utilisateur peut avoir plusieurs memberships/userId)
-	const contacts = rawContacts.filter(
-		(c: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.name === c.name) === i,
-	);
-
-	const filteredContacts = search
-		? contacts.filter((c: any) =>
-			c.name.toLowerCase().includes(search.toLowerCase()) ||
-			c.email?.toLowerCase().includes(search.toLowerCase()),
-		)
-		: contacts;
+	// Aplatir les groupes pour obtenir la liste des contacts
+	const allContacts = groups.flatMap((g: any) => g.contacts);
 
 	// Auto-scroll chat IA
 	useEffect(() => {
@@ -91,6 +83,26 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 		}
 	}, [chat.messages, selectedContact]);
 
+	// Callback pour basculer vers l'onglet iContact avec un terme de recherche
+	const handleSearchContact = (searchTerm: string) => {
+		// Afficher les résultats directement dans le chat via une recherche
+		setSearch(searchTerm);
+		// Construire une réponse IA avec les résultats trouvés
+		const matchingContacts = allContacts.filter((c: any) =>
+			c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+			c.position?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+			c.orgName?.toLowerCase().includes(searchTerm.toLowerCase()),
+		);
+
+		if (matchingContacts.length > 0) {
+			const contactList = matchingContacts.slice(0, 5).map((c: any) =>
+				`• **${c.lastName} ${c.firstName}** — ${c.position ?? "N/A"} _(${c.orgName})_`,
+			).join("\n");
+			return `J'ai trouvé **${matchingContacts.length}** contact(s) pour "${searchTerm}" :\n\n${contactList}${matchingContacts.length > 5 ? `\n\n_...et ${matchingContacts.length - 5} autres. Consultez l'onglet iContact._` : ""}`;
+		}
+		return `Aucun contact trouvé pour "${searchTerm}". Essayez avec un autre terme.`;
+	};
+
 	// ── Envoi message IA ──
 	const handleSendAI = async () => {
 		const text = messageInput.trim();
@@ -98,16 +110,95 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 
 		// IntentProcessor
 		const intent = parseIntent(text);
-		if (intent && intent.confidence >= 0.7 && intent.category === "navigation") {
-			const route = resolveNavigationTarget(intent.target);
-			if (route) {
+		if (intent && intent.confidence >= 0.7) {
+			// Navigation
+			if (intent.category === "navigation") {
+				const route = resolveNavigationTarget(intent.target);
+				if (route) {
+					setMessageInput("");
+					chat.messages.push(
+						{ role: "user", content: text, timestamp: Date.now() },
+						{ role: "assistant", content: `Je vous emmène sur **${intent.target}**.`, timestamp: Date.now() },
+					);
+					navigate({ to: route });
+					toast.success(`Navigation vers ${intent.target}`);
+					return;
+				}
+			}
+
+			// Recherche de contact
+			if (intent.category === "contact_search" && intent.target) {
+				setMessageInput("");
+				const userMsg = { role: "user" as const, content: text, timestamp: Date.now() };
+				chat.messages.push(userMsg);
+				const result = handleSearchContact(intent.target);
+				chat.messages.push({ role: "assistant" as const, content: result, timestamp: Date.now() });
+				return;
+			}
+
+			// Appel contact
+			if (intent.category === "call_contact" && intent.target) {
+				setMessageInput("");
+				const userMsg = { role: "user" as const, content: text, timestamp: Date.now() };
+				chat.messages.push(userMsg);
+				const match = allContacts.find((c: any) =>
+					c.name.toLowerCase().includes(intent.target!.toLowerCase()) ||
+					c.position?.toLowerCase().includes(intent.target!.toLowerCase()),
+				);
+				if (match) {
+					chat.messages.push({
+						role: "assistant" as const,
+						content: `📞 Lancement de l'appel vers **${match.lastName} ${match.firstName}** (${match.position ?? "N/A"} — ${match.orgName}).\n\n_Basculez sur l'onglet iAppel pour continuer._`,
+						timestamp: Date.now(),
+					});
+					toast.success(`Appel vers ${match.lastName} ${match.firstName}`);
+				} else {
+					chat.messages.push({
+						role: "assistant" as const,
+						content: `Je n'ai pas trouvé de contact correspondant à "${intent.target}". Vérifiez le nom ou consultez l'onglet iContact.`,
+						timestamp: Date.now(),
+					});
+				}
+				return;
+			}
+
+			// Création de réunion
+			if (intent.category === "meeting_create" && intent.target) {
+				setMessageInput("");
+				const userMsg = { role: "user" as const, content: text, timestamp: Date.now() };
+				chat.messages.push(userMsg);
+				const searchTerms = intent.target.split(/\s+(?:et|,)\s+/).map((t) => t.trim());
+				const matchedContacts = allContacts.filter((c: any) =>
+					searchTerms.some((term) =>
+						c.name.toLowerCase().includes(term.toLowerCase()) ||
+						c.orgName?.toLowerCase().includes(term.toLowerCase()),
+					),
+				);
+				if (matchedContacts.length > 0) {
+					const names = matchedContacts.slice(0, 5).map((c: any) => `**${c.lastName} ${c.firstName}**`).join(", ");
+					chat.messages.push({
+						role: "assistant" as const,
+						content: `🗓️ Je prépare une réunion avec ${names}.\n\n_Basculez sur l'onglet iRéunion pour finaliser et démarrer._`,
+						timestamp: Date.now(),
+					});
+					toast.success("Réunion en préparation — onglet iRéunion");
+				} else {
+					chat.messages.push({
+						role: "assistant" as const,
+						content: `Je n'ai pas trouvé de contacts pour "${intent.target}". Essayez avec un nom ou une organisation précise.`,
+						timestamp: Date.now(),
+					});
+				}
+				return;
+			}
+
+			// Contrôle (stop, annule)
+			if (intent.category === "control") {
 				setMessageInput("");
 				chat.messages.push(
-					{ role: "user", content: text, timestamp: Date.now() },
-					{ role: "assistant", content: `Je vous emmène sur **${intent.target}**.`, timestamp: Date.now() },
+					{ role: "user" as const, content: text, timestamp: Date.now() },
+					{ role: "assistant" as const, content: "Compris, j'arrête. Comment puis-je vous aider ?", timestamp: Date.now() },
 				);
-				navigate({ to: route });
-				toast.success(`Navigation vers ${intent.target}`);
 				return;
 			}
 		}
@@ -272,22 +363,40 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 	// ════════════════════════════════════════════════════════════
 	return (
 		<div className="flex flex-col flex-1 overflow-hidden">
-			{/* Recherche */}
-			<div className="p-2 border-b">
+			{/* Recherche + segments */}
+			<div className="p-2 border-b space-y-1.5">
 				<div className="relative">
 					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
 					<Input
-						value={search}
+						value={filters.searchTerm}
 						onChange={(e) => setSearch(e.target.value)}
-						placeholder="Rechercher une conversation..."
+						placeholder="Rechercher (nom, email, poste, org)..."
 						className="h-8 pl-8 text-xs"
 					/>
+				</div>
+				{/* Segments source */}
+				<div className="flex items-center gap-1">
+					{SOURCE_SEGMENTS.map((seg) => (
+						<button
+							key={seg.id}
+							type="button"
+							onClick={() => setSource(seg.id)}
+							className={cn(
+								"text-[10px] px-2 py-0.5 rounded-md font-medium transition-colors",
+								filters.source === seg.id
+									? "bg-primary text-primary-foreground"
+									: "text-muted-foreground hover:bg-muted",
+							)}
+						>
+							{seg.label}
+						</button>
+					))}
 				</div>
 			</div>
 
 			<ScrollArea className="flex-1">
 				{/* iAsted — Contact IA épinglé */}
-				{(!search || "iasted ia assistant".includes(search.toLowerCase())) && (
+				{(!filters.searchTerm || "iasted ia assistant".includes(filters.searchTerm.toLowerCase())) && (
 					<button
 						type="button"
 						onClick={() => setSelectedContact(IASTED_CONTACT)}
@@ -320,37 +429,74 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 					</button>
 				)}
 
-				{/* Contacts humains */}
-				{filteredContacts.length === 0 && search ? (
+				{/* Contacts groupés par org (cross-org) */}
+				{contactsLoading ? (
+					<div className="flex items-center justify-center py-8">
+						<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+					</div>
+				) : groups.length === 0 && filters.searchTerm ? (
 					<div className="flex flex-col items-center justify-center py-8 text-center">
 						<User className="h-8 w-8 text-muted-foreground/30 mb-2" />
 						<p className="text-xs text-muted-foreground">Aucun résultat</p>
 					</div>
 				) : (
-					<div className="divide-y divide-border/30">
-						{filteredContacts.map((contact: any) => (
-							<button
-								key={contact.id}
-								type="button"
-								onClick={() => setSelectedContact(contact)}
-								className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/30 transition-colors text-left"
-							>
-								<Avatar className="h-9 w-9">
-									<AvatarImage src={contact.avatar} />
-									<AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-										{contact.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
-									</AvatarFallback>
-								</Avatar>
-								<div className="flex-1 min-w-0">
-									<p className="text-xs font-medium truncate">{contact.name}</p>
-									<p className="text-[10px] text-muted-foreground truncate">{contact.position}</p>
+					<div className="divide-y">
+						{groups.map((group: any) => (
+							<div key={group.org.id} className="py-1">
+								{/* En-tête org */}
+								<div className="flex items-center gap-2 px-3 py-1">
+									<Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
+									<span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
+										{group.org.name}
+									</span>
+									{group.org.country && (
+										<span className="text-[8px] text-muted-foreground/60">{group.org.country}</span>
+									)}
+									<Badge variant="outline" className="text-[7px] h-3.5 px-1 ml-auto shrink-0">
+										{group.contacts.length}
+									</Badge>
 								</div>
-								<MessageSquare className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0" />
-							</button>
+								{/* Contacts du groupe */}
+								{group.contacts.map((contact: any) => (
+									<button
+										key={contact.id}
+										type="button"
+										onClick={() => setSelectedContact({ ...contact, isAI: false })}
+										className="w-full flex items-center gap-3 px-3 py-2 hover:bg-muted/30 transition-colors text-left"
+									>
+										<Avatar className="h-9 w-9">
+											<AvatarImage src={contact.avatar} />
+											<AvatarFallback className={cn("text-[10px]",
+												contact.source === "team" ? "bg-primary/10 text-primary"
+													: contact.source === "citizen" ? "bg-amber-500/10 text-amber-600"
+													: "bg-blue-500/10 text-blue-600",
+											)}>
+												{contact.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
+											</AvatarFallback>
+										</Avatar>
+										<div className="flex-1 min-w-0">
+											<div className="flex items-center gap-1">
+												<p className="text-xs font-bold truncate">{contact.lastName}</p>
+												<p className="text-xs text-foreground/80 truncate">{contact.firstName}</p>
+											</div>
+											{contact.position && (
+												<p className="text-[10px] text-muted-foreground truncate">{contact.position}</p>
+											)}
+										</div>
+										<MessageSquare className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0" />
+									</button>
+								))}
+							</div>
 						))}
 					</div>
 				)}
 			</ScrollArea>
+
+			{/* Footer stats */}
+			<div className="border-t px-3 py-1 text-[9px] text-muted-foreground flex items-center justify-between shrink-0">
+				<span>{total} contact{total > 1 ? "s" : ""}</span>
+				<span>{groups.length} org{groups.length > 1 ? "s" : ""}</span>
+			</div>
 		</div>
 	);
 }
