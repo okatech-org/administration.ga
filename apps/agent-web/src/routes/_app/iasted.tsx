@@ -20,6 +20,7 @@ import {
 	Settings,
 	ShieldCheck,
 	User,
+	Video,
 } from "lucide-react";
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import Markdown from "react-markdown";
@@ -38,6 +39,7 @@ import { parseIntent, resolveNavigationTarget } from "@/components/ai/iasted/Int
 import { getSuggestions } from "@/components/ai/iasted/SpatialAwareness";
 import { IAstedContactTab } from "@/components/ai/iasted/IAstedContactTab";
 import { IAstedCallTab } from "@/components/ai/iasted/IAstedCallTab";
+import { IAstedMeetingTab } from "@/components/ai/iasted/IAstedMeetingTab";
 import { IAstedSettingsTab } from "@/components/ai/iasted/IAstedSettingsTab";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
@@ -58,6 +60,7 @@ const NAV_ITEMS = [
 	{ id: "ichat", icon: MessageSquare, label: "iChat" },
 	{ id: "icontact", icon: Contact, label: "iContact" },
 	{ id: "icall", icon: Phone, label: "iAppel" },
+	{ id: "imeeting", icon: Video, label: "iRéunion" },
 	{ id: "settings", icon: Settings, label: "Réglages" },
 ] as const;
 
@@ -435,12 +438,13 @@ function IAstedFullPage() {
 				<div className="flex-1 flex flex-col overflow-hidden">
 					<div className="px-4 py-3 border-b shrink-0">
 						<h2 className="text-base font-semibold">
-							{activeTab === "icontact" ? "iContact" : activeTab === "icall" ? "iAppel" : "Réglages"}
+							{activeTab === "icontact" ? "iContact" : activeTab === "icall" ? "iAppel" : activeTab === "imeeting" ? "iRéunion" : "Réglages"}
 						</h2>
 					</div>
 					<div className="flex-1 overflow-hidden">
 						{activeTab === "icontact" && <IAstedContactTab />}
 						{activeTab === "icall" && <IAstedCallTab />}
+						{activeTab === "imeeting" && <IAstedMeetingTab />}
 						{activeTab === "settings" && <IAstedSettingsTab />}
 					</div>
 				</div>

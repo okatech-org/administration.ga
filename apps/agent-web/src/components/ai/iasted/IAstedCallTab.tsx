@@ -34,12 +34,11 @@ import {
 } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 
-type SubTab = "audio" | "video" | "reunion";
+type SubTab = "audio" | "video";
 
 const SUB_TABS: Array<{ id: SubTab; label: string; icon: typeof Phone }> = [
 	{ id: "audio", label: "Audio", icon: Phone },
 	{ id: "video", label: "Vidéo", icon: Video },
-	{ id: "reunion", label: "iRéunion", icon: Users },
 ];
 
 export function IAstedCallTab() {
