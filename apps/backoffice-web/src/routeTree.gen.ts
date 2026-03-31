@@ -46,6 +46,7 @@ import { Route as AppOrgsOrgIdRouteImport } from './routes/_app/orgs/$orgId'
 import { Route as AppEventsNewRouteImport } from './routes/_app/events/new'
 import { Route as AppConfigServicesRouteImport } from './routes/_app/config/services'
 import { Route as AppConfigRepresentationsRouteImport } from './routes/_app/config/representations'
+import { Route as AppConfigPrintSettingsRouteImport } from './routes/_app/config/print-settings'
 import { Route as AppConfigPositionsRouteImport } from './routes/_app/config/positions'
 import { Route as AppConfigModulesRouteImport } from './routes/_app/config/modules'
 import { Route as AppTutorialsTutorialIdEditRouteImport } from './routes/_app/tutorials/$tutorialId.edit'
@@ -240,6 +241,11 @@ const AppConfigRepresentationsRoute =
     path: '/config/representations',
     getParentRoute: () => AppRoute,
   } as any)
+const AppConfigPrintSettingsRoute = AppConfigPrintSettingsRouteImport.update({
+  id: '/config/print-settings',
+  path: '/config/print-settings',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppConfigPositionsRoute = AppConfigPositionsRouteImport.update({
   id: '/config/positions',
   path: '/config/positions',
@@ -297,6 +303,7 @@ export interface FileRoutesByFullPath {
   '/sign-in/$': typeof SignInSplatRoute
   '/config/modules': typeof AppConfigModulesRoute
   '/config/positions': typeof AppConfigPositionsRoute
+  '/config/print-settings': typeof AppConfigPrintSettingsRoute
   '/config/representations': typeof AppConfigRepresentationsRoute
   '/config/services': typeof AppConfigServicesRoute
   '/events/new': typeof AppEventsNewRoute
@@ -343,6 +350,7 @@ export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/config/modules': typeof AppConfigModulesRoute
   '/config/positions': typeof AppConfigPositionsRoute
+  '/config/print-settings': typeof AppConfigPrintSettingsRoute
   '/config/representations': typeof AppConfigRepresentationsRoute
   '/config/services': typeof AppConfigServicesRoute
   '/events/new': typeof AppEventsNewRoute
@@ -391,6 +399,7 @@ export interface FileRoutesById {
   '/_app/': typeof AppIndexRoute
   '/_app/config/modules': typeof AppConfigModulesRoute
   '/_app/config/positions': typeof AppConfigPositionsRoute
+  '/_app/config/print-settings': typeof AppConfigPrintSettingsRoute
   '/_app/config/representations': typeof AppConfigRepresentationsRoute
   '/_app/config/services': typeof AppConfigServicesRoute
   '/_app/events/new': typeof AppEventsNewRoute
@@ -439,6 +448,7 @@ export interface FileRouteTypes {
     | '/sign-in/$'
     | '/config/modules'
     | '/config/positions'
+    | '/config/print-settings'
     | '/config/representations'
     | '/config/services'
     | '/events/new'
@@ -485,6 +495,7 @@ export interface FileRouteTypes {
     | '/'
     | '/config/modules'
     | '/config/positions'
+    | '/config/print-settings'
     | '/config/representations'
     | '/config/services'
     | '/events/new'
@@ -532,6 +543,7 @@ export interface FileRouteTypes {
     | '/_app/'
     | '/_app/config/modules'
     | '/_app/config/positions'
+    | '/_app/config/print-settings'
     | '/_app/config/representations'
     | '/_app/config/services'
     | '/_app/events/new'
@@ -834,6 +846,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfigRepresentationsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/config/print-settings': {
+      id: '/_app/config/print-settings'
+      path: '/config/print-settings'
+      fullPath: '/config/print-settings'
+      preLoaderRoute: typeof AppConfigPrintSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/config/positions': {
       id: '/_app/config/positions'
       path: '/config/positions'
@@ -905,6 +924,7 @@ interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppConfigModulesRoute: typeof AppConfigModulesRoute
   AppConfigPositionsRoute: typeof AppConfigPositionsRoute
+  AppConfigPrintSettingsRoute: typeof AppConfigPrintSettingsRoute
   AppConfigRepresentationsRoute: typeof AppConfigRepresentationsRoute
   AppConfigServicesRoute: typeof AppConfigServicesRoute
   AppEventsNewRoute: typeof AppEventsNewRoute
@@ -949,6 +969,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppConfigModulesRoute: AppConfigModulesRoute,
   AppConfigPositionsRoute: AppConfigPositionsRoute,
+  AppConfigPrintSettingsRoute: AppConfigPrintSettingsRoute,
   AppConfigRepresentationsRoute: AppConfigRepresentationsRoute,
   AppConfigServicesRoute: AppConfigServicesRoute,
   AppEventsNewRoute: AppEventsNewRoute,

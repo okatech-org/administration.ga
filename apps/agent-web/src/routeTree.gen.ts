@@ -21,6 +21,8 @@ import { Route as AppIastedRouteImport } from './routes/_app/iasted'
 import { Route as AppIarchiveRouteImport } from './routes/_app/iarchive'
 import { Route as AppIagendaRouteImport } from './routes/_app/iagenda'
 import { Route as AppCallsRouteImport } from './routes/_app/calls'
+import { Route as AppAffairesDiplomatiquesRouteImport } from './routes/_app/affaires-diplomatiques'
+import { Route as AppAffairesConsulairesRouteImport } from './routes/_app/affaires-consulaires'
 import { Route as AppTeamIndexRouteImport } from './routes/_app/team/index'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppServicesIndexRouteImport } from './routes/_app/services/index'
@@ -97,6 +99,17 @@ const AppIagendaRoute = AppIagendaRouteImport.update({
 const AppCallsRoute = AppCallsRouteImport.update({
   id: '/calls',
   path: '/calls',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAffairesDiplomatiquesRoute =
+  AppAffairesDiplomatiquesRouteImport.update({
+    id: '/affaires-diplomatiques',
+    path: '/affaires-diplomatiques',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppAffairesConsulairesRoute = AppAffairesConsulairesRouteImport.update({
+  id: '/affaires-consulaires',
+  path: '/affaires-consulaires',
   getParentRoute: () => AppRoute,
 } as any)
 const AppTeamIndexRoute = AppTeamIndexRouteImport.update({
@@ -197,6 +210,8 @@ const AppPostsPostIdEditRoute = AppPostsPostIdEditRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/affaires-consulaires': typeof AppAffairesConsulairesRoute
+  '/affaires-diplomatiques': typeof AppAffairesDiplomatiquesRoute
   '/calls': typeof AppCallsRoute
   '/iagenda': typeof AppIagendaRoute
   '/iarchive': typeof AppIarchiveRoute
@@ -227,6 +242,8 @@ export interface FileRoutesByFullPath {
   '/services/$serviceId/edit': typeof AppServicesServiceIdEditRoute
 }
 export interface FileRoutesByTo {
+  '/affaires-consulaires': typeof AppAffairesConsulairesRoute
+  '/affaires-diplomatiques': typeof AppAffairesDiplomatiquesRoute
   '/calls': typeof AppCallsRoute
   '/iagenda': typeof AppIagendaRoute
   '/iarchive': typeof AppIarchiveRoute
@@ -260,6 +277,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/_app/affaires-consulaires': typeof AppAffairesConsulairesRoute
+  '/_app/affaires-diplomatiques': typeof AppAffairesDiplomatiquesRoute
   '/_app/calls': typeof AppCallsRoute
   '/_app/iagenda': typeof AppIagendaRoute
   '/_app/iarchive': typeof AppIarchiveRoute
@@ -294,6 +313,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/affaires-consulaires'
+    | '/affaires-diplomatiques'
     | '/calls'
     | '/iagenda'
     | '/iarchive'
@@ -324,6 +345,8 @@ export interface FileRouteTypes {
     | '/services/$serviceId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/affaires-consulaires'
+    | '/affaires-diplomatiques'
     | '/calls'
     | '/iagenda'
     | '/iarchive'
@@ -356,6 +379,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
+    | '/_app/affaires-consulaires'
+    | '/_app/affaires-diplomatiques'
     | '/_app/calls'
     | '/_app/iagenda'
     | '/_app/iarchive'
@@ -477,6 +502,20 @@ declare module '@tanstack/react-router' {
       path: '/calls'
       fullPath: '/calls'
       preLoaderRoute: typeof AppCallsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/affaires-diplomatiques': {
+      id: '/_app/affaires-diplomatiques'
+      path: '/affaires-diplomatiques'
+      fullPath: '/affaires-diplomatiques'
+      preLoaderRoute: typeof AppAffairesDiplomatiquesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/affaires-consulaires': {
+      id: '/_app/affaires-consulaires'
+      path: '/affaires-consulaires'
+      fullPath: '/affaires-consulaires'
+      preLoaderRoute: typeof AppAffairesConsulairesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/team/': {
@@ -609,6 +648,8 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppAffairesConsulairesRoute: typeof AppAffairesConsulairesRoute
+  AppAffairesDiplomatiquesRoute: typeof AppAffairesDiplomatiquesRoute
   AppCallsRoute: typeof AppCallsRoute
   AppIagendaRoute: typeof AppIagendaRoute
   AppIarchiveRoute: typeof AppIarchiveRoute
@@ -639,6 +680,8 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAffairesConsulairesRoute: AppAffairesConsulairesRoute,
+  AppAffairesDiplomatiquesRoute: AppAffairesDiplomatiquesRoute,
   AppCallsRoute: AppCallsRoute,
   AppIagendaRoute: AppIagendaRoute,
   AppIarchiveRoute: AppIarchiveRoute,
