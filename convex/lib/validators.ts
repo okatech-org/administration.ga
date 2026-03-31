@@ -638,6 +638,15 @@ export const orgSettingsValidator = v.object({
       cachetStorageId: v.optional(v.id("_storage")),
     })),
   })),
+
+  // ── Carte consulaire & impression ──
+  printEnabled: v.optional(v.boolean()),
+  defaultCardDesignId: v.optional(v.id("cardDesigns")),
+  printConfig: v.optional(v.object({
+    headerText: v.optional(v.string()),
+    footerText: v.optional(v.string()),
+    logoStorageId: v.optional(v.id("_storage")),
+  })),
 });
 
 export type OrgSettings = Infer<typeof orgSettingsValidator>;
