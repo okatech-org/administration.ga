@@ -101,6 +101,7 @@ export function CorrespondanceDetail({
 	onBack,
 }: CorrespondanceDetailProps) {
 	const [selectedDocIndex, setSelectedDocIndex] = useState(0);
+	const [selectedDocViewer, setSelectedDocViewer] = useState<ViewerDoc | null>(null);
 
 	const { data: item, isPending } = useAuthenticatedConvexQuery(
 		api.functions.correspondance.getItem,
@@ -143,7 +144,6 @@ export function CorrespondanceDetail({
 
 	const selectedDoc = allDocs[selectedDocIndex] ?? allDocs[0];
 	const stCfg = STATUS_LABELS[item.status] ?? STATUS_LABELS.draft;
-	const [selectedDocViewer, setSelectedDocViewer] = useState<ViewerDoc | null>(null);
 
 	const handleSend = async () => {
 		try {
