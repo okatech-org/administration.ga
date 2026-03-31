@@ -326,25 +326,25 @@ function IBoitePage() {
 	// ── Render ─────────────────────────────────────────────────────────────
 
 	return (
-		<div className="flex flex-col gap-4 h-[calc(100dvh-3rem)] min-h-0 p-1">
+		<div className="flex flex-col gap-4 h-full min-h-0 p-4 lg:p-6">
 			<div className="shrink-0">
 				<PageHeader
-					title={t("mySpace.screens.iboite.heading")}
-					subtitle={t("mySpace.screens.iboite.subtitle")}
+					title="iBoîte"
+					subtitle="Messagerie consulaire sécurisée"
 					icon={<Mail className="h-5 w-5 text-teal-600 dark:text-teal-400" />}
 					iconBgClass="bg-teal-500/10"
 				/>
 			</div>
 
 			{/* ── Mobile: folder chips ──────────────────────────────────────── */}
-			<div className="lg:hidden flex gap-1.5 overflow-x-auto py-3 -mx-1 px-1 scrollbar-none shrink-0">
+			<div className="lg:hidden flex gap-1 overflow-x-auto border border-border/50 rounded-xl bg-card p-1 scrollbar-none shrink-0">
 				{MAIL_FOLDERS.map(({ key, icon: Icon }) => (
 					<button
 						type="button"
 						key={key}
 						onClick={() => switchView(key)}
 						className={cn(
-							"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0",
+							"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0",
 							activeView === key
 								? "bg-primary text-primary-foreground"
 								: "bg-muted text-muted-foreground hover:bg-muted/80",
@@ -363,7 +363,7 @@ function IBoitePage() {
 					type="button"
 					onClick={() => switchView("packages")}
 					className={cn(
-						"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0",
+						"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0",
 						activeView === "packages"
 							? "bg-primary text-primary-foreground"
 							: "bg-muted text-muted-foreground hover:bg-muted/80",
@@ -381,7 +381,7 @@ function IBoitePage() {
 					type="button"
 					onClick={() => switchView("calls")}
 					className={cn(
-						"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0",
+						"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0",
 						activeView === "calls"
 							? "bg-primary text-primary-foreground"
 							: "bg-muted text-muted-foreground hover:bg-muted/80",
@@ -394,7 +394,7 @@ function IBoitePage() {
 
 			{/* ── Mobile: compose + account selector ──────────────────────── */}
 			<div className="lg:hidden flex items-center gap-2 shrink-0">
-				<Button onClick={() => setComposeOpen(true)} className="gap-2 flex-1">
+				<Button onClick={() => setComposeOpen(true)} size="sm" className="gap-2">
 					<PenLine className="size-4" />
 					{t("iboite.actions.compose")}
 				</Button>
