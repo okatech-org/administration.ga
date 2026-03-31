@@ -32,7 +32,8 @@ export function IAstedMeetingsTab() {
 		api.functions.meetings.create,
 	);
 
-	const meetings = (rawMeetings as any[])
+	const meetingsArray = Array.isArray(rawMeetings) ? rawMeetings : [];
+	const meetings = (meetingsArray as any[])
 		.filter((m) => m.type === "meeting")
 		.sort((a, b) => (b.startedAt ?? b._creationTime) - (a.startedAt ?? a._creationTime));
 

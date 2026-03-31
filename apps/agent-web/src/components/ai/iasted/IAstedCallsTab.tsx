@@ -25,7 +25,8 @@ export function IAstedCallsTab() {
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
 
-	const recentCalls = (rawMeetings as any[])
+	const meetingsArray = Array.isArray(rawMeetings) ? rawMeetings : [];
+	const recentCalls = (meetingsArray as any[])
 		.filter((m) => m.type === "call")
 		.sort((a, b) => (b.startedAt ?? b._creationTime) - (a.startedAt ?? a._creationTime))
 		.slice(0, 20);
