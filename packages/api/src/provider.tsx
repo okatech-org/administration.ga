@@ -68,6 +68,12 @@ export default function AppConvexProvider({
 					queries: {
 						queryKeyHashFn: convexQueryClient.hashFn(),
 						queryFn: convexQueryClient.queryFn(),
+						// Convex gère ses propres souscriptions temps-réel via WebSocket.
+						// On désactive les refetch automatiques de React Query pour éviter
+						// que les composants repassent en état "loading" lors d'un retour
+						// sur l'onglet ou d'une reconnexion réseau.
+						refetchOnWindowFocus: false,
+						refetchOnReconnect: false,
 					},
 				},
 			}),
