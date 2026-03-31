@@ -10,10 +10,18 @@ import {
 } from "react";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 
+interface OrgModuleConfigEntry {
+	moduleCode: string;
+	enabled: boolean;
+	capabilities?: string[];
+}
+
 interface OrgContextType {
 	activeOrgId: Id<"orgs"> | null;
 	activeMembershipId: Id<"memberships"> | null;
 	activePositionGrade: string | null;
+	activeOrgModules: string[];
+	activeOrgModuleConfig: OrgModuleConfigEntry[] | null;
 	setActiveOrgId: (orgId: Id<"orgs">) => void;
 	isLoading: boolean;
 	activeOrg: any | null;
@@ -79,6 +87,8 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 	const activeMembershipId = (activeMember?._id as Id<"memberships">) || null;
 	const activePositionGrade = (activeMember as any)?.positionGrade || null;
 	const activeOrg = activeMember?.org || null;
+	const activeOrgModules: string[] = (activeMember?.org as any)?.modules ?? [];
+	const activeOrgModuleConfig: OrgModuleConfigEntry[] | null = (activeMember?.org as any)?.orgModuleConfig ?? null;
 	// Only show loading on the very first load. Subsequent re-fetches keep stale data visible.
 	const isLoading = isRestoring || (!hasLoadedOnce.current && memberships === undefined);
 
@@ -88,6 +98,8 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 				activeOrgId,
 				activeMembershipId,
 				activePositionGrade,
+				activeOrgModules,
+				activeOrgModuleConfig,
 				setActiveOrgId,
 				isLoading,
 				activeOrg,

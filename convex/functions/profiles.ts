@@ -1570,3 +1570,167 @@ export const getProfileDetail = authQuery({
     };
   },
 });
+/**
+ * Agent: Search profiles related to the agent's org
+ *
+ * Returns profiles that have any link to this org:
+ *  1. Request.profileId → profile directly linked to a request for this org
+ *  2. Request.userId   → look up the user's profile (requests don't always have profileId)
+ *  3. consularRegistrations.profileId linked to this org
+ *  4. profiles.signaledToOrgId = this org (citizen signaled their presence)
+ *  5. profiles.managedByOrgId  = this org (directly managed)
+ *
+ * Used by Affaires Consulaires > Profils Citoyens in agent-web ONLY.
+ * NEVER exposed to citizen-web.
+ */
+export const searchConsularProfiles = authQuery({
+  args: {
+    searchTerm: v.optional(v.string()),
+    orgId: v.id("orgs"),
+  },
+  handler: async (ctx, args) => {
+    const { searchTerm, orgId } = args;
+
+    const profileIds = new Set<string>();
+
+    // ── Strategy 1 & 2: Requests to this org (capped at 500) ─────────────
+    const orgRequests = await ctx.db
+      .query("requests")
+      .withIndex("by_org_status", (q) => q.eq("orgId", orgId))
+      .take(500); // Guard against exceeding Convex 4096 read limit
+
+    const userIdsFromRequests = new Set<string>();
+    for (const r of orgRequests) {
+      if (r.profileId) profileIds.add(r.profileId as string);
+      if (r.userId) userIdsFromRequests.add(r.userId as string);
+    }
+
+    // Resolve userId → profile (batched, already unique userIds)
+    if (userIdsFromRequests.size > 0) {
+      const profilesByUser = await Promise.all(
+        [...userIdsFromRequests].slice(0, 200).map((uid) =>
+          ctx.db
+            .query("profiles")
+            .withIndex("by_user", (q) => q.eq("userId", uid as Id<"users">))
+            .unique(),
+        ),
+      );
+      for (const p of profilesByUser) {
+        if (p) profileIds.add(p._id as string);
+      }
+    }
+
+    // ── Strategy 3: Consular registrations (capped at 200) ────────────────
+    const registrations = await ctx.db
+      .query("consularRegistrations")
+      .withIndex("by_org_status", (q) => q.eq("orgId", orgId))
+      .take(200);
+    for (const reg of registrations) {
+      if (reg.profileId) profileIds.add(reg.profileId as string);
+    }
+
+    // ── Strategy 4: profiles.signaledToOrgId (filter scan, capped) ────────
+    const signaled = await ctx.db
+      .query("profiles")
+      .filter((q) => q.eq(q.field("signaledToOrgId"), orgId))
+      .take(500);
+    for (const p of signaled) profileIds.add(p._id as string);
+
+    // ── Strategy 5: profiles.managedByOrgId (filter scan, capped) ─────────
+    const managed = await ctx.db
+      .query("profiles")
+      .filter((q) => q.eq(q.field("managedByOrgId"), orgId))
+      .take(500);
+    for (const p of managed) profileIds.add(p._id as string);
+
+    // ── Fetch all resolved profiles (deduplicated) ─────────────────────────
+    // Limit to 200 to stay safe on enrichment reads
+    const cappedIds = [...profileIds].slice(0, 200);
+    const allProfiles = await Promise.all(
+      cappedIds.map((id) => ctx.db.get(id as Id<"profiles">)),
+    );
+    const validProfiles = allProfiles.filter(Boolean) as any[];
+
+
+    // ── Apply text search filter ───────────────────────────────────────────
+    let filtered = validProfiles;
+    if (searchTerm && searchTerm.trim() !== "") {
+      const term = searchTerm.trim().toLowerCase();
+      filtered = validProfiles.filter((p) => {
+        const first = (p.identity?.firstName || "").toLowerCase();
+        const last = (p.identity?.lastName || "").toLowerCase();
+        const passport = (p.passportInfo?.number || "").toLowerCase();
+        const email = (p.contacts?.email || "").toLowerCase();
+        return (
+          first.includes(term) ||
+          last.includes(term) ||
+          `${first} ${last}`.includes(term) ||
+          passport.includes(term) ||
+          email.includes(term)
+        );
+      });
+    }
+
+    // ── Enrich profiles with user info, photo, request count ──────────────
+    const enriched = await Promise.all(
+      filtered.map(async (p) => {
+        // User info
+        let user = null;
+        let avatarUrl: string | undefined;
+        if (p.userId) {
+          const u = await ctx.db.get(p.userId) as any;
+          if (u) {
+            user = { _id: u._id, email: u.email, name: u.name };
+            avatarUrl = u.avatarUrl;
+          }
+        }
+
+        // Identity photo
+        let photoUrl: string | undefined;
+        if (p.documents?.identityPhoto) {
+          try {
+            const doc = await ctx.db.get(p.documents.identityPhoto) as any;
+            if (doc?.files?.length) {
+              photoUrl = (await ctx.storage.getUrl(doc.files[0].storageId)) ?? undefined;
+            }
+          } catch {
+            // Photo not available
+          }
+        }
+
+
+        // Request count (profileId match OR userId match via orgRequests)
+        const profileRequests = orgRequests.filter(
+          (r) =>
+            r.profileId === p._id ||
+            (p.userId && r.userId === p.userId),
+        );
+        const requestCount = profileRequests.length;
+
+        // Child count
+        let childCount = 0;
+        if (p.userId) {
+          const children = await ctx.db
+            .query("childProfiles")
+            .withIndex("by_author", (q) => q.eq("authorUserId", p.userId))
+            .collect();
+          childCount = children.length;
+        }
+
+        return {
+          ...p,
+          user,
+          avatarUrl,
+          photoUrl,
+          requestCount,
+          childCount,
+        };
+      }),
+    );
+
+    // Sort: most requests → most relevant
+    enriched.sort((a, b) => (b.requestCount ?? 0) - (a.requestCount ?? 0));
+
+    return enriched;
+  },
+});

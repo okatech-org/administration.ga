@@ -2,9 +2,11 @@
 
 import { Link, useLocation } from "@tanstack/react-router";
 import {
+	BarChart3,
 	Calendar,
 	ChevronsLeft,
 	ChevronsRight,
+	CreditCard,
 	FileText,
 	FolderOpen,
 	Globe2,
@@ -15,6 +17,7 @@ import {
 	Settings2,
 	Sun,
 	Users,
+	Users2,
 	Eye,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -30,6 +33,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useCanDoTask } from "@/hooks/useCanDoTask";
 import { useModuleAccessLevel } from "@/hooks/useModuleAccessLevel";
+import { useOrgModules } from "@/hooks/useOrgModules";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { useOrg } from "./org-provider";
@@ -88,6 +92,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 	const { activeOrgId } = useOrg();
 	const { canDo, isReady } = useCanDoTask(activeOrgId ?? undefined);
 	const { isReadOnly } = useModuleAccessLevel(activeOrgId ?? undefined);
+	const { isModuleEnabled } = useOrgModules();
 
 	const navSections: NavSection[] = [
 		{
@@ -99,35 +104,47 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 		{
 			label: "Opérations",
 			items: [
-				{ title: "Affaires Diplomatiques", url: "/affaires-diplomatiques", icon: Globe2, moduleCode: "intelligence" },
+				{ title: "Affaires Diplomatiques", url: "/affaires-diplomatiques", icon: Globe2, requires: "intelligence.view", moduleCode: "intelligence" },
 				{ title: "Affaires Consulaires", url: "/affaires-consulaires", icon: Users, requires: "requests.view", moduleCode: "requests" },
-				{ title: "Gestion Actualités", url: "/posts", icon: Newspaper, requires: "communication.publish", moduleCode: "communication" },
+				{ title: "Actualités", url: "/posts", icon: Newspaper, requires: "communication.publish", moduleCode: "communication" },
 			],
 		},
 		{
 			label: "iBureau",
 			items: [
-				{ title: "iBoîte", url: "/iboite", icon: Mail, moduleCode: "digital_mail" },
-				{ title: "iCorrespondance", url: "/icorrespondance", icon: FolderOpen, moduleCode: "correspondance" },
-				{ title: "iDocument", url: "/idocument", icon: FileText, moduleCode: "documents" },
-				{ title: "iAgenda", url: "/iagenda", icon: Calendar, moduleCode: "appointments" },
+				{ title: "iBoîte", url: "/iboite", icon: Mail, requires: "digital_mail.view", moduleCode: "digital_mail" },
+				{ title: "iCorrespondance", url: "/icorrespondance", icon: FolderOpen, requires: "correspondance.view", moduleCode: "correspondance" },
+				{ title: "iDocument", url: "/idocument", icon: FileText, requires: "documents.view", moduleCode: "documents" },
+				{ title: "iAgenda", url: "/iagenda", icon: Calendar, requires: "appointments.view", moduleCode: "appointments" },
+			],
+		},
+		{
+			label: "Gestion",
+			items: [
+				{ title: "Équipe", url: "/team", icon: Users2, requires: "team.view", moduleCode: "team" },
+				{ title: "Paiements", url: "/payments", icon: CreditCard, requires: "finance.view", moduleCode: "finance" },
+				{ title: "Statistiques", url: "/statistics", icon: BarChart3, requires: "analytics.view", moduleCode: "analytics" },
 			],
 		},
 		{
 			label: "Administration",
 			items: [
-				{ title: "Paramètres", url: "/settings", icon: Settings2, moduleCode: "settings" },
+				{ title: "Paramètres", url: "/settings", icon: Settings2, requires: "settings.view", moduleCode: "settings" },
 			],
 		},
 	];
 
-	// Filter sections and their items based on permissions
+	// Filter sections and their items based on org modules + permissions
 	const filteredSections = navSections
 		.map((section) => ({
 			...section,
-			items: section.items.filter(
-				(item) => !item.requires || (isReady && canDo(item.requires)),
-			),
+			items: section.items.filter((item) => {
+				// 1. Module actif dans l'org ?
+				if (item.moduleCode && !isModuleEnabled(item.moduleCode)) return false;
+				// 2. Permission utilisateur ?
+				if (item.requires && !(isReady && canDo(item.requires))) return false;
+				return true;
+			}),
 		}))
 		.filter((section) => section.items.length > 0);
 

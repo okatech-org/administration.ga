@@ -23,6 +23,7 @@ import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
+import { useModuleAccess } from "@/components/shared/access-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,6 +75,8 @@ const PRIORITY_COLOR: Record<string, string> = {
 function AffairesDiplomatiquesPage() {
 	const [activeTab, setActiveTab] = useState<TabId>("cibles");
 	const { activeOrgId } = useOrg();
+	const { hasMin: hasIntelAccess } = useModuleAccess("intelligence");
+	const canEditIntel = hasIntelAccess("editor");
 
 	return (
 		<div className="flex flex-col gap-4 p-4 lg:p-6 h-full overflow-y-auto">

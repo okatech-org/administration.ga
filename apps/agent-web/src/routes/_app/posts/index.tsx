@@ -18,6 +18,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
+import { useModuleAccess } from "@/components/shared/access-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,6 +64,9 @@ const categoryLabels: Record<
 function DashboardPosts() {
   const { activeOrgId } = useOrg();
   const { t } = useTranslation();
+  const { hasMin: hasComAccess } = useModuleAccess("communication");
+  const canPublish = hasComAccess("editor");
+  const canAdminCom = hasComAccess("admin");
 
   const {
     results: posts,
@@ -143,12 +147,14 @@ function DashboardPosts() {
             )}
           </p>
         </div>
-        <Button asChild>
-          <Link to="/posts/new">
-            <Plus className="mr-2 h-4 w-4" />
-            {t("dashboard.posts.create")}
-          </Link>
-        </Button>
+        {canPublish && (
+          <Button asChild>
+            <Link to="/posts/new">
+              <Plus className="mr-2 h-4 w-4" />
+              {t("dashboard.posts.create")}
+            </Link>
+          </Button>
+        )}
       </div>
 
       <Card>

@@ -535,10 +535,10 @@ function PositionsConfigPage() {
 						<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
 							<Shield className="h-5 w-5 text-primary" />
 						</div>
-						Postes & Rôles
+						Postes & Profils
 					</h1>
 					<p className="text-muted-foreground mt-1">
-						Glissez-déposez les postes entre les grades ou utilisez les flèches
+						Templates de postes et profils métier par type de représentation
 					</p>
 				</div>
 				<div className="flex items-center gap-2">

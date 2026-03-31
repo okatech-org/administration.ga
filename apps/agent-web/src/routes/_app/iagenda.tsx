@@ -25,6 +25,7 @@ import {
 import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { useOrg } from "@/components/org/org-provider";
+import { useModuleAccess } from "@/components/shared/access-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -94,6 +95,8 @@ function IAgendaPage() {
 	const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
 	const [selectedDate, setSelectedDate] = useState<string | null>(null);
 	const { activeOrgId } = useOrg();
+	const { hasMin: hasAgendaAccess } = useModuleAccess("appointments");
+	const canManageAgenda = hasAgendaAccess("editor");
 
 	// ── Données Convex ──
 	const { data: rawCommunityEvents = [], isPending: eventsLoading } = useAuthenticatedConvexQuery(

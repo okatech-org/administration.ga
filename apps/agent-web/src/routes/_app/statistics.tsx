@@ -39,6 +39,7 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
+import { useModuleAccess } from "@/components/shared/access-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,6 +113,8 @@ const tooltipStyle = {
 function StatisticsPage() {
 	const { t, i18n } = useTranslation();
 	const { activeOrg, activeOrgId } = useOrg();
+	const { hasMin: hasStatsAccess } = useModuleAccess("analytics");
+	const canExportStats = hasStatsAccess("admin");
 	const [period, setPeriod] = useState<"week" | "month" | "year">("month");
 	const dateFnsLocale = i18n.language?.startsWith("fr") ? fr : enUS;
 	const trendGradId = useId();
@@ -332,9 +335,11 @@ function StatisticsPage() {
 						</SelectContent>
 					</Select>
 
-					<Button variant="outline" size="icon" onClick={handleExport}>
-						<Download className="h-4 w-4" />
-					</Button>
+					{canExportStats && (
+						<Button variant="outline" size="icon" onClick={handleExport}>
+							<Download className="h-4 w-4" />
+						</Button>
+					)}
 				</div>
 			</motion.div>
 

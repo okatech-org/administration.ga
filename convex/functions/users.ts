@@ -323,6 +323,9 @@ export const getOrgMemberships = authQuery({
             name: org.name,
             slug: org.slug,
             logoUrl: org.logoUrl,
+            modules: org.modules ?? [],
+            orgModuleConfig: org.orgModuleConfig ?? null,
+            type: org.type,
           },
         };
       })

@@ -15,7 +15,7 @@ import {
   type OrgTemplateType,
 } from "../lib/roles";
 import { ALL_TASK_CODES, TASK_RISK, type TaskCodeValue, type TaskCategory, taskCodeValidator } from "../lib/taskCodes";
-import { moduleCodeValidator, accessLevelValidator, type ModuleCodeValue, CORE_MODULE_CODES } from "../lib/moduleCodes";
+import { moduleCodeValidator, accessLevelValidator, type ModuleCodeValue, CORE_MODULE_CODES, MODULE_REGISTRY, getDefaultCapabilities } from "../lib/moduleCodes";
 
 // ═══════════════════════════════════════════════════════════════
 // QUERIES — Static catalogs
@@ -189,6 +189,7 @@ export const initializeFromTemplate = mutation({
           ? ministryGroupIds[pos.ministryCode]
           : undefined,
         tasks: getPresetTasks(pos.taskPresets),
+        moduleAccess: pos.moduleAccess,
         isRequired: pos.isRequired,
         isActive: true,
         createdBy: user._id,
@@ -276,6 +277,7 @@ export const resetToTemplate = mutation({
           ? ministryGroupIds[pos.ministryCode]
           : undefined,
         tasks: getPresetTasks(pos.taskPresets),
+        moduleAccess: pos.moduleAccess,
         isRequired: pos.isRequired,
         isActive: true,
         createdBy: user._id,
@@ -642,6 +644,90 @@ export const updateOrgModules = mutation({
       updatedAt: Date.now(),
     });
     return true;
+  },
+});
+
+/**
+ * Update org module config (v4) — with capabilities/sous-modules.
+ * Écrit orgModuleConfig ET met à jour le champ flat modules[] (backward compat).
+ */
+export const updateOrgModuleConfig = mutation({
+  args: {
+    orgId: v.id("orgs"),
+    config: v.array(v.object({
+      moduleCode: moduleCodeValidator,
+      enabled: v.boolean(),
+      capabilities: v.optional(v.array(v.string())),
+    })),
+  },
+  handler: async (ctx, { orgId, config }) => {
+    const user = await requireAuth(ctx);
+    const callerMembership = await getMembership(ctx, user._id, orgId);
+    await assertCanDoTask(ctx, user, callerMembership, "settings.manage");
+
+    // Les core modules restent toujours enabled
+    const configMap = new Map(config.map((c) => [c.moduleCode, c]));
+    for (const core of CORE_MODULE_CODES) {
+      if (!configMap.has(core)) {
+        configMap.set(core, { moduleCode: core, enabled: true });
+      } else {
+        const existing = configMap.get(core)!;
+        existing.enabled = true;
+      }
+    }
+
+    const finalConfig = Array.from(configMap.values());
+
+    // Backward compat : mettre à jour le champ flat modules[]
+    const enabledModules = finalConfig
+      .filter((c) => c.enabled)
+      .map((c) => c.moduleCode) as ModuleCodeValue[];
+
+    await ctx.db.patch(orgId, {
+      orgModuleConfig: finalConfig,
+      modules: enabledModules,
+      updatedAt: Date.now(),
+    });
+    return true;
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
+// MIGRATION — modules[] → orgModuleConfig[]
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Migration : pour chaque org ayant modules[] mais pas orgModuleConfig[],
+ * crée orgModuleConfig avec enabled=true + toutes capabilities par défaut.
+ * Appeler via le dashboard Convex : `npx convex run roleConfig:migrateOrgsToModuleConfig`
+ */
+export const migrateOrgsToModuleConfig = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const orgs = await ctx.db.query("orgs").collect();
+    let migrated = 0;
+
+    for (const org of orgs) {
+      // Sauter les orgs déjà migrées
+      if (org.orgModuleConfig && (org.orgModuleConfig as any[]).length > 0) continue;
+
+      const modules = (org.modules as string[]) ?? [];
+      if (modules.length === 0) continue;
+
+      const config = Object.values(MODULE_REGISTRY).map((def) => ({
+        moduleCode: def.code,
+        enabled: modules.includes(def.code) || def.isCore,
+        capabilities: getDefaultCapabilities(def.code as ModuleCodeValue),
+      }));
+
+      await ctx.db.patch(org._id, {
+        orgModuleConfig: config,
+        updatedAt: Date.now(),
+      });
+      migrated++;
+    }
+
+    return { migrated, total: orgs.length };
   },
 });
 

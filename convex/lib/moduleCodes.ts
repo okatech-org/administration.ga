@@ -201,6 +201,11 @@ export const moduleCodeValidator = v.union(
 // MODULE REGISTRY — Metadata for each module
 // ═══════════════════════════════════════════════════════════════
 
+export interface CapabilityDefinition {
+  code: string;
+  label: LocalizedString;
+}
+
 export interface ModuleDefinition {
   code: ModuleCodeValue;
   label: LocalizedString;
@@ -209,6 +214,8 @@ export interface ModuleDefinition {
   color: string;     // Tailwind color class
   category: ModuleCategory;
   isCore: boolean;   // Core modules cannot be disabled
+  /** Sous-modules/onglets activables individuellement */
+  capabilities?: CapabilityDefinition[];
 }
 
 export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
@@ -221,6 +228,12 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     color: "text-emerald-500",
     category: "core",
     isCore: true,
+    capabilities: [
+      { code: "passports", label: { fr: "Passeports", en: "Passports" } },
+      { code: "visas", label: { fr: "Visas", en: "Visas" } },
+      { code: "civil_status", label: { fr: "État civil", en: "Civil status" } },
+      { code: "registre", label: { fr: "Registre consulaire", en: "Consular registry" } },
+    ],
   },
   [ModuleCode.documents]: {
     code: ModuleCode.documents,
@@ -230,6 +243,11 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     color: "text-blue-500",
     category: "core",
     isCore: true,
+    capabilities: [
+      { code: "explorer", label: { fr: "Explorateur", en: "Explorer" } },
+      { code: "archive", label: { fr: "Archive", en: "Archive" } },
+      { code: "retention", label: { fr: "Rétention", en: "Retention" } },
+    ],
   },
   [ModuleCode.appointments]: {
     code: ModuleCode.appointments,
@@ -239,6 +257,10 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     color: "text-violet-500",
     category: "core",
     isCore: true,
+    capabilities: [
+      { code: "rdv_consulaires", label: { fr: "RDV Consulaires", en: "Consular appointments" } },
+      { code: "agenda_diplomatique", label: { fr: "Agenda diplomatique", en: "Diplomatic agenda" } },
+    ],
   },
   [ModuleCode.profiles]: {
     code: ModuleCode.profiles,
@@ -391,6 +413,11 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     color: "text-blue-400",
     category: "tools",
     isCore: false,
+    capabilities: [
+      { code: "mail", label: { fr: "Messagerie", en: "Mail" } },
+      { code: "packages", label: { fr: "Colis", en: "Packages" } },
+      { code: "calls", label: { fr: "Appels", en: "Calls" } },
+    ],
   },
   [ModuleCode.meetings]: {
     code: ModuleCode.meetings,
@@ -730,6 +757,79 @@ export const CATEGORY_ORDER: ModuleCategory[] = ["core", "consular", "diplomatic
 /** Get all core modules (cannot be disabled) */
 export function getCoreModules(): ModuleDefinition[] {
   return Object.values(MODULE_REGISTRY).filter((m) => m.isCore);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SIDEBAR MODULE GROUPS — Sections du sidebar agent-web
+// Utilisé pour la configuration des modules (OrgModulesPanel)
+// ═══════════════════════════════════════════════════════════════
+
+export interface SidebarModuleGroup {
+  key: string;
+  label: LocalizedString;
+  icon: string;
+  modules: ModuleCodeValue[];
+}
+
+/**
+ * Groupement des modules par sections du sidebar agent-web.
+ * L'admin configure ces sections — elles correspondent exactement
+ * a ce que l'utilisateur voit dans le menu.
+ */
+export const SIDEBAR_MODULE_GROUPS: SidebarModuleGroup[] = [
+  {
+    key: "operations",
+    label: { fr: "Opérations", en: "Operations" },
+    icon: "Globe2",
+    modules: [
+      ModuleCode.intelligence,
+      ModuleCode.requests,
+      ModuleCode.communication,
+    ],
+  },
+  {
+    key: "ibureau",
+    label: { fr: "iBureau", en: "iBureau" },
+    icon: "Briefcase",
+    modules: [
+      ModuleCode.digital_mail,
+      ModuleCode.correspondance,
+      ModuleCode.documents,
+      ModuleCode.appointments,
+    ],
+  },
+  {
+    key: "gestion",
+    label: { fr: "Gestion", en: "Management" },
+    icon: "BarChart3",
+    modules: [
+      ModuleCode.team,
+      ModuleCode.finance,
+      ModuleCode.analytics,
+    ],
+  },
+  {
+    key: "communication",
+    label: { fr: "Communication", en: "Communication" },
+    icon: "Video",
+    modules: [
+      ModuleCode.meetings,
+    ],
+  },
+  {
+    key: "administration",
+    label: { fr: "Administration", en: "Administration" },
+    icon: "Settings",
+    modules: [
+      ModuleCode.settings,
+    ],
+  },
+];
+
+/** Get all default capabilities for a module */
+export function getDefaultCapabilities(moduleCode: ModuleCodeValue): string[] {
+  const def = MODULE_REGISTRY[moduleCode];
+  return def?.capabilities?.map((c) => c.code) ?? [];
 }
 
 // ═══════════════════════════════════════════════════════════════

@@ -254,25 +254,19 @@ export function SuperadminSidebar({
 			label: "⚙️ Contrôle",
 			items: [
 				{
-					title: t("superadmin.nav.positionsRoles", "Postes & Rôles"),
-					url: "/config/positions",
-					icon: Shield,
-					moduleCode: "roles",
-				},
-				{
-					title: t("superadmin.nav.modulesPermissions", "Modules & Permissions"),
-					url: "/config/modules",
-					icon: Layers,
-					moduleCode: "permissions",
-				},
-				{
-					title: t("superadmin.nav.representations", "Config représentations"),
+					title: t("superadmin.nav.representations", "Représentations"),
 					url: "/config/representations",
 					icon: Globe,
 					moduleCode: "org_config",
 				},
 				{
-					title: t("superadmin.nav.servicesConfig", "Config services"),
+					title: t("superadmin.nav.positionsRoles", "Postes & Profils"),
+					url: "/config/positions",
+					icon: Shield,
+					moduleCode: "roles",
+				},
+				{
+					title: t("superadmin.nav.servicesConfig", "Services"),
 					url: "/config/services",
 					icon: Cog,
 					moduleCode: "services_config",

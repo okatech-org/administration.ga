@@ -319,6 +319,15 @@ function DashboardRequests() {
 
 	return (
 		<div className="flex min-h-full flex-col gap-6 p-4 md:p-6">
+			{/* ── Back breadcrumb ─────────────────────────── */}
+			<div className="flex items-center gap-2 text-xs text-muted-foreground">
+				<Link to="/affaires-consulaires" className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer">
+					<svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+					Affaires Consulaires
+				</Link>
+				<span className="text-muted-foreground/30">/</span>
+				<span className="font-medium text-foreground/80">{t("dashboard.requests.title", "Demandes")}</span>
+			</div>
 			{/* ── Header ─────────────────────────────────── */}
 			<div className="flex items-center justify-between">
 				<div>

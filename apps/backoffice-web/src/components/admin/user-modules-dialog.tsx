@@ -248,23 +248,29 @@ export function UserModulesDialog({ user, open, onOpenChange }: UserModulesDialo
 								<Layers className="h-5 w-5 text-primary" />
 							</div>
 							<div>
-								<span>Gestion des modules</span>
+								<span>Accès Backoffice</span>
 								<p className="text-sm font-normal text-muted-foreground mt-0.5">
-									Configurer les accès de <strong className="text-foreground">{userName}</strong>
+									Sections visibles dans l'administration pour <strong className="text-foreground">{userName}</strong>
 								</p>
 							</div>
 						</DialogTitle>
-						<DialogDescription className="flex items-center gap-2 flex-wrap mt-2">
-							<Badge variant="outline" className="text-xs px-2.5 py-0.5">
-								{totalEnabled}/{totalModules} modules actifs
-							</Badge>
-							<Badge variant="secondary" className="text-xs px-2.5 py-0.5">
-								{userRole === "admin_system" ? "🛡️ Admin Système" :
-									userRole === "admin" ? "🔧 Admin" :
-									userRole === "intel_agent" ? "🕵️ Agent Intel" :
-									userRole === "education_agent" ? "📚 Agent Éducation" :
-									"👤 " + userRole}
-							</Badge>
+						<DialogDescription className="flex flex-col gap-2 mt-2">
+							<div className="flex items-center gap-2 flex-wrap">
+								<Badge variant="outline" className="text-xs px-2.5 py-0.5">
+									{totalEnabled}/{totalModules} modules actifs
+								</Badge>
+								<Badge variant="secondary" className="text-xs px-2.5 py-0.5">
+									{userRole === "admin_system" ? "🛡️ Admin Système" :
+										userRole === "admin" ? "🔧 Admin" :
+										userRole === "intel_agent" ? "🕵️ Agent Intel" :
+										userRole === "education_agent" ? "📚 Agent Éducation" :
+										"👤 " + userRole}
+								</Badge>
+							</div>
+							<div className="rounded-md bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-400">
+								Ces modules contrôlent uniquement l'accès au <strong>backoffice d'administration</strong>.
+								Les permissions de l'espace agent sont gérées via les <strong>postes</strong> de chaque organisation.
+							</div>
 						</DialogDescription>
 					</DialogHeader>
 				</div>

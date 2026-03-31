@@ -27,6 +27,7 @@ import {
 	YAxis,
 } from "recharts";
 import { useOrg } from "@/components/org/org-provider";
+import { useModuleAccess } from "@/components/shared/access-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +56,9 @@ export const Route = createFileRoute("/_app/payments")({
 function PaymentsDashboardPage() {
 	const { t, i18n } = useTranslation();
 	const { activeOrg } = useOrg();
+	const { hasMin: hasFinAccess } = useModuleAccess("finance");
+	const canCollect = hasFinAccess("editor");
+	const canManageFinance = hasFinAccess("admin");
 	const [dateRange, setDateRange] = useState("30");
 	const viewed = useRef(false);
 
@@ -219,9 +223,11 @@ function PaymentsDashboardPage() {
 							<SelectItem value="90">{t("payments.last90days")}</SelectItem>
 						</SelectContent>
 					</Select>
-					<Button variant="outline" size="icon">
-						<Download className="h-4 w-4" />
-					</Button>
+					{canManageFinance && (
+						<Button variant="outline" size="icon">
+							<Download className="h-4 w-4" />
+						</Button>
+					)}
 				</div>
 			</div>
 

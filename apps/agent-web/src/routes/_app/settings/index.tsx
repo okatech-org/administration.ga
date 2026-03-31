@@ -29,6 +29,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
+import { useModuleAccess } from "@/components/shared/access-gate";
 import {
 	SettingsDivider,
 	SettingsLayout,
@@ -109,6 +110,8 @@ function DashboardSettings() {
 	const { canDo, isReady: permissionsReady } = useCanDoTask(
 		activeOrgId ?? undefined,
 	);
+	const { hasMin: hasSettingsAccess } = useModuleAccess("settings");
+	const canAdminSettings = hasSettingsAccess("admin");
 
 	// ── Session data ──
 	const { data: session } = authClient.useSession();

@@ -17,7 +17,7 @@
 
 import { OrganizationType } from "./constants";
 import { TaskCode, type TaskCodeValue } from "./taskCodes";
-import { ModuleCode, ALL_MODULE_CODES, CORE_MODULE_CODES, type ModuleCodeValue } from "./moduleCodes";
+import { ModuleCode, ALL_MODULE_CODES, CORE_MODULE_CODES, type ModuleCodeValue, type ModuleAccessLevel } from "./moduleCodes";
 import type { LocalizedString } from "./validators";
 
 // ═══════════════════════════════════════════════════════════════
@@ -330,8 +330,158 @@ export const CONSULATE_MINISTRY_GROUPS: MinistryGroupTemplate[] = [
 ];
 
 // ═══════════════════════════════════════════════════════════════
+// PRESET → MODULE ACCESS MAPPING
+// Traduit chaque preset en profil moduleAccess (reader/editor/admin)
+// ═══════════════════════════════════════════════════════════════
+
+type MA = ModuleAccessEntry;
+const ma = (moduleCode: ModuleCodeValue, accessLevel: ModuleAccessLevel): MA => ({ moduleCode, accessLevel });
+
+/**
+ * Pour chaque preset, definir le profil moduleAccess associe.
+ * Le niveau d'acces reflète les matrices du prompt (Section 5.1-5.3).
+ */
+export const PRESET_MODULE_ACCESS: Record<string, MA[]> = {
+  direction: [
+    ma(ModuleCode.requests, "reader"),
+    ma(ModuleCode.documents, "editor"),
+    ma(ModuleCode.appointments, "editor"),
+    ma(ModuleCode.profiles, "admin"),
+    ma(ModuleCode.consular_registrations, "reader"),
+    ma(ModuleCode.civil_status, "reader"),
+    ma(ModuleCode.passports, "reader"),
+    ma(ModuleCode.visas, "reader"),
+    ma(ModuleCode.intelligence, "admin"),
+    ma(ModuleCode.digital_mail, "editor"),
+    ma(ModuleCode.correspondance, "admin"),
+    ma(ModuleCode.meetings, "editor"),
+    ma(ModuleCode.communication, "admin"),
+    ma(ModuleCode.team, "admin"),
+    ma(ModuleCode.finance, "reader"),
+    ma(ModuleCode.analytics, "admin"),
+    ma(ModuleCode.statistics, "admin"),
+    ma(ModuleCode.settings, "admin"),
+  ],
+  management: [
+    ma(ModuleCode.requests, "admin"),
+    ma(ModuleCode.documents, "editor"),
+    ma(ModuleCode.appointments, "editor"),
+    ma(ModuleCode.profiles, "editor"),
+    ma(ModuleCode.consular_registrations, "admin"),
+    ma(ModuleCode.civil_status, "admin"),
+    ma(ModuleCode.passports, "admin"),
+    ma(ModuleCode.visas, "admin"),
+    ma(ModuleCode.digital_mail, "editor"),
+    ma(ModuleCode.correspondance, "editor"),
+    ma(ModuleCode.meetings, "editor"),
+    ma(ModuleCode.communication, "editor"),
+    ma(ModuleCode.team, "editor"),
+    ma(ModuleCode.finance, "editor"),
+    ma(ModuleCode.analytics, "reader"),
+    ma(ModuleCode.statistics, "reader"),
+  ],
+  request_processing: [
+    ma(ModuleCode.requests, "editor"),
+    ma(ModuleCode.documents, "editor"),
+    ma(ModuleCode.appointments, "editor"),
+    ma(ModuleCode.profiles, "reader"),
+    ma(ModuleCode.consular_registrations, "editor"),
+    ma(ModuleCode.digital_mail, "editor"),
+  ],
+  validation: [
+    ma(ModuleCode.requests, "editor"),
+    ma(ModuleCode.documents, "editor"),
+    ma(ModuleCode.profiles, "reader"),
+    ma(ModuleCode.consular_registrations, "reader"),
+  ],
+  civil_status: [
+    ma(ModuleCode.civil_status, "admin"),
+    ma(ModuleCode.requests, "editor"),
+    ma(ModuleCode.documents, "editor"),
+    ma(ModuleCode.profiles, "reader"),
+  ],
+  passports: [
+    ma(ModuleCode.passports, "admin"),
+    ma(ModuleCode.requests, "editor"),
+    ma(ModuleCode.documents, "editor"),
+    ma(ModuleCode.profiles, "reader"),
+    ma(ModuleCode.appointments, "reader"),
+  ],
+  visas: [
+    ma(ModuleCode.visas, "admin"),
+    ma(ModuleCode.requests, "editor"),
+    ma(ModuleCode.documents, "editor"),
+    ma(ModuleCode.profiles, "reader"),
+    ma(ModuleCode.appointments, "reader"),
+  ],
+  finance: [
+    ma(ModuleCode.finance, "admin"),
+    ma(ModuleCode.analytics, "editor"),
+    ma(ModuleCode.statistics, "reader"),
+  ],
+  communication: [
+    ma(ModuleCode.communication, "editor"),
+    ma(ModuleCode.analytics, "reader"),
+  ],
+  reception: [
+    ma(ModuleCode.requests, "reader"),
+    ma(ModuleCode.appointments, "editor"),
+    ma(ModuleCode.profiles, "reader"),
+    ma(ModuleCode.digital_mail, "reader"),
+    ma(ModuleCode.meetings, "reader"),
+  ],
+  consultation: [
+    ma(ModuleCode.requests, "reader"),
+    ma(ModuleCode.documents, "reader"),
+    ma(ModuleCode.appointments, "reader"),
+    ma(ModuleCode.profiles, "reader"),
+    ma(ModuleCode.analytics, "reader"),
+    ma(ModuleCode.digital_mail, "reader"),
+  ],
+  intelligence: [
+    ma(ModuleCode.intelligence, "editor"),
+    ma(ModuleCode.profiles, "reader"),
+  ],
+  system_admin: [
+    ma(ModuleCode.settings, "admin"),
+    ma(ModuleCode.team, "admin"),
+    ma(ModuleCode.analytics, "admin"),
+    ma(ModuleCode.statistics, "reader"),
+  ],
+  meetings: [
+    ma(ModuleCode.meetings, "admin"),
+  ],
+};
+
+const ACCESS_LEVEL_VALUE: Record<ModuleAccessLevel, number> = { reader: 1, editor: 2, admin: 3 };
+
+/**
+ * Merge plusieurs presets en un profil moduleAccess unique.
+ * Quand un module apparait dans plusieurs presets, garde le niveau le plus eleve.
+ */
+export function resolveModuleAccessFromPresets(presets: string[]): MA[] {
+  const map = new Map<ModuleCodeValue, ModuleAccessLevel>();
+  for (const presetCode of presets) {
+    const entries = PRESET_MODULE_ACCESS[presetCode];
+    if (!entries) continue;
+    for (const entry of entries) {
+      const existing = map.get(entry.moduleCode);
+      if (!existing || ACCESS_LEVEL_VALUE[entry.accessLevel] > ACCESS_LEVEL_VALUE[existing]) {
+        map.set(entry.moduleCode, entry.accessLevel);
+      }
+    }
+  }
+  return Array.from(map.entries()).map(([moduleCode, accessLevel]) => ({ moduleCode, accessLevel }));
+}
+
+// ═══════════════════════════════════════════════════════════════
 // POSITION TEMPLATES — Job titles with role modules
 // ═══════════════════════════════════════════════════════════════
+
+export interface ModuleAccessEntry {
+  moduleCode: ModuleCodeValue;
+  accessLevel: ModuleAccessLevel;
+}
 
 export interface PositionTemplate {
   code: string;
@@ -343,6 +493,8 @@ export interface PositionTemplate {
   grade?: PositionGrade;
   ministryCode?: string;
   taskPresets: string[];
+  /** Acces modulaire par module (reader/editor/admin) — derive les task codes */
+  moduleAccess?: ModuleAccessEntry[];
   isRequired: boolean;
 }
 
@@ -546,6 +698,28 @@ export const ORGANIZATION_TEMPLATES: OrganizationTemplate[] = [
     modules: [...CORE_MODULE_CODES],
   },
 ];
+
+// ═══════════════════════════════════════════════════════════════
+// AUTO-POPULATE moduleAccess FROM taskPresets
+// Chaque template de position hérite automatiquement d'un profil
+// moduleAccess dérivé de ses presets, sauf si déjà défini.
+// ═══════════════════════════════════════════════════════════════
+
+function populateModuleAccess(positions: PositionTemplate[]): void {
+  for (const pos of positions) {
+    if (!pos.moduleAccess && pos.taskPresets.length > 0) {
+      pos.moduleAccess = resolveModuleAccessFromPresets(pos.taskPresets);
+    }
+  }
+}
+
+// Peupler toutes les listes de positions
+populateModuleAccess(EMBASSY_POSITIONS);
+populateModuleAccess(CONSULATE_POSITIONS);
+populateModuleAccess(HONORARY_CONSULATE_POSITIONS);
+populateModuleAccess(HIGH_COMMISSION_POSITIONS);
+populateModuleAccess(PERMANENT_MISSION_POSITIONS);
+populateModuleAccess(HIGH_REPRESENTATION_POSITIONS);
 
 // ═══════════════════════════════════════════════════════════════
 // TASK CATEGORY METADATA (icons + labels for UI)
