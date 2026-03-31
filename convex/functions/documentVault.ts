@@ -322,3 +322,108 @@ export const setExpiration = authMutation({
     return args.id;
   },
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ORG-LEVEL VAULT (for agent-web iDocument)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Get all vault documents for an organization */
+export const getOrgVault = authQuery({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    const documents = await ctx.db
+      .query("documents")
+      .withIndex("by_owner", (q) => q.eq("ownerId", args.orgId))
+      .collect();
+
+    const withUrls = await Promise.all(
+      documents.map(async (doc) => {
+        const filesWithUrls = await Promise.all(
+          doc.files.map(async (file) => ({
+            ...file,
+            url: await ctx.storage.getUrl(file.storageId),
+          })),
+        );
+        return { ...doc, files: filesWithUrls };
+      }),
+    );
+
+    return withUrls;
+  },
+});
+
+/** Get org vault stats */
+export const getOrgVaultStats = authQuery({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    const documents = await ctx.db
+      .query("documents")
+      .withIndex("by_owner", (q) => q.eq("ownerId", args.orgId))
+      .collect();
+
+    const byCategory: Record<string, number> = {};
+    const byStatus: Record<string, number> = {};
+    let totalSize = 0;
+
+    for (const doc of documents) {
+      const cat = doc.category ?? "uncategorized";
+      byCategory[cat] = (byCategory[cat] ?? 0) + 1;
+      byStatus[doc.status] = (byStatus[doc.status] ?? 0) + 1;
+      for (const file of doc.files) {
+        totalSize += file.sizeBytes;
+      }
+    }
+
+    return { totalDocuments: documents.length, totalSize, byCategory, byStatus };
+  },
+});
+
+/** Add a document to org vault */
+export const addToOrgVault = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    storageId: v.id("_storage"),
+    filename: v.string(),
+    mimeType: v.string(),
+    sizeBytes: v.number(),
+    label: v.optional(v.string()),
+    category: v.optional(documentTypeCategoryValidator),
+    documentType: v.optional(detailedDocumentTypeValidator),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    return await ctx.db.insert("documents", {
+      ownerId: args.orgId,
+      files: [{
+        storageId: args.storageId,
+        filename: args.filename,
+        mimeType: args.mimeType,
+        sizeBytes: args.sizeBytes,
+        uploadedAt: now,
+      }],
+      label: args.label,
+      category: args.category,
+      documentType: args.documentType,
+      status: DocumentStatus.Pending,
+      updatedAt: now,
+    });
+  },
+});
+
+/** Generate upload URL for org vault */
+export const generateOrgUploadUrl = authMutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/** Delete document from org vault */
+export const deleteFromOrgVault = authMutation({
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    const doc = await ctx.db.get(args.documentId);
+    if (!doc) throw error(ErrorCode.NOT_FOUND, "Document introuvable");
+    await ctx.db.delete(args.documentId);
+  },
+});

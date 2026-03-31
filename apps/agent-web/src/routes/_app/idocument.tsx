@@ -1,8 +1,16 @@
 "use client";
 
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { createFileRoute } from "@tanstack/react-router";
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
+import { useOrg } from "@/components/org/org-provider";
+import {
+	useAuthenticatedConvexQuery,
+	useConvexMutationQuery,
+} from "@/integrations/convex/hooks";
+import { toast } from "sonner";
 import {
 	Archive, Search, Upload, Shield, Clock, Lock, Landmark, Users2, Scale,
 	Building2, FileText, Folder, FolderOpen, FolderPlus, Hash,
@@ -34,15 +42,16 @@ interface DocItem {
 	title: string;
 	excerpt: string;
 	author: string;
-	authorInitials: string;
+	authorInitials?: string;
 	updatedAt: string;
 	updatedAtTs: number;
 	status: DocStatus;
 	tags: string[];
 	version: number;
-	folderId: string;
-	archiveCategorySlug?: string;
+	folderId: string | null;
+	archiveCategorySlug?: string | null;
 	mimeType?: string;
+	url?: string | null;
 }
 
 interface FolderItem {
@@ -660,8 +669,46 @@ function IDocumentPage() {
 	const [statusFilter, setStatusFilter] = useState<DocStatus | "all">("all");
 	const [sortBy, setSortBy] = useState("date");
 	const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-	const [documents] = useState<DocItem[]>(MOCK_DOCUMENTS);
-	const [folders] = useState<FolderItem[]>(DEFAULT_FOLDERS);
+	const { activeOrgId } = useOrg();
+
+	// Convex queries — données réelles
+	const { data: rawDocuments = [] } = useAuthenticatedConvexQuery(
+		api.functions.documentVault.getOrgVault,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+
+	// Upload mutation
+	const { mutateAsync: generateUploadUrl } = useConvexMutationQuery(
+		api.functions.documentVault.generateOrgUploadUrl,
+	);
+	const { mutateAsync: addToVault } = useConvexMutationQuery(
+		api.functions.documentVault.addToOrgVault,
+	);
+	const { mutateAsync: deleteDoc } = useConvexMutationQuery(
+		api.functions.documentVault.deleteFromOrgVault,
+	);
+
+	// Mapper les données Convex → types UI
+	const documents = useMemo((): DocItem[] =>
+		(rawDocuments as any[]).map((doc) => ({
+			id: doc._id,
+			title: doc.label ?? doc.files?.[0]?.filename ?? "Document",
+			excerpt: "",
+			author: "",
+			updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString("fr-FR") : "",
+			updatedAtTs: doc.updatedAt ?? doc._creationTime,
+			status: (doc.status === "validated" ? "approved" : doc.status === "pending" ? "draft" : doc.status) as DocStatus,
+			tags: [],
+			version: 1,
+			folderId: null,
+			archiveCategorySlug: doc.category ?? null,
+			mimeType: doc.files?.[0]?.mimeType ?? "application/pdf",
+			url: doc.files?.[0]?.url,
+		})),
+		[rawDocuments],
+	);
+
+	const folders = useMemo((): FolderItem[] => [...DEFAULT_FOLDERS], []);
 
 	// Dialog states
 	const [shareDialogOpen, setShareDialogOpen] = useState(false);
