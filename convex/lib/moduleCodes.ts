@@ -686,6 +686,34 @@ export function getTasksForModuleAccess(
   return mapping[level] ?? [];
 }
 
+/**
+ * Résout l'ensemble complet des task codes depuis un tableau moduleAccess.
+ *
+ * Utilisé par getTasksForMembership() pour dériver les permissions
+ * d'un poste depuis sa configuration module×niveau.
+ *
+ * Ajoute automatiquement les tâches transversales implicites
+ * (org.view, schedules.view) présentes dans tous les profils.
+ */
+export function resolveTaskCodesFromModuleAccess(
+  moduleAccess: Array<{ moduleCode: string; accessLevel: ModuleAccessLevel }>,
+): Set<string> {
+  const tasks = new Set<string>();
+
+  // Tâches transversales implicites pour tout membre actif
+  tasks.add("org.view");
+  tasks.add("schedules.view");
+
+  for (const entry of moduleAccess) {
+    const moduleTasks = getTasksForModuleAccess(entry.moduleCode, entry.accessLevel);
+    for (const task of moduleTasks) {
+      tasks.add(task);
+    }
+  }
+
+  return tasks;
+}
+
 /** Category labels for UI */
 export const CATEGORY_LABELS: Record<ModuleCategory, LocalizedString> = {
   core: { fr: "Modules fondamentaux", en: "Core modules" },

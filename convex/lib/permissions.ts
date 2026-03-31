@@ -3,7 +3,7 @@ import type { Doc } from "../_generated/dataModel";
 import { error, ErrorCode } from "./errors";
 import { UserRole, PermissionEffect } from "./constants";
 import type { TaskCodeValue } from "./taskCodes";
-import { ALL_MODULE_CODES, type ModuleCodeValue } from "./moduleCodes";
+import { ALL_MODULE_CODES, type ModuleCodeValue, type ModuleAccessLevel, resolveTaskCodesFromModuleAccess } from "./moduleCodes";
 
 // ============================================
 // Types
@@ -28,10 +28,11 @@ export function isSuperAdmin(user: Doc<"users">): boolean {
 
 /**
  * Resolve all task codes for a membership via:
- *   membership.positionId → position.tasks (stored directly in DB)
+ *   1. Si position.moduleAccess existe → dérive les tasks via MODULE_ACCESS_TASKS
+ *   2. Sinon → fallback sur position.tasks[] (backward compat)
  *
- * Tasks are stored at creation time from presets. No runtime resolution needed.
- * No fallback. If no position or no tasks → empty set → no access.
+ * Le point pivot : changer la résolution ici impacte TOUT le système
+ * (canDoTask, useCanDoTask, sidebar, pages) automatiquement.
  */
 export async function getTasksForMembership(
   ctx: AuthContext,
@@ -40,11 +41,24 @@ export async function getTasksForMembership(
   if (!membership.positionId) return new Set();
 
   const position = await ctx.db.get(membership.positionId);
-  if (!position || !position.isActive || !position.tasks) {
+  if (!position || !position.isActive) {
     return new Set();
   }
 
-  return new Set(position.tasks);
+  // Priorité 1 : moduleAccess (nouveau système structuré)
+  const moduleAccess = (position as any).moduleAccess as
+    Array<{ moduleCode: string; accessLevel: ModuleAccessLevel }> | undefined;
+
+  if (moduleAccess && moduleAccess.length > 0) {
+    return resolveTaskCodesFromModuleAccess(moduleAccess);
+  }
+
+  // Priorité 2 : tasks[] (legacy, backward compat)
+  if (position.tasks && position.tasks.length > 0) {
+    return new Set(position.tasks);
+  }
+
+  return new Set();
 }
 
 // ============================================

@@ -15,6 +15,7 @@ import {
   type OrgTemplateType,
 } from "../lib/roles";
 import { ALL_TASK_CODES, TASK_RISK, type TaskCodeValue, type TaskCategory, taskCodeValidator } from "../lib/taskCodes";
+import { moduleCodeValidator, accessLevelValidator, type ModuleCodeValue, CORE_MODULE_CODES } from "../lib/moduleCodes";
 
 // ═══════════════════════════════════════════════════════════════
 // QUERIES — Static catalogs
@@ -292,7 +293,8 @@ export const resetToTemplate = mutation({
 // ─── Position CRUD ──────────────────────────────────────
 
 /**
- * Create a new position in an organization
+ * Create a new position in an organization.
+ * Accepte moduleAccess (nouveau) ou tasks (legacy).
  */
 export const createPosition = mutation({
   args: {
@@ -304,6 +306,10 @@ export const createPosition = mutation({
     grade: v.optional(v.string()),
     ministryGroupId: v.optional(v.id("ministryGroups")),
     tasks: v.array(taskCodeValidator),
+    moduleAccess: v.optional(v.array(v.object({
+      moduleCode: moduleCodeValidator,
+      accessLevel: accessLevelValidator,
+    }))),
     isRequired: v.optional(v.boolean()),
     isUnique: v.optional(v.boolean()),
   },
@@ -342,7 +348,9 @@ export const createPosition = mutation({
 });
 
 /**
- * Update an existing position
+ * Update an existing position.
+ * Accepte moduleAccess (nouveau système) ou tasks (legacy).
+ * Si moduleAccess est fourni, il prend la priorité sur tasks.
  */
 export const updatePosition = mutation({
   args: {
@@ -353,6 +361,10 @@ export const updatePosition = mutation({
     grade: v.optional(v.string()),
     ministryGroupId: v.optional(v.id("ministryGroups")),
     tasks: v.optional(v.array(taskCodeValidator)),
+    moduleAccess: v.optional(v.array(v.object({
+      moduleCode: moduleCodeValidator,
+      accessLevel: accessLevelValidator,
+    }))),
     isRequired: v.optional(v.boolean()),
     isActive: v.optional(v.boolean()),
     isUnique: v.optional(v.boolean()),
@@ -604,8 +616,6 @@ export const updateMinistryGroup = mutation({
 });
 
 // ─── Organization Module Management ────────────────────
-
-import { moduleCodeValidator, type ModuleCodeValue, CORE_MODULE_CODES } from "../lib/moduleCodes";
 
 /**
  * Update the active modules for an organization

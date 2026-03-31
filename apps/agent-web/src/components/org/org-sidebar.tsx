@@ -15,6 +15,7 @@ import {
 	Settings2,
 	Sun,
 	Users,
+	Eye,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
@@ -28,6 +29,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useCanDoTask } from "@/hooks/useCanDoTask";
+import { useModuleAccessLevel } from "@/hooks/useModuleAccessLevel";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { useOrg } from "./org-provider";
@@ -38,6 +40,7 @@ interface NavItem {
 	url: string;
 	icon: React.ElementType;
 	requires?: string; // task code required to see this item
+	moduleCode?: string; // module code for access level detection
 }
 
 interface NavSection {
@@ -84,6 +87,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 	const { theme, setTheme } = useTheme();
 	const { activeOrgId } = useOrg();
 	const { canDo, isReady } = useCanDoTask(activeOrgId ?? undefined);
+	const { isReadOnly } = useModuleAccessLevel(activeOrgId ?? undefined);
 
 	const navSections: NavSection[] = [
 		{
@@ -95,24 +99,24 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 		{
 			label: "Opérations",
 			items: [
-				{ title: "Affaires Diplomatiques", url: "/affaires-diplomatiques", icon: Globe2 },
-				{ title: "Affaires Consulaires", url: "/affaires-consulaires", icon: Users, requires: "requests.view" },
-				{ title: "Gestion Actualités", url: "/posts", icon: Newspaper, requires: "communication.publish" },
+				{ title: "Affaires Diplomatiques", url: "/affaires-diplomatiques", icon: Globe2, moduleCode: "intelligence" },
+				{ title: "Affaires Consulaires", url: "/affaires-consulaires", icon: Users, requires: "requests.view", moduleCode: "requests" },
+				{ title: "Gestion Actualités", url: "/posts", icon: Newspaper, requires: "communication.publish", moduleCode: "communication" },
 			],
 		},
 		{
 			label: "iBureau",
 			items: [
-				{ title: "iBoîte", url: "/iboite", icon: Mail },
-				{ title: "iCorrespondance", url: "/icorrespondance", icon: FolderOpen },
-				{ title: "iDocument", url: "/idocument", icon: FileText },
-				{ title: "iAgenda", url: "/iagenda", icon: Calendar },
+				{ title: "iBoîte", url: "/iboite", icon: Mail, moduleCode: "digital_mail" },
+				{ title: "iCorrespondance", url: "/icorrespondance", icon: FolderOpen, moduleCode: "correspondance" },
+				{ title: "iDocument", url: "/idocument", icon: FileText, moduleCode: "documents" },
+				{ title: "iAgenda", url: "/iagenda", icon: Calendar, moduleCode: "appointments" },
 			],
 		},
 		{
 			label: "Administration",
 			items: [
-				{ title: "Paramètres", url: "/settings", icon: Settings2 },
+				{ title: "Paramètres", url: "/settings", icon: Settings2, moduleCode: "settings" },
 			],
 		},
 	];
@@ -201,6 +205,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 							{/* Items */}
 							{section.items.map((item) => {
 								const active = isActive(item.url);
+								const readOnly = item.moduleCode ? isReadOnly(item.moduleCode) : false;
 								const button = (
 									<Button
 										asChild
@@ -214,6 +219,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 											active
 												? "bg-primary/10 text-primary border border-primary/20 font-semibold hover:bg-primary/15 hover:text-primary"
 												: "text-muted-foreground hover:text-foreground hover:bg-muted",
+											readOnly && "opacity-70",
 										)}
 									>
 										<Link to={item.url}>
@@ -221,6 +227,10 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 											<SidebarText isExpanded={isExpanded}>
 												{item.title}
 											</SidebarText>
+											{/* Indicateur lecture seule */}
+											{isExpanded && readOnly && (
+												<Eye className="size-3 text-blue-500/60 ml-auto shrink-0" />
+											)}
 											{!isExpanded && (
 												<span className="sr-only">{item.title}</span>
 											)}
