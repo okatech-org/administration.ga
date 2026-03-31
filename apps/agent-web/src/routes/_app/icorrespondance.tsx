@@ -730,15 +730,38 @@ function ICorrespondancePage() {
 		}
 	}, [selectedDossierId, rejectPieceMutation]);
 
-	// ─── Convex queries ──────────────────────────────────────
+	// ─── Convex queries — 4 espaces exclusifs ──────────────────
 	const { data: rawFolders = [] } = useAuthenticatedConvexQuery(
 		api.functions.correspondance.getFolders,
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
-	const { data: rawItems = [] } = useAuthenticatedConvexQuery(
-		api.functions.correspondance.getItems,
+	const { data: brouillons = [] } = useAuthenticatedConvexQuery(
+		api.functions.correspondanceCore.getBrouillons,
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
+	const { data: envoyes = [] } = useAuthenticatedConvexQuery(
+		api.functions.correspondanceCore.getEnvoyes,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+	const { data: recus = [] } = useAuthenticatedConvexQuery(
+		api.functions.correspondanceCore.getRecus,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+	const { data: corbeille = [] } = useAuthenticatedConvexQuery(
+		api.functions.correspondanceCore.getCorbeille,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+	const { data: espaceCounts } = useAuthenticatedConvexQuery(
+		api.functions.correspondanceCore.getEspaceCounts,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+	// Combiner toutes les données des 4 espaces
+	const rawItems = useMemo(() => [
+		...(brouillons as any[]),
+		...(envoyes as any[]),
+		...(recus as any[]),
+		...(corbeille as any[]),
+	], [brouillons, envoyes, recus, corbeille]);
 
 	// ─── Convex mutations ────────────────────────────────────
 	const createFolderMutation = useConvexMutationQuery(
