@@ -6,7 +6,7 @@
  */
 
 import { createFileRoute, useNavigate, useLocation } from "@tanstack/react-router";
-import { Briefcase, Calendar, ClipboardList, IdCard, Users } from "lucide-react";
+import { ClipboardList, IdCard, Users } from "lucide-react";
 import { useMemo } from "react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
@@ -18,8 +18,6 @@ export const Route = createFileRoute("/_app/affaires-consulaires")({
 const TABS = [
 	{ id: "demandes", label: "Demandes", icon: ClipboardList, href: "/requests" },
 	{ id: "registre", label: "Registre Consulaire", icon: IdCard, href: "/consular-registry" },
-	{ id: "rendezvous", label: "Rendez-vous", icon: Calendar, href: "/appointments" },
-	{ id: "services", label: "Services", icon: Briefcase, href: "/services" },
 ] as const;
 
 function AffairesConsulairesPage() {
@@ -31,8 +29,6 @@ function AffairesConsulairesPage() {
 		const path = location.pathname;
 		if (path.startsWith("/requests")) return "demandes";
 		if (path.startsWith("/consular-registry")) return "registre";
-		if (path.startsWith("/appointments")) return "rendezvous";
-		if (path.startsWith("/services")) return "services";
 		return null; // On est sur /affaires-consulaires sans sous-route
 	}, [location.pathname]);
 
