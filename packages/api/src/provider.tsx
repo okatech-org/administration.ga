@@ -68,6 +68,7 @@ export default function AppConvexProvider({
 					queries: {
 						queryKeyHashFn: convexQueryClient.hashFn(),
 						queryFn: convexQueryClient.queryFn(),
+						refetchOnWindowFocus: false,
 					},
 				},
 			}),
