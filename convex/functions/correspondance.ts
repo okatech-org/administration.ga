@@ -1,8 +1,25 @@
 /**
- * iCorrespondance — Convex Functions
+ * iCorrespondance — Convex Functions (Legacy + CRUD de base)
  *
- * CRUD complet pour les dossiers, items et workflow
- * de correspondance diplomatique officielle.
+ * ATTENTION : Les fonctions métier refondues (envoi, espaces, approbation
+ * hiérarchique) sont dans `correspondanceCore.ts`. Ce fichier contient :
+ * - CRUD dossiers (createFolder, renameFolder, deleteFolder, getFolders)
+ * - CRUD items (createItem, updateItem, deleteItem, getItem, getItems)
+ * - Upload (generateUploadUrl, addAttachment)
+ * - Expéditeur/Destinataires (getCurrentUserSenderInfo, listAvailableRecipients)
+ * - Recherche (searchItems)
+ * - Legacy workflow (submitForApproval, approveItem, rejectItem, markAsSent)
+ *
+ * Les fonctions suivantes sont DÉPRÉCIÉES et remplacées par correspondanceCore.ts :
+ * - sendCorrespondance → correspondanceCore.sendCorrespondance
+ * - syncRecipientStatus → correspondanceCore._syncRecipientStatus (interne)
+ * - registerIncoming → correspondanceCore.registerIncoming
+ * - assignCorrespondance → correspondanceCore.assignCorrespondance
+ * - respondToCorrespondance → correspondanceCore.respondToCorrespondance
+ * - approveChainStep → correspondanceCore.approveAndSend
+ * - rejectChainStep → correspondanceCore.rejectCorrespondance
+ * - submitForChainApproval → correspondanceCore.sendCorrespondance (intégré)
+ * - resolveApprovalChain → correspondanceCore.sendCorrespondance (intégré)
  */
 
 import { v } from "convex/values";
