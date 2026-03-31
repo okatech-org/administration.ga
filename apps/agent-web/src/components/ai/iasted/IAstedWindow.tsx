@@ -1,15 +1,15 @@
 /**
- * IAstedWindow — Fenêtre unifiée "Conscience Numérique"
+ * IAstedWindow — Fenêtre flottante style WhatsApp Mobile
  *
- * 4 onglets : IA | iCom | Appels | Réunions
- * Remplace AdminAIAssistant dans le layout.
+ * Navigation en bas (5 onglets), contenu principal au centre,
+ * header compact en haut. Bouton [+] pour passer en plein écran.
  */
 
-import { Bot, Contact, MessageSquare, Minus, Phone, Plus, ShieldCheck, Video } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { Bot, Contact, Maximize2, MessageSquare, Minus, Phone, Plus, ShieldCheck, Video } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/components/org/org-provider";
 import { useAdminAIChat } from "../useAdminAIChat";
@@ -23,21 +23,37 @@ import { IAstedContactTab } from "./IAstedContactTab";
 import { IAstedCallsTab } from "./IAstedCallsTab";
 import { IAstedMeetingsTab } from "./IAstedMeetingsTab";
 
+const TABS = [
+	{ id: "ia", label: "IA", icon: Bot },
+	{ id: "ichat", label: "iChat", icon: MessageSquare },
+	{ id: "icontact", label: "Contact", icon: Contact },
+	{ id: "calls", label: "Appels", icon: Phone },
+	{ id: "meetings", label: "Vidéo", icon: Video },
+] as const;
+
+type TabId = (typeof TABS)[number]["id"];
+
 export function IAstedWindow() {
 	const [open, setOpen] = useState(false);
-	const [activeTab, setActiveTab] = useState("ia");
+	const [activeTab, setActiveTab] = useState<TabId>("ia");
 	const { activeOrg } = useOrg();
+	const navigate = useNavigate();
 
 	// Hooks IA existants
 	const chat = useAdminAIChat();
 	const voice = useAdminVoiceChat();
+
+	const handleExpand = () => {
+		setOpen(false);
+		navigate({ to: "/iasted" });
+	};
 
 	return (
 		<>
 			{/* FAB flottant */}
 			<IAstedFAB isOpen={open} onClick={() => setOpen(true)} />
 
-			{/* Fenêtre principale */}
+			{/* Fenêtre flottante */}
 			<AnimatePresence>
 				{open && (
 					<motion.div
@@ -53,85 +69,90 @@ export function IAstedWindow() {
 							"bg-background border flex flex-col overflow-hidden",
 						)}
 					>
-						{/* ── Header ── */}
-						<div className="border-b px-4 py-3 flex items-center justify-between shrink-0 bg-emerald-600 text-white">
-							<div className="flex items-center gap-3">
-								<div className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center">
-									<ShieldCheck className="h-5 w-5 text-white" />
+						{/* ── Header compact ── */}
+						<div className="border-b px-3 py-2 flex items-center justify-between shrink-0 bg-emerald-600 text-white">
+							<div className="flex items-center gap-2.5">
+								<div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
+									<ShieldCheck className="h-4 w-4 text-white" />
 								</div>
 								<div>
-									<h2 className="text-sm font-semibold">iAsted</h2>
-									<p className="text-[10px] text-white/70">
-										{activeOrg?.name ?? "Consulat"} — Conscience Numérique
+									<h2 className="text-xs font-semibold leading-tight">iAsted</h2>
+									<p className="text-[9px] text-white/60 leading-tight">
+										{activeOrg?.name ?? "Conscience Numérique"}
 									</p>
 								</div>
 							</div>
-							<div className="flex items-center gap-1">
+							<div className="flex items-center gap-0.5">
 								{activeTab === "ia" && voice.isAvailable && (
 									<VoiceButton
 										isOpen={voice.isOpen}
 										onClick={() => voice.isOpen ? voice.closeOverlay() : voice.openOverlay()}
-										className="text-white hover:bg-white/20"
+										className="h-7 w-7 text-white hover:bg-white/20"
 									/>
 								)}
 								{activeTab === "ia" && (
 									<Button variant="ghost" size="icon" onClick={chat.newConversation}
-										title="Nouvelle conversation" className="h-8 w-8 text-white hover:bg-white/20">
-										<Plus className="h-4 w-4" />
+										title="Nouvelle conversation" className="h-7 w-7 text-white hover:bg-white/20">
+										<Plus className="h-3.5 w-3.5" />
 									</Button>
 								)}
+								<Button variant="ghost" size="icon" onClick={handleExpand}
+									title="Plein écran" className="h-7 w-7 text-white hover:bg-white/20">
+									<Maximize2 className="h-3.5 w-3.5" />
+								</Button>
 								<Button variant="ghost" size="icon" onClick={() => setOpen(false)}
-									title="Fermer" className="h-8 w-8 text-white hover:bg-white/20">
-									<Minus className="h-4 w-4" />
+									title="Réduire" className="h-7 w-7 text-white hover:bg-white/20">
+									<Minus className="h-3.5 w-3.5" />
 								</Button>
 							</div>
 						</div>
 
-						{/* ── Onglets ── */}
-						<Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-							<TabsList className="grid grid-cols-5 rounded-none border-b bg-muted/30 h-10 px-0.5 shrink-0">
-								<TabsTrigger value="ia" className="text-[10px] gap-1 data-[state=active]:bg-background rounded-lg px-1">
-									<Bot className="h-3.5 w-3.5" />
-									<span className="hidden sm:inline">IA</span>
-								</TabsTrigger>
-								<TabsTrigger value="ichat" className="text-[10px] gap-1 data-[state=active]:bg-background rounded-lg px-1">
-									<MessageSquare className="h-3.5 w-3.5" />
-									<span className="hidden sm:inline">iChat</span>
-								</TabsTrigger>
-								<TabsTrigger value="icontact" className="text-[10px] gap-1 data-[state=active]:bg-background rounded-lg px-1">
-									<Contact className="h-3.5 w-3.5" />
-									<span className="hidden sm:inline">iContact</span>
-								</TabsTrigger>
-								<TabsTrigger value="calls" className="text-[10px] gap-1 data-[state=active]:bg-background rounded-lg px-1">
-									<Phone className="h-3.5 w-3.5" />
-									<span className="hidden sm:inline">Appels</span>
-								</TabsTrigger>
-								<TabsTrigger value="meetings" className="text-[10px] gap-1 data-[state=active]:bg-background rounded-lg px-1">
-									<Video className="h-3.5 w-3.5" />
-									<span className="hidden sm:inline">Réunions</span>
-								</TabsTrigger>
-							</TabsList>
+						{/* ── Contenu principal ── */}
+						<div className="flex-1 flex flex-col overflow-hidden">
+							{activeTab === "ia" && <IAstedChatTab chat={chat} voice={voice} />}
+							{activeTab === "ichat" && <IAstedInstantChatTab />}
+							{activeTab === "icontact" && <IAstedContactTab />}
+							{activeTab === "calls" && <IAstedCallsTab />}
+							{activeTab === "meetings" && <IAstedMeetingsTab />}
+						</div>
 
-							<TabsContent value="ia" className="flex-1 flex flex-col overflow-hidden mt-0">
-								<IAstedChatTab chat={chat} voice={voice} />
-							</TabsContent>
-
-							<TabsContent value="ichat" className="flex-1 flex flex-col overflow-hidden mt-0">
-								<IAstedInstantChatTab />
-							</TabsContent>
-
-							<TabsContent value="icontact" className="flex-1 flex flex-col overflow-hidden mt-0">
-								<IAstedContactTab />
-							</TabsContent>
-
-							<TabsContent value="calls" className="flex-1 flex flex-col overflow-hidden mt-0">
-								<IAstedCallsTab />
-							</TabsContent>
-
-							<TabsContent value="meetings" className="flex-1 flex flex-col overflow-hidden mt-0">
-								<IAstedMeetingsTab />
-							</TabsContent>
-						</Tabs>
+						{/* ── Navigation en bas (style WhatsApp) ── */}
+						<div className="border-t bg-card shrink-0">
+							<div className="flex items-center justify-around py-1.5">
+								{TABS.map((tab) => {
+									const Icon = tab.icon;
+									const isActive = activeTab === tab.id;
+									return (
+										<button
+											key={tab.id}
+											type="button"
+											onClick={() => setActiveTab(tab.id)}
+											className={cn(
+												"flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[52px]",
+												isActive
+													? "text-emerald-500"
+													: "text-muted-foreground hover:text-foreground",
+											)}
+										>
+											<Icon className={cn("h-5 w-5", isActive && "text-emerald-500")} />
+											<span className={cn(
+												"text-[9px] font-medium leading-none",
+												isActive && "text-emerald-500",
+											)}>
+												{tab.label}
+											</span>
+											{isActive && (
+												<motion.div
+													layoutId="iasted-tab-indicator"
+													className="h-0.5 w-4 bg-emerald-500 rounded-full mt-0.5"
+													transition={{ type: "spring", stiffness: 400, damping: 30 }}
+												/>
+											)}
+										</button>
+									);
+								})}
+							</div>
+						</div>
 					</motion.div>
 				)}
 			</AnimatePresence>
