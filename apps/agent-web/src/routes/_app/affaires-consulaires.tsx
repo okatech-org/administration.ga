@@ -6,7 +6,7 @@
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { ClipboardList, IdCard, Users } from "lucide-react";
+import { Briefcase, Calendar, ClipboardList, IdCard, Users } from "lucide-react";
 import { useState } from "react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,12 @@ const RequestsPage = lazy(() =>
 const ConsularRegistryPage = lazy(() =>
 	import("./consular-registry/index").then((m) => ({ default: m.Route.options.component as React.ComponentType })),
 );
+const AppointmentsPage = lazy(() =>
+	import("./appointments/index").then((m) => ({ default: m.Route.options.component as React.ComponentType })),
+);
+const ServicesPage = lazy(() =>
+	import("./services/index").then((m) => ({ default: m.Route.options.component as React.ComponentType })),
+);
 
 export const Route = createFileRoute("/_app/affaires-consulaires")({
 	component: AffairesConsulairesPage,
@@ -29,6 +35,8 @@ export const Route = createFileRoute("/_app/affaires-consulaires")({
 const TABS = [
 	{ id: "demandes", label: "Demandes", icon: ClipboardList },
 	{ id: "registre", label: "Registre Consulaire", icon: IdCard },
+	{ id: "rendezvous", label: "Rendez-vous", icon: Calendar },
+	{ id: "services", label: "Services", icon: Briefcase },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -93,6 +101,8 @@ function AffairesConsulairesPage() {
 				>
 					{activeTab === "demandes" && <RequestsPage />}
 					{activeTab === "registre" && <ConsularRegistryPage />}
+					{activeTab === "rendezvous" && <AppointmentsPage />}
+					{activeTab === "services" && <ServicesPage />}
 				</Suspense>
 			</div>
 		</div>
