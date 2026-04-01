@@ -9,6 +9,7 @@ function createWindow(): void {
     minWidth: 900,
     minHeight: 600,
     title: "Diplomate.ga — Portail Agent Consulaire",
+    backgroundColor: "#1A1A1A",
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.js"),
       sandbox: false,

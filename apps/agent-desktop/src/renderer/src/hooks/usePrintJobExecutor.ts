@@ -11,11 +11,13 @@
  */
 
 import { useCallback } from "react"
-import { useQuery, useMutation } from "convex/react"
+import { useConvex, useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import type { Id } from "@convex/_generated/dataModel"
 import { toast } from "sonner"
 import type { usePrinter } from "./usePrinter"
+import { renderDesignToBmp } from "../lib/card-renderer"
+import type { CardDesign } from "../lib/card-types"
 
 type PrinterHook = ReturnType<typeof usePrinter>
 
@@ -25,6 +27,7 @@ interface UsePrintJobExecutorOptions {
 }
 
 export function usePrintJobExecutor({ printer, orgId }: UsePrintJobExecutorOptions) {
+  const convex = useConvex()
   const updateStatus = useMutation(api.functions.printJobs.updateStatus)
 
   // Fetch all jobs to get fieldValues when executing
@@ -54,18 +57,44 @@ export function usePrintJobExecutor({ printer, orgId }: UsePrintJobExecutorOptio
           status: "printing",
         })
 
-        // 2. For now, we create a simple placeholder BMP
-        // TODO: Full Konva rendering from stored design elements
-        // This requires loading the full design with imageData from cardDesigns.getById
-        // then rendering each element on an off-screen Konva Stage
-        // For now, we send a minimal white BMP to test the pipeline
+        // 2. Load the full design from Convex (imperatively via client.query)
+        let designData: CardDesign | null = null
+        try {
+          const fullDesign = await convex.query(
+            api.functions.cardDesigns.getById,
+            { designId: job.designId },
+          )
+          if (fullDesign) {
+            designData = fullDesign as unknown as CardDesign
+          }
+        } catch (err) {
+          console.warn("[PrintJobExecutor] Could not load design:", err)
+        }
 
-        const bmpBuffer = createMinimalBmp(1016, 648)
+        // 3. Render to BMP
+        let frontBuffer: ArrayBuffer
+        let backBuffer: ArrayBuffer | undefined
 
-        // 3. Send to printer
+        if (designData && designData.frontElements?.length > 0) {
+          // Real Konva rendering
+          const result = await renderDesignToBmp(
+            designData,
+            job.fieldValues as Record<string, string> | undefined,
+          )
+          frontBuffer = result.front
+          backBuffer = result.back
+        } else {
+          // Fallback: white card (design not available)
+          frontBuffer = createMinimalBmp(1016, 648)
+          if (job.printDuplex) {
+            backBuffer = createMinimalBmp(1016, 648)
+          }
+        }
+
+        // 4. Send to printer
         const result = await printer.printFromBuffer({
-          frontBuffer: bmpBuffer,
-          backBuffer: job.printDuplex ? bmpBuffer : undefined,
+          frontBuffer,
+          backBuffer,
           duplex: job.printDuplex,
         })
 
@@ -104,7 +133,7 @@ export function usePrintJobExecutor({ printer, orgId }: UsePrintJobExecutorOptio
         })
       }
     },
-    [jobs, printer, updateStatus],
+    [jobs, printer, updateStatus, convex],
   )
 
   return { executeJob }

@@ -15,7 +15,6 @@ import { Route as AppStatisticsRouteImport } from './routes/_app/statistics'
 import { Route as AppPaymentsRouteImport } from './routes/_app/payments'
 import { Route as AppIdocumentRouteImport } from './routes/_app/idocument'
 import { Route as AppIcorrespondanceRouteImport } from './routes/_app/icorrespondance'
-import { Route as AppIcomRouteImport } from './routes/_app/icom'
 import { Route as AppIboiteRouteImport } from './routes/_app/iboite'
 import { Route as AppIastedRouteImport } from './routes/_app/iasted'
 import { Route as AppIarchiveRouteImport } from './routes/_app/iarchive'
@@ -69,11 +68,6 @@ const AppIdocumentRoute = AppIdocumentRouteImport.update({
 const AppIcorrespondanceRoute = AppIcorrespondanceRouteImport.update({
   id: '/icorrespondance',
   path: '/icorrespondance',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppIcomRoute = AppIcomRouteImport.update({
-  id: '/icom',
-  path: '/icom',
   getParentRoute: () => AppRoute,
 } as any)
 const AppIboiteRoute = AppIboiteRouteImport.update({
@@ -217,7 +211,6 @@ export interface FileRoutesByFullPath {
   '/iarchive': typeof AppIarchiveRoute
   '/iasted': typeof AppIastedRoute
   '/iboite': typeof AppIboiteRoute
-  '/icom': typeof AppIcomRoute
   '/icorrespondance': typeof AppIcorrespondanceRoute
   '/idocument': typeof AppIdocumentRoute
   '/payments': typeof AppPaymentsRoute
@@ -249,7 +242,6 @@ export interface FileRoutesByTo {
   '/iarchive': typeof AppIarchiveRoute
   '/iasted': typeof AppIastedRoute
   '/iboite': typeof AppIboiteRoute
-  '/icom': typeof AppIcomRoute
   '/icorrespondance': typeof AppIcorrespondanceRoute
   '/idocument': typeof AppIdocumentRoute
   '/payments': typeof AppPaymentsRoute
@@ -284,7 +276,6 @@ export interface FileRoutesById {
   '/_app/iarchive': typeof AppIarchiveRoute
   '/_app/iasted': typeof AppIastedRoute
   '/_app/iboite': typeof AppIboiteRoute
-  '/_app/icom': typeof AppIcomRoute
   '/_app/icorrespondance': typeof AppIcorrespondanceRoute
   '/_app/idocument': typeof AppIdocumentRoute
   '/_app/payments': typeof AppPaymentsRoute
@@ -320,7 +311,6 @@ export interface FileRouteTypes {
     | '/iarchive'
     | '/iasted'
     | '/iboite'
-    | '/icom'
     | '/icorrespondance'
     | '/idocument'
     | '/payments'
@@ -352,7 +342,6 @@ export interface FileRouteTypes {
     | '/iarchive'
     | '/iasted'
     | '/iboite'
-    | '/icom'
     | '/icorrespondance'
     | '/idocument'
     | '/payments'
@@ -386,7 +375,6 @@ export interface FileRouteTypes {
     | '/_app/iarchive'
     | '/_app/iasted'
     | '/_app/iboite'
-    | '/_app/icom'
     | '/_app/icorrespondance'
     | '/_app/idocument'
     | '/_app/payments'
@@ -460,13 +448,6 @@ declare module '@tanstack/react-router' {
       path: '/icorrespondance'
       fullPath: '/icorrespondance'
       preLoaderRoute: typeof AppIcorrespondanceRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/icom': {
-      id: '/_app/icom'
-      path: '/icom'
-      fullPath: '/icom'
-      preLoaderRoute: typeof AppIcomRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/iboite': {
@@ -655,7 +636,6 @@ interface AppRouteChildren {
   AppIarchiveRoute: typeof AppIarchiveRoute
   AppIastedRoute: typeof AppIastedRoute
   AppIboiteRoute: typeof AppIboiteRoute
-  AppIcomRoute: typeof AppIcomRoute
   AppIcorrespondanceRoute: typeof AppIcorrespondanceRoute
   AppIdocumentRoute: typeof AppIdocumentRoute
   AppPaymentsRoute: typeof AppPaymentsRoute
@@ -687,7 +667,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppIarchiveRoute: AppIarchiveRoute,
   AppIastedRoute: AppIastedRoute,
   AppIboiteRoute: AppIboiteRoute,
-  AppIcomRoute: AppIcomRoute,
   AppIcorrespondanceRoute: AppIcorrespondanceRoute,
   AppIdocumentRoute: AppIdocumentRoute,
   AppPaymentsRoute: AppPaymentsRoute,

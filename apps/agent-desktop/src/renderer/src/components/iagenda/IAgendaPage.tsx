@@ -93,7 +93,7 @@ export function IAgendaPage() {
 
 	// -- Donnees Convex --
 	const { results: rawCommunityEvents, isLoading: eventsLoading } = usePaginatedQuery(
-		api.functions.communityEvents.listAll,
+		api.functions.communityEvents.list,
 		{},
 		{ initialNumItems: 200 },
 	);
