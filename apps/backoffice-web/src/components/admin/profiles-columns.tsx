@@ -39,17 +39,17 @@ type ProfileRow = {
 
 // ── Display Maps ────────────────────────────────────────
 export const USER_TYPE_DISPLAY: Record<string, { label: string; emoji: string; className: string }> = {
-  long_stay: { label: "Résident", emoji: "🏠", className: "bg-green-500/10 text-green-700 border-green-300 dark:text-green-400" },
-  short_stay: { label: "De passage", emoji: "✈️", className: "bg-blue-500/10 text-blue-700 border-blue-300 dark:text-blue-400" },
-  visa_tourism: { label: "Visa tourisme", emoji: "🌴", className: "bg-amber-500/10 text-amber-700 border-amber-300 dark:text-amber-400" },
-  visa_business: { label: "Visa affaires", emoji: "💼", className: "bg-violet-500/10 text-violet-700 border-violet-300 dark:text-violet-400" },
-  visa_long_stay: { label: "Visa long séjour", emoji: "📋", className: "bg-cyan-500/10 text-cyan-700 border-cyan-300 dark:text-cyan-400" },
-  admin_services: { label: "Services admin", emoji: "📝", className: "bg-gray-500/10 text-gray-700 border-gray-300 dark:text-gray-400" },
+  long_stay: { label: "Résident", emoji: "", className: "bg-green-500/10 text-green-700 border-green-300 dark:text-green-400" },
+  short_stay: { label: "De passage", emoji: "", className: "bg-blue-500/10 text-blue-700 border-blue-300 dark:text-blue-400" },
+  visa_tourism: { label: "Visa tourisme", emoji: "", className: "bg-amber-500/10 text-amber-700 border-amber-300 dark:text-amber-400" },
+  visa_business: { label: "Visa affaires", emoji: "", className: "bg-violet-500/10 text-violet-700 border-violet-300 dark:text-violet-400" },
+  visa_long_stay: { label: "Visa long séjour", emoji: "", className: "bg-cyan-500/10 text-cyan-700 border-cyan-300 dark:text-cyan-400" },
+  admin_services: { label: "Services admin", emoji: "", className: "bg-gray-500/10 text-gray-700 border-gray-300 dark:text-gray-400" },
 }
 
 export const GENDER_DISPLAY: Record<string, { label: string; emoji: string }> = {
-  male: { label: "H", emoji: "♂️" },
-  female: { label: "F", emoji: "♀️" },
+  male: { label: "H", emoji: "" },
+  female: { label: "F", emoji: "" },
 }
 
 export const MARITAL_STATUS_DISPLAY: Record<string, string> = {

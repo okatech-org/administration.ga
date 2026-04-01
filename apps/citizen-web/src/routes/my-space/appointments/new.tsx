@@ -284,7 +284,7 @@ function NewAppointmentPage() {
 																key={action.id}
 																className="text-xs text-amber-600 mt-1"
 															>
-																⚠️ {action.message}
+																 {action.message}
 															</p>
 														))}
 												</div>

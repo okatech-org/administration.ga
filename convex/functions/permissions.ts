@@ -3,10 +3,12 @@ import {
   authQuery,
   authMutation,
   superadminMutation,
+  backofficeQuery,
 } from "../lib/customFunctions";
 import { permissionEffectValidator } from "../lib/validators";
 import { getMembership } from "../lib/auth";
 import { getTasksForMembership, isSuperAdmin, assertCanDoTask } from "../lib/permissions";
+import { MODULE_ACCESS_TASKS, ALL_MODULE_CODES, type ModuleCodeValue } from "../lib/moduleCodes";
 import { ALL_TASK_CODES, taskCodeValidator } from "../lib/taskCodes";
 
 // ============================================================================
@@ -183,5 +185,99 @@ export const resetAll = superadminMutation({
 
     await ctx.db.patch(args.membershipId, { specialPermissions: [] });
     return args.membershipId;
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
+// MENU PREVIEW — Résolution du menu pour un utilisateur donné
+// ═══════════════════════════════════════════════════════════════
+
+const MENU_MODULES = [
+  { code: "iprofil", label: "iProfil", requires: null, section: "Commandes" },
+  { code: "intelligence", label: "Aff. Diplomatiques", requires: "intelligence.view", section: "Opérations" },
+  { code: "requests", label: "Aff. Consulaires", requires: "requests.view", section: "Opérations" },
+  { code: "communication", label: "Actualités", requires: "communication.publish", section: "Opérations" },
+  { code: "digital_mail", label: "iBoîte", requires: "digital_mail.view", section: "iBureau" },
+  { code: "correspondance", label: "iCorrespondance", requires: "correspondance.view", section: "iBureau" },
+  { code: "documents", label: "iDocument", requires: "documents.view", section: "iBureau" },
+  { code: "appointments", label: "iAgenda", requires: "appointments.view", section: "iBureau" },
+  { code: "team", label: "Équipe", requires: "team.view", section: "Gestion" },
+  { code: "finance", label: "Paiements", requires: "finance.view", section: "Gestion" },
+  { code: "analytics", label: "Statistiques", requires: "analytics.view", section: "Gestion" },
+  { code: "settings", label: "Paramètres", requires: "settings.view", section: "Administration" },
+] as const;
+
+/**
+ * Calcule le menu résultant pour un utilisateur dans une org.
+ * Le SuperAdmin voit tout, les autres voient selon org.modules + position.moduleAccess + specialPermissions.
+ */
+export const getResolvedMenuForUser = backofficeQuery({
+  args: {
+    userId: v.id("users"),
+    orgId: v.id("orgs"),
+  },
+  handler: async (ctx, { userId, orgId }) => {
+    const membership = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_org", (q) => q.eq("userId", userId).eq("orgId", orgId))
+      .first();
+
+    if (!membership || membership.deletedAt) return null;
+
+    const org = await ctx.db.get(orgId);
+    const orgModules = new Set<string>((org?.modules as string[]) ?? []);
+    const hasOrgModules = orgModules.size > 0;
+
+    const user = await ctx.db.get(userId);
+    if (!user) return null;
+
+    if (isSuperAdmin(user)) {
+      return {
+        isSuperAdmin: true,
+        modules: MENU_MODULES.map((m) => ({
+          code: m.code, label: m.label, section: m.section,
+          isVisible: true, accessLevel: "admin" as const, reason: "SuperAdmin",
+        })),
+      };
+    }
+
+    const resolvedTasks = await getTasksForMembership(ctx, membership);
+    const specialPerms = membership.specialPermissions ?? [];
+    for (const sp of specialPerms) {
+      if (sp.effect === "grant") resolvedTasks.add(sp.taskCode);
+      if (sp.effect === "deny") resolvedTasks.delete(sp.taskCode);
+    }
+
+    return {
+      isSuperAdmin: false,
+      modules: MENU_MODULES.map((m) => {
+        const orgEnabled = !hasOrgModules || orgModules.has(m.code) || m.code === "iprofil";
+        const hasTask = !m.requires || resolvedTasks.has(m.requires);
+        const isVisible = orgEnabled && hasTask;
+
+        let accessLevel: string | null = null;
+        let reason = "";
+
+        if (!orgEnabled) {
+          reason = "Module désactivé";
+        } else if (!hasTask) {
+          reason = "Pas de permission";
+        } else {
+          const mapping = MODULE_ACCESS_TASKS[m.code];
+          if (mapping) {
+            for (const level of ["admin", "editor", "reader"] as const) {
+              const requiredTasks = mapping[level];
+              if (requiredTasks && requiredTasks.every((t: string) => resolvedTasks.has(t))) {
+                accessLevel = level;
+                break;
+              }
+            }
+          }
+          if (!accessLevel) accessLevel = "reader";
+        }
+
+        return { code: m.code, label: m.label, section: m.section, isVisible, accessLevel, reason };
+      }),
+    };
   },
 });

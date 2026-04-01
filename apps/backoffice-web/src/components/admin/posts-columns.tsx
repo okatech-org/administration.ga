@@ -66,7 +66,7 @@ export const postsColumns: ColumnDef<Post>[] = [
   },
   {
     accessorKey: "orgName",
-    header: "Organisation",
+    header: "Représentation",
     cell: ({ row }) => (
       <span className="text-muted-foreground">{row.original.orgName}</span>
     ),

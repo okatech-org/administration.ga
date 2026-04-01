@@ -1,9 +1,9 @@
 ---
 name: tailwind-styling
-description: "🎯 Expert Tailwind CSS Styling. S'active automatiquement pour tout travail de styling, design, mise en page, responsive design, animations. Couvre les patterns Tailwind CSS v3, les utilitaires personnalisés, et le responsive design."
+description: " Expert Tailwind CSS Styling. S'active automatiquement pour tout travail de styling, design, mise en page, responsive design, animations. Couvre les patterns Tailwind CSS v3, les utilitaires personnalisés, et le responsive design."
 ---
 
-# 🎯 Skill : Tailwind CSS Styling Expert
+#  Skill : Tailwind CSS Styling Expert
 
 ## Auto-Activation
 - Mots-clés : style, design, couleur, layout, responsive, animation, CSS, UI, dark mode
@@ -170,8 +170,8 @@ const statusColors: Record<string, string> = {
 ```
 
 ## Anti-Patterns
-- ❌ JAMAIS de CSS inline quand Tailwind peut le faire
-- ❌ JAMAIS de valeurs pixel arbitraires — utiliser l'échelle Tailwind
-- ❌ JAMAIS ignorer le responsive (TOUJOURS tester mobile → desktop)
-- ❌ JAMAIS mélanger les standards de couleurs entre projets
-- ❌ JAMAIS utiliser `!important` — résoudre les conflits autrement
+-  JAMAIS de CSS inline quand Tailwind peut le faire
+-  JAMAIS de valeurs pixel arbitraires — utiliser l'échelle Tailwind
+-  JAMAIS ignorer le responsive (TOUJOURS tester mobile → desktop)
+-  JAMAIS mélanger les standards de couleurs entre projets
+-  JAMAIS utiliser `!important` — résoudre les conflits autrement

@@ -264,6 +264,7 @@ export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {
 					expandedModules={expandedModules}
 					isSaving={isSaving}
 					lang={lang}
+					orgId={orgId}
 					onToggleModule={handleToggleModule}
 					onToggleCapability={handleToggleCapability}
 					onToggleExpand={toggleExpand}
@@ -282,6 +283,7 @@ function SidebarGroupCard({
 	expandedModules,
 	isSaving,
 	lang,
+	orgId,
 	onToggleModule,
 	onToggleCapability,
 	onToggleExpand,
@@ -292,6 +294,7 @@ function SidebarGroupCard({
 	expandedModules: Set<string>;
 	isSaving: boolean;
 	lang: string;
+	orgId?: Id<"orgs">;
 	onToggleModule: (code: string, enabled: boolean) => void;
 	onToggleCapability: (moduleCode: string, cap: string, checked: boolean) => void;
 	onToggleExpand: (code: string) => void;
@@ -405,6 +408,11 @@ function SidebarGroupCard({
 												);
 											})}
 										</div>
+
+										{/* Services activés — affiché uniquement pour le module "requests" */}
+									{moduleCode === "requests" && orgId && (
+										<OrgServicesSection orgId={orgId} lang={lang} />
+									)}
 									</div>
 								)}
 							</div>
@@ -413,5 +421,65 @@ function SidebarGroupCard({
 				</div>
 			</CardContent>
 		</Card>
+	);
+}
+
+// ─── Org Services Section (affiché dans le module "requests") ──
+
+function OrgServicesSection({ orgId, lang }: { orgId: Id<"orgs">; lang: string }) {
+	const { data: orgServices = [], isPending } = useAuthenticatedConvexQuery(
+		api.functions.services.listByOrg,
+		{ orgId },
+	);
+
+	if (isPending) {
+		return (
+			<div className="mt-3 pt-3 border-t border-border/30">
+				<p className="text-[10px] text-muted-foreground animate-pulse">Chargement des services…</p>
+			</div>
+		);
+	}
+
+	if (orgServices.length === 0) {
+		return (
+			<div className="mt-3 pt-3 border-t border-border/30">
+				<p className="text-[10px] font-semibold uppercase text-muted-foreground mb-1">Services activés</p>
+				<p className="text-[10px] text-muted-foreground italic">Aucun service configuré pour cette organisation</p>
+			</div>
+		);
+	}
+
+	return (
+		<div className="mt-3 pt-3 border-t border-border/30">
+			<p className="text-[10px] font-semibold uppercase text-muted-foreground mb-1.5">
+				Services activés ({orgServices.length})
+			</p>
+			<div className="grid gap-1">
+				{orgServices.map((os: any) => {
+					const serviceName = os.service?.name?.fr ?? os.service?.name ?? os.name?.fr ?? "Service";
+					const category = os.service?.category ?? os.category ?? "other";
+					const isActive = os.isActive !== false;
+					const hasAccess = !!(os as any).serviceAccess?.length;
+
+					return (
+						<div key={os._id} className={cn(
+							"flex items-center gap-2 rounded-md px-2 py-1.5 text-xs",
+							isActive ? "bg-primary/5" : "bg-muted/20 opacity-50",
+						)}>
+							<div className={cn("h-2 w-2 rounded-full shrink-0", isActive ? "bg-green-500" : "bg-gray-400")} />
+							<span className="flex-1 min-w-0 truncate">{serviceName}</span>
+							<Badge variant="outline" className="text-[8px] h-3.5 px-1 shrink-0">
+								{category}
+							</Badge>
+							{hasAccess && (
+								<Badge variant="secondary" className="text-[8px] h-3.5 px-1 shrink-0">
+									Accès personnalisé
+								</Badge>
+							)}
+						</div>
+					);
+				})}
+			</div>
+		</div>
 	);
 }

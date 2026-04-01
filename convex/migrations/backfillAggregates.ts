@@ -58,9 +58,9 @@ async function chainedBackfill(
     // More rows to process — schedule continuation
     const nextCursor = page.continueCursor;
     await ctx.scheduler.runAfter(0, continuationFn, { cursor: nextCursor });
-    console.log(`⏳ ${tableName}: processed ${BATCH_SIZE} rows, continuing...`);
+    console.log(` ${tableName}: processed ${BATCH_SIZE} rows, continuing...`);
   } else {
-    console.log(`✅ ${tableName}: done (final batch of ${page.page.length} rows)`);
+    console.log(` ${tableName}: done (final batch of ${page.page.length} rows)`);
   }
 }
 
@@ -169,9 +169,9 @@ export const backfillChildProfiles = internalMutation({
 export const rebuildChildProfiles = internalMutation({
   args: {},
   handler: async (ctx) => {
-    console.log("🗑️ Clearing childProfilesGlobal aggregate...");
+    console.log(" Clearing childProfilesGlobal aggregate...");
     await childProfilesGlobal.clearAll(ctx);
-    console.log("🔄 Starting backfill...");
+    console.log(" Starting backfill...");
     await ctx.scheduler.runAfter(0, internal.migrations.backfillAggregates.backfillChildProfiles, {});
   },
 });
@@ -184,9 +184,9 @@ export const rebuildChildProfiles = internalMutation({
 export const rebuildRegistrations = internalMutation({
   args: {},
   handler: async (ctx) => {
-    console.log("🗑️ Clearing registrationsByOrg aggregate...");
+    console.log(" Clearing registrationsByOrg aggregate...");
     await registrationsByOrg.clearAll(ctx);
-    console.log("🔄 Starting backfill...");
+    console.log(" Starting backfill...");
     await ctx.scheduler.runAfter(0, internal.migrations.backfillAggregates.backfillRegistrations, {});
   },
 });
@@ -215,7 +215,7 @@ export const backfillAll = internalMutation({
     for (let i = 0; i < fns.length; i++) {
       await ctx.scheduler.runAfter(i * 5000, fns[i], {});
     }
-    console.log(`🚀 Scheduled ${fns.length} backfill chains`);
+    console.log(` Scheduled ${fns.length} backfill chains`);
   },
 });
 
@@ -236,6 +236,6 @@ export const clearAll = internalMutation({
     await servicesGlobal.clearAll(ctx);
     await appointmentsByOrg.clearAll(ctx);
     await childProfilesGlobal.clearAll(ctx);
-    console.log("🗑️ All aggregates cleared");
+    console.log(" All aggregates cleared");
   },
 });

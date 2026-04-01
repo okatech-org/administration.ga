@@ -7,6 +7,7 @@ import {
 	ChevronsLeft,
 	ChevronsRight,
 	CreditCard,
+	Eye,
 	FileText,
 	FolderOpen,
 	Globe2,
@@ -16,9 +17,9 @@ import {
 	Newspaper,
 	Settings2,
 	Sun,
+	UserCircle,
 	Users,
 	Users2,
-	Eye,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
@@ -99,6 +100,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 			label: "Commandes",
 			items: [
 				{ title: "Dashboard", url: "/", icon: Home },
+				{ title: "iProfil", url: "/iprofil", icon: UserCircle },
 			],
 		},
 		{

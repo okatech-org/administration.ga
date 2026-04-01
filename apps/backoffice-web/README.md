@@ -20,12 +20,9 @@ Interface d'administration centrale de la plateforme. Déployé sur **[admin.con
 - **Monitoring** — Tableau de bord système (GCP)
 - **Paramètres** — Configuration globale
 
-### Contrôle
-- **Postes & Rôles** — Gestion des postes consulaires et permissions
-- **Modules & Permissions** — Configuration fine des droits
-- **Représentations** — Réseau diplomatique
-- **Services** — Configuration des types de services
-- **Publications** — Gestion des actualités et tutoriels
+### Éditorial
+- **Publications** — Gestion des actualités (Actualités)
+- **Tutoriels** — Guides et contenus pédagogiques
 - **Événements** — Événements communautaires
 
 ## Stack

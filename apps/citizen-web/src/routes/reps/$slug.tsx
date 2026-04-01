@@ -28,7 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useConvexQuery } from "@/integrations/convex/hooks";
 import { getLocalizedValue } from "@/lib/i18n-utils";
 
-export const Route = createFileRoute("/orgs/$slug")({
+export const Route = createFileRoute("/reps/$slug")({
 	component: OrgDetailPage,
 });
 
@@ -106,7 +106,7 @@ function OrgDetailPage() {
 	const { data: orgServices } = useConvexQuery(
 		api.functions.services.listByOrg,
 		org ? { orgId: org._id } : "skip",
-	);
+	)
 
 	const isLoading = org === undefined;
 
@@ -128,7 +128,7 @@ function OrgDetailPage() {
 					</div>
 				</div>
 			</div>
-		);
+		)
 	}
 
 	if (!org) {
@@ -145,7 +145,7 @@ function OrgDetailPage() {
 							)}
 						</p>
 						<Button asChild>
-							<Link to="/orgs" search={{ view: "grid" }}>
+							<Link to="/reps" search={{ view: "grid" }}>
 								<ArrowLeft className="w-4 h-4 mr-2" />
 								{t("orgs.backToOrgs")}
 							</Link>
@@ -153,7 +153,7 @@ function OrgDetailPage() {
 					</div>
 				</div>
 			</div>
-		);
+		)
 	}
 
 	const countryName = countryNames[org.address.country] || org.address.country;
@@ -161,15 +161,15 @@ function OrgDetailPage() {
 	const isPrimary = org.type === OrganizationType.Embassy;
 
 	return (
-		<div className="min-h-screen bg-background flex flex-col">
-			<div className="flex-1">
+        <div className="min-h-screen bg-background flex flex-col">
+            <div className="flex-1">
 				{/* Header */}
 				<section
 					className={`py-12 px-6 ${isPrimary ? "bg-primary/10" : "bg-linear-to-b from-secondary/50 to-background"}`}
 				>
 					<div className="max-w-4xl mx-auto">
 						<Button asChild variant="ghost" size="sm" className="mb-6">
-							<Link to="/orgs" search={{ view: "grid" }}>
+							<Link to="/reps" search={{ view: "grid" }}>
 								<ArrowLeft className="w-4 h-4 mr-2" />
 								{t("orgs.backToOrgs")}
 							</Link>
@@ -245,7 +245,7 @@ function OrgDetailPage() {
 										<div className="flex items-center gap-3">
 											<Mail className="w-4 h-4 text-muted-foreground" />
 											<a
-												href={`mailto:${org.email}`}
+												href={"mailto:${org.email}"}
 												className="text-primary hover:underline"
 											>
 												{org.email}
@@ -306,12 +306,12 @@ function OrgDetailPage() {
 													<p className="text-muted-foreground">
 														{slots && slots.length > 0
 															? slots
-																	.map((s) => `${s.start} - ${s.end}`)
+																	.map((s) => "${s.start} - ${s.end}")
 																	.join(", ")
 															: t("orgs.closed")}
 													</p>
 												</div>
-											);
+											)
 										})}
 									</div>
 								</CardContent>
@@ -335,10 +335,10 @@ function OrgDetailPage() {
 											serviceCategoryConfig[ServiceCategory.Other];
 										const serviceName = os.name
 											? getLocalizedValue(os.name as any, i18n.language)
-											: "Service";
+											: "Service"
 										const serviceDesc = os.description
 											? getLocalizedValue(os.description as any, i18n.language)
-											: "";
+											: ""
 										const serviceSlug = os.service?.slug;
 
 										return (
@@ -369,7 +369,7 @@ function OrgDetailPage() {
 														: undefined
 												}
 											/>
-										);
+										)
 									})}
 								</div>
 							) : orgServices && orgServices.length === 0 ? (
@@ -413,6 +413,6 @@ function OrgDetailPage() {
 					</div>
 				</section>
 			</div>
-		</div>
-	);
+        </div>
+    )
 }

@@ -197,7 +197,7 @@ export function RequestChat({ requestId, className }: RequestChatProps) {
 										>
 											<span>{formatTime(msg.createdAt)}</span>
 											{msg.readAt && msg.senderRole === "citizen" && (
-												<span>✓✓</span>
+												<span></span>
 											)}
 										</div>
 									</div>

@@ -3,28 +3,28 @@
   "configurations": [
     {
       "name": "citizen-web",
-      "runtimeExecutable": "bun",
+      "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
       "runtimeArgs": ["run", "dev"],
       "port": 3001,
       "cwd": "apps/citizen-web"
     },
     {
       "name": "agent-desktop",
-      "runtimeExecutable": "npx",
+      "runtimeExecutable": "/Users/okatech/.bun/bin/bunx",
       "runtimeArgs": ["vite", "--port", "3003"],
       "port": 3003,
       "cwd": "apps/agent-desktop"
     },
     {
       "name": "backoffice",
-      "runtimeExecutable": "bun",
+      "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
       "runtimeArgs": ["run", "dev"],
       "port": 3002,
       "cwd": "apps/backoffice-web"
     },
     {
       "name": "agent-web",
-      "runtimeExecutable": "bun",
+      "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
       "runtimeArgs": ["run", "dev"],
       "port": 3003,
       "cwd": "apps/agent-web"

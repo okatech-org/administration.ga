@@ -111,7 +111,7 @@ export function DisperseDialog({ open, onOpenChange, itemId, documents }: Disper
 					recipientOrgName: g.recipientOrgName.trim() || undefined,
 				})),
 			});
-			toast.success(`${result.createdCorrespondanceIds.length} correspondance(s) créée(s) en brouillon ✓`);
+			toast.success(`${result.createdCorrespondanceIds.length} correspondance(s) créée(s) en brouillon `);
 			onOpenChange(false);
 			setGroups([]);
 		} catch (e: any) {
@@ -190,7 +190,7 @@ export function DisperseDialog({ open, onOpenChange, itemId, documents }: Disper
 									/>
 								</div>
 								<div className="space-y-1">
-									<Label className="text-[10px]">Organisation</Label>
+									<Label className="text-[10px]">Représentation</Label>
 									<Input
 										value={group.recipientOrgName}
 										onChange={(e) => updateGroupRecipient(group.id, "recipientOrgName", e.target.value)}

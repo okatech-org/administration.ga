@@ -73,7 +73,7 @@ Poser les questions clés:
 [Cas d'usage plus complexes]
 
 ## Anti-patterns
-[Erreurs courantes avec ❌ MAUVAIS et ✅ BON]
+[Erreurs courantes avec  MAUVAIS et  BON]
 
 ## Ressources
 [Liens vers documentation officielle]
@@ -318,26 +318,26 @@ Utiliser le numérotation sémantique:
 
 ## Anti-patterns en création de skills
 
-❌ **NE PAS** créer une skill trop générique:
+ **NE PAS** créer une skill trop générique:
 ```
 name: programming-patterns
 description: Expert en patterns de programmation
 ```
 Problème: Activée pour TOUTE question de code.
 
-✅ **FAIRE** être spécifique:
+ **FAIRE** être spécifique:
 ```
 name: actor-concurrency
 description: Expert en patterns Acteur (Akka, Erlang) et concurrence distribuée.
 ```
 
-❌ **NE PAS** créer une skill sans exemples de code:
+ **NE PAS** créer une skill sans exemples de code:
 ```
 ## Concepts
 Utilisez les guards pour contrôler les transitions...
 ```
 
-✅ **FAIRE** inclure code exécutable:
+ **FAIRE** inclure code exécutable:
 ```
 ## Concepts
 Utilisez les guards:
@@ -347,15 +347,15 @@ const guard: Guard = (state, event) => state.value === 'idle';
 \`\`\`
 ```
 
-❌ **NE PAS** oublier les anti-patterns:
+ **NE PAS** oublier les anti-patterns:
 ```
 # Skill complete without anti-patterns section
 ```
 
-✅ **FAIRE** montrer les erreurs courantes:
+ **FAIRE** montrer les erreurs courantes:
 ```
-❌ MAUVAIS: const x = new Array(size).fill(null)
-✅ BON: const x = Array.from({ length: size })
+ MAUVAIS: const x = new Array(size).fill(null)
+ BON: const x = Array.from({ length: size })
 ```
 
 ## Optimisation des descriptions
@@ -433,9 +433,9 @@ pip install [dependencies]
 
 ## Anti-patterns
 
-❌ MAUVAIS: [code]
+ MAUVAIS: [code]
 
-✅ BON: [code]
+ BON: [code]
 
 ## Ressources
 

@@ -253,7 +253,7 @@ export function ConsularMap({ searchQuery = "", className }: ConsularMapProps) {
 			name: string,
 			addressLine: string,
 			slug?: string,
-			linkPrefix = "/orgs",
+			linkPrefix = "/reps",
 		) => {
 			const el = document.createElement("div");
 			el.className = "custom-marker group cursor-pointer";
@@ -393,7 +393,7 @@ export function ConsularMap({ searchQuery = "", className }: ConsularMapProps) {
 					? `${org.address.street}, ${org.address.postalCode} ${org.address.city}`
 					: `${org.address.city}, ${org.address.country}`;
 
-				addMarker(coords, config, org.name, addressLine, org.slug, "/orgs");
+				addMarker(coords, config, org.name, addressLine, org.slug, "/reps");
 			});
 		}
 

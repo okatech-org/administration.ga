@@ -1,9 +1,9 @@
 ---
 name: shadcn-ui
-description: "🎨 Expert Shadcn/UI Components. S'active automatiquement quand un composant UI est créé ou modifié. Couvre l'installation, la personnalisation, et les patterns d'utilisation de Shadcn/ui avec Radix UI et Tailwind CSS."
+description: " Expert Shadcn/UI Components. S'active automatiquement quand un composant UI est créé ou modifié. Couvre l'installation, la personnalisation, et les patterns d'utilisation de Shadcn/ui avec Radix UI et Tailwind CSS."
 ---
 
-# 🎨 Skill : Shadcn/UI Components Expert
+#  Skill : Shadcn/UI Components Expert
 
 ## Auto-Activation
 - Fichier dans `components/ui/` ou composant utilisant Shadcn
@@ -22,7 +22,7 @@ npx shadcn@latest add [composant]
 npx shadcn@latest add button card dialog table form input select
 ```
 
-## ⚠️ RÈGLE CRITIQUE
+##  RÈGLE CRITIQUE
 Les fichiers dans `components/ui/` sont gérés par Shadcn. Pour personnaliser, créer un wrapper dans `components/shared/` ou `components/common/`.
 
 ## Composants les Plus Utilisés dans les Projets OkaTech
@@ -133,7 +133,7 @@ export function cn(...inputs: ClassValue[]) {
 - **sonner** : Toast notifications (TOUS les projets)
 
 ## Anti-Patterns
-- ❌ JAMAIS modifier les fichiers `components/ui/`
-- ❌ JAMAIS oublier `asChild` sur les DialogTrigger/PopoverTrigger avec composant custom
-- ❌ JAMAIS utiliser `alert()` natif — utiliser `toast` de sonner
-- ❌ JAMAIS réinventer un composant que Shadcn fournit déjà
+-  JAMAIS modifier les fichiers `components/ui/`
+-  JAMAIS oublier `asChild` sur les DialogTrigger/PopoverTrigger avec composant custom
+-  JAMAIS utiliser `alert()` natif — utiliser `toast` de sonner
+-  JAMAIS réinventer un composant que Shadcn fournit déjà

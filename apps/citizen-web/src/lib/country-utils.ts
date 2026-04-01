@@ -16,12 +16,12 @@ export const CONTINENT_META: Record<
 	Continent,
 	{ label: string; emoji: string; order: number }
 > = {
-	africa: { label: "Afrique", emoji: "🌍", order: 1 },
-	europe: { label: "Europe", emoji: "🌍", order: 2 },
-	americas: { label: "Amériques", emoji: "🌎", order: 3 },
-	asia: { label: "Asie & Pacifique", emoji: "🌏", order: 4 },
-	middle_east: { label: "Moyen-Orient", emoji: "🕌", order: 5 },
-	oceania: { label: "Océanie", emoji: "🌏", order: 6 },
+	africa: { label: "Afrique", emoji: "", order: 1 },
+	europe: { label: "Europe", emoji: "", order: 2 },
+	americas: { label: "Amériques", emoji: "", order: 3 },
+	asia: { label: "Asie & Pacifique", emoji: "", order: 4 },
+	middle_east: { label: "Moyen-Orient", emoji: "", order: 5 },
+	oceania: { label: "Océanie", emoji: "", order: 6 },
 };
 
 // ── ISO 3166-1 alpha-2 → Continent ─────────────────────
@@ -98,7 +98,7 @@ const COUNTRY_NAMES_FR: Record<string, string> = {
 
 // ── Flag emoji from country code ───────────────────────
 export function getCountryFlag(code: string): string {
-	if (!code || code.length !== 2) return "🏳️";
+	if (!code || code.length !== 2) return "";
 	const upper = code.toUpperCase();
 	return String.fromCodePoint(
 		...upper.split("").map((c) => 0x1f1e6 + c.charCodeAt(0) - 65),
@@ -120,7 +120,7 @@ export function getContinentLabel(continent: Continent): string {
 }
 
 export function getContinentEmoji(continent: Continent): string {
-	return CONTINENT_META[continent]?.emoji ?? "🌐";
+	return CONTINENT_META[continent]?.emoji ?? "";
 }
 
 /**
@@ -142,15 +142,15 @@ export function getActiveContinents(
 
 // ── Organization type display helpers ──────────────────
 const ORG_TYPE_META: Record<string, { label: string; emoji: string }> = {
-	embassy: { label: "Ambassade", emoji: "🏛️" },
-	high_representation: { label: "Haute Représentation", emoji: "🏛️" },
-	general_consulate: { label: "Consulat Général", emoji: "🏢" },
-	high_commission: { label: "Haut-Commissariat", emoji: "🏛️" },
-	permanent_mission: { label: "Mission Permanente", emoji: "🏢" },
-	third_party: { label: "Tiers de confiance", emoji: "🤝" },
-	consulate: { label: "Consulat", emoji: "🏢" },
-	honorary_consulate: { label: "Consulat Honoraire", emoji: "📜" },
-	other: { label: "Autre", emoji: "🏢" },
+	embassy: { label: "Ambassade", emoji: "" },
+	high_representation: { label: "Haute Représentation", emoji: "" },
+	general_consulate: { label: "Consulat Général", emoji: "" },
+	high_commission: { label: "Haut-Commissariat", emoji: "" },
+	permanent_mission: { label: "Mission Permanente", emoji: "" },
+	third_party: { label: "Tiers de confiance", emoji: "" },
+	consulate: { label: "Consulat", emoji: "" },
+	honorary_consulate: { label: "Consulat Honoraire", emoji: "" },
+	other: { label: "Autre", emoji: "" },
 };
 
 export function getOrgTypeLabel(type: string): string {
@@ -158,6 +158,6 @@ export function getOrgTypeLabel(type: string): string {
 }
 
 export function getOrgTypeEmoji(type: string): string {
-	return ORG_TYPE_META[type]?.emoji ?? "🏢";
+	return ORG_TYPE_META[type]?.emoji ?? "";
 }
 

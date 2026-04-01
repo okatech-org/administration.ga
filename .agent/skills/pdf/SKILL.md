@@ -411,37 +411,37 @@ with open("pages_11_to_21.pdf", "wb") as f:
 
 ## Anti-patterns
 
-❌ **NE PAS** utiliser pypdf pour l'extraction de texte (peu fiable):
+ **NE PAS** utiliser pypdf pour l'extraction de texte (peu fiable):
 ```python
 from pypdf import PdfReader
 text = PdfReader("doc.pdf").pages[0].extract_text()  # MAUVAIS
 ```
 
-✅ **FAIRE** utiliser pdfplumber:
+ **FAIRE** utiliser pdfplumber:
 ```python
 import pdfplumber
 with pdfplumber.open("doc.pdf") as pdf:
     text = pdf.pages[0].extract_text()  # BON
 ```
 
-❌ **NE PAS** oublier le context manager (fuite de mémoire):
+ **NE PAS** oublier le context manager (fuite de mémoire):
 ```python
 pdf = pdfplumber.open("doc.pdf")
 text = pdf.pages[0].extract_text()  # MAUVAIS
 ```
 
-✅ **FAIRE** utiliser with:
+ **FAIRE** utiliser with:
 ```python
 with pdfplumber.open("doc.pdf") as pdf:
     text = pdf.pages[0].extract_text()  # BON
 ```
 
-❌ **NE PAS** traiter l'OCR sans pré-traitement (résultats bruts):
+ **NE PAS** traiter l'OCR sans pré-traitement (résultats bruts):
 ```python
 text = pytesseract.image_to_string(image)  # MAUVAIS
 ```
 
-✅ **FAIRE** appliquer le pré-traitement:
+ **FAIRE** appliquer le pré-traitement:
 ```python
 gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
 _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)

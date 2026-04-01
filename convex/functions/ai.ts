@@ -113,17 +113,17 @@ function buildAnalysisNote(analysis: AnalysisResult): string {
   const docAnalysis = analysis.documentAnalysis;
   if (docAnalysis?.missing?.length > 0) {
     sections.push(
-      `\n\n**📄 Documents manquants:**\n${docAnalysis.missing.map((d: string) => `- ${d}`).join("\n")}`,
+      `\n\n** Documents manquants:**\n${docAnalysis.missing.map((d: string) => `- ${d}`).join("\n")}`,
     );
   }
   if (docAnalysis?.suspicious?.length > 0) {
     sections.push(
-      `\n\n**⚠️ Documents à vérifier:**\n${docAnalysis.suspicious.map((d: string) => `- ${d}`).join("\n")}`,
+      `\n\n** Documents à vérifier:**\n${docAnalysis.suspicious.map((d: string) => `- ${d}`).join("\n")}`,
     );
   }
   if (docAnalysis?.matched?.length > 0) {
     sections.push(
-      `\n\n**✅ Documents fournis:**\n${docAnalysis.matched.map((d: string) => `- ${d}`).join("\n")}`,
+      `\n\n** Documents fournis:**\n${docAnalysis.matched.map((d: string) => `- ${d}`).join("\n")}`,
     );
   }
 
@@ -131,19 +131,19 @@ function buildAnalysisNote(analysis: AnalysisResult): string {
   const formAnalysis = analysis.formAnalysis;
   if (formAnalysis?.missingFields?.length > 0) {
     sections.push(
-      `\n\n**📝 Champs manquants:**\n${formAnalysis.missingFields.map((f: string) => `- ${f}`).join("\n")}`,
+      `\n\n** Champs manquants:**\n${formAnalysis.missingFields.map((f: string) => `- ${f}`).join("\n")}`,
     );
   }
   if (formAnalysis?.invalidValues?.length > 0) {
     sections.push(
-      `\n\n**❌ Valeurs invalides:**\n${formAnalysis.invalidValues.map((f: string) => `- ${f}`).join("\n")}`,
+      `\n\n** Valeurs invalides:**\n${formAnalysis.invalidValues.map((f: string) => `- ${f}`).join("\n")}`,
     );
   }
 
   // Other issues
   if (analysis.issues?.length > 0) {
     sections.push(
-      `\n\n**ℹ️ Points d'attention:**\n${analysis.issues.map((i: string) => `- ${i}`).join("\n")}`,
+      `\n\n**ℹ Points d'attention:**\n${analysis.issues.map((i: string) => `- ${i}`).join("\n")}`,
     );
   }
 

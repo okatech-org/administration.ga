@@ -306,6 +306,62 @@ export const getMembers = query({
 });
 
 /**
+ * List diplomatic members of a specific org with enriched profiles.
+ * Used by team page (chef de mission view) and backoffice org detail.
+ * Requires team.view permission.
+ */
+export const listOrgDiplomaticMembers = authQuery({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    const callerMembership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, callerMembership, "team.view");
+
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .collect();
+
+    const activeMembers = memberships.filter((m) => !m.deletedAt && m.positionId);
+
+    const enriched = await Promise.all(
+      activeMembers.map(async (m) => {
+        const [user, position] = await Promise.all([
+          ctx.db.get(m.userId),
+          m.positionId ? ctx.db.get(m.positionId) : null,
+        ]);
+
+        return {
+          membershipId: m._id,
+          diplomaticProfile: (m as any).diplomaticProfile ?? null,
+          isPublicContact: m.isPublicContact,
+          user: user
+            ? {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                firstName: (user as any).firstName,
+                lastName: (user as any).lastName,
+                avatarUrl: (user as any).avatarUrl,
+              }
+            : null,
+          position: position
+            ? {
+                _id: position._id,
+                code: position.code,
+                title: position.title,
+                grade: position.grade,
+                level: position.level,
+              }
+            : null,
+        };
+      }),
+    );
+
+    return enriched.filter((m) => m.user !== null);
+  },
+});
+
+/**
  * Get org chart data: positions with occupants + unassigned members.
  * Used by the team/org chart page.
  */

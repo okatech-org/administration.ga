@@ -310,7 +310,7 @@
 			"phone": "",
 			"license": ""
 		},
-		"copyright": "© {{year}} Consulat.ga — Gabonese Republic",
+		"copyright": " {{year}} Consulat.ga — Gabonese Republic",
 		"version": ""
 	},
 	"theme": {
@@ -734,7 +734,7 @@
 	"superadmin": {
 		"nav": {
 			"dashboard": "Dashboard",
-			"organizations": "Organizations",
+			"organizations": "Representations",
 			"users": "Users",
 			"services": "Consular services",
 			"requests": "All requests",
@@ -816,8 +816,8 @@
 			"noResults": "No users found",
 			"details": {
 				"infos": "Information",
-				"organizations": "Organizations",
-				"orgMembership": "Organization Membership",
+				"organizations": "Representations",
+				"orgMembership": "Representation Membership",
 				"activity": "Recent Activity",
 				"lastActions": "Last 10 actions",
 				"nationality": "Nationality",
@@ -826,13 +826,13 @@
 				"verified": "verified",
 				"unverified": "unverified",
 				"since": "Since",
-				"noOrg": "No organization",
+				"noOrg": "No representation",
 				"noActivity": "No activity"
 			}
 		},
 		"organizations": {
-			"title": "Organizations",
-			"description": "Manage consulates, embassies, and organizations",
+			"title": "Diplomatic Representations",
+			"description": "Manage consulates, embassies, and diplomatic representations",
 			"columns": {
 				"logo": "Logo",
 				"name": "Name",
@@ -854,7 +854,7 @@
 			"filters": {
 				"allTypes": "All Types",
 				"allCountries": "All Countries",
-				"searchPlaceholder": "Search organizations..."
+				"searchPlaceholder": "Search representations..."
 			},
 			"actions": {
 				"view": "View",
@@ -865,8 +865,8 @@
 				"disable": "Disable"
 			},
 			"form": {
-				"create": "Create Organization",
-				"edit": "Edit Organization",
+				"create": "New Representation",
+				"edit": "Edit Representation",
 				"name": "Name",
 				"namePlaceholder": "e.g. Consulate of Gabon in Paris",
 				"slug": "Slug",

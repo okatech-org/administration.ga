@@ -57,7 +57,7 @@ export function CVThemeCreative({ data }: CVThemeProps) {
         {data.experiences.length > 0 && (
           <div>
             <h2 className="text-xs font-bold uppercase tracking-widest text-violet-500 mb-3">
-              ✦ Expérience
+               Expérience
             </h2>
             <div className="space-y-3">
               {data.experiences.map((exp, i) => (
@@ -93,7 +93,7 @@ export function CVThemeCreative({ data }: CVThemeProps) {
         {data.education.length > 0 && (
           <div>
             <h2 className="text-xs font-bold uppercase tracking-widest text-violet-500 mb-3">
-              ✦ Formation
+               Formation
             </h2>
             <div className="space-y-2">
               {data.education.map((edu, i) => (
@@ -118,7 +118,7 @@ export function CVThemeCreative({ data }: CVThemeProps) {
         {data.skills.length > 0 && (
           <div>
             <h2 className="text-xs font-bold uppercase tracking-widest text-violet-500 mb-2">
-              ✦ Compétences
+               Compétences
             </h2>
             <div className="flex flex-wrap gap-1.5">
               {data.skills.map((s, i) => (
@@ -137,7 +137,7 @@ export function CVThemeCreative({ data }: CVThemeProps) {
         {data.languages.length > 0 && (
           <div>
             <h2 className="text-xs font-bold uppercase tracking-widest text-violet-500 mb-2">
-              ✦ Langues
+               Langues
             </h2>
             <div className="flex gap-2">
               {data.languages.map((l, i) => (

@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppStatisticsRouteImport } from './routes/_app/statistics'
 import { Route as AppPaymentsRouteImport } from './routes/_app/payments'
+import { Route as AppIprofilRouteImport } from './routes/_app/iprofil'
 import { Route as AppIdocumentRouteImport } from './routes/_app/idocument'
 import { Route as AppIcorrespondanceRouteImport } from './routes/_app/icorrespondance'
 import { Route as AppIboiteRouteImport } from './routes/_app/iboite'
@@ -60,6 +61,11 @@ const AppStatisticsRoute = AppStatisticsRouteImport.update({
 const AppPaymentsRoute = AppPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIprofilRoute = AppIprofilRouteImport.update({
+  id: '/iprofil',
+  path: '/iprofil',
   getParentRoute: () => AppRoute,
 } as any)
 const AppIdocumentRoute = AppIdocumentRouteImport.update({
@@ -227,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/iboite': typeof AppIboiteRoute
   '/icorrespondance': typeof AppIcorrespondanceRoute
   '/idocument': typeof AppIdocumentRoute
+  '/iprofil': typeof AppIprofilRoute
   '/payments': typeof AppPaymentsRoute
   '/statistics': typeof AppStatisticsRoute
   '/appointments/$appointmentId': typeof AppAppointmentsAppointmentIdRoute
@@ -260,6 +267,7 @@ export interface FileRoutesByTo {
   '/iboite': typeof AppIboiteRoute
   '/icorrespondance': typeof AppIcorrespondanceRoute
   '/idocument': typeof AppIdocumentRoute
+  '/iprofil': typeof AppIprofilRoute
   '/payments': typeof AppPaymentsRoute
   '/statistics': typeof AppStatisticsRoute
   '/': typeof AppIndexRoute
@@ -296,6 +304,7 @@ export interface FileRoutesById {
   '/_app/iboite': typeof AppIboiteRoute
   '/_app/icorrespondance': typeof AppIcorrespondanceRoute
   '/_app/idocument': typeof AppIdocumentRoute
+  '/_app/iprofil': typeof AppIprofilRoute
   '/_app/payments': typeof AppPaymentsRoute
   '/_app/statistics': typeof AppStatisticsRoute
   '/_app/': typeof AppIndexRoute
@@ -333,6 +342,7 @@ export interface FileRouteTypes {
     | '/iboite'
     | '/icorrespondance'
     | '/idocument'
+    | '/iprofil'
     | '/payments'
     | '/statistics'
     | '/appointments/$appointmentId'
@@ -366,6 +376,7 @@ export interface FileRouteTypes {
     | '/iboite'
     | '/icorrespondance'
     | '/idocument'
+    | '/iprofil'
     | '/payments'
     | '/statistics'
     | '/'
@@ -401,6 +412,7 @@ export interface FileRouteTypes {
     | '/_app/iboite'
     | '/_app/icorrespondance'
     | '/_app/idocument'
+    | '/_app/iprofil'
     | '/_app/payments'
     | '/_app/statistics'
     | '/_app/'
@@ -460,6 +472,13 @@ declare module '@tanstack/react-router' {
       path: '/payments'
       fullPath: '/payments'
       preLoaderRoute: typeof AppPaymentsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/iprofil': {
+      id: '/_app/iprofil'
+      path: '/iprofil'
+      fullPath: '/iprofil'
+      preLoaderRoute: typeof AppIprofilRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/idocument': {
@@ -696,6 +715,7 @@ interface AppRouteChildren {
   AppIboiteRoute: typeof AppIboiteRoute
   AppIcorrespondanceRoute: typeof AppIcorrespondanceRoute
   AppIdocumentRoute: typeof AppIdocumentRoute
+  AppIprofilRoute: typeof AppIprofilRoute
   AppPaymentsRoute: typeof AppPaymentsRoute
   AppStatisticsRoute: typeof AppStatisticsRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -727,6 +747,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppIboiteRoute: AppIboiteRoute,
   AppIcorrespondanceRoute: AppIcorrespondanceRoute,
   AppIdocumentRoute: AppIdocumentRoute,
+  AppIprofilRoute: AppIprofilRoute,
   AppPaymentsRoute: AppPaymentsRoute,
   AppStatisticsRoute: AppStatisticsRoute,
   AppIndexRoute: AppIndexRoute,

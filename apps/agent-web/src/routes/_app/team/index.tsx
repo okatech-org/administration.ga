@@ -270,7 +270,7 @@ function DashboardTeam() {
 				<div>
 					<h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
 						<Building2 className="h-6 w-6 text-primary" />
-						{t("admin.nav.organization", "Organisation")}
+						{t("admin.nav.organization", "Représentation")}
 					</h1>
 					<p className="text-muted-foreground text-sm mt-1">
 						{t("dashboard.team.description")}

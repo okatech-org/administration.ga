@@ -442,17 +442,17 @@ Notifie si problème détecté.
 
 ## Anti-patterns
 
-❌ **NE PAS** créer des tâches trop fréquentes (chaque minute):
+ **NE PAS** créer des tâches trop fréquentes (chaque minute):
 ```typescript
 cronExpression: '* * * * *'  // MAUVAIS — surcharge système
 ```
 
-✅ **FAIRE** choisir une fréquence raisonnable:
+ **FAIRE** choisir une fréquence raisonnable:
 ```typescript
 cronExpression: '0 9 * * *'  // BON — une fois par jour
 ```
 
-❌ **NE PAS** spécifier les deux (cron ET fireAt):
+ **NE PAS** spécifier les deux (cron ET fireAt):
 ```typescript
 await createScheduledTask({
   cronExpression: '0 9 * * *',
@@ -460,7 +460,7 @@ await createScheduledTask({
 });
 ```
 
-✅ **FAIRE** choisir un seul mode:
+ **FAIRE** choisir un seul mode:
 ```typescript
 // SOIT récurrent:
 await createScheduledTask({
@@ -475,22 +475,22 @@ await createScheduledTask({
 // SOIT ad-hoc (aucun des deux)
 ```
 
-❌ **NE PAS** oublier de formater correctement les ISO timestamps:
+ **NE PAS** oublier de formater correctement les ISO timestamps:
 ```typescript
 fireAt: '2026-03-05 14:30:00'  // MAUVAIS — pas ISO 8601
 ```
 
-✅ **FAIRE** utiliser le format ISO avec offset:
+ **FAIRE** utiliser le format ISO avec offset:
 ```typescript
 fireAt: '2026-03-05T14:30:00-08:00'  // BON
 ```
 
-❌ **NE PAS** laisser les prompts trop vagues:
+ **NE PAS** laisser les prompts trop vagues:
 ```typescript
 prompt: 'Effectue un rapport'  // MAUVAIS — insuffisant
 ```
 
-✅ **FAIRE** structurer le prompt:
+ **FAIRE** structurer le prompt:
 ```typescript
 prompt: `
 Effectue un rapport:

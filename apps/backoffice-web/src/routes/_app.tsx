@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { BackofficeIAstedWindow } from "@/components/ai/BackofficeIAstedWindow";
 import { SuperadminGuard } from "@/components/guards/SuperadminGuard";
 import { SuperadminSidebar } from "@/components/sidebars/superadmin-sidebar";
 
@@ -39,6 +40,7 @@ function SuperadminLayout() {
 				<main className="flex-1 min-h-full overflow-y-auto md:-ml-6">
 					<Outlet />
 				</main>
+				<BackofficeIAstedWindow />
 			</div>
 		</SuperadminGuard>
 	);

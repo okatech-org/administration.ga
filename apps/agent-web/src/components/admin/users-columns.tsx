@@ -126,7 +126,7 @@ const statusCol: ColumnDef<User> = {
       return (
         <div className="flex flex-col gap-0.5">
           <Badge variant="outline" className="text-red-600 border-red-300 bg-red-50 dark:bg-red-500/10 dark:text-red-400 text-[10px]">
-            🗑️ Corbeille
+             Corbeille
           </Badge>
           <span className="text-[10px] text-muted-foreground">
             {daysRemaining > 0 ? `${daysRemaining}j restants` : "Expirée"}

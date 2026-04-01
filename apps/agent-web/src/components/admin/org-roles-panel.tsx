@@ -180,7 +180,7 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 	const [newMinistry, setNewMinistry] = useState({
 		code: "",
 		label: "",
-		icon: "🏛️",
+		icon: "",
 		description: "",
 	});
 
@@ -362,11 +362,11 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 							en: newMinistry.description,
 						}
 					: undefined,
-				icon: newMinistry.icon || "🏛️",
+				icon: newMinistry.icon || "",
 				sortOrder: ministryGroups.length + 1,
 			});
 			toast.success(t("admin.roles.ministryCreated"));
-			setNewMinistry({ code: "", label: "", icon: "🏛️", description: "" });
+			setNewMinistry({ code: "", label: "", icon: "", description: "" });
 			setShowAddMinistryDialog(false);
 		} catch (err: unknown) {
 			toast.error(getErrorMessage(err, t("admin.roles.ministryCreateError")));
@@ -676,7 +676,7 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 																	icon: e.target.value,
 																}))
 															}
-															placeholder="🏛️"
+															placeholder=""
 														/>
 													</div>
 												</div>
@@ -1665,7 +1665,7 @@ function EditMinistryGroupSheet({
 	const [labelEn, setLabelEn] = useState(group.label?.en ?? "");
 	const [descFr, setDescFr] = useState(group.description?.fr ?? "");
 	const [descEn, setDescEn] = useState(group.description?.en ?? "");
-	const [icon, setIcon] = useState(group.icon ?? "🏛️");
+	const [icon, setIcon] = useState(group.icon ?? "");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const { mutateAsync: updateMinistryGroup } = useConvexMutationQuery(
@@ -1683,7 +1683,7 @@ function EditMinistryGroupSheet({
 					descFr.trim() || descEn.trim()
 						? { fr: descFr.trim(), en: descEn.trim() || descFr.trim() }
 						: undefined,
-				icon: icon.trim() || "🏛️",
+				icon: icon.trim() || "",
 			});
 			toast.success(t("admin.roles.ministryUpdated"));
 			onSuccess();
@@ -1727,7 +1727,7 @@ function EditMinistryGroupSheet({
 								id={`${formId}-icon`}
 								value={icon}
 								onChange={(e) => setIcon(e.target.value)}
-								placeholder="🏛️"
+								placeholder=""
 							/>
 						</div>
 					</div>

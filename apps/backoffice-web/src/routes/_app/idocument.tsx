@@ -1,5 +1,7 @@
 "use client";
 
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { createFileRoute } from "@tanstack/react-router";
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,6 +14,12 @@ import {
 	LayoutGrid, List, Columns3, ChevronRight, GripVertical,
 	FileSpreadsheet, ImageIcon, Plus, Filter,
 } from "lucide-react";
+import { toast } from "sonner";
+import { useOrgSelector } from "@/hooks/use-org-selector";
+import {
+	useAuthenticatedConvexQuery,
+	useConvexMutationQuery,
+} from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/idocument")({
@@ -654,6 +662,9 @@ function InfoDialog({ open, onClose, item, itemType }: { open: boolean; onClose:
 // ═══════════════════════════════════════════════════════════════
 
 function IDocumentPage() {
+	// ─── Org selector (backoffice) ──────────────────────────
+	const { activeOrgId, OrgSelector } = useOrgSelector();
+
 	// ─── State ──────────────────────────────────────────────
 	const [viewMode, setViewMode] = useState<ViewMode>("grid");
 	const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -661,8 +672,32 @@ function IDocumentPage() {
 	const [statusFilter, setStatusFilter] = useState<DocStatus | "all">("all");
 	const [sortBy, setSortBy] = useState("date");
 	const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-	const [documents] = useState<DocItem[]>(MOCK_DOCUMENTS);
-	const [folders] = useState<FolderItem[]>(DEFAULT_FOLDERS);
+
+	// ─── Convex queries (données réelles) ───────────────────
+	const { data: rawDocuments = [] } = useAuthenticatedConvexQuery(
+		api.functions.documentVault.getOrgVault,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+
+	// Mapper les données Convex → types UI
+	const documents = useMemo((): DocItem[] =>
+		(rawDocuments as any[]).map((doc) => ({
+			id: doc._id,
+			title: doc.label ?? doc.files?.[0]?.filename ?? "Document",
+			excerpt: "",
+			author: "",
+			updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString("fr-FR") : "",
+			updatedAtTs: doc.updatedAt ?? doc._creationTime,
+			status: (doc.status === "validated" ? "approved" : doc.status === "pending" ? "draft" : doc.status ?? "draft") as DocStatus,
+			tags: [],
+			version: 1,
+			folderId: doc.folderId ?? null,
+			mimeType: doc.files?.[0]?.mimeType,
+		})),
+		[rawDocuments],
+	);
+
+	const folders = useMemo(() => DEFAULT_FOLDERS, []);
 
 	// Dialog states
 	const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -793,11 +828,12 @@ function IDocumentPage() {
 						<FileText className="h-5 w-5 text-white" />
 					</div>
 					<div>
-						<h1 className="text-2xl font-bold tracking-tight">iDocument — Administration</h1>
-						<p className="text-sm text-muted-foreground">Gestion centralisée des documents diplomatiques · {documents.length} documents · {folders.filter((f) => !f.isSystem).length} dossiers</p>
+						<h1 className="text-2xl font-bold tracking-tight">iDocument</h1>
+						<p className="text-sm text-muted-foreground">{documents.length} documents · {folders.filter((f) => !f.isSystem).length} dossiers</p>
 					</div>
 				</div>
 				<div className="flex items-center gap-2">
+					<OrgSelector />
 					<button onClick={() => setShowNewFolderDialog(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-muted transition-colors">
 						<FolderPlus className="h-3.5 w-3.5" />Nouveau dossier
 					</button>

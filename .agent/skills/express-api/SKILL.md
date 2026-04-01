@@ -1,9 +1,9 @@
 ---
 name: express-api
-description: "🔧 Expert Express.js API Backend. S'active automatiquement pour les projets avec un serveur Express (idetude.ga, sgg.ga). Couvre les routes, middleware, authentification JWT, validation Zod, et les patterns API REST."
+description: " Expert Express.js API Backend. S'active automatiquement pour les projets avec un serveur Express (idetude.ga, sgg.ga). Couvre les routes, middleware, authentification JWT, validation Zod, et les patterns API REST."
 ---
 
-# 🔧 Skill : Express.js API Backend Expert
+#  Skill : Express.js API Backend Expert
 
 ## Auto-Activation
 - Fichier dans `server/` ou `backend/`
@@ -112,8 +112,8 @@ super_admin → regional_director → provincial_inspector → district_inspecto
 ```
 
 ## Anti-Patterns
-- ❌ JAMAIS mettre la logique métier dans les routes
-- ❌ JAMAIS oublier `try/catch` + `next(error)` dans les handlers
-- ❌ JAMAIS renvoyer des stack traces en production
-- ❌ JAMAIS oublier `helmet()` + `cors()` en production
-- ❌ JAMAIS instancier `Pool` multiple fois (utiliser singleton)
+-  JAMAIS mettre la logique métier dans les routes
+-  JAMAIS oublier `try/catch` + `next(error)` dans les handlers
+-  JAMAIS renvoyer des stack traces en production
+-  JAMAIS oublier `helmet()` + `cors()` en production
+-  JAMAIS instancier `Pool` multiple fois (utiliser singleton)

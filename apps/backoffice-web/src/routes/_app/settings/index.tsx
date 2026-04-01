@@ -215,7 +215,7 @@ function SettingsPage() {
 		try {
 			await restoreUser({ userId });
 			setTrashedUsers((prev) => prev.filter((u) => u._id !== userId));
-			toast.success("Utilisateur restauré avec succès ✓");
+			toast.success("Utilisateur restauré avec succès ");
 		} catch {
 			toast.error("Erreur lors de la restauration");
 		}
@@ -283,7 +283,7 @@ function SettingsPage() {
 											// Simulate save (these settings would go to a platform settings table)
 											setTimeout(() => {
 												setGeneralSaving(false);
-												toast.success("Paramètres généraux sauvegardés ✓");
+												toast.success("Paramètres généraux sauvegardés ");
 											}, 600);
 										}}
 									>
@@ -571,7 +571,7 @@ function SettingsPage() {
 								<div className="space-y-2">
 									<div className="flex items-center gap-2 mb-4">
 										<Badge variant="outline" className="text-red-600 border-red-300 bg-red-50 dark:bg-red-500/10 dark:text-red-400">
-											🗑️ {trashedUsers.length} compte{trashedUsers.length > 1 ? "s" : ""} en corbeille
+											 {trashedUsers.length} compte{trashedUsers.length > 1 ? "s" : ""} en corbeille
 										</Badge>
 									</div>
 
@@ -612,7 +612,7 @@ function SettingsPage() {
 																		: "text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-500/10"
 																}`}
 															>
-																{isExpired ? "⚠️ Expirée" : `⏳ ${daysRemaining}j restants`}
+																{isExpired ? " Expirée" : ` ${daysRemaining}j restants`}
 															</Badge>
 														</div>
 													</div>

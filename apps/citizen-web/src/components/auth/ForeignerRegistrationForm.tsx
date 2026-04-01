@@ -1002,7 +1002,7 @@ export function ForeignerRegistrationForm({
 			type: PublicUserType.VisaTourism,
 			titleKey: "register.foreigner.purpose.tourism.title",
 			descKey: "register.foreigner.purpose.tourism.description",
-			icon: "🌍",
+			icon: "",
 			features: [
 				"register.foreigner.purpose.tourism.feature1",
 				"register.foreigner.purpose.tourism.feature2",
@@ -1012,7 +1012,7 @@ export function ForeignerRegistrationForm({
 			type: PublicUserType.VisaBusiness,
 			titleKey: "register.foreigner.purpose.business.title",
 			descKey: "register.foreigner.purpose.business.description",
-			icon: "💼",
+			icon: "",
 			features: [
 				"register.foreigner.purpose.business.feature1",
 				"register.foreigner.purpose.business.feature2",
@@ -1022,7 +1022,7 @@ export function ForeignerRegistrationForm({
 			type: PublicUserType.VisaLongStay,
 			titleKey: "register.foreigner.purpose.longStay.title",
 			descKey: "register.foreigner.purpose.longStay.description",
-			icon: "🏠",
+			icon: "",
 			features: [
 				"register.foreigner.purpose.longStay.feature1",
 				"register.foreigner.purpose.longStay.feature2",
@@ -1032,7 +1032,7 @@ export function ForeignerRegistrationForm({
 			type: PublicUserType.AdminServices,
 			titleKey: "register.foreigner.purpose.admin.title",
 			descKey: "register.foreigner.purpose.admin.description",
-			icon: "📋",
+			icon: "",
 			features: [
 				"register.foreigner.purpose.admin.feature1",
 				"register.foreigner.purpose.admin.feature2",

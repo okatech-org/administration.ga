@@ -1,10 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useConvex } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { DataTable } from "@/components/ui/data-table";
 import { columns, corpsAdminColumns } from "@/components/admin/users-columns";
+import { ProfilesView } from "@/components/admin/profiles-view";
+import { DiplomaticProfilesView } from "@/components/admin/diplomatic-profiles-view";
 import { Badge } from "@/components/ui/badge";
+import { Crown, Shield, Users as UsersIcon } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -16,21 +19,26 @@ import {
   type Continent,
 } from "@/lib/country-utils";
 
+type ViewMode = "accounts" | "profiles" | "diplomatic";
+
 export const Route = createFileRoute("/_app/users/")(
   {
     component: UsersPage,
+    validateSearch: (search: Record<string, unknown>) => ({
+      view: (search.view as ViewMode) || "accounts",
+    }),
   },
 );
 
 type UserTab = "all" | "backoffice" | "corps" | "agents" | "users" | "inactive";
 
 const TABS: { id: UserTab; label: string; emoji: string }[] = [
-  { id: "all", label: "Tous", emoji: "👥" },
-  { id: "backoffice", label: "Back-Office", emoji: "👑" },
-  { id: "corps", label: "Corps Administratif", emoji: "🏛️" },
-  { id: "agents", label: "Agents Spéciaux", emoji: "🕵️" },
-  { id: "users", label: "Utilisateurs", emoji: "👤" },
-  { id: "inactive", label: "Inactifs", emoji: "🚫" },
+  { id: "all", label: "Tous", emoji: "" },
+  { id: "backoffice", label: "Back-Office", emoji: "" },
+  { id: "corps", label: "Corps Administratif", emoji: "" },
+  { id: "agents", label: "Agents Spéciaux", emoji: "" },
+  { id: "users", label: "Utilisateurs", emoji: "" },
+  { id: "inactive", label: "Inactifs", emoji: "" },
 ];
 
 const BACKOFFICE_ROLES = ["super_admin", "admin_system", "admin"] as const;
@@ -38,15 +46,23 @@ const AGENT_ROLES = ["intel_agent", "education_agent"] as const;
 const PRIVILEGED_ROLES = [...BACKOFFICE_ROLES, ...AGENT_ROLES] as const;
 
 const ROLE_META: Record<string, { label: string; emoji: string; color: string }> = {
-  super_admin: { label: "Super Admin", emoji: "👑", color: "bg-amber-500/10 text-amber-700 border-amber-300 dark:text-amber-400" },
-  admin_system: { label: "Admin Système", emoji: "🛡️", color: "bg-violet-500/10 text-violet-700 border-violet-300 dark:text-violet-400" },
-  admin: { label: "Admin", emoji: "🔧", color: "bg-blue-500/10 text-blue-700 border-blue-300 dark:text-blue-400" },
-  intel_agent: { label: "Agent Intel", emoji: "🕵️", color: "bg-emerald-500/10 text-emerald-700 border-emerald-300 dark:text-emerald-400" },
-  education_agent: { label: "Agent Éducation", emoji: "🎓", color: "bg-teal-500/10 text-teal-700 border-teal-300 dark:text-teal-400" },
+  super_admin: { label: "Super Admin", emoji: "", color: "bg-amber-500/10 text-amber-700 border-amber-300 dark:text-amber-400" },
+  admin_system: { label: "Admin Système", emoji: "", color: "bg-violet-500/10 text-violet-700 border-violet-300 dark:text-violet-400" },
+  admin: { label: "Admin", emoji: "", color: "bg-blue-500/10 text-blue-700 border-blue-300 dark:text-blue-400" },
+  intel_agent: { label: "Agent Intel", emoji: "", color: "bg-emerald-500/10 text-emerald-700 border-emerald-300 dark:text-emerald-400" },
+  education_agent: { label: "Agent Éducation", emoji: "", color: "bg-teal-500/10 text-teal-700 border-teal-300 dark:text-teal-400" },
 };
+
+const VIEW_MODES: { id: ViewMode; label: string; icon: React.ElementType }[] = [
+  { id: "accounts", label: "Comptes", icon: UsersIcon },
+  { id: "profiles", label: "Profils Consulaires", icon: Crown },
+  { id: "diplomatic", label: "Corps Diplomatique", icon: Shield },
+];
 
 function UsersPage() {
   const { t } = useTranslation();
+  const { view } = Route.useSearch();
+  const navigate = useNavigate();
   const convex = useConvex();
   
   const [activeTab, setActiveTab] = useState<UserTab>("all");
@@ -302,13 +318,48 @@ function UsersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {t("superadmin.users.title")}
+            Comptes & Profils
           </h1>
           <p className="text-muted-foreground">
-            {t("superadmin.users.description")}
+            {view === "accounts" && "Gestion des comptes de la plateforme"}
+            {view === "profiles" && "Profils consulaires des citoyens et ressortissants"}
+            {view === "diplomatic" && "Profils diplomatiques du corps administratif"}
           </p>
         </div>
       </div>
+
+      {/* ── View Toggle (3 vues principales) ── */}
+      <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl w-fit">
+        {VIEW_MODES.map((mode) => {
+          const Icon = mode.icon;
+          const isActive = view === mode.id;
+          return (
+            <button
+              key={mode.id}
+              type="button"
+              onClick={() => navigate({ search: { view: mode.id } })}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                isActive
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50",
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {mode.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Vue Profils Consulaires ── */}
+      {view === "profiles" && <ProfilesView />}
+
+      {/* ── Vue Corps Diplomatique ── */}
+      {view === "diplomatic" && <DiplomaticProfilesView />}
+
+      {/* ── Vue Comptes (existant) ── */}
+      {view === "accounts" && <>
 
       {/* Main Tabs */}
       <div className="flex flex-wrap gap-1.5 p-1 bg-muted/50 rounded-xl">
@@ -362,7 +413,7 @@ function UsersPage() {
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/80",
             )}
           >
-            <span>🌐</span>
+            <span></span>
             <span>Tous</span>
             <span className="text-[10px] opacity-70 ml-0.5">
               {activeTab !== "all" ? tabFilteredUsers.length : users?.length ?? 0}
@@ -413,7 +464,7 @@ function UsersPage() {
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/80",
             )}
           >
-            <span>📍</span>
+            <span></span>
             <span>Tous les pays</span>
             <span className="text-[10px] opacity-70 ml-0.5">
               {usersFilteredByContinent.length}
@@ -458,7 +509,7 @@ function UsersPage() {
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/80",
             )}
           >
-            <span>🏛️</span>
+            <span></span>
             <span>Toutes les représentations</span>
             <span className="text-[10px] opacity-70 ml-0.5">
               {usersFilteredByCountry.length}
@@ -499,7 +550,7 @@ function UsersPage() {
                 : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/50",
             )}
           >
-            <span>👑</span>
+            <span></span>
             <span className="font-medium">Tous</span>
             <Badge variant="outline" className="h-5 min-w-[20px] px-1.5 text-[10px]">
               {counts.backoffice}
@@ -544,7 +595,7 @@ function UsersPage() {
                 : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/50",
             )}
           >
-            <span>🕵️</span>
+            <span></span>
             <span className="font-medium">Tous</span>
             <Badge variant="outline" className="h-5 min-w-[20px] px-1.5 text-[10px]">
               {counts.agents}
@@ -584,6 +635,8 @@ function UsersPage() {
         filterableColumns={filterableColumns}
         isLoading={isPending}
       />
+
+      </>}
     </div>
   );
 }

@@ -26,10 +26,10 @@ interface OrgGroup {
 /* ─── Real accounts, hardcoded for dev switcher ─── */
 const DEV_ACCOUNTS: OrgGroup[] = [
 	{
-		org: "👤 Ressortissants & Citoyens",
+		org: " Ressortissants & Citoyens",
 		accounts: [
-			{ label: "Berny ITOUTOU — Ressortissant (Longue Durée)", email: "itoutouberny@gmail.com", org: "👤 Ressortissants & Citoyens" },
-			{ label: "Kama UITOUTOU — Citoyen (Courte Durée)", email: "kamauitoutou@gmail.com", org: "👤 Ressortissants & Citoyens" },
+			{ label: "Berny ITOUTOU — Ressortissant (Longue Durée)", email: "itoutouberny@gmail.com", org: " Ressortissants & Citoyens" },
+			{ label: "Kama UITOUTOU — Citoyen (Courte Durée)", email: "kamauitoutou@gmail.com", org: " Ressortissants & Citoyens" },
 		],
 	},
 ];

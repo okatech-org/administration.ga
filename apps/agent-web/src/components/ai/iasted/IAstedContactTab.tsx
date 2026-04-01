@@ -103,7 +103,7 @@ export function IAstedContactTab() {
 						onChange={(e) => setCountry(e.target.value)}
 						className="text-[10px] px-2 py-1 rounded-md border bg-background text-foreground h-6"
 					>
-						<option value="">🌍 Tous pays</option>
+						<option value=""> Tous pays</option>
 						{availableCountries.map((c: any) => (
 							<option key={c.code} value={c.code}>{c.code} ({c.count})</option>
 						))}

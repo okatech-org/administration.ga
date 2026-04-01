@@ -445,7 +445,7 @@ function ModuleAccessCard({
 					<SelectContent>
 						<SelectItem value="none">
 							<span className="flex items-center gap-1.5 text-muted-foreground">
-								❌ {lang === "fr" ? "Aucun" : "None"}
+								 {lang === "fr" ? "Aucun" : "None"}
 							</span>
 						</SelectItem>
 						{(["reader", "editor", "admin"] as const).map((level) => {
@@ -887,7 +887,7 @@ function PositionFormSheet({
 								/>
 								<span className="text-sm font-medium">
 									{ORGANIZATION_TEMPLATES.find((t) => t.type === selectedOrgType)?.label[lang as "fr" | "en"] ??
-										(lang === "fr" ? "Organisation" : "Organization")}
+										(lang === "fr" ? "Représentation" : "Representation")}
 								</span>
 								<span className="text-xs text-muted-foreground">— {positionTemplates.length} postes</span>
 							</div>

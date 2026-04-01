@@ -2,7 +2,8 @@ import { v } from "convex/values";
 import { query } from "../_generated/server";
 import { authMutation, superadminMutation } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
-import { assertCanDoTask } from "../lib/permissions";
+import { assertCanDoTask, resolveServiceAccessLevel, getTasksForMembership } from "../lib/permissions";
+import { MODULE_ACCESS_TASKS } from "../lib/moduleCodes";
 import { error, ErrorCode } from "../lib/errors";
 import { logCortexAction } from "../lib/neocortex";
 import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
@@ -419,6 +420,130 @@ export const toggleOrgServiceActive = authMutation({
     });
 
     return !orgService.isActive;
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SERVICE ACCESS CONTROL
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Retourne la map orgServiceId → accessLevel pour un membre dans une org.
+ * Résout l'accès par service en combinant :
+ *   1. Le serviceAccess spécifique (si défini sur l'orgService)
+ *   2. Le fallback au niveau d'accès du module "requests" du poste
+ */
+export const getServiceAccessForMember = query({
+  args: {
+    orgId: v.id("orgs"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // Trouver la membership + position
+    const membership = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_org", (q) =>
+        q.eq("userId", args.userId).eq("orgId", args.orgId),
+      )
+      .first();
+
+    if (!membership || membership.deletedAt) return {};
+    if (!membership.positionId) return {};
+
+    const position = await ctx.db.get(membership.positionId);
+    if (!position || !position.isActive) return {};
+
+    // Déterminer le niveau d'accès "requests" du module sur ce poste
+    const moduleAccess = (position as any).moduleAccess as
+      Array<{ moduleCode: string; accessLevel: string }> | undefined;
+
+    let fallbackLevel: string | null = null;
+    if (moduleAccess) {
+      const requestsAccess = moduleAccess.find((m) => m.moduleCode === "requests");
+      fallbackLevel = requestsAccess?.accessLevel ?? null;
+    } else if (position.tasks) {
+      // Legacy: dériver du task set
+      const tasks = new Set(position.tasks);
+      if (tasks.has("requests.assign") || tasks.has("requests.delete")) fallbackLevel = "admin";
+      else if (tasks.has("requests.create") || tasks.has("requests.process")) fallbackLevel = "editor";
+      else if (tasks.has("requests.view")) fallbackLevel = "reader";
+    }
+
+    // Récupérer tous les orgServices actifs de cette org
+    const orgServices = await ctx.db
+      .query("orgServices")
+      .withIndex("by_org_active", (q) =>
+        q.eq("orgId", args.orgId).eq("isActive", true),
+      )
+      .collect();
+
+    // Résoudre l'accès pour chaque service
+    const result: Record<string, string> = {};
+    for (const os of orgServices) {
+      const level = resolveServiceAccessLevel(
+        (os as any).serviceAccess,
+        membership.positionId,
+        fallbackLevel,
+      );
+      if (level) {
+        result[os._id] = level;
+      }
+    }
+
+    return result;
+  },
+});
+
+/**
+ * Met à jour le contrôle d'accès par poste pour un service spécifique.
+ * Requiert settings.manage sur l'org.
+ */
+export const updateServiceAccess = authMutation({
+  args: {
+    orgServiceId: v.id("orgServices"),
+    serviceAccess: v.array(v.object({
+      positionId: v.id("positions"),
+      accessLevel: v.union(
+        v.literal("reader"),
+        v.literal("editor"),
+        v.literal("admin"),
+      ),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const orgService = await ctx.db.get(args.orgServiceId);
+    if (!orgService) throw error(ErrorCode.SERVICE_NOT_FOUND);
+
+    const membership = await getMembership(ctx, ctx.user._id, orgService.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.manage");
+
+    await ctx.db.patch(args.orgServiceId, {
+      serviceAccess: args.serviceAccess,
+      updatedAt: Date.now(),
+    } as any);
+
+    return args.orgServiceId;
+  },
+});
+
+/**
+ * Supprime le contrôle d'accès par service (revient au défaut module).
+ */
+export const resetServiceAccess = authMutation({
+  args: { orgServiceId: v.id("orgServices") },
+  handler: async (ctx, args) => {
+    const orgService = await ctx.db.get(args.orgServiceId);
+    if (!orgService) throw error(ErrorCode.SERVICE_NOT_FOUND);
+
+    const membership = await getMembership(ctx, ctx.user._id, orgService.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.manage");
+
+    await ctx.db.patch(args.orgServiceId, {
+      serviceAccess: undefined,
+      updatedAt: Date.now(),
+    } as any);
+
+    return args.orgServiceId;
   },
 });
 

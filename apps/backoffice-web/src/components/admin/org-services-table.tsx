@@ -77,7 +77,7 @@ export function OrgServicesTable({ orgId }: OrgServicesTableProps) {
 	const handleToggleActive = async (orgServiceId: Id<"orgServices">) => {
 		try {
 			await toggleActive({ orgServiceId });
-			toast.success(t("superadmin.common.save") + " ✓");
+			toast.success(t("superadmin.common.save") + " ");
 		} catch (error) {
 			toast.error(t("superadmin.common.error"));
 		}
@@ -97,7 +97,7 @@ export function OrgServicesTable({ orgId }: OrgServicesTableProps) {
 				},
 				requiresAppointment: activationForm.requiresAppointment,
 			});
-			toast.success(`${t("superadmin.common.save")} ✓`);
+			toast.success(`${t("superadmin.common.save")} `);
 			setAddDialogOpen(false);
 			setSelectedCommonService("");
 			setActivationForm({ fee: 0, currency: "XAF", requiresAppointment: true });

@@ -324,7 +324,7 @@ function DashboardSettings() {
 	};
 
 	const GROUPS: SettingsTabGroup[] = [
-		// ── 🏛️ ORGANISME (admin seulement) ──
+		// ──  ORGANISME (admin seulement) ──
 		...(canViewOrgSettings
 			? [{
 				label: "Organisme",
@@ -362,7 +362,7 @@ function DashboardSettings() {
 				],
 			}]
 			: []),
-		// ── 👤 MON ESPACE (tous) ──
+		// ──  MON ESPACE (tous) ──
 		{
 			label: "Mon espace",
 			tabs: [
@@ -378,7 +378,7 @@ function DashboardSettings() {
 				},
 			],
 		},
-		// ── 🔐 COMPTE (tous) ──
+		// ──  COMPTE (tous) ──
 		{
 			label: "Compte",
 			tabs: [

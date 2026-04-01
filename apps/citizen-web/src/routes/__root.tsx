@@ -18,7 +18,7 @@ import { Toaster } from "@workspace/ui/components/sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { authClient } from "@/lib/auth-client";
 import { FormFillProvider } from "../components/ai/FormFillContext";
-import { CitizenIAstedWindow, CitizenIAstedFAB } from "../components/ai/iasted/CitizenIAstedWindow";
+import { CitizenIAstedWindow } from "../components/ai/iasted/CitizenIAstedWindow";
 import Header from "../components/Header";
 import AppConvexProvider from "@workspace/api/provider";
 import I18nProvider from "@workspace/i18n/provider";
@@ -119,7 +119,7 @@ const routesWithOwnLayout = [
 function RootLayout() {
 	const matches = useMatches();
 	const { data: session } = authClient.useSession();
-	const [iastedOpen, setIastedOpen] = useState(false);
+	// iAsted gère son propre état open/close via le FAB intégré
 
 	const hasOwnLayout = matches.some((match) =>
 		routesWithOwnLayout.some((route) => match.fullPath.startsWith(route)),
@@ -191,12 +191,7 @@ function RootLayout() {
 					<Footer />
 				</main>
 
-				{session && (
-						<>
-							{!iastedOpen && <CitizenIAstedFAB onClick={() => setIastedOpen(true)} />}
-							<CitizenIAstedWindow isOpen={iastedOpen} onClose={() => setIastedOpen(false)} />
-						</>
-					)}
+				{session && <CitizenIAstedWindow />}
 			</div>
 		);
 	}
@@ -214,12 +209,7 @@ function RootLayout() {
 				<Footer />
 			</main>
 
-			{session && (
-						<>
-							{!iastedOpen && <CitizenIAstedFAB onClick={() => setIastedOpen(true)} />}
-							<CitizenIAstedWindow isOpen={iastedOpen} onClose={() => setIastedOpen(false)} />
-						</>
-					)}
+			{session && <CitizenIAstedWindow />}
 		</div>
 	);
 }

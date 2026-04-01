@@ -38,7 +38,7 @@ export default function Header() {
 	const navLinks = [
 		{
 			label: t("header.nav.worldNetwork"),
-			href: "/orgs",
+			href: "/reps",
 			icon: Globe,
 		},
 		{ label: t("header.nav.news"), href: "/news", icon: Newspaper },

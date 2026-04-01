@@ -1,9 +1,9 @@
 ---
 name: react-vite-spa
-description: "⚛️ Expert React + Vite SPA. S'active automatiquement pour les projets SPA (consulat.ga, mairie.ga, sgg.ga, idetude.ga, cnom.ga). Couvre React Router, architecture des composants, hooks, state management, et patterns Vite."
+description: " Expert React + Vite SPA. S'active automatiquement pour les projets SPA (consulat.ga, mairie.ga, sgg.ga, idetude.ga, cnom.ga). Couvre React Router, architecture des composants, hooks, state management, et patterns Vite."
 ---
 
-# ⚛️ Skill : React + Vite SPA Expert
+#  Skill : React + Vite SPA Expert
 
 ## Auto-Activation
 - Le projet contient `vite.config.ts` (et PAS `next.config.*`)
@@ -45,12 +45,12 @@ src/
 ### mairie.ga — Architecture Cerveau + Standard
 ```
 src/
-├── Consciousness/    # 🧬 Orchestration IA iAsted
-├── Cortex/           # 🧬 Skills, entités, rules
-├── LimbicSystem/     # 🧬 Connectors (Supabase)
-├── Neurons/          # 🧬 Hooks spécialisés (auth, profile, request)
-├── Senses/           # 🧬 Inputs
-├── Signals/          # 🧬 Event bus
+├── Consciousness/    #  Orchestration IA iAsted
+├── Cortex/           #  Skills, entités, rules
+├── LimbicSystem/     #  Connectors (Supabase)
+├── Neurons/          #  Hooks spécialisés (auth, profile, request)
+├── Senses/           #  Inputs
+├── Signals/          #  Event bus
 ├── components/       # Composants UI classiques
 │   ├── admin/
 │   ├── icorrespondance/  # Module iCorrespondance
@@ -181,8 +181,8 @@ toast.promise(submitForm(), {
 ```
 
 ## Anti-Patterns
-- ❌ JAMAIS utiliser des patterns Next.js dans un projet Vite
-- ❌ JAMAIS mettre de logique métier dans les composants — utiliser hooks/services
-- ❌ JAMAIS oublier les états loading/error dans les data-fetching hooks
-- ❌ JAMAIS modifier les fichiers `components/ui/` (Shadcn)
-- ❌ JAMAIS ignorer la structure existante du projet — s'y conformer
+-  JAMAIS utiliser des patterns Next.js dans un projet Vite
+-  JAMAIS mettre de logique métier dans les composants — utiliser hooks/services
+-  JAMAIS oublier les états loading/error dans les data-fetching hooks
+-  JAMAIS modifier les fichiers `components/ui/` (Shadcn)
+-  JAMAIS ignorer la structure existante du projet — s'y conformer

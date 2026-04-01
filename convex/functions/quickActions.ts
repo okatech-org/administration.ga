@@ -89,7 +89,7 @@ export const runQuickAction = action({
     let totalPatched = 0;
     let isDone = false;
 
-    console.log(`🚀 Starting quick action with batch size ${batchSize}...`);
+    console.log(` Starting quick action with batch size ${batchSize}...`);
 
     while (!isDone) {
       const result: any = await ctx.runMutation(api.functions.quickActions.quickActionBatch, {
@@ -106,7 +106,7 @@ export const runQuickAction = action({
       console.log(`Processed: ${totalProcessed} | Empty: ${totalMatched} | Patched: ${totalPatched}`);
     }
 
-    console.log(`✅ Quick action finished. ${totalProcessed} requests scanned, ${totalMatched} empty, ${totalPatched} patched.`);
+    console.log(` Quick action finished. ${totalProcessed} requests scanned, ${totalMatched} empty, ${totalPatched} patched.`);
 
     return {
       message: "Quick action completed",
@@ -241,7 +241,7 @@ export const runBackfillEmailPhone = action({
     let totalPatchedEmail = 0;
     let totalPatchedPhone = 0;
 
-    console.log(`🚀 Starting email/phone backfill with batch size ${batchSize}...`);
+    console.log(` Starting email/phone backfill with batch size ${batchSize}...`);
 
     while (!isDone) {
       const result: any = await ctx.runMutation(api.functions.quickActions.backfillEmailPhoneBatch, {
@@ -262,7 +262,7 @@ export const runBackfillEmailPhone = action({
       );
     }
 
-    console.log(`✅ Backfill finished. ${totalProcessed} profiles scanned.`);
+    console.log(` Backfill finished. ${totalProcessed} profiles scanned.`);
     console.log(`   Email: ${totalMissingEmail} missing → ${totalPatchedEmail} recovered`);
     console.log(`   Phone: ${totalMissingPhone} missing → ${totalPatchedPhone} recovered`);
 

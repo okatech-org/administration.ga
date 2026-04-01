@@ -129,7 +129,7 @@ export function ConsulateLocations() {
 									</CardContent>
 									<CardFooter>
 										<Link
-											to="/orgs/$slug"
+											to="/reps/$slug"
 											params={{ slug: org.slug }}
 											className="inline-flex items-center gap-2 text-primary font-medium text-sm hover:gap-3 transition-all"
 										>
@@ -151,7 +151,7 @@ export function ConsulateLocations() {
 						size="lg"
 						className="border-primary/30 hover:bg-primary hover:text-white hover:border-primary"
 					>
-						<Link to="/orgs" search={{ view: "grid" }}>
+						<Link to="/reps" search={{ view: "grid" }}>
 							<MapPin className="w-4 h-4 mr-2" />
 							{t("consulates.viewAll")}
 						</Link>

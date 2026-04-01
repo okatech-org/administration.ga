@@ -268,7 +268,7 @@ function VaultFileCard({ title, iconColor = "text-stone-600", author, authorInit
 }) {
 	return (
 		<motion.div layoutId={layoutId} className={cn("group hover:shadow-lg transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-card rounded-xl", isSelected && "ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/5")} onClick={onClick}>
-			<div className="relative aspect-[1/1.414] bg-white/[0.03] flex flex-col overflow-hidden">
+			<div className="relative aspect-[1/1.414] bg-white/3 flex flex-col overflow-hidden">
 				<div className="relative flex items-center px-2.5 pt-2 z-10 min-h-[20px]">
 					<div className="flex items-center gap-1 shrink min-w-0">{badges}</div>
 					<div className="absolute inset-x-0 flex justify-center pointer-events-none">
@@ -296,7 +296,7 @@ function VaultFileCard({ title, iconColor = "text-stone-600", author, authorInit
 				<div className="flex items-center justify-between px-2.5 pb-2 mt-auto">
 					<div className="flex items-center gap-1">{statusBadge}</div>
 					<div className="flex items-center gap-1.5 text-[8px] text-muted-foreground/50">
-						{version !== undefined && <span className="font-mono bg-white/[0.04] px-1 rounded">v{version}</span>}
+						{version !== undefined && <span className="font-mono bg-white/4 px-1 rounded">v{version}</span>}
 						{date && <span className="flex items-center gap-0.5 whitespace-nowrap"><Clock className="h-2 w-2" />{date}</span>}
 					</div>
 				</div>
@@ -360,7 +360,7 @@ function FolderContextMenu({ itemId, itemName, itemType, onShare, onSavePolicy, 
 	const [open, setOpen] = useState(false);
 	return (
 		<div className="relative">
-			<button onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="h-7 w-7 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-muted-foreground hover:text-foreground">
+			<button onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="h-7 w-7 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-muted-foreground hover:text-foreground" aria-label="Actions">
 				<MoreHorizontal className="h-4 w-4" />
 			</button>
 			{open && (
@@ -546,7 +546,7 @@ function ArchivePolicyDialog({ open, onClose, targetName, itemType }: { open: bo
 								</div>
 								{countingStart === "date_manuelle" && (
 									<div className="flex items-center gap-2 mt-1 pl-6">
-										<input type="date" value={manualDate} onChange={(e) => setManualDate(e.target.value)} className="h-7 text-xs bg-card border border-border rounded-md px-2" />
+										<input type="date" value={manualDate} onChange={(e) => setManualDate(e.target.value)} className="h-7 text-xs bg-card border border-border rounded-md px-2" aria-label="Date de comptage manuelle" />
 									</div>
 								)}
 							</div>
@@ -569,13 +569,13 @@ function ArchivePolicyDialog({ open, onClose, targetName, itemType }: { open: bo
 									<div className="space-y-1.5">
 										<div className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border/50">
 											<div><p className="text-[11px] font-medium">Sous-dossiers</p><p className="text-[9px] text-muted-foreground">Héritent de cette politique</p></div>
-											<button onClick={() => setInheritChildren(!inheritChildren)} className={cn("w-9 h-5 rounded-full transition-colors relative", inheritChildren ? "bg-primary" : "bg-muted-foreground/30")}>
+											<button onClick={() => setInheritChildren(!inheritChildren)} className={cn("w-9 h-5 rounded-full transition-colors relative", inheritChildren ? "bg-primary" : "bg-muted-foreground/30")} aria-label="Héritage sous-dossiers">
 												<span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform shadow-sm", inheritChildren ? "translate-x-4" : "translate-x-0.5")} />
 											</button>
 										</div>
 										<div className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border/50">
 											<div><p className="text-[11px] font-medium">Documents enfants</p><p className="text-[9px] text-muted-foreground">Héritent de la catégorie</p></div>
-											<button onClick={() => setInheritDocuments(!inheritDocuments)} className={cn("w-9 h-5 rounded-full transition-colors relative", inheritDocuments ? "bg-primary" : "bg-muted-foreground/30")}>
+											<button onClick={() => setInheritDocuments(!inheritDocuments)} className={cn("w-9 h-5 rounded-full transition-colors relative", inheritDocuments ? "bg-primary" : "bg-muted-foreground/30")} aria-label="Héritage documents enfants">
 												<span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform shadow-sm", inheritDocuments ? "translate-x-4" : "translate-x-0.5")} />
 											</button>
 										</div>
@@ -587,7 +587,7 @@ function ArchivePolicyDialog({ open, onClose, targetName, itemType }: { open: bo
 				</div>
 				<div className="px-6 py-4 border-t border-border/50 flex justify-end gap-2">
 					<button onClick={onClose} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Annuler</button>
-					<button onClick={onClose} className="px-3 py-1.5 text-xs rounded-md bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-700 hover:to-teal-600 text-white transition-colors flex items-center gap-1.5">
+					<button onClick={onClose} className="px-3 py-1.5 text-xs rounded-md bg-linear-to-r from-cyan-600 to-teal-500 hover:from-cyan-700 hover:to-teal-600 text-white transition-colors flex items-center gap-1.5">
 						<Archive className="h-4 w-4" />Enregistrer la politique
 					</button>
 				</div>
@@ -843,7 +843,7 @@ function IDocumentPage() {
 			{/* ── Header ── */}
 			<motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 				<div className="flex items-center gap-3">
-					<div className="h-11 w-11 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
+					<div className="h-11 w-11 rounded-xl bg-linear-to-br from-violet-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
 						<FileText className="h-5 w-5 text-white" />
 					</div>
 					<div>
@@ -856,7 +856,7 @@ function IDocumentPage() {
 						<button onClick={() => setShowNewFolderDialog(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-muted transition-colors">
 							<FolderPlus className="h-3.5 w-3.5" />Nouveau dossier
 						</button>
-						<button className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gradient-to-r from-violet-600 to-indigo-500 hover:from-violet-700 hover:to-indigo-600 text-white rounded-lg transition-colors">
+						<button className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-linear-to-r from-violet-600 to-indigo-500 hover:from-violet-700 hover:to-indigo-600 text-white rounded-lg transition-colors">
 							<Plus className="h-3.5 w-3.5" />Nouveau document
 						</button>
 					</div>
@@ -1149,7 +1149,7 @@ function IDocumentPage() {
 						</div>
 						<div className="px-5 py-3 border-t border-border/50 flex justify-end gap-2">
 							<button onClick={() => setShowNewFolderDialog(false)} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Annuler</button>
-							<button onClick={() => setShowNewFolderDialog(false)} disabled={!newFolderName.trim()} className="px-3 py-1.5 text-xs rounded-md bg-gradient-to-r from-violet-600 to-indigo-500 text-white disabled:opacity-50 transition-colors flex items-center gap-1.5">
+							<button onClick={() => setShowNewFolderDialog(false)} disabled={!newFolderName.trim()} className="px-3 py-1.5 text-xs rounded-md bg-linear-to-r from-violet-600 to-indigo-500 text-white disabled:opacity-50 transition-colors flex items-center gap-1.5">
 								<FolderPlus className="h-4 w-4" />Créer
 							</button>
 						</div>

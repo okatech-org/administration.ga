@@ -133,7 +133,7 @@ function CardElementRenderer({
               cornerRadius={element.cornerRadius}
             />
             <Text
-              text={element.isDynamicField ? "📷 Photo" : "🖼 Image"}
+              text={element.isDynamicField ? " Photo" : " Image"}
               width={element.width}
               height={element.height}
               align="center"

@@ -61,7 +61,7 @@ export function useAdminAIChat() {
 						);
 						const resultMessage: Message = {
 							role: "assistant",
-							content: "✅ Navigation effectuée.",
+							content: " Navigation effectuée.",
 							timestamp: Date.now(),
 						};
 						setMessages((prev) => [...prev, resultMessage]);
@@ -205,7 +205,7 @@ export function useAdminAIChat() {
 					);
 					const resultMessage: Message = {
 						role: "assistant",
-						content: "✅ Navigation effectuée.",
+						content: " Navigation effectuée.",
 						timestamp: Date.now(),
 					};
 					setMessages((prev) => [...prev, resultMessage]);
@@ -227,8 +227,8 @@ export function useAdminAIChat() {
 				const resultMessage: Message = {
 					role: "assistant",
 					content: result.success
-						? `✅ ${(result.data as any)?.message || "Action exécutée"}`
-						: `❌ Erreur: ${result.error}`,
+						? ` ${(result.data as any)?.message || "Action exécutée"}`
+						: ` Erreur: ${result.error}`,
 					timestamp: Date.now(),
 				};
 				setMessages((prev) => [...prev, resultMessage]);

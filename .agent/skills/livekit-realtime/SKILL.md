@@ -1027,32 +1027,32 @@ export async function updateParticipantMetadata(
 ## Anti-patterns à éviter
 
 ```typescript
-// ❌ JAMAIS exposer URL serveur LiveKit publiquement
+//  JAMAIS exposer URL serveur LiveKit publiquement
 // (Elle doit être sécurisée, pas accessible directement)
 
-// ❌ JAMAIS créer tokens côté client
+//  JAMAIS créer tokens côté client
 const token = createAccessToken(roomName, userName) // DANGEREUX!
 
-// ✅ À faire : créer tokens côté serveur seulement
+//  À faire : créer tokens côté serveur seulement
 const { token } = await generateRoomToken({ roomName })
 
-// ❌ JAMAIS faire confiance aux permissions du client
+//  JAMAIS faire confiance aux permissions du client
 at.addGrant({
   room: userInputRoomName, // Vérifier que l'utilisateur peut accéder
 })
 
-// ✅ À faire : valider les accès côté serveur
+//  À faire : valider les accès côté serveur
 const permission = await checkUserRoomAccess(userId, roomName)
 if (!permission) throw new Error('Accès refusé')
 
-// ❌ JAMAIS ignorer les erreurs de connexion
+//  JAMAIS ignorer les erreurs de connexion
 try {
   await room.connect()
 } catch (e) {
   console.log(e) // Pas assez!
 }
 
-// ✅ À faire : implémenter retry logic
+//  À faire : implémenter retry logic
 async function connectWithRetry(maxAttempts = 3) {
   for (let i = 0; i < maxAttempts; i++) {
     try {

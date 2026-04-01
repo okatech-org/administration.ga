@@ -213,7 +213,7 @@ gsap.to(camera.position, {
 
 ## Anti-Patterns
 
-### ❌ 3D For 3D's Sake
+###  3D For 3D's Sake
 
 **Why bad**: Slows down the site.
 Confuses users.
@@ -225,7 +225,7 @@ Product visualization = good.
 Random floating shapes = probably not.
 Ask: would an image work?
 
-### ❌ Desktop-Only 3D
+###  Desktop-Only 3D
 
 **Why bad**: Most traffic is mobile.
 Kills battery.
@@ -237,7 +237,7 @@ Reduce quality on mobile.
 Provide static fallback.
 Consider disabling 3D on low-end.
 
-### ❌ No Loading State
+###  No Loading State
 
 **Why bad**: Users think it's broken.
 High bounce rate.

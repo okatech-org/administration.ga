@@ -182,3 +182,28 @@ export function hasPermissionSync(
   return resolvedTasks.has(taskCode);
 }
 
+// ============================================
+// Service-Level Access Resolution
+// ============================================
+
+/**
+ * Résout le niveau d'accès effectif d'un poste pour un service spécifique.
+ *
+ * Si l'orgService a un serviceAccess défini → cherche le poste, retourne son niveau ou null.
+ * Sinon → retourne le fallback (niveau d'accès du module "requests" sur le poste).
+ */
+export function resolveServiceAccessLevel(
+  serviceAccess: Array<{ positionId: string; accessLevel: string }> | undefined,
+  positionId: string,
+  fallbackModuleLevel: string | null,
+): string | null {
+  // Pas de config spécifique → hériter du module
+  if (!serviceAccess || serviceAccess.length === 0) {
+    return fallbackModuleLevel;
+  }
+
+  // Chercher le poste dans la config spécifique
+  const entry = serviceAccess.find((e) => e.positionId === positionId);
+  return entry?.accessLevel ?? null;
+}
+

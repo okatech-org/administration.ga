@@ -349,7 +349,7 @@ Les workflows Convex exigent le **déterminisme** pour les retries :
 // MAUVAIS — non déterministe
 export const badWorkflow = workflow(
   async (ctx, userId) => {
-    const randomId = Math.random(); // ❌ Changera à chaque retry
+    const randomId = Math.random(); //  Changera à chaque retry
     await step(ctx, "process", async () => {
       // ...
     });
@@ -359,7 +359,7 @@ export const badWorkflow = workflow(
 // BON — déterministe
 export const goodWorkflow = workflow(
   async (ctx, userId, randomSeed) => {
-    const randomId = randomSeed; // ✓ Même à chaque retry
+    const randomId = randomSeed; //  Même à chaque retry
     await step(ctx, "process", async () => {
       // ...
     });

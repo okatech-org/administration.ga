@@ -81,7 +81,7 @@ export function ApprovalPanel({ itemId, currentUserId, status }: ApprovalPanelPr
 				itemId,
 				comment: approveComment.trim() || undefined,
 			});
-			toast.success("Correspondance approuvée ✓");
+			toast.success("Correspondance approuvée ");
 			setApproveComment("");
 			setShowCommentInput(false);
 		} catch (e: any) {

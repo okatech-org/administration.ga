@@ -141,10 +141,10 @@ export function IAstedMeetingTab() {
 			resetForm();
 
 			if (scheduledAt) {
-				toast.success("Réunion planifiée ✓");
+				toast.success("Réunion planifiée ");
 				setView("list");
 			} else {
-				toast.success("Réunion créée ✓");
+				toast.success("Réunion créée ");
 				setView("prejoin");
 			}
 		} catch (e: any) {
@@ -475,7 +475,7 @@ export function IAstedMeetingTab() {
 						{activeMeetings.length > 0 && (
 							<div>
 								<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-2">
-									🔴 En cours
+									 En cours
 								</p>
 								<div className="space-y-1.5">
 									{activeMeetings.map((m: any) => (
@@ -503,7 +503,7 @@ export function IAstedMeetingTab() {
 						{scheduledMeetings.length > 0 && (
 							<div>
 								<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-2">
-									📅 Planifiées
+									 Planifiées
 								</p>
 								<div className="space-y-1">
 									{scheduledMeetings.map((m: any) => {

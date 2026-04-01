@@ -25,7 +25,7 @@ convex/
 │   └── ...
 ├── lib/                  # Shared logic
 │   ├── auth.ts           # requireAuth, requireSuperadmin
-│   ├── customFunctions.ts  # ⚠️ CRITICAL — authQuery, authMutation, authAction
+│   ├── customFunctions.ts  #  CRITICAL — authQuery, authMutation, authAction
 │   ├── constants.ts      # Enums (RequestStatus, etc.)
 │   ├── errors.ts         # ErrorCode + error factories
 │   ├── permissions.ts    # Task/position verification
@@ -42,13 +42,13 @@ convex/
 
 **Critical import rule (consulat.ga, idetude.ga):**
 ```ts
-// ✅ ALWAYS use these in consulat.ga
+//  ALWAYS use these in consulat.ga
 import { authQuery, authMutation, authAction } from "./lib/customFunctions";
 
-// ❌ NEVER import directly from _generated/server in consulat.ga
+//  NEVER import directly from _generated/server in consulat.ga
 // import { query, mutation } from "./_generated/server";
 
-// ✅ Other projects use standard imports
+//  Other projects use standard imports
 import { query, mutation, action } from "convex/server";
 ```
 
@@ -130,7 +130,7 @@ v.array(v.string())         // Typed array
 v.object({...})             // Typed object
 v.optional(v.string())      // Optional field (undefined | type)
 v.bytes()                   // ArrayBuffer/Uint8Array
-v.any()                     // ⚠️ AVOID — loses type safety
+v.any()                     //  AVOID — loses type safety
 
 // Validator manipulation
 v.string().pick("field1", "field2")     // Pick fields from union
@@ -827,7 +827,7 @@ export const deleteRequest = authMutation({
 ### Never Trust Client-Provided User IDs
 
 ```ts
-// ❌ WRONG
+//  WRONG
 export const updateUser = mutation({
   args: { userId: v.id("users"), name: v.string() },
   handler: async (ctx, args) => {
@@ -836,7 +836,7 @@ export const updateUser = mutation({
   },
 });
 
-// ✅ CORRECT
+//  CORRECT
 export const updateUser = mutation({
   args: { name: v.string() },
   handler: async (ctx, args) => {
@@ -1088,10 +1088,10 @@ npx convex insights --details
 
 **Pagination to avoid large queries:**
 ```ts
-// ❌ WRONG — loads entire table
+//  WRONG — loads entire table
 const allDocs = await ctx.db.query("documents").collect();
 
-// ✅ CORRECT — paginate
+//  CORRECT — paginate
 const docs = await ctx.db.query("documents")
   .order("desc")
   .take(100);
@@ -1099,12 +1099,12 @@ const docs = await ctx.db.query("documents")
 
 **Index for filter + sort combos:**
 ```ts
-// ❌ SLOW — no index
+//  SLOW — no index
 q = ctx.db.query("requests")
   .filter((q) => q.eq(q.field("orgId"), orgId))
   .filter((q) => q.eq(q.field("status"), "pending"));
 
-// ✅ FAST — uses composite index
+//  FAST — uses composite index
 q = ctx.db.query("requests")
   .withIndex("by_org_status", (q) =>
     q.eq("orgId", orgId).eq("status", "pending")
@@ -1117,7 +1117,7 @@ q = ctx.db.query("requests")
 export const getUserStats = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    // ❌ SLOW for large datasets
+    //  SLOW for large datasets
     const requests = await ctx.db.query("requests")
       .filter((q) => q.eq(q.field("userId"), args.userId))
       .collect();
@@ -1129,7 +1129,7 @@ export const getUserStats = query({
 export const getUserStats = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    // ✅ FAST — O(1) lookup
+    //  FAST — O(1) lookup
     const stats = await ctx.db.query("user_stats")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .first();
@@ -1140,7 +1140,7 @@ export const getUserStats = query({
 
 **Avoid OCC conflicts:**
 ```ts
-// ❌ WRONG — multiple reads then writes causes OCC conflicts
+//  WRONG — multiple reads then writes causes OCC conflicts
 export const incrementCounter = mutation({
   args: { counterId: v.id("counters") },
   handler: async (ctx, args) => {
@@ -1151,7 +1151,7 @@ export const incrementCounter = mutation({
   },
 });
 
-// ✅ CORRECT — structure to avoid conflicts
+//  CORRECT — structure to avoid conflicts
 // Use per-user counters instead of global
 // Or batch increments in a single document
 ```
@@ -1434,18 +1434,18 @@ function RequestCard({ request, onStatusChange }: Props) {
 ## Critical Anti-Patterns
 
 ```
-❌ Never define _id or _creationTime in schema
-❌ Never import query/mutation from _generated/server in consulat.ga
-❌ Never call ctx.db in actions — use ctx.runQuery/ctx.runMutation
-❌ Never use fetch() in queries/mutations — move to actions
-❌ Never use process.env in queries/mutations — only in actions
-❌ Never forget indexes for frequent queries
-❌ Never trust client-provided userIds — verify with auth
-❌ Never omit audit logging (logCortexAction) for important mutations
-❌ Never use v.any() without documenting why
-❌ Never mutate function arguments — create new objects
-❌ Never call db operations in loops without batching
-❌ Never create circular references between documents
+ Never define _id or _creationTime in schema
+ Never import query/mutation from _generated/server in consulat.ga
+ Never call ctx.db in actions — use ctx.runQuery/ctx.runMutation
+ Never use fetch() in queries/mutations — move to actions
+ Never use process.env in queries/mutations — only in actions
+ Never forget indexes for frequent queries
+ Never trust client-provided userIds — verify with auth
+ Never omit audit logging (logCortexAction) for important mutations
+ Never use v.any() without documenting why
+ Never mutate function arguments — create new objects
+ Never call db operations in loops without batching
+ Never create circular references between documents
 ```
 
 ---

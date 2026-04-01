@@ -75,7 +75,7 @@ export function CitizenSettingsTab() {
 							Assistant Consulaire Intelligent — Gabon Diplomatie
 						</p>
 						<p className="text-[10px] text-muted-foreground/60">
-							© 2026 OkaTech / Digitalium
+							 2026 OkaTech / Digitalium
 						</p>
 					</div>
 				</div>

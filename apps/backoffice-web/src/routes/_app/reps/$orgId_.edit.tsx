@@ -33,7 +33,7 @@ import {
 	useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
 
-export const Route = createFileRoute("/_app/orgs/$orgId_/edit")({
+export const Route = createFileRoute("/_app/reps/$orgId_/edit")({
 	component: EditOrganizationPageWrapper,
 });
 
@@ -64,11 +64,11 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 	const { data: org, isPending: isLoading } = useAuthenticatedConvexQuery(
 		api.functions.orgs.getById,
 		{ orgId },
-	);
+	)
 
 	const { mutateAsync: updateOrg, isPending } = useConvexMutationQuery(
 		api.functions.orgs.update,
-	);
+	)
 
 	const form = useForm({
 		defaultValues: {
@@ -103,7 +103,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 		onSubmit: async ({ value }) => {
 			if (!value.name || value.name.length < 3) {
 				toast.error("Name must be at least 3 characters");
-				return;
+				return
 			}
 			if (
 				!value.address.street ||
@@ -111,7 +111,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 				!value.address.country
 			) {
 				toast.error("Street, city, and country are required");
-				return;
+				return
 			}
 
 			try {
@@ -132,14 +132,14 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 					jurisdictionCountries: value.jurisdictionCountries as CountryCode[],
 					logoUrl: value.logoUrl || undefined,
 					settings: value.settings,
-				});
-				toast.success(t("superadmin.organizations.form.edit") + " ✓");
-				navigate({ to: `/orgs/${orgId}` });
+				})
+				toast.success(t("superadmin.organizations.form.edit") + " ");
+				navigate({ to: `/reps/${orgId}` });
 			} catch (error) {
 				toast.error(t("superadmin.common.error"));
 			}
 		},
-	});
+	})
 
 	if (isLoading) {
 		return (
@@ -154,7 +154,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 					</CardContent>
 				</Card>
 			</div>
-		);
+		)
 	}
 
 	if (!org) {
@@ -163,14 +163,14 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 				<Button
 					variant="ghost"
 					size="sm"
-					onClick={() => navigate({ to: "/orgs" })}
+					onClick={() => navigate({ to: "/reps" })}
 				>
 					<ArrowLeft className="mr-2 h-4 w-4" />
 					{t("superadmin.common.back")}
 				</Button>
 				<div className="text-destructive">{t("errors.orgs.notFound")}</div>
 			</div>
-		);
+		)
 	}
 
 	return (
@@ -179,7 +179,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 				<Button
 					variant="ghost"
 					size="sm"
-					onClick={() => navigate({ to: `/orgs/${orgId}` })}
+					onClick={() => navigate({ to: `/reps/${orgId}` })}
 				>
 					<ArrowLeft className="mr-2 h-4 w-4" />
 					{t("superadmin.common.back")}
@@ -196,8 +196,8 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 					<form
 						id="org-form"
 						onSubmit={(e) => {
-							e.preventDefault();
-							form.handleSubmit();
+							e.preventDefault()
+							form.handleSubmit()
 						}}
 					>
 						<FieldGroup>
@@ -228,7 +228,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 												<FieldError errors={field.state.meta.errors} />
 											)}
 										</Field>
-									);
+									)
 								}}
 							/>
 
@@ -274,7 +274,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 														<FieldError errors={field.state.meta.errors} />
 													)}
 												</Field>
-											);
+											)
 										}}
 									/>
 
@@ -284,7 +284,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 											children={(field) => {
 												const isInvalid =
 													field.state.meta.isTouched &&
-													!field.state.meta.isValid;
+													!field.state.meta.isValid
 												return (
 													<Field data-invalid={isInvalid}>
 														<FieldLabel htmlFor={field.name}>
@@ -304,7 +304,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 															<FieldError errors={field.state.meta.errors} />
 														)}
 													</Field>
-												);
+												)
 											}}
 										/>
 
@@ -333,7 +333,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 											children={(field) => {
 												const isInvalid =
 													field.state.meta.isTouched &&
-													!field.state.meta.isValid;
+													!field.state.meta.isValid
 												return (
 													<Field data-invalid={isInvalid}>
 														<FieldLabel htmlFor={field.name}>
@@ -355,7 +355,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 															<FieldError errors={field.state.meta.errors} />
 														)}
 													</Field>
-												);
+												)
 											}}
 										/>
 									</div>
@@ -391,7 +391,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 														<FieldError errors={field.state.meta.errors} />
 													)}
 												</Field>
-											);
+											)
 										}}
 									/>
 
@@ -438,7 +438,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 														<FieldError errors={field.state.meta.errors} />
 													)}
 												</Field>
-											);
+											)
 										}}
 									/>
 								</div>
@@ -467,7 +467,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 											onValueChange={(val) => {
 												const current = field.state.value || [];
 												if (!current.includes(val))
-													field.handleChange([...current, val]);
+													field.handleChange([...current, val])
 											}}
 											placeholder={t(
 												"superadmin.organizations.form.jurisdictionPlaceholder",
@@ -556,7 +556,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 					<Button
 						type="button"
 						variant="outline"
-						onClick={() => navigate({ to: `/orgs/${orgId}` })}
+						onClick={() => navigate({ to: `/reps/${orgId}` })}
 					>
 						{t("superadmin.organizations.form.cancel")}
 					</Button>
@@ -568,5 +568,5 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 				</CardFooter>
 			</Card>
 		</div>
-	);
+	)
 }

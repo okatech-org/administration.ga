@@ -58,6 +58,7 @@ import type * as functions_cvAI from "../functions/cvAI.js";
 import type * as functions_deliveryPackages from "../functions/deliveryPackages.js";
 import type * as functions_digitalMail from "../functions/digitalMail.js";
 import type * as functions_diplomaticAffairs from "../functions/diplomaticAffairs.js";
+import type * as functions_diplomaticProfile from "../functions/diplomaticProfile.js";
 import type * as functions_documentTemplates from "../functions/documentTemplates.js";
 import type * as functions_documentVault from "../functions/documentVault.js";
 import type * as functions_documentVerifications from "../functions/documentVerifications.js";
@@ -254,6 +255,7 @@ declare const fullApi: ApiFromModules<{
   "functions/deliveryPackages": typeof functions_deliveryPackages;
   "functions/digitalMail": typeof functions_digitalMail;
   "functions/diplomaticAffairs": typeof functions_diplomaticAffairs;
+  "functions/diplomaticProfile": typeof functions_diplomaticProfile;
   "functions/documentTemplates": typeof functions_documentTemplates;
   "functions/documentVault": typeof functions_documentVault;
   "functions/documentVerifications": typeof functions_documentVerifications;

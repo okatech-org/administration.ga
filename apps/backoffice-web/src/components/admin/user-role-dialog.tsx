@@ -32,19 +32,19 @@ const ROLE_OPTIONS: { value: PlatformRole; label: string; emoji: string; descrip
 	{
 		value: "user",
 		label: "Utilisateur",
-		emoji: "👤",
+		emoji: "",
 		description: "Citoyen standard, accès à l'espace citoyen",
 	},
 	{
 		value: "admin",
 		label: "Admin",
-		emoji: "🔧",
+		emoji: "",
 		description: "Admin back-office, gestion courante",
 	},
 	{
 		value: "admin_system",
 		label: "Admin Système",
-		emoji: "🛡️",
+		emoji: "",
 		description: "Accès complet sauf suppression du Super Admin",
 	},
 ];
@@ -80,7 +80,7 @@ export function UserRoleDialog({
 	const handleConfirm = async () => {
 		try {
 			await updateRole({ userId: user._id, role: selectedRole as any });
-			toast.success(`Rôle mis à jour pour ${userName} ✓`);
+			toast.success(`Rôle mis à jour pour ${userName} `);
 			onOpenChange(false);
 		} catch (err) {
 			toast.error(t("superadmin.common.error"));
@@ -95,7 +95,7 @@ export function UserRoleDialog({
 					<AlertDialogHeader>
 						<AlertDialogTitle>Compte protégé</AlertDialogTitle>
 						<AlertDialogDescription>
-							Le rôle <Badge className="bg-amber-600 text-white mx-1">👑 Super Admin</Badge>
+							Le rôle <Badge className="bg-amber-600 text-white mx-1"> Super Admin</Badge>
 							ne peut pas être modifié. Ce compte a un accès exclusif à la plateforme.
 						</AlertDialogDescription>
 					</AlertDialogHeader>

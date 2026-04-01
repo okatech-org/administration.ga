@@ -1,28 +1,27 @@
 /**
- * iAsted Citoyen — Espace de communication consulaire
+ * iAsted Citoyen — Layout WhatsApp Desktop 3 colonnes
  *
- * Basé sur le même backend que iAsted agent (LiveKit + Convex),
- * adapté aux droits citoyens :
+ * [Icônes nav 56px] | [Liste conversations/orgs 320px] | [Zone contenu flex-1]
  *
  * Onglets :
- *  - iChat     : Support consulaire (tickets)
- *  - iAppel    : Appelez vos représentations (audio seulement)
- *                Recevez des appels audio/vidéo d'agents
- *  - iContact  : Contacts urgence & standard des représentations
+ *  - iChat     : IA iAsted épinglé + threads agents (temps réel)
+ *  - iAppel    : Appels audio vers représentations + historique
+ *  - iContact  : Annuaire des représentations diplomatiques
  *
  * Restrictions citoyens :
- *  ✔ Peut initier appels AUDIO vers une org (callOrganization)
- *  ✔ Peut RECEVOIR appels/réunions d'un agent (via GlobalCallAlert + meetings.tsx)
- *  ✗ Ne peut PAS initier d'appels vidéo
- *  ✗ Ne peut PAS appeler un autre citoyen
+ *   Peut initier appels AUDIO vers une org (callOrganization)
+ *   Peut RECEVOIR appels/réunions d'un agent
+ *   Ne peut PAS initier d'appels vidéo
+ *   Ne peut PAS appeler un autre citoyen
  */
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { LiveKitRoom } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
+	Bot,
 	Building2,
 	Contact,
 	Globe,
@@ -30,31 +29,35 @@ import {
 	Mail,
 	MessageSquare,
 	Mic,
+	Minimize2,
 	Phone,
 	PhoneCall,
 	PhoneIncoming,
 	PhoneMissed,
 	PhoneOff,
-	PlusCircle,
+	Pin,
 	Search,
+	Send,
 	Shield,
-	TicketCheck,
+	ShieldCheck,
+	User,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import Markdown from "react-markdown";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
-import { FlatCard } from "@/components/my-space/flat-card";
-import { PageHeader } from "@/components/my-space/page-header";
 import { useMeeting } from "@/hooks/use-meeting";
 import {
 	useAuthenticatedConvexQuery,
-	useAuthenticatedPaginatedQuery,
 	useConvexMutationQuery,
+	useConvexActionQuery,
 } from "@/integrations/convex/hooks";
 import { useCallStore } from "@/stores/call-store";
 import { cn } from "@/lib/utils";
@@ -64,7 +67,7 @@ export const Route = createFileRoute("/my-space/iasted")({
 });
 
 // ─────────────────────────────────────────────
-// Types
+// Types & constantes
 // ─────────────────────────────────────────────
 
 type TabId = "ichat" | "icall" | "icontact";
@@ -75,25 +78,171 @@ const NAV_ITEMS: Array<{ id: TabId; icon: typeof Phone; label: string }> = [
 	{ id: "icontact", icon: Contact, label: "iContact" },
 ];
 
+const IASTED_CONTACT = {
+	id: "__iasted__",
+	name: "iAsted",
+	subtitle: "Assistant Consulaire Intelligent",
+	isAI: true,
+};
+
 // ─────────────────────────────────────────────
-// Page principale
+// Page principale — Layout WhatsApp Desktop
 // ─────────────────────────────────────────────
 
 function IAstedCitizenPage() {
 	const [activeTab, setActiveTab] = useState<TabId>("ichat");
+	const [selectedContact, setSelectedContact] = useState<any>(IASTED_CONTACT);
+	const [search, setSearch] = useState("");
+	const [messageInput, setMessageInput] = useState("");
+	const messagesEndRef = useRef<HTMLDivElement>(null);
+	const navigate = useNavigate();
+
+	// ── Chat IA ──
+	const [aiMessages, setAiMessages] = useState<
+		Array<{ role: string; content: string; timestamp: number }>
+	>([]);
+	const [aiLoading, setAiLoading] = useState(false);
+	const { mutateAsync: chatAction } = useConvexActionQuery(api.ai.chat.chat);
+
+	// ── Threads agents (temps réel) ──
+	const { data: chatThreads, isPending: threadsLoading } =
+		useAuthenticatedConvexQuery(api.functions.chats.listMyChats, {});
+
+	// Messages du thread sélectionné
+	const selectedChatId =
+		selectedContact && !selectedContact.isAI ? selectedContact._id : undefined;
+	const { data: threadMessages, isPending: messagesLoading } =
+		useAuthenticatedConvexQuery(
+			api.functions.chats.listMessages,
+			selectedChatId
+				? { chatId: selectedChatId as Id<"chats">, limit: 50 }
+				: "skip",
+		);
+
+	const { mutateAsync: sendChatMessage } = useConvexMutationQuery(
+		api.functions.chats.sendMessage,
+	);
+	const { mutateAsync: markRead } = useConvexMutationQuery(
+		api.functions.chats.markRead,
+	);
+
+	// Marquer comme lu
+	useEffect(() => {
+		if (selectedChatId) {
+			markRead({ chatId: selectedChatId as Id<"chats"> }).catch(() => {});
+		}
+	}, [selectedChatId, markRead, threadMessages?.length]);
+
+	// Auto-scroll
+	useEffect(() => {
+		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+	}, [aiMessages, threadMessages]);
+
+	// ── Envoi IA ──
+	const handleSendAI = async () => {
+		const text = messageInput.trim();
+		if (!text || aiLoading) return;
+
+		setAiMessages((prev) => [
+			...prev,
+			{ role: "user", content: text, timestamp: Date.now() },
+		]);
+		setMessageInput("");
+		setAiLoading(true);
+
+		try {
+			const response = await chatAction({ message: text });
+			setAiMessages((prev) => [
+				...prev,
+				{
+					role: "assistant",
+					content: response.message,
+					timestamp: Date.now(),
+				},
+			]);
+		} catch {
+			setAiMessages((prev) => [
+				...prev,
+				{
+					role: "assistant",
+					content: "Désolé, une erreur s'est produite. Réessayez.",
+					timestamp: Date.now(),
+				},
+			]);
+		} finally {
+			setAiLoading(false);
+		}
+	};
+
+	// ── Envoi message humain ──
+	const handleSendHuman = async () => {
+		const text = messageInput.trim();
+		if (!text || !selectedChatId) return;
+		try {
+			await sendChatMessage({
+				chatId: selectedChatId as Id<"chats">,
+				content: text,
+			});
+			setMessageInput("");
+		} catch (e: any) {
+			toast.error(e?.message ?? "Erreur d'envoi");
+		}
+	};
+
+	const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+		if (e.key === "Enter" && !e.shiftKey) {
+			e.preventDefault();
+			if (selectedContact?.isAI) handleSendAI();
+			else handleSendHuman();
+		}
+	};
+
+	// Filtrage threads
+	const filteredThreads = useMemo(() => {
+		if (!chatThreads) return [];
+		const q = search.trim().toLowerCase();
+		if (!q) return chatThreads as any[];
+		return (chatThreads as any[]).filter(
+			(t: any) =>
+				(t.otherUser?.firstName ?? "").toLowerCase().includes(q) ||
+				(t.otherUser?.lastName ?? "").toLowerCase().includes(q),
+		);
+	}, [chatThreads, search]);
 
 	return (
-		<div className="h-full flex flex-col bg-background">
-			<PageHeader
-				title="iAsted"
-				subtitle="Espace de communication consulaire"
-				icon={<Mic className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
-				iconBgClass="bg-blue-500/10"
-			/>
+		<div className="flex flex-col gap-4 h-full p-4 lg:p-6 overflow-hidden">
+			{/* Header */}
+			<div className="flex items-center justify-between shrink-0">
+				<div className="flex items-center gap-3">
+					<div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+						<ShieldCheck className="h-5 w-5 text-emerald-500" />
+					</div>
+					<div>
+						<h1 className="text-xl font-bold">iAsted</h1>
+						<p className="text-sm text-muted-foreground">
+							Espace de communication consulaire
+						</p>
+					</div>
+				</div>
+				<Button
+					variant="outline"
+					size="sm"
+					onClick={() => navigate({ to: "/my-space" })}
+					className="gap-1.5"
+				>
+					<Minimize2 className="h-3.5 w-3.5" />
+					Réduire
+				</Button>
+			</div>
 
-			{/* Navigation tabs */}
-			<div className="px-4 pb-1 flex-shrink-0">
-				<div className="flex items-center gap-1 bg-muted/40 rounded-xl p-1">
+			{/* Card principale — 3 colonnes */}
+			<div className="flex flex-1 min-h-0 overflow-hidden rounded-2xl border shadow-sm bg-card">
+				{/* ── Col 1 : Icônes navigation ── */}
+				<div className="w-14 border-r flex flex-col items-center py-3 gap-1 shrink-0">
+					<div className="h-9 w-9 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
+						<ShieldCheck className="h-4 w-4 text-emerald-500" />
+					</div>
+
 					{NAV_ITEMS.map((item) => {
 						const Icon = item.icon;
 						const isActive = activeTab === item.id;
@@ -102,260 +251,567 @@ function IAstedCitizenPage() {
 								key={item.id}
 								type="button"
 								onClick={() => setActiveTab(item.id)}
+								title={item.label}
 								className={cn(
-									"flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+									"h-10 w-10 rounded-xl flex items-center justify-center transition-all",
 									isActive
-										? "bg-background shadow text-foreground"
-										: "text-muted-foreground hover:text-foreground",
+										? "bg-primary/10 text-primary"
+										: "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
 								)}
 							>
-								<Icon className="h-4 w-4" />
-								<span className="hidden sm:inline">{item.label}</span>
+								<Icon className="h-5 w-5" />
 							</button>
 						);
 					})}
-				</div>
-			</div>
 
-			{/* Content */}
-			<div className="flex-1 min-h-0 overflow-hidden px-4 pb-4">
-				{activeTab === "ichat" && (
-					<IChatTab onSwitchToCall={() => setActiveTab("icall")} />
-				)}
-				{activeTab === "icall" && <IAppelTab />}
-				{activeTab === "icontact" && <IContactTab />}
-			</div>
-		</div>
-	);
-}
+					<div className="flex-1" />
 
-// ─────────────────────────────────────────────
-// Tab 1 — iChat (Support & tickets consulaires)
-// ─────────────────────────────────────────────
-
-function IChatTab({ onSwitchToCall }: { onSwitchToCall: () => void }) {
-	// Tickets paginés
-	const {
-		results: tickets,
-		status: paginationStatus,
-		loadMore,
-		isLoading: isTicketsLoading,
-	} = useAuthenticatedPaginatedQuery(
-		api.functions.tickets.listMine,
-		{},
-		{ initialNumItems: 20 },
-	);
-
-	const openTicketsCount = (tickets ?? []).filter(
-		(t) =>
-			t.status === "open" ||
-			t.status === "in_progress" ||
-			t.status === "waiting_for_user",
-	).length;
-
-	const ticketStatusConfig: Record<string, { label: string; className: string }> = {
-		open: { label: "Ouvert", className: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
-		in_progress: { label: "En cours", className: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
-		waiting_for_user: { label: "Votre réponse", className: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
-		resolved: { label: "Résolu", className: "bg-green-500/10 text-green-600 border-green-500/20" },
-		closed: { label: "Fermé", className: "bg-zinc-500/10 text-zinc-600 border-zinc-500/20" },
-	};
-
-	return (
-		<div className="h-full flex flex-col gap-3 overflow-hidden mt-3">
-			{/* Header */}
-			<div className="flex items-center justify-between flex-shrink-0">
-				<div>
-					<h2 className="text-base font-semibold">Support consulaire</h2>
-					<p className="text-xs text-muted-foreground">
-						{openTicketsCount > 0
-							? `${openTicketsCount} ticket${openTicketsCount > 1 ? "s" : ""} actif${openTicketsCount > 1 ? "s" : ""}`
-							: "Aucun ticket actif"}
-					</p>
-				</div>
-				<Button asChild size="sm" className="gap-1.5">
-					<Link to="/my-space/support/new">
-						<PlusCircle className="h-3.5 w-3.5" />
-						Nouveau ticket
-					</Link>
-				</Button>
-			</div>
-
-			{/* Tickets list */}
-			<ScrollArea className="flex-1">
-				{isTicketsLoading && (!tickets || tickets.length === 0) ? (
-					<div className="flex justify-center py-8">
-						<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-					</div>
-				) : !tickets || tickets.length === 0 ? (
-					<FlatCard className="mt-2">
-						<div className="flex flex-col items-center py-10 text-center">
-							<TicketCheck className="h-10 w-10 text-muted-foreground/30 mb-3" />
-							<p className="text-sm font-medium">Aucun ticket de support</p>
-							<p className="text-xs text-muted-foreground mt-1 mb-4 max-w-xs">
-								Créez un ticket pour être pris en charge par un agent consulaire.
-							</p>
-							<Button asChild size="sm">
-								<Link to="/my-space/support/new">
-									<PlusCircle className="h-3.5 w-3.5 mr-1.5" />
-									Créer un ticket
-								</Link>
-							</Button>
-						</div>
-					</FlatCard>
-				) : (
-					<div className="space-y-2 mt-1">
-						{(tickets ?? []).map((ticket) => {
-							const config =
-								ticketStatusConfig[ticket.status] ?? ticketStatusConfig.closed;
-							return (
-								<Link
-									key={ticket._id}
-									to="/my-space/support/$ticketId"
-									params={{ ticketId: ticket._id }}
-									className="block"
-								>
-									<FlatCard className="p-4 hover:border-primary/40 transition-colors cursor-pointer">
-										<div className="flex items-start gap-3">
-											<div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-												<MessageSquare className="h-4 w-4 text-primary" />
-											</div>
-											<div className="flex-1 min-w-0">
-												<div className="flex items-center gap-2 mb-1">
-													<Badge
-														variant="outline"
-														className={cn("text-[10px] border", config.className)}
-													>
-														{config.label}
-													</Badge>
-													<span className="text-[10px] text-muted-foreground font-mono">
-														{ticket.reference}
-													</span>
-												</div>
-												<p className="text-sm font-medium truncate">
-													{ticket.subject}
-												</p>
-												<p className="text-xs text-muted-foreground mt-0.5">
-													{new Date(ticket._creationTime).toLocaleDateString("fr-FR", {
-														day: "2-digit",
-														month: "short",
-														year: "numeric",
-													})}
-													{ticket.messages && ticket.messages.length > 0 && (
-														<span className="ml-1.5">
-															·{" "}{ticket.messages.length} message
-															{ticket.messages.length > 1 ? "s" : ""}
-														</span>
-													)}
-												</p>
-											</div>
-										</div>
-									</FlatCard>
-								</Link>
-							);
-						})}
-
-						{paginationStatus === "CanLoadMore" && (
-							<div className="flex justify-center pt-2">
-								<Button variant="outline" size="sm" onClick={() => loadMore(20)}>
-									Charger plus
-								</Button>
-							</div>
-						)}
-					</div>
-				)}
-			</ScrollArea>
-
-			{/* Escalation card */}
-			<FlatCard className="p-3 bg-muted/30 border-dashed flex-shrink-0">
-				<div className="flex items-start gap-3">
-					<Phone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-					<div className="flex-1 min-w-0">
-						<p className="text-xs font-medium">Besoin d'un appel urgent ?</p>
-						<p className="text-[11px] text-muted-foreground mt-0.5">
-							Appelez directement votre représentation consulaire.
-						</p>
-					</div>
 					<button
 						type="button"
-						onClick={onSwitchToCall}
-						className="text-[11px] text-primary underline underline-offset-2 hover:no-underline shrink-0 font-medium"
+						onClick={() => navigate({ to: "/my-space" })}
+						title="Réduire"
+						className="h-10 w-10 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all"
 					>
-						iAppel →
+						<Minimize2 className="h-5 w-5" />
 					</button>
 				</div>
-			</FlatCard>
+
+				{activeTab === "ichat" ? (
+					<>
+						{/* ── Col 2 : Liste conversations ── */}
+						<div className="w-80 border-r flex flex-col shrink-0">
+							<div className="px-4 py-3 border-b shrink-0">
+								<h2 className="text-base font-semibold">Discussions</h2>
+							</div>
+
+							<div className="p-2 border-b">
+								<div className="relative">
+									<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+									<Input
+										value={search}
+										onChange={(e) => setSearch(e.target.value)}
+										placeholder="Rechercher"
+										className="h-8 pl-8 text-xs bg-muted/30 border-0"
+									/>
+								</div>
+							</div>
+
+							<ScrollArea className="flex-1">
+								{/* iAsted épinglé */}
+								<button
+									type="button"
+									onClick={() => setSelectedContact(IASTED_CONTACT)}
+									className={cn(
+										"w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/20",
+										selectedContact?.id === "__iasted__"
+											? "bg-primary/5"
+											: "hover:bg-muted/30",
+									)}
+								>
+									<div className="relative">
+										<Avatar className="h-11 w-11">
+											<AvatarFallback className="bg-emerald-500/15 text-emerald-500">
+												<Bot className="h-5 w-5" />
+											</AvatarFallback>
+										</Avatar>
+										<Pin className="absolute -top-0.5 -right-0.5 h-3 w-3 text-emerald-500 rotate-45" />
+									</div>
+									<div className="flex-1 min-w-0">
+										<div className="flex items-center justify-between">
+											<div className="flex items-center gap-1.5">
+												<p className="text-sm font-semibold">iAsted</p>
+												<Badge className="text-[7px] h-3.5 px-1 bg-emerald-500/15 text-emerald-500 border-emerald-500/20">
+													IA
+												</Badge>
+											</div>
+											{aiMessages.length > 0 && (
+												<span className="text-[10px] text-muted-foreground">
+													{new Date(
+														aiMessages[aiMessages.length - 1].timestamp,
+													).toLocaleTimeString("fr-FR", {
+														hour: "2-digit",
+														minute: "2-digit",
+													})}
+												</span>
+											)}
+										</div>
+										<p className="text-xs text-muted-foreground truncate mt-0.5">
+											{aiMessages.length > 0
+												? aiMessages[aiMessages.length - 1].content.slice(
+														0,
+														45,
+													) + "..."
+												: "Assistant Consulaire — Posez une question"}
+										</p>
+									</div>
+								</button>
+
+								{/* Threads agents */}
+								{threadsLoading ? (
+									<div className="flex items-center justify-center py-6">
+										<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+									</div>
+								) : filteredThreads.length > 0 ? (
+									filteredThreads.map((thread: any) => (
+										<button
+											key={thread._id}
+											type="button"
+											onClick={() => setSelectedContact(thread)}
+											className={cn(
+												"w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/10",
+												selectedContact?._id === thread._id
+													? "bg-primary/5"
+													: "hover:bg-muted/30",
+											)}
+										>
+											<Avatar className="h-11 w-11">
+												<AvatarImage
+													src={thread.otherUser?.avatarUrl}
+												/>
+												<AvatarFallback className="text-xs bg-primary/10 text-primary">
+													{(
+														(thread.otherUser?.firstName?.[0] ?? "") +
+														(thread.otherUser?.lastName?.[0] ?? "")
+													).toUpperCase()}
+												</AvatarFallback>
+											</Avatar>
+											<div className="flex-1 min-w-0">
+												<div className="flex items-center justify-between">
+													<p className="text-sm font-bold truncate">
+														{(
+															thread.otherUser?.lastName ?? ""
+														).toUpperCase()}
+													</p>
+													{thread.lastMessageAt && (
+														<span className="text-[10px] text-muted-foreground shrink-0 ml-2">
+															{new Date(
+																thread.lastMessageAt,
+															).toLocaleTimeString("fr-FR", {
+																hour: "2-digit",
+																minute: "2-digit",
+															})}
+														</span>
+													)}
+												</div>
+												<p className="text-xs text-foreground/80 truncate">
+													{thread.otherUser?.firstName ?? ""}
+												</p>
+												<p className="text-[10px] text-muted-foreground truncate">
+													{thread.lastMessageText ??
+														"Agent consulaire"}
+												</p>
+											</div>
+											{thread.unreadCount > 0 && (
+												<Badge className="text-[8px] h-4 min-w-[16px] px-1 bg-emerald-600 text-white">
+													{thread.unreadCount}
+												</Badge>
+											)}
+										</button>
+									))
+								) : (
+									<div className="flex flex-col items-center justify-center py-8 text-center px-4">
+										<MessageSquare className="h-8 w-8 text-muted-foreground/20 mb-2" />
+										<p className="text-xs text-muted-foreground">
+											Aucune conversation avec un agent
+										</p>
+										<p className="text-[10px] text-muted-foreground/60 mt-1">
+											Les agents vous contacteront ici
+										</p>
+									</div>
+								)}
+							</ScrollArea>
+						</div>
+
+						{/* ── Col 3 : Zone de chat ── */}
+						<div className="flex-1 flex flex-col overflow-hidden">
+							{selectedContact ? (
+								<>
+									{/* Header contact */}
+									<div className="px-4 py-3 border-b flex items-center gap-3 shrink-0">
+										<Avatar className="h-9 w-9">
+											{selectedContact.isAI ? (
+												<AvatarFallback className="bg-emerald-500/15 text-emerald-500">
+													<Bot className="h-4 w-4" />
+												</AvatarFallback>
+											) : (
+												<>
+													<AvatarImage
+														src={
+															selectedContact.otherUser
+																?.avatarUrl
+														}
+													/>
+													<AvatarFallback className="text-xs bg-primary/10 text-primary">
+														{(
+															(selectedContact.otherUser
+																?.firstName?.[0] ?? "") +
+															(selectedContact.otherUser
+																?.lastName?.[0] ?? "")
+														).toUpperCase()}
+													</AvatarFallback>
+												</>
+											)}
+										</Avatar>
+										<div className="flex-1 min-w-0">
+											{selectedContact.isAI ? (
+												<>
+													<p className="text-sm font-semibold">
+														iAsted
+													</p>
+													<p className="text-[11px] text-muted-foreground">
+														Assistant Consulaire Intelligent
+													</p>
+												</>
+											) : (
+												<>
+													<p className="text-sm font-bold">
+														{selectedContact.otherUser
+															?.lastName ?? ""}{" "}
+														{selectedContact.otherUser
+															?.firstName ?? ""}
+													</p>
+													<p className="text-[11px] text-muted-foreground">
+														Agent consulaire
+													</p>
+												</>
+											)}
+										</div>
+									</div>
+
+									{/* Messages */}
+									<ScrollArea className="flex-1 px-6 py-4">
+										{selectedContact.isAI ? (
+											aiMessages.length === 0 ? (
+												<div className="flex flex-col items-center justify-center h-full text-center py-12">
+													<div className="h-16 w-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
+														<Bot className="h-8 w-8 text-emerald-500" />
+													</div>
+													<h3 className="text-base font-semibold mb-1">
+														Bonjour, je suis iAsted
+													</h3>
+													<p className="text-sm text-muted-foreground max-w-md mb-6">
+														Votre assistant consulaire. Posez-moi
+														une question ou choisissez une
+														suggestion.
+													</p>
+													<div className="flex flex-wrap gap-2 justify-center max-w-lg">
+														{[
+															"Résumé de mes démarches",
+															"Mon passeport",
+															"Rendez-vous",
+															"État civil",
+														].map((s) => (
+															<button
+																key={s}
+																type="button"
+																onClick={() =>
+																	setMessageInput(s)
+																}
+																className="text-xs px-3 py-1.5 rounded-full border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+															>
+																{s}
+															</button>
+														))}
+													</div>
+												</div>
+											) : (
+												<div className="space-y-3 max-w-3xl mx-auto">
+													{aiMessages.map((msg, i) => (
+														<div
+															key={i}
+															className={cn(
+																"flex gap-2",
+																msg.role === "user"
+																	? "justify-end"
+																	: "justify-start",
+															)}
+														>
+															{msg.role ===
+																"assistant" && (
+																<Avatar className="h-7 w-7 shrink-0 mt-1">
+																	<AvatarFallback className="bg-emerald-500/10 text-emerald-600 text-[9px]">
+																		<Bot className="h-3.5 w-3.5" />
+																	</AvatarFallback>
+																</Avatar>
+															)}
+															<div
+																className={cn(
+																	"max-w-[70%] rounded-xl px-3 py-2 text-sm",
+																	msg.role === "user"
+																		? "bg-emerald-600 text-white"
+																		: "bg-card border",
+																)}
+															>
+																{msg.role ===
+																"assistant" ? (
+																	<Markdown className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
+																		{msg.content}
+																	</Markdown>
+																) : (
+																	msg.content
+																)}
+																<p
+																	className={cn(
+																		"text-[9px] mt-1",
+																		msg.role === "user"
+																			? "text-white/60 text-right"
+																			: "text-muted-foreground",
+																	)}
+																>
+																	{new Date(
+																		msg.timestamp,
+																	).toLocaleTimeString(
+																		"fr-FR",
+																		{
+																			hour: "2-digit",
+																			minute: "2-digit",
+																		},
+																	)}
+																</p>
+															</div>
+														</div>
+													))}
+													{aiLoading && (
+														<div className="flex items-center gap-2">
+															<Avatar className="h-7 w-7">
+																<AvatarFallback className="bg-emerald-500/10 text-emerald-600 text-[9px]">
+																	<Bot className="h-3.5 w-3.5" />
+																</AvatarFallback>
+															</Avatar>
+															<div className="bg-card border rounded-xl px-3 py-2">
+																<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+															</div>
+														</div>
+													)}
+													<div ref={messagesEndRef} />
+												</div>
+											)
+										) : /* ── Messages agent (temps réel) ── */
+										messagesLoading ? (
+											<div className="flex items-center justify-center py-8">
+												<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+											</div>
+										) : !threadMessages ||
+										  threadMessages.length === 0 ? (
+											<div className="flex flex-col items-center justify-center h-full text-center py-12">
+												<MessageSquare className="h-12 w-12 text-muted-foreground/20 mb-3" />
+												<p className="text-sm text-muted-foreground">
+													Démarrez la conversation avec{" "}
+													{selectedContact.otherUser
+														?.firstName ?? "l'agent"}
+												</p>
+											</div>
+										) : (
+											<div className="space-y-3 max-w-3xl mx-auto">
+												{(threadMessages as any[]).map(
+													(msg: any) => {
+														const isMe =
+															msg.senderId !==
+															selectedContact.otherUser
+																?.id;
+														return (
+															<div
+																key={msg._id}
+																className={cn(
+																	"flex gap-2",
+																	isMe
+																		? "justify-end"
+																		: "justify-start",
+																)}
+															>
+																{!isMe && (
+																	<Avatar className="h-7 w-7 shrink-0 mt-1">
+																		<AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+																			{(
+																				(selectedContact
+																					.otherUser
+																					?.firstName?.[0] ??
+																					"") +
+																				(selectedContact
+																					.otherUser
+																					?.lastName?.[0] ??
+																					"")
+																			).toUpperCase()}
+																		</AvatarFallback>
+																	</Avatar>
+																)}
+																<div
+																	className={cn(
+																		"max-w-[70%] rounded-xl px-3 py-2 text-sm",
+																		isMe
+																			? "bg-emerald-600 text-white"
+																			: "bg-card border",
+																	)}
+																>
+																	{msg.content}
+																	<p
+																		className={cn(
+																			"text-[9px] mt-1",
+																			isMe
+																				? "text-white/60 text-right"
+																				: "text-muted-foreground",
+																		)}
+																	>
+																		{new Date(
+																			msg._creationTime,
+																		).toLocaleTimeString(
+																			"fr-FR",
+																			{
+																				hour: "2-digit",
+																				minute: "2-digit",
+																			},
+																		)}
+																	</p>
+																</div>
+															</div>
+														);
+													},
+												)}
+												<div ref={messagesEndRef} />
+											</div>
+										)}
+									</ScrollArea>
+
+									{/* Input */}
+									<div className="border-t px-4 py-3 flex items-end gap-3 shrink-0">
+										<Textarea
+											value={messageInput}
+											onChange={(e) =>
+												setMessageInput(e.target.value)
+											}
+											onKeyDown={handleKeyDown}
+											placeholder={
+												selectedContact.isAI
+													? "Demandez à iAsted..."
+													: "Écrire un message..."
+											}
+											className="min-h-[40px] max-h-[120px] resize-none text-sm flex-1"
+											rows={1}
+										/>
+										<Button
+											size="icon"
+											onClick={
+												selectedContact.isAI
+													? handleSendAI
+													: handleSendHuman
+											}
+											disabled={
+												!messageInput.trim() ||
+												(selectedContact.isAI && aiLoading)
+											}
+											className={cn(
+												"h-10 w-10 rounded-full shrink-0",
+												selectedContact.isAI &&
+													"bg-emerald-600 hover:bg-emerald-700",
+											)}
+										>
+											{selectedContact.isAI && aiLoading ? (
+												<Loader2 className="h-4 w-4 animate-spin" />
+											) : (
+												<Send className="h-4 w-4" />
+											)}
+										</Button>
+									</div>
+								</>
+							) : (
+								<div className="flex-1 flex items-center justify-center text-center">
+									<div>
+										<ShieldCheck className="h-16 w-16 text-emerald-500/20 mx-auto mb-4" />
+										<h2 className="text-lg font-semibold text-muted-foreground">
+											iAsted
+										</h2>
+										<p className="text-sm text-muted-foreground/60">
+											Sélectionnez une conversation
+										</p>
+									</div>
+								</div>
+							)}
+						</div>
+					</>
+				) : (
+					/* ── Onglets non-chat (iAppel, iContact) — 2 colonnes ── */
+					<div className="flex-1 flex flex-col overflow-hidden">
+						<div className="px-4 py-3 border-b shrink-0">
+							<h2 className="text-base font-semibold">
+								{activeTab === "icall" ? "iAppel" : "iContact"}
+							</h2>
+						</div>
+						<div className="flex-1 overflow-hidden p-4">
+							{activeTab === "icall" && <IAppelContent />}
+							{activeTab === "icontact" && <IContactContent />}
+						</div>
+					</div>
+				)}
+			</div>
 		</div>
 	);
 }
 
 // ─────────────────────────────────────────────
-// Tab 2 — iAppel
+// iAppel — Appels audio vers représentations
 // ─────────────────────────────────────────────
 
-function IAppelTab() {
-	const [activeMeetingId, setActiveMeetingId] = useState<Id<"meetings"> | null>(null);
+function IAppelContent() {
+	const [activeMeetingId, setActiveMeetingId] = useState<Id<"meetings"> | null>(
+		null,
+	);
 	const [selectedOrg, setSelectedOrg] = useState<any>(null);
 	const [searchOrg, setSearchOrg] = useState("");
 	const [isCalling, setIsCalling] = useState(false);
 	const { globalActiveMeetingId, setGlobalMeetingId } = useCallStore();
 
-	// Liste publique des orgs
-	const { data: allOrgs, isPending: orgsLoading } = useAuthenticatedConvexQuery(
-		api.functions.orgs.list,
-		{},
-	);
-
-	// Historique des appels/réunions du citoyen
-	const { data: myMeetingsData, isPending: historyLoading } = useAuthenticatedConvexQuery(
-		api.functions.meetings.listMine,
-		{},
-	);
+	const { data: allOrgs, isPending: orgsLoading } =
+		useAuthenticatedConvexQuery(api.functions.orgs.list, {});
+	const { data: myMeetingsData, isPending: historyLoading } =
+		useAuthenticatedConvexQuery(api.functions.meetings.listMine, {});
 
 	const myMeetings = (myMeetingsData as any)?.meetings ?? [];
 	const participantNames = (myMeetingsData as any)?.participantNames ?? {};
 
-	// Appels entrants actifs (agent → citoyen)
 	const incomingCalls = useMemo(() => {
 		const now = Date.now();
 		return myMeetings.filter((m: any) => {
 			if (m.status !== "active") return false;
 			if (m.type !== "call" && m.type !== "meeting") return false;
-			// Ignore old calls (> 75s)
 			if (now - m._creationTime > 75_000) return false;
-			// Les appels entrants sont ceux où le citoyen est participant (pas host/creator)
-			const myParticipant = m.participants?.find((p: any) => p.role !== "host");
+			const myParticipant = m.participants?.find(
+				(p: any) => p.role !== "host",
+			);
 			return !!myParticipant && !myParticipant.joinedAt;
 		});
 	}, [myMeetings]);
 
-	// Historique (appels terminés ou actifs)
 	const callHistory = useMemo(() => {
-		return myMeetings.filter((m: any) => m.type === "call" || m.type === "meeting").slice(0, 25);
+		return myMeetings
+			.filter((m: any) => m.type === "call" || m.type === "meeting")
+			.slice(0, 25);
 	}, [myMeetings]);
 
-	// Hook LiveKit
-	const { token, wsUrl, isConnecting, error: meetingError, connect, disconnect } =
-		useMeeting(activeMeetingId ?? undefined);
+	const {
+		token,
+		wsUrl,
+		error: meetingError,
+		connect,
+		disconnect,
+	} = useMeeting(activeMeetingId ?? undefined);
 
-	// Mutation appel org (audio uniquement pour citoyens)
 	const { mutateAsync: callOrganization } = useConvexMutationQuery(
 		api.functions.meetings.callOrganization,
 	);
 
-	// Filtrage orgs
 	const filteredOrgs = useMemo(() => {
 		if (!allOrgs) return [];
 		const q = searchOrg.trim().toLowerCase();
 		if (!q) return (allOrgs as any[]).slice(0, 12);
-		return (allOrgs as any[]).filter(
-			(org) =>
-				org.name.toLowerCase().includes(q) ||
-				(org.country ?? "").toLowerCase().includes(q),
-		).slice(0, 12);
+		return (allOrgs as any[])
+			.filter(
+				(org) =>
+					org.name.toLowerCase().includes(q) ||
+					(org.country ?? "").toLowerCase().includes(q),
+			)
+			.slice(0, 12);
 	}, [allOrgs, searchOrg]);
 
-	// ── Lancer un appel audio ──
 	const handleCallOrg = async (org: any) => {
 		if (globalActiveMeetingId) {
 			toast.error("Un appel est déjà en cours");
@@ -386,25 +842,21 @@ function IAppelTab() {
 		}
 	};
 
-	// ── Répondre à un appel entrant ──
-	const handleAnswer = async (meetingId: Id<"meetings">, meeting: any) => {
+	const handleAnswer = async (meetingId: Id<"meetings">) => {
 		setActiveMeetingId(meetingId);
 		setSelectedOrg(null);
 		setGlobalMeetingId(meetingId);
 		try {
 			await connect(meetingId);
-		} catch (e: any) {
+		} catch {
 			toast.error("Impossible de rejoindre l'appel");
 			setActiveMeetingId(null);
 			setGlobalMeetingId(null);
 		}
 	};
 
-	// ── Raccrocher ──
 	const handleHangUp = async () => {
-		if (activeMeetingId) {
-			await disconnect(activeMeetingId);
-		}
+		if (activeMeetingId) await disconnect(activeMeetingId);
 		setActiveMeetingId(null);
 		setGlobalMeetingId(null);
 	};
@@ -412,165 +864,163 @@ function IAppelTab() {
 	const isInCall = activeMeetingId !== null && token && wsUrl;
 
 	return (
-		<div className="h-full flex flex-col gap-3 mt-3 overflow-hidden">
-			{/* ── Appels entrants ── */}
+		<div className="h-full flex flex-col gap-4 overflow-hidden">
+			{/* Appels entrants */}
 			{incomingCalls.length > 0 && (
-				<FlatCard className="border-emerald-500/30 bg-emerald-500/5 flex-shrink-0">
-					<div className="p-3 space-y-2">
-						<div className="flex items-center gap-2">
-							<PhoneIncoming className="h-4 w-4 text-emerald-500 animate-pulse" />
-							<span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-								Appel entrant
-							</span>
-						</div>
-						{incomingCalls.map((call: any) => {
-							const callerName =
-								participantNames[call.createdBy] ?? "Agent consulaire";
-							const isVideo = call.mediaType === "video" || call.type === "meeting";
-							return (
-								<div
-									key={call._id}
-									className="flex items-center justify-between bg-background rounded-xl p-3 border"
-								>
-									<div className="flex items-center gap-3">
-										<div className="relative h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
-											{isVideo ? (
-												<PhoneCall className="h-5 w-5 text-emerald-500" />
-											) : (
-												<PhoneCall className="h-5 w-5 text-emerald-500" />
-											)}
-											<span className="absolute inset-0 rounded-full border border-emerald-500 animate-ping opacity-40" />
-										</div>
-										<div>
-											<p className="text-sm font-medium">{callerName}</p>
-											<p className="text-xs text-muted-foreground">
-												{call.title ?? "Appel"}{" "}
-												{isVideo && (
-													<Badge className="text-[9px] h-3.5 bg-blue-500/10 text-blue-500 ml-1">
-														Vidéo
-													</Badge>
-												)}
-											</p>
-										</div>
+				<div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2 shrink-0">
+					<div className="flex items-center gap-2">
+						<PhoneIncoming className="h-4 w-4 text-emerald-500 animate-pulse" />
+						<span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+							Appel entrant
+						</span>
+					</div>
+					{incomingCalls.map((call: any) => {
+						const callerName =
+							participantNames[call.createdBy] ?? "Agent consulaire";
+						const isVideo =
+							call.mediaType === "video" || call.type === "meeting";
+						return (
+							<div
+								key={call._id}
+								className="flex items-center justify-between bg-background rounded-xl p-3 border"
+							>
+								<div className="flex items-center gap-3">
+									<div className="relative h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+										<PhoneCall className="h-5 w-5 text-emerald-500" />
+										<span className="absolute inset-0 rounded-full border border-emerald-500 animate-ping opacity-40" />
 									</div>
-									<div className="flex gap-2">
-										<Button
-											size="sm"
-											variant="outline"
-											className="h-8 gap-1 text-destructive border-destructive/30"
-											onClick={handleHangUp}
-										>
-											<PhoneOff className="h-3.5 w-3.5" />
-											Refuser
-										</Button>
-										<Button
-											size="sm"
-											className="h-8 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-											onClick={() => handleAnswer(call._id, call)}
-										>
-											<Phone className="h-3.5 w-3.5" />
-											Répondre
-										</Button>
+									<div>
+										<p className="text-sm font-medium">
+											{callerName}
+										</p>
+										<p className="text-xs text-muted-foreground">
+											{call.title ?? "Appel"}{" "}
+											{isVideo && (
+												<Badge className="text-[9px] h-3.5 bg-blue-500/10 text-blue-500 ml-1">
+													Vidéo
+												</Badge>
+											)}
+										</p>
 									</div>
 								</div>
-							);
-						})}
-					</div>
-				</FlatCard>
+								<div className="flex gap-2">
+									<Button
+										size="sm"
+										variant="outline"
+										className="h-8 gap-1 text-destructive border-destructive/30"
+										onClick={handleHangUp}
+									>
+										<PhoneOff className="h-3.5 w-3.5" />
+										Refuser
+									</Button>
+									<Button
+										size="sm"
+										className="h-8 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+										onClick={() => handleAnswer(call._id)}
+									>
+										<Phone className="h-3.5 w-3.5" />
+										Répondre
+									</Button>
+								</div>
+							</div>
+						);
+					})}
+				</div>
 			)}
 
-			{/* ── Sélecteur d'organisation ── */}
-			<FlatCard className="flex-shrink-0">
-				<div className="p-3 space-y-2.5">
-					<h3 className="text-sm font-semibold flex items-center gap-1.5">
-						<Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-						Appeler une représentation
-					</h3>
-					<div className="relative">
-						<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-						<Input
-							value={searchOrg}
-							onChange={(e) => setSearchOrg(e.target.value)}
-							placeholder="Rechercher une représentation..."
-							className="pl-8 h-8 text-sm"
-						/>
-					</div>
-
-					{orgsLoading ? (
-						<div className="flex items-center justify-center py-3">
-							<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-						</div>
-					) : (
-						<div className="space-y-1 max-h-44 overflow-y-auto pr-0.5">
-							{filteredOrgs.length === 0 ? (
-								<p className="text-xs text-muted-foreground text-center py-2">
-									Aucune représentation trouvée
-								</p>
-							) : (
-								filteredOrgs.map((org: any) => (
-									<button
-										key={org._id}
-										type="button"
-										onClick={() =>
-											setSelectedOrg(
-												selectedOrg?._id === org._id ? null : org,
-											)
-										}
-										className={cn(
-											"w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors",
-											selectedOrg?._id === org._id
-												? "bg-primary/10 text-primary"
-												: "hover:bg-muted/50",
-										)}
-									>
-										<div className="h-7 w-7 rounded-full bg-muted/50 flex items-center justify-center shrink-0">
-											<Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-										</div>
-										<div className="flex-1 min-w-0">
-											<p className="text-xs font-medium truncate">{org.name}</p>
-											{org.country && (
-												<p className="text-[10px] text-muted-foreground">
-													{org.country}
-												</p>
-											)}
-										</div>
-										{selectedOrg?._id === org._id && (
-											<Badge className="text-[9px] h-4 bg-primary/15 text-primary border-primary/20 shrink-0">
-												✓
-											</Badge>
-										)}
-									</button>
-								))
-							)}
-						</div>
-					)}
-
-					<Button
-						className="w-full gap-2"
-						disabled={!selectedOrg || isCalling || !!globalActiveMeetingId}
-						onClick={() => selectedOrg && handleCallOrg(selectedOrg)}
-					>
-						{isCalling ? (
-							<>
-								<Loader2 className="h-4 w-4 animate-spin" />
-								Connexion...
-							</>
-						) : (
-							<>
-								<Phone className="h-4 w-4" />
-								{selectedOrg
-									? `Appeler ${selectedOrg.name}`
-									: "Sélectionner une représentation"}
-							</>
-						)}
-					</Button>
-					<p className="text-[10px] text-muted-foreground text-center">
-						🔒 Audio uniquement · Les citoyens peuvent recevoir des appels vidéo d'un agent
-					</p>
+			{/* Sélecteur org */}
+			<div className="rounded-xl border p-4 space-y-3 shrink-0">
+				<h3 className="text-sm font-semibold flex items-center gap-1.5">
+					<Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+					Appeler une représentation
+				</h3>
+				<div className="relative">
+					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+					<Input
+						value={searchOrg}
+						onChange={(e) => setSearchOrg(e.target.value)}
+						placeholder="Rechercher une représentation..."
+						className="pl-8 h-8 text-sm"
+					/>
 				</div>
-			</FlatCard>
 
-			{/* ── Historique des appels ── */}
+				{orgsLoading ? (
+					<div className="flex items-center justify-center py-3">
+						<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+					</div>
+				) : (
+					<div className="space-y-1 max-h-44 overflow-y-auto pr-0.5">
+						{filteredOrgs.length === 0 ? (
+							<p className="text-xs text-muted-foreground text-center py-2">
+								Aucune représentation trouvée
+							</p>
+						) : (
+							filteredOrgs.map((org: any) => (
+								<button
+									key={org._id}
+									type="button"
+									onClick={() =>
+										setSelectedOrg(
+											selectedOrg?._id === org._id ? null : org,
+										)
+									}
+									className={cn(
+										"w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors",
+										selectedOrg?._id === org._id
+											? "bg-primary/10 text-primary"
+											: "hover:bg-muted/50",
+									)}
+								>
+									<div className="h-7 w-7 rounded-full bg-muted/50 flex items-center justify-center shrink-0">
+										<Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+									</div>
+									<div className="flex-1 min-w-0">
+										<p className="text-xs font-medium truncate">
+											{org.name}
+										</p>
+										{org.country && (
+											<p className="text-[10px] text-muted-foreground">
+												{org.country}
+											</p>
+										)}
+									</div>
+									{selectedOrg?._id === org._id && (
+										<Badge className="text-[9px] h-4 bg-primary/15 text-primary border-primary/20 shrink-0">
+											
+										</Badge>
+									)}
+								</button>
+							))
+						)}
+					</div>
+				)}
+
+				<Button
+					className="w-full gap-2"
+					disabled={!selectedOrg || isCalling || !!globalActiveMeetingId}
+					onClick={() => selectedOrg && handleCallOrg(selectedOrg)}
+				>
+					{isCalling ? (
+						<>
+							<Loader2 className="h-4 w-4 animate-spin" />
+							Connexion...
+						</>
+					) : (
+						<>
+							<Phone className="h-4 w-4" />
+							{selectedOrg
+								? `Appeler ${selectedOrg.name}`
+								: "Sélectionner une représentation"}
+						</>
+					)}
+				</Button>
+				<p className="text-[10px] text-muted-foreground text-center">
+					Audio uniquement — Les citoyens peuvent recevoir des appels vidéo
+					d'un agent
+				</p>
+			</div>
+
+			{/* Historique */}
 			<div className="flex-1 min-h-0 overflow-y-auto">
 				<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-2">
 					Historique récent
@@ -582,7 +1032,9 @@ function IAppelTab() {
 				) : callHistory.length === 0 ? (
 					<div className="flex flex-col items-center py-6 text-center">
 						<PhoneMissed className="h-8 w-8 text-muted-foreground/20 mb-2" />
-						<p className="text-xs text-muted-foreground">Aucun appel récent</p>
+						<p className="text-xs text-muted-foreground">
+							Aucun appel récent
+						</p>
 					</div>
 				) : (
 					<div className="space-y-1">
@@ -590,12 +1042,17 @@ function IAppelTab() {
 							const isOutgoing = call.isOrgInbound === true;
 							const duration =
 								call.startedAt && call.endedAt
-									? Math.floor((call.endedAt - call.startedAt) / 60000)
+									? Math.floor(
+											(call.endedAt - call.startedAt) / 60000,
+										)
 									: null;
-							const date = new Date(call.startedAt ?? call._creationTime);
+							const date = new Date(
+								call.startedAt ?? call._creationTime,
+							);
 							const isMissed =
 								call.status === "ended" &&
-								call.participants.filter((p: any) => p.joinedAt).length <= 1;
+								call.participants.filter((p: any) => p.joinedAt)
+									.length <= 1;
 
 							return (
 								<div
@@ -634,7 +1091,9 @@ function IAppelTab() {
 												hour: "2-digit",
 												minute: "2-digit",
 											})}
-											{duration !== null && duration > 0 && ` · ${duration}min`}
+											{duration !== null &&
+												duration > 0 &&
+												` · ${duration}min`}
 										</p>
 									</div>
 									{isMissed && (
@@ -649,7 +1108,7 @@ function IAppelTab() {
 				)}
 			</div>
 
-			{/* ── Dialog LiveKit pendant l'appel ── */}
+			{/* Dialog LiveKit */}
 			<Dialog
 				open={!!isInCall}
 				onOpenChange={(open) => {
@@ -680,16 +1139,23 @@ function IAppelTab() {
 						>
 							<CustomCallUI
 								onHangUp={handleHangUp}
-								title={selectedOrg?.name ?? "Représentation consulaire"}
+								title={
+									selectedOrg?.name ??
+									"Représentation consulaire"
+								}
 							/>
 						</LiveKitRoom>
 					) : (
 						<div className="flex-1 flex items-center justify-center bg-zinc-950">
 							<div className="text-center space-y-3">
 								<Loader2 className="h-8 w-8 animate-spin text-zinc-500 mx-auto" />
-								<p className="text-sm text-zinc-400">Connexion en cours...</p>
+								<p className="text-sm text-zinc-400">
+									Connexion en cours...
+								</p>
 								{meetingError && (
-									<p className="text-xs text-red-400 max-w-xs">{meetingError}</p>
+									<p className="text-xs text-red-400 max-w-xs">
+										{meetingError}
+									</p>
 								)}
 							</div>
 						</div>
@@ -701,10 +1167,10 @@ function IAppelTab() {
 }
 
 // ─────────────────────────────────────────────
-// Tab 3 — iContact (contacts urgence & standard)
+// iContact — Annuaire des représentations
 // ─────────────────────────────────────────────
 
-function IContactTab() {
+function IContactContent() {
 	const [search, setSearch] = useState("");
 
 	const { data: allOrgs, isPending } = useAuthenticatedConvexQuery(
@@ -726,9 +1192,8 @@ function IContactTab() {
 	}, [allOrgs, search]);
 
 	return (
-		<div className="h-full flex flex-col gap-3 mt-3 overflow-hidden">
-			{/* Recherche */}
-			<div className="relative flex-shrink-0">
+		<div className="h-full flex flex-col gap-3 overflow-hidden">
+			<div className="relative shrink-0">
 				<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
 				<Input
 					value={search}
@@ -738,15 +1203,14 @@ function IContactTab() {
 				/>
 			</div>
 
-			{/* Notice */}
-			<div className="flex-shrink-0 rounded-lg bg-blue-500/5 border border-blue-500/20 px-3 py-2">
+			<div className="shrink-0 rounded-lg bg-blue-500/5 border border-blue-500/20 px-3 py-2">
 				<p className="text-[11px] text-blue-600 dark:text-blue-400 leading-relaxed">
 					<Shield className="h-3 w-3 inline mr-1 mb-0.5" />
-					Contacts officiels des représentations diplomatiques — urgence et standard uniquement.
+					Contacts officiels des représentations diplomatiques — urgence
+					et standard uniquement.
 				</p>
 			</div>
 
-			{/* Liste */}
 			<ScrollArea className="flex-1">
 				{isPending ? (
 					<div className="flex items-center justify-center py-10">
@@ -788,17 +1252,19 @@ function OrgContactCard({ org }: { org: any }) {
 	const [expanded, setExpanded] = useState(false);
 
 	const contactInfo = org.contactInfo ?? org.contacts ?? {};
-	const emergency = contactInfo.emergency ?? org.emergencyPhone ?? org.emergencyContact;
+	const emergency =
+		contactInfo.emergency ?? org.emergencyPhone ?? org.emergencyContact;
 	const phone = contactInfo.phone ?? org.phone ?? org.mainPhone;
 	const email = contactInfo.email ?? org.email ?? org.mainEmail;
 	const website = contactInfo.website ?? org.website;
 	const address = contactInfo.address ?? org.address;
 
 	const hasContacts = emergency || phone || email || website || address;
-	const typeLabel = ORG_TYPE_LABELS[org.type] ?? org.type ?? "Représentation";
+	const typeLabel =
+		ORG_TYPE_LABELS[org.type] ?? org.type ?? "Représentation";
 
 	return (
-		<FlatCard className="overflow-hidden">
+		<div className="rounded-xl border bg-card overflow-hidden">
 			<button
 				type="button"
 				onClick={() => setExpanded(!expanded)}
@@ -818,7 +1284,10 @@ function OrgContactCard({ org }: { org: any }) {
 				<div className="flex-1 min-w-0">
 					<p className="text-sm font-semibold truncate">{org.name}</p>
 					<div className="flex items-center gap-1.5 mt-0.5">
-						<Badge variant="outline" className="text-[9px] h-4 px-1.5 text-muted-foreground">
+						<Badge
+							variant="outline"
+							className="text-[9px] h-4 px-1.5 text-muted-foreground"
+						>
 							{typeLabel}
 						</Badge>
 						{org.country && (
@@ -835,8 +1304,15 @@ function OrgContactCard({ org }: { org: any }) {
 							Urgence
 						</Badge>
 					)}
-					<Badge variant="outline" className="text-[9px] h-4 text-muted-foreground">
-						{hasContacts ? (expanded ? "Fermer ↑" : "Voir ↓") : "N/A"}
+					<Badge
+						variant="outline"
+						className="text-[9px] h-4 text-muted-foreground"
+					>
+						{hasContacts
+							? expanded
+								? "Fermer ↑"
+								: "Voir ↓"
+							: "N/A"}
 					</Badge>
 				</div>
 			</button>
@@ -846,7 +1322,7 @@ function OrgContactCard({ org }: { org: any }) {
 					{emergency && (
 						<ContactLine
 							icon={Phone}
-							label="Urgence 🚨"
+							label="Urgence"
 							value={emergency}
 							href={`tel:${emergency}`}
 							accent="red"
@@ -871,7 +1347,12 @@ function OrgContactCard({ org }: { org: any }) {
 						/>
 					)}
 					{address && (
-						<ContactLine icon={Globe} label="Adresse" value={address} accent="purple" />
+						<ContactLine
+							icon={Globe}
+							label="Adresse"
+							value={address}
+							accent="purple"
+						/>
 					)}
 					{website && (
 						<ContactLine
@@ -884,7 +1365,7 @@ function OrgContactCard({ org }: { org: any }) {
 					)}
 				</div>
 			)}
-		</FlatCard>
+		</div>
 	);
 }
 
@@ -895,8 +1376,14 @@ function OrgContactCard({ org }: { org: any }) {
 const ACCENT_CLASSES: Record<string, { bg: string; text: string }> = {
 	red: { bg: "bg-red-500/10", text: "text-red-600 dark:text-red-400" },
 	blue: { bg: "bg-blue-500/10", text: "text-blue-600 dark:text-blue-400" },
-	green: { bg: "bg-green-500/10", text: "text-green-600 dark:text-green-400" },
-	purple: { bg: "bg-purple-500/10", text: "text-purple-600 dark:text-purple-400" },
+	green: {
+		bg: "bg-green-500/10",
+		text: "text-green-600 dark:text-green-400",
+	},
+	purple: {
+		bg: "bg-purple-500/10",
+		text: "text-purple-600 dark:text-purple-400",
+	},
 	teal: { bg: "bg-teal-500/10", text: "text-teal-600 dark:text-teal-400" },
 };
 
@@ -917,7 +1404,12 @@ function ContactLine({
 
 	return (
 		<div className="flex items-center gap-2.5">
-			<div className={cn("h-6 w-6 rounded-full flex items-center justify-center shrink-0", colors.bg)}>
+			<div
+				className={cn(
+					"h-6 w-6 rounded-full flex items-center justify-center shrink-0",
+					colors.bg,
+				)}
+			>
 				<Icon className={cn("h-3 w-3", colors.text)} />
 			</div>
 			<div className="flex-1 min-w-0">
@@ -927,7 +1419,10 @@ function ContactLine({
 						href={href}
 						target={href.startsWith("http") ? "_blank" : undefined}
 						rel="noopener noreferrer"
-						className={cn("text-xs font-medium hover:underline truncate block", colors.text)}
+						className={cn(
+							"text-xs font-medium hover:underline truncate block",
+							colors.text,
+						)}
 					>
 						{value}
 					</a>

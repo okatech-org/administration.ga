@@ -343,7 +343,7 @@ class LicenseAnalyzer:
 - **Project License**: MIT
 - **Total Dependencies**: 245
 - **License Issues**: 3
-- **Compliance Status**: ⚠️ REVIEW REQUIRED
+- **Compliance Status**:  REVIEW REQUIRED
 
 ### License Distribution
 | License | Count | Packages |
@@ -584,12 +584,12 @@ Generate automated fixes:
 #!/bin/bash
 # Auto-update dependencies with security fixes
 
-echo "🔒 Security Update Script"
+echo " Security Update Script"
 echo "========================"
 
 # NPM/Yarn updates
 if [ -f "package.json" ]; then
-    echo "📦 Updating NPM dependencies..."
+    echo " Updating NPM dependencies..."
     
     # Audit and auto-fix
     npm audit fix --force
@@ -601,16 +601,16 @@ if [ -f "package.json" ]; then
     npm test
     
     if [ $? -eq 0 ]; then
-        echo "✅ NPM updates successful"
+        echo " NPM updates successful"
     else
-        echo "❌ Tests failed, reverting..."
+        echo " Tests failed, reverting..."
         git checkout package-lock.json
     fi
 fi
 
 # Python updates
 if [ -f "requirements.txt" ]; then
-    echo "🐍 Updating Python dependencies..."
+    echo " Updating Python dependencies..."
     
     # Create backup
     cp requirements.txt requirements.txt.backup
@@ -622,9 +622,9 @@ if [ -f "requirements.txt" ]; then
     pip install -r requirements.txt --dry-run
     
     if [ $? -eq 0 ]; then
-        echo "✅ Python updates successful"
+        echo " Python updates successful"
     else
-        echo "❌ Update failed, reverting..."
+        echo " Update failed, reverting..."
         mv requirements.txt.backup requirements.txt
     fi
 fi
@@ -637,7 +637,7 @@ def generate_dependency_update_pr(updates):
     Generate PR with dependency updates
     """
     pr_body = f"""
-## 🔒 Dependency Security Update
+##  Dependency Security Update
 
 This PR updates {len(updates)} dependencies to address security vulnerabilities and outdated packages.
 
@@ -745,7 +745,7 @@ jobs:
             github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `🚨 ${critical} critical vulnerabilities found`,
+              title: ` ${critical} critical vulnerabilities found`,
               body: 'Dependency audit found critical vulnerabilities. See workflow run for details.',
               labels: ['security', 'dependencies', 'critical']
             });

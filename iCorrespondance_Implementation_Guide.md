@@ -1,4 +1,4 @@
-# 📬 iCorrespondance — Guide d'Implémentation Complet
+#  iCorrespondance — Guide d'Implémentation Complet
 
 > **Extrait du projet `mairie.ga`** — Module de gestion de correspondance officielle inter-administrations avec workflow d'approbation, envoi interne (iBoîte) et externe (email via Resend).
 

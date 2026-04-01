@@ -29,6 +29,7 @@ export const ModuleCode = {
   appointments: "appointments",
   profiles: "profiles",
   citizen_profiles: "citizen_profiles",
+  iprofil: "iprofil",
 
   // Consular services
   consular_registrations: "consular_registrations",
@@ -195,6 +196,7 @@ export const moduleCodeValidator = v.union(
   // Special
   v.literal(ModuleCode.intelligence),
   v.literal(ModuleCode.cv),
+  v.literal(ModuleCode.iprofil),
 );
 
 // ═══════════════════════════════════════════════════════════════
@@ -279,6 +281,15 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     color: "text-amber-500",
     category: "core",
     isCore: false,
+  },
+  [ModuleCode.iprofil]: {
+    code: ModuleCode.iprofil,
+    label: { fr: "iProfil", en: "iProfil" },
+    description: { fr: "Profil métier et accréditations diplomatiques", en: "Professional profile and diplomatic credentials" },
+    icon: "UserCircle",
+    color: "text-violet-500",
+    category: "core",
+    isCore: true,
   },
 
   // ─── Consular ─────────────────────────────────────────────
@@ -609,6 +620,11 @@ export const MODULE_ACCESS_TASKS: Partial<Record<string, Record<ModuleAccessLeve
     editor: ["profiles.view", "profiles.manage"],
     admin: ["profiles.view", "profiles.manage"],
   },
+  iprofil: {
+    reader: ["profiles.view"],
+    editor: ["profiles.view", "profiles.manage"],
+    admin: ["profiles.view", "profiles.manage", "team.assign_roles"],
+  },
   civil_status: {
     reader: ["civil_status.transcribe"],
     editor: ["civil_status.transcribe", "civil_status.register"],
@@ -847,13 +863,13 @@ export function getDefaultCapabilities(moduleCode: ModuleCodeValue): string[] {
  *   - Attribution: "this admin can access the network and population axes"
  */
 export const AdminAxis = {
-  /** 🏛️ Réseau — Organismes, services, demandes, communauté */
+  /**  Réseau — Organismes, services, demandes, communauté */
   network: "network",
-  /** 👥 Population — Comptes staff, profils citoyens, support */
+  /**  Population — Comptes staff, profils citoyens, support */
   population: "population",
-  /** 🔒 Sécurité & Système — Audit, monitoring, paramètres */
+  /**  Sécurité & Système — Audit, monitoring, paramètres */
   security: "security",
-  /** ⚙️ Contrôle — Postes, modules, permissions, contenu éditorial */
+  /**  Éditorial — Postes, modules, permissions, contenu éditorial */
   control: "control",
 } as const;
 
@@ -889,9 +905,9 @@ export const ADMIN_AXIS_REGISTRY: Record<AdminAxisValue, AdminAxisDefinition> = 
   },
   [AdminAxis.control]: {
     code: AdminAxis.control,
-    label: { fr: "Contrôle", en: "Control" },
-    icon: "Settings",
-    description: { fr: "Gouvernance des rôles, modules et contenu", en: "Role, module and content governance" },
+    label: { fr: "Éditorial", en: "Editorial" },
+    icon: "PenLine",
+    description: { fr: "Publications, tutoriels et événements communautaires", en: "Publications, tutorials and community events" },
   },
 };
 
@@ -921,7 +937,7 @@ export interface AxisModuleMapping {
 }
 
 export const AXIS_MODULE_MAP: Record<AdminAxisValue, AxisModuleMapping> = {
-  // 🏛️ AXE 1 — RÉSEAU
+  //  AXE 1 — RÉSEAU
   [AdminAxis.network]: {
     modules: [ModuleCode.team, ModuleCode.settings, ModuleCode.requests, ModuleCode.associations],
     sidebarItems: [
@@ -932,7 +948,7 @@ export const AXIS_MODULE_MAP: Record<AdminAxisValue, AxisModuleMapping> = {
       { title: { fr: "Réclamations associatives", en: "Association Claims" }, moduleCode: ModuleCode.associations, icon: "Crown" },
     ],
   },
-  // 👥 AXE 2 — POPULATION
+  //  AXE 2 — POPULATION
   [AdminAxis.population]: {
     modules: [ModuleCode.profiles, ModuleCode.citizen_profiles, ModuleCode.appointments],
     sidebarItems: [
@@ -941,7 +957,7 @@ export const AXIS_MODULE_MAP: Record<AdminAxisValue, AxisModuleMapping> = {
       { title: { fr: "Support", en: "Support" }, moduleCode: ModuleCode.appointments, icon: "LifeBuoy" },
     ],
   },
-  // 🔒 AXE 3 — SÉCURITÉ & SYSTÈME (SuperAdmin/AdminSystem only)
+  //  AXE 3 — SÉCURITÉ & SYSTÈME (SuperAdmin/AdminSystem only)
   [AdminAxis.security]: {
     modules: [ModuleCode.analytics, ModuleCode.monitoring, ModuleCode.platform_settings],
     restrictedToSuperSystem: true,
@@ -951,7 +967,7 @@ export const AXIS_MODULE_MAP: Record<AdminAxisValue, AxisModuleMapping> = {
       { title: { fr: "Paramètres", en: "Settings" }, moduleCode: ModuleCode.platform_settings, icon: "Settings" },
     ],
   },
-  // ⚙️ AXE 4 — CONTRÔLE
+  //  AXE 4 — ÉDITORIAL
   [AdminAxis.control]: {
     modules: [ModuleCode.roles, ModuleCode.permissions, ModuleCode.org_config, ModuleCode.services_config, ModuleCode.communication, ModuleCode.tutorials, ModuleCode.community_events],
     sidebarItems: [
@@ -994,14 +1010,14 @@ export const ROLE_MODULE_PRESETS: RoleModulePreset[] = [
     id: "admin_system",
     label: { fr: "Admin Système", en: "System Admin" },
     description: { fr: "Accès complet à tous les modules", en: "Full access to all modules" },
-    emoji: "🛡️",
+    emoji: "",
     modules: [...ALL_MODULE_CODES],
   },
   {
     id: "admin_standard",
     label: { fr: "Admin Standard", en: "Standard Admin" },
     description: { fr: "Réseau + Population + Contrôle éditorial", en: "Network + Population + Editorial Control" },
-    emoji: "🔧",
+    emoji: "",
     modules: [
       ...CORE_MODULE_CODES,
       ModuleCode.team, ModuleCode.settings,
@@ -1015,7 +1031,7 @@ export const ROLE_MODULE_PRESETS: RoleModulePreset[] = [
     id: "sous_admin",
     label: { fr: "Sous-Admin", en: "Sub-Admin" },
     description: { fr: "Réseau + Population, sans sécurité ni gouvernance", en: "Network + Population, no security or governance" },
-    emoji: "👤",
+    emoji: "",
     modules: [
       ...CORE_MODULE_CODES,
       ModuleCode.associations,
@@ -1026,7 +1042,7 @@ export const ROLE_MODULE_PRESETS: RoleModulePreset[] = [
     id: "admin_content",
     label: { fr: "Contenu uniquement", en: "Content Only" },
     description: { fr: "Publications, tutoriels et événements", en: "Posts, tutorials and events" },
-    emoji: "📝",
+    emoji: "",
     modules: [
       ...CORE_MODULE_CODES,
       ModuleCode.communication, ModuleCode.tutorials, ModuleCode.community_events,
@@ -1070,19 +1086,19 @@ export function getRecommendedModules(ctx: ModuleAttributionContext): {
 
   if (ctx.role === "super_admin" || ctx.role === "admin_system") {
     modulePool = new Set(ALL_MODULE_CODES);
-    sources.push({ label: ctx.role === "super_admin" ? "Super Admin" : "Admin Système", emoji: "🛡️" });
+    sources.push({ label: ctx.role === "super_admin" ? "Super Admin" : "Admin Système", emoji: "" });
   } else if (ctx.role === "admin") {
     // Admin standard: reasonable subset
     const preset = ROLE_MODULE_PRESETS.find((p) => p.id === "admin_standard");
     modulePool = new Set(preset?.modules ?? CORE_MODULE_CODES);
-    sources.push({ label: "Admin", emoji: "🔧" });
+    sources.push({ label: "Admin", emoji: "" });
   } else if (ctx.role === "sous_admin") {
     const preset = ROLE_MODULE_PRESETS.find((p) => p.id === "sous_admin");
     modulePool = new Set(preset?.modules ?? CORE_MODULE_CODES);
-    sources.push({ label: "Sous-Admin", emoji: "👤" });
+    sources.push({ label: "Sous-Admin", emoji: "" });
   } else {
     modulePool = new Set(CORE_MODULE_CODES);
-    sources.push({ label: "Base", emoji: "📋" });
+    sources.push({ label: "Base", emoji: "" });
   }
 
   // Step 2: If orgType is specified, intersect with org template modules
@@ -1099,7 +1115,7 @@ export function getRecommendedModules(ctx: ModuleAttributionContext): {
         }
       }
       modulePool = intersected;
-      sources.push({ label: ORG_TYPE_LABELS[ctx.orgType] ?? ctx.orgType, emoji: ORG_TYPE_EMOJIS[ctx.orgType] ?? "🏢" });
+      sources.push({ label: ORG_TYPE_LABELS[ctx.orgType] ?? ctx.orgType, emoji: ORG_TYPE_EMOJIS[ctx.orgType] ?? "" });
     }
   }
 
@@ -1158,12 +1174,12 @@ const ORG_TYPE_LABELS: Record<string, string> = {
 };
 
 const ORG_TYPE_EMOJIS: Record<string, string> = {
-  embassy: "🏛️",
-  high_representation: "⭐",
-  general_consulate: "🏢",
-  permanent_mission: "🌐",
-  high_commission: "👑",
-  honorary_consulate: "📜",
-  third_party: "🤝",
-  custom: "⚙️",
+  embassy: "",
+  high_representation: "",
+  general_consulate: "",
+  permanent_mission: "",
+  high_commission: "",
+  honorary_consulate: "",
+  third_party: "",
+  custom: "",
 };

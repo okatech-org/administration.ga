@@ -156,7 +156,7 @@ const KANBAN_COLUMNS: KanbanColumnDef[] = [
 	{
 		id: "incoming",
 		labelKey: "dashboard.requests.kanban.columns.incoming",
-		icon: "📥",
+		icon: "",
 		statuses: [
 			RequestStatus.Draft,
 			RequestStatus.Submitted,
@@ -169,7 +169,7 @@ const KANBAN_COLUMNS: KanbanColumnDef[] = [
 	{
 		id: "review",
 		labelKey: "dashboard.requests.kanban.columns.review",
-		icon: "🔍",
+		icon: "",
 		statuses: [RequestStatus.UnderReview],
 		headerColor:
 			"bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800",
@@ -178,7 +178,7 @@ const KANBAN_COLUMNS: KanbanColumnDef[] = [
 	{
 		id: "production",
 		labelKey: "dashboard.requests.kanban.columns.production",
-		icon: "⚙️",
+		icon: "",
 		statuses: [
 			RequestStatus.InProduction,
 			RequestStatus.AppointmentScheduled,
@@ -192,7 +192,7 @@ const KANBAN_COLUMNS: KanbanColumnDef[] = [
 	{
 		id: "done",
 		labelKey: "dashboard.requests.kanban.columns.done",
-		icon: "✅",
+		icon: "",
 		statuses: [RequestStatus.Completed],
 		headerColor:
 			"bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800",
@@ -201,7 +201,7 @@ const KANBAN_COLUMNS: KanbanColumnDef[] = [
 	{
 		id: "closed",
 		labelKey: "dashboard.requests.kanban.columns.closed",
-		icon: "🚫",
+		icon: "",
 		statuses: [RequestStatus.Rejected, RequestStatus.Cancelled],
 		headerColor:
 			"bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700",
@@ -621,7 +621,7 @@ function TableView({
 									{/* Requester */}
 									<TableCell>
 										<div className="flex items-center gap-2.5">
-											<div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary text-xs font-bold shrink-0">
+											<div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-primary/20 to-primary/5 text-primary text-xs font-bold shrink-0">
 												{userName ? (
 													getInitials(
 														request.user?.firstName,
@@ -946,7 +946,7 @@ function KanbanCard({
 			{/* Footer: user avatar + metadata */}
 			<div className="flex items-center justify-between pt-2 border-t border-border/40">
 				<div className="flex items-center gap-2 min-w-0">
-					<div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary text-[9px] font-bold shrink-0">
+					<div className="flex h-6 w-6 items-center justify-center rounded-full bg-linear-to-br from-primary/20 to-primary/5 text-primary text-[9px] font-bold shrink-0">
 						{userName ? (
 							getInitials(request.user?.firstName, request.user?.lastName)
 						) : (

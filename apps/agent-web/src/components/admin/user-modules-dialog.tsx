@@ -49,29 +49,29 @@ import {
 
 // ─── Axis visual metadata ────────────────────────────────────
 const AXIS_UI: Record<AdminAxisValue, { emoji: string; colorBorder: string; colorBg: string; colorText: string }> = {
-	network: { emoji: "🏛️", colorBorder: "border-blue-500/30", colorBg: "bg-blue-500/5", colorText: "text-blue-600 dark:text-blue-400" },
-	population: { emoji: "👥", colorBorder: "border-purple-500/30", colorBg: "bg-purple-500/5", colorText: "text-purple-600 dark:text-purple-400" },
-	security: { emoji: "🔒", colorBorder: "border-red-500/30", colorBg: "bg-red-500/5", colorText: "text-red-600 dark:text-red-400" },
-	control: { emoji: "⚙️", colorBorder: "border-amber-500/30", colorBg: "bg-amber-500/5", colorText: "text-amber-600 dark:text-amber-400" },
+	network: { emoji: "", colorBorder: "border-blue-500/30", colorBg: "bg-blue-500/5", colorText: "text-blue-600 dark:text-blue-400" },
+	population: { emoji: "", colorBorder: "border-purple-500/30", colorBg: "bg-purple-500/5", colorText: "text-purple-600 dark:text-purple-400" },
+	security: { emoji: "", colorBorder: "border-red-500/30", colorBg: "bg-red-500/5", colorText: "text-red-600 dark:text-red-400" },
+	control: { emoji: "", colorBorder: "border-amber-500/30", colorBg: "bg-amber-500/5", colorText: "text-amber-600 dark:text-amber-400" },
 };
 
 // ─── Org type options ────────────────────────────────────────
 const ORG_TYPE_OPTIONS = [
-	{ value: "embassy", label: "Ambassade", emoji: "🏛️" },
-	{ value: "high_representation", label: "Haute Représentation", emoji: "⭐" },
-	{ value: "general_consulate", label: "Consulat Général", emoji: "🏢" },
-	{ value: "permanent_mission", label: "Mission Permanente", emoji: "🌐" },
-	{ value: "high_commission", label: "Haut-Commissariat", emoji: "👑" },
-	{ value: "honorary_consulate", label: "Consulat Honoraire", emoji: "📜" },
-	{ value: "third_party", label: "Partenaire Tiers", emoji: "🤝" },
+	{ value: "embassy", label: "Ambassade", emoji: "" },
+	{ value: "high_representation", label: "Haute Représentation", emoji: "" },
+	{ value: "general_consulate", label: "Consulat Général", emoji: "" },
+	{ value: "permanent_mission", label: "Mission Permanente", emoji: "" },
+	{ value: "high_commission", label: "Haut-Commissariat", emoji: "" },
+	{ value: "honorary_consulate", label: "Consulat Honoraire", emoji: "" },
+	{ value: "third_party", label: "Partenaire Tiers", emoji: "" },
 ] as const;
 
 // ─── Role options ────────────────────────────────────────────
 const ROLE_OPTIONS = [
-	{ value: "super_admin", label: "Super Admin", emoji: "👑" },
-	{ value: "admin_system", label: "Admin Système", emoji: "🛡️" },
-	{ value: "admin", label: "Admin", emoji: "🔧" },
-	{ value: "sous_admin", label: "Sous-Admin", emoji: "👤" },
+	{ value: "super_admin", label: "Super Admin", emoji: "" },
+	{ value: "admin_system", label: "Admin Système", emoji: "" },
+	{ value: "admin", label: "Admin", emoji: "" },
+	{ value: "sous_admin", label: "Sous-Admin", emoji: "" },
 ] as const;
 
 // ─── Continent options ───────────────────────────────────────
@@ -227,7 +227,7 @@ export function UserModulesDialog({ user, open, onOpenChange }: UserModulesDialo
 				userId: user._id,
 				modules: Array.from(enabledModules) as ModuleCodeValue[],
 			});
-			toast.success(`Modules mis à jour pour ${userName} ✓`);
+			toast.success(`Modules mis à jour pour ${userName} `);
 			onOpenChange(false);
 		} catch (_err) {
 			toast.error("Erreur lors de la mise à jour des modules");
@@ -254,8 +254,8 @@ export function UserModulesDialog({ user, open, onOpenChange }: UserModulesDialo
 							{totalEnabled}/{totalModules} modules actifs
 						</Badge>
 						<Badge variant="secondary" className="text-[10px]">
-							{userRole === "admin_system" ? "🛡️ Admin Système" :
-								userRole === "admin" ? "🔧 Admin" : userRole}
+							{userRole === "admin_system" ? " Admin Système" :
+								userRole === "admin" ? " Admin" : userRole}
 						</Badge>
 					</DialogDescription>
 				</DialogHeader>
@@ -300,7 +300,7 @@ export function UserModulesDialog({ user, open, onOpenChange }: UserModulesDialo
 										{/* Role selector */}
 										<div className="space-y-1">
 											<label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-												🎭 Rôle
+												 Rôle
 											</label>
 											<div className="flex flex-wrap gap-1">
 												{ROLE_OPTIONS.map((opt) => (
@@ -323,7 +323,7 @@ export function UserModulesDialog({ user, open, onOpenChange }: UserModulesDialo
 										{/* Org type selector */}
 										<div className="space-y-1">
 											<label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-												🏛️ Représentation
+												 Représentation
 											</label>
 												<select
 													title="Type de représentation"
@@ -346,7 +346,7 @@ export function UserModulesDialog({ user, open, onOpenChange }: UserModulesDialo
 										{/* Continent pills */}
 										<div className="space-y-1">
 											<label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-												🌍 Continent
+												 Continent
 											</label>
 											<div className="flex flex-wrap gap-1">
 												<button
@@ -381,7 +381,7 @@ export function UserModulesDialog({ user, open, onOpenChange }: UserModulesDialo
 										{/* Country */}
 										<div className="space-y-1">
 											<label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-												🏳️ Pays
+												 Pays
 											</label>
 											<div className="flex items-center gap-2">
 												{ctxCountry ? (
@@ -399,7 +399,7 @@ export function UserModulesDialog({ user, open, onOpenChange }: UserModulesDialo
 														onClick={() => setCtxCountry("")}
 														className="text-[10px] text-muted-foreground hover:text-foreground"
 													>
-														✕
+														
 													</button>
 												)}
 											</div>
@@ -519,7 +519,7 @@ export function UserModulesDialog({ user, open, onOpenChange }: UserModulesDialo
 											<div className="rounded-lg bg-card/80 border border-border/50 p-3">
 												<div className="flex items-center gap-1.5 mb-2">
 													<span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-														👁️ Aperçu menu
+														 Aperçu menu
 													</span>
 												</div>
 												<div className="space-y-0.5">

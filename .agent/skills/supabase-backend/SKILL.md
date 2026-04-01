@@ -1,9 +1,9 @@
 ---
 name: supabase-backend
-description: "🟢 Expert Supabase Backend. S'active automatiquement pour les projets utilisant Supabase (mairie.ga). Couvre Postgres, RLS, auth, Edge Functions, performance, security et patterns temps réel."
+description: " Expert Supabase Backend. S'active automatiquement pour les projets utilisant Supabase (mairie.ga). Couvre Postgres, RLS, auth, Edge Functions, performance, security et patterns temps réel."
 ---
 
-# 🟢 Skill : Supabase Backend Expert
+#  Skill : Supabase Backend Expert
 
 ## Auto-Activation
 Ce skill s'active quand :
@@ -115,7 +115,7 @@ const supabase = createClient(url, key, {
 
 // Never hold connections across async operations
 export async function getDocuments(authorId: string) {
-  // ✅ GOOD: Connection released after query
+  //  GOOD: Connection released after query
   const { data, error } = await supabase
     .from("documents")
     .select("*")
@@ -124,7 +124,7 @@ export async function getDocuments(authorId: string) {
   return data;
 }
 
-// ❌ BAD: Connection held during processing
+//  BAD: Connection held during processing
 async function processDocumentsBAD(authorId: string) {
   const query = supabase.from("documents").select("*").eq("author_id", authorId);
 
@@ -135,7 +135,7 @@ async function processDocumentsBAD(authorId: string) {
   return data;
 }
 
-// ✅ GOOD: Fetch first, then process
+//  GOOD: Fetch first, then process
 async function processDocumentsGOOD(authorId: string) {
   const { data: documents } = await supabase
     .from("documents")
@@ -194,7 +194,7 @@ ALTER TABLE documents FORCE ROW LEVEL SECURITY;
 
 ### Efficient RLS Policies
 
-#### ✅ GOOD: Index columns used in RLS
+####  GOOD: Index columns used in RLS
 ```sql
 -- Index the column used in RLS WHERE clause
 CREATE INDEX idx_documents_author_id ON documents(author_id);
@@ -217,7 +217,7 @@ CREATE POLICY "Admins see all" ON documents
   );
 ```
 
-#### ❌ BAD: Function calls per row
+####  BAD: Function calls per row
 ```sql
 -- Avoid: function called for every row!
 CREATE POLICY "bad_policy" ON documents
@@ -225,7 +225,7 @@ CREATE POLICY "bad_policy" ON documents
     get_user_role(auth.uid()) = 'admin'
   );
 
--- ✅ Better: subquery cached
+--  Better: subquery cached
 CREATE POLICY "good_policy" ON documents
   FOR SELECT USING (
     EXISTS (
@@ -260,13 +260,13 @@ CREATE POLICY "Users can edit own documents" ON documents
 
 #### Prevent RLS Bypass
 ```sql
--- ✅ Prevent UPDATE from bypassing SELECT policy
+--  Prevent UPDATE from bypassing SELECT policy
 CREATE POLICY "Users update own documents" ON documents
   FOR UPDATE
   USING (author_id = auth.uid())
   WITH CHECK (author_id = auth.uid());
 
--- ✅ Prevent UPDATE changing owner
+--  Prevent UPDATE changing owner
 CREATE POLICY "Preserve ownership" ON documents
   FOR UPDATE USING (author_id = auth.uid())
   WITH CHECK (author_id = auth.uid());
@@ -278,7 +278,7 @@ CREATE POLICY "Preserve ownership" ON documents
 
 ### Eliminate N+1 Queries with Batch Loading
 ```ts
-// ❌ BAD: N+1 problem - 21 queries for 20 users
+//  BAD: N+1 problem - 21 queries for 20 users
 async function getUsersAndRoleBAD() {
   const { data: users } = await supabase.from("users").select("*");
 
@@ -295,7 +295,7 @@ async function getUsersAndRoleBAD() {
   return users;
 }
 
-// ✅ GOOD: Single batch query - 2 queries total
+//  GOOD: Single batch query - 2 queries total
 async function getUsersAndRoleGOOD() {
   const { data: users } = await supabase.from("users").select("*");
 
@@ -329,7 +329,7 @@ async function getUsersAndRoleGOOD() {
 
 ### Cursor-Based Pagination (O(1) vs O(n))
 ```ts
-// ❌ BAD: OFFSET is O(n) - skips n rows every time
+//  BAD: OFFSET is O(n) - skips n rows every time
 async function getDocumentsOFFSET(page: number) {
   const pageSize = 20;
   const { data } = await supabase
@@ -341,7 +341,7 @@ async function getDocumentsOFFSET(page: number) {
   return data;
 }
 
-// ✅ GOOD: Cursor-based pagination O(1)
+//  GOOD: Cursor-based pagination O(1)
 interface PaginationCursor {
   lastId: string;
   hasMore: boolean;
@@ -376,7 +376,7 @@ async function getDocumentsCursor(cursor?: PaginationCursor) {
 
 ### Batch Inserts & Upserts
 ```ts
-// ✅ Single round-trip instead of multiple inserts
+//  Single round-trip instead of multiple inserts
 async function createManyDocuments(docs: Array<{ title: string; content: string }>) {
   const { data, error } = await supabase
     .from("documents")
@@ -386,7 +386,7 @@ async function createManyDocuments(docs: Array<{ title: string; content: string 
   return { data, error };
 }
 
-// ✅ Bulk upsert (create or update)
+//  Bulk upsert (create or update)
 async function syncDocuments(docs: Array<{ id: string; title: string; content: string }>) {
   const { data, error } = await supabase
     .from("documents")
@@ -403,14 +403,14 @@ async function syncDocuments(docs: Array<{ id: string; title: string; content: s
 
 ### Sequential IDs vs UUIDs
 ```sql
--- ✅ IDENTITY for sequential IDs (preferred, smallest storage)
+--  IDENTITY for sequential IDs (preferred, smallest storage)
 CREATE TABLE documents (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
   title TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- ✅ UUIDv7 for distributed systems (sortable, timestamp-based)
+--  UUIDv7 for distributed systems (sortable, timestamp-based)
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS uuid-ossp;
 
@@ -421,7 +421,7 @@ CREATE TABLE documents (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- ❌ AVOID: Random UUIDs (v4) - bad for index performance
+--  AVOID: Random UUIDs (v4) - bad for index performance
 -- They fragment B-tree indexes as they're random-order
 ```
 
@@ -465,14 +465,14 @@ CREATE INDEX idx_documents_author_status ON documents(author_id, status);
 
 ### Identifier Conventions
 ```sql
--- ✅ Use lowercase identifiers (Postgres default)
+--  Use lowercase identifiers (Postgres default)
 CREATE TABLE documents (
   id UUID PRIMARY KEY,
   author_id UUID NOT NULL,
   created_at TIMESTAMP
 );
 
--- ❌ AVOID: Mixed case forces quoting everywhere
+--  AVOID: Mixed case forces quoting everywhere
 CREATE TABLE "Documents" (
   "ID" UUID PRIMARY KEY
 );
@@ -505,7 +505,7 @@ CREATE INDEX idx_logs_created_at ON logs(created_at);
 
 ### SELECT avec filtres (Indexed)
 ```ts
-// ✅ GOOD: Indexed columns, limit results
+//  GOOD: Indexed columns, limit results
 const { data, error } = await supabase
   .from("documents")
   .select("id, title, author_id, created_at")  // only needed columns
@@ -514,7 +514,7 @@ const { data, error } = await supabase
   .order("created_at", { ascending: false })     // indexed DESC
   .limit(20);                                     // always limit!
 
-// ✅ Relationship queries with select
+//  Relationship queries with select
 const { data, error } = await supabase
   .from("documents")
   .select(`
@@ -527,7 +527,7 @@ const { data, error } = await supabase
 
 ### INSERT with Validation
 ```ts
-// ✅ Single insert with return
+//  Single insert with return
 const { data, error } = await supabase
   .from("documents")
   .insert({
@@ -538,7 +538,7 @@ const { data, error } = await supabase
   .select()
   .single();
 
-// ✅ Batch insert
+//  Batch insert
 const { data, error } = await supabase
   .from("documents")
   .insert([
@@ -555,7 +555,7 @@ if (error) {
 
 ### UPDATE with Safety Checks
 ```ts
-// ✅ Update single row, return result
+//  Update single row, return result
 const { data, error } = await supabase
   .from("documents")
   .update({ status: "archived", updated_at: new Date() })
@@ -564,7 +564,7 @@ const { data, error } = await supabase
   .select()
   .single();
 
-// ✅ Batch update
+//  Batch update
 const { data, error } = await supabase
   .from("documents")
   .update({ status: "archived" })
@@ -574,7 +574,7 @@ const { data, error } = await supabase
 
 ### DELETE with Cascade
 ```ts
-// ✅ Delete single
+//  Delete single
 const { error } = await supabase
   .from("documents")
   .delete()
@@ -899,26 +899,26 @@ SELECT indexrelname, idx_scan, idx_tup_read, idx_tup_fetch
 ## Anti-Patterns
 
 ### Security & Trust
-- ❌ **NEVER** use `service_role` key on client (only `anon`)
-- ❌ **NEVER** skip RLS on multi-tenant tables
-- ❌ **NEVER** trust client-side validation without server checks
-- ❌ **NEVER** expose secrets in source code
+-  **NEVER** use `service_role` key on client (only `anon`)
+-  **NEVER** skip RLS on multi-tenant tables
+-  **NEVER** trust client-side validation without server checks
+-  **NEVER** expose secrets in source code
 
 ### Performance
-- ❌ **NEVER** write queries without WHERE/JOIN indexes
-- ❌ **NEVER** use N+1 queries when batch loading is available
-- ❌ **NEVER** use OFFSET for pagination on large tables (use cursors)
-- ❌ **NEVER** fetch 1000+ rows to client and filter in JavaScript
-- ❌ **NEVER** call functions repeatedly in RLS policies (use subqueries)
-- ❌ **NEVER** skip LIMIT on SELECT queries (DoS risk)
+-  **NEVER** write queries without WHERE/JOIN indexes
+-  **NEVER** use N+1 queries when batch loading is available
+-  **NEVER** use OFFSET for pagination on large tables (use cursors)
+-  **NEVER** fetch 1000+ rows to client and filter in JavaScript
+-  **NEVER** call functions repeatedly in RLS policies (use subqueries)
+-  **NEVER** skip LIMIT on SELECT queries (DoS risk)
 
 ### Data Integrity
-- ❌ **NEVER** use TEXT for numeric IDs (use BIGINT, UUID)
-- ❌ **NEVER** use random UUIDs (v4) as primary keys (use IDENTITY, UUIDv7)
-- ❌ **NEVER** rely on application code for constraints (use CHECK, FK)
-- ❌ **NEVER** omit ON DELETE CASCADE for relationships (orphaned rows)
+-  **NEVER** use TEXT for numeric IDs (use BIGINT, UUID)
+-  **NEVER** use random UUIDs (v4) as primary keys (use IDENTITY, UUIDv7)
+-  **NEVER** rely on application code for constraints (use CHECK, FK)
+-  **NEVER** omit ON DELETE CASCADE for relationships (orphaned rows)
 
 ### Connection Management
-- ❌ **NEVER** hold connections during async operations
-- ❌ **NEVER** create client per request (reuse single client)
-- ❌ **NEVER** ignore connection pool limits
+-  **NEVER** hold connections during async operations
+-  **NEVER** create client per request (reuse single client)
+-  **NEVER** ignore connection pool limits

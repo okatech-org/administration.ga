@@ -110,7 +110,7 @@ function BookAppointmentPage() {
 				<p className="text-muted-foreground text-center">
 					{t("appointments.book.noOrg")}
 				</p>
-				<Button onClick={() => navigate({ to: "/orgs" })}>
+				<Button onClick={() => navigate({ to: "/reps" })}>
 					{t("appointments.book.selectOrg")}
 				</Button>
 			</div>

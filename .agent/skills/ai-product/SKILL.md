@@ -28,19 +28,19 @@ Version prompts in code and test with regression suite
 
 ## Anti-Patterns
 
-### ❌ Demo-ware
+###  Demo-ware
 
 **Why bad**: Demos deceive. Production reveals truth. Users lose trust fast.
 
-### ❌ Context window stuffing
+###  Context window stuffing
 
 **Why bad**: Expensive, slow, hits limits. Dilutes relevant context with noise.
 
-### ❌ Unstructured output parsing
+###  Unstructured output parsing
 
 **Why bad**: Breaks randomly. Inconsistent formats. Injection risks.
 
-## ⚠️ Sharp Edges
+##  Sharp Edges
 
 | Issue | Severity | Solution |
 |-------|----------|----------|

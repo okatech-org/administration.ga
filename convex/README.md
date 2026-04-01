@@ -29,13 +29,13 @@ export const myQueryFunction = query({
 Using this query function in a React component looks like:
 
 ```ts
-// ❌ NOT PREFERRED: Direct useQuery from convex/react
+//  NOT PREFERRED: Direct useQuery from convex/react
 const data = useQuery(api.myFunctions.myQueryFunction, {
   first: 10,
   second: "hello",
 });
 
-// ✅ PREFERRED: Use custom hooks from @/integrations/convex/hooks
+//  PREFERRED: Use custom hooks from @/integrations/convex/hooks
 const { data, isPending } = useConvexQuery(api.myFunctions.myQueryFunction, {
   first: 10,
   second: "hello",
@@ -179,7 +179,7 @@ export const getMyData = authQuery({
 
 ---
 
-## 📚 Resources
+##  Resources
 
 ### Official Documentation
 

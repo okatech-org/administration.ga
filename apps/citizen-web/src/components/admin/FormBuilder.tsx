@@ -285,7 +285,7 @@ export function FormBuilder({
 		// This could integrate with the Gemini assistant to generate form fields
 		// For now, show a helpful message
 		alert(
-			'💡 Fonctionnalité IA\n\nOuvrez l\'assistant IA et décrivez le formulaire souhaité.\nExemple: "Crée un formulaire pour une demande de passeport avec sections identité, ancien passeport et coordonnées."',
+			' Fonctionnalité IA\n\nOuvrez l\'assistant IA et décrivez le formulaire souhaité.\nExemple: "Crée un formulaire pour une demande de passeport avec sections identité, ancien passeport et coordonnées."',
 		);
 	};
 

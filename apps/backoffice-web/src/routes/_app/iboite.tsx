@@ -56,8 +56,7 @@ import React, { useCallback, useEffect, useId, useMemo, useState } from "react";
 // Appels non disponibles dans backoffice
 // import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { useIsMobile } from "@/hooks/use-mobile";
-// Analytics stub — pas disponible dans backoffice
-const captureEvent = (..._args: any[]) => {};
+import { captureEvent } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 // Official org types — shown with a special badge

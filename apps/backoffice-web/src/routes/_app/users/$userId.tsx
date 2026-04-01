@@ -7,6 +7,7 @@ import {
 	ArrowLeft,
 	Building2,
 	Calendar,
+	Eye,
 	Layers,
 	Mail,
 	MapPin,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MenuPreviewCard } from "@/components/admin/menu-preview-card";
 import { MemberPermissionsDialog } from "@/components/org/member-permissions-dialog";
 import { UserRoleDialog } from "@/components/admin/user-role-dialog";
 import { UserModulesDialog } from "@/components/admin/user-modules-dialog";
@@ -115,10 +117,10 @@ function UserDetailPage() {
 		try {
 			if (user.isActive) {
 				await disableUserMut({ userId: user._id });
-				toast.success("Utilisateur désactivé ✓");
+				toast.success("Utilisateur désactivé ");
 			} else {
 				await enableUserMut({ userId: user._id });
-				toast.success("Utilisateur activé ✓");
+				toast.success("Utilisateur activé ");
 			}
 		} catch {
 			toast.error(t("superadmin.common.error"));
@@ -129,7 +131,7 @@ function UserDetailPage() {
 		if (!user) return;
 		try {
 			await softDeleteMut({ userId: user._id });
-			toast.success("Utilisateur déplacé dans la corbeille 🗑️");
+			toast.success("Utilisateur déplacé dans la corbeille ");
 		} catch {
 			toast.error(t("superadmin.common.error"));
 		}
@@ -139,7 +141,7 @@ function UserDetailPage() {
 		if (!user) return;
 		try {
 			await restoreMut({ userId: user._id });
-			toast.success("Utilisateur restauré ✓");
+			toast.success("Utilisateur restauré ");
 		} catch {
 			toast.error(t("superadmin.common.error"));
 		}
@@ -391,7 +393,7 @@ function UserDetailPage() {
 								<dt className="text-sm text-muted-foreground">Statut du compte</dt>
 								<dd>
 									<Badge variant={user.isActive ? "default" : "outline"}>
-										{user.isActive ? "✅ Actif" : "🚫 Inactif"}
+										{user.isActive ? " Actif" : " Inactif"}
 									</Badge>
 								</dd>
 							</div>
@@ -400,7 +402,7 @@ function UserDetailPage() {
 									<dt className="text-sm text-muted-foreground">Corbeille</dt>
 									<dd>
 										<Badge variant="outline" className="text-red-600 border-red-300 bg-red-50 dark:bg-red-500/10 dark:text-red-400">
-											🗑️ En attente de suppression
+											 En attente de suppression
 										</Badge>
 									</dd>
 								</div>
@@ -419,7 +421,7 @@ function UserDetailPage() {
 								<dt className="text-sm text-muted-foreground">Gérable par vous</dt>
 								<dd className="text-sm">
 									{canManage ? (
-										<span className="text-green-600 dark:text-green-400">✓ Oui</span>
+										<span className="text-green-600 dark:text-green-400"> Oui</span>
 									) : (
 										<span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
 											<ShieldAlert className="h-3.5 w-3.5" />
@@ -453,37 +455,44 @@ function UserDetailPage() {
 					) : memberships && memberships.length > 0 ? (
 						<div className="space-y-3">
 							{memberships.map((membership: any) => (
-								<div
-									key={membership._id}
-									className="flex items-center justify-between p-3 border rounded-md"
-								>
-									<div>
-										<p className="font-medium">
-											{membership.org?.name || "—"}
-										</p>
-										<p className="text-xs text-muted-foreground">
-											{t("superadmin.users.details.since")}{" "}
-											{new Date(membership.joinedAt).toLocaleDateString()}
-										</p>
+								<div key={membership._id} className="border rounded-md overflow-hidden">
+									<div className="flex items-center justify-between p-3">
+										<div>
+											<p className="font-medium">
+												{membership.org?.name || "—"}
+											</p>
+											<p className="text-xs text-muted-foreground">
+												{t("superadmin.users.details.since")}{" "}
+												{new Date(membership.joinedAt).toLocaleDateString()}
+											</p>
+										</div>
+										<div className="flex items-center gap-2">
+											<Button
+												variant="ghost"
+												size="icon"
+												className="h-7 w-7"
+												title={t("permissions.dialog.title")}
+												onClick={() =>
+													setPermsMembership({
+														membershipId: membership._id as Id<"memberships">,
+														orgId: membership.orgId as Id<"orgs">,
+														name: membership.org?.name || "—",
+														role: membership.role,
+													})
+												}
+											>
+												<ShieldCheck className="h-4 w-4" />
+											</Button>
+											<Badge variant="secondary">{membership.role}</Badge>
+										</div>
 									</div>
-									<div className="flex items-center gap-2">
-										<Button
-											variant="ghost"
-											size="icon"
-											className="h-7 w-7"
-											title={t("permissions.dialog.title")}
-											onClick={() =>
-												setPermsMembership({
-													membershipId: membership._id as Id<"memberships">,
-													orgId: membership.orgId as Id<"orgs">,
-													name: membership.org?.name || "—",
-													role: membership.role,
-												})
-											}
-										>
-											<ShieldCheck className="h-4 w-4" />
-										</Button>
-										<Badge variant="secondary">{membership.role}</Badge>
+									{/* Aperçu du menu de cet utilisateur dans cette org */}
+									<div className="border-t px-3 py-2 bg-muted/20">
+										<MenuPreviewCard
+											userId={userId as Id<"users">}
+											orgId={membership.orgId as Id<"orgs">}
+											compact
+										/>
 									</div>
 								</div>
 							))}
@@ -530,7 +539,7 @@ function UserDetailPage() {
 							</div>
 						) : (
 							<p className="text-muted-foreground text-sm">
-								✅ Aucune restriction — accès à tous les modules
+								 Aucune restriction — accès à tous les modules
 							</p>
 						)}
 					</CardContent>

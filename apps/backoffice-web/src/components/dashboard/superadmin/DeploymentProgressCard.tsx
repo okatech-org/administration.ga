@@ -19,15 +19,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // Map org type codes to French display names
 const ORG_TYPE_LABELS: Record<string, { fr: string; icon: string }> = {
-	embassy: { fr: "Ambassade", icon: "🏛️" },
-	high_representation: { fr: "Haute Représentation", icon: "🏛️" },
-	general_consulate: { fr: "Consulat Général", icon: "🏢" },
-	high_commission: { fr: "Haut-Commissariat", icon: "🏛️" },
-	permanent_mission: { fr: "Mission Permanente", icon: "🌐" },
-	third_party: { fr: "Partenaire Tiers", icon: "🤝" },
-	consulate: { fr: "Consulat", icon: "🏢" },
-	honorary_consulate: { fr: "Consulat Honoraire", icon: "🎖️" },
-	other: { fr: "Autre", icon: "📋" },
+	embassy: { fr: "Ambassade", icon: "" },
+	high_representation: { fr: "Haute Représentation", icon: "" },
+	general_consulate: { fr: "Consulat Général", icon: "" },
+	high_commission: { fr: "Haut-Commissariat", icon: "" },
+	permanent_mission: { fr: "Mission Permanente", icon: "" },
+	third_party: { fr: "Partenaire Tiers", icon: "" },
+	consulate: { fr: "Consulat", icon: "" },
+	honorary_consulate: { fr: "Consulat Honoraire", icon: "" },
+	other: { fr: "Autre", icon: "" },
 };
 
 // Map country codes to names (subset — most common for Gabon diplomatic network)
@@ -152,7 +152,7 @@ export function DeploymentProgressCard({
 						{Object.entries(data.byType)
 							.sort(([, a], [, b]) => b - a)
 							.map(([type, count]) => {
-								const info = ORG_TYPE_LABELS[type] ?? { fr: type, icon: "📋" };
+								const info = ORG_TYPE_LABELS[type] ?? { fr: type, icon: "" };
 								return (
 									<div
 										key={type}

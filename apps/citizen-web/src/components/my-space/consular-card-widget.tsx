@@ -21,11 +21,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 
-// Card model images
-const CARD_RECTO_URL =
-	"https://greedy-horse-339.convex.cloud/api/storage/91438165-c30d-4aab-91e0-0a8e5806c1ec";
-const CARD_VERSO_URL =
-	"https://greedy-horse-339.convex.cloud/api/storage/1423b4ef-2701-46ef-ac6f-10d759e61c09";
+// Card model images — placeholder gradient si les images storage ne sont plus disponibles
+const CARD_RECTO_URL = "";
+const CARD_VERSO_URL = "";
 
 interface ConsularCardWidgetProps {
 	profile: Doc<"profiles"> | null | undefined;
@@ -108,11 +106,16 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 						>
 							{/* Front */}
 							<div className="absolute inset-0 w-full h-full backface-hidden rounded-xl overflow-hidden shadow-lg border border-border/20">
-								<img
-									src={CARD_RECTO_URL}
-									alt="Card front"
-									className="absolute inset-0 w-full h-full object-cover"
-								/>
+								{CARD_RECTO_URL ? (
+									<img
+										src={CARD_RECTO_URL}
+										alt="Card front"
+										className="absolute inset-0 w-full h-full object-cover"
+										onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+									/>
+								) : (
+									<div className="absolute inset-0 w-full h-full bg-gradient-to-br from-emerald-100 via-emerald-50 to-amber-50" />
+								)}
 								<div className="absolute inset-0 p-3.5 flex flex-col justify-between">
 									<div className="text-center">
 										<p className="text-[10px] text-gray-800/80 font-medium uppercase tracking-wider">
@@ -172,11 +175,16 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 									"rounded-xl overflow-hidden shadow-lg border border-border/20",
 								)}
 							>
-								<img
-									src={CARD_VERSO_URL}
-									alt="Card back"
-									className="absolute inset-0 w-full h-full object-cover"
-								/>
+								{CARD_VERSO_URL ? (
+									<img
+										src={CARD_VERSO_URL}
+										alt="Card back"
+										className="absolute inset-0 w-full h-full object-cover"
+										onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+									/>
+								) : (
+									<div className="absolute inset-0 w-full h-full bg-gradient-to-br from-amber-50 via-emerald-50 to-emerald-100" />
+								)}
 								<div className="absolute inset-0 p-4 flex flex-col justify-center items-center">
 									<div className="bg-white/95 rounded-lg p-3 text-center max-w-[80%] shadow-sm">
 										<p className="text-[10px] text-gray-700 font-medium mb-2 leading-tight">

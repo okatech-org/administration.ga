@@ -9,7 +9,7 @@ import { useConvexAuth } from "convex/react";
 import { AlertTriangle, Loader2, UserPlus } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { AIAssistant } from "@/components/ai";
+import { CitizenIAstedWindow } from "@/components/ai/iasted/CitizenIAstedWindow";
 import { MySpaceWrapper } from "@/components/my-space/my-space-wrapper";
 import { Button } from "@/components/ui/button";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
@@ -118,7 +118,7 @@ function MySpaceLayout() {
 	return (
 		<MySpaceWrapper>
 			<Outlet />
-			<AIAssistant />
+			<CitizenIAstedWindow />
 		</MySpaceWrapper>
 	);
 }

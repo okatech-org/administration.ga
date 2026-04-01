@@ -1,9 +1,9 @@
 ---
 name: prisma-database
-description: "🗄️ Expert Prisma ORM & Database. S'active automatiquement pour les projets utilisant Prisma (evenement.ga). Couvre le schema Prisma, les migrations, le seeding, et les patterns de requêtes avancées."
+description: " Expert Prisma ORM & Database. S'active automatiquement pour les projets utilisant Prisma (evenement.ga). Couvre le schema Prisma, les migrations, le seeding, et les patterns de requêtes avancées."
 ---
 
-# 🗄️ Skill : Prisma ORM & Database Expert
+#  Skill : Prisma ORM & Database Expert
 
 ## Auto-Activation
 Ce skill s'active quand :
@@ -98,7 +98,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// ✅ Requête avec relations
+//  Requête avec relations
 const events = await prisma.event.findMany({
   where: { status: "PUBLISHED" },
   include: {
@@ -110,13 +110,13 @@ const events = await prisma.event.findMany({
   skip: 0,
 });
 
-// ✅ Transaction
+//  Transaction
 const [event, ticket] = await prisma.$transaction([
   prisma.event.update({ where: { id: eventId }, data: { /* ... */ } }),
   prisma.ticket.create({ data: { /* ... */ } }),
 ]);
 
-// ✅ Upsert
+//  Upsert
 const user = await prisma.user.upsert({
   where: { email: "user@example.com" },
   update: { name: "Updated Name" },
@@ -125,7 +125,7 @@ const user = await prisma.user.upsert({
 ```
 
 ## Anti-Patterns
-- ❌ Ne JAMAIS instancier PrismaClient dans le scope d'une fonction — utiliser un singleton
-- ❌ Ne JAMAIS oublier `@@map()` pour les noms de tables
-- ❌ Ne JAMAIS faire de N+1 queries — utiliser `include` ou `select`
-- ❌ Ne JAMAIS modifier la DB en production avec `migrate dev` — utiliser `migrate deploy`
+-  Ne JAMAIS instancier PrismaClient dans le scope d'une fonction — utiliser un singleton
+-  Ne JAMAIS oublier `@@map()` pour les noms de tables
+-  Ne JAMAIS faire de N+1 queries — utiliser `include` ou `select`
+-  Ne JAMAIS modifier la DB en production avec `migrate dev` — utiliser `migrate deploy`

@@ -191,7 +191,7 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 				if (match) {
 					chat.messages.push({
 						role: "assistant" as const,
-						content: `📞 Lancement de l'appel vers **${match.lastName} ${match.firstName}** (${match.position ?? "N/A"} — ${match.orgName}).\n\n_Basculez sur l'onglet iAppel pour continuer._`,
+						content: ` Lancement de l'appel vers **${match.lastName} ${match.firstName}** (${match.position ?? "N/A"} — ${match.orgName}).\n\n_Basculez sur l'onglet iAppel pour continuer._`,
 						timestamp: Date.now(),
 					});
 					toast.success(`Appel vers ${match.lastName} ${match.firstName}`);
@@ -221,7 +221,7 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 					const names = matchedContacts.slice(0, 5).map((c: any) => `**${c.lastName} ${c.firstName}**`).join(", ");
 					chat.messages.push({
 						role: "assistant" as const,
-						content: `🗓️ Je prépare une réunion avec ${names}.\n\n_Basculez sur l'onglet iRéunion pour finaliser et démarrer._`,
+						content: ` Je prépare une réunion avec ${names}.\n\n_Basculez sur l'onglet iRéunion pour finaliser et démarrer._`,
 						timestamp: Date.now(),
 					});
 					toast.success("Réunion en préparation — onglet iRéunion");

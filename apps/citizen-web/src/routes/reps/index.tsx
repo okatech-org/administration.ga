@@ -42,7 +42,7 @@ const orgsSearchSchema = z.object({
   view: z.enum(["map", "grid"]).optional().default("map"),
 });
 
-export const Route = createFileRoute("/orgs/")({
+export const Route = createFileRoute("/reps/")({
   component: OrgsPage,
   validateSearch: (search) => orgsSearchSchema.parse(search),
 });
@@ -55,7 +55,7 @@ const CONTINENTS = [
   {
     id: "africa",
     nameKey: "orgs.continents.africa",
-    emoji: "🌍",
+    emoji: "",
     countries: [
       "ZA",
       "DZ",
@@ -100,19 +100,19 @@ const CONTINENTS = [
   {
     id: "asia",
     nameKey: "orgs.continents.asia",
-    emoji: "🌏",
+    emoji: "",
     countries: ["CN", "IN", "JP", "KR", "TR", "IR"],
   },
   {
     id: "americas",
     nameKey: "orgs.continents.americas",
-    emoji: "🌎",
+    emoji: "",
     countries: ["US", "CA", "BR", "MX", "AR", "CU"],
   },
   {
     id: "middle_east",
     nameKey: "orgs.continents.middle_east",
-    emoji: "🕌",
+    emoji: "",
     countries: ["SA", "AE", "QA", "KW", "LB"],
   },
 ];
@@ -334,7 +334,7 @@ function OrgsPage() {
                     value="all"
                     className="text-sm whitespace-nowrap shrink-0"
                   >
-                    🌐 {t("orgs.allContinents")} (
+                     {t("orgs.allContinents")} (
                     {Object.keys(orgsByCountry).length})
                   </TabsTrigger>
                   {CONTINENTS.map((c) => {
@@ -533,7 +533,7 @@ function RepresentationItem({
 }) {
   const { t } = useTranslation();
   return (
-    <Link to="/orgs/$slug" params={{ slug: rep.slug }} className="block group">
+    <Link to="/reps/$slug" params={{ slug: rep.slug }} className="block group">
       <div
         className={`rounded-lg border p-3 transition-all hover:border-primary/40 hover:shadow-sm ${isMain ? "border-primary/30 bg-primary/5" : ""}`}
       >
