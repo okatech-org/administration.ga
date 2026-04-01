@@ -116,14 +116,25 @@ export function CardDesigner() {
       }
       const canvas = stageRef.current.toCanvas({ pixelRatio: 1 })
       const bmp = canvasToBmp(canvas)
-      const blob = new Blob([bmp], { type: "image/bmp" })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `${state.name.replace(/\s+/g, "_")}_${face}.bmp`
-      a.click()
-      URL.revokeObjectURL(url)
-      toast.success(`BMP ${face} exporté`)
+      const fileName = `${state.name.replace(/\s+/g, "_")}_${face}.bmp`
+      if (window.desktopApi?.fileDialog) {
+        const result = await window.desktopApi.fileDialog.save({
+          title: "Exporter le design BMP",
+          defaultPath: fileName,
+          filters: [{ name: "BMP Image", extensions: ["bmp"] }],
+          data: bmp.buffer as ArrayBuffer,
+        })
+        if (!result.canceled) toast.success(`BMP ${face} exporté`)
+      } else {
+        const blob = new Blob([bmp as BlobPart], { type: "image/bmp" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = fileName
+        a.click()
+        URL.revokeObjectURL(url)
+        toast.success(`BMP ${face} exporté`)
+      }
     },
     [state.activeFace, state.name, dispatch]
   )

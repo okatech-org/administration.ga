@@ -9,8 +9,11 @@ import {
 } from "./hooks/useConsularTheme"
 import { cn } from "./lib/utils"
 
-// Desktop-only pages
+// Desktop-only
 import { ImpressionPage } from "./components/impression/ImpressionPage"
+import { useNativeNotifications } from "./hooks/useNativeNotifications"
+import { useTraySync } from "./hooks/useTraySync"
+import { useMenuActions } from "./hooks/useMenuActions"
 
 // Web-mirrored pages
 import { DashboardPage } from "./components/dashboard/DashboardPage"
@@ -39,6 +42,10 @@ export function App() {
   const [activeRoute, setActiveRoute] = useState<Route>({ page: "dashboard" })
   const consularThemeValue = useConsularThemeState()
   const { consularTheme } = consularThemeValue
+  // Native desktop integrations (notification click → navigate, tray sync, menu bar)
+  useNativeNotifications(setActiveRoute)
+  useTraySync(setActiveRoute)
+  useMenuActions(setActiveRoute)
 
   // Loading state
   if (isLoading) {

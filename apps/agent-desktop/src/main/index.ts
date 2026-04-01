@@ -1,9 +1,24 @@
 import { app, BrowserWindow, ipcMain, session } from "electron"
 import path from "path"
 import { registerPrinterIpc } from "./ipc/printer.ipc"
+import { registerNotificationIpc } from "./ipc/notification.ipc"
+import { registerFileDialogIpc } from "./ipc/file-dialog.ipc"
+import { registerTrayIpc } from "./ipc/tray.ipc"
+import { registerClipboardIpc } from "./ipc/clipboard.ipc"
+import { registerMenuIpc } from "./ipc/menu.ipc"
+import { DeepLinkService } from "./services/deep-link.service"
+import { registerUpdaterIpc } from "./ipc/updater.ipc"
 
-function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+let mainWindow: BrowserWindow | null = null
+
+// Ensure single instance for deep link handling
+const gotTheLock = app.requestSingleInstanceLock()
+if (!gotTheLock) {
+  app.quit()
+}
+
+function createWindow(): BrowserWindow {
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 900,
@@ -47,6 +62,20 @@ function createWindow(): void {
 
   // Register IPC handlers
   registerPrinterIpc(ipcMain)
+  registerNotificationIpc(ipcMain, mainWindow)
+  registerFileDialogIpc(ipcMain, mainWindow)
+  registerTrayIpc(ipcMain, mainWindow)
+  registerClipboardIpc(ipcMain)
+  registerMenuIpc(ipcMain, mainWindow)
+  registerUpdaterIpc(ipcMain, mainWindow)
+
+  // On macOS, hide window instead of closing so tray stays active
+  mainWindow.on("close", (e) => {
+    if (process.platform === "darwin" && !(app as any).isQuitting) {
+      e.preventDefault()
+      mainWindow?.hide()
+    }
+  })
 
   // Open DevTools in dev
   if (!app.isPackaged) {
@@ -59,13 +88,36 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"))
   }
+
+  return mainWindow
 }
 
+// Deep link protocol registration
+const deepLinkService = new DeepLinkService(() =>
+  mainWindow && !mainWindow.isDestroyed() ? mainWindow : null
+)
+deepLinkService.register()
+
+// Track quit intent for macOS hide-on-close behavior
+app.on("before-quit", () => {
+  ;(app as typeof app & { isQuitting: boolean }).isQuitting = true
+})
+
 app.whenReady().then(() => {
-  createWindow()
+  const win = createWindow()
+
+  // Forward deep link navigation to renderer
+  deepLinkService.setOnNavigateCallback((path) => {
+    if (!win.isDestroyed()) {
+      win.webContents.send("menu:action", `navigate:${path.split("/")[1]}`)
+    }
+  })
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show()
+      mainWindow.focus()
+    } else {
       createWindow()
     }
   })

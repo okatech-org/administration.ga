@@ -103,16 +103,25 @@ export function DashboardPage({ onNavigate }: { onNavigate: (route: Route) => vo
 	const handleExportJSON = async () => {
 		if (!orgId) return;
 		try {
-			const blob = new Blob([JSON.stringify(stats, null, 2)], {
-				type: "application/json",
-			});
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = `dashboard-stats-${format(new Date(), "yyyy-MM-dd")}.json`;
-			a.click();
-			URL.revokeObjectURL(url);
-			toast.success(t("admin.export.success"));
+			const jsonStr = JSON.stringify(stats, null, 2);
+			if (window.desktopApi?.fileDialog) {
+				const result = await window.desktopApi.fileDialog.save({
+					title: "Exporter les statistiques",
+					defaultPath: `dashboard-stats-${format(new Date(), "yyyy-MM-dd")}.json`,
+					filters: [{ name: "JSON", extensions: ["json"] }],
+					data: jsonStr,
+				});
+				if (!result.canceled) toast.success(t("admin.export.success"));
+			} else {
+				const blob = new Blob([jsonStr], { type: "application/json" });
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				a.href = url;
+				a.download = `dashboard-stats-${format(new Date(), "yyyy-MM-dd")}.json`;
+				a.click();
+				URL.revokeObjectURL(url);
+				toast.success(t("admin.export.success"));
+			}
 		} catch {
 			toast.error(t("admin.export.error"));
 		}

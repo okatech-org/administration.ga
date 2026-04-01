@@ -253,7 +253,7 @@ export function StatisticsPage() {
 	}, [registrations, t]);
 
 	// ─── Export handler ─────────────────────────────────────────────────────
-	const handleExport = () => {
+	const handleExport = async () => {
 		if (!stats) return;
 		try {
 			const exportData = {
@@ -263,16 +263,25 @@ export function StatisticsPage() {
 				agentPerformance: agentData?.agents,
 				registrationBreakdown: registrationChartData,
 			};
-			const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-				type: "application/json",
-			});
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = `statistics-${format(new Date(), "yyyy-MM-dd")}.json`;
-			a.click();
-			URL.revokeObjectURL(url);
-			toast.success(t("admin.export.success"));
+			const jsonStr = JSON.stringify(exportData, null, 2);
+			if (window.desktopApi?.fileDialog) {
+				const result = await window.desktopApi.fileDialog.save({
+					title: "Exporter les statistiques",
+					defaultPath: `statistics-${format(new Date(), "yyyy-MM-dd")}.json`,
+					filters: [{ name: "JSON", extensions: ["json"] }],
+					data: jsonStr,
+				});
+				if (!result.canceled) toast.success(t("admin.export.success"));
+			} else {
+				const blob = new Blob([jsonStr], { type: "application/json" });
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				a.href = url;
+				a.download = `statistics-${format(new Date(), "yyyy-MM-dd")}.json`;
+				a.click();
+				URL.revokeObjectURL(url);
+				toast.success(t("admin.export.success"));
+			}
 		} catch {
 			toast.error(t("admin.export.error"));
 		}
