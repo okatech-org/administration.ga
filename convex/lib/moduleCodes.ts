@@ -224,7 +224,7 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   // ─── Core ─────────────────────────────────────────────────
   [ModuleCode.requests]: {
     code: ModuleCode.requests,
-    label: { fr: "Demandes", en: "Requests" },
+    label: { fr: "Affaires Consulaires", en: "Consular Affairs" },
     description: { fr: "Gestion des demandes consulaires", en: "Consular request management" },
     icon: "FileEdit",
     color: "text-emerald-500",
@@ -239,7 +239,7 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   },
   [ModuleCode.documents]: {
     code: ModuleCode.documents,
-    label: { fr: "Documents", en: "Documents" },
+    label: { fr: "iDocument", en: "iDocument" },
     description: { fr: "Gestion et vérification des documents", en: "Document management and verification" },
     icon: "FileText",
     color: "text-blue-500",
@@ -253,7 +253,7 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   },
   [ModuleCode.appointments]: {
     code: ModuleCode.appointments,
-    label: { fr: "Rendez-vous", en: "Appointments" },
+    label: { fr: "iAgenda", en: "iAgenda" },
     description: { fr: "Planification des rendez-vous", en: "Appointment scheduling" },
     icon: "CalendarDays",
     color: "text-violet-500",
@@ -380,7 +380,7 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   // ─── Finance ──────────────────────────────────────────────
   [ModuleCode.finance]: {
     code: ModuleCode.finance,
-    label: { fr: "Finances", en: "Finance" },
+    label: { fr: "Paiements", en: "Payments" },
     description: { fr: "Gestion financière consulaire", en: "Consular financial management" },
     icon: "Wallet",
     color: "text-yellow-600",
@@ -400,8 +400,8 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   // ─── Communication & Outils (category: tools) ─────────────
   [ModuleCode.communication]: {
     code: ModuleCode.communication,
-    label: { fr: "Communication", en: "Communication" },
-    description: { fr: "Publications et notifications", en: "Publications and notifications" },
+    label: { fr: "Actualités", en: "News" },
+    description: { fr: "Publications et notifications aux citoyens", en: "Citizen publications and notifications" },
     icon: "Megaphone",
     color: "text-sky-500",
     category: "tools",
@@ -418,8 +418,8 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   },
   [ModuleCode.digital_mail]: {
     code: ModuleCode.digital_mail,
-    label: { fr: "Courrier numérique", en: "Digital mail" },
-    description: { fr: "Envoi de courrier dématérialisé", en: "Digital mail delivery" },
+    label: { fr: "iBoîte", en: "iBoîte" },
+    description: { fr: "Messagerie interne et courrier dématérialisé", en: "Internal messaging and digital mail" },
     icon: "Mail",
     color: "text-blue-400",
     category: "tools",
@@ -452,8 +452,8 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   // ─── Admin ────────────────────────────────────────────────
   [ModuleCode.team]: {
     code: ModuleCode.team,
-    label: { fr: "Organismes", en: "Organizations" },
-    description: { fr: "Gestion des organismes", en: "Organization management" },
+    label: { fr: "Équipe", en: "Team" },
+    description: { fr: "Gestion de l'équipe et des membres", en: "Team and member management" },
     icon: "Building2",
     color: "text-blue-500",
     category: "admin",
@@ -479,8 +479,8 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   },
   [ModuleCode.settings]: {
     code: ModuleCode.settings,
-    label: { fr: "Services", en: "Services" },
-    description: { fr: "Gestion des services", en: "Service management" },
+    label: { fr: "Paramètres", en: "Settings" },
+    description: { fr: "Configuration et paramétrage", en: "Configuration and settings" },
     icon: "Wrench",
     color: "text-zinc-500",
     category: "admin",
@@ -515,8 +515,8 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   },
   [ModuleCode.analytics]: {
     code: ModuleCode.analytics,
-    label: { fr: "Journal d'audit", en: "Audit Log" },
-    description: { fr: "Traçabilité et journal d'audit", en: "Audit trail and logs" },
+    label: { fr: "Statistiques", en: "Statistics" },
+    description: { fr: "Tableaux de bord et statistiques", en: "Dashboards and statistics" },
     icon: "ScrollText",
     color: "text-cyan-500",
     category: "admin",
@@ -544,8 +544,8 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   // ─── Diplomatique ─────────────────────────────────────────
   [ModuleCode.intelligence]: {
     code: ModuleCode.intelligence,
-    label: { fr: "Renseignement", en: "Intelligence" },
-    description: { fr: "Notes de renseignement diplomatique", en: "Diplomatic intelligence notes" },
+    label: { fr: "Affaires Diplomatiques", en: "Diplomatic Affairs" },
+    description: { fr: "Intelligence et renseignement diplomatique", en: "Diplomatic intelligence and affairs" },
     icon: "ShieldAlert",
     color: "text-red-500",
     category: "diplomatic",
@@ -942,9 +942,9 @@ export const AXIS_MODULE_MAP: Record<AdminAxisValue, AxisModuleMapping> = {
     modules: [ModuleCode.team, ModuleCode.settings, ModuleCode.requests, ModuleCode.associations],
     sidebarItems: [
       { title: { fr: "Dashboard", en: "Dashboard" }, icon: "LayoutDashboard" },
-      { title: { fr: "Organismes", en: "Organizations" }, moduleCode: ModuleCode.team, icon: "Building2" },
+      { title: { fr: "Équipe", en: "Team" }, moduleCode: ModuleCode.team, icon: "Users2" },
       { title: { fr: "Services", en: "Services" }, moduleCode: ModuleCode.settings, icon: "Wrench" },
-      { title: { fr: "Demandes", en: "Requests" }, moduleCode: ModuleCode.requests, icon: "ClipboardList" },
+      { title: { fr: "Affaires Consulaires", en: "Consular Affairs" }, moduleCode: ModuleCode.requests, icon: "ClipboardList" },
       { title: { fr: "Réclamations associatives", en: "Association Claims" }, moduleCode: ModuleCode.associations, icon: "Crown" },
     ],
   },
@@ -962,7 +962,7 @@ export const AXIS_MODULE_MAP: Record<AdminAxisValue, AxisModuleMapping> = {
     modules: [ModuleCode.analytics, ModuleCode.monitoring, ModuleCode.platform_settings],
     restrictedToSuperSystem: true,
     sidebarItems: [
-      { title: { fr: "Journal d'audit", en: "Audit Logs" }, moduleCode: ModuleCode.analytics, icon: "ScrollText" },
+      { title: { fr: "Statistiques", en: "Statistics" }, moduleCode: ModuleCode.analytics, icon: "BarChart3" },
       { title: { fr: "Monitoring", en: "Monitoring" }, moduleCode: ModuleCode.monitoring, icon: "Activity" },
       { title: { fr: "Paramètres", en: "Settings" }, moduleCode: ModuleCode.platform_settings, icon: "Settings" },
     ],

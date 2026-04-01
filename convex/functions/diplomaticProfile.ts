@@ -6,7 +6,7 @@
  */
 
 import { v } from "convex/values";
-import { authQuery, authMutation } from "../lib/customFunctions";
+import { authQuery, authMutation, backofficeMutation } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
 
@@ -247,5 +247,69 @@ export const addPreviousPosting = authMutation({
         previousPostings: [...postings, args.posting],
       },
     } as any);
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN — Édition complète depuis le backoffice
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Mise à jour complète du profil diplomatique par le SuperAdmin.
+ * Peut modifier TOUS les champs : statut, contact, langues, bio, credentials.
+ */
+export const adminUpdateDiplomaticProfile = backofficeMutation({
+  args: {
+    membershipId: v.id("memberships"),
+    diplomaticProfile: v.object({
+      status: v.optional(v.string()),
+      startDate: v.optional(v.number()),
+      officePhone: v.optional(v.string()),
+      officeExtension: v.optional(v.string()),
+      officialEmail: v.optional(v.string()),
+      languages: v.optional(v.array(v.object({
+        code: v.string(),
+        level: v.string(),
+      }))),
+      bio: v.optional(v.string()),
+      credentials: v.optional(v.object({
+        lettersOfCredence: v.optional(v.object({
+          presentedDate: v.optional(v.number()),
+        })),
+        diplomaticCard: v.optional(v.object({
+          number: v.optional(v.string()),
+          issuedAt: v.optional(v.number()),
+          expiresAt: v.optional(v.number()),
+        })),
+        diplomaticPassport: v.optional(v.object({
+          number: v.optional(v.string()),
+          expiresAt: v.optional(v.number()),
+        })),
+        exequatur: v.optional(v.object({
+          grantedDate: v.optional(v.number()),
+        })),
+      })),
+      previousPostings: v.optional(v.array(v.object({
+        position: v.string(),
+        orgName: v.string(),
+        country: v.string(),
+        startDate: v.number(),
+        endDate: v.optional(v.number()),
+      }))),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const membership = await ctx.db.get(args.membershipId);
+    if (!membership) throw new Error("Membership introuvable");
+
+    const existing = (membership as any).diplomaticProfile ?? {};
+    await ctx.db.patch(args.membershipId, {
+      diplomaticProfile: {
+        ...existing,
+        ...args.diplomaticProfile,
+      },
+    } as any);
+
+    return args.membershipId;
   },
 });

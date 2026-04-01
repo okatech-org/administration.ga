@@ -223,7 +223,7 @@ function RequestStatusDonut({ breakdown }: { breakdown: Record<string, number> }
 	return (
 		<div className="flex flex-col gap-4 lg:flex-row lg:items-center">
 			<div className="h-56 flex-1 min-w-0">
-				<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+				<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
 					<PieChart>
 						<Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value" strokeWidth={0}>
 							{data.map((e) => <Cell key={e.name} fill={e.fill} />)}
@@ -265,7 +265,7 @@ function PipelineBarChart({ pipeline, total }: {
 	if (stages.length === 0 || total === 0) return null;
 	return (
 		<div className="h-72">
-			<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+			<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
 				<BarChart data={stages} layout="vertical" margin={{ left: 70, right: 20, top: 5, bottom: 5 }}>
 					<CartesianGrid strokeDasharray="3 3" opacity={0.1} horizontal={false} />
 					<XAxis type="number" tick={{ fontSize: 11 }} />
@@ -293,7 +293,7 @@ function OrgTypeDonut({ byType }: { byType: Record<string, number> }) {
 	return (
 		<div className="flex flex-col items-center gap-4">
 			<div className="h-52 w-full">
-				<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+				<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
 					<PieChart>
 						<Pie data={data} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value" strokeWidth={0}>
 							{data.map((e) => <Cell key={e.name} fill={e.fill} />)}
@@ -329,7 +329,7 @@ function CountryBarChart({ byCountry }: { byCountry: Record<string, { count: num
 	if (data.length === 0) return null;
 	return (
 		<div className="h-64">
-			<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+			<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
 				<BarChart data={data} margin={{ left: 5, right: 5, top: 5, bottom: 40 }}>
 					<CartesianGrid strokeDasharray="3 3" opacity={0.1} />
 					<XAxis dataKey="country" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" interval={0} />
@@ -352,7 +352,7 @@ function PerformanceGauge({ completionRate, urgentPending }: { completionRate: n
 	return (
 		<div className="flex flex-col items-center gap-2">
 			<div className="h-44 w-44 relative">
-				<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+				<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
 					<RadialBarChart cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" data={data} startAngle={180} endAngle={0} barSize={12}>
 						<RadialBar background={{ fill: "hsl(var(--muted))" }} dataKey="value" cornerRadius={6} />
 					</RadialBarChart>
@@ -390,7 +390,7 @@ function RegistrationStatusChart({ byStatus }: { byStatus: Record<string, number
 	if (data.length === 0) return <p className="text-sm text-muted-foreground py-4 text-center">Aucune inscription</p>;
 	return (
 		<div className="h-48">
-			<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+			<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
 				<BarChart data={data} margin={{ left: 5, right: 5, top: 5, bottom: 5 }}>
 					<CartesianGrid strokeDasharray="3 3" opacity={0.1} />
 					<XAxis dataKey="name" tick={{ fontSize: 11 }} />

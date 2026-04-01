@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 const CONVEX_SITE_URL = import.meta.env.VITE_CONVEX_SITE_URL as string;
 
 async function devSignInHandler(request: Request): Promise<Response> {
-	if (!import.meta.env.DEV) {
+	if (!import.meta.env.DEV && import.meta.env.VITE_E2E_MODE !== "true") {
 		return Response.json({ error: "Not available in production" }, { status: 403 });
 	}
 

@@ -8,10 +8,12 @@
  */
 
 import { api } from "@convex/_generated/api";
+import { Link } from "@tanstack/react-router";
 import {
 	Award,
 	Briefcase,
 	Building2,
+	ExternalLink,
 	Globe,
 	Languages,
 	Loader2,
@@ -386,7 +388,12 @@ function DiplomaticMemberCard({ member }: { member: any }) {
 	const credentials = diplomaticProfile?.credentials;
 
 	return (
-		<Card className="hover:border-primary/20 transition-colors">
+		<Link
+			to="/users/$userId"
+			params={{ userId: user?._id }}
+			className="block"
+		>
+		<Card className="hover:border-primary/20 transition-colors cursor-pointer group">
 			<CardContent className="p-4">
 				<div className="flex items-start gap-3">
 					<Avatar className="h-12 w-12 rounded-xl shrink-0">
@@ -466,5 +473,6 @@ function DiplomaticMemberCard({ member }: { member: any }) {
 				)}
 			</CardContent>
 		</Card>
+		</Link>
 	);
 }

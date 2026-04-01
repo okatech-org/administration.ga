@@ -7,6 +7,7 @@ import {
 	ArrowLeft,
 	Building2,
 	Calendar,
+	Edit,
 	Eye,
 	Layers,
 	Mail,
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DiplomaticProfileEditDialog } from "@/components/admin/diplomatic-profile-edit-dialog";
 import { MenuPreviewCard } from "@/components/admin/menu-preview-card";
 import { MemberPermissionsDialog } from "@/components/org/member-permissions-dialog";
 import { UserRoleDialog } from "@/components/admin/user-role-dialog";
@@ -79,6 +81,11 @@ function UserDetailPage() {
 	} | null>(null);
 
 	const [showRoleDialog, setShowRoleDialog] = useState(false);
+	const [editDiploMembership, setEditDiploMembership] = useState<{
+		membershipId: Id<"memberships">;
+		name: string;
+		diplomaticProfile: any;
+	} | null>(null);
 	const [showModulesDialog, setShowModulesDialog] = useState(false);
 
 	const { data: user, isPending: isLoadingUser } = useAuthenticatedConvexQuery(
@@ -467,6 +474,24 @@ function UserDetailPage() {
 											</p>
 										</div>
 										<div className="flex items-center gap-2">
+											{/* Bouton éditer profil diplomatique (si corps admin) */}
+											{membership.positionId && (
+												<Button
+													variant="ghost"
+													size="icon"
+													className="h-7 w-7"
+													title="Modifier le profil diplomatique"
+													onClick={() =>
+														setEditDiploMembership({
+															membershipId: membership._id as Id<"memberships">,
+															name: `${(user as any)?.lastName?.toUpperCase() ?? ""} ${(user as any)?.firstName ?? ""}`.trim() || membership.org?.name || "—",
+															diplomaticProfile: (membership as any).diplomaticProfile,
+														})
+													}
+												>
+													<Edit className="h-4 w-4" />
+												</Button>
+											)}
 											<Button
 												variant="ghost"
 												size="icon"
@@ -589,6 +614,16 @@ function UserDetailPage() {
 			</Card>
 
 			{/* Dialogs */}
+			{editDiploMembership && (
+				<DiplomaticProfileEditDialog
+					open={!!editDiploMembership}
+					onOpenChange={(open) => !open && setEditDiploMembership(null)}
+					membershipId={editDiploMembership.membershipId}
+					memberName={editDiploMembership.name}
+					currentProfile={editDiploMembership.diplomaticProfile}
+				/>
+			)}
+
 			{permsMembership && (
 				<MemberPermissionsDialog
 					open={!!permsMembership}
