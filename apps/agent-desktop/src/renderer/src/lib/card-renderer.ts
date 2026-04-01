@@ -37,14 +37,21 @@ export async function renderDesignToBmp(
   const profile: CitizenProfileData = profileData ?? {
     firstName: fieldValues?.firstName,
     lastName: fieldValues?.lastName,
-    cardNumber: fieldValues?.cardNumber,
+    dateOfBirth: fieldValues?.dateOfBirth,
+    placeOfBirth: fieldValues?.placeOfBirth,
+    nationality: fieldValues?.nationality,
+    sex: fieldValues?.sex,
     nip: fieldValues?.nip,
+    photoUrl: fieldValues?.photoUrl,
+    cardNumber: fieldValues?.cardNumber,
     cardIssuedAt: fieldValues?.cardIssuedAt,
     cardExpiresAt: fieldValues?.cardExpiresAt,
     consulateName: fieldValues?.consulateName,
     consulateCity: fieldValues?.consulateCity,
     consulateCountry: fieldValues?.consulateCountry,
   }
+
+  console.log("[CardRenderer] Rendering design:", design.name, "with profile:", JSON.stringify(profile))
 
   // Render front
   const frontBuffer = await renderFace(design.frontElements, design.backgroundColor, profile)
@@ -133,15 +140,20 @@ async function renderElement(
         ? resolveFieldValue(el.fieldKey, profile)
         : el.textContent
 
+      console.log(`[CardRenderer] Text element: "${el.fieldKey || 'static'}" → "${displayText}" at (${el.x},${el.y}) ${el.width}×${el.height} fontSize=${el.fontSize}`)
+
       const text = new Konva.Text({
         ...commonConfig,
         text: displayText,
         width: el.width,
+        height: el.height,
         fontSize: el.fontSize,
         fontFamily: el.fontName,
         fontStyle: `${el.isBold ? "bold" : "normal"} ${el.isItalic ? "italic" : ""}`,
         fill: el.textColor,
         align: el.textAlignment,
+        wrap: "none", // Don't wrap — single line, clip if too long
+        ellipsis: false,
       })
       layer.add(text)
       break
@@ -154,6 +166,8 @@ async function renderElement(
         const resolved = resolveFieldValue(el.fieldKey, profile)
         if (resolved) imageSrc = resolved
       }
+
+      console.log(`[CardRenderer] Image element: "${el.fieldKey || 'static'}" src=${imageSrc ? imageSrc.substring(0, 80) + '...' : 'null'} at (${el.x},${el.y}) ${el.width}×${el.height}`)
 
       if (imageSrc) {
         try {

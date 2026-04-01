@@ -337,18 +337,43 @@ export function RegistryPage() {
       const design = cardDesigns?.find((d: any) => d._id === selectedDesignId);
       if (!design) throw new Error("Design introuvable");
 
-      // Build field values from registration data
+      // Build field values from registration data — ALL fields needed for card rendering
       const reg = selectedRegistration as any;
       const firstName = reg.profile?.identity?.firstName ?? "";
       const lastName = reg.profile?.identity?.lastName ?? "";
       const fullName = [firstName, lastName].filter(Boolean).join(" ") || "—";
 
       const fieldValues: Record<string, string> = {};
+
+      // Identity fields
       if (firstName) fieldValues.firstName = firstName;
       if (lastName) fieldValues.lastName = lastName;
+      if (reg.profile?.identity?.dateOfBirth) fieldValues.dateOfBirth = reg.profile.identity.dateOfBirth;
+      if (reg.profile?.identity?.placeOfBirth) fieldValues.placeOfBirth = reg.profile.identity.placeOfBirth;
+      if (reg.profile?.identity?.nationality) fieldValues.nationality = reg.profile.identity.nationality;
+      if (reg.profile?.identity?.sex) fieldValues.sex = reg.profile.identity.sex;
+      if (reg.profile?.identity?.nip) fieldValues.nip = reg.profile.identity.nip;
+
+      // Card fields
       if (reg.cardNumber) fieldValues.cardNumber = reg.cardNumber;
-      if (reg.profile?.identity?.email || reg.email) fieldValues.email = reg.profile?.identity?.email || reg.email;
-      // Store registrationId in fieldValues so updateStatus can mark it as printed
+      if (reg.registeredAt) {
+        const issuedDate = new Date(reg.registeredAt);
+        fieldValues.cardIssuedAt = issuedDate.toLocaleDateString("fr-FR");
+        // Expiry = issued + 3 years
+        const expiryDate = new Date(issuedDate);
+        expiryDate.setFullYear(expiryDate.getFullYear() + 3);
+        fieldValues.cardExpiresAt = expiryDate.toLocaleDateString("fr-FR");
+      }
+
+      // Photo URL
+      if (reg.user?.photoUrl) fieldValues.photoUrl = reg.user.photoUrl;
+
+      // Email
+      if (reg.user?.email || reg.profile?.identity?.email) {
+        fieldValues.email = reg.user?.email || reg.profile?.identity?.email;
+      }
+
+      // Store registrationId so updateStatus can mark it as printed
       fieldValues._registrationId = String(selectedRegistration._id);
 
       await createPrintJob({
