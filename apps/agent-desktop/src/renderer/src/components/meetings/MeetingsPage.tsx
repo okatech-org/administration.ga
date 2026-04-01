@@ -182,7 +182,7 @@ export function MeetingsPage() {
 
   // ─── Meetings list ───────────────────────────────────────
   return (
-    <div className="p-6 space-y-6">
+    <div className="flex-1 p-6 space-y-6 overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -318,7 +318,7 @@ export function CallsPage() {
   );
 
   return (
-    <div className="px-6 py-8 max-w-5xl mx-auto space-y-6">
+    <div className="flex-1 px-6 py-8 max-w-5xl mx-auto space-y-6 overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -348,7 +348,7 @@ export function IArchivePage() {
   // ===============================================================
 
   return (
-    <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-5 max-w-[1400px] mx-auto p-4">
+    <motion.div initial="hidden" animate="visible" variants={stagger} className="flex-1 space-y-5 max-w-[1400px] mx-auto p-4 overflow-y-auto">
       {/* Header */}
       <motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
