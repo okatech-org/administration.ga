@@ -35,7 +35,7 @@ const DEV_ACCOUNTS: OrgGroup[] = [
 ];
 
 export function DevAccountSwitcher() {
-	if (!import.meta.env.DEV) return null;
+	if (!import.meta.env.DEV && import.meta.env.VITE_E2E_MODE !== "true") return null;
 
 	return <DevAccountSwitcherInner />;
 }
@@ -49,6 +49,45 @@ function DevAccountSwitcherInner() {
 	const groups = DEV_ACCOUNTS;
 
 	const currentEmail = session?.user?.email;
+
+	// ── Expose sign-in function for E2E tests ──
+	// Playwright calls window.__e2eDevSignIn(email) via page.evaluate()
+	// which triggers the real authClient.signIn.email() flow with crossDomainClient.
+	if (typeof window !== "undefined") {
+		(window as any).__e2eDevSignIn = async (email: string) => {
+			try {
+				if (session) {
+					await authClient.signOut();
+					await new Promise((r) => setTimeout(r, 300));
+				}
+
+				const res = await fetch("/api/dev/sign-in", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					credentials: "include",
+					body: JSON.stringify({ email }),
+				});
+
+				const data = await res.json();
+				if (!res.ok || data.error) {
+					return { ok: false, error: data.error || `HTTP ${res.status}` };
+				}
+
+				const signInResult = await authClient.signIn.email({
+					email: data.email,
+					password: data.tempPassword,
+				});
+
+				if (signInResult.error) {
+					return { ok: false, error: signInResult.error.message };
+				}
+
+				return { ok: true };
+			} catch (err: any) {
+				return { ok: false, error: err.message || "Unknown error" };
+			}
+		};
+	}
 
 	const handleSignIn = async (account: DevAccount) => {
 		setLoading(account.email);

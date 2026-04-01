@@ -139,7 +139,8 @@ export function DiplomaticProfileEditDialog({
 			setBio(profile.bio ?? "");
 			setLanguages(profile.languages ?? []);
 		}
-	}, [open, profile]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [open, currentProfile]);
 
 	const { mutateAsync: updateProfile, isPending } = useConvexMutationQuery(
 		api.functions.diplomaticProfile.adminUpdateDiplomaticProfile,
