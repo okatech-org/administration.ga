@@ -132,7 +132,7 @@ export function AppSidebar({ activeRoute, onNavigate }: AppSidebarProps) {
   ]
 
   return (
-    <aside className="flex flex-col py-3 px-3 bg-card border border-border h-full overflow-hidden rounded-2xl w-52 shrink-0">
+    <aside className="flex flex-col py-3 px-3 bg-card/80 backdrop-blur-xl border border-border h-full overflow-hidden rounded-2xl w-52 shrink-0">
       {/* Logo */}
       <div className="flex items-center gap-3 mb-4 px-1">
         <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm shrink-0 overflow-hidden">

@@ -51,6 +51,9 @@ export function usePrintJobExecutor({ printer, orgId }: UsePrintJobExecutorOptio
       }
 
       try {
+        // Show indeterminate progress in taskbar/dock
+        window.desktopApi?.window?.setProgressBar(2)
+
         // 1. Mark as printing
         await updateStatus({
           jobId: jobId as Id<"printJobs">,
@@ -98,7 +101,9 @@ export function usePrintJobExecutor({ printer, orgId }: UsePrintJobExecutorOptio
           duplex: job.printDuplex,
         })
 
-        // 4. Update status
+        // 4. Update status + clear progress bar
+        window.desktopApi?.window?.setProgressBar(-1)
+
         if (result.success) {
           await updateStatus({
             jobId: jobId as Id<"printJobs">,
@@ -118,6 +123,8 @@ export function usePrintJobExecutor({ printer, orgId }: UsePrintJobExecutorOptio
           })
         }
       } catch (err) {
+        // Clear progress bar on error
+        window.desktopApi?.window?.setProgressBar(-1)
         // Mark as failed
         try {
           await updateStatus({

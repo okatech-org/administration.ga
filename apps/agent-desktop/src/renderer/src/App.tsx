@@ -11,6 +11,7 @@ import { cn } from "./lib/utils"
 
 // Desktop-only
 import { ImpressionPage } from "./components/impression/ImpressionPage"
+import { TitleBar } from "./components/titlebar/TitleBar"
 import { useNativeNotifications } from "./hooks/useNativeNotifications"
 import { useTraySync } from "./hooks/useTraySync"
 import { useMenuActions } from "./hooks/useMenuActions"
@@ -67,9 +68,11 @@ export function App() {
   return (
     <ConsularThemeContext.Provider value={consularThemeValue}>
       <div className={cn(
-        "h-screen flex gap-4 bg-background p-4 overflow-hidden",
+        "h-screen flex flex-col bg-background overflow-hidden",
         consularTheme === "homeomorphism" && "theme-homeomorphism",
       )}>
+        <TitleBar />
+        <div className="flex gap-4 flex-1 min-h-0 px-4 pb-4">
         <AppSidebar activeRoute={activeRoute} onNavigate={setActiveRoute} />
         <main className="flex-1 min-h-0 bg-card border border-border rounded-2xl overflow-hidden flex flex-col">
           {activeRoute.page === "dashboard" && <DashboardPage onNavigate={setActiveRoute} />}
@@ -94,6 +97,7 @@ export function App() {
           {/* Desktop-only */}
           {activeRoute.page === "impression" && <ImpressionPage />}
         </main>
+        </div>
       </div>
     </ConsularThemeContext.Provider>
   )

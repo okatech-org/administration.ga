@@ -8,6 +8,7 @@ import type {
   SaveDialogOptions,
   OpenDialogOptions,
 } from "@workspace/desktop-shared/file-dialog-types"
+import type { ContextMenuItem } from "@workspace/desktop-shared/context-menu-types"
 
 const printerApi = {
   listDevices: () => ipcRenderer.invoke("printer:list-devices"),
@@ -95,6 +96,39 @@ const updaterApi = {
   },
 }
 
+const windowApi = {
+  minimize: () => ipcRenderer.invoke("window:minimize"),
+  maximizeToggle: () => ipcRenderer.invoke("window:maximize-toggle"),
+  close: () => ipcRenderer.invoke("window:close"),
+  isMaximized: () => ipcRenderer.invoke("window:is-maximized") as Promise<boolean>,
+  getPlatform: () => ipcRenderer.invoke("window:get-platform") as Promise<string>,
+  setProgressBar: (value: number) => ipcRenderer.invoke("system:set-progress", value),
+  onMaximizedChanged: (cb: (isMaximized: boolean) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, val: boolean) => cb(val)
+    ipcRenderer.on("window:maximized-changed", handler)
+    return () => {
+      ipcRenderer.removeListener("window:maximized-changed", handler)
+    }
+  },
+  onThemeChanged: (cb: (data: { shouldUseDarkColors: boolean }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: any) => cb(data)
+    ipcRenderer.on("system:theme-changed", handler)
+    return () => {
+      ipcRenderer.removeListener("system:theme-changed", handler)
+    }
+  },
+}
+
+const spellCheckApi = {
+  setEnabled: (enabled: boolean) => ipcRenderer.invoke("system:set-spell-check", enabled),
+  isEnabled: () => ipcRenderer.invoke("system:get-spell-check") as Promise<boolean>,
+}
+
+const contextMenuApi = {
+  show: (items: ContextMenuItem[]) =>
+    ipcRenderer.invoke("context-menu:show", items) as Promise<string | null>,
+}
+
 contextBridge.exposeInMainWorld("desktopApi", {
   printer: printerApi,
   notifications: notificationsApi,
@@ -104,6 +138,9 @@ contextBridge.exposeInMainWorld("desktopApi", {
   clipboard: clipboardApi,
   menu: menuApi,
   updater: updaterApi,
+  window: windowApi,
+  spellCheck: spellCheckApi,
+  contextMenu: contextMenuApi,
 })
 
 export type DesktopApi = {
@@ -115,4 +152,7 @@ export type DesktopApi = {
   clipboard: typeof clipboardApi
   menu: typeof menuApi
   updater: typeof updaterApi
+  window: typeof windowApi
+  spellCheck: typeof spellCheckApi
+  contextMenu: typeof contextMenuApi
 }

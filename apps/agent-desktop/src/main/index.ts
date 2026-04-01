@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, session } from "electron"
+import { app, BrowserWindow, ipcMain, session, nativeTheme } from "electron"
 import path from "path"
 import { registerPrinterIpc } from "./ipc/printer.ipc"
 import { registerNotificationIpc } from "./ipc/notification.ipc"
@@ -6,8 +6,11 @@ import { registerFileDialogIpc } from "./ipc/file-dialog.ipc"
 import { registerTrayIpc } from "./ipc/tray.ipc"
 import { registerClipboardIpc } from "./ipc/clipboard.ipc"
 import { registerMenuIpc } from "./ipc/menu.ipc"
-import { DeepLinkService } from "./services/deep-link.service"
 import { registerUpdaterIpc } from "./ipc/updater.ipc"
+import { registerWindowIpc } from "./ipc/window.ipc"
+import { registerContextMenuIpc } from "./ipc/context-menu.ipc"
+import { DeepLinkService } from "./services/deep-link.service"
+import { WindowStateService } from "./services/window-state.service"
 
 let mainWindow: BrowserWindow | null = null
 
@@ -17,33 +20,48 @@ if (!gotTheLock) {
   app.quit()
 }
 
+const windowStateService = new WindowStateService()
+
 function createWindow(): BrowserWindow {
+  const savedState = windowStateService.load()
+
+  const isMac = process.platform === "darwin"
+
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    ...savedState,
     minWidth: 900,
     minHeight: 600,
     title: "Diplomate.ga — Portail Agent Consulaire",
-    backgroundColor: "#1A1A1A",
+    backgroundColor: isMac ? "#00000000" : "#1A1A1A",
+    show: false, // Prevent white flash — show on ready-to-show
+
+    // Frameless window configuration
+    ...(isMac
+      ? {
+          titleBarStyle: "hiddenInset" as const,
+          trafficLightPosition: { x: 20, y: 18 },
+          vibrancy: "sidebar" as const,
+          visualEffectState: "followWindow" as const,
+        }
+      : {
+          frame: false,
+        }),
+
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.js"),
       sandbox: false,
-      // Disable web security so the renderer can call Convex directly
-      // without CORS preflight. This is safe — Electron is a native app.
       webSecurity: false,
+      spellcheck: true,
     },
   })
 
-  // ── Bypass CORS for the Convex backend ────────────────────────────
+  // Enable spell checking (French + English)
+  session.defaultSession.setSpellCheckerLanguages(["fr", "en-US"])
 
-  // Electron is a native app — CORS restrictions don't apply.
-  // The Convex HTTP endpoint doesn't serve OPTIONS preflight responses,
-  // so we strip the Origin header on outgoing requests to Convex and
-  // inject permissive CORS headers on responses.
+  // ── Bypass CORS for the Convex backend ────────────────────────────
   session.defaultSession.webRequest.onBeforeSendHeaders(
     { urls: ["http://127.0.0.1:3211/*", "https://*.convex.site/*"] },
     (details, callback) => {
-      // Set Origin to the Convex site URL itself so Better Auth trusts it
       details.requestHeaders["Origin"] = "http://127.0.0.1:3211"
       callback({ requestHeaders: details.requestHeaders })
     }
@@ -60,7 +78,7 @@ function createWindow(): BrowserWindow {
     }
   )
 
-  // Register IPC handlers
+  // Register all IPC handlers
   registerPrinterIpc(ipcMain)
   registerNotificationIpc(ipcMain, mainWindow)
   registerFileDialogIpc(ipcMain, mainWindow)
@@ -68,14 +86,45 @@ function createWindow(): BrowserWindow {
   registerClipboardIpc(ipcMain)
   registerMenuIpc(ipcMain, mainWindow)
   registerUpdaterIpc(ipcMain, mainWindow)
+  registerWindowIpc(ipcMain, mainWindow)
+  registerContextMenuIpc(ipcMain, mainWindow)
 
-  // On macOS, hide window instead of closing so tray stays active
+  // ── Window state persistence ──────────────────────────────────────
   mainWindow.on("close", (e) => {
+    // Save window bounds before closing
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      windowStateService.save({
+        ...mainWindow.getBounds(),
+        isMaximized: mainWindow.isMaximized(),
+      })
+    }
+
+    // On macOS, hide instead of closing (tray stays active)
     if (process.platform === "darwin" && !(app as any).isQuitting) {
       e.preventDefault()
       mainWindow?.hide()
     }
   })
+
+  // Restore maximized state
+  if (savedState.isMaximized) {
+    mainWindow.maximize()
+  }
+
+  // Show window when ready (prevents white flash)
+  mainWindow.once("ready-to-show", () => {
+    mainWindow?.show()
+  })
+
+  // ── Native theme sync ─────────────────────────────────────────────
+  const sendTheme = () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("system:theme-changed", {
+        shouldUseDarkColors: nativeTheme.shouldUseDarkColors,
+      })
+    }
+  }
+  nativeTheme.on("updated", sendTheme)
 
   // Open DevTools in dev
   if (!app.isPackaged) {

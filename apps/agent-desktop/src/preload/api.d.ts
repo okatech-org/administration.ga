@@ -15,6 +15,7 @@ import type {
   OpenDialogOptions,
   OpenDialogResult,
 } from "@workspace/desktop-shared/file-dialog-types"
+import type { ContextMenuItem } from "@workspace/desktop-shared/context-menu-types"
 
 interface TrayStatus {
   unreadMail?: number
@@ -75,6 +76,23 @@ interface DesktopApi {
       progress?: number
       error?: string
     }) => void) => () => void
+  }
+  window: {
+    minimize: () => Promise<void>
+    maximizeToggle: () => Promise<void>
+    close: () => Promise<void>
+    isMaximized: () => Promise<boolean>
+    getPlatform: () => Promise<string>
+    setProgressBar: (value: number) => Promise<void>
+    onMaximizedChanged: (cb: (isMaximized: boolean) => void) => () => void
+    onThemeChanged: (cb: (data: { shouldUseDarkColors: boolean }) => void) => () => void
+  }
+  spellCheck: {
+    setEnabled: (enabled: boolean) => Promise<void>
+    isEnabled: () => Promise<boolean>
+  }
+  contextMenu: {
+    show: (items: ContextMenuItem[]) => Promise<string | null>
   }
 }
 

@@ -40,6 +40,27 @@ export const IPC_CHANNELS = {
   // Menu
   MENU_ACTION: "menu:action",
 
+  // Window controls
+  WINDOW_MINIMIZE: "window:minimize",
+  WINDOW_MAXIMIZE_TOGGLE: "window:maximize-toggle",
+  WINDOW_CLOSE: "window:close",
+  WINDOW_IS_MAXIMIZED: "window:is-maximized",
+  WINDOW_GET_PLATFORM: "window:get-platform",
+  WINDOW_MAXIMIZED_CHANGED: "window:maximized-changed",
+
+  // Progress bar
+  SYSTEM_SET_PROGRESS: "system:set-progress",
+
+  // Spell check
+  SYSTEM_SET_SPELL_CHECK: "system:set-spell-check",
+  SYSTEM_GET_SPELL_CHECK: "system:get-spell-check",
+
+  // Context menu
+  CONTEXT_MENU_SHOW: "context-menu:show",
+
+  // Theme
+  SYSTEM_THEME_CHANGED: "system:theme-changed",
+
   // Auth (future)
   AUTH_LOGIN: "auth:login",
   AUTH_LOGOUT: "auth:logout",
