@@ -3,8 +3,6 @@
  *
  * Uses a hidden Konva Stage to render each element (text, image, QR, shapes)
  * then converts the canvas to BMP format for Evolis printing.
- *
- * This replicates what DesignerCanvas does visually, but without React components.
  */
 
 import Konva from "konva"
@@ -22,18 +20,12 @@ export interface RenderResult {
 
 /**
  * Render a card design to BMP buffers.
- *
- * @param design - The full card design (with elements, backgrounds, etc.)
- * @param fieldValues - Key-value map of dynamic fields (from print job)
- * @param profileData - Optional citizen profile for resolving fields
- * @returns { front: ArrayBuffer, back?: ArrayBuffer } — BMP buffers ready for printing
  */
 export async function renderDesignToBmp(
   design: CardDesign,
   fieldValues?: Record<string, string>,
   profileData?: CitizenProfileData | null,
 ): Promise<RenderResult> {
-  // Build a profile from fieldValues for resolveFieldValue()
   const profile: CitizenProfileData = profileData ?? {
     firstName: fieldValues?.firstName,
     lastName: fieldValues?.lastName,
@@ -51,12 +43,12 @@ export async function renderDesignToBmp(
     consulateCountry: fieldValues?.consulateCountry,
   }
 
-  console.log("[CardRenderer] Rendering design:", design.name, "with profile:", JSON.stringify(profile))
+  console.log("[CardRenderer] Rendering design:", design.name)
+  console.log("[CardRenderer] Profile:", JSON.stringify(profile))
+  console.log("[CardRenderer] Front elements:", design.frontElements.length)
 
-  // Render front
   const frontBuffer = await renderFace(design.frontElements, design.backgroundColor, profile)
 
-  // Render back (if duplex)
   let backBuffer: ArrayBuffer | undefined
   if (design.printDuplex && design.backElements.length > 0) {
     backBuffer = await renderFace(design.backElements, design.backgroundColor, profile)
@@ -65,14 +57,13 @@ export async function renderDesignToBmp(
   return { front: frontBuffer, back: backBuffer }
 }
 
-// ─── Internal ────────────────────────────────────────────────────
+// ─── Render a single face ────────────────────────────────────────
 
 async function renderFace(
   elements: CardElement[],
   backgroundColor: string,
   profile: CitizenProfileData,
 ): Promise<ArrayBuffer> {
-  // Create a hidden container
   const container = document.createElement("div")
   container.style.position = "absolute"
   container.style.left = "-9999px"
@@ -82,7 +73,6 @@ async function renderFace(
   document.body.appendChild(container)
 
   try {
-    // Create Konva Stage
     const stage = new Konva.Stage({
       container,
       width: CARD_WIDTH,
@@ -92,29 +82,29 @@ async function renderFace(
     const layer = new Konva.Layer()
     stage.add(layer)
 
-    // Background
-    const bg = new Konva.Rect({
-      x: 0,
-      y: 0,
-      width: CARD_WIDTH,
-      height: CARD_HEIGHT,
+    // White background (Evolis prints transparent as white)
+    layer.add(new Konva.Rect({
+      x: 0, y: 0,
+      width: CARD_WIDTH, height: CARD_HEIGHT,
       fill: backgroundColor || "#ffffff",
-    })
-    layer.add(bg)
+    }))
 
-    // Render each element
-    for (const el of elements) {
+    // Render each element (sorted by zIndex)
+    const sorted = [...elements].sort((a, b) => a.zIndex - b.zIndex)
+    for (const el of sorted) {
       if (!el.isVisible) continue
-      await renderElement(layer, el, profile)
+      try {
+        await renderElement(layer, el, profile)
+      } catch (err) {
+        console.error(`[CardRenderer] Failed to render element ${el.id} (${el.type}):`, err)
+      }
     }
 
     layer.draw()
 
-    // Export to canvas then BMP
     const canvas = stage.toCanvas({ pixelRatio: 1 })
     const bmp = canvasToBmp(canvas as unknown as HTMLCanvasElement)
 
-    // Cleanup
     stage.destroy()
 
     return bmp.buffer as ArrayBuffer
@@ -122,6 +112,8 @@ async function renderFace(
     document.body.removeChild(container)
   }
 }
+
+// ─── Render individual element ───────────────────────────────────
 
 async function renderElement(
   layer: Konva.Layer,
@@ -140,52 +132,51 @@ async function renderElement(
         ? resolveFieldValue(el.fieldKey, profile)
         : el.textContent
 
-      console.log(`[CardRenderer] Text element: "${el.fieldKey || 'static'}" → "${displayText}" at (${el.x},${el.y}) ${el.width}×${el.height} fontSize=${el.fontSize}`)
+      console.log(`[CardRenderer] TEXT "${el.fieldKey || 'static'}" = "${displayText}" @ (${el.x},${el.y}) w=${el.width} fs=${el.fontSize}`)
 
       const text = new Konva.Text({
         ...commonConfig,
         text: displayText,
         width: el.width,
-        height: el.height,
+        // Don't set height — let text flow naturally without clipping
         fontSize: el.fontSize,
-        fontFamily: el.fontName,
-        fontStyle: `${el.isBold ? "bold" : "normal"} ${el.isItalic ? "italic" : ""}`,
-        fill: el.textColor,
-        align: el.textAlignment,
-        wrap: "none", // Don't wrap — single line, clip if too long
-        ellipsis: false,
+        fontFamily: el.fontName || "Arial",
+        fontStyle: `${el.isBold ? "bold" : ""} ${el.isItalic ? "italic" : ""}`.trim() || "normal",
+        fill: el.textColor || "#000000",
+        align: el.textAlignment || "left",
+        wrap: "none",
       })
       layer.add(text)
       break
     }
 
     case "image": {
-      // For dynamic photo fields, try to load from profile
       let imageSrc = el.imageData
-      if (el.isDynamicField && el.fieldKey === "citizen.photo") {
+      if (el.isDynamicField) {
         const resolved = resolveFieldValue(el.fieldKey, profile)
-        if (resolved) imageSrc = resolved
+        if (resolved && resolved !== "") imageSrc = resolved
       }
 
-      console.log(`[CardRenderer] Image element: "${el.fieldKey || 'static'}" src=${imageSrc ? imageSrc.substring(0, 80) + '...' : 'null'} at (${el.x},${el.y}) ${el.width}×${el.height}`)
+      console.log(`[CardRenderer] IMAGE "${el.fieldKey || 'static'}" src=${imageSrc ? (imageSrc.length > 80 ? imageSrc.substring(0, 80) + "..." : imageSrc) : "null"} @ (${el.x},${el.y}) ${el.width}×${el.height}`)
 
       if (imageSrc) {
         try {
-          const img = await loadImage(imageSrc)
-          const kImage = new Konva.Image({
+          const img = await loadImageFromUrl(imageSrc)
+          layer.add(new Konva.Image({
             ...commonConfig,
             image: img,
             width: el.width,
             height: el.height,
             cornerRadius: el.cornerRadius,
-          })
-          layer.add(kImage)
-        } catch {
-          // Image failed to load — render placeholder
-          renderPlaceholderRect(layer, el, commonConfig)
+          }))
+          console.log(`[CardRenderer] IMAGE loaded OK: ${img.width}×${img.height}`)
+        } catch (err) {
+          console.error(`[CardRenderer] IMAGE FAILED to load:`, err)
+          renderPlaceholder(layer, el, commonConfig)
         }
       } else {
-        renderPlaceholderRect(layer, el, commonConfig)
+        console.log(`[CardRenderer] IMAGE no source, rendering placeholder`)
+        renderPlaceholder(layer, el, commonConfig)
       }
       break
     }
@@ -195,30 +186,32 @@ async function renderElement(
         ? resolveFieldValue(el.fieldKey, profile)
         : el.codeContent
 
+      console.log(`[CardRenderer] QR "${el.fieldKey || 'static'}" = "${content}" @ (${el.x},${el.y}) ${el.width}×${el.height}`)
+
       if (content) {
         try {
           const qrDataUrl = await QRCode.toDataURL(content, {
-            width: el.width,
+            width: Math.max(el.width, 200), // Generate at high res
             margin: 0,
-            color: { dark: "#000000", light: el.fillColor || "#ffffff" },
+            color: { dark: "#000000", light: "#ffffff" },
           })
-          const img = await loadImage(qrDataUrl)
-          const kImage = new Konva.Image({
+          const img = await loadImageFromDataUrl(qrDataUrl)
+          layer.add(new Konva.Image({
             ...commonConfig,
             image: img,
             width: el.width,
             height: el.height,
-          })
-          layer.add(kImage)
-        } catch {
-          renderPlaceholderRect(layer, el, commonConfig)
+          }))
+        } catch (err) {
+          console.error(`[CardRenderer] QR FAILED:`, err)
+          renderPlaceholder(layer, el, commonConfig)
         }
       }
       break
     }
 
     case "rectangle": {
-      const rect = new Konva.Rect({
+      layer.add(new Konva.Rect({
         ...commonConfig,
         width: el.width,
         height: el.height,
@@ -226,13 +219,12 @@ async function renderElement(
         stroke: el.strokeColor,
         strokeWidth: el.strokeWidth,
         cornerRadius: el.cornerRadius,
-      })
-      layer.add(rect)
+      }))
       break
     }
 
     case "circle": {
-      const circle = new Konva.Circle({
+      layer.add(new Konva.Circle({
         x: el.x + el.width / 2,
         y: el.y + el.height / 2,
         rotation: el.rotation,
@@ -240,51 +232,48 @@ async function renderElement(
         fill: el.fillColor,
         stroke: el.strokeColor,
         strokeWidth: el.strokeWidth,
-      })
-      layer.add(circle)
+      }))
       break
     }
 
     case "line": {
-      const line = new Konva.Line({
+      layer.add(new Konva.Line({
         ...commonConfig,
         points: [0, 0, el.width, 0],
         stroke: el.strokeColor,
         strokeWidth: el.strokeWidth || 2,
-      })
-      layer.add(line)
+      }))
       break
     }
 
     case "barcode": {
-      // Simple placeholder for barcode — text representation
       const barcodeText = el.isDynamicField
         ? resolveFieldValue(el.fieldKey, profile)
         : el.codeContent
 
-      const text = new Konva.Text({
+      layer.add(new Konva.Text({
         ...commonConfig,
         text: barcodeText,
         width: el.width,
-        height: el.height,
         fontSize: 14,
         fontFamily: "Courier New",
         fill: "#000000",
         align: "center",
         verticalAlign: "middle",
-      })
-      layer.add(text)
+      }))
       break
     }
   }
 }
 
-function renderPlaceholderRect(
+// ─── Helpers ─────────────────────────────────────────────────────
+
+function renderPlaceholder(
   layer: Konva.Layer,
   el: CardElement,
   config: { x: number; y: number; rotation: number },
 ): void {
-  const rect = new Konva.Rect({
+  layer.add(new Konva.Rect({
     ...config,
     width: el.width,
     height: el.height,
@@ -292,16 +281,44 @@ function renderPlaceholderRect(
     stroke: el.strokeColor || "#d1d5db",
     strokeWidth: el.strokeWidth || 1,
     cornerRadius: el.cornerRadius,
-  })
-  layer.add(rect)
+  }))
 }
 
-function loadImage(src: string): Promise<HTMLImageElement> {
+/**
+ * Load image from URL — handles both HTTP URLs and data URLs.
+ * For HTTP URLs (like Convex storage), fetch as blob first to avoid CORS issues.
+ */
+async function loadImageFromUrl(src: string): Promise<HTMLImageElement> {
+  // Data URLs can be loaded directly
+  if (src.startsWith("data:")) {
+    return loadImageFromDataUrl(src)
+  }
+
+  // HTTP URLs: fetch as blob first (avoids CORS issues in Electron)
+  console.log(`[CardRenderer] Fetching image from URL: ${src.substring(0, 80)}...`)
+  const response = await fetch(src)
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} fetching image`)
+  }
+  const blob = await response.blob()
+  const dataUrl = await blobToDataUrl(blob)
+  return loadImageFromDataUrl(dataUrl)
+}
+
+function loadImageFromDataUrl(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new window.Image()
-    img.crossOrigin = "anonymous"
     img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error(`Failed to load image`))
+    img.onerror = (e) => reject(new Error(`Image load error: ${e}`))
     img.src = src
+  })
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
   })
 }
