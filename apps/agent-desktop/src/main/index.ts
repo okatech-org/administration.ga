@@ -8,10 +8,13 @@ function createWindow(): void {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    title: "Agent Desktop — Gabon Diplomatie",
+    title: "Diplomate.ga — Portail Agent Consulaire",
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.js"),
       sandbox: false,
+      // Disable web security so the renderer can call Convex directly
+      // without CORS preflight. This is safe — Electron is a native app.
+      webSecurity: false,
     },
   })
 
@@ -24,8 +27,8 @@ function createWindow(): void {
   session.defaultSession.webRequest.onBeforeSendHeaders(
     { urls: ["http://127.0.0.1:3211/*", "https://*.convex.site/*"] },
     (details, callback) => {
-      // Remove Origin so Convex doesn't see a cross-origin request
-      delete details.requestHeaders["Origin"]
+      // Set Origin to the Convex site URL itself so Better Auth trusts it
+      details.requestHeaders["Origin"] = "http://127.0.0.1:3211"
       callback({ requestHeaders: details.requestHeaders })
     }
   )
@@ -43,6 +46,11 @@ function createWindow(): void {
 
   // Register IPC handlers
   registerPrinterIpc(ipcMain)
+
+  // Open DevTools in dev
+  if (!app.isPackaged) {
+    mainWindow.webContents.openDevTools()
+  }
 
   // HMR in dev, file in production
   if (!app.isPackaged && process.env["ELECTRON_RENDERER_URL"]) {

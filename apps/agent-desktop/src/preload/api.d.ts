@@ -11,9 +11,15 @@ interface DesktopApi {
     connect: (name: string) => Promise<EvolisInfo>
     disconnect: () => Promise<void>
     getStatus: () => Promise<PrinterStatus>
+    getConnectedInfo: () => Promise<EvolisInfo | null>
     print: (options: {
       frontImagePath: string
       backImagePath?: string
+      duplex?: boolean
+    }) => Promise<PrintResult>
+    printFromBuffer: (options: {
+      frontBuffer: ArrayBuffer
+      backBuffer?: ArrayBuffer
       duplex?: boolean
     }) => Promise<PrintResult>
   }

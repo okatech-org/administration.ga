@@ -2234,7 +2234,8 @@
 		"share": "Share",
 		"redirecting": "Redirecting...",
 		"email": "Email",
-		"password": "Password"
+		"password": "Password",
+		"locale": "en-US"
 	},
 	"settings": {
 		"notifications": {
@@ -4226,6 +4227,312 @@
 				"description": "Log in to your agent space to access the sovereignty instruments of the Gabonese Republic.",
 				"button": "Sign in"
 			}
+		}
+	},
+	"desktop": {
+		"sidebar": {
+			"sections": {
+				"commands": "Commands",
+				"operations": "Operations",
+				"iBureau": "iBureau",
+				"localOffice": "Local Office",
+				"administration": "Administration"
+			},
+			"nav": {
+				"dashboard": "Dashboard",
+				"diplomaticAffairs": "Diplomatic Affairs",
+				"consularAffairs": "Consular Affairs",
+				"news": "News",
+				"iBoite": "iBoîte",
+				"iCorrespondance": "iCorrespondance",
+				"iDocument": "iDocument",
+				"iAgenda": "iAgenda",
+				"cardDesigner": "Card Designer",
+				"printQueue": "Print Queue",
+				"printer": "Printer",
+				"statistics": "Statistics",
+				"payments": "Payments",
+				"team": "Team",
+				"settings": "Settings",
+				"impression": "Printing",
+				"appointments": "Appointments",
+				"requests": "Requests",
+				"services": "Services",
+				"iArchive": "iArchive",
+				"iAsted": "iAsted",
+				"calls": "Calls",
+				"meetings": "Meetings"
+			},
+			"brand": "Consular Agent Portal",
+			"logout": "Sign out"
+		},
+		"consularAffairs": {
+			"title": "Consular Affairs",
+			"subtitle": "Manage requests, registry, appointments and consular services",
+			"tabs": {
+				"requests": "Requests",
+				"registry": "Consular Registry",
+				"appointments": "Appointments",
+				"services": "Services"
+			},
+			"requests": {
+				"reference": "Reference",
+				"applicant": "Applicant",
+				"service": "Service",
+				"status": "Status",
+				"date": "Date",
+				"loadMore": "Load more…",
+				"empty": "No requests",
+				"emptyDesc": "Consular requests will appear here."
+			},
+			"registry": {
+				"name": "Name",
+				"cardNumber": "Card No.",
+				"status": "Status",
+				"date": "Date",
+				"empty": "No registrations",
+				"emptyDesc": "Consular registrations will appear here.",
+				"loadMore": "Load more…"
+			},
+			"appointments": {
+				"citizen": "Citizen",
+				"type": "Type",
+				"status": "Status",
+				"dateTime": "Date & Time",
+				"empty": "No appointments",
+				"emptyDesc": "Scheduled appointments will appear here."
+			},
+			"services": {
+				"active": "Active",
+				"inactive": "Inactive",
+				"empty": "No services",
+				"emptyDesc": "Configured consular services will appear here."
+			},
+			"statuses": {
+				"draft": "Draft",
+				"submitted": "Submitted",
+				"pending": "Pending",
+				"under_review": "Under Review",
+				"in_production": "In Production",
+				"validated": "Validated",
+				"rejected": "Rejected",
+				"completed": "Completed",
+				"cancelled": "Cancelled",
+				"requested": "Requested",
+				"active": "Active",
+				"expired": "Expired",
+				"scheduled": "Scheduled",
+				"confirmed": "Confirmed",
+				"no_show": "No-show"
+			}
+		},
+		"diplomaticAffairs": {
+			"title": "Diplomatic Affairs",
+			"subtitle": "Diplomatic relations and mission tracking",
+			"tabs": {
+				"targets": "Targets",
+				"letters": "Contact Letters",
+				"plans": "Strategic Plan",
+				"reports": "Reports"
+			},
+			"targets": {
+				"empty": "No targets identified",
+				"emptyDesc": "Diplomatic targets will appear here.",
+				"contact": "Contact"
+			},
+			"letters": {
+				"empty": "No letters",
+				"emptyDesc": "Contact letters will appear here.",
+				"to": "Recipient",
+				"sentOn": "Sent on"
+			},
+			"plans": {
+				"empty": "No strategic plans",
+				"emptyDesc": "Strategic plans will appear here.",
+				"period": "Period",
+				"objectives": "objectives",
+				"noObjectives": "No objectives defined"
+			},
+			"reports": {
+				"empty": "No reports",
+				"emptyDesc": "Reports will appear here."
+			},
+			"targetTypes": {
+				"enterprise": "Enterprise",
+				"government": "Government",
+				"ngo": "NGO",
+				"international_org": "Int. Organization",
+				"academic": "Academic",
+				"media": "Media",
+				"other": "Other"
+			},
+			"targetStatuses": {
+				"identified": "Identified",
+				"contacted": "Contacted",
+				"in_discussion": "In Discussion",
+				"partnership": "Partner",
+				"inactive": "Inactive"
+			},
+			"letterStatuses": {
+				"draft": "Draft",
+				"pending_approval": "Pending Approval",
+				"approved": "Approved",
+				"sent": "Sent",
+				"responded": "Responded",
+				"archived": "Archived"
+			},
+			"planCategories": {
+				"bilateral": "Bilateral",
+				"economic": "Economic",
+				"cultural": "Cultural",
+				"security": "Security",
+				"multilateral": "Multilateral",
+				"other": "Other"
+			},
+			"reportTypes": {
+				"activity": "Activity",
+				"situation": "Situation",
+				"mission": "Mission",
+				"economic": "Economic",
+				"security": "Security",
+				"annual": "Annual",
+				"other": "Other"
+			},
+			"reportRecipients": {
+				"president": "President",
+				"minister": "Minister",
+				"secretary_general": "Secretary General",
+				"direction": "Management",
+				"other": "Other"
+			},
+			"reportStatuses": {
+				"draft": "Draft",
+				"pending_review": "Under Review",
+				"submitted": "Submitted",
+				"approved": "Approved"
+			}
+		},
+		"posts": {
+			"title": "News",
+			"subtitle": "Manage publications and announcements",
+			"columns": {
+				"title": "Title",
+				"category": "Category",
+				"status": "Status",
+				"date": "Date"
+			},
+			"statuses": {
+				"published": "Published",
+				"draft": "Draft"
+			},
+			"empty": "No publications",
+			"emptyDesc": "News and announcements will appear here."
+		},
+		"placeholders": {
+			"iBoite": {
+				"title": "iBoîte",
+				"desc": "Messaging — integration in progress"
+			},
+			"iCorrespondance": {
+				"title": "iCorrespondance",
+				"desc": "Official correspondence — integration in progress"
+			},
+			"iDocument": {
+				"title": "iDocument",
+				"desc": "Document management — integration in progress"
+			},
+			"iAgenda": {
+				"title": "iAgenda",
+				"desc": "Calendar & events — integration in progress"
+			},
+			"statistics": {
+				"title": "Statistics",
+				"desc": "Statistical dashboards — integration in progress"
+			},
+			"payments": {
+				"title": "Payments",
+				"desc": "Transaction tracking — integration in progress"
+			},
+			"team": {
+				"title": "Team",
+				"desc": "Member management — integration in progress"
+			}
+		},
+		"impression": {
+			"title": "Printing",
+			"subtitle": "Print queue, card designer and printer configuration",
+			"noPrinter": "No printer",
+			"printerConfig": "Printer configuration",
+			"printerConfigDesc": "Scan, connect and check Evolis printer status",
+			"printers": "Printers",
+			"scan": "Scan",
+			"noDevices": "No printer detected. Click \"Scan\".",
+			"connect": "Connect",
+			"disconnect": "Disconnect",
+			"refresh": "Refresh",
+			"queued": "queued",
+			"printing": "printing",
+			"failed": "failed",
+			"noJobs": "No jobs in this category",
+			"profile": "Profile",
+			"design": "Design",
+			"priority": "Priority",
+			"status": "Status",
+			"copies": "Copies",
+			"date": "Date",
+			"print": "Print",
+			"cancel": "Cancel",
+			"retry": "Retry",
+			"remove": "Remove",
+			"tabs": {
+				"queue": "Print Queue",
+				"designer": "Designer",
+				"all": "All",
+				"queued": "Queued",
+				"printing": "Printing",
+				"completed": "Completed",
+				"failed": "Failed"
+			}
+		},
+		"common": {
+			"loading": "Connecting...",
+			"minutes": "min"
+		},
+		"settings": {
+			"title": "Settings",
+			"subtitle": "Workstation configuration",
+			"tabs": {
+				"account": "Account",
+				"printer": "Printing",
+				"appearance": "Appearance",
+				"language": "Language"
+			},
+			"account": {
+				"title": "Account"
+			},
+			"printer": {
+				"title": "Printing (Local Office)",
+				"duplex": "Default duplex",
+				"duplexDesc": "Enable double-sided printing for new jobs",
+				"priority": "Default priority",
+				"priorityDesc": "Priority assigned to new jobs",
+				"priorityNormal": "Normal",
+				"priorityHigh": "High",
+				"priorityUrgent": "Urgent",
+				"autoPrint": "Auto-print",
+				"autoPrintDesc": "Start printing as soon as a job is added to the queue"
+			},
+			"appearance": {
+				"title": "Appearance",
+				"comingSoon": "Theme and display configuration — coming soon."
+			},
+			"language": {
+				"title": "Language",
+				"description": "Choose the interface language",
+				"french": "Français",
+				"english": "English"
+			},
+			"reset": "Reset settings"
 		}
 	}
 }

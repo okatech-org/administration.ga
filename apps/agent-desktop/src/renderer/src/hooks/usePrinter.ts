@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import type {
   EvolisDevice,
   EvolisInfo,
@@ -15,6 +15,17 @@ export function usePrinter() {
   const [isConnecting, setIsConnecting] = useState(false)
   const [isPrinting, setIsPrinting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Auto-reconnect: check if main process still has a printer connected
+  useEffect(() => {
+    window.desktopApi?.printer?.getConnectedInfo?.().then((info: EvolisInfo | null) => {
+      if (info) {
+        setConnectedInfo(info)
+        // Also fetch fresh status
+        window.desktopApi.printer.getStatus().then((s: PrinterStatus) => setStatus(s)).catch(() => {})
+      }
+    }).catch(() => {})
+  }, [])
 
   const scanDevices = useCallback(async () => {
     setIsScanning(true)
@@ -88,6 +99,29 @@ export function usePrinter() {
     []
   )
 
+  const printFromBuffer = useCallback(
+    async (options: {
+      frontBuffer: ArrayBuffer
+      backBuffer?: ArrayBuffer
+      duplex?: boolean
+    }) => {
+      setIsPrinting(true)
+      setError(null)
+      setPrintResult(null)
+      try {
+        const result = await window.desktopApi.printer.printFromBuffer(options)
+        setPrintResult(result)
+        return result
+      } catch (err) {
+        setError(`Erreur impression : ${err}`)
+        return { success: false, errorCode: -999, errorMessage: String(err) } as PrintResult
+      } finally {
+        setIsPrinting(false)
+      }
+    },
+    []
+  )
+
   return {
     devices,
     connectedInfo,
@@ -102,5 +136,6 @@ export function usePrinter() {
     disconnect,
     getStatus,
     print,
+    printFromBuffer,
   }
 }

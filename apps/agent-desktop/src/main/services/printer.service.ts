@@ -1,3 +1,7 @@
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { writeFile, unlink } from "node:fs/promises"
+import { randomBytes } from "node:crypto"
 import type {
   EvolisDevice,
   EvolisInfo,
@@ -35,6 +39,12 @@ const MODEL_NAMES: Record<number, string> = {
 export class PrinterService {
   private printerHandle: unknown = null
   private printerName: string | null = null
+  private connectedInfo: EvolisInfo | null = null
+
+  /** Check if printer is still connected (survives renderer reload) */
+  getConnectedInfo(): EvolisInfo | null {
+    return this.connectedInfo
+  }
 
   async listDevices(): Promise<EvolisDevice[]> {
     try {
@@ -83,7 +93,7 @@ export class PrinterService {
       const info = evolisGetInfo(this.printerHandle)
       console.log("[PrinterService] Info:", JSON.stringify(info))
 
-      return {
+      const result: EvolisInfo = {
         name: info.name || name,
         model: String(info.model ?? ""),
         modelName: info.modelName || MODEL_NAMES[info.model] || name,
@@ -97,9 +107,12 @@ export class PrinterService {
         hasScanner: info.hasScanner,
         hasLock: info.hasLock,
       }
+      this.connectedInfo = result
+      return result
     } catch (err) {
       this.printerHandle = null
       this.printerName = null
+      this.connectedInfo = null
       console.error("[PrinterService] connect error:", err)
       throw err
     }
@@ -119,6 +132,7 @@ export class PrinterService {
       }
       this.printerHandle = null
       this.printerName = null
+      this.connectedInfo = null
       console.log("[PrinterService] Disconnected")
     }
   }
@@ -199,6 +213,57 @@ export class PrinterService {
         success: false,
         errorCode: -999,
         errorMessage: String(err),
+      }
+    }
+  }
+
+  /** Print from raw BMP buffers (writes temp files, prints, cleans up) */
+  async printFromBuffer(options: {
+    frontBuffer: Buffer
+    backBuffer?: Buffer
+    duplex?: boolean
+  }): Promise<PrintResult> {
+    if (!this.printerHandle) {
+      return {
+        success: false,
+        errorCode: -1,
+        errorMessage: "Aucune imprimante connectée",
+      }
+    }
+
+    const id = randomBytes(6).toString("hex")
+    const frontPath = join(tmpdir(), `evolis_front_${id}.bmp`)
+    const backPath = options.backBuffer
+      ? join(tmpdir(), `evolis_back_${id}.bmp`)
+      : undefined
+
+    try {
+      console.log(`[PrinterService] printFromBuffer: writing ${options.frontBuffer.length} bytes to ${frontPath}`)
+      await writeFile(frontPath, options.frontBuffer)
+      if (options.backBuffer && backPath) {
+        console.log(`[PrinterService] printFromBuffer: writing back ${options.backBuffer.length} bytes to ${backPath}`)
+        await writeFile(backPath, options.backBuffer)
+      }
+
+      const result = await this.print({
+        frontImagePath: frontPath,
+        backImagePath: backPath,
+        duplex: options.duplex,
+      })
+
+      return result
+    } catch (err) {
+      console.error("[PrinterService] printFromBuffer error:", err)
+      return {
+        success: false,
+        errorCode: -999,
+        errorMessage: `Erreur printFromBuffer: ${String(err)}`,
+      }
+    } finally {
+      // Cleanup temp files
+      try { await unlink(frontPath) } catch { /* ignore */ }
+      if (backPath) {
+        try { await unlink(backPath) } catch { /* ignore */ }
       }
     }
   }

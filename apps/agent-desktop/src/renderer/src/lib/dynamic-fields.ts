@@ -18,6 +18,7 @@ export const DYNAMIC_FIELDS: DynamicField[] = [
   { key: "citizen.placeOfBirth", label: "Lieu de naissance", category: "Identité", preview: "Libreville" },
   { key: "citizen.nationality", label: "Nationalité", category: "Identité", preview: "Gabonaise" },
   { key: "citizen.sex", label: "Sexe", category: "Identité", preview: "M" },
+  { key: "citizen.nip", label: "NIP", category: "Identité", preview: "NIP : 28GA18922" },
 
   // Document
   { key: "card.number", label: "N° Carte", category: "Document", preview: "FR26280467-00001" },
@@ -58,6 +59,7 @@ export interface CitizenProfileData {
   placeOfBirth?: string
   nationality?: string
   sex?: string
+  nip?: string
   photoUrl?: string | null
   // Card
   cardNumber?: string
@@ -94,6 +96,7 @@ export function resolveFieldValue(
     "citizen.placeOfBirth": profile.placeOfBirth,
     "citizen.nationality": profile.nationality,
     "citizen.sex": profile.sex,
+    "citizen.nip": profile.nip ? `NIP : ${profile.nip}` : undefined,
     "citizen.photo": profile.photoUrl ?? undefined,
     "card.number": profile.cardNumber,
     "card.issuedAt": profile.cardIssuedAt,
@@ -123,6 +126,7 @@ export const SAMPLE_PROFILES: { label: string; data: CitizenProfileData }[] = [
       placeOfBirth: "Libreville",
       nationality: "Gabonaise",
       sex: "M",
+      nip: "28GA18922",
       cardNumber: "FR26280467-00001",
       cardIssuedAt: "30/03/2026",
       cardExpiresAt: "30/03/2031",

@@ -33,4 +33,37 @@ export function registerPrinterIpc(ipcMain: IpcMain): void {
       return printerService.print(options)
     }
   )
+
+  // Get connected printer info (survives renderer reload)
+  ipcMain.handle("printer:get-connected-info", async () => {
+    return printerService.getConnectedInfo()
+  })
+
+  // Print from raw BMP buffers (renderer sends ArrayBuffer)
+  ipcMain.handle(
+    "printer:print-from-buffer",
+    async (
+      _event,
+      options: {
+        frontBuffer: ArrayBuffer
+        backBuffer?: ArrayBuffer
+        duplex?: boolean
+      }
+    ) => {
+      try {
+        return await printerService.printFromBuffer({
+          frontBuffer: Buffer.from(options.frontBuffer),
+          backBuffer: options.backBuffer ? Buffer.from(options.backBuffer) : undefined,
+          duplex: options.duplex,
+        })
+      } catch (err) {
+        console.error("[printer:print-from-buffer] Caught crash:", err)
+        return {
+          success: false,
+          errorCode: -999,
+          errorMessage: `Crash prevented: ${String(err)}`,
+        }
+      }
+    }
+  )
 }

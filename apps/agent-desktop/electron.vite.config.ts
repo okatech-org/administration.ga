@@ -29,6 +29,10 @@ export default defineConfig({
   },
   renderer: {
     root: resolve(__dirname, "src/renderer"),
+    server: {
+      // Prevent full-page reload when the Electron window loses/regains focus
+      hmr: { overlay: false },
+    },
     plugins: [
       viteTsConfigPaths({ projects: [resolve(__dirname, "tsconfig.json")] }),
       tailwindcss(),
@@ -37,6 +41,10 @@ export default defineConfig({
     resolve: {
       alias: {
         "@convex": resolve(__dirname, "../../convex"),
+        "@workspace/ui": resolve(__dirname, "../../packages/ui/src"),
+        "@workspace/api": resolve(__dirname, "../../packages/api/src"),
+        "@workspace/shared": resolve(__dirname, "../../packages/shared/src"),
+        "@workspace/i18n": resolve(__dirname, "../../packages/i18n/src"),
       },
     },
     build: {

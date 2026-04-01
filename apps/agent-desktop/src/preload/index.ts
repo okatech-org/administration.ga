@@ -5,11 +5,17 @@ const printerApi = {
   connect: (name: string) => ipcRenderer.invoke("printer:connect", name),
   disconnect: () => ipcRenderer.invoke("printer:disconnect"),
   getStatus: () => ipcRenderer.invoke("printer:get-status"),
+  getConnectedInfo: () => ipcRenderer.invoke("printer:get-connected-info"),
   print: (options: {
     frontImagePath: string
     backImagePath?: string
     duplex?: boolean
   }) => ipcRenderer.invoke("printer:print", options),
+  printFromBuffer: (options: {
+    frontBuffer: ArrayBuffer
+    backBuffer?: ArrayBuffer
+    duplex?: boolean
+  }) => ipcRenderer.invoke("printer:print-from-buffer", options),
 }
 
 contextBridge.exposeInMainWorld("desktopApi", {

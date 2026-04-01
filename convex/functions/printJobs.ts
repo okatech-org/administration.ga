@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import type { Id } from "../_generated/dataModel";
 import { authMutation, authQuery } from "../lib/customFunctions";
 
 // ============================================================================
@@ -186,6 +187,21 @@ export const updateStatus = authMutation({
 		}
 
 		await ctx.db.patch(args.jobId, updates);
+
+		// When completed, mark the linked consular registration as printed
+		const regIdStr = (job as any).fieldValues?._registrationId || (job as any).registrationId;
+		if (args.status === "completed" && regIdStr) {
+			try {
+				const regId = regIdStr as Id<"consularRegistrations">;
+				const registration = await ctx.db.get(regId);
+				if (registration && !(registration as any).printedAt) {
+					await ctx.db.patch(regId, { printedAt: Date.now() } as any);
+				}
+			} catch {
+				// Ignore if registration not found
+			}
+		}
+
 		return args.jobId;
 	},
 });

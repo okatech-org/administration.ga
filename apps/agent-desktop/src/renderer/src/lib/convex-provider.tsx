@@ -8,6 +8,10 @@ import { authClient } from "./auth-client"
 
 const CONVEX_URL = (import.meta as any).env.VITE_CONVEX_URL
 
+console.log("[convex] VITE_CONVEX_URL =", CONVEX_URL)
+console.log("[convex] VITE_CONVEX_SITE_URL =", (import.meta as any).env.VITE_CONVEX_SITE_URL)
+console.log("[convex] all env =", JSON.stringify(import.meta.env))
+
 if (!CONVEX_URL) {
   console.error("[convex] Missing VITE_CONVEX_URL")
 }

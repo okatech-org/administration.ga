@@ -8,8 +8,14 @@ import {
   FileText,
   Clock,
   Loader2,
+  CreditCard,
+  FlipHorizontal,
+  File,
+  ArrowLeft,
 } from "lucide-react"
 import type { Id } from "@convex/_generated/dataModel"
+import { DEFAULT_TEMPLATES } from "../../lib/default-card-templates"
+import type { CardDesign } from "../../lib/card-types"
 
 interface DesignSummary {
   _id: Id<"cardDesigns">
@@ -33,6 +39,7 @@ interface DesignListDialogProps {
   onDelete: (id: Id<"cardDesigns">) => void
   onDuplicate: (id: Id<"cardDesigns">) => void
   onNew: () => void
+  onNewFromTemplate?: (design: CardDesign) => void
 }
 
 export function DesignListDialog({
@@ -45,8 +52,10 @@ export function DesignListDialog({
   onDelete,
   onDuplicate,
   onNew,
+  onNewFromTemplate,
 }: DesignListDialogProps) {
   const [confirmDelete, setConfirmDelete] = useState<Id<"cardDesigns"> | null>(null)
+  const [showTemplates, setShowTemplates] = useState(false)
 
   if (!open) return null
 
@@ -73,15 +82,25 @@ export function DesignListDialog({
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {showTemplates ? (
+              <button
+                onClick={() => setShowTemplates(false)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Retour
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowTemplates(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Nouveau
+              </button>
+            )}
             <button
-              onClick={onNew}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Nouveau
-            </button>
-            <button
-              onClick={onClose}
+              onClick={() => { onClose(); setShowTemplates(false) }}
               className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <X className="w-5 h-5" />
@@ -91,7 +110,49 @@ export function DesignListDialog({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-3">
-          {isLoading ? (
+          {showTemplates ? (
+            /* Template picker */
+            <div className="space-y-3 p-2">
+              <p className="text-sm text-muted-foreground px-1">
+                Choisissez un modèle de départ :
+              </p>
+              <div className="grid grid-cols-1 gap-2">
+                {DEFAULT_TEMPLATES.map((tpl) => {
+                  const IconMap: Record<string, React.ElementType> = {
+                    card: CreditCard,
+                    "card-duplex": FlipHorizontal,
+                    blank: File,
+                  }
+                  const Icon = IconMap[tpl.icon] || FileText
+                  return (
+                    <button
+                      key={tpl.id}
+                      onClick={() => {
+                        if (onNewFromTemplate) {
+                          onNewFromTemplate(tpl.create())
+                        } else {
+                          onNew()
+                        }
+                        setShowTemplates(false)
+                        onClose()
+                      }}
+                      className="flex items-start gap-4 p-4 rounded-xl border border-border hover:border-primary/30 hover:bg-primary/5 transition-all text-left group"
+                    >
+                      <div className="shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                        <Icon className="w-6 h-6 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-foreground">{tpl.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                          {tpl.description}
+                        </p>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ) : isLoading ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Loader2 className="w-6 h-6 animate-spin mb-2" />
               <span className="text-sm">Chargement...</span>

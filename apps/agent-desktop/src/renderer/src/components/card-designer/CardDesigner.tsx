@@ -307,6 +307,11 @@ export function CardDesigner() {
           })
           setShowDesignList(false)
         }}
+        onNewFromTemplate={(design) => {
+          persistence.newDesign()
+          dispatch({ type: "LOAD_DESIGN", design })
+          setShowDesignList(false)
+        }}
       />
     </div>
   )

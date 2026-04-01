@@ -1,13 +1,9 @@
 import { convexClient, crossDomainClient } from "@convex-dev/better-auth/client/plugins"
-import {
-  emailOTPClient,
-  genericOAuthClient,
-  phoneNumberClient,
-} from "better-auth/client/plugins"
+import { emailOTPClient } from "better-auth/client/plugins"
 import { createAuthClient } from "better-auth/react"
 
-// The desktop app talks directly to Convex Site URL for auth
-// — no need for the agent-web Vite proxy.
+// The desktop app talks directly to Convex Site URL for auth.
+// crossDomainClient handles session transfer between Convex domain and Electron renderer.
 const CONVEX_SITE_URL = (import.meta as any).env.VITE_CONVEX_SITE_URL
 
 if (!CONVEX_SITE_URL) {
@@ -19,8 +15,6 @@ export const authClient = createAuthClient({
   plugins: [
     convexClient(),
     crossDomainClient(),
-    genericOAuthClient(),
     emailOTPClient(),
-    phoneNumberClient(),
   ],
 })
