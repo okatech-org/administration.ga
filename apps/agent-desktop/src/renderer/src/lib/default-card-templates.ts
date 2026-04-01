@@ -216,6 +216,7 @@ function createCarteConsulaireTemplate(): CardDesign {
     name: "Carte Consulaire — Standard",
     description:
       "Modèle standard pour carte consulaire gabonaise. Place les données variables (nom, photo, dates, QR) sur la carte pré-imprimée.",
+    entityId: "carte-consulaire",
     backgroundColor: "#ffffff",
     frontBackgroundImage: null,
     backBackgroundImage: null,
@@ -283,6 +284,7 @@ function createBlankTemplate(): CardDesign {
   return {
     name: "Modèle vide",
     description: "Un modèle vide pour créer votre propre design de carte.",
+    entityId: "carte-consulaire",
     backgroundColor: "#ffffff",
     frontBackgroundImage: null,
     backBackgroundImage: null,

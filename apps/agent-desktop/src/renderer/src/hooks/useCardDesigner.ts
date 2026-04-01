@@ -5,6 +5,7 @@ import { CARD_HEIGHT, CARD_WIDTH, createDefaultElement } from "../lib/card-types
 interface DesignerState {
   name: string
   description: string
+  entityId?: string
   backgroundColor: string
   frontBackgroundImage: string | null
   backBackgroundImage: string | null
@@ -141,6 +142,7 @@ function reduceDesigner(state: DesignerState, action: Action): DesignerState {
         ...getInitialState(),
         name: action.design.name,
         description: action.design.description ?? "",
+        entityId: action.design.entityId,
         backgroundColor: action.design.backgroundColor,
         frontBackgroundImage: action.design.frontBackgroundImage,
         backBackgroundImage: action.design.backBackgroundImage,
@@ -232,6 +234,7 @@ export function useCardDesigner() {
     return {
       name: state.name,
       description: state.description,
+      entityId: state.entityId,
       backgroundColor: state.backgroundColor,
       frontBackgroundImage: state.frontBackgroundImage,
       backBackgroundImage: state.backBackgroundImage,

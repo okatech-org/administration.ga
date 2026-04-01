@@ -19,11 +19,12 @@ import {
   CloudOff,
 } from "lucide-react"
 import type { ActiveFace, ElementType } from "../../lib/card-types"
-import { getFieldsByCategory, SAMPLE_PROFILES, type CitizenProfileData } from "../../lib/dynamic-fields"
+import { getFieldsByCategory, getSampleProfiles, type CitizenProfileData } from "../../lib/dynamic-fields"
 import { useState } from "react"
 
 interface DesignerToolbarProps {
   name: string
+  entityId?: string
   activeFace: ActiveFace
   printDuplex: boolean
   selectedElementId: string | null
@@ -51,6 +52,7 @@ interface DesignerToolbarProps {
 
 export function DesignerToolbar({
   name,
+  entityId,
   activeFace,
   printDuplex,
   selectedElementId,
@@ -75,7 +77,7 @@ export function DesignerToolbar({
 }: DesignerToolbarProps) {
   const [showFieldMenu, setShowFieldMenu] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
-  const fieldGroups = getFieldsByCategory()
+  const fieldGroups = getFieldsByCategory(entityId)
 
   return (
     <div className="flex items-center gap-2 px-4 py-2 bg-card border-b border-border shrink-0">
@@ -222,7 +224,7 @@ export function DesignerToolbar({
                   <p className="text-[10px] font-semibold uppercase text-muted-foreground/60 px-2 pt-1 pb-1">
                     Profils exemples
                   </p>
-                  {SAMPLE_PROFILES.map((sp, i) => (
+                  {getSampleProfiles(entityId).map((sp, i) => (
                     <button
                       key={i}
                       onClick={() => {

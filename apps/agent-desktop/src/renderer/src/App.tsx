@@ -3,6 +3,11 @@ import { useTranslation } from "react-i18next"
 import { useConvexAuth } from "convex/react"
 import { AppSidebar, type Route } from "./components/sidebar/AppSidebar"
 import { LoginPage } from "./components/auth/LoginPage"
+import {
+  ConsularThemeContext,
+  useConsularThemeState,
+} from "./hooks/useConsularTheme"
+import { cn } from "./lib/utils"
 
 // Desktop-only pages
 import { ImpressionPage } from "./components/impression/ImpressionPage"
@@ -32,6 +37,8 @@ export function App() {
   const { t } = useTranslation()
   const { isAuthenticated, isLoading } = useConvexAuth()
   const [activeRoute, setActiveRoute] = useState<Route>({ page: "dashboard" })
+  const consularThemeValue = useConsularThemeState()
+  const { consularTheme } = consularThemeValue
 
   // Loading state
   if (isLoading) {
@@ -51,31 +58,36 @@ export function App() {
   }
 
   return (
-    <div className="h-screen flex gap-4 bg-background p-4 overflow-hidden">
-      <AppSidebar activeRoute={activeRoute} onNavigate={setActiveRoute} />
-      <main className="flex-1 min-h-0 bg-card border border-border rounded-2xl overflow-hidden flex flex-col">
-        {activeRoute.page === "dashboard" && <DashboardPage onNavigate={setActiveRoute} />}
-        {activeRoute.page === "affaires-diplomatiques" && <AffairesDiplomatiquesPage />}
-        {activeRoute.page === "affaires-consulaires" && <AffairesConsulairesPage route={activeRoute} onNavigate={setActiveRoute} />}
-        {activeRoute.page === "posts" && <PostsPage />}
-        {activeRoute.page === "iboite" && <IBoitePage />}
-        {activeRoute.page === "icorrespondance" && <ICorrespondancePage />}
-        {activeRoute.page === "idocument" && <IDocumentPage />}
-        {activeRoute.page === "iagenda" && <IAgendaPage />}
-        {activeRoute.page === "statistics" && <StatisticsPage />}
-        {activeRoute.page === "payments" && <PaymentsPage />}
-        {activeRoute.page === "team" && <TeamPage />}
-        {activeRoute.page === "settings" && <SettingsPage />}
-        {activeRoute.page === "appointments" && <AppointmentsPage />}
-        {activeRoute.page === "requests" && <RequestsPage />}
-        {activeRoute.page === "services" && <ServicesPage />}
-        {activeRoute.page === "iarchive" && <IArchivePage />}
-        {activeRoute.page === "iasted" && <IAstedPage />}
-        {activeRoute.page === "calls" && <CallsPage />}
-        {activeRoute.page === "meetings" && <MeetingsPage />}
-        {/* Desktop-only */}
-        {activeRoute.page === "impression" && <ImpressionPage />}
-      </main>
-    </div>
+    <ConsularThemeContext.Provider value={consularThemeValue}>
+      <div className={cn(
+        "h-screen flex gap-4 bg-background p-4 overflow-hidden",
+        consularTheme === "homeomorphism" && "theme-homeomorphism",
+      )}>
+        <AppSidebar activeRoute={activeRoute} onNavigate={setActiveRoute} />
+        <main className="flex-1 min-h-0 bg-card border border-border rounded-2xl overflow-hidden flex flex-col">
+          {activeRoute.page === "dashboard" && <DashboardPage onNavigate={setActiveRoute} />}
+          {activeRoute.page === "affaires-diplomatiques" && <AffairesDiplomatiquesPage />}
+          {activeRoute.page === "affaires-consulaires" && <AffairesConsulairesPage route={activeRoute} onNavigate={setActiveRoute} />}
+          {activeRoute.page === "posts" && <PostsPage />}
+          {activeRoute.page === "iboite" && <IBoitePage />}
+          {activeRoute.page === "icorrespondance" && <ICorrespondancePage />}
+          {activeRoute.page === "idocument" && <IDocumentPage />}
+          {activeRoute.page === "iagenda" && <IAgendaPage />}
+          {activeRoute.page === "statistics" && <StatisticsPage />}
+          {activeRoute.page === "payments" && <PaymentsPage />}
+          {activeRoute.page === "team" && <TeamPage />}
+          {activeRoute.page === "settings" && <SettingsPage />}
+          {activeRoute.page === "appointments" && <AppointmentsPage />}
+          {activeRoute.page === "requests" && <RequestsPage />}
+          {activeRoute.page === "services" && <ServicesPage />}
+          {activeRoute.page === "iarchive" && <IArchivePage />}
+          {activeRoute.page === "iasted" && <IAstedPage />}
+          {activeRoute.page === "calls" && <CallsPage />}
+          {activeRoute.page === "meetings" && <MeetingsPage />}
+          {/* Desktop-only */}
+          {activeRoute.page === "impression" && <ImpressionPage />}
+        </main>
+      </div>
+    </ConsularThemeContext.Provider>
   )
 }

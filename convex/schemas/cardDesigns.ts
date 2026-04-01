@@ -52,6 +52,7 @@ export const cardDesignsTable = defineTable({
 	// Basic info
 	name: v.string(),
 	description: v.optional(v.string()),
+	entityId: v.optional(v.string()), // Print entity (e.g., "carte-consulaire")
 
 	// Template data — full card template content
 	backgroundColor: v.string(),

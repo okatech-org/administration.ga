@@ -209,6 +209,7 @@ export function CardDesigner() {
     <div className="flex flex-col h-full">
       <DesignerToolbar
         name={state.name}
+        entityId={state.entityId}
         activeFace={state.activeFace}
         printDuplex={state.printDuplex}
         selectedElementId={state.selectedElementId}
@@ -251,6 +252,7 @@ export function CardDesigner() {
         {!isPreviewMode && (
           <PropertiesPanel
             element={selectedElement}
+            entityId={state.entityId}
             backgroundColor={state.backgroundColor}
             backgroundOpacity={state.backgroundOpacity}
             onUpdateElement={updateElement}

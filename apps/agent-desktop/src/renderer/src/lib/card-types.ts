@@ -44,6 +44,7 @@ export interface CardElement {
 export interface CardDesign {
   name: string
   description?: string
+  entityId?: string // Print entity (e.g., "carte-consulaire") — determines available dynamic fields
   backgroundColor: string
   frontBackgroundImage: string | null
   backBackgroundImage: string | null

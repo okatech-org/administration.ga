@@ -14,10 +14,11 @@ import {
   EyeOff,
 } from "lucide-react"
 import type { CardElement, TextAlignment } from "../../lib/card-types"
-import { DYNAMIC_FIELDS } from "../../lib/dynamic-fields"
+import { getFieldsByCategory, type DynamicField } from "../../lib/dynamic-fields"
 
 interface PropertiesPanelProps {
   element: CardElement | null
+  entityId?: string
   backgroundColor: string
   backgroundOpacity: number
   onUpdateElement: (id: string, changes: Partial<CardElement>) => void
@@ -28,6 +29,7 @@ interface PropertiesPanelProps {
 
 export function PropertiesPanel({
   element,
+  entityId,
   backgroundColor,
   backgroundOpacity,
   onUpdateElement,
@@ -138,7 +140,7 @@ export function PropertiesPanel({
                 onChange={(e) => update({ fieldKey: e.target.value })}
                 className="w-full text-xs px-2 py-1.5 bg-muted border border-border rounded-md text-foreground"
               >
-                {DYNAMIC_FIELDS.filter((f) => f.key !== "citizen.photo").map((f) => (
+                {Object.values(getFieldsByCategory(entityId)).flat().filter((f: DynamicField) => f.key !== "citizen.photo").map((f: DynamicField) => (
                   <option key={f.key} value={f.key}>
                     {f.label}
                   </option>
