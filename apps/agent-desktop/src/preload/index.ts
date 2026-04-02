@@ -26,6 +26,11 @@ const printerApi = {
     backBuffer?: ArrayBuffer
     duplex?: boolean
   }) => ipcRenderer.invoke("printer:print-from-buffer", options),
+  saveDebugBmp: (options: {
+    frontBuffer: ArrayBuffer
+    backBuffer?: ArrayBuffer
+    label?: string
+  }) => ipcRenderer.invoke("printer:save-debug-bmp", options),
 }
 
 const notificationsApi = {

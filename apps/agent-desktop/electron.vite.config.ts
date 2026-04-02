@@ -6,7 +6,7 @@ import viteTsConfigPaths from "vite-tsconfig-paths"
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()],
+    plugins: [externalizeDepsPlugin({ exclude: ["@workspace/desktop-shared"] })],
     build: {
       outDir: "out/main",
       rollupOptions: {
@@ -17,7 +17,7 @@ export default defineConfig({
     },
   },
   preload: {
-    plugins: [externalizeDepsPlugin()],
+    plugins: [externalizeDepsPlugin({ exclude: ["@workspace/desktop-shared"] })],
     build: {
       outDir: "out/preload",
       rollupOptions: {

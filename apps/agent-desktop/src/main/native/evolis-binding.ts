@@ -191,6 +191,9 @@ function declareAll() {
     evolis_print_set_setting: l.func(
       "bool evolis_print_set_setting(void* printer, int key, const char* value)"
     ),
+    evolis_print_get_setting: l.func(
+      "bool evolis_print_get_setting(void* printer, int key, _Out_ const char** value)"
+    ),
     evolis_print_set_auto_eject: l.func(
       "bool evolis_print_set_auto_eject(void* printer, bool on)"
     ),
@@ -219,9 +222,15 @@ const EVOLIS_OT_ERROR = 8
 const EVOLIS_FA_FRONT = 0
 const EVOLIS_FA_BACK = 1
 
-// Settings keys for duplex (from evosettings_keys.h)
-const EVOSETTINGS_KE_Duplex = 4
-const EVOSETTINGS_KE_GDuplexType = 6
+// Settings keys from evosettings_keys.h — values are enum indices in evosettings_key_e
+// IMPORTANT: counted from the X-macro in evosettings_keys.h, starting at Unknown=0
+const EVOSETTINGS_KE_Duplex = 19
+const EVOSETTINGS_KE_GDuplexType = 40
+const EVOSETTINGS_KE_Orientation = 111
+const EVOSETTINGS_KE_Resolution = 113
+const EVOSETTINGS_KE_PaperSize = 136
+const EVOSETTINGS_KE_FBlackManagement = 20
+const EVOSETTINGS_KE_FOverlayManagement = 27
 
 export interface NativeEvolisDevice {
   id: string
@@ -424,6 +433,22 @@ export function evolisSetTrays(printer: unknown): void {
   getFns().evolis_set_error_tray(printer, EVOLIS_OT_ERROR)
 }
 
+/** Log a single print setting for diagnostics. */
+function logPrintSetting(
+  f: ReturnType<typeof declareAll>,
+  printer: unknown,
+  name: string,
+  key: number,
+): void {
+  try {
+    const valuePtr = [null as unknown as string]
+    const ok = f.evolis_print_get_setting(printer, key, valuePtr)
+    console.log(`[evolis] Setting ${name} (key=${key}): ${ok ? valuePtr[0] : "(not set)"}`)
+  } catch {
+    console.warn(`[evolis] Could not read setting ${name}`)
+  }
+}
+
 export function evolisPrintFromPath(
   printer: unknown,
   frontPath: string,
@@ -446,6 +471,7 @@ export function evolisPrintFromPath(
   // Initialize print job — try driver settings first, fall back to auto-detect
   const rcInit = f.evolis_print_init_from_driver_settings(printer)
   if (rcInit !== 0) {
+    console.warn(`[evolis] init_from_driver_settings failed (${rcInit}), trying evolis_print_init`)
     const rcInit2 = f.evolis_print_init(printer)
     if (rcInit2 !== 0) {
       throw new Error(
@@ -453,6 +479,20 @@ export function evolisPrintFromPath(
       )
     }
   }
+
+  // Explicitly set print area settings to ensure full CR-80 card printing
+  f.evolis_print_set_setting(printer, EVOSETTINGS_KE_PaperSize, "CR80")
+  f.evolis_print_set_setting(printer, EVOSETTINGS_KE_Resolution, "DPI300")
+  f.evolis_print_set_setting(printer, EVOSETTINGS_KE_Orientation, "LANDSCAPE_CC90")
+  f.evolis_print_set_setting(printer, EVOSETTINGS_KE_FOverlayManagement, "FULLVARNISH")
+
+  // Diagnostic: log active print settings
+  logPrintSetting(f, printer, "PaperSize", EVOSETTINGS_KE_PaperSize)
+  logPrintSetting(f, printer, "Resolution", EVOSETTINGS_KE_Resolution)
+  logPrintSetting(f, printer, "Orientation", EVOSETTINGS_KE_Orientation)
+  logPrintSetting(f, printer, "Duplex", EVOSETTINGS_KE_Duplex)
+  logPrintSetting(f, printer, "FBlackManagement", EVOSETTINGS_KE_FBlackManagement)
+  logPrintSetting(f, printer, "FOverlayManagement", EVOSETTINGS_KE_FOverlayManagement)
 
   // Set front image
   const rcFront = f.evolis_print_set_imagep(printer, EVOLIS_FA_FRONT, frontPath)
@@ -474,6 +514,71 @@ export function evolisPrintFromPath(
     if (rcBack !== 0) {
       throw new Error(
         `set_image back failed: ${evolisGetErrorName(rcBack)} (${rcBack})`
+      )
+    }
+  }
+
+  // Execute
+  return f.evolis_print_exec(printer)
+}
+
+/**
+ * Print from raw BMP buffers — matches EasyCard's approach using evolis_print_set_imageb.
+ * Avoids writing temporary files to disk.
+ */
+export function evolisPrintFromBuffer(
+  printer: unknown,
+  frontBuffer: Buffer,
+  backBuffer?: Buffer
+): number {
+  const f = getFns()
+
+  // Clean session
+  try { f.evolis_release(printer) } catch { /* ignore */ }
+  const session = f.evolis_reserve(printer, 0, 10000)
+  if (session < 0) {
+    console.warn(`[evolis] Reserve before print: ${evolisGetErrorName(session)} (${session})`)
+  }
+
+  f.evolis_clear_mechanical_errors(printer)
+  evolisSetTrays(printer)
+
+  // Initialize print job
+  const rcInit = f.evolis_print_init_from_driver_settings(printer)
+  if (rcInit !== 0) {
+    console.warn(`[evolis] init_from_driver_settings failed (${rcInit}), trying evolis_print_init`)
+    const rcInit2 = f.evolis_print_init(printer)
+    if (rcInit2 !== 0) {
+      throw new Error(
+        `print_init failed: ${evolisGetErrorName(rcInit2)} (${rcInit2})`
+      )
+    }
+  }
+
+  // Explicitly set print area settings to ensure full CR-80 card printing
+  f.evolis_print_set_setting(printer, EVOSETTINGS_KE_PaperSize, "CR80")
+  f.evolis_print_set_setting(printer, EVOSETTINGS_KE_Resolution, "DPI300")
+  f.evolis_print_set_setting(printer, EVOSETTINGS_KE_Orientation, "LANDSCAPE_CC90")
+  f.evolis_print_set_setting(printer, EVOSETTINGS_KE_FOverlayManagement, "FULLVARNISH")
+
+  // Set front image from buffer
+  console.log(`[evolis] Setting front image from buffer (${frontBuffer.length} bytes)`)
+  const rcFront = f.evolis_print_set_imageb(printer, EVOLIS_FA_FRONT, frontBuffer, frontBuffer.length)
+  if (rcFront !== 0) {
+    throw new Error(
+      `set_imageb front failed: ${evolisGetErrorName(rcFront)} (${rcFront})`
+    )
+  }
+
+  // Duplex
+  if (backBuffer) {
+    f.evolis_print_set_setting(printer, EVOSETTINGS_KE_Duplex, "HORIZONTAL")
+    f.evolis_print_set_setting(printer, EVOSETTINGS_KE_GDuplexType, "DUPLEX_CC")
+    console.log(`[evolis] Setting back image from buffer (${backBuffer.length} bytes)`)
+    const rcBack = f.evolis_print_set_imageb(printer, EVOLIS_FA_BACK, backBuffer, backBuffer.length)
+    if (rcBack !== 0) {
+      throw new Error(
+        `set_imageb back failed: ${evolisGetErrorName(rcBack)} (${rcBack})`
       )
     }
   }

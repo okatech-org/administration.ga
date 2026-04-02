@@ -89,6 +89,24 @@ export const listByOrg = authQuery({
         const userId = adultProfile?.userId ?? childProfile?.authorUserId;
         const user = userId ? await ctx.db.get(userId) : null;
 
+        // Resolve identity photo from request documents (for card printing)
+        let photoUrl: string | null = null;
+        const requestDocs = (request as any)?.documents;
+        if (requestDocs && Array.isArray(requestDocs)) {
+          for (const docId of requestDocs) {
+            const doc = await ctx.db.get(docId as Id<"documents">);
+            if (
+              doc &&
+              doc.documentType === "identity_photo" &&
+              (doc as any).files?.length > 0 &&
+              (doc as any).files[0].mimeType?.startsWith("image/")
+            ) {
+              photoUrl = await ctx.storage.getUrl((doc as any).files[0].storageId);
+              break;
+            }
+          }
+        }
+
         return {
           ...reg,
           requestReference: request?.reference,
@@ -98,6 +116,7 @@ export const listByOrg = authQuery({
                 _id: user._id,
                 email: user.email,
                 avatarUrl: user.avatarUrl,
+                photoUrl,
               }
             : null,
         };

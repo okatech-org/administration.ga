@@ -11,6 +11,39 @@ import { CARD_WIDTH, CARD_HEIGHT, type CardDesign, type CardElement } from "./ca
 import { resolveFieldValue, type CitizenProfileData } from "./dynamic-fields"
 import { canvasToBmp } from "./bmp-encoder"
 
+// ─── Font name mapping ──────────────────────────────────────────
+// @fontsource-variable packages register fonts under "X Variable" names.
+// The card designer stores short names (e.g. "Inter"), so we map them
+// to the CSS-registered variable font names for Canvas 2D rendering.
+const FONT_MAP: Record<string, string> = {
+  "Inter": '"Inter Variable", Inter, sans-serif',
+  "Plus Jakarta Sans": '"Plus Jakarta Sans Variable", "Plus Jakarta Sans", sans-serif',
+  "DM Sans": '"DM Sans Variable", "DM Sans", sans-serif',
+  "Courier New": '"Courier New", monospace',
+  "Arial": "Arial, sans-serif",
+}
+
+function resolveFontFamily(fontName: string): string {
+  return FONT_MAP[fontName] ?? `"${fontName}", sans-serif`
+}
+
+/** Pre-load all variable fonts so the off-screen canvas can rasterize them. */
+async function ensureFontsLoaded(): Promise<void> {
+  if (typeof document === "undefined" || !document.fonts) return
+  try {
+    await Promise.all([
+      document.fonts.load('16px "Inter Variable"'),
+      document.fonts.load('bold 16px "Inter Variable"'),
+      document.fonts.load('italic 16px "Inter Variable"'),
+      document.fonts.load('16px "Plus Jakarta Sans Variable"'),
+      document.fonts.load('16px "DM Sans Variable"'),
+    ])
+    console.log("[CardRenderer] Fonts pre-loaded OK")
+  } catch (err) {
+    console.warn("[CardRenderer] Font pre-load warning:", err)
+  }
+}
+
 // ─── Public API ──────────────────────────────────────────────────
 
 export interface RenderResult {
@@ -46,6 +79,9 @@ export async function renderDesignToBmp(
   console.log("[CardRenderer] Rendering design:", design.name)
   console.log("[CardRenderer] Profile:", JSON.stringify(profile))
   console.log("[CardRenderer] Front elements:", design.frontElements.length)
+
+  // Ensure fonts are loaded before off-screen rendering
+  await ensureFontsLoaded()
 
   const frontBuffer = await renderFace(design.frontElements, design.backgroundColor, profile)
 
@@ -132,7 +168,8 @@ async function renderElement(
         ? resolveFieldValue(el.fieldKey, profile)
         : el.textContent
 
-      console.log(`[CardRenderer] TEXT "${el.fieldKey || 'static'}" = "${displayText}" @ (${el.x},${el.y}) w=${el.width} fs=${el.fontSize}`)
+      const resolvedFont = resolveFontFamily(el.fontName || "Inter")
+      console.log(`[CardRenderer] TEXT "${el.fieldKey || 'static'}" = "${displayText}" @ (${el.x},${el.y}) w=${el.width} fs=${el.fontSize} font="${el.fontName}" → ${resolvedFont}`)
 
       const text = new Konva.Text({
         ...commonConfig,
@@ -140,7 +177,7 @@ async function renderElement(
         width: el.width,
         // Don't set height — let text flow naturally without clipping
         fontSize: el.fontSize,
-        fontFamily: el.fontName || "Arial",
+        fontFamily: resolvedFont,
         fontStyle: `${el.isBold ? "bold" : ""} ${el.isItalic ? "italic" : ""}`.trim() || "normal",
         fill: el.textColor || "#000000",
         align: el.textAlignment || "left",
@@ -287,6 +324,7 @@ function renderPlaceholder(
 /**
  * Load image from URL — handles both HTTP URLs and data URLs.
  * For HTTP URLs (like Convex storage), fetch as blob first to avoid CORS issues.
+ * Includes a timeout to prevent hanging on unreachable URLs.
  */
 async function loadImageFromUrl(src: string): Promise<HTMLImageElement> {
   // Data URLs can be loaded directly
@@ -295,14 +333,40 @@ async function loadImageFromUrl(src: string): Promise<HTMLImageElement> {
   }
 
   // HTTP URLs: fetch as blob first (avoids CORS issues in Electron)
-  console.log(`[CardRenderer] Fetching image from URL: ${src.substring(0, 80)}...`)
-  const response = await fetch(src)
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} fetching image`)
+  console.log(`[CardRenderer] Fetching image from URL: ${src.substring(0, 120)}...`)
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+
+  try {
+    const response = await fetch(src, {
+      signal: controller.signal,
+      // Electron renderer: no CORS restriction in most cases, but be explicit
+      mode: "cors",
+      credentials: "omit",
+    })
+    clearTimeout(timeout)
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} ${response.statusText}`)
+    }
+
+    const blob = await response.blob()
+    console.log(`[CardRenderer] Image fetched: ${blob.size} bytes, type=${blob.type}`)
+
+    if (blob.size === 0) {
+      throw new Error("Empty image response")
+    }
+
+    const dataUrl = await blobToDataUrl(blob)
+    return loadImageFromDataUrl(dataUrl)
+  } catch (err) {
+    clearTimeout(timeout)
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error(`Image fetch timeout (8s): ${src.substring(0, 80)}`)
+    }
+    throw err
   }
-  const blob = await response.blob()
-  const dataUrl = await blobToDataUrl(blob)
-  return loadImageFromDataUrl(dataUrl)
 }
 
 function loadImageFromDataUrl(src: string): Promise<HTMLImageElement> {

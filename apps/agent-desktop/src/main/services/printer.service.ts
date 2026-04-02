@@ -217,7 +217,7 @@ export class PrinterService {
     }
   }
 
-  /** Print from raw BMP buffers (writes temp files, prints, cleans up) */
+  /** Print from raw BMP buffers (writes temp files, then uses evolis_print_set_imagep). */
   async printFromBuffer(options: {
     frontBuffer: Buffer
     backBuffer?: Buffer
@@ -238,10 +238,10 @@ export class PrinterService {
       : undefined
 
     try {
-      console.log(`[PrinterService] printFromBuffer: writing ${options.frontBuffer.length} bytes to ${frontPath}`)
+      console.log(`[PrinterService] printFromBuffer: writing front ${options.frontBuffer.length} bytes → ${frontPath}`)
       await writeFile(frontPath, options.frontBuffer)
       if (options.backBuffer && backPath) {
-        console.log(`[PrinterService] printFromBuffer: writing back ${options.backBuffer.length} bytes to ${backPath}`)
+        console.log(`[PrinterService] printFromBuffer: writing back ${options.backBuffer.length} bytes → ${backPath}`)
         await writeFile(backPath, options.backBuffer)
       }
 
@@ -260,11 +260,14 @@ export class PrinterService {
         errorMessage: `Erreur printFromBuffer: ${String(err)}`,
       }
     } finally {
-      // Cleanup temp files
-      try { await unlink(frontPath) } catch { /* ignore */ }
-      if (backPath) {
-        try { await unlink(backPath) } catch { /* ignore */ }
-      }
+      // Keep temp files for 5 seconds to ensure SDK has finished reading them
+      setTimeout(async () => {
+        try { await unlink(frontPath) } catch { /* ignore */ }
+        if (backPath) {
+          try { await unlink(backPath) } catch { /* ignore */ }
+        }
+        console.log(`[PrinterService] Cleaned up temp files`)
+      }, 5000)
     }
   }
 }
