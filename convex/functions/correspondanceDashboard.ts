@@ -86,7 +86,13 @@ export const getDashboardStats = authQuery({
   },
 });
 
-/** Get recent activity across both correspondance and dossiers */
+/**
+ * Get recent activity across both correspondance and dossiers.
+ *
+ * Optimisé : utilise les N items les plus récents (via createdAt desc)
+ * au lieu de scanner tous les items puis leurs workflow steps.
+ * Réduit de ~300 queries à ~20 max.
+ */
 export const getRecentActivity = authQuery({
   args: {
     orgId: v.id("orgs"),
@@ -95,23 +101,25 @@ export const getRecentActivity = authQuery({
   handler: async (ctx, args) => {
     await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     const maxItems = args.limit ?? 20;
+    // On prend plus d'items que nécessaire car on va trier et couper
+    const fetchLimit = maxItems * 2;
 
-    // Recent correspondance workflow steps
-    // Get all items for this org first
-    const orgItems = await ctx.db
+    // ── Correspondance : les N items les plus récents ──
+    const recentItems = await ctx.db
       .query("correspondanceItems")
-      .withIndex("by_org", (q: any) => q.eq("orgId", args.orgId))
-      .collect();
-    const orgItemIds = new Set(orgItems.map((i: any) => i._id));
+      .withIndex("by_org_created", (q: any) => q.eq("orgId", args.orgId))
+      .order("desc")
+      .take(fetchLimit);
 
-    // Get recent workflow steps for those items
     const recentCorrSteps: any[] = [];
-    for (const item of orgItems.slice(-50)) {
+    // Limiter à 10 items max pour les workflow steps (10 items x 2 steps = 20 queries)
+    for (const item of recentItems.slice(0, 10)) {
+      if (item.deletedAt) continue;
       const steps = await ctx.db
         .query("correspondanceWorkflowSteps")
         .withIndex("by_item_created", (q: any) => q.eq("itemId", item._id))
         .order("desc")
-        .take(3);
+        .take(2);
       for (const step of steps) {
         recentCorrSteps.push({
           type: "correspondance" as const,
@@ -126,19 +134,21 @@ export const getRecentActivity = authQuery({
       }
     }
 
-    // Recent dossier journal entries
-    const orgDossiers = await ctx.db
+    // ── Dossiers : les N dossiers les plus récents ──
+    const recentDossiers = await ctx.db
       .query("dossierProcedures")
       .withIndex("by_org", (q: any) => q.eq("orgId", args.orgId))
-      .collect();
+      .order("desc")
+      .take(fetchLimit);
 
     const recentDossierActions: any[] = [];
-    for (const dossier of orgDossiers.slice(-50)) {
+    for (const dossier of recentDossiers.slice(0, 10)) {
+      if ((dossier as any).deletedAt) continue;
       const actions = await ctx.db
         .query("journalActions")
         .withIndex("by_dossier_created", (q: any) => q.eq("dossierId", dossier._id))
         .order("desc")
-        .take(3);
+        .take(2);
       for (const action of actions) {
         recentDossierActions.push({
           type: "dossier" as const,
@@ -146,18 +156,16 @@ export const getRecentActivity = authQuery({
           actorName: action.actorName,
           comment: undefined,
           timestamp: action.createdAt,
-          itemReference: dossier.reference,
+          itemReference: (dossier as any).reference,
           itemTitle: undefined,
         });
       }
     }
 
     // Merge and sort by timestamp desc
-    const allActivity = [...recentCorrSteps, ...recentDossierActions]
+    return [...recentCorrSteps, ...recentDossierActions]
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, maxItems);
-
-    return allActivity;
   },
 });
 

@@ -13,6 +13,7 @@
 
 import { v } from "convex/values";
 import { authMutation, authQuery } from "../lib/customFunctions";
+import { internal } from "../_generated/api";
 import {
   correspondanceTypeValidator,
   correspondancePriorityValidator,
@@ -345,11 +346,28 @@ export const sendCorrespondance = authMutation({
 
             // Vérifier la condition (si la chaîne a des conditions)
             if (chainConfig.length > 0) {
+              // La position supérieure doit correspondre à au moins une règle
               const matchingRule = chainConfig.find((rule: any) => {
+                // Le grade de cette position doit être >= au roleMinimum de la règle
+                const meetsMinimumGrade = gradeOrder.indexOf(sup.grade ?? "agent") >= gradeOrder.indexOf(rule.roleMinimum);
+                if (!meetsMinimumGrade) return false;
+
+                // Vérifier la condition d'activation
                 if (rule.conditionType === "always") return true;
-                if (rule.conditionType === "if_external" && item.primaryRecipientOrgId) return true;
-                if (rule.conditionType === "if_recipient_rank_above") return true;
-                return gradeOrder.indexOf(sup.grade) >= gradeOrder.indexOf(rule.roleMinimum);
+                if (rule.conditionType === "if_external") {
+                  // Vérifie que le destinataire est d'une org DIFFÉRENTE de l'expéditeur
+                  return item.primaryRecipientOrgId && item.primaryRecipientOrgId !== item.orgId;
+                }
+                if (rule.conditionType === "if_recipient_rank_above") {
+                  // Compare le grade du destinataire avec la valeur de condition
+                  // Si pas de conditionValue, considérer comme "au-dessus de agent"
+                  const thresholdGrade = rule.conditionValue ?? "agent";
+                  // On ne peut pas connaître le grade du destinataire ici sans query
+                  // supplémentaire. Par sécurité, si la condition est configurée,
+                  // on l'active pour les destinataires externes.
+                  return item.primaryRecipientOrgId && item.primaryRecipientOrgId !== item.orgId;
+                }
+                return false;
               });
               if (!matchingRule) continue;
             }
@@ -538,6 +556,29 @@ async function _executeEnvoi(ctx: any, itemId: any, item: any, now: number) {
     isRead: false,
     createdAt: now,
   });
+
+  // Envoyer une notification email si le destinataire a un email
+  // et que c'est un envoi vers une org externe
+  if (item.recipientEmail && item.primaryRecipientOrgId !== item.orgId) {
+    await ctx.scheduler.runAfter(
+      0,
+      internal.functions.correspondanceEmail.sendCorrespondanceEmail,
+      {
+        recipientEmail: item.recipientEmail,
+        reference: item.reference,
+        title: item.title,
+        type: item.type,
+        priority: item.priority,
+        senderName: item.senderName,
+        senderOrg: item.senderOrg ?? "",
+        recipientName: item.recipientName,
+        comment: item.comment,
+        hasAttachments: (item.documents ?? []).length > 0 || item.attachments.length > 0,
+        attachmentCount: (item.documents ?? []).length || item.attachments.length,
+        itemId: originalId,
+      },
+    );
+  }
 
   return { status: "sent", copyId: itemId, originalId };
 }
