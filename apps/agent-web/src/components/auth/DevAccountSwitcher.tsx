@@ -23,51 +23,28 @@ interface OrgGroup {
 	accounts: DevAccount[];
 }
 
-/* ─── Real accounts, hardcoded for dev switcher ─── */
+/* ─── Dev accounts — NE JAMAIS utiliser d'emails réels ─── */
 const DEV_ACCOUNTS: OrgGroup[] = [
 	{
-		org: "🇬🇦 Consulat Général — Paris",
+		org: "Dev — Consulat Test",
 		accounts: [
-			{ label: "Consul Général", email: "consul-general@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "Gwenaëlle NTSAGA — Consul", email: "consul@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "Christiane MOUELE — Vice-Consul", email: "vice-consul1@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "ANDJAYI KEITA Madina — Vice-Consul", email: "vice-consul2@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "Léa Marcelle ASSEH AKORE — Secrétaire", email: "secretaire1@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "Nelly CALAMEPAT — Secrétaire", email: "secretaire2@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "Jacqueline MPEMBA — Secrétaire", email: "secretaire3@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "Carmel L. KINGA MIHINDOU — Agent", email: "assistant-admin1@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
-			{ label: "NGOMONDAMI Ray P. — Agent", email: "assistant-admin2@consulatdugabon.fr", org: "🇬🇦 Consulat Général — Paris" },
+			{ label: "Consul Test", email: "dev-consul@test.local", org: "Dev — Consulat Test" },
+			{ label: "Agent Test", email: "dev-agent@test.local", org: "Dev — Consulat Test" },
 		],
 	},
 	{
-		org: "🇫🇷 Ambassade — France",
+		org: "Dev — Ambassade Test",
 		accounts: [
-			{ label: "Marc Ngoubou — Ambassadeur", email: "ambassadeur@ambassadedugabon.fr", org: "🇫🇷 Ambassade — France" },
-			{ label: "Isaac Koumba — Agent", email: "agent@ambassadedugabon.fr", org: "🇫🇷 Ambassade — France" },
-		],
-	},
-	{
-		org: "🇨🇦 Ambassade — Canada",
-		accounts: [
-			{ label: "Henri Mboumba — Ambassadeur", email: "ambassadeur@ambagabon.ca", org: "🇨🇦 Ambassade — Canada" },
-			{ label: "Éric Mouiri — Agent", email: "agent@ambagabon.ca", org: "🇨🇦 Ambassade — Canada" },
-		],
-	},
-	{
-		org: "🇪🇸 Ambassade — Espagne",
-		accounts: [
-			{ label: "Allegra Pamela BONGO — Ambassadeur", email: "allegra.bongo@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
-			{ label: "Franck Elvis OGNAGNA OCKOGHO — Premier Conseiller", email: "franck.ognagna@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
-			{ label: "Mélanie EKIBA — Conseiller Affaires Consulaires", email: "melanie.ekiba@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
-			{ label: "Chrisalline MOUYAPOU NGOUBOU — Conseiller", email: "chrisalline.mouyapou@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
-			{ label: "Valère Landry MOMBO MOUNDOUGA — Agent Consulaire", email: "valere.mombo@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
-			{ label: "Prisque Euphrasie OWANGA ESSONGUE — Agent Consulaire", email: "prisque.owanga@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
-			{ label: "Mélanie EKIBA — Chancellerie", email: "chancellerie.es@gmail.com", org: "🇪🇸 Ambassade — Espagne" },
+			{ label: "Ambassadeur Test", email: "dev-ambassadeur@test.local", org: "Dev — Ambassade Test" },
 		],
 	},
 ];
 
+/**
+ * SÉCURITÉ : Triple gate pour éviter toute fuite en production.
+ */
 export function DevAccountSwitcher() {
+	if (import.meta.env.PROD) return null;
 	if (!import.meta.env.DEV) return null;
 
 	return <DevAccountSwitcherInner />;

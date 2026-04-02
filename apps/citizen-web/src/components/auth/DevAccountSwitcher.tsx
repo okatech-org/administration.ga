@@ -23,18 +23,25 @@ interface OrgGroup {
 	accounts: DevAccount[];
 }
 
-/* ─── Real accounts, hardcoded for dev switcher ─── */
+/* ─── Dev accounts — NE JAMAIS utiliser d'emails réels ─── */
 const DEV_ACCOUNTS: OrgGroup[] = [
 	{
-		org: " Ressortissants & Citoyens",
+		org: "Dev Accounts",
 		accounts: [
-			{ label: "Berny ITOUTOU — Ressortissant (Longue Durée)", email: "itoutouberny@gmail.com", org: " Ressortissants & Citoyens" },
-			{ label: "iAsted — Compte Test", email: "iasted@me.com", org: " Ressortissants & Citoyens" },
+			{ label: "Citoyen Test", email: "dev-citizen@test.local", org: "Dev Accounts" },
+			{ label: "Admin Test", email: "dev-admin@test.local", org: "Dev Accounts" },
 		],
 	},
 ];
 
+/**
+ * SÉCURITÉ : Triple gate pour éviter toute fuite en production.
+ * 1. import.meta.env.DEV (build-time, stripped en prod)
+ * 2. import.meta.env.PROD doit être false
+ * 3. VITE_E2E_MODE pour les tests E2E uniquement
+ */
 export function DevAccountSwitcher() {
+	if (import.meta.env.PROD) return null;
 	if (!import.meta.env.DEV && import.meta.env.VITE_E2E_MODE !== "true") return null;
 
 	return <DevAccountSwitcherInner />;
@@ -50,10 +57,8 @@ function DevAccountSwitcherInner() {
 
 	const currentEmail = session?.user?.email;
 
-	// ── Expose sign-in function for E2E tests ──
-	// Playwright calls window.__e2eDevSignIn(email) via page.evaluate()
-	// which triggers the real authClient.signIn.email() flow with crossDomainClient.
-	if (typeof window !== "undefined") {
+	// ── Expose sign-in function for E2E tests (dev/test only) ──
+	if (typeof window !== "undefined" && !import.meta.env.PROD) {
 		(window as any).__e2eDevSignIn = async (email: string) => {
 			try {
 				if (session) {

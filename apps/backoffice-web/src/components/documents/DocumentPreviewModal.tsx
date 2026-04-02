@@ -160,6 +160,7 @@ export function DocumentPreviewModal({
 									src={`${pdfBlobUrl}#toolbar=0`}
 									className="w-full h-full border-0"
 									title={filename}
+									sandbox="allow-same-origin"
 								/>
 							)}
 

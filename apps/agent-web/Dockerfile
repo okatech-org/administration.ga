@@ -31,6 +31,8 @@ COPY --from=builder /app/apps/agent-web/.output ./.output
 ENV NODE_ENV=production
 ENV PORT=8080
 
+USER bun
+
 EXPOSE 8080
 
 CMD ["bun", ".output/server/index.mjs"]

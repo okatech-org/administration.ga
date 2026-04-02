@@ -21,7 +21,7 @@ export default defineEventHandler((event) => {
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     "Content-Security-Policy": [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.convex.cloud https://*.posthog.com",
+      "script-src 'self' 'unsafe-inline' https://*.convex.cloud https://*.posthog.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",

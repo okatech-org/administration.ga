@@ -1,7 +1,7 @@
 /**
  * useRegistrationStorage Hook
  * Manages local persistence for the registration form:
- * - localStorage for form field data (saved per-step on "Next" click)
+ * - sessionStorage for form field data (saved per-step on "Next" click)
  * - IndexedDB for binary file blobs (documents)
  *
  * This ensures no data is sent to Convex until final submission,
@@ -87,7 +87,7 @@ export function useRegistrationStorage(email: string | undefined) {
   }, []);
 
   // ========================================================================
-  // Form Data (localStorage)
+  // Form Data (sessionStorage)
   // ========================================================================
 
   /** Save form data for a specific step */
@@ -97,12 +97,12 @@ export function useRegistrationStorage(email: string | undefined) {
       const key = `${LS_PREFIX}${email}`;
 
       try {
-        const existing = localStorage.getItem(key);
+        const existing = sessionStorage.getItem(key);
         const allData = existing ? JSON.parse(existing) : {};
         allData[`step_${step}`] = data;
         allData._lastStep = step;
         allData._updatedAt = Date.now();
-        localStorage.setItem(key, JSON.stringify(allData));
+        sessionStorage.setItem(key, JSON.stringify(allData));
       } catch (err) {
         console.error("Failed to save step data:", err);
       }
@@ -119,7 +119,7 @@ export function useRegistrationStorage(email: string | undefined) {
     const key = `${LS_PREFIX}${email}`;
 
     try {
-      const stored = localStorage.getItem(key);
+      const stored = sessionStorage.getItem(key);
       if (!stored) return null;
 
       const parsed = JSON.parse(stored);
@@ -264,12 +264,12 @@ export function useRegistrationStorage(email: string | undefined) {
   // Cleanup
   // ========================================================================
 
-  /** Clear all registration data (localStorage + IndexedDB) */
+  /** Clear all registration data (sessionStorage + IndexedDB) */
   const clearRegistration = useCallback(async () => {
     if (!email) return;
 
-    // Clear localStorage
-    localStorage.removeItem(`${LS_PREFIX}${email}`);
+    // Clear sessionStorage
+    sessionStorage.removeItem(`${LS_PREFIX}${email}`);
 
     // Clear IndexedDB files for this email
     if (dbRef.current) {
