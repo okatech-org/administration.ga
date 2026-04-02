@@ -57,24 +57,21 @@ export const checkPinStatus = query({
         .unique();
     }
 
-    if (!user || !user.isActive) return { hasPin: false };
-    if (!(user as any).pinHash) return { hasPin: false };
+    // Anti-enumeration : reponse uniforme pour tous les cas d'echec
+    // Ne jamais reveler si l'utilisateur existe ou non
+    if (!user || !user.isActive || !(user as any).pinHash) {
+      return { hasPin: false };
+    }
 
     const now = Date.now();
-
-    // Verrouillé ?
     const lockedUntil = (user as any).pinLockedUntil;
-    if (lockedUntil && lockedUntil > now) {
-      return { hasPin: true, locked: true };
-    }
-
-    // OTP expiré (> 90 jours) ?
     const lastOtp = (user as any).lastOtpVerifiedAt;
-    if (!lastOtp || now - lastOtp > OTP_EXPIRY_MS) {
-      return { hasPin: true, otpRequired: true };
-    }
 
-    return { hasPin: true, locked: false, otpRequired: false };
+    return {
+      hasPin: true,
+      locked: !!(lockedUntil && lockedUntil > now),
+      otpRequired: !lastOtp || now - lastOtp > OTP_EXPIRY_MS,
+    };
   },
 });
 

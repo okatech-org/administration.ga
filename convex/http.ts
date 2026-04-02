@@ -5,6 +5,7 @@ import { authComponent, createAuth } from "./betterAuth/auth";
 import { hashPassword } from "better-auth/crypto";
 import { generateRandomString } from "better-auth/crypto";
 import { validateWarehouseApiKey } from "./lib/warehouseAuth";
+import { getTrustedClientIp } from "./lib/httpSecurity";
 import { WAREHOUSE_TABLES } from "./functions/warehouse";
 
 const http = httpRouter();
@@ -54,6 +55,27 @@ function buildPreflightHeaders(requestOrigin: string | null): Record<string, str
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
   };
+}
+
+// ── Verification IP bloquee — systeme de defense automatique ──
+async function checkIpBlock(
+  ctx: { runQuery: (fn: any, args: any) => Promise<any> },
+  request: Request,
+): Promise<Response | null> {
+  const ip = getTrustedClientIp(request);
+  const { blocked } = (await ctx.runQuery(
+    internal.functions.autoDefense.isIpBlocked,
+    { ip },
+  )) as { blocked: boolean; score: number };
+  if (blocked) {
+    // Tarpit silencieux avant reponse
+    await new Promise((r) => setTimeout(r, 5000));
+    return new Response(JSON.stringify({ error: "Service unavailable" }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  return null;
 }
 
 // ── Validation taille payload — protection anti-DoS ──
@@ -113,6 +135,10 @@ http.route({
     const origin = request.headers.get("origin");
     const corsHeaders = buildCorsHeaders(origin);
 
+    // ── IP bloquee ? ──
+    const ipBlockResponse = await checkIpBlock(ctx, request);
+    if (ipBlockResponse) return ipBlockResponse;
+
     // ── Validation taille payload ──
     if (isPayloadTooLarge(request, 10_000)) {
       return new Response(JSON.stringify({ error: "Payload too large" }), {
@@ -122,7 +148,7 @@ http.route({
     }
 
     // ── Rate limiting ──
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const ip = getTrustedClientIp(request);
     const { ok, retryAfter } = await ctx.runMutation(internal.functions.authRateLimit.checkDevSigninRateLimit, { key: ip }) as any;
     if (!ok) {
       return new Response(JSON.stringify({ error: "Too many requests" }), {
@@ -207,7 +233,7 @@ http.route({
       // The client will call authClient.signIn.email() with it,
       // which goes through the proper crossDomain flow and sets cookies correctly.
       // The password will be cleared automatically after 30s via scheduler.
-      await ctx.scheduler.runAfter(30_000, internal.functions.roleConfig.clearTempPassword, {
+      await ctx.scheduler.runAfter(5_000, internal.functions.roleConfig.clearTempPassword, {
         accountId: accounts[0]?._id ?? accounts[0]?.id ?? null,
       });
 
@@ -245,6 +271,10 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const origin = request.headers.get("origin");
     const corsHeaders = buildCorsHeaders(origin);
+
+    // ── IP bloquee ? ──
+    const ipBlockResponse = await checkIpBlock(ctx, request);
+    if (ipBlockResponse) return ipBlockResponse;
 
     // ── Validation taille payload ──
     if (isPayloadTooLarge(request, 10_000)) {
@@ -370,7 +400,7 @@ http.route({
       }
 
       // 4. Clean up temp password after 30s
-      await ctx.scheduler.runAfter(30_000, internal.functions.roleConfig.clearTempPassword, {
+      await ctx.scheduler.runAfter(5_000, internal.functions.roleConfig.clearTempPassword, {
         accountId: accounts[0]?._id ?? accounts[0]?.id ?? null,
       });
 
@@ -577,7 +607,7 @@ const HONEYPOT_PATHS = [
 ];
 
 const honeypotHandler = httpAction(async (ctx, request) => {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = getTrustedClientIp(request);
   const url = new URL(request.url);
 
   await ctx.scheduler.runAfter(0, internal.limbique.emettreSignal, {
@@ -593,6 +623,13 @@ const honeypotHandler = httpAction(async (ctx, request) => {
     confiance: 1,
     priorite: "HIGH",
     correlationId: crypto.randomUUID(),
+  });
+
+  // Enregistrer dans le systeme de defense automatique
+  await ctx.runMutation(internal.functions.autoDefense.recordThreatEvent, {
+    ip,
+    eventType: "HONEYPOT_TRIGGERED",
+    metadata: { path: url.pathname },
   });
 
   // Tarpit : ralentir l'attaquant (3s de delai)
@@ -618,7 +655,7 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const url = new URL(request.url);
     const tokenId = url.pathname.split("/canary/")[1] ?? "unknown";
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const ip = getTrustedClientIp(request);
 
     await ctx.scheduler.runAfter(0, internal.limbique.emettreSignal, {
       type: "CANARY_TRIGGERED",
@@ -634,6 +671,13 @@ http.route({
       confiance: 1,
       priorite: "CRITICAL",
       correlationId: crypto.randomUUID(),
+    });
+
+    // Enregistrer dans le systeme de defense automatique
+    await ctx.runMutation(internal.functions.autoDefense.recordThreatEvent, {
+      ip,
+      eventType: "CANARY_TRIGGERED",
+      metadata: { tokenId },
     });
 
     // Reponse silencieuse pour ne pas alerter l'attaquant

@@ -1,4 +1,5 @@
-import { internalMutation, query } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
+import { backofficeQuery } from "./lib/customFunctions";
 import { internal } from "./_generated/api";
 import { SIGNAL_TYPES } from "./lib/types";
 
@@ -55,7 +56,7 @@ export const verifierSanteSysteme = internalMutation({
  * Dashboard data pour le widget frontend.
  * Agrège toutes les métriques NEOCORTEX en un seul appel.
  */
-export const getDashboardData = query({
+export const getDashboardData = backofficeQuery({
   args: {},
   handler: async (ctx) => {
     // Signaux en attente (limbique)

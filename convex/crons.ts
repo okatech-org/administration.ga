@@ -64,4 +64,27 @@ crons.daily(
   internal.crons.correspondanceSla.checkOverdueSla,
 );
 
+// --- SENTINEL AI ---
+// Analyse horaire des signaux de securite via Gemini
+crons.hourly(
+  "sentinel_security_analysis",
+  { minuteUTC: 15 },
+  internal.ai.securityGuardian.analyzeThreats,
+);
+
+// --- AUTO-DEFENSE ---
+// Decay quotidien des scores de menace (-10%/jour)
+crons.daily(
+  "autodefense_decay",
+  { hourUTC: 4, minuteUTC: 0 },
+  internal.functions.autoDefense.decayScores,
+);
+
+// Nettoyage des blocages IP expires
+crons.daily(
+  "autodefense_cleanup",
+  { hourUTC: 4, minuteUTC: 30 },
+  internal.functions.autoDefense.cleanupExpired,
+);
+
 export default crons;

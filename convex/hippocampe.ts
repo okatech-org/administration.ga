@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { internalMutation, query } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
+import { backofficeQuery } from "./lib/customFunctions";
 import { internal } from "./_generated/api";
 
 export const loguerAction = internalMutation({
@@ -45,7 +46,7 @@ export const calculerMetriques = internalMutation({
   },
 });
 
-export const listerHistorique = query({
+export const listerHistorique = backofficeQuery({
   args: {
     entiteType: v.optional(v.string()),
     entiteId: v.optional(v.string()),
@@ -69,7 +70,7 @@ export const listerHistorique = query({
   },
 });
 
-export const rechercherActions = query({
+export const rechercherActions = backofficeQuery({
   args: {
     searchTerm: v.string(),
   },

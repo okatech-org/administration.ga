@@ -1,4 +1,5 @@
-import { internalMutation, query } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
+import { backofficeQuery } from "./lib/customFunctions";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { CORTEX, ROUTING_TABLE } from "./lib/types";
@@ -225,7 +226,7 @@ export const nettoyerSignaux = internalMutation({
 /**
  * Lister les signaux non traités (monitoring temps réel).
  */
-export const listerSignauxNonTraites = query({
+export const listerSignauxNonTraites = backofficeQuery({
   args: {},
   handler: async (ctx) => {
     return await ctx.db
