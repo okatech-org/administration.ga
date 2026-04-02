@@ -17,13 +17,39 @@ import { formatDocumentFilename } from "../lib/referenceHelpers";
 const MAX_FILES_PER_DOCUMENT = 10;
 
 /**
- * Get documents for an owner (user or org)
+ * Get documents for an owner (user, org, or profile).
+ * Requires authentication — caller must own the resource or be superadmin.
  */
-export const getByOwner = query({
+export const getByOwner = authQuery({
   args: {
-    ownerId: v.union(v.id("users"), v.id("orgs")),
+    ownerId: v.union(v.id("users"), v.id("orgs"), v.id("profiles")),
   },
   handler: async (ctx, args) => {
+    // Vérifier que l'appelant est le propriétaire ou superadmin
+    const isSuperadmin = ctx.user.isSuperadmin || ctx.user.role === "super_admin";
+    const isOwnUser = args.ownerId === (ctx.user._id as string);
+
+    // Vérifier si ownerId est le profile de l'utilisateur
+    let isOwnProfile = false;
+    if (!isOwnUser) {
+      const profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+        .unique();
+      isOwnProfile = profile?._id === args.ownerId;
+    }
+
+    // Vérifier si l'utilisateur est membre de l'org
+    let isOrgMember = false;
+    if (!isOwnUser && !isOwnProfile) {
+      const membership = await getMembership(ctx, ctx.user._id, args.ownerId as any);
+      isOrgMember = !!membership;
+    }
+
+    if (!isSuperadmin && !isOwnUser && !isOwnProfile && !isOrgMember) {
+      return [];
+    }
+
     const docs = await ctx.db
       .query("documents")
       .withIndex("by_owner", (q) => q.eq("ownerId", args.ownerId))

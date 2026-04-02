@@ -30,6 +30,8 @@ COPY --from=builder /app/apps/backoffice-web/.output ./.output
 ENV NODE_ENV=production
 ENV PORT=8080
 
+USER bun
+
 EXPOSE 8080
 
 CMD ["bun", ".output/server/index.mjs"]

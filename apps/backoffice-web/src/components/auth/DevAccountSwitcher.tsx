@@ -23,19 +23,22 @@ interface OrgGroup {
 	accounts: DevAccount[];
 }
 
-/* ─── Real accounts, hardcoded for dev switcher ─── */
+/* ─── Dev accounts — NE JAMAIS utiliser d'emails réels ─── */
 const DEV_ACCOUNTS: OrgGroup[] = [
 	{
-		org: " Back-Office",
+		org: "Dev — Back-Office",
 		accounts: [
-			{ label: "Gueylord A. PELLEN-LAKOUMBA — Super Admin", email: "iasted@me.com", org: " Back-Office" },
-			{ label: "Berny ITOUTOU — Admin Système", email: "itoutouberny@gmail.com", org: " Back-Office" },
-			{ label: "Annabelle P. KASSA DI SCALA — Admin", email: "annabelle.gabao@gmail.com", org: " Back-Office" },
+			{ label: "Super Admin Test", email: "dev-superadmin@test.local", org: "Dev — Back-Office" },
+			{ label: "Admin Test", email: "dev-admin@test.local", org: "Dev — Back-Office" },
 		],
 	},
 ];
 
+/**
+ * SÉCURITÉ : Triple gate pour éviter toute fuite en production.
+ */
 export function DevAccountSwitcher() {
+	if (import.meta.env.PROD) return null;
 	if (!import.meta.env.DEV) return null;
 
 	return <DevAccountSwitcherInner />;
