@@ -9,7 +9,7 @@ import {
   documentTypeCategoryValidator,
   detailedDocumentTypeValidator,
 } from "../lib/validators";
-import { ActivityType as EventType, DocumentStatus } from "../lib/constants";
+import { ActivityType as EventType, DocumentStatus, DetailedDocumentType, DocumentTypeCategory } from "../lib/constants";
 import { logCortexAction } from "../lib/neocortex";
 import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
 
@@ -124,12 +124,20 @@ export const create = authMutation({
       .unique();
     const ownerId = profile?._id ?? ctx.user._id;
 
+    // Auto-assign category and label for identity photos
+    let resolvedCategory = args.category;
+    let resolvedLabel = args.label;
+    if (args.documentType === DetailedDocumentType.IdentityPhoto) {
+      if (!resolvedCategory) resolvedCategory = DocumentTypeCategory.Identity;
+      if (!resolvedLabel) resolvedLabel = "Photo d'identité";
+    }
+
     // Create document with single file in files array
     const docId = await ctx.db.insert("documents", {
       ownerId,
       documentType: args.documentType,
-      category: args.category,
-      label: args.label,
+      category: resolvedCategory,
+      label: resolvedLabel,
       expiresAt: args.expiresAt,
       files: [
         {
