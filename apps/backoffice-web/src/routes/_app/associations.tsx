@@ -60,16 +60,16 @@ export const Route = createFileRoute("/_app/associations")({
 
 // ─── Type labels ────────────────────────────────────────
 const ASSOCIATION_TYPE_LABELS: Record<string, { label: string; emoji: string }> = {
-  [AssociationType.Cultural]: { label: "Culturelle", emoji: "🎭" },
-  [AssociationType.Sports]: { label: "Sportive", emoji: "⚽" },
-  [AssociationType.Religious]: { label: "Religieuse", emoji: "🕊️" },
-  [AssociationType.Professional]: { label: "Professionnelle", emoji: "💼" },
-  [AssociationType.Solidarity]: { label: "Solidarité", emoji: "🤝" },
-  [AssociationType.Education]: { label: "Éducation", emoji: "📚" },
-  [AssociationType.Youth]: { label: "Jeunesse", emoji: "🌱" },
-  [AssociationType.Women]: { label: "Femmes", emoji: "👩" },
-  [AssociationType.Student]: { label: "Étudiante", emoji: "🎓" },
-  [AssociationType.Other]: { label: "Autre", emoji: "📋" },
+  [AssociationType.Cultural]: { label: "Culturelle", emoji: "" },
+  [AssociationType.Sports]: { label: "Sportive", emoji: "" },
+  [AssociationType.Religious]: { label: "Religieuse", emoji: "" },
+  [AssociationType.Professional]: { label: "Professionnelle", emoji: "" },
+  [AssociationType.Solidarity]: { label: "Solidarité", emoji: "" },
+  [AssociationType.Education]: { label: "Éducation", emoji: "" },
+  [AssociationType.Youth]: { label: "Jeunesse", emoji: "" },
+  [AssociationType.Women]: { label: "Femmes", emoji: "" },
+  [AssociationType.Student]: { label: "Étudiante", emoji: "" },
+  [AssociationType.Other]: { label: "Autre", emoji: "" },
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -268,7 +268,7 @@ function AssociationsTab() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-sm shrink-0">
-                            {typeInfo?.emoji ?? "📋"}
+                            {typeInfo?.emoji ?? ""}
                           </div>
                           <span className="font-medium truncate max-w-[200px]">
                             {assoc.name}
@@ -379,7 +379,7 @@ function AssociationDetailDialog({
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-lg">
-              {typeInfo?.emoji ?? "📋"}
+              {typeInfo?.emoji ?? ""}
             </div>
             <div>
               <DialogTitle className="text-lg">{association.name}</DialogTitle>

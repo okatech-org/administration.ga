@@ -39,6 +39,7 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
+import { useModuleAccess } from "@/components/shared/access-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,6 +113,8 @@ const tooltipStyle = {
 function StatisticsPage() {
 	const { t, i18n } = useTranslation();
 	const { activeOrg, activeOrgId } = useOrg();
+	const { hasMin: hasStatsAccess } = useModuleAccess("analytics");
+	const canExportStats = hasStatsAccess("admin");
 	const [period, setPeriod] = useState<"week" | "month" | "year">("month");
 	const dateFnsLocale = i18n.language?.startsWith("fr") ? fr : enUS;
 	const trendGradId = useId();
@@ -332,9 +335,11 @@ function StatisticsPage() {
 						</SelectContent>
 					</Select>
 
-					<Button variant="outline" size="icon" onClick={handleExport}>
-						<Download className="h-4 w-4" />
-					</Button>
+					{canExportStats && (
+						<Button variant="outline" size="icon" onClick={handleExport}>
+							<Download className="h-4 w-4" />
+						</Button>
+					)}
 				</div>
 			</motion.div>
 
@@ -423,7 +428,7 @@ function StatisticsPage() {
 								<CardContent>
 									<div className="h-72">
 										{trendData.length > 0 ? (
-											<ResponsiveContainer width="100%" height="100%">
+											<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 												<AreaChart
 													data={trendData}
 													margin={{ top: 8, right: 8, left: -20, bottom: 0 }}
@@ -501,7 +506,7 @@ function StatisticsPage() {
 								<CardContent>
 									<div className="h-48">
 										{statusChartData.length > 0 ? (
-											<ResponsiveContainer width="100%" height="100%">
+											<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 												<PieChart>
 													<Pie
 														data={statusChartData}
@@ -567,7 +572,7 @@ function StatisticsPage() {
 							<CardContent>
 								<div className="h-72">
 									{serviceChartData.length > 0 ? (
-										<ResponsiveContainer width="100%" height="100%">
+										<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 											<BarChart
 												data={serviceChartData}
 												layout="vertical"
@@ -640,7 +645,7 @@ function StatisticsPage() {
 								<CardContent>
 									<div className="h-64">
 										{registrationChartData.length > 0 ? (
-											<ResponsiveContainer width="100%" height="100%">
+											<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 												<PieChart>
 													<Pie
 														data={registrationChartData}

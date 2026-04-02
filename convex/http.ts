@@ -1,6 +1,6 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
-import { internal, components } from "./_generated/api";
+import { api, internal, components } from "./_generated/api";
 import { authComponent, createAuth } from "./betterAuth/auth";
 import { hashPassword } from "better-auth/crypto";
 import { generateRandomString } from "better-auth/crypto";
@@ -8,6 +8,53 @@ import { validateWarehouseApiKey } from "./lib/warehouseAuth";
 import { WAREHOUSE_TABLES } from "./functions/warehouse";
 
 const http = httpRouter();
+
+// ============================================================================
+// CORS — Validated origin whitelist (no wildcard fallback)
+// ============================================================================
+
+/** Parse trusted origins from environment (same source as Better Auth config). */
+const ALLOWED_ORIGINS = new Set(
+  (process.env.TRUSTED_ORIGINS ?? "")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean),
+);
+
+// In dev mode, also allow localhost variants
+if (process.env.DEV_SIGNIN_ENABLED === "true") {
+  for (const port of [3000, 3001, 3002, 3003]) {
+    ALLOWED_ORIGINS.add(`http://localhost:${port}`);
+    ALLOWED_ORIGINS.add(`https://localhost:${port}`);
+  }
+}
+
+/**
+ * Build CORS headers only for trusted origins.
+ * Returns empty object for unknown origins — browser will block the request.
+ */
+function buildCorsHeaders(requestOrigin: string | null): Record<string, string> {
+  const origin = requestOrigin ?? "";
+  if (!ALLOWED_ORIGINS.has(origin)) {
+    return {};
+  }
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
+
+/** Build CORS preflight headers for trusted origins. */
+function buildPreflightHeaders(requestOrigin: string | null): Record<string, string> {
+  const cors = buildCorsHeaders(requestOrigin);
+  if (!cors["Access-Control-Allow-Origin"]) return {};
+  return {
+    ...cors,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Max-Age": "86400",
+  };
+}
 
 // ============================================================================
 // Better Auth route handlers (manual registration for dynamic crossDomain)
@@ -50,11 +97,18 @@ http.route({
       return new Response("Dev sign-in not enabled", { status: 403 });
     }
 
-    const origin = request.headers.get("origin") ?? "";
-    const corsHeaders: Record<string, string> = {
-      "Access-Control-Allow-Origin": origin || "*",
-      "Access-Control-Allow-Credentials": "true",
-    };
+    const origin = request.headers.get("origin");
+    const corsHeaders = buildCorsHeaders(origin);
+
+    // ── Rate limiting ──
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const { ok, retryAfter } = await ctx.runMutation(internal.functions.authRateLimit.checkDevSigninRateLimit, { key: ip }) as any;
+    if (!ok) {
+      return new Response(JSON.stringify({ error: "Too many requests" }), {
+        status: 429,
+        headers: { "Content-Type": "application/json", "Retry-After": String(retryAfter), ...corsHeaders },
+      });
+    }
 
     const { email } = (await request.json()) as { email?: string };
     if (!email) {
@@ -155,17 +209,164 @@ http.route({
   path: "/dev/sign-in",
   method: "OPTIONS",
   handler: httpAction(async (_ctx, request) => {
-    const origin = request.headers.get("origin") ?? "*";
-    return new Response(null, {
-      status: 204,
-      headers: {
-        "Access-Control-Allow-Origin": origin,
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-        "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Max-Age": "86400",
-      },
-    });
+    const headers = buildPreflightHeaders(request.headers.get("origin"));
+    return new Response(null, { status: 204, headers });
+  }),
+});
+
+// ============================================================================
+// PIN-based sign-in: verify PIN and create session via temp password technique
+// Same pattern as /dev/sign-in but for production PIN-based authentication
+// ============================================================================
+http.route({
+  path: "/api/auth/pin-session",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const origin = request.headers.get("origin");
+    const corsHeaders = buildCorsHeaders(origin);
+
+    const body = (await request.json()) as { email?: string; phone?: string; pin?: string };
+    if (!body.pin || (!body.email && !body.phone)) {
+      return new Response(JSON.stringify({ error: "email/phone and pin required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // ── Rate limiting (keyed by email or phone) ──
+    const rateLimitKey = body.email || body.phone || "unknown";
+    const { ok: rlOk, retryAfter: rlRetry } = await ctx.runMutation(
+      internal.functions.authRateLimit.checkPinVerifyRateLimit,
+      { key: rateLimitKey },
+    ) as any;
+    if (!rlOk) {
+      return new Response(JSON.stringify({ error: "Too many attempts" }), {
+        status: 429,
+        headers: { "Content-Type": "application/json", "Retry-After": String(rlRetry), ...corsHeaders },
+      });
+    }
+
+    try {
+      // 1. Verify PIN via the pin.verifyPin mutation
+      const result = await ctx.runMutation(api.functions.pin.verifyPin, {
+        email: body.email,
+        phone: body.phone,
+        pin: body.pin,
+      }) as any;
+
+      if (!result.success) {
+        return new Response(
+          JSON.stringify({ error: result.error, attemptsRemaining: result.attemptsRemaining }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } },
+        );
+      }
+
+      // 2. Find the Better Auth user by authId
+      const email = body.email;
+      if (!email) {
+        // Pour les connexions par téléphone, on doit d'abord trouver l'email
+        const userByPhone = await ctx.runQuery(
+          components.betterAuth.adapter.findMany,
+          {
+            model: "user",
+            where: [{ field: "email", value: email ?? "" }],
+            paginationOpts: { numItems: 1, cursor: null },
+          },
+        );
+        // Fallback: PIN par téléphone nécessite un flux différent
+        return new Response(
+          JSON.stringify({ error: "Phone PIN login not yet supported via HTTP" }),
+          { status: 501, headers: { "Content-Type": "application/json", ...corsHeaders } },
+        );
+      }
+
+      const usersResult = await ctx.runQuery(
+        components.betterAuth.adapter.findMany,
+        {
+          model: "user",
+          where: [{ field: "email", value: email }],
+          paginationOpts: { numItems: 1, cursor: null },
+        },
+      );
+      const users = ((usersResult as any)?.page ?? usersResult ?? []) as any[];
+      if (users.length === 0) {
+        return new Response(
+          JSON.stringify({ error: "User not found in auth system" }),
+          { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } },
+        );
+      }
+
+      const user = users[0];
+      const userId = String(user._id ?? user.id);
+
+      // 3. Set temp password (same technique as dev sign-in)
+      const tempPassword = "__pin_temp_" + crypto.randomUUID();
+      const hashedTempPwd = await hashPassword(tempPassword);
+
+      const accountsResult = await ctx.runQuery(
+        components.betterAuth.adapter.findMany,
+        {
+          model: "account",
+          where: [
+            { field: "userId", value: userId },
+            { field: "providerId", value: "credential" },
+          ],
+          paginationOpts: { numItems: 1, cursor: null },
+        },
+      );
+      const accounts = ((accountsResult as any)?.page ?? accountsResult ?? []) as any[];
+
+      if (accounts.length > 0) {
+        await ctx.runMutation(components.betterAuth.adapter.updateOne, {
+          input: {
+            model: "account",
+            where: [{ field: "_id", value: accounts[0]._id ?? accounts[0].id }],
+            update: { password: hashedTempPwd },
+          },
+        } as any);
+      } else {
+        await ctx.runMutation(components.betterAuth.adapter.create, {
+          input: {
+            model: "account",
+            data: {
+              userId,
+              providerId: "credential",
+              accountId: userId,
+              password: hashedTempPwd,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            },
+          },
+        } as any);
+      }
+
+      // 4. Clean up temp password after 30s
+      await ctx.scheduler.runAfter(30_000, internal.functions.roleConfig.clearTempPassword, {
+        accountId: accounts[0]?._id ?? accounts[0]?.id ?? null,
+      });
+
+      // 5. Return temp password for client to complete sign-in via Better Auth
+      return new Response(
+        JSON.stringify({ email, tempPassword }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    } catch (err: any) {
+      console.error("[pin-session] error:", err);
+      return new Response(
+        JSON.stringify({ error: err.message ?? "Internal error" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
+  }),
+});
+
+// CORS preflight for /api/auth/pin-session
+http.route({
+  path: "/api/auth/pin-session",
+  method: "OPTIONS",
+  handler: httpAction(async (_ctx, request) => {
+    const headers = buildPreflightHeaders(request.headers.get("origin"));
+    return new Response(null, { status: 204, headers });
   }),
 });
 

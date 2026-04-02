@@ -109,7 +109,7 @@ function CommunityPage() {
 							)}
 						</p>
 					</div>
-					<Link to="/orgs" search={{ view: "grid" }}>
+					<Link to="/reps" search={{ view: "grid" }}>
 						<Button variant="outline" className="gap-2">
 							{t("community.seeAll")}
 							<ArrowRight className="h-4 w-4" />
@@ -174,7 +174,7 @@ function CommunityPage() {
 							)}
 						</p>
 					</div>
-					<Link to="/orgs" search={{ view: "grid" }}>
+					<Link to="/reps" search={{ view: "grid" }}>
 						<Button variant="outline" className="gap-2">
 							{t("community.seeAll")}
 							<ArrowRight className="h-4 w-4" />
@@ -370,7 +370,7 @@ function CommunityPage() {
 							"Trouvez les représentations diplomatiques, entreprises et associations gabonaises dans le monde entier.",
 						)}
 					</p>
-					<Link to="/orgs" search={{ view: "map" }}>
+					<Link to="/reps" search={{ view: "map" }}>
 						<Button size="lg" className="gap-2">
 							<MapPin className="h-5 w-5" />
 							{t("community.map.cta")}

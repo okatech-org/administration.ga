@@ -589,7 +589,7 @@ function PositionFormSheet({
 								/>
 								<span className="text-sm font-medium">
 									{ORGANIZATION_TEMPLATES.find((t) => t.type === selectedOrgType)?.label[lang as "fr" | "en"] ??
-										(lang === "fr" ? "Organisation" : "Organization")}
+										(lang === "fr" ? "Représentation" : "Representation")}
 								</span>
 								<span className="text-xs text-muted-foreground">— {positionTemplates.length} postes</span>
 							</div>

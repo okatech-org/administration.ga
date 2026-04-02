@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppStatisticsRouteImport } from './routes/_app/statistics'
 import { Route as AppPaymentsRouteImport } from './routes/_app/payments'
+import { Route as AppIprofilRouteImport } from './routes/_app/iprofil'
 import { Route as AppIdocumentRouteImport } from './routes/_app/idocument'
 import { Route as AppIcorrespondanceRouteImport } from './routes/_app/icorrespondance'
 import { Route as AppIboiteRouteImport } from './routes/_app/iboite'
@@ -38,8 +39,10 @@ import { Route as AppPostsNewRouteImport } from './routes/_app/posts/new'
 import { Route as AppConsularRegistryPrintQueueRouteImport } from './routes/_app/consular-registry/print-queue'
 import { Route as AppAppointmentsAgentSchedulesRouteImport } from './routes/_app/appointments/agent-schedules'
 import { Route as AppAppointmentsAppointmentIdRouteImport } from './routes/_app/appointments/$appointmentId'
+import { Route as AppAffairesConsulairesProfilesIndexRouteImport } from './routes/_app/affaires-consulaires/profiles/index'
 import { Route as AppServicesServiceIdEditRouteImport } from './routes/_app/services/$serviceId.edit'
 import { Route as AppPostsPostIdEditRouteImport } from './routes/_app/posts/$postId.edit'
+import { Route as AppAffairesConsulairesProfilesProfileIdRouteImport } from './routes/_app/affaires-consulaires/profiles/$profileId'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -58,6 +61,11 @@ const AppStatisticsRoute = AppStatisticsRouteImport.update({
 const AppPaymentsRoute = AppPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIprofilRoute = AppIprofilRouteImport.update({
+  id: '/iprofil',
+  path: '/iprofil',
   getParentRoute: () => AppRoute,
 } as any)
 const AppIdocumentRoute = AppIdocumentRouteImport.update({
@@ -190,6 +198,12 @@ const AppAppointmentsAppointmentIdRoute =
     path: '/appointments/$appointmentId',
     getParentRoute: () => AppRoute,
   } as any)
+const AppAffairesConsulairesProfilesIndexRoute =
+  AppAffairesConsulairesProfilesIndexRouteImport.update({
+    id: '/profiles/',
+    path: '/profiles/',
+    getParentRoute: () => AppAffairesConsulairesRoute,
+  } as any)
 const AppServicesServiceIdEditRoute =
   AppServicesServiceIdEditRouteImport.update({
     id: '/services/$serviceId/edit',
@@ -201,10 +215,16 @@ const AppPostsPostIdEditRoute = AppPostsPostIdEditRouteImport.update({
   path: '/posts/$postId/edit',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAffairesConsulairesProfilesProfileIdRoute =
+  AppAffairesConsulairesProfilesProfileIdRouteImport.update({
+    id: '/profiles/$profileId',
+    path: '/profiles/$profileId',
+    getParentRoute: () => AppAffairesConsulairesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
-  '/affaires-consulaires': typeof AppAffairesConsulairesRoute
+  '/affaires-consulaires': typeof AppAffairesConsulairesRouteWithChildren
   '/affaires-diplomatiques': typeof AppAffairesDiplomatiquesRoute
   '/calls': typeof AppCallsRoute
   '/iagenda': typeof AppIagendaRoute
@@ -213,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/iboite': typeof AppIboiteRoute
   '/icorrespondance': typeof AppIcorrespondanceRoute
   '/idocument': typeof AppIdocumentRoute
+  '/iprofil': typeof AppIprofilRoute
   '/payments': typeof AppPaymentsRoute
   '/statistics': typeof AppStatisticsRoute
   '/appointments/$appointmentId': typeof AppAppointmentsAppointmentIdRoute
@@ -231,11 +252,13 @@ export interface FileRoutesByFullPath {
   '/services/': typeof AppServicesIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
   '/team/': typeof AppTeamIndexRoute
+  '/affaires-consulaires/profiles/$profileId': typeof AppAffairesConsulairesProfilesProfileIdRoute
   '/posts/$postId/edit': typeof AppPostsPostIdEditRoute
   '/services/$serviceId/edit': typeof AppServicesServiceIdEditRoute
+  '/affaires-consulaires/profiles/': typeof AppAffairesConsulairesProfilesIndexRoute
 }
 export interface FileRoutesByTo {
-  '/affaires-consulaires': typeof AppAffairesConsulairesRoute
+  '/affaires-consulaires': typeof AppAffairesConsulairesRouteWithChildren
   '/affaires-diplomatiques': typeof AppAffairesDiplomatiquesRoute
   '/calls': typeof AppCallsRoute
   '/iagenda': typeof AppIagendaRoute
@@ -244,6 +267,7 @@ export interface FileRoutesByTo {
   '/iboite': typeof AppIboiteRoute
   '/icorrespondance': typeof AppIcorrespondanceRoute
   '/idocument': typeof AppIdocumentRoute
+  '/iprofil': typeof AppIprofilRoute
   '/payments': typeof AppPaymentsRoute
   '/statistics': typeof AppStatisticsRoute
   '/': typeof AppIndexRoute
@@ -263,13 +287,15 @@ export interface FileRoutesByTo {
   '/services': typeof AppServicesIndexRoute
   '/settings': typeof AppSettingsIndexRoute
   '/team': typeof AppTeamIndexRoute
+  '/affaires-consulaires/profiles/$profileId': typeof AppAffairesConsulairesProfilesProfileIdRoute
   '/posts/$postId/edit': typeof AppPostsPostIdEditRoute
   '/services/$serviceId/edit': typeof AppServicesServiceIdEditRoute
+  '/affaires-consulaires/profiles': typeof AppAffairesConsulairesProfilesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
-  '/_app/affaires-consulaires': typeof AppAffairesConsulairesRoute
+  '/_app/affaires-consulaires': typeof AppAffairesConsulairesRouteWithChildren
   '/_app/affaires-diplomatiques': typeof AppAffairesDiplomatiquesRoute
   '/_app/calls': typeof AppCallsRoute
   '/_app/iagenda': typeof AppIagendaRoute
@@ -278,6 +304,7 @@ export interface FileRoutesById {
   '/_app/iboite': typeof AppIboiteRoute
   '/_app/icorrespondance': typeof AppIcorrespondanceRoute
   '/_app/idocument': typeof AppIdocumentRoute
+  '/_app/iprofil': typeof AppIprofilRoute
   '/_app/payments': typeof AppPaymentsRoute
   '/_app/statistics': typeof AppStatisticsRoute
   '/_app/': typeof AppIndexRoute
@@ -297,8 +324,10 @@ export interface FileRoutesById {
   '/_app/services/': typeof AppServicesIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
   '/_app/team/': typeof AppTeamIndexRoute
+  '/_app/affaires-consulaires/profiles/$profileId': typeof AppAffairesConsulairesProfilesProfileIdRoute
   '/_app/posts/$postId/edit': typeof AppPostsPostIdEditRoute
   '/_app/services/$serviceId/edit': typeof AppServicesServiceIdEditRoute
+  '/_app/affaires-consulaires/profiles/': typeof AppAffairesConsulairesProfilesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -313,6 +342,7 @@ export interface FileRouteTypes {
     | '/iboite'
     | '/icorrespondance'
     | '/idocument'
+    | '/iprofil'
     | '/payments'
     | '/statistics'
     | '/appointments/$appointmentId'
@@ -331,8 +361,10 @@ export interface FileRouteTypes {
     | '/services/'
     | '/settings/'
     | '/team/'
+    | '/affaires-consulaires/profiles/$profileId'
     | '/posts/$postId/edit'
     | '/services/$serviceId/edit'
+    | '/affaires-consulaires/profiles/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/affaires-consulaires'
@@ -344,6 +376,7 @@ export interface FileRouteTypes {
     | '/iboite'
     | '/icorrespondance'
     | '/idocument'
+    | '/iprofil'
     | '/payments'
     | '/statistics'
     | '/'
@@ -363,8 +396,10 @@ export interface FileRouteTypes {
     | '/services'
     | '/settings'
     | '/team'
+    | '/affaires-consulaires/profiles/$profileId'
     | '/posts/$postId/edit'
     | '/services/$serviceId/edit'
+    | '/affaires-consulaires/profiles'
   id:
     | '__root__'
     | '/_app'
@@ -377,6 +412,7 @@ export interface FileRouteTypes {
     | '/_app/iboite'
     | '/_app/icorrespondance'
     | '/_app/idocument'
+    | '/_app/iprofil'
     | '/_app/payments'
     | '/_app/statistics'
     | '/_app/'
@@ -396,8 +432,10 @@ export interface FileRouteTypes {
     | '/_app/services/'
     | '/_app/settings/'
     | '/_app/team/'
+    | '/_app/affaires-consulaires/profiles/$profileId'
     | '/_app/posts/$postId/edit'
     | '/_app/services/$serviceId/edit'
+    | '/_app/affaires-consulaires/profiles/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -434,6 +472,13 @@ declare module '@tanstack/react-router' {
       path: '/payments'
       fullPath: '/payments'
       preLoaderRoute: typeof AppPaymentsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/iprofil': {
+      id: '/_app/iprofil'
+      path: '/iprofil'
+      fullPath: '/iprofil'
+      preLoaderRoute: typeof AppIprofilRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/idocument': {
@@ -611,6 +656,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppointmentsAppointmentIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/affaires-consulaires/profiles/': {
+      id: '/_app/affaires-consulaires/profiles/'
+      path: '/profiles'
+      fullPath: '/affaires-consulaires/profiles/'
+      preLoaderRoute: typeof AppAffairesConsulairesProfilesIndexRouteImport
+      parentRoute: typeof AppAffairesConsulairesRoute
+    }
     '/_app/services/$serviceId/edit': {
       id: '/_app/services/$serviceId/edit'
       path: '/services/$serviceId/edit'
@@ -625,11 +677,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPostsPostIdEditRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/affaires-consulaires/profiles/$profileId': {
+      id: '/_app/affaires-consulaires/profiles/$profileId'
+      path: '/profiles/$profileId'
+      fullPath: '/affaires-consulaires/profiles/$profileId'
+      preLoaderRoute: typeof AppAffairesConsulairesProfilesProfileIdRouteImport
+      parentRoute: typeof AppAffairesConsulairesRoute
+    }
   }
 }
 
+interface AppAffairesConsulairesRouteChildren {
+  AppAffairesConsulairesProfilesProfileIdRoute: typeof AppAffairesConsulairesProfilesProfileIdRoute
+  AppAffairesConsulairesProfilesIndexRoute: typeof AppAffairesConsulairesProfilesIndexRoute
+}
+
+const AppAffairesConsulairesRouteChildren: AppAffairesConsulairesRouteChildren =
+  {
+    AppAffairesConsulairesProfilesProfileIdRoute:
+      AppAffairesConsulairesProfilesProfileIdRoute,
+    AppAffairesConsulairesProfilesIndexRoute:
+      AppAffairesConsulairesProfilesIndexRoute,
+  }
+
+const AppAffairesConsulairesRouteWithChildren =
+  AppAffairesConsulairesRoute._addFileChildren(
+    AppAffairesConsulairesRouteChildren,
+  )
+
 interface AppRouteChildren {
-  AppAffairesConsulairesRoute: typeof AppAffairesConsulairesRoute
+  AppAffairesConsulairesRoute: typeof AppAffairesConsulairesRouteWithChildren
   AppAffairesDiplomatiquesRoute: typeof AppAffairesDiplomatiquesRoute
   AppCallsRoute: typeof AppCallsRoute
   AppIagendaRoute: typeof AppIagendaRoute
@@ -638,6 +715,7 @@ interface AppRouteChildren {
   AppIboiteRoute: typeof AppIboiteRoute
   AppIcorrespondanceRoute: typeof AppIcorrespondanceRoute
   AppIdocumentRoute: typeof AppIdocumentRoute
+  AppIprofilRoute: typeof AppIprofilRoute
   AppPaymentsRoute: typeof AppPaymentsRoute
   AppStatisticsRoute: typeof AppStatisticsRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -660,7 +738,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppAffairesConsulairesRoute: AppAffairesConsulairesRoute,
+  AppAffairesConsulairesRoute: AppAffairesConsulairesRouteWithChildren,
   AppAffairesDiplomatiquesRoute: AppAffairesDiplomatiquesRoute,
   AppCallsRoute: AppCallsRoute,
   AppIagendaRoute: AppIagendaRoute,
@@ -669,6 +747,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppIboiteRoute: AppIboiteRoute,
   AppIcorrespondanceRoute: AppIcorrespondanceRoute,
   AppIdocumentRoute: AppIdocumentRoute,
+  AppIprofilRoute: AppIprofilRoute,
   AppPaymentsRoute: AppPaymentsRoute,
   AppStatisticsRoute: AppStatisticsRoute,
   AppIndexRoute: AppIndexRoute,

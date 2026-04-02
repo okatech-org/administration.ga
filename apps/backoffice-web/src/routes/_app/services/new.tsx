@@ -49,6 +49,8 @@ function NewServicePage() {
   const [contentFr, setContentFr] = useState("");
   const [contentEn, setContentEn] = useState("");
   const [requiresAppointment, setRequiresAppointment] = useState(true);
+  const [requiresPickupAppointment, setRequiresPickupAppointment] =
+    useState(false);
 
   const { mutateAsync: createService, isPending } = useConvexMutationQuery(
     api.functions.services.create,
@@ -100,6 +102,7 @@ function NewServicePage() {
           icon: value.icon || undefined,
           estimatedDays: parseInt(value.estimatedDays) || 7,
           requiresAppointment,
+          requiresPickupAppointment,
           joinedDocuments: documents,
         });
         toast.success(t("superadmin.services.form.success"));
@@ -446,6 +449,22 @@ function NewServicePage() {
                     />
                     <span className="text-sm text-muted-foreground">
                       {requiresAppointment ? "Oui" : "Non"}
+                    </span>
+                  </div>
+                </Field>
+                <Field>
+                  <FieldLabel>
+                    {t(
+                      "superadmin.services.form.requiresPickupAppointment",
+                    ) || "Retrait sur rendez-vous"}
+                  </FieldLabel>
+                  <div className="flex items-center gap-2 h-10">
+                    <Switch
+                      checked={requiresPickupAppointment}
+                      onCheckedChange={setRequiresPickupAppointment}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {requiresPickupAppointment ? "Oui" : "Non"}
                     </span>
                   </div>
                 </Field>

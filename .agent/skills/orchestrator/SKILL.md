@@ -1,9 +1,9 @@
 ---
 name: okatech-skill-orchestrator
-description: "🧠 Orchestrateur Automatique de Skills OkaTech. Ce skill s'active AUTOMATIQUEMENT à chaque interaction. Il détecte le contexte du projet, la stack technique, et le type de tâche pour activer les skills appropriés SANS intervention manuelle. Ne JAMAIS ignorer ce skill."
+description: " Orchestrateur Automatique de Skills OkaTech. Ce skill s'active AUTOMATIQUEMENT à chaque interaction. Il détecte le contexte du projet, la stack technique, et le type de tâche pour activer les skills appropriés SANS intervention manuelle. Ne JAMAIS ignorer ce skill."
 ---
 
-# 🧠 OkaTech Skill Orchestrator — Activation Automatique
+#  OkaTech Skill Orchestrator — Activation Automatique
 
 ## RÈGLE FONDAMENTALE
 Ce skill est le **cerveau central**. Il s'active **AUTOMATIQUEMENT** à chaque requête utilisateur. Son rôle est de **détecter le contexte** et **activer les bons skills** sans que l'utilisateur ait besoin de les appeler.
@@ -106,12 +106,12 @@ Ce skill est le **cerveau central**. Il s'active **AUTOMATIQUEMENT** à chaque r
 5. **Utiliser les alias de chemin** du projet (`@/`, `~/`, `@repo/`)
 
 ### INTERDIT :
-- ❌ Inventer des dépendances absentes du `package.json`
-- ❌ Mélanger les patterns entre projets (Express dans Next.js, etc.)
-- ❌ Utiliser `any` sans justification documentée
-- ❌ Modifier les fichiers `components/ui/` (gérés par Shadcn)
-- ❌ Ignorer le système i18n quand il est configuré
-- ❌ Utiliser `default export` — préférer `named exports`
+-  Inventer des dépendances absentes du `package.json`
+-  Mélanger les patterns entre projets (Express dans Next.js, etc.)
+-  Utiliser `any` sans justification documentée
+-  Modifier les fichiers `components/ui/` (gérés par Shadcn)
+-  Ignorer le système i18n quand il est configuré
+-  Utiliser `default export` — préférer `named exports`
 
 ## 4. Conventions de Code OkaTech
 

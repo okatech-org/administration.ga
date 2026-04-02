@@ -177,7 +177,7 @@ export function DesignerToolbar({
                       className="w-full text-left px-2 py-1.5 text-xs text-foreground hover:bg-muted rounded-md transition-colors"
                     >
                       {field.label}
-                      <span className="text-muted-foreground ml-1">— {field.preview || "📷"}</span>
+                      <span className="text-muted-foreground ml-1">— {field.preview || ""}</span>
                     </button>
                   ))}
                 </div>

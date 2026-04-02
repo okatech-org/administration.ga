@@ -6,7 +6,7 @@
  */
 
 import { useNavigate } from "@tanstack/react-router";
-import { Contact, Maximize2, MessageSquare, Minus, Phone, Plus, Settings, ShieldCheck } from "lucide-react";
+import { Contact, Maximize2, MessageSquare, Minus, Phone, Plus, Settings, ShieldCheck, Video } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -20,12 +20,14 @@ import { IAstedFAB } from "./IAstedFAB";
 import { IAstedInstantChatTab } from "./IAstedInstantChatTab";
 import { IAstedContactTab } from "./IAstedContactTab";
 import { IAstedCallTab } from "./IAstedCallTab";
+import { IAstedMeetingTab } from "./IAstedMeetingTab";
 import { IAstedSettingsTab } from "./IAstedSettingsTab";
 
 const TABS = [
 	{ id: "ichat", label: "iChat", icon: MessageSquare },
 	{ id: "icontact", label: "iContact", icon: Contact },
 	{ id: "icall", label: "iAppel", icon: Phone },
+	{ id: "imeeting", label: "iRéunion", icon: Video },
 	{ id: "settings", label: "", icon: Settings },
 ] as const;
 
@@ -76,7 +78,7 @@ export function IAstedWindow() {
 								<div>
 									<h2 className="text-xs font-semibold leading-tight">iAsted</h2>
 									<p className="text-[9px] text-white/60 leading-tight">
-										{activeOrg?.name ?? "Conscience Numérique"}
+										{activeOrg?.name ?? "Agent IA Diplomate"}
 									</p>
 								</div>
 							</div>
@@ -97,6 +99,7 @@ export function IAstedWindow() {
 							{activeTab === "ichat" && <IAstedInstantChatTab chat={chat} voice={voice} />}
 							{activeTab === "icontact" && <IAstedContactTab />}
 							{activeTab === "icall" && <IAstedCallTab />}
+							{activeTab === "imeeting" && <IAstedMeetingTab />}
 							{activeTab === "settings" && <IAstedSettingsTab />}
 						</div>
 

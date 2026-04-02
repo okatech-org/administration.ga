@@ -37,7 +37,7 @@ export const Footer = () => {
 							</li>
 							<li>
 								<Link
-									to="/orgs"
+									to="/reps"
 									search={{ view: "grid" }}
 									className="hover:text-foreground transition-colors"
 								>

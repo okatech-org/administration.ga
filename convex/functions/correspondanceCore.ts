@@ -13,6 +13,9 @@
 
 import { v } from "convex/values";
 import { authMutation, authQuery } from "../lib/customFunctions";
+import { internal } from "../_generated/api";
+import type { MutationCtx } from "../_generated/server";
+import type { Doc, Id } from "../_generated/dataModel";
 import {
   correspondanceTypeValidator,
   correspondancePriorityValidator,
@@ -20,17 +23,12 @@ import {
   recipientStatusValidator,
   correspondanceDocumentValidator,
 } from "../schemas/correspondance";
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function generateReference(type: string): string {
-  const year = new Date().getFullYear();
-  const code = type.substring(0, 3).toUpperCase();
-  const n = Math.floor(Math.random() * 100000)
-    .toString()
-    .padStart(5, "0");
-  return `DIPL/${year}/${code}/${n}`;
-}
+import {
+  requireCorrespondanceAccess,
+  generateSequentialReference,
+} from "../lib/correspondanceHelpers";
+import { isSuperAdmin } from "../lib/permissions";
+import { error, ErrorCode } from "../lib/errors";
 
 // ═════════════════════════════════════════════════════════════════════════════
 // ESPACES DE TRAVAIL — Requêtes par espace exclusif
@@ -46,9 +44,13 @@ export const getBrouillons = authQuery({
     filterStatus: v.optional(v.union(
       v.literal("draft"),
       v.literal("pending"),
+      v.literal("rejected"),
     )),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
+    const max = args.limit ?? 100;
     const items = await ctx.db
       .query("correspondanceItems")
       .withIndex("by_owner_org_status", (q) =>
@@ -61,24 +63,26 @@ export const getBrouillons = authQuery({
         ),
       )
       .order("desc")
-      .collect();
+      .take(max);
 
-    // Si pas de filtre spécifique, inclure aussi les "pending" (en attente d'approbation)
+    // Si pas de filtre spécifique, inclure aussi pending + rejected
     if (!args.filterStatus) {
-      const pending = await ctx.db
-        .query("correspondanceItems")
-        .withIndex("by_owner_org_status", (q) =>
-          q.eq("copyOwnerOrgId", args.orgId).eq("status", "pending"),
-        )
-        .filter((q) =>
-          q.and(
-            q.neq(q.field("isCopy"), true),
-            q.eq(q.field("deletedAt"), undefined),
-          ),
-        )
-        .order("desc")
-        .collect();
-      items.push(...pending);
+      for (const status of ["pending", "rejected"] as const) {
+        const extra = await ctx.db
+          .query("correspondanceItems")
+          .withIndex("by_owner_org_status", (q) =>
+            q.eq("copyOwnerOrgId", args.orgId).eq("status", status),
+          )
+          .filter((q) =>
+            q.and(
+              q.neq(q.field("isCopy"), true),
+              q.eq(q.field("deletedAt"), undefined),
+            ),
+          )
+          .order("desc")
+          .take(max);
+        items.push(...extra);
+      }
     }
 
     return _enrichWithUrls(ctx, items);
@@ -94,8 +98,11 @@ export const getEnvoyes = authQuery({
   args: {
     orgId: v.id("orgs"),
     recipientStatusFilter: v.optional(recipientStatusValidator),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
+    const max = args.limit ?? 100;
     let items = await ctx.db
       .query("correspondanceItems")
       .withIndex("by_owner_org_copy", (q) =>
@@ -103,7 +110,7 @@ export const getEnvoyes = authQuery({
       )
       .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .order("desc")
-      .collect();
+      .take(max);
 
     if (args.recipientStatusFilter) {
       items = items.filter((i) => i.recipientStatus === args.recipientStatusFilter);
@@ -125,8 +132,11 @@ export const getRecus = authQuery({
       v.literal("non_enregistres"),
       v.literal("assignes_a_moi"),
     )),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
+    const max = args.limit ?? 100;
     let items = await ctx.db
       .query("correspondanceItems")
       .withIndex("by_owner_org_status", (q) =>
@@ -139,7 +149,7 @@ export const getRecus = authQuery({
         ),
       )
       .order("desc")
-      .collect();
+      .take(max);
 
     if (args.filter === "non_lus") {
       const userId = ctx.user._id as string;
@@ -158,8 +168,13 @@ export const getRecus = authQuery({
  * CORBEILLE — Items soft-deleted.
  */
 export const getCorbeille = authQuery({
-  args: { orgId: v.id("orgs") },
+  args: {
+    orgId: v.id("orgs"),
+    limit: v.optional(v.number()),
+  },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
+    const max = args.limit ?? 100;
     const items = await ctx.db
       .query("correspondanceItems")
       .withIndex("by_owner_org", (q) =>
@@ -167,7 +182,7 @@ export const getCorbeille = authQuery({
       )
       .filter((q) => q.neq(q.field("deletedAt"), undefined))
       .order("desc")
-      .collect();
+      .take(max);
 
     return _enrichWithUrls(ctx, items);
   },
@@ -179,6 +194,7 @@ export const getCorbeille = authQuery({
 export const getEspaceCounts = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     // Brouillons (draft + pending, non-copie)
     const drafts = await ctx.db
       .query("correspondanceItems")
@@ -270,10 +286,14 @@ export const sendCorrespondance = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Dossier de correspondance introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Dossier de correspondance introuvable");
     if (item.status !== "draft") {
-      throw new Error("Seul un brouillon peut être envoyé");
+      throw error(ErrorCode.VALIDATION_ERROR, "Seul un brouillon peut être envoyé");
     }
+
+    // Contrôle d'accès org
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "transmit");
 
     // Vérifier les documents
     const docs = item.documents ?? [];
@@ -341,11 +361,28 @@ export const sendCorrespondance = authMutation({
 
             // Vérifier la condition (si la chaîne a des conditions)
             if (chainConfig.length > 0) {
+              // La position supérieure doit correspondre à au moins une règle
               const matchingRule = chainConfig.find((rule: any) => {
+                // Le grade de cette position doit être >= au roleMinimum de la règle
+                const meetsMinimumGrade = gradeOrder.indexOf(sup.grade ?? "agent") >= gradeOrder.indexOf(rule.roleMinimum);
+                if (!meetsMinimumGrade) return false;
+
+                // Vérifier la condition d'activation
                 if (rule.conditionType === "always") return true;
-                if (rule.conditionType === "if_external" && item.primaryRecipientOrgId) return true;
-                if (rule.conditionType === "if_recipient_rank_above") return true;
-                return gradeOrder.indexOf(sup.grade) >= gradeOrder.indexOf(rule.roleMinimum);
+                if (rule.conditionType === "if_external") {
+                  // Vérifie que le destinataire est d'une org DIFFÉRENTE de l'expéditeur
+                  return item.primaryRecipientOrgId && item.primaryRecipientOrgId !== item.orgId;
+                }
+                if (rule.conditionType === "if_recipient_rank_above") {
+                  // Compare le grade du destinataire avec la valeur de condition
+                  // Si pas de conditionValue, considérer comme "au-dessus de agent"
+                  const thresholdGrade = rule.conditionValue ?? "agent";
+                  // On ne peut pas connaître le grade du destinataire ici sans query
+                  // supplémentaire. Par sécurité, si la condition est configurée,
+                  // on l'active pour les destinataires externes.
+                  return item.primaryRecipientOrgId && item.primaryRecipientOrgId !== item.orgId;
+                }
+                return false;
               });
               if (!matchingRule) continue;
             }
@@ -437,7 +474,12 @@ export const sendCorrespondance = authMutation({
  * 1. L'item source devient la COPIE (isCopy=true, status=sent)
  * 2. Un ORIGINAL est créé chez le destinataire (isCopy=false, status=received)
  */
-async function _executeEnvoi(ctx: any, itemId: any, item: any, now: number) {
+async function _executeEnvoi(
+  ctx: MutationCtx & { user: Doc<"users"> },
+  itemId: Id<"correspondanceItems">,
+  item: Doc<"correspondanceItems">,
+  now: number,
+) {
   // Créer l'ORIGINAL chez le destinataire
   const recipientOrgId = item.primaryRecipientOrgId ?? item.orgId;
 
@@ -451,8 +493,6 @@ async function _executeEnvoi(ctx: any, itemId: any, item: any, now: number) {
     type: item.type,
     priority: item.priority,
     status: "received",
-    recipientStatus: "recu",
-    recipientStatusUpdatedAt: now,
     direction: "incoming",
     senderName: item.senderName,
     senderOrg: item.senderOrg,
@@ -486,7 +526,7 @@ async function _executeEnvoi(ctx: any, itemId: any, item: any, now: number) {
     sentAt: now,
     copyOwnerOrgId: item.copyOwnerOrgId ?? item.orgId,
     originalItemId: originalId,
-    recipientStatus: "recu",
+    recipientStatus: "en_transit",
     recipientStatusUpdatedAt: now,
     // Marquer les documents comme copies avec filigrane
     documents: (item.documents ?? []).map((d: any) => ({
@@ -537,6 +577,29 @@ async function _executeEnvoi(ctx: any, itemId: any, item: any, now: number) {
     createdAt: now,
   });
 
+  // Envoyer une notification email si le destinataire a un email
+  // et que c'est un envoi vers une org externe
+  if (item.recipientEmail && item.primaryRecipientOrgId !== item.orgId) {
+    await ctx.scheduler.runAfter(
+      0,
+      internal.functions.correspondanceEmail.sendCorrespondanceEmail,
+      {
+        recipientEmail: item.recipientEmail,
+        reference: item.reference,
+        title: item.title,
+        type: item.type,
+        priority: item.priority,
+        senderName: item.senderName,
+        senderOrg: item.senderOrg ?? "",
+        recipientName: item.recipientName,
+        comment: item.comment,
+        hasAttachments: (item.documents ?? []).length > 0 || item.attachments.length > 0,
+        attachmentCount: (item.documents ?? []).length || item.attachments.length,
+        itemId: originalId,
+      },
+    );
+  }
+
   return { status: "sent", copyId: itemId, originalId };
 }
 
@@ -556,9 +619,18 @@ export const approveAndSend = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Dossier introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Dossier introuvable");
     if (item.status !== "pending") {
-      throw new Error("Ce dossier n'est pas en attente d'approbation");
+      throw error(ErrorCode.VALIDATION_ERROR, "Ce dossier n'est pas en attente d'approbation");
+    }
+
+    // Contrôle d'accès
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "approve");
+
+    // Vérifier que l'utilisateur est le currentHolder
+    if (item.currentHolderId && item.currentHolderId !== ctx.user._id && !isSuperAdmin(ctx.user)) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Seul le détenteur actuel peut approuver ce dossier");
     }
 
     // Chercher les étapes d'approbation pendantes
@@ -641,7 +713,16 @@ export const rejectCorrespondance = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Dossier introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Dossier introuvable");
+
+    // Contrôle d'accès
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "approve");
+
+    // Vérifier que l'utilisateur est le currentHolder
+    if (item.currentHolderId && item.currentHolderId !== ctx.user._id && !isSuperAdmin(ctx.user)) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Seul le détenteur actuel peut rejeter ce dossier");
+    }
 
     // Rejeter les étapes d'approbation pendantes
     const steps = await ctx.db
@@ -653,7 +734,7 @@ export const rejectCorrespondance = authMutation({
     }
 
     await ctx.db.patch(args.itemId, {
-      status: "draft",
+      status: "rejected",
       currentHolderId: item.createdBy,
       updatedAt: now,
     });
@@ -687,7 +768,10 @@ export const registerIncoming = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Correspondance introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
 
     await ctx.db.patch(args.itemId, {
       arrivalReference: args.arrivalReference,
@@ -700,7 +784,7 @@ export const registerIncoming = authMutation({
 
     await ctx.db.insert("correspondanceWorkflowSteps", {
       itemId: args.itemId,
-      stepType: "VIEWED",
+      stepType: "REGISTERED",
       actorId: ctx.user._id,
       actorName: ctx.user.name ?? ctx.user.email,
       comment: `Enregistré sous réf. d'arrivée : ${args.arrivalReference}`,
@@ -720,6 +804,11 @@ export const assignCorrespondance = authMutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "transmit");
+
     const agent = await ctx.db.get(args.agentId) as any;
 
     await ctx.db.patch(args.itemId, {
@@ -759,10 +848,13 @@ export const respondToCorrespondance = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Correspondance introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
 
-    const org = await ctx.db.get(item.copyOwnerOrgId ?? item.orgId) as any;
-    const reference = generateReference(args.type);
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
+
+    const org = await ctx.db.get(orgId) as any;
+    const reference = await generateSequentialReference(ctx, args.type);
 
     // Créer la réponse en brouillon avec expéditeur/destinataire inversés
     const responseId = await ctx.db.insert("correspondanceItems", {
@@ -816,8 +908,8 @@ export const respondToCorrespondance = authMutation({
  * Cherche la copie liée via originalItemId et met à jour son recipientStatus.
  */
 async function _syncRecipientStatus(
-  ctx: any,
-  receivedItemId: any,
+  ctx: MutationCtx,
+  receivedItemId: Id<"correspondanceItems">,
   newStatus: string,
   now: number,
 ) {
@@ -876,6 +968,10 @@ export const getDossier = authQuery({
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.itemId);
     if (!item || item.deletedAt) return null;
+
+    // Contrôle d'accès
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "view");
 
     // URLs des documents enrichis
     const docsWithUrls = await Promise.all(
@@ -941,7 +1037,7 @@ export const getDossier = authQuery({
 // HELPER — Enrichir avec les URLs de storage
 // ═════════════════════════════════════════════════════════════════════════════
 
-async function _enrichWithUrls(ctx: any, items: any[]) {
+async function _enrichWithUrls(ctx: { storage: { getUrl: (id: Id<"_storage">) => Promise<string | null> } }, items: Doc<"correspondanceItems">[]) {
   return await Promise.all(
     items.map(async (item) => {
       const docsWithUrls = await Promise.all(

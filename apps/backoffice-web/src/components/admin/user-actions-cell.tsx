@@ -77,10 +77,10 @@ export function UserActionsCell({ user }: UserActionsCellProps) {
     try {
       if (user.isActive) {
         await disableUser({ userId: user._id })
-        toast.success(t("superadmin.users.actions.disable") + " ✓")
+        toast.success(t("superadmin.users.actions.disable") + " ")
       } else {
         await enableUser({ userId: user._id })
-        toast.success(t("superadmin.users.actions.enable") + " ✓")
+        toast.success(t("superadmin.users.actions.enable") + " ")
       }
     } catch (error) {
       toast.error(t("superadmin.common.error"))
@@ -90,7 +90,7 @@ export function UserActionsCell({ user }: UserActionsCellProps) {
   const handleSoftDelete = async () => {
     try {
       await softDeleteUser({ userId: user._id })
-      toast.success("Utilisateur déplacé dans la corbeille 🗑️")
+      toast.success("Utilisateur déplacé dans la corbeille ")
     } catch (error) {
       toast.error(t("superadmin.common.error"))
     }
@@ -99,7 +99,7 @@ export function UserActionsCell({ user }: UserActionsCellProps) {
   const handleRestore = async () => {
     try {
       await restoreUser({ userId: user._id })
-      toast.success("Utilisateur restauré avec succès ✓")
+      toast.success("Utilisateur restauré avec succès ")
     } catch (error) {
       toast.error(t("superadmin.common.error"))
     }

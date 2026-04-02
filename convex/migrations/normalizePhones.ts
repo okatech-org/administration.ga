@@ -18,7 +18,7 @@ const BATCH_SIZE = 100;
 export const run = internalMutation({
 	args: {},
 	handler: async (ctx) => {
-		console.log("🚀 Starting phone normalization + BetterAuth sync...");
+		console.log(" Starting phone normalization + BetterAuth sync...");
 		await ctx.scheduler.runAfter(0, internal.migrations.normalizePhones.processBatch, {});
 	},
 });
@@ -63,7 +63,7 @@ export const processBatch = internalMutation({
 		}
 
 		console.log(
-			`📱 Phones: synced=${synced}, normalized=${normalized}, skipped=${skipped}, batch=${page.page.length}`,
+			` Phones: synced=${synced}, normalized=${normalized}, skipped=${skipped}, batch=${page.page.length}`,
 		);
 
 		if (!page.isDone) {
@@ -71,7 +71,7 @@ export const processBatch = internalMutation({
 				cursor: page.continueCursor,
 			});
 		} else {
-			console.log("✅ Phone normalization complete!");
+			console.log(" Phone normalization complete!");
 		}
 	},
 });

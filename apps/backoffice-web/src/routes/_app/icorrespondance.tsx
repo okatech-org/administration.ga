@@ -549,10 +549,10 @@ function InfoDialog({ open, onClose, item, itemType }: { open: boolean; onClose:
 function ICorrespondancePage() {
 	// ─── Org selector (backoffice: admin chooses which org to manage) ──
 	const { data: orgsList = [] } = useAuthenticatedConvexQuery(
-		api.functions.admin.listOrgs,
-		{ paginationOpts: { numItems: 50, cursor: null } },
+		api.functions.orgs.list,
+		{},
 	);
-	const orgs = (orgsList as any)?.page ?? orgsList ?? [];
+	const orgs = orgsList as any[];
 	const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
 	const activeOrgId = (selectedOrgId ?? orgs[0]?._id ?? null) as Id<"orgs"> | null;
 
@@ -1423,7 +1423,7 @@ function ICorrespondancePage() {
 									<input placeholder="Ex: Minist\u00e8re des Affaires \u00c9trang\u00e8res" value={newCorr.recipientName} onChange={(e) => setNewCorr((p) => ({ ...p, recipientName: e.target.value }))} className="w-full h-9 px-3 text-xs bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/30" />
 								</div>
 								<div className="space-y-1.5">
-									<label className="text-xs font-medium">Organisation destinataire</label>
+									<label className="text-xs font-medium">Représentation destinataire</label>
 									<input placeholder="Ex: MAE Gabon" value={newCorr.recipientOrg} onChange={(e) => setNewCorr((p) => ({ ...p, recipientOrg: e.target.value }))} className="w-full h-9 px-3 text-xs bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/30" />
 								</div>
 								<div className="space-y-1.5">

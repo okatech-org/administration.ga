@@ -346,7 +346,7 @@
 			"phone": "",
 			"license": ""
 		},
-		"copyright": "© {{year}} Consulat.ga — République Gabonaise",
+		"copyright": " {{year}} Consulat.ga — République Gabonaise",
 		"version": ""
 	},
 	"theme": {
@@ -1222,7 +1222,7 @@
 			"cannotDisableSelf": "Vous ne pouvez pas désactiver votre propre compte"
 		},
 		"orgs": {
-			"notFound": "Organisation introuvable",
+			"notFound": "Représentation introuvable",
 			"slugExists": "Ce slug d'organisation existe déjà",
 			"memberAlreadyExists": "Cet utilisateur est déjà membre de cette organisation",
 			"memberNotFound": "Cet utilisateur n'est pas membre de cette organisation",
@@ -1412,9 +1412,9 @@
 			"dashboard": "Tableau de bord",
 			"users": "Utilisateurs",
 			"allUsers": "Tous les utilisateurs",
-			"organizations": "Organisations",
-			"allOrganizations": "Toutes les organisations",
-			"newOrganization": "Nouvelle organisation",
+			"organizations": "Représentations",
+			"allOrganizations": "Toutes les représentations",
+			"newOrganization": "Nouvelle représentation",
 			"roles": "Rôles & Permissions",
 			"rolesCatalog": "Catalogue des rôles",
 			"services": "Services",
@@ -1579,8 +1579,8 @@
 			"noResults": "Aucun utilisateur trouvé",
 			"details": {
 				"infos": "Informations",
-				"organizations": "Organisations",
-				"orgMembership": "Appartenance aux organisations",
+				"organizations": "Représentations",
+				"orgMembership": "Appartenance aux représentations",
 				"activity": "Activité récente",
 				"lastActions": "Les 10 dernières actions",
 				"nationality": "Nationalité",
@@ -1589,13 +1589,13 @@
 				"verified": "vérifié",
 				"unverified": "non vérifié",
 				"since": "Depuis le",
-				"noOrg": "Aucune organisation",
+				"noOrg": "Aucune représentation",
 				"noActivity": "Aucune activité"
 			}
 		},
 		"organizations": {
-			"title": "Organisations",
-			"description": "Gérer les consulats, ambassades et organisations",
+			"title": "Représentations diplomatiques",
+			"description": "Gérer les consulats, ambassades et représentations diplomatiques",
 			"columns": {
 				"logo": "Logo",
 				"name": "Nom",
@@ -1622,7 +1622,7 @@
 			"filters": {
 				"allTypes": "Tous les types",
 				"allCountries": "Tous les pays",
-				"searchPlaceholder": "Rechercher des organisations..."
+				"searchPlaceholder": "Rechercher des représentations..."
 			},
 			"actions": {
 				"view": "Voir",
@@ -1633,8 +1633,8 @@
 				"disable": "Désactiver"
 			},
 			"form": {
-				"create": "Créer une organisation",
-				"edit": "Modifier l'organisation",
+				"create": "Nouvelle représentation",
+				"edit": "Modifier la représentation",
 				"name": "Nom",
 				"namePlaceholder": "ex. Consulat du Gabon à Paris",
 				"slug": "Slug",
@@ -1875,9 +1875,9 @@
 				"user_updated": "Utilisateur modifié",
 				"user_disabled": "Utilisateur désactivé",
 				"user_role_changed": "Rôle modifié",
-				"org_created": "Organisation créée",
-				"org_updated": "Organisation modifiée",
-				"org_disabled": "Organisation désactivée",
+				"org_created": "Représentation créée",
+				"org_updated": "Représentation modifiée",
+				"org_disabled": "Représentation désactivée",
 				"service_created": "Service créé",
 				"service_updated": "Service modifié",
 				"request_status_changed": "Statut de demande modifié"
@@ -2125,7 +2125,7 @@
 				"save": "Enregistrer les modifications",
 				"saved": "Service mis à jour avec succès",
 				"saveError": "Erreur lors de la mise à jour du service",
-				"noOrgError": "Organisation introuvable",
+				"noOrgError": "Représentation introuvable",
 				"back": "Retour",
 				"tabs": {
 					"general": "Général",
@@ -2632,7 +2632,7 @@
 		"settings": {
 			"title": "Paramètres",
 			"description": "Informations de votre organisation",
-			"notFound": "Organisation non trouvée",
+			"notFound": "Représentation non trouvée",
 			"edit": "Éditer",
 			"orgProfile": "Profil de l'organisation",
 			"orgProfileDescription": "Informations générales",
@@ -3698,7 +3698,7 @@
 			"from": "De",
 			"filterAll": "Tous",
 			"filterProfiles": "Profils",
-			"filterOrgs": "Organisations",
+			"filterOrgs": "Représentations",
 			"filterAssocs": "Associations",
 			"filterCompanies": "Entreprises",
 			"noResults": "Aucun résultat.",
@@ -3726,7 +3726,7 @@
 		"error": "Une erreur est survenue",
 		"ownerType": {
 			"profile": "Profil personnel",
-			"organization": "Organisation",
+			"organization": "Représentation",
 			"association": "Association",
 			"company": "Entreprise"
 		},

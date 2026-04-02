@@ -36,10 +36,10 @@ export function OrgActionsCell({ org }: OrgActionsCellProps) {
     try {
       if (org.isActive) {
         await disableOrg({ orgId: org._id })
-        toast.success(t("superadmin.organizations.actions.disable") + " ✓")
+        toast.success(t("superadmin.organizations.actions.disable") + " ")
       } else {
         await enableOrg({ orgId: org._id })
-        toast.success(t("superadmin.organizations.actions.enable") + " ✓")
+        toast.success(t("superadmin.organizations.actions.enable") + " ")
       }
     } catch (error) {
       toast.error(t("superadmin.common.error"))
@@ -58,26 +58,26 @@ export function OrgActionsCell({ org }: OrgActionsCellProps) {
         <DropdownMenuLabel>{org.name}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/orgs/$orgId" params={{ orgId: org._id }}>
+          <Link to="/reps/$orgId" params={{ orgId: org._id }}>
             <Eye className="mr-2 h-4 w-4" />
             {t("superadmin.organizations.actions.view")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/orgs/$orgId/edit" params={{ orgId: org._id }}>
+          <Link to="/reps/$orgId/edit" params={{ orgId: org._id }}>
             <Edit className="mr-2 h-4 w-4" />
             {t("superadmin.organizations.actions.edit")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/orgs/$orgId" params={{ orgId: org._id }}>
+          <Link to="/reps/$orgId" params={{ orgId: org._id }}>
             <Users className="mr-2 h-4 w-4" />
             {t("superadmin.organizations.actions.manageMembers")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/orgs/$orgId" params={{ orgId: org._id }}>
+          <Link to="/reps/$orgId" params={{ orgId: org._id }}>
             <FileText className="mr-2 h-4 w-4" />
             {t("superadmin.organizations.actions.manageServices")}
           </Link>

@@ -93,7 +93,7 @@ export function ContinentTabs<T>({
 							: "text-muted-foreground hover:text-foreground hover:bg-background/50",
 					)}
 				>
-					<span>🌐</span>
+					<span></span>
 					<span>Tous</span>
 					<Badge
 						variant="secondary"

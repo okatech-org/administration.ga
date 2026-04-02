@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_app/audit-logs/")({
 // ─── Helpers ─────────────────────────────────────────────────────
 const ACTION_GROUPS: Record<string, { label: string; icon: React.ElementType; color: string; bgLight: string }> = {
 	user: { label: "Utilisateurs", icon: User, color: "text-blue-500", bgLight: "bg-blue-500/10" },
-	org: { label: "Organisations", icon: Building2, color: "text-amber-500", bgLight: "bg-amber-500/10" },
+	org: { label: "Représentations", icon: Building2, color: "text-amber-500", bgLight: "bg-amber-500/10" },
 	service: { label: "Services", icon: FileText, color: "text-emerald-500", bgLight: "bg-emerald-500/10" },
 	request: { label: "Demandes", icon: Activity, color: "text-indigo-500", bgLight: "bg-indigo-500/10" },
 	security: { label: "Sécurité", icon: ShieldAlert, color: "text-red-500", bgLight: "bg-red-500/10" },

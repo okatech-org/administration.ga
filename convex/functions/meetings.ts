@@ -6,6 +6,7 @@ import { getMembership } from "../lib/auth";
 import { error, ErrorCode } from "../lib/errors";
 import { canDoTask } from "../lib/permissions";
 import { TaskCode } from "../lib/taskCodes";
+import { isPublicUser } from "../lib/userCategory";
 
 /**
  * Internal query: Get meeting by ID (for use in actions).
@@ -28,7 +29,7 @@ export const getForToken = internalQuery({
  */
 function generateRoomName(orgSlug: string): string {
   const ts = Date.now().toString(36);
-  const rand = Math.random().toString(36).substring(2, 8);
+  const rand = crypto.randomUUID().replace(/-/g, "").substring(0, 8);
   return `mtg-${orgSlug}-${ts}-${rand}`;
 }
 
@@ -287,6 +288,26 @@ export const create = authMutation({
       startedAt: args.scheduledAt ? undefined : Date.now(),
     });
 
+    // ── Envoyer des notifications d'invitation aux participants ──
+    const now = Date.now();
+    const creatorName = [ctx.user.firstName, ctx.user.lastName].filter(Boolean).join(" ") || ctx.user.email || "Un agent";
+    for (const participantId of args.participantIds) {
+      if (participantId === ctx.user._id) continue; // Pas de notification au créateur
+      await ctx.db.insert("notifications", {
+        userId: participantId,
+        type: "meeting_invitation" as any,
+        title: args.type === "meeting" ? "Invitation à une réunion" : "Appel entrant",
+        body: args.type === "meeting"
+          ? `${creatorName} vous invite à "${args.title}"`
+          : `${creatorName} vous appelle`,
+        link: `/meetings?join=${meetingId}`,
+        isRead: false,
+        relatedId: meetingId as string,
+        relatedType: "meeting",
+        createdAt: now,
+      });
+    }
+
     return { meetingId, roomName };
   },
 });
@@ -503,13 +524,18 @@ export const listInboundOrgCalls = authQuery({
 /**
  * Citizen calls an organization.
  * Creates an active inbound call — no org membership required.
+ * Citizens are restricted to audio-only calls.
  */
 export const callOrganization = authMutation({
   args: {
     orgId: v.id("orgs"),
     callLineId: v.optional(v.id("callLines")),
+    mediaType: v.optional(v.union(v.literal("audio"), v.literal("video"))),
   },
   handler: async (ctx, args) => {
+    // Citoyens : forcer audio uniquement
+    const isCitizen = await isPublicUser(ctx, ctx.user._id);
+    const resolvedMediaType = isCitizen ? "audio" : (args.mediaType ?? "audio");
     const org = await ctx.db.get(args.orgId);
     if (!org) throw error(ErrorCode.NOT_FOUND, "Organisation non trouvée");
 
@@ -540,6 +566,7 @@ export const callOrganization = authMutation({
       createdBy: ctx.user._id,
       isOrgInbound: true,
       callLineId: args.callLineId,
+      mediaType: resolvedMediaType,
       participants: [
         {
           userId: ctx.user._id,
@@ -563,6 +590,7 @@ export const callUser = authMutation({
   args: {
     orgId: v.id("orgs"),
     targetUserId: v.id("users"),
+    mediaType: v.optional(v.union(v.literal("audio"), v.literal("video"))),
   },
   handler: async (ctx, args) => {
     // Verify agent has meetings.create permission
@@ -595,6 +623,7 @@ export const callUser = authMutation({
       roomName,
       orgId: args.orgId,
       createdBy: ctx.user._id,
+      mediaType: args.mediaType ?? "audio",
       participants: [
         {
           userId: ctx.user._id,
@@ -616,12 +645,21 @@ export const callUser = authMutation({
 
 /**
  * Citizen calls another citizen by email (C2C).
+ * RESTRICTION : seuls les agents (Catégorie A) peuvent utiliser cette fonction.
  */
 export const callCitizenByEmail = authMutation({
   args: {
     email: v.string(),
   },
   handler: async (ctx, args) => {
+    // Bloquer les citoyens (Catégorie B)
+    const isCitizen = await isPublicUser(ctx, ctx.user._id);
+    if (isCitizen) {
+      throw error(
+        ErrorCode.INSUFFICIENT_PERMISSIONS,
+        "Les ressortissants ne peuvent pas appeler d'autres ressortissants. Utilisez les lignes d'appel de votre représentation.",
+      );
+    }
     const targetUser = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
@@ -638,7 +676,7 @@ export const callCitizenByEmail = authMutation({
     // End any stale active calls from this user
     await endStaleCalls(ctx, ctx.user._id);
 
-    const roomName = `mtg-c2c-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`;
+    const roomName = `mtg-c2c-${Date.now().toString(36)}-${crypto.randomUUID().replace(/-/g, "").substring(0, 8)}`;
 
     const titleParts = [];
     if (targetUser.firstName) titleParts.push(targetUser.firstName);
@@ -665,12 +703,22 @@ export const callCitizenByEmail = authMutation({
 
 /**
  * Citizen calls another citizen by ID (C2C, used for history recall).
+ * RESTRICTION : seuls les agents (Catégorie A) peuvent utiliser cette fonction.
  */
 export const callCitizenById = authMutation({
   args: {
     targetUserId: v.id("users"),
   },
   handler: async (ctx, args) => {
+    // Bloquer les citoyens (Catégorie B)
+    const isCitizen = await isPublicUser(ctx, ctx.user._id);
+    if (isCitizen) {
+      throw error(
+        ErrorCode.INSUFFICIENT_PERMISSIONS,
+        "Les ressortissants ne peuvent pas appeler d'autres ressortissants. Utilisez les lignes d'appel de votre représentation.",
+      );
+    }
+
     const targetUser = await ctx.db.get(args.targetUserId);
 
     if (!targetUser) {
@@ -684,7 +732,7 @@ export const callCitizenById = authMutation({
     // End any stale active calls from this user
     await endStaleCalls(ctx, ctx.user._id);
 
-    const roomName = `mtg-c2c-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`;
+    const roomName = `mtg-c2c-${Date.now().toString(36)}-${crypto.randomUUID().replace(/-/g, "").substring(0, 8)}`;
 
     const titleParts = [];
     if (targetUser.firstName) titleParts.push(targetUser.firstName);
@@ -709,3 +757,67 @@ export const callCitizenById = authMutation({
   },
 });
 
+
+// ============================================
+// CITIZEN → REQUEST AGENT (routed through standard line)
+// ============================================
+
+/**
+ * Citoyen appelle l'agent traitant sa demande.
+ * L'appel est routé via la ligne standard/par défaut de l'org,
+ * PAS en appel direct vers l'agent.
+ */
+export const callRequestAgent = authMutation({
+  args: {
+    requestId: v.id("requests"),
+  },
+  handler: async (ctx, args) => {
+    const request = await ctx.db.get(args.requestId);
+    if (!request) throw error(ErrorCode.NOT_FOUND, "Demande non trouvée");
+    if (request.userId !== ctx.user._id) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Cette demande ne vous appartient pas");
+    }
+    if (!request.orgId) {
+      throw error(ErrorCode.INVALID_ARGUMENT, "Aucune organisation liée à cette demande");
+    }
+
+    const org = await ctx.db.get(request.orgId);
+    if (!org) throw error(ErrorCode.NOT_FOUND, "Organisation non trouvée");
+
+    // Trouver la ligne par défaut de l'org
+    const callLines = await ctx.db
+      .query("callLines")
+      .withIndex("by_org_active", (q: any) =>
+        q.eq("orgId", request.orgId).eq("isActive", true),
+      )
+      .collect();
+
+    const defaultLine = callLines.find((l) => l.isDefault && l.type === "org");
+    const fallbackLine = callLines.find((l) => l.type === "org");
+    const callLineId = defaultLine?._id ?? fallbackLine?._id;
+
+    await endStaleCalls(ctx, ctx.user._id);
+
+    const roomName = generateRoomName(org.slug);
+
+    const meetingId = await ctx.db.insert("meetings", {
+      title: `Appel demande — ${org.name}`,
+      type: "call",
+      status: "active",
+      roomName,
+      orgId: request.orgId,
+      createdBy: ctx.user._id,
+      isOrgInbound: true,
+      callLineId,
+      requestId: args.requestId,
+      mediaType: "audio",
+      participants: [
+        { userId: ctx.user._id, role: "host", joinedAt: Date.now() },
+      ],
+      maxParticipants: 2,
+      startedAt: Date.now(),
+    });
+
+    return { meetingId, roomName };
+  },
+});

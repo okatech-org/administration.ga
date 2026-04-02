@@ -26,11 +26,11 @@ interface OrgGroup {
 /* ─── Real accounts, hardcoded for dev switcher ─── */
 const DEV_ACCOUNTS: OrgGroup[] = [
 	{
-		org: "👑 Back-Office",
+		org: " Back-Office",
 		accounts: [
-			{ label: "Gueylord A. PELLEN-LAKOUMBA — Super Admin", email: "iasted@me.com", org: "👑 Back-Office" },
-			{ label: "Berny ITOUTOU — Admin Système", email: "itoutouberny@gmail.com", org: "👑 Back-Office" },
-			{ label: "Annabelle P. KASSA DI SCALA — Admin", email: "annabelle.gabao@gmail.com", org: "👑 Back-Office" },
+			{ label: "Gueylord A. PELLEN-LAKOUMBA — Super Admin", email: "iasted@me.com", org: " Back-Office" },
+			{ label: "Berny ITOUTOU — Admin Système", email: "itoutouberny@gmail.com", org: " Back-Office" },
+			{ label: "Annabelle P. KASSA DI SCALA — Admin", email: "annabelle.gabao@gmail.com", org: " Back-Office" },
 		],
 	},
 ];

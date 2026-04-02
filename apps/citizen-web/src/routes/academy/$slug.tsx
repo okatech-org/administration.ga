@@ -1,5 +1,6 @@
 "use client";
 
+import { sanitizeHtml } from "@workspace/shared/utils/sanitize";
 import { api } from "@convex/_generated/api";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -199,7 +200,7 @@ function TutorialDetailPage() {
             prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
             prose-pre:bg-muted prose-pre:border
             prose-li:text-muted-foreground"
-          dangerouslySetInnerHTML={{ __html: tutorial.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(tutorial.content) }}
         />
       </article>
     </div>

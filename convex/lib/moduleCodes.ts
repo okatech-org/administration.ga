@@ -29,6 +29,7 @@ export const ModuleCode = {
   appointments: "appointments",
   profiles: "profiles",
   citizen_profiles: "citizen_profiles",
+  iprofil: "iprofil",
 
   // Consular services
   consular_registrations: "consular_registrations",
@@ -195,11 +196,17 @@ export const moduleCodeValidator = v.union(
   // Special
   v.literal(ModuleCode.intelligence),
   v.literal(ModuleCode.cv),
+  v.literal(ModuleCode.iprofil),
 );
 
 // ═══════════════════════════════════════════════════════════════
 // MODULE REGISTRY — Metadata for each module
 // ═══════════════════════════════════════════════════════════════
+
+export interface CapabilityDefinition {
+  code: string;
+  label: LocalizedString;
+}
 
 export interface ModuleDefinition {
   code: ModuleCodeValue;
@@ -209,36 +216,53 @@ export interface ModuleDefinition {
   color: string;     // Tailwind color class
   category: ModuleCategory;
   isCore: boolean;   // Core modules cannot be disabled
+  /** Sous-modules/onglets activables individuellement */
+  capabilities?: CapabilityDefinition[];
 }
 
 export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   // ─── Core ─────────────────────────────────────────────────
   [ModuleCode.requests]: {
     code: ModuleCode.requests,
-    label: { fr: "Demandes", en: "Requests" },
+    label: { fr: "Affaires Consulaires", en: "Consular Affairs" },
     description: { fr: "Gestion des demandes consulaires", en: "Consular request management" },
     icon: "FileEdit",
     color: "text-emerald-500",
     category: "core",
     isCore: true,
+    capabilities: [
+      { code: "passports", label: { fr: "Passeports", en: "Passports" } },
+      { code: "visas", label: { fr: "Visas", en: "Visas" } },
+      { code: "civil_status", label: { fr: "État civil", en: "Civil status" } },
+      { code: "registre", label: { fr: "Registre consulaire", en: "Consular registry" } },
+    ],
   },
   [ModuleCode.documents]: {
     code: ModuleCode.documents,
-    label: { fr: "Documents", en: "Documents" },
+    label: { fr: "iDocument", en: "iDocument" },
     description: { fr: "Gestion et vérification des documents", en: "Document management and verification" },
     icon: "FileText",
     color: "text-blue-500",
     category: "core",
     isCore: true,
+    capabilities: [
+      { code: "explorer", label: { fr: "Explorateur", en: "Explorer" } },
+      { code: "archive", label: { fr: "Archive", en: "Archive" } },
+      { code: "retention", label: { fr: "Rétention", en: "Retention" } },
+    ],
   },
   [ModuleCode.appointments]: {
     code: ModuleCode.appointments,
-    label: { fr: "Rendez-vous", en: "Appointments" },
+    label: { fr: "iAgenda", en: "iAgenda" },
     description: { fr: "Planification des rendez-vous", en: "Appointment scheduling" },
     icon: "CalendarDays",
     color: "text-violet-500",
     category: "core",
     isCore: true,
+    capabilities: [
+      { code: "rdv_consulaires", label: { fr: "RDV Consulaires", en: "Consular appointments" } },
+      { code: "agenda_diplomatique", label: { fr: "Agenda diplomatique", en: "Diplomatic agenda" } },
+    ],
   },
   [ModuleCode.profiles]: {
     code: ModuleCode.profiles,
@@ -257,6 +281,15 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     color: "text-amber-500",
     category: "core",
     isCore: false,
+  },
+  [ModuleCode.iprofil]: {
+    code: ModuleCode.iprofil,
+    label: { fr: "iProfil", en: "iProfil" },
+    description: { fr: "Profil métier et accréditations diplomatiques", en: "Professional profile and diplomatic credentials" },
+    icon: "UserCircle",
+    color: "text-violet-500",
+    category: "core",
+    isCore: true,
   },
 
   // ─── Consular ─────────────────────────────────────────────
@@ -347,7 +380,7 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   // ─── Finance ──────────────────────────────────────────────
   [ModuleCode.finance]: {
     code: ModuleCode.finance,
-    label: { fr: "Finances", en: "Finance" },
+    label: { fr: "Paiements", en: "Payments" },
     description: { fr: "Gestion financière consulaire", en: "Consular financial management" },
     icon: "Wallet",
     color: "text-yellow-600",
@@ -367,8 +400,8 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   // ─── Communication & Outils (category: tools) ─────────────
   [ModuleCode.communication]: {
     code: ModuleCode.communication,
-    label: { fr: "Communication", en: "Communication" },
-    description: { fr: "Publications et notifications", en: "Publications and notifications" },
+    label: { fr: "Actualités", en: "News" },
+    description: { fr: "Publications et notifications aux citoyens", en: "Citizen publications and notifications" },
     icon: "Megaphone",
     color: "text-sky-500",
     category: "tools",
@@ -385,12 +418,17 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   },
   [ModuleCode.digital_mail]: {
     code: ModuleCode.digital_mail,
-    label: { fr: "Courrier numérique", en: "Digital mail" },
-    description: { fr: "Envoi de courrier dématérialisé", en: "Digital mail delivery" },
+    label: { fr: "iBoîte", en: "iBoîte" },
+    description: { fr: "Messagerie interne et courrier dématérialisé", en: "Internal messaging and digital mail" },
     icon: "Mail",
     color: "text-blue-400",
     category: "tools",
     isCore: false,
+    capabilities: [
+      { code: "mail", label: { fr: "Messagerie", en: "Mail" } },
+      { code: "packages", label: { fr: "Colis", en: "Packages" } },
+      { code: "calls", label: { fr: "Appels", en: "Calls" } },
+    ],
   },
   [ModuleCode.meetings]: {
     code: ModuleCode.meetings,
@@ -414,8 +452,8 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   // ─── Admin ────────────────────────────────────────────────
   [ModuleCode.team]: {
     code: ModuleCode.team,
-    label: { fr: "Organismes", en: "Organizations" },
-    description: { fr: "Gestion des organismes", en: "Organization management" },
+    label: { fr: "Équipe", en: "Team" },
+    description: { fr: "Gestion de l'équipe et des membres", en: "Team and member management" },
     icon: "Building2",
     color: "text-blue-500",
     category: "admin",
@@ -441,8 +479,8 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   },
   [ModuleCode.settings]: {
     code: ModuleCode.settings,
-    label: { fr: "Services", en: "Services" },
-    description: { fr: "Gestion des services", en: "Service management" },
+    label: { fr: "Paramètres", en: "Settings" },
+    description: { fr: "Configuration et paramétrage", en: "Configuration and settings" },
     icon: "Wrench",
     color: "text-zinc-500",
     category: "admin",
@@ -477,8 +515,8 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   },
   [ModuleCode.analytics]: {
     code: ModuleCode.analytics,
-    label: { fr: "Journal d'audit", en: "Audit Log" },
-    description: { fr: "Traçabilité et journal d'audit", en: "Audit trail and logs" },
+    label: { fr: "Statistiques", en: "Statistics" },
+    description: { fr: "Tableaux de bord et statistiques", en: "Dashboards and statistics" },
     icon: "ScrollText",
     color: "text-cyan-500",
     category: "admin",
@@ -506,8 +544,8 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   // ─── Diplomatique ─────────────────────────────────────────
   [ModuleCode.intelligence]: {
     code: ModuleCode.intelligence,
-    label: { fr: "Renseignement", en: "Intelligence" },
-    description: { fr: "Notes de renseignement diplomatique", en: "Diplomatic intelligence notes" },
+    label: { fr: "Affaires Diplomatiques", en: "Diplomatic Affairs" },
+    description: { fr: "Intelligence et renseignement diplomatique", en: "Diplomatic intelligence and affairs" },
     icon: "ShieldAlert",
     color: "text-red-500",
     category: "diplomatic",
@@ -581,6 +619,11 @@ export const MODULE_ACCESS_TASKS: Partial<Record<string, Record<ModuleAccessLeve
     reader: ["profiles.view"],
     editor: ["profiles.view", "profiles.manage"],
     admin: ["profiles.view", "profiles.manage"],
+  },
+  iprofil: {
+    reader: ["profiles.view"],
+    editor: ["profiles.view", "profiles.manage"],
+    admin: ["profiles.view", "profiles.manage", "team.assign_roles"],
   },
   civil_status: {
     reader: ["civil_status.transcribe"],
@@ -686,6 +729,34 @@ export function getTasksForModuleAccess(
   return mapping[level] ?? [];
 }
 
+/**
+ * Résout l'ensemble complet des task codes depuis un tableau moduleAccess.
+ *
+ * Utilisé par getTasksForMembership() pour dériver les permissions
+ * d'un poste depuis sa configuration module×niveau.
+ *
+ * Ajoute automatiquement les tâches transversales implicites
+ * (org.view, schedules.view) présentes dans tous les profils.
+ */
+export function resolveTaskCodesFromModuleAccess(
+  moduleAccess: Array<{ moduleCode: string; accessLevel: ModuleAccessLevel }>,
+): Set<string> {
+  const tasks = new Set<string>();
+
+  // Tâches transversales implicites pour tout membre actif
+  tasks.add("org.view");
+  tasks.add("schedules.view");
+
+  for (const entry of moduleAccess) {
+    const moduleTasks = getTasksForModuleAccess(entry.moduleCode, entry.accessLevel);
+    for (const task of moduleTasks) {
+      tasks.add(task);
+    }
+  }
+
+  return tasks;
+}
+
 /** Category labels for UI */
 export const CATEGORY_LABELS: Record<ModuleCategory, LocalizedString> = {
   core: { fr: "Modules fondamentaux", en: "Core modules" },
@@ -705,6 +776,79 @@ export function getCoreModules(): ModuleDefinition[] {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// SIDEBAR MODULE GROUPS — Sections du sidebar agent-web
+// Utilisé pour la configuration des modules (OrgModulesPanel)
+// ═══════════════════════════════════════════════════════════════
+
+export interface SidebarModuleGroup {
+  key: string;
+  label: LocalizedString;
+  icon: string;
+  modules: ModuleCodeValue[];
+}
+
+/**
+ * Groupement des modules par sections du sidebar agent-web.
+ * L'admin configure ces sections — elles correspondent exactement
+ * a ce que l'utilisateur voit dans le menu.
+ */
+export const SIDEBAR_MODULE_GROUPS: SidebarModuleGroup[] = [
+  {
+    key: "operations",
+    label: { fr: "Opérations", en: "Operations" },
+    icon: "Globe2",
+    modules: [
+      ModuleCode.intelligence,
+      ModuleCode.requests,
+      ModuleCode.communication,
+    ],
+  },
+  {
+    key: "ibureau",
+    label: { fr: "iBureau", en: "iBureau" },
+    icon: "Briefcase",
+    modules: [
+      ModuleCode.digital_mail,
+      ModuleCode.correspondance,
+      ModuleCode.documents,
+      ModuleCode.appointments,
+    ],
+  },
+  {
+    key: "gestion",
+    label: { fr: "Gestion", en: "Management" },
+    icon: "BarChart3",
+    modules: [
+      ModuleCode.team,
+      ModuleCode.finance,
+      ModuleCode.analytics,
+    ],
+  },
+  {
+    key: "communication",
+    label: { fr: "Communication", en: "Communication" },
+    icon: "Video",
+    modules: [
+      ModuleCode.meetings,
+    ],
+  },
+  {
+    key: "administration",
+    label: { fr: "Administration", en: "Administration" },
+    icon: "Settings",
+    modules: [
+      ModuleCode.settings,
+    ],
+  },
+];
+
+/** Get all default capabilities for a module */
+export function getDefaultCapabilities(moduleCode: ModuleCodeValue): string[] {
+  const def = MODULE_REGISTRY[moduleCode];
+  return def?.capabilities?.map((c) => c.code) ?? [];
+}
+
+// ═══════════════════════════════════════════════════════════════
 // ADMIN AXES — High-level grouping for admin sidebar
 // ═══════════════════════════════════════════════════════════════
 
@@ -719,13 +863,13 @@ export function getCoreModules(): ModuleDefinition[] {
  *   - Attribution: "this admin can access the network and population axes"
  */
 export const AdminAxis = {
-  /** 🏛️ Réseau — Organismes, services, demandes, communauté */
+  /**  Réseau — Organismes, services, demandes, communauté */
   network: "network",
-  /** 👥 Population — Comptes staff, profils citoyens, support */
+  /**  Population — Comptes staff, profils citoyens, support */
   population: "population",
-  /** 🔒 Sécurité & Système — Audit, monitoring, paramètres */
+  /**  Sécurité & Système — Audit, monitoring, paramètres */
   security: "security",
-  /** ⚙️ Contrôle — Postes, modules, permissions, contenu éditorial */
+  /**  Éditorial — Postes, modules, permissions, contenu éditorial */
   control: "control",
 } as const;
 
@@ -761,9 +905,9 @@ export const ADMIN_AXIS_REGISTRY: Record<AdminAxisValue, AdminAxisDefinition> = 
   },
   [AdminAxis.control]: {
     code: AdminAxis.control,
-    label: { fr: "Contrôle", en: "Control" },
-    icon: "Settings",
-    description: { fr: "Gouvernance des rôles, modules et contenu", en: "Role, module and content governance" },
+    label: { fr: "Éditorial", en: "Editorial" },
+    icon: "PenLine",
+    description: { fr: "Publications, tutoriels et événements communautaires", en: "Publications, tutorials and community events" },
   },
 };
 
@@ -793,18 +937,18 @@ export interface AxisModuleMapping {
 }
 
 export const AXIS_MODULE_MAP: Record<AdminAxisValue, AxisModuleMapping> = {
-  // 🏛️ AXE 1 — RÉSEAU
+  //  AXE 1 — RÉSEAU
   [AdminAxis.network]: {
     modules: [ModuleCode.team, ModuleCode.settings, ModuleCode.requests, ModuleCode.associations],
     sidebarItems: [
       { title: { fr: "Dashboard", en: "Dashboard" }, icon: "LayoutDashboard" },
-      { title: { fr: "Organismes", en: "Organizations" }, moduleCode: ModuleCode.team, icon: "Building2" },
+      { title: { fr: "Équipe", en: "Team" }, moduleCode: ModuleCode.team, icon: "Users2" },
       { title: { fr: "Services", en: "Services" }, moduleCode: ModuleCode.settings, icon: "Wrench" },
-      { title: { fr: "Demandes", en: "Requests" }, moduleCode: ModuleCode.requests, icon: "ClipboardList" },
+      { title: { fr: "Affaires Consulaires", en: "Consular Affairs" }, moduleCode: ModuleCode.requests, icon: "ClipboardList" },
       { title: { fr: "Réclamations associatives", en: "Association Claims" }, moduleCode: ModuleCode.associations, icon: "Crown" },
     ],
   },
-  // 👥 AXE 2 — POPULATION
+  //  AXE 2 — POPULATION
   [AdminAxis.population]: {
     modules: [ModuleCode.profiles, ModuleCode.citizen_profiles, ModuleCode.appointments],
     sidebarItems: [
@@ -813,17 +957,17 @@ export const AXIS_MODULE_MAP: Record<AdminAxisValue, AxisModuleMapping> = {
       { title: { fr: "Support", en: "Support" }, moduleCode: ModuleCode.appointments, icon: "LifeBuoy" },
     ],
   },
-  // 🔒 AXE 3 — SÉCURITÉ & SYSTÈME (SuperAdmin/AdminSystem only)
+  //  AXE 3 — SÉCURITÉ & SYSTÈME (SuperAdmin/AdminSystem only)
   [AdminAxis.security]: {
     modules: [ModuleCode.analytics, ModuleCode.monitoring, ModuleCode.platform_settings],
     restrictedToSuperSystem: true,
     sidebarItems: [
-      { title: { fr: "Journal d'audit", en: "Audit Logs" }, moduleCode: ModuleCode.analytics, icon: "ScrollText" },
+      { title: { fr: "Statistiques", en: "Statistics" }, moduleCode: ModuleCode.analytics, icon: "BarChart3" },
       { title: { fr: "Monitoring", en: "Monitoring" }, moduleCode: ModuleCode.monitoring, icon: "Activity" },
       { title: { fr: "Paramètres", en: "Settings" }, moduleCode: ModuleCode.platform_settings, icon: "Settings" },
     ],
   },
-  // ⚙️ AXE 4 — CONTRÔLE
+  //  AXE 4 — ÉDITORIAL
   [AdminAxis.control]: {
     modules: [ModuleCode.roles, ModuleCode.permissions, ModuleCode.org_config, ModuleCode.services_config, ModuleCode.communication, ModuleCode.tutorials, ModuleCode.community_events],
     sidebarItems: [
@@ -866,14 +1010,14 @@ export const ROLE_MODULE_PRESETS: RoleModulePreset[] = [
     id: "admin_system",
     label: { fr: "Admin Système", en: "System Admin" },
     description: { fr: "Accès complet à tous les modules", en: "Full access to all modules" },
-    emoji: "🛡️",
+    emoji: "",
     modules: [...ALL_MODULE_CODES],
   },
   {
     id: "admin_standard",
     label: { fr: "Admin Standard", en: "Standard Admin" },
     description: { fr: "Réseau + Population + Contrôle éditorial", en: "Network + Population + Editorial Control" },
-    emoji: "🔧",
+    emoji: "",
     modules: [
       ...CORE_MODULE_CODES,
       ModuleCode.team, ModuleCode.settings,
@@ -887,7 +1031,7 @@ export const ROLE_MODULE_PRESETS: RoleModulePreset[] = [
     id: "sous_admin",
     label: { fr: "Sous-Admin", en: "Sub-Admin" },
     description: { fr: "Réseau + Population, sans sécurité ni gouvernance", en: "Network + Population, no security or governance" },
-    emoji: "👤",
+    emoji: "",
     modules: [
       ...CORE_MODULE_CODES,
       ModuleCode.associations,
@@ -898,7 +1042,7 @@ export const ROLE_MODULE_PRESETS: RoleModulePreset[] = [
     id: "admin_content",
     label: { fr: "Contenu uniquement", en: "Content Only" },
     description: { fr: "Publications, tutoriels et événements", en: "Posts, tutorials and events" },
-    emoji: "📝",
+    emoji: "",
     modules: [
       ...CORE_MODULE_CODES,
       ModuleCode.communication, ModuleCode.tutorials, ModuleCode.community_events,
@@ -942,19 +1086,19 @@ export function getRecommendedModules(ctx: ModuleAttributionContext): {
 
   if (ctx.role === "super_admin" || ctx.role === "admin_system") {
     modulePool = new Set(ALL_MODULE_CODES);
-    sources.push({ label: ctx.role === "super_admin" ? "Super Admin" : "Admin Système", emoji: "🛡️" });
+    sources.push({ label: ctx.role === "super_admin" ? "Super Admin" : "Admin Système", emoji: "" });
   } else if (ctx.role === "admin") {
     // Admin standard: reasonable subset
     const preset = ROLE_MODULE_PRESETS.find((p) => p.id === "admin_standard");
     modulePool = new Set(preset?.modules ?? CORE_MODULE_CODES);
-    sources.push({ label: "Admin", emoji: "🔧" });
+    sources.push({ label: "Admin", emoji: "" });
   } else if (ctx.role === "sous_admin") {
     const preset = ROLE_MODULE_PRESETS.find((p) => p.id === "sous_admin");
     modulePool = new Set(preset?.modules ?? CORE_MODULE_CODES);
-    sources.push({ label: "Sous-Admin", emoji: "👤" });
+    sources.push({ label: "Sous-Admin", emoji: "" });
   } else {
     modulePool = new Set(CORE_MODULE_CODES);
-    sources.push({ label: "Base", emoji: "📋" });
+    sources.push({ label: "Base", emoji: "" });
   }
 
   // Step 2: If orgType is specified, intersect with org template modules
@@ -971,7 +1115,7 @@ export function getRecommendedModules(ctx: ModuleAttributionContext): {
         }
       }
       modulePool = intersected;
-      sources.push({ label: ORG_TYPE_LABELS[ctx.orgType] ?? ctx.orgType, emoji: ORG_TYPE_EMOJIS[ctx.orgType] ?? "🏢" });
+      sources.push({ label: ORG_TYPE_LABELS[ctx.orgType] ?? ctx.orgType, emoji: ORG_TYPE_EMOJIS[ctx.orgType] ?? "" });
     }
   }
 
@@ -1030,12 +1174,12 @@ const ORG_TYPE_LABELS: Record<string, string> = {
 };
 
 const ORG_TYPE_EMOJIS: Record<string, string> = {
-  embassy: "🏛️",
-  high_representation: "⭐",
-  general_consulate: "🏢",
-  permanent_mission: "🌐",
-  high_commission: "👑",
-  honorary_consulate: "📜",
-  third_party: "🤝",
-  custom: "⚙️",
+  embassy: "",
+  high_representation: "",
+  general_consulate: "",
+  permanent_mission: "",
+  high_commission: "",
+  honorary_consulate: "",
+  third_party: "",
+  custom: "",
 };

@@ -39,8 +39,11 @@ jobs:
         run: bunx playwright test
         working-directory: apps/citizen-web
         env:
-          VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
-          VITE_CONVEX_SITE_URL: ${{ secrets.VITE_CONVEX_SITE_URL }}
+          # Point to the Convex DEV deployment (has DEV_SIGNIN_ENABLED=true)
+          VITE_CONVEX_URL: ${{ secrets.E2E_CONVEX_URL }}
+          VITE_CONVEX_SITE_URL: ${{ secrets.E2E_CONVEX_SITE_URL }}
+          # Enable dev mode so the /api/dev/sign-in proxy is active
+          VITE_E2E_MODE: "true"
           CI: true
 
       - name: Upload Playwright report

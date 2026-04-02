@@ -185,6 +185,12 @@ export const createPaymentIntent = action({
 		requestId: v.id("requests"),
 	},
 	handler: async (ctx, args): Promise<{ clientSecret: string; amount: number; currency: string }> => {
+		// Verify authentication
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			throw new Error("NOT_AUTHENTICATED");
+		}
+
 		// Get request details
 		const data = await ctx.runQuery(internal.functions.payments.getRequestInternal, {
 			requestId: args.requestId,
@@ -195,6 +201,11 @@ export const createPaymentIntent = action({
 		}
 
 		const { request, orgService, service, user, org } = data;
+
+		// Ownership check: only the request owner can create a payment
+		if (user.authId !== identity.subject) {
+			throw new Error("INSUFFICIENT_PERMISSIONS: You can only pay for your own requests");
+		}
 
 		// Check if already paid
 		if (request.paymentStatus === "succeeded") {

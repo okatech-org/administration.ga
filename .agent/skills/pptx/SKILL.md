@@ -471,7 +471,7 @@ slide.notes = {
 
 ## Anti-patterns
 
-❌ **JAMAIS** créer des slides texte uniquement:
+ **JAMAIS** créer des slides texte uniquement:
 ```typescript
 // MAUVAIS:
 slide.addText('Bullet 1\nBullet 2\nBullet 3\nBullet 4\nBullet 5', {
@@ -479,14 +479,14 @@ slide.addText('Bullet 1\nBullet 2\nBullet 3\nBullet 4\nBullet 5', {
 });
 ```
 
-✅ **FAIRE** ajouter des visuels:
+ **FAIRE** ajouter des visuels:
 ```typescript
 // Slide avec image et peu de texte
 slide.addImage({ path: 'icon.png', x: 0.5, y: 1, w: 1.5, h: 1.5 });
 slide.addText('Concept clé', { x: 2.2, y: 1, w: 7.3, h: 1.5 });
 ```
 
-❌ **NE PAS** mélanger les couleurs sans cohérence:
+ **NE PAS** mélanger les couleurs sans cohérence:
 ```typescript
 // MAUVAIS: Trop de couleurs
 slide.addText('...', { color: 'FF0000' });
@@ -494,7 +494,7 @@ slide.addText('...', { color: '00FF00' });
 slide.addText('...', { color: '0000FF' });
 ```
 
-✅ **FAIRE** utiliser une palette limitée:
+ **FAIRE** utiliser une palette limitée:
 ```typescript
 // BON: 3 couleurs cohérentes
 slide.addText('...', { color: colorScheme.dominant });
@@ -502,13 +502,13 @@ slide.addText('...', { color: colorScheme.secondary });
 slide.addText('...', { color: colorScheme.accent });
 ```
 
-❌ **NE PAS** charger manuellement les modifications:
+ **NE PAS** charger manuellement les modifications:
 ```typescript
 // MAUVAIS: Édition brute du XML
 // ... manipulation manuelle
 ```
 
-✅ **FAIRE** utiliser python-pptx pour édition:
+ **FAIRE** utiliser python-pptx pour édition:
 ```python
 from pptx import Presentation
 

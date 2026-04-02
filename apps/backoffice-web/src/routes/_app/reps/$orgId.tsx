@@ -46,7 +46,7 @@ import {
 } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_app/orgs/$orgId")({
+export const Route = createFileRoute("/_app/reps/$orgId")({
 	component: OrgDetailPage,
 });
 
@@ -103,7 +103,7 @@ function KpiCard({
 				</div>
 			</CardContent>
 		</Card>
-	);
+	)
 }
 
 // ─── Main Component ─────────────────────────────────────────────────────────
@@ -121,22 +121,22 @@ function OrgDetailPage() {
 		error: orgError,
 	} = useAuthenticatedConvexQuery(api.functions.orgs.getById, {
 		orgId: orgId as Id<"orgs">,
-	});
+	})
 
 	const { data: members, isPending: isMembersLoading } =
 		useAuthenticatedConvexQuery(api.functions.orgs.getMembers, {
 			orgId: orgId as Id<"orgs">,
-		});
+		})
 
 	const { data: orgChart, isPending: isOrgChartLoading } =
 		useAuthenticatedConvexQuery(api.functions.orgs.getOrgChart, {
 			orgId: orgId as Id<"orgs">,
-		});
+		})
 
 	const { data: orgServices } = useAuthenticatedConvexQuery(
 		api.functions.services.listByOrg,
 		{ orgId: orgId as Id<"orgs"> },
-	);
+	)
 
 	// Requests for this org (paginated)
 	const { results: requests, isLoading: isRequestsLoading } =
@@ -144,13 +144,13 @@ function OrgDetailPage() {
 			api.functions.requests.listByOrg,
 			{ orgId: orgId as Id<"orgs"> },
 			{ initialNumItems: 10 },
-		);
+		)
 
 	// Consular registry stats
 	const { data: registryStats } = useAuthenticatedConvexQuery(
 		api.functions.consularRegistrations.getStatsByOrg,
 		{ orgId: orgId as Id<"orgs"> },
-	);
+	)
 
 	// ── Derived counts ──────────────────────────────────────────
 	const memberCount = members?.length ?? 0;
@@ -182,7 +182,7 @@ function OrgDetailPage() {
 					))}
 				</div>
 			</div>
-		);
+		)
 	}
 
 	if (orgError || !org) {
@@ -195,19 +195,19 @@ function OrgDetailPage() {
 				<Button
 					variant="outline"
 					size="sm"
-					onClick={() => navigate({ to: "/orgs" })}
+					onClick={() => navigate({ to: "/reps" })}
 				>
 					<ArrowLeft className="mr-2 h-4 w-4" />
 					{t("superadmin.common.back")}
 				</Button>
 			</div>
-		);
+		)
 	}
 
 	const typeStyle = ORG_TYPE_STYLE[org.type] ?? {
 		color: "text-gray-700",
 		bg: "bg-gray-100",
-	};
+	}
 
 	return (
 		<div className="flex flex-1 flex-col gap-6 p-4 pt-6 md:p-6">
@@ -216,7 +216,7 @@ function OrgDetailPage() {
 				variant="ghost"
 				size="sm"
 				className="w-fit -ml-2"
-				onClick={() => navigate({ to: "/orgs" })}
+				onClick={() => navigate({ to: "/reps" })}
 			>
 				<ArrowLeft className="mr-2 h-4 w-4" />
 				{t("superadmin.common.back")}
@@ -279,14 +279,14 @@ function OrgDetailPage() {
 				{/* Action buttons */}
 				<div className="flex items-center gap-2 shrink-0">
 					<Button variant="outline" size="sm" asChild>
-						<Link to="/orgs/$slug" params={{ slug: org.slug }} target="_blank">
+						<a href={`/reps/${org.slug}`} target="_blank" rel="noopener noreferrer">
 							<ExternalLink className="mr-1.5 h-3.5 w-3.5" />
 							{t("superadmin.organizations.viewPublic", "Page publique")}
-						</Link>
+						</a>
 					</Button>
 					<Button size="sm" asChild>
 						<Link
-							to="/orgs/$orgId/edit"
+							to="/reps/$orgId/edit"
 							params={{ orgId }}
 						>
 							<Edit className="mr-1.5 h-3.5 w-3.5" />
@@ -399,7 +399,7 @@ function OrgDetailPage() {
 								<p>
 									{org.address?.city}
 									{org.address?.postalCode &&
-										`, ${org.address.postalCode}`}
+										", ${org.address.postalCode}"}
 								</p>
 								<p className="font-medium">
 									{org.address?.country &&
@@ -424,7 +424,7 @@ function OrgDetailPage() {
 									<div className="flex items-center gap-2">
 										<Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
 										<a
-											href={`mailto:${org.email}`}
+											href={"mailto:${org.email}"}
 											className="text-primary hover:underline truncate"
 										>
 											{org.email}
@@ -435,7 +435,7 @@ function OrgDetailPage() {
 									<div className="flex items-center gap-2">
 										<Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
 										<a
-											href={`tel:${org.phone}`}
+											href={"tel:${org.phone}"}
 											className="text-primary hover:underline"
 										>
 											{org.phone}
@@ -619,11 +619,11 @@ function OrgDetailPage() {
 											}
 											onKeyDown={(e) => {
 												if (e.key === "Enter" || e.key === " ") {
-													e.preventDefault();
+													e.preventDefault()
 													navigate({
 														to: "/requests/$requestId",
 														params: { requestId: req._id },
-													});
+													})
 												}
 											}}
 										>
@@ -849,5 +849,5 @@ function OrgDetailPage() {
 				</TabsContent>
 			</Tabs>
 		</div>
-	);
+	)
 }

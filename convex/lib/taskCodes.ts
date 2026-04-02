@@ -129,6 +129,11 @@ export const TaskCode = {
     manage: "meetings.manage",
     view_history: "meetings.view_history",
   },
+  // Chat peer-to-peer
+  chats: {
+    view: "chats.view",
+    send: "chats.send",
+  },
   // Correspondance & Dossiers de procédure
   correspondance: {
     view: "correspondance.view",
@@ -264,6 +269,9 @@ export const taskCodeValidator = v.union(
   // Digital Mail
   v.literal(TaskCode.digital_mail.view),
   v.literal(TaskCode.digital_mail.manage),
+  // Chat peer-to-peer
+  v.literal(TaskCode.chats.view),
+  v.literal(TaskCode.chats.send),
   // Meetings & Calls
   v.literal(TaskCode.meetings.create),
   v.literal(TaskCode.meetings.join),
@@ -374,6 +382,9 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   // Digital Mail
   [TaskCode.digital_mail.view]: "low",
   [TaskCode.digital_mail.manage]: "medium",
+  // Chat peer-to-peer
+  [TaskCode.chats.view]: "low",
+  [TaskCode.chats.send]: "low",
   // Meetings & Calls
   [TaskCode.meetings.create]: "low",
   [TaskCode.meetings.join]: "low",

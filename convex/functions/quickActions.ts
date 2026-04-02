@@ -1,7 +1,7 @@
 import { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
-import { action, mutation } from "../_generated/server";
-import { api } from "../_generated/api";
+import { internalAction, internalMutation } from "../_generated/server";
+import { internal } from "../_generated/api";
 import { buildRegistrationFormData } from "./profiles";
 import { ChildProfileStatus } from "../lib/constants";
 
@@ -9,7 +9,7 @@ import { ChildProfileStatus } from "../lib/constants";
  * Quick Action — batch mutation.
  * Finds requests with empty formData, rebuilds it from the linked profile.
  */
-export const quickActionBatch = mutation({
+export const quickActionBatch = internalMutation({
   args: {
     cursor: v.optional(v.string()),
     batchSize: v.number(),
@@ -76,7 +76,7 @@ export const quickActionBatch = mutation({
  * Usage:
  *   npx convex run functions/quickActions:runQuickAction
  */
-export const runQuickAction = action({
+export const runQuickAction = internalAction({
   args: {
     batchSize: v.optional(v.number()),
   },
@@ -89,10 +89,10 @@ export const runQuickAction = action({
     let totalPatched = 0;
     let isDone = false;
 
-    console.log(`🚀 Starting quick action with batch size ${batchSize}...`);
+    console.log(` Starting quick action with batch size ${batchSize}...`);
 
     while (!isDone) {
-      const result: any = await ctx.runMutation(api.functions.quickActions.quickActionBatch, {
+      const result: any = await ctx.runMutation(internal.functions.quickActions.quickActionBatch, {
         cursor,
         batchSize,
       });
@@ -106,7 +106,7 @@ export const runQuickAction = action({
       console.log(`Processed: ${totalProcessed} | Empty: ${totalMatched} | Patched: ${totalPatched}`);
     }
 
-    console.log(`✅ Quick action finished. ${totalProcessed} requests scanned, ${totalMatched} empty, ${totalPatched} patched.`);
+    console.log(` Quick action finished. ${totalProcessed} requests scanned, ${totalMatched} empty, ${totalPatched} patched.`);
 
     return {
       message: "Quick action completed",
@@ -128,7 +128,7 @@ export const runQuickAction = action({
  *  1. User auth email from the `users` table
  *  2. formData.contact_info.email / formData.contact_info.phone on the linked request
  */
-export const backfillEmailPhoneBatch = mutation({
+export const backfillEmailPhoneBatch = internalMutation({
   args: {
     cursor: v.optional(v.string()),
     batchSize: v.number(),
@@ -226,7 +226,7 @@ export const backfillEmailPhoneBatch = mutation({
  * Usage:
  *   npx convex run functions/quickActions:runBackfillEmailPhone
  */
-export const runBackfillEmailPhone = action({
+export const runBackfillEmailPhone = internalAction({
   args: {
     batchSize: v.optional(v.number()),
   },
@@ -241,10 +241,10 @@ export const runBackfillEmailPhone = action({
     let totalPatchedEmail = 0;
     let totalPatchedPhone = 0;
 
-    console.log(`🚀 Starting email/phone backfill with batch size ${batchSize}...`);
+    console.log(` Starting email/phone backfill with batch size ${batchSize}...`);
 
     while (!isDone) {
-      const result: any = await ctx.runMutation(api.functions.quickActions.backfillEmailPhoneBatch, {
+      const result: any = await ctx.runMutation(internal.functions.quickActions.backfillEmailPhoneBatch, {
         cursor,
         batchSize,
       });
@@ -262,7 +262,7 @@ export const runBackfillEmailPhone = action({
       );
     }
 
-    console.log(`✅ Backfill finished. ${totalProcessed} profiles scanned.`);
+    console.log(` Backfill finished. ${totalProcessed} profiles scanned.`);
     console.log(`   Email: ${totalMissingEmail} missing → ${totalPatchedEmail} recovered`);
     console.log(`   Phone: ${totalMissingPhone} missing → ${totalPatchedPhone} recovered`);
 

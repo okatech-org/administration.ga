@@ -68,7 +68,7 @@ export function OrgCorrespondanceConfigTab({ orgId }: OrgCorrespondanceConfigTab
 	const handleInit = async () => {
 		try {
 			const result = await initDefaults({ orgId });
-			toast.success(`${result.created} types de correspondance initialisés ✓`);
+			toast.success(`${result.created} types de correspondance initialisés `);
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur lors de l'initialisation");
 		}

@@ -817,6 +817,7 @@ export const emergencyContactValidator = v.object({
   lastName: v.string(),
   phone: v.string(),
   email: v.optional(v.string()),
+  relationship: v.optional(familyLinkValidator),
 });
 
 export type EmergencyContact = Infer<typeof emergencyContactValidator>;
@@ -950,6 +951,10 @@ export const notificationTypeValidator = v.union(
   v.literal(NotificationType.ActionRequired),
   v.literal(NotificationType.DocumentValidated),
   v.literal(NotificationType.DocumentRejected),
+  // Meetings & Calls
+  v.literal(NotificationType.MeetingInvitation),
+  v.literal(NotificationType.CallIncoming),
+  v.literal(NotificationType.ChatMessage),
 );
 
 // ============================================================================

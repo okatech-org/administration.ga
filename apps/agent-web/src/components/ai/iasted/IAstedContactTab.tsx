@@ -1,207 +1,219 @@
 /**
- * IAstedContactTab — Onglet iContact dans iAsted.
+ * IAstedContactTab — Recherche intelligente de contacts.
  *
- * Contacts :
- * - Collaborateurs (membres de l'org via getOrgChart)
- * - Ressortissants (profils citoyens sous l'autorité de la représentation)
- * Recherche intelligente unifiée sur les deux sources.
+ * Segmentation : Mon équipe | Réseau diplomatique | Ressortissants
+ * Filtres : Pays, Type d'org, Grade/Poste
+ * Groupement par organisation
  */
 
-import { api } from "@convex/_generated/api";
-import { Building2, Loader2, Mail, MapPin, Phone, Search, User, Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+	Building2,
+	Globe,
+	Loader2,
+	Mail,
+	MapPin,
+	Phone,
+	Search,
+	Shield,
+	Users,
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useOrg } from "@/components/org/org-provider";
-import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
+import { useContactSearch, type ContactSource } from "@/hooks/useContactSearch";
 import { cn } from "@/lib/utils";
 
-type ContactSource = "all" | "team" | "citizens";
+const SEGMENTS: Array<{ id: ContactSource | "all"; label: string; icon: typeof Users }> = [
+	{ id: "all", label: "Tous", icon: Users },
+	{ id: "team", label: "Mon équipe", icon: Shield },
+	{ id: "network", label: "Réseau", icon: Globe },
+	{ id: "citizens", label: "Ressortissants", icon: Users },
+];
 
-interface Contact {
-	id: string;
-	name: string;
-	email?: string;
-	phone?: string;
-	avatar?: string;
-	position?: string;
-	org?: string;
-	country?: string;
-	source: "team" | "citizen";
-}
+const ORG_TYPES = [
+	{ value: "", label: "Tous types" },
+	{ value: "embassy", label: "Ambassade" },
+	{ value: "general_consulate", label: "Consulat" },
+	{ value: "permanent_mission", label: "Mission" },
+	{ value: "high_commission", label: "Haut-Commissariat" },
+];
+
+const GRADES = [
+	{ value: "", label: "Tous postes" },
+	{ value: "chief", label: "Chef de mission" },
+	{ value: "deputy_chief", label: "Adjoint" },
+	{ value: "counselor", label: "Conseiller" },
+	{ value: "agent", label: "Agent" },
+	{ value: "external", label: "Externe" },
+];
 
 export function IAstedContactTab() {
-	const { activeOrgId } = useOrg();
-	const [search, setSearch] = useState("");
-	const [filter, setFilter] = useState<ContactSource>("all");
-
-	// Collaborateurs (membres de l'org)
-	const { data: orgChart, isPending: teamLoading } = useAuthenticatedConvexQuery(
-		api.functions.orgs.getOrgChart,
-		activeOrgId ? { orgId: activeOrgId } : "skip",
-	);
-
-	// Ressortissants (profils citoyens)
-	const { data: rawProfiles, isPending: profilesLoading } = useAuthenticatedConvexQuery(
-		api.functions.profiles.listByOrg,
-		activeOrgId ? { orgId: activeOrgId } : "skip",
-	);
-
-	const isPending = teamLoading || profilesLoading;
-
-	// Fusionner les deux sources
-	const contacts: Contact[] = useMemo(() => {
-		const teamContacts: Contact[] = (orgChart as any)?.positions?.flatMap((pos: any) =>
-			(pos.occupants ?? []).map((occ: any) => ({
-				id: `team-${occ.userId}`,
-				name: `${occ.firstName ?? ""} ${occ.lastName ?? ""}`.trim() || occ.email,
-				email: occ.email,
-				avatar: occ.avatarUrl,
-				position: pos.title?.fr ?? pos.code,
-				source: "team" as const,
-			})),
-		) ?? [];
-
-		const citizenContacts: Contact[] = ((rawProfiles as any[]) ?? []).map((p) => ({
-			id: `citizen-${p._id}`,
-			name: `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim() || p.email,
-			email: p.email,
-			phone: p.phone,
-			country: p.residenceCountry,
-			source: "citizen" as const,
-		}));
-
-		return [...teamContacts, ...citizenContacts];
-	}, [orgChart, rawProfiles]);
-
-	// Filtrage par source + recherche
-	const filtered = useMemo(() => {
-		let list = contacts;
-		if (filter === "team") list = list.filter((c) => c.source === "team");
-		if (filter === "citizens") list = list.filter((c) => c.source === "citizen");
-
-		if (search.trim()) {
-			const q = search.toLowerCase();
-			list = list.filter((c) =>
-				c.name.toLowerCase().includes(q) ||
-				c.email?.toLowerCase().includes(q) ||
-				c.phone?.includes(q) ||
-				c.position?.toLowerCase().includes(q),
-			);
-		}
-		return list;
-	}, [contacts, filter, search]);
-
-	const teamCount = contacts.filter((c) => c.source === "team").length;
-	const citizenCount = contacts.filter((c) => c.source === "citizen").length;
+	const {
+		groups,
+		total,
+		availableCountries,
+		isPending,
+		filters,
+		setSearch,
+		setSource,
+		setCountry,
+		setOrgType,
+		setPositionGrade,
+	} = useContactSearch();
 
 	return (
 		<div className="flex flex-col flex-1 overflow-hidden">
 			{/* Recherche */}
-			<div className="p-2 border-b space-y-2">
+			<div className="p-2 border-b space-y-2 shrink-0">
 				<div className="relative">
 					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
 					<Input
-						value={search}
+						value={filters.searchTerm}
 						onChange={(e) => setSearch(e.target.value)}
-						placeholder="Rechercher un contact (nom, email, poste)..."
+						placeholder="Rechercher (nom, email, poste, org)..."
 						className="h-8 pl-8 text-xs"
 					/>
 				</div>
-				{/* Filtres */}
+
+				{/* Segments */}
 				<div className="flex items-center gap-1">
-					{([
-						{ id: "all", label: "Tous", count: contacts.length },
-						{ id: "team", label: "Équipe", count: teamCount },
-						{ id: "citizens", label: "Ressortissants", count: citizenCount },
-					] as const).map((f) => (
+					{SEGMENTS.map((seg) => (
 						<button
-							key={f.id}
+							key={seg.id}
 							type="button"
-							onClick={() => setFilter(f.id)}
+							onClick={() => setSource(seg.id)}
 							className={cn(
 								"text-[10px] px-2 py-1 rounded-md font-medium transition-colors",
-								filter === f.id
+								filters.source === seg.id
 									? "bg-primary text-primary-foreground"
 									: "text-muted-foreground hover:bg-muted",
 							)}
 						>
-							{f.label}
-							<span className="ml-1 opacity-60">{f.count}</span>
+							{seg.label}
 						</button>
 					))}
 				</div>
+
+				{/* Filtres avancés */}
+				<div className="flex items-center gap-1.5 overflow-x-auto">
+					{/* Pays */}
+					<select
+						value={filters.country}
+						onChange={(e) => setCountry(e.target.value)}
+						className="text-[10px] px-2 py-1 rounded-md border bg-background text-foreground h-6"
+					>
+						<option value=""> Tous pays</option>
+						{availableCountries.map((c: any) => (
+							<option key={c.code} value={c.code}>{c.code} ({c.count})</option>
+						))}
+					</select>
+
+					{/* Type d'org */}
+					<select
+						value={filters.orgType}
+						onChange={(e) => setOrgType(e.target.value)}
+						className="text-[10px] px-2 py-1 rounded-md border bg-background text-foreground h-6"
+					>
+						{ORG_TYPES.map((t) => (
+							<option key={t.value} value={t.value}>{t.label}</option>
+						))}
+					</select>
+
+					{/* Grade */}
+					<select
+						value={filters.positionGrade}
+						onChange={(e) => setPositionGrade(e.target.value)}
+						className="text-[10px] px-2 py-1 rounded-md border bg-background text-foreground h-6"
+					>
+						{GRADES.map((g) => (
+							<option key={g.value} value={g.value}>{g.label}</option>
+						))}
+					</select>
+				</div>
 			</div>
 
-			{/* Liste contacts */}
+			{/* Résultats groupés */}
 			<ScrollArea className="flex-1">
 				{isPending ? (
 					<div className="flex items-center justify-center py-8">
 						<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
 					</div>
-				) : filtered.length === 0 ? (
+				) : groups.length === 0 ? (
 					<div className="flex flex-col items-center justify-center py-8 text-center">
 						<Users className="h-8 w-8 text-muted-foreground/30 mb-2" />
 						<p className="text-xs text-muted-foreground">
-							{search ? "Aucun résultat pour cette recherche" : "Aucun contact disponible"}
+							{filters.searchTerm ? "Aucun résultat" : "Aucun contact"}
 						</p>
 					</div>
 				) : (
 					<div className="divide-y">
-						{filtered.map((contact) => (
-							<div
-								key={contact.id}
-								className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/30 transition-colors"
-							>
-								<Avatar className="h-8 w-8 shrink-0">
-									<AvatarImage src={contact.avatar} />
-									<AvatarFallback className={cn(
-										"text-[10px]",
-										contact.source === "team"
-											? "bg-primary/10 text-primary"
-											: "bg-amber-500/10 text-amber-600",
-									)}>
-										{contact.name?.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2) || "?"}
-									</AvatarFallback>
-								</Avatar>
-								<div className="flex-1 min-w-0">
-									<div className="flex items-center gap-1.5">
-										<p className="text-xs font-medium truncate">{contact.name}</p>
-										<Badge
-											variant="outline"
-											className={cn(
-												"text-[7px] h-3.5 px-1",
-												contact.source === "team"
-													? "text-primary border-primary/20"
-													: "text-amber-600 border-amber-500/20",
-											)}
-										>
-											{contact.source === "team" ? "Équipe" : "Citoyen"}
-										</Badge>
-									</div>
-									{contact.position && (
-										<p className="text-[10px] text-muted-foreground truncate flex items-center gap-1">
-											<Building2 className="h-2.5 w-2.5 shrink-0" />
-											{contact.position}
-										</p>
+						{groups.map((group: any) => (
+							<div key={group.org.id} className="py-2">
+								{/* Header org */}
+								<div className="flex items-center gap-2 px-3 py-1.5">
+									<Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
+									<span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
+										{group.org.name}
+									</span>
+									{group.org.country && (
+										<span className="text-[9px] text-muted-foreground/60">{group.org.country}</span>
 									)}
-									<div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">
-										{contact.email && (
-											<span className="flex items-center gap-0.5 truncate">
-												<Mail className="h-2.5 w-2.5 shrink-0" />
-												{contact.email}
-											</span>
-										)}
-										{contact.phone && (
-											<span className="flex items-center gap-0.5">
-												<Phone className="h-2.5 w-2.5 shrink-0" />
-												{contact.phone}
-											</span>
-										)}
-									</div>
+									<Badge variant="outline" className="text-[7px] h-3.5 px-1 ml-auto shrink-0">
+										{group.contacts.length}
+									</Badge>
 								</div>
+
+								{/* Contacts */}
+								{group.contacts.map((contact: any) => (
+									<div
+										key={contact.id}
+										className="flex items-center gap-3 px-3 py-2 hover:bg-muted/30 transition-colors"
+									>
+										<Avatar className="h-8 w-8 shrink-0">
+											<AvatarImage src={contact.avatar} />
+											<AvatarFallback className={cn(
+												"text-[10px]",
+												contact.source === "team" ? "bg-primary/10 text-primary"
+													: contact.source === "citizen" ? "bg-amber-500/10 text-amber-600"
+													: "bg-blue-500/10 text-blue-600",
+											)}>
+												{contact.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
+											</AvatarFallback>
+										</Avatar>
+										<div className="flex-1 min-w-0">
+											<div className="flex items-center gap-1.5">
+												<p className="text-xs font-bold truncate">{contact.lastName}</p>
+												<p className="text-xs text-foreground/80 truncate">{contact.firstName}</p>
+												<Badge
+													variant="outline"
+													className={cn("text-[7px] h-3.5 px-1 shrink-0",
+														contact.source === "team" ? "text-primary border-primary/20"
+															: contact.source === "citizen" ? "text-amber-600 border-amber-500/20"
+															: "text-blue-600 border-blue-500/20",
+													)}
+												>
+													{contact.source === "team" ? "Équipe" : contact.source === "citizen" ? "Citoyen" : "Réseau"}
+												</Badge>
+											</div>
+											{contact.position && (
+												<p className="text-[10px] text-muted-foreground truncate">{contact.position}</p>
+											)}
+											<div className="flex items-center gap-3 text-[9px] text-muted-foreground/70 mt-0.5">
+												{contact.email && (
+													<span className="flex items-center gap-0.5 truncate">
+														<Mail className="h-2.5 w-2.5 shrink-0" />{contact.email}
+													</span>
+												)}
+												{contact.phone && (
+													<span className="flex items-center gap-0.5">
+														<Phone className="h-2.5 w-2.5 shrink-0" />{contact.phone}
+													</span>
+												)}
+											</div>
+										</div>
+									</div>
+								))}
 							</div>
 						))}
 					</div>
@@ -209,9 +221,9 @@ export function IAstedContactTab() {
 			</ScrollArea>
 
 			{/* Footer stats */}
-			<div className="border-t px-3 py-1.5 text-[10px] text-muted-foreground flex items-center justify-between">
-				<span>{filtered.length} contact{filtered.length > 1 ? "s" : ""}</span>
-				<span>{teamCount} équipe · {citizenCount} ressortissants</span>
+			<div className="border-t px-3 py-1.5 text-[10px] text-muted-foreground flex items-center justify-between shrink-0">
+				<span>{total} contact{total > 1 ? "s" : ""}</span>
+				<span>{groups.length} organisation{groups.length > 1 ? "s" : ""}</span>
 			</div>
 		</div>
 	);

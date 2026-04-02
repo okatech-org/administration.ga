@@ -1,6 +1,7 @@
 import { api } from "@convex/_generated/api";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery as useConvexQuery, useMutation as useConvexMutation } from "convex/react";
 import {
 	Bell,
 	Bot,
@@ -8,10 +9,12 @@ import {
 	Building2,
 	Check,
 	Clock,
+	CreditCard,
 	Edit,
 	Globe,
 	KeyRound,
 	Loader2,
+	Lock,
 	LogOut,
 	Mail,
 	Palette,
@@ -20,6 +23,7 @@ import {
 	Save,
 	Settings2,
 	Trash2,
+	Users,
 	X,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -27,6 +31,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
+import { useModuleAccess } from "@/components/shared/access-gate";
 import {
 	SettingsDivider,
 	SettingsLayout,
@@ -107,6 +112,8 @@ function DashboardSettings() {
 	const { canDo, isReady: permissionsReady } = useCanDoTask(
 		activeOrgId ?? undefined,
 	);
+	const { hasMin: hasSettingsAccess } = useModuleAccess("settings");
+	const canAdminSettings = hasSettingsAccess("admin");
 
 	// ── Session data ──
 	const { data: session } = authClient.useSession();
@@ -319,7 +326,7 @@ function DashboardSettings() {
 	};
 
 	const GROUPS: SettingsTabGroup[] = [
-		// ── 🏛️ ORGANISME (admin seulement) ──
+		// ──  ORGANISME (admin seulement) ──
 		...(canViewOrgSettings
 			? [{
 				label: "Organisme",
@@ -344,10 +351,20 @@ function DashboardSettings() {
 						label: "Traitement",
 						icon: <Settings2 className="size-4" />,
 					},
+					{
+						id: "team",
+						label: "Équipe",
+						icon: <Users className="size-4" />,
+					},
+					{
+						id: "payments",
+						label: "Paiements",
+						icon: <CreditCard className="size-4" />,
+					},
 				],
 			}]
 			: []),
-		// ── 👤 MON ESPACE (tous) ──
+		// ──  MON ESPACE (tous) ──
 		{
 			label: "Mon espace",
 			tabs: [
@@ -363,7 +380,7 @@ function DashboardSettings() {
 				},
 			],
 		},
-		// ── 🔐 COMPTE (tous) ──
+		// ──  COMPTE (tous) ──
 		{
 			label: "Compte",
 			tabs: [
@@ -1092,7 +1109,119 @@ function DashboardSettings() {
 					</div>
 				)}
 
+	
+				{/* ─── Équipe Tab ─── */}
+				{canViewOrgSettings && (
+					<div
+						id="settings-tab-team"
+						className={cn(
+							"animate-in fade-in duration-300",
+							activeTab !== "team" && "hidden",
+						)}
+					>
+						<div className="space-y-6">
+							<div>
+								<h3 className="text-lg font-semibold flex items-center gap-2">
+									<Users className="h-5 w-5 text-primary" />
+									Organigramme &amp; Équipe
+								</h3>
+								<p className="text-sm text-muted-foreground mt-1">
+									Gérez les membres de votre équipe, leurs rôles et l&apos;organigramme de votre organisme.
+								</p>
+							</div>
+							<div className="rounded-xl border border-border/50 bg-card p-6 space-y-4">
+								<div className="flex items-center justify-between">
+									<div className="flex items-center gap-3">
+										<div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+											<Users className="h-5 w-5 text-primary" />
+										</div>
+										<div>
+											<p className="font-medium text-sm">Page Équipe complète</p>
+											<p className="text-xs text-muted-foreground">Organigramme interactif, gestion des membres et des rôles</p>
+										</div>
+									</div>
+									<Link
+										to="/team"
+										id="settings-link-team"
+										className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors"
+									>
+										Ouvrir iÉquipe
+									</Link>
+								</div>
+								<div className="grid grid-cols-3 gap-3 pt-2 border-t border-border/50">
+									{[
+										{ label: "Membres actifs", color: "text-emerald-500" },
+										{ label: "Rôles assignés", color: "text-blue-500" },
+										{ label: "En attente", color: "text-amber-500" },
+									].map((item) => (
+										<div key={item.label} className="text-center p-3 rounded-lg bg-muted/30">
+											<p className={`text-2xl font-bold ${item.color}`}>—</p>
+											<p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+										</div>
+									))}
+								</div>
+							</div>
+						</div>
+					</div>
+				)}
+
+				{/* ─── Paiements Tab ─── */}
+				{canViewOrgSettings && (
+					<div
+						id="settings-tab-payments"
+						className={cn(
+							"animate-in fade-in duration-300",
+							activeTab !== "payments" && "hidden",
+						)}
+					>
+						<div className="space-y-6">
+							<div>
+								<h3 className="text-lg font-semibold flex items-center gap-2">
+									<CreditCard className="h-5 w-5 text-primary" />
+									Suivi des Paiements
+								</h3>
+								<p className="text-sm text-muted-foreground mt-1">
+									Consultez l&apos;historique des transactions et configurez les paramètres de paiement.
+								</p>
+							</div>
+							<div className="rounded-xl border border-border/50 bg-card p-6 space-y-4">
+								<div className="flex items-center justify-between">
+									<div className="flex items-center gap-3">
+										<div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+											<CreditCard className="h-5 w-5 text-green-600" />
+										</div>
+										<div>
+											<p className="font-medium text-sm">Tableau de bord Paiements</p>
+											<p className="text-xs text-muted-foreground">Revenus, transactions et répartition des statuts</p>
+										</div>
+									</div>
+									<Link
+										to="/payments"
+										id="settings-link-payments"
+										className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors"
+									>
+										Voir les paiements
+									</Link>
+								</div>
+								<div className="grid grid-cols-3 gap-3 pt-2 border-t border-border/50">
+									{[
+										{ label: "Revenus totaux", color: "text-green-600" },
+										{ label: "Transactions", color: "text-blue-600" },
+										{ label: "Taux de succès", color: "text-emerald-600" },
+									].map((item) => (
+										<div key={item.label} className="text-center p-3 rounded-lg bg-muted/30">
+											<p className={`text-2xl font-bold ${item.color}`}>—</p>
+											<p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+										</div>
+									))}
+								</div>
+							</div>
+						</div>
+					</div>
+				)}
+
 				{/* ─── Personal settings (visible to everyone) ─── */}
+
 
 				<div
 					className={cn(
@@ -1234,6 +1363,11 @@ function DashboardSettings() {
 							)}
 						</div>
 					</div>
+
+					<SettingsDivider />
+
+					{/* PIN Code section */}
+					<PinCodeSection />
 
 					<SettingsDivider />
 
@@ -1806,5 +1940,63 @@ function ServicesSettingsPanel() {
 				</DialogContent>
 			</Dialog>
 		</>
+	);
+}
+
+// ─── PIN Code Section ─────────────────────────────────────
+function PinCodeSection() {
+	const pinStatus = useConvexQuery(api.functions.pin.getPinStatus, {});
+	const createPinMut = useConvexMutation(api.functions.pin.createPin);
+	const updatePinMut = useConvexMutation(api.functions.pin.updatePin);
+	const deletePinMut = useConvexMutation(api.functions.pin.deletePin);
+	const [mode, setMode] = useState<"idle" | "create" | "modify" | "delete">("idle");
+	const [newPin, setNewPin] = useState("");
+	const [confirmPin, setConfirmPin] = useState("");
+	const [currentPin, setCurrentPin] = useState("");
+	const [pinError, setPinError] = useState<string | null>(null);
+	const [pinLoading, setPinLoading] = useState(false);
+	const resetForm = () => { setMode("idle"); setNewPin(""); setConfirmPin(""); setCurrentPin(""); setPinError(null); };
+	if (pinStatus === undefined) return null;
+	const daysLeft = pinStatus.lastOtpVerifiedAt ? Math.max(0, Math.floor((pinStatus.lastOtpVerifiedAt + 90*24*60*60*1000 - Date.now()) / (24*60*60*1000))) : 0;
+	return (
+		<div>
+			<SettingsSectionHeader title="Code PIN" description={pinStatus.hasPin ? `Actif depuis le ${pinStatus.pinCreatedAt ? new Date(pinStatus.pinCreatedAt).toLocaleDateString("fr-FR") : "—"}` : "Créez un code PIN pour vous connecter plus rapidement"} />
+			<div className="py-3 space-y-3">
+				{!pinStatus.hasPin && mode === "idle" && <Button variant="outline" onClick={() => setMode("create")} className="gap-2"><Lock className="h-4 w-4" />Créer mon code PIN</Button>}
+				{pinStatus.hasPin && mode === "idle" && (
+					<div className="space-y-2">
+						{daysLeft > 0 && daysLeft <= 15 && <p className="text-xs text-amber-600">Vérification OTP requise dans {daysLeft} jours</p>}
+						<div className="flex gap-2">
+							<Button variant="outline" size="sm" onClick={() => setMode("modify")} className="gap-1.5"><KeyRound className="h-3.5 w-3.5" />Modifier</Button>
+							<Button variant="ghost" size="sm" onClick={() => setMode("delete")} className="gap-1.5 text-destructive"><Trash2 className="h-3.5 w-3.5" />Supprimer</Button>
+						</div>
+					</div>
+				)}
+				{mode === "create" && (
+					<div className="space-y-3 p-3 border rounded-lg">
+						<div className="space-y-1"><label className="text-xs font-medium">Nouveau PIN (6 chiffres)</label><input type="password" inputMode="numeric" maxLength={6} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, "").slice(0,6))} placeholder="------" className="w-full h-10 text-center text-lg tracking-[0.3em] font-mono border rounded-md bg-background px-3" /></div>
+						<div className="space-y-1"><label className="text-xs font-medium">Confirmer</label><input type="password" inputMode="numeric" maxLength={6} value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, "").slice(0,6))} placeholder="------" className="w-full h-10 text-center text-lg tracking-[0.3em] font-mono border rounded-md bg-background px-3" /></div>
+						{pinError && <p className="text-xs text-destructive">{pinError}</p>}
+						<div className="flex gap-2"><Button size="sm" onClick={async () => { if(newPin.length!==6||newPin!==confirmPin){setPinError("Codes différents");return;} setPinLoading(true);setPinError(null);try{await createPinMut({pin:newPin});resetForm();toast.success("Code PIN créé");}catch(e:any){setPinError(e.message?.includes("OTP")?"Reconnectez-vous par OTP d'abord":(e.message??"Erreur"));}finally{setPinLoading(false);} }} disabled={pinLoading||newPin.length!==6||newPin!==confirmPin}>{pinLoading&&<Loader2 className="mr-1 h-3.5 w-3.5 animate-spin"/>}Enregistrer</Button><Button size="sm" variant="ghost" onClick={resetForm}>Annuler</Button></div>
+					</div>
+				)}
+				{mode === "modify" && (
+					<div className="space-y-3 p-3 border rounded-lg">
+						<div className="space-y-1"><label className="text-xs font-medium">PIN actuel</label><input type="password" inputMode="numeric" maxLength={6} value={currentPin} onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, "").slice(0,6))} placeholder="------" className="w-full h-10 text-center text-lg tracking-[0.3em] font-mono border rounded-md bg-background px-3" /></div>
+						<div className="space-y-1"><label className="text-xs font-medium">Nouveau PIN</label><input type="password" inputMode="numeric" maxLength={6} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, "").slice(0,6))} placeholder="------" className="w-full h-10 text-center text-lg tracking-[0.3em] font-mono border rounded-md bg-background px-3" /></div>
+						<div className="space-y-1"><label className="text-xs font-medium">Confirmer</label><input type="password" inputMode="numeric" maxLength={6} value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, "").slice(0,6))} placeholder="------" className="w-full h-10 text-center text-lg tracking-[0.3em] font-mono border rounded-md bg-background px-3" /></div>
+						{pinError && <p className="text-xs text-destructive">{pinError}</p>}
+						<div className="flex gap-2"><Button size="sm" onClick={async () => { if(newPin.length!==6||newPin!==confirmPin){setPinError("Codes différents");return;} setPinLoading(true);setPinError(null);try{await updatePinMut({currentPin,newPin});resetForm();toast.success("Code PIN modifié");}catch(e:any){setPinError(e.message?.includes("INVALID")?"PIN actuel incorrect":(e.message??"Erreur"));}finally{setPinLoading(false);} }} disabled={pinLoading}>{pinLoading&&<Loader2 className="mr-1 h-3.5 w-3.5 animate-spin"/>}Enregistrer</Button><Button size="sm" variant="ghost" onClick={resetForm}>Annuler</Button></div>
+					</div>
+				)}
+				{mode === "delete" && (
+					<div className="space-y-3 p-3 border border-destructive/20 rounded-lg bg-destructive/5">
+						<p className="text-sm">Supprimer votre code PIN ?</p>
+						{pinError && <p className="text-xs text-destructive">{pinError}</p>}
+						<div className="flex gap-2"><Button size="sm" variant="destructive" onClick={async () => { setPinLoading(true);try{await deletePinMut({});resetForm();toast.success("Code PIN supprimé");}catch(e:any){setPinError(e.message??"Erreur");}finally{setPinLoading(false);} }} disabled={pinLoading}>{pinLoading&&<Loader2 className="mr-1 h-3.5 w-3.5 animate-spin"/>}Supprimer</Button><Button size="sm" variant="ghost" onClick={resetForm}>Annuler</Button></div>
+					</div>
+				)}
+			</div>
+		</div>
 	);
 }

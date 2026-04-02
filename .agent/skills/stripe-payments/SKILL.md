@@ -871,25 +871,25 @@ export const refundPayment = authMutation({
 ### Anti-patterns à éviter
 
 ```typescript
-// ❌ JAMAIS
+//  JAMAIS
 const payment = await createPaymentWithRawCard({
   cardNumber: '4242 4242 4242 4242',
   expiry: '12/25',
   cvc: '123',
 })
 
-// ❌ JAMAIS
+//  JAMAIS
 console.log('Paiement:', JSON.stringify(paymentIntent))
 // Cela pourrait exposer les données
 
-// ✅ À faire
+//  À faire
 const { clientSecret } = await createPaymentIntent({
   amount: 1000,
   currency: 'xaf',
 })
 // Elements gère les données sensibles côté client
 
-// ✅ À faire
+//  À faire
 const refund = await stripe.refunds.create({
   payment_intent: intentId,
 })
@@ -901,14 +901,14 @@ const refund = await stripe.refunds.create({
 Les webhooks Stripe sont déjà vérifiés via signature. Toujours vérifier la signature avant de traiter:
 
 ```typescript
-// ✅ BON
+//  BON
 const event = stripe.webhooks.constructEvent(
   body,
   signature,
   webhookSecret
 )
 
-// ❌ JAMAIS
+//  JAMAIS
 const event = JSON.parse(body) // Sans signature!
 ```
 

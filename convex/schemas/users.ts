@@ -56,6 +56,13 @@ export const usersTable = defineTable({
     shareAnalytics: v.optional(v.boolean()),       // Opt-in anonymous analytics
   })),
 
+  // ─── Code PIN (connexion rapide citoyens) ───────────────────
+  pinHash: v.optional(v.string()),             // Hash scrypt du PIN 6 chiffres
+  pinCreatedAt: v.optional(v.number()),        // Timestamp création/modification
+  pinFailedAttempts: v.optional(v.number()),   // Compteur d'échecs (reset à 0 au succès)
+  pinLockedUntil: v.optional(v.number()),      // Timestamp fin de verrouillage (30min)
+  lastOtpVerifiedAt: v.optional(v.number()),   // Dernière vérification OTP réussie
+
   // Metadata (pas de _createdAt, utilise _creationTime natif)
   updatedAt: v.optional(v.number()),
 

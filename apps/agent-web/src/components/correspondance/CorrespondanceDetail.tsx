@@ -43,7 +43,7 @@ const DocumentViewerModal = ({ isOpen, onClose, document: doc }: { isOpen: boole
 			<div className="bg-card rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
 				<div className="flex items-center justify-between p-4 border-b">
 					<h3 className="font-semibold truncate">{doc.title}</h3>
-					<button type="button" onClick={onClose} className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-muted">✕</button>
+					<button type="button" onClick={onClose} className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-muted"></button>
 				</div>
 				{doc.mimeType === "application/pdf" ? (
 					<iframe src={`${url}#view=FitH`} className="w-full h-[75vh] border-0" title={doc.title} />
@@ -148,7 +148,7 @@ export function CorrespondanceDetail({
 	const handleSend = async () => {
 		try {
 			await sendCorrespondance({ itemId });
-			toast.success("Correspondance envoyée ✓");
+			toast.success("Correspondance envoyée ");
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur lors de l'envoi");
 		}
@@ -157,7 +157,7 @@ export function CorrespondanceDetail({
 	const handleClasser = async () => {
 		try {
 			await classerDansIDocument({ itemId });
-			toast.success("Dossier classé dans iDocument ✓");
+			toast.success("Dossier classé dans iDocument ");
 			onBack();
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur lors du classement");
@@ -177,7 +177,7 @@ export function CorrespondanceDetail({
 	const handleRemoveDoc = async (docIndex: number) => {
 		try {
 			await removeDocument({ itemId, documentIndex: docIndex });
-			toast.success("Document retiré et classé dans iDocument ✓");
+			toast.success("Document retiré et classé dans iDocument ");
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur");
 		}

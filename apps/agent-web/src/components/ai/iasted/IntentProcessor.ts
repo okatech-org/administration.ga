@@ -4,7 +4,7 @@
  */
 
 export interface ParsedIntent {
-	category: "navigation" | "communication" | "administrative" | "information" | "control";
+	category: "navigation" | "communication" | "administrative" | "information" | "control" | "contact_search" | "call_contact" | "meeting_create";
 	action: string;
 	target?: string;
 	confidence: number;
@@ -42,8 +42,36 @@ const INTENT_PATTERNS: Array<{
 		],
 		action: "administrative",
 	},
+	// Recherche de contact
 	{
-		category: "control",
+		category: "contact_search" as const,
+		patterns: [
+			/(?:cherche|trouve|qui est|où est)[\s]+(.+)/i,
+			/(?:montre|affiche|liste)[\s-]*(moi\s+)?(?:les\s+)?(?:contacts?|membres?|agents?|personnel)[\s]+(?:de\s+|d['']|du\s+|en\s+)?(.+)/i,
+		],
+		action: "search_contact",
+	},
+	// Appel direct
+	{
+		category: "call_contact" as const,
+		patterns: [
+			/appelle?[\s-]*(moi\s+)?(.+)/i,
+			/(?:lance|fais|passe)[\s]+(?:un\s+)?appel[\s]+(?:à|avec|vers)\s+(.+)/i,
+			/appel[\s]+(?:vidéo|audio)[\s]+(?:à|avec|vers)\s+(.+)/i,
+		],
+		action: "call_contact",
+	},
+	// Création de réunion avec participants
+	{
+		category: "meeting_create" as const,
+		patterns: [
+			/(?:crée?|organise?|planifie?)[\s]+(?:une\s+)?réunion[\s]+(?:avec\s+)?(.*)/i,
+			/(?:réunion|visio|visioconférence)[\s]+(?:avec\s+)?(.*)/i,
+		],
+		action: "create_meeting_with",
+	},
+	{
+		category: "control" as const,
 		patterns: [
 			/(?:stop|arrête|tais[\s-]toi|annule?|cancel)/i,
 			/(?:recommence|redémarre|reset)/i,

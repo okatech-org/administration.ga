@@ -15,10 +15,10 @@ export function CVThemeProfessional({ data }: CVThemeProps) {
           <p className="text-teal-100 text-sm mt-1">{data.title}</p>
         )}
         <div className="flex items-center gap-4 text-xs text-teal-200 mt-3 flex-wrap">
-          {data.email && <span>✉ {data.email}</span>}
-          {data.phone && <span>☎ {data.phone}</span>}
-          {data.address && <span>📍 {data.address}</span>}
-          {data.linkedinUrl && <span>🔗 LinkedIn</span>}
+          {data.email && <span> {data.email}</span>}
+          {data.phone && <span> {data.phone}</span>}
+          {data.address && <span> {data.address}</span>}
+          {data.linkedinUrl && <span> LinkedIn</span>}
         </div>
       </div>
 

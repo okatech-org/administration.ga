@@ -223,7 +223,7 @@ function AdminNewEventPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Organisation</Label>
+                <Label>Représentation</Label>
                 <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Global (aucune)" />

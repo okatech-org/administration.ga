@@ -2,8 +2,8 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { MODULE_REGISTRY, type ModuleCategory, type ModuleCodeValue } from "@convex/lib/moduleCodes";
-import { POSITION_GRADES, ORGANIZATION_TEMPLATES, getPresetTasks, type PositionGrade, type PositionTemplate } from "@convex/lib/roles";
+import { MODULE_REGISTRY, MODULE_ACCESS_TASKS, ACCESS_LEVEL_META, type ModuleCodeValue, type ModuleAccessLevel } from "@convex/lib/moduleCodes";
+import { POSITION_GRADES, ORGANIZATION_TEMPLATES, PRESET_MODULE_ACCESS, resolveModuleAccessFromPresets, getPresetTasks, type PositionGrade, type PositionTemplate } from "@convex/lib/roles";
 import { ALL_TASK_CODES, TASK_RISK, type TaskCodeValue } from "@convex/lib/taskCodes";
 import {
 	ArrowDown,
@@ -14,9 +14,12 @@ import {
 	ChevronsUpDown,
 	Crown,
 	Edit,
+	Eye,
 	Loader2,
+	PenLine,
 	Plus,
 	Shield,
+	ShieldCheck,
 	Trash2,
 	Users,
 	MoreHorizontal,
@@ -76,6 +79,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import {
 	useAuthenticatedConvexQuery,
@@ -86,6 +90,11 @@ import { DynamicLucideIcon } from "@/lib/lucide-icon";
 import { cn } from "@/lib/utils";
 
 // ─── Types ──────────────────────────────────────────────────────
+interface ModuleAccessEntry {
+	moduleCode: string;
+	accessLevel: ModuleAccessLevel;
+}
+
 interface Position {
 	_id: Id<"positions">;
 	code: string;
@@ -94,6 +103,7 @@ interface Position {
 	level: number;
 	grade?: string;
 	tasks: string[];
+	moduleAccess?: ModuleAccessEntry[];
 	isRequired?: boolean;
 	isActive?: boolean;
 	occupant?: {
@@ -345,6 +355,242 @@ function ModulePermissionCard({
 	);
 }
 
+// ─── Access Level Icons ─────────────────────────────────────────
+const ACCESS_LEVEL_ICONS: Record<ModuleAccessLevel, React.ElementType> = {
+	reader: Eye,
+	editor: PenLine,
+	admin: ShieldCheck,
+};
+
+// ─── Access Level Result Descriptions ───────────────────────────
+const ACCESS_RESULT: Record<string, Record<ModuleAccessLevel, { fr: string; en: string }>> = {
+	requests: { reader: { fr: "Voir uniquement", en: "View only" }, editor: { fr: "Traiter + Valider", en: "Process + Validate" }, admin: { fr: "Tout + Assigner", en: "All + Assign" } },
+	documents: { reader: { fr: "Consulter", en: "View" }, editor: { fr: "Upload + Valider", en: "Upload + Validate" }, admin: { fr: "Tout + Supprimer", en: "All + Delete" } },
+	appointments: { reader: { fr: "Voir calendrier", en: "View calendar" }, editor: { fr: "Gérer les RDV", en: "Manage appointments" }, admin: { fr: "Tout + Configurer", en: "All + Configure" } },
+	intelligence: { reader: { fr: "Consulter", en: "View" }, editor: { fr: "Rédiger + Modifier", en: "Write + Edit" }, admin: { fr: "Tout + Configurer", en: "All + Configure" } },
+	digital_mail: { reader: { fr: "Lire", en: "Read" }, editor: { fr: "Envoyer + Gérer", en: "Send + Manage" }, admin: { fr: "Tout + Config", en: "All + Config" } },
+	correspondance: { reader: { fr: "Consulter", en: "View" }, editor: { fr: "Créer + Approuver", en: "Create + Approve" }, admin: { fr: "Signer + Config", en: "Sign + Config" } },
+	meetings: { reader: { fr: "Historique", en: "History" }, editor: { fr: "Appeler + Réunions", en: "Call + Meetings" }, admin: { fr: "Tout + Gérer", en: "All + Manage" } },
+	communication: { reader: { fr: "Voir", en: "View" }, editor: { fr: "Publier", en: "Publish" }, admin: { fr: "Publier + Notifier", en: "Publish + Notify" } },
+	team: { reader: { fr: "Organigramme", en: "Org chart" }, editor: { fr: "Gérer membres", en: "Manage members" }, admin: { fr: "Rôles + Postes", en: "Roles + Positions" } },
+	finance: { reader: { fr: "Voir stats", en: "View stats" }, editor: { fr: "Encaisser", en: "Collect" }, admin: { fr: "Gérer tarifs", en: "Manage pricing" } },
+	analytics: { reader: { fr: "Consulter", en: "View" }, editor: { fr: "Exporter", en: "Export" }, admin: { fr: "Exporter", en: "Export" } },
+	settings: { reader: { fr: "Voir config", en: "View config" }, editor: { fr: "Modifier", en: "Edit" }, admin: { fr: "Config complète", en: "Full config" } },
+	civil_status: { reader: { fr: "Transcrire", en: "Transcribe" }, editor: { fr: "Enregistrer", en: "Register" }, admin: { fr: "Certifier", en: "Certify" } },
+	passports: { reader: { fr: "Instruire", en: "Process" }, editor: { fr: "Biométrie", en: "Biometrics" }, admin: { fr: "Délivrer", en: "Deliver" } },
+	visas: { reader: { fr: "Instruire", en: "Process" }, editor: { fr: "Approuver", en: "Approve" }, admin: { fr: "Apposer visa", en: "Stamp visa" } },
+	profiles: { reader: { fr: "Consulter", en: "View" }, editor: { fr: "Modifier", en: "Edit" }, admin: { fr: "Gérer", en: "Manage" } },
+	consular_registrations: { reader: { fr: "Consulter", en: "View" }, editor: { fr: "Gérer", en: "Manage" }, admin: { fr: "Gérer + Exporter", en: "Manage + Export" } },
+	statistics: { reader: { fr: "Consulter", en: "View" }, editor: { fr: "Consulter", en: "View" }, admin: { fr: "Consulter", en: "View" } },
+};
+
+function getAccessResult(moduleCode: string, level: ModuleAccessLevel, lang: string): string {
+	const desc = ACCESS_RESULT[moduleCode]?.[level];
+	return desc ? desc[lang as "fr" | "en"] || desc.fr : "";
+}
+
+// ─── Quick Profile Presets ──────────────────────────────────────
+const QUICK_PROFILES = [
+	{ code: "direction", label: { fr: "Direction", en: "Leadership" }, icon: "Crown", color: "text-amber-500" },
+	{ code: "management", label: { fr: "Gestion Bureau", en: "Office Management" }, icon: "ClipboardList", color: "text-blue-500" },
+	{ code: "request_processing", label: { fr: "Traitement", en: "Processing" }, icon: "FileEdit", color: "text-emerald-500" },
+	{ code: "consultation", label: { fr: "Consultation", en: "Read-only" }, icon: "Eye", color: "text-zinc-400" },
+] as const;
+
+// ─── Module Access Card (new: dropdown per module) ──────────────
+function ModuleAccessCard({
+	moduleCode,
+	currentLevel,
+	onChange,
+	lang,
+}: {
+	moduleCode: string;
+	currentLevel: ModuleAccessLevel | null;
+	onChange: (level: ModuleAccessLevel | null) => void;
+	lang: string;
+}) {
+	const moduleDef = MODULE_REGISTRY[moduleCode as ModuleCodeValue];
+	const mapping = MODULE_ACCESS_TASKS[moduleCode];
+	if (!moduleDef) return null;
+
+	const derivedTasks = currentLevel && mapping ? (mapping[currentLevel] ?? []) : [];
+
+	return (
+		<div className={cn(
+			"rounded-lg border transition-all",
+			currentLevel === "admin" ? "border-emerald-400/40 bg-emerald-50/30 dark:bg-emerald-900/5"
+				: currentLevel === "editor" ? "border-amber-400/40 bg-amber-50/30 dark:bg-amber-900/5"
+					: currentLevel === "reader" ? "border-blue-400/40 bg-blue-50/30 dark:bg-blue-900/5"
+						: "border-border/40",
+		)}>
+			<div className="flex items-center gap-2.5 px-3 py-2.5">
+				<DynamicLucideIcon name={moduleDef.icon} className={cn("h-4 w-4 shrink-0", moduleDef.color)} />
+				<div className="min-w-0 flex-1">
+					<span className="text-sm font-medium block truncate">
+						{moduleDef.label[lang as "fr" | "en"] || moduleDef.label.fr}
+					</span>
+					{currentLevel && (
+						<span className="text-[10px] text-muted-foreground block truncate">
+							{getAccessResult(moduleCode, currentLevel, lang)}
+						</span>
+					)}
+				</div>
+				<Select
+					value={currentLevel ?? "none"}
+					onValueChange={(val) => onChange(val === "none" ? null : val as ModuleAccessLevel)}
+				>
+					<SelectTrigger className="h-8 w-[140px] text-xs shrink-0">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="none">
+							<span className="flex items-center gap-1.5 text-muted-foreground">
+								 {lang === "fr" ? "Aucun" : "None"}
+							</span>
+						</SelectItem>
+						{(["reader", "editor", "admin"] as const).map((level) => {
+							const meta = ACCESS_LEVEL_META[level];
+							const Icon = ACCESS_LEVEL_ICONS[level];
+							return (
+								<SelectItem key={level} value={level}>
+									<span className="flex items-center gap-1.5">
+										<Icon className={cn("h-3 w-3", meta.color)} />
+										{meta.label[lang as "fr" | "en"] || meta.label.fr}
+									</span>
+								</SelectItem>
+							);
+						})}
+					</SelectContent>
+				</Select>
+			</div>
+			{/* Derived task codes (informatif) */}
+			{derivedTasks.length > 0 && (
+				<div className="px-3 pb-2 pt-0 border-t border-border/20">
+					<div className="flex flex-wrap gap-1 pt-1.5">
+						{derivedTasks.map((task) => {
+							const label = TASK_LABELS[task];
+							return (
+								<Badge key={task} variant="outline" className="text-[9px] px-1.5 py-0 h-4 text-muted-foreground">
+									{label ? (label[lang as "fr" | "en"] || label.fr) : task}
+								</Badge>
+							);
+						})}
+					</div>
+				</div>
+			)}
+		</div>
+	);
+}
+
+// ─── Module Access Selector (new: dropdown-based) ───────────────
+function ModuleAccessSelector({
+	moduleAccess,
+	onChange,
+	lang,
+	orgEnabledModules,
+}: {
+	moduleAccess: ModuleAccessEntry[];
+	onChange: (entries: ModuleAccessEntry[]) => void;
+	lang: string;
+	/** Si fourni, ne montre que les modules activés dans l'org */
+	orgEnabledModules?: Set<string>;
+}) {
+	const accessMap = useMemo(() => {
+		const map = new Map<string, ModuleAccessLevel>();
+		for (const entry of moduleAccess) {
+			map.set(entry.moduleCode, entry.accessLevel);
+		}
+		return map;
+	}, [moduleAccess]);
+
+	const modulesByCategory = useMemo(() => {
+		const result: Record<string, string[]> = { core: [], consular: [], diplomatic: [], tools: [], finance: [], admin: [] };
+		for (const [code, def] of Object.entries(MODULE_REGISTRY)) {
+			const mapping = MODULE_ACCESS_TASKS[code];
+			if (!mapping) continue;
+			// Filtrer par modules activés dans l'org (si fourni et non vide)
+			if (orgEnabledModules && orgEnabledModules.size > 0 && !orgEnabledModules.has(code)) continue;
+			if (!result[def.category]) result[def.category] = [];
+			result[def.category].push(code);
+		}
+		return result;
+	}, [orgEnabledModules]);
+
+	const handleModuleChange = (moduleCode: string, level: ModuleAccessLevel | null) => {
+		const next = moduleAccess.filter((e) => e.moduleCode !== moduleCode);
+		if (level) {
+			next.push({ moduleCode, accessLevel: level });
+		}
+		onChange(next);
+	};
+
+	// Compteur
+	const totalModules = Object.values(modulesByCategory).reduce((s, m) => s + m.length, 0);
+	const activeModules = moduleAccess.length;
+
+	const applyQuickProfile = (presetCode: string) => {
+		const entries = PRESET_MODULE_ACCESS[presetCode];
+		if (!entries) return;
+		onChange(entries.map((e) => ({ moduleCode: e.moduleCode, accessLevel: e.accessLevel })));
+	};
+
+	return (
+		<div className="space-y-4 overflow-y-auto pr-1 scrollbar-thin">
+			{/* Profils rapides */}
+			<div className="flex flex-wrap gap-1.5 mb-1">
+				{QUICK_PROFILES.map((profile) => (
+					<button
+						key={profile.code}
+						type="button"
+						onClick={() => applyQuickProfile(profile.code)}
+						className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md border border-border/50 hover:bg-muted/50 hover:border-primary/30 transition-all"
+					>
+						<DynamicLucideIcon name={profile.icon} className={cn("h-3 w-3", profile.color)} />
+						{profile.label[lang as "fr" | "en"]}
+					</button>
+				))}
+			</div>
+			<div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+				<Badge variant="secondary" className="text-[10px]">
+					{activeModules}/{totalModules} {lang === "fr" ? "modules" : "modules"}
+				</Badge>
+				{activeModules > 0 && (
+					<button
+						type="button"
+						className="text-destructive/70 hover:text-destructive transition-colors text-[10px]"
+						onClick={() => onChange([])}
+					>
+						{lang === "fr" ? "× Tout retirer" : "× Clear all"}
+					</button>
+				)}
+			</div>
+			{CATEGORY_ORDER.map((cat) => {
+				const modules = modulesByCategory[cat];
+				if (!modules || modules.length === 0) return null;
+				const catLabel = CATEGORY_LABELS[cat];
+				return (
+					<div key={cat} className="space-y-1.5">
+						<h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-1">
+							{catLabel[lang as "fr" | "en"] || catLabel.fr}
+						</h4>
+						<div className="grid gap-1.5">
+							{modules.map((moduleCode) => (
+								<ModuleAccessCard
+									key={moduleCode}
+									moduleCode={moduleCode}
+									currentLevel={accessMap.get(moduleCode) ?? null}
+									onChange={(level) => handleModuleChange(moduleCode, level)}
+									lang={lang}
+								/>
+							))}
+						</div>
+					</div>
+				);
+			})}
+		</div>
+	);
+}
+
 // ─── Module Permission Selector ─────────────────────────────────
 function ModulePermissionSelector({
 	selected,
@@ -412,9 +658,13 @@ function PositionFormSheet({
 }) {
 	const isEdit = !!editPosition;
 
-	// Fetch org to get its type for position templates
+	// Fetch org to get its type + modules for position templates
 	const { data: org } = useAuthenticatedConvexQuery(api.functions.orgs.getById, { orgId });
 	const orgType = org?.type ?? "embassy";
+	const orgEnabledModules = useMemo<Set<string>>(() => {
+		const modules = (org?.modules as string[]) ?? [];
+		return modules.length > 0 ? new Set(modules) : new Set(); // vide = tout montrer
+	}, [org?.modules]);
 
 	// Get position templates for this org type
 	const [selectedOrgType, setSelectedOrgType] = useState<string>(orgType);
@@ -443,6 +693,14 @@ function PositionFormSheet({
 	const [selectedTasks, setSelectedTasks] = useState<Set<string>>(
 		new Set(editPosition?.tasks ?? []),
 	);
+	// Module access mode — new positions default to module mode
+	const hasExistingModuleAccess = !!(editPosition as any)?.moduleAccess?.length;
+	const [permMode, setPermMode] = useState<"module" | "tasks">(
+		hasExistingModuleAccess || !isEdit ? "module" : "tasks",
+	);
+	const [moduleAccessConfig, setModuleAccessConfig] = useState<ModuleAccessEntry[]>(
+		(editPosition as any)?.moduleAccess ?? [],
+	);
 
 	const { mutateAsync: createPosition, isPending: isCreating } =
 		useConvexMutationQuery(api.functions.roleConfig.createPosition);
@@ -465,6 +723,7 @@ function PositionFormSheet({
 			setGrade("");
 			setIsRequired(false);
 			setSelectedTasks(new Set());
+			setModuleAccessConfig([]);
 			return;
 		}
 		setSelectedTemplateCode(template.code);
@@ -478,11 +737,48 @@ function PositionFormSheet({
 		// Resolve taskPresets → actual task codes
 		const resolvedTasks = getPresetTasks(template.taskPresets);
 		setSelectedTasks(new Set(resolvedTasks));
+		// Populate moduleAccess from template if available
+		if ((template as any).moduleAccess?.length) {
+			setModuleAccessConfig((template as any).moduleAccess);
+			setPermMode("module");
+		}
 	};
+
+	// Derive tasks from moduleAccess config for backward compat
+	const derivedTasksFromModuleAccess = useMemo(() => {
+		if (permMode !== "module" || moduleAccessConfig.length === 0) return null;
+		const tasks = new Set<string>();
+		tasks.add("org.view");
+		tasks.add("schedules.view");
+		for (const entry of moduleAccessConfig) {
+			const mapping = MODULE_ACCESS_TASKS[entry.moduleCode];
+			if (mapping) {
+				const moduleTasks = mapping[entry.accessLevel] ?? [];
+				for (const t of moduleTasks) tasks.add(t);
+			}
+		}
+		return tasks;
+	}, [permMode, moduleAccessConfig]);
+
+	// Effective task count for summary
+	const effectiveTaskCount = permMode === "module"
+		? (derivedTasksFromModuleAccess?.size ?? 0)
+		: selectedTasks.size;
 
 	const handleSubmit = async () => {
 		if (!isFormValid) return;
 		try {
+			// En mode module, deriver les tasks depuis moduleAccess
+			const finalTasks = permMode === "module" && derivedTasksFromModuleAccess
+				? Array.from(derivedTasksFromModuleAccess) as TaskCodeValue[]
+				: Array.from(selectedTasks) as TaskCodeValue[];
+			const finalModuleAccess = permMode === "module" && moduleAccessConfig.length > 0
+				? moduleAccessConfig.map((e) => ({
+					moduleCode: e.moduleCode as ModuleCodeValue,
+					accessLevel: e.accessLevel,
+				}))
+				: undefined;
+
 			if (isEdit && editPosition) {
 				await updatePosition({
 					positionId: editPosition._id,
@@ -490,7 +786,8 @@ function PositionFormSheet({
 					description: descFr ? { fr: descFr, en: descFr } : undefined,
 					level,
 					grade: grade || undefined,
-					tasks: Array.from(selectedTasks) as TaskCodeValue[],
+					tasks: finalTasks,
+					moduleAccess: finalModuleAccess,
 				});
 				toast.success(lang === "fr" ? "Poste modifié" : "Position updated");
 			} else {
@@ -501,8 +798,9 @@ function PositionFormSheet({
 					description: descFr ? { fr: descFr, en: descFr } : undefined,
 					level,
 					grade: grade || undefined,
-					tasks: Array.from(selectedTasks) as TaskCodeValue[],
+					tasks: finalTasks,
 					isRequired,
+					moduleAccess: finalModuleAccess,
 				});
 				toast.success(lang === "fr" ? "Poste créé" : "Position created");
 			}
@@ -589,7 +887,7 @@ function PositionFormSheet({
 								/>
 								<span className="text-sm font-medium">
 									{ORGANIZATION_TEMPLATES.find((t) => t.type === selectedOrgType)?.label[lang as "fr" | "en"] ??
-										(lang === "fr" ? "Organisation" : "Organization")}
+										(lang === "fr" ? "Représentation" : "Representation")}
 								</span>
 								<span className="text-xs text-muted-foreground">— {positionTemplates.length} postes</span>
 							</div>
@@ -819,12 +1117,25 @@ function PositionFormSheet({
 										{lang === "fr" ? "Résumé des permissions" : "Permission summary"}
 									</h4>
 									<div className="flex items-center gap-3">
-										<div className="text-2xl font-bold text-primary">{selectedTasks.size}</div>
+										<div className="text-2xl font-bold text-primary">{effectiveTaskCount}</div>
 										<div className="text-[10px] text-muted-foreground leading-tight whitespace-pre-line">
 											{lang === "fr" ? "permissions\nactivées" : "permissions\nenabled"}
 										</div>
 									</div>
-									{selectedTasks.size > 0 && (
+									{permMode === "module" && moduleAccessConfig.length > 0 && (
+										<div className="flex flex-wrap gap-1 pt-1">
+											{moduleAccessConfig.map((e) => {
+												const meta = ACCESS_LEVEL_META[e.accessLevel];
+												const mod = MODULE_REGISTRY[e.moduleCode as ModuleCodeValue];
+												return (
+													<Badge key={e.moduleCode} variant="outline" className={cn("text-[9px] px-1.5 py-0 h-4", meta.color)}>
+														{mod?.label.fr ?? e.moduleCode}
+													</Badge>
+												);
+											})}
+										</div>
+									)}
+									{permMode === "tasks" && selectedTasks.size > 0 && (
 										<button
 											type="button"
 											className="text-[10px] text-destructive/70 hover:text-destructive transition-colors"
@@ -838,26 +1149,50 @@ function PositionFormSheet({
 
 							{/* Right column — Module permissions */}
 							<div className="flex-1 overflow-y-auto p-5 min-w-0">
-								<div className="flex items-center justify-between mb-3">
-									<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-										<Shield className="h-3 w-3" />
-										{lang === "fr" ? "Permissions par module" : "Permissions by module"}
-									</h3>
-									<Badge variant="secondary" className="text-[10px]">
-										{selectedTasks.size} {lang === "fr" ? "sélectionnées" : "selected"}
-									</Badge>
-								</div>
-								<ModulePermissionSelector selected={selectedTasks} onChange={setSelectedTasks} lang={lang} />
+								<Tabs value={permMode} onValueChange={(v) => setPermMode(v as "module" | "tasks")}>
+									<div className="flex items-center justify-between mb-3">
+										<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+											<Shield className="h-3 w-3" />
+											{lang === "fr" ? "Permissions" : "Permissions"}
+										</h3>
+										<TabsList className="h-7">
+											<TabsTrigger value="module" className="text-[10px] px-2 h-5 gap-1">
+												<ShieldCheck className="h-3 w-3" />
+												{lang === "fr" ? "Modules" : "Modules"}
+											</TabsTrigger>
+											<TabsTrigger value="tasks" className="text-[10px] px-2 h-5 gap-1">
+												<Shield className="h-3 w-3" />
+												{lang === "fr" ? "Tâches" : "Tasks"}
+											</TabsTrigger>
+										</TabsList>
+									</div>
+									<TabsContent value="module" className="mt-0">
+										<ModuleAccessSelector
+											moduleAccess={moduleAccessConfig}
+											onChange={setModuleAccessConfig}
+											lang={lang}
+											orgEnabledModules={orgEnabledModules}
+										/>
+									</TabsContent>
+									<TabsContent value="tasks" className="mt-0">
+										<ModulePermissionSelector selected={selectedTasks} onChange={setSelectedTasks} lang={lang} />
+									</TabsContent>
+								</Tabs>
 							</div>
 						</div>
 
 						{/* Footer */}
 						<div className="shrink-0 border-t px-6 py-3 flex items-center justify-between">
 							<div className="text-xs text-muted-foreground flex items-center gap-1.5">
-								{selectedTasks.size > 0 && (
+								{effectiveTaskCount > 0 && (
 									<>
 										<Shield className="h-3 w-3" />
-										{selectedTasks.size} {lang === "fr" ? "permissions actives" : "active permissions"}
+										{effectiveTaskCount} {lang === "fr" ? "permissions actives" : "active permissions"}
+										{permMode === "module" && (
+											<Badge variant="outline" className="text-[9px] px-1 h-4 ml-1">
+												{moduleAccessConfig.length} {lang === "fr" ? "modules" : "modules"}
+											</Badge>
+										)}
 									</>
 								)}
 							</div>

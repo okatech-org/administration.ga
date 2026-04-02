@@ -1,7 +1,10 @@
+import { api } from "@convex/_generated/api";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery as useConvexQuery, useMutation } from "convex/react";
 import {
 	ArrowLeft,
 	KeyRound,
+	Lock,
 	Loader2,
 	Mail,
 	Smartphone,
@@ -21,7 +24,7 @@ export const Route = createFileRoute("/sign-in/$")({
 	component: SignInPage,
 });
 
-type SignInStep = "identifier" | "password" | "otp-code";
+type SignInStep = "identifier" | "pin" | "password" | "otp-code";
 type LoginMode = "email" | "phone";
 
 /** Map Better Auth English errors → FR translation keys */
@@ -53,10 +56,14 @@ function SignInPage() {
 	const [phone, setPhone] = useState("");
 	const [password, setPassword] = useState("");
 	const [otpCode, setOtpCode] = useState("");
+	const [pinCode, setPinCode] = useState("");
+	const [pinAttemptsRemaining, setPinAttemptsRemaining] = useState(3);
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [otpSent, setOtpSent] = useState(false);
 	const otpInputRef = useRef<HTMLInputElement>(null);
+	const pinInputRef = useRef<HTMLInputElement>(null);
+	const markOtpVerified = useMutation(api.functions.pin.markOtpVerified);
 
 	const identifier = loginMode === "email" ? email : phone;
 
@@ -64,7 +71,100 @@ function SignInPage() {
 		if (step === "otp-code" && otpInputRef.current) {
 			otpInputRef.current.focus();
 		}
+		if (step === "pin" && pinInputRef.current) {
+			pinInputRef.current.focus();
+		}
 	}, [step]);
+
+	// ── Check PIN before sending OTP ────────────────────────────────
+	const handleIdentifierSubmit = async () => {
+		if (!identifier) return;
+		setError(null);
+		setLoading(true);
+
+		try {
+			// Vérifier si l'utilisateur a un PIN
+			const pinStatus = await fetch(
+				`${import.meta.env.VITE_CONVEX_URL?.replace(".convex.cloud", ".convex.site") ?? ""}/api/auth/pin-status?email=${encodeURIComponent(loginMode === "email" ? email : "")}&phone=${encodeURIComponent(loginMode === "phone" ? phone : "")}`,
+			).then((r) => r.ok ? r.json() : null).catch(() => null);
+
+			if (pinStatus?.hasPin && !pinStatus?.locked && !pinStatus?.otpRequired) {
+				// Utilisateur a un PIN valide → afficher le clavier PIN
+				setPinCode("");
+				setPinAttemptsRemaining(3);
+				setStep("pin");
+				setLoading(false);
+				return;
+			}
+
+			if (pinStatus?.locked) {
+				setError("Compte verrouillé. Connexion par code OTP requise.");
+			}
+			if (pinStatus?.otpRequired) {
+				setError("Vérification périodique requise. Un code OTP va vous être envoyé.");
+			}
+		} catch {
+			// Si la vérification PIN échoue, on continue avec OTP normal
+		}
+
+		// Pas de PIN ou PIN verrouillé/expiré → envoyer OTP
+		setLoading(false);
+		await handleSendOtp();
+	};
+
+	// ── Verify PIN ──────────────────────────────────────────────────
+	const handleVerifyPin = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (pinCode.length !== 6 || !identifier) return;
+		setError(null);
+		setLoading(true);
+
+		try {
+			const convexSiteUrl = import.meta.env.VITE_CONVEX_URL?.replace(".convex.cloud", ".convex.site") ?? "";
+			const response = await fetch(`${convexSiteUrl}/api/auth/pin-session`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({
+					email: loginMode === "email" ? email : undefined,
+					phone: loginMode === "phone" ? phone : undefined,
+					pin: pinCode,
+				}),
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				// Utiliser le tempPassword pour compléter l'auth via Better Auth
+				const signInResult = await authClient.signIn.email({
+					email: data.email,
+					password: data.tempPassword,
+				});
+				if (signInResult.error) {
+					setError("Erreur lors de la création de la session");
+				} else {
+					captureEvent("user_logged_in", { method: "pin" });
+					await new Promise((r) => setTimeout(r, 500));
+					navigate({ to: "/" });
+				}
+			} else {
+				const errorData = await response.json().catch(() => ({}));
+				if (errorData.error === "PIN_LOCKED") {
+					setError("Code PIN verrouillé. Connexion par OTP requise.");
+					setStep("identifier");
+					await handleSendOtp();
+				} else {
+					const remaining = errorData.attemptsRemaining ?? 0;
+					setPinAttemptsRemaining(remaining);
+					setError(`Code incorrect. ${remaining} tentative${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""}.`);
+					setPinCode("");
+				}
+			}
+		} catch {
+			setError("Erreur de connexion. Veuillez réessayer.");
+		} finally {
+			setLoading(false);
+		}
+	};
 
 	// ── Send OTP ─────────────────────────────────────────────────────
 	const handleSendOtp = async () => {
@@ -121,7 +221,8 @@ function SignInPage() {
 					setError(translateAuthError(result.error.message, "errors.auth.otp.invalidCode"));
 				} else {
 					captureEvent("user_logged_in", { method: "sms_otp" });
-					// Attendre que le crossDomain plugin pose les cookies
+					// Marquer OTP vérifié (pour le timer 90 jours du PIN)
+					try { await markOtpVerified({}); } catch { /* ignore si pas connecté */ }
 					await new Promise((r) => setTimeout(r, 500));
 					navigate({ to: "/" });
 				}
@@ -134,6 +235,7 @@ function SignInPage() {
 					setError(translateAuthError(result.error.message, "errors.auth.otp.invalidCode"));
 				} else {
 					captureEvent("user_logged_in", { method: "email_otp" });
+					try { await markOtpVerified({}); } catch { /* ignore */ }
 					await new Promise((r) => setTimeout(r, 500));
 					navigate({ to: "/" });
 				}
@@ -285,7 +387,7 @@ function SignInPage() {
 							size="lg"
 							className="w-full font-medium"
 							disabled={loading || !identifier}
-							onClick={handleSendOtp}
+							onClick={handleIdentifierSubmit}
 						>
 							{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 							{loginMode === "phone" ? (
@@ -394,6 +496,71 @@ function SignInPage() {
 							{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 							{t("header.nav.signIn")}
 						</Button>
+					</form>
+				)}
+
+				{/* Step 2c: PIN Code */}
+				{step === "pin" && (
+					<form onSubmit={handleVerifyPin} className="space-y-4">
+						<button
+							type="button"
+							onClick={() => { setStep("identifier"); setPinCode(""); setError(null); }}
+							className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+						>
+							<ArrowLeft className="h-4 w-4" />
+							{identifier}
+						</button>
+
+						<div className="text-center space-y-2 py-2">
+							<div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+								<Lock className="h-6 w-6 text-primary" />
+							</div>
+							<h3 className="text-lg font-semibold">Entrez votre code PIN</h3>
+							<p className="text-sm text-muted-foreground">
+								6 chiffres pour vous connecter rapidement
+							</p>
+						</div>
+
+						<div className="space-y-2">
+							<Input
+								ref={pinInputRef}
+								type="password"
+								inputMode="numeric"
+								maxLength={6}
+								pattern="[0-9]*"
+								value={pinCode}
+								onChange={(e) => setPinCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+								placeholder="• • • • • •"
+								className="h-14 text-2xl tracking-[0.5em] font-mono text-center"
+								autoComplete="off"
+								disabled={loading}
+							/>
+						</div>
+
+						{error && (
+							<p className="text-sm text-destructive text-center">{error}</p>
+						)}
+
+						<Button
+							type="submit"
+							size="lg"
+							className="w-full font-medium"
+							disabled={loading || pinCode.length !== 6}
+						>
+							{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+							<KeyRound className="mr-2 h-5 w-5" />
+							Connexion
+						</Button>
+
+						<div className="text-center">
+							<button
+								type="button"
+								onClick={() => { setStep("identifier"); handleSendOtp(); }}
+								className="text-sm text-primary hover:underline"
+							>
+								Recevoir un code OTP à la place
+							</button>
+						</div>
 					</form>
 				)}
 

@@ -1,9 +1,9 @@
 ---
 name: auth-patterns
-description: "🔐 Expert Authentification & Autorisation. S'active automatiquement pour tout travail lié à l'auth (login, JWT, sessions, rôles, permissions). Couvre Clerk, NextAuth, Better Auth, Supabase Auth, JWT custom, et les patterns RBAC avancés avec MFA et OAuth."
+description: " Expert Authentification & Autorisation. S'active automatiquement pour tout travail lié à l'auth (login, JWT, sessions, rôles, permissions). Couvre Clerk, NextAuth, Better Auth, Supabase Auth, JWT custom, et les patterns RBAC avancés avec MFA et OAuth."
 ---
 
-# 🔐 Skill : Authentication & Authorization Patterns
+#  Skill : Authentication & Authorization Patterns
 
 ## Auto-Activation
 - Mots-clés : auth, login, inscription, JWT, session, rôle, permission, accès, TaskCode, guard, protect, MFA, 2FA, OAuth, social login, password reset
@@ -944,11 +944,11 @@ Voir aussi:
 ---
 
 ## Anti-Patterns
-- ❌ JAMAIS stocker des mots de passe en clair
-- ❌ JAMAIS exposer les secrets JWT côté client
-- ❌ JAMAIS faire confiance au rôle envoyé par le client — TOUJOURS vérifier côté serveur
-- ❌ JAMAIS utiliser le système auth d'un projet dans un autre
-- ❌ JAMAIS bypasser `canDoTask` — même pour les superadmins (la fonction gère déjà le cas)
-- ❌ JAMAIS stocker les tokens de rafraîchissement dans localStorage sans encryption
-- ❌ JAMAIS ignorer les expirations de session
-- ❌ JAMAIS mettre MFA optionnel pour les comptes privilégiés
+-  JAMAIS stocker des mots de passe en clair
+-  JAMAIS exposer les secrets JWT côté client
+-  JAMAIS faire confiance au rôle envoyé par le client — TOUJOURS vérifier côté serveur
+-  JAMAIS utiliser le système auth d'un projet dans un autre
+-  JAMAIS bypasser `canDoTask` — même pour les superadmins (la fonction gère déjà le cas)
+-  JAMAIS stocker les tokens de rafraîchissement dans localStorage sans encryption
+-  JAMAIS ignorer les expirations de session
+-  JAMAIS mettre MFA optionnel pour les comptes privilégiés

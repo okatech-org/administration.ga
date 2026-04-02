@@ -219,6 +219,79 @@ export const listOrgs = backofficeQuery({
 });
 
 /**
+ * List all diplomatic members (corps administratif) with enriched profiles.
+ * Returns memberships that have a positionId (= staff, not citizens).
+ */
+export const listDiplomaticMembers = backofficeQuery({
+  args: {},
+  handler: async (ctx) => {
+    // Récupérer toutes les memberships actives avec un poste
+    const allMemberships = await ctx.db
+      .query("memberships")
+      .collect();
+
+    const activeMemberships = allMemberships.filter(
+      (m) => !m.deletedAt && m.positionId,
+    );
+
+    // Batch lookup: users, positions, orgs
+    const userIds = [...new Set(activeMemberships.map((m) => m.userId))];
+    const positionIds = [...new Set(activeMemberships.map((m) => m.positionId!))];
+    const orgIds = [...new Set(activeMemberships.map((m) => m.orgId))];
+
+    const [users, positions, orgs] = await Promise.all([
+      Promise.all(userIds.map((id) => ctx.db.get(id))),
+      Promise.all(positionIds.map((id) => ctx.db.get(id))),
+      Promise.all(orgIds.map((id) => ctx.db.get(id))),
+    ]);
+
+    const userMap = new Map(users.filter(Boolean).map((u) => [u!._id, u!]));
+    const positionMap = new Map(positions.filter(Boolean).map((p) => [p!._id, p!]));
+    const orgMap = new Map(orgs.filter(Boolean).map((o) => [o!._id, o!]));
+
+    return activeMemberships.map((m) => {
+      const user = userMap.get(m.userId);
+      const position = m.positionId ? positionMap.get(m.positionId) : null;
+      const org = orgMap.get(m.orgId);
+
+      return {
+        membershipId: m._id,
+        orgId: m.orgId,
+        diplomaticProfile: (m as any).diplomaticProfile ?? null,
+        isPublicContact: m.isPublicContact,
+        user: user
+          ? {
+              _id: user._id,
+              name: user.name,
+              email: user.email,
+              firstName: (user as any).firstName,
+              lastName: (user as any).lastName,
+              avatarUrl: (user as any).avatarUrl,
+            }
+          : null,
+        position: position
+          ? {
+              code: position.code,
+              title: position.title,
+              grade: position.grade,
+              level: position.level,
+            }
+          : null,
+        org: org
+          ? {
+              _id: org._id,
+              name: org.name,
+              type: org.type,
+              country: org.country,
+              slug: org.slug,
+            }
+          : null,
+      };
+    }).filter((m) => m.user !== null);
+  },
+});
+
+/**
  * Get user memberships
  */
 export const getUserMemberships = backofficeQuery({

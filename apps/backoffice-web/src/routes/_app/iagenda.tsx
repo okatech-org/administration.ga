@@ -1,363 +1,346 @@
+/**
+ * iAgenda — Backoffice (SuperAdmin)
+ *
+ * Même architecture UX que agent-web et citizen-web :
+ * sidebar calendar, tabs, date blocks, stats.
+ * Avec org-selector pour superviser différentes organisations.
+ */
+
+import { api } from "@convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import {
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  MapPin,
-  Users,
+	Calendar,
+	ChevronLeft,
+	ChevronRight,
+	Clock,
+	Globe,
+	List,
+	Loader2,
+	MapPin,
+	Users,
 } from "lucide-react";
-
-interface Event {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  type: "reunion_diplomatique" | "conference" | "ceremonie" | "audience" | "visite_officielle";
-  location: string;
-  attendees: string[];
-  description: string;
-}
-
-const mockEvents: Event[] = [
-  {
-    id: "1",
-    title: "Réunion Diplomatique - Affaires Bilatérales",
-    date: "2026-03-25",
-    time: "10:00",
-    type: "reunion_diplomatique",
-    location: "Salle de Conférence A",
-    attendees: ["Ambassadeur Jean Dupont", "Consul Marie Ondo", "Attaché Pierre Martin"],
-    description: "Discussion des relations bilatérales avec la France et la Belgique.",
-  },
-  {
-    id: "2",
-    title: "Conférence de Presse",
-    date: "2026-03-26",
-    time: "14:30",
-    type: "conference",
-    location: "Salle de Presse",
-    attendees: ["Ambassadeur Jean Dupont", "Porte-parole du Ministère"],
-    description: "Présentation des nouveaux protocoles consulaires et services diplomatiques.",
-  },
-  {
-    id: "3",
-    title: "Cérémonie Officielle - Fête Nationale",
-    date: "2026-03-27",
-    time: "18:00",
-    type: "ceremonie",
-    location: "Résidence de l'Ambassadeur",
-    attendees: ["Tout le personnel diplomatique", "Invités officiels"],
-    description: "Célébration de la Fête Nationale du Gabon.",
-  },
-  {
-    id: "4",
-    title: "Audience Consulaire - Réclamations",
-    date: "2026-03-28",
-    time: "09:00",
-    type: "audience",
-    location: "Bureau du Consul",
-    attendees: ["Consul Pierre Martin", "Assistante Consulaire"],
-    description: "Audition des réclamations et demandes des citoyens gabonais.",
-  },
-  {
-    id: "5",
-    title: "Visite Officielle - Délégation Commerciale",
-    date: "2026-03-29",
-    time: "11:00",
-    type: "visite_officielle",
-    location: "Ministère du Commerce",
-    attendees: ["Ambassadeur", "Délégation Commerciale Étrangère"],
-    description: "Visite de la délégation commerciale chinoise pour les négociations.",
-  },
-  {
-    id: "6",
-    title: "Réunion Administrative Mensuelle",
-    date: "2026-04-01",
-    time: "15:00",
-    type: "reunion_diplomatique",
-    location: "Salle de Réunion B",
-    attendees: ["Direction Administrative", "Chefs de Département"],
-    description: "Revue mensuelle des opérations administratives et budgétaires.",
-  },
-];
+import { motion } from "framer-motion";
+import { useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useOrgSelector } from "@/hooks/use-org-selector";
+import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/iagenda")({
-  component: IagendaPage,
+	component: IAgendaPage,
 });
 
-function IagendaPage() {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 2, 1)); // March 2026
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+// ─── Types ─────────────────────────────────────────────────────
+interface AgendaEvent {
+	id: string;
+	title: string;
+	type: string;
+	date: string;
+	time: string;
+	endTime?: string;
+	location: string;
+	attendees: string[];
+	description: string;
+	source: "diplomatic" | "appointment";
+	status?: string;
+}
 
-  const getDaysInMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-  };
+// ─── Status & Type Config (identique agent-web) ────────────────
+const STATUS_CONFIG: Record<string, { label: string; color: string; dotColor: string }> = {
+	confirmed: { label: "Confirmé", color: "bg-green-500/10 text-green-600 border-green-500/20", dotColor: "bg-green-500" },
+	completed: { label: "Complété", color: "bg-blue-500/10 text-blue-600 border-blue-500/20", dotColor: "bg-blue-500" },
+	cancelled: { label: "Annulé", color: "bg-red-500/10 text-red-600 border-red-500/20", dotColor: "bg-red-500" },
+	no_show: { label: "Absent", color: "bg-amber-500/10 text-amber-600 border-amber-500/20", dotColor: "bg-amber-500" },
+	rescheduled: { label: "Reprogrammé", color: "bg-purple-500/10 text-purple-600 border-purple-500/20", dotColor: "bg-purple-500" },
+	active: { label: "Actif", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20", dotColor: "bg-emerald-500" },
+	draft: { label: "Brouillon", color: "bg-gray-500/10 text-gray-600 border-gray-500/20", dotColor: "bg-gray-500" },
+};
 
-  const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-  };
+const EVENT_TYPE_STYLE: Record<string, { label: string; dotColor: string }> = {
+	diplomacy: { label: "Diplomatique", dotColor: "bg-emerald-500" },
+	cultural: { label: "Culturel", dotColor: "bg-purple-500" },
+	community: { label: "Communauté", dotColor: "bg-blue-500" },
+	celebration: { label: "Célébration", dotColor: "bg-amber-500" },
+	sport: { label: "Sport", dotColor: "bg-cyan-500" },
+	charity: { label: "Solidarité", dotColor: "bg-rose-500" },
+	appointment: { label: "RDV Consulaire", dotColor: "bg-indigo-500" },
+};
 
-  const previousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
-  };
+function getMonday(d: Date) {
+	const day = d.getDay();
+	return day === 0 ? 6 : day - 1;
+}
 
-  const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
-  };
+// ─── Main Page ────────────────────────────────────────────────
+function IAgendaPage() {
+	const [activeTab, setActiveTab] = useState("calendar");
+	const [currentMonth, setCurrentMonth] = useState(new Date());
+	const { activeOrgId, OrgSelector } = useOrgSelector();
 
-  const getEventTypeColor = (type: string) => {
-    const colors: Record<string, string> = {
-      reunion_diplomatique: "bg-blue-500/20 text-blue-200",
-      conference: "bg-purple-500/20 text-purple-200",
-      ceremonie: "bg-amber-500/20 text-amber-200",
-      audience: "bg-green-500/20 text-green-200",
-      visite_officielle: "bg-red-500/20 text-red-200",
-    };
-    return colors[type] || "bg-slate-500/20 text-slate-200";
-  };
+	// ── Données Convex (mêmes queries que agent-web) ──
+	const { data: rawCommunityEvents = [], isPending: eventsLoading } = useAuthenticatedConvexQuery(
+		api.functions.communityEvents.listAll,
+		{},
+	);
+	const { data: rawAppointments = [], isPending: appointmentsLoading } = useAuthenticatedConvexQuery(
+		api.functions.slots.listAppointmentsByOrg,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+	const isPending = eventsLoading || appointmentsLoading;
 
-  const getEventTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      reunion_diplomatique: "Réunion Diplomatique",
-      conference: "Conférence",
-      ceremonie: "Cérémonie",
-      audience: "Audience",
-      visite_officielle: "Visite Officielle",
-    };
-    return labels[type];
-  };
+	// ── Fusionner (même logique que agent-web) ──
+	const allEvents: AgendaEvent[] = useMemo(() => {
+		const diplomatic: AgendaEvent[] = (rawCommunityEvents as any[]).map((e) => ({
+			id: e._id,
+			title: e.title ?? "Événement",
+			type: e.category ?? "diplomacy",
+			date: e.date ? new Date(e.date).toISOString().split("T")[0] : new Date(e._creationTime).toISOString().split("T")[0],
+			time: "09:00",
+			location: e.location ?? "",
+			attendees: [],
+			description: e.description ?? "",
+			source: "diplomatic" as const,
+			status: e.status ?? "active",
+		}));
+		const appointments: AgendaEvent[] = (rawAppointments as any[]).map((a) => ({
+			id: a._id,
+			title: a.service?.name?.fr ?? a.service?.name ?? "Rendez-vous consulaire",
+			type: "appointment",
+			date: a.date ?? "",
+			time: a.time ?? "09:00",
+			endTime: a.endTime,
+			location: "",
+			attendees: a.attendee ? [`${a.attendee.firstName ?? ""} ${a.attendee.lastName ?? ""}`] : [],
+			description: a.attendee?.email ?? "",
+			source: "appointment" as const,
+			status: a.status ?? "confirmed",
+		}));
+		return [...diplomatic, ...appointments].sort((a, b) =>
+			`${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`),
+		);
+	}, [rawCommunityEvents, rawAppointments]);
 
-  const getEventsForDate = (day: number) => {
-    const dateStr = `2026-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    return mockEvents.filter((event) => event.date === dateStr);
-  };
+	const today = new Date().toISOString().split("T")[0];
+	const upcomingEvents = allEvents.filter((e) => e.date >= today && e.status !== "cancelled");
+	const pastEvents = allEvents.filter((e) => e.date < today || e.status === "cancelled");
 
-  const monthNames = [
-    "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
-  ];
+	const monthStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}`;
+	const monthEvents = allEvents.filter((e) => e.date.startsWith(monthStr) && e.status !== "cancelled");
+	const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
+	const firstDay = getMonday(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1));
 
-  const dayNames = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+	const isToday = (day: number) => {
+		const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+		return dateStr === today;
+	};
+	const getEventsForDay = (day: number) => {
+		const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+		return monthEvents.filter((e) => e.date === dateStr);
+	};
 
-  const daysInMonth = getDaysInMonth(currentDate);
-  const firstDayOfMonth = getFirstDayOfMonth(currentDate);
-  const days: (number | null)[] = Array(firstDayOfMonth).fill(null);
+	const thisMonth = allEvents.filter((e) => e.date.startsWith(monthStr)).length;
+	const todayCount = allEvents.filter((e) => e.date === today).length;
 
-  for (let i = 1; i <= daysInMonth; i++) {
-    days.push(i);
-  }
+	return (
+		<div className="flex flex-col gap-4 p-4 lg:p-6 h-full overflow-y-auto">
+			{/* ── Header ── */}
+			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+				<div className="flex items-center gap-3">
+					<div className="h-10 w-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+						<Calendar className="h-5 w-5 text-indigo-500" />
+					</div>
+					<div>
+						<h1 className="text-xl font-bold">iAgenda</h1>
+						<p className="text-xs text-muted-foreground">Supervision des agendas diplomatiques</p>
+					</div>
+				</div>
+				<div className="flex items-center gap-2">
+					<OrgSelector />
+					{todayCount > 0 && (
+						<Badge variant="outline" className="text-xs gap-1">
+							<Clock className="h-3 w-3" /> {todayCount} aujourd'hui
+						</Badge>
+					)}
+					<Badge variant="secondary" className="text-xs">{thisMonth} ce mois</Badge>
+				</div>
+			</div>
 
-  return (
-    <div className="h-full bg-gradient-to-br from-slate-900 to-slate-800 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Agenda</h1>
-          <p className="text-slate-400">Administration Diplomatique</p>
-        </div>
+			{/* ── Tabs (même structure que agent-web) ── */}
+			<Tabs value={activeTab} onValueChange={setActiveTab}>
+				<TabsList className="grid w-full grid-cols-2">
+					<TabsTrigger value="calendar" className="gap-2">
+						<Calendar className="h-4 w-4" /> Calendrier
+					</TabsTrigger>
+					<TabsTrigger value="events" className="gap-2">
+						<List className="h-4 w-4" /> Événements
+						{upcomingEvents.length > 0 && (
+							<Badge variant="secondary" className="text-[10px] h-4 px-1 ml-1">{upcomingEvents.length}</Badge>
+						)}
+					</TabsTrigger>
+				</TabsList>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Calendar */}
-          <div className="lg:col-span-2">
-            <Card className="bg-slate-800 border-slate-700 p-6">
-              {/* Month Header */}
-              <div className="flex items-center justify-between mb-6">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={previousMonth}
-                  className="gap-2"
-                >
-                  <ChevronLeft size={18} />
-                </Button>
-                <h2 className="text-xl font-bold text-white">
-                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={nextMonth}
-                  className="gap-2"
-                >
-                  <ChevronRight size={18} />
-                </Button>
-              </div>
+				<TabsContent value="calendar">
+					{isPending ? (
+						<div className="flex items-center justify-center py-20">
+							<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+						</div>
+					) : (
+						<div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+							<div className="lg:col-span-2 space-y-2">
+								<h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+									<Calendar className="h-3.5 w-3.5" /> Événements à venir
+								</h3>
+								{upcomingEvents.length === 0 ? (
+									<Card><CardContent className="flex flex-col items-center justify-center py-12 text-center">
+										<Calendar className="h-10 w-10 text-muted-foreground/30 mb-3" />
+										<p className="text-sm text-muted-foreground">Aucun événement planifié</p>
+									</CardContent></Card>
+								) : (
+									<ScrollArea className="h-[calc(100vh-340px)]">
+										<div className="space-y-2 pr-2">
+											{upcomingEvents.slice(0, 10).map((ev) => (
+												<EventCard key={ev.id} event={ev} />
+											))}
+										</div>
+									</ScrollArea>
+								)}
+							</div>
 
-              {/* Day Names */}
-              <div className="grid grid-cols-7 gap-2 mb-4">
-                {dayNames.map((day) => (
-                  <div
-                    key={day}
-                    className="text-center text-sm font-semibold text-slate-400 py-2"
-                  >
-                    {day}
-                  </div>
-                ))}
-              </div>
+							{/* Sidebar */}
+							<div className="space-y-4">
+								<Card><CardContent className="p-4 space-y-4">
+									<div className="flex items-center justify-between">
+										<Button size="icon" variant="ghost" className="h-8 w-8"
+											onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+										><ChevronLeft className="h-4 w-4" /></Button>
+										<h4 className="text-sm font-semibold capitalize">{format(currentMonth, "MMMM yyyy", { locale: fr })}</h4>
+										<Button size="icon" variant="ghost" className="h-8 w-8"
+											onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+										><ChevronRight className="h-4 w-4" /></Button>
+									</div>
+									<div className="grid grid-cols-7 gap-1 text-center">
+										{["L", "M", "M", "J", "V", "S", "D"].map((d, i) => (
+											<div key={`${d}-${i}`} className="h-6 text-[10px] font-semibold text-muted-foreground flex items-center justify-center">{d}</div>
+										))}
+										{Array.from({ length: firstDay }).map((_, i) => <div key={`e-${i}`} className="h-7" />)}
+										{Array.from({ length: daysInMonth }).map((_, i) => {
+											const day = i + 1;
+											const dayEvents = getEventsForDay(day);
+											const isTodayDay = isToday(day);
+											return (
+												<div key={day} className={cn(
+													"h-7 text-xs font-medium rounded-md flex flex-col items-center justify-center relative",
+													isTodayDay ? "bg-primary text-primary-foreground font-bold" : "hover:bg-muted/50",
+												)}>
+													{day}
+													{dayEvents.length > 0 && (
+														<div className="absolute bottom-0 flex gap-0.5">
+															{dayEvents.slice(0, 3).map((ev, j) => {
+																const style = EVENT_TYPE_STYLE[ev.type] ?? EVENT_TYPE_STYLE.diplomacy;
+																return <div key={j} className={cn("h-1 w-1 rounded-full", style.dotColor)} />;
+															})}
+														</div>
+													)}
+												</div>
+											);
+										})}
+									</div>
+								</CardContent></Card>
 
-              {/* Days */}
-              <div className="grid grid-cols-7 gap-2">
-                {days.map((day, index) => {
-                  const events = day ? getEventsForDate(day) : [];
-                  const isCurrentDay =
-                    day &&
-                    day === new Date().getDate() &&
-                    currentDate.getMonth() === new Date().getMonth();
+								<Card><CardContent className="p-4">
+									<h4 className="text-xs font-semibold text-muted-foreground mb-2">Statuts</h4>
+									<div className="space-y-1">
+										{Object.entries(STATUS_CONFIG).slice(0, 5).map(([key, { label, dotColor }]) => (
+											<div key={key} className="flex items-center gap-2 text-xs">
+												<div className={cn("h-2 w-2 rounded-full", dotColor)} />
+												<span>{label}</span>
+											</div>
+										))}
+									</div>
+								</CardContent></Card>
 
-                  return (
-                    <div
-                      key={index}
-                      className={`min-h-24 rounded-lg border transition-colors cursor-pointer ${
-                        !day
-                          ? "bg-slate-700/20 border-slate-700"
-                          : isCurrentDay
-                            ? "bg-blue-600/20 border-blue-500"
-                            : "bg-slate-700 border-slate-600 hover:bg-slate-700/70"
-                      }`}
-                      onClick={() => {
-                        if (events.length > 0) setSelectedEvent(events[0]);
-                      }}
-                    >
-                      {day && (
-                        <div className="p-2">
-                          <p
-                            className={`text-sm font-semibold mb-1 ${
-                              isCurrentDay
-                                ? "text-blue-200"
-                                : "text-slate-200"
-                            }`}
-                          >
-                            {day}
-                          </p>
-                          <div className="space-y-1">
-                            {events.slice(0, 2).map((event) => (
-                              <div
-                                key={event.id}
-                                className={`text-xs p-1 rounded ${getEventTypeColor(event.type)}`}
-                              >
-                                {event.title.substring(0, 20)}...
-                              </div>
-                            ))}
-                            {events.length > 2 && (
-                              <p className="text-xs text-slate-400">
-                                +{events.length - 2} plus
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          </div>
+								<Card><CardContent className="p-4">
+									<h4 className="text-xs font-semibold text-muted-foreground mb-2">Résumé</h4>
+									<div className="space-y-1.5 text-sm">
+										<div className="flex justify-between"><span className="text-muted-foreground">À venir</span><span className="font-semibold">{upcomingEvents.length}</span></div>
+										<div className="flex justify-between"><span className="text-muted-foreground">Ce mois</span><span className="font-semibold">{thisMonth}</span></div>
+										<div className="flex justify-between"><span className="text-muted-foreground">Total</span><span className="font-semibold">{allEvents.length}</span></div>
+									</div>
+								</CardContent></Card>
+							</div>
+						</div>
+					)}
+				</TabsContent>
 
-          {/* Upcoming Events */}
-          <div>
-            <Card className="bg-slate-800 border-slate-700 p-6">
-              <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                <Calendar size={20} />
-                Événements à Venir
-              </h3>
-              <div className="space-y-3">
-                {mockEvents.slice(0, 5).map((event) => (
-                  <Card
-                    key={event.id}
-                    className="bg-slate-700/50 border-slate-600 p-3 cursor-pointer hover:bg-slate-700 transition-colors"
-                    onClick={() => setSelectedEvent(event)}
-                  >
-                    <Badge className={getEventTypeColor(event.type) + " mb-2"}>
-                      {getEventTypeLabel(event.type)}
-                    </Badge>
-                    <h4 className="text-white text-sm font-medium mb-2 line-clamp-2">
-                      {event.title}
-                    </h4>
-                    <div className="space-y-1 text-xs text-slate-400">
-                      <p className="flex items-center gap-1">
-                        <Clock size={14} />
-                        {event.date} à {event.time}
-                      </p>
-                      <p className="flex items-center gap-1">
-                        <MapPin size={14} />
-                        {event.location}
-                      </p>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </Card>
-          </div>
-        </div>
-      </div>
+				<TabsContent value="events">
+					<div className="space-y-6 mt-4">
+						{upcomingEvents.length > 0 && (
+							<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+								<h3 className="text-sm font-semibold text-muted-foreground mb-3">À venir ({upcomingEvents.length})</h3>
+								<div className="space-y-2">{upcomingEvents.map((ev) => <EventCard key={ev.id} event={ev} />)}</div>
+							</motion.div>
+						)}
+						{pastEvents.length > 0 && (
+							<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+								<h3 className="text-sm font-semibold text-muted-foreground mb-3">Passés ({pastEvents.length})</h3>
+								<div className="space-y-2 opacity-60">{pastEvents.map((ev) => <EventCard key={ev.id} event={ev} />)}</div>
+							</motion.div>
+						)}
+						{allEvents.length === 0 && !isPending && (
+							<div className="text-center py-16 text-muted-foreground text-sm">Aucun événement</div>
+						)}
+					</div>
+				</TabsContent>
+			</Tabs>
+		</div>
+	);
+}
 
-      {/* Event Detail Modal */}
-      <Dialog open={!!selectedEvent} onOpenChange={() => setSelectedEvent(null)}>
-        <DialogContent className="bg-slate-800 border-slate-700">
-          <DialogHeader>
-            <DialogTitle className="text-white">
-              {selectedEvent?.title}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedEvent && (
-            <div className="space-y-4">
-              <Badge className={getEventTypeColor(selectedEvent.type)}>
-                {getEventTypeLabel(selectedEvent.type)}
-              </Badge>
+// ─── Event Card (identique agent-web) ─────────────────────────
+function EventCard({ event }: { event: AgendaEvent }) {
+	const statusInfo = STATUS_CONFIG[event.status ?? "active"] ?? STATUS_CONFIG.active;
+	const typeStyle = EVENT_TYPE_STYLE[event.type] ?? EVENT_TYPE_STYLE.diplomacy;
 
-              <div className="space-y-3 text-slate-200">
-                <div className="flex items-start gap-3">
-                  <Calendar size={18} className="text-slate-400 mt-1" />
-                  <div>
-                    <p className="text-xs text-slate-400">Date et Heure</p>
-                    <p className="font-medium">
-                      {selectedEvent.date} à {selectedEvent.time}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <MapPin size={18} className="text-slate-400 mt-1" />
-                  <div>
-                    <p className="text-xs text-slate-400">Localisation</p>
-                    <p className="font-medium">{selectedEvent.location}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <Users size={18} className="text-slate-400 mt-1" />
-                  <div>
-                    <p className="text-xs text-slate-400">Participants</p>
-                    <ul className="text-sm space-y-1">
-                      {selectedEvent.attendees.map((attendee, idx) => (
-                        <li key={idx}>• {attendee}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs text-slate-400 mb-2">Description</p>
-                  <p className="text-sm">{selectedEvent.description}</p>
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <Button className="flex-1">Modifier</Button>
-                <Button variant="destructive" className="flex-1">
-                  Supprimer
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+	return (
+		<Card className="hover:border-primary/20 transition-colors">
+			<CardContent className="p-3">
+				<div className="flex items-start gap-3">
+					<div className="shrink-0 text-center bg-primary/10 rounded-lg p-2 min-w-[52px]">
+						<span className="text-lg font-bold text-primary block leading-none">
+							{event.date ? format(new Date(event.date + "T00:00:00"), "dd") : "—"}
+						</span>
+						<span className="text-[10px] font-medium uppercase text-primary/70">
+							{event.date ? format(new Date(event.date + "T00:00:00"), "MMM", { locale: fr }) : ""}
+						</span>
+					</div>
+					<div className="flex-1 min-w-0 space-y-1.5">
+						<div className="flex items-start justify-between gap-2">
+							<p className="text-sm font-medium truncate">{event.title}</p>
+							<Badge variant="outline" className={cn("text-[10px] border shrink-0", statusInfo.color)}>{statusInfo.label}</Badge>
+						</div>
+						<div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+							<span className="flex items-center gap-1"><Clock className="h-3 w-3" />{event.time}{event.endTime ? ` — ${event.endTime}` : ""}</span>
+							{event.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{event.location}</span>}
+							{event.attendees.length > 0 && <span className="flex items-center gap-1"><Users className="h-3 w-3" />{event.attendees.length}</span>}
+						</div>
+						<div className="flex items-center gap-1.5">
+							<div className={cn("h-2 w-2 rounded-full", typeStyle.dotColor)} />
+							<span className="text-[10px] text-muted-foreground">{typeStyle.label}</span>
+							{event.source === "diplomatic" && (
+								<Badge variant="outline" className="text-[8px] h-3.5 px-1 border-emerald-500/30 text-emerald-600">
+									<Globe className="h-2 w-2 mr-0.5" /> Diplomatique
+								</Badge>
+							)}
+						</div>
+					</div>
+				</div>
+			</CardContent>
+		</Card>
+	);
 }

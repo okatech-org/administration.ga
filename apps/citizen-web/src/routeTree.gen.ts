@@ -20,8 +20,8 @@ import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AccessibiliteRouteImport } from './routes/accessibilite'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
+import { Route as RepsIndexRouteImport } from './routes/reps/index'
 import { Route as RegisterIndexRouteImport } from './routes/register/index'
-import { Route as OrgsIndexRouteImport } from './routes/orgs/index'
 import { Route as NewsIndexRouteImport } from './routes/news/index'
 import { Route as MySpaceIndexRouteImport } from './routes/my-space/index'
 import { Route as AcademyIndexRouteImport } from './routes/academy/index'
@@ -30,13 +30,14 @@ import { Route as VerifyProfileProfileIdRouteImport } from './routes/verify-prof
 import { Route as SignUpSplatRouteImport } from './routes/sign-up/$'
 import { Route as SignInSplatRouteImport } from './routes/sign-in/$'
 import { Route as ServicesSlugRouteImport } from './routes/services/$slug'
-import { Route as OrgsSlugRouteImport } from './routes/orgs/$slug'
+import { Route as RepsSlugRouteImport } from './routes/reps/$slug'
 import { Route as NewsSlugRouteImport } from './routes/news/$slug'
 import { Route as MySpaceVaultRouteImport } from './routes/my-space/vault'
 import { Route as MySpaceSettingsRouteImport } from './routes/my-space/settings'
 import { Route as MySpaceServicesDemarchesRouteImport } from './routes/my-space/services-demarches'
 import { Route as MySpaceRequestsRouteImport } from './routes/my-space/requests'
 import { Route as MySpaceNotificationsRouteImport } from './routes/my-space/notifications'
+import { Route as MySpaceMeetingsRouteImport } from './routes/my-space/meetings'
 import { Route as MySpaceIdocumentRouteImport } from './routes/my-space/idocument'
 import { Route as MySpaceIboiteRouteImport } from './routes/my-space/iboite'
 import { Route as MySpaceIastedRouteImport } from './routes/my-space/iasted'
@@ -123,14 +124,14 @@ const ServicesIndexRoute = ServicesIndexRouteImport.update({
   path: '/services/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RepsIndexRoute = RepsIndexRouteImport.update({
+  id: '/reps/',
+  path: '/reps/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegisterIndexRoute = RegisterIndexRouteImport.update({
   id: '/register/',
   path: '/register/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrgsIndexRoute = OrgsIndexRouteImport.update({
-  id: '/orgs/',
-  path: '/orgs/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewsIndexRoute = NewsIndexRouteImport.update({
@@ -173,9 +174,9 @@ const ServicesSlugRoute = ServicesSlugRouteImport.update({
   path: '/services/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OrgsSlugRoute = OrgsSlugRouteImport.update({
-  id: '/orgs/$slug',
-  path: '/orgs/$slug',
+const RepsSlugRoute = RepsSlugRouteImport.update({
+  id: '/reps/$slug',
+  path: '/reps/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewsSlugRoute = NewsSlugRouteImport.update({
@@ -207,6 +208,11 @@ const MySpaceRequestsRoute = MySpaceRequestsRouteImport.update({
 const MySpaceNotificationsRoute = MySpaceNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
+  getParentRoute: () => MySpaceRoute,
+} as any)
+const MySpaceMeetingsRoute = MySpaceMeetingsRouteImport.update({
+  id: '/meetings',
+  path: '/meetings',
   getParentRoute: () => MySpaceRoute,
 } as any)
 const MySpaceIdocumentRoute = MySpaceIdocumentRouteImport.update({
@@ -386,13 +392,14 @@ export interface FileRoutesByFullPath {
   '/my-space/iasted': typeof MySpaceIastedRoute
   '/my-space/iboite': typeof MySpaceIboiteRoute
   '/my-space/idocument': typeof MySpaceIdocumentRoute
+  '/my-space/meetings': typeof MySpaceMeetingsRoute
   '/my-space/notifications': typeof MySpaceNotificationsRoute
   '/my-space/requests': typeof MySpaceRequestsRouteWithChildren
   '/my-space/services-demarches': typeof MySpaceServicesDemarchesRoute
   '/my-space/settings': typeof MySpaceSettingsRoute
   '/my-space/vault': typeof MySpaceVaultRoute
   '/news/$slug': typeof NewsSlugRoute
-  '/orgs/$slug': typeof OrgsSlugRoute
+  '/reps/$slug': typeof RepsSlugRoute
   '/services/$slug': typeof ServicesSlugRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -401,8 +408,8 @@ export interface FileRoutesByFullPath {
   '/academy/': typeof AcademyIndexRoute
   '/my-space/': typeof MySpaceIndexRoute
   '/news/': typeof NewsIndexRoute
-  '/orgs/': typeof OrgsIndexRoute
   '/register/': typeof RegisterIndexRoute
+  '/reps/': typeof RepsIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/dev/sign-in': typeof ApiDevSignInRoute
@@ -445,13 +452,14 @@ export interface FileRoutesByTo {
   '/my-space/iasted': typeof MySpaceIastedRoute
   '/my-space/iboite': typeof MySpaceIboiteRoute
   '/my-space/idocument': typeof MySpaceIdocumentRoute
+  '/my-space/meetings': typeof MySpaceMeetingsRoute
   '/my-space/notifications': typeof MySpaceNotificationsRoute
   '/my-space/requests': typeof MySpaceRequestsRouteWithChildren
   '/my-space/services-demarches': typeof MySpaceServicesDemarchesRoute
   '/my-space/settings': typeof MySpaceSettingsRoute
   '/my-space/vault': typeof MySpaceVaultRoute
   '/news/$slug': typeof NewsSlugRoute
-  '/orgs/$slug': typeof OrgsSlugRoute
+  '/reps/$slug': typeof RepsSlugRoute
   '/services/$slug': typeof ServicesSlugRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -460,8 +468,8 @@ export interface FileRoutesByTo {
   '/academy': typeof AcademyIndexRoute
   '/my-space': typeof MySpaceIndexRoute
   '/news': typeof NewsIndexRoute
-  '/orgs': typeof OrgsIndexRoute
   '/register': typeof RegisterIndexRoute
+  '/reps': typeof RepsIndexRoute
   '/services': typeof ServicesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/dev/sign-in': typeof ApiDevSignInRoute
@@ -506,13 +514,14 @@ export interface FileRoutesById {
   '/my-space/iasted': typeof MySpaceIastedRoute
   '/my-space/iboite': typeof MySpaceIboiteRoute
   '/my-space/idocument': typeof MySpaceIdocumentRoute
+  '/my-space/meetings': typeof MySpaceMeetingsRoute
   '/my-space/notifications': typeof MySpaceNotificationsRoute
   '/my-space/requests': typeof MySpaceRequestsRouteWithChildren
   '/my-space/services-demarches': typeof MySpaceServicesDemarchesRoute
   '/my-space/settings': typeof MySpaceSettingsRoute
   '/my-space/vault': typeof MySpaceVaultRoute
   '/news/$slug': typeof NewsSlugRoute
-  '/orgs/$slug': typeof OrgsSlugRoute
+  '/reps/$slug': typeof RepsSlugRoute
   '/services/$slug': typeof ServicesSlugRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -521,8 +530,8 @@ export interface FileRoutesById {
   '/academy/': typeof AcademyIndexRoute
   '/my-space/': typeof MySpaceIndexRoute
   '/news/': typeof NewsIndexRoute
-  '/orgs/': typeof OrgsIndexRoute
   '/register/': typeof RegisterIndexRoute
+  '/reps/': typeof RepsIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/dev/sign-in': typeof ApiDevSignInRoute
@@ -568,13 +577,14 @@ export interface FileRouteTypes {
     | '/my-space/iasted'
     | '/my-space/iboite'
     | '/my-space/idocument'
+    | '/my-space/meetings'
     | '/my-space/notifications'
     | '/my-space/requests'
     | '/my-space/services-demarches'
     | '/my-space/settings'
     | '/my-space/vault'
     | '/news/$slug'
-    | '/orgs/$slug'
+    | '/reps/$slug'
     | '/services/$slug'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -583,8 +593,8 @@ export interface FileRouteTypes {
     | '/academy/'
     | '/my-space/'
     | '/news/'
-    | '/orgs/'
     | '/register/'
+    | '/reps/'
     | '/services/'
     | '/api/auth/$'
     | '/api/dev/sign-in'
@@ -627,13 +637,14 @@ export interface FileRouteTypes {
     | '/my-space/iasted'
     | '/my-space/iboite'
     | '/my-space/idocument'
+    | '/my-space/meetings'
     | '/my-space/notifications'
     | '/my-space/requests'
     | '/my-space/services-demarches'
     | '/my-space/settings'
     | '/my-space/vault'
     | '/news/$slug'
-    | '/orgs/$slug'
+    | '/reps/$slug'
     | '/services/$slug'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -642,8 +653,8 @@ export interface FileRouteTypes {
     | '/academy'
     | '/my-space'
     | '/news'
-    | '/orgs'
     | '/register'
+    | '/reps'
     | '/services'
     | '/api/auth/$'
     | '/api/dev/sign-in'
@@ -687,13 +698,14 @@ export interface FileRouteTypes {
     | '/my-space/iasted'
     | '/my-space/iboite'
     | '/my-space/idocument'
+    | '/my-space/meetings'
     | '/my-space/notifications'
     | '/my-space/requests'
     | '/my-space/services-demarches'
     | '/my-space/settings'
     | '/my-space/vault'
     | '/news/$slug'
-    | '/orgs/$slug'
+    | '/reps/$slug'
     | '/services/$slug'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -702,8 +714,8 @@ export interface FileRouteTypes {
     | '/academy/'
     | '/my-space/'
     | '/news/'
-    | '/orgs/'
     | '/register/'
+    | '/reps/'
     | '/services/'
     | '/api/auth/$'
     | '/api/dev/sign-in'
@@ -740,7 +752,7 @@ export interface RootRouteChildren {
   TarifsRoute: typeof TarifsRoute
   AcademySlugRoute: typeof AcademySlugRoute
   NewsSlugRoute: typeof NewsSlugRoute
-  OrgsSlugRoute: typeof OrgsSlugRoute
+  RepsSlugRoute: typeof RepsSlugRoute
   ServicesSlugRoute: typeof ServicesSlugRoute
   SignInSplatRoute: typeof SignInSplatRoute
   SignUpSplatRoute: typeof SignUpSplatRoute
@@ -748,8 +760,8 @@ export interface RootRouteChildren {
   VerifyTokenRoute: typeof VerifyTokenRoute
   AcademyIndexRoute: typeof AcademyIndexRoute
   NewsIndexRoute: typeof NewsIndexRoute
-  OrgsIndexRoute: typeof OrgsIndexRoute
   RegisterIndexRoute: typeof RegisterIndexRoute
+  RepsIndexRoute: typeof RepsIndexRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiDevSignInRoute: typeof ApiDevSignInRoute
@@ -835,18 +847,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reps/': {
+      id: '/reps/'
+      path: '/reps'
+      fullPath: '/reps/'
+      preLoaderRoute: typeof RepsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/register/': {
       id: '/register/'
       path: '/register'
       fullPath: '/register/'
       preLoaderRoute: typeof RegisterIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/orgs/': {
-      id: '/orgs/'
-      path: '/orgs'
-      fullPath: '/orgs/'
-      preLoaderRoute: typeof OrgsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/news/': {
@@ -905,11 +917,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/orgs/$slug': {
-      id: '/orgs/$slug'
-      path: '/orgs/$slug'
-      fullPath: '/orgs/$slug'
-      preLoaderRoute: typeof OrgsSlugRouteImport
+    '/reps/$slug': {
+      id: '/reps/$slug'
+      path: '/reps/$slug'
+      fullPath: '/reps/$slug'
+      preLoaderRoute: typeof RepsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/news/$slug': {
@@ -952,6 +964,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/my-space/notifications'
       preLoaderRoute: typeof MySpaceNotificationsRouteImport
+      parentRoute: typeof MySpaceRoute
+    }
+    '/my-space/meetings': {
+      id: '/my-space/meetings'
+      path: '/meetings'
+      fullPath: '/my-space/meetings'
+      preLoaderRoute: typeof MySpaceMeetingsRouteImport
       parentRoute: typeof MySpaceRoute
     }
     '/my-space/idocument': {
@@ -1217,6 +1236,7 @@ interface MySpaceRouteChildren {
   MySpaceIastedRoute: typeof MySpaceIastedRoute
   MySpaceIboiteRoute: typeof MySpaceIboiteRoute
   MySpaceIdocumentRoute: typeof MySpaceIdocumentRoute
+  MySpaceMeetingsRoute: typeof MySpaceMeetingsRoute
   MySpaceNotificationsRoute: typeof MySpaceNotificationsRoute
   MySpaceRequestsRoute: typeof MySpaceRequestsRouteWithChildren
   MySpaceServicesDemarchesRoute: typeof MySpaceServicesDemarchesRoute
@@ -1247,6 +1267,7 @@ const MySpaceRouteChildren: MySpaceRouteChildren = {
   MySpaceIastedRoute: MySpaceIastedRoute,
   MySpaceIboiteRoute: MySpaceIboiteRoute,
   MySpaceIdocumentRoute: MySpaceIdocumentRoute,
+  MySpaceMeetingsRoute: MySpaceMeetingsRoute,
   MySpaceNotificationsRoute: MySpaceNotificationsRoute,
   MySpaceRequestsRoute: MySpaceRequestsRouteWithChildren,
   MySpaceServicesDemarchesRoute: MySpaceServicesDemarchesRoute,
@@ -1283,7 +1304,7 @@ const rootRouteChildren: RootRouteChildren = {
   TarifsRoute: TarifsRoute,
   AcademySlugRoute: AcademySlugRoute,
   NewsSlugRoute: NewsSlugRoute,
-  OrgsSlugRoute: OrgsSlugRoute,
+  RepsSlugRoute: RepsSlugRoute,
   ServicesSlugRoute: ServicesSlugRoute,
   SignInSplatRoute: SignInSplatRoute,
   SignUpSplatRoute: SignUpSplatRoute,
@@ -1291,8 +1312,8 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyTokenRoute: VerifyTokenRoute,
   AcademyIndexRoute: AcademyIndexRoute,
   NewsIndexRoute: NewsIndexRoute,
-  OrgsIndexRoute: OrgsIndexRoute,
   RegisterIndexRoute: RegisterIndexRoute,
+  RepsIndexRoute: RepsIndexRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiDevSignInRoute: ApiDevSignInRoute,

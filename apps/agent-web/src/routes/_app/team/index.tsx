@@ -29,6 +29,7 @@ import { CallButton } from "@/components/meetings/call-button";
 import { AddMemberDialog } from "@/components/org/add-member-dialog";
 import { MemberPermissionsDialog } from "@/components/org/member-permissions-dialog";
 import { useOrg } from "@/components/org/org-provider";
+import { useModuleAccess } from "@/components/shared/access-gate";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -133,6 +134,9 @@ function DashboardTeam() {
 	const { t, i18n } = useTranslation();
 	const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 	const { canDo } = useCanDoTask(activeOrgId ?? undefined);
+	const { hasMin: hasTeamAccess } = useModuleAccess("team");
+	const canManageTeam = hasTeamAccess("editor");
+	const canAdminTeam = hasTeamAccess("admin");
 
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
 	const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
@@ -266,16 +270,18 @@ function DashboardTeam() {
 				<div>
 					<h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
 						<Building2 className="h-6 w-6 text-primary" />
-						{t("admin.nav.organization", "Organisation")}
+						{t("admin.nav.organization", "Représentation")}
 					</h1>
 					<p className="text-muted-foreground text-sm mt-1">
 						{t("dashboard.team.description")}
 					</p>
 				</div>
-				<Button onClick={() => setAddDialogOpen(true)} className="gap-2">
-					<UserPlus className="h-4 w-4" />
-					{t("dashboard.team.addMember")}
-				</Button>
+				{canAdminTeam && (
+					<Button onClick={() => setAddDialogOpen(true)} className="gap-2">
+						<UserPlus className="h-4 w-4" />
+						{t("dashboard.team.addMember")}
+					</Button>
+				)}
 			</div>
 
 			{/* ─── Tabs ──────────────────────────────── */}

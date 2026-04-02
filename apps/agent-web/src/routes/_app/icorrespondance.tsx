@@ -6,6 +6,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import React, { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
+import { useModuleAccess } from "@/components/shared/access-gate";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
@@ -566,6 +567,9 @@ function InfoDialog({ open, onClose, item, itemType }: { open: boolean; onClose:
 function ICorrespondancePage() {
 	// ─── Org context ────────────────────────────────────────
 	const { activeOrgId } = useOrg();
+	const { hasMin: hasCorrAccess } = useModuleAccess("correspondance");
+	const canCreateCorr = hasCorrAccess("editor");
+	const canAdminCorr = hasCorrAccess("admin");
 
 	// ─── Active tab ──────────────────────────────────────────
 	const [activeTab, setActiveTab] = useState<ActiveTab>("correspondance");
@@ -1059,7 +1063,7 @@ function ICorrespondancePage() {
 					</div>
 				</div>
 				<div className="flex items-center gap-2">
-					{activeTab === "correspondance" && (
+					{activeTab === "correspondance" && canCreateCorr && (
 						<>
 							<button onClick={() => setShowNewFolderDialog(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-muted transition-colors">
 								<FolderPlus className="h-3.5 w-3.5" />Nouveau dossier
@@ -1069,7 +1073,7 @@ function ICorrespondancePage() {
 							</button>
 						</>
 					)}
-					{activeTab === "dossiers" && !selectedDossierId && (
+					{activeTab === "dossiers" && !selectedDossierId && canCreateCorr && (
 						<button onClick={() => setShowDossierWizard(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-linear-to-r from-indigo-600 to-violet-500 hover:from-indigo-700 hover:to-violet-600 text-white rounded-lg transition-colors">
 							<Plus className="h-3.5 w-3.5" />Nouveau dossier de procédure
 						</button>

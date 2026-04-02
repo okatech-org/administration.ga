@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation } from "../_generated/server";
+import { backofficeQuery } from "../lib/customFunctions";
 import { requireAuth } from "../lib/auth";
 import { isSuperAdmin } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
@@ -9,9 +10,10 @@ import { error, ErrorCode } from "../lib/errors";
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * List all security policies for an organization
+ * List all security policies for an organization.
+ * Protected: requires back-office access (SuperAdmin, AdminSystem, or Admin).
  */
-export const listPolicies = query({
+export const listPolicies = backofficeQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, { orgId }) => {
     const policies = await ctx.db
@@ -24,9 +26,10 @@ export const listPolicies = query({
 });
 
 /**
- * Get a single security policy
+ * Get a single security policy.
+ * Protected: requires back-office access.
  */
-export const getPolicy = query({
+export const getPolicy = backofficeQuery({
   args: { id: v.id("securityPolicies") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id);

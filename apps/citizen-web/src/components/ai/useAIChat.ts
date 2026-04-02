@@ -103,8 +103,8 @@ export function useAIChat() {
 							role: "assistant",
 							content:
 								action.type === "fillForm"
-									? "✅ Les informations ont été pré-remplies dans le formulaire."
-									: "✅ Navigation effectuée.",
+									? " Les informations ont été pré-remplies dans le formulaire."
+									: " Navigation effectuée.",
 							timestamp: Date.now(),
 						};
 						setMessages((prev) => [...prev, resultMessage]);
@@ -258,7 +258,7 @@ export function useAIChat() {
 			// Add user message with image indicator
 			const userMessage: Message = {
 				role: "user",
-				content: "📄 Document envoyé pour analyse...",
+				content: " Document envoyé pour analyse...",
 				timestamp: Date.now(),
 			};
 			setMessages((prev) => [...prev, userMessage]);
@@ -310,8 +310,8 @@ export function useAIChat() {
 				// Build response message with human-readable labels
 				const docTypeLabel =
 					documentTypeLabels[result.documentType] || result.documentType;
-				let responseText = `📋 **Analyse du ${docTypeLabel.toLowerCase()}**\n\n`;
-				responseText += `✅ Confiance: ${result.confidence}%\n\n`;
+				let responseText = ` **Analyse du ${docTypeLabel.toLowerCase()}**\n\n`;
+				responseText += ` Confiance: ${result.confidence}%\n\n`;
 
 				if (Object.keys(result.extractedData).length > 0) {
 					responseText += `**Informations extraites :**\n`;
@@ -330,7 +330,7 @@ export function useAIChat() {
 				}
 
 				if (result.warnings.length > 0) {
-					responseText += `\n\n⚠️ **Avertissements :**\n`;
+					responseText += `\n\n **Avertissements :**\n`;
 					for (const warning of result.warnings) {
 						responseText += `• ${warning}\n`;
 					}
@@ -469,8 +469,8 @@ export function useAIChat() {
 						role: "assistant",
 						content:
 							action.type === "fillForm"
-								? "✅ Les informations ont été pré-remplies dans le formulaire."
-								: "✅ Navigation effectuée.",
+								? " Les informations ont été pré-remplies dans le formulaire."
+								: " Navigation effectuée.",
 						timestamp: Date.now(),
 					};
 					setMessages((prev) => [...prev, resultMessage]);
@@ -492,8 +492,8 @@ export function useAIChat() {
 				const resultMessage: Message = {
 					role: "assistant",
 					content: result.success
-						? `✅ Action exécutée: ${JSON.stringify(result.data)}`
-						: `❌ Erreur: ${result.error}`,
+						? ` Action exécutée: ${JSON.stringify(result.data)}`
+						: ` Erreur: ${result.error}`,
 					timestamp: Date.now(),
 				};
 				setMessages((prev) => [...prev, resultMessage]);

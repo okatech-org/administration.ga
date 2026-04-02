@@ -164,7 +164,7 @@ export function NearbyOrgs({
 						)}
 					</div>
 					<Button asChild variant="outline" size="sm">
-						<Link to="/orgs" search={{ view: "grid" }}>
+						<Link to="/reps" search={{ view: "grid" }}>
 							{t("nearbyOrgs.viewAll")}
 							<ArrowRight className="w-4 h-4 ml-1" />
 						</Link>
@@ -249,7 +249,7 @@ export function NearbyOrgs({
 
 								<CardFooter className="pt-4">
 									<Link
-										to="/orgs/$slug"
+										to="/reps/$slug"
 										params={{ slug: org.slug }}
 										className="inline-flex items-center gap-2 text-primary font-medium hover:underline text-sm"
 									>

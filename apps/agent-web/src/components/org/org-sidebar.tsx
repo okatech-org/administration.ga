@@ -2,9 +2,12 @@
 
 import { Link, useLocation } from "@tanstack/react-router";
 import {
+	BarChart3,
 	Calendar,
 	ChevronsLeft,
 	ChevronsRight,
+	CreditCard,
+	Eye,
 	FileText,
 	FolderOpen,
 	Globe2,
@@ -14,7 +17,9 @@ import {
 	Newspaper,
 	Settings2,
 	Sun,
+	UserCircle,
 	Users,
+	Users2,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
@@ -28,6 +33,8 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useCanDoTask } from "@/hooks/useCanDoTask";
+import { useModuleAccessLevel } from "@/hooks/useModuleAccessLevel";
+import { useOrgModules } from "@/hooks/useOrgModules";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { useOrg } from "./org-provider";
@@ -38,6 +45,7 @@ interface NavItem {
 	url: string;
 	icon: React.ElementType;
 	requires?: string; // task code required to see this item
+	moduleCode?: string; // module code for access level detection
 }
 
 interface NavSection {
@@ -84,46 +92,61 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 	const { theme, setTheme } = useTheme();
 	const { activeOrgId } = useOrg();
 	const { canDo, isReady } = useCanDoTask(activeOrgId ?? undefined);
+	const { isReadOnly } = useModuleAccessLevel(activeOrgId ?? undefined);
+	const { isModuleEnabled } = useOrgModules();
 
 	const navSections: NavSection[] = [
 		{
 			label: "Commandes",
 			items: [
 				{ title: "Dashboard", url: "/", icon: Home },
+				{ title: "iProfil", url: "/iprofil", icon: UserCircle },
 			],
 		},
 		{
 			label: "Opérations",
 			items: [
-				{ title: "Affaires Diplomatiques", url: "/affaires-diplomatiques", icon: Globe2 },
-				{ title: "Affaires Consulaires", url: "/affaires-consulaires", icon: Users, requires: "requests.view" },
-				{ title: "Gestion Actualités", url: "/posts", icon: Newspaper, requires: "communication.publish" },
+				{ title: "Affaires Diplomatiques", url: "/affaires-diplomatiques", icon: Globe2, requires: "intelligence.view", moduleCode: "intelligence" },
+				{ title: "Affaires Consulaires", url: "/affaires-consulaires", icon: Users, requires: "requests.view", moduleCode: "requests" },
+				{ title: "Actualités", url: "/posts", icon: Newspaper, requires: "communication.publish", moduleCode: "communication" },
 			],
 		},
 		{
 			label: "iBureau",
 			items: [
-				{ title: "iBoîte", url: "/iboite", icon: Mail },
-				{ title: "iCorrespondance", url: "/icorrespondance", icon: FolderOpen },
-				{ title: "iDocument", url: "/idocument", icon: FileText },
-				{ title: "iAgenda", url: "/iagenda", icon: Calendar },
+				{ title: "iBoîte", url: "/iboite", icon: Mail, requires: "digital_mail.view", moduleCode: "digital_mail" },
+				{ title: "iCorrespondance", url: "/icorrespondance", icon: FolderOpen, requires: "correspondance.view", moduleCode: "correspondance" },
+				{ title: "iDocument", url: "/idocument", icon: FileText, requires: "documents.view", moduleCode: "documents" },
+				{ title: "iAgenda", url: "/iagenda", icon: Calendar, requires: "appointments.view", moduleCode: "appointments" },
+			],
+		},
+		{
+			label: "Gestion",
+			items: [
+				{ title: "Équipe", url: "/team", icon: Users2, requires: "team.view", moduleCode: "team" },
+				{ title: "Paiements", url: "/payments", icon: CreditCard, requires: "finance.view", moduleCode: "finance" },
+				{ title: "Statistiques", url: "/statistics", icon: BarChart3, requires: "analytics.view", moduleCode: "analytics" },
 			],
 		},
 		{
 			label: "Administration",
 			items: [
-				{ title: "Paramètres", url: "/settings", icon: Settings2 },
+				{ title: "Paramètres", url: "/settings", icon: Settings2, requires: "settings.view", moduleCode: "settings" },
 			],
 		},
 	];
 
-	// Filter sections and their items based on permissions
+	// Filter sections and their items based on org modules + permissions
 	const filteredSections = navSections
 		.map((section) => ({
 			...section,
-			items: section.items.filter(
-				(item) => !item.requires || (isReady && canDo(item.requires)),
-			),
+			items: section.items.filter((item) => {
+				// 1. Module actif dans l'org ?
+				if (item.moduleCode && !isModuleEnabled(item.moduleCode)) return false;
+				// 2. Permission utilisateur ?
+				if (item.requires && !(isReady && canDo(item.requires))) return false;
+				return true;
+			}),
 		}))
 		.filter((section) => section.items.length > 0);
 
@@ -201,6 +224,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 							{/* Items */}
 							{section.items.map((item) => {
 								const active = isActive(item.url);
+								const readOnly = item.moduleCode ? isReadOnly(item.moduleCode) : false;
 								const button = (
 									<Button
 										asChild
@@ -214,6 +238,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 											active
 												? "bg-primary/10 text-primary border border-primary/20 font-semibold hover:bg-primary/15 hover:text-primary"
 												: "text-muted-foreground hover:text-foreground hover:bg-muted",
+											readOnly && "opacity-70",
 										)}
 									>
 										<Link to={item.url}>
@@ -221,6 +246,10 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 											<SidebarText isExpanded={isExpanded}>
 												{item.title}
 											</SidebarText>
+											{/* Indicateur lecture seule */}
+											{isExpanded && readOnly && (
+												<Eye className="size-3 text-blue-500/60 ml-auto shrink-0" />
+											)}
 											{!isExpanded && (
 												<span className="sr-only">{item.title}</span>
 											)}

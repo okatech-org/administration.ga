@@ -67,7 +67,7 @@ function ServiceEdit() {
 		onSubmit: async ({ value }) => {
 			if (!activeOrgId) {
 				toast.error(
-					t("dashboard.services.edit.noOrgError") || "Organisation introuvable",
+					t("dashboard.services.edit.noOrgError") || "Représentation introuvable",
 				);
 				return;
 			}

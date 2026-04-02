@@ -60,7 +60,7 @@ import {
 } from "@/integrations/convex/hooks";
 import { getLocalizedValue } from "@/lib/i18n-utils";
 
-export const Route = createFileRoute("/_app/orgs/new")({
+export const Route = createFileRoute("/_app/reps/new")({
 	component: NewOrganizationPage,
 });
 
@@ -90,7 +90,7 @@ interface TemplateData {
 		grade?: string;
 		taskPresets: string[];
 		isRequired: boolean;
-	}>;
+	}>
 }
 
 // ─── Helpers ───────────────────────────────────────────────────
@@ -118,7 +118,7 @@ function templatePositionToDraft(
 		grade: pos.grade,
 		tasks: getPresetTasks(pos.taskPresets ?? []),
 		isRequired: pos.isRequired,
-	};
+	}
 }
 
 const GRADE_CONFIG: Record<string, { label: string; color: string }> = {
@@ -183,10 +183,10 @@ function StepIndicator({
 							{step.label}
 						</div>
 					</div>
-				);
+				)
 			})}
 		</div>
-	);
+	)
 }
 
 // ─── Main Component ────────────────────────────────────────────
@@ -202,7 +202,7 @@ function NewOrganizationPage() {
 	// Template selection
 	const [selectedTemplate, setSelectedTemplate] = useState<TemplateData | null>(
 		null,
-	);
+	)
 
 	// Editable positions
 	const [positions, setPositions] = useState<PositionDraft[]>([]);
@@ -214,11 +214,11 @@ function NewOrganizationPage() {
 	const { data: templates } = useConvexQuery(
 		api.functions.roleConfig.getOrgTemplates,
 		{},
-	);
+	)
 
 	const { mutateAsync: createOrg, isPending } = useConvexMutationQuery(
 		api.functions.orgs.create,
-	);
+	)
 
 	// When selecting a template, pre-fill positions
 	const handleSelectTemplate = useCallback((template: TemplateData) => {
@@ -232,7 +232,7 @@ function NewOrganizationPage() {
 		if (selectedTemplate) {
 			setPositions(
 				selectedTemplate.positions.map((p) => templatePositionToDraft(p)),
-			);
+			)
 		}
 	}, [selectedTemplate]);
 
@@ -281,15 +281,15 @@ function NewOrganizationPage() {
 		onSubmit: async ({ value }) => {
 			if (!selectedTemplate) {
 				toast.error("Veuillez sélectionner un template");
-				return;
+				return
 			}
 			if (!value.name || value.name.length < 3) {
 				toast.error("Le nom doit comporter au moins 3 caractères");
-				return;
+				return
 			}
 			if (!value.slug || value.slug.length < 2) {
 				toast.error("Le slug doit comporter au moins 2 caractères");
-				return;
+				return
 			}
 
 			try {
@@ -320,15 +320,15 @@ function NewOrganizationPage() {
 						tasks: p.tasks,
 						isRequired: p.isRequired,
 					})),
-				});
-				toast.success("Organisation créée avec succès ✓");
-				navigate({ to: "/orgs" });
+				})
+				toast.success("Représentation créée avec succès");
+				navigate({ to: "/reps" });
 			} catch (err: unknown) {
 				const message = err instanceof Error ? err.message : "Erreur inconnue";
 				toast.error(message);
 			}
 		},
-	});
+	})
 
 	const handleNameChange = (name: string) => {
 		form.setFieldValue("name", name);
@@ -339,13 +339,13 @@ function NewOrganizationPage() {
 			.replace(/[^a-z0-9]+/g, "-")
 			.replace(/^-|-$/g, "");
 		form.setFieldValue("slug", slug);
-	};
+	}
 
 	// Sorted positions by level
 	const sortedPositions = useMemo(
 		() => [...positions].sort((a, b) => a.level - b.level),
 		[positions],
-	);
+	)
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4 pt-6 max-w-4xl mx-auto w-full">
@@ -357,7 +357,7 @@ function NewOrganizationPage() {
 					onClick={() => {
 						if (step === "positions") setStep("template");
 						else if (step === "details") setStep("positions");
-						else navigate({ to: "/orgs" });
+						else navigate({ to: "/reps" });
 					}}
 				>
 					<ArrowLeft className="h-4 w-4" />
@@ -433,7 +433,7 @@ function NewOrganizationPage() {
 										</div>
 									</div>
 								</button>
-							);
+							)
 						})}
 					</div>
 				</div>
@@ -610,8 +610,8 @@ function NewOrganizationPage() {
 						<form
 							id="org-form"
 							onSubmit={(e) => {
-								e.preventDefault();
-								form.handleSubmit();
+								e.preventDefault()
+								form.handleSubmit()
 							}}
 						>
 							<FieldGroup>
@@ -642,7 +642,7 @@ function NewOrganizationPage() {
 													<FieldError errors={field.state.meta.errors} />
 												)}
 											</Field>
-										);
+										)
 									}}
 								/>
 
@@ -676,7 +676,7 @@ function NewOrganizationPage() {
 													<FieldError errors={field.state.meta.errors} />
 												)}
 											</Field>
-										);
+										)
 									}}
 								/>
 
@@ -836,7 +836,7 @@ function NewOrganizationPage() {
 													label: code,
 												}))}
 												onChange={(value: CountryCode[]) => {
-													field.handleChange(value);
+													field.handleChange(value)
 												}}
 												selected={field.state.value}
 											/>
@@ -926,7 +926,7 @@ function NewOrganizationPage() {
 				onAdd={handleAddPosition}
 			/>
 		</div>
-	);
+	)
 }
 
 // ─── Add Position Dialog ───────────────────────────────────────
@@ -950,7 +950,7 @@ function AddPositionDialog({
 	const handleSubmit = () => {
 		if (!code.trim() || !titleFr.trim()) {
 			toast.error("Le code et le titre sont requis");
-			return;
+			return
 		}
 		onAdd({
 			code: code.trim().toLowerCase().replace(/\s+/g, "_"),
@@ -960,7 +960,7 @@ function AddPositionDialog({
 			grade: grade || undefined,
 			tasks: [],
 			isRequired: false,
-		});
+		})
 		// Reset
 		setCode("");
 		setTitleFr("");
@@ -968,7 +968,7 @@ function AddPositionDialog({
 		setDescFr("");
 		setLevel(5);
 		setGrade("");
-	};
+	}
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -1050,5 +1050,5 @@ function AddPositionDialog({
 				</div>
 			</DialogContent>
 		</Dialog>
-	);
+	)
 }

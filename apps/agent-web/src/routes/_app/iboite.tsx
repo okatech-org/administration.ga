@@ -54,6 +54,8 @@ import { AnimatePresence, motion } from "motion/react";
 import React, { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useModuleAccess } from "@/components/shared/access-gate";
+import { useOrgModules } from "@/hooks/useOrgModules";
 import { captureEvent } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
@@ -147,6 +149,11 @@ const MAIL_FOLDERS: { key: ViewKey; icon: typeof Inbox }[] = [
 function IBoitePage() {
 	const { t, i18n } = useTranslation();
 	const dateFnsLocale = i18n.language === "fr" ? fr : enUS;
+	const { hasMin: hasMailAccess } = useModuleAccess("digital_mail");
+	const canCompose = hasMailAccess("editor");
+	const { hasCapability } = useOrgModules();
+	const showPackages = hasCapability("digital_mail", "packages");
+	const showCalls = hasCapability("digital_mail", "calls");
 
 	const [activeView, setActiveView] = useState<ViewKey>("inbox");
 	const [selectedMailId, setSelectedMailId] =
@@ -359,45 +366,51 @@ function IBoitePage() {
 						)}
 					</button>
 				))}
-				<button
-					type="button"
-					onClick={() => switchView("packages")}
-					className={cn(
-						"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0",
-						activeView === "packages"
-							? "bg-primary text-primary-foreground"
-							: "bg-muted text-muted-foreground hover:bg-muted/80",
-					)}
-				>
-					<Package className="size-3.5" />
-					{t("iboite.tabs.packages")}
-					{packageStats.total > 0 && (
-						<span className="bg-primary-foreground/20 rounded-full text-[10px] px-1.5">
-							{packageStats.total}
-						</span>
-					)}
-				</button>
-				<button
-					type="button"
-					onClick={() => switchView("calls")}
-					className={cn(
-						"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0",
-						activeView === "calls"
-							? "bg-primary text-primary-foreground"
-							: "bg-muted text-muted-foreground hover:bg-muted/80",
-					)}
-				>
-					<Phone className="size-3.5" />
-					{t("iboite.tabs.calls")}
-				</button>
+				{showPackages && (
+					<button
+						type="button"
+						onClick={() => switchView("packages")}
+						className={cn(
+							"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0",
+							activeView === "packages"
+								? "bg-primary text-primary-foreground"
+								: "bg-muted text-muted-foreground hover:bg-muted/80",
+						)}
+					>
+						<Package className="size-3.5" />
+						{t("iboite.tabs.packages")}
+						{packageStats.total > 0 && (
+							<span className="bg-primary-foreground/20 rounded-full text-[10px] px-1.5">
+								{packageStats.total}
+							</span>
+						)}
+					</button>
+				)}
+				{showCalls && (
+					<button
+						type="button"
+						onClick={() => switchView("calls")}
+						className={cn(
+							"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0",
+							activeView === "calls"
+								? "bg-primary text-primary-foreground"
+								: "bg-muted text-muted-foreground hover:bg-muted/80",
+						)}
+					>
+						<Phone className="size-3.5" />
+						{t("iboite.tabs.calls")}
+					</button>
+				)}
 			</div>
 
 			{/* ── Mobile: compose + account selector ──────────────────────── */}
 			<div className="lg:hidden flex items-center gap-2 shrink-0">
-				<Button onClick={() => setComposeOpen(true)} size="sm" className="gap-2">
-					<PenLine className="size-4" />
-					{t("iboite.actions.compose")}
-				</Button>
+				{canCompose && (
+					<Button onClick={() => setComposeOpen(true)} size="sm" className="gap-2">
+						<PenLine className="size-4" />
+						{t("iboite.actions.compose")}
+					</Button>
+				)}
 				{accounts && accounts.length > 1 && (
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
@@ -521,16 +534,18 @@ function IBoitePage() {
 			<Card className="hidden lg:flex lg:flex-row flex-1 min-h-0 overflow-hidden p-0">
 				{/* Sidebar */}
 				<aside className="max-w-56 w-full border-r flex flex-col">
-					{/* Compose button */}
-					<div className="p-3">
-						<Button
-							className="w-full gap-2"
-							onClick={() => setComposeOpen(true)}
-						>
-							<PenLine className="size-4" />
-							{t("iboite.actions.compose")}
-						</Button>
-					</div>
+					{/* Compose button (editeur+) */}
+					{canCompose && (
+						<div className="p-3">
+							<Button
+								className="w-full gap-2"
+								onClick={() => setComposeOpen(true)}
+							>
+								<PenLine className="size-4" />
+								{t("iboite.actions.compose")}
+							</Button>
+						</div>
+					)}
 
 					<Separator />
 
@@ -623,81 +638,85 @@ function IBoitePage() {
 						))}
 					</nav>
 
-					<Separator className="mx-2" />
+					{(showPackages || showCalls) && <Separator className="mx-2" />}
 
-					<div className="p-2">
-						<p className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-							{t("iboite.tabs.packages")}
-						</p>
-						<button
-							type="button"
-							onClick={() => switchView("packages")}
-							className={cn(
-								"flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors",
-								activeView === "packages"
-									? "bg-primary/10 text-primary font-medium"
-									: "text-muted-foreground hover:bg-muted",
-							)}
-						>
-							<span className="flex items-center gap-2.5">
-								<Package className="size-4" />
-								{t("iboite.packages.title")}
-							</span>
+					{showPackages && (
+						<div className="p-2">
+							<p className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+								{t("iboite.tabs.packages")}
+							</p>
+							<button
+								type="button"
+								onClick={() => switchView("packages")}
+								className={cn(
+									"flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors",
+									activeView === "packages"
+										? "bg-primary/10 text-primary font-medium"
+										: "text-muted-foreground hover:bg-muted",
+								)}
+							>
+								<span className="flex items-center gap-2.5">
+									<Package className="size-4" />
+									{t("iboite.packages.title")}
+								</span>
+								{packageStats.total > 0 && (
+									<Badge
+										variant="secondary"
+										className="text-[10px] h-5 min-w-5 flex items-center justify-center"
+									>
+										{packageStats.total}
+									</Badge>
+								)}
+							</button>
+
 							{packageStats.total > 0 && (
-								<Badge
-									variant="secondary"
-									className="text-[10px] h-5 min-w-5 flex items-center justify-center"
-								>
-									{packageStats.total}
-								</Badge>
+								<div className="px-3 mt-2 space-y-1">
+									{packageStats.inTransit > 0 && (
+										<div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
+											<Truck className="size-3" />
+											<span>
+												{packageStats.inTransit}{" "}
+												{t("iboite.packages.inTransit").toLowerCase()}
+											</span>
+										</div>
+									)}
+									{packageStats.available > 0 && (
+										<div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+											<Package className="size-3" />
+											<span>
+												{packageStats.available}{" "}
+												{t("iboite.packages.available").toLowerCase()}
+											</span>
+										</div>
+									)}
+								</div>
 							)}
-						</button>
-
-						{packageStats.total > 0 && (
-							<div className="px-3 mt-2 space-y-1">
-								{packageStats.inTransit > 0 && (
-									<div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
-										<Truck className="size-3" />
-										<span>
-											{packageStats.inTransit}{" "}
-											{t("iboite.packages.inTransit").toLowerCase()}
-										</span>
-									</div>
-								)}
-								{packageStats.available > 0 && (
-									<div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
-										<Package className="size-3" />
-										<span>
-											{packageStats.available}{" "}
-											{t("iboite.packages.available").toLowerCase()}
-										</span>
-									</div>
-								)}
-							</div>
-						)}
-					</div>
+						</div>
+					)}
 
 					{/* Calls section */}
-					<div className="p-2">
-						<p className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-							{t("iboite.tabs.calls")}
-						</p>
-						<button
-							type="button"
-							onClick={() => switchView("calls")}
-							className={cn(
-								"flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors",
-								activeView === "calls"
-									? "bg-primary/10 text-primary font-medium"
-									: "text-muted-foreground hover:bg-muted",
-							)}
-						>
-							<span className="flex items-center gap-2.5">
-								<Phone className="size-4" />
-								{t("iboite.calls.title")}
-							</span>
-						</button>
-					</div>
+					{showCalls && (
+						<div className="p-2">
+							<p className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+								{t("iboite.tabs.calls")}
+							</p>
+							<button
+								type="button"
+								onClick={() => switchView("calls")}
+								className={cn(
+									"flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors",
+									activeView === "calls"
+										? "bg-primary/10 text-primary font-medium"
+										: "text-muted-foreground hover:bg-muted",
+								)}
+							>
+								<span className="flex items-center gap-2.5">
+									<Phone className="size-4" />
+									{t("iboite.calls.title")}
+								</span>
+							</button>
+						</div>
+					)}
 				</aside>
 
 				<main className="flex-1 flex min-h-0 min-w-0">

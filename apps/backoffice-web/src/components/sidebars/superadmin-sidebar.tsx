@@ -3,33 +3,24 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
 	Activity,
-	Archive,
 	BookOpen,
-	Bot,
 	Building2,
 	Calendar,
 	ChevronsLeft,
 	ChevronsRight,
-	ClipboardList,
-	Cog,
 	Crown,
 	FileText,
 	FolderOpen,
 	Globe,
-	Layers,
 	LayoutDashboard,
 	LifeBuoy,
 	Mail,
-	MessageSquare,
 	Moon,
 	Newspaper,
 	ScrollText,
 	Settings,
-	Shield,
 	Sun,
-	User,
 	Users,
-	Wrench,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
@@ -104,10 +95,10 @@ export function SuperadminSidebar({
 	// ─── Navigation Sections (4 axes) ───────────────────
 	const allNavSections: NavSection[] = [
 		// ═══════════════════════════════════════════════════
-		// 🏛️ AXE 1 — RÉSEAU (Les Organismes)
+		//  AXE 1 — RÉSEAU (Les Organismes)
 		// ═══════════════════════════════════════════════════
 		{
-			label: "🏛️ Réseau",
+			label: "Réseau",
 			items: [
 				{
 					title: t("superadmin.nav.dashboard"),
@@ -116,21 +107,15 @@ export function SuperadminSidebar({
 					// Dashboard always visible — no moduleCode
 				},
 				{
-					title: t("superadmin.nav.organizations"),
-					url: "/orgs",
+					title: t("superadmin.nav.representations", "Représentations"),
+					url: "/reps",
 					icon: Building2,
 					moduleCode: "team",
 				},
 				{
-					title: t("superadmin.nav.services"),
-					url: "/services",
-					icon: Wrench,
-					moduleCode: "settings",
-				},
-				{
-					title: t("superadmin.nav.requests"),
-					url: "/requests",
-					icon: ClipboardList,
+					title: t("superadmin.nav.affairesConsulaires", "Affaires Consulaires"),
+					url: "/affaires-consulaires",
+					icon: Globe,
 					moduleCode: "requests",
 				},
 				{
@@ -143,22 +128,16 @@ export function SuperadminSidebar({
 		},
 
 		// ═══════════════════════════════════════════════════
-		// 👥 AXE 2 — POPULATION (Les Utilisateurs)
+		//  AXE 2 — POPULATION (Les Utilisateurs)
 		// ═══════════════════════════════════════════════════
 		{
-			label: "👥 Population",
+			label: "Population",
 			items: [
 				{
 					title: t("superadmin.nav.users"),
 					url: "/users",
 					icon: Users,
 					moduleCode: "profiles",
-				},
-				{
-					title: t("superadmin.nav.profiles", "Profils"),
-					url: "/profiles",
-					icon: Crown,
-					moduleCode: "citizen_profiles",
 				},
 				{
 					title: t("superadmin.nav.support"),
@@ -170,61 +149,43 @@ export function SuperadminSidebar({
 		},
 
 		// ═══════════════════════════════════════════════════
-		// 📡 AXE 3 — COMMUNICATION & MODULES
+		//  AXE 3 — iBUREAU (Les Volets métier)
 		// ═══════════════════════════════════════════════════
 		{
-			label: "📡 Communication",
+			label: "iBureau",
 			items: [
-				{
-					title: "iAsted",
-					url: "/iasted",
-					icon: Bot,
-					moduleCode: "iasted",
-				},
-				{
-					title: "iCom",
-					url: "/icom",
-					icon: MessageSquare,
-					moduleCode: "icom",
-				},
 				{
 					title: "iBoîte",
 					url: "/iboite",
 					icon: Mail,
-					moduleCode: "iboite",
+					moduleCode: "digital_mail",
 				},
 				{
 					title: "iCorrespondance",
 					url: "/icorrespondance",
 					icon: FolderOpen,
-					moduleCode: "icorrespondance",
+					moduleCode: "correspondance",
 				},
 				{
 					title: "iDocument",
 					url: "/idocument",
 					icon: FileText,
-					moduleCode: "idocument",
+					moduleCode: "documents",
 				},
 				{
 					title: "iAgenda",
 					url: "/iagenda",
 					icon: Calendar,
-					moduleCode: "iagenda",
-				},
-				{
-					title: "iArchive",
-					url: "/iarchive",
-					icon: Archive,
-					moduleCode: "iarchive",
+					moduleCode: "appointments",
 				},
 			],
 		},
 
 		// ═══════════════════════════════════════════════════
-		// 🔒 AXE 4 — SÉCURITÉ & SYSTÈME
+		//  AXE 4 — SÉCURITÉ & SYSTÈME
 		// ═══════════════════════════════════════════════════
 		{
-			label: "🔒 Sécurité & Système",
+			label: "Sécurité & Système",
 			items: [
 				{
 					title: t("superadmin.nav.auditLogs"),
@@ -248,36 +209,11 @@ export function SuperadminSidebar({
 		},
 
 		// ═══════════════════════════════════════════════════
-		// ⚙️ AXE 5 — CONTRÔLE (Gouvernance)
+		//  AXE 5 — ÉDITORIAL (Contenu public)
 		// ═══════════════════════════════════════════════════
 		{
-			label: "⚙️ Contrôle",
+			label: "Éditorial",
 			items: [
-				{
-					title: t("superadmin.nav.positionsRoles", "Postes & Rôles"),
-					url: "/config/positions",
-					icon: Shield,
-					moduleCode: "roles",
-				},
-				{
-					title: t("superadmin.nav.modulesPermissions", "Modules & Permissions"),
-					url: "/config/modules",
-					icon: Layers,
-					moduleCode: "permissions",
-				},
-				{
-					title: t("superadmin.nav.representations", "Config représentations"),
-					url: "/config/representations",
-					icon: Globe,
-					moduleCode: "org_config",
-				},
-				{
-					title: t("superadmin.nav.servicesConfig", "Config services"),
-					url: "/config/services",
-					icon: Cog,
-					moduleCode: "services_config",
-				},
-				// Content items
 				{
 					title: t("superadmin.nav.posts"),
 					url: "/posts",

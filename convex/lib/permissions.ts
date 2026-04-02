@@ -3,7 +3,7 @@ import type { Doc } from "../_generated/dataModel";
 import { error, ErrorCode } from "./errors";
 import { UserRole, PermissionEffect } from "./constants";
 import type { TaskCodeValue } from "./taskCodes";
-import { ALL_MODULE_CODES, type ModuleCodeValue } from "./moduleCodes";
+import { ALL_MODULE_CODES, type ModuleCodeValue, type ModuleAccessLevel, resolveTaskCodesFromModuleAccess } from "./moduleCodes";
 
 // ============================================
 // Types
@@ -28,10 +28,11 @@ export function isSuperAdmin(user: Doc<"users">): boolean {
 
 /**
  * Resolve all task codes for a membership via:
- *   membership.positionId → position.tasks (stored directly in DB)
+ *   1. Si position.moduleAccess existe → dérive les tasks via MODULE_ACCESS_TASKS
+ *   2. Sinon → fallback sur position.tasks[] (backward compat)
  *
- * Tasks are stored at creation time from presets. No runtime resolution needed.
- * No fallback. If no position or no tasks → empty set → no access.
+ * Le point pivot : changer la résolution ici impacte TOUT le système
+ * (canDoTask, useCanDoTask, sidebar, pages) automatiquement.
  */
 export async function getTasksForMembership(
   ctx: AuthContext,
@@ -40,11 +41,24 @@ export async function getTasksForMembership(
   if (!membership.positionId) return new Set();
 
   const position = await ctx.db.get(membership.positionId);
-  if (!position || !position.isActive || !position.tasks) {
+  if (!position || !position.isActive) {
     return new Set();
   }
 
-  return new Set(position.tasks);
+  // Priorité 1 : moduleAccess (nouveau système structuré)
+  const moduleAccess = (position as any).moduleAccess as
+    Array<{ moduleCode: string; accessLevel: ModuleAccessLevel }> | undefined;
+
+  if (moduleAccess && moduleAccess.length > 0) {
+    return resolveTaskCodesFromModuleAccess(moduleAccess);
+  }
+
+  // Priorité 2 : tasks[] (legacy, backward compat)
+  if (position.tasks && position.tasks.length > 0) {
+    return new Set(position.tasks);
+  }
+
+  return new Set();
 }
 
 // ============================================
@@ -166,5 +180,30 @@ export function hasPermissionSync(
   }
 
   return resolvedTasks.has(taskCode);
+}
+
+// ============================================
+// Service-Level Access Resolution
+// ============================================
+
+/**
+ * Résout le niveau d'accès effectif d'un poste pour un service spécifique.
+ *
+ * Si l'orgService a un serviceAccess défini → cherche le poste, retourne son niveau ou null.
+ * Sinon → retourne le fallback (niveau d'accès du module "requests" sur le poste).
+ */
+export function resolveServiceAccessLevel(
+  serviceAccess: Array<{ positionId: string; accessLevel: string }> | undefined,
+  positionId: string,
+  fallbackModuleLevel: string | null,
+): string | null {
+  // Pas de config spécifique → hériter du module
+  if (!serviceAccess || serviceAccess.length === 0) {
+    return fallbackModuleLevel;
+  }
+
+  // Chercher le poste dans la config spécifique
+  const entry = serviceAccess.find((e) => e.positionId === positionId);
+  return entry?.accessLevel ?? null;
 }
 

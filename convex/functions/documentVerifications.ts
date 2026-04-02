@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query, mutation, internalMutation } from "../_generated/server";
+import { query, internalMutation } from "../_generated/server";
 import { authMutation } from "../lib/customFunctions";
 import { internal } from "../_generated/api";
 
@@ -69,7 +69,7 @@ export const verifyDocument = query({
 /**
  * Track verification (called after viewing)
  */
-export const trackVerification = mutation({
+export const trackVerification = internalMutation({
 	args: { verificationId: v.id("documentVerifications") },
 	handler: async (ctx, args) => {
 		const verification = await ctx.db.get(args.verificationId);
@@ -147,7 +147,17 @@ export const revokeDocument = authMutation({
 			throw new Error("Verification not found");
 		}
 
-		// TODO: Check if user has permission (org member)
+		// Permission check: user must be a member of the issuing org
+		const membership = await ctx.db
+			.query("memberships")
+			.withIndex("by_user_org_deletedAt", (q: any) =>
+				q.eq("userId", ctx.user._id).eq("orgId", verification.orgId).eq("deletedAt", undefined)
+			)
+			.unique();
+
+		if (!membership) {
+			throw new Error("You do not have permission to revoke this document");
+		}
 
 		await ctx.db.patch(args.verificationId, {
 			isRevoked: true,
@@ -164,19 +174,8 @@ export const revokeDocument = authMutation({
 // ============================================================================
 
 function generateVerificationToken(): string {
-	// Generate a random token (UUID-like)
-	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-	const segments = [8, 4, 4, 4, 12];
-	
-	return segments
-		.map((length) => {
-			let segment = "";
-			for (let i = 0; i < length; i++) {
-				segment += chars.charAt(Math.floor(Math.random() * chars.length));
-			}
-			return segment;
-		})
-		.join("-");
+	// Cryptographically secure token using Web Crypto API
+	return crypto.randomUUID();
 }
 
 /**

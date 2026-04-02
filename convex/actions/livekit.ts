@@ -56,7 +56,7 @@ export const generateToken = internalAction({
  */
 export const requestToken = action({
   args: { meetingId: v.id("meetings") },
-  handler: async (ctx, { meetingId }): Promise<{ token: string; roomName: string; wsUrl: string }> => {
+  handler: async (ctx, { meetingId }): Promise<{ token: string; roomName: string; wsUrl: string; mediaType: "audio" | "video" }> => {
     // Verify authentication
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
@@ -91,12 +91,17 @@ export const requestToken = action({
       ttl: "2h",
     });
 
+    // Enforcement mediaType : si audio-only, bloquer la caméra au niveau token
+    const isAudioOnly = meeting.mediaType === "audio";
+
     token.addGrant({
       roomJoin: true,
       room: meeting.roomName,
       canPublish: true,
       canSubscribe: true,
       canPublishData: true,
+      // Restreindre les sources publiables si audio uniquement
+      ...(isAudioOnly ? { canPublishSources: [0] } : {}), // 0 = MICROPHONE in TrackSource enum
     });
 
     const jwt = await token.toJwt();
@@ -105,6 +110,7 @@ export const requestToken = action({
       token: jwt,
       roomName: meeting.roomName,
       wsUrl,
+      mediaType: (meeting.mediaType ?? "audio") as "audio" | "video",
     };
   },
 });

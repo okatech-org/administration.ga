@@ -206,6 +206,10 @@ export enum NotificationType {
   ActionRequired = "action_required",
   DocumentValidated = "document_validated",
   DocumentRejected = "document_rejected",
+  // Meetings & Calls
+  MeetingInvitation = "meeting_invitation",
+  CallIncoming = "call_incoming",
+  ChatMessage = "chat_message",
 }
 
 export enum ProfileCategory {
@@ -1312,6 +1316,8 @@ export enum CountryCode {
   ZM = "ZM",
   ZW = "ZW",
 }
+
+export const countryCodes = Object.values(CountryCode);
 
 export const countryDialCodes = [
   { code: "AD", dial_code: "376" },

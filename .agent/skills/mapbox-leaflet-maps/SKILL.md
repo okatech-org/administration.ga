@@ -1089,34 +1089,34 @@ export function useDebouncedMapUpdate(
 ## Anti-patterns à éviter
 
 ```typescript
-// ❌ JAMAIS charger tout GeoJSON d'un coup
+//  JAMAIS charger tout GeoJSON d'un coup
 const allCommunesGabon = await fetch('/gabon-communes.geojson')
 // Si 10,000+ features, la carte gèlera!
 
-// ✅ À faire : charger par viewport ou zoom
+//  À faire : charger par viewport ou zoom
 if (zoom > 8) {
   const visibleCommunesOnly = await getVisibleFeatures(viewport)
 }
 
-// ❌ JAMAIS exposer token Mapbox secret côté client
+//  JAMAIS exposer token Mapbox secret côté client
 const response = await fetch(`/api/tiles`, {
   headers: { 'Mapbox-Secret': process.env.MAPBOX_SECRET_TOKEN }
 })
 
-// ✅ À faire : proxy backend
+//  À faire : proxy backend
 const response = await fetch('/api/proxy-tiles')
 // Backend vérifie auth puis appelle Mapbox avec secret
 
-// ❌ JAMAIS logger les coordonnées sensibles
+//  JAMAIS logger les coordonnées sensibles
 console.log('User location:', userLatitude, userLongitude)
 
-// ✅ À faire : logs génériques
+//  À faire : logs génériques
 console.log('User location updated')
 
-// ❌ JAMAIS utiliser zoom libre sur données PostGIS
+//  JAMAIS utiliser zoom libre sur données PostGIS
 const allPoints = await supabase.from('points').select()
 
-// ✅ À faire : requête spatiale
+//  À faire : requête spatiale
 const nearbyPoints = await supabase.rpc('nearby_points', {
   lat: viewportCenter.lat,
   lng: viewportCenter.lng,

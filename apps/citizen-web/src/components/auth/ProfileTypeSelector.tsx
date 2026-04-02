@@ -105,7 +105,7 @@ export function ProfileTypeSelector({ onSelect }: ProfileTypeSelectorProps) {
               <ul className="space-y-2 mb-6 text-sm text-muted-foreground">
                 {profile.features.map((feature, idx) => (
                   <li key={idx} className="flex items-center gap-2">
-                    ✓ {feature}
+                     {feature}
                   </li>
                 ))}
               </ul>

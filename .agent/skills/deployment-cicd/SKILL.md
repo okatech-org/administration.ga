@@ -1,9 +1,9 @@
 ---
 name: deployment-cicd
-description: "🚀 Expert Déploiement & CI/CD. S'active automatiquement pour les tâches de déploiement, build, production, GitHub Actions, Vercel, Cloud Run, Turborepo. Couvre Convex Deploy, Docker, workflows CI/CD, environment management, rollback, monitoring, et multi-project coordination."
+description: " Expert Déploiement & CI/CD. S'active automatiquement pour les tâches de déploiement, build, production, GitHub Actions, Vercel, Cloud Run, Turborepo. Couvre Convex Deploy, Docker, workflows CI/CD, environment management, rollback, monitoring, et multi-project coordination."
 ---
 
-# 🚀 Skill : Deployment & CI/CD Expert
+#  Skill : Deployment & CI/CD Expert
 
 ## Auto-Activation
 Ce skill s'active quand :
@@ -177,7 +177,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🚀 Preview deployed to ${deploymentUrl}`
+              body: ` Preview deployed to ${deploymentUrl}`
             });
 ```
 
@@ -291,7 +291,7 @@ jobs:
         run: |
           for i in {1..30}; do
             if curl -f ${{ steps.deploy.outputs.url }}/health; then
-              echo "✓ Health check passed"
+              echo " Health check passed"
               exit 0
             fi
             echo "Attempt $i/30..."
@@ -911,7 +911,7 @@ for app in "${APPS[@]}"; do
 
   cd ../../
 
-  echo "✓ $app deployed"
+  echo " $app deployed"
 done
 
 echo "All apps deployed successfully!"
@@ -1015,13 +1015,13 @@ gcloud run services update SERVICE_NAME \
 ---
 
 ## Anti-Patterns à ÉVITER
-- ❌ Ne JAMAIS déployer sans tester localement avant
-- ❌ Ne JAMAIS commiter des secrets dans le code source (utiliser GitHub Secrets)
-- ❌ Ne JAMAIS utiliser `convex dev` en production — seulement `convex deploy`
-- ❌ Ne JAMAIS oublier de mettre à jour les variables d'environnement de production
-- ❌ Ne JAMAIS déployer sans vérifier l'health check endpoint
-- ❌ Ne JAMAIS ignorer les failing tests avant de merger vers main
-- ❌ Ne JAMAIS changer les DATABASE URLs en production manuellement — utiliser les workflows
-- ❌ Ne JAMAIS déployer plusieurs services simultanément sans orchestration
-- ❌ Ne JAMAIS oublier de sauvegarder les données avant les migrations majeures
-- ❌ Ne JAMAIS ignorer les alertes de monitoring post-déploiement
+-  Ne JAMAIS déployer sans tester localement avant
+-  Ne JAMAIS commiter des secrets dans le code source (utiliser GitHub Secrets)
+-  Ne JAMAIS utiliser `convex dev` en production — seulement `convex deploy`
+-  Ne JAMAIS oublier de mettre à jour les variables d'environnement de production
+-  Ne JAMAIS déployer sans vérifier l'health check endpoint
+-  Ne JAMAIS ignorer les failing tests avant de merger vers main
+-  Ne JAMAIS changer les DATABASE URLs en production manuellement — utiliser les workflows
+-  Ne JAMAIS déployer plusieurs services simultanément sans orchestration
+-  Ne JAMAIS oublier de sauvegarder les données avant les migrations majeures
+-  Ne JAMAIS ignorer les alertes de monitoring post-déploiement

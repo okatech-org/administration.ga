@@ -1,52 +1,40 @@
 import type { Page } from "@playwright/test";
 
 /**
- * Authenticate via the dev-only passwordless sign-in endpoint.
+ * Authenticate via the app's real authClient by calling
+ * window.__e2eDevSignIn(email) exposed by DevAccountSwitcher.
  *
- * The app uses `crossDomainClient()` which stores auth tokens in
- * localStorage (key: `better-auth_cookie`) instead of relying on
- * HTTP cookies. We call the dev endpoint via Playwright's API context
- * (to capture Set-Cookie headers) then inject the tokens into
- * localStorage in the format crossDomainClient expects.
+ * This is the most reliable approach because it uses the exact same
+ * code path as the DevAccountSwitcher UI button:
+ *   1. POST /api/dev/sign-in → { email, tempPassword }
+ *   2. authClient.signIn.email({ email, password: tempPassword })
+ *      with crossDomainClient handling token storage
  *
- * Only works when the Vite dev server is running (import.meta.env.DEV === true).
+ * Requirements:
+ *   - DevAccountSwitcher must be mounted (DEV or VITE_E2E_MODE=true)
+ *   - DEV_SIGNIN_ENABLED=true on the Convex backend
+ *   - The test email must exist as a Better Auth user
  */
 export async function devSignIn(page: Page, email: string): Promise<void> {
-  // Call via Playwright API context to capture response headers
-  const response = await page.request.post("/api/dev/sign-in", {
-    data: { email },
-  });
+  // Wait for the app to mount and expose the sign-in function
+  await page.waitForFunction(
+    () => typeof (window as any).__e2eDevSignIn === "function",
+    { timeout: 15_000 },
+  );
 
-  if (!response.ok()) {
-    throw new Error(
-      `Dev sign-in failed (${response.status()}): ${await response.text()}`
-    );
+  // Call the real authClient sign-in flow via the exposed function
+  const result = await page.evaluate(async (targetEmail: string) => {
+    return (window as any).__e2eDevSignIn(targetEmail);
+  }, email);
+
+  if (!result.ok) {
+    throw new Error(`Dev sign-in failed: ${result.error}`);
   }
 
-  // Parse Set-Cookie header to extract session_token and convex_jwt
-  const setCookie = response.headers()["set-cookie"] || "";
-  const cookieStore: Record<string, { value: string; expires: string | null }> = {};
+  // Wait for the auth state to propagate through React
+  await page.waitForTimeout(2_000);
 
-  // Split on ", " but be careful with cookie values containing ", "
-  // Better approach: split by known cookie name prefixes
-  const cookieRegex = /(better-auth\.[^=]+)=([^;]+);\s*Max-Age=(\d+)/g;
-  let match;
-  while ((match = cookieRegex.exec(setCookie)) !== null) {
-    const [, name, value, maxAge] = match;
-    cookieStore[name] = {
-      value: decodeURIComponent(value),
-      expires: new Date(Date.now() + Number(maxAge) * 1000).toISOString(),
-    };
-  }
-
-  // Inject cookies into localStorage in the format crossDomainClient expects
-  await page.evaluate((store) => {
-    localStorage.setItem("better-auth_cookie", JSON.stringify(store));
-    // Also clear any stale session cache
-    localStorage.removeItem("better-auth_session_data");
-  }, cookieStore);
-
-  // Reload to let the auth provider pick up the new tokens from localStorage
+  // Reload to ensure all route guards pick up the new auth state
   await page.reload();
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(2_000);

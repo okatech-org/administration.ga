@@ -7,6 +7,8 @@
 
 import { v } from "convex/values";
 import { authMutation, authQuery } from "../lib/customFunctions";
+import { requireCorrespondanceAccess } from "../lib/correspondanceHelpers";
+import { error, ErrorCode } from "../lib/errors";
 
 // ─── Standard type definitions ──────────────────────────────────────────────
 
@@ -93,6 +95,7 @@ const STANDARD_TYPES = [
 export const listTypeConfigs = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     return await ctx.db
       .query("correspondanceTypeConfigs")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
@@ -134,6 +137,7 @@ export const getTypeConfigByCode = authQuery({
 export const initializeDefaultTypes = authMutation({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "configure");
     const now = Date.now();
 
     // Vérifier qu'il n'y a pas déjà de configs
@@ -169,7 +173,7 @@ export const initializeDefaultTypes = authMutation({
   },
 });
 
-/** Créer un type personnalisé */
+/** Créer un type personnalisé (nécessite correspondance.configure) */
 export const createTypeConfig = authMutation({
   args: {
     orgId: v.id("orgs"),
@@ -195,6 +199,7 @@ export const createTypeConfig = authMutation({
     confidentialiteParDefaut: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "configure");
     const now = Date.now();
 
     // Vérifier l'unicité du typeCode dans l'org
@@ -207,7 +212,7 @@ export const createTypeConfig = authMutation({
       .first();
 
     if (existing) {
-      throw new Error(`Le type "${args.typeCode}" existe déjà pour cette organisation`);
+      throw error(ErrorCode.ALREADY_EXISTS, `Le type "${args.typeCode}" existe déjà pour cette organisation`);
     }
 
     return await ctx.db.insert("correspondanceTypeConfigs", {
@@ -226,7 +231,7 @@ export const createTypeConfig = authMutation({
   },
 });
 
-/** Mettre à jour un type (label, workflow, template, etc.) */
+/** Mettre à jour un type (label, workflow, template, etc.) — nécessite correspondance.configure */
 export const updateTypeConfig = authMutation({
   args: {
     configId: v.id("correspondanceTypeConfigs"),
@@ -261,7 +266,8 @@ export const updateTypeConfig = authMutation({
   handler: async (ctx, args) => {
     const { configId, ...updates } = args;
     const config = await ctx.db.get(configId);
-    if (!config) throw new Error("Configuration introuvable");
+    if (!config) throw error(ErrorCode.NOT_FOUND, "Configuration introuvable");
+    await requireCorrespondanceAccess(ctx, ctx.user, config.orgId, "configure");
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
     if (updates.label !== undefined) patch.label = updates.label;
@@ -278,10 +284,14 @@ export const updateTypeConfig = authMutation({
   },
 });
 
-/** Désactiver un type (soft-delete) */
+/** Désactiver un type (soft-delete) — nécessite correspondance.configure */
 export const deactivateTypeConfig = authMutation({
   args: { configId: v.id("correspondanceTypeConfigs") },
   handler: async (ctx, args) => {
+    const config = await ctx.db.get(args.configId);
+    if (!config) throw error(ErrorCode.NOT_FOUND, "Configuration introuvable");
+    await requireCorrespondanceAccess(ctx, ctx.user, config.orgId, "configure");
+
     await ctx.db.patch(args.configId, {
       isActive: false,
       deletedAt: Date.now(),

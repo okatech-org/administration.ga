@@ -2,7 +2,7 @@ import { internalMutation } from "../_generated/server";
 
 /**
  * Clear ALL data from ALL tables.
- * ⚠️  DEV ONLY — run via: npx convex run seeds/clearAll:clearAll
+ *   DEV ONLY — run via: npx convex run seeds/clearAll:clearAll
  */
 export const clearAll = internalMutation({
 	args: {},

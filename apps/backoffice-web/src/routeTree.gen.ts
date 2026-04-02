@@ -14,10 +14,7 @@ import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as SignInSplatRouteImport } from './routes/sign-in/$'
 import { Route as AppIdocumentRouteImport } from './routes/_app/idocument'
 import { Route as AppIcorrespondanceRouteImport } from './routes/_app/icorrespondance'
-import { Route as AppIcomRouteImport } from './routes/_app/icom'
 import { Route as AppIboiteRouteImport } from './routes/_app/iboite'
-import { Route as AppIastedRouteImport } from './routes/_app/iasted'
-import { Route as AppIarchiveRouteImport } from './routes/_app/iarchive'
 import { Route as AppIagendaRouteImport } from './routes/_app/iagenda'
 import { Route as AppAssociationsRouteImport } from './routes/_app/associations'
 import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
@@ -26,12 +23,13 @@ import { Route as AppSupportIndexRouteImport } from './routes/_app/support/index
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppServicesIndexRouteImport } from './routes/_app/services/index'
 import { Route as AppRequestsIndexRouteImport } from './routes/_app/requests/index'
+import { Route as AppRepsIndexRouteImport } from './routes/_app/reps/index'
 import { Route as AppProfilesIndexRouteImport } from './routes/_app/profiles/index'
 import { Route as AppPostsIndexRouteImport } from './routes/_app/posts/index'
-import { Route as AppOrgsIndexRouteImport } from './routes/_app/orgs/index'
 import { Route as AppMonitoringIndexRouteImport } from './routes/_app/monitoring/index'
 import { Route as AppEventsIndexRouteImport } from './routes/_app/events/index'
 import { Route as AppAuditLogsIndexRouteImport } from './routes/_app/audit-logs/index'
+import { Route as AppAffairesConsulairesIndexRouteImport } from './routes/_app/affaires-consulaires/index'
 import { Route as ApiDevSignInRouteImport } from './routes/api/dev/sign-in'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AppUsersUserIdRouteImport } from './routes/_app/users/$userId'
@@ -39,10 +37,10 @@ import { Route as AppTutorialsNewRouteImport } from './routes/_app/tutorials/new
 import { Route as AppSupportTicketIdRouteImport } from './routes/_app/support/$ticketId'
 import { Route as AppServicesNewRouteImport } from './routes/_app/services/new'
 import { Route as AppRequestsRequestIdRouteImport } from './routes/_app/requests/$requestId'
+import { Route as AppRepsNewRouteImport } from './routes/_app/reps/new'
+import { Route as AppRepsOrgIdRouteImport } from './routes/_app/reps/$orgId'
 import { Route as AppProfilesProfileIdRouteImport } from './routes/_app/profiles/$profileId'
 import { Route as AppPostsNewRouteImport } from './routes/_app/posts/new'
-import { Route as AppOrgsNewRouteImport } from './routes/_app/orgs/new'
-import { Route as AppOrgsOrgIdRouteImport } from './routes/_app/orgs/$orgId'
 import { Route as AppEventsNewRouteImport } from './routes/_app/events/new'
 import { Route as AppConfigServicesRouteImport } from './routes/_app/config/services'
 import { Route as AppConfigRepresentationsRouteImport } from './routes/_app/config/representations'
@@ -52,8 +50,8 @@ import { Route as AppConfigModulesRouteImport } from './routes/_app/config/modul
 import { Route as AppTutorialsTutorialIdEditRouteImport } from './routes/_app/tutorials/$tutorialId.edit'
 import { Route as AppServicesServiceIdFormBuilderRouteImport } from './routes/_app/services/$serviceId_.form-builder'
 import { Route as AppServicesServiceIdEditRouteImport } from './routes/_app/services/$serviceId_.edit'
+import { Route as AppRepsOrgIdEditRouteImport } from './routes/_app/reps/$orgId_.edit'
 import { Route as AppPostsPostIdEditRouteImport } from './routes/_app/posts/$postId.edit'
-import { Route as AppOrgsOrgIdEditRouteImport } from './routes/_app/orgs/$orgId_.edit'
 import { Route as AppEventsEventIdEditRouteImport } from './routes/_app/events/$eventId.edit'
 
 const AppRoute = AppRouteImport.update({
@@ -80,24 +78,9 @@ const AppIcorrespondanceRoute = AppIcorrespondanceRouteImport.update({
   path: '/icorrespondance',
   getParentRoute: () => AppRoute,
 } as any)
-const AppIcomRoute = AppIcomRouteImport.update({
-  id: '/icom',
-  path: '/icom',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppIboiteRoute = AppIboiteRouteImport.update({
   id: '/iboite',
   path: '/iboite',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppIastedRoute = AppIastedRouteImport.update({
-  id: '/iasted',
-  path: '/iasted',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppIarchiveRoute = AppIarchiveRouteImport.update({
-  id: '/iarchive',
-  path: '/iarchive',
   getParentRoute: () => AppRoute,
 } as any)
 const AppIagendaRoute = AppIagendaRouteImport.update({
@@ -140,6 +123,11 @@ const AppRequestsIndexRoute = AppRequestsIndexRouteImport.update({
   path: '/requests/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppRepsIndexRoute = AppRepsIndexRouteImport.update({
+  id: '/reps/',
+  path: '/reps/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProfilesIndexRoute = AppProfilesIndexRouteImport.update({
   id: '/profiles/',
   path: '/profiles/',
@@ -148,11 +136,6 @@ const AppProfilesIndexRoute = AppProfilesIndexRouteImport.update({
 const AppPostsIndexRoute = AppPostsIndexRouteImport.update({
   id: '/posts/',
   path: '/posts/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppOrgsIndexRoute = AppOrgsIndexRouteImport.update({
-  id: '/orgs/',
-  path: '/orgs/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppMonitoringIndexRoute = AppMonitoringIndexRouteImport.update({
@@ -170,6 +153,12 @@ const AppAuditLogsIndexRoute = AppAuditLogsIndexRouteImport.update({
   path: '/audit-logs/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAffairesConsulairesIndexRoute =
+  AppAffairesConsulairesIndexRouteImport.update({
+    id: '/affaires-consulaires/',
+    path: '/affaires-consulaires/',
+    getParentRoute: () => AppRoute,
+  } as any)
 const ApiDevSignInRoute = ApiDevSignInRouteImport.update({
   id: '/api/dev/sign-in',
   path: '/api/dev/sign-in',
@@ -205,6 +194,16 @@ const AppRequestsRequestIdRoute = AppRequestsRequestIdRouteImport.update({
   path: '/requests/$requestId',
   getParentRoute: () => AppRoute,
 } as any)
+const AppRepsNewRoute = AppRepsNewRouteImport.update({
+  id: '/reps/new',
+  path: '/reps/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRepsOrgIdRoute = AppRepsOrgIdRouteImport.update({
+  id: '/reps/$orgId',
+  path: '/reps/$orgId',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProfilesProfileIdRoute = AppProfilesProfileIdRouteImport.update({
   id: '/profiles/$profileId',
   path: '/profiles/$profileId',
@@ -213,16 +212,6 @@ const AppProfilesProfileIdRoute = AppProfilesProfileIdRouteImport.update({
 const AppPostsNewRoute = AppPostsNewRouteImport.update({
   id: '/posts/new',
   path: '/posts/new',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppOrgsNewRoute = AppOrgsNewRouteImport.update({
-  id: '/orgs/new',
-  path: '/orgs/new',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppOrgsOrgIdRoute = AppOrgsOrgIdRouteImport.update({
-  id: '/orgs/$orgId',
-  path: '/orgs/$orgId',
   getParentRoute: () => AppRoute,
 } as any)
 const AppEventsNewRoute = AppEventsNewRouteImport.update({
@@ -274,14 +263,14 @@ const AppServicesServiceIdEditRoute =
     path: '/services/$serviceId/edit',
     getParentRoute: () => AppRoute,
   } as any)
+const AppRepsOrgIdEditRoute = AppRepsOrgIdEditRouteImport.update({
+  id: '/reps/$orgId_/edit',
+  path: '/reps/$orgId/edit',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPostsPostIdEditRoute = AppPostsPostIdEditRouteImport.update({
   id: '/posts/$postId/edit',
   path: '/posts/$postId/edit',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppOrgsOrgIdEditRoute = AppOrgsOrgIdEditRouteImport.update({
-  id: '/orgs/$orgId_/edit',
-  path: '/orgs/$orgId/edit',
   getParentRoute: () => AppRoute,
 } as any)
 const AppEventsEventIdEditRoute = AppEventsEventIdEditRouteImport.update({
@@ -294,10 +283,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/associations': typeof AppAssociationsRoute
   '/iagenda': typeof AppIagendaRoute
-  '/iarchive': typeof AppIarchiveRoute
-  '/iasted': typeof AppIastedRoute
   '/iboite': typeof AppIboiteRoute
-  '/icom': typeof AppIcomRoute
   '/icorrespondance': typeof AppIcorrespondanceRoute
   '/idocument': typeof AppIdocumentRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -307,10 +293,10 @@ export interface FileRoutesByFullPath {
   '/config/representations': typeof AppConfigRepresentationsRoute
   '/config/services': typeof AppConfigServicesRoute
   '/events/new': typeof AppEventsNewRoute
-  '/orgs/$orgId': typeof AppOrgsOrgIdRoute
-  '/orgs/new': typeof AppOrgsNewRoute
   '/posts/new': typeof AppPostsNewRoute
   '/profiles/$profileId': typeof AppProfilesProfileIdRoute
+  '/reps/$orgId': typeof AppRepsOrgIdRoute
+  '/reps/new': typeof AppRepsNewRoute
   '/requests/$requestId': typeof AppRequestsRequestIdRoute
   '/services/new': typeof AppServicesNewRoute
   '/support/$ticketId': typeof AppSupportTicketIdRoute
@@ -318,12 +304,13 @@ export interface FileRoutesByFullPath {
   '/users/$userId': typeof AppUsersUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/dev/sign-in': typeof ApiDevSignInRoute
+  '/affaires-consulaires/': typeof AppAffairesConsulairesIndexRoute
   '/audit-logs/': typeof AppAuditLogsIndexRoute
   '/events/': typeof AppEventsIndexRoute
   '/monitoring/': typeof AppMonitoringIndexRoute
-  '/orgs/': typeof AppOrgsIndexRoute
   '/posts/': typeof AppPostsIndexRoute
   '/profiles/': typeof AppProfilesIndexRoute
+  '/reps/': typeof AppRepsIndexRoute
   '/requests/': typeof AppRequestsIndexRoute
   '/services/': typeof AppServicesIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
@@ -331,8 +318,8 @@ export interface FileRoutesByFullPath {
   '/tutorials/': typeof AppTutorialsIndexRoute
   '/users/': typeof AppUsersIndexRoute
   '/events/$eventId/edit': typeof AppEventsEventIdEditRoute
-  '/orgs/$orgId/edit': typeof AppOrgsOrgIdEditRoute
   '/posts/$postId/edit': typeof AppPostsPostIdEditRoute
+  '/reps/$orgId/edit': typeof AppRepsOrgIdEditRoute
   '/services/$serviceId/edit': typeof AppServicesServiceIdEditRoute
   '/services/$serviceId/form-builder': typeof AppServicesServiceIdFormBuilderRoute
   '/tutorials/$tutorialId/edit': typeof AppTutorialsTutorialIdEditRoute
@@ -340,10 +327,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/associations': typeof AppAssociationsRoute
   '/iagenda': typeof AppIagendaRoute
-  '/iarchive': typeof AppIarchiveRoute
-  '/iasted': typeof AppIastedRoute
   '/iboite': typeof AppIboiteRoute
-  '/icom': typeof AppIcomRoute
   '/icorrespondance': typeof AppIcorrespondanceRoute
   '/idocument': typeof AppIdocumentRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -354,10 +338,10 @@ export interface FileRoutesByTo {
   '/config/representations': typeof AppConfigRepresentationsRoute
   '/config/services': typeof AppConfigServicesRoute
   '/events/new': typeof AppEventsNewRoute
-  '/orgs/$orgId': typeof AppOrgsOrgIdRoute
-  '/orgs/new': typeof AppOrgsNewRoute
   '/posts/new': typeof AppPostsNewRoute
   '/profiles/$profileId': typeof AppProfilesProfileIdRoute
+  '/reps/$orgId': typeof AppRepsOrgIdRoute
+  '/reps/new': typeof AppRepsNewRoute
   '/requests/$requestId': typeof AppRequestsRequestIdRoute
   '/services/new': typeof AppServicesNewRoute
   '/support/$ticketId': typeof AppSupportTicketIdRoute
@@ -365,12 +349,13 @@ export interface FileRoutesByTo {
   '/users/$userId': typeof AppUsersUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/dev/sign-in': typeof ApiDevSignInRoute
+  '/affaires-consulaires': typeof AppAffairesConsulairesIndexRoute
   '/audit-logs': typeof AppAuditLogsIndexRoute
   '/events': typeof AppEventsIndexRoute
   '/monitoring': typeof AppMonitoringIndexRoute
-  '/orgs': typeof AppOrgsIndexRoute
   '/posts': typeof AppPostsIndexRoute
   '/profiles': typeof AppProfilesIndexRoute
+  '/reps': typeof AppRepsIndexRoute
   '/requests': typeof AppRequestsIndexRoute
   '/services': typeof AppServicesIndexRoute
   '/settings': typeof AppSettingsIndexRoute
@@ -378,8 +363,8 @@ export interface FileRoutesByTo {
   '/tutorials': typeof AppTutorialsIndexRoute
   '/users': typeof AppUsersIndexRoute
   '/events/$eventId/edit': typeof AppEventsEventIdEditRoute
-  '/orgs/$orgId/edit': typeof AppOrgsOrgIdEditRoute
   '/posts/$postId/edit': typeof AppPostsPostIdEditRoute
+  '/reps/$orgId/edit': typeof AppRepsOrgIdEditRoute
   '/services/$serviceId/edit': typeof AppServicesServiceIdEditRoute
   '/services/$serviceId/form-builder': typeof AppServicesServiceIdFormBuilderRoute
   '/tutorials/$tutorialId/edit': typeof AppTutorialsTutorialIdEditRoute
@@ -389,10 +374,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_app/associations': typeof AppAssociationsRoute
   '/_app/iagenda': typeof AppIagendaRoute
-  '/_app/iarchive': typeof AppIarchiveRoute
-  '/_app/iasted': typeof AppIastedRoute
   '/_app/iboite': typeof AppIboiteRoute
-  '/_app/icom': typeof AppIcomRoute
   '/_app/icorrespondance': typeof AppIcorrespondanceRoute
   '/_app/idocument': typeof AppIdocumentRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -403,10 +385,10 @@ export interface FileRoutesById {
   '/_app/config/representations': typeof AppConfigRepresentationsRoute
   '/_app/config/services': typeof AppConfigServicesRoute
   '/_app/events/new': typeof AppEventsNewRoute
-  '/_app/orgs/$orgId': typeof AppOrgsOrgIdRoute
-  '/_app/orgs/new': typeof AppOrgsNewRoute
   '/_app/posts/new': typeof AppPostsNewRoute
   '/_app/profiles/$profileId': typeof AppProfilesProfileIdRoute
+  '/_app/reps/$orgId': typeof AppRepsOrgIdRoute
+  '/_app/reps/new': typeof AppRepsNewRoute
   '/_app/requests/$requestId': typeof AppRequestsRequestIdRoute
   '/_app/services/new': typeof AppServicesNewRoute
   '/_app/support/$ticketId': typeof AppSupportTicketIdRoute
@@ -414,12 +396,13 @@ export interface FileRoutesById {
   '/_app/users/$userId': typeof AppUsersUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/dev/sign-in': typeof ApiDevSignInRoute
+  '/_app/affaires-consulaires/': typeof AppAffairesConsulairesIndexRoute
   '/_app/audit-logs/': typeof AppAuditLogsIndexRoute
   '/_app/events/': typeof AppEventsIndexRoute
   '/_app/monitoring/': typeof AppMonitoringIndexRoute
-  '/_app/orgs/': typeof AppOrgsIndexRoute
   '/_app/posts/': typeof AppPostsIndexRoute
   '/_app/profiles/': typeof AppProfilesIndexRoute
+  '/_app/reps/': typeof AppRepsIndexRoute
   '/_app/requests/': typeof AppRequestsIndexRoute
   '/_app/services/': typeof AppServicesIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
@@ -427,8 +410,8 @@ export interface FileRoutesById {
   '/_app/tutorials/': typeof AppTutorialsIndexRoute
   '/_app/users/': typeof AppUsersIndexRoute
   '/_app/events/$eventId/edit': typeof AppEventsEventIdEditRoute
-  '/_app/orgs/$orgId_/edit': typeof AppOrgsOrgIdEditRoute
   '/_app/posts/$postId/edit': typeof AppPostsPostIdEditRoute
+  '/_app/reps/$orgId_/edit': typeof AppRepsOrgIdEditRoute
   '/_app/services/$serviceId_/edit': typeof AppServicesServiceIdEditRoute
   '/_app/services/$serviceId_/form-builder': typeof AppServicesServiceIdFormBuilderRoute
   '/_app/tutorials/$tutorialId/edit': typeof AppTutorialsTutorialIdEditRoute
@@ -439,10 +422,7 @@ export interface FileRouteTypes {
     | '/'
     | '/associations'
     | '/iagenda'
-    | '/iarchive'
-    | '/iasted'
     | '/iboite'
-    | '/icom'
     | '/icorrespondance'
     | '/idocument'
     | '/sign-in/$'
@@ -452,10 +432,10 @@ export interface FileRouteTypes {
     | '/config/representations'
     | '/config/services'
     | '/events/new'
-    | '/orgs/$orgId'
-    | '/orgs/new'
     | '/posts/new'
     | '/profiles/$profileId'
+    | '/reps/$orgId'
+    | '/reps/new'
     | '/requests/$requestId'
     | '/services/new'
     | '/support/$ticketId'
@@ -463,12 +443,13 @@ export interface FileRouteTypes {
     | '/users/$userId'
     | '/api/auth/$'
     | '/api/dev/sign-in'
+    | '/affaires-consulaires/'
     | '/audit-logs/'
     | '/events/'
     | '/monitoring/'
-    | '/orgs/'
     | '/posts/'
     | '/profiles/'
+    | '/reps/'
     | '/requests/'
     | '/services/'
     | '/settings/'
@@ -476,8 +457,8 @@ export interface FileRouteTypes {
     | '/tutorials/'
     | '/users/'
     | '/events/$eventId/edit'
-    | '/orgs/$orgId/edit'
     | '/posts/$postId/edit'
+    | '/reps/$orgId/edit'
     | '/services/$serviceId/edit'
     | '/services/$serviceId/form-builder'
     | '/tutorials/$tutorialId/edit'
@@ -485,10 +466,7 @@ export interface FileRouteTypes {
   to:
     | '/associations'
     | '/iagenda'
-    | '/iarchive'
-    | '/iasted'
     | '/iboite'
-    | '/icom'
     | '/icorrespondance'
     | '/idocument'
     | '/sign-in/$'
@@ -499,10 +477,10 @@ export interface FileRouteTypes {
     | '/config/representations'
     | '/config/services'
     | '/events/new'
-    | '/orgs/$orgId'
-    | '/orgs/new'
     | '/posts/new'
     | '/profiles/$profileId'
+    | '/reps/$orgId'
+    | '/reps/new'
     | '/requests/$requestId'
     | '/services/new'
     | '/support/$ticketId'
@@ -510,12 +488,13 @@ export interface FileRouteTypes {
     | '/users/$userId'
     | '/api/auth/$'
     | '/api/dev/sign-in'
+    | '/affaires-consulaires'
     | '/audit-logs'
     | '/events'
     | '/monitoring'
-    | '/orgs'
     | '/posts'
     | '/profiles'
+    | '/reps'
     | '/requests'
     | '/services'
     | '/settings'
@@ -523,8 +502,8 @@ export interface FileRouteTypes {
     | '/tutorials'
     | '/users'
     | '/events/$eventId/edit'
-    | '/orgs/$orgId/edit'
     | '/posts/$postId/edit'
+    | '/reps/$orgId/edit'
     | '/services/$serviceId/edit'
     | '/services/$serviceId/form-builder'
     | '/tutorials/$tutorialId/edit'
@@ -533,10 +512,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_app/associations'
     | '/_app/iagenda'
-    | '/_app/iarchive'
-    | '/_app/iasted'
     | '/_app/iboite'
-    | '/_app/icom'
     | '/_app/icorrespondance'
     | '/_app/idocument'
     | '/sign-in/$'
@@ -547,10 +523,10 @@ export interface FileRouteTypes {
     | '/_app/config/representations'
     | '/_app/config/services'
     | '/_app/events/new'
-    | '/_app/orgs/$orgId'
-    | '/_app/orgs/new'
     | '/_app/posts/new'
     | '/_app/profiles/$profileId'
+    | '/_app/reps/$orgId'
+    | '/_app/reps/new'
     | '/_app/requests/$requestId'
     | '/_app/services/new'
     | '/_app/support/$ticketId'
@@ -558,12 +534,13 @@ export interface FileRouteTypes {
     | '/_app/users/$userId'
     | '/api/auth/$'
     | '/api/dev/sign-in'
+    | '/_app/affaires-consulaires/'
     | '/_app/audit-logs/'
     | '/_app/events/'
     | '/_app/monitoring/'
-    | '/_app/orgs/'
     | '/_app/posts/'
     | '/_app/profiles/'
+    | '/_app/reps/'
     | '/_app/requests/'
     | '/_app/services/'
     | '/_app/settings/'
@@ -571,8 +548,8 @@ export interface FileRouteTypes {
     | '/_app/tutorials/'
     | '/_app/users/'
     | '/_app/events/$eventId/edit'
-    | '/_app/orgs/$orgId_/edit'
     | '/_app/posts/$postId/edit'
+    | '/_app/reps/$orgId_/edit'
     | '/_app/services/$serviceId_/edit'
     | '/_app/services/$serviceId_/form-builder'
     | '/_app/tutorials/$tutorialId/edit'
@@ -622,32 +599,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIcorrespondanceRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/icom': {
-      id: '/_app/icom'
-      path: '/icom'
-      fullPath: '/icom'
-      preLoaderRoute: typeof AppIcomRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/iboite': {
       id: '/_app/iboite'
       path: '/iboite'
       fullPath: '/iboite'
       preLoaderRoute: typeof AppIboiteRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/iasted': {
-      id: '/_app/iasted'
-      path: '/iasted'
-      fullPath: '/iasted'
-      preLoaderRoute: typeof AppIastedRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/iarchive': {
-      id: '/_app/iarchive'
-      path: '/iarchive'
-      fullPath: '/iarchive'
-      preLoaderRoute: typeof AppIarchiveRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/iagenda': {
@@ -706,6 +662,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRequestsIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/reps/': {
+      id: '/_app/reps/'
+      path: '/reps'
+      fullPath: '/reps/'
+      preLoaderRoute: typeof AppRepsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/profiles/': {
       id: '/_app/profiles/'
       path: '/profiles'
@@ -718,13 +681,6 @@ declare module '@tanstack/react-router' {
       path: '/posts'
       fullPath: '/posts/'
       preLoaderRoute: typeof AppPostsIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/orgs/': {
-      id: '/_app/orgs/'
-      path: '/orgs'
-      fullPath: '/orgs/'
-      preLoaderRoute: typeof AppOrgsIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/monitoring/': {
@@ -746,6 +702,13 @@ declare module '@tanstack/react-router' {
       path: '/audit-logs'
       fullPath: '/audit-logs/'
       preLoaderRoute: typeof AppAuditLogsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/affaires-consulaires/': {
+      id: '/_app/affaires-consulaires/'
+      path: '/affaires-consulaires'
+      fullPath: '/affaires-consulaires/'
+      preLoaderRoute: typeof AppAffairesConsulairesIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/api/dev/sign-in': {
@@ -797,6 +760,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRequestsRequestIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/reps/new': {
+      id: '/_app/reps/new'
+      path: '/reps/new'
+      fullPath: '/reps/new'
+      preLoaderRoute: typeof AppRepsNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/reps/$orgId': {
+      id: '/_app/reps/$orgId'
+      path: '/reps/$orgId'
+      fullPath: '/reps/$orgId'
+      preLoaderRoute: typeof AppRepsOrgIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/profiles/$profileId': {
       id: '/_app/profiles/$profileId'
       path: '/profiles/$profileId'
@@ -809,20 +786,6 @@ declare module '@tanstack/react-router' {
       path: '/posts/new'
       fullPath: '/posts/new'
       preLoaderRoute: typeof AppPostsNewRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/orgs/new': {
-      id: '/_app/orgs/new'
-      path: '/orgs/new'
-      fullPath: '/orgs/new'
-      preLoaderRoute: typeof AppOrgsNewRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/orgs/$orgId': {
-      id: '/_app/orgs/$orgId'
-      path: '/orgs/$orgId'
-      fullPath: '/orgs/$orgId'
-      preLoaderRoute: typeof AppOrgsOrgIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/events/new': {
@@ -888,18 +851,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServicesServiceIdEditRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/reps/$orgId_/edit': {
+      id: '/_app/reps/$orgId_/edit'
+      path: '/reps/$orgId/edit'
+      fullPath: '/reps/$orgId/edit'
+      preLoaderRoute: typeof AppRepsOrgIdEditRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/posts/$postId/edit': {
       id: '/_app/posts/$postId/edit'
       path: '/posts/$postId/edit'
       fullPath: '/posts/$postId/edit'
       preLoaderRoute: typeof AppPostsPostIdEditRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/orgs/$orgId_/edit': {
-      id: '/_app/orgs/$orgId_/edit'
-      path: '/orgs/$orgId/edit'
-      fullPath: '/orgs/$orgId/edit'
-      preLoaderRoute: typeof AppOrgsOrgIdEditRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/events/$eventId/edit': {
@@ -915,10 +878,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppAssociationsRoute: typeof AppAssociationsRoute
   AppIagendaRoute: typeof AppIagendaRoute
-  AppIarchiveRoute: typeof AppIarchiveRoute
-  AppIastedRoute: typeof AppIastedRoute
   AppIboiteRoute: typeof AppIboiteRoute
-  AppIcomRoute: typeof AppIcomRoute
   AppIcorrespondanceRoute: typeof AppIcorrespondanceRoute
   AppIdocumentRoute: typeof AppIdocumentRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -928,21 +888,22 @@ interface AppRouteChildren {
   AppConfigRepresentationsRoute: typeof AppConfigRepresentationsRoute
   AppConfigServicesRoute: typeof AppConfigServicesRoute
   AppEventsNewRoute: typeof AppEventsNewRoute
-  AppOrgsOrgIdRoute: typeof AppOrgsOrgIdRoute
-  AppOrgsNewRoute: typeof AppOrgsNewRoute
   AppPostsNewRoute: typeof AppPostsNewRoute
   AppProfilesProfileIdRoute: typeof AppProfilesProfileIdRoute
+  AppRepsOrgIdRoute: typeof AppRepsOrgIdRoute
+  AppRepsNewRoute: typeof AppRepsNewRoute
   AppRequestsRequestIdRoute: typeof AppRequestsRequestIdRoute
   AppServicesNewRoute: typeof AppServicesNewRoute
   AppSupportTicketIdRoute: typeof AppSupportTicketIdRoute
   AppTutorialsNewRoute: typeof AppTutorialsNewRoute
   AppUsersUserIdRoute: typeof AppUsersUserIdRoute
+  AppAffairesConsulairesIndexRoute: typeof AppAffairesConsulairesIndexRoute
   AppAuditLogsIndexRoute: typeof AppAuditLogsIndexRoute
   AppEventsIndexRoute: typeof AppEventsIndexRoute
   AppMonitoringIndexRoute: typeof AppMonitoringIndexRoute
-  AppOrgsIndexRoute: typeof AppOrgsIndexRoute
   AppPostsIndexRoute: typeof AppPostsIndexRoute
   AppProfilesIndexRoute: typeof AppProfilesIndexRoute
+  AppRepsIndexRoute: typeof AppRepsIndexRoute
   AppRequestsIndexRoute: typeof AppRequestsIndexRoute
   AppServicesIndexRoute: typeof AppServicesIndexRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
@@ -950,8 +911,8 @@ interface AppRouteChildren {
   AppTutorialsIndexRoute: typeof AppTutorialsIndexRoute
   AppUsersIndexRoute: typeof AppUsersIndexRoute
   AppEventsEventIdEditRoute: typeof AppEventsEventIdEditRoute
-  AppOrgsOrgIdEditRoute: typeof AppOrgsOrgIdEditRoute
   AppPostsPostIdEditRoute: typeof AppPostsPostIdEditRoute
+  AppRepsOrgIdEditRoute: typeof AppRepsOrgIdEditRoute
   AppServicesServiceIdEditRoute: typeof AppServicesServiceIdEditRoute
   AppServicesServiceIdFormBuilderRoute: typeof AppServicesServiceIdFormBuilderRoute
   AppTutorialsTutorialIdEditRoute: typeof AppTutorialsTutorialIdEditRoute
@@ -960,10 +921,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAssociationsRoute: AppAssociationsRoute,
   AppIagendaRoute: AppIagendaRoute,
-  AppIarchiveRoute: AppIarchiveRoute,
-  AppIastedRoute: AppIastedRoute,
   AppIboiteRoute: AppIboiteRoute,
-  AppIcomRoute: AppIcomRoute,
   AppIcorrespondanceRoute: AppIcorrespondanceRoute,
   AppIdocumentRoute: AppIdocumentRoute,
   AppIndexRoute: AppIndexRoute,
@@ -973,21 +931,22 @@ const AppRouteChildren: AppRouteChildren = {
   AppConfigRepresentationsRoute: AppConfigRepresentationsRoute,
   AppConfigServicesRoute: AppConfigServicesRoute,
   AppEventsNewRoute: AppEventsNewRoute,
-  AppOrgsOrgIdRoute: AppOrgsOrgIdRoute,
-  AppOrgsNewRoute: AppOrgsNewRoute,
   AppPostsNewRoute: AppPostsNewRoute,
   AppProfilesProfileIdRoute: AppProfilesProfileIdRoute,
+  AppRepsOrgIdRoute: AppRepsOrgIdRoute,
+  AppRepsNewRoute: AppRepsNewRoute,
   AppRequestsRequestIdRoute: AppRequestsRequestIdRoute,
   AppServicesNewRoute: AppServicesNewRoute,
   AppSupportTicketIdRoute: AppSupportTicketIdRoute,
   AppTutorialsNewRoute: AppTutorialsNewRoute,
   AppUsersUserIdRoute: AppUsersUserIdRoute,
+  AppAffairesConsulairesIndexRoute: AppAffairesConsulairesIndexRoute,
   AppAuditLogsIndexRoute: AppAuditLogsIndexRoute,
   AppEventsIndexRoute: AppEventsIndexRoute,
   AppMonitoringIndexRoute: AppMonitoringIndexRoute,
-  AppOrgsIndexRoute: AppOrgsIndexRoute,
   AppPostsIndexRoute: AppPostsIndexRoute,
   AppProfilesIndexRoute: AppProfilesIndexRoute,
+  AppRepsIndexRoute: AppRepsIndexRoute,
   AppRequestsIndexRoute: AppRequestsIndexRoute,
   AppServicesIndexRoute: AppServicesIndexRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
@@ -995,8 +954,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppTutorialsIndexRoute: AppTutorialsIndexRoute,
   AppUsersIndexRoute: AppUsersIndexRoute,
   AppEventsEventIdEditRoute: AppEventsEventIdEditRoute,
-  AppOrgsOrgIdEditRoute: AppOrgsOrgIdEditRoute,
   AppPostsPostIdEditRoute: AppPostsPostIdEditRoute,
+  AppRepsOrgIdEditRoute: AppRepsOrgIdEditRoute,
   AppServicesServiceIdEditRoute: AppServicesServiceIdEditRoute,
   AppServicesServiceIdFormBuilderRoute: AppServicesServiceIdFormBuilderRoute,
   AppTutorialsTutorialIdEditRoute: AppTutorialsTutorialIdEditRoute,

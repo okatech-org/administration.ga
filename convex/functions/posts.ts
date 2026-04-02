@@ -187,14 +187,20 @@ export const listByOrg = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
+    // Public-facing: only return published posts
     const paginatedResult = await ctx.db
       .query("posts")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
       .order("desc")
       .paginate(args.paginationOpts);
 
+    // Filter to published only — drafts/archived should not be public
+    const publishedPosts = paginatedResult.page.filter(
+      (post) => post.status === "published",
+    );
+
     const postsWithImages = await Promise.all(
-      paginatedResult.page.map(async (post) => {
+      publishedPosts.map(async (post) => {
         const coverImageUrl =
           post.coverImageStorageId ?
             await ctx.storage.getUrl(post.coverImageStorageId)
@@ -225,6 +231,10 @@ export const getById = query({
   handler: async (ctx, args) => {
     const post = await ctx.db.get(args.postId);
     if (!post) return null;
+
+    // Public-facing: only expose published posts
+    // Draft/archived posts should only be accessible via the authenticated listAll
+    if (post.status !== "published") return null;
 
     const coverImageUrl =
       post.coverImageStorageId ?

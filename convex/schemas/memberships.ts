@@ -34,6 +34,78 @@ export const membershipsTable = defineTable({
   // Contact
   isPublicContact: v.optional(v.boolean()), // Visible in public contact directory
 
+  // Profil métier diplomatique (iProfil)
+  diplomaticProfile: v.optional(v.object({
+    // Statut professionnel
+    status: v.optional(v.union(
+      v.literal("en_poste"),
+      v.literal("en_mission"),
+      v.literal("en_conge"),
+      v.literal("en_formation"),
+      v.literal("rapatrie"),
+      v.literal("detache"),
+    )),
+    startDate: v.optional(v.number()),
+
+    // Contact professionnel
+    officePhone: v.optional(v.string()),
+    officeExtension: v.optional(v.string()),
+    officialEmail: v.optional(v.string()),
+
+    // Compétences linguistiques
+    languages: v.optional(v.array(v.object({
+      code: v.string(),
+      level: v.union(
+        v.literal("native"),
+        v.literal("fluent"),
+        v.literal("advanced"),
+        v.literal("intermediate"),
+        v.literal("basic"),
+      ),
+    }))),
+
+    // Accréditations
+    credentials: v.optional(v.object({
+      lettersOfCredence: v.optional(v.object({
+        presentedDate: v.optional(v.number()),
+        documentId: v.optional(v.id("documents")),
+      })),
+      diplomaticCard: v.optional(v.object({
+        number: v.optional(v.string()),
+        issuedAt: v.optional(v.number()),
+        expiresAt: v.optional(v.number()),
+      })),
+      diplomaticPassport: v.optional(v.object({
+        number: v.optional(v.string()),
+        expiresAt: v.optional(v.number()),
+      })),
+      exequatur: v.optional(v.object({
+        grantedDate: v.optional(v.number()),
+      })),
+    })),
+
+    // Historique des affectations
+    previousPostings: v.optional(v.array(v.object({
+      position: v.string(),
+      orgName: v.string(),
+      country: v.string(),
+      startDate: v.number(),
+      endDate: v.optional(v.number()),
+    }))),
+
+    // Signature officielle (pour iCorrespondance)
+    officialSignature: v.optional(v.object({
+      imageStorageId: v.optional(v.id("_storage")),
+      title: v.optional(v.string()),
+    })),
+
+    // Photo officielle protocolaire
+    officialPhotoStorageId: v.optional(v.id("_storage")),
+
+    // Bio résumée
+    bio: v.optional(v.string()),
+  })),
+
   deletedAt: v.optional(v.number()), // Soft delete
 })
   // Note: by_user_org can be used for "by_user" queries via prefix matching

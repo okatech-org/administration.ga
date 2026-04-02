@@ -1,12 +1,11 @@
 import { v } from "convex/values";
-import { query } from "../_generated/server";
 import { authQuery } from "../lib/customFunctions";
 import { eventTargetTypeValidator } from "../lib/validators";
 
 /**
  * Get event history for a target
  */
-export const getHistory = query({
+export const getHistory = authQuery({
   args: {
     targetType: eventTargetTypeValidator,
     targetId: v.string(),
@@ -57,7 +56,7 @@ export const getMyActivity = authQuery({
 /**
  * Get notes for a request (filtered from events)
  */
-export const getNotesForRequest = query({
+export const getNotesForRequest = authQuery({
   args: {
     requestId: v.string(),
     includeInternal: v.optional(v.boolean()),

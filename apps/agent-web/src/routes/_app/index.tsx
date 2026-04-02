@@ -5,10 +5,12 @@ import { fr } from "date-fns/locale";
 import {
 	Activity,
 	ArrowRight,
+	BarChart3,
 	Calendar,
 	CheckCircle2,
 	Clock,
 	ClipboardList,
+	CreditCard,
 	Download,
 	FileText,
 	Loader2,
@@ -219,6 +221,16 @@ function AdminDashboard() {
 			icon: Settings,
 			href: "/settings",
 		},
+		{
+			label: t("admin.statistics.title", "Statistiques"),
+			icon: BarChart3,
+			href: "/statistics",
+		},
+		{
+			label: t("payments.title", "Paiements"),
+			icon: CreditCard,
+			href: "/payments",
+		},
 	];
 
 	return (
@@ -325,7 +337,7 @@ function AdminDashboard() {
 					<CardContent>
 						<div className="h-72">
 							{trendData.length > 0 ? (
-								<ResponsiveContainer width="100%" height="100%">
+								<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 									<AreaChart
 										data={trendData}
 										margin={{ top: 8, right: 8, left: -20, bottom: 0 }}
@@ -405,7 +417,7 @@ function AdminDashboard() {
 					<CardContent>
 						<div className="h-44">
 							{statusChartData.length > 0 ? (
-								<ResponsiveContainer width="100%" height="100%">
+								<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 									<PieChart>
 										<Pie
 											data={statusChartData}
@@ -477,7 +489,7 @@ function AdminDashboard() {
 					<CardContent>
 						<div className="h-64">
 							{serviceChartData.length > 0 ? (
-								<ResponsiveContainer width="100%" height="100%">
+								<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 									<BarChart
 										data={serviceChartData}
 										layout="vertical"

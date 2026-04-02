@@ -41,6 +41,7 @@ const emergencyContactSchema = z.object({
 		.string()
 		.min(1, { message: "errors.profile.contacts.emergency.phone.required" }),
 	email: z
+		.string()
 		.email({ message: "errors.profile.contacts.emergency.email.invalid" })
 		.optional(),
 	relationship: z.enum(FamilyLink, {
@@ -148,6 +149,7 @@ export const profileFormSchema = z.object({
 	contacts: z.object({
 		phone: z.string().optional(),
 		email: z
+			.string()
 			.email({ message: "errors.profile.contacts.email.invalid" })
 			.optional(),
 		emergencyResidence: emergencyContactSchema.optional(),

@@ -413,12 +413,12 @@ fs.writeFileSync("output.pdf", pdfBuffer);
 
 ## Anti-patterns
 
-❌ **NE PAS** utiliser de caractères Unicode pour les puces:
+ **NE PAS** utiliser de caractères Unicode pour les puces:
 ```typescript
 new Paragraph({ text: "• Item" })  // MAUVAIS
 ```
 
-✅ **FAIRE** utiliser le système intégré:
+ **FAIRE** utiliser le système intégré:
 ```typescript
 new Paragraph({
   text: "Item",
@@ -426,12 +426,12 @@ new Paragraph({
 })  // BON
 ```
 
-❌ **NE PAS** oublier la taille de page:
+ **NE PAS** oublier la taille de page:
 ```typescript
 sections: [{ children: [...] }]  // Default A4 — MAUVAIS
 ```
 
-✅ **FAIRE** spécifier US Letter:
+ **FAIRE** spécifier US Letter:
 ```typescript
 sections: [{
   page: {
@@ -444,12 +444,12 @@ sections: [{
 }]  // BON
 ```
 
-❌ **NE PAS** oublier le paramètre `type` pour les images:
+ **NE PAS** oublier le paramètre `type` pour les images:
 ```typescript
 new ImageRun({ data: buffer })  // MAUVAIS
 ```
 
-✅ **FAIRE** toujours spécifier le type:
+ **FAIRE** toujours spécifier le type:
 ```typescript
 new ImageRun({
   data: buffer,
@@ -457,7 +457,7 @@ new ImageRun({
 })  // BON
 ```
 
-❌ **NE PAS** placer un PageBreak en dehors d'un Paragraph:
+ **NE PAS** placer un PageBreak en dehors d'un Paragraph:
 ```typescript
 children: [
   new PageBreak(),  // MAUVAIS
@@ -465,7 +465,7 @@ children: [
 ]
 ```
 
-✅ **FAIRE** l'envelopper:
+ **FAIRE** l'envelopper:
 ```typescript
 children: [
   new Paragraph({ pageBreakBefore: true, text: "" }),  // BON

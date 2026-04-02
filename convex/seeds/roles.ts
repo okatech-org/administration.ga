@@ -188,7 +188,7 @@ export const syncPositionTasks = mutation({
 
 /**
  * Supprime TOUTES les données de rôles (dev/reset uniquement).
- * ⚠️  Destructif — ne pas utiliser en production.
+ *   Destructif — ne pas utiliser en production.
  */
 export const purgeAllRoleData = mutation({
   args: {},

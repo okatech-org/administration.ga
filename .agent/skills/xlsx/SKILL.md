@@ -462,34 +462,34 @@ wb.save("conditional.xlsx")
 
 ## Anti-patterns
 
-❌ **NE PAS** hardcoder les valeurs dans les formules:
+ **NE PAS** hardcoder les valeurs dans les formules:
 ```python
 ws['B1'] = 100 * 1.5  # MAUVAIS — valeur figée
 ```
 
-✅ **FAIRE** utiliser des formules:
+ **FAIRE** utiliser des formules:
 ```python
 ws['B1'] = "=A1*1.5"  # BON — dynamique
 ```
 
-❌ **NE PAS** mélanger les formatages numériques:
+ **NE PAS** mélanger les formatages numériques:
 ```python
 ws['B1'].number_format = '@'  # Texte
 ws['B2'].number_format = '0.00'  # Décimal
 ```
 
-✅ **FAIRE** harmoniser:
+ **FAIRE** harmoniser:
 ```python
 for row in range(1, 10):
     ws[f'B{row}'].number_format = '#,##0.00'  # Cohérent
 ```
 
-❌ **NE PAS** utiliser des valeurs hardcodées pour les taux:
+ **NE PAS** utiliser des valeurs hardcodées pour les taux:
 ```python
 ws['B1'] = df['sales'] * 0.08  # Taux figé — MAUVAIS
 ```
 
-✅ **FAIRE** définir des hypothèses modifiables:
+ **FAIRE** définir des hypothèses modifiables:
 ```python
 ws['B1'] = "Hypothèses"
 ws['B2'] = 0.08  # Cellule nommée "TauxTVA"

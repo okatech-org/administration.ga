@@ -1,6 +1,7 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
 import { pricingValidator } from "../lib/validators";
+import { accessLevelValidator } from "../lib/moduleCodes";
 
 /**
  * OrgServices table - service configuration per org
@@ -35,6 +36,14 @@ export const orgServicesTable = defineTable({
   // Pickup appointment configuration (separate from deposit)
   pickupAppointmentDurationMinutes: v.optional(v.number()), // Pickup slot duration
   pickupAppointmentBreakMinutes: v.optional(v.number()),    // Break between pickup slots
+
+  // Contrôle d'accès par poste pour ce service (optionnel)
+  // Si absent : hérite du niveau d'accès du module "requests" sur le poste
+  // Si présent : seuls les postes listés ont accès au niveau spécifié
+  serviceAccess: v.optional(v.array(v.object({
+    positionId: v.id("positions"),
+    accessLevel: accessLevelValidator, // "reader" | "editor" | "admin"
+  }))),
 
   updatedAt: v.optional(v.number()),
 })

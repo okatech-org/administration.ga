@@ -89,11 +89,11 @@ export function ImageCropDialog({
 					/>
 					<ul className="text-[11px] text-muted-foreground space-y-0.5">
 						<li>
-							✓ {t("register.documents.photoTip1", "Visage centré et dégagé")}
+							 {t("register.documents.photoTip1", "Visage centré et dégagé")}
 						</li>
-						<li>✓ {t("register.documents.photoTip2", "Fond uni et clair")}</li>
+						<li> {t("register.documents.photoTip2", "Fond uni et clair")}</li>
 						<li>
-							✓{" "}
+							{" "}
 							{t(
 								"register.documents.photoTip3",
 								"Expression neutre, bouche fermée",

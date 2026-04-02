@@ -1,9 +1,9 @@
 ---
 name: typescript-patterns
-description: "📘 Expert TypeScript. S'active automatiquement pour tous les projets (tous utilisent TypeScript). Couvre les types avancés, les generics, les patterns de typage strict, et les conventions TypeScript OkaTech."
+description: " Expert TypeScript. S'active automatiquement pour tous les projets (tous utilisent TypeScript). Couvre les types avancés, les generics, les patterns de typage strict, et les conventions TypeScript OkaTech."
 ---
 
-# 📘 Skill : TypeScript Patterns Expert
+#  Skill : TypeScript Patterns Expert
 
 ## Auto-Activation
 Ce skill s'active quand :
@@ -15,23 +15,23 @@ Ce skill s'active quand :
 
 ### Nommage
 ```ts
-// ✅ Interfaces : PascalCase avec suffixe descriptif
+//  Interfaces : PascalCase avec suffixe descriptif
 interface UserProfile { ... }
 interface CreateDocumentInput { ... }
 interface DocumentListResponse { ... }
 
-// ✅ Types : PascalCase
+//  Types : PascalCase
 type DocumentStatus = "draft" | "published" | "archived";
 type Role = "admin" | "user" | "viewer";
 
-// ✅ Enums : PascalCase + valeurs UPPERCASE ou camelCase
+//  Enums : PascalCase + valeurs UPPERCASE ou camelCase
 enum HttpStatus {
   OK = 200,
   NOT_FOUND = 404,
   INTERNAL_ERROR = 500,
 }
 
-// ✅ Constantes : UPPER_SNAKE_CASE
+//  Constantes : UPPER_SNAKE_CASE
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const API_BASE_URL = "/api/v1";
 ```
@@ -130,8 +130,8 @@ function validateDocument(data: unknown): Document {
 ```
 
 ## Anti-Patterns
-- ❌ Ne JAMAIS utiliser `any` sans raison documentée — utiliser `unknown` à la place
-- ❌ Ne JAMAIS ignorer les erreurs TypeScript avec `// @ts-ignore` — corriger le type
-- ❌ Ne JAMAIS dupliquer les types — les garder dans un seul endroit (DRY)
-- ❌ Ne JAMAIS exporter `default` — préférer les named exports
-- ❌ Ne JAMAIS utiliser `as` pour forcer un type — corriger la chaîne de types en amont
+-  Ne JAMAIS utiliser `any` sans raison documentée — utiliser `unknown` à la place
+-  Ne JAMAIS ignorer les erreurs TypeScript avec `// @ts-ignore` — corriger le type
+-  Ne JAMAIS dupliquer les types — les garder dans un seul endroit (DRY)
+-  Ne JAMAIS exporter `default` — préférer les named exports
+-  Ne JAMAIS utiliser `as` pour forcer un type — corriger la chaîne de types en amont

@@ -550,7 +550,7 @@ function OptimizeForJobView({
         {parsed.matchingKeywords && parsed.matchingKeywords.length > 0 && (
           <div className="space-y-1.5">
             <p className="text-xs font-semibold text-green-600">
-              ✓ {t("icv.ai.drawer.matchingKeywords")}
+               {t("icv.ai.drawer.matchingKeywords")}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {parsed.matchingKeywords.map((k, i) => (
@@ -568,7 +568,7 @@ function OptimizeForJobView({
         {parsed.missingKeywords && parsed.missingKeywords.length > 0 && (
           <div className="space-y-1.5">
             <p className="text-xs font-semibold text-red-600">
-              ✗ {t("icv.ai.drawer.missingKeywords")}
+               {t("icv.ai.drawer.missingKeywords")}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {parsed.missingKeywords.map((k, i) => (
@@ -878,7 +878,7 @@ function ATSScoreView({
             title={t("icv.ai.drawer.strengths")}
             items={strengths}
             color="green"
-            icon="✓"
+            icon=""
           />
         )}
 
@@ -888,7 +888,7 @@ function ATSScoreView({
             title={t("icv.ai.drawer.weaknesses")}
             items={weaknesses}
             color="red"
-            icon="✗"
+            icon=""
           />
         )}
 

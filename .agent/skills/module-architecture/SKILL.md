@@ -1,9 +1,9 @@
 ---
 name: module-architecture
-description: "🏗️ Expert Architecture Modulaire OkaTech. S'active automatiquement pour la conception de modules métier (iDocument, iCorrespondance, iAsted, etc.). Couvre la structure des modules, l'intégration, et les patterns de composition."
+description: " Expert Architecture Modulaire OkaTech. S'active automatiquement pour la conception de modules métier (iDocument, iCorrespondance, iAsted, etc.). Couvre la structure des modules, l'intégration, et les patterns de composition."
 ---
 
-# 🏗️ Skill : Architecture Modulaire OkaTech
+#  Skill : Architecture Modulaire OkaTech
 
 ## Auto-Activation
 - Mots-clés : module, iDocument, iCorrespondance, iAsted, iBoîte, iArchive, iCom, architecture modulaire

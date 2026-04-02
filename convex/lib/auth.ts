@@ -1,5 +1,6 @@
-import { QueryCtx, MutationCtx, ActionCtx } from "../_generated/server";
+import { QueryCtx, MutationCtx, ActionCtx, internalQuery } from "../_generated/server";
 import { Id } from "../_generated/dataModel";
+import { v } from "convex/values";
 import { error, ErrorCode } from "./errors";
 import { UserRole } from "./constants";
 
@@ -137,3 +138,23 @@ export async function isSuperadmin(ctx: AuthContext): Promise<boolean> {
   const user = await getCurrentUser(ctx);
   return user ? isSuperadminUser(user) : false;
 }
+
+// ============================================
+// Internal Queries (for use in Actions via ctx.runQuery)
+// ============================================
+
+/**
+ * Check if a user is superadmin by their auth subject (identity.subject).
+ * Used by superadminAction since actions don't have ctx.db.
+ */
+export const checkSuperadminBySubject = internalQuery({
+  args: { subject: v.string() },
+  handler: async (ctx, { subject }) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_authId", (q) => q.eq("authId", subject))
+      .unique();
+    if (!user || !user.isActive) return false;
+    return isSuperadminUser(user);
+  },
+});

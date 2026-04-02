@@ -1,9 +1,9 @@
 ---
 name: nextjs-app-router
-description: "🚀 Expert Next.js 14+ App Router. S'active automatiquement pour les projets Next.js (digitalium.io, evenement.ga, foot.cd, AGASA Digital). Couvre routing, Server/Client Components, Suspense, Streaming, API Routes, middleware, ISR, Convex preloadQuery, image/font optimization, et patterns avancés."
+description: " Expert Next.js 14+ App Router. S'active automatiquement pour les projets Next.js (digitalium.io, evenement.ga, foot.cd, AGASA Digital). Couvre routing, Server/Client Components, Suspense, Streaming, API Routes, middleware, ISR, Convex preloadQuery, image/font optimization, et patterns avancés."
 ---
 
-# 🚀 Skill : Next.js 14+ App Router Expert
+#  Skill : Next.js 14+ App Router Expert
 
 ## Auto-Activation
 Ce skill s'active quand :
@@ -160,7 +160,7 @@ export function DocumentFilter({ documents }) {
 
 ### Mixing Server & Client Components
 ```tsx
-// ✅ CORRECT: Server component fetches, client component interacts
+//  CORRECT: Server component fetches, client component interacts
 // app/(dashboard)/documents/page.tsx (Server)
 import { DocumentFilter } from "./DocumentFilter"; // Client
 
@@ -175,9 +175,9 @@ export default async function Page() {
   );
 }
 
-// ❌ WRONG: Cannot import server component into client component
+//  WRONG: Cannot import server component into client component
 // DocumentFilter.tsx (Client - "use client")
-// import { fetchDocuments } from "@/lib/api"; // ❌ This won't work!
+// import { fetchDocuments } from "@/lib/api"; //  This won't work!
 ```
 
 ---
@@ -384,7 +384,7 @@ export default function EditModal({ params }: { params: { id: string } }) {
 ## Image Optimization with next/image
 
 ```tsx
-// ✅ Always use next/image for optimization
+//  Always use next/image for optimization
 import Image from "next/image";
 
 export function ProductImage({ src, alt }) {
@@ -1052,11 +1052,11 @@ module.exports = nextConfig;
 ---
 
 ## Anti-Patterns à ÉVITER
-- ❌ Ne JAMAIS utiliser `getServerSideProps` ou `getStaticProps` (Pages Router)
-- ❌ Ne JAMAIS mettre `"use client"` sur un layout racine sans raison
-- ❌ Ne JAMAIS fetch des données dans un Client Component si un Server Component peut le faire
-- ❌ Ne JAMAIS utiliser `useRouter` de `next/router` — utiliser `next/navigation`
-- ❌ Ne JAMAIS importer des composants serveur dans des composants client
-- ❌ Ne JAMAIS faire confiance aux données côté client pour les contrôles d'accès
-- ❌ Ne JAMAIS oublier les `Suspense` boundaries autour des données lentes
-- ❌ Ne JAMAIS utiliser `layout.tsx` pour les redirects d'auth (utiliser `middleware.ts`)
+-  Ne JAMAIS utiliser `getServerSideProps` ou `getStaticProps` (Pages Router)
+-  Ne JAMAIS mettre `"use client"` sur un layout racine sans raison
+-  Ne JAMAIS fetch des données dans un Client Component si un Server Component peut le faire
+-  Ne JAMAIS utiliser `useRouter` de `next/router` — utiliser `next/navigation`
+-  Ne JAMAIS importer des composants serveur dans des composants client
+-  Ne JAMAIS faire confiance aux données côté client pour les contrôles d'accès
+-  Ne JAMAIS oublier les `Suspense` boundaries autour des données lentes
+-  Ne JAMAIS utiliser `layout.tsx` pour les redirects d'auth (utiliser `middleware.ts`)

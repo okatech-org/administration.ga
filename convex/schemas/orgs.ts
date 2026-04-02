@@ -47,6 +47,12 @@ export const orgsTable = defineTable({
   headOfMissionTitle: v.optional(v.string()), // Title (Ambassadeur, Consul Général...)
   staffCount: v.optional(v.number()), // Staff count
   modules: v.optional(v.array(moduleCodeValidator)), // Active feature modules (typed)
+  // Configuration modulaire enrichie avec capabilities/sous-modules par module
+  orgModuleConfig: v.optional(v.array(v.object({
+    moduleCode: moduleCodeValidator,
+    enabled: v.boolean(),
+    capabilities: v.optional(v.array(v.string())),
+  }))),
   jurisdictionNotes: v.optional(v.string()), // Notes on jurisdiction
 
   // Status
