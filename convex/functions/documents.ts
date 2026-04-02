@@ -125,12 +125,20 @@ export const create = authMutation({
       .unique();
     const ownerId = profile?._id ?? ctx.user._id;
 
-    // Auto-assign category and label for identity photos
+    // Auto-assign category and label for consular document types
     let resolvedCategory = args.category;
     let resolvedLabel = args.label;
-    if (args.documentType === DetailedDocumentType.IdentityPhoto) {
-      if (!resolvedCategory) resolvedCategory = DocumentTypeCategory.Identity;
-      if (!resolvedLabel) resolvedLabel = "Photo d'identité";
+    const DOC_AUTO_LABELS: Record<string, { label: string; category: string }> = {
+      [DetailedDocumentType.IdentityPhoto]: { label: "Photo d'identité", category: DocumentTypeCategory.Identity },
+      [DetailedDocumentType.Passport]: { label: "Passeport", category: DocumentTypeCategory.Identity },
+      [DetailedDocumentType.ProofOfAddress]: { label: "Justificatif de domicile", category: DocumentTypeCategory.Housing },
+      [DetailedDocumentType.BirthCertificate]: { label: "Acte de naissance", category: DocumentTypeCategory.CivilStatus },
+      [DetailedDocumentType.ResidencePermit]: { label: "Titre de séjour", category: DocumentTypeCategory.Identity },
+    };
+    if (args.documentType && args.documentType in DOC_AUTO_LABELS) {
+      const auto = DOC_AUTO_LABELS[args.documentType];
+      if (!resolvedCategory) resolvedCategory = auto.category as any;
+      if (!resolvedLabel) resolvedLabel = auto.label;
     }
 
     // Nommage du fichier avec le matricule consulaire si disponible

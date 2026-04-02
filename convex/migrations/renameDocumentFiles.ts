@@ -25,6 +25,24 @@ const CONSULAR_DOC_TYPES = new Set([
   "residence_permit",
 ]);
 
+/** Labels lisibles par type de document */
+const DOC_TYPE_LABELS: Record<string, string> = {
+  identity_photo: "Photo d'identité",
+  passport: "Passeport",
+  proof_of_address: "Justificatif de domicile",
+  birth_certificate: "Acte de naissance",
+  residence_permit: "Titre de séjour",
+};
+
+/** Catégories correctes par type */
+const DOC_TYPE_CATEGORIES: Record<string, string> = {
+  identity_photo: "identity",
+  passport: "identity",
+  proof_of_address: "housing",
+  birth_certificate: "civil_status",
+  residence_permit: "identity",
+};
+
 /**
  * Etape 1 : Generer les matricules manquants pour tous les profils.
  */
@@ -108,15 +126,33 @@ export const renameFiles = internalMutation({
         matricule,
       );
 
-      // Ne patcher que si le nom a change
-      if (newFilename === originalFilename) continue;
+      // Calculer le label et la catégorie corrects
+      const correctLabel = DOC_TYPE_LABELS[doc.documentType];
+      const correctCategory = DOC_TYPE_CATEGORIES[doc.documentType];
 
-      await ctx.db.patch(doc._id, {
-        files: doc.files.map((f, i) =>
+      const needsFileRename = newFilename !== originalFilename;
+      const needsLabel = correctLabel && doc.label !== correctLabel;
+      const needsCategory = correctCategory && doc.category !== correctCategory;
+
+      if (!needsFileRename && !needsLabel && !needsCategory) continue;
+
+      const patch: Record<string, unknown> = { updatedAt: Date.now() };
+
+      if (needsFileRename) {
+        patch.files = doc.files.map((f, i) =>
           i === 0 ? { ...f, filename: newFilename } : f,
-        ),
-        updatedAt: Date.now(),
-      });
+        );
+      }
+
+      if (needsLabel) {
+        patch.label = correctLabel;
+      }
+
+      if (needsCategory) {
+        patch.category = correctCategory;
+      }
+
+      await ctx.db.patch(doc._id, patch);
       renamed++;
     }
 
