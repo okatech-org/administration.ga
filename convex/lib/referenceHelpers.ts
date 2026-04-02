@@ -42,12 +42,13 @@ async function nextCounter(
 /**
  * Genere un matricule consulaire permanent.
  *
- * Format : GAB-{CC}-{YYYY}-{NNNNN}
- * Exemple : GAB-FR-2025-00042
+ * Format : gab-{cc}-{yyyy}-{nnnnn}  (tout en minuscules)
+ * Exemple : gab-fr-2026-00042
  *
- * - CC = code pays de residence (2 lettres)
- * - YYYY = annee de creation
- * - NNNNN = sequence annuelle (5 chiffres)
+ * - gab = nationalite gabonaise (fixe)
+ * - cc = code pays de residence (2 ou 3 lettres, ex: fr, es, usa)
+ * - yyyy = annee d'inscription
+ * - nnnnn = rang dans le pays de residence (compteur par pays+annee)
  *
  * Un citoyen ne recoit qu'un seul matricule, il ne change jamais.
  */
@@ -56,13 +57,14 @@ export async function generateMatricule(
   countryCode: string,
 ): Promise<string> {
   const year = new Date().getFullYear();
-  const cc = (countryCode || "XX").toUpperCase().slice(0, 2);
-  const counterName = `matricule_${year}`;
+  const cc = (countryCode || "xx").toLowerCase().slice(0, 3);
+  // Compteur par pays + annee pour le rang dans le pays de residence
+  const counterName = `matricule_${cc}_${year}`;
 
   const seq = await nextCounter(ctx, counterName);
   const sequence = String(seq).padStart(5, "0");
 
-  return `GAB-${cc}-${year}-${sequence}`;
+  return `gab-${cc}-${year}-${sequence}`;
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -107,9 +109,10 @@ const DOC_TYPE_NAMES: Record<string, string> = {
 /**
  * Genere un nom de fichier normalise pour un document.
  *
- * Format : {type-du-document}-{MATRICULE}.{ext}
- * Exemple : photo-d-identite-GAB-FR-2025-00042.jpg
+ * Format strict : {type}-{matricule}.{ext}  (tout en minuscules)
+ * Exemple : photo-identite-gab-fr-2026-00042.jpg
  *
+ * Aucun texte supplementaire, aucune majuscule, aucun storageId.
  * Si pas de matricule ou pas de type connu, retourne le nom original.
  */
 export function formatDocumentFilename(
@@ -123,5 +126,6 @@ export function formatDocumentFilename(
   if (!docTypeName) return originalFilename;
 
   const ext = originalFilename.split(".").pop()?.toLowerCase() ?? "pdf";
+  // Format strict : tout en minuscules, pas d'info supplementaire
   return `${docTypeName}-${matricule.toLowerCase()}.${ext}`;
 }

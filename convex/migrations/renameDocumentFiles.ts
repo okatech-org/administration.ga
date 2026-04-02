@@ -59,11 +59,19 @@ export const generateMatricules = internalMutation({
     let generated = 0;
 
     for (const profile of page.page) {
-      if (profile.matricule) continue;
+      if (profile.matricule) {
+        // Normaliser les matricules existants en minuscules
+        const lower = profile.matricule.toLowerCase();
+        if (lower !== profile.matricule) {
+          await ctx.db.patch(profile._id, { matricule: lower });
+          generated++;
+        }
+        continue;
+      }
 
       const matricule = await generateMatricule(
         ctx,
-        (profile as any).countryOfResidence ?? "XX",
+        (profile as any).countryOfResidence ?? "xx",
       );
       await ctx.db.patch(profile._id, { matricule });
       generated++;
