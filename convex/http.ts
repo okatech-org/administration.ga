@@ -6,7 +6,11 @@ import { hashPassword } from "better-auth/crypto";
 import { generateRandomString } from "better-auth/crypto";
 import { validateWarehouseApiKey } from "./lib/warehouseAuth";
 import { getTrustedClientIp } from "./lib/httpSecurity";
+import { validateAllSecrets } from "./lib/startupChecks";
 import { WAREHOUSE_TABLES } from "./functions/warehouse";
+
+// ── Verification securite au chargement du module ──
+validateAllSecrets();
 
 const http = httpRouter();
 
@@ -58,18 +62,25 @@ function buildPreflightHeaders(requestOrigin: string | null): Record<string, str
 }
 
 // ── Verification IP bloquee — systeme de defense automatique ──
+// Tarpit adaptatif : delai exponentiel selon le score de menace
+function computeTarpitDelay(score: number): number {
+  // score 0 → 0ms | score 50 → 5s | score 100 → 10s | score 200+ → 30s max
+  return Math.min(Math.floor(score * 100), 30_000);
+}
+
 async function checkIpBlock(
   ctx: { runQuery: (fn: any, args: any) => Promise<any> },
   request: Request,
 ): Promise<Response | null> {
   const ip = getTrustedClientIp(request);
-  const { blocked } = (await ctx.runQuery(
+  const { blocked, score } = (await ctx.runQuery(
     internal.functions.autoDefense.isIpBlocked,
     { ip },
   )) as { blocked: boolean; score: number };
   if (blocked) {
-    // Tarpit silencieux avant reponse
-    await new Promise((r) => setTimeout(r, 5000));
+    // Tarpit adaptatif : plus le score est eleve, plus le delai est long
+    const delay = computeTarpitDelay(score);
+    if (delay > 0) await new Promise((r) => setTimeout(r, delay));
     return new Response(JSON.stringify({ error: "Service unavailable" }), {
       status: 503,
       headers: { "Content-Type": "application/json" },
