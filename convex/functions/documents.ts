@@ -61,6 +61,8 @@ export const listMine = authQuery({
  * Strategie de resolution (ordre de priorite) :
  *   1. profile.documents.identityPhoto (lien direct)
  *   2. Document avec documentType = "identity_photo" et ownerId = profileId
+ *   3. Document avec documentType = "identity_photo" et ownerId = userId
+ *      (cas des uploads avant la correction du lien automatique)
  *
  * Retourne l'URL ou null.
  */
@@ -82,18 +84,33 @@ export const getMyIdentityPhotoUrl = authQuery({
       }
     }
 
-    // Strategie 2 : recherche par type + owner
-    const docs = await ctx.db
+    // Helper pour trouver la photo dans une liste de documents
+    const findPhoto = (docs: any[]) =>
+      docs.find(
+        (d: any) => d.documentType === "identity_photo" && d.files?.length > 0,
+      );
+
+    // Strategie 2 : recherche par ownerId = profile._id
+    const docsByProfile = await ctx.db
       .query("documents")
       .withIndex("by_owner", (q) => q.eq("ownerId", profile._id))
       .collect();
 
-    const identityPhoto = docs.find(
-      (d) => d.documentType === "identity_photo" && d.files?.length > 0,
-    );
+    const photoByProfile = findPhoto(docsByProfile);
+    if (photoByProfile?.files?.[0]?.storageId) {
+      return await ctx.storage.getUrl(photoByProfile.files[0].storageId);
+    }
 
-    if (identityPhoto?.files?.[0]?.storageId) {
-      return await ctx.storage.getUrl(identityPhoto.files[0].storageId);
+    // Strategie 3 : recherche par ownerId = userId
+    // (cas des documents uploadés avant la correction du lien automatique)
+    const docsByUser = await ctx.db
+      .query("documents")
+      .withIndex("by_owner", (q) => q.eq("ownerId", ctx.user._id))
+      .collect();
+
+    const photoByUser = findPhoto(docsByUser);
+    if (photoByUser?.files?.[0]?.storageId) {
+      return await ctx.storage.getUrl(photoByUser.files[0].storageId);
     }
 
     return null;
