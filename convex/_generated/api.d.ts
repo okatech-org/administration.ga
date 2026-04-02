@@ -26,6 +26,7 @@ import type * as auditif from "../auditif.js";
 import type * as betterAuth_auth from "../betterAuth/auth.js";
 import type * as check_id from "../check_id.js";
 import type * as crons from "../crons.js";
+import type * as crons_correspondanceSla from "../crons/correspondanceSla.js";
 import type * as crons_expiration from "../crons/expiration.js";
 import type * as crons_posthogHealthCheck from "../crons/posthogHealthCheck.js";
 import type * as functions_admin from "../functions/admin.js";
@@ -228,6 +229,7 @@ declare const fullApi: ApiFromModules<{
   "betterAuth/auth": typeof betterAuth_auth;
   check_id: typeof check_id;
   crons: typeof crons;
+  "crons/correspondanceSla": typeof crons_correspondanceSla;
   "crons/expiration": typeof crons_expiration;
   "crons/posthogHealthCheck": typeof crons_posthogHealthCheck;
   "functions/admin": typeof functions_admin;
