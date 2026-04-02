@@ -119,13 +119,36 @@ export function formatDocumentFilename(
   originalFilename: string,
   documentType: string | undefined,
   matricule: string | undefined,
+  mimeType?: string,
 ): string {
   if (!matricule || !documentType) return originalFilename;
 
   const docTypeName = DOC_TYPE_NAMES[documentType];
   if (!docTypeName) return originalFilename;
 
-  const ext = originalFilename.split(".").pop()?.toLowerCase() ?? "pdf";
+  // Deduire l'extension proprement :
+  // 1. Depuis le mimeType (source fiable)
+  // 2. Depuis le nom original (si c'est une vraie extension courte)
+  // 3. Fallback "pdf"
+  let ext = "pdf";
+  if (mimeType) {
+    const mimeToExt: Record<string, string> = {
+      "image/jpeg": "jpg", "image/jpg": "jpg", "image/png": "png",
+      "image/webp": "webp", "image/gif": "gif", "image/heic": "heic",
+      "application/pdf": "pdf",
+      "application/msword": "doc",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+    };
+    ext = mimeToExt[mimeType] ?? "pdf";
+  } else {
+    // Extraire l'extension uniquement si elle ressemble a une vraie extension (2-4 chars)
+    const parts = originalFilename.split(".");
+    const lastPart = parts.length > 1 ? parts.pop()?.toLowerCase() : undefined;
+    if (lastPart && lastPart.length <= 5 && /^[a-z0-9]+$/.test(lastPart)) {
+      ext = lastPart;
+    }
+  }
+
   // Format strict : tout en minuscules, pas d'info supplementaire
   return `${docTypeName}-${matricule.toLowerCase()}.${ext}`;
 }

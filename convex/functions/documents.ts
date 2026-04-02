@@ -146,6 +146,7 @@ export const create = authMutation({
       args.filename,
       args.documentType,
       profile?.matricule,
+      args.mimeType,
     );
 
     // Create document with single file in files array

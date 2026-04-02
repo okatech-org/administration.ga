@@ -59,20 +59,37 @@ export const generateMatricules = internalMutation({
     let generated = 0;
 
     for (const profile of page.page) {
+      // Resoudre le code pays : countryOfResidence > org.country > "xx"
+      let countryCode = (profile as any).countryOfResidence ?? "";
+      if (!countryCode && (profile as any).managedByOrgId) {
+        const org = await ctx.db.get((profile as any).managedByOrgId);
+        countryCode = (org as any)?.country ?? "";
+      }
+      if (!countryCode && (profile as any).signaledToOrgId) {
+        const org = await ctx.db.get((profile as any).signaledToOrgId);
+        countryCode = (org as any)?.country ?? "";
+      }
+      countryCode = (countryCode || "xx").toLowerCase().slice(0, 3);
+
       if (profile.matricule) {
-        // Normaliser les matricules existants en minuscules
+        // Corriger les matricules avec "xx" si on connait maintenant le pays
         const lower = profile.matricule.toLowerCase();
-        if (lower !== profile.matricule) {
+        const hasWrongCountry = lower.includes("-xx-") && countryCode !== "xx";
+        const needsLowercase = lower !== profile.matricule;
+
+        if (hasWrongCountry) {
+          // Remplacer le code pays dans le matricule existant
+          const corrected = lower.replace(/-xx-/, `-${countryCode}-`);
+          await ctx.db.patch(profile._id, { matricule: corrected });
+          generated++;
+        } else if (needsLowercase) {
           await ctx.db.patch(profile._id, { matricule: lower });
           generated++;
         }
         continue;
       }
 
-      const matricule = await generateMatricule(
-        ctx,
-        (profile as any).countryOfResidence ?? "xx",
-      );
+      const matricule = await generateMatricule(ctx, countryCode);
       await ctx.db.patch(profile._id, { matricule });
       generated++;
     }
@@ -126,19 +143,20 @@ export const renameFiles = internalMutation({
       const matricule = (owner as any).matricule;
       if (!matricule) continue;
 
-      // Recalculer le filename pour chaque fichier
-      const originalFilename = doc.files[0].filename;
+      // Recalculer le filename pour chaque fichier (avec mimeType pour l'extension)
+      const firstFile = doc.files[0];
       const newFilename = formatDocumentFilename(
-        originalFilename,
+        firstFile.filename,
         doc.documentType,
         matricule,
+        firstFile.mimeType,
       );
 
       // Calculer le label et la catégorie corrects
       const correctLabel = DOC_TYPE_LABELS[doc.documentType];
       const correctCategory = DOC_TYPE_CATEGORIES[doc.documentType];
 
-      const needsFileRename = newFilename !== originalFilename;
+      const needsFileRename = newFilename !== firstFile.filename;
       const needsLabel = correctLabel && doc.label !== correctLabel;
       const needsCategory = correctCategory && doc.category !== correctCategory;
 
