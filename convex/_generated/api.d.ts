@@ -109,6 +109,7 @@ import type * as lib_correspondanceHelpers from "../lib/correspondanceHelpers.js
 import type * as lib_countryCodeValidator from "../lib/countryCodeValidator.js";
 import type * as lib_customFunctions from "../lib/customFunctions.js";
 import type * as lib_emailTemplates from "../lib/emailTemplates.js";
+import type * as lib_encryption from "../lib/encryption.js";
 import type * as lib_errors from "../lib/errors.js";
 import type * as lib_httpSecurity from "../lib/httpSecurity.js";
 import type * as lib_legacyProfilesMap from "../lib/legacyProfilesMap.js";
@@ -121,6 +122,7 @@ import type * as lib_posthogEvents from "../lib/posthogEvents.js";
 import type * as lib_referenceHelpers from "../lib/referenceHelpers.js";
 import type * as lib_requestWorkflow from "../lib/requestWorkflow.js";
 import type * as lib_roles from "../lib/roles.js";
+import type * as lib_startupChecks from "../lib/startupChecks.js";
 import type * as lib_taskCodes from "../lib/taskCodes.js";
 import type * as lib_territoriality from "../lib/territoriality.js";
 import type * as lib_triggerSetup from "../lib/triggerSetup.js";
@@ -134,6 +136,7 @@ import type * as limbique from "../limbique.js";
 import type * as migrations_backfillAggregates from "../migrations/backfillAggregates.js";
 import type * as migrations_backfillCopyOwnerOrgId from "../migrations/backfillCopyOwnerOrgId.js";
 import type * as migrations_fixIdentityPhotos from "../migrations/fixIdentityPhotos.js";
+import type * as migrations_fixOwnerIds from "../migrations/fixOwnerIds.js";
 import type * as migrations_initCardCounter from "../migrations/initCardCounter.js";
 import type * as migrations_migrateActionRequiredTypes from "../migrations/migrateActionRequiredTypes.js";
 import type * as migrations_normalizePhones from "../migrations/normalizePhones.js";
@@ -319,6 +322,7 @@ declare const fullApi: ApiFromModules<{
   "lib/countryCodeValidator": typeof lib_countryCodeValidator;
   "lib/customFunctions": typeof lib_customFunctions;
   "lib/emailTemplates": typeof lib_emailTemplates;
+  "lib/encryption": typeof lib_encryption;
   "lib/errors": typeof lib_errors;
   "lib/httpSecurity": typeof lib_httpSecurity;
   "lib/legacyProfilesMap": typeof lib_legacyProfilesMap;
@@ -331,6 +335,7 @@ declare const fullApi: ApiFromModules<{
   "lib/referenceHelpers": typeof lib_referenceHelpers;
   "lib/requestWorkflow": typeof lib_requestWorkflow;
   "lib/roles": typeof lib_roles;
+  "lib/startupChecks": typeof lib_startupChecks;
   "lib/taskCodes": typeof lib_taskCodes;
   "lib/territoriality": typeof lib_territoriality;
   "lib/triggerSetup": typeof lib_triggerSetup;
@@ -344,6 +349,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/backfillAggregates": typeof migrations_backfillAggregates;
   "migrations/backfillCopyOwnerOrgId": typeof migrations_backfillCopyOwnerOrgId;
   "migrations/fixIdentityPhotos": typeof migrations_fixIdentityPhotos;
+  "migrations/fixOwnerIds": typeof migrations_fixOwnerIds;
   "migrations/initCardCounter": typeof migrations_initCardCounter;
   "migrations/migrateActionRequiredTypes": typeof migrations_migrateActionRequiredTypes;
   "migrations/normalizePhones": typeof migrations_normalizePhones;

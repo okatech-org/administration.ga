@@ -56,10 +56,13 @@ const DEV_ACCOUNTS: OrgGroup[] = [
 	{
 		org: "🇪🇸 Ambassade — Espagne",
 		accounts: [
-			{ label: "Allegra Pamela BONGO — Ambassadeur", email: "ambassadegabon.madrid@gmail.com", org: "🇪🇸 Ambassade — Espagne" },
-			{ label: "Franck Elvis OGNAGNA OCKOGHO — Premier Conseiller", email: "ognagnaf@yahoo.fr", org: "🇪🇸 Ambassade — Espagne" },
-			{ label: "Mélanie EKIBA — Conseiller Affaires Consulaires", email: "chancellerie.es@gmail.com", org: "🇪🇸 Ambassade — Espagne" },
-			{ label: "Chrisalline MOUYAPOU NGOUBOU — Conseiller", email: "chrisalline.mouyapou@gouv.ga", org: "🇪🇸 Ambassade — Espagne" },
+			{ label: "Allegra Pamela BONGO — Ambassadeur", email: "allegra.bongo@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
+			{ label: "Franck Elvis OGNAGNA OCKOGHO — Premier Conseiller", email: "franck.ognagna@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
+			{ label: "Mélanie EKIBA — Conseiller Affaires Consulaires", email: "melanie.ekiba@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
+			{ label: "Chrisalline MOUYAPOU NGOUBOU — Conseiller", email: "chrisalline.mouyapou@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
+			{ label: "Valère Landry MOMBO MOUNDOUGA — Agent Consulaire", email: "valere.mombo@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
+			{ label: "Prisque Euphrasie OWANGA ESSONGUE — Agent Consulaire", email: "prisque.owanga@diplomate.ga", org: "🇪🇸 Ambassade — Espagne" },
+			{ label: "Mélanie EKIBA — Chancellerie", email: "chancellerie.es@gmail.com", org: "🇪🇸 Ambassade — Espagne" },
 		],
 	},
 ];

@@ -147,6 +147,16 @@ export function CitizenChatTab() {
 		}
 	};
 
+	// Filtrer les threads : séparer Mr Ray des threads P2P
+	// ⚠️ Doit être avant tout early return (règle des hooks React)
+	const p2pThreads = useMemo(() => {
+		if (!chatThreads) return [];
+		return (chatThreads as any[]).filter((t: any) => t.type !== "standard");
+	}, [chatThreads]);
+
+	// Compteur non-lus Mr Ray
+	const mrRayUnread = mrRayThread?.unreadCount ?? 0;
+
 	// ════════════════════════════════════════════════════════
 	// VUE CONVERSATION
 	// ════════════════════════════════════════════════════════
@@ -288,15 +298,6 @@ export function CitizenChatTab() {
 	// ════════════════════════════════════════════════════════
 	// VUE LISTE (Mr Ray épinglé + threads agents)
 	// ════════════════════════════════════════════════════════
-
-	// Filtrer les threads : séparer Mr Ray des threads P2P
-	const p2pThreads = useMemo(() => {
-		if (!chatThreads) return [];
-		return (chatThreads as any[]).filter((t: any) => t.type !== "standard");
-	}, [chatThreads]);
-
-	// Compteur non-lus Mr Ray
-	const mrRayUnread = mrRayThread?.unreadCount ?? 0;
 
 	return (
 		<div className="flex flex-col flex-1 overflow-hidden">

@@ -71,7 +71,7 @@ function UserDashboard() {
 	const { data: cvData } = useAuthenticatedConvexQuery(api.functions.cv.getMine, {});
 	const { data: childProfiles } = useAuthenticatedConvexQuery(api.functions.childProfiles.getMine, {});
 
-	// Photo d'identite : resolution fiable (lien direct OU recherche par type)
+	// Photo d'identite : resolution fiable (lien direct OU recherche par type, plus recent en priorite)
 	const { data: identityPhotoUrl } = useAuthenticatedConvexQuery(
 		api.functions.documents.getMyIdentityPhotoUrl,
 		{},

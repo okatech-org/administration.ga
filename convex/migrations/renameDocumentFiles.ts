@@ -275,7 +275,71 @@ export const linkDocumentsToProfiles = internalMutation({
         { cursor: page.continueCursor },
       );
     } else {
-      console.log("[linkDocumentsToProfiles] Migration complete terminee");
+      console.log("[linkDocumentsToProfiles] Terminee — lancement du nettoyage des doublons");
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.renameDocumentFiles.deduplicateConsularDocs,
+        { cursor: undefined },
+      );
+    }
+  },
+});
+
+/**
+ * Etape 4 : Supprimer les doublons consulaires.
+ * Pour chaque profil, ne garder qu'un seul document par type consulaire
+ * (celui lie dans profile.documents). Supprimer les autres.
+ */
+export const deduplicateConsularDocs = internalMutation({
+  args: {
+    cursor: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const page = await ctx.db.query("profiles").paginate({
+      cursor: args.cursor ?? null,
+      numItems: BATCH_SIZE,
+    });
+
+    let deleted = 0;
+
+    for (const profile of page.page) {
+      const docs = await ctx.db
+        .query("documents")
+        .withIndex("by_owner", (q: any) => q.eq("ownerId", profile._id))
+        .collect();
+
+      const profileDocs = (profile as any).documents ?? {};
+
+      // IDs des documents lies au profil (ceux a garder)
+      const linkedIds = new Set(
+        Object.values(profileDocs).filter(Boolean).map(String),
+      );
+
+      for (const docType of CONSULAR_DOC_TYPES) {
+        const docsOfType = docs.filter((d) => d.documentType === docType);
+        if (docsOfType.length <= 1) continue;
+
+        // Garder le document lie au profil, ou le plus recent
+        for (const doc of docsOfType) {
+          if (linkedIds.has(String(doc._id))) continue; // Garder celui lie
+          await ctx.db.delete(doc._id);
+          deleted++;
+        }
+      }
+    }
+
+    console.log(
+      `[deduplicateConsularDocs] Batch : ${page.page.length} profils, ${deleted} doublons supprimes`,
+    );
+
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.renameDocumentFiles.deduplicateConsularDocs,
+        { cursor: page.continueCursor },
+      );
+    } else {
+      console.log("[deduplicateConsularDocs] Migration complete terminee");
     }
   },
 });
