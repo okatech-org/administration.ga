@@ -26,6 +26,8 @@ import {
 import {
   requireCorrespondanceAccess,
   generateSequentialReference,
+  generateArrivalReference,
+  generateDepartureReference,
 } from "../lib/correspondanceHelpers";
 import { isSuperAdmin } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
@@ -519,6 +521,9 @@ async function _executeEnvoi(
     updatedAt: now,
   });
 
+  // Générer le numéro de registre de départ
+  const departureRef = await generateDepartureReference(ctx, item.copyOwnerOrgId ?? item.orgId);
+
   // Transformer l'item source en COPIE chez l'expéditeur
   await ctx.db.patch(itemId, {
     isCopy: true,
@@ -561,7 +566,7 @@ async function _executeEnvoi(
     stepType: "SENT_EMAIL",
     actorId: ctx.user._id,
     actorName: ctx.user.name ?? ctx.user.email,
-    comment: `Correspondance envoyée à ${item.recipientName}`,
+    comment: `Correspondance envoyée à ${item.recipientName} (Réf. départ : ${departureRef})`,
     isRead: true,
     createdAt: now,
   });
@@ -763,7 +768,7 @@ export const rejectCorrespondance = authMutation({
 export const registerIncoming = authMutation({
   args: {
     itemId: v.id("correspondanceItems"),
-    arrivalReference: v.string(),
+    arrivalReference: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -773,8 +778,11 @@ export const registerIncoming = authMutation({
     const orgId = item.copyOwnerOrgId ?? item.orgId;
     await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
 
+    // Auto-générer le numéro d'arrivée si non fourni
+    const ref = args.arrivalReference ?? await generateArrivalReference(ctx, orgId);
+
     await ctx.db.patch(args.itemId, {
-      arrivalReference: args.arrivalReference,
+      arrivalReference: ref,
       arrivalDate: now,
       updatedAt: now,
     });
@@ -787,7 +795,7 @@ export const registerIncoming = authMutation({
       stepType: "REGISTERED",
       actorId: ctx.user._id,
       actorName: ctx.user.name ?? ctx.user.email,
-      comment: `Enregistré sous réf. d'arrivée : ${args.arrivalReference}`,
+      comment: `Enregistré sous réf. d'arrivée : ${ref}`,
       isRead: true,
       createdAt: now,
     });

@@ -56,4 +56,12 @@ crons.daily(
   internal.actions.posthogHealthCheck.run,
 );
 
+// --- iCorrespondance ---
+// Vérification SLA : correspondances en retard (quotidien 7h UTC = 8h Paris)
+crons.daily(
+  "correspondance_check_sla",
+  { hourUTC: 7, minuteUTC: 30 },
+  internal.crons.correspondanceSla.checkOverdueSla,
+);
+
 export default crons;
