@@ -907,10 +907,12 @@ export const respondToCorrespondance = authMutation({
  *
  * Cherche la copie liée via originalItemId et met à jour son recipientStatus.
  */
+type RecipientStatus = "en_transit" | "recu" | "en_attente" | "approuve" | "repondu";
+
 async function _syncRecipientStatus(
   ctx: MutationCtx,
   receivedItemId: Id<"correspondanceItems">,
-  newStatus: string,
+  newStatus: RecipientStatus,
   now: number,
 ) {
   // L'item reçu est l'original. Trouver la copie de l'expéditeur.
