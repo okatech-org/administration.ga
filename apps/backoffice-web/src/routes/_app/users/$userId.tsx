@@ -2,6 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { useQuery as useConvexQuery, useMutation as useConvexMutation } from "convex/react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
 	ArrowLeft,
@@ -9,7 +10,9 @@ import {
 	Calendar,
 	Edit,
 	Eye,
+	KeyRound,
 	Layers,
+	Lock,
 	Mail,
 	MapPin,
 	Phone,
@@ -437,6 +440,8 @@ function UserDetailPage() {
 									)}
 								</dd>
 							</div>
+							{/* PIN Code Status */}
+							<PinStatusRow userId={userId as Id<"users">} />
 						</dl>
 					</CardContent>
 				</Card>
@@ -650,5 +655,93 @@ function UserDetailPage() {
 				</>
 			)}
 		</div>
+	);
+}
+
+// ─── PIN Status Row (inline dans la carte Sécurité) ───────
+function PinStatusRow({ userId }: { userId: Id<"users"> }) {
+	const pinStatus = useConvexQuery(api.functions.pin.adminGetPinStatus, { userId });
+	const adminDeletePin = useConvexMutation(api.functions.pin.adminDeletePin);
+	const adminUnlockPin = useConvexMutation(api.functions.pin.adminUnlockPin);
+	const [deleting, setDeleting] = useState(false);
+	const [unlocking, setUnlocking] = useState(false);
+
+	if (pinStatus === undefined || pinStatus === null) {
+		return (
+			<div className="flex items-center justify-between">
+				<dt className="text-sm text-muted-foreground">Code PIN</dt>
+				<dd className="text-sm text-muted-foreground">—</dd>
+			</div>
+		);
+	}
+
+	return (
+		<>
+			<div className="flex items-center justify-between">
+				<dt className="text-sm text-muted-foreground flex items-center gap-1.5">
+					<Lock className="h-3.5 w-3.5" /> Code PIN
+				</dt>
+				<dd className="flex items-center gap-2">
+					{pinStatus.hasPin ? (
+						<>
+							<Badge variant={pinStatus.isLocked ? "destructive" : "default"} className="text-xs">
+								{pinStatus.isLocked ? "Verrouillé" : "Actif"}
+							</Badge>
+							{pinStatus.pinCreatedAt && (
+								<span className="text-[10px] text-muted-foreground">
+									depuis {new Date(pinStatus.pinCreatedAt).toLocaleDateString("fr-FR")}
+								</span>
+							)}
+						</>
+					) : (
+						<Badge variant="outline" className="text-xs">Non configuré</Badge>
+					)}
+				</dd>
+			</div>
+			{pinStatus.hasPin && (
+				<div className="flex items-center justify-between">
+					<dt className="text-sm text-muted-foreground">Actions PIN</dt>
+					<dd className="flex items-center gap-1.5">
+						{pinStatus.isLocked && (
+							<Button
+								variant="outline"
+								size="sm"
+								className="h-6 text-[10px] gap-1"
+								disabled={unlocking}
+								onClick={async () => {
+									setUnlocking(true);
+									try { await adminUnlockPin({ userId }); } catch {}
+									setUnlocking(false);
+								}}
+							>
+								<KeyRound className="h-3 w-3" />
+								Déverrouiller
+							</Button>
+						)}
+						<Button
+							variant="ghost"
+							size="sm"
+							className="h-6 text-[10px] gap-1 text-destructive hover:text-destructive"
+							disabled={deleting}
+							onClick={async () => {
+								if (!confirm("Supprimer le code PIN de cet utilisateur ?")) return;
+								setDeleting(true);
+								try { await adminDeletePin({ userId }); } catch {}
+								setDeleting(false);
+							}}
+						>
+							<Trash2 className="h-3 w-3" />
+							Supprimer
+						</Button>
+					</dd>
+				</div>
+			)}
+			{pinStatus.hasPin && pinStatus.pinFailedAttempts > 0 && (
+				<div className="flex items-center justify-between">
+					<dt className="text-sm text-muted-foreground">Tentatives échouées</dt>
+					<dd className="text-sm text-amber-600">{pinStatus.pinFailedAttempts}/3</dd>
+				</div>
+			)}
+		</>
 	);
 }

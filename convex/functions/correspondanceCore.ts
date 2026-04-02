@@ -14,6 +14,8 @@
 import { v } from "convex/values";
 import { authMutation, authQuery } from "../lib/customFunctions";
 import { internal } from "../_generated/api";
+import type { MutationCtx } from "../_generated/server";
+import type { Doc, Id } from "../_generated/dataModel";
 import {
   correspondanceTypeValidator,
   correspondancePriorityValidator,
@@ -42,10 +44,13 @@ export const getBrouillons = authQuery({
     filterStatus: v.optional(v.union(
       v.literal("draft"),
       v.literal("pending"),
+      v.literal("rejected"),
     )),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
+    const max = args.limit ?? 100;
     const items = await ctx.db
       .query("correspondanceItems")
       .withIndex("by_owner_org_status", (q) =>
@@ -58,24 +63,26 @@ export const getBrouillons = authQuery({
         ),
       )
       .order("desc")
-      .collect();
+      .take(max);
 
-    // Si pas de filtre spécifique, inclure aussi les "pending" (en attente d'approbation)
+    // Si pas de filtre spécifique, inclure aussi pending + rejected
     if (!args.filterStatus) {
-      const pending = await ctx.db
-        .query("correspondanceItems")
-        .withIndex("by_owner_org_status", (q) =>
-          q.eq("copyOwnerOrgId", args.orgId).eq("status", "pending"),
-        )
-        .filter((q) =>
-          q.and(
-            q.neq(q.field("isCopy"), true),
-            q.eq(q.field("deletedAt"), undefined),
-          ),
-        )
-        .order("desc")
-        .collect();
-      items.push(...pending);
+      for (const status of ["pending", "rejected"] as const) {
+        const extra = await ctx.db
+          .query("correspondanceItems")
+          .withIndex("by_owner_org_status", (q) =>
+            q.eq("copyOwnerOrgId", args.orgId).eq("status", status),
+          )
+          .filter((q) =>
+            q.and(
+              q.neq(q.field("isCopy"), true),
+              q.eq(q.field("deletedAt"), undefined),
+            ),
+          )
+          .order("desc")
+          .take(max);
+        items.push(...extra);
+      }
     }
 
     return _enrichWithUrls(ctx, items);
@@ -91,9 +98,11 @@ export const getEnvoyes = authQuery({
   args: {
     orgId: v.id("orgs"),
     recipientStatusFilter: v.optional(recipientStatusValidator),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
+    const max = args.limit ?? 100;
     let items = await ctx.db
       .query("correspondanceItems")
       .withIndex("by_owner_org_copy", (q) =>
@@ -101,7 +110,7 @@ export const getEnvoyes = authQuery({
       )
       .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .order("desc")
-      .collect();
+      .take(max);
 
     if (args.recipientStatusFilter) {
       items = items.filter((i) => i.recipientStatus === args.recipientStatusFilter);
@@ -123,9 +132,11 @@ export const getRecus = authQuery({
       v.literal("non_enregistres"),
       v.literal("assignes_a_moi"),
     )),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
+    const max = args.limit ?? 100;
     let items = await ctx.db
       .query("correspondanceItems")
       .withIndex("by_owner_org_status", (q) =>
@@ -138,7 +149,7 @@ export const getRecus = authQuery({
         ),
       )
       .order("desc")
-      .collect();
+      .take(max);
 
     if (args.filter === "non_lus") {
       const userId = ctx.user._id as string;
@@ -157,9 +168,13 @@ export const getRecus = authQuery({
  * CORBEILLE — Items soft-deleted.
  */
 export const getCorbeille = authQuery({
-  args: { orgId: v.id("orgs") },
+  args: {
+    orgId: v.id("orgs"),
+    limit: v.optional(v.number()),
+  },
   handler: async (ctx, args) => {
     await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
+    const max = args.limit ?? 100;
     const items = await ctx.db
       .query("correspondanceItems")
       .withIndex("by_owner_org", (q) =>
@@ -167,7 +182,7 @@ export const getCorbeille = authQuery({
       )
       .filter((q) => q.neq(q.field("deletedAt"), undefined))
       .order("desc")
-      .collect();
+      .take(max);
 
     return _enrichWithUrls(ctx, items);
   },
@@ -459,7 +474,12 @@ export const sendCorrespondance = authMutation({
  * 1. L'item source devient la COPIE (isCopy=true, status=sent)
  * 2. Un ORIGINAL est créé chez le destinataire (isCopy=false, status=received)
  */
-async function _executeEnvoi(ctx: any, itemId: any, item: any, now: number) {
+async function _executeEnvoi(
+  ctx: MutationCtx & { user: Doc<"users"> },
+  itemId: Id<"correspondanceItems">,
+  item: Doc<"correspondanceItems">,
+  now: number,
+) {
   // Créer l'ORIGINAL chez le destinataire
   const recipientOrgId = item.primaryRecipientOrgId ?? item.orgId;
 
@@ -714,7 +734,7 @@ export const rejectCorrespondance = authMutation({
     }
 
     await ctx.db.patch(args.itemId, {
-      status: "draft",
+      status: "rejected",
       currentHolderId: item.createdBy,
       updatedAt: now,
     });
@@ -764,7 +784,7 @@ export const registerIncoming = authMutation({
 
     await ctx.db.insert("correspondanceWorkflowSteps", {
       itemId: args.itemId,
-      stepType: "VIEWED",
+      stepType: "REGISTERED",
       actorId: ctx.user._id,
       actorName: ctx.user.name ?? ctx.user.email,
       comment: `Enregistré sous réf. d'arrivée : ${args.arrivalReference}`,
@@ -888,8 +908,8 @@ export const respondToCorrespondance = authMutation({
  * Cherche la copie liée via originalItemId et met à jour son recipientStatus.
  */
 async function _syncRecipientStatus(
-  ctx: any,
-  receivedItemId: any,
+  ctx: MutationCtx,
+  receivedItemId: Id<"correspondanceItems">,
   newStatus: string,
   now: number,
 ) {
@@ -1017,7 +1037,7 @@ export const getDossier = authQuery({
 // HELPER — Enrichir avec les URLs de storage
 // ═════════════════════════════════════════════════════════════════════════════
 
-async function _enrichWithUrls(ctx: any, items: any[]) {
+async function _enrichWithUrls(ctx: { storage: { getUrl: (id: Id<"_storage">) => Promise<string | null> } }, items: Doc<"correspondanceItems">[]) {
   return await Promise.all(
     items.map(async (item) => {
       const docsWithUrls = await Promise.all(

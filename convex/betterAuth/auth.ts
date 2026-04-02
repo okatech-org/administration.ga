@@ -4,7 +4,7 @@ import { createClient } from "@convex-dev/better-auth";
 import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
 import authConfig from "../auth.config";
 import { components } from "../_generated/api";
-import { mutation, query } from "../_generated/server";
+import { internalMutation, mutation, query } from "../_generated/server";
 import { resend } from "../functions/notifications";
 import { sendSms } from "../lib/bird";
 import { detectPlatform, fromEmail } from "../lib/platform";
@@ -54,11 +54,11 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
     baseURL: process.env.CONVEX_SITE_URL,
     secret: process.env.BETTER_AUTH_SECRET,
     session: {
-      // Keep sessions alive for 30 days (default is 7 days).
-      expiresIn: 60 * 60 * 24 * 30, // 30 days in seconds
-      // Refresh the session cookie when 20% of the lifetime has passed,
-      // i.e. every ~6 days of active use.
-      updateAge: 60 * 60 * 24 * 6, // 6 days in seconds
+      // 8-hour sessions — appropriate for a diplomatic portal handling
+      // sensitive data (passports, identities, consular cards).
+      expiresIn: 60 * 60 * 8, // 8 hours in seconds
+      // Refresh at 50% of session lifetime (every 4 hours of active use).
+      updateAge: 60 * 60 * 4, // 4 hours in seconds
     },
     trustedOrigins: isDev
       ? (request) => {
@@ -82,7 +82,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,
-      requireEmailVerification: false,
+      requireEmailVerification: true,
     },
     advanced: {
       // Convex always runs on HTTPS → Better Auth infers Secure cookies.
@@ -93,10 +93,10 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
       convex({
         authConfig,
         jwt: {
-          // Convex JWT valid for 1 hour (default 15 min).
+          // Convex JWT valid for 30 minutes (hardened from 1h).
           // The ConvexBetterAuthProvider auto-refreshes before expiry
-          // using the long-lived Better Auth session cookie.
-          expirationSeconds: 60 * 60, // 1 hour
+          // using the Better Auth session cookie.
+          expirationSeconds: 60 * 30, // 30 minutes
         },
       }),
       crossDomain({
@@ -173,7 +173,7 @@ export const getCurrentUser = query({
  * Reset BetterAuth credential passwords to null, in batches.
  * Returns { done, reset, skipped, remaining } so the script can loop.
  */
-export const resetAllPasswords = mutation({
+export const resetAllPasswords = internalMutation({
   args: {},
   handler: async (ctx) => {
     const result = (await ctx.runQuery(components.betterAuth.adapter.findMany, {

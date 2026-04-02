@@ -6,6 +6,7 @@
  * 2. Mes Démarches — merged view of user requests + dossier procedures
  */
 
+import { sanitizeHtml } from "@workspace/shared/utils/sanitize";
 import { api } from "@convex/_generated/api";
 import { ServiceCategory } from "@convex/lib/constants";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -1119,7 +1120,7 @@ function ServiceDetailModal({
 								className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground"
 								// biome-ignore lint/security/noDangerouslySetInnerHtml: <Needed for rich content>
 								dangerouslySetInnerHTML={{
-									__html: serviceContent,
+									__html: sanitizeHtml(serviceContent),
 								}}
 							/>
 						</div>

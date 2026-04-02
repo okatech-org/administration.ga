@@ -10,6 +10,7 @@ import {
   customAction,
   customCtx,
 } from "convex-helpers/server/customFunctions";
+import { internal } from "../_generated/api";
 import { requireAuth, requireSuperadmin, requireBackOfficeAccess } from "./auth";
 import triggers from "../triggers";
 
@@ -116,6 +117,7 @@ export const authAction = customAction(
 
 /**
  * Custom action that requires superadmin role.
+ * Since actions don't have ctx.db, we verify the role via an internalQuery.
  */
 export const superadminAction = customAction(
   action,
@@ -123,6 +125,13 @@ export const superadminAction = customAction(
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error("NOT_AUTHENTICATED");
+    }
+    const isSuperadmin = await ctx.runQuery(
+      internal.lib.auth.checkSuperadminBySubject,
+      { subject: identity.subject },
+    );
+    if (!isSuperadmin) {
+      throw new Error("INSUFFICIENT_PERMISSIONS");
     }
     return { identity };
   }),

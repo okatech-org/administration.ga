@@ -1,7 +1,7 @@
 import { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
-import { action, mutation } from "../_generated/server";
-import { api } from "../_generated/api";
+import { internalAction, internalMutation } from "../_generated/server";
+import { internal } from "../_generated/api";
 import { buildRegistrationFormData } from "./profiles";
 import { ChildProfileStatus } from "../lib/constants";
 
@@ -9,7 +9,7 @@ import { ChildProfileStatus } from "../lib/constants";
  * Quick Action — batch mutation.
  * Finds requests with empty formData, rebuilds it from the linked profile.
  */
-export const quickActionBatch = mutation({
+export const quickActionBatch = internalMutation({
   args: {
     cursor: v.optional(v.string()),
     batchSize: v.number(),
@@ -76,7 +76,7 @@ export const quickActionBatch = mutation({
  * Usage:
  *   npx convex run functions/quickActions:runQuickAction
  */
-export const runQuickAction = action({
+export const runQuickAction = internalAction({
   args: {
     batchSize: v.optional(v.number()),
   },
@@ -92,7 +92,7 @@ export const runQuickAction = action({
     console.log(` Starting quick action with batch size ${batchSize}...`);
 
     while (!isDone) {
-      const result: any = await ctx.runMutation(api.functions.quickActions.quickActionBatch, {
+      const result: any = await ctx.runMutation(internal.functions.quickActions.quickActionBatch, {
         cursor,
         batchSize,
       });
@@ -128,7 +128,7 @@ export const runQuickAction = action({
  *  1. User auth email from the `users` table
  *  2. formData.contact_info.email / formData.contact_info.phone on the linked request
  */
-export const backfillEmailPhoneBatch = mutation({
+export const backfillEmailPhoneBatch = internalMutation({
   args: {
     cursor: v.optional(v.string()),
     batchSize: v.number(),
@@ -226,7 +226,7 @@ export const backfillEmailPhoneBatch = mutation({
  * Usage:
  *   npx convex run functions/quickActions:runBackfillEmailPhone
  */
-export const runBackfillEmailPhone = action({
+export const runBackfillEmailPhone = internalAction({
   args: {
     batchSize: v.optional(v.number()),
   },
@@ -244,7 +244,7 @@ export const runBackfillEmailPhone = action({
     console.log(` Starting email/phone backfill with batch size ${batchSize}...`);
 
     while (!isDone) {
-      const result: any = await ctx.runMutation(api.functions.quickActions.backfillEmailPhoneBatch, {
+      const result: any = await ctx.runMutation(internal.functions.quickActions.backfillEmailPhoneBatch, {
         cursor,
         batchSize,
       });

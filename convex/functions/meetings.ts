@@ -29,7 +29,7 @@ export const getForToken = internalQuery({
  */
 function generateRoomName(orgSlug: string): string {
   const ts = Date.now().toString(36);
-  const rand = Math.random().toString(36).substring(2, 8);
+  const rand = crypto.randomUUID().replace(/-/g, "").substring(0, 8);
   return `mtg-${orgSlug}-${ts}-${rand}`;
 }
 
@@ -676,7 +676,7 @@ export const callCitizenByEmail = authMutation({
     // End any stale active calls from this user
     await endStaleCalls(ctx, ctx.user._id);
 
-    const roomName = `mtg-c2c-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`;
+    const roomName = `mtg-c2c-${Date.now().toString(36)}-${crypto.randomUUID().replace(/-/g, "").substring(0, 8)}`;
 
     const titleParts = [];
     if (targetUser.firstName) titleParts.push(targetUser.firstName);
@@ -732,7 +732,7 @@ export const callCitizenById = authMutation({
     // End any stale active calls from this user
     await endStaleCalls(ctx, ctx.user._id);
 
-    const roomName = `mtg-c2c-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`;
+    const roomName = `mtg-c2c-${Date.now().toString(36)}-${crypto.randomUUID().replace(/-/g, "").substring(0, 8)}`;
 
     const titleParts = [];
     if (targetUser.firstName) titleParts.push(targetUser.firstName);

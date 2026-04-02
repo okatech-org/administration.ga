@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query, mutation, internalMutation } from "../_generated/server";
+import { mutation, internalMutation } from "../_generated/server";
 import { authQuery, authMutation } from "../lib/customFunctions";
 import { logCortexAction } from "../lib/neocortex";
 import { normalizePhone } from "../lib/phone";
@@ -16,12 +16,25 @@ export const getMe = authQuery({
 });
 
 /**
- * Get user by ID
+ * Get user by ID (authenticated, with filtered fields)
  */
-export const getById = query({
+export const getById = authQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.userId);
+    const user = await ctx.db.get(args.userId);
+    if (!user) return null;
+    // Return only safe public fields — never expose authId, pinHash, etc.
+    return {
+      _id: user._id,
+      _creationTime: user._creationTime,
+      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      avatarUrl: user.avatarUrl,
+      isActive: user.isActive,
+    };
   },
 });
 

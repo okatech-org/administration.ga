@@ -1317,6 +1317,8 @@ export enum CountryCode {
   ZW = "ZW",
 }
 
+export const countryCodes = Object.values(CountryCode);
+
 export const countryDialCodes = [
   { code: "AD", dial_code: "376" },
   { code: "AE", dial_code: "971" },

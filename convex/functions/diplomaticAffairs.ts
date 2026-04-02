@@ -120,7 +120,7 @@ export const createLetter = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const year = new Date().getFullYear();
-    const n = Math.floor(Math.random() * 100000).toString().padStart(5, "0");
+    const n = crypto.randomUUID().replace(/-/g, "").substring(0, 5).toUpperCase();
     const reference = `LD/${year}/${n}`;
 
     return await ctx.db.insert("diplomaticLetters", {

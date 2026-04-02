@@ -73,7 +73,7 @@ export const addDocumentToCorrespondance = authMutation({
     // Log workflow
     await ctx.db.insert("correspondanceWorkflowSteps", {
       itemId: args.itemId,
-      stepType: "VIEWED",
+      stepType: "DOCUMENT_ADDED",
       actorId: ctx.user._id,
       actorName: ctx.user.name ?? ctx.user.email,
       comment: `Document ajouté : ${args.filename}`,
@@ -135,7 +135,7 @@ export const removeDocumentFromCorrespondance = authMutation({
     // Log
     await ctx.db.insert("correspondanceWorkflowSteps", {
       itemId: args.itemId,
-      stepType: "VIEWED",
+      stepType: "DOCUMENT_REMOVED",
       actorId: ctx.user._id,
       actorName: ctx.user.name ?? ctx.user.email,
       comment: `Document retiré et classé dans iDocument : ${removedDoc.filename}`,
@@ -316,7 +316,7 @@ export const importDocumentFromIDocument = authMutation({
     // Log
     await ctx.db.insert("correspondanceWorkflowSteps", {
       itemId: args.correspondanceItemId,
-      stepType: "VIEWED",
+      stepType: "DOCUMENT_ADDED",
       actorId: ctx.user._id,
       actorName: ctx.user.name ?? ctx.user.email,
       comment: `Document importé depuis iDocument : ${file.filename}`,
@@ -354,6 +354,19 @@ export const disperseCorrespondance = authMutation({
     const docs = item.documents ?? [];
     const dispersedIndices = new Set<number>();
     const createdIds: string[] = [];
+
+    // Valider l'existence des organisations destinataires
+    for (const group of args.groups) {
+      if (group.recipientOrgId) {
+        const recipientOrg = await ctx.db.get(group.recipientOrgId);
+        if (!recipientOrg || (recipientOrg as any).deletedAt) {
+          throw error(
+            ErrorCode.NOT_FOUND,
+            `Organisation destinataire introuvable : ${group.recipientOrgName ?? group.recipientOrgId}`,
+          );
+        }
+      }
+    }
 
     for (const group of args.groups) {
       // Extraire les documents pour ce groupe

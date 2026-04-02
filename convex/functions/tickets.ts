@@ -18,7 +18,7 @@ import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
 // Helper function to generate ticket reference
 function generateTicketReference(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const random = crypto.randomUUID().replace(/-/g, "").substring(0, 4).toUpperCase();
   return `TCK-${timestamp}-${random}`;
 }
 

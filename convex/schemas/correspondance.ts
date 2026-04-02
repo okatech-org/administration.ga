@@ -34,6 +34,7 @@ export const correspondanceStatusValidator = v.union(
   v.literal("draft"),
   v.literal("pending"),
   v.literal("approved"),
+  v.literal("rejected"),
   v.literal("sent"),
   v.literal("received"),
   v.literal("archived"),
@@ -58,6 +59,10 @@ export const correspondanceWorkflowStepTypeValidator = v.union(
   v.literal("TRANSMITTED"),
   v.literal("SENT_EMAIL"),
   v.literal("ARCHIVED"),
+  // Types spécifiques pour les actions sur documents (remplacent la surcharge de VIEWED)
+  v.literal("DOCUMENT_ADDED"),
+  v.literal("DOCUMENT_REMOVED"),
+  v.literal("REGISTERED"),
 );
 
 const correspondanceAttachmentValidator = v.object({

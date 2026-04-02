@@ -1,3 +1,4 @@
+import { sanitizeHtml } from "@workspace/shared/utils/sanitize";
 import { api } from "@convex/_generated/api";
 import { ServiceCategory } from "@convex/lib/constants";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -558,7 +559,7 @@ function ServiceDetailModal({
 							<div
 								className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground"
 								// biome-ignore lint/security/noDangerouslySetInnerHtml: <Needed for rich content>
-								dangerouslySetInnerHTML={{ __html: serviceContent }}
+								dangerouslySetInnerHTML={{ __html: sanitizeHtml(serviceContent) }}
 							/>
 						</div>
 					</>

@@ -1096,7 +1096,7 @@ export const registerIncoming = authMutation({
 
     await ctx.db.insert("correspondanceWorkflowSteps", {
       itemId: args.itemId,
-      stepType: "VIEWED",
+      stepType: "REGISTERED",
       actorId: ctx.user._id,
       actorName: ctx.user.name ?? ctx.user.email,
       comment: "Correspondance enregistrée à l'arrivée",

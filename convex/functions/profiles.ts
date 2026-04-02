@@ -345,7 +345,7 @@ export const requestRegistration = authMutation({
     // Generate reference number
     const now = Date.now();
     const year = new Date(now).getFullYear();
-    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const random = crypto.randomUUID().replace(/-/g, "").substring(0, 8).toUpperCase();
     const reference = `REG-${year}-${random}`;
 
     // Create actual request in requests table

@@ -94,8 +94,9 @@ export async function generateSequentialReference(
  */
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   draft: ["pending", "sent", "archived"],
-  pending: ["draft", "approved"],
+  pending: ["draft", "approved", "rejected"],
   approved: ["sent", "draft"],
+  rejected: ["draft"],
   sent: ["archived"],
   received: ["archived"],
   archived: [],

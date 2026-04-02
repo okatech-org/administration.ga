@@ -817,6 +817,7 @@ export const emergencyContactValidator = v.object({
   lastName: v.string(),
   phone: v.string(),
   email: v.optional(v.string()),
+  relationship: v.optional(familyLinkValidator),
 });
 
 export type EmergencyContact = Infer<typeof emergencyContactValidator>;

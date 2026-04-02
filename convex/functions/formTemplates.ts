@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query, mutation } from "../_generated/server";
+import { query } from "../_generated/server";
 import { authMutation, authQuery } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
@@ -163,7 +163,7 @@ export const remove = authMutation({
 /**
  * Increment usage count when a template is used
  */
-export const incrementUsage = mutation({
+export const incrementUsage = authMutation({
 	args: { templateId: v.id("formTemplates") },
 	handler: async (ctx, args) => {
 		const template = await ctx.db.get(args.templateId);

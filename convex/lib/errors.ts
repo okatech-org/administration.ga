@@ -82,6 +82,15 @@ export const ErrorCode = {
 
   // Security
   POLICY_NOT_FOUND: "POLICY_NOT_FOUND",
+
+  // PIN Code
+  PIN_INVALID: "PIN_INVALID",
+  PIN_LOCKED: "PIN_LOCKED",
+  PIN_OTP_REQUIRED: "PIN_OTP_REQUIRED",
+  PIN_ALREADY_EXISTS: "PIN_ALREADY_EXISTS",
+  PIN_NOT_FOUND: "PIN_NOT_FOUND",
+  PIN_RATE_LIMITED: "PIN_RATE_LIMITED",
+  PIN_RECENT_OTP_REQUIRED: "PIN_RECENT_OTP_REQUIRED",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

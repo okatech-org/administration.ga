@@ -1,3 +1,4 @@
+import { sanitizeHtml } from "@workspace/shared/utils/sanitize";
 import { api } from "@convex/_generated/api";
 import { ServiceCategory } from "@convex/lib/validators";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -322,7 +323,7 @@ function ServiceDetailPage() {
 									<div
 										className="prose prose-sm dark:prose-invert max-w-none"
 										// biome-ignore lint/security/noDangerouslySetInnerHtml: <Needed for the feature>
-										dangerouslySetInnerHTML={{ __html: serviceContent }}
+										dangerouslySetInnerHTML={{ __html: sanitizeHtml(serviceContent) }}
 									/>
 								</CardContent>
 							</Card>

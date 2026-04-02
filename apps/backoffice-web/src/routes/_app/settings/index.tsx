@@ -4,6 +4,7 @@ import {
 	Check,
 	KeyRound,
 	Loader2,
+	Lock,
 	LogOut,
 	Mail,
 	Settings,
@@ -13,7 +14,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useConvex } from "convex/react";
+import { useConvex, useQuery as useConvexQuery, useMutation as useConvexMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useConvexMutationQuery, useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { toast } from "sonner";
@@ -524,6 +525,11 @@ function SettingsPage() {
 
 							<SettingsDivider />
 
+							{/* PIN Code section */}
+							<BackofficePinSection />
+
+							<SettingsDivider />
+
 							<SettingsSectionHeader
 								title={t("settings.account.title")}
 								description={t("settings.account.description")}
@@ -702,5 +708,57 @@ function SettingsPage() {
 				</AlertDialogContent>
 			</AlertDialog>
 		</>
+	);
+}
+
+function BackofficePinSection() {
+	const pinStatus = useConvexQuery(api.functions.pin.getPinStatus, {});
+	const createPinMut = useConvexMutation(api.functions.pin.createPin);
+	const updatePinMut = useConvexMutation(api.functions.pin.updatePin);
+	const deletePinMut = useConvexMutation(api.functions.pin.deletePin);
+	const [mode, setMode] = useState<"idle" | "create" | "modify" | "delete">("idle");
+	const [newPin, setNewPin] = useState("");
+	const [confirmPin, setConfirmPin] = useState("");
+	const [currentPin, setCurrentPin] = useState("");
+	const [pinError, setPinError] = useState<string | null>(null);
+	const [pinLoading, setPinLoading] = useState(false);
+	const resetForm = () => { setMode("idle"); setNewPin(""); setConfirmPin(""); setCurrentPin(""); setPinError(null); };
+	if (pinStatus === undefined) return null;
+	return (
+		<div>
+			<SettingsSectionHeader title="Code PIN" description={pinStatus.hasPin ? `Actif depuis le ${pinStatus.pinCreatedAt ? new Date(pinStatus.pinCreatedAt).toLocaleDateString("fr-FR") : "—"}` : "Créez un code PIN pour vous connecter plus rapidement"} />
+			<div className="py-3 space-y-3">
+				{!pinStatus.hasPin && mode === "idle" && <Button variant="outline" onClick={() => setMode("create")} className="gap-2"><Lock className="h-4 w-4" />Créer mon code PIN</Button>}
+				{pinStatus.hasPin && mode === "idle" && (
+					<div className="flex gap-2">
+						<Button variant="outline" size="sm" onClick={() => setMode("modify")} className="gap-1.5"><KeyRound className="h-3.5 w-3.5" />Modifier</Button>
+						<Button variant="ghost" size="sm" onClick={() => setMode("delete")} className="gap-1.5 text-destructive"><Trash2 className="h-3.5 w-3.5" />Supprimer</Button>
+					</div>
+				)}
+				{mode === "create" && (
+					<div className="space-y-3 p-3 border rounded-lg">
+						<div className="space-y-1"><label className="text-xs font-medium">Nouveau PIN (6 chiffres)</label><input type="password" inputMode="numeric" maxLength={6} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, "").slice(0,6))} placeholder="------" className="w-full h-10 text-center text-lg tracking-[0.3em] font-mono border rounded-md bg-background px-3" /></div>
+						<div className="space-y-1"><label className="text-xs font-medium">Confirmer</label><input type="password" inputMode="numeric" maxLength={6} value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, "").slice(0,6))} placeholder="------" className="w-full h-10 text-center text-lg tracking-[0.3em] font-mono border rounded-md bg-background px-3" /></div>
+						{pinError && <p className="text-xs text-destructive">{pinError}</p>}
+						<div className="flex gap-2"><Button size="sm" onClick={async () => { if(newPin.length!==6||newPin!==confirmPin){setPinError("Codes différents");return;} setPinLoading(true);setPinError(null);try{await createPinMut({pin:newPin});resetForm();toast.success("Code PIN créé");}catch(e:any){setPinError(e.message?.includes("OTP")?"Reconnectez-vous par OTP d'abord":(e.message??"Erreur"));}finally{setPinLoading(false);} }} disabled={pinLoading||newPin.length!==6||newPin!==confirmPin}>{pinLoading&&<Loader2 className="mr-1 h-3.5 w-3.5 animate-spin"/>}Enregistrer</Button><Button size="sm" variant="ghost" onClick={resetForm}>Annuler</Button></div>
+					</div>
+				)}
+				{mode === "modify" && (
+					<div className="space-y-3 p-3 border rounded-lg">
+						<div className="space-y-1"><label className="text-xs font-medium">PIN actuel</label><input type="password" inputMode="numeric" maxLength={6} value={currentPin} onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, "").slice(0,6))} placeholder="------" className="w-full h-10 text-center text-lg tracking-[0.3em] font-mono border rounded-md bg-background px-3" /></div>
+						<div className="space-y-1"><label className="text-xs font-medium">Nouveau PIN</label><input type="password" inputMode="numeric" maxLength={6} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, "").slice(0,6))} placeholder="------" className="w-full h-10 text-center text-lg tracking-[0.3em] font-mono border rounded-md bg-background px-3" /></div>
+						<div className="space-y-1"><label className="text-xs font-medium">Confirmer</label><input type="password" inputMode="numeric" maxLength={6} value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, "").slice(0,6))} placeholder="------" className="w-full h-10 text-center text-lg tracking-[0.3em] font-mono border rounded-md bg-background px-3" /></div>
+						{pinError && <p className="text-xs text-destructive">{pinError}</p>}
+						<div className="flex gap-2"><Button size="sm" onClick={async () => { if(newPin.length!==6||newPin!==confirmPin){setPinError("Codes différents");return;} setPinLoading(true);setPinError(null);try{await updatePinMut({currentPin,newPin});resetForm();toast.success("Code PIN modifié");}catch(e:any){setPinError(e.message?.includes("INVALID")?"PIN actuel incorrect":(e.message??"Erreur"));}finally{setPinLoading(false);} }} disabled={pinLoading}>{pinLoading&&<Loader2 className="mr-1 h-3.5 w-3.5 animate-spin"/>}Enregistrer</Button><Button size="sm" variant="ghost" onClick={resetForm}>Annuler</Button></div>
+					</div>
+				)}
+				{mode === "delete" && (
+					<div className="space-y-3 p-3 border border-destructive/20 rounded-lg bg-destructive/5">
+						<p className="text-sm">Supprimer votre code PIN ?</p>
+						<div className="flex gap-2"><Button size="sm" variant="destructive" onClick={async () => { setPinLoading(true);try{await deletePinMut({});resetForm();toast.success("PIN supprimé");}catch(e:any){setPinError(e.message??"Erreur");}finally{setPinLoading(false);} }} disabled={pinLoading}>{pinLoading&&<Loader2 className="mr-1 h-3.5 w-3.5 animate-spin"/>}Supprimer</Button><Button size="sm" variant="ghost" onClick={resetForm}>Annuler</Button></div>
+					</div>
+				)}
+			</div>
+		</div>
 	);
 }

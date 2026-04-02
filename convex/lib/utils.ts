@@ -29,7 +29,7 @@ export function notDeleted<T extends { deletedAt?: number }>(docs: T[]): T[] {
  */
 export function generateReferenceNumber(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const random = crypto.randomUUID().replace(/-/g, "").substring(0, 4).toUpperCase();
   return `REQ-${timestamp}-${random}`;
 }
 

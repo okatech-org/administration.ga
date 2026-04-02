@@ -1,5 +1,6 @@
 "use client"
 
+import { sanitizeHtml } from "@workspace/shared/utils/sanitize"
 import { useEditor, EditorContent, Editor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Image from "@tiptap/extension-image"
@@ -301,7 +302,7 @@ export function RichTextRenderer({
         "[&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg",
         className
       )}
-      dangerouslySetInnerHTML={{ __html: content }}
+      dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
     />
   )
 }
