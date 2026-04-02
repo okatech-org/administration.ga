@@ -915,7 +915,9 @@ export const respondToCorrespondance = authMutation({
  *
  * Cherche la copie liée via originalItemId et met à jour son recipientStatus.
  */
-type RecipientStatus = "en_transit" | "recu" | "en_attente" | "approuve" | "repondu";
+import { Infer } from "convex/values";
+
+type RecipientStatus = Infer<typeof recipientStatusValidator>;
 
 async function _syncRecipientStatus(
   ctx: MutationCtx,

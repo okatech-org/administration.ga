@@ -9,6 +9,7 @@
  *   npx vitest watch convex/tests/correspondance.test.ts
  */
 
+// @ts-ignore
 import { describe, it, expect } from "vitest";
 import {
   isValidTransition,
