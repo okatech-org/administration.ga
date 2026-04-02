@@ -11,7 +11,7 @@
  * Ce fichier REMPLACE progressivement les fonctions de correspondance.ts
  */
 
-import { v } from "convex/values";
+import { type Infer, v } from "convex/values";
 import { authMutation, authQuery } from "../lib/customFunctions";
 import { internal } from "../_generated/api";
 import type { MutationCtx } from "../_generated/server";
@@ -915,8 +915,6 @@ export const respondToCorrespondance = authMutation({
  *
  * Cherche la copie liée via originalItemId et met à jour son recipientStatus.
  */
-import { Infer } from "convex/values";
-
 type RecipientStatus = Infer<typeof recipientStatusValidator>;
 
 async function _syncRecipientStatus(
