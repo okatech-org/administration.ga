@@ -13,6 +13,7 @@ import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
 import { assertCanDoTask } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
 import { generateReferenceNumber } from "../lib/utils";
+import { generateRequestReference } from "../lib/referenceHelpers";
 import {
   requestStatusValidator,
   requestPriorityValidator,
@@ -39,11 +40,12 @@ export const createFromForm = authMutation({
     }
 
     const now = Date.now();
+    const reference = await generateRequestReference(ctx);
     const requestId = await ctx.db.insert("requests", {
       userId: ctx.user._id,
       orgId: orgService.orgId,
       orgServiceId: args.orgServiceId,
-      reference: generateReferenceNumber(),
+      reference,
       status: RequestStatus.Submitted,
       priority: RequestPriority.Normal,
       formData: args.formData,
@@ -109,7 +111,7 @@ export const create = authMutation({
       (id): id is Id<"documents"> => id !== undefined,
     );
 
-    const reference = args.submitNow ? generateReferenceNumber() : `DRAFT-${now}`;
+    const reference = args.submitNow ? await generateRequestReference(ctx) : `DRAFT-${now}`;
 
     const requestId = await ctx.db.insert("requests", {
       userId: ctx.user._id,
@@ -737,10 +739,11 @@ export const internalSubmit = triggeredInternalMutation({
 
     const now = Date.now();
 
+    const newReference = await generateRequestReference(ctx);
     await ctx.db.patch(args.requestId, {
       status: RequestStatus.Submitted,
       formData: args.formData ?? request.formData,
-      reference: generateReferenceNumber(),
+      reference: newReference,
       submittedAt: now,
       updatedAt: now,
     });

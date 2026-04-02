@@ -9,7 +9,7 @@
  * Usage :
  *   npx convex run migrations/fixIdentityPhotos:fix
  */
-import { internalMutation } from "../_generated/server";
+import { internalMutation, mutation } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { v } from "convex/values";
 
@@ -80,5 +80,21 @@ export const fix = internalMutation({
     } else {
       console.log("[fixIdentityPhotos] Migration terminée");
     }
+  },
+});
+
+/**
+ * Point d'entrée public pour lancer la migration via CLI :
+ *   npx convex run migrations/fixIdentityPhotos:runFix
+ */
+export const runFix = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await ctx.scheduler.runAfter(
+      0,
+      internal.migrations.fixIdentityPhotos.fix,
+      { cursor: undefined },
+    );
+    return { started: true, message: "Migration fixIdentityPhotos démarrée en arrière-plan." };
   },
 });

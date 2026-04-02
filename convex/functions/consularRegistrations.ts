@@ -18,6 +18,7 @@ import { TaskCode } from "../lib/taskCodes";
 import { registrationsByOrg } from "../lib/aggregates";
 import { logCortexAction } from "../lib/neocortex";
 import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
+import { generateMatricule } from "../lib/referenceHelpers";
 
 /**
  * List registrations by organization with optional status filter (paginated)
@@ -430,6 +431,18 @@ export const updateStatus = authMutation({
       updates.activatedAt = now;
       // Set expiration 5 years from activation
       updates.expiresAt = now + 5 * 365.25 * 24 * 60 * 60 * 1000;
+
+      // Generer le matricule consulaire si le profil n'en a pas encore
+      if (reg.profileId) {
+        const profile = await ctx.db.get(reg.profileId);
+        if (profile && !profile.matricule) {
+          const matricule = await generateMatricule(
+            ctx,
+            profile.countryOfResidence ?? "XX",
+          );
+          await ctx.db.patch(reg.profileId, { matricule });
+        }
+      }
     }
 
     await ctx.db.patch(args.registrationId, updates);

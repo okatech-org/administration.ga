@@ -101,10 +101,15 @@ export const profilesTable = defineTable({
     }),
   ),
 
+  // Matricule consulaire permanent (GAB-{CC}-{YYYY}-{NNNNN})
+  // Genere une seule fois a l'inscription consulaire, ne change jamais
+  matricule: v.optional(v.string()),
+
   updatedAt: v.optional(v.number()),
 })
   .index("by_user", ["userId"])
   .index("by_card_number", ["consularCard.cardNumber"])
+  .index("by_matricule", ["matricule"])
   .searchIndex("search_firstName", { searchField: "identity.firstName" })
   .searchIndex("search_lastName", { searchField: "identity.lastName" })
   .searchIndex("search_passportNumber", { searchField: "passportInfo.number" });

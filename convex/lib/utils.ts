@@ -25,7 +25,8 @@ export function notDeleted<T extends { deletedAt?: number }>(docs: T[]): T[] {
 }
 
 /**
- * Generate a unique reference number
+ * Generate a unique reference number (legacy, pour brouillons uniquement)
+ * @deprecated Utiliser generateRequestReference() de referenceHelpers.ts pour les demandes soumises
  */
 export function generateReferenceNumber(): string {
   const timestamp = Date.now().toString(36).toUpperCase();

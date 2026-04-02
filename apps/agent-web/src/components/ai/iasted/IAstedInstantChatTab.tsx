@@ -12,6 +12,7 @@ import {
 	Bot,
 	Building2,
 	Globe,
+	Headset,
 	Loader2,
 	MessageSquare,
 	Pin,
@@ -80,6 +81,12 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 
 	// Aplatir les groupes pour obtenir la liste des contacts
 	const allContacts = groups.flatMap((g: any) => g.contacts);
+
+	// Threads Standard (Mr Ray) pour cette org
+	const { data: standardChats } = useAuthenticatedConvexQuery(
+		api.functions.chats.listStandardChats,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
 
 	// Chat peer-to-peer — mutations
 	const { mutateAsync: initiateChat } = useConvexMutationQuery(
@@ -471,6 +478,70 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 							</span>
 						)}
 					</button>
+				)}
+
+				{/* Threads Standard (Mr Ray) — citoyens en attente */}
+				{(standardChats as any[])?.length > 0 && (
+					<div className="border-b border-border/30">
+						<div className="flex items-center gap-2 px-3 py-1.5">
+							<Headset className="h-3 w-3 text-teal-600 dark:text-teal-400 shrink-0" />
+							<span className="text-[9px] font-semibold text-teal-600 dark:text-teal-400 uppercase tracking-wider">
+								Standard
+							</span>
+							<Badge variant="outline" className="text-[7px] h-3.5 px-1 ml-auto border-teal-500/30 text-teal-600 dark:text-teal-400">
+								{(standardChats as any[]).length}
+							</Badge>
+						</div>
+						{(standardChats as any[]).map((thread: any) => (
+							<button
+								key={thread._id}
+								type="button"
+								onClick={() => setSelectedContact({
+									...thread.otherUser,
+									name: `${thread.otherUser?.firstName ?? ""} ${thread.otherUser?.lastName ?? ""}`.trim(),
+									userId: thread.otherUser?.id,
+									_chatId: thread._id,
+									isAI: false,
+									isStandard: true,
+								})}
+								className="w-full flex items-center gap-3 px-3 py-2 hover:bg-teal-500/5 transition-colors text-left"
+							>
+								<Avatar className="h-9 w-9">
+									<AvatarImage src={thread.otherUser?.avatarUrl} />
+									<AvatarFallback className="text-[10px] bg-teal-500/10 text-teal-600 dark:text-teal-400">
+										{(thread.otherUser?.firstName?.[0] ?? "") + (thread.otherUser?.lastName?.[0] ?? "")}
+									</AvatarFallback>
+								</Avatar>
+								<div className="flex-1 min-w-0">
+									<div className="flex items-center justify-between">
+										<div className="flex items-center gap-1.5">
+											<p className="text-xs font-medium truncate">
+												{thread.otherUser?.firstName ?? ""} {thread.otherUser?.lastName ?? ""}
+											</p>
+											{!thread.claimedBy && (
+												<Badge className="text-[7px] h-3.5 px-1 bg-amber-500/15 text-amber-600 border-amber-500/20">
+													En attente
+												</Badge>
+											)}
+										</div>
+										{thread.lastMessageAt && (
+											<span className="text-[9px] text-muted-foreground shrink-0 ml-2">
+												{new Date(thread.lastMessageAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+											</span>
+										)}
+									</div>
+									<p className="text-[10px] text-muted-foreground truncate">
+										{thread.lastMessageText ?? "Conversation Standard"}
+									</p>
+								</div>
+								{thread.unreadCount > 0 && (
+									<Badge className="text-[8px] h-4 min-w-[16px] px-1 bg-teal-600 text-white">
+										{thread.unreadCount}
+									</Badge>
+								)}
+							</button>
+						))}
+					</div>
 				)}
 
 				{/* Contacts groupés par org (cross-org) */}

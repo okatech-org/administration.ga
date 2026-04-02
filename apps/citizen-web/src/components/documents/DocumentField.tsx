@@ -2,7 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { DetailedDocumentType, DocumentTypeCategory } from "@convex/lib/constants";
+import { DetailedDocumentType } from "@convex/lib/constants";
 import { Check, Eye, Loader2, RefreshCw, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -49,8 +49,6 @@ interface DocumentFieldProps {
 	disabled?: boolean;
 	/** Analytics request type (if uploaded as part of a request) */
 	requestType?: string;
-	/** Profile ID for auto-naming (ex: Photo_identite_{profileId}) */
-	profileId?: Id<"profiles">;
 }
 
 /**
@@ -70,7 +68,6 @@ export function DocumentField({
 	onChange,
 	disabled = false,
 	requestType,
-	profileId,
 }: DocumentFieldProps) {
 	const { t } = useTranslation();
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -121,28 +118,13 @@ export function DocumentField({
 
 			const { storageId } = await result.json();
 
-			// Déterminer le nom de fichier, le label et la catégorie selon le type
-			let filename = file.name;
-			let docLabel: string | undefined;
-			let docCategory: string | undefined;
-
-			if (documentKey === "identityPhoto") {
-				const ext = file.name.split(".").pop() ?? "jpg";
-				const profileRef = profileId ? profileId.replace(/[^a-zA-Z0-9]/g, "") : "unknown";
-				filename = `Photo_identite_${profileRef}.${ext}`;
-				docLabel = "Photo d'identité";
-				docCategory = DocumentTypeCategory.Identity;
-			}
-
-			// Create document record - owned by current user automatically
+			// Le backend renomme automatiquement le fichier avec le matricule consulaire
 			const newDocId = await createDocument({
 				storageId,
-				filename,
+				filename: file.name,
 				mimeType: file.type,
 				sizeBytes: file.size,
 				documentType: DOC_KEY_TO_TYPE[documentKey] as any,
-				label: docLabel,
-				category: docCategory as any,
 			});
 
 			if (requestType) {

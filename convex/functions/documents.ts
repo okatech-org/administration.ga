@@ -12,6 +12,7 @@ import {
 import { ActivityType as EventType, DocumentStatus, DetailedDocumentType, DocumentTypeCategory } from "../lib/constants";
 import { logCortexAction } from "../lib/neocortex";
 import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
+import { formatDocumentFilename } from "../lib/referenceHelpers";
 
 const MAX_FILES_PER_DOCUMENT = 10;
 
@@ -132,6 +133,13 @@ export const create = authMutation({
       if (!resolvedLabel) resolvedLabel = "Photo d'identité";
     }
 
+    // Nommage du fichier avec le matricule consulaire si disponible
+    const resolvedFilename = formatDocumentFilename(
+      args.filename,
+      args.documentType,
+      profile?.matricule,
+    );
+
     // Create document with single file in files array
     const docId = await ctx.db.insert("documents", {
       ownerId,
@@ -142,7 +150,7 @@ export const create = authMutation({
       files: [
         {
           storageId: args.storageId,
-          filename: args.filename,
+          filename: resolvedFilename,
           mimeType: args.mimeType,
           sizeBytes: args.sizeBytes,
           uploadedAt: now,
