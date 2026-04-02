@@ -45,6 +45,20 @@ function resolveSiteUrl(origin?: string | null): string {
   return process.env.SITE_URL ?? "https://consulat.ga";
 }
 
+/** Valide que BETTER_AUTH_SECRET est present et suffisamment long. */
+function validateAuthSecret(): string {
+  const secret = process.env.BETTER_AUTH_SECRET;
+  if (!secret) {
+    throw new Error("[Auth] BETTER_AUTH_SECRET est manquant. Le serveur ne peut pas demarrer sans secret.");
+  }
+  if (secret.length < 32) {
+    throw new Error(
+      `[Auth] BETTER_AUTH_SECRET trop court (${secret.length} chars). Minimum 32 requis.`,
+    );
+  }
+  return secret;
+}
+
 export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | null) => {
   const isDev = process.env.DEV_SIGNIN_ENABLED === "true";
 
@@ -52,7 +66,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
     appName: "Consulat.ga",
     // CONVEX_SITE_URL is automatically provided by Convex in all environments.
     baseURL: process.env.CONVEX_SITE_URL,
-    secret: process.env.BETTER_AUTH_SECRET,
+    secret: validateAuthSecret(),
     session: {
       // 8-hour sessions — appropriate for a diplomatic portal handling
       // sensitive data (passports, identities, consular cards).

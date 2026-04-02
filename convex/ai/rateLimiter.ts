@@ -47,6 +47,13 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
     period: MINUTE,
     capacity: 10,
   },
+  // Desktop OTT generation: 5 per 5 min per session
+  "auth:ott:generate": {
+    kind: "token bucket",
+    rate: 5,
+    period: 5 * MINUTE,
+    capacity: 5,
+  },
 
   // ── Warehouse / data export ──────────────────────────────────
   // PostHog Data Warehouse sync: 60 requests per minute

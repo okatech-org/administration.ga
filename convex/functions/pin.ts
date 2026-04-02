@@ -7,13 +7,15 @@
  */
 
 import { v } from "convex/values";
-import { query, mutation } from "../_generated/server";
+import { query, mutation, internalMutation } from "../_generated/server";
 import { authQuery, authMutation, backofficeMutation, backofficeQuery } from "../lib/customFunctions";
 import { error, ErrorCode } from "../lib/errors";
 import { logCortexAction } from "../lib/neocortex";
 
 // ─── Constants ─────────────────────────────────────────────
 const PIN_REGEX = /^\d{6}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^\+?\d{7,15}$/;
 const MAX_FAILED_ATTEMPTS = 3;
 const LOCK_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 const OTP_EXPIRY_MS = 90 * 24 * 60 * 60 * 1000; // 90 jours
@@ -36,6 +38,10 @@ export const checkPinStatus = query({
     if (!args.email && !args.phone) {
       return { hasPin: false };
     }
+
+    // Valider le format des identifiants
+    if (args.email && !EMAIL_REGEX.test(args.email)) return { hasPin: false };
+    if (args.phone && !PHONE_REGEX.test(args.phone)) return { hasPin: false };
 
     // Trouver l'utilisateur
     let user;
@@ -96,7 +102,7 @@ export const getPinStatus = authQuery({
  * Vérifie le PIN d'un utilisateur (pré-auth, publique).
  * Retourne authId en cas de succès pour créer la session HTTP.
  */
-export const verifyPin = mutation({
+export const verifyPin = internalMutation({
   args: {
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
@@ -109,6 +115,14 @@ export const verifyPin = mutation({
     }
 
     if (!args.email && !args.phone) {
+      return { success: false, error: ErrorCode.INVALID_ARGUMENT };
+    }
+
+    // Valider le format des identifiants
+    if (args.email && !EMAIL_REGEX.test(args.email)) {
+      return { success: false, error: ErrorCode.INVALID_ARGUMENT };
+    }
+    if (args.phone && !PHONE_REGEX.test(args.phone)) {
       return { success: false, error: ErrorCode.INVALID_ARGUMENT };
     }
 
@@ -152,13 +166,20 @@ export const verifyPin = mutation({
     // Vérifier le PIN via scrypt (import dynamique pour éviter les problèmes de bundling)
     let isValid = false;
     try {
-      // Comparaison simple du hash — en production, utiliser verifyPassword de better-auth
-      // Pour l'instant, on utilise une comparaison directe car le hash est stocké
       const { verifyPassword } = await import("better-auth/crypto");
       isValid = await verifyPassword({ hash: pinHash, password: args.pin });
-    } catch {
-      // Fallback : comparaison directe (si better-auth/crypto pas disponible dans mutation)
-      isValid = false;
+    } catch (cryptoErr: unknown) {
+      // Erreur critique : le module crypto est indisponible
+      console.error("[PIN] Erreur crypto lors de la verification:", cryptoErr);
+      await logCortexAction(ctx, {
+        action: "PIN_CRYPTO_FAILURE",
+        categorie: "securite",
+        entiteType: "user",
+        entiteId: user._id,
+        signalType: "ALERTE_SYSTEME",
+        priorite: "CRITICAL",
+      });
+      return { success: false, error: ErrorCode.SERVICE_UNAVAILABLE };
     }
 
     if (!isValid) {

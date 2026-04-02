@@ -42,3 +42,12 @@ export const checkDevSigninRateLimit = internalMutation({
     return { ok, retryAfter: retryAfter ?? 0 };
   },
 });
+
+/** Check rate limit for OTT generation (keyed by session token). */
+export const checkOttGenerateRateLimit = internalMutation({
+  args: { key: v.string() },
+  handler: async (ctx, { key }) => {
+    const { ok, retryAfter } = await rateLimiter.limit(ctx, "auth:ott:generate", { key });
+    return { ok, retryAfter: retryAfter ?? 0 };
+  },
+});
