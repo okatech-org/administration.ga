@@ -103,10 +103,10 @@ return mismatch === 0; // ✅ Résistant aux timing attacks
 ### 🔴 CRITIQUE — Faille #1 : Secrets Exposés dans `.env.local`
 
 ```bash
-# Ce fichier contient des secrets en clair
-LIVEKIT_API_KEY=APItD4N8DQeC6RA           ← À RÉVOQUER IMMÉDIATEMENT
-LIVEKIT_API_SECRET=9fgefw7tj8UG8fQd...    ← À RÉVOQUER IMMÉDIATEMENT
-BIRD_API_KEY=HRH1FBFNPS8bh30jtAoWy...    ← À RÉVOQUER IMMÉDIATEMENT
+# Les clés suivantes ont été exposées et doivent être régénérées
+LIVEKIT_API_KEY=***REDACTED***
+LIVEKIT_API_SECRET=***REDACTED***
+BIRD_API_KEY=***REDACTED***
 ```
 
 **Impact :** Appels LiveKit frauduleux, SMS/WhatsApp abuse, coûts financiers.

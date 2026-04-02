@@ -312,9 +312,9 @@ const securityHeaders = [
 
 **Fichier** : `.env.local`
 ```
-LIVEKIT_API_SECRET=9fgefw7tj8UG8fQdH04XsxM2ZsEqphrnOEsgU2rrufoD  ← SECRET SERVICE
-BIRD_API_KEY=HRH1FBFNPS8bh30jtAoWyaRuNuqF2HRxAvE8              ← SMS/WhatsApp
-STRIPE_SECRET_KEY=...  (probablement dans les env Convex)
+LIVEKIT_API_SECRET=***REDACTED***  ← À RÉVOQUER ET RÉGÉNÉRER
+BIRD_API_KEY=***REDACTED***       ← À RÉVOQUER ET RÉGÉNÉRER
+STRIPE_SECRET_KEY=***REDACTED***  ← À RÉVOQUER ET RÉGÉNÉRER
 ```
 
 **Impact** : Si `.env.local` est accidentellement commité ou si l'environnement dev est compromis, **toutes les clés sont exposées**. Le `.gitignore` est configuré correctement (`.env.*`), mais la rotation n'est pas documentée.
