@@ -193,7 +193,89 @@ export const renameFiles = internalMutation({
         { cursor: page.continueCursor },
       );
     } else {
-      console.log("[renameFiles] Migration terminee");
+      console.log("[renameFiles] Terminee — lancement du lien profil-documents");
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.renameDocumentFiles.linkDocumentsToProfiles,
+        { cursor: undefined },
+      );
+    }
+  },
+});
+
+/** Map documentType → cle dans profile.documents */
+const DOC_TO_PROFILE_KEY: Record<string, string> = {
+  identity_photo: "identityPhoto",
+  passport: "passport",
+  proof_of_address: "proofOfAddress",
+  birth_certificate: "birthCertificate",
+  residence_permit: "proofOfResidency",
+};
+
+/**
+ * Etape 3 : Lier les documents existants au profil.
+ * Pour chaque profil, verifie que profile.documents.{key} pointe vers un document existant.
+ * Si le lien manque mais qu'un document du bon type existe, cree le lien.
+ */
+export const linkDocumentsToProfiles = internalMutation({
+  args: {
+    cursor: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const page = await ctx.db.query("profiles").paginate({
+      cursor: args.cursor ?? null,
+      numItems: BATCH_SIZE,
+    });
+
+    let linked = 0;
+
+    for (const profile of page.page) {
+      // Recuperer tous les documents du profil
+      const docs = await ctx.db
+        .query("documents")
+        .withIndex("by_owner", (q: any) => q.eq("ownerId", profile._id))
+        .collect();
+
+      const currentDocs = (profile as any).documents ?? {};
+      let needsUpdate = false;
+      const updatedDocs = { ...currentDocs };
+
+      for (const [docType, profileKey] of Object.entries(DOC_TO_PROFILE_KEY)) {
+        // Si le lien existe deja et pointe vers un document valide, passer
+        if (currentDocs[profileKey]) {
+          const existing = await ctx.db.get(currentDocs[profileKey]);
+          if (existing) continue;
+        }
+
+        // Chercher un document du bon type
+        const match = docs.find(
+          (d) => d.documentType === docType && d.files?.length > 0,
+        );
+
+        if (match) {
+          updatedDocs[profileKey] = match._id;
+          needsUpdate = true;
+        }
+      }
+
+      if (needsUpdate) {
+        await ctx.db.patch(profile._id, { documents: updatedDocs });
+        linked++;
+      }
+    }
+
+    console.log(
+      `[linkDocumentsToProfiles] Batch : ${page.page.length} profils scannes, ${linked} lies`,
+    );
+
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.renameDocumentFiles.linkDocumentsToProfiles,
+        { cursor: page.continueCursor },
+      );
+    } else {
+      console.log("[linkDocumentsToProfiles] Migration complete terminee");
     }
   },
 });

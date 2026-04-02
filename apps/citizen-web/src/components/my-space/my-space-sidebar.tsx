@@ -65,7 +65,7 @@ function SidebarText({
 	return (
 		<span
 			className={cn(
-				"truncate text-sm whitespace-nowrap transition-opacity duration-200",
+				"truncate text-[15px] whitespace-nowrap transition-opacity duration-200",
 				isExpanded ? "opacity-100 delay-100" : "opacity-0 w-0 overflow-hidden",
 				className,
 			)}
@@ -104,13 +104,11 @@ export function MySpaceSidebar({
 					title: "iProfil",
 					url: "/my-space",
 					icon: User,
-					color: "text-teal-600 dark:text-teal-400",
 				},
 				{
 					title: "iDocument",
 					url: "/my-space/idocument",
 					icon: FileText,
-					color: "text-teal-600 dark:text-teal-400",
 				},
 			],
 		},
@@ -121,19 +119,16 @@ export function MySpaceSidebar({
 					title: "iBoîte",
 					url: "/my-space/iboite",
 					icon: Mail,
-					color: "text-blue-500",
 				},
 				{
 					title: "iAsted",
 					url: "/my-space/iasted",
 					icon: Bot,
-					color: "text-amber-500",
 				},
 				{
 					title: "iAgenda",
 					url: "/my-space/iagenda",
 					icon: Calendar,
-					color: "text-blue-500",
 				},
 			],
 		},
@@ -144,7 +139,6 @@ export function MySpaceSidebar({
 					title: "Mes Démarches",
 					url: "/my-space/services-demarches",
 					icon: Briefcase,
-					color: "text-teal-600 dark:text-teal-400",
 				},
 			],
 		},
@@ -245,7 +239,6 @@ export function MySpaceSidebar({
 										<item.icon className={cn(
 											"size-[18px] shrink-0 transition-colors",
 											active && "text-teal-600 dark:text-teal-400",
-											!active && item.color,
 										)} />
 										<SidebarText isExpanded={isExpanded}>
 											{item.title}
@@ -294,13 +287,13 @@ export function MySpaceSidebar({
 										type="button"
 										onClick={() => setChildrenOpen(!childrenOpen)}
 										className={cn(
-											" w-full flex items-center gap-3 px-3 h-10 transition-all duration-200 text-sm",
+											" w-full flex items-center gap-3 px-3 h-10 transition-all duration-200 text-[15px]",
 											childrenOpen
 												? "active bg-pink-500/8 text-pink-600 font-semibold"
 												: "text-muted-foreground hover:text-foreground",
 										)}
 									>
-										<Users className="size-[18px] shrink-0 text-pink-500" />
+										<Users className="size-[18px] shrink-0" />
 										<span className="flex-1 text-left truncate">Mes Enfants</span>
 										<span className="text-[8px] bg-pink-500/12 text-pink-500 font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
 											{children.length}
@@ -322,13 +315,13 @@ export function MySpaceSidebar({
 														key={child._id}
 														to={childUrl as any}
 														className={cn(
-															" flex items-center gap-2.5 px-3 h-9 text-sm",
+															" flex items-center gap-2.5 px-3 h-9 text-[14px]",
 															active
 																? "active text-pink-600 font-semibold"
 																: "text-muted-foreground hover:text-foreground",
 														)}
 													>
-														<Baby className="size-4 shrink-0 text-pink-400" />
+														<Baby className="size-4 shrink-0" />
 														<span className="truncate">{child.identity?.firstName ?? "Enfant"}</span>
 													</Link>
 												);

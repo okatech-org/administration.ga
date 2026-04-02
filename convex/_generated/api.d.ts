@@ -116,6 +116,7 @@ import type * as lib_permissions from "../lib/permissions.js";
 import type * as lib_phone from "../lib/phone.js";
 import type * as lib_platform from "../lib/platform.js";
 import type * as lib_posthogEvents from "../lib/posthogEvents.js";
+import type * as lib_referenceHelpers from "../lib/referenceHelpers.js";
 import type * as lib_requestWorkflow from "../lib/requestWorkflow.js";
 import type * as lib_roles from "../lib/roles.js";
 import type * as lib_taskCodes from "../lib/taskCodes.js";
@@ -134,6 +135,7 @@ import type * as migrations_fixIdentityPhotos from "../migrations/fixIdentityPho
 import type * as migrations_initCardCounter from "../migrations/initCardCounter.js";
 import type * as migrations_migrateActionRequiredTypes from "../migrations/migrateActionRequiredTypes.js";
 import type * as migrations_normalizePhones from "../migrations/normalizePhones.js";
+import type * as migrations_renameDocumentFiles from "../migrations/renameDocumentFiles.js";
 import type * as monitoring from "../monitoring.js";
 import type * as moteur from "../moteur.js";
 import type * as plasticite from "../plasticite.js";
@@ -321,6 +323,7 @@ declare const fullApi: ApiFromModules<{
   "lib/phone": typeof lib_phone;
   "lib/platform": typeof lib_platform;
   "lib/posthogEvents": typeof lib_posthogEvents;
+  "lib/referenceHelpers": typeof lib_referenceHelpers;
   "lib/requestWorkflow": typeof lib_requestWorkflow;
   "lib/roles": typeof lib_roles;
   "lib/taskCodes": typeof lib_taskCodes;
@@ -339,6 +342,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/initCardCounter": typeof migrations_initCardCounter;
   "migrations/migrateActionRequiredTypes": typeof migrations_migrateActionRequiredTypes;
   "migrations/normalizePhones": typeof migrations_normalizePhones;
+  "migrations/renameDocumentFiles": typeof migrations_renameDocumentFiles;
   monitoring: typeof monitoring;
   moteur: typeof moteur;
   plasticite: typeof plasticite;

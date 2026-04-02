@@ -71,13 +71,11 @@ function UserDashboard() {
 	const { data: cvData } = useAuthenticatedConvexQuery(api.functions.cv.getMine, {});
 	const { data: childProfiles } = useAuthenticatedConvexQuery(api.functions.childProfiles.getMine, {});
 
-	// Load identity photo from profile documents
-	const identityPhotoId = (profile as any)?.documents?.identityPhoto;
-	const { data: identityPhotoDocs } = useAuthenticatedConvexQuery(
-		api.functions.documents.getDocumentsByIds,
-		identityPhotoId ? { ids: [identityPhotoId] } : "skip",
+	// Photo d'identite : resolution fiable (lien direct OU recherche par type)
+	const { data: identityPhotoUrl } = useAuthenticatedConvexQuery(
+		api.functions.documents.getMyIdentityPhotoUrl,
+		{},
 	);
-	const identityPhotoUrl = (identityPhotoDocs as any)?.[0]?.files?.[0]?.url ?? null;
 
 	const children = (childProfiles ?? []) as any[];
 	const p = profile as any;

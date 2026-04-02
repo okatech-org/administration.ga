@@ -48,13 +48,11 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 			: "skip",
 	);
 
-	// Resoudre l'URL de la photo d'identite depuis profile.documents
-	const identityPhotoId = profile?.documents?.identityPhoto;
-	const { data: identityPhotoDocs } = useAuthenticatedConvexQuery(
-		api.functions.documents.getDocumentsByIds,
-		identityPhotoId ? { ids: [identityPhotoId] } : "skip",
+	// Photo d'identite : resolution fiable (lien direct OU recherche par type)
+	const { data: identityPhotoUrl } = useAuthenticatedConvexQuery(
+		api.functions.documents.getMyIdentityPhotoUrl,
+		{},
 	);
-	const identityPhotoUrl = (identityPhotoDocs as any)?.[0]?.files?.[0]?.url ?? null;
 
 	const hasValidCard =
 		profile?.consularCard?.cardNumber &&
