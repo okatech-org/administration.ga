@@ -34,33 +34,16 @@ export const fix = internalMutation({
       const needsCategoryFix = !doc.category || doc.category === "other";
       const needsLabelFix = !doc.label || doc.label === "Autre";
 
-      // Vérifier si le filename a besoin d'être renommé
-      const firstFile = doc.files?.[0];
-      const needsFilenameFix = firstFile && !firstFile.filename.startsWith("Photo_identite_");
-
-      if (!needsCategoryFix && !needsLabelFix && !needsFilenameFix) continue;
+      if (!needsCategoryFix && !needsLabelFix) continue;
 
       const patch: Record<string, unknown> = { updatedAt: Date.now() };
 
-      // Corriger la catégorie
       if (needsCategoryFix) {
         patch.category = "identity";
       }
 
-      // Corriger le label
       if (needsLabelFix) {
         patch.label = "Photo d'identité";
-      }
-
-      // Renommer le fichier
-      if (needsFilenameFix && firstFile) {
-        const ext = firstFile.filename.split(".").pop() ?? "jpg";
-        const ownerRef = String(doc.ownerId).replace(/[^a-zA-Z0-9]/g, "");
-        const newFilename = `Photo_identite_${ownerRef}.${ext}`;
-
-        patch.files = doc.files.map((f, i) =>
-          i === 0 ? { ...f, filename: newFilename } : f,
-        );
       }
 
       await ctx.db.patch(doc._id, patch);
