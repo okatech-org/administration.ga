@@ -30,18 +30,15 @@ import {
   correspondanceStatusValidator,
   correspondanceWorkflowStepTypeValidator,
 } from "../schemas/correspondance";
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-/** Generate a diplomatic reference number: DIPL/YYYY/TYPE/00042 */
-function generateReference(type: string): string {
-  const year = new Date().getFullYear();
-  const code = type.substring(0, 3).toUpperCase();
-  const n = Math.floor(Math.random() * 100000)
-    .toString()
-    .padStart(5, "0");
-  return `DIPL/${year}/${code}/${n}`;
-}
+import {
+  requireCorrespondanceAccess,
+  generateSequentialReference,
+  assertValidTransition,
+} from "../lib/correspondanceHelpers";
+import { getMembership } from "../lib/auth";
+import { assertCanDoTask, isSuperAdmin } from "../lib/permissions";
+import { TaskCode } from "../lib/taskCodes";
+import { error, ErrorCode } from "../lib/errors";
 
 // ═════════════════════════════════════════════════════════════════════════════
 // FOLDERS
@@ -51,6 +48,7 @@ function generateReference(type: string): string {
 export const getFolders = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     return await ctx.db
       .query("correspondanceFolders")
       .withIndex("by_org_deleted", (q) =>
@@ -69,6 +67,7 @@ export const createFolder = authMutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "create");
     const now = Date.now();
     return await ctx.db.insert("correspondanceFolders", {
       orgId: args.orgId,
@@ -89,6 +88,9 @@ export const renameFolder = authMutation({
     name: v.string(),
   },
   handler: async (ctx, args) => {
+    const folder = await ctx.db.get(args.folderId);
+    if (!folder) throw error(ErrorCode.NOT_FOUND, "Dossier introuvable");
+    await requireCorrespondanceAccess(ctx, ctx.user, folder.orgId, "create");
     await ctx.db.patch(args.folderId, {
       name: args.name,
       updatedAt: Date.now(),
@@ -100,6 +102,9 @@ export const renameFolder = authMutation({
 export const deleteFolder = authMutation({
   args: { folderId: v.id("correspondanceFolders") },
   handler: async (ctx, args) => {
+    const folder = await ctx.db.get(args.folderId);
+    if (!folder) throw error(ErrorCode.NOT_FOUND, "Dossier introuvable");
+    await requireCorrespondanceAccess(ctx, ctx.user, folder.orgId, "create");
     await ctx.db.patch(args.folderId, { deletedAt: Date.now() });
   },
 });
@@ -115,6 +120,7 @@ export const getItems = authQuery({
     folderId: v.optional(v.id("correspondanceFolders")),
   },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     let items = await ctx.db
       .query("correspondanceItems")
       .withIndex("by_org_deleted", (q) =>
@@ -149,6 +155,10 @@ export const getItem = authQuery({
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.itemId);
     if (!item) return null;
+
+    // Vérifier l'accès à l'org propriétaire
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "view");
 
     const attachmentsWithUrls = await Promise.all(
       item.attachments.map(async (att) => ({
@@ -211,8 +221,9 @@ export const createItem = authMutation({
     ),
   },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "create");
     const now = Date.now();
-    const reference = generateReference(args.type);
+    const reference = await generateSequentialReference(ctx, args.type);
 
     const itemId = await ctx.db.insert("correspondanceItems", {
       orgId: args.orgId,
@@ -308,6 +319,11 @@ export const updateItem = authMutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
+
     const { itemId, ...fields } = args;
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     if (fields.folderId !== undefined) updates.folderId = fields.folderId;
@@ -319,16 +335,46 @@ export const updateItem = authMutation({
   },
 });
 
-/** Update item status directly */
+/**
+ * Update item status with transition validation, access control, and audit trail.
+ *
+ * Seuls les utilisateurs avec la permission correspondance.admin ou le
+ * currentHolder du dossier peuvent changer le statut, et uniquement
+ * vers les statuts autorisés par la matrice de transitions.
+ */
 export const updateStatus = authMutation({
   args: {
     itemId: v.id("correspondanceItems"),
     status: correspondanceStatusValidator,
+    comment: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const now = Date.now();
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+
+    // Contrôle d'accès : membership dans l'org
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "admin");
+
+    // Valider la transition
+    assertValidTransition(item.status, args.status);
+
+    // Appliquer la transition
     await ctx.db.patch(args.itemId, {
       status: args.status,
-      updatedAt: Date.now(),
+      updatedAt: now,
+    });
+
+    // Trace d'audit
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: args.itemId,
+      stepType: args.status === "archived" ? "ARCHIVED" : "VIEWED",
+      actorId: ctx.user._id,
+      actorName: ctx.user.name ?? ctx.user.email,
+      comment: args.comment ?? `Statut changé manuellement : ${item.status} → ${args.status}`,
+      isRead: true,
+      createdAt: now,
     });
   },
 });
@@ -337,6 +383,10 @@ export const updateStatus = authMutation({
 export const deleteItem = authMutation({
   args: { itemId: v.id("correspondanceItems") },
   handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
     await ctx.db.patch(args.itemId, { deletedAt: Date.now() });
   },
 });
@@ -364,7 +414,9 @@ export const addAttachment = authMutation({
   },
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Item not found");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
 
     const attachment = {
       storageId: args.storageId,
@@ -389,6 +441,11 @@ export const addAttachment = authMutation({
 export const getWorkflowHistory = authQuery({
   args: { itemId: v.id("correspondanceItems") },
   handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item) return [];
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "view");
+
     return await ctx.db
       .query("correspondanceWorkflowSteps")
       .withIndex("by_item_created", (q) => q.eq("itemId", args.itemId))
@@ -397,7 +454,10 @@ export const getWorkflowHistory = authQuery({
   },
 });
 
-/** Submit for approval (status → pending, assign holder) */
+/**
+ * @deprecated Utiliser correspondanceCore.sendCorrespondance() qui intègre
+ * la résolution automatique de la chaîne d'approbation.
+ */
 export const submitForApproval = authMutation({
   args: {
     itemId: v.id("correspondanceItems"),
@@ -405,6 +465,11 @@ export const submitForApproval = authMutation({
     comment: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "transmit");
+    assertValidTransition(item.status, "pending");
     const now = Date.now();
 
     await ctx.db.patch(args.itemId, {
@@ -430,7 +495,10 @@ export const submitForApproval = authMutation({
   },
 });
 
-/** Approve an item (holder approves → status = approved) */
+/**
+ * @deprecated Utiliser correspondanceCore.approveAndSend() qui gère
+ * la chaîne multi-niveaux et l'envoi automatique.
+ */
 export const approveItem = authMutation({
   args: {
     itemId: v.id("correspondanceItems"),
@@ -439,7 +507,16 @@ export const approveItem = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Item not found");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+
+    // Seul le currentHolder peut approuver
+    if (item.currentHolderId && item.currentHolderId !== ctx.user._id && !isSuperAdmin(ctx.user)) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Seul le détenteur actuel peut approuver");
+    }
+
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "approve");
+    assertValidTransition(item.status, "approved");
 
     await ctx.db.patch(args.itemId, {
       status: "approved",
@@ -465,7 +542,10 @@ export const approveItem = authMutation({
   },
 });
 
-/** Reject an item with a reason */
+/**
+ * @deprecated Utiliser correspondanceCore.rejectCorrespondance() qui gère
+ * les étapes d'approbation multi-niveaux.
+ */
 export const rejectItem = authMutation({
   args: {
     itemId: v.id("correspondanceItems"),
@@ -474,7 +554,15 @@ export const rejectItem = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Item not found");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+
+    // Seul le currentHolder peut rejeter
+    if (item.currentHolderId && item.currentHolderId !== ctx.user._id && !isSuperAdmin(ctx.user)) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Seul le détenteur actuel peut rejeter");
+    }
+
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "approve");
 
     await ctx.db.patch(args.itemId, {
       status: "draft",
@@ -498,7 +586,10 @@ export const rejectItem = authMutation({
   },
 });
 
-/** Mark item as sent (email or internal) and log the step */
+/**
+ * @deprecated Utiliser correspondanceCore.sendCorrespondance() qui crée
+ * le mécanisme copie/original automatiquement.
+ */
 export const markAsSent = authMutation({
   args: {
     itemId: v.id("correspondanceItems"),
@@ -506,6 +597,11 @@ export const markAsSent = authMutation({
     comment: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "transmit");
+    assertValidTransition(item.status, "sent");
     const now = Date.now();
 
     await ctx.db.patch(args.itemId, {
@@ -534,6 +630,11 @@ export const markAsSent = authMutation({
 export const archiveItem = authMutation({
   args: { itemId: v.id("correspondanceItems") },
   handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "transmit");
+    assertValidTransition(item.status, "archived");
     const now = Date.now();
 
     await ctx.db.patch(args.itemId, {
@@ -560,6 +661,7 @@ export const archiveItem = authMutation({
 export const getCurrentUserSenderInfo = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     const org = await ctx.db.get(args.orgId);
 
     const membership = await ctx.db
@@ -678,6 +780,7 @@ export const getItemsByDirection = authQuery({
     direction: v.union(v.literal("incoming"), v.literal("outgoing")),
   },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     const items = await ctx.db
       .query("correspondanceItems")
       .withIndex("by_org_direction", (q) =>
@@ -695,6 +798,7 @@ export const getItemsByDirection = authQuery({
 export const getOverdueItems = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     const now = Date.now();
     const items = await ctx.db
       .query("correspondanceItems")
@@ -750,6 +854,7 @@ export const searchItems = authQuery({
     searchText: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     if (!args.searchText.trim()) return [];
 
     const results = await ctx.db
@@ -767,6 +872,7 @@ export const searchItems = authQuery({
 export const getPendingApprovalCount = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     const pending = await ctx.db
       .query("correspondanceItems")
       .withIndex("by_holder", (q) => q.eq("currentHolderId", ctx.user._id))
@@ -788,11 +894,11 @@ export const getPendingApprovalCount = authQuery({
 // ═════════════════════════════════════════════════════════════════════════════
 
 /**
+ * @deprecated Utiliser correspondanceCore.sendCorrespondance() qui intègre
+ * la résolution automatique de la chaîne d'approbation hiérarchique.
+ *
  * Envoyer une correspondance — crée l'original chez le destinataire
  * et transforme l'item source en copie chez l'expéditeur.
- *
- * C'est le cœur du modèle "correspondance mobile" :
- * l'original se déplace, l'expéditeur conserve une copie.
  */
 export const sendCorrespondance = authMutation({
   args: {
@@ -801,22 +907,24 @@ export const sendCorrespondance = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Correspondance introuvable");
-    if (item.deletedAt) throw new Error("Correspondance supprimée");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+    if (item.deletedAt) throw error(ErrorCode.VALIDATION_ERROR, "Correspondance supprimée");
+
+    // Contrôle d'accès org
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "transmit");
 
     // Vérifier le status — seuls draft et approved peuvent être envoyés
-    if (item.status !== "draft" && item.status !== "approved") {
-      throw new Error(`Impossible d'envoyer une correspondance en statut "${item.status}"`);
-    }
+    assertValidTransition(item.status, "sent");
 
     // Vérifier que l'expéditeur est le créateur ou a approuvé
-    if (item.createdBy !== ctx.user._id && item.approvedById !== ctx.user._id) {
-      throw new Error("Seul le créateur ou l'approbateur peut envoyer");
+    if (item.createdBy !== ctx.user._id && item.approvedById !== ctx.user._id && !isSuperAdmin(ctx.user)) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Seul le créateur ou l'approbateur peut envoyer");
     }
 
     // Vérifier qu'il y a un destinataire
     if (!item.primaryRecipientOrgId) {
-      throw new Error("Aucune organisation destinataire définie");
+      throw error(ErrorCode.VALIDATION_ERROR, "Aucune organisation destinataire définie");
     }
 
     // ── Étape 1 : Créer l'item REÇU chez le destinataire ──
@@ -849,8 +957,6 @@ export const sendCorrespondance = authMutation({
       confidentialite: item.confidentialite,
       parentItemId: item.parentItemId,
       dateReponseAttendue: item.dateReponseAttendue,
-      recipientStatus: "recu",
-      recipientStatusUpdatedAt: now,
       createdAt: now,
       updatedAt: now,
     });
@@ -868,7 +974,7 @@ export const sendCorrespondance = authMutation({
       originalItemId: receivedItemId,
       status: "sent",
       sentAt: now,
-      recipientStatus: "recu",
+      recipientStatus: "en_transit",
       recipientStatusUpdatedAt: now,
       documents: copyDocuments,
       updatedAt: now,
@@ -965,7 +1071,7 @@ export const registerIncoming = authMutation({
     }
 
     await ctx.db.patch(args.itemId, {
-      arrivalReference: args.arrivalReference ?? `ARR/${new Date().getFullYear()}/${Math.floor(Math.random() * 100000).toString().padStart(5, "0")}`,
+      arrivalReference: args.arrivalReference,
       arrivalDate: now,
       recipientStatus: "recu",
       recipientStatusUpdatedAt: now,
@@ -1075,7 +1181,7 @@ export const respondToCorrespondance = authMutation({
     if (!original) throw new Error("Correspondance originale introuvable");
 
     // Créer la réponse (nouvelle correspondance sortante liée)
-    const reference = generateReference(original.type);
+    const reference = await generateSequentialReference(ctx, original.type);
     const responseItemId = await ctx.db.insert("correspondanceItems", {
       orgId: original.orgId,
       copyOwnerOrgId: original.copyOwnerOrgId ?? original.orgId,

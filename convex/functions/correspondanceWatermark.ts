@@ -8,15 +8,16 @@
 "use node";
 
 import { v } from "convex/values";
-import { action } from "../_generated/server";
-import { api } from "../_generated/api";
+import { authAction } from "../lib/customFunctions";
 
 /**
  * Générer une version filigranée d'un PDF.
  * Télécharge le PDF depuis Convex Storage, ajoute "COPIE" en filigrane,
  * et stocke la version filigranée.
+ *
+ * Requiert authentification (authAction).
  */
-export const generateWatermarkedPdf = action({
+export const generateWatermarkedPdf = authAction({
   args: {
     storageId: v.id("_storage"),
   },

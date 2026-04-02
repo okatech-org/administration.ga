@@ -10,6 +10,8 @@ import { v } from "convex/values";
 import { authMutation, authQuery } from "../lib/customFunctions";
 import { DocumentStatus } from "../lib/constants";
 import { correspondanceDocumentValidator } from "../schemas/correspondance";
+import { requireCorrespondanceAccess, generateSequentialReference } from "../lib/correspondanceHelpers";
+import { error, ErrorCode } from "../lib/errors";
 
 // ═════════════════════════════════════════════════════════════════════════════
 // DOCUMENT ACTIONS
@@ -32,7 +34,9 @@ export const addDocumentToCorrespondance = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Dossier de correspondance introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Dossier de correspondance introuvable");
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
 
     const currentDocs = item.documents ?? [];
     const maxOrdre = currentDocs.length > 0
@@ -90,11 +94,13 @@ export const removeDocumentFromCorrespondance = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Dossier de correspondance introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Dossier de correspondance introuvable");
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
 
     const docs = item.documents ?? [];
     if (args.documentIndex < 0 || args.documentIndex >= docs.length) {
-      throw new Error("Index de document invalide");
+      throw error(ErrorCode.VALIDATION_ERROR, "Index de document invalide");
     }
 
     const removedDoc = docs[args.documentIndex];
@@ -151,11 +157,13 @@ export const reorderDocuments = authMutation({
   },
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Dossier introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Dossier introuvable");
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
 
     const docs = item.documents ?? [];
     if (args.newOrder.length !== docs.length) {
-      throw new Error("Le nombre d'indices ne correspond pas au nombre de documents");
+      throw error(ErrorCode.VALIDATION_ERROR, "Le nombre d'indices ne correspond pas au nombre de documents");
     }
 
     const reordered = args.newOrder.map((oldIndex, newIndex) => ({
@@ -187,7 +195,9 @@ export const classerCorrespondanceDansIDocument = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Dossier introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Dossier introuvable");
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "transmit");
 
     const docs = item.documents ?? [];
     const createdDocIds: string[] = [];
@@ -262,10 +272,12 @@ export const importDocumentFromIDocument = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.correspondanceItemId);
-    if (!item) throw new Error("Dossier de correspondance introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Dossier de correspondance introuvable");
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
 
     const doc = await ctx.db.get(args.documentId);
-    if (!doc) throw new Error("Document iDocument introuvable");
+    if (!doc) throw error(ErrorCode.NOT_FOUND, "Document iDocument introuvable");
 
     const file = doc.files?.[0];
     if (!file) throw new Error("Aucun fichier dans le document iDocument");
@@ -335,7 +347,9 @@ export const disperseCorrespondance = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Dossier introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Dossier introuvable");
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "transmit");
 
     const docs = item.documents ?? [];
     const dispersedIndices = new Set<number>();
@@ -353,8 +367,8 @@ export const disperseCorrespondance = authMutation({
 
       if (groupDocs.length === 0) continue;
 
-      // Créer une nouvelle correspondance brouillon
-      const reference = `DIPL/${new Date().getFullYear()}/${item.type.substring(0, 3).toUpperCase()}/${Math.floor(Math.random() * 100000).toString().padStart(5, "0")}`;
+      // Créer une nouvelle correspondance brouillon avec référence séquentielle
+      const reference = await generateSequentialReference(ctx, item.type);
 
       const newItemId = await ctx.db.insert("correspondanceItems", {
         orgId: item.orgId,
@@ -446,6 +460,7 @@ export const disperseCorrespondance = authMutation({
 export const getOrgCorrespondanceConfig = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     const org = await ctx.db.get(args.orgId);
     if (!org) return null;
     return (org.settings as any)?.correspondanceConfig ?? null;
@@ -477,8 +492,9 @@ export const updateOrgCorrespondanceConfig = authMutation({
     }),
   },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "configure");
     const org = await ctx.db.get(args.orgId);
-    if (!org) throw new Error("Organisation introuvable");
+    if (!org) throw error(ErrorCode.NOT_FOUND, "Organisation introuvable");
 
     const currentSettings = (org.settings ?? {}) as Record<string, unknown>;
 

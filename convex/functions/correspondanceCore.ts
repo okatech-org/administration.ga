@@ -20,17 +20,12 @@ import {
   recipientStatusValidator,
   correspondanceDocumentValidator,
 } from "../schemas/correspondance";
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function generateReference(type: string): string {
-  const year = new Date().getFullYear();
-  const code = type.substring(0, 3).toUpperCase();
-  const n = Math.floor(Math.random() * 100000)
-    .toString()
-    .padStart(5, "0");
-  return `DIPL/${year}/${code}/${n}`;
-}
+import {
+  requireCorrespondanceAccess,
+  generateSequentialReference,
+} from "../lib/correspondanceHelpers";
+import { isSuperAdmin } from "../lib/permissions";
+import { error, ErrorCode } from "../lib/errors";
 
 // ═════════════════════════════════════════════════════════════════════════════
 // ESPACES DE TRAVAIL — Requêtes par espace exclusif
@@ -49,6 +44,7 @@ export const getBrouillons = authQuery({
     )),
   },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     const items = await ctx.db
       .query("correspondanceItems")
       .withIndex("by_owner_org_status", (q) =>
@@ -96,6 +92,7 @@ export const getEnvoyes = authQuery({
     recipientStatusFilter: v.optional(recipientStatusValidator),
   },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     let items = await ctx.db
       .query("correspondanceItems")
       .withIndex("by_owner_org_copy", (q) =>
@@ -127,6 +124,7 @@ export const getRecus = authQuery({
     )),
   },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     let items = await ctx.db
       .query("correspondanceItems")
       .withIndex("by_owner_org_status", (q) =>
@@ -160,6 +158,7 @@ export const getRecus = authQuery({
 export const getCorbeille = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     const items = await ctx.db
       .query("correspondanceItems")
       .withIndex("by_owner_org", (q) =>
@@ -179,6 +178,7 @@ export const getCorbeille = authQuery({
 export const getEspaceCounts = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     // Brouillons (draft + pending, non-copie)
     const drafts = await ctx.db
       .query("correspondanceItems")
@@ -270,10 +270,14 @@ export const sendCorrespondance = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Dossier de correspondance introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Dossier de correspondance introuvable");
     if (item.status !== "draft") {
-      throw new Error("Seul un brouillon peut être envoyé");
+      throw error(ErrorCode.VALIDATION_ERROR, "Seul un brouillon peut être envoyé");
     }
+
+    // Contrôle d'accès org
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "transmit");
 
     // Vérifier les documents
     const docs = item.documents ?? [];
@@ -451,8 +455,6 @@ async function _executeEnvoi(ctx: any, itemId: any, item: any, now: number) {
     type: item.type,
     priority: item.priority,
     status: "received",
-    recipientStatus: "recu",
-    recipientStatusUpdatedAt: now,
     direction: "incoming",
     senderName: item.senderName,
     senderOrg: item.senderOrg,
@@ -486,7 +488,7 @@ async function _executeEnvoi(ctx: any, itemId: any, item: any, now: number) {
     sentAt: now,
     copyOwnerOrgId: item.copyOwnerOrgId ?? item.orgId,
     originalItemId: originalId,
-    recipientStatus: "recu",
+    recipientStatus: "en_transit",
     recipientStatusUpdatedAt: now,
     // Marquer les documents comme copies avec filigrane
     documents: (item.documents ?? []).map((d: any) => ({
@@ -556,9 +558,18 @@ export const approveAndSend = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Dossier introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Dossier introuvable");
     if (item.status !== "pending") {
-      throw new Error("Ce dossier n'est pas en attente d'approbation");
+      throw error(ErrorCode.VALIDATION_ERROR, "Ce dossier n'est pas en attente d'approbation");
+    }
+
+    // Contrôle d'accès
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "approve");
+
+    // Vérifier que l'utilisateur est le currentHolder
+    if (item.currentHolderId && item.currentHolderId !== ctx.user._id && !isSuperAdmin(ctx.user)) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Seul le détenteur actuel peut approuver ce dossier");
     }
 
     // Chercher les étapes d'approbation pendantes
@@ -641,7 +652,16 @@ export const rejectCorrespondance = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Dossier introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Dossier introuvable");
+
+    // Contrôle d'accès
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "approve");
+
+    // Vérifier que l'utilisateur est le currentHolder
+    if (item.currentHolderId && item.currentHolderId !== ctx.user._id && !isSuperAdmin(ctx.user)) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Seul le détenteur actuel peut rejeter ce dossier");
+    }
 
     // Rejeter les étapes d'approbation pendantes
     const steps = await ctx.db
@@ -687,7 +707,10 @@ export const registerIncoming = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Correspondance introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
 
     await ctx.db.patch(args.itemId, {
       arrivalReference: args.arrivalReference,
@@ -720,6 +743,11 @@ export const assignCorrespondance = authMutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "transmit");
+
     const agent = await ctx.db.get(args.agentId) as any;
 
     await ctx.db.patch(args.itemId, {
@@ -759,10 +787,13 @@ export const respondToCorrespondance = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const item = await ctx.db.get(args.itemId);
-    if (!item) throw new Error("Correspondance introuvable");
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
 
-    const org = await ctx.db.get(item.copyOwnerOrgId ?? item.orgId) as any;
-    const reference = generateReference(args.type);
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
+
+    const org = await ctx.db.get(orgId) as any;
+    const reference = await generateSequentialReference(ctx, args.type);
 
     // Créer la réponse en brouillon avec expéditeur/destinataire inversés
     const responseId = await ctx.db.insert("correspondanceItems", {
@@ -876,6 +907,10 @@ export const getDossier = authQuery({
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.itemId);
     if (!item || item.deletedAt) return null;
+
+    // Contrôle d'accès
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "view");
 
     // URLs des documents enrichis
     const docsWithUrls = await Promise.all(

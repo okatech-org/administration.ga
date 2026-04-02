@@ -7,6 +7,7 @@
 
 import { v } from "convex/values";
 import { authQuery } from "../lib/customFunctions";
+import { requireCorrespondanceAccess } from "../lib/correspondanceHelpers";
 
 // ═════════════════════════════════════════════════════════════════════════════
 // DASHBOARD STATS
@@ -16,6 +17,7 @@ import { authQuery } from "../lib/customFunctions";
 export const getDashboardStats = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     const now = Date.now();
 
     // Correspondance items stats
@@ -91,6 +93,7 @@ export const getRecentActivity = authQuery({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     const maxItems = args.limit ?? 20;
 
     // Recent correspondance workflow steps
@@ -162,6 +165,7 @@ export const getRecentActivity = authQuery({
 export const getDossierStats = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     const dossiers = await ctx.db
       .query("dossierProcedures")
       .withIndex("by_org_deleted", (q: any) =>
