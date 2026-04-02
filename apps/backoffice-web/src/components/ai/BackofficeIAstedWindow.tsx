@@ -1,62 +1,63 @@
 /**
  * BackofficeIAstedWindow — iAsted pour le Back-Office (SuperAdmin).
  *
- * Version simplifiée du FAB iAsted :
- *   - iChat : Chat IA basique
- *   - iContact : Annuaire des représentations
- *   - Réglages : Préférences
+ * 5 onglets complets :
+ *   - iChat : Chat IA + messagerie P2P temps réel
+ *   - iContact : Annuaire cross-org avec filtres
+ *   - iAppel : Appels audio/vidéo via LiveKit
+ *   - iRéunion : Réunions vidéo avec participants
+ *   - Réglages : Préférences utilisateur
  *
- * Pas de iAppel ni iRéunion (le SuperAdmin ne fait pas de VoIP).
- * Pas de dépendance à OrgProvider.
+ * Utilise useOrgSelector() pour le contexte d'organisation
+ * (pas de OrgProvider comme dans agent-web).
  */
 
-import { api } from "@convex/_generated/api";
 import {
 	Bot,
-	Building2,
-	ChevronRight,
 	Contact,
-	Globe,
-	Loader2,
-	Maximize2,
 	MessageSquare,
 	Minus,
-	Search,
+	Phone,
 	Settings,
 	Shield,
+	Video,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
+import { useOrgSelector } from "@/hooks/use-org-selector";
 import { useSuperAdminData } from "@/hooks/use-superadmin-data";
+import { useBackofficeAIChat } from "@/hooks/useBackofficeAIChat";
 import { cn } from "@/lib/utils";
+
+// Tab components
+import { BackofficeChatTab } from "./tabs/BackofficeChatTab";
+import { BackofficeContactTab } from "./tabs/BackofficeContactTab";
+import { BackofficeCallTab } from "./tabs/BackofficeCallTab";
+import { BackofficeMeetingTab } from "./tabs/BackofficeMeetingTab";
 
 // ─── Tabs ─────────────────────────────────────────────────
 const TABS = [
 	{ id: "ichat", label: "iChat", icon: MessageSquare },
 	{ id: "icontact", label: "iContact", icon: Contact },
-	{ id: "settings", label: "", icon: Settings },
+	{ id: "icall", label: "iAppel", icon: Phone },
+	{ id: "imeeting", label: "iRéunion", icon: Video },
+	{ id: "settings", label: "Réglages", icon: Settings },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
-
-// ─── Org type labels ──────────────────────────────────────
-const ORG_TYPE_LABELS: Record<string, string> = {
-	embassy: "Ambassade",
-	general_consulate: "Consulat Général",
-	consulate: "Consulat",
-	permanent_mission: "Mission Permanente",
-	high_commission: "Haut-Commissariat",
-};
 
 // ─── Main Component ───────────────────────────────────────
 export function BackofficeIAstedWindow() {
 	const [open, setOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<TabId>("ichat");
+
+	// Org selector (remplace OrgProvider)
+	const { activeOrgId, OrgSelector } = useOrgSelector();
+
+	// Chat IA
+	const chat = useBackofficeAIChat(activeOrgId);
 
 	return (
 		<>
@@ -111,7 +112,11 @@ export function BackofficeIAstedWindow() {
 									</p>
 								</div>
 							</div>
-							<div className="flex items-center gap-0.5">
+							<div className="flex items-center gap-1">
+								{/* Org Selector compact */}
+								<div className="max-w-[140px]">
+									<OrgSelector />
+								</div>
 								<Button
 									variant="ghost"
 									size="icon"
@@ -126,8 +131,10 @@ export function BackofficeIAstedWindow() {
 
 						{/* Contenu */}
 						<div className="flex-1 flex flex-col overflow-hidden">
-							{activeTab === "ichat" && <BackofficeChatTab />}
-							{activeTab === "icontact" && <BackofficeContactTab />}
+							{activeTab === "ichat" && <BackofficeChatTab orgId={activeOrgId} chat={chat} />}
+							{activeTab === "icontact" && <BackofficeContactTab orgId={activeOrgId} />}
+							{activeTab === "icall" && <BackofficeCallTab orgId={activeOrgId} />}
+							{activeTab === "imeeting" && <BackofficeMeetingTab orgId={activeOrgId} />}
 							{activeTab === "settings" && <BackofficeSettingsTab />}
 						</div>
 
@@ -167,105 +174,6 @@ export function BackofficeIAstedWindow() {
 				)}
 			</AnimatePresence>
 		</>
-	);
-}
-
-// ─── iChat Tab ────────────────────────────────────────────
-function BackofficeChatTab() {
-	return (
-		<div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-			<div className="h-14 w-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4">
-				<MessageSquare className="h-7 w-7 text-emerald-500" />
-			</div>
-			<h3 className="text-sm font-semibold">Bienvenue !</h3>
-			<p className="text-xs text-muted-foreground mt-1 max-w-[280px]">
-				Je suis l'assistant IA de la plateforme. Comment puis-je vous aider ?
-			</p>
-			<div className="flex flex-wrap gap-2 mt-4 justify-center">
-				{["Statistiques globales", "État des représentations", "Demandes en attente"].map((suggestion) => (
-					<button
-						key={suggestion}
-						type="button"
-						className="text-xs px-3 py-1.5 rounded-full border border-border hover:bg-muted/50 transition-colors"
-					>
-						{suggestion}
-					</button>
-				))}
-			</div>
-		</div>
-	);
-}
-
-// ─── iContact Tab ─────────────────────────────────────────
-function BackofficeContactTab() {
-	const [search, setSearch] = useState("");
-	const { data: allOrgs, isPending } = useAuthenticatedConvexQuery(
-		api.functions.orgs.list,
-		{},
-	);
-
-	const filtered = useMemo(() => {
-		if (!allOrgs) return [];
-		const q = search.trim().toLowerCase();
-		const orgs = allOrgs as any[];
-		if (!q) return orgs;
-		return orgs.filter(
-			(org) =>
-				org.name.toLowerCase().includes(q) ||
-				(org.country ?? "").toLowerCase().includes(q),
-		);
-	}, [allOrgs, search]);
-
-	return (
-		<div className="flex-1 flex flex-col overflow-hidden">
-			<div className="px-3 pt-3 pb-1.5 shrink-0">
-				<div className="relative">
-					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-					<Input
-						value={search}
-						onChange={(e) => setSearch(e.target.value)}
-						placeholder="Rechercher une représentation..."
-						className="pl-7 h-8 text-xs"
-					/>
-				</div>
-			</div>
-			<ScrollArea className="flex-1 px-3 pb-2">
-				{isPending ? (
-					<div className="flex items-center justify-center py-8">
-						<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-					</div>
-				) : filtered.length === 0 ? (
-					<div className="flex flex-col items-center py-8 text-center">
-						<Building2 className="h-6 w-6 text-muted-foreground/30 mb-2" />
-						<p className="text-[11px] text-muted-foreground">
-							{search ? "Aucun résultat" : "Aucune représentation"}
-						</p>
-					</div>
-				) : (
-					<div className="space-y-1.5">
-						{filtered.map((org: any) => (
-							<div key={org._id} className="rounded-lg border bg-card p-2.5 hover:bg-muted/20 transition-colors">
-								<div className="flex items-center gap-2">
-									<Building2 className="h-4 w-4 text-primary shrink-0" />
-									<div className="flex-1 min-w-0">
-										<p className="text-xs font-semibold truncate">{org.name}</p>
-										<p className="text-[9px] text-muted-foreground">
-											{ORG_TYPE_LABELS[org.type] ?? org.type}
-											{org.country && ` · ${org.country}`}
-										</p>
-									</div>
-									{org.phone && (
-										<Badge variant="outline" className="text-[8px] h-3.5 px-1 shrink-0">
-											{org.phone}
-										</Badge>
-									)}
-								</div>
-							</div>
-						))}
-					</div>
-				)}
-			</ScrollArea>
-		</div>
 	);
 }
 

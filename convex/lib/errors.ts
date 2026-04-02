@@ -91,6 +91,9 @@ export const ErrorCode = {
   PIN_NOT_FOUND: "PIN_NOT_FOUND",
   PIN_RATE_LIMITED: "PIN_RATE_LIMITED",
   PIN_RECENT_OTP_REQUIRED: "PIN_RECENT_OTP_REQUIRED",
+
+  // Service
+  SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

@@ -230,7 +230,7 @@ export function RegistrationForm({
 										return (
 											<DocumentField
 												key={doc.type}
-												profileId={profile._id}
+
 												documentKey={
 													profileKey as
 														| "passport"
@@ -278,7 +278,7 @@ export function RegistrationForm({
 												return (
 													<DocumentField
 														key={doc.type}
-														profileId={profile._id}
+		
 														documentKey={
 															profileKey as
 																| "passport"

@@ -1,32 +1,13 @@
 import { query } from "./_generated/server";
-import { components } from "./_generated/api";
 
-export const dumpUserRecords = query({
+export const find1982 = query({
   args: {},
   handler: async (ctx) => {
-    // 1. Find all users with this email
-    const users = await ctx.runQuery(components.betterAuth.adapter.findMany, {
-      model: "user",
-      where: [{ field: "email", value: "itoutouberny@gmail.com" }],
-      paginationOpts: { numItems: 10, cursor: null }
-    }) as any;
-    
-    // 2. For each user, find their accounts
-    const results = [];
-    for (const u of users.page) {
-      const accounts = await ctx.runQuery(components.betterAuth.adapter.findMany, {
-        model: "account",
-        where: [{ field: "userId", value: u._id }],
-        paginationOpts: { numItems: 10, cursor: null }
-      }) as any;
-      
-      results.push({
-        user: u,
-        accounts: accounts.page
-      });
-    }
-    
-    console.log("Dump results:", JSON.stringify(results, null, 2));
-    return results;
-  },
+    const profiles = await ctx.db.query("profiles").collect();
+    return profiles.filter(p => {
+       if (!p.identity?.birthDate) return false;
+       const d = new Date(p.identity.birthDate);
+       return d.getFullYear() === 1982 || d.getFullYear() === 1984 || d.getFullYear() === 1985;
+    });
+  }
 });

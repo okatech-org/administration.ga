@@ -118,7 +118,7 @@ export function DocumentField({
 
 			const { storageId } = await result.json();
 
-			// Create document record - owned by current user automatically
+			// Le backend renomme automatiquement le fichier avec le matricule consulaire
 			const newDocId = await createDocument({
 				storageId,
 				filename: file.name,

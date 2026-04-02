@@ -1,8 +1,9 @@
 import { v } from "convex/values";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
+import { backofficeQuery, superadminMutation } from "./lib/customFunctions";
 import { internal } from "./_generated/api";
 
-export const lireConfig = query({
+export const lireConfig = backofficeQuery({
   args: { cle: v.string() },
   handler: async (ctx, args) => {
     const conf = await ctx.db
@@ -13,7 +14,7 @@ export const lireConfig = query({
   },
 });
 
-export const ecrireConfig = mutation({
+export const ecrireConfig = superadminMutation({
   args: { 
     cle: v.string(), 
     valeur: v.any(), 
@@ -103,7 +104,7 @@ export const ajusterPoids = internalMutation({
   },
 });
 
-export const lirePoidsAdaptatifs = query({
+export const lirePoidsAdaptatifs = backofficeQuery({
   args: { signal: v.optional(v.string()) },
   handler: async (ctx, args) => {
     if (args.signal) {

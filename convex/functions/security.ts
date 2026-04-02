@@ -1,6 +1,6 @@
 import { v } from "convex/values";
-import { query, mutation } from "../_generated/server";
-import { backofficeQuery } from "../lib/customFunctions";
+import { mutation } from "../_generated/server";
+import { authQuery, backofficeQuery } from "../lib/customFunctions";
 import { requireAuth } from "../lib/auth";
 import { isSuperAdmin } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
@@ -70,6 +70,15 @@ export const upsertPolicy = mutation({
       throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
     }
 
+    // Verification cross-tenant : le caller doit appartenir a l'organisation
+    const membership = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_org", (q: any) => q.eq("userId", user._id).eq("orgId", args.orgId))
+      .first();
+    if (!membership) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
+    }
+
     const now = Date.now();
     const { orgId, name, ...policyFields } = args;
 
@@ -134,7 +143,7 @@ export const removePolicy = mutation({
 /**
  * Get maintenance config (global — single record)
  */
-export const getMaintenanceConfig = query({
+export const getMaintenanceConfig = authQuery({
   args: {},
   handler: async (ctx) => {
     // maintenanceConfig has no org index — it's a global single record

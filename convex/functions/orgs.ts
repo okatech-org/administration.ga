@@ -540,7 +540,7 @@ export const assignMemberPosition = authMutation({
   args: {
     orgId: v.id("orgs"),
     membershipId: v.id("memberships"),
-    positionId: v.optional(v.id("positions")),
+    positionId: v.optional(v.union(v.id("positions"), v.null())),
   },
   handler: async (ctx, args) => {
     const callerMembership = await getMembership(ctx, ctx.user._id, args.orgId);
@@ -551,9 +551,12 @@ export const assignMemberPosition = authMutation({
       throw error(ErrorCode.MEMBER_NOT_FOUND);
     }
 
+    // Normaliser null → undefined (retirer la position)
+    const positionId = args.positionId ?? undefined;
+
     // If assigning a position, validate it belongs to this org
-    if (args.positionId) {
-      const position = await ctx.db.get(args.positionId);
+    if (positionId) {
+      const position = await ctx.db.get(positionId);
       if (!position || position.orgId !== args.orgId) {
         throw new Error("Position not found in this organization");
       }
@@ -565,7 +568,7 @@ export const assignMemberPosition = authMutation({
           .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
           .filter((q) =>
             q.and(
-              q.eq(q.field("positionId"), args.positionId),
+              q.eq(q.field("positionId"), positionId),
               q.eq(q.field("deletedAt"), undefined),
               q.neq(q.field("_id"), args.membershipId),
             ),
@@ -579,7 +582,7 @@ export const assignMemberPosition = authMutation({
       }
     }
 
-    await ctx.db.patch(args.membershipId, { positionId: args.positionId });
+    await ctx.db.patch(args.membershipId, { positionId });
     return args.membershipId;
   },
 });

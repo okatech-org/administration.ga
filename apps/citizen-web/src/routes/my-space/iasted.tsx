@@ -25,10 +25,10 @@ import {
 	Building2,
 	Contact,
 	Globe,
+	Headset,
 	Loader2,
 	Mail,
 	MessageSquare,
-	Mic,
 	Minimize2,
 	Phone,
 	PhoneCall,
@@ -40,7 +40,6 @@ import {
 	Send,
 	Shield,
 	ShieldCheck,
-	User,
 } from "lucide-react";
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import Markdown from "react-markdown";
@@ -57,7 +56,6 @@ import { useMeeting } from "@/hooks/use-meeting";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
-	useConvexActionQuery,
 } from "@/integrations/convex/hooks";
 import { useCallStore } from "@/stores/call-store";
 import { cn } from "@/lib/utils";
@@ -78,11 +76,12 @@ const NAV_ITEMS: Array<{ id: TabId; icon: typeof Phone; label: string }> = [
 	{ id: "icontact", icon: Contact, label: "iContact" },
 ];
 
-const IASTED_CONTACT = {
-	id: "__iasted__",
-	name: "iAsted",
-	subtitle: "Assistant Consulaire Intelligent",
+const MR_RAY_CONTACT = {
+	id: "__mr_ray__",
+	name: "Mr Ray",
+	subtitle: "Standard — Assistance Consulaire",
 	isAI: true,
+	isStandard: true,
 };
 
 // ─────────────────────────────────────────────
@@ -91,26 +90,37 @@ const IASTED_CONTACT = {
 
 function IAstedCitizenPage() {
 	const [activeTab, setActiveTab] = useState<TabId>("ichat");
-	const [selectedContact, setSelectedContact] = useState<any>(IASTED_CONTACT);
+	const [selectedContact, setSelectedContact] = useState<any>(MR_RAY_CONTACT);
 	const [search, setSearch] = useState("");
 	const [messageInput, setMessageInput] = useState("");
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const navigate = useNavigate();
 
-	// ── Chat IA ──
-	const [aiMessages, setAiMessages] = useState<
-		Array<{ role: string; content: string; timestamp: number }>
-	>([]);
-	const [aiLoading, setAiLoading] = useState(false);
-	const { mutateAsync: chatAction } = useConvexActionQuery(api.ai.chat.chat);
-
 	// ── Threads agents (temps réel) ──
 	const { data: chatThreads, isPending: threadsLoading } =
 		useAuthenticatedConvexQuery(api.functions.chats.listMyChats, {});
 
-	// Messages du thread sélectionné
-	const selectedChatId =
-		selectedContact && !selectedContact.isAI ? selectedContact._id : undefined;
+	// Inscription consulaire → orgId pour initiateStandardChat
+	const { data: registrations } = useAuthenticatedConvexQuery(
+		api.functions.consularRegistrations.listByProfile,
+		{},
+	);
+	const orgId = (registrations as any[])?.[0]?.orgId as Id<"orgs"> | undefined;
+
+	// Thread Standard (Mr Ray) existant
+	const mrRayThread = useMemo(() => {
+		if (!chatThreads) return null;
+		return (chatThreads as any[]).find((t: any) => t.type === "standard") ?? null;
+	}, [chatThreads]);
+
+	// Messages du thread sélectionné (Mr Ray = thread standard, sinon P2P)
+	const selectedChatId = useMemo(() => {
+		if (!selectedContact) return undefined;
+		if (selectedContact.isStandard && mrRayThread) return mrRayThread._id;
+		if (selectedContact.isStandard) return undefined;
+		return selectedContact._id;
+	}, [selectedContact, mrRayThread]);
+
 	const { data: threadMessages, isPending: messagesLoading } =
 		useAuthenticatedConvexQuery(
 			api.functions.chats.listMessages,
@@ -121,6 +131,9 @@ function IAstedCitizenPage() {
 
 	const { mutateAsync: sendChatMessage } = useConvexMutationQuery(
 		api.functions.chats.sendMessage,
+	);
+	const { mutateAsync: initiateStandard } = useConvexMutationQuery(
+		api.functions.chats.initiateStandardChat,
 	);
 	const { mutateAsync: markRead } = useConvexMutationQuery(
 		api.functions.chats.markRead,
@@ -136,41 +149,24 @@ function IAstedCitizenPage() {
 	// Auto-scroll
 	useEffect(() => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	}, [aiMessages, threadMessages]);
+	}, [threadMessages]);
 
-	// ── Envoi IA ──
-	const handleSendAI = async () => {
+	// ── Envoi message Mr Ray (Standard) ──
+	const handleSendStandard = async () => {
 		const text = messageInput.trim();
-		if (!text || aiLoading) return;
-
-		setAiMessages((prev) => [
-			...prev,
-			{ role: "user", content: text, timestamp: Date.now() },
-		]);
-		setMessageInput("");
-		setAiLoading(true);
-
+		if (!text) return;
 		try {
-			const response = await chatAction({ message: text });
-			setAiMessages((prev) => [
-				...prev,
-				{
-					role: "assistant",
-					content: response.message,
-					timestamp: Date.now(),
-				},
-			]);
-		} catch {
-			setAiMessages((prev) => [
-				...prev,
-				{
-					role: "assistant",
-					content: "Désolé, une erreur s'est produite. Réessayez.",
-					timestamp: Date.now(),
-				},
-			]);
-		} finally {
-			setAiLoading(false);
+			if (mrRayThread) {
+				await sendChatMessage({ chatId: mrRayThread._id as Id<"chats">, content: text });
+			} else if (orgId) {
+				await initiateStandard({ orgId, initialMessage: text });
+			} else {
+				toast.error("Vous devez être inscrit à une représentation pour utiliser le Standard.");
+				return;
+			}
+			setMessageInput("");
+		} catch (e: any) {
+			toast.error(e?.data ?? e?.message ?? "Erreur d'envoi");
 		}
 	};
 
@@ -192,17 +188,18 @@ function IAstedCitizenPage() {
 	const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
-			if (selectedContact?.isAI) handleSendAI();
+			if (selectedContact?.isStandard) handleSendStandard();
 			else handleSendHuman();
 		}
 	};
 
-	// Filtrage threads
+	// Filtrage threads — exclure le thread standard (Mr Ray est affiché séparément)
 	const filteredThreads = useMemo(() => {
 		if (!chatThreads) return [];
+		const p2p = (chatThreads as any[]).filter((t: any) => t.type !== "standard");
 		const q = search.trim().toLowerCase();
-		if (!q) return chatThreads as any[];
-		return (chatThreads as any[]).filter(
+		if (!q) return p2p;
+		return p2p.filter(
 			(t: any) =>
 				(t.otherUser?.firstName ?? "").toLowerCase().includes(q) ||
 				(t.otherUser?.lastName ?? "").toLowerCase().includes(q),
@@ -297,37 +294,37 @@ function IAstedCitizenPage() {
 							</div>
 
 							<ScrollArea className="flex-1">
-								{/* iAsted épinglé */}
+								{/* Mr Ray — Standard épinglé */}
 								<button
 									type="button"
-									onClick={() => setSelectedContact(IASTED_CONTACT)}
+									onClick={() => setSelectedContact(MR_RAY_CONTACT)}
 									className={cn(
 										"w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/20",
-										selectedContact?.id === "__iasted__"
+										selectedContact?.id === "__mr_ray__"
 											? "bg-primary/5"
 											: "hover:bg-muted/30",
 									)}
 								>
 									<div className="relative">
 										<Avatar className="h-11 w-11">
-											<AvatarFallback className="bg-emerald-500/15 text-emerald-500">
-												<Bot className="h-5 w-5" />
+											<AvatarFallback className="bg-teal-500/15 text-teal-600 dark:text-teal-400">
+												<Headset className="h-5 w-5" />
 											</AvatarFallback>
 										</Avatar>
-										<Pin className="absolute -top-0.5 -right-0.5 h-3 w-3 text-emerald-500 rotate-45" />
+										<Pin className="absolute -top-0.5 -right-0.5 h-3 w-3 text-teal-500 rotate-45" />
 									</div>
 									<div className="flex-1 min-w-0">
 										<div className="flex items-center justify-between">
 											<div className="flex items-center gap-1.5">
-												<p className="text-sm font-semibold">iAsted</p>
-												<Badge className="text-[7px] h-3.5 px-1 bg-emerald-500/15 text-emerald-500 border-emerald-500/20">
-													IA
+												<p className="text-sm font-semibold">Mr Ray</p>
+												<Badge className="text-[7px] h-3.5 px-1 bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/20">
+													Standard
 												</Badge>
 											</div>
-											{aiMessages.length > 0 && (
+											{mrRayThread?.lastMessageAt && (
 												<span className="text-[10px] text-muted-foreground">
 													{new Date(
-														aiMessages[aiMessages.length - 1].timestamp,
+														mrRayThread.lastMessageAt,
 													).toLocaleTimeString("fr-FR", {
 														hour: "2-digit",
 														minute: "2-digit",
@@ -336,14 +333,16 @@ function IAstedCitizenPage() {
 											)}
 										</div>
 										<p className="text-xs text-muted-foreground truncate mt-0.5">
-											{aiMessages.length > 0
-												? aiMessages[aiMessages.length - 1].content.slice(
-														0,
-														45,
-													) + "..."
-												: "Assistant Consulaire — Posez une question"}
+											{mrRayThread?.lastMessageText
+												? mrRayThread.lastMessageText.slice(0, 45) + "..."
+												: "Standard Consulaire — Posez une question"}
 										</p>
 									</div>
+									{(mrRayThread?.unreadCount ?? 0) > 0 && (
+										<Badge className="text-[8px] h-4 min-w-[16px] px-1 bg-teal-600 text-white">
+											{mrRayThread.unreadCount}
+										</Badge>
+									)}
 								</button>
 
 								{/* Threads agents */}
@@ -429,9 +428,9 @@ function IAstedCitizenPage() {
 									{/* Header contact */}
 									<div className="px-4 py-3 border-b flex items-center gap-3 shrink-0">
 										<Avatar className="h-9 w-9">
-											{selectedContact.isAI ? (
-												<AvatarFallback className="bg-emerald-500/15 text-emerald-500">
-													<Bot className="h-4 w-4" />
+											{selectedContact.isStandard ? (
+												<AvatarFallback className="bg-teal-500/15 text-teal-600 dark:text-teal-400">
+													<Headset className="h-4 w-4" />
 												</AvatarFallback>
 											) : (
 												<>
@@ -453,13 +452,13 @@ function IAstedCitizenPage() {
 											)}
 										</Avatar>
 										<div className="flex-1 min-w-0">
-											{selectedContact.isAI ? (
+											{selectedContact.isStandard ? (
 												<>
 													<p className="text-sm font-semibold">
-														iAsted
+														Mr Ray
 													</p>
 													<p className="text-[11px] text-muted-foreground">
-														Assistant Consulaire Intelligent
+														Standard — Assistance Consulaire
 													</p>
 												</>
 											) : (
@@ -480,26 +479,26 @@ function IAstedCitizenPage() {
 
 									{/* Messages */}
 									<ScrollArea className="flex-1 px-6 py-4">
-										{selectedContact.isAI ? (
-											aiMessages.length === 0 ? (
+										{selectedContact.isStandard ? (
+											/* ── Chat Mr Ray (temps réel via P2P) ── */
+											!threadMessages || (threadMessages as any[]).length === 0 ? (
 												<div className="flex flex-col items-center justify-center h-full text-center py-12">
-													<div className="h-16 w-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
-														<Bot className="h-8 w-8 text-emerald-500" />
+													<div className="h-16 w-16 rounded-full bg-teal-500/10 flex items-center justify-center mb-4">
+														<Headset className="h-8 w-8 text-teal-600 dark:text-teal-400" />
 													</div>
 													<h3 className="text-base font-semibold mb-1">
-														Bonjour, je suis iAsted
+														Bonjour, je suis Mr Ray
 													</h3>
 													<p className="text-sm text-muted-foreground max-w-md mb-6">
-														Votre assistant consulaire. Posez-moi
-														une question ou choisissez une
-														suggestion.
+														Votre assistant au Standard consulaire. Posez-moi
+														vos questions sur les démarches, passeports, visas...
 													</p>
 													<div className="flex flex-wrap gap-2 justify-center max-w-lg">
 														{[
-															"Résumé de mes démarches",
+															"Carte consulaire",
 															"Mon passeport",
 															"Rendez-vous",
-															"État civil",
+															"Horaires",
 														].map((s) => (
 															<button
 																key={s}
@@ -507,7 +506,7 @@ function IAstedCitizenPage() {
 																onClick={() =>
 																	setMessageInput(s)
 																}
-																className="text-xs px-3 py-1.5 rounded-full border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+																className="text-xs px-3 py-1.5 rounded-full border border-teal-500/20 text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 transition-colors"
 															>
 																{s}
 															</button>
@@ -516,73 +515,62 @@ function IAstedCitizenPage() {
 												</div>
 											) : (
 												<div className="space-y-3 max-w-3xl mx-auto">
-													{aiMessages.map((msg, i) => (
-														<div
-															key={i}
-															className={cn(
-																"flex gap-2",
-																msg.role === "user"
-																	? "justify-end"
-																	: "justify-start",
-															)}
-														>
-															{msg.role ===
-																"assistant" && (
-																<Avatar className="h-7 w-7 shrink-0 mt-1">
-																	<AvatarFallback className="bg-emerald-500/10 text-emerald-600 text-[9px]">
-																		<Bot className="h-3.5 w-3.5" />
-																	</AvatarFallback>
-																</Avatar>
-															)}
+													{(threadMessages as any[]).map((msg: any) => {
+														const isMrRay = msg.senderName?.includes("Ray") || msg.senderName?.includes("NGOMONDAMI");
+														return (
 															<div
+																key={msg._id}
 																className={cn(
-																	"max-w-[70%] rounded-xl px-3 py-2 text-sm",
-																	msg.role === "user"
-																		? "bg-emerald-600 text-white"
-																		: "bg-card border",
+																	"flex gap-2",
+																	!isMrRay
+																		? "justify-end"
+																		: "justify-start",
 																)}
 															>
-																{msg.role ===
-																"assistant" ? (
-																	<Markdown className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
-																		{msg.content}
-																	</Markdown>
-																) : (
-																	msg.content
+																{isMrRay && (
+																	<Avatar className="h-7 w-7 shrink-0 mt-1">
+																		<AvatarFallback className="bg-teal-500/10 text-teal-600 dark:text-teal-400 text-[9px]">
+																			<Bot className="h-3.5 w-3.5" />
+																		</AvatarFallback>
+																	</Avatar>
 																)}
-																<p
+																<div
 																	className={cn(
-																		"text-[9px] mt-1",
-																		msg.role === "user"
-																			? "text-white/60 text-right"
-																			: "text-muted-foreground",
+																		"max-w-[70%] rounded-xl px-3 py-2 text-sm",
+																		!isMrRay
+																			? "bg-teal-600 text-white"
+																			: "bg-card border",
 																	)}
 																>
-																	{new Date(
-																		msg.timestamp,
-																	).toLocaleTimeString(
-																		"fr-FR",
-																		{
-																			hour: "2-digit",
-																			minute: "2-digit",
-																		},
+																	{isMrRay ? (
+																		<div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
+																			<Markdown>{msg.content}</Markdown>
+																		</div>
+																	) : (
+																		msg.content
 																	)}
-																</p>
+																	<p
+																		className={cn(
+																			"text-[9px] mt-1",
+																			!isMrRay
+																				? "text-white/60 text-right"
+																				: "text-muted-foreground",
+																		)}
+																	>
+																		{new Date(
+																			msg.createdAt,
+																		).toLocaleTimeString(
+																			"fr-FR",
+																			{
+																				hour: "2-digit",
+																				minute: "2-digit",
+																			},
+																		)}
+																	</p>
+																</div>
 															</div>
-														</div>
-													))}
-													{aiLoading && (
-														<div className="flex items-center gap-2">
-															<Avatar className="h-7 w-7">
-																<AvatarFallback className="bg-emerald-500/10 text-emerald-600 text-[9px]">
-																	<Bot className="h-3.5 w-3.5" />
-																</AvatarFallback>
-															</Avatar>
-															<div className="bg-card border rounded-xl px-3 py-2">
-																<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-															</div>
-														</div>
-													)}
+														);
+													})}
 													<div ref={messagesEndRef} />
 												</div>
 											)
@@ -681,8 +669,8 @@ function IAstedCitizenPage() {
 											}
 											onKeyDown={handleKeyDown}
 											placeholder={
-												selectedContact.isAI
-													? "Demandez à iAsted..."
+												selectedContact.isStandard
+													? "Écrivez au Standard..."
 													: "Écrire un message..."
 											}
 											className="min-h-[40px] max-h-[120px] resize-none text-sm flex-1"
@@ -691,25 +679,18 @@ function IAstedCitizenPage() {
 										<Button
 											size="icon"
 											onClick={
-												selectedContact.isAI
-													? handleSendAI
+												selectedContact.isStandard
+													? handleSendStandard
 													: handleSendHuman
 											}
-											disabled={
-												!messageInput.trim() ||
-												(selectedContact.isAI && aiLoading)
-											}
+											disabled={!messageInput.trim()}
 											className={cn(
 												"h-10 w-10 rounded-full shrink-0",
-												selectedContact.isAI &&
-													"bg-emerald-600 hover:bg-emerald-700",
+												selectedContact.isStandard &&
+													"bg-teal-600 hover:bg-teal-700",
 											)}
 										>
-											{selectedContact.isAI && aiLoading ? (
-												<Loader2 className="h-4 w-4 animate-spin" />
-											) : (
-												<Send className="h-4 w-4" />
-											)}
+											<Send className="h-4 w-4" />
 										</Button>
 									</div>
 								</>

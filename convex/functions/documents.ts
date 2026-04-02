@@ -9,9 +9,10 @@ import {
   documentTypeCategoryValidator,
   detailedDocumentTypeValidator,
 } from "../lib/validators";
-import { ActivityType as EventType, DocumentStatus } from "../lib/constants";
+import { ActivityType as EventType, DocumentStatus, DetailedDocumentType, DocumentTypeCategory } from "../lib/constants";
 import { logCortexAction } from "../lib/neocortex";
 import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
+import { formatDocumentFilename } from "../lib/referenceHelpers";
 
 const MAX_FILES_PER_DOCUMENT = 10;
 
@@ -51,6 +52,62 @@ export const listMine = authQuery({
       .collect();
 
     return docs;
+  },
+});
+
+/**
+ * Recupere l'URL de la photo d'identite du citoyen connecte.
+ *
+ * Strategie de resolution (ordre de priorite) :
+ *   1. profile.documents.identityPhoto (lien direct)
+ *   2. Document avec documentType = "identity_photo" et ownerId = profileId
+ *   3. Document avec documentType = "identity_photo" et ownerId = userId
+ *      (cas des uploads avant la correction du lien automatique)
+ *
+ * Retourne l'URL ou null.
+ */
+export const getMyIdentityPhotoUrl = authQuery({
+  args: {},
+  handler: async (ctx) => {
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+      .unique();
+    if (!profile) return null;
+
+    // Strategie 1 : lien direct profile.documents.identityPhoto
+    if (profile.documents?.identityPhoto) {
+      const doc = await ctx.db.get(profile.documents.identityPhoto);
+      if (doc?.files?.[0]?.storageId) {
+        const url = await ctx.storage.getUrl(doc.files[0].storageId);
+        if (url) return url;
+      }
+    }
+
+    // Strategie 2 : recherche par type dans TOUS les documents du profil ET du user
+    // Prend le plus recent (tri par _creationTime descendant)
+    const docsByProfile = await ctx.db
+      .query("documents")
+      .withIndex("by_owner", (q) => q.eq("ownerId", profile._id))
+      .collect();
+
+    const docsByUser = await ctx.db
+      .query("documents")
+      .withIndex("by_owner", (q) => q.eq("ownerId", ctx.user._id))
+      .collect();
+
+    // Fusionner, filtrer par type, trier par le plus recent
+    const allPhotos = [...docsByProfile, ...docsByUser]
+      .filter((d) => d.documentType === "identity_photo" && d.files?.length > 0)
+      .sort((a, b) => (b._creationTime ?? 0) - (a._creationTime ?? 0));
+
+    // Prendre le plus recent qui a un storageId valide
+    for (const photo of allPhotos) {
+      const url = await ctx.storage.getUrl(photo.files[0].storageId);
+      if (url) return url;
+    }
+
+    return null;
   },
 });
 
@@ -124,25 +181,111 @@ export const create = authMutation({
       .unique();
     const ownerId = profile?._id ?? ctx.user._id;
 
-    // Create document with single file in files array
-    const docId = await ctx.db.insert("documents", {
-      ownerId,
-      documentType: args.documentType,
-      category: args.category,
-      label: args.label,
-      expiresAt: args.expiresAt,
-      files: [
-        {
-          storageId: args.storageId,
-          filename: args.filename,
-          mimeType: args.mimeType,
-          sizeBytes: args.sizeBytes,
-          uploadedAt: now,
-        },
-      ],
-      status: DocumentStatus.Pending,
-      updatedAt: now,
-    });
+    // Auto-assign category and label for consular document types
+    let resolvedCategory = args.category;
+    let resolvedLabel = args.label;
+    const DOC_AUTO_LABELS: Record<string, { label: string; category: string }> = {
+      [DetailedDocumentType.IdentityPhoto]: { label: "Photo d'identité", category: DocumentTypeCategory.Identity },
+      [DetailedDocumentType.Passport]: { label: "Passeport", category: DocumentTypeCategory.Identity },
+      [DetailedDocumentType.ProofOfAddress]: { label: "Justificatif de domicile", category: DocumentTypeCategory.Housing },
+      [DetailedDocumentType.BirthCertificate]: { label: "Acte de naissance", category: DocumentTypeCategory.CivilStatus },
+      [DetailedDocumentType.ResidencePermit]: { label: "Titre de séjour", category: DocumentTypeCategory.Identity },
+    };
+    if (args.documentType && args.documentType in DOC_AUTO_LABELS) {
+      const auto = DOC_AUTO_LABELS[args.documentType];
+      if (!resolvedCategory) resolvedCategory = auto.category as any;
+      if (!resolvedLabel) resolvedLabel = auto.label;
+    }
+
+    // Nommage du fichier avec le matricule consulaire si disponible
+    const resolvedFilename = formatDocumentFilename(
+      args.filename,
+      args.documentType,
+      profile?.matricule,
+      args.mimeType,
+    );
+
+    const fileData = {
+      storageId: args.storageId,
+      filename: resolvedFilename,
+      mimeType: args.mimeType,
+      sizeBytes: args.sizeBytes,
+      uploadedAt: now,
+    };
+
+    // Pour les 5 types consulaires : remplacer le document existant au lieu d'en creer un nouveau
+    const CONSULAR_TYPES = new Set([
+      DetailedDocumentType.IdentityPhoto,
+      DetailedDocumentType.Passport,
+      DetailedDocumentType.ProofOfAddress,
+      DetailedDocumentType.BirthCertificate,
+      DetailedDocumentType.ResidencePermit,
+    ]);
+
+    let docId;
+
+    if (args.documentType && CONSULAR_TYPES.has(args.documentType as DetailedDocumentType)) {
+      // Chercher un document existant du meme type pour ce owner
+      const existing = await ctx.db
+        .query("documents")
+        .withIndex("by_owner", (q) => q.eq("ownerId", ownerId))
+        .collect();
+      const existingDoc = existing.find((d) => d.documentType === args.documentType);
+
+      if (existingDoc) {
+        // Remplacer le fichier dans le document existant
+        await ctx.db.patch(existingDoc._id, {
+          files: [fileData],
+          category: resolvedCategory,
+          label: resolvedLabel,
+          status: DocumentStatus.Pending,
+          updatedAt: now,
+        });
+        docId = existingDoc._id;
+      } else {
+        // Creer un nouveau document
+        docId = await ctx.db.insert("documents", {
+          ownerId,
+          documentType: args.documentType,
+          category: resolvedCategory,
+          label: resolvedLabel,
+          expiresAt: args.expiresAt,
+          files: [fileData],
+          status: DocumentStatus.Pending,
+          updatedAt: now,
+        });
+      }
+    } else {
+      // Autres types : toujours creer un nouveau document
+      docId = await ctx.db.insert("documents", {
+        ownerId,
+        documentType: args.documentType,
+        category: resolvedCategory,
+        label: resolvedLabel,
+        expiresAt: args.expiresAt,
+        files: [fileData],
+        status: DocumentStatus.Pending,
+        updatedAt: now,
+      });
+    }
+
+    // Lier automatiquement au profil pour les 5 types consulaires
+    if (profile && args.documentType) {
+      const DOC_PROFILE_KEY: Record<string, string> = {
+        [DetailedDocumentType.IdentityPhoto]: "identityPhoto",
+        [DetailedDocumentType.Passport]: "passport",
+        [DetailedDocumentType.ProofOfAddress]: "proofOfAddress",
+        [DetailedDocumentType.BirthCertificate]: "birthCertificate",
+        [DetailedDocumentType.ResidencePermit]: "proofOfResidency",
+      };
+      const profileKey = DOC_PROFILE_KEY[args.documentType];
+      if (profileKey) {
+        const currentDocs = profile.documents ?? {};
+        await ctx.db.patch(profile._id, {
+          documents: { ...currentDocs, [profileKey]: docId },
+        });
+      }
+    }
 
     // Log event
     await ctx.db.insert("events", {
@@ -208,19 +351,100 @@ export const createWithFiles = authMutation({
       .unique();
     const ownerId = profile?._id ?? ctx.user._id;
 
-    const docId = await ctx.db.insert("documents", {
-      ownerId,
-      documentType: args.documentType,
-      category: args.category,
-      label: args.label,
-      expiresAt: args.expiresAt,
-      files: args.files.map((f) => ({
-        ...f,
-        uploadedAt: now,
-      })),
-      status: DocumentStatus.Pending,
-      updatedAt: now,
-    });
+    // Auto-assign category and label for consular document types
+    let resolvedCategory = args.category;
+    let resolvedLabel = args.label;
+    const DOC_AUTO: Record<string, { label: string; category: string }> = {
+      [DetailedDocumentType.IdentityPhoto]: { label: "Photo d'identité", category: DocumentTypeCategory.Identity },
+      [DetailedDocumentType.Passport]: { label: "Passeport", category: DocumentTypeCategory.Identity },
+      [DetailedDocumentType.ProofOfAddress]: { label: "Justificatif de domicile", category: "housing" },
+      [DetailedDocumentType.BirthCertificate]: { label: "Acte de naissance", category: "civil_status" },
+      [DetailedDocumentType.ResidencePermit]: { label: "Titre de séjour", category: DocumentTypeCategory.Identity },
+    };
+    if (args.documentType && args.documentType in DOC_AUTO) {
+      const auto = DOC_AUTO[args.documentType];
+      if (!resolvedCategory) resolvedCategory = auto.category as any;
+      if (!resolvedLabel) resolvedLabel = auto.label;
+    }
+
+    // Nommage avec matricule pour le premier fichier
+    const resolvedFiles = args.files.map((f, i) => ({
+      ...f,
+      filename: i === 0
+        ? formatDocumentFilename(f.filename, args.documentType, profile?.matricule, f.mimeType)
+        : f.filename,
+      uploadedAt: now,
+    }));
+
+    // Pour les 5 types consulaires : remplacer le document existant
+    const CONSULAR_TYPES = new Set([
+      DetailedDocumentType.IdentityPhoto,
+      DetailedDocumentType.Passport,
+      DetailedDocumentType.ProofOfAddress,
+      DetailedDocumentType.BirthCertificate,
+      DetailedDocumentType.ResidencePermit,
+    ]);
+
+    let docId;
+
+    if (args.documentType && CONSULAR_TYPES.has(args.documentType as DetailedDocumentType)) {
+      const existing = await ctx.db
+        .query("documents")
+        .withIndex("by_owner", (q) => q.eq("ownerId", ownerId))
+        .collect();
+      const existingDoc = existing.find((d) => d.documentType === args.documentType);
+
+      if (existingDoc) {
+        await ctx.db.patch(existingDoc._id, {
+          files: resolvedFiles,
+          category: resolvedCategory,
+          label: resolvedLabel,
+          status: DocumentStatus.Pending,
+          updatedAt: now,
+        });
+        docId = existingDoc._id;
+      } else {
+        docId = await ctx.db.insert("documents", {
+          ownerId,
+          documentType: args.documentType,
+          category: resolvedCategory,
+          label: resolvedLabel,
+          expiresAt: args.expiresAt,
+          files: resolvedFiles,
+          status: DocumentStatus.Pending,
+          updatedAt: now,
+        });
+      }
+    } else {
+      docId = await ctx.db.insert("documents", {
+        ownerId,
+        documentType: args.documentType,
+        category: resolvedCategory,
+        label: resolvedLabel,
+        expiresAt: args.expiresAt,
+        files: resolvedFiles,
+        status: DocumentStatus.Pending,
+        updatedAt: now,
+      });
+    }
+
+    // Lier automatiquement au profil pour les 5 types consulaires
+    if (profile && args.documentType) {
+      const DOC_PROFILE_KEY: Record<string, string> = {
+        [DetailedDocumentType.IdentityPhoto]: "identityPhoto",
+        [DetailedDocumentType.Passport]: "passport",
+        [DetailedDocumentType.ProofOfAddress]: "proofOfAddress",
+        [DetailedDocumentType.BirthCertificate]: "birthCertificate",
+        [DetailedDocumentType.ResidencePermit]: "proofOfResidency",
+      };
+      const profileKey = DOC_PROFILE_KEY[args.documentType];
+      if (profileKey) {
+        const currentDocs = profile.documents ?? {};
+        await ctx.db.patch(profile._id, {
+          documents: { ...currentDocs, [profileKey]: docId },
+        });
+      }
+    }
 
     // Log event
     await ctx.db.insert("events", {

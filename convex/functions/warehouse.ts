@@ -25,7 +25,10 @@ export type WarehouseTableName = (typeof WAREHOUSE_TABLES)[number];
  * These are sensitive or internal fields that should not leave the system.
  */
 const SENSITIVE_FIELDS: Partial<Record<WarehouseTableName, string[]>> = {
-  users: ["authId", "preferences"],
+  users: ["authId", "preferences", "pinHash", "pinLockedUntil", "pinFailedAttempts", "lastOtpVerifiedAt"],
+  profiles: ["passportNumber", "nationalId", "phoneNumber", "addressLine1", "addressLine2"],
+  auditLog: ["actorTokenIdentifier", "changes"],
+  payments: ["stripeCustomerId", "stripePaymentIntentId"],
 };
 
 /**

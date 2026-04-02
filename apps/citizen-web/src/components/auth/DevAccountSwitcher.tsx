@@ -29,7 +29,7 @@ const DEV_ACCOUNTS: OrgGroup[] = [
 		org: " Ressortissants & Citoyens",
 		accounts: [
 			{ label: "Berny ITOUTOU — Ressortissant (Longue Durée)", email: "itoutouberny@gmail.com", org: " Ressortissants & Citoyens" },
-			{ label: "Kama UITOUTOU — Citoyen (Courte Durée)", email: "kamauitoutou@gmail.com", org: " Ressortissants & Citoyens" },
+			{ label: "iAsted — Compte Test", email: "iasted@me.com", org: " Ressortissants & Citoyens" },
 		],
 	},
 ];

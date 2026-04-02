@@ -48,6 +48,12 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 			: "skip",
 	);
 
+	// Photo d'identite : resolution fiable (lien direct OU recherche par type)
+	const { data: identityPhotoUrl } = useAuthenticatedConvexQuery(
+		api.functions.documents.getMyIdentityPhotoUrl,
+		{},
+	);
+
 	const hasValidCard =
 		profile?.consularCard?.cardNumber &&
 		profile.consularCard.cardExpiresAt > Date.now();
@@ -126,10 +132,14 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 										</p>
 									</div>
 									<div className="flex items-center gap-3">
-										<div className="w-16 h-20 bg-white/20 rounded-md flex items-center justify-center border-2 border-white/30 shrink-0">
-											<span className="text-gray-800/50 text-[9px] font-semibold">
-												Photo
-											</span>
+										<div className="w-16 h-20 bg-white/20 rounded-md flex items-center justify-center border-2 border-white/30 shrink-0 overflow-hidden">
+											{identityPhotoUrl ? (
+												<img src={identityPhotoUrl} alt="Photo d'identité" className="w-full h-full object-cover" />
+											) : (
+												<span className="text-gray-800/50 text-[9px] font-semibold">
+													Photo
+												</span>
+											)}
 										</div>
 										<div className="flex-1 text-gray-800 space-y-0.5 text-left min-w-0">
 											<p className="font-bold text-sm uppercase truncate">

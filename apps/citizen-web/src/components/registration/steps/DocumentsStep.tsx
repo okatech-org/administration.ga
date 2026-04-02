@@ -72,7 +72,6 @@ interface DocumentsStepProps {
  * Documents are stored in profile.documents as a typed object.
  */
 export function DocumentsStep({
-	profileId,
 	documents,
 	onDocumentChange,
 }: DocumentsStepProps) {
@@ -94,7 +93,6 @@ export function DocumentsStep({
 					{PROFILE_DOCUMENTS.map((doc) => (
 						<DocumentField
 							key={doc.key}
-							profileId={profileId}
 							documentKey={doc.key}
 							documentId={documents?.[doc.key]}
 							label={`${t(doc.labelKey)}${doc.required ? " *" : ""}`}

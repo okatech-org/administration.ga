@@ -5,9 +5,52 @@
  * Adapted from the mairie.ga iCorrespondance module for the gabon-diplomatie context.
  *
  * Tables:
- *  - correspondanceFolders   : User-created folder hierarchy per org
- *  - correspondanceItems     : Individual correspondence items (note verbale, lettre, etc.)
- *  - correspondanceWorkflowSteps : Workflow audit trail (approval, rejection, transmission)
+ *  - correspondanceFolders         : User-created folder hierarchy per org
+ *  - correspondanceItems           : Individual correspondence items (note verbale, lettre, etc.)
+ *  - correspondanceWorkflowSteps   : Workflow audit trail (approval, rejection, transmission)
+ *  - correspondanceTypeConfigs     : Per-org type configuration (approval chains, templates)
+ *  - correspondanceApprovalSteps   : Multi-level hierarchical approval chain steps
+ *  - correspondanceRecipients      : Junction table for primary & CC recipients
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ARCHITECTURE DECISIONS (ADR)
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * 1. DÉNORMALISATION DES NOMS (senderName, recipientName, actorName, etc.)
+ *    CHOIX DÉLIBÉRÉ — Les noms sont stockés en clair à côté des IDs liés.
+ *    Raison : la correspondance diplomatique est un acte officiel. Le nom du
+ *    signataire/destinataire au moment de l'envoi fait partie du dossier juridique.
+ *    Si un membre change de poste ou de nom, les correspondances passées doivent
+ *    conserver le nom officiel au moment de l'acte. De plus, cela évite des
+ *    jointures coûteuses dans les listes et timelines.
+ *
+ * 2. MÉCANISME COPIE/ORIGINAL (isCopy, originalItemId, copyOwnerOrgId)
+ *    CHOIX DÉLIBÉRÉ — À l'envoi, l'original est créé chez le destinataire et
+ *    l'expéditeur conserve une copie (isCopy=true). Cela modélise le flux réel
+ *    du courrier diplomatique : le dossier « se déplace ». L'expéditeur garde
+ *    une copie en lecture seule avec suivi du statut côté destinataire.
+ *
+ * 3. DOCUMENTS EMBARQUÉS (documents: v.array(...))
+ *    COMPROMIS ACCEPTÉ — Les documents sont stockés comme array dans l'item
+ *    plutôt que dans une table séparée. Simplifie les opérations atomiques
+ *    (envoi crée copie + original avec leurs docs en une mutation).
+ *    Limitation : performance dégradée si > 50 documents par dossier (rare
+ *    en contexte diplomatique : 2-5 documents en moyenne).
+ *
+ * 4. DOUBLE ARRAY (documents + attachments)
+ *    RÉTROCOMPATIBILITÉ — `attachments` est l'ancien format (storageId + filename).
+ *    `documents` est le format enrichi (avec ordre, label, type, watermark).
+ *    Les deux sont maintenus en parallèle pendant la migration progressive.
+ *    Les nouvelles fonctions (correspondanceCore.ts) utilisent `documents`.
+ *
+ * 5. RÉFÉRENCE SÉQUENTIELLE (DIPL/YYYY/TYPE/NNNNN)
+ *    Utilise la table `counters` avec un compteur atomique par type + année.
+ *    Garantit l'unicité sans risque de collision (mutations Convex sérialisées).
+ *    Format diplomatique : DIPL/2026/NV/00042.
+ *
+ * 6. REGISTRE COURRIER (ARR/YYYY/NNNNN, DEP/YYYY/NNNNN)
+ *    Numérotation séquentielle par org + année pour le registre d'arrivée
+ *    et le registre de départ. Chaque org a ses propres compteurs.
  */
 
 import { defineTable } from "convex/server";

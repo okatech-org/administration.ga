@@ -1,8 +1,9 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
+import { authQuery, authMutation } from "./lib/customFunctions";
 import { internal } from "./_generated/api";
 
-export const creerNotification = mutation({
+export const creerNotification = internalMutation({
   args: {
     userId: v.string(), // The recipient
     titre: v.string(),
@@ -27,7 +28,7 @@ export const creerNotification = mutation({
   },
 });
 
-export const marquerLue = mutation({
+export const marquerLue = authMutation({
   args: {
     notificationId: v.id("notifications"),
   },
@@ -38,7 +39,7 @@ export const marquerLue = mutation({
 
 // Assuming a standard 'notifications' table exists from the legacy schemas
 // If it doesn't match perfectly, it should be adapted. 
-export const listerNonLues = query({
+export const listerNonLues = authQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     return await ctx.db

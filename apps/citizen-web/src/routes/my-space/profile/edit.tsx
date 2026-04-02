@@ -12,7 +12,6 @@ import {
 	AlertCircle,
 	ArrowLeft,
 	Briefcase,
-	Check,
 	ChevronLeft,
 	ChevronRight,
 	FileText,
@@ -339,39 +338,26 @@ function ProfileForm({ profile, updateProfile }: ProfileFormProps) {
 		}
 	};
 
-	const handleNext = async () => {
-		const saved = await saveStep(currentStep);
-		if (saved) {
-			setShowErrors(false);
-			const currentIndex = STEPS.indexOf(currentStep);
-			if (currentIndex < STEPS.length - 1) {
-				setCurrentStep(STEPS[currentIndex + 1]);
-			}
+	const handleNext = () => {
+		setShowErrors(false);
+		const currentIndex = STEPS.indexOf(currentStep);
+		if (currentIndex < STEPS.length - 1) {
+			setCurrentStep(STEPS[currentIndex + 1]);
 		}
 	};
 
 	const handlePrevious = () => {
+		setShowErrors(false);
 		const currentIndex = STEPS.indexOf(currentStep);
 		if (currentIndex > 0) {
 			setCurrentStep(STEPS[currentIndex - 1]);
 		}
 	};
 
-	const handleStepClick = async (step: Step) => {
+	const handleStepClick = (step: Step) => {
 		if (step === currentStep) return;
-
-		const currentIndex = STEPS.indexOf(currentStep);
-		const targetIndex = STEPS.indexOf(step);
-
-		if (targetIndex < currentIndex) {
-			setCurrentStep(step);
-			return;
-		}
-
-		const saved = await saveStep(currentStep);
-		if (saved) {
-			setCurrentStep(step);
-		}
+		setShowErrors(false);
+		setCurrentStep(step);
 	};
 
 	const renderStepContent = () => {
@@ -446,41 +432,28 @@ function ProfileForm({ profile, updateProfile }: ProfileFormProps) {
 					{STEPS.map((step, index) => {
 						const Icon = stepIconsMap[step];
 						const isActive = step === currentStep;
-						const isCompleted = index < currentStepIndex;
-						const canNavigate = index <= currentStepIndex;
 
 						return (
 							<div key={step} className="flex items-center shrink-0 sm:flex-1">
 								<button
 									type="button"
-									onClick={() => canNavigate && handleStepClick(step)}
-									disabled={!canNavigate}
+									onClick={() => handleStepClick(step)}
 									className={cn(
-										"flex items-center gap-1.5 sm:gap-2 flex-1 sm:flex-1 p-2 sm:p-4 rounded-lg transition-all",
+										"flex items-center gap-1.5 sm:gap-2 flex-1 sm:flex-1 p-2 sm:p-4 rounded-lg transition-all cursor-pointer",
 										"min-w-[140px] sm:min-w-0",
 										isActive && "bg-primary/10 border-2 border-primary",
-										!isActive && !isCompleted && "border-2 border-muted",
-										isCompleted &&
-											!isActive &&
-											"border-2 border-primary/30 bg-primary/5",
-										!canNavigate && "opacity-50 cursor-not-allowed",
+										!isActive &&
+											"border-2 border-muted hover:border-primary/30",
 									)}
 								>
 									<div
 										className={cn(
 											"shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold transition-colors",
 											isActive && "bg-primary text-primary-foreground",
-											isCompleted && !isActive && "bg-primary/20 text-primary",
-											!isCompleted &&
-												!isActive &&
-												"bg-muted text-muted-foreground",
+											!isActive && "bg-muted text-muted-foreground",
 										)}
 									>
-										{isCompleted && !isActive ? (
-											<Check className="h-3 w-3 sm:h-4 sm:w-4" />
-										) : (
-											<span>{index + 1}</span>
-										)}
+										<span>{index + 1}</span>
 									</div>
 									<div className="flex-1 min-w-0 text-left">
 										<div className="flex items-center gap-1 sm:gap-2">
@@ -534,27 +507,16 @@ function ProfileForm({ profile, updateProfile }: ProfileFormProps) {
 							type="button"
 							variant="outline"
 							onClick={handlePrevious}
-							disabled={currentStepIndex === 0 || form.formState.isSubmitting}
+							disabled={currentStepIndex === 0}
 						>
 							<ChevronLeft className="mr-2 h-4 w-4" />
 							{t("common.previous")}
 						</Button>
 						<div className="flex gap-2">
-							{currentStepIndex < STEPS.length - 1 ? (
+							{currentStep !== "documents" && (
 								<Button
 									type="button"
-									onClick={handleNext}
-									disabled={form.formState.isSubmitting}
-								>
-									{form.formState.isSubmitting && (
-										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									)}
-									{t("common.next")}
-									<ChevronRight className="ml-1 h-4 w-4" />
-								</Button>
-							) : (
-								<Button
-									type="button"
+									variant="outline"
 									onClick={() => saveStep(currentStep)}
 									disabled={form.formState.isSubmitting}
 								>
@@ -563,6 +525,12 @@ function ProfileForm({ profile, updateProfile }: ProfileFormProps) {
 									)}
 									<Save className="mr-2 h-4 w-4" />
 									{t("common.save")}
+								</Button>
+							)}
+							{currentStepIndex < STEPS.length - 1 && (
+								<Button type="button" onClick={handleNext}>
+									{t("common.next")}
+									<ChevronRight className="ml-1 h-4 w-4" />
 								</Button>
 							)}
 						</div>

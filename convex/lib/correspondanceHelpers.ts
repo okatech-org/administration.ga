@@ -85,6 +85,74 @@ export async function generateSequentialReference(
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// REGISTRE COURRIER FORMEL
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Génère un numéro de registre d'arrivée séquentiel.
+ *
+ * Format : ARR/{YYYY}/{NNNNN}
+ * Exemple : ARR/2026/00042
+ *
+ * Chaque organisation a son propre compteur annuel.
+ */
+export async function generateArrivalReference(
+  ctx: MutationCtx,
+  orgId: Id<"orgs">,
+): Promise<string> {
+  const year = new Date().getFullYear();
+  const counterName = `correspondance_arrivee_${orgId}_${year}`;
+
+  const counter = await ctx.db
+    .query("counters")
+    .withIndex("by_name", (q) => q.eq("name", counterName))
+    .unique();
+
+  const nextValue = (counter?.value ?? 0) + 1;
+
+  if (counter) {
+    await ctx.db.patch(counter._id, { value: nextValue });
+  } else {
+    await ctx.db.insert("counters", { name: counterName, value: nextValue });
+  }
+
+  const sequence = String(nextValue).padStart(5, "0");
+  return `ARR/${year}/${sequence}`;
+}
+
+/**
+ * Génère un numéro de registre de départ séquentiel.
+ *
+ * Format : DEP/{YYYY}/{NNNNN}
+ * Exemple : DEP/2026/00042
+ *
+ * Chaque organisation a son propre compteur annuel.
+ */
+export async function generateDepartureReference(
+  ctx: MutationCtx,
+  orgId: Id<"orgs">,
+): Promise<string> {
+  const year = new Date().getFullYear();
+  const counterName = `correspondance_depart_${orgId}_${year}`;
+
+  const counter = await ctx.db
+    .query("counters")
+    .withIndex("by_name", (q) => q.eq("name", counterName))
+    .unique();
+
+  const nextValue = (counter?.value ?? 0) + 1;
+
+  if (counter) {
+    await ctx.db.patch(counter._id, { value: nextValue });
+  } else {
+    await ctx.db.insert("counters", { name: counterName, value: nextValue });
+  }
+
+  const sequence = String(nextValue).padStart(5, "0");
+  return `DEP/${year}/${sequence}`;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // MATRICE DE TRANSITIONS DE STATUTS
 // ═════════════════════════════════════════════════════════════════════════════
 

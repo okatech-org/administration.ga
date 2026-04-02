@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
+import { backofficeQuery } from "./lib/customFunctions";
 import { calculerScorePondere } from "./lib/types";
 import {
   canTransition,
@@ -23,7 +24,7 @@ import { RequestPriority, type RequestStatus } from "./lib/constants";
  * Évaluer une décision multi-critères avec scoring pondéré.
  * Utilisé pour les validations complexes (profil complet, éligibilité service, etc.)
  */
-export const evaluerDecision = mutation({
+export const evaluerDecision = internalMutation({
   args: {
     critereData: v.array(
       v.object({
@@ -47,7 +48,7 @@ export const evaluerDecision = mutation({
  * Valider si une transition de statut est autorisée dans le workflow des demandes.
  * Connecté à la machine à états requestWorkflow.ts.
  */
-export const validerTransition = query({
+export const validerTransition = backofficeQuery({
   args: {
     etapeActuelle: v.string(),
     action: v.string(),
@@ -76,7 +77,7 @@ export const validerTransition = query({
  * Calculer un score de priorité pour une demande basé sur plusieurs facteurs.
  * Aide les agents à trier les demandes par urgence.
  */
-export const calculerPriorite = query({
+export const calculerPriorite = backofficeQuery({
   args: {
     requestId: v.id("requests"),
   },

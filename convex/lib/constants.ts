@@ -718,6 +718,7 @@ export const DOCUMENT_TYPES_BY_CATEGORY: Record<
     DetailedDocumentType.ResidentCard,
     DetailedDocumentType.ResidencePermitReceipt,
     DetailedDocumentType.VitaleCardCertificate,
+    DetailedDocumentType.IdentityPhoto,
   ],
   [DocumentTypeCategory.CivilStatus]: [
     DetailedDocumentType.BirthCertificate,
@@ -843,7 +844,6 @@ export const DOCUMENT_TYPES_BY_CATEGORY: Record<
     DetailedDocumentType.FiscalStamp,
   ],
   [DocumentTypeCategory.Other]: [
-    DetailedDocumentType.IdentityPhoto,
     DetailedDocumentType.ForeignCivilStatusDocument,
     DetailedDocumentType.SwornTranslation,
     DetailedDocumentType.PowerOfAttorney,

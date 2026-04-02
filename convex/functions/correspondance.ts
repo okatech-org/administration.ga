@@ -391,6 +391,23 @@ export const deleteItem = authMutation({
   },
 });
 
+/** Restore an item from trash (undo soft-delete) */
+export const restoreFromTrash = authMutation({
+  args: { itemId: v.id("correspondanceItems") },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+    if (!item.deletedAt) throw error(ErrorCode.VALIDATION_ERROR, "Cet élément n'est pas dans la corbeille");
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
+
+    await ctx.db.patch(args.itemId, {
+      deletedAt: undefined,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
 // ═════════════════════════════════════════════════════════════════════════════
 // ATTACHMENTS
 // ═════════════════════════════════════════════════════════════════════════════

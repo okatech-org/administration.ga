@@ -5,7 +5,12 @@ import { authComponent, createAuth } from "./betterAuth/auth";
 import { hashPassword } from "better-auth/crypto";
 import { generateRandomString } from "better-auth/crypto";
 import { validateWarehouseApiKey } from "./lib/warehouseAuth";
+import { getTrustedClientIp } from "./lib/httpSecurity";
+import { validateAllSecrets } from "./lib/startupChecks";
 import { WAREHOUSE_TABLES } from "./functions/warehouse";
+
+// ── Verification securite au chargement du module ──
+validateAllSecrets();
 
 const http = httpRouter();
 
@@ -56,6 +61,47 @@ function buildPreflightHeaders(requestOrigin: string | null): Record<string, str
   };
 }
 
+// ── Verification IP bloquee — systeme de defense automatique ──
+// Tarpit adaptatif : delai exponentiel selon le score de menace
+function computeTarpitDelay(score: number): number {
+  // score 0 → 0ms | score 50 → 5s | score 100 → 10s | score 200+ → 30s max
+  return Math.min(Math.floor(score * 100), 30_000);
+}
+
+async function checkIpBlock(
+  ctx: { runQuery: (fn: any, args: any) => Promise<any> },
+  request: Request,
+): Promise<Response | null> {
+  const ip = getTrustedClientIp(request);
+  const { blocked, score } = (await ctx.runQuery(
+    internal.functions.autoDefense.isIpBlocked,
+    { ip },
+  )) as { blocked: boolean; score: number };
+  if (blocked) {
+    // Tarpit adaptatif : plus le score est eleve, plus le delai est long
+    const delay = computeTarpitDelay(score);
+    if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+    return new Response(JSON.stringify({ error: "Service unavailable" }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  return null;
+}
+
+// ── Validation taille payload — protection anti-DoS ──
+function isPayloadTooLarge(request: Request, maxBytes = 50_000): boolean {
+  const contentLength = request.headers.get("content-length");
+  return !!contentLength && parseInt(contentLength, 10) > maxBytes;
+}
+
+// ── Detection production — garde independante de DEV_SIGNIN_ENABLED ──
+const PRODUCTION_DOMAINS = ["consulat.ga", "diplomate.ga", "admin.consulat.ga"];
+function isProductionDeployment(): boolean {
+  const siteUrl = process.env.CONVEX_SITE_URL ?? "";
+  return PRODUCTION_DOMAINS.some((d) => siteUrl.includes(d));
+}
+
 // ============================================================================
 // Better Auth route handlers (manual registration for dynamic crossDomain)
 // ============================================================================
@@ -92,16 +138,28 @@ http.route({
   path: "/dev/sign-in",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
-    // ── Safety guard: only active when DEV_SIGNIN_ENABLED=true ──
-    if (process.env.DEV_SIGNIN_ENABLED !== "true") {
-      return new Response("Dev sign-in not enabled", { status: 403 });
+    // ── Double garde : desactive si non explicitement active OU si en production ──
+    if (process.env.DEV_SIGNIN_ENABLED !== "true" || isProductionDeployment()) {
+      return new Response("Not available", { status: 403 });
     }
 
     const origin = request.headers.get("origin");
     const corsHeaders = buildCorsHeaders(origin);
 
+    // ── IP bloquee ? ──
+    const ipBlockResponse = await checkIpBlock(ctx, request);
+    if (ipBlockResponse) return ipBlockResponse;
+
+    // ── Validation taille payload ──
+    if (isPayloadTooLarge(request, 10_000)) {
+      return new Response(JSON.stringify({ error: "Payload too large" }), {
+        status: 413,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     // ── Rate limiting ──
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const ip = getTrustedClientIp(request);
     const { ok, retryAfter } = await ctx.runMutation(internal.functions.authRateLimit.checkDevSigninRateLimit, { key: ip }) as any;
     if (!ok) {
       return new Response(JSON.stringify({ error: "Too many requests" }), {
@@ -131,7 +189,7 @@ http.route({
       const users = ((usersResult as any)?.page ?? usersResult ?? []) as any[];
       if (users.length === 0) {
         return new Response(
-          JSON.stringify({ error: `No user found for ${email}` }),
+          JSON.stringify({ error: "Invalid credentials" }),
           { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } },
         );
       }
@@ -186,7 +244,7 @@ http.route({
       // The client will call authClient.signIn.email() with it,
       // which goes through the proper crossDomain flow and sets cookies correctly.
       // The password will be cleared automatically after 30s via scheduler.
-      await ctx.scheduler.runAfter(30_000, internal.functions.roleConfig.clearTempPassword, {
+      await ctx.scheduler.runAfter(5_000, internal.functions.roleConfig.clearTempPassword, {
         accountId: accounts[0]?._id ?? accounts[0]?.id ?? null,
       });
 
@@ -197,7 +255,7 @@ http.route({
     } catch (error: any) {
       console.error("[dev/sign-in] error:", error);
       return new Response(
-        JSON.stringify({ error: error.message ?? "Internal error" }),
+        JSON.stringify({ error: "Authentication service error" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
@@ -225,6 +283,18 @@ http.route({
     const origin = request.headers.get("origin");
     const corsHeaders = buildCorsHeaders(origin);
 
+    // ── IP bloquee ? ──
+    const ipBlockResponse = await checkIpBlock(ctx, request);
+    if (ipBlockResponse) return ipBlockResponse;
+
+    // ── Validation taille payload ──
+    if (isPayloadTooLarge(request, 10_000)) {
+      return new Response(JSON.stringify({ error: "Payload too large" }), {
+        status: 413,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     const body = (await request.json()) as { email?: string; phone?: string; pin?: string };
     if (!body.pin || (!body.email && !body.phone)) {
       return new Response(JSON.stringify({ error: "email/phone and pin required" }), {
@@ -248,7 +318,7 @@ http.route({
 
     try {
       // 1. Verify PIN via the pin.verifyPin mutation
-      const result = await ctx.runMutation(api.functions.pin.verifyPin, {
+      const result = await ctx.runMutation(internal.functions.pin.verifyPin, {
         email: body.email,
         phone: body.phone,
         pin: body.pin,
@@ -341,7 +411,7 @@ http.route({
       }
 
       // 4. Clean up temp password after 30s
-      await ctx.scheduler.runAfter(30_000, internal.functions.roleConfig.clearTempPassword, {
+      await ctx.scheduler.runAfter(5_000, internal.functions.roleConfig.clearTempPassword, {
         accountId: accounts[0]?._id ?? accounts[0]?.id ?? null,
       });
 
@@ -353,7 +423,7 @@ http.route({
     } catch (err: any) {
       console.error("[pin-session] error:", err);
       return new Response(
-        JSON.stringify({ error: err.message ?? "Internal error" }),
+        JSON.stringify({ error: "Authentication service error" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
@@ -393,6 +463,19 @@ http.route({
       return Response.redirect(`${siteUrl}/sign-in?from=desktop`, 302);
     }
 
+    // ── Rate limiting — cle basee sur le token de session ──
+    const rateLimitKey = session.session.token.slice(0, 16);
+    const { ok: rlOk, retryAfter: rlRetry } = await ctx.runMutation(
+      internal.functions.authRateLimit.checkOttGenerateRateLimit,
+      { key: rateLimitKey },
+    ) as { ok: boolean; retryAfter: number };
+    if (!rlOk) {
+      return new Response("Too many requests", {
+        status: 429,
+        headers: { "Retry-After": String(Math.ceil(rlRetry / 1000)) },
+      });
+    }
+
     // Generate a one-time token linked to this session
     const token = generateRandomString(32);
     const expiresAt = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes
@@ -423,6 +506,14 @@ http.route({
   path: "/stripe-webhook",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
+    // Stripe payloads sont typiquement <100KB
+    if (isPayloadTooLarge(request, 500_000)) {
+      return new Response(JSON.stringify({ error: "Payload too large" }), {
+        status: 413,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const signature = request.headers.get("stripe-signature");
     const payload = await request.text();
 
@@ -441,7 +532,10 @@ http.route({
       });
     } catch (error: any) {
       console.error("Stripe webhook error:", error);
-      return new Response(error.message || "Webhook error", { status: 400 });
+      return new Response(JSON.stringify({ error: "Webhook processing error" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
   }),
 });
@@ -511,5 +605,95 @@ for (const tableName of WAREHOUSE_TABLES) {
     handler: warehouseHandler,
   });
 }
+
+// ============================================================================
+// Honeypot routes — detection des scanners et attaquants automatises
+// Chemins courants testes par les bots ; un acces = IP suspecte
+// ============================================================================
+
+const HONEYPOT_PATHS = [
+  "/admin/login", "/wp-admin", "/wp-login.php",
+  "/.env", "/.git/config", "/config.json",
+  "/api/v1/admin", "/phpmyadmin", "/xmlrpc.php",
+];
+
+const honeypotHandler = httpAction(async (ctx, request) => {
+  const ip = getTrustedClientIp(request);
+  const url = new URL(request.url);
+
+  await ctx.scheduler.runAfter(0, internal.limbique.emettreSignal, {
+    type: "HONEYPOT_TRIGGERED",
+    source: "SECURITE",
+    entiteType: "ip",
+    entiteId: ip,
+    payload: {
+      path: url.pathname,
+      userAgent: request.headers.get("user-agent") ?? "unknown",
+      ip,
+    },
+    confiance: 1,
+    priorite: "HIGH",
+    correlationId: crypto.randomUUID(),
+  });
+
+  // Enregistrer dans le systeme de defense automatique
+  await ctx.runMutation(internal.functions.autoDefense.recordThreatEvent, {
+    ip,
+    eventType: "HONEYPOT_TRIGGERED",
+    metadata: { path: url.pathname },
+  });
+
+  // Tarpit : ralentir l'attaquant (3s de delai)
+  await new Promise((r) => setTimeout(r, 3000));
+  return new Response(JSON.stringify({ error: "Not found" }), {
+    status: 404,
+    headers: { "Content-Type": "application/json" },
+  });
+});
+
+for (const path of HONEYPOT_PATHS) {
+  http.route({ path, method: "GET", handler: honeypotHandler });
+}
+
+// ============================================================================
+// Canary token — alerte critique si des donnees volees sont utilisees
+// Un acces a /canary/{id} signifie qu'un token injecte a ete declenche
+// ============================================================================
+
+http.route({
+  pathPrefix: "/canary/",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const tokenId = url.pathname.split("/canary/")[1] ?? "unknown";
+    const ip = getTrustedClientIp(request);
+
+    await ctx.scheduler.runAfter(0, internal.limbique.emettreSignal, {
+      type: "CANARY_TRIGGERED",
+      source: "SECURITE",
+      entiteType: "canary",
+      entiteId: tokenId,
+      payload: {
+        tokenId,
+        ip,
+        userAgent: request.headers.get("user-agent") ?? "unknown",
+        triggeredAt: Date.now(),
+      },
+      confiance: 1,
+      priorite: "CRITICAL",
+      correlationId: crypto.randomUUID(),
+    });
+
+    // Enregistrer dans le systeme de defense automatique
+    await ctx.runMutation(internal.functions.autoDefense.recordThreatEvent, {
+      ip,
+      eventType: "CANARY_TRIGGERED",
+      metadata: { tokenId },
+    });
+
+    // Reponse silencieuse pour ne pas alerter l'attaquant
+    return new Response("", { status: 200 });
+  }),
+});
 
 export default http;

@@ -621,8 +621,7 @@ export const getStats = backofficeQuery({
   },
 });
 
-import { query } from "../_generated/server";
-export const getStatsDev = query({
+export const getStatsDev = backofficeQuery({
   args: {},
   handler: async (ctx) => {
     return {

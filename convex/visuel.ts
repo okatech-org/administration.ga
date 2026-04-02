@@ -1,6 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { authQuery, authMutation } from "./lib/customFunctions";
 import { SIGNAL_TYPES, CATEGORIES_ACTION } from "./lib/types";
 
 // ============================================================================
@@ -13,7 +13,7 @@ import { SIGNAL_TYPES, CATEGORIES_ACTION } from "./lib/types";
 /**
  * Générer une URL d'upload vers le storage Convex.
  */
-export const genererUrlUpload = mutation({
+export const genererUrlUpload = authMutation({
   args: {},
   handler: async (ctx) => {
     return await ctx.storage.generateUploadUrl();
@@ -23,7 +23,7 @@ export const genererUrlUpload = mutation({
 /**
  * Récupérer l'URL publique d'un fichier stocké.
  */
-export const recupererDossierMedia = query({
+export const recupererDossierMedia = authQuery({
   args: { storageId: v.id("_storage") },
   handler: async (ctx, args) => {
     return await ctx.storage.getUrl(args.storageId);
@@ -33,7 +33,7 @@ export const recupererDossierMedia = query({
 /**
  * Supprimer un fichier du storage avec signal NEOCORTEX.
  */
-export const supprimerMedia = mutation({
+export const supprimerMedia = authMutation({
   args: { storageId: v.id("_storage") },
   handler: async (ctx, args) => {
     await ctx.storage.delete(args.storageId);
@@ -56,7 +56,7 @@ export const supprimerMedia = mutation({
  * Enregistrer un upload réussi et émettre le signal correspondant.
  * Appelé par le frontend après un upload storage réussi.
  */
-export const enregistrerUpload = mutation({
+export const enregistrerUpload = authMutation({
   args: {
     storageId: v.id("_storage"),
     filename: v.string(),

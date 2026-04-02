@@ -133,6 +133,8 @@
       "version": "0.0.1",
       "dependencies": {
         "@convex-dev/better-auth": "^0.11.3",
+        "@livekit/components-react": "^2.9.20",
+        "@livekit/components-styles": "^1.2.0",
         "@react-pdf/renderer": "^4.3.2",
         "@tailwindcss/vite": "^4.1.18",
         "@tanstack/react-form": "^1.27.7",
@@ -160,6 +162,7 @@
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
         "react-i18next": "^16.5.0",
+        "react-markdown": "^10.1.0",
         "recharts": "^3.8.1",
         "sonner": "^2.0.7",
         "tailwind-merge": "^3.5.0",

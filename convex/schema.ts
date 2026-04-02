@@ -68,6 +68,7 @@ import {
   diplomaticReportsTable,
   chatsTable,
   chatMessagesTable,
+  ipThreatScoresTable,
 } from "./schemas";
 
 export default defineSchema({
@@ -141,4 +142,6 @@ export default defineSchema({
   // Chat peer-to-peer
   chats: chatsTable,
   chatMessages: chatMessagesTable,
+  // Defense automatique
+  ipThreatScores: ipThreatScoresTable,
 });

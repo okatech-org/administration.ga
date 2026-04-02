@@ -30,6 +30,12 @@ export const chatsTable = defineTable({
   lastMessageAt: v.optional(v.number()),
   lastMessageBy: v.optional(v.id("users")),
 
+  // Type de thread : p2p (agent↔citoyen classique) ou standard (Mr Ray / Standard)
+  type: v.optional(v.union(v.literal("p2p"), v.literal("standard"))),
+
+  // Pour les threads standard : agent humain qui a pris en charge
+  claimedBy: v.optional(v.id("users")),
+
   // Statut
   status: v.union(v.literal("active"), v.literal("archived")),
 
@@ -38,4 +44,5 @@ export const chatsTable = defineTable({
 })
   .index("by_participantA_B", ["participantA", "participantB"])
   .index("by_participantA", ["participantA"])
-  .index("by_participantB", ["participantB"]);
+  .index("by_participantB", ["participantB"])
+  .index("by_org_type", ["orgId", "type"]);

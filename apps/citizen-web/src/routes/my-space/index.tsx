@@ -68,28 +68,14 @@ function UserDashboard() {
 	const { data: appointments } = useAuthenticatedConvexQuery(api.functions.appointments.listByUser, {});
 	const { data: posts } = useConvexQuery(api.functions.posts.getLatest, { limit: 3 });
 
-	const { data: registrations } = useAuthenticatedConvexQuery(
-		api.functions.consularRegistrations.listByProfile,
-		{},
-	);
-	const latestRegistration = (registrations as any[])?.[0];
-	const { data: registrationRequest } = useAuthenticatedConvexQuery(
-		api.functions.requests.getById,
-		latestRegistration?.requestId ? { requestId: latestRegistration.requestId } : "skip",
-	);
-	const requestReference = registrationRequest?.reference;
-	const orgName = (registrationRequest?.org as any)?.name;
-
 	const { data: cvData } = useAuthenticatedConvexQuery(api.functions.cv.getMine, {});
 	const { data: childProfiles } = useAuthenticatedConvexQuery(api.functions.childProfiles.getMine, {});
 
-	// Load identity photo from profile documents
-	const identityPhotoId = (profile as any)?.documents?.identityPhoto;
-	const { data: identityPhotoDocs } = useAuthenticatedConvexQuery(
-		api.functions.documents.getDocumentsByIds,
-		identityPhotoId ? { ids: [identityPhotoId] } : "skip",
+	// Photo d'identite : resolution fiable (lien direct OU recherche par type, plus recent en priorite)
+	const { data: identityPhotoUrl } = useAuthenticatedConvexQuery(
+		api.functions.documents.getMyIdentityPhotoUrl,
+		{},
 	);
-	const identityPhotoUrl = (identityPhotoDocs as any)?.[0]?.files?.[0]?.url ?? null;
 
 	const children = (childProfiles ?? []) as any[];
 	const p = profile as any;
@@ -342,10 +328,10 @@ function UserDashboard() {
 										<span className="text-xs font-bold ">Dossier Citoyen</span>
 									</div>
 									<div className="flex items-center gap-2">
-										{requestReference && (
+										{p?.matricule && (
 											<div className="text-[10px] text-muted-foreground flex items-center gap-1.5">
-												<span className="font-medium text-foreground">{t("mySpace.header.dossier", "Dossier N°")} :</span>
-												<span className="font-mono font-semibold text-teal-600 dark:text-teal-400">{requestReference}</span>
+												<span className="font-medium text-foreground">Matricule :</span>
+												<span className="font-mono font-semibold text-teal-600 dark:text-teal-400">{p.matricule}</span>
 											</div>
 										)}
 									</div>
