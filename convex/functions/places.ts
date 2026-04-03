@@ -1,6 +1,6 @@
 /**
  * Google Places API (New) integration for address autocomplete
- * Uses GEMINI_API_KEY with Places API (New) enabled in Google Cloud Console
+ * Uses GOOGLE_CLOUD_MAPS_API with Places API (New) enabled in Google Cloud Console
  *
  * Docs: https://developers.google.com/maps/documentation/places/web-service/op-overview
  */
@@ -51,7 +51,7 @@ export const autocomplete = action({
       return { success: true, predictions: [] };
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GOOGLE_CLOUD_MAPS_API;
     if (!apiKey) {
       return {
         success: false,
@@ -143,7 +143,7 @@ export const getDetails = action({
     details?: PlaceDetails;
     error?: string;
   }> => {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GOOGLE_CLOUD_MAPS_API;
     if (!apiKey) {
       return { success: false, error: "API key not configured" };
     }
