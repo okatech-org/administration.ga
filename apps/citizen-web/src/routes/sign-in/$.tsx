@@ -43,7 +43,7 @@ function SignInPage() {
 	const navigate = useNavigate();
 	const formId = useId();
 	const redirectTo =
-		new URLSearchParams(window.location.search).get("redirect") || "/";
+		new URLSearchParams(window.location.search).get("redirect") || "/my-space";
 
 	/** Translate a Better Auth error to French */
 	const translateAuthError = (message: string | undefined, fallbackKey: string) => {
@@ -438,7 +438,7 @@ function SignInPage() {
 						<div className="text-center text-sm text-muted-foreground pt-4">
 							{t("errors.auth.noAccount")}{" "}
 							<a
-								href="/register"
+								href={`/register${window.location.search}`}
 								className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline"
 							>
 								{t("errors.auth.createAccount")}

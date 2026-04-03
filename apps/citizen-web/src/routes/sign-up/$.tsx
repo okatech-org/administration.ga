@@ -264,7 +264,7 @@ function SignUpPage() {
 							<div className="text-center text-sm text-muted-foreground">
 								{t("errors.auth.alreadyHaveAccount")}{" "}
 								<a
-									href="/sign-in"
+									href={`/sign-in${window.location.search}`}
 									className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline"
 								>
 									{t("header.nav.signIn")}

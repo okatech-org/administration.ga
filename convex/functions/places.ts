@@ -78,9 +78,8 @@ export const autocomplete = action({
         body.includedRegionCodes = regionCodes;
       }
 
-      if (types) {
-        body.includedPrimaryTypes = [types];
-      }
+      // Note: "address" is not a valid includedPrimaryTypes value in Places API (New).
+      // Omitting it returns all types including addresses, which is the desired behavior.
 
       const response = await fetch(AUTOCOMPLETE_URL, {
         method: "POST",
