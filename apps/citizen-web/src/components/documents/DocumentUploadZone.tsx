@@ -20,6 +20,7 @@ import {
 	Upload,
 	X,
 } from "lucide-react";
+import imageCompression from "browser-image-compression";
 import {
 	forwardRef,
 	useCallback,
@@ -32,6 +33,21 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { ImageCropDialog } from "./ImageCropDialog";
+
+async function compressImageIfNeeded(file: File): Promise<File> {
+	if (!file.type.startsWith("image/") || file.size <= 1 * 1024 * 1024) {
+		return file;
+	}
+	const compressed = await imageCompression(file, {
+		maxSizeMB: 1,
+		maxWidthOrHeight: 2048,
+		useWebWorker: true,
+	});
+	return new File([compressed], file.name, {
+		type: compressed.type,
+		lastModified: Date.now(),
+	});
+}
 
 interface UploadedFile {
 	storageId: Id<"_storage">;
@@ -124,6 +140,7 @@ export const DocumentUploadZone = forwardRef<
 		ref,
 	) => {
 		const inputRef = useRef<HTMLInputElement>(null);
+		const [isCompressing, setIsCompressing] = useState(false);
 		const [documentId, setDocumentId] = useState<Id<"documents"> | undefined>(
 			value,
 		);
@@ -372,18 +389,29 @@ export const DocumentUploadZone = forwardRef<
 					}
 				}
 
+				// Compress images client-side
+				setIsCompressing(true);
+				let compressed: File[];
+				try {
+					compressed = await Promise.all(
+						fileArray.map(compressImageIfNeeded),
+					);
+				} finally {
+					setIsCompressing(false);
+				}
+
 				// If it's an identity photo and it's a single image, intercept for cropping
 				if (
 					documentType === DetailedDocumentType.IdentityPhoto &&
-					fileArray.length === 1 &&
-					fileArray[0].type.startsWith("image/")
+					compressed.length === 1 &&
+					compressed[0].type.startsWith("image/")
 				) {
-					setCropFile(fileArray[0]);
+					setCropFile(compressed[0]);
 					return;
 				}
 
 				// Upload files normally
-				for (const file of fileArray) {
+				for (const file of compressed) {
 					await uploadFile(file);
 				}
 			},
@@ -501,10 +529,10 @@ export const DocumentUploadZone = forwardRef<
 		);
 
 		const openFilePicker = useCallback(() => {
-			if (!disabled && !isDeleting) {
+			if (!disabled && !isDeleting && !isCompressing) {
 				inputRef.current?.click();
 			}
-		}, [disabled, isDeleting]);
+		}, [disabled, isDeleting, isCompressing]);
 
 		// States
 		const isUploading = Array.from(uploads.values()).some(
@@ -515,7 +543,6 @@ export const DocumentUploadZone = forwardRef<
 			: uploadedFiles.length > 0;
 		const displayFiles = localOnly ? localFiles : uploadedFiles;
 		const canAddMore = multiple && displayFiles.length < maxFiles;
-
 		return (
 			<div className={cn("relative", className)} data-testid={dataTestId}>
 				<input
@@ -527,7 +554,6 @@ export const DocumentUploadZone = forwardRef<
 					onChange={handleInputChange}
 					disabled={disabled}
 				/>
-
 				<div
 					className={cn(
 						"relative border-2 border-dashed rounded-lg p-4 transition-all",
@@ -585,7 +611,7 @@ export const DocumentUploadZone = forwardRef<
 											key={`local-${idx}`}
 											className="flex items-center gap-2 bg-white dark:bg-muted/30 rounded-md px-3 py-2 border"
 										>
-											<FileIcon className="h-4 w-4 text-green-600 flex-shrink-0" />
+											<FileIcon className="h-4 w-4 text-green-600 shrink-0" />
 											<span className="text-sm truncate flex-1">
 												{file.filename}
 											</span>
@@ -609,7 +635,7 @@ export const DocumentUploadZone = forwardRef<
 											key={file.storageId}
 											className="flex items-center gap-2 bg-white dark:bg-muted/30 rounded-md px-3 py-2 border"
 										>
-											<File className="h-4 w-4 text-green-600 flex-shrink-0" />
+											<File className="h-4 w-4 text-green-600 shrink-0" />
 											<span className="text-sm truncate flex-1">
 												{file.filename}
 											</span>
@@ -682,11 +708,23 @@ export const DocumentUploadZone = forwardRef<
 						</Button>
 					)}
 
+					{/* Compressing indicator */}
+					{isCompressing && (
+						<div className="flex items-center justify-center gap-2 py-4">
+							<Loader2 className="h-4 w-4 animate-spin text-primary" />
+							<span className="text-sm text-muted-foreground">
+								Optimisation en cours...
+							</span>
+						</div>
+					)}
+
 					{/* Empty state - dropzone */}
-					{!hasFiles && !isUploading && (
+					{!hasFiles && !isUploading && !isCompressing && (
 						<div className="text-center py-4">
 							<Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-							<p className="text-xs text-muted-foreground">{formatHint}</p>
+							<p className="text-xs text-muted-foreground">
+								{formatHint}
+							</p>
 							{multiple && (
 								<p className="text-xs text-muted-foreground mt-1">
 									Max {maxFiles} fichiers
@@ -699,7 +737,7 @@ export const DocumentUploadZone = forwardRef<
 				{/* External validation error */}
 				{externalError && (
 					<p className="mt-1.5 text-sm text-destructive flex items-center gap-1.5">
-						<AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+						<AlertCircle className="h-3.5 w-3.5 shrink-0" />
 						{externalError}
 					</p>
 				)}

@@ -11,7 +11,7 @@ import {
 /**
  * Full LongStay consular registration flow.
  *
- * Steps: account → documents → basicInfo → family → contacts → profession → review
+ * Steps: documents → basicInfo → family → contacts → profession → review
  *
  * Prerequisites:
  *   - Dev server running (`bun run dev`)
@@ -27,46 +27,33 @@ const TEST_EMAIL = "itoutouberny@gmail.com";
 test.describe("LongStay Registration — Full Flow", () => {
   test("completes the full registration wizard", async ({ page }) => {
     // ──────────────────────────────────────────────────────────
-    // Step 0: Navigate & authenticate
+    // Step 0: Authenticate then navigate to wizard
     // ──────────────────────────────────────────────────────────
-    // First authenticate, then navigate to the registration wizard
-    // This ensures cookies are set before the wizard loads
+    // Auth is now separate from the wizard — sign in first,
+    // then navigate to /register which starts at Documents step.
     await page.goto("/register");
     await devSignIn(page, TEST_EMAIL);
 
-    // Now navigate to the wizard with auth already active
     await page.goto("/register?type=long_stay");
 
-    // Wait for the wizard to detect auth and advance past the account step.
-    // It may show a loading spinner ("Votre compte est en cours de création...")
-    // then advance to the documents step.
-    // We wait for either doc upload zones OR the basicInfo firstName field.
+    // Wizard starts directly on the Documents step (no account step)
     await expect(
-      page
-        .locator('[data-testid^="doc-upload-"]')
-        .first()
-        .or(page.locator("#firstName"))
+      page.locator('[data-testid^="doc-upload-"]').first()
     ).toBeVisible({ timeout: 30_000 });
 
     // ──────────────────────────────────────────────────────────
     // Step 1: Documents
     // ──────────────────────────────────────────────────────────
-    const isDocStep = (await page.locator('[data-testid^="doc-upload-"]').count()) > 0;
+    await uploadDocument(page, "identityPhoto", "test-photo.jpg");
+    await uploadDocument(page, "passport", "test-document.pdf");
+    await uploadDocument(page, "birthCertificate", "test-document.pdf");
+    await uploadDocument(page, "addressProof", "test-document.pdf");
 
-    if (isDocStep) {
-      // Upload test fixtures to each document zone
-      await uploadDocument(page, "identityPhoto", "test-photo.jpg");
-      await uploadDocument(page, "passport", "test-document.pdf");
-      await uploadDocument(page, "birthCertificate", "test-document.pdf");
-      await uploadDocument(page, "addressProof", "test-document.pdf");
-
-      await clickNext(page);
-    }
+    await clickNext(page);
 
     // ──────────────────────────────────────────────────────────
     // Step 2: Basic Info (Identité)
     // ──────────────────────────────────────────────────────────
-    // Wait for the basic info form to appear
     await expect(page.locator("#firstName")).toBeVisible({ timeout: 10_000 });
 
     await page.locator("#firstName").fill("Jean-Test");
@@ -74,7 +61,7 @@ test.describe("LongStay Registration — Full Flow", () => {
     await page.locator("#birthDate").fill("1990-05-15");
     await page.locator("#birthPlace").fill("Libreville");
 
-    // Gender select (MultiSelect with data-testid)
+    // Gender select
     await selectOption(page, "select-gender", /masculin|male|homme/i);
 
     await clickNext(page);
@@ -82,12 +69,10 @@ test.describe("LongStay Registration — Full Flow", () => {
     // ──────────────────────────────────────────────────────────
     // Step 3: Family (Famille) — LongStay only
     // ──────────────────────────────────────────────────────────
-    // Wait for the family step
     await expect(
       page.locator('[data-testid="select-maritalStatus"]')
     ).toBeVisible({ timeout: 10_000 });
 
-    // Select "Célibataire" (Single)
     await selectOption(page, "select-maritalStatus", /célibataire|single/i);
 
     // Father info
@@ -103,7 +88,6 @@ test.describe("LongStay Registration — Full Flow", () => {
     // ──────────────────────────────────────────────────────────
     // Step 4: Contacts
     // ──────────────────────────────────────────────────────────
-    // Wait for the contact fields
     await expect(
       page.locator('[name="contactInfo.email"]')
     ).toBeVisible({ timeout: 10_000 });
@@ -154,10 +138,8 @@ test.describe("LongStay Registration — Full Flow", () => {
       page.locator('[data-testid="select-workStatus"]')
     ).toBeVisible({ timeout: 10_000 });
 
-    // Select "Employed" / "Salarié"
     await selectOption(page, "select-workStatus", /salarié|employed/i);
 
-    // Fill employer and profession (conditionally visible)
     const employerField = page.locator('[name="professionalInfo.employer"]');
     if (await employerField.isVisible()) {
       await employerField.fill("ACME Corp");
@@ -171,7 +153,6 @@ test.describe("LongStay Registration — Full Flow", () => {
     // ──────────────────────────────────────────────────────────
     // Step 6: Review & Submit
     // ──────────────────────────────────────────────────────────
-    // Verify some of our entered data appears in the review summary
     await expect(page.getByText("Jean-Test")).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText("Mba-E2E")).toBeVisible();
 
@@ -180,18 +161,16 @@ test.describe("LongStay Registration — Full Flow", () => {
     await expect(termsCheckbox).toBeVisible({ timeout: 5_000 });
     await termsCheckbox.check({ force: true });
 
-    // Submit the registration
+    // Submit
     await clickSubmit(page);
 
     // ──────────────────────────────────────────────────────────
     // Success screen
     // ──────────────────────────────────────────────────────────
-    // Wait for the submission progress to complete and success message
     await expect(
       page.getByText(/demande envoyée|succès|réussi|success/i)
     ).toBeVisible({ timeout: 30_000 });
 
-    // The "Accéder à mon Espace" button should be present
     await expect(
       page.getByRole("button", { name: /accéder/i })
     ).toBeVisible();

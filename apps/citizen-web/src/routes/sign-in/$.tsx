@@ -42,6 +42,8 @@ function SignInPage() {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const formId = useId();
+	const redirectTo =
+		new URLSearchParams(window.location.search).get("redirect") || "/my-space";
 
 	/** Translate a Better Auth error to French */
 	const translateAuthError = (message: string | undefined, fallbackKey: string) => {
@@ -144,7 +146,7 @@ function SignInPage() {
 				} else {
 					captureEvent("user_logged_in", { method: "pin" });
 					await new Promise((r) => setTimeout(r, 500));
-					navigate({ to: "/" });
+					navigate({ to: redirectTo });
 				}
 			} else {
 				const errorData = await response.json().catch(() => ({}));
@@ -224,7 +226,7 @@ function SignInPage() {
 					// Marquer OTP vérifié (pour le timer 90 jours du PIN)
 					try { await markOtpVerified({}); } catch { /* ignore si pas connecté */ }
 					await new Promise((r) => setTimeout(r, 500));
-					navigate({ to: "/" });
+					navigate({ to: redirectTo });
 				}
 			} else {
 				const result = await authClient.signIn.emailOtp({
@@ -237,7 +239,7 @@ function SignInPage() {
 					captureEvent("user_logged_in", { method: "email_otp" });
 					try { await markOtpVerified({}); } catch { /* ignore */ }
 					await new Promise((r) => setTimeout(r, 500));
-					navigate({ to: "/" });
+					navigate({ to: redirectTo });
 				}
 			}
 		} catch {
@@ -263,7 +265,7 @@ function SignInPage() {
 			} else {
 				captureEvent("user_logged_in", { method: "password" });
 				await new Promise((r) => setTimeout(r, 500));
-				navigate({ to: "/" });
+				navigate({ to: redirectTo });
 			}
 		} catch {
 			setError(t("errors.auth.signInFailed"));
@@ -436,7 +438,7 @@ function SignInPage() {
 						<div className="text-center text-sm text-muted-foreground pt-4">
 							{t("errors.auth.noAccount")}{" "}
 							<a
-								href="/register"
+								href={`/register${window.location.search}`}
 								className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline"
 							>
 								{t("errors.auth.createAccount")}

@@ -26,7 +26,7 @@ import {
 	User,
 	UserPlus,
 } from "lucide-react";
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -67,7 +67,6 @@ import {
 	type RegistrationStepId,
 } from "@/lib/registrationConfig";
 import { AddressWithAutocomplete } from "./AddressWithAutocomplete";
-import { InlineAuth } from "./InlineAuth";
 
 // ============================================================================
 // VALIDATION SCHEMA
@@ -189,7 +188,7 @@ export function ForeignerRegistrationForm({
 }: ForeignerRegistrationFormProps) {
 	const { t } = useTranslation();
 	const formId = useId();
-	const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+	const { isLoading: isAuthLoading } = useConvexAuth();
 	const { userData } = useCitizenData();
 	const { mutateAsync: createProfile } = useConvexMutationQuery(
 		api.functions.profiles.createFromRegistration,
@@ -232,8 +231,8 @@ export function ForeignerRegistrationForm({
 	// Track inline document validation errors
 	const [docErrors, setDocErrors] = useState<Record<string, string | null>>({});
 
-	// Step index — 0 = Account, 1..N = form steps from config
-	const [step, setStep] = useState(isAuthenticated ? 1 : 0);
+	// Step index — 0 = first form step from config
+	const [step, setStep] = useState(0);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isScanning, setIsScanning] = useState(false);
 	const [formRestored, setFormRestored] = useState(false);
@@ -275,13 +274,10 @@ export function ForeignerRegistrationForm({
 		},
 	});
 
-	// Auto-advance from step 0 when user signs in
+	// Track registration start on mount
 	useEffect(() => {
-		if (isAuthenticated && step === 0) {
-			setStep(1);
-			captureEvent("registration_started");
-		}
-	}, [isAuthenticated, step]);
+		captureEvent("registration_started");
+	}, []);
 
 	// Dynamic steps from config
 	const steps = useMemo(
@@ -298,15 +294,25 @@ export function ForeignerRegistrationForm({
 	const currentStepId = steps[step]?.stepId;
 	const lastStepIndex = steps.length - 1;
 
+	// Auto-save debounce
+	const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+	const handleAutoSave = useCallback(() => {
+		if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+		autoSaveTimerRef.current = setTimeout(() => {
+			const stepId = steps[step]?.stepId;
+			if (stepId && stepId !== "documents" && stepId !== "review" && stepId !== "purpose") {
+				regStorage.saveFormSnapshot(step, form.getValues());
+			}
+		}, 1000);
+	}, [step, steps, form, regStorage]);
+
 	useEffect(() => {
 		scrollToTop();
-		if (step > 0) {
-			const currentStepInfo = steps[step];
-			if (currentStepInfo?.stepId) {
-				captureEvent("registration_step_viewed", {
-					step_name: currentStepInfo.stepId,
-				});
-			}
+		const currentStepInfo = steps[step];
+		if (currentStepInfo?.stepId) {
+			captureEvent("registration_step_viewed", {
+				step_name: currentStepInfo.stepId,
+			});
 		}
 	}, [step, steps]);
 
@@ -314,7 +320,6 @@ export function ForeignerRegistrationForm({
 	const STEP_FIELDS: Partial<
 		Record<RegistrationStepId, (keyof ForeignerFormValues)[]>
 	> = {
-		account: [],
 		purpose: [],
 		documents: [],
 		basicInfo: ["basicInfo"],
@@ -473,7 +478,7 @@ export function ForeignerRegistrationForm({
 	};
 
 	const handlePrevious = () => {
-		if (step > 1) {
+		if (step > 0) {
 			setStep(step - 1);
 		}
 	};
@@ -627,9 +632,14 @@ export function ForeignerRegistrationForm({
 
 		if (images.length === 0) {
 			toast.error(t("register.scan.noDocuments"));
+			captureEvent("registration_ai_scan_failed", {
+				error_type: "no_documents",
+				documents_attempted: 0,
+			});
 			return;
 		}
 
+		const scanStart = Date.now();
 		setIsScanning(true);
 		try {
 			const result = await extractDataFromImages({ images });
@@ -637,8 +647,16 @@ export function ForeignerRegistrationForm({
 			if (!result.success) {
 				if (result.error?.startsWith("RATE_LIMITED:")) {
 					toast.error(result.error.replace("RATE_LIMITED:", ""));
+					captureEvent("registration_ai_scan_failed", {
+						error_type: "rate_limited",
+						documents_attempted: images.length,
+					});
 				} else {
 					toast.error(t("register.scan.error"));
+					captureEvent("registration_ai_scan_failed", {
+						error_type: "extraction_error",
+						documents_attempted: images.length,
+					});
 				}
 				return;
 			}
@@ -731,6 +749,13 @@ export function ForeignerRegistrationForm({
 				fieldsUpdated++;
 			}
 
+			captureEvent("registration_ai_scan_used", {
+				documents_scanned: images.length,
+				fields_extracted: fieldsUpdated,
+				scan_duration_ms: Date.now() - scanStart,
+				confidence: result.confidence ?? 0,
+			});
+
 			if (fieldsUpdated > 0) {
 				toast.success(
 					t("register.scan.success", {
@@ -743,6 +768,10 @@ export function ForeignerRegistrationForm({
 		} catch (error) {
 			console.error("Document scan error:", error);
 			toast.error(t("register.scan.error"));
+			captureEvent("registration_ai_scan_failed", {
+				error_type: "extraction_error",
+				documents_attempted: images.length,
+			});
 		} finally {
 			setIsScanning(false);
 		}
@@ -981,18 +1010,6 @@ export function ForeignerRegistrationForm({
 	// ============================================================================
 	// STEP RENDERERS
 	// ============================================================================
-
-	const renderAccountStep = () => (
-		<Card>
-			<CardHeader>
-				<CardTitle>{t("register.foreigner.steps.account.title")}</CardTitle>
-				<CardDescription>{t("register.foreigner.subtitle")}</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<InlineAuth defaultMode="sign-up" />
-			</CardContent>
-		</Card>
-	);
 
 	// --------------------------------------------------------------------------
 	// Purpose Step — Choose the stay reason (determines PublicUserType)
@@ -1717,8 +1734,6 @@ export function ForeignerRegistrationForm({
 
 	// Map step IDs to render functions
 	const renderStepContent = () => {
-		if (step === 0) return renderAccountStep();
-
 		switch (currentStepId) {
 			case "purpose":
 				return renderPurposeStep();
@@ -1751,17 +1766,34 @@ export function ForeignerRegistrationForm({
 				{/* Stepper */}
 				{renderStepper()}
 
+				{/* Save indicator */}
+				{regStorage.lastSavedAt &&
+					currentStepId !== "documents" &&
+					currentStepId !== "review" &&
+					currentStepId !== "purpose" && (
+						<div className="flex items-center gap-1.5 text-xs text-muted-foreground justify-end">
+							<CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+							Brouillon sauvegardé ·{" "}
+							{regStorage.lastSavedAt.toLocaleTimeString("fr-FR", {
+								hour: "2-digit",
+								minute: "2-digit",
+							})}
+						</div>
+					)}
+
 				{/* Step Content */}
-				{renderStepContent()}
+				<div onBlur={handleAutoSave}>
+					{renderStepContent()}
+				</div>
 
 				{/* Navigation Buttons */}
-				{step > 0 && (
+				{step >= 0 && (
 					<div className="flex justify-between">
 						<Button
 							type="button"
 							variant="outline"
 							onClick={handlePrevious}
-							disabled={step <= 1 || isSubmitting}
+							disabled={step <= 0 || isSubmitting}
 						>
 							{t("common.previous")}
 						</Button>

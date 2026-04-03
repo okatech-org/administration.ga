@@ -166,14 +166,25 @@ export function otpEmail(opts: {
 // ---------------------------------------------------------------------------
 
 /**
- * Parse the Accept-Language header and return the best match ("fr" or "en").
+ * Detect the user's preferred language from request headers.
+ *
+ * Priority:
+ * 1. `X-App-Language` – explicit app-level language choice (set by the frontend)
+ * 2. `Accept-Language` – browser / OS language preference (fallback)
+ *
  * Defaults to "fr".
  */
 export function detectLangFromHeaders(headers?: Headers | null): EmailLang {
   if (!headers) return "fr";
+
+  // 1. Explicit app language (most reliable — reflects what the user chose in the UI)
+  const appLang = headers.get("x-app-language")?.toLowerCase().split("-")[0];
+  if (appLang === "en") return "en";
+  if (appLang === "fr") return "fr";
+
+  // 2. Fallback to Accept-Language
   const accept = headers.get("accept-language");
   if (!accept) return "fr";
-  // Rough match: if "en" appears before "fr", prefer English
   const lower = accept.toLowerCase();
   const enIdx = lower.indexOf("en");
   const frIdx = lower.indexOf("fr");

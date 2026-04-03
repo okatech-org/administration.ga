@@ -7,7 +7,12 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "turbo format",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "dev:citizen-web": "bun run dev --filter=citizen-web",
+    "dev:agent-web": "bun run dev --filter=agent-web",
+    "dev:backoffice-web": "bun run dev --filter=backoffice-web",
+    "dev:convex": "bash scripts/fix-convex-local-ports.sh 2>/dev/null; bunx convex dev",
+    "fix:convex-local": "bash scripts/fix-convex-local-ports.sh"
   },
   "dependencies": {
     "@convex-dev/aggregate": "^0.2.1",
@@ -28,7 +33,7 @@
   },
   "devDependencies": {
     "@types/qrcode": "^1.5.6",
-    "esbuild": "0.27.4",
+    "esbuild": "0.27.0",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "qrcode": "^1.5.4",

@@ -228,7 +228,9 @@ export interface RegistrationConfig {
  * → Full form: all steps, all documents, all sections
  */
 const LONG_STAY_CONFIG: RegistrationConfig = {
-	steps: ALL_STEPS.filter((s) => s.id !== "purpose"),
+	steps: ALL_STEPS.filter(
+		(s) => s.id !== "purpose" && s.id !== "account",
+	),
 	documents: [
 		DOC_IDENTITY_PHOTO,
 		DOC_PASSPORT,
@@ -272,7 +274,11 @@ const LONG_STAY_CONFIG: RegistrationConfig = {
  */
 const SHORT_STAY_CONFIG: RegistrationConfig = {
 	steps: ALL_STEPS.filter(
-		(s) => s.id !== "family" && s.id !== "profession" && s.id !== "purpose",
+		(s) =>
+			s.id !== "family" &&
+			s.id !== "profession" &&
+			s.id !== "purpose" &&
+			s.id !== "account",
 	),
 	documents: [DOC_IDENTITY_PHOTO, DOC_PASSPORT],
 	visibleSections: {
@@ -311,7 +317,9 @@ const SHORT_STAY_CONFIG: RegistrationConfig = {
  *   No consular registration request — profile only
  */
 const FOREIGNER_CONFIG: RegistrationConfig = {
-	steps: ALL_STEPS.filter((s) => s.id !== "family" && s.id !== "profession"),
+	steps: ALL_STEPS.filter(
+		(s) => s.id !== "family" && s.id !== "profession" && s.id !== "account",
+	),
 	documents: [DOC_IDENTITY_PHOTO, DOC_PASSPORT],
 	visibleSections: {
 		residenceAddress: true,

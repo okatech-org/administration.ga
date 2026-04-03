@@ -14,6 +14,12 @@ const SITE_URL =
 
 export const authClient = createAuthClient({
 	baseURL: SITE_URL || undefined,
+	fetchOptions: {
+		get headers() {
+			if (typeof window === "undefined") return undefined;
+			return { "X-App-Language": localStorage.getItem("i18nextLng") ?? "fr" };
+		},
+	},
 	plugins: [
 		convexClient(),
 		crossDomainClient(),

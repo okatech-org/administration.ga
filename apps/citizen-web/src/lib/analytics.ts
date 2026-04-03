@@ -13,6 +13,16 @@ export type AnalyticsEvents = {
 	registration_step_viewed: { step_name: string };
 	registration_step_completed: { step_name: string };
 	registration_document_uploaded: { document_type: string };
+	registration_ai_scan_used: {
+		documents_scanned: number;
+		fields_extracted: number;
+		scan_duration_ms: number;
+		confidence: number;
+	};
+	registration_ai_scan_failed: {
+		error_type: "no_documents" | "rate_limited" | "extraction_error";
+		documents_attempted: number;
+	};
 	registration_submitted: {
 		marital_status?: string;
 		has_children?: boolean;

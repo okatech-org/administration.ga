@@ -18,19 +18,19 @@ test.describe("Registration — Smoke tests", () => {
     await expect(page.getByText(/étranger|foreigner/i).first()).toBeVisible();
   });
 
-  test("clicking LongStay card navigates to the registration wizard", async ({
+  test("selecting LongStay card redirects to sign-up when not authenticated", async ({
     page,
   }) => {
-    await page.goto("/register");
-
-    // Navigate directly to the registration page with the type parameter
-    // (the Card click uses TanStack Router navigate which updates the URL)
     await page.goto("/register?type=long_stay");
 
-    // The registration wizard should load with the InlineAuth form
-    // We should see "Créer votre compte" heading and password field
+    // Not authenticated → should redirect to /sign-up with redirect param
+    await page.waitForURL(/\/sign-up.*redirect/, { timeout: 15_000 });
+    expect(page.url()).toContain("redirect");
+    expect(page.url()).toContain("register");
+
+    // The sign-up form should be visible
     await expect(
-      page.getByText("Créer votre compte").first()
-    ).toBeVisible({ timeout: 15_000 });
+      page.getByRole("heading", { name: /créer un compte/i })
+    ).toBeVisible({ timeout: 10_000 });
   });
 });
