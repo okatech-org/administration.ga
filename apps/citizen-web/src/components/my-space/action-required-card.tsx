@@ -616,30 +616,28 @@ export function ActionRequiredCard({
 	return (
 		<div className="rounded-lg border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/20 p-5 space-y-4">
 			{/* Header */}
-			<div className="flex items-start gap-4">
-				<div className="flex-shrink-0 w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-					<div className="scale-125">{typeInfo.icon}</div>
+			<div className="flex gap-3">
+				<div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+					{typeInfo.icon}
 				</div>
-				<div className="flex-1 min-w-0">
-					<div className="flex items-center gap-2 flex-wrap">
-						<h3 className="font-semibold text-amber-800 dark:text-amber-300 text-base">
-							{t(
-								"requests.detail.actionRequired",
-								"Action requise de votre part",
-							)}
-						</h3>
-						<Badge
-							variant="secondary"
-							className="text-xs bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200"
-						>
-							{typeInfo.label}
-						</Badge>
-					</div>
-					<p className="text-amber-700 dark:text-amber-300/80 text-sm mt-1 leading-relaxed">
-						{actionRequired.message}
-					</p>
+				<div className="flex-1 min-w-0 space-y-1">
+					<h3 className="font-semibold text-amber-800 dark:text-amber-300 text-base">
+						{t(
+							"requests.detail.actionRequired",
+							"Action requise de votre part",
+						)}
+					</h3>
+					<Badge
+						variant="secondary"
+						className="text-xs bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200"
+					>
+						{typeInfo.label}
+					</Badge>
 				</div>
 			</div>
+			<p className="text-amber-700 dark:text-amber-300/80 text-sm leading-relaxed">
+				{actionRequired.message}
+			</p>
 
 			{/* Form content with scroll if needed */}
 			<div className="max-h-[500px] overflow-y-auto">{renderForm()}</div>
