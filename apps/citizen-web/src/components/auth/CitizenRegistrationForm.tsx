@@ -31,7 +31,7 @@ import {
 	UserPlus,
 	Users,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -71,9 +71,7 @@ import {
 	type RegistrationConfig,
 	type RegistrationStepId,
 } from "@/lib/registrationConfig";
-import { authClient } from "@/lib/auth-client";
 import { AddressWithAutocomplete } from "./AddressWithAutocomplete";
-import { InlineAuth } from "./InlineAuth";
 
 // ============================================================================
 // VALIDATION SCHEMA (dynamic per userType)
@@ -290,12 +288,11 @@ interface CitizenRegistrationFormProps {
 
 export function CitizenRegistrationForm({
 	userType,
-	authMode = "sign-up",
+	authMode: _authMode = "sign-up",
 	onComplete,
 }: CitizenRegistrationFormProps) {
 	const { t } = useTranslation();
-	const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
-	const { data: betterAuthSession } = authClient.useSession();
+	const { isLoading: isAuthLoading } = useConvexAuth();
 	const { userData } = useCitizenData();
 	const { mutateAsync: createProfile } = useConvexMutationQuery(
 		api.functions.profiles.createFromRegistration,
@@ -339,11 +336,13 @@ export function CitizenRegistrationForm({
 	// Track inline document validation errors
 	const [docErrors, setDocErrors] = useState<Record<string, string | null>>({});
 
-	// Step index — 0 = Account, 1..N = form steps from config
-	const [step, setStep] = useState(isAuthenticated ? 1 : 0);
+	// Step index — 0 = first form step from config (documents)
+	const [step, setStep] = useState(0);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isScanning, setIsScanning] = useState(false);
 	const [formRestored, setFormRestored] = useState(false);
+
+	const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
 	// Submission progress state
 	type SubmissionState =
@@ -418,13 +417,10 @@ export function CitizenRegistrationForm({
 		WorkStatus.Entrepreneur,
 	].includes(form.watch("professionalInfo.workStatus"));
 
-	// Auto-advance from step 0 when user signs in
+	// Track registration start on mount
 	useEffect(() => {
-		if (isAuthenticated && step === 0) {
-			setStep(1);
-			captureEvent("registration_started");
-		}
-	}, [isAuthenticated, step]);
+		captureEvent("registration_started");
+	}, []);
 
 	// Dynamic steps from config
 	const steps = regConfig.steps.map((s, index) => ({
@@ -437,15 +433,24 @@ export function CitizenRegistrationForm({
 	const currentStepId = steps[step]?.stepId;
 	const lastStepIndex = steps.length - 1;
 
+	// Auto-save debounce (must be after steps and form declarations)
+	const handleAutoSave = useCallback(() => {
+		if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+		autoSaveTimerRef.current = setTimeout(() => {
+			const stepId = steps[step]?.stepId;
+			if (stepId && stepId !== "documents" && stepId !== "review") {
+				regStorage.saveFormSnapshot(step, form.getValues());
+			}
+		}, 1000);
+	}, [step, steps, form, regStorage]);
+
 	useEffect(() => {
 		scrollToTop();
-		if (step > 0) {
-			const currentStepInfo = steps[step];
-			if (currentStepInfo?.stepId) {
-				captureEvent("registration_step_viewed", {
-					step_name: currentStepInfo.stepId,
-				});
-			}
+		const currentStepInfo = steps[step];
+		if (currentStepInfo?.stepId) {
+			captureEvent("registration_step_viewed", {
+				step_name: currentStepInfo.stepId,
+			});
 		}
 	}, [step, steps]);
 
@@ -453,7 +458,6 @@ export function CitizenRegistrationForm({
 	const STEP_FIELDS: Partial<
 		Record<RegistrationStepId, (keyof RegistrationFormValues)[]>
 	> = {
-		account: [],
 		documents: [],
 		basicInfo: ["basicInfo"],
 		family: hasFamily ? ["familyInfo" as keyof RegistrationFormValues] : [],
@@ -623,7 +627,7 @@ export function CitizenRegistrationForm({
 	};
 
 	const handlePrevious = () => {
-		if (step > 1) {
+		if (step > 0) {
 			setStep(step - 1);
 		}
 	};
@@ -867,9 +871,14 @@ export function CitizenRegistrationForm({
 					"Veuillez d'abord uploader au moins un document",
 				),
 			);
+			captureEvent("registration_ai_scan_failed", {
+				error_type: "no_documents",
+				documents_attempted: 0,
+			});
 			return;
 		}
 
+		const scanStart = Date.now();
 		setIsScanning(true);
 		try {
 			const result = await extractDataFromImages({ images });
@@ -877,8 +886,16 @@ export function CitizenRegistrationForm({
 			if (!result.success) {
 				if (result.error?.startsWith("RATE_LIMITED:")) {
 					toast.error(result.error.replace("RATE_LIMITED:", ""));
+					captureEvent("registration_ai_scan_failed", {
+						error_type: "rate_limited",
+						documents_attempted: images.length,
+					});
 				} else {
 					toast.error(t("register.scan.error"));
+					captureEvent("registration_ai_scan_failed", {
+						error_type: "extraction_error",
+						documents_attempted: images.length,
+					});
 				}
 				return;
 			}
@@ -1110,6 +1127,13 @@ export function CitizenRegistrationForm({
 				}
 			}
 
+			captureEvent("registration_ai_scan_used", {
+				documents_scanned: images.length,
+				fields_extracted: fieldsUpdated,
+				scan_duration_ms: Date.now() - scanStart,
+				confidence: result.confidence ?? 0,
+			});
+
 			if (fieldsUpdated > 0) {
 				toast.success(t("register.scan.success", { count: fieldsUpdated }));
 			} else {
@@ -1118,6 +1142,10 @@ export function CitizenRegistrationForm({
 		} catch (error) {
 			console.error("Document scan error:", error);
 			toast.error(t("register.scan.error"));
+			captureEvent("registration_ai_scan_failed", {
+				error_type: "extraction_error",
+				documents_attempted: images.length,
+			});
 		} finally {
 			setIsScanning(false);
 		}
@@ -1453,41 +1481,34 @@ export function CitizenRegistrationForm({
 				))}
 			</div>
 
+			{/* Save indicator */}
+			{regStorage.lastSavedAt &&
+				currentStepId !== "documents" &&
+				currentStepId !== "review" && (
+					<div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2 justify-end">
+						<CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+						Brouillon sauvegardé ·{" "}
+						{regStorage.lastSavedAt.toLocaleTimeString("fr-FR", {
+							hour: "2-digit",
+							minute: "2-digit",
+						})}
+					</div>
+				)}
+
 			<FormProvider {...form}>
 				<Card>
 					<CardHeader>
 						<CardTitle>
-							{t(`register.citizen.steps.${currentStepId || "account"}.title`)}
+							{t(`register.citizen.steps.${currentStepId || "documents"}.title`)}
 						</CardTitle>
 						<CardDescription>
-							{currentStepId === "account" && authMode === "sign-in"
-								? t("register.citizen.steps.account.descriptionSignIn")
-								: t(
-										`register.citizen.steps.${currentStepId || "account"}.description`,
-									)}
+							{t(
+								`register.citizen.steps.${currentStepId || "documents"}.description`,
+							)}
 						</CardDescription>
 					</CardHeader>
 
-					<CardContent className="space-y-6">
-						{/* Step: Account Creation */}
-						{currentStepId === "account" && (
-							betterAuthSession?.user && !isAuthenticated ? (
-								<div className="flex flex-col items-center justify-center gap-4 py-12">
-									<Loader2 className="h-8 w-8 animate-spin text-primary" />
-									<p className="text-base font-medium text-foreground">
-										{t("register.accountCreating", "Votre compte est en cours de création...")}
-									</p>
-									<p className="text-sm text-muted-foreground text-center">
-										{t("register.accountCreatingHint", "Veuillez patienter quelques instants.")}
-									</p>
-								</div>
-							) : (
-								<InlineAuth
-									defaultMode={authMode === "sign-in" ? "sign-in" : "sign-up"}
-								/>
-							)
-						)}
-
+					<CardContent className="space-y-6" onBlur={handleAutoSave}>
 						{/* Step: Documents */}
 						{currentStepId === "documents" && (
 							<>

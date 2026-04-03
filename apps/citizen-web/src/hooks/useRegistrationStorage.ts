@@ -62,6 +62,7 @@ export interface LocalFileInfo {
 export function useRegistrationStorage(email: string | undefined) {
   const dbRef = useRef<IDBDatabase | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   // Track object URLs for cleanup
   const objectUrlsRef = useRef<string[]>([]);
 
@@ -103,8 +104,29 @@ export function useRegistrationStorage(email: string | undefined) {
         allData._lastStep = step;
         allData._updatedAt = Date.now();
         sessionStorage.setItem(key, JSON.stringify(allData));
+        setLastSavedAt(new Date());
       } catch (err) {
         console.error("Failed to save step data:", err);
+      }
+    },
+    [email],
+  );
+
+  /** Save a snapshot of the current form data (for auto-save on blur) */
+  const saveFormSnapshot = useCallback(
+    (step: number, data: Record<string, unknown>) => {
+      if (!email) return;
+      const key = `${LS_PREFIX}${email}`;
+
+      try {
+        const existing = sessionStorage.getItem(key);
+        const allData = existing ? JSON.parse(existing) : {};
+        allData[`step_${step}`] = data;
+        allData._updatedAt = Date.now();
+        sessionStorage.setItem(key, JSON.stringify(allData));
+        setLastSavedAt(new Date());
+      } catch (err) {
+        console.error("Failed to save form snapshot:", err);
       }
     },
     [email],
@@ -323,8 +345,10 @@ export function useRegistrationStorage(email: string | undefined) {
 
   return {
     isReady,
+    lastSavedAt,
     // Form data
     saveStepData,
+    saveFormSnapshot,
     getStoredData,
     // File storage
     saveFile,

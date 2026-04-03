@@ -1,5 +1,6 @@
 import { PublicUserType } from "@convex/lib/constants";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useConvexAuth } from "convex/react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -30,6 +31,7 @@ function RegisterPage() {
 	const navigate = useNavigate();
 	const { t } = useTranslation();
 	const { type: urlType, mode: urlMode } = Route.useSearch();
+	const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
 
 	// Selected profile type (from URL or user selection)
 	const [selectedType, setSelectedType] = useState<PublicUserType | null>(
@@ -42,6 +44,14 @@ function RegisterPage() {
 			setSelectedType(urlType);
 		}
 	}, [urlType]);
+
+	// Auth guard: redirect to sign-up if not authenticated and a type is selected
+	useEffect(() => {
+		if (!isAuthLoading && !isAuthenticated && selectedType) {
+			const redirectUrl = `/register?type=${selectedType}`;
+			window.location.href = `/sign-up?redirect=${encodeURIComponent(redirectUrl)}`;
+		}
+	}, [isAuthLoading, isAuthenticated, selectedType]);
 
 	const handleProfileSelect = (type: PublicUserType) => {
 		setSelectedType(type);
@@ -94,8 +104,8 @@ function RegisterPage() {
 				</div>
 			)}
 
-			{/* Citizen Registration Form (with SignUp embedded as Step 0) */}
-			{isCitizen && (
+			{/* Citizen Registration Form */}
+			{isCitizen && isAuthenticated && (
 				<div className="max-w-4xl mx-auto">
 					<button
 						onClick={handleBack}
@@ -113,8 +123,8 @@ function RegisterPage() {
 				</div>
 			)}
 
-			{/* Foreigner Registration Form (with SignUp embedded as Step 0) */}
-			{isForeigner && (
+			{/* Foreigner Registration Form */}
+			{isForeigner && isAuthenticated && (
 				<div className="max-w-4xl mx-auto">
 					<button
 						onClick={handleBack}

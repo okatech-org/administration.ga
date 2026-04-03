@@ -235,24 +235,35 @@ export const ensureUser = mutation({
         .unique();
 
       if (existingByEmail) {
-        await ctx.db.patch(existingByEmail._id, {
+        const patchData: Record<string, unknown> = {
           authId: identity.subject,
           name: identity.name ?? existingByEmail.name,
           avatarUrl: identity.pictureUrl ?? existingByEmail.avatarUrl,
           updatedAt: Date.now(),
-        });
+        };
+        // Backfill firstName/lastName if missing
+        if (!existingByEmail.firstName && identity.name) {
+          const parts = identity.name.trim().split(/\s+/);
+          patchData.firstName = parts.length > 1 ? parts.slice(1).join(" ") : parts[0];
+          patchData.lastName = parts.length > 1 ? parts[0] : undefined;
+        }
+        await ctx.db.patch(existingByEmail._id, patchData);
         return existingByEmail._id;
       }
     }
 
-    // 3. Create new user
-    // Note: firstName/lastName are NOT set here — they will be set
-    // by updateMe() called from InlineAuth after sign-up, which has
-    // the explicit separate values from the form fields.
+    // 3. Create new user — derive firstName/lastName from identity.name
+    const fullName = identity.name ?? "";
+    const nameParts = fullName.trim().split(/\s+/);
+    const derivedFirstName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : nameParts[0] ?? "";
+    const derivedLastName = nameParts.length > 1 ? nameParts[0] : "";
+
     const newUserId = await ctx.db.insert("users", {
       authId: identity.subject,
       email: identity.email ?? "",
-      name: identity.name ?? identity.email ?? "User",
+      name: fullName || identity.email || "User",
+      firstName: derivedFirstName || undefined,
+      lastName: derivedLastName || undefined,
       phone: normalizePhone((identity as any).phoneNumber) ?? (identity as any).phoneNumber ?? undefined,
       avatarUrl: identity.pictureUrl,
       isActive: true,

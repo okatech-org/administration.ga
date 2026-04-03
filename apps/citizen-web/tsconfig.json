@@ -21,9 +21,8 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "allowJs": true,
-    "baseUrl": ".",
     "paths": {
-      "@/components/ui/*": ["../../packages/ui/src/components/*"],
+      "@/components/ui/*": ["../../packages/ui/src/components/*", "./src/components/ui/*"],
       "@/*": ["./src/*"],
       "@convex/*": ["../../convex/*"],
       "@workspace/ui/*": ["../../packages/ui/src/*"],
