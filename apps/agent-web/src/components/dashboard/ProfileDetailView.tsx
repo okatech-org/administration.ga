@@ -545,51 +545,43 @@ export function ProfileDetailView({ profileId }: ProfileDetailViewProps) {
 							</Section>
 
 							{/* Emergency Contacts */}
-							{(profile.contacts?.emergencyResidence ||
-								profile.contacts?.emergencyHomeland) && (
-								<Section
-									icon={ShieldAlert}
-									title={t("profile.emergency.title")}
-									className="md:col-span-2"
-								>
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-										{profile.contacts?.emergencyResidence && (
-											<div className="bg-destructive/5 p-4 rounded-lg border border-destructive/10">
-												<p className="text-xs font-semibold text-destructive uppercase tracking-wide mb-3">
-													{t("profile.emergency.residence")}
-												</p>
-												<div className="space-y-3">
-													<InfoItem
-														label={t("profile.sections.identity")}
-														value={`${profile.contacts.emergencyResidence.firstName} ${profile.contacts.emergencyResidence.lastName}`}
-													/>
-													<InfoItem
-														label={t("profile.fields.phone")}
-														value={profile.contacts.emergencyResidence.phone}
-													/>
+							{(() => {
+								const ec = (profile.contacts as any)?.emergencyContacts as Array<{ firstName: string; lastName: string; phone: string; country?: string }> | undefined;
+								const legacyRes = profile.contacts?.emergencyResidence;
+								const legacyHome = profile.contacts?.emergencyHomeland;
+								const contacts = ec?.length ? ec : [
+									...(legacyRes ? [legacyRes] : []),
+									...(legacyHome ? [legacyHome] : []),
+								];
+								return contacts.length > 0 ? (
+									<Section
+										icon={ShieldAlert}
+										title={t("profile.emergency.title")}
+										className="md:col-span-2"
+									>
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+											{contacts.map((c, i) => (
+												<div key={i} className="bg-destructive/5 p-4 rounded-lg border border-destructive/10">
+													<p className="text-xs font-semibold text-destructive uppercase tracking-wide mb-3">
+														{t("profile.emergencyContacts.contactNumber", { number: i + 1 })}
+														{(c as any).country ? ` — ${t(`superadmin.countryCodes.${(c as any).country}`, (c as any).country)}` : ""}
+													</p>
+													<div className="space-y-3">
+														<InfoItem
+															label={t("profile.sections.identity")}
+															value={`${c.firstName} ${c.lastName}`}
+														/>
+														<InfoItem
+															label={t("profile.fields.phone")}
+															value={c.phone}
+														/>
+													</div>
 												</div>
-											</div>
-										)}
-										{profile.contacts?.emergencyHomeland && (
-											<div className="bg-destructive/5 p-4 rounded-lg border border-destructive/10">
-												<p className="text-xs font-semibold text-destructive uppercase tracking-wide mb-3">
-													{t("profile.emergency.homeland")}
-												</p>
-												<div className="space-y-3">
-													<InfoItem
-														label={t("profile.sections.identity")}
-														value={`${profile.contacts.emergencyHomeland.firstName} ${profile.contacts.emergencyHomeland.lastName}`}
-													/>
-													<InfoItem
-														label={t("profile.fields.phone")}
-														value={profile.contacts.emergencyHomeland.phone}
-													/>
-												</div>
-											</div>
-										)}
-									</div>
-								</Section>
-							)}
+											))}
+										</div>
+									</Section>
+								) : null;
+							})()}
 						</div>
 					</TabsContent>
 

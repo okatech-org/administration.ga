@@ -371,7 +371,7 @@ export const chat = action({
               case "getRequestDetails": {
                 const typedArgs = args as { requestId: string };
                 toolResult = await ctx.runQuery(
-                  api.functions.requests.getByReferenceId,
+                  internal.functions.requests.internalGetByReferenceId,
                   {
                     referenceId: typedArgs.requestId,
                   },

@@ -172,9 +172,11 @@ export interface VisibleSections {
 	residenceAddress: boolean;
 	/** Show homeland address fields */
 	homelandAddress: boolean;
-	/** Show emergency contact (homeland) */
+	/** Show emergency contacts section */
+	emergencyContacts: boolean;
+	/** @deprecated kept for backward compat — use emergencyContacts */
 	emergencyHomeland: boolean;
-	/** Show emergency contact (residence) */
+	/** @deprecated kept for backward compat — use emergencyContacts */
 	emergencyResidence: boolean;
 	/** Show spouse fields (conditional on marital status) */
 	spouse: boolean;
@@ -240,6 +242,7 @@ const LONG_STAY_CONFIG: RegistrationConfig = {
 	visibleSections: {
 		residenceAddress: true,
 		homelandAddress: true,
+		emergencyContacts: true,
 		emergencyHomeland: true,
 		emergencyResidence: true,
 		spouse: true,
@@ -284,6 +287,7 @@ const SHORT_STAY_CONFIG: RegistrationConfig = {
 	visibleSections: {
 		residenceAddress: false,
 		homelandAddress: false,
+		emergencyContacts: true,
 		emergencyHomeland: true,
 		emergencyResidence: true,
 		spouse: false,
@@ -324,6 +328,7 @@ const FOREIGNER_CONFIG: RegistrationConfig = {
 	visibleSections: {
 		residenceAddress: true,
 		homelandAddress: false,
+		emergencyContacts: true,
 		emergencyHomeland: false,
 		emergencyResidence: true,
 		spouse: false,

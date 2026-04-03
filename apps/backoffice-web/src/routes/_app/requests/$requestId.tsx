@@ -151,7 +151,7 @@ function RequestDetailPage() {
 	const { requestId } = Route.useParams();
 	const navigate = useNavigate();
 
-	const { data: request } = useAuthenticatedConvexQuery(
+	const { data: request, isError } = useAuthenticatedConvexQuery(
 		api.functions.requests.getById,
 		{
 			requestId: requestId as any,
@@ -214,7 +214,7 @@ function RequestDetailPage() {
 		);
 	}
 
-	if (request === null) {
+	if (request === null || isError) {
 		return (
 			<div className="p-8 text-center text-muted-foreground">
 				Demande introuvable

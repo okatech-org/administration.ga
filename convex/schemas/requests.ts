@@ -71,6 +71,7 @@ export const requestsTable = defineTable({
       type: v.optional(v.string()),   // "text" | "date" | "select" etc.
       options: v.optional(v.any()),   // Select options if applicable
       currentValue: v.optional(v.any()), // For pre-filling
+      sectionTitle: v.optional(v.any()), // LocalizedString — section header for grouping
     }))),
     infoToConfirm: v.optional(v.string()),          // For confirm_info
     deadline: v.optional(v.number()),

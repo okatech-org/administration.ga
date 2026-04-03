@@ -371,14 +371,14 @@ export const chat = action({
               case "getRequestDetail": {
                 const typedArgs = args as { requestId: string };
                 let detail: unknown = await ctx.runQuery(
-                  api.functions.requests.getByReferenceId,
+                  internal.functions.requests.internalGetByReferenceId,
                   { referenceId: typedArgs.requestId },
                 );
                 // Try by ID if reference didn't work
                 if (!detail) {
                   try {
                     detail = await ctx.runQuery(
-                      api.functions.requests.getById,
+                      internal.functions.requests.internalGetById,
                       { requestId: typedArgs.requestId as Id<"requests"> },
                     );
                   } catch {

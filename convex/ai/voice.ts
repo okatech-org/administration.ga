@@ -11,7 +11,7 @@
  */
 import { v } from "convex/values";
 import { action, query } from "../_generated/server";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 
 // Voice model for real-time audio (from official Gemini Live API docs)
 const VOICE_MODEL = "gemini-2.5-flash-native-audio-preview-12-2025";
@@ -249,7 +249,7 @@ export const executeVoiceTool = action({
 
         case "getRequestDetails": {
           const args = toolArgs as { requestId: string };
-          result = await ctx.runQuery(api.functions.requests.getById, {
+          result = await ctx.runQuery(internal.functions.requests.internalGetById, {
             requestId: args.requestId as any,
           });
           break;

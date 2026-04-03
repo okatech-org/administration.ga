@@ -235,12 +235,12 @@ export const executeAdminVoiceTool = action({
         case "getRequestDetail": {
           const args = toolArgs as { requestId: string };
           let detail: unknown = await ctx.runQuery(
-            api.functions.requests.getByReferenceId,
+            internal.functions.requests.internalGetByReferenceId,
             { referenceId: args.requestId },
           );
           if (!detail) {
             try {
-              detail = await ctx.runQuery(api.functions.requests.getById, {
+              detail = await ctx.runQuery(internal.functions.requests.internalGetById, {
                 requestId: args.requestId as Id<"requests">,
               });
             } catch {

@@ -29,6 +29,7 @@ import { ActiveCallBanner } from "@/components/meetings/active-call-banner";
 import { OrgCallButton } from "@/components/meetings/org-call-button";
 import { ActionRequiredCard } from "@/components/my-space/action-required-card";
 import { PaymentForm } from "@/components/payment/PaymentForm";
+import { DocumentChecklist } from "@/components/shared/DocumentChecklist";
 import { DynamicForm } from "@/components/services/DynamicForm";
 import { RegistrationForm } from "@/components/services/RegistrationForm";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -129,7 +130,7 @@ function UserRequestDetail() {
 	const lang = i18n.language;
 
 	// Look up the request by reference string
-	const { data: request } = useAuthenticatedConvexQuery(
+	const { data: request, isPending, isError } = useAuthenticatedConvexQuery(
 		api.functions.requests.getByReferenceId,
 		{ referenceId: reference },
 	);
@@ -160,20 +161,39 @@ function UserRequestDetail() {
 	const sections = useMemo(() => {
 		if (!formData) return [];
 
-		// If schema has sections, use them (same as admin page)
-		if (formSchema?.sections && formSchema.sections.length > 0) {
-			return formSchema.sections.map((section) => {
-				const sectionData =
-					(formData[section.id] as Record<string, unknown>) || {};
-				const fields = section.fields || [];
-				const rows = fields.map((field) => ({
+		const buildRows = (
+			_sectionId: string,
+			sectionData: unknown,
+			fields: FormField[],
+		) => {
+			const rows = fields.map((field) => {
+				let value: unknown;
+				if (
+					sectionData &&
+					typeof sectionData === "object" &&
+					!Array.isArray(sectionData)
+				) {
+					value = (sectionData as Record<string, unknown>)[field.id];
+				}
+				if (value === undefined) {
+					value = formData[field.id];
+				}
+				return {
 					key: field.id,
 					label: getLocalized(field.label, lang) || field.id,
-					value: resolveFieldValue(sectionData[field.id], lang, t, field),
-				}));
-				// Add any extra fields not in schema
+					value: resolveFieldValue(value, lang, t, field),
+				};
+			});
+			// Add any extra fields not in schema
+			if (
+				sectionData &&
+				typeof sectionData === "object" &&
+				!Array.isArray(sectionData)
+			) {
 				const schemaFieldIds = new Set(fields.map((f) => f.id));
-				for (const [key, val] of Object.entries(sectionData)) {
+				for (const [key, val] of Object.entries(
+					sectionData as Record<string, unknown>,
+				)) {
 					if (!schemaFieldIds.has(key)) {
 						rows.push({
 							key,
@@ -182,12 +202,105 @@ function UserRequestDetail() {
 						});
 					}
 				}
-				return {
+			}
+			return rows;
+		};
+
+		// If schema has sections, use them (same as admin page)
+		if (formSchema?.sections && formSchema.sections.length > 0) {
+			// Merge contact_info + residence_address + homeland_address into one "Coordonnées" section
+			const mergedContactIds = new Set([
+				"contact_info",
+				"residence_address",
+				"homeland_address",
+			]);
+			const skippedIds = new Set([
+				"emergency_residence",
+				"emergency_homeland",
+				...mergedContactIds,
+			]);
+
+			const templateSections = formSchema.sections
+				.filter((s) => !skippedIds.has(s.id))
+				.map((section) => ({
 					id: section.id,
 					title: getLocalized(section.title, lang) || section.id,
-					rows,
-				};
-			});
+					rows: buildRows(
+						section.id,
+						formData[section.id],
+						section.fields || [],
+					),
+				}))
+				.filter((s) => s.rows.length > 0);
+
+			// Build merged "Coordonnées" section
+			const coordRows: typeof templateSections[0]["rows"] = [];
+			for (const sId of [
+				"contact_info",
+				"residence_address",
+				"homeland_address",
+			] as const) {
+				const schemaSection = formSchema.sections.find((s) => s.id === sId);
+				if (schemaSection) {
+					coordRows.push(
+						...buildRows(sId, formData[sId], schemaSection.fields ?? []),
+					);
+				}
+			}
+			if (coordRows.length > 0) {
+				const insertAfter = templateSections.findIndex(
+					(s) => s.id === "family_info",
+				);
+				const pos = insertAfter >= 0 ? insertAfter + 1 : 0;
+				templateSections.splice(pos, 0, {
+					id: "coordinates",
+					title: lang === "fr" ? "Coordonnées" : "Contact & Addresses",
+					rows: coordRows,
+				});
+			}
+
+			// Inject "Emergency Contacts" section from formData array
+			const ecArray = formData["emergency_contacts"];
+			if (Array.isArray(ecArray) && ecArray.length > 0) {
+				const ecRows: typeof templateSections[0]["rows"] = [];
+				ecArray.forEach((c: any, i: number) => {
+					if (!c || typeof c !== "object") return;
+					for (const key of [
+						"last_name",
+						"first_name",
+						"phone",
+						"email",
+						"country",
+					]) {
+						const val = c[key];
+						const display = resolveFieldValue(val, lang, t);
+						if (display !== "—") {
+							ecRows.push({
+								key: `ec_${i}_${key}`,
+								label: key,
+								value: display,
+							});
+						}
+					}
+				});
+				if (ecRows.length > 0) {
+					const insertIdx = templateSections.findIndex(
+						(s) => s.id === "coordinates",
+					);
+					const pos =
+						insertIdx >= 0 ? insertIdx + 1 : templateSections.length;
+					templateSections.splice(pos, 0, {
+						id: "emergency_contacts",
+						title:
+							lang === "fr"
+								? "Contacts d'urgence"
+								: "Emergency Contacts",
+						rows: ecRows,
+					});
+				}
+			}
+
+			return templateSections;
 		}
 
 		// Fallback: iterate formData keys
@@ -274,7 +387,27 @@ function UserRequestDetail() {
 		);
 	};
 
-	if (!request) {
+	if (isError) {
+		return (
+			<div className="flex flex-1 flex-col items-center justify-center gap-6 p-8 text-center">
+				<div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+					<AlertTriangle className="h-8 w-8 text-muted-foreground" />
+				</div>
+				<div className="space-y-2">
+					<h2 className="text-lg font-semibold">{t("requestDetail.notFound")}</h2>
+					<p className="text-sm text-muted-foreground max-w-md">
+						{t("requestDetail.notFoundDesc")}
+					</p>
+				</div>
+				<Button variant="outline" onClick={() => navigate({ to: "/my-space" })}>
+					<ArrowLeft className="mr-2 h-4 w-4" />
+					{t("requestDetail.backToList")}
+				</Button>
+			</div>
+		);
+	}
+
+	if (isPending || !request) {
 		return (
 			<div className="flex flex-1 items-center justify-center p-4">
 				<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -550,21 +683,578 @@ function UserRequestDetail() {
 
 									{sections.map((section) => (
 										<TabsContent key={section.id} value={section.id}>
-											<div className="divide-y">
-												{section.rows.map((row) => (
-													<div
-														key={row.key}
-														className="flex flex-col sm:flex-row sm:justify-between py-2.5 text-sm gap-0.5 sm:gap-4"
-													>
+											{(() => {
+												// ── Helper: field row ──
+												const FieldRow = ({
+													label,
+													value,
+												}: {
+													label: string;
+													value: string;
+												}) => (
+													<div className="flex flex-col sm:flex-row sm:justify-between py-1 text-sm gap-0.5 sm:gap-4">
 														<span className="text-muted-foreground text-xs sm:text-sm shrink-0">
-															{row.label}
+															{label}
 														</span>
 														<span className="font-medium sm:text-right break-words">
-															{row.value}
+															{value}
 														</span>
 													</div>
-												))}
-											</div>
+												);
+
+												// ── Card wrapper ──
+												const InfoCard = ({
+													title,
+													badge,
+													children,
+												}: {
+													title: string;
+													badge?: React.ReactNode;
+													children: React.ReactNode;
+												}) => (
+													<div className="rounded-lg border border-border/60 bg-muted/30 p-4">
+														<div className="flex items-center justify-between mb-3">
+															<span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+																{title}
+															</span>
+															{badge}
+														</div>
+														<div className="space-y-1">
+															{children}
+														</div>
+													</div>
+												);
+
+												// ── Emergency Contacts ──
+												if (section.id === "emergency_contacts") {
+													const ecData = formData?.[
+														"emergency_contacts"
+													] as any[] | undefined;
+													if (
+														!ecData ||
+														!Array.isArray(ecData)
+													)
+														return null;
+													const ecLabels: Record<
+														string,
+														{ fr: string; en: string }
+													> = {
+														last_name: {
+															fr: "Nom",
+															en: "Last Name",
+														},
+														first_name: {
+															fr: "Prénom",
+															en: "First Name",
+														},
+														phone: {
+															fr: "Téléphone",
+															en: "Phone",
+														},
+														email: {
+															fr: "Email",
+															en: "Email",
+														},
+													};
+													return (
+														<div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
+															{ecData.map(
+																(
+																	contact: any,
+																	idx: number,
+																) => {
+																	if (
+																		!contact ||
+																		typeof contact !==
+																			"object"
+																	)
+																		return null;
+																	return (
+																		<InfoCard
+																			key={idx}
+																			title={`Contact ${idx + 1}`}
+																			badge={
+																				contact.country ? (
+																					<span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+																						{resolveFieldValue(
+																							contact.country,
+																							lang,
+																							t,
+																						)}
+																					</span>
+																				) : undefined
+																			}
+																		>
+																			{(
+																				[
+																					"last_name",
+																					"first_name",
+																					"phone",
+																					"email",
+																				] as const
+																			).map(
+																				(
+																					key,
+																				) => {
+																					const val =
+																						contact[
+																							key
+																						];
+																					if (
+																						!val
+																					)
+																						return null;
+																					return (
+																						<FieldRow
+																							key={
+																								key
+																							}
+																							label={
+																								lang ===
+																								"fr"
+																									? ecLabels[
+																											key
+																										]
+																											.fr
+																									: ecLabels[
+																											key
+																										]
+																											.en
+																							}
+																							value={resolveFieldValue(
+																								val,
+																								lang,
+																								t,
+																							)}
+																						/>
+																					);
+																				},
+																			)}
+																		</InfoCard>
+																	);
+																},
+															)}
+														</div>
+													);
+												}
+
+												// ── Family Info ──
+												if (section.id === "family_info") {
+													const fam = formData?.[
+														"family_info"
+													] as
+														| Record<string, any>
+														| undefined;
+													if (
+														!fam ||
+														typeof fam !== "object"
+													)
+														return null;
+
+													const maritalRow = section.rows.find(
+														(r) =>
+															r.key ===
+															"marital_status",
+													);
+													const maritalDisplay =
+														maritalRow
+															? maritalRow.value
+															: resolveFieldValue(
+																	fam.marital_status,
+																	lang,
+																	t,
+																);
+
+													const familyCards: Array<{
+														title: string;
+														content: React.ReactNode[];
+													}> = [];
+
+													if (
+														fam.father_last_name ||
+														fam.father_first_name
+													) {
+														familyCards.push({
+															title:
+																lang === "fr"
+																	? "Père"
+																	: "Father",
+															content: [
+																fam.father_last_name && (
+																	<FieldRow
+																		key="fln"
+																		label={
+																			lang ===
+																			"fr"
+																				? "Nom"
+																				: "Last Name"
+																		}
+																		value={
+																			fam.father_last_name
+																		}
+																	/>
+																),
+																fam.father_first_name && (
+																	<FieldRow
+																		key="ffn"
+																		label={
+																			lang ===
+																			"fr"
+																				? "Prénom"
+																				: "First Name"
+																		}
+																		value={
+																			fam.father_first_name
+																		}
+																	/>
+																),
+															].filter(Boolean),
+														});
+													}
+
+													if (
+														fam.mother_last_name ||
+														fam.mother_first_name
+													) {
+														familyCards.push({
+															title:
+																lang === "fr"
+																	? "Mère"
+																	: "Mother",
+															content: [
+																fam.mother_last_name && (
+																	<FieldRow
+																		key="mln"
+																		label={
+																			lang ===
+																			"fr"
+																				? "Nom"
+																				: "Last Name"
+																		}
+																		value={
+																			fam.mother_last_name
+																		}
+																	/>
+																),
+																fam.mother_first_name && (
+																	<FieldRow
+																		key="mfn"
+																		label={
+																			lang ===
+																			"fr"
+																				? "Prénom"
+																				: "First Name"
+																		}
+																		value={
+																			fam.mother_first_name
+																		}
+																	/>
+																),
+															].filter(Boolean),
+														});
+													}
+
+													if (
+														fam.spouse_last_name ||
+														fam.spouse_first_name
+													) {
+														familyCards.push({
+															title:
+																lang === "fr"
+																	? "Conjoint(e)"
+																	: "Spouse",
+															content: [
+																fam.spouse_last_name && (
+																	<FieldRow
+																		key="sln"
+																		label={
+																			lang ===
+																			"fr"
+																				? "Nom"
+																				: "Last Name"
+																		}
+																		value={
+																			fam.spouse_last_name
+																		}
+																	/>
+																),
+																fam.spouse_first_name && (
+																	<FieldRow
+																		key="sfn"
+																		label={
+																			lang ===
+																			"fr"
+																				? "Prénom"
+																				: "First Name"
+																		}
+																		value={
+																			fam.spouse_first_name
+																		}
+																	/>
+																),
+															].filter(Boolean),
+														});
+													}
+
+													return (
+														<div className="space-y-4 pt-3">
+															{fam.marital_status && (
+																<FieldRow
+																	label={
+																		lang ===
+																		"fr"
+																			? "Situation"
+																			: "Status"
+																	}
+																	value={
+																		maritalDisplay
+																	}
+																/>
+															)}
+															{familyCards.length >
+																0 && (
+																<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+																	{familyCards.map(
+																		(
+																			card,
+																		) => (
+																			<InfoCard
+																				key={
+																					card.title
+																				}
+																				title={
+																					card.title
+																				}
+																			>
+																				{
+																					card.content
+																				}
+																			</InfoCard>
+																		),
+																	)}
+																</div>
+															)}
+														</div>
+													);
+												}
+
+												// ── Coordinates (merged contact + addresses) ──
+												if (section.id === "coordinates") {
+													const contact = formData?.[
+														"contact_info"
+													] as
+														| Record<string, any>
+														| undefined;
+													const residence = formData?.[
+														"residence_address"
+													] as
+														| Record<string, any>
+														| undefined;
+													const homeland = formData?.[
+														"homeland_address"
+													] as
+														| Record<string, any>
+														| undefined;
+
+													return (
+														<div className="space-y-4 pt-3">
+															{contact && (
+																<div className="space-y-1">
+																	{contact.phone && (
+																		<FieldRow
+																			label={
+																				lang ===
+																				"fr"
+																					? "Téléphone"
+																					: "Phone"
+																			}
+																			value={
+																				contact.phone
+																			}
+																		/>
+																	)}
+																	{contact.email && (
+																		<FieldRow
+																			label={
+																				lang ===
+																				"fr"
+																					? "Email"
+																					: "Email"
+																			}
+																			value={
+																				contact.email
+																			}
+																		/>
+																	)}
+																</div>
+															)}
+															<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+																{residence &&
+																	Object.values(
+																		residence,
+																	).some(
+																		Boolean,
+																	) && (
+																	<InfoCard
+																		title={
+																			lang ===
+																			"fr"
+																				? "Adresse de résidence"
+																				: "Residence Address"
+																		}
+																	>
+																		{residence.residence_street && (
+																			<FieldRow
+																				label={
+																					lang ===
+																					"fr"
+																						? "Rue"
+																						: "Street"
+																				}
+																				value={
+																					residence.residence_street
+																				}
+																			/>
+																		)}
+																		{residence.residence_city && (
+																			<FieldRow
+																				label={
+																					lang ===
+																					"fr"
+																						? "Ville"
+																						: "City"
+																				}
+																				value={
+																					residence.residence_city
+																				}
+																			/>
+																		)}
+																		{residence.residence_postal_code && (
+																			<FieldRow
+																				label={
+																					lang ===
+																					"fr"
+																						? "Code postal"
+																						: "Postal Code"
+																				}
+																				value={
+																					residence.residence_postal_code
+																				}
+																			/>
+																		)}
+																		{residence.residence_country && (
+																			<FieldRow
+																				label={
+																					lang ===
+																					"fr"
+																						? "Pays"
+																						: "Country"
+																				}
+																				value={resolveFieldValue(
+																					residence.residence_country,
+																					lang,
+																					t,
+																				)}
+																			/>
+																		)}
+																	</InfoCard>
+																)}
+																{homeland &&
+																	Object.values(
+																		homeland,
+																	).some(
+																		Boolean,
+																	) && (
+																	<InfoCard
+																		title={
+																			lang ===
+																			"fr"
+																				? "Adresse au Gabon"
+																				: "Address in Gabon"
+																		}
+																	>
+																		{homeland.homeland_street && (
+																			<FieldRow
+																				label={
+																					lang ===
+																					"fr"
+																						? "Rue"
+																						: "Street"
+																				}
+																				value={
+																					homeland.homeland_street
+																				}
+																			/>
+																		)}
+																		{homeland.homeland_city && (
+																			<FieldRow
+																				label={
+																					lang ===
+																					"fr"
+																						? "Ville"
+																						: "City"
+																				}
+																				value={
+																					homeland.homeland_city
+																				}
+																			/>
+																		)}
+																		{homeland.homeland_postal_code && (
+																			<FieldRow
+																				label={
+																					lang ===
+																					"fr"
+																						? "Code postal"
+																						: "Postal Code"
+																				}
+																				value={
+																					homeland.homeland_postal_code
+																				}
+																			/>
+																		)}
+																		{homeland.homeland_country && (
+																			<FieldRow
+																				label={
+																					lang ===
+																					"fr"
+																						? "Pays"
+																						: "Country"
+																				}
+																				value={resolveFieldValue(
+																					homeland.homeland_country,
+																					lang,
+																					t,
+																				)}
+																			/>
+																		)}
+																	</InfoCard>
+																)}
+															</div>
+														</div>
+													);
+												}
+
+												// ── Default: simple rows ──
+												return (
+													<div className="divide-y">
+														{section.rows.map(
+															(row) => (
+																<FieldRow
+																	key={
+																		row.key
+																	}
+																	label={
+																		row.label
+																	}
+																	value={
+																		row.value
+																	}
+																/>
+															),
+														)}
+													</div>
+												);
+											})()}
 										</TabsContent>
 									))}
 								</Tabs>
@@ -621,59 +1311,33 @@ function UserRequestDetail() {
 						);
 					})()}
 
-					{/* Documents/Attachments */}
-					{request.documents && request.documents.length > 0 && (
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
-									<FileText className="h-5 w-5" />
-									{t("requests.detail.attachments")}
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<div className="space-y-2">
-									{request.documents.map((doc: any) => {
-										const file = doc.files?.[0];
-										const filename =
-											file?.filename || doc.filename || doc.name || "Document";
-										const sizeBytes = file?.sizeBytes || doc.sizeBytes;
-										const docUrl = doc.fileUrls?.[0]?.url || doc.url;
-										return (
-											<div
-												key={doc._id}
-												className="flex items-center justify-between p-2 sm:p-3 bg-muted/30 rounded-lg gap-2"
-											>
-												<div className="flex items-center gap-3 min-w-0">
-													<div className="p-2 bg-primary/10 rounded-md shrink-0">
-														<FileText className="h-4 w-4 text-primary" />
-													</div>
-													<div className="min-w-0">
-														<p className="text-sm font-medium truncate">
-															{filename}
-														</p>
-														{sizeBytes && (
-															<p className="text-xs text-muted-foreground">
-																{(sizeBytes / 1024).toFixed(0)} Ko
-															</p>
-														)}
-													</div>
-												</div>
-												{docUrl && (
-													<Button
-														variant="ghost"
-														size="sm"
-														onClick={() => window.open(docUrl, "_blank")}
-													>
-														<Eye className="mr-1.5 h-3.5 w-3.5" />
-														{t("common.view")}
-													</Button>
-												)}
-											</div>
-										);
-									})}
-								</div>
-							</CardContent>
-						</Card>
+					{/* Documents Checklist — shows required documents from schema + submitted docs */}
+					{((request.service?.formSchema?.joinedDocuments?.length ?? 0) > 0 ||
+						(request.documents && request.documents.length > 0)) && (
+						<DocumentChecklist
+							requiredDocuments={
+								request.service?.formSchema?.joinedDocuments || []
+							}
+							submittedDocuments={
+								(request.documents || []).map((doc: any) => ({
+									_id: doc._id,
+									documentType: doc.documentType || doc.type || "",
+									filename:
+										doc.files?.[0]?.filename ||
+										doc.filename ||
+										doc.name ||
+										"Document",
+									status: doc.status || "pending",
+									mimeType:
+										doc.files?.[0]?.mimeType || doc.mimeType || "",
+									sizeBytes:
+										doc.files?.[0]?.sizeBytes || doc.sizeBytes || 0,
+									url: doc.fileUrls?.[0]?.url || doc.url,
+									storageId: doc.storageId,
+									rejectionReason: doc.rejectionReason,
+								}))
+							}
+						/>
 					)}
 				</div>
 

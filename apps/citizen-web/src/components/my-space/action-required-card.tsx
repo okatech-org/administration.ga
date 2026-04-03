@@ -431,7 +431,14 @@ export function ActionRequiredCard({
 						)}
 						<Button
 							onClick={handleSubmit}
-							disabled={isSubmitting}
+							disabled={
+								isSubmitting ||
+								(actionRequired.documentTypes &&
+									actionRequired.documentTypes.length > 0 &&
+									actionRequired.documentTypes
+										.filter((d) => d.required !== false)
+										.some((d) => !uploadedDocIds.has(d.type)))
+							}
 							className="w-full mt-4"
 						>
 							{isSubmitting ? (
@@ -447,12 +454,50 @@ export function ActionRequiredCard({
 			case "complete_info":
 				return (
 					<div className="mt-4 space-y-4">
-						{actionRequired.fields?.map((field) => renderDynamicField(field))}
+						{actionRequired.fields && actionRequired.fields.length > 0 ? (
+							(() => {
+								// Group fields by sectionTitle
+								const groups: Array<{
+									title: string;
+									fields: typeof actionRequired.fields;
+								}> = [];
+								let currentGroup: (typeof groups)[number] | null = null;
+
+								for (const field of actionRequired.fields!) {
+									const title =
+										(field.sectionTitle as { fr?: string })?.fr ?? "";
+									if (!currentGroup || currentGroup.title !== title) {
+										currentGroup = { title, fields: [] };
+										groups.push(currentGroup);
+									}
+									currentGroup.fields!.push(field);
+								}
+
+								return groups.map((group, gi) => (
+									<div key={gi} className="space-y-3">
+										{group.title && (
+											<h4 className="text-sm font-medium text-foreground border-b pb-1">
+												{group.title}
+											</h4>
+										)}
+										{group.fields!.map((field) => renderDynamicField(field))}
+									</div>
+								));
+							})()
+						) : (
+							<p className="text-sm text-muted-foreground">
+								{t(
+									"requests.noFieldsToComplete",
+									"Aucun champ spécifique à compléter. Veuillez contacter le consulat pour plus d'informations.",
+								)}
+							</p>
+						)}
 						<Button
 							onClick={handleSubmit}
 							disabled={
 								isSubmitting ||
-								actionRequired.fields?.some((f) => !formData[f.fieldPath])
+								!actionRequired.fields?.length ||
+								actionRequired.fields.some((f) => !formData[f.fieldPath])
 							}
 							className="w-full mt-4"
 						>

@@ -650,7 +650,11 @@
 					},
 					"relationship": {
 						"invalid": "Invalid relationship"
-					}
+					},
+					"country": {
+						"invalid": "Invalid country"
+					},
+					"atLeastOne": "Please provide at least one emergency contact"
 				}
 			},
 			"family": {
@@ -2445,6 +2449,7 @@
 		"agentAssigned": "Agent assigned successfully",
 		"assignAgent": "Assign to an agent...",
 		"notFound": "Request not found",
+		"notFoundDesc": "This request does not exist or you do not have permission to access it.",
 		"backToList": "Back to requests",
 		"statusUpdated": "Status updated",
 		"unknownService": "Unknown service",
@@ -2630,6 +2635,13 @@
 			"addressAbroad": "Current Residence Address",
 			"emergencyResidence": "Emergency Contact (Residence Country)",
 			"emergencyHomeland": "Emergency Contact (Gabon)"
+		},
+		"emergencyContacts": {
+			"recommendation": "We recommend having at least one emergency contact in your home country and in your country of residence.",
+			"contactNumber": "Emergency contact #{{number}}",
+			"country": "Contact's country",
+			"add": "Add an emergency contact",
+			"remove": "Remove this contact"
 		},
 		"documents": {
 			"empty": "No documents added",

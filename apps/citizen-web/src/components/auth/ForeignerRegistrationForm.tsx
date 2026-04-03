@@ -20,14 +20,17 @@ import {
 	CreditCard,
 	Eye,
 	FileText,
+	Info,
 	Loader2,
 	MapPin,
+	Plus,
 	Sparkles,
+	Trash2,
 	User,
 	UserPlus,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { Controller, FormProvider, useForm } from "react-hook-form";
+import { Controller, FormProvider, useFieldArray, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -106,19 +109,23 @@ function buildForeignerSchema(_config: RegistrationConfig) {
 			city: z.string().optional(),
 			postalCode: z.string().optional(),
 			country: z.string().optional(),
-			emergencyResidenceLastName: z
-				.string({ message: "errors.field.required" })
-				.min(1, { message: "errors.field.required" })
-				.default(""),
-			emergencyResidenceFirstName: z
-				.string({ message: "errors.field.required" })
-				.min(1, { message: "errors.field.required" })
-				.default(""),
-			emergencyResidencePhone: z
-				.string({ message: "errors.field.required" })
-				.min(1, { message: "errors.field.required" })
-				.default(""),
-			emergencyResidenceEmail: z.string().optional(),
+			emergencyContacts: z
+				.array(
+					z.object({
+						firstName: z
+							.string({ message: "errors.field.required" })
+							.min(1, { message: "errors.field.required" }),
+						lastName: z
+							.string({ message: "errors.field.required" })
+							.min(1, { message: "errors.field.required" }),
+						phone: z
+							.string({ message: "errors.field.required" })
+							.min(1, { message: "errors.field.required" }),
+						email: z.string().optional(),
+						country: z.string().optional(),
+					}),
+				)
+				.min(1, { message: "errors.profile.contacts.emergency.atLeastOne" }),
 		}),
 
 		acceptTerms: z.boolean().refine((v) => v === true),
@@ -151,10 +158,13 @@ type ForeignerFormValues = {
 		city?: string;
 		postalCode?: string;
 		country?: string;
-		emergencyResidenceLastName: string;
-		emergencyResidenceFirstName: string;
-		emergencyResidencePhone: string;
-		emergencyResidenceEmail?: string;
+		emergencyContacts: Array<{
+			firstName: string;
+			lastName: string;
+			phone: string;
+			email?: string;
+			country?: string;
+		}>;
 	};
 	acceptTerms: boolean;
 };
@@ -172,6 +182,159 @@ const STEP_ICON_MAP: Record<
 	CreditCard,
 	Compass,
 };
+
+// ============================================================================
+// EMERGENCY CONTACTS SECTION
+// ============================================================================
+
+function ForeignerEmergencyContactsSection({
+	form,
+	t,
+}: {
+	form: ReturnType<typeof useForm<ForeignerFormValues>>;
+	t: ReturnType<typeof useTranslation>["t"];
+}) {
+	const { fields, append, remove } = useFieldArray({
+		control: form.control,
+		name: "contactInfo.emergencyContacts",
+	});
+
+	return (
+		<FieldSet className="mt-6">
+			<FieldLegend>{t("profile.sections.emergencyContacts")}</FieldLegend>
+
+			{/* Recommendation */}
+			<div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 mb-4 dark:border-blue-800 dark:bg-blue-950">
+				<Info className="h-4 w-4 mt-0.5 shrink-0 text-blue-600 dark:text-blue-400" />
+				<p className="text-xs text-blue-800 dark:text-blue-200">
+					{t("profile.emergencyContacts.recommendation")}
+				</p>
+			</div>
+
+			<FieldGroup className="space-y-4">
+				{fields.map((field, index) => (
+					<div
+						key={field.id}
+						className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-100 dark:border-red-900 relative"
+					>
+						<p className="text-sm font-medium text-red-800 dark:text-red-200 mb-3">
+							{t("profile.emergencyContacts.contactNumber", {
+								number: index + 1,
+							})}
+						</p>
+						{fields.length > 1 && (
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon"
+								className="absolute top-2 right-2 text-destructive hover:text-destructive h-7 w-7"
+								onClick={() => remove(index)}
+							>
+								<Trash2 className="h-3.5 w-3.5" />
+							</Button>
+						)}
+
+						{/* Country */}
+						<div className="mb-3">
+							<Controller
+								name={`contactInfo.emergencyContacts.${index}.country`}
+								control={form.control}
+								render={({ field: f }) => (
+									<Field>
+										<FieldLabel>
+											{t("profile.emergencyContacts.country")}
+										</FieldLabel>
+										<CountrySelect
+											type="single"
+											selected={f.value as any}
+											onChange={f.onChange as any}
+										/>
+									</Field>
+								)}
+							/>
+						</div>
+
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+							<Controller
+								name={`contactInfo.emergencyContacts.${index}.lastName`}
+								control={form.control}
+								render={({ field: f, fieldState }) => (
+									<Field data-invalid={fieldState.invalid}>
+										<FieldLabel>
+											{t("common.lastName")}{" "}
+											<span className="text-destructive">*</span>
+										</FieldLabel>
+										<Input {...f} />
+										<FieldError errors={[fieldState.error]} />
+									</Field>
+								)}
+							/>
+							<Controller
+								name={`contactInfo.emergencyContacts.${index}.firstName`}
+								control={form.control}
+								render={({ field: f, fieldState }) => (
+									<Field data-invalid={fieldState.invalid}>
+										<FieldLabel>
+											{t("common.firstName")}{" "}
+											<span className="text-destructive">*</span>
+										</FieldLabel>
+										<Input {...f} />
+										<FieldError errors={[fieldState.error]} />
+									</Field>
+								)}
+							/>
+						</div>
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+							<Controller
+								name={`contactInfo.emergencyContacts.${index}.phone`}
+								control={form.control}
+								render={({ field: f, fieldState }) => (
+									<Field data-invalid={fieldState.invalid}>
+										<FieldLabel>
+											{t("profile.fields.phone")}{" "}
+											<span className="text-destructive">*</span>
+										</FieldLabel>
+										<Input type="tel" {...f} />
+										<FieldError errors={[fieldState.error]} />
+									</Field>
+								)}
+							/>
+							<Controller
+								name={`contactInfo.emergencyContacts.${index}.email`}
+								control={form.control}
+								render={({ field: f }) => (
+									<Field>
+										<FieldLabel>{t("profile.fields.email")}</FieldLabel>
+										<Input type="email" {...f} />
+									</Field>
+								)}
+							/>
+						</div>
+					</div>
+				))}
+
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					className="w-full"
+					onClick={() =>
+						append({
+							firstName: "",
+							lastName: "",
+							phone: "",
+							email: "",
+							country: "",
+						})
+					}
+				>
+					<Plus className="h-4 w-4 mr-2" />
+					{t("profile.emergencyContacts.add")}
+				</Button>
+			</FieldGroup>
+		</FieldSet>
+	);
+}
 
 // ============================================================================
 // COMPONENT
@@ -266,9 +429,9 @@ export function ForeignerRegistrationForm({
 				email: userData?.email || "",
 				phone: userData?.phone || "",
 				country: CountryCode.FR,
-				emergencyResidenceLastName: "",
-				emergencyResidenceFirstName: "",
-				emergencyResidencePhone: "",
+				emergencyContacts: [
+					{ firstName: "", lastName: "", phone: "", email: "", country: "" },
+				],
 			},
 			acceptTerms: false,
 		},
@@ -314,7 +477,8 @@ export function ForeignerRegistrationForm({
 				step_name: currentStepInfo.stepId,
 			});
 		}
-	}, [step, steps]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [step]);
 
 	// Map stepId to form fields for validation
 	const STEP_FIELDS: Partial<
@@ -574,16 +738,15 @@ export function ForeignerRegistrationForm({
 							}
 						: {}),
 				},
-				emergencyResidence:
-					data.contactInfo.emergencyResidenceLastName ||
-					data.contactInfo.emergencyResidenceFirstName
-						? {
-								firstName: data.contactInfo.emergencyResidenceFirstName || "",
-								lastName: data.contactInfo.emergencyResidenceLastName || "",
-								phone: data.contactInfo.emergencyResidencePhone || "",
-								email: data.contactInfo.emergencyResidenceEmail || undefined,
-							}
-						: undefined,
+				emergencyContacts: data.contactInfo.emergencyContacts
+					?.filter((c) => c.firstName || c.lastName || c.phone)
+					.map((c) => ({
+						firstName: c.firstName || "",
+						lastName: c.lastName || "",
+						phone: c.phone || "",
+						email: c.email || undefined,
+						country: c.country || undefined,
+					})),
 				documents:
 					Object.keys(documentIds).length > 0
 						? {
@@ -1503,70 +1666,8 @@ export function ForeignerRegistrationForm({
 					</FieldGroup>
 				</FieldSet>
 
-				{/* Emergency Contact */}
-				{regConfig.visibleSections.emergencyResidence && (
-					<FieldSet className="mt-6">
-						<FieldLegend>{t("profile.sections.emergencyContacts")}</FieldLegend>
-						<FieldGroup>
-							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-								<Controller
-									name="contactInfo.emergencyResidenceLastName"
-									control={form.control}
-									render={({ field, fieldState }) => (
-										<Field data-invalid={fieldState.invalid}>
-											<FieldLabel>
-												{t("common.lastName")}{" "}
-												<span className="text-destructive">*</span>
-											</FieldLabel>
-											<Input {...field} />
-											<FieldError errors={[fieldState.error]} />
-										</Field>
-									)}
-								/>
-								<Controller
-									name="contactInfo.emergencyResidenceFirstName"
-									control={form.control}
-									render={({ field, fieldState }) => (
-										<Field data-invalid={fieldState.invalid}>
-											<FieldLabel>
-												{t("common.firstName")}{" "}
-												<span className="text-destructive">*</span>
-											</FieldLabel>
-											<Input {...field} />
-											<FieldError errors={[fieldState.error]} />
-										</Field>
-									)}
-								/>
-							</div>
-							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-								<Controller
-									name="contactInfo.emergencyResidencePhone"
-									control={form.control}
-									render={({ field, fieldState }) => (
-										<Field data-invalid={fieldState.invalid}>
-											<FieldLabel>
-												{t("profile.fields.phone")}{" "}
-												<span className="text-destructive">*</span>
-											</FieldLabel>
-											<Input type="tel" {...field} />
-											<FieldError errors={[fieldState.error]} />
-										</Field>
-									)}
-								/>
-								<Controller
-									name="contactInfo.emergencyResidenceEmail"
-									control={form.control}
-									render={({ field }) => (
-										<Field>
-											<FieldLabel>{t("profile.fields.email")}</FieldLabel>
-											<Input type="email" {...field} />
-										</Field>
-									)}
-								/>
-							</div>
-						</FieldGroup>
-					</FieldSet>
-				)}
+				{/* Emergency Contacts — Dynamic list */}
+				<ForeignerEmergencyContactsSection form={form} t={t} />
 			</CardContent>
 		</Card>
 	);

@@ -96,6 +96,37 @@ const STEPS = [
 ] as const;
 type Step = (typeof STEPS)[number];
 
+/** Convert profile emergency contact data (new or legacy) to form array */
+function buildEmergencyContactsFromProfile(profile: Doc<"profiles">) {
+	const contacts = profile.contacts as any;
+
+	// Prefer new array format
+	if (contacts?.emergencyContacts?.length > 0) {
+		return contacts.emergencyContacts;
+	}
+
+	// Fallback: convert legacy emergencyResidence/emergencyHomeland to array
+	const result: Array<Record<string, any>> = [];
+
+	if (contacts?.emergencyResidence?.firstName) {
+		result.push({
+			...contacts.emergencyResidence,
+			country: profile.countryOfResidence || undefined,
+		});
+	}
+	if (contacts?.emergencyHomeland?.firstName) {
+		result.push({
+			...contacts.emergencyHomeland,
+			country: profile.identity?.nationality || CountryCode.GA,
+		});
+	}
+
+	// Always provide at least one empty entry
+	return result.length > 0
+		? result
+		: [{ firstName: "", lastName: "", phone: "", email: undefined, relationship: undefined, country: undefined }];
+}
+
 function ProfileForm({ profile, updateProfile }: ProfileFormProps) {
 	const { t } = useTranslation();
 	const [currentStep, setCurrentStep] = useState<Step>("personal");
@@ -152,8 +183,7 @@ function ProfileForm({ profile, updateProfile }: ProfileFormProps) {
 			contacts: {
 				email: profile.contacts?.email || "",
 				phone: profile.contacts?.phone || "",
-				emergencyResidence: profile.contacts?.emergencyResidence || undefined,
-				emergencyHomeland: profile.contacts?.emergencyHomeland || undefined,
+				emergencyContacts: buildEmergencyContactsFromProfile(profile),
 			},
 			family: {
 				maritalStatus: profile.family?.maritalStatus || MaritalStatus.Single,
@@ -273,10 +303,13 @@ function ProfileForm({ profile, updateProfile }: ProfileFormProps) {
 	};
 
 	const [showErrors, setShowErrors] = useState(false);
+	const [isSaving, setIsSaving] = useState(false);
 
+	// Use errorCount to force recalculation after trigger()
+	const errorCount = Object.keys(form.formState.errors).length;
 	const currentStepErrors = useMemo(() => {
 		return getStepErrors(form.formState.errors, currentStep);
-	}, [form.formState.errors, currentStep, t]);
+	}, [form.formState.errors, currentStep, errorCount, t]);
 
 	const saveStep = async (step: Step) => {
 		const isValid = await isStepValid(step);
@@ -286,6 +319,7 @@ function ProfileForm({ profile, updateProfile }: ProfileFormProps) {
 			return false;
 		}
 		setShowErrors(false);
+		setIsSaving(true);
 
 		try {
 			const data = form.getValues();
@@ -335,6 +369,8 @@ function ProfileForm({ profile, updateProfile }: ProfileFormProps) {
 			console.error(error);
 			toast.error(error.message || "Erreur lors de l'enregistrement");
 			return false;
+		} finally {
+			setIsSaving(false);
 		}
 	};
 
@@ -518,12 +554,13 @@ function ProfileForm({ profile, updateProfile }: ProfileFormProps) {
 									type="button"
 									variant="outline"
 									onClick={() => saveStep(currentStep)}
-									disabled={form.formState.isSubmitting}
+									disabled={isSaving}
 								>
-									{form.formState.isSubmitting && (
+									{isSaving ? (
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+									) : (
+										<Save className="mr-2 h-4 w-4" />
 									)}
-									<Save className="mr-2 h-4 w-4" />
 									{t("common.save")}
 								</Button>
 							)}

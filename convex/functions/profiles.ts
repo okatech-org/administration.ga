@@ -65,8 +65,10 @@ export function buildRegistrationFormData(
   const profession = profile.profession ?? {};
   const residence = addresses.residence ?? {};
   const homeland = addresses.homeland ?? {};
-  const emergencyRes = contacts.emergencyResidence ?? {};
-  const emergencyHome = contacts.emergencyHomeland ?? {};
+  // Support both new array format and legacy fields
+  const emergencyContacts = contacts.emergencyContacts ?? [];
+  const emergencyRes = emergencyContacts[0] ?? contacts.emergencyResidence ?? {};
+  const emergencyHome = emergencyContacts[1] ?? contacts.emergencyHomeland ?? {};
 
   return {
     // Meta
@@ -128,21 +130,14 @@ export function buildRegistrationFormData(
       homeland_country: homeland.country || undefined,
     },
 
-    // Section: emergency_residence
-    emergency_residence: {
-      emergency_residence_last_name: emergencyRes.lastName || undefined,
-      emergency_residence_first_name: emergencyRes.firstName || undefined,
-      emergency_residence_phone: emergencyRes.phone || undefined,
-      emergency_residence_email: emergencyRes.email || undefined,
-    },
-
-    // Section: emergency_homeland
-    emergency_homeland: {
-      emergency_homeland_last_name: emergencyHome.lastName || undefined,
-      emergency_homeland_first_name: emergencyHome.firstName || undefined,
-      emergency_homeland_phone: emergencyHome.phone || undefined,
-      emergency_homeland_email: emergencyHome.email || undefined,
-    },
+    // Section: emergency contacts
+    emergency_contacts: emergencyContacts.map((c: any) => ({
+      last_name: c.lastName || undefined,
+      first_name: c.firstName || undefined,
+      phone: c.phone || undefined,
+      email: c.email || undefined,
+      country: c.country || undefined,
+    })),
 
     // Section: professional_info
     professional_info: {
@@ -960,6 +955,18 @@ export const createFromRegistration = authMutation({
     // Direct contact info (email & phone) — previously missing, causing data loss
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
+    emergencyContacts: v.optional(
+      v.array(
+        v.object({
+          firstName: v.optional(v.string()),
+          lastName: v.optional(v.string()),
+          phone: v.optional(v.string()),
+          email: v.optional(v.string()),
+          country: v.optional(v.string()),
+        }),
+      ),
+    ),
+    // Legacy fields — kept for backward compatibility during migration
     emergencyResidence: v.optional(
       v.object({
         firstName: v.optional(v.string()),
@@ -1065,6 +1072,21 @@ export const createFromRegistration = authMutation({
       contacts: {
         email: args.email || undefined,
         phone: args.phone || undefined,
+        // New format: dynamic array of emergency contacts
+        ...(args.emergencyContacts && args.emergencyContacts.length > 0
+          ? {
+              emergencyContacts: args.emergencyContacts
+                .filter((c) => c.firstName || c.lastName || c.phone)
+                .map((c) => ({
+                  firstName: c.firstName || "",
+                  lastName: c.lastName || "",
+                  phone: c.phone || "",
+                  email: c.email || undefined,
+                  country: c.country || undefined,
+                })),
+            }
+          : {}),
+        // Legacy fallback for old clients
         ...(args.emergencyResidence ?
           {
             emergencyResidence: {

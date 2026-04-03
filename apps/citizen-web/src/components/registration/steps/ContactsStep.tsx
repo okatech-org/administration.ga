@@ -1,8 +1,15 @@
-import { CountryCode, countryCodes, FamilyLink } from "@convex/lib/constants";
+import { CountryCode, FamilyLink } from "@convex/lib/constants";
 import type { TFunction } from "i18next";
+import { Plus, Trash2, Info } from "lucide-react";
 import { useMemo } from "react";
-import { type Control, Controller, type FieldErrors } from "react-hook-form";
+import {
+	type Control,
+	Controller,
+	type FieldErrors,
+	useFieldArray,
+} from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -34,25 +41,78 @@ interface ContactsStepProps {
 	errors?: FieldErrors<ProfileFormValues>;
 }
 
-function EmergencyContactSection({
+function EmergencyContactEntry({
 	control,
-	namePrefix,
-	title,
-	sectionName,
+	index,
+	countryOptions,
+	onRemove,
+	canRemove,
 	t,
 }: {
 	control: Control<ProfileFormValues>;
-	namePrefix: "contacts.emergencyResidence" | "contacts.emergencyHomeland";
-	title: string;
-	sectionName: "residence" | "homeland";
+	index: number;
+	countryOptions: Array<{ value: string; label: string }>;
+	onRemove: () => void;
+	canRemove: boolean;
 	t: TFunction<"translation", undefined>;
 }) {
+	const namePrefix = `contacts.emergencyContacts.${index}` as const;
+
 	return (
-		<FieldSet>
-			<FieldLegend>{title}</FieldLegend>
+		<FieldSet className="relative rounded-lg border p-4">
+			{canRemove && (
+				<Button
+					type="button"
+					variant="ghost"
+					size="icon"
+					className="absolute top-2 right-2 text-destructive hover:text-destructive"
+					onClick={onRemove}
+					aria-label={t("profile.emergencyContacts.remove")}
+				>
+					<Trash2 className="h-4 w-4" />
+				</Button>
+			)}
+
+			<FieldLegend>
+				{t("profile.emergencyContacts.contactNumber", {
+					number: index + 1,
+				})}
+			</FieldLegend>
+
 			<FieldGroup className="grid gap-4 md:grid-cols-2">
+				{/* Country */}
 				<Controller
-					name={`${namePrefix}.firstName` as any}
+					name={`${namePrefix}.country`}
+					control={control}
+					render={({ field, fieldState }) => {
+						const errorId = `${namePrefix}-country-error`;
+						return (
+							<Field
+								className="md:col-span-2"
+								data-invalid={fieldState.invalid}
+							>
+								<FieldLabel htmlFor={`${namePrefix}-country`}>
+									{t("profile.emergencyContacts.country")}
+								</FieldLabel>
+								<Combobox
+									options={countryOptions}
+									value={field.value}
+									onValueChange={field.onChange}
+									placeholder={t("registration.labels.selectPlaceholder")}
+									aria-invalid={fieldState.invalid}
+									aria-describedby={fieldState.invalid ? errorId : undefined}
+								/>
+								{fieldState.invalid && (
+									<FieldError id={errorId} errors={[fieldState.error]} />
+								)}
+							</Field>
+						);
+					}}
+				/>
+
+				{/* First name */}
+				<Controller
+					name={`${namePrefix}.firstName`}
 					control={control}
 					render={({ field, fieldState }) => {
 						const errorId = `${namePrefix}-firstName-error`;
@@ -63,7 +123,7 @@ function EmergencyContactSection({
 								</FieldLabel>
 								<Input
 									id={`${namePrefix}-firstName`}
-									autoComplete={`section-${sectionName} given-name`}
+									autoComplete="given-name"
 									aria-invalid={fieldState.invalid}
 									aria-describedby={fieldState.invalid ? errorId : undefined}
 									{...field}
@@ -75,8 +135,10 @@ function EmergencyContactSection({
 						);
 					}}
 				/>
+
+				{/* Last name */}
 				<Controller
-					name={`${namePrefix}.lastName` as any}
+					name={`${namePrefix}.lastName`}
 					control={control}
 					render={({ field, fieldState }) => {
 						const errorId = `${namePrefix}-lastName-error`;
@@ -87,7 +149,7 @@ function EmergencyContactSection({
 								</FieldLabel>
 								<Input
 									id={`${namePrefix}-lastName`}
-									autoComplete={`section-${sectionName} family-name`}
+									autoComplete="family-name"
 									aria-invalid={fieldState.invalid}
 									aria-describedby={fieldState.invalid ? errorId : undefined}
 									{...field}
@@ -99,8 +161,10 @@ function EmergencyContactSection({
 						);
 					}}
 				/>
+
+				{/* Phone */}
 				<Controller
-					name={`${namePrefix}.phone` as any}
+					name={`${namePrefix}.phone`}
 					control={control}
 					render={({ field, fieldState }) => {
 						const errorId = `${namePrefix}-phone-error`;
@@ -112,7 +176,7 @@ function EmergencyContactSection({
 								<Input
 									id={`${namePrefix}-phone`}
 									type="tel"
-									autoComplete={`section-${sectionName} tel`}
+									autoComplete="tel"
 									aria-invalid={fieldState.invalid}
 									aria-describedby={fieldState.invalid ? errorId : undefined}
 									{...field}
@@ -124,8 +188,10 @@ function EmergencyContactSection({
 						);
 					}}
 				/>
+
+				{/* Email */}
 				<Controller
-					name={`${namePrefix}.email` as any}
+					name={`${namePrefix}.email`}
 					control={control}
 					render={({ field, fieldState }) => {
 						const errorId = `${namePrefix}-email-error`;
@@ -137,7 +203,7 @@ function EmergencyContactSection({
 								<Input
 									id={`${namePrefix}-email`}
 									type="email"
-									autoComplete={`section-${sectionName} email`}
+									autoComplete="email"
 									aria-invalid={fieldState.invalid}
 									aria-describedby={fieldState.invalid ? errorId : undefined}
 									{...field}
@@ -149,8 +215,10 @@ function EmergencyContactSection({
 						);
 					}}
 				/>
+
+				{/* Relationship */}
 				<Controller
-					name={`${namePrefix}.relationship` as any}
+					name={`${namePrefix}.relationship`}
 					control={control}
 					render={({ field, fieldState }) => {
 						const errorId = `${namePrefix}-relationship-error`;
@@ -341,6 +409,11 @@ export function ContactsStep({ control }: ContactsStepProps) {
 		}));
 	}, [t]);
 
+	const { fields, append, remove } = useFieldArray({
+		control,
+		name: "contacts.emergencyContacts",
+	});
+
 	return (
 		<div className="space-y-6">
 			<Card>
@@ -351,7 +424,7 @@ export function ContactsStep({ control }: ContactsStepProps) {
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-6">
-					{/* Pays de résidence - champ prioritaire pour les services consulaires */}
+					{/* Pays de residence */}
 					<FieldSet>
 						<FieldLegend>{t("profile.sections.residenceCountry")}</FieldLegend>
 						<FieldGroup>
@@ -478,21 +551,45 @@ export function ContactsStep({ control }: ContactsStepProps) {
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-6">
-					<EmergencyContactSection
-						control={control}
-						namePrefix="contacts.emergencyResidence"
-						title={t("profile.sections.emergencyResidence")}
-						sectionName="residence"
-						t={t}
-					/>
+					{/* Recommendation message */}
+					<div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+						<Info className="h-5 w-5 mt-0.5 shrink-0 text-blue-600 dark:text-blue-400" />
+						<p className="text-sm text-blue-800 dark:text-blue-200">
+							{t("profile.emergencyContacts.recommendation")}
+						</p>
+					</div>
 
-					<EmergencyContactSection
-						control={control}
-						namePrefix="contacts.emergencyHomeland"
-						title={t("profile.sections.emergencyHomeland")}
-						sectionName="homeland"
-						t={t}
-					/>
+					{/* Dynamic emergency contacts list */}
+					{fields.map((field, index) => (
+						<EmergencyContactEntry
+							key={field.id}
+							control={control}
+							index={index}
+							countryOptions={countryOptions}
+							onRemove={() => remove(index)}
+							canRemove={fields.length > 1}
+							t={t}
+						/>
+					))}
+
+					<Button
+						type="button"
+						variant="outline"
+						className="w-full"
+						onClick={() =>
+							append({
+								firstName: "",
+								lastName: "",
+								phone: "",
+								email: undefined,
+								relationship: undefined as any,
+								country: undefined,
+							})
+						}
+					>
+						<Plus className="h-4 w-4 mr-2" />
+						{t("profile.emergencyContacts.add")}
+					</Button>
 				</CardContent>
 			</Card>
 		</div>

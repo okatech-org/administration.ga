@@ -2,9 +2,10 @@ import { v } from "convex/values";
 import { ObjectType, PropertyValidators } from "convex/values";
 import { assertCanTransition } from "../lib/requestWorkflow";
 import { paginationOptsValidator } from "convex/server";
-import { query } from "../_generated/server";
+import { query, internalQuery } from "../_generated/server";
+import type { QueryCtx } from "../_generated/server";
 import { triggeredInternalMutation } from "../lib/customFunctions";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import { authQuery, authMutation } from "../lib/customFunctions";
 import { getMembership, requireBackOfficeAccess } from "../lib/auth";
@@ -154,114 +155,132 @@ export const create = authMutation({
 });
 
 /**
- * Get request by ID with all related data
+ * Shared helper: load all related data for a request document.
  */
-export const getById = query({
+async function loadRequestDetails(
+  ctx: QueryCtx,
+  request: Doc<"requests">,
+  opts?: { includeAppointments?: boolean },
+) {
+  const [user, org, orgService, assignedTo] = await Promise.all([
+    ctx.db.get(request.userId),
+    ctx.db.get(request.orgId),
+    ctx.db.get(request.orgServiceId),
+    request.assignedTo ? ctx.db.get(request.assignedTo) : null,
+  ]);
+
+  const service = orgService ? await ctx.db.get(orgService.serviceId) : null;
+
+  const requestDocIds = request.documents ?? [];
+  const requestDocuments = (
+    await Promise.all(requestDocIds.map((id: Id<"documents">) => ctx.db.get(id)))
+  ).filter((doc): doc is NonNullable<typeof doc> => doc !== null);
+
+  const documents = await Promise.all(
+    requestDocuments.map(async (doc) => ({
+      ...doc,
+      url:
+        doc.files?.[0]?.storageId ?
+          await ctx.storage.getUrl(doc.files[0].storageId)
+        : null,
+      fileUrls:
+        doc.files ?
+          await Promise.all(
+            doc.files.map(async (f) => ({
+              filename: f.filename,
+              mimeType: f.mimeType,
+              url: await ctx.storage.getUrl(f.storageId),
+            })),
+          )
+        : [],
+    })),
+  );
+
+  const allEvents = await ctx.db
+    .query("events")
+    .withIndex("by_target", (q) =>
+      q
+        .eq("targetType", "request")
+        .eq("targetId", request._id as unknown as string),
+    )
+    .collect();
+
+  const notes = allEvents
+    .filter((e) => e.type === EventType.NoteAdded)
+    .map((e) => ({
+      _id: e._id,
+      content: e.data.content,
+      isInternal: e.data.isInternal,
+      createdAt: e._creationTime,
+      userId: e.actorId,
+    }));
+
+  const statusHistory = allEvents
+    .filter(
+      (e) =>
+        e.type === EventType.StatusChanged ||
+        e.type === EventType.RequestSubmitted,
+    )
+    .map((e) => ({
+      _id: e._id,
+      type: e.type,
+      from: e.data.from,
+      to: e.data.to || e.data.status,
+      note: e.data.note,
+      createdAt: e._creationTime,
+    }))
+    .sort((a, b) => a.createdAt - b.createdAt);
+
+  const joinedDocuments = service?.formSchema?.joinedDocuments ?? [];
+
+  const base = {
+    ...request,
+    user: user ?? null,
+    org: org ?? null,
+    orgService: orgService ?? null,
+    service: service ?? null,
+    assignedTo: assignedTo ?? null,
+    documents,
+    notes,
+    statusHistory,
+    joinedDocuments,
+  };
+
+  if (opts?.includeAppointments) {
+    const appointments = await ctx.db
+      .query("appointments")
+      .withIndex("by_request", (q) => q.eq("requestId", request._id))
+      .collect();
+    return { ...base, appointments };
+  }
+
+  return base;
+}
+
+/**
+ * Get request by ID with all related data (authenticated)
+ */
+export const getById = authQuery({
   args: { requestId: v.id("requests") },
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.requestId);
     if (!request) return null;
 
-    const [user, org, orgService, assignedTo] = await Promise.all([
-      ctx.db.get(request.userId),
-      ctx.db.get(request.orgId),
-      ctx.db.get(request.orgServiceId),
-      request.assignedTo ? ctx.db.get(request.assignedTo) : null,
-    ]);
+    // Authorization: owner or staff with requests.view permission
+    const isOwner = request.userId === ctx.user._id;
+    if (!isOwner) {
+      const membership = await getMembership(ctx, ctx.user._id, request.orgId);
+      await assertCanDoTask(ctx, ctx.user, membership, "requests.view");
+    }
 
-    const service = orgService ? await ctx.db.get(orgService.serviceId) : null;
-
-    // Get documents for this request using the documents array
-    const requestDocIds = request.documents ?? [];
-    const requestDocuments = (
-      await Promise.all(requestDocIds.map((id) => ctx.db.get(id)))
-    ).filter((doc): doc is NonNullable<typeof doc> => doc !== null);
-
-    // Use request documents directly
-    const mergedDocs = requestDocuments;
-
-    // Generate URLs for each document (first file for backwards compatibility)
-    const documents = await Promise.all(
-      mergedDocs.map(async (doc) => ({
-        ...doc,
-        url:
-          doc.files?.[0]?.storageId ?
-            await ctx.storage.getUrl(doc.files[0].storageId)
-          : null,
-        // Include all file URLs for multi-file support
-        fileUrls:
-          doc.files ?
-            await Promise.all(
-              doc.files.map(async (f) => ({
-                filename: f.filename,
-                mimeType: f.mimeType,
-                url: await ctx.storage.getUrl(f.storageId),
-              })),
-            )
-          : [],
-      })),
-    );
-
-    // Get ALL events for this request (notes, status changes, etc.)
-    const allEvents = await ctx.db
-      .query("events")
-      .withIndex("by_target", (q) =>
-        q
-          .eq("targetType", "request")
-          .eq("targetId", args.requestId as unknown as string),
-      )
-      .collect();
-
-    // Separate notes for backwards compatibility
-    const notes = allEvents
-      .filter((e) => e.type === EventType.NoteAdded)
-      .map((e) => ({
-        _id: e._id,
-        content: e.data.content,
-        isInternal: e.data.isInternal,
-        createdAt: e._creationTime,
-        userId: e.actorId,
-      }));
-
-    // Get status change events for timeline
-    const statusHistory = allEvents
-      .filter(
-        (e) =>
-          e.type === EventType.StatusChanged ||
-          e.type === EventType.RequestSubmitted,
-      )
-      .map((e) => ({
-        _id: e._id,
-        type: e.type,
-        from: e.data.from,
-        to: e.data.to || e.data.status,
-        note: e.data.note,
-        createdAt: e._creationTime,
-      }))
-      .sort((a, b) => a.createdAt - b.createdAt);
-
-    // Get joinedDocuments from orgService or service formSchema
-    const joinedDocuments = service?.formSchema?.joinedDocuments ?? [];
-
-    return {
-      ...request,
-      user: user ?? null,
-      org: org ?? null,
-      orgService: orgService ?? null,
-      service: service ?? null,
-      assignedTo: assignedTo ?? null,
-      documents,
-      notes,
-      statusHistory,
-      joinedDocuments,
-    };
+    return loadRequestDetails(ctx, request);
   },
 });
 
 /**
- * Get request by reference ID with all related data
+ * Get request by reference ID with all related data (authenticated)
  */
-export const getByReferenceId = query({
+export const getByReferenceId = authQuery({
   args: { referenceId: v.string() },
   handler: async (ctx, args) => {
     const request = await ctx.db
@@ -271,106 +290,41 @@ export const getByReferenceId = query({
 
     if (!request) return null;
 
-    const [user, org, orgService, assignedTo] = await Promise.all([
-      ctx.db.get(request.userId),
-      ctx.db.get(request.orgId),
-      ctx.db.get(request.orgServiceId),
-      request.assignedTo ? ctx.db.get(request.assignedTo) : null,
-    ]);
+    // Authorization: owner or staff with requests.view permission
+    const isOwner = request.userId === ctx.user._id;
+    if (!isOwner) {
+      const membership = await getMembership(ctx, ctx.user._id, request.orgId);
+      await assertCanDoTask(ctx, ctx.user, membership, "requests.view");
+    }
 
-    const service = orgService ? await ctx.db.get(orgService.serviceId) : null;
+    return loadRequestDetails(ctx, request, { includeAppointments: true });
+  },
+});
 
-    // Get documents for this request using the documents array
-    const requestDocIds = request.documents ?? [];
-    const requestDocuments = (
-      await Promise.all(requestDocIds.map((id) => ctx.db.get(id)))
-    ).filter((doc): doc is NonNullable<typeof doc> => doc !== null);
+/**
+ * Internal: get request by ID (no auth check, for trusted server-side callers only)
+ */
+export const internalGetById = internalQuery({
+  args: { requestId: v.id("requests") },
+  handler: async (ctx, args) => {
+    const request = await ctx.db.get(args.requestId);
+    if (!request) return null;
+    return loadRequestDetails(ctx, request);
+  },
+});
 
-    // Use request documents directly
-    const mergedDocs = requestDocuments;
-
-    // Generate URLs for each document (first file for backwards compatibility)
-    const documents = await Promise.all(
-      mergedDocs.map(async (doc) => ({
-        ...doc,
-        url:
-          doc.files?.[0]?.storageId ?
-            await ctx.storage.getUrl(doc.files[0].storageId)
-          : null,
-        // Include all file URLs for multi-file support
-        fileUrls:
-          doc.files ?
-            await Promise.all(
-              doc.files.map(async (f) => ({
-                filename: f.filename,
-                mimeType: f.mimeType,
-                url: await ctx.storage.getUrl(f.storageId),
-              })),
-            )
-          : [],
-      })),
-    );
-
-    // Get ALL events for this request (notes, status changes, etc.)
-    const allEvents = await ctx.db
-      .query("events")
-      .withIndex("by_target", (q) =>
-        q
-          .eq("targetType", "request")
-          .eq("targetId", request._id as unknown as string),
-      )
-      .collect();
-
-    // Separate notes for backwards compatibility
-    const notes = allEvents
-      .filter((e) => e.type === EventType.NoteAdded)
-      .map((e) => ({
-        _id: e._id,
-        content: e.data.content,
-        isInternal: e.data.isInternal,
-        createdAt: e._creationTime,
-        userId: e.actorId,
-      }));
-
-    // Get status change events for timeline
-    const statusHistory = allEvents
-      .filter(
-        (e) =>
-          e.type === EventType.StatusChanged ||
-          e.type === EventType.RequestSubmitted,
-      )
-      .map((e) => ({
-        _id: e._id,
-        type: e.type,
-        from: e.data.from,
-        to: e.data.to || e.data.status,
-        note: e.data.note,
-        createdAt: e._creationTime,
-      }))
-      .sort((a, b) => a.createdAt - b.createdAt);
-
-    // Get joinedDocuments from orgService or service formSchema
-    const joinedDocuments = service?.formSchema?.joinedDocuments ?? [];
-
-    // Fetch the linked appointments if they exist
-    const appointments = await ctx.db
-      .query("appointments")
-      .withIndex("by_request", (q) => q.eq("requestId", request._id))
-      .collect();
-
-    return {
-      ...request,
-      user,
-      org,
-      orgService,
-      service,
-      assignedTo,
-      documents,
-      notes,
-      statusHistory,
-      joinedDocuments,
-      appointments,
-    };
+/**
+ * Internal: get request by reference ID (no auth check, for trusted server-side callers only)
+ */
+export const internalGetByReferenceId = internalQuery({
+  args: { referenceId: v.string() },
+  handler: async (ctx, args) => {
+    const request = await ctx.db
+      .query("requests")
+      .withIndex("by_reference", (q) => q.eq("reference", args.referenceId))
+      .first();
+    if (!request) return null;
+    return loadRequestDetails(ctx, request, { includeAppointments: true });
   },
 });
 
@@ -1102,6 +1056,7 @@ export const setActionRequired = authMutation({
       type: v.optional(v.string()),
       options: v.optional(v.any()),
       currentValue: v.optional(v.any()),
+      sectionTitle: v.optional(v.any()),
     }))),
     infoToConfirm: v.optional(v.string()),
     deadline: v.optional(v.number()),
@@ -1164,6 +1119,160 @@ export const setActionRequired = authMutation({
     return args.requestId;
   },
 });
+
+/**
+ * Build a profile patch from formData changes (inverse of buildRegistrationFormData).
+ * Maps form section/field IDs back to profile nested structure.
+ * Only includes fields that are present in the formData update.
+ */
+function buildProfilePatchFromFormData(
+  formData: Record<string, Record<string, unknown>>,
+  existingProfile: Record<string, any>,
+): Record<string, unknown> {
+  const patch: Record<string, unknown> = {};
+
+  // basic_info -> identity
+  if (formData.basic_info) {
+    const bi = formData.basic_info;
+    const identity = { ...(existingProfile.identity ?? {}) };
+    if (bi.last_name !== undefined) identity.lastName = bi.last_name;
+    if (bi.first_name !== undefined) identity.firstName = bi.first_name;
+    if (bi.nip !== undefined) identity.nip = bi.nip;
+    if (bi.gender !== undefined) identity.gender = bi.gender;
+    if (bi.birth_date !== undefined) {
+      const ts = typeof bi.birth_date === "string" ? new Date(bi.birth_date).getTime() : bi.birth_date;
+      if (typeof ts === "number" && !isNaN(ts)) identity.birthDate = ts;
+    }
+    if (bi.birth_place !== undefined) identity.birthPlace = bi.birth_place;
+    if (bi.birth_country !== undefined) identity.birthCountry = bi.birth_country;
+    if (bi.nationality !== undefined) identity.nationality = bi.nationality;
+    if (bi.nationality_acquisition !== undefined) identity.nationalityAcquisition = bi.nationality_acquisition;
+    patch.identity = identity;
+  }
+
+  // passport_info -> passportInfo
+  if (formData.passport_info) {
+    const pi = formData.passport_info;
+    const passportInfo = { ...(existingProfile.passportInfo ?? {}) };
+    if (pi.passport_number !== undefined) passportInfo.number = pi.passport_number;
+    if (pi.passport_issue_date !== undefined) {
+      const ts = typeof pi.passport_issue_date === "string" ? new Date(pi.passport_issue_date).getTime() : pi.passport_issue_date;
+      if (typeof ts === "number" && !isNaN(ts)) passportInfo.issueDate = ts;
+    }
+    if (pi.passport_expiry_date !== undefined) {
+      const ts = typeof pi.passport_expiry_date === "string" ? new Date(pi.passport_expiry_date).getTime() : pi.passport_expiry_date;
+      if (typeof ts === "number" && !isNaN(ts)) passportInfo.expiryDate = ts;
+    }
+    if (pi.passport_issuing_authority !== undefined) passportInfo.issuingAuthority = pi.passport_issuing_authority;
+    patch.passportInfo = passportInfo;
+  }
+
+  // family_info -> family
+  if (formData.family_info) {
+    const fi = formData.family_info;
+    const family = { ...(existingProfile.family ?? {}) };
+    if (fi.marital_status !== undefined) family.maritalStatus = fi.marital_status;
+    if (fi.father_last_name !== undefined || fi.father_first_name !== undefined) {
+      family.father = { ...(family.father ?? {}) };
+      if (fi.father_last_name !== undefined) family.father.lastName = fi.father_last_name;
+      if (fi.father_first_name !== undefined) family.father.firstName = fi.father_first_name;
+    }
+    if (fi.mother_last_name !== undefined || fi.mother_first_name !== undefined) {
+      family.mother = { ...(family.mother ?? {}) };
+      if (fi.mother_last_name !== undefined) family.mother.lastName = fi.mother_last_name;
+      if (fi.mother_first_name !== undefined) family.mother.firstName = fi.mother_first_name;
+    }
+    if (fi.spouse_last_name !== undefined || fi.spouse_first_name !== undefined) {
+      family.spouse = { ...(family.spouse ?? {}) };
+      if (fi.spouse_last_name !== undefined) family.spouse.lastName = fi.spouse_last_name;
+      if (fi.spouse_first_name !== undefined) family.spouse.firstName = fi.spouse_first_name;
+    }
+    patch.family = family;
+  }
+
+  // contact_info -> contacts
+  if (formData.contact_info) {
+    const ci = formData.contact_info;
+    const contacts = { ...(existingProfile.contacts ?? {}) };
+    if (ci.email !== undefined) contacts.email = ci.email;
+    if (ci.phone !== undefined) contacts.phone = ci.phone;
+    patch.contacts = contacts;
+  }
+
+  // residence_address -> addresses.residence
+  if (formData.residence_address) {
+    const ra = formData.residence_address;
+    const addresses = { ...(existingProfile.addresses ?? {}) };
+    const residence = { ...(addresses.residence ?? {}) };
+    if (ra.residence_street !== undefined) residence.street = ra.residence_street;
+    if (ra.residence_city !== undefined) residence.city = ra.residence_city;
+    if (ra.residence_postal_code !== undefined) residence.postalCode = ra.residence_postal_code;
+    if (ra.residence_country !== undefined) residence.country = ra.residence_country;
+    addresses.residence = residence;
+    patch.addresses = addresses;
+  }
+
+  // homeland_address -> addresses.homeland
+  if (formData.homeland_address) {
+    const ha = formData.homeland_address;
+    const addresses = (patch.addresses as Record<string, any>) ?? { ...(existingProfile.addresses ?? {}) };
+    const homeland = { ...(addresses.homeland ?? {}) };
+    if (ha.homeland_street !== undefined) homeland.street = ha.homeland_street;
+    if (ha.homeland_city !== undefined) homeland.city = ha.homeland_city;
+    if (ha.homeland_postal_code !== undefined) homeland.postalCode = ha.homeland_postal_code;
+    if (ha.homeland_country !== undefined) homeland.country = ha.homeland_country;
+    addresses.homeland = homeland;
+    patch.addresses = addresses;
+  }
+
+  // emergency_residence -> contacts.emergencyContacts[0]
+  if (formData.emergency_residence) {
+    const er = formData.emergency_residence;
+    const contacts = (patch.contacts as Record<string, any>) ?? { ...(existingProfile.contacts ?? {}) };
+    const emergencyContacts = [...(contacts.emergencyContacts ?? [])];
+    const existing = emergencyContacts[0] ?? {};
+    emergencyContacts[0] = {
+      ...existing,
+      ...(er.emergency_residence_last_name !== undefined && { lastName: er.emergency_residence_last_name }),
+      ...(er.emergency_residence_first_name !== undefined && { firstName: er.emergency_residence_first_name }),
+      ...(er.emergency_residence_phone !== undefined && { phone: er.emergency_residence_phone }),
+      ...(er.emergency_residence_email !== undefined && { email: er.emergency_residence_email }),
+    };
+    contacts.emergencyContacts = emergencyContacts;
+    patch.contacts = contacts;
+  }
+
+  // emergency_homeland -> contacts.emergencyContacts[1]
+  if (formData.emergency_homeland) {
+    const eh = formData.emergency_homeland;
+    const contacts = (patch.contacts as Record<string, any>) ?? { ...(existingProfile.contacts ?? {}) };
+    const emergencyContacts = [...(contacts.emergencyContacts ?? [])];
+    // Ensure index 0 exists
+    if (!emergencyContacts[0]) emergencyContacts[0] = {};
+    const existing = emergencyContacts[1] ?? {};
+    emergencyContacts[1] = {
+      ...existing,
+      ...(eh.emergency_homeland_last_name !== undefined && { lastName: eh.emergency_homeland_last_name }),
+      ...(eh.emergency_homeland_first_name !== undefined && { firstName: eh.emergency_homeland_first_name }),
+      ...(eh.emergency_homeland_phone !== undefined && { phone: eh.emergency_homeland_phone }),
+      ...(eh.emergency_homeland_email !== undefined && { email: eh.emergency_homeland_email }),
+    };
+    contacts.emergencyContacts = emergencyContacts;
+    patch.contacts = contacts;
+  }
+
+  // professional_info -> profession
+  if (formData.professional_info) {
+    const pi = formData.professional_info;
+    const profession = { ...(existingProfile.profession ?? {}) };
+    if (pi.work_status !== undefined) profession.status = pi.work_status;
+    if (pi.profession !== undefined) profession.title = pi.profession;
+    if (pi.employer !== undefined) profession.employer = pi.employer;
+    patch.profession = profession;
+  }
+
+  return patch;
+}
 
 /**
  * Respond to action required (citizen only)
@@ -1280,6 +1389,34 @@ export const respondToAction = authMutation({
       await ctx.db.patch(args.requestId, {
         formData: merged,
       });
+
+      // Sync formData changes to profile for registration/notification requests
+      const orgService = await ctx.db.get(request.orgServiceId);
+      const service = orgService ? await ctx.db.get(orgService.serviceId) : null;
+      const PROFILE_SYNC_CATEGORIES: string[] = [
+        ServiceCategory.Registration,
+        ServiceCategory.Notification,
+      ];
+
+      if (service && PROFILE_SYNC_CATEGORIES.includes(service.category)) {
+        const profile = await ctx.db
+          .query("profiles")
+          .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+          .unique();
+
+        if (profile) {
+          const profilePatch = buildProfilePatchFromFormData(
+            args.formData as Record<string, Record<string, unknown>>,
+            profile as any,
+          );
+          if (Object.keys(profilePatch).length > 0) {
+            await ctx.db.patch(profile._id, {
+              ...profilePatch,
+              updatedAt: now,
+            });
+          }
+        }
+      }
     }
 
     // Update the specific action in the array with response

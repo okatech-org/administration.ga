@@ -81,7 +81,9 @@ export function calculateCompletionScore(
     contacts?: {
       phone?: string;
       email?: string;
-      emergency?: unknown[];
+      emergencyContacts?: unknown[];
+      emergencyResidence?: object;
+      emergencyHomeland?: object;
     };
     family?: {
       maritalStatus?: string;
@@ -128,7 +130,12 @@ export function calculateCompletionScore(
 
   // Emergency contact (always counted)
   total += 1;
-  if (profile.contacts?.emergency && profile.contacts.emergency.length > 0)
+  if (
+    (profile.contacts?.emergencyContacts &&
+      profile.contacts.emergencyContacts.length > 0) ||
+    profile.contacts?.emergencyResidence ||
+    profile.contacts?.emergencyHomeland
+  )
     filled++;
 
   // Family

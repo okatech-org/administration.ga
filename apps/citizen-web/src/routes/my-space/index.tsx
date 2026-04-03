@@ -398,15 +398,19 @@ function UserDashboard() {
 									<div className="grid grid-cols-2 gap-2">
 										<InfoRow label="Statut Pro." value={lbl(PROFESSION_LABELS, p?.profession?.status)} />
 										<InfoRow label="Profession" value={p?.profession?.title} />
-										{(contacts?.emergencyResidence || contacts?.emergencyHomeland) && (
-											<div className="col-span-2 mt-1 p-2 rounded-lg bg-rose-500/5">
-												<p className="text-[8px] font-bold text-rose-600 uppercase mb-1">Contact Urgence</p>
-												<div className="flex justify-between items-center">
-													<span className="text-[11px] font-medium truncate">{contacts.emergencyResidence?.firstName ?? contacts.emergencyHomeland?.firstName} {contacts.emergencyResidence?.lastName ?? contacts.emergencyHomeland?.lastName}</span>
-													<span className="text-[10px] text-muted-foreground">{contacts.emergencyResidence?.phone ?? contacts.emergencyHomeland?.phone}</span>
+										{(() => {
+											const ec = (contacts as any)?.emergencyContacts;
+											const first = ec?.[0] ?? contacts?.emergencyResidence ?? contacts?.emergencyHomeland;
+											return first ? (
+												<div className="col-span-2 mt-1 p-2 rounded-lg bg-rose-500/5">
+													<p className="text-[8px] font-bold text-rose-600 uppercase mb-1">Contact Urgence{ec?.length > 1 ? ` (${ec.length})` : ""}</p>
+													<div className="flex justify-between items-center">
+														<span className="text-[11px] font-medium truncate">{first.firstName} {first.lastName}</span>
+														<span className="text-[10px] text-muted-foreground">{first.phone}</span>
+													</div>
 												</div>
-											</div>
-										)}
+											) : null;
+										})()}
 									</div>
 								</div>
 

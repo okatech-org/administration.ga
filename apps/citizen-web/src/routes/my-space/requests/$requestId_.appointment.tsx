@@ -42,7 +42,7 @@ function AppointmentBookingPage() {
 	const [isBooking, setIsBooking] = useState(false);
 
 	// Fetch request details
-	const { data: request } = useAuthenticatedConvexQuery(
+	const { data: request, isError } = useAuthenticatedConvexQuery(
 		api.functions.requests.getById,
 		{
 			requestId: requestId as Id<"requests">,
@@ -99,8 +99,8 @@ function AppointmentBookingPage() {
 		)
 	}
 
-	// Not Found
-	if (request === null) {
+	// Not Found or Access Denied
+	if (request === null || isError) {
 		return (
 			<div className="flex flex-col items-center justify-center h-full p-8 text-center">
 				<h2 className="text-xl font-semibold mb-2">{t("request.not_found")}</h2>

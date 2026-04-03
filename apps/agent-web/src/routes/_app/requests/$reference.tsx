@@ -226,7 +226,7 @@ function RequestDetailPage() {
 	const { activeOrgId } = useOrg();
 	const { canDo } = useCanDoTask(activeOrgId ?? undefined);
 
-	const { data: request } = useAuthenticatedConvexQuery(
+	const { data: request, isError } = useAuthenticatedConvexQuery(
 		api.functions.requests.getByReferenceId,
 		{ referenceId: reference },
 	);
@@ -285,50 +285,115 @@ function RequestDetailPage() {
 	// Build sections from formSchema, with values from formData
 	const sections = useMemo(() => {
 		if (!formSchema?.sections) return [];
-		return formSchema.sections
+
+		const buildFields = (
+			sectionId: string,
+			sectionData: unknown,
+			fields: FormSchemaField[],
+		) =>
+			fields.map((field) => {
+				let value: unknown;
+				if (
+					sectionData &&
+					typeof sectionData === "object" &&
+					!Array.isArray(sectionData)
+				) {
+					value = (sectionData as Record<string, unknown>)[field.id];
+				}
+				if (value === undefined) {
+					value = formDataObj[field.id];
+				}
+				const label = getLocalized(field.label, lang) || field.id;
+				let display: string;
+				if (field.options && typeof value === "string") {
+					const opt = field.options.find((o) => o.value === value);
+					display = opt
+						? getLocalized(opt.label, lang) || value
+						: renderValue(value, lang);
+				} else {
+					display = renderValue(value, lang);
+				}
+				const fieldPath = `${sectionId}.${field.id}`;
+				return {
+					id: field.id,
+					fieldPath,
+					label,
+					display,
+					isEmpty: display === "—",
+				};
+			});
+
+		// Merge contact_info + residence_address + homeland_address into one "Coordonnées" section
+		const mergedContactIds = new Set(["contact_info", "residence_address", "homeland_address"]);
+		const skippedIds = new Set(["emergency_residence", "emergency_homeland", ...mergedContactIds]);
+
+		const templateSections = formSchema.sections
+			.filter((s) => !skippedIds.has(s.id))
 			.map((section) => {
 				const sectionData = formDataObj[section.id];
-				const fields = (section.fields ?? []).map((field) => {
-					// Look up value: try nested (formData[sectionId][fieldId]) then flat (formData[fieldId])
-					let value: unknown;
-					if (
-						sectionData &&
-						typeof sectionData === "object" &&
-						!Array.isArray(sectionData)
-					) {
-						value = (sectionData as Record<string, unknown>)[field.id];
-					}
-					if (value === undefined) {
-						value = formDataObj[field.id];
-					}
-					const label = getLocalized(field.label, lang) || field.id;
-					// For select fields, resolve value to option label
-					let display: string;
-					if (field.options && typeof value === "string") {
-						const opt = field.options.find((o) => o.value === value);
-						display = opt
-							? getLocalized(opt.label, lang) || value
-							: renderValue(value, lang);
-					} else {
-						display = renderValue(value, lang);
-					}
-					const fieldPath = `${section.id}.${field.id}`;
-					return {
-						id: field.id,
-						fieldPath,
-						label,
-						display,
-						isEmpty: display === "—",
-					};
-				});
-
 				return {
 					id: section.id,
 					title: getLocalized(section.title, lang) || section.id,
-					fields,
+					fields: buildFields(section.id, sectionData, section.fields ?? []),
 				};
 			})
 			.filter((s) => s.fields.length > 0);
+
+		// Build merged "Coordonnées" section
+		const coordFields: typeof templateSections[0]["fields"] = [];
+		for (const sId of ["contact_info", "residence_address", "homeland_address"] as const) {
+			const schemaSection = formSchema.sections.find((s) => s.id === sId);
+			if (schemaSection) {
+				coordFields.push(
+					...buildFields(sId, formDataObj[sId], schemaSection.fields ?? []),
+				);
+			}
+		}
+		if (coordFields.length > 0) {
+			// Insert after family_info or at the start
+			const insertAfter = templateSections.findIndex((s) => s.id === "family_info");
+			const pos = insertAfter >= 0 ? insertAfter + 1 : 0;
+			templateSections.splice(pos, 0, {
+				id: "coordinates",
+				title: lang === "fr" ? "Coordonnées" : "Contact & Addresses",
+				fields: coordFields,
+			});
+		}
+
+		// Inject "Emergency Contacts" section from formData array
+		const ecArray = formDataObj["emergency_contacts"];
+		if (Array.isArray(ecArray) && ecArray.length > 0) {
+			const fieldKeys = ["last_name", "first_name", "phone", "email", "country"] as const;
+			const ecFields: typeof templateSections[0]["fields"] = [];
+			ecArray.forEach((c: any, i: number) => {
+				if (!c || typeof c !== "object") return;
+				for (const key of fieldKeys) {
+					const value = c[key];
+					const display = renderValue(value, lang);
+					if (display !== "—") {
+						ecFields.push({
+							id: `ec_${i}_${key}`,
+							fieldPath: `emergency_contacts.${i}.${key}`,
+							label: key,
+							display,
+							isEmpty: false,
+						});
+					}
+				}
+			});
+
+			if (ecFields.length > 0) {
+				const insertIdx = templateSections.findIndex((s) => s.id === "coordinates");
+				const pos = insertIdx >= 0 ? insertIdx + 1 : templateSections.length;
+				templateSections.splice(pos, 0, {
+					id: "emergency_contacts",
+					title: lang === "fr" ? "Contacts d'urgence" : "Emergency Contacts",
+					fields: ecFields,
+				});
+			}
+		}
+
+		return templateSections;
 	}, [formSchema, formDataObj, lang]);
 
 	// Field validation tracking
@@ -391,7 +456,7 @@ function RequestDetailPage() {
 		);
 	}
 
-	if (request === null) {
+	if (request === null || isError) {
 		return (
 			<div className="flex h-full flex-col items-center justify-center gap-3">
 				<FileText className="h-10 w-10 text-muted-foreground/40" />
@@ -533,6 +598,34 @@ function RequestDetailPage() {
 						</AlertTitle>
 						<AlertDescription className="text-amber-700 dark:text-amber-300">
 							{action.message}
+							{/* Structured details: documents requested */}
+							{action.documentTypes?.length > 0 && (
+								<ul className="mt-2 ml-4 list-disc text-xs space-y-0.5">
+									{action.documentTypes.map((doc: any) => (
+										<li key={doc.type}>
+											{getLocalized(doc.label, lang) || doc.type}
+											{doc.required && (
+												<span className="text-amber-600 ml-1">*</span>
+											)}
+										</li>
+									))}
+								</ul>
+							)}
+							{/* Structured details: fields requested */}
+							{action.fields?.length > 0 && (
+								<ul className="mt-2 ml-4 list-disc text-xs space-y-0.5">
+									{action.fields.map((field: any) => (
+										<li key={field.fieldPath}>
+											{getLocalized(field.label, lang) || field.fieldPath}
+											{field.currentValue != null && (
+												<span className="text-muted-foreground ml-1">
+													({t("requestDetail.actionRequired.currentValue", "actuel")}: {String(field.currentValue)})
+												</span>
+											)}
+										</li>
+									))}
+								</ul>
+							)}
 						</AlertDescription>
 					</Alert>
 				))}
@@ -637,41 +730,219 @@ function RequestDetailPage() {
 
 									{sections.map((section) => (
 										<TabsContent key={section.id} value={section.id}>
-											<Table className="table-fixed w-full">
-												<TableBody>
-													{section.fields.map((field) => {
-														const isValidated =
-															!!fieldValidations[field.fieldPath];
-														return (
-															<TableRow
-																key={field.id}
-																className="transition-colors"
-															>
-																<TableCell className="w-8 pr-0 align-top">
-																	<Checkbox
-																		checked={isValidated}
-																		disabled={!canDo("requests.validate")}
-																		onCheckedChange={(checked) => {
-																			toggleFieldValidation({
-																				requestId: request._id,
-																				fieldPath: field.fieldPath,
-																				validated: !!checked,
-																			});
-																		}}
-																		className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
-																	/>
-																</TableCell>
-																<TableCell className="text-muted-foreground font-medium w-[40%] truncate">
-																	{field.label}
-																</TableCell>
-																<TableCell className="truncate">
-																	{field.display}
-																</TableCell>
-															</TableRow>
-														);
-													})}
-												</TableBody>
-											</Table>
+											{(() => {
+												// ── Helper: validated checkbox field row ──
+												const ValidatedField = ({ fieldPath, label, value }: { fieldPath: string; label: string; value: string }) => {
+													const isValidated = !!fieldValidations[fieldPath];
+													return (
+														<div className="flex items-center gap-2 py-1">
+															<Checkbox
+																checked={isValidated}
+																disabled={!canDo("requests.validate")}
+																onCheckedChange={(checked) => {
+																	toggleFieldValidation({ requestId: request._id, fieldPath, validated: !!checked });
+																}}
+																className="shrink-0 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+															/>
+															<span className="text-muted-foreground text-sm w-28 shrink-0">{label}</span>
+															<span className="text-sm truncate">{value}</span>
+														</div>
+													);
+												};
+
+												// ── Card wrapper ──
+												const Card = ({ title, badge, children }: { title: string; badge?: React.ReactNode; children: React.ReactNode }) => (
+													<div className="rounded-lg border border-border/60 bg-muted/30 p-4">
+														<div className="flex items-center justify-between mb-3">
+															<span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+																{title}
+															</span>
+															{badge}
+														</div>
+														<div className="space-y-1">
+															{children}
+														</div>
+													</div>
+												);
+
+												// ── Emergency Contacts ──
+												if (section.id === "emergency_contacts") {
+													const ecData = formDataObj["emergency_contacts"] as any[] | undefined;
+													if (!ecData || !Array.isArray(ecData)) return null;
+													const ecLabels: Record<string, { fr: string; en: string }> = {
+														last_name: { fr: "Nom", en: "Last Name" },
+														first_name: { fr: "Prénom", en: "First Name" },
+														phone: { fr: "Téléphone", en: "Phone" },
+														email: { fr: "Email", en: "Email" },
+													};
+													return (
+														<div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
+															{ecData.map((contact: any, idx: number) => {
+																if (!contact || typeof contact !== "object") return null;
+																return (
+																	<Card
+																		key={idx}
+																		title={`Contact ${idx + 1}`}
+																		badge={contact.country ? (
+																			<span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+																				{renderValue(contact.country, lang)}
+																			</span>
+																		) : undefined}
+																	>
+																		{(["last_name", "first_name", "phone", "email"] as const).map((key) => {
+																			const val = contact[key];
+																			if (!val) return null;
+																			return (
+																				<ValidatedField
+																					key={key}
+																					fieldPath={`emergency_contacts.${idx}.${key}`}
+																					label={lang === "fr" ? ecLabels[key].fr : ecLabels[key].en}
+																					value={renderValue(val, lang)}
+																				/>
+																			);
+																		})}
+																	</Card>
+																);
+															})}
+														</div>
+													);
+												}
+
+												// ── Family Info ──
+												if (section.id === "family_info") {
+													const fam = formDataObj["family_info"] as Record<string, any> | undefined;
+													if (!fam || typeof fam !== "object") return null;
+
+													const maritalField = section.fields.find((f) => f.id === "marital_status");
+													const maritalDisplay = maritalField ? maritalField.display : renderValue(fam.marital_status, lang);
+
+													const familyCards: Array<{ title: string; content: React.ReactNode[] }> = [];
+
+													if (fam.father_last_name || fam.father_first_name) {
+														familyCards.push({
+															title: lang === "fr" ? "Père" : "Father",
+															content: [
+																fam.father_last_name && <ValidatedField key="fln" fieldPath="family_info.father_last_name" label={lang === "fr" ? "Nom" : "Last Name"} value={fam.father_last_name} />,
+																fam.father_first_name && <ValidatedField key="ffn" fieldPath="family_info.father_first_name" label={lang === "fr" ? "Prénom" : "First Name"} value={fam.father_first_name} />,
+															].filter(Boolean),
+														});
+													}
+
+													if (fam.mother_last_name || fam.mother_first_name) {
+														familyCards.push({
+															title: lang === "fr" ? "Mère" : "Mother",
+															content: [
+																fam.mother_last_name && <ValidatedField key="mln" fieldPath="family_info.mother_last_name" label={lang === "fr" ? "Nom" : "Last Name"} value={fam.mother_last_name} />,
+																fam.mother_first_name && <ValidatedField key="mfn" fieldPath="family_info.mother_first_name" label={lang === "fr" ? "Prénom" : "First Name"} value={fam.mother_first_name} />,
+															].filter(Boolean),
+														});
+													}
+
+													if (fam.spouse_last_name || fam.spouse_first_name) {
+														familyCards.push({
+															title: lang === "fr" ? "Conjoint(e)" : "Spouse",
+															content: [
+																fam.spouse_last_name && <ValidatedField key="sln" fieldPath="family_info.spouse_last_name" label={lang === "fr" ? "Nom" : "Last Name"} value={fam.spouse_last_name} />,
+																fam.spouse_first_name && <ValidatedField key="sfn" fieldPath="family_info.spouse_first_name" label={lang === "fr" ? "Prénom" : "First Name"} value={fam.spouse_first_name} />,
+															].filter(Boolean),
+														});
+													}
+
+													return (
+														<div className="space-y-4 pt-3">
+															{fam.marital_status && (
+																<ValidatedField
+																	fieldPath="family_info.marital_status"
+																	label={lang === "fr" ? "Situation" : "Status"}
+																	value={maritalDisplay}
+																/>
+															)}
+															{familyCards.length > 0 && (
+																<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+																	{familyCards.map((card) => (
+																		<Card key={card.title} title={card.title}>
+																			{card.content}
+																		</Card>
+																	))}
+																</div>
+															)}
+														</div>
+													);
+												}
+
+												// ── Coordinates (merged contact + addresses) ──
+												if (section.id === "coordinates") {
+													const contact = formDataObj["contact_info"] as Record<string, any> | undefined;
+													const residence = formDataObj["residence_address"] as Record<string, any> | undefined;
+													const homeland = formDataObj["homeland_address"] as Record<string, any> | undefined;
+
+													return (
+														<div className="space-y-4 pt-3">
+															{/* Phone & Email */}
+															{contact && (
+																<div className="space-y-1">
+																	{contact.phone && <ValidatedField fieldPath="contact_info.phone" label={lang === "fr" ? "Téléphone" : "Phone"} value={contact.phone} />}
+																	{contact.email && <ValidatedField fieldPath="contact_info.email" label={lang === "fr" ? "Email" : "Email"} value={contact.email} />}
+																</div>
+															)}
+															{/* Address cards */}
+															<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+																{residence && Object.values(residence).some(Boolean) && (
+																	<Card title={lang === "fr" ? "Adresse de résidence" : "Residence Address"}>
+																		{residence.residence_street && <ValidatedField fieldPath="residence_address.residence_street" label={lang === "fr" ? "Rue" : "Street"} value={residence.residence_street} />}
+																		{residence.residence_city && <ValidatedField fieldPath="residence_address.residence_city" label={lang === "fr" ? "Ville" : "City"} value={residence.residence_city} />}
+																		{residence.residence_postal_code && <ValidatedField fieldPath="residence_address.residence_postal_code" label={lang === "fr" ? "Code postal" : "Postal Code"} value={residence.residence_postal_code} />}
+																		{residence.residence_country && <ValidatedField fieldPath="residence_address.residence_country" label={lang === "fr" ? "Pays" : "Country"} value={renderValue(residence.residence_country, lang)} />}
+																	</Card>
+																)}
+																{homeland && Object.values(homeland).some(Boolean) && (
+																	<Card title={lang === "fr" ? "Adresse au Gabon" : "Address in Gabon"}>
+																		{homeland.homeland_street && <ValidatedField fieldPath="homeland_address.homeland_street" label={lang === "fr" ? "Rue" : "Street"} value={homeland.homeland_street} />}
+																		{homeland.homeland_city && <ValidatedField fieldPath="homeland_address.homeland_city" label={lang === "fr" ? "Ville" : "City"} value={homeland.homeland_city} />}
+																		{homeland.homeland_postal_code && <ValidatedField fieldPath="homeland_address.homeland_postal_code" label={lang === "fr" ? "Code postal" : "Postal Code"} value={homeland.homeland_postal_code} />}
+																		{homeland.homeland_country && <ValidatedField fieldPath="homeland_address.homeland_country" label={lang === "fr" ? "Pays" : "Country"} value={renderValue(homeland.homeland_country, lang)} />}
+																	</Card>
+																)}
+															</div>
+														</div>
+													);
+												}
+
+												// ── Default: Table ──
+												return (
+													<Table className="table-fixed w-full">
+														<TableBody>
+															{section.fields.map((field) => {
+																const isValidated = !!fieldValidations[field.fieldPath];
+																return (
+																	<TableRow key={field.id} className="transition-colors">
+																		<TableCell className="w-8 pr-0 align-top">
+																			<Checkbox
+																				checked={isValidated}
+																				disabled={!canDo("requests.validate")}
+																				onCheckedChange={(checked) => {
+																					toggleFieldValidation({
+																						requestId: request._id,
+																						fieldPath: field.fieldPath,
+																						validated: !!checked,
+																					});
+																				}}
+																				className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+																			/>
+																		</TableCell>
+																		<TableCell className="text-muted-foreground font-medium w-[40%] truncate">
+																			{field.label}
+																		</TableCell>
+																		<TableCell className="truncate">
+																			{field.display}
+																		</TableCell>
+																	</TableRow>
+																);
+															})}
+														</TableBody>
+													</Table>
+												);
+											})()}
 										</TabsContent>
 									))}
 								</Tabs>

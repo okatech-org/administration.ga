@@ -904,6 +904,7 @@
 		"agentAssigned": "Agent assigné avec succès",
 		"assignAgent": "Assigner à un agent...",
 		"notFound": "Demande introuvable",
+		"notFoundDesc": "Cette demande n'existe pas ou vous n'avez pas les droits pour y accéder.",
 		"backToList": "Retour aux demandes",
 		"statusUpdated": "Statut mis à jour",
 		"unknownService": "Service inconnu",
@@ -1331,7 +1332,11 @@
 					},
 					"relationship": {
 						"invalid": "Lien de parenté invalide"
-					}
+					},
+					"country": {
+						"invalid": "Pays invalide"
+					},
+					"atLeastOne": "Veuillez renseigner au moins un contact d'urgence"
 				}
 			},
 			"family": {
@@ -2808,6 +2813,13 @@
 			"emergencyResidence": "Contact d'urgence (Pays de résidence)",
 			"emergencyHomeland": "Contact d'urgence (Gabon)",
 			"emergencyContactsDesc": "Personnes à contacter en cas d'urgence"
+		},
+		"emergencyContacts": {
+			"recommendation": "Nous vous recommandons d'avoir au moins un contact d'urgence dans votre pays d'origine et dans votre pays de résidence.",
+			"contactNumber": "Contact d'urgence n°{{number}}",
+			"country": "Pays du contact",
+			"add": "Ajouter un contact d'urgence",
+			"remove": "Supprimer ce contact"
 		},
 		"documents": {
 			"empty": "Aucun document ajouté",

@@ -24,15 +24,18 @@ import {
 	CheckCircle2,
 	Eye,
 	FileText,
+	Info,
 	Loader2,
 	MapPin,
+	Plus,
 	Sparkles,
+	Trash2,
 	User,
 	UserPlus,
 	Users,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Controller, FormProvider, useForm } from "react-hook-form";
+import { Controller, FormProvider, useFieldArray, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -154,34 +157,24 @@ function buildRegistrationSchema(config: RegistrationConfig) {
 			homelandCity: z.string().optional(),
 			homelandPostalCode: z.string().optional(),
 			homelandCountry: z.enum(CountryCode).or(z.literal("")).optional(),
-			// Emergency contact — residence
-			emergencyResidenceLastName: z
-				.string({ message: "errors.field.required" })
-				.min(1, { message: "errors.field.required" })
-				.default(""),
-			emergencyResidenceFirstName: z
-				.string({ message: "errors.field.required" })
-				.min(1, { message: "errors.field.required" })
-				.default(""),
-			emergencyResidencePhone: z
-				.string({ message: "errors.field.required" })
-				.min(1, { message: "errors.field.required" })
-				.default(""),
-			emergencyResidenceEmail: z.email().optional().or(z.literal("")),
-			// Emergency contact — homeland
-			emergencyHomelandLastName: z
-				.string({ message: "errors.field.required" })
-				.min(1, { message: "errors.field.required" })
-				.default(""),
-			emergencyHomelandFirstName: z
-				.string({ message: "errors.field.required" })
-				.min(1, { message: "errors.field.required" })
-				.default(""),
-			emergencyHomelandPhone: z
-				.string({ message: "errors.field.required" })
-				.min(1, { message: "errors.field.required" })
-				.default(""),
-			emergencyHomelandEmail: z.email().optional().or(z.literal("")),
+			// Emergency contacts — dynamic list
+			emergencyContacts: z
+				.array(
+					z.object({
+						firstName: z
+							.string({ message: "errors.field.required" })
+							.min(1, { message: "errors.field.required" }),
+						lastName: z
+							.string({ message: "errors.field.required" })
+							.min(1, { message: "errors.field.required" }),
+						phone: z
+							.string({ message: "errors.field.required" })
+							.min(1, { message: "errors.field.required" }),
+						email: z.email().optional().or(z.literal("")),
+						country: z.enum(CountryCode).or(z.literal("")).optional(),
+					}),
+				)
+				.min(1, { message: "errors.profile.contacts.emergency.atLeastOne" }),
 		}),
 
 		// Professional (only if step exists)
@@ -245,14 +238,13 @@ type RegistrationFormValues = {
 		homelandCity?: string;
 		homelandPostalCode?: string;
 		homelandCountry?: (typeof CountryCode)[keyof typeof CountryCode];
-		emergencyResidenceLastName: string;
-		emergencyResidenceFirstName: string;
-		emergencyResidencePhone: string;
-		emergencyResidenceEmail?: string;
-		emergencyHomelandLastName: string;
-		emergencyHomelandFirstName: string;
-		emergencyHomelandPhone: string;
-		emergencyHomelandEmail?: string;
+		emergencyContacts: Array<{
+			firstName: string;
+			lastName: string;
+			phone: string;
+			email?: string;
+			country?: string;
+		}>;
 	};
 	professionalInfo?: {
 		workStatus?: string;
@@ -275,6 +267,163 @@ const STEP_ICON_MAP: Record<
 	Briefcase,
 	Eye,
 };
+
+// ============================================================================
+// EMERGENCY CONTACTS SECTION (used in contacts step)
+// ============================================================================
+
+function EmergencyContactsSection({
+	form,
+	t,
+}: {
+	form: ReturnType<typeof useForm<RegistrationFormValues>>;
+	t: ReturnType<typeof useTranslation>["t"];
+}) {
+	const { fields, append, remove } = useFieldArray({
+		control: form.control,
+		name: "contactInfo.emergencyContacts",
+	});
+
+	return (
+		<div className="space-y-4">
+			<FieldLegend className="text-red-800 dark:text-red-200">
+				{t("profile.sections.emergencyContacts")}
+			</FieldLegend>
+
+			{/* Recommendation */}
+			<div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
+				<Info className="h-4 w-4 mt-0.5 shrink-0 text-blue-600 dark:text-blue-400" />
+				<p className="text-xs text-blue-800 dark:text-blue-200">
+					{t("profile.emergencyContacts.recommendation")}
+				</p>
+			</div>
+
+			{fields.map((field, index) => (
+				<FieldSet
+					key={field.id}
+					className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-100 dark:border-red-900 relative"
+				>
+					<FieldLegend className="text-red-800 dark:text-red-200">
+						{t("profile.emergencyContacts.contactNumber", {
+							number: index + 1,
+						})}
+					</FieldLegend>
+					{fields.length > 1 && (
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon"
+							className="absolute top-2 right-2 text-destructive hover:text-destructive h-7 w-7"
+							onClick={() => remove(index)}
+						>
+							<Trash2 className="h-3.5 w-3.5" />
+						</Button>
+					)}
+
+					{/* Country */}
+					<div className="mt-2 mb-3">
+						<Controller
+							name={`contactInfo.emergencyContacts.${index}.country`}
+							control={form.control}
+							render={({ field: f }) => (
+								<Field>
+									<FieldLabel>
+										{t("profile.emergencyContacts.country")}
+									</FieldLabel>
+									<CountrySelect
+										type="single"
+										selected={f.value as any}
+										onChange={f.onChange as any}
+									/>
+								</Field>
+							)}
+						/>
+					</div>
+
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+						<Controller
+							name={`contactInfo.emergencyContacts.${index}.lastName`}
+							control={form.control}
+							render={({ field: f, fieldState }) => (
+								<Field data-invalid={fieldState.invalid}>
+									<FieldLabel>
+										{t("common.lastName")}{" "}
+										<span className="text-destructive">*</span>
+									</FieldLabel>
+									<Input placeholder={t("common.lastName")} {...f} />
+									<FieldError errors={[fieldState.error]} />
+								</Field>
+							)}
+						/>
+						<Controller
+							name={`contactInfo.emergencyContacts.${index}.firstName`}
+							control={form.control}
+							render={({ field: f, fieldState }) => (
+								<Field data-invalid={fieldState.invalid}>
+									<FieldLabel>
+										{t("common.firstName")}{" "}
+										<span className="text-destructive">*</span>
+									</FieldLabel>
+									<Input placeholder={t("common.firstName")} {...f} />
+									<FieldError errors={[fieldState.error]} />
+								</Field>
+							)}
+						/>
+					</div>
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+						<Controller
+							name={`contactInfo.emergencyContacts.${index}.phone`}
+							control={form.control}
+							render={({ field: f, fieldState }) => (
+								<Field data-invalid={fieldState.invalid}>
+									<FieldLabel>
+										{t("profile.fields.phone")}{" "}
+										<span className="text-destructive">*</span>
+									</FieldLabel>
+									<Input placeholder="+33..." {...f} />
+									<FieldError errors={[fieldState.error]} />
+								</Field>
+							)}
+						/>
+						<Controller
+							name={`contactInfo.emergencyContacts.${index}.email`}
+							control={form.control}
+							render={({ field: f }) => (
+								<Field>
+									<FieldLabel>{t("profile.fields.email")}</FieldLabel>
+									<Input
+										type="email"
+										placeholder="email@example.com"
+										{...f}
+									/>
+								</Field>
+							)}
+						/>
+					</div>
+				</FieldSet>
+			))}
+
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				className="w-full"
+				onClick={() =>
+					append({
+						firstName: "",
+						lastName: "",
+						phone: "",
+						email: "",
+						country: "",
+					})
+				}
+			>
+				<Plus className="h-4 w-4 mr-2" />
+				{t("profile.emergencyContacts.add")}
+			</Button>
+		</div>
+	);
+}
 
 // ============================================================================
 // COMPONENT
@@ -387,12 +536,9 @@ export function CitizenRegistrationForm({
 				email: userData?.email || "",
 				phone: userData?.phone || "",
 				country: CountryCode.FR,
-				emergencyResidenceLastName: "",
-				emergencyResidenceFirstName: "",
-				emergencyResidencePhone: "",
-				emergencyHomelandLastName: "",
-				emergencyHomelandFirstName: "",
-				emergencyHomelandPhone: "",
+				emergencyContacts: [
+					{ firstName: "", lastName: "", phone: "", email: "", country: "" },
+				],
 			},
 			...(hasProfession
 				? {
@@ -452,7 +598,8 @@ export function CitizenRegistrationForm({
 				step_name: currentStepInfo.stepId,
 			});
 		}
-	}, [step, steps]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [step]);
 
 	// Map stepId to form fields for validation
 	const STEP_FIELDS: Partial<
@@ -765,26 +912,15 @@ export function CitizenRegistrationForm({
 							employer: data.professionalInfo.employer,
 						}
 					: undefined,
-				emergencyResidence:
-					data.contactInfo.emergencyResidenceLastName ||
-					data.contactInfo.emergencyResidenceFirstName
-						? {
-								firstName: data.contactInfo.emergencyResidenceFirstName || "",
-								lastName: data.contactInfo.emergencyResidenceLastName || "",
-								phone: data.contactInfo.emergencyResidencePhone || "",
-								email: data.contactInfo.emergencyResidenceEmail || undefined,
-							}
-						: undefined,
-				emergencyHomeland:
-					data.contactInfo.emergencyHomelandLastName ||
-					data.contactInfo.emergencyHomelandFirstName
-						? {
-								firstName: data.contactInfo.emergencyHomelandFirstName || "",
-								lastName: data.contactInfo.emergencyHomelandLastName || "",
-								phone: data.contactInfo.emergencyHomelandPhone || "",
-								email: data.contactInfo.emergencyHomelandEmail || undefined,
-							}
-						: undefined,
+				emergencyContacts: data.contactInfo.emergencyContacts
+					?.filter((c) => c.firstName || c.lastName || c.phone)
+					.map((c) => ({
+						firstName: c.firstName || "",
+						lastName: c.lastName || "",
+						phone: c.phone || "",
+						email: c.email || undefined,
+						country: c.country || undefined,
+					})),
 				// Link uploaded documents to the profile
 				documents:
 					Object.keys(documentIds).length > 0
@@ -2032,155 +2168,8 @@ export function CitizenRegistrationForm({
 									<AddressWithAutocomplete form={form} t={t} />
 								)}
 
-								{/* Emergency Contact — Residence */}
-								{regConfig.visibleSections.emergencyResidence && (
-									<FieldSet className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-100 dark:border-red-900">
-										<FieldLegend className="text-red-800 dark:text-red-200">
-											{t("profile.contacts.emergency.residence")}
-										</FieldLegend>
-										<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-											<Controller
-												name="contactInfo.emergencyResidenceLastName"
-												control={form.control}
-												render={({ field, fieldState }) => (
-													<Field data-invalid={fieldState.invalid}>
-														<FieldLabel>
-															{t("common.lastName")}{" "}
-															<span className="text-destructive">*</span>
-														</FieldLabel>
-														<Input
-															placeholder={t("common.lastName")}
-															{...field}
-														/>
-														<FieldError errors={[fieldState.error]} />
-													</Field>
-												)}
-											/>
-											<Controller
-												name="contactInfo.emergencyResidenceFirstName"
-												control={form.control}
-												render={({ field, fieldState }) => (
-													<Field data-invalid={fieldState.invalid}>
-														<FieldLabel>
-															{t("common.firstName")}{" "}
-															<span className="text-destructive">*</span>
-														</FieldLabel>
-														<Input
-															placeholder={t("common.firstName")}
-															{...field}
-														/>
-														<FieldError errors={[fieldState.error]} />
-													</Field>
-												)}
-											/>
-										</div>
-										<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
-											<Controller
-												name="contactInfo.emergencyResidencePhone"
-												control={form.control}
-												render={({ field, fieldState }) => (
-													<Field data-invalid={fieldState.invalid}>
-														<FieldLabel>
-															{t("profile.fields.phone")}{" "}
-															<span className="text-destructive">*</span>
-														</FieldLabel>
-														<Input placeholder="+33..." {...field} />
-														<FieldError errors={[fieldState.error]} />
-													</Field>
-												)}
-											/>
-											<Controller
-												name="contactInfo.emergencyResidenceEmail"
-												control={form.control}
-												render={({ field }) => (
-													<Field>
-														<FieldLabel>{t("profile.fields.email")}</FieldLabel>
-														<Input
-															type="email"
-															placeholder="email@example.com"
-															{...field}
-														/>
-													</Field>
-												)}
-											/>
-										</div>
-									</FieldSet>
-								)}
-
-								{/* Emergency Contact — Homeland */}
-								{regConfig.visibleSections.emergencyHomeland && (
-									<FieldSet className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-100 dark:border-amber-900">
-										<FieldLegend className="text-amber-800 dark:text-amber-200">
-											{t("profile.contacts.emergency.homeland")}
-										</FieldLegend>
-										<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-											<Controller
-												name="contactInfo.emergencyHomelandLastName"
-												control={form.control}
-												render={({ field, fieldState }) => (
-													<Field data-invalid={fieldState.invalid}>
-														<FieldLabel>
-															{t("common.lastName")}{" "}
-															<span className="text-destructive">*</span>
-														</FieldLabel>
-														<Input
-															placeholder={t("common.lastName")}
-															{...field}
-														/>
-														<FieldError errors={[fieldState.error]} />
-													</Field>
-												)}
-											/>
-											<Controller
-												name="contactInfo.emergencyHomelandFirstName"
-												control={form.control}
-												render={({ field, fieldState }) => (
-													<Field data-invalid={fieldState.invalid}>
-														<FieldLabel>
-															{t("common.firstName")}{" "}
-															<span className="text-destructive">*</span>
-														</FieldLabel>
-														<Input
-															placeholder={t("common.firstName")}
-															{...field}
-														/>
-														<FieldError errors={[fieldState.error]} />
-													</Field>
-												)}
-											/>
-										</div>
-										<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
-											<Controller
-												name="contactInfo.emergencyHomelandPhone"
-												control={form.control}
-												render={({ field, fieldState }) => (
-													<Field data-invalid={fieldState.invalid}>
-														<FieldLabel>
-															{t("profile.fields.phone")}{" "}
-															<span className="text-destructive">*</span>
-														</FieldLabel>
-														<Input placeholder="+241..." {...field} />
-														<FieldError errors={[fieldState.error]} />
-													</Field>
-												)}
-											/>
-											<Controller
-												name="contactInfo.emergencyHomelandEmail"
-												control={form.control}
-												render={({ field }) => (
-													<Field>
-														<FieldLabel>{t("profile.fields.email")}</FieldLabel>
-														<Input
-															type="email"
-															placeholder="email@example.com"
-															{...field}
-														/>
-													</Field>
-												)}
-											/>
-										</div>
-									</FieldSet>
-								)}
+								{/* Emergency Contacts — Dynamic list */}
+								<EmergencyContactsSection form={form} t={t} />
 
 								{/* Homeland Address */}
 								{regConfig.visibleSections.homelandAddress && (
@@ -2552,74 +2541,55 @@ export function CitizenRegistrationForm({
 										</FieldSet>
 									)}
 
-									{/* Emergency Contact — Residence */}
-									{regConfig.visibleSections.emergencyResidence && (
-										<FieldSet className="p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
-											<FieldLegend className="text-xs font-semibold text-red-800 dark:text-red-200 uppercase tracking-wide">
-												{t("register.review.emergencyResidence")}
-											</FieldLegend>
-											<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-2">
-												<div>
-													<span className="text-muted-foreground">
-														{t("register.review.fields.lastName")}:
-													</span>{" "}
-													{form.watch("contactInfo.emergencyResidenceLastName")}{" "}
-													{form.watch(
-														"contactInfo.emergencyResidenceFirstName",
-													) || "-"}
-												</div>
-												<div>
-													<span className="text-muted-foreground">
-														{t("register.review.fields.phone")}:
-													</span>{" "}
-													{form.watch("contactInfo.emergencyResidencePhone") ||
-														"-"}
-												</div>
-												{form.watch("contactInfo.emergencyResidenceEmail") && (
-													<div>
-														<span className="text-muted-foreground">
-															{t("register.review.fields.email")}:
-														</span>{" "}
-														{form.watch("contactInfo.emergencyResidenceEmail")}
+									{/* Emergency Contacts — Review */}
+									{form.watch("contactInfo.emergencyContacts")?.map(
+										(contact, idx) =>
+											(contact.firstName || contact.lastName) && (
+												<FieldSet
+													key={idx}
+													className="p-3 bg-red-50 dark:bg-red-950/20 rounded-lg"
+												>
+													<FieldLegend className="text-xs font-semibold text-red-800 dark:text-red-200 uppercase tracking-wide">
+														{t(
+															"profile.emergencyContacts.contactNumber",
+															{ number: idx + 1 },
+														)}
+													</FieldLegend>
+													<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-2">
+														<div>
+															<span className="text-muted-foreground">
+																{t("register.review.fields.lastName")}:
+															</span>{" "}
+															{contact.lastName} {contact.firstName || "-"}
+														</div>
+														<div>
+															<span className="text-muted-foreground">
+																{t("register.review.fields.phone")}:
+															</span>{" "}
+															{contact.phone || "-"}
+														</div>
+														{contact.country && (
+															<div>
+																<span className="text-muted-foreground">
+																	{t("profile.emergencyContacts.country")}:
+																</span>{" "}
+																{t(
+																	`superadmin.countryCodes.${contact.country}`,
+																	contact.country,
+																)}
+															</div>
+														)}
+														{contact.email && (
+															<div>
+																<span className="text-muted-foreground">
+																	{t("register.review.fields.email")}:
+																</span>{" "}
+																{contact.email}
+															</div>
+														)}
 													</div>
-												)}
-											</div>
-										</FieldSet>
-									)}
-
-									{/* Emergency Contact — Homeland */}
-									{regConfig.visibleSections.emergencyHomeland && (
-										<FieldSet className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
-											<FieldLegend className="text-xs font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wide">
-												{t("register.review.emergencyHomeland")}
-											</FieldLegend>
-											<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-2">
-												<div>
-													<span className="text-muted-foreground">
-														{t("register.review.fields.lastName")}:
-													</span>{" "}
-													{form.watch("contactInfo.emergencyHomelandLastName")}{" "}
-													{form.watch(
-														"contactInfo.emergencyHomelandFirstName",
-													) || "-"}
-												</div>
-												<div>
-													<span className="text-muted-foreground">
-														{t("register.review.fields.phone")}:
-													</span>{" "}
-													{form.watch("contactInfo.emergencyHomelandPhone") ||
-														"-"}
-												</div>
-												{form.watch("contactInfo.emergencyHomelandEmail") && (
-													<div>
-														<span className="text-muted-foreground">
-															{t("register.review.fields.email")}:
-														</span>{" "}
-														{form.watch("contactInfo.emergencyHomelandEmail")}
-													</div>
-												)}
-											</div>
-										</FieldSet>
+												</FieldSet>
+											),
 									)}
 
 									{/* Profession */}

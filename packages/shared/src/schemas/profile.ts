@@ -46,6 +46,11 @@ const emergencyContactSchema = z.object({
 	relationship: z.enum(FamilyLink, {
 		message: "errors.profile.contacts.emergency.relationship.invalid",
 	}),
+	country: z
+		.enum(CountryCode, {
+			message: "errors.profile.contacts.emergency.country.invalid",
+		})
+		.optional(),
 });
 
 const parentSchema = z.object({
@@ -149,8 +154,11 @@ export const profileFormSchema = z.object({
 		email: z
 			.email({ message: "errors.profile.contacts.email.invalid" })
 			.optional(),
-		emergencyResidence: emergencyContactSchema.optional(),
-		emergencyHomeland: emergencyContactSchema.optional(),
+		emergencyContacts: z
+			.array(emergencyContactSchema)
+			.min(1, {
+				message: "errors.profile.contacts.emergency.atLeastOne",
+			}),
 	}),
 	family: z
 		.object({

@@ -5,6 +5,7 @@ import {
   passportInfoValidator,
   addressValidator,
   emergencyContactValidator,
+  emergencyContactWithCountryValidator,
   parentValidator,
   spouseValidator,
   maritalStatusValidator,
@@ -66,6 +67,11 @@ export const profilesTable = defineTable({
   contacts: v.object({
     phone: v.optional(v.string()),
     email: v.optional(v.string()),
+    // New: dynamic list of emergency contacts with country
+    emergencyContacts: v.optional(
+      v.array(emergencyContactWithCountryValidator),
+    ),
+    // Legacy fields — kept for migration, will be removed after narrow step
     emergencyHomeland: v.optional(emergencyContactValidator),
     emergencyResidence: v.optional(emergencyContactValidator),
   }),

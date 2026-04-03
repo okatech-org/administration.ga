@@ -811,7 +811,7 @@ export const passportInfoValidator = v.object({
 
 export type PassportInfo = Infer<typeof passportInfoValidator>;
 
-// Emergency contact
+// Emergency contact (legacy — kept for migration compatibility)
 export const emergencyContactValidator = v.object({
   firstName: v.string(),
   lastName: v.string(),
@@ -821,6 +821,20 @@ export const emergencyContactValidator = v.object({
 });
 
 export type EmergencyContact = Infer<typeof emergencyContactValidator>;
+
+// Emergency contact with country (new format — dynamic list)
+export const emergencyContactWithCountryValidator = v.object({
+  firstName: v.string(),
+  lastName: v.string(),
+  phone: v.string(),
+  email: v.optional(v.string()),
+  relationship: v.optional(familyLinkValidator),
+  country: v.optional(countryCodeValidator),
+});
+
+export type EmergencyContactWithCountry = Infer<
+  typeof emergencyContactWithCountryValidator
+>;
 
 // Parent info
 export const parentValidator = v.object({
@@ -865,6 +879,11 @@ export const profileContactsValidator = v.object({
   phone: v.optional(v.string()),
   phoneAbroad: v.optional(v.string()),
   email: v.optional(v.string()),
+  // New: dynamic list of emergency contacts with country
+  emergencyContacts: v.optional(
+    v.array(emergencyContactWithCountryValidator),
+  ),
+  // Legacy fields — kept for migration
   emergencyHomeland: v.optional(emergencyContactValidator),
   emergencyResidence: v.optional(emergencyContactValidator),
 });

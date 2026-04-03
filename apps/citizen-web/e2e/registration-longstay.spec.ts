@@ -95,37 +95,40 @@ test.describe("LongStay Registration — Full Flow", () => {
     await fillByName(page, "contactInfo.email", "jean.mba.test@example.com");
     await fillByName(page, "contactInfo.phone", "+33612345678");
 
-    // Emergency contact — Residence (required)
+    // Emergency contact #1 (required — at least one)
     await fillByName(
       page,
-      "contactInfo.emergencyResidenceLastName",
+      "contactInfo.emergencyContacts.0.lastName",
       "Obiang"
     );
     await fillByName(
       page,
-      "contactInfo.emergencyResidenceFirstName",
+      "contactInfo.emergencyContacts.0.firstName",
       "Paul"
     );
     await fillByName(
       page,
-      "contactInfo.emergencyResidencePhone",
+      "contactInfo.emergencyContacts.0.phone",
       "+33698765432"
     );
 
-    // Emergency contact — Homeland (required for LongStay)
+    // Add a second emergency contact via the "Add" button
+    await page.getByRole("button", { name: /ajouter/i }).click();
+
+    // Emergency contact #2
     await fillByName(
       page,
-      "contactInfo.emergencyHomelandLastName",
+      "contactInfo.emergencyContacts.1.lastName",
       "Nze"
     );
     await fillByName(
       page,
-      "contactInfo.emergencyHomelandFirstName",
+      "contactInfo.emergencyContacts.1.firstName",
       "Sophie"
     );
     await fillByName(
       page,
-      "contactInfo.emergencyHomelandPhone",
+      "contactInfo.emergencyContacts.1.phone",
       "+24177123456"
     );
 

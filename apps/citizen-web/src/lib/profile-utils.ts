@@ -326,20 +326,11 @@ export function getChangedFields(
 		}
 		if (
 			isDifferent(
-				formData.contacts.emergencyResidence,
-				originalContacts?.emergencyResidence,
+				formData.contacts.emergencyContacts,
+				(originalContacts as any)?.emergencyContacts,
 			)
 		) {
-			changedContacts.emergencyResidence = formData.contacts.emergencyResidence;
-			hasChanges = true;
-		}
-		if (
-			isDifferent(
-				formData.contacts.emergencyHomeland,
-				originalContacts?.emergencyHomeland,
-			)
-		) {
-			changedContacts.emergencyHomeland = formData.contacts.emergencyHomeland;
+			changedContacts.emergencyContacts = formData.contacts.emergencyContacts;
 			hasChanges = true;
 		}
 
