@@ -247,3 +247,19 @@
 .dark .citizen-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.12);
 }
+
+/* ── View Transition — cross-fade fluide entre pages ── */
+::view-transition-old(root) {
+  animation: fade-out 120ms ease-out;
+}
+::view-transition-new(root) {
+  animation: fade-in 120ms ease-in;
+}
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

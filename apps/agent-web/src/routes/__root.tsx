@@ -14,6 +14,7 @@ import I18nProvider from "@workspace/i18n/provider";
 import { PostHogProvider } from "@/integrations/posthog/provider";
 import { PostHogPageviewTracker } from "@/integrations/posthog/pageview-tracker";
 import { DevAccountSwitcher } from "@/components/auth/DevAccountSwitcher";
+import { NavigationProgress } from "@workspace/ui/components/navigation-progress";
 import { api } from "@convex/_generated/api";
 import appCss from "../styles.css?url";
 
@@ -63,6 +64,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 	shellComponent: RootDocument,
 	component: RootLayout,
+	pendingComponent: NavigationProgress,
 });
 
 function RootLayout() {

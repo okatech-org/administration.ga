@@ -19,7 +19,7 @@ import {
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { RichTextEditor } from "@/components/common/rich-text-editor";
+import { RichTextEditor } from "@/components/common/lazy-rich-text-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

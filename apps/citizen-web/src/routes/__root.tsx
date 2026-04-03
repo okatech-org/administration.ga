@@ -12,8 +12,8 @@ import { useEffect, useRef, useState } from "react";
 import { DevAccountSwitcher } from "@/components/auth/DevAccountSwitcher";
 import { Footer } from "@/components/Footer";
 import { GlobalCallAlert } from "@/components/meetings/global-call-alert";
-import { PageLoadingSkeleton } from "@/components/PageLoadingSkeleton";
 import { ThemeProvider } from "@/components/theme-provider";
+import { NavigationProgress } from "@workspace/ui/components/navigation-progress";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { authClient } from "@/lib/auth-client";
@@ -105,7 +105,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 		};
 	},
 
-	pendingComponent: PageLoadingSkeleton,
+	pendingComponent: NavigationProgress,
 	shellComponent: RootDocument,
 	component: RootLayout,
 });

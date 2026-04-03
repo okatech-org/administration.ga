@@ -7,9 +7,10 @@ export function getRouter() {
 
     scrollRestoration: true,
     defaultPreload: "intent",
-    // Ne pas re-exécuter les loaders si les données ont moins de 30s.
-    // Évite le flash de "loading" lors des retours sur une page déjà visitée.
     defaultPreloadStaleTime: 30_000,
+    defaultPendingMs: 0,
+    defaultPendingMinMs: 150,
+    defaultViewTransition: true,
   })
 
   return router

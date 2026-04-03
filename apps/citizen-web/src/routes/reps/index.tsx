@@ -14,7 +14,7 @@ import {
   Mail,
   Search,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,11 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useConvexQuery } from "@/integrations/convex/hooks";
-import { ConsularMap } from "@/components/ConsularMap";
+const ConsularMap = lazy(() =>
+  import("@/components/ConsularMap").then((m) => ({
+    default: m.ConsularMap,
+  })),
+);
 import { FlagIcon } from "@/components/ui/flag-icon";
 
 // ============================================================================
@@ -310,10 +314,12 @@ function OrgsPage() {
           {/* ==================== MAP VIEW ==================== */}
           {viewMode === "map" && (
             <div className="max-w-6xl mx-auto">
-              <ConsularMap
-                searchQuery={searchQuery}
-                className="h-[400px] md:h-[70vh] rounded-xl md:rounded-2xl"
-              />
+              <Suspense fallback={<Skeleton className="h-[400px] md:h-[70vh] rounded-xl md:rounded-2xl" />}>
+                <ConsularMap
+                  searchQuery={searchQuery}
+                  className="h-[400px] md:h-[70vh] rounded-xl md:rounded-2xl"
+                />
+              </Suspense>
             </div>
           )}
 

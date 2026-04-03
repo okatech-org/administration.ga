@@ -1,13 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef } from "react";
+import { lazy, Suspense, useRef } from "react";
 
 import { Hero } from "../components/home/Hero";
 import { ProfilesSection } from "../components/home/ProfilesSection";
 import { ServicesSection } from "../components/home/ServicesSection";
 import { NewsSection } from "../components/home/NewsSection";
-import { WorldMapSection } from "../components/home/WorldMapSection";
 import { WhySection } from "../components/home/WhySection";
 import { CTASection } from "../components/home/CTASection";
+
+const WorldMapSection = lazy(() =>
+  import("../components/home/WorldMapSection").then((m) => ({
+    default: m.WorldMapSection,
+  })),
+);
 
 export const Route = createFileRoute("/")({ component: App });
 
@@ -31,7 +36,9 @@ function App() {
       <NewsSection />
 
       {/* Map Section */}
-      <WorldMapSection />
+      <Suspense fallback={<div className="h-[500px]" />}>
+        <WorldMapSection />
+      </Suspense>
 
       {/* Why Section */}
       <WhySection />

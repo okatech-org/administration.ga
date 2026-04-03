@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { RichTextEditor } from "@/components/common/rich-text-editor";
+import { RichTextEditor } from "@/components/common/lazy-rich-text-editor";
 import { useConvexMutationQuery } from "@/integrations/convex/hooks";
 
 export const Route = createFileRoute("/_app/tutorials/new")({

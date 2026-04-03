@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FormBuilder } from "@/components/admin/FormBuilder";
-import { RichTextEditor } from "@/components/common/rich-text-editor";
+import { RichTextEditor } from "@/components/common/lazy-rich-text-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
