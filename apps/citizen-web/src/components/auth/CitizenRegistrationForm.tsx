@@ -2692,9 +2692,8 @@ export function CitizenRegistrationForm({
 						)}
 
 						{/* Navigation Buttons */}
-						{step > 0 && (
-							<div className="flex justify-between pt-6 gap-3">
-								{step > 1 && (
+						<div className="flex justify-between pt-6 gap-3">
+							{step > 0 && (
 									<Button
 										type="button"
 										variant="outline"
@@ -2728,8 +2727,7 @@ export function CitizenRegistrationForm({
 										</Button>
 									)}
 								</div>
-							</div>
-						)}
+						</div>
 					</CardContent>
 				</Card>
 			</FormProvider>

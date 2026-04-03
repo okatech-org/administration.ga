@@ -1,15 +1,15 @@
 /**
- * Google Places API integration for address autocomplete
- * Uses the same API key as Gemini (GEMINI_API_KEY with Places API enabled)
+ * Google Places API (New) integration for address autocomplete
+ * Uses GEMINI_API_KEY with Places API (New) enabled in Google Cloud Console
+ *
+ * Docs: https://developers.google.com/maps/documentation/places/web-service/op-overview
  */
 import { v } from "convex/values";
 import { action } from "../_generated/server";
 
-// Places API autocomplete endpoint
-const PLACES_AUTOCOMPLETE_URL =
-  "https://maps.googleapis.com/maps/api/place/autocomplete/json";
-const PLACES_DETAILS_URL =
-  "https://maps.googleapis.com/maps/api/place/details/json";
+const AUTOCOMPLETE_URL =
+  "https://places.googleapis.com/v1/places:autocomplete";
+const DETAILS_URL = "https://places.googleapis.com/v1/places";
 
 export type PlaceAutocompleteResult = {
   placeId: string;
@@ -30,12 +30,12 @@ export type PlaceDetails = {
 };
 
 /**
- * Search for address suggestions using Google Places Autocomplete
+ * Search for address suggestions using Google Places Autocomplete (New)
  */
 export const autocomplete = action({
   args: {
     input: v.string(),
-    types: v.optional(v.string()), // e.g., "address", "geocode", "(cities)"
+    types: v.optional(v.string()),
     language: v.optional(v.string()),
     components: v.optional(v.string()), // e.g., "country:fr|country:ga"
   },
@@ -61,46 +61,60 @@ export const autocomplete = action({
     }
 
     try {
-      const params = new URLSearchParams({
-        input,
-        key: apiKey,
-        types: types || "address",
-        language: language || "fr",
-      });
+      // Parse "country:fr|country:ga" → ["fr", "ga"]
+      const regionCodes = components
+        ? components
+            .split("|")
+            .map((c) => c.replace("country:", "").trim())
+            .filter(Boolean)
+        : undefined;
 
-      if (components) {
-        params.append("components", components);
+      const body: Record<string, unknown> = {
+        input,
+        languageCode: language || "fr",
+      };
+
+      if (regionCodes && regionCodes.length > 0) {
+        body.includedRegionCodes = regionCodes;
       }
 
-      const response = await fetch(`${PLACES_AUTOCOMPLETE_URL}?${params}`);
+      if (types) {
+        body.includedPrimaryTypes = [types];
+      }
+
+      const response = await fetch(AUTOCOMPLETE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": apiKey,
+        },
+        body: JSON.stringify(body),
+      });
+
       const data = await response.json();
 
-      if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
-        console.error("Places API error:", data.status, data.error_message);
+      if (!response.ok) {
+        console.error("Places API error:", data.error?.message || data);
         return {
           success: false,
           predictions: [],
-          error: data.error_message || data.status,
+          error: data.error?.message || `HTTP ${response.status}`,
         };
       }
 
       const predictions: PlaceAutocompleteResult[] = (
-        data.predictions || []
-      ).map(
-        (p: {
-          place_id: string;
-          description: string;
-          structured_formatting?: {
-            main_text?: string;
-            secondary_text?: string;
+        data.suggestions || []
+      )
+        .filter((s: any) => s.placePrediction)
+        .map((s: any) => {
+          const p = s.placePrediction;
+          return {
+            placeId: p.placeId,
+            description: p.text?.text || "",
+            mainText: p.structuredFormat?.mainText?.text || p.text?.text || "",
+            secondaryText: p.structuredFormat?.secondaryText?.text || "",
           };
-        }) => ({
-          placeId: p.place_id,
-          description: p.description,
-          mainText: p.structured_formatting?.main_text || p.description,
-          secondaryText: p.structured_formatting?.secondary_text || "",
-        }),
-      );
+        });
 
       return { success: true, predictions };
     } catch (error) {
@@ -115,7 +129,7 @@ export const autocomplete = action({
 });
 
 /**
- * Get detailed address components from a place ID
+ * Get detailed address components from a place ID (New)
  */
 export const getDetails = action({
   args: {
@@ -136,39 +150,39 @@ export const getDetails = action({
     }
 
     try {
-      const params = new URLSearchParams({
-        place_id: placeId,
-        key: apiKey,
-        fields: "address_components,formatted_address,geometry,name,place_id",
-        language: language || "fr",
+      const url = `${DETAILS_URL}/${placeId}?languageCode=${language || "fr"}`;
+
+      const response = await fetch(url, {
+        headers: {
+          "X-Goog-Api-Key": apiKey,
+          "X-Goog-FieldMask":
+            "addressComponents,formattedAddress,location",
+        },
       });
 
-      const response = await fetch(`${PLACES_DETAILS_URL}?${params}`);
       const data = await response.json();
 
-      if (data.status !== "OK") {
+      if (!response.ok) {
         return {
           success: false,
-          error: data.error_message || data.status,
+          error: data.error?.message || `HTTP ${response.status}`,
         };
       }
 
-      const result = data.result;
-      const components = result.address_components || [];
+      const components = data.addressComponents || [];
 
-      // Extract address components
       const getComponent = (types: string[]): string => {
         const component = components.find((c: { types: string[] }) =>
           types.some((t) => c.types.includes(t)),
         );
-        return component?.long_name || "";
+        return component?.longText || "";
       };
 
       const getShortComponent = (types: string[]): string => {
         const component = components.find((c: { types: string[] }) =>
           types.some((t) => c.types.includes(t)),
         );
-        return component?.short_name || "";
+        return component?.shortText || "";
       };
 
       const streetNumber = getComponent(["street_number"]);
@@ -183,9 +197,9 @@ export const getDetails = action({
         postalCode: getComponent(["postal_code"]),
         country: getComponent(["country"]),
         countryCode: getShortComponent(["country"]),
-        formattedAddress: result.formatted_address || "",
-        lat: result.geometry?.location?.lat,
-        lng: result.geometry?.location?.lng,
+        formattedAddress: data.formattedAddress || "",
+        lat: data.location?.latitude,
+        lng: data.location?.longitude,
       };
 
       return { success: true, details };
