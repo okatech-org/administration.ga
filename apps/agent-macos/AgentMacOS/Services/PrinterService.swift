@@ -478,36 +478,41 @@ final class PrinterService {
             print("⚠️ [PrinterService] Could not get printer state: \(stateResult)")
         }
         
-        // Execute print - this is where we had the crash
+        // Execute print
+        // NOTE: evolis_print_exec returns 0 (RC_OK) or a positive value on success,
+        //       negative values indicate errors. All EVOLIS_RC error codes are < 0.
         print("🖨️ [PrinterService] Executing print...")
         let printResult = evolis_print_exec(handle)
         print("🖨️ [PrinterService] Print exec result: \(printResult)")
-        
-        if printResult != EVOLIS_RC_OK.rawValue {
+
+        if printResult < 0 {
             print("❌ [PrinterService] Print exec failed with code: \(printResult)")
-            
+
             // Map error code to name
             let errorName: String
             switch printResult {
             case EVOLIS_RC_EUNDEFINED.rawValue: errorName = "EUNDEFINED"
-            case EVOLIS_RC_EINTERNAL.rawValue: errorName = "EINTERNAL" 
+            case EVOLIS_RC_EINTERNAL.rawValue: errorName = "EINTERNAL"
             case EVOLIS_RC_EPARAMS.rawValue: errorName = "EPARAMS"
             case EVOLIS_RC_ETIMEOUT.rawValue: errorName = "ETIMEOUT"
             case EVOLIS_RC_PRINT_EDATA.rawValue: errorName = "PRINT_EDATA"
             case EVOLIS_RC_PRINT_NEEDACTION.rawValue: errorName = "PRINT_NEEDACTION"
             case EVOLIS_RC_PRINT_EMECHANICAL.rawValue: errorName = "PRINT_EMECHANICAL"
             case EVOLIS_RC_PRINT_ENOIMAGE.rawValue: errorName = "PRINT_ENOIMAGE"
+            case EVOLIS_RC_PRINT_EJOB.rawValue: errorName = "PRINT_EJOB"
+            case EVOLIS_RC_PRINT_ESESSION.rawValue: errorName = "PRINT_ESESSION"
+            case EVOLIS_RC_PRINT_EUNKNOWNRIBBON.rawValue: errorName = "PRINT_EUNKNOWNRIBBON"
             case EVOLIS_RC_PRINTER_ENOCOM.rawValue: errorName = "PRINTER_ENOCOM"
             case EVOLIS_RC_PRINTER_EBUSY.rawValue: errorName = "PRINTER_EBUSY"
             case EVOLIS_RC_PRINTER_EOTHER.rawValue: errorName = "PRINTER_EOTHER (USB in use by other software)"
             default: errorName = "UNKNOWN(\(printResult))"
             }
             print("❌ [PrinterService] Error type: \(errorName)")
-            
+
             throw PrintError.printFailed(code: printResult)
         }
-        
-        print("✅ [PrinterService] Print exec completed successfully")
+
+        print("✅ [PrinterService] Print completed successfully (result: \(printResult))")
     }
     
     // MARK: - Magnetic Encoding
