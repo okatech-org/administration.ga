@@ -367,9 +367,26 @@ final class PrinterService {
         evolis_set_output_tray(handle, outputTray.evoValue)
         evolis_set_error_tray(handle, EVOLIS_OT_ERROR)
         
-        // 4. Initialize print session using driver settings
-        print("🖨️ [PrinterService] Step 4/8: Calling evolis_print_init_from_driver_settings...")
-        let initResult = evolis_print_init_from_driver_settings(handle)
+        // 4. Initialize print session
+        // Use evolis_print_init() first (auto-detects ribbon).
+        // Fall back to evolis_print_init_with_ribbon() if that fails.
+        // Avoid evolis_print_init_from_driver_settings() — on macOS it reads
+        // CUPS driver settings which may be empty or stale.
+        print("🖨️ [PrinterService] Step 4/8: Initializing print session...")
+        var initResult = evolis_print_init(handle)
+        print("🖨️ [PrinterService] evolis_print_init result: \(initResult)")
+
+        if initResult != EVOLIS_RC_OK.rawValue {
+            // Fallback: init with the detected ribbon type
+            print("⚠️ [PrinterService] print_init failed, trying with ribbon type...")
+            var ribbon = evolis_ribbon_t()
+            if evolis_get_ribbon(handle, &ribbon) == EVOLIS_RC_OK.rawValue {
+                print("🖨️ [PrinterService] Detected ribbon: \(ribbon.type.rawValue)")
+                initResult = evolis_print_init_with_ribbon(handle, ribbon.type)
+                print("🖨️ [PrinterService] evolis_print_init_with_ribbon result: \(initResult)")
+            }
+        }
+
         guard initResult == EVOLIS_RC_OK.rawValue else {
             print("❌ [PrinterService] Print init failed with code: \(initResult)")
             throw PrintError.initFailed(code: initResult)
@@ -478,11 +495,12 @@ final class PrinterService {
             print("⚠️ [PrinterService] Could not get printer state: \(stateResult)")
         }
         
-        // Execute print
-        // NOTE: evolis_print_exec returns 0 (RC_OK) or a positive value on success,
+        // Execute print with timeout
+        // NOTE: evolis_print_exec/exect returns 0 (RC_OK) or a positive value on success,
         //       negative values indicate errors. All EVOLIS_RC error codes are < 0.
-        print("🖨️ [PrinterService] Executing print...")
-        let printResult = evolis_print_exec(handle)
+        // Use evolis_print_exect with 60s timeout to wait for completion.
+        print("🖨️ [PrinterService] Executing print (60s timeout)...")
+        let printResult = evolis_print_exect(handle, 60)
         print("🖨️ [PrinterService] Print exec result: \(printResult)")
 
         if printResult < 0 {
