@@ -72,7 +72,8 @@ struct DashboardView: View {
     @Environment(AppState.self) private var appState
     @State private var stats: OrgStats?
     @State private var agentStats: AgentStatsResponse?
-    @State private var isLoading = true
+    @State private var isLoading = false
+    @State private var errorMessage: String?
     @State private var selectedPeriod: String = "month"
 
     var body: some View {
@@ -81,8 +82,12 @@ struct DashboardView: View {
                 // Header
                 headerSection
 
-                if isLoading {
+                if appState.selectedOrgId == nil {
+                    noOrgSelected
+                } else if isLoading {
                     loadingSection
+                } else if let errorMessage {
+                    errorSection(errorMessage)
                 } else if let stats {
                     // Stats cards
                     statsGrid(stats)
@@ -93,7 +98,9 @@ struct DashboardView: View {
                     // Bottom row: service breakdown + agent performance + quick actions
                     bottomRow(stats)
                 } else {
-                    noOrgSelected
+                    // Stats loaded but nil — show quick actions at least
+                    quickActionsCard
+                        .frame(maxWidth: 400)
                 }
 
                 Spacer(minLength: 24)
@@ -102,14 +109,15 @@ struct DashboardView: View {
         }
         .background(Color(.windowBackgroundColor))
         .frame(minWidth: 600, minHeight: 400)
-        .task {
-            await loadStats()
-        }
-        .onChange(of: appState.selectedOrgId) { _, _ in
-            Task { await loadStats() }
+        .onChange(of: appState.selectedOrgId) { _, newValue in
+            if newValue != nil {
+                Task { await loadStats() }
+            }
         }
         .onChange(of: selectedPeriod) { _, _ in
-            Task { await loadStats() }
+            if appState.selectedOrgId != nil {
+                Task { await loadStats() }
+            }
         }
     }
 
@@ -163,6 +171,30 @@ struct DashboardView: View {
             Text("Choisissez une organisation pour afficher les statistiques.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, minHeight: 300)
+    }
+
+    private func errorSection(_ message: String) -> some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 48))
+                .foregroundStyle(.orange)
+            Text("Impossible de charger les statistiques")
+                .font(.headline)
+            Text(message)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            // Show quick actions even on error
+            quickActionsCard
+                .frame(maxWidth: 400)
+
+            Button("Réessayer") {
+                Task { await loadStats() }
+            }
+            .buttonStyle(.bordered)
         }
         .frame(maxWidth: .infinity, minHeight: 300)
     }
@@ -448,12 +480,11 @@ struct DashboardView: View {
 
     private func loadStats() async {
         guard let orgId = appState.selectedOrgId else {
-            isLoading = false
-            stats = nil
             return
         }
 
         isLoading = true
+        errorMessage = nil
 
         // Use subscribe + first value since ConvexMobile doesn't expose query()
         do {
@@ -480,34 +511,43 @@ struct DashboardView: View {
             stats = orgStatsResult
         } catch {
             print("[Dashboard] Error loading org stats: \(error)")
+            let msg = "\(error)"
+            if msg.contains("INSUFFICIENT_PERMISSION") || msg.contains("permission") {
+                errorMessage = "Vous n'avez pas la permission d'accéder aux statistiques de cette organisation."
+            } else {
+                errorMessage = "Erreur de chargement: \(msg)"
+            }
             stats = nil
         }
 
-        do {
-            let agentStatsResult: AgentStatsResponse = try await withCheckedThrowingContinuation { continuation in
-                var cancellable: AnyCancellable?
-                cancellable = convex.subscribe(
-                    to: "functions/statistics:getAgentStats",
-                    with: ["orgId": orgId],
-                    yielding: AgentStatsResponse.self
-                )
-                .first()
-                .sink(
-                    receiveCompletion: { completion in
-                        if case .failure(let error) = completion {
-                            continuation.resume(throwing: error)
+        // Only load agent stats if org stats succeeded
+        if stats != nil {
+            do {
+                let agentStatsResult: AgentStatsResponse = try await withCheckedThrowingContinuation { continuation in
+                    var cancellable: AnyCancellable?
+                    cancellable = convex.subscribe(
+                        to: "functions/statistics:getAgentStats",
+                        with: ["orgId": orgId],
+                        yielding: AgentStatsResponse.self
+                    )
+                    .first()
+                    .sink(
+                        receiveCompletion: { completion in
+                            if case .failure(let error) = completion {
+                                continuation.resume(throwing: error)
+                            }
+                            cancellable?.cancel()
+                        },
+                        receiveValue: { value in
+                            continuation.resume(returning: value)
                         }
-                        cancellable?.cancel()
-                    },
-                    receiveValue: { value in
-                        continuation.resume(returning: value)
-                    }
-                )
+                    )
+                }
+                agentStats = agentStatsResult
+            } catch {
+                print("[Dashboard] Error loading agent stats: \(error)")
+                agentStats = nil
             }
-            agentStats = agentStatsResult
-        } catch {
-            print("[Dashboard] Error loading agent stats: \(error)")
-            agentStats = nil
         }
 
         isLoading = false
