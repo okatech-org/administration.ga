@@ -16,6 +16,11 @@ import Security
 /// Better Auth server base URL (Convex site URL)
 private let authBaseURL = "https://acrobatic-mole-132.eu-west-1.convex.site/api/auth"
 
+/// Origin header for native macOS requests.
+/// Better Auth requires a non-null Origin header for CORS validation.
+/// This must match a trusted origin configured on the server.
+private let nativeOrigin = "http://localhost:3000"
+
 // MARK: - Auth Result
 
 public struct BetterAuthResult: Sendable {
@@ -57,6 +62,9 @@ public class BetterAuthProvider: AuthProvider {
         let config = URLSessionConfiguration.default
         config.httpCookieStorage = BetterAuthProvider.cookieStorage
         config.httpCookieAcceptPolicy = .always
+        config.httpAdditionalHeaders = [
+            "Origin": nativeOrigin
+        ]
         self.session = URLSession(configuration: config)
     }
 
