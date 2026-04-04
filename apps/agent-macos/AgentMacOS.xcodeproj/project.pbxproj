@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		C2184A1B2F2F7C0E00F1944A /* ConvexMobile in Frameworks */ = {isa = PBXBuildFile; productRef = C2184A1A2F2F7C0E00F1944A /* ConvexMobile */; };
-		C2184A1E2F2F7C1D00F1944A /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = C2184A1D2F2F7C1D00F1944A /* Clerk */; };
+
 		C2184A292F2F880400F1944A /* libevolis.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = C2184A282F2F880400F1944A /* libevolis.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -43,7 +43,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C2184A1E2F2F7C1D00F1944A /* Clerk in Frameworks */,
 				C2184A1B2F2F7C0E00F1944A /* ConvexMobile in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -90,7 +89,6 @@
 			name = AgentMacOS;
 			packageProductDependencies = (
 				C2184A1A2F2F7C0E00F1944A /* ConvexMobile */,
-				C2184A1D2F2F7C1D00F1944A /* Clerk */,
 			);
 			productName = AgentMacOS;
 			productReference = C2184A052F2F7A5F00F1944A /* AgentMacOS.app */;
@@ -122,7 +120,6 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				C2184A192F2F7C0E00F1944A /* XCRemoteSwiftPackageReference "convex-swift" */,
-				C2184A1C2F2F7C1D00F1944A /* XCRemoteSwiftPackageReference "clerk-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C2184A062F2F7A5F00F1944A /* Products */;
@@ -383,14 +380,7 @@
 				minimumVersion = 0.7.0;
 			};
 		};
-		C2184A1C2F2F7C1D00F1944A /* XCRemoteSwiftPackageReference "clerk-ios" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/clerk/clerk-ios";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.71.4;
-			};
-		};
+
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -399,11 +389,7 @@
 			package = C2184A192F2F7C0E00F1944A /* XCRemoteSwiftPackageReference "convex-swift" */;
 			productName = ConvexMobile;
 		};
-		C2184A1D2F2F7C1D00F1944A /* Clerk */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C2184A1C2F2F7C1D00F1944A /* XCRemoteSwiftPackageReference "clerk-ios" */;
-			productName = Clerk;
-		};
+
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C21849FD2F2F7A5F00F1944A /* Project object */;
