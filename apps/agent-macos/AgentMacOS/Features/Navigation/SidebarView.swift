@@ -16,56 +16,44 @@ struct SidebarView: View {
         List(selection: $state.currentScreen) {
             // Commandes
             Section("Commandes") {
-                Label("Tableau de bord", systemImage: "square.grid.2x2")
+                Label("Dashboard", systemImage: "house")
                     .tag(AppState.Screen.dashboard)
+
+                Label("iProfil", systemImage: "person.circle")
+                    .tag(AppState.Screen.profiles)
             }
 
             // Opérations
             Section("Opérations") {
-                Label("Affaires Diplomatiques", systemImage: "globe.europe.africa.fill")
+                Label("Affaires Diplomatiques", systemImage: "globe.europe.africa")
                     .tag(AppState.Screen.affairesDiplomatiques)
 
-                Label("Affaires Consulaires", systemImage: "person.2.fill")
+                Label("Affaires Consulaires", systemImage: "person.2")
                     .tag(AppState.Screen.affairesConsulaires)
 
-                Label("Demandes", systemImage: "doc.text.fill")
-                    .tag(AppState.Screen.requests)
-
-                Label("Rendez-vous", systemImage: "calendar")
-                    .tag(AppState.Screen.appointments)
-
-                Label("Articles", systemImage: "newspaper.fill")
+                Label("Actualités", systemImage: "newspaper")
                     .tag(AppState.Screen.posts)
             }
 
             // iBureau
             Section("iBureau") {
-                Label("iBoite", systemImage: "tray.full.fill")
+                Label("iBoîte", systemImage: "tray.full")
                     .tag(AppState.Screen.iboite)
 
-                Label("iCorrespondance", systemImage: "envelope.fill")
+                Label("iCorrespondance", systemImage: "folder")
                     .tag(AppState.Screen.icorrespondance)
 
-                Label("iDocument", systemImage: "doc.fill")
+                Label("iDocument", systemImage: "doc.text")
                     .tag(AppState.Screen.idocument)
 
-                Label("iAgenda", systemImage: "calendar.badge.clock")
+                Label("iAgenda", systemImage: "calendar")
                     .tag(AppState.Screen.iagenda)
-
-                Label("iArchive", systemImage: "archivebox.fill")
-                    .tag(AppState.Screen.iarchive)
-
-                Label("iAsted", systemImage: "brain.fill")
-                    .tag(AppState.Screen.iasted)
             }
 
-            // Bureau Local — Production & Impression
+            // Bureau Local — Impression (desktop-only)
             Section("Bureau Local") {
                 Label("Impression", systemImage: "printer.fill")
                     .tag(AppState.Screen.print)
-
-                Label("Registre Consulaire", systemImage: "list.clipboard.fill")
-                    .tag(AppState.Screen.consularRegistry)
 
                 Label("Designer", systemImage: "paintbrush")
                     .tag(AppState.Screen.designer)
@@ -77,20 +65,20 @@ struct SidebarView: View {
                     .tag(AppState.Screen.data)
             }
 
-            // Administration
-            Section("Administration") {
-                Label("Services", systemImage: "list.bullet.rectangle.fill")
-                    .tag(AppState.Screen.services)
-
-                Label("Équipe", systemImage: "person.3.fill")
+            // Gestion
+            Section("Gestion") {
+                Label("Équipe", systemImage: "person.3")
                     .tag(AppState.Screen.team)
 
-                Label("Paiements", systemImage: "creditcard.fill")
+                Label("Paiements", systemImage: "creditcard")
                     .tag(AppState.Screen.payments)
 
-                Label("Statistiques", systemImage: "chart.bar.fill")
+                Label("Statistiques", systemImage: "chart.bar")
                     .tag(AppState.Screen.statistics)
+            }
 
+            // Administration
+            Section("Administration") {
                 Label("Paramètres", systemImage: "gear")
                     .tag(AppState.Screen.settings)
             }

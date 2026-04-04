@@ -47,6 +47,12 @@ public class BetterAuthProvider: AuthProvider {
     /// Shared cookie storage (persists across app launches via macOS cookie jar)
     private static let cookieStorage = HTTPCookieStorage.shared
 
+    /// Stored callback for pushing fresh tokens to ConvexClientWithAuth
+    private var onIdTokenCallback: (@Sendable (String?) -> Void)?
+
+    /// Timer for periodic token refresh (JWT valid 30 min, refresh every 25 min)
+    private var refreshTask: Task<Void, Never>?
+
     public init() {
         let config = URLSessionConfiguration.default
         config.httpCookieStorage = BetterAuthProvider.cookieStorage
@@ -54,15 +60,23 @@ public class BetterAuthProvider: AuthProvider {
         self.session = URLSession(configuration: config)
     }
 
-    // MARK: - AuthProvider Protocol
+    // MARK: - AuthProvider Protocol (ConvexMobile v0.8+)
 
-    /// Login — attempts to get a Convex JWT from an existing session
-    public func login() async throws -> BetterAuthResult {
-        return try await getConvexToken()
+    /// Login — attempts to get a Convex JWT from an existing session.
+    /// Stores the onIdToken callback and starts periodic refresh.
+    public func login(onIdToken: @Sendable @escaping (String?) -> Void) async throws -> BetterAuthResult {
+        self.onIdTokenCallback = onIdToken
+        let result = try await getConvexToken()
+        onIdToken(result.token)
+        startTokenRefresh()
+        return result
     }
 
     /// Logout — calls Better Auth sign-out endpoint
     public func logout() async throws {
+        refreshTask?.cancel()
+        refreshTask = nil
+
         let url = URL(string: "\(authBaseURL)/sign-out")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -72,27 +86,56 @@ public class BetterAuthProvider: AuthProvider {
         let httpResponse = response as? HTTPURLResponse
         print("[BetterAuth] Sign out: \(httpResponse?.statusCode ?? 0)")
 
-        // Clear keychain token
+        // Clear keychain token and notify Convex
         KeychainHelper.delete(key: "convex_jwt")
+        onIdTokenCallback?(nil)
     }
 
-    /// Login from cache — try to refresh the Convex JWT using existing session cookies
-    public func loginFromCache() async throws -> BetterAuthResult {
+    /// Login from cache — try to refresh the Convex JWT using existing session cookies.
+    /// Stores the onIdToken callback and starts periodic refresh.
+    public func loginFromCache(onIdToken: @Sendable @escaping (String?) -> Void) async throws -> BetterAuthResult {
+        self.onIdTokenCallback = onIdToken
+
         // First try cached JWT from Keychain
         if let cachedToken = KeychainHelper.read(key: "convex_jwt") {
-            // Verify it's not expired (JWTs are valid for 30 min)
             if !isTokenExpired(cachedToken) {
+                onIdToken(cachedToken)
+                startTokenRefresh()
                 return BetterAuthResult(token: cachedToken)
             }
         }
 
         // Try to get a fresh token using session cookies
-        return try await getConvexToken()
+        let result = try await getConvexToken()
+        onIdToken(result.token)
+        startTokenRefresh()
+        return result
     }
 
     /// Extracts the JWT token from the auth result
     public func extractIdToken(from authResult: BetterAuthResult) -> String {
         return authResult.token
+    }
+
+    // MARK: - Token Refresh
+
+    /// Start a background task that refreshes the JWT every 25 minutes
+    private func startTokenRefresh() {
+        refreshTask?.cancel()
+        refreshTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 25 * 60 * 1_000_000_000) // 25 min
+                guard !Task.isCancelled else { break }
+                do {
+                    let result = try await getConvexToken()
+                    onIdTokenCallback?(result.token)
+                    print("[BetterAuth] Token refreshed")
+                } catch {
+                    print("[BetterAuth] Token refresh failed: \(error)")
+                    onIdTokenCallback?(nil)
+                }
+            }
+        }
     }
 
     // MARK: - OTP Flow (called from SignInView)
@@ -121,9 +164,9 @@ public class BetterAuthProvider: AuthProvider {
         print("[BetterAuth] OTP sent to \(email)")
     }
 
-    /// Verify OTP code and establish session
+    /// Verify OTP code and sign in (establishes session)
     func verifyOTP(email: String, otp: String) async throws -> BetterAuthResult {
-        let url = URL(string: "\(authBaseURL)/email-otp/verify-email")!
+        let url = URL(string: "\(authBaseURL)/sign-in/email-otp")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -152,7 +195,7 @@ public class BetterAuthProvider: AuthProvider {
     /// Get Convex JWT from the cross-domain token endpoint.
     /// This endpoint reads the Better Auth session cookie and returns a signed JWT.
     private func getConvexToken() async throws -> BetterAuthResult {
-        let url = URL(string: "\(authBaseURL)/cross-domain/get-token")!
+        let url = URL(string: "\(authBaseURL)/convex/token")!
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Accept")

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ConvexMobile
 
 struct SignInView: View {
     @Environment(AppState.self) private var appState
@@ -33,7 +34,7 @@ struct SignInView: View {
                 VStack(spacing: 12) {
                     Image(systemName: "building.columns.fill")
                         .font(.system(size: 56))
-                        .foregroundStyle(.accent)
+                        .foregroundStyle(.blue)
 
                     Text("Agent macOS")
                         .font(.largeTitle.weight(.bold))
@@ -131,7 +132,7 @@ struct SignInView: View {
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(
-                                    index == otpCode.count ? Color.accentColor : Color.secondary.opacity(0.3),
+                                    index == otpCode.count ? Color.blue : Color.secondary.opacity(0.3),
                                     lineWidth: index == otpCode.count ? 2 : 1
                                 )
                         )

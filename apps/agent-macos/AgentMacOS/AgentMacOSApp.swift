@@ -37,9 +37,11 @@ struct AgentMacOSApp: App {
         switch result {
         case .success:
             print("[AgentMacOS] Authenticated with Convex via Better Auth")
+            appState.isAuthenticated = true
         case .failure(let error):
             print("[AgentMacOS] No cached session or auth failed: \(error)")
-            // User will see sign-in screen
+            appState.isAuthenticated = false
         }
+        appState.isAuthLoading = false
     }
 }
