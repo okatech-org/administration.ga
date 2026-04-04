@@ -502,15 +502,15 @@ final class PrinterService {
             (EVOSETTINGS_KE_Duplex, "Duplex"),
             (EVOSETTINGS_KE_GDuplexType, "GDuplexType"),
             (EVOSETTINGS_KE_Resolution, "Resolution"),
-            (EVOSETTINGS_KE_InputTray, "InputTray"),
-            (EVOSETTINGS_KE_OutputTray, "OutputTray"),
         ]
         for (key, name) in settingsToCheck {
-            var buf = [CChar](repeating: 0, count: 256)
-            evolis_print_get_setting(handle, key, &buf, 256)
-            let val = String(cString: buf)
-            print("   \(name) = \(val.isEmpty ? "(empty)" : val)")
+            var valuePtr: UnsafePointer<CChar>?
+            let found = evolis_print_get_setting(handle, key, &valuePtr)
+            let val = found && valuePtr != nil ? String(cString: valuePtr!) : "(not set)"
+            print("   \(name) = \(val)")
         }
+        let settingCount = evolis_print_get_setting_count(handle)
+        print("🖨️ [PrinterService] Total settings count: \(settingCount)")
 
         // First try writing PRN to file for diagnostics
         let prnPath = NSTemporaryDirectory() + "evolis_test.prn"
