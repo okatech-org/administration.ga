@@ -20,7 +20,7 @@ struct SidebarView: View {
                     .tag(AppState.Screen.dashboard)
 
                 Label("iProfil", systemImage: "person.circle")
-                    .tag(AppState.Screen.profiles)
+                    .tag(AppState.Screen.iprofil)
             }
 
             // Opérations

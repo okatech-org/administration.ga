@@ -37,7 +37,8 @@ func convexQuery<T: Decodable>(_ name: String, with args: [String: Any] = [:], y
             var convexArgs: [String: (any ConvexEncodable)?] = [:]
             for (key, value) in args {
                 if value is NSNull {
-                    convexArgs[key] = nil
+                    // Use updateValue to store .some(nil) — dict[key]=nil would remove the key
+                    convexArgs.updateValue(nil, forKey: key)
                 } else if let s = value as? String {
                     convexArgs[key] = s
                 } else if let i = value as? Int {
@@ -48,8 +49,12 @@ func convexQuery<T: Decodable>(_ name: String, with args: [String: Any] = [:], y
                     convexArgs[key] = b
                 } else if let e = value as? (any ConvexEncodable) {
                     convexArgs[key] = e
+                } else if let dict = value as? [String: Any] {
+                    // Recursively convert nested dicts (e.g. paginationOpts)
+                    convexArgs[key] = convertToConvexEncodable(dict)
+                } else if let arr = value as? [Any] {
+                    convexArgs[key] = convertArrayToConvexEncodable(arr)
                 } else {
-                    // Skip unsupported types (nested dicts, arrays, etc.)
                     print("⚠️ [convexQuery] Skipping unsupported arg type for key '\(key)': \(Swift.type(of: value))")
                 }
             }
@@ -67,6 +72,45 @@ func convexQuery<T: Decodable>(_ name: String, with args: [String: Any] = [:], y
                     }
                 )
         }
+    }
+}
+
+/// Recursively convert [String: Any] to [String: ConvexEncodable?]
+private func convertToConvexEncodable(_ dict: [String: Any]) -> [String: (any ConvexEncodable)?] {
+    var result: [String: (any ConvexEncodable)?] = [:]
+    for (key, value) in dict {
+        if value is NSNull {
+            result.updateValue(nil, forKey: key)
+        } else if let s = value as? String {
+            result[key] = s
+        } else if let i = value as? Int {
+            result[key] = i
+        } else if let d = value as? Double {
+            result[key] = d
+        } else if let b = value as? Bool {
+            result[key] = b
+        } else if let e = value as? (any ConvexEncodable) {
+            result[key] = e
+        } else if let nested = value as? [String: Any] {
+            result[key] = convertToConvexEncodable(nested)
+        } else if let arr = value as? [Any] {
+            result[key] = convertArrayToConvexEncodable(arr)
+        }
+    }
+    return result
+}
+
+/// Convert [Any] to [ConvexEncodable?]
+private func convertArrayToConvexEncodable(_ arr: [Any]) -> [(any ConvexEncodable)?] {
+    arr.map { value -> (any ConvexEncodable)? in
+        if value is NSNull { return nil }
+        if let s = value as? String { return s }
+        if let i = value as? Int { return i }
+        if let d = value as? Double { return d }
+        if let b = value as? Bool { return b }
+        if let e = value as? (any ConvexEncodable) { return e }
+        if let dict = value as? [String: Any] { return convertToConvexEncodable(dict) }
+        return nil
     }
 }
 

@@ -18,6 +18,7 @@ final class AppState {
     enum Screen: String, Hashable, CaseIterable {
         // Core
         case dashboard
+        case iprofil
         case requests
         case appointments
 

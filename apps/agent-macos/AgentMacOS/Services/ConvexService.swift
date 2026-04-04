@@ -91,26 +91,44 @@ struct ConvexProfile: Codable, Hashable {
 /// Registration ready for printing
 struct PrintableRegistration: Identifiable, Codable, Hashable {
     let _id: String
-    let profileId: String
+    let profileId: String?
+    let childProfileId: String?
     let orgId: String
+    let requestId: String?
+    let type: String?
     let status: String
+    let duration: String?
+    let registeredAt: Double?
+    let activatedAt: Double?
+    let expiresAt: Double?
     let cardNumber: String?
     let cardIssuedAt: Double?
     let cardExpiresAt: Double?
-    let duration: String?
+    let printedAt: Double?
+    // Enriched fields from listByOrg
+    let requestReference: String?
     let profile: ConvexProfile?
-    
+    let user: RegistrationUser?
+
     var id: String { _id }
-    
+
     var cardIssuedDate: Date? {
         guard let ts = cardIssuedAt else { return nil }
         return Date(timeIntervalSince1970: ts / 1000)
     }
-    
+
     var cardExpiresDate: Date? {
         guard let ts = cardExpiresAt else { return nil }
         return Date(timeIntervalSince1970: ts / 1000)
     }
+}
+
+/// User info attached to a registration
+struct RegistrationUser: Codable, Hashable {
+    let _id: String
+    let email: String?
+    let avatarUrl: String?
+    let photoUrl: String?
 }
 
 // MARK: - Convex Service

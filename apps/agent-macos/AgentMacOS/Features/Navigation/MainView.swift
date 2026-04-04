@@ -104,36 +104,38 @@ struct MainView: View {
         // Core
         case .dashboard:
             DashboardView()
+        case .iprofil:
+            ProfilesView()
         case .requests:
-            PlaceholderView(title: "Demandes", icon: "doc.text.fill")
+            RequestsView()
         case .appointments:
-            PlaceholderView(title: "Rendez-vous", icon: "calendar")
+            AppointmentsView()
 
         // Consular & Diplomatic
         case .affairesConsulaires:
-            PlaceholderView(title: "Affaires Consulaires", icon: "person.2.fill")
+            AffairesConsulairesView()
         case .affairesDiplomatiques:
-            PlaceholderView(title: "Affaires Diplomatiques", icon: "globe.europe.africa.fill")
+            AffairesDiplomatiquesView()
         case .consularRegistry:
-            PlaceholderView(title: "Registre Consulaire", icon: "list.clipboard.fill")
+            ConsularRegistryView()
 
         // iBureau
         case .iboite:
-            PlaceholderView(title: "iBoite", icon: "tray.full.fill")
+            iBoiteView()
         case .icorrespondance:
-            PlaceholderView(title: "iCorrespondance", icon: "envelope.fill")
+            iCorrespondanceView()
         case .idocument:
-            PlaceholderView(title: "iDocument", icon: "doc.fill")
+            iDocumentView()
         case .iagenda:
-            PlaceholderView(title: "iAgenda", icon: "calendar.badge.clock")
+            iAgendaView()
         case .iarchive:
-            PlaceholderView(title: "iArchive", icon: "archivebox.fill")
+            iDocumentView() // Archive redirects to iDocument
         case .iasted:
-            PlaceholderView(title: "iAsted", icon: "brain.fill")
+            iAstedView()
 
         // Content
         case .posts:
-            PlaceholderView(title: "Articles", icon: "newspaper.fill")
+            PostsView()
 
         // Production (EasyCard)
         case .designer:
@@ -147,46 +149,22 @@ struct MainView: View {
 
         // Administration
         case .services:
-            PlaceholderView(title: "Services", icon: "list.bullet.rectangle.fill")
+            ServicesView()
         case .payments:
-            PlaceholderView(title: "Paiements", icon: "creditcard.fill")
+            PaymentsView()
         case .team:
-            PlaceholderView(title: "Équipe", icon: "person.3.fill")
+            TeamView()
         case .statistics:
-            PlaceholderView(title: "Statistiques", icon: "chart.bar.fill")
+            StatisticsView()
         case .profiles:
-            PlaceholderView(title: "Profils", icon: "person.crop.rectangle.fill")
+            CitizenProfilesView()
         case .calls:
-            PlaceholderView(title: "Appels", icon: "video.fill")
+            iAstedView() // Calls redirects to iAsted
         case .meetings:
-            PlaceholderView(title: "Réunions", icon: "person.2.wave.2.fill")
+            MeetingsView()
         case .settings:
             SettingsView()
         }
-    }
-}
-
-// Placeholder for screens not yet implemented
-struct PlaceholderView: View {
-    let title: String
-    let icon: String
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-
-            Text(title)
-                .font(.title)
-                .fontWeight(.medium)
-
-            Text("Coming soon...")
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.windowBackgroundColor))
     }
 }
 

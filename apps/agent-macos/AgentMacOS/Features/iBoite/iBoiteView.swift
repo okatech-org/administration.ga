@@ -348,7 +348,7 @@ struct iBoiteView: View {
         do {
             let result = try await convexQuery(
                 "functions/digitalMail:list",
-                with: ["paginationOpts": ["numItems": 100, "cursor": NSNull()]],
+                with: ["paginationOpts": ["numItems": 100.0, "cursor": NSNull()]],
                 yielding: PaginatedMails.self
             )
             mails = result.page
