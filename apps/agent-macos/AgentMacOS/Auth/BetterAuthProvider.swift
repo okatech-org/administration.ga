@@ -138,6 +138,34 @@ public class BetterAuthProvider: AuthProvider {
         }
     }
 
+    // MARK: - Password Flow (called from SignInView)
+
+    /// Sign in with email and password
+    func signInWithPassword(email: String, password: String) async throws -> BetterAuthResult {
+        let url = URL(string: "\(authBaseURL)/sign-in/email")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body = ["email": email, "password": password]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw BetterAuthError.networkError("Invalid response")
+        }
+
+        if httpResponse.statusCode != 200 {
+            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw BetterAuthError.passwordSignInFailed(errorBody)
+        }
+
+        print("[BetterAuth] Password sign-in successful")
+
+        // Now get the Convex JWT using the session
+        return try await getConvexToken()
+    }
+
     // MARK: - OTP Flow (called from SignInView)
 
     /// Send OTP to email address
@@ -308,6 +336,7 @@ public enum BetterAuthError: LocalizedError {
     case tokenFetchFailed(String)
     case otpSendFailed(String)
     case otpVerifyFailed(String)
+    case passwordSignInFailed(String)
     case networkError(String)
 
     public var errorDescription: String? {
@@ -320,6 +349,8 @@ public enum BetterAuthError: LocalizedError {
             return "Échec d'envoi du code OTP: \(detail)"
         case .otpVerifyFailed(let detail):
             return "Code OTP invalide: \(detail)"
+        case .passwordSignInFailed(let detail):
+            return "Identifiants invalides: \(detail)"
         case .networkError(let detail):
             return "Erreur réseau: \(detail)"
         }

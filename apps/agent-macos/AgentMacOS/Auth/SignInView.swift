@@ -2,7 +2,7 @@
 //  SignInView.swift
 //  AgentMacOS
 //
-//  Sign-in view using Better Auth email OTP flow
+//  Sign-in view using Better Auth email OTP + password flow
 //
 
 import SwiftUI
@@ -14,14 +14,17 @@ struct SignInView: View {
     enum Step {
         case enterEmail
         case enterOTP
+        case enterPassword
     }
 
     @State private var step: Step = .enterEmail
     @State private var email = ""
+    @State private var password = ""
     @State private var otpCode = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
     @FocusState private var isOTPFocused: Bool
+    @FocusState private var isPasswordFocused: Bool
 
     private let authProvider = BetterAuthProvider()
 
@@ -51,6 +54,8 @@ struct SignInView: View {
                         emailStep
                     case .enterOTP:
                         otpStep
+                    case .enterPassword:
+                        passwordStep
                     }
 
                     if let error = errorMessage {
@@ -91,6 +96,7 @@ struct SignInView: View {
                     Task { await sendOTP() }
                 }
 
+            // Send OTP button (primary action)
             Button {
                 Task { await sendOTP() }
             } label: {
@@ -99,7 +105,7 @@ struct SignInView: View {
                         ProgressView()
                             .controlSize(.small)
                     } else {
-                        Text("Envoyer le code")
+                        Label("Envoyer le code OTP", systemImage: "envelope")
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -107,6 +113,33 @@ struct SignInView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .disabled(email.isEmpty || isLoading)
+
+            // Divider
+            HStack {
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundStyle(.secondary.opacity(0.3))
+                Text("ou")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundStyle(.secondary.opacity(0.3))
+            }
+
+            // Password sign-in button
+            Button {
+                withAnimation {
+                    step = .enterPassword
+                    errorMessage = nil
+                }
+            } label: {
+                Label("Se connecter avec un mot de passe", systemImage: "key")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .disabled(email.isEmpty)
         }
     }
 
@@ -194,6 +227,76 @@ struct SignInView: View {
         .onAppear { isOTPFocused = true }
     }
 
+    // MARK: - Password Step
+
+    private var passwordStep: some View {
+        VStack(spacing: 16) {
+            // Back button with email
+            HStack {
+                Button {
+                    withAnimation {
+                        step = .enterEmail
+                        password = ""
+                        errorMessage = nil
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.left")
+                        Text(email)
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+            }
+
+            // Password field
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Mot de passe")
+                        .font(.subheadline.weight(.medium))
+
+                    Spacer()
+
+                    Button("Mot de passe oublié ?") {
+                        // Switch to OTP flow as password reset
+                        Task { await sendOTP() }
+                    }
+                    .buttonStyle(.plain)
+                    .font(.caption)
+                    .foregroundStyle(.blue)
+                }
+
+                SecureField("Entrez votre mot de passe", text: $password)
+                    .textFieldStyle(.roundedBorder)
+                    .focused($isPasswordFocused)
+                    .onSubmit {
+                        Task { await signInWithPassword() }
+                    }
+            }
+
+            Button {
+                Task { await signInWithPassword() }
+            } label: {
+                Group {
+                    if isLoading {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Text("Se connecter")
+                    }
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .disabled(password.isEmpty || isLoading)
+        }
+        .onAppear { isPasswordFocused = true }
+    }
+
     // MARK: - Actions
 
     private func sendOTP() async {
@@ -218,22 +321,40 @@ struct SignInView: View {
 
         do {
             let result = try await authProvider.verifyOTP(email: email, otp: otpCode)
-            print("[SignInView] Auth successful, token: \(result.token.prefix(20))...")
-
-            // Authenticate with Convex
-            let convexResult = await convex.loginFromCache()
-            switch convexResult {
-            case .success:
-                appState.isAuthenticated = true
-            case .failure(let error):
-                errorMessage = "Erreur Convex: \(error.localizedDescription)"
-            }
+            print("[SignInView] OTP auth successful, token: \(result.token.prefix(20))...")
+            await authenticateWithConvex()
         } catch {
             errorMessage = error.localizedDescription
             otpCode = ""
         }
 
         isLoading = false
+    }
+
+    private func signInWithPassword() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let result = try await authProvider.signInWithPassword(email: email, password: password)
+            print("[SignInView] Password auth successful, token: \(result.token.prefix(20))...")
+            await authenticateWithConvex()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+
+        isLoading = false
+    }
+
+    /// Shared post-authentication step: sync with Convex
+    private func authenticateWithConvex() async {
+        let convexResult = await convex.loginFromCache()
+        switch convexResult {
+        case .success:
+            appState.isAuthenticated = true
+        case .failure(let error):
+            errorMessage = "Erreur Convex: \(error.localizedDescription)"
+        }
     }
 }
 
