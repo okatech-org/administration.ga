@@ -131,11 +131,11 @@ struct ProfilePrintView: View {
                             Circle()
                                 .fill(.green)
                                 .frame(width: 8, height: 8)
-                            Text(user.name)
+                            Text(user.displayName)
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                            
-                            if user.isSuperadmin {
+
+                            if user.isSuperadmin == true {
                                 Text("SUPERADMIN")
                                     .font(.caption2.weight(.semibold))
                                     .padding(.horizontal, 6)
