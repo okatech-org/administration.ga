@@ -326,34 +326,17 @@ final class PrinterService {
         duplexType: DuplexType,
         magTracks: [Int: String]?
     ) throws {
-        // Release any stale session first (fix for SESSION_EBUSY / 29023)
-        print("🖨️ [PrinterService] Pre-releasing any stale session...")
-        evolis_release(handle)
-
-        // Small delay to let the printer process the release
-        Thread.sleep(forTimeInterval: 0.3)
-
-        // Clear mechanical errors before reserving
-        evolis_clear_mechanical_errors(handle)
-
         // Reserve printer session
+        // NOTE: evolis_reserve() returns a session ID (> 0) on success,
+        //       NOT EVOLIS_RC_OK. Use EVOLIS_SESSION_IS_OK(s) → (s > 0).
         print("🖨️ [PrinterService] Reserving printer session...")
-        // 0 = auto-generated session ID, 10000 = 10s timeout (longer for recovery)
-        var reserveResult = evolis_reserve(handle, 0, 10000)
+        let reserveResult = evolis_reserve(handle, 0, 10000)
 
-        // If still busy, wait and retry once
-        if reserveResult != EVOLIS_RC_OK.rawValue {
-            print("⚠️ [PrinterService] First reserve attempt failed (\(reserveResult)), retrying after delay...")
-            evolis_release(handle)
-            Thread.sleep(forTimeInterval: 2.0)
-            reserveResult = evolis_reserve(handle, 0, 10000)
-        }
-
-        guard reserveResult == EVOLIS_RC_OK.rawValue else {
+        guard reserveResult > 0 else {
              print("❌ [PrinterService] Failed to reserve session: \(reserveResult)")
              throw PrintError.sessionReservationFailed(code: reserveResult)
         }
-        print("✅ [PrinterService] Session reserved")
+        print("✅ [PrinterService] Session reserved (ID: \(reserveResult))")
         
         defer {
             print("🖨️ [PrinterService] Releasing printer session...")
