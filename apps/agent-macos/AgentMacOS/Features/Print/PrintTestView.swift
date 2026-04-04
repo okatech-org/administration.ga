@@ -466,26 +466,44 @@ struct PrintTestView: View {
     }
 
     /// Render a test card image at CR80 print resolution (1016 x 648 px)
+    ///
+    /// Uses the same CGContext-based approach as CardRenderer to ensure
+    /// correct orientation when converted to BMP for the Evolis SDK.
+    /// Do NOT use NSImage.lockFocus() — it creates a different internal
+    /// representation that causes 90° rotation in bmpData().
     private func renderTestCardImage(front: Bool) -> NSImage? {
-        let width: CGFloat = 1016
-        let height: CGFloat = 648
+        let width = 1016
+        let height = 648
 
-        let image = NSImage(size: NSSize(width: width, height: height))
-        image.lockFocus()
+        // Create CGContext directly (same as CardRenderer)
+        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
+        guard let cgContext = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: width * 4,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+        ) else { return nil }
 
-        guard let context = NSGraphicsContext.current?.cgContext else {
-            image.unlockFocus()
-            return nil
-        }
+        // Set up NSGraphicsContext for text drawing (flipped: false = standard CG coords)
+        let nsContext = NSGraphicsContext(cgContext: cgContext, flipped: false)
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = nsContext
 
+        let size = CGSize(width: CGFloat(width), height: CGFloat(height))
         if front {
-            drawTestCardFront(in: context, size: CGSize(width: width, height: height))
+            drawTestCardFront(in: cgContext, size: size)
         } else {
-            drawTestCardBack(in: context, size: CGSize(width: width, height: height))
+            drawTestCardBack(in: cgContext, size: size)
         }
 
-        image.unlockFocus()
-        return image
+        NSGraphicsContext.restoreGraphicsState()
+
+        // Create NSImage from CGContext (same as CardRenderer)
+        guard let cgImage = cgContext.makeImage() else { return nil }
+        return NSImage(cgImage: cgImage, size: NSSize(width: width, height: height))
     }
 
     /// Draw the front — white background, thin green bar, centered text, small color swatches
