@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ConvexMobile
 
 struct MainView: View {
     @Environment(AppState.self) private var appState
@@ -36,11 +37,60 @@ struct MainView: View {
 
     private var authenticatedContent: some View {
         NavigationSplitView {
-            SidebarView()
+            VStack(spacing: 0) {
+                // Org picker at top of sidebar
+                orgPicker
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+
+                Divider()
+
+                SidebarView()
+            }
         } detail: {
             contentView
         }
         .frame(minWidth: 1000, minHeight: 700)
+        .task {
+            // Load user data when authenticated content appears
+            await ConvexService.shared.loadCurrentUser()
+            // Auto-select first org if none selected
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            if appState.selectedOrgId == nil {
+                if let firstOrg = ConvexService.shared.availableOrgs.first {
+                    appState.selectedOrgId = firstOrg._id
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var orgPicker: some View {
+        let orgs = ConvexService.shared.availableOrgs
+        if orgs.count > 1 {
+            @Bindable var state = appState
+            Picker("Organisation", selection: $state.selectedOrgId) {
+                Text("Sélectionner...").tag(nil as String?)
+                ForEach(orgs, id: \._id) { org in
+                    Text(org.name).tag(org._id as String?)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+        } else if let org = orgs.first {
+            HStack {
+                Image(systemName: "building.2")
+                    .foregroundStyle(.secondary)
+                Text(org.name)
+                    .font(.subheadline.weight(.medium))
+                Spacer()
+            }
+            .onAppear {
+                if appState.selectedOrgId == nil {
+                    appState.selectedOrgId = org._id
+                }
+            }
+        }
     }
 
     @ViewBuilder
