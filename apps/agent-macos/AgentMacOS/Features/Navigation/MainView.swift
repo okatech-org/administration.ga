@@ -141,7 +141,7 @@ struct MainView: View {
         case .templates:
             TemplateGalleryView()
         case .print:
-            ProfilePrintView()
+            PrintPageView()
         case .data:
             DataImportView()
 
