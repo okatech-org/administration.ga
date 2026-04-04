@@ -10,6 +10,7 @@
 import SwiftUI
 import Charts
 import ConvexMobile
+import Combine
 
 // MARK: - Data Models
 
@@ -453,24 +454,62 @@ struct DashboardView: View {
         }
 
         isLoading = true
-        do {
-            async let orgStatsResult: OrgStats = convex.query(
-                "functions/statistics:getOrgStats",
-                with: ["orgId": orgId, "period": selectedPeriod, "currentTime": Date.now.timeIntervalSince1970 * 1000]
-            )
-            async let agentStatsResult: AgentStatsResponse = convex.query(
-                "functions/statistics:getAgentStats",
-                with: ["orgId": orgId]
-            )
 
-            stats = try await orgStatsResult
-            agentStats = try await agentStatsResult
+        // Use subscribe + first value since ConvexMobile doesn't expose query()
+        do {
+            let orgStatsResult: OrgStats = try await withCheckedThrowingContinuation { continuation in
+                var cancellable: AnyCancellable?
+                cancellable = convex.subscribe(
+                    to: "functions/statistics:getOrgStats",
+                    with: ["orgId": orgId, "period": selectedPeriod, "currentTime": Date.now.timeIntervalSince1970 * 1000],
+                    yielding: OrgStats.self
+                )
+                .first()
+                .sink(
+                    receiveCompletion: { completion in
+                        if case .failure(let error) = completion {
+                            continuation.resume(throwing: error)
+                        }
+                        cancellable?.cancel()
+                    },
+                    receiveValue: { value in
+                        continuation.resume(returning: value)
+                    }
+                )
+            }
+            stats = orgStatsResult
         } catch {
-            print("[Dashboard] Error loading stats: \(error)")
-            // Show empty state rather than crashing
+            print("[Dashboard] Error loading org stats: \(error)")
             stats = nil
+        }
+
+        do {
+            let agentStatsResult: AgentStatsResponse = try await withCheckedThrowingContinuation { continuation in
+                var cancellable: AnyCancellable?
+                cancellable = convex.subscribe(
+                    to: "functions/statistics:getAgentStats",
+                    with: ["orgId": orgId],
+                    yielding: AgentStatsResponse.self
+                )
+                .first()
+                .sink(
+                    receiveCompletion: { completion in
+                        if case .failure(let error) = completion {
+                            continuation.resume(throwing: error)
+                        }
+                        cancellable?.cancel()
+                    },
+                    receiveValue: { value in
+                        continuation.resume(returning: value)
+                    }
+                )
+            }
+            agentStats = agentStatsResult
+        } catch {
+            print("[Dashboard] Error loading agent stats: \(error)")
             agentStats = nil
         }
+
         isLoading = false
     }
 
