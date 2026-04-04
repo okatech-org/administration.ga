@@ -115,6 +115,9 @@ final class PrinterService {
     
     // evolis_t* is typedef'd as void* in C, which becomes UnsafeMutableRawPointer in Swift
     private var printerHandle: UnsafeMutableRawPointer?
+
+    /// CUPS queue name for the connected printer (used for lp -d)
+    private var connectedCupsName: String?
     
     // UserDefaults key for persisting last printer
     private let lastPrinterKey = "AgentMacOS.LastConnectedPrinter"
@@ -194,7 +197,8 @@ final class PrinterService {
         
         isConnected = true
         lastError = nil
-        
+        connectedCupsName = printerName
+
         // Save for auto-reconnect
         lastConnectedPrinterName = printerName
         print("💾 [PrinterService] Saved printer for auto-reconnect: \(printerName)")
@@ -213,6 +217,7 @@ final class PrinterService {
         }
         isConnected = false
         connectedPrinter = nil
+        connectedCupsName = nil
         ribbonInfo = nil
         // Note: We keep lastConnectedPrinterName for next auto-reconnect
     }
@@ -301,7 +306,8 @@ final class PrinterService {
                         nfcPayload: nfcPayload,
                         outputTray: outputTray,
                         duplexType: duplexType,
-                        magTracks: magTracks
+                        magTracks: magTracks,
+                        cupsName: self.connectedCupsName
                     )
                     
                     // Refresh printer info on the main actor after successful print
@@ -324,7 +330,8 @@ final class PrinterService {
         nfcPayload: NFCPayload?,
         outputTray: OutputTrayOption,
         duplexType: DuplexType,
-        magTracks: [Int: String]?
+        magTracks: [Int: String]?,
+        cupsName: String?
     ) throws {
         // Reserve printer session
         // NOTE: evolis_reserve() returns a session ID (> 0) on success,
@@ -512,48 +519,84 @@ final class PrinterService {
         let settingCount = evolis_print_get_setting_count(handle)
         print("🖨️ [PrinterService] Total settings count: \(settingCount)")
 
-        // First try writing PRN to file for diagnostics
-        let prnPath = NSTemporaryDirectory() + "evolis_test.prn"
+        // ===================================================================
+        // macOS printing: evolis_print_exec/exect doesn't send to
+        // the physical printer on macOS. The working flow is:
+        // 1. Generate PRN file via evolis_print_to_file()
+        // 2. Send PRN to printer via CUPS: lp -d PRINTER -o raw FILE.prn
+        // ===================================================================
+
+        let prnPath = NSTemporaryDirectory() + "evolis_print_\(UUID().uuidString).prn"
+        print("🖨️ [PrinterService] Generating PRN file: \(prnPath)")
         let fileResult = evolis_print_to_file(handle, prnPath)
-        print("🖨️ [PrinterService] PRN file result: \(fileResult), path: \(prnPath)")
-        if fileResult >= 0 {
-            let fileSize = (try? FileManager.default.attributesOfItem(atPath: prnPath)[.size] as? Int) ?? 0
-            print("🖨️ [PrinterService] PRN file size: \(fileSize) bytes")
+        print("🖨️ [PrinterService] PRN file result: \(fileResult)")
+
+        guard fileResult >= 0 else {
+            print("❌ [PrinterService] Failed to generate PRN file: \(fileResult)")
+            throw PrintError.printFailed(code: fileResult)
         }
 
-        // Now execute the actual print
-        print("🖨️ [PrinterService] Executing print (60s timeout)...")
-        let printResult = evolis_print_exect(handle, 60)
-        print("🖨️ [PrinterService] Print exec result: \(printResult)")
+        let fileSize = (try? FileManager.default.attributesOfItem(atPath: prnPath)[.size] as? Int) ?? 0
+        print("🖨️ [PrinterService] PRN file size: \(fileSize) bytes")
 
-        if printResult < 0 {
-            print("❌ [PrinterService] Print exec failed with code: \(printResult)")
-
-            // Map error code to name
-            let errorName: String
-            switch printResult {
-            case EVOLIS_RC_EUNDEFINED.rawValue: errorName = "EUNDEFINED"
-            case EVOLIS_RC_EINTERNAL.rawValue: errorName = "EINTERNAL"
-            case EVOLIS_RC_EPARAMS.rawValue: errorName = "EPARAMS"
-            case EVOLIS_RC_ETIMEOUT.rawValue: errorName = "ETIMEOUT"
-            case EVOLIS_RC_PRINT_EDATA.rawValue: errorName = "PRINT_EDATA"
-            case EVOLIS_RC_PRINT_NEEDACTION.rawValue: errorName = "PRINT_NEEDACTION"
-            case EVOLIS_RC_PRINT_EMECHANICAL.rawValue: errorName = "PRINT_EMECHANICAL"
-            case EVOLIS_RC_PRINT_ENOIMAGE.rawValue: errorName = "PRINT_ENOIMAGE"
-            case EVOLIS_RC_PRINT_EJOB.rawValue: errorName = "PRINT_EJOB"
-            case EVOLIS_RC_PRINT_ESESSION.rawValue: errorName = "PRINT_ESESSION"
-            case EVOLIS_RC_PRINT_EUNKNOWNRIBBON.rawValue: errorName = "PRINT_EUNKNOWNRIBBON"
-            case EVOLIS_RC_PRINTER_ENOCOM.rawValue: errorName = "PRINTER_ENOCOM"
-            case EVOLIS_RC_PRINTER_EBUSY.rawValue: errorName = "PRINTER_EBUSY"
-            case EVOLIS_RC_PRINTER_EOTHER.rawValue: errorName = "PRINTER_EOTHER (USB in use by other software)"
-            default: errorName = "UNKNOWN(\(printResult))"
-            }
-            print("❌ [PrinterService] Error type: \(errorName)")
-
-            throw PrintError.printFailed(code: printResult)
+        guard fileSize > 0 else {
+            print("❌ [PrinterService] PRN file is empty")
+            throw PrintError.printFailed(code: -1)
         }
 
-        print("✅ [PrinterService] Print completed successfully (result: \(printResult))")
+        // Determine CUPS queue name
+        guard let cupsQueue = cupsName ?? self.lastConnectedPrinterName else {
+            print("❌ [PrinterService] No CUPS printer name available")
+            throw PrintError.notConnected
+        }
+
+        // Enable the CUPS queue (it may be paused to prevent SDK conflicts)
+        print("🖨️ [PrinterService] Enabling CUPS queue '\(cupsQueue)'...")
+        let enableProcess = Process()
+        enableProcess.executableURL = URL(fileURLWithPath: "/usr/sbin/cupsenable")
+        enableProcess.arguments = [cupsQueue]
+        try? enableProcess.run()
+        enableProcess.waitUntilExit()
+
+        // Send PRN to printer via lp
+        print("🖨️ [PrinterService] Sending PRN to CUPS: lp -d \(cupsQueue) -o raw \(prnPath)")
+        let lpProcess = Process()
+        lpProcess.executableURL = URL(fileURLWithPath: "/usr/bin/lp")
+        lpProcess.arguments = ["-d", cupsQueue, "-o", "raw", prnPath]
+
+        let lpPipe = Pipe()
+        lpProcess.standardOutput = lpPipe
+        lpProcess.standardError = lpPipe
+
+        try lpProcess.run()
+        lpProcess.waitUntilExit()
+
+        let lpOutput = String(data: lpPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        print("🖨️ [PrinterService] lp output: \(lpOutput)")
+        print("🖨️ [PrinterService] lp exit code: \(lpProcess.terminationStatus)")
+
+        guard lpProcess.terminationStatus == 0 else {
+            print("❌ [PrinterService] lp failed with exit code: \(lpProcess.terminationStatus)")
+            throw PrintError.printFailed(code: Int32(lpProcess.terminationStatus))
+        }
+
+        // Clean up PRN file after a delay (give CUPS time to read it)
+        DispatchQueue.global().asyncAfter(deadline: .now() + 10) {
+            try? FileManager.default.removeItem(atPath: prnPath)
+            print("🧹 [PrinterService] Cleaned up PRN file: \(prnPath)")
+        }
+
+        // Optionally pause CUPS queue again to prevent conflicts with SDK
+        DispatchQueue.global().asyncAfter(deadline: .now() + 30) {
+            let disableProcess = Process()
+            disableProcess.executableURL = URL(fileURLWithPath: "/usr/sbin/cupsdisable")
+            disableProcess.arguments = [cupsQueue]
+            try? disableProcess.run()
+            disableProcess.waitUntilExit()
+            print("🖨️ [PrinterService] Re-paused CUPS queue '\(cupsQueue)' to prevent SDK conflicts")
+        }
+
+        print("✅ [PrinterService] Print job sent to CUPS successfully")
     }
     
     // MARK: - Magnetic Encoding

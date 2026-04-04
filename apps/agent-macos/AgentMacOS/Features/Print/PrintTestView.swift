@@ -489,26 +489,30 @@ struct PrintTestView: View {
     }
 
     /// Draw the front — white background, thin green bar, centered text, small color swatches
+    /// Uses safe margins (24px = ~2mm) to avoid Evolis non-printable border area
     private func drawTestCardFront(in ctx: CGContext, size: CGSize) {
         let w = size.width
         let h = size.height
+
+        // Safe margins — Evolis printers have ~1-2mm non-printable border
+        let margin: CGFloat = 24 // ~2mm at 300 DPI
 
         // White background
         ctx.setFillColor(CGColor.white)
         ctx.fill(CGRect(origin: .zero, size: size))
 
-        // Thin green header bar (40px out of 648)
+        // Thin green header bar (inside safe area)
         ctx.setFillColor(CGColor(red: 0, green: 0.45, blue: 0.25, alpha: 1))
-        ctx.fill(CGRect(x: 0, y: h - 40, width: w, height: 40))
+        ctx.fill(CGRect(x: margin, y: h - margin - 36, width: w - margin * 2, height: 36))
 
-        // Title
+        // Title — centered vertically
         let titleAttrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 36, weight: .bold),
             .foregroundColor: NSColor.black
         ]
         let title = "CARTE DE TEST" as NSString
         let titleSize = title.size(withAttributes: titleAttrs)
-        title.draw(at: CGPoint(x: (w - titleSize.width) / 2, y: h / 2 + 30), withAttributes: titleAttrs)
+        title.draw(at: CGPoint(x: (w - titleSize.width) / 2, y: h / 2 + 20), withAttributes: titleAttrs)
 
         // Subtitle
         let subAttrs: [NSAttributedString.Key: Any] = [
@@ -518,9 +522,9 @@ struct PrintTestView: View {
         let dateStr = Date.now.formatted(date: .abbreviated, time: .omitted)
         let sub = "Agent macOS — \(dateStr)" as NSString
         let subSize = sub.size(withAttributes: subAttrs)
-        sub.draw(at: CGPoint(x: (w - subSize.width) / 2, y: h / 2 - 5), withAttributes: subAttrs)
+        sub.draw(at: CGPoint(x: (w - subSize.width) / 2, y: h / 2 - 15), withAttributes: subAttrs)
 
-        // Small color swatches centered
+        // Small color swatches centered (inside safe area)
         let swatchColors: [CGColor] = [
             .init(red: 1, green: 0, blue: 0, alpha: 1),
             .init(red: 0, green: 0.7, blue: 0, alpha: 1),
@@ -530,43 +534,53 @@ struct PrintTestView: View {
             .init(red: 1, green: 0, blue: 1, alpha: 1),
             .init(red: 0, green: 0, blue: 0, alpha: 1),
         ]
-        let swatchW: CGFloat = 60
-        let swatchH: CGFloat = 30
-        let gap: CGFloat = 10
+        let swatchW: CGFloat = 55
+        let swatchH: CGFloat = 28
+        let gap: CGFloat = 8
         let totalW = CGFloat(swatchColors.count) * swatchW + CGFloat(swatchColors.count - 1) * gap
         let startX = (w - totalW) / 2
-        let swatchY = h / 2 - 60
+        let swatchY = h / 2 - 70
         for (i, color) in swatchColors.enumerated() {
             ctx.setFillColor(color)
             ctx.fill(CGRect(x: startX + CGFloat(i) * (swatchW + gap), y: swatchY, width: swatchW, height: swatchH))
         }
 
-        // Footer
+        // Footer (inside safe area)
         let footerAttrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 14),
             .foregroundColor: NSColor.lightGray
         ]
         let footer = "TEST IMPRESSION" as NSString
         let footerSize = footer.size(withAttributes: footerAttrs)
-        footer.draw(at: CGPoint(x: (w - footerSize.width) / 2, y: 20), withAttributes: footerAttrs)
+        footer.draw(at: CGPoint(x: (w - footerSize.width) / 2, y: margin + 8), withAttributes: footerAttrs)
+
+        // Draw margin guide — thin gray border showing the safe area boundary
+        ctx.setStrokeColor(CGColor(gray: 0.85, alpha: 1))
+        ctx.setLineWidth(0.5)
+        ctx.stroke(CGRect(x: margin, y: margin, width: w - margin * 2, height: h - margin * 2))
     }
 
     /// Draw the back — white background, grayscale ramp, text, fine lines
+    /// Uses safe margins (24px = ~2mm) to avoid Evolis non-printable border area
     private func drawTestCardBack(in ctx: CGContext, size: CGSize) {
         let w = size.width
         let h = size.height
+
+        // Safe margins
+        let margin: CGFloat = 24
 
         // White background
         ctx.setFillColor(CGColor.white)
         ctx.fill(CGRect(origin: .zero, size: size))
 
-        // Grayscale ramp
+        // Grayscale ramp (inside safe area)
         let rampCount = 8
-        let rampW = (w - 160) / CGFloat(rampCount)
+        let rampPadding: CGFloat = margin + 40
+        let rampW = (w - rampPadding * 2) / CGFloat(rampCount)
         for i in 0..<rampCount {
             let gray = CGFloat(i) / CGFloat(rampCount - 1)
             ctx.setFillColor(CGColor(gray: gray, alpha: 1))
-            ctx.fill(CGRect(x: 80 + rampW * CGFloat(i), y: h / 2 + 40, width: rampW, height: 40))
+            ctx.fill(CGRect(x: rampPadding + rampW * CGFloat(i), y: h / 2 + 40, width: rampW, height: 36))
         }
 
         // Text
@@ -578,24 +592,30 @@ struct PrintTestView: View {
         let textSize = text.size(withAttributes: monoAttrs)
         text.draw(at: CGPoint(x: (w - textSize.width) / 2, y: h / 2 - 10), withAttributes: monoAttrs)
 
-        // Fine lines
+        // Fine lines (inside safe area)
+        let lineInset: CGFloat = margin + 60
         for (i, lineWidth) in [2.0, 1.0].enumerated() {
             ctx.setStrokeColor(CGColor(gray: 0, alpha: 1))
             ctx.setLineWidth(lineWidth)
             let y = h / 2 - 50 - CGFloat(i) * 25
-            ctx.move(to: CGPoint(x: 120, y: y))
-            ctx.addLine(to: CGPoint(x: w - 120, y: y))
+            ctx.move(to: CGPoint(x: lineInset, y: y))
+            ctx.addLine(to: CGPoint(x: w - lineInset, y: y))
             ctx.strokePath()
         }
 
-        // Footer
+        // Footer (inside safe area)
         let footerAttrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 14),
             .foregroundColor: NSColor.gray
         ]
         let footer = "diplomate.ga" as NSString
         let footerSize = footer.size(withAttributes: footerAttrs)
-        footer.draw(at: CGPoint(x: (w - footerSize.width) / 2, y: 20), withAttributes: footerAttrs)
+        footer.draw(at: CGPoint(x: (w - footerSize.width) / 2, y: margin + 8), withAttributes: footerAttrs)
+
+        // Draw margin guide
+        ctx.setStrokeColor(CGColor(gray: 0.85, alpha: 1))
+        ctx.setLineWidth(0.5)
+        ctx.stroke(CGRect(x: margin, y: margin, width: w - margin * 2, height: h - margin * 2))
     }
 
     // MARK: - Helpers
