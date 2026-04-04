@@ -117,7 +117,6 @@ final class PrinterService {
     private var printerHandle: UnsafeMutableRawPointer?
 
     /// CUPS queue name for the connected printer (used for lp -d)
-    private var connectedCupsName: String?
     
     // UserDefaults key for persisting last printer
     private let lastPrinterKey = "AgentMacOS.LastConnectedPrinter"
@@ -186,18 +185,18 @@ final class PrinterService {
     /// Connect to a printer by name
     func connect(printerName: String) -> Bool {
         disconnect()
-        
+
+        // Use evolis_open() exactly like EasyCard (AUTO mode).
         printerHandle = evolis_open(printerName)
-        
+
         guard printerHandle != nil else {
             lastError = "Failed to connect to \(printerName)"
             isConnected = false
             return false
         }
-        
+
         isConnected = true
         lastError = nil
-        connectedCupsName = printerName
 
         // Save for auto-reconnect
         lastConnectedPrinterName = printerName
@@ -217,7 +216,6 @@ final class PrinterService {
         }
         isConnected = false
         connectedPrinter = nil
-        connectedCupsName = nil
         ribbonInfo = nil
         // Note: We keep lastConnectedPrinterName for next auto-reconnect
     }
@@ -285,10 +283,10 @@ final class PrinterService {
             throw PrintError.imageConversionFailed
         }
         print("🖨️ [PrinterService] Front BMP size: \(frontData.count) bytes")
-        
+
         let backData = backImage?.bmpData()
-        if backData != nil {
-            print("🖨️ [PrinterService] Back BMP size: \(backData!.count) bytes")
+        if let backData = backData {
+            print("🖨️ [PrinterService] Back BMP size: \(backData.count) bytes")
         }
         
         // Execute ALL SDK calls on a background serial queue
@@ -306,8 +304,7 @@ final class PrinterService {
                         nfcPayload: nfcPayload,
                         outputTray: outputTray,
                         duplexType: duplexType,
-                        magTracks: magTracks,
-                        cupsName: self.connectedCupsName
+                        magTracks: magTracks
                     )
                     
                     // Refresh printer info on the main actor after successful print
@@ -330,20 +327,12 @@ final class PrinterService {
         nfcPayload: NFCPayload?,
         outputTray: OutputTrayOption,
         duplexType: DuplexType,
-        magTracks: [Int: String]?,
-        cupsName: String?
+        magTracks: [Int: String]?
     ) throws {
-        // Reserve printer session
-        // NOTE: evolis_reserve() returns a session ID (> 0) on success,
-        //       NOT EVOLIS_RC_OK. Use EVOLIS_SESSION_IS_OK(s) → (s > 0).
+        // Reserve session — matching EasyCard exactly
         print("🖨️ [PrinterService] Reserving printer session...")
-        let reserveResult = evolis_reserve(handle, 0, 10000)
-
-        guard reserveResult > 0 else {
-             print("❌ [PrinterService] Failed to reserve session: \(reserveResult)")
-             throw PrintError.sessionReservationFailed(code: reserveResult)
-        }
-        print("✅ [PrinterService] Session reserved (ID: \(reserveResult))")
+        let reserveResult = evolis_reserve(handle, 0, 5000)
+        print("🖨️ [PrinterService] Reserve result: \(reserveResult)")
         
         defer {
             print("🖨️ [PrinterService] Releasing printer session...")
@@ -374,21 +363,13 @@ final class PrinterService {
         evolis_set_output_tray(handle, outputTray.evoValue)
         evolis_set_error_tray(handle, EVOLIS_OT_ERROR)
         
-        // 4. Initialize print session using driver settings
-        // evolis_print_init_from_driver_settings() loads ALL settings from the
-        // CUPS driver (ribbon type, paper size, etc.)
-        print("🖨️ [PrinterService] Step 4/8: Calling evolis_print_init_from_driver_settings...")
+        // 4. Initialize print session using driver settings (matches EasyCard)
+        print("🖨️ [PrinterService] Step 4/8: Initializing print session...")
         let initResult = evolis_print_init_from_driver_settings(handle)
         guard initResult == EVOLIS_RC_OK.rawValue else {
             print("❌ [PrinterService] Print init failed with code: \(initResult)")
             throw PrintError.initFailed(code: initResult)
         }
-
-        // Override orientation: the CUPS PPD defaults to PORTRAIT, but our
-        // BMP images are landscape (1016×648). Without this, the SDK maps
-        // 1016px into a 648px portrait viewport → 63% visible = cropping.
-        evolis_print_set_setting(handle, EVOSETTINGS_KE_Orientation, "LANDSCAPE_CC90")
-        print("🖨️ [PrinterService] Orientation set to LANDSCAPE_CC90")
 
         // 5. Configure duplex settings if back image is provided
         if backData != nil {
@@ -453,26 +434,32 @@ final class PrinterService {
 
         // 8. Set images and execute print
         print("🖨️ [PrinterService] Step 8/8: Setting images and printing...")
-        
-        // Set front image
-        print("🖨️ [PrinterService] Setting front image (\(frontData.count) bytes)...")
-        let frontResult = frontData.withUnsafeBytes { rawPtr -> Int32 in
-            let ptr = rawPtr.baseAddress?.assumingMemoryBound(to: CChar.self)
-            return evolis_print_set_imageb(handle, EVOLIS_FA_FRONT, ptr, frontData.count)
-        }
+
+        // Save BMP files and use evolis_print_set_imagep (path-based) — this
+        // matches ALL official SDK examples (C, Python, Java). The path-based
+        // method lets the SDK read the BMP file directly.
+        let tmpDir = NSTemporaryDirectory() + "evolis_print"
+        try? FileManager.default.createDirectory(atPath: tmpDir, withIntermediateDirectories: true)
+
+        let frontPath = tmpDir + "/front.bmp"
+        let backPath = tmpDir + "/back.bmp"
+
+        try frontData.write(to: URL(fileURLWithPath: frontPath))
+        print("🖨️ [PrinterService] Front BMP saved: \(frontPath) (\(frontData.count) bytes)")
+
+        let frontResult = evolis_print_set_imagep(handle, EVOLIS_FA_FRONT, frontPath)
         print("🖨️ [PrinterService] Front image result: \(frontResult)")
         guard frontResult == EVOLIS_RC_OK.rawValue else {
             print("❌ [PrinterService] Set front image failed with code: \(frontResult)")
             throw PrintError.setImageFailed(face: "front", code: frontResult)
         }
-        
+
         // Set back image if provided
         if let backData = backData {
-            print("🖨️ [PrinterService] Setting back image (\(backData.count) bytes)...")
-            let backResult = backData.withUnsafeBytes { rawPtr -> Int32 in
-                let ptr = rawPtr.baseAddress?.assumingMemoryBound(to: CChar.self)
-                return evolis_print_set_imageb(handle, EVOLIS_FA_BACK, ptr, backData.count)
-            }
+            try backData.write(to: URL(fileURLWithPath: backPath))
+            print("🖨️ [PrinterService] Back BMP saved: \(backPath) (\(backData.count) bytes)")
+
+            let backResult = evolis_print_set_imagep(handle, EVOLIS_FA_BACK, backPath)
             print("🖨️ [PrinterService] Back image result: \(backResult)")
             guard backResult == EVOLIS_RC_OK.rawValue else {
                 print("❌ [PrinterService] Set back image failed with code: \(backResult)")
@@ -480,107 +467,25 @@ final class PrinterService {
             }
         }
         
-        // Check printer state before executing
-        print("🖨️ [PrinterService] Checking printer state...")
-        var majorState: evolis_major_state_t = EVOLIS_MJ_OFF
-        var minorState: evolis_minor_state_t = EVOLIS_MI_PRINTER_UNKNOWN
-        let stateResult = evolis_get_state(handle, &majorState, &minorState)
-        if stateResult == EVOLIS_RC_OK.rawValue {
-            let majorStr = String(cString: evolis_get_major_string(majorState))
-            let minorStr = String(cString: evolis_get_minor_string(minorState))
-            print("🖨️ [PrinterService] Printer state - Major: \(majorStr), Minor: \(minorStr)")
-        } else {
-            print("⚠️ [PrinterService] Could not get printer state: \(stateResult)")
-        }
-        
-        // Log all current print settings for diagnostics
-        print("🖨️ [PrinterService] Current settings dump:")
-        let settingsToCheck: [(evosettings_key_e, String)] = [
-            (EVOSETTINGS_KE_GRibbonType, "GRibbonType"),
-            (EVOSETTINGS_KE_Orientation, "Orientation"),
-            (EVOSETTINGS_KE_FPageRotate180, "FPageRotate180"),
-            (EVOSETTINGS_KE_BPageRotate180, "BPageRotate180"),
-            (EVOSETTINGS_KE_Duplex, "Duplex"),
-            (EVOSETTINGS_KE_GDuplexType, "GDuplexType"),
-            (EVOSETTINGS_KE_Resolution, "Resolution"),
-        ]
-        for (key, name) in settingsToCheck {
-            var valuePtr: UnsafePointer<CChar>?
-            let found = evolis_print_get_setting(handle, key, &valuePtr)
-            let val = found && valuePtr != nil ? String(cString: valuePtr!) : "(not set)"
-            print("   \(name) = \(val)")
-        }
-        let settingCount = evolis_print_get_setting_count(handle)
-        print("🖨️ [PrinterService] Total settings count: \(settingCount)")
+        // Execute print via evolis_print_exec() — direct USB path.
+        // NOTE: EPS2 (evoservice) must be stopped, otherwise error 1700.
+        // Stop with: sudo launchctl unload /Library/LaunchDaemons/com.evolis.evoservice.plist
+        print("🖨️ [PrinterService] Executing print via evolis_print_exec...")
+        let printResult = evolis_print_exec(handle)
+        print("🖨️ [PrinterService] Print exec result: \(printResult)")
 
-        // ===================================================================
-        // macOS printing: evolis_print_exec/exect doesn't send to
-        // the physical printer on macOS. The working flow is:
-        // 1. Generate PRN file via evolis_print_to_file()
-        // 2. Send PRN to printer via CUPS: lp -d PRINTER -o raw FILE.prn
-        // ===================================================================
-
-        let prnPath = NSTemporaryDirectory() + "evolis_print_\(UUID().uuidString).prn"
-        print("🖨️ [PrinterService] Generating PRN file: \(prnPath)")
-        let fileResult = evolis_print_to_file(handle, prnPath)
-        print("🖨️ [PrinterService] PRN file result: \(fileResult)")
-
-        guard fileResult >= 0 else {
-            print("❌ [PrinterService] Failed to generate PRN file: \(fileResult)")
-            throw PrintError.printFailed(code: fileResult)
+        if printResult != EVOLIS_RC_OK.rawValue {
+            let errorMsg: String
+            if printResult == 1700 {
+                errorMsg = "EPS2 (Evolis Print Suite) bloque l'impression. Arrêtez EPS2 avec : sudo launchctl unload /Library/LaunchDaemons/com.evolis.evoservice.plist"
+            } else {
+                errorMsg = "Print failed with code: \(printResult)"
+            }
+            print("❌ [PrinterService] \(errorMsg)")
+            throw PrintError.printFailed(code: Int32(printResult))
         }
 
-        let fileSize = (try? FileManager.default.attributesOfItem(atPath: prnPath)[.size] as? Int) ?? 0
-        print("🖨️ [PrinterService] PRN file size: \(fileSize) bytes")
-
-        guard fileSize > 0 else {
-            print("❌ [PrinterService] PRN file is empty")
-            throw PrintError.printFailed(code: -1)
-        }
-
-        // Determine CUPS queue name
-        guard let cupsQueue = cupsName ?? self.lastConnectedPrinterName else {
-            print("❌ [PrinterService] No CUPS printer name available")
-            throw PrintError.notConnected
-        }
-
-        // Enable the CUPS queue (it may be paused to prevent SDK conflicts)
-        print("🖨️ [PrinterService] Enabling CUPS queue '\(cupsQueue)'...")
-        let enableProcess = Process()
-        enableProcess.executableURL = URL(fileURLWithPath: "/usr/sbin/cupsenable")
-        enableProcess.arguments = [cupsQueue]
-        try? enableProcess.run()
-        enableProcess.waitUntilExit()
-
-        // Send PRN to printer via lp
-        print("🖨️ [PrinterService] Sending PRN to CUPS: lp -d \(cupsQueue) -o raw \(prnPath)")
-        let lpProcess = Process()
-        lpProcess.executableURL = URL(fileURLWithPath: "/usr/bin/lp")
-        lpProcess.arguments = ["-d", cupsQueue, "-o", "raw", prnPath]
-
-        let lpPipe = Pipe()
-        lpProcess.standardOutput = lpPipe
-        lpProcess.standardError = lpPipe
-
-        try lpProcess.run()
-        lpProcess.waitUntilExit()
-
-        let lpOutput = String(data: lpPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-        print("🖨️ [PrinterService] lp output: \(lpOutput)")
-        print("🖨️ [PrinterService] lp exit code: \(lpProcess.terminationStatus)")
-
-        guard lpProcess.terminationStatus == 0 else {
-            print("❌ [PrinterService] lp failed with exit code: \(lpProcess.terminationStatus)")
-            throw PrintError.printFailed(code: Int32(lpProcess.terminationStatus))
-        }
-
-        // Clean up PRN file after a delay (give CUPS time to read it)
-        DispatchQueue.global().asyncAfter(deadline: .now() + 10) {
-            try? FileManager.default.removeItem(atPath: prnPath)
-            print("🧹 [PrinterService] Cleaned up PRN file: \(prnPath)")
-        }
-
-        print("✅ [PrinterService] Print job sent to CUPS successfully")
+        print("✅ [PrinterService] Print job executed successfully")
     }
     
     // MARK: - Magnetic Encoding
@@ -765,8 +670,8 @@ extension NSImage {
     /// - 300 DPI (11811 pixels/meter)
     /// - Dimensions: 1016×648 (CR-80 card, landscape)
     ///
-    /// Note: The SDK handles orientation via EVOSETTINGS_KE_Orientation setting.
-    /// Set to "PORTRAIT" to disable the default LANDSCAPE_CC90 rotation.
+    /// Note: Ensure a FULL-PANEL ribbon (YMCKO) is installed for full card coverage.
+    /// Short-panel ribbons (YMCKOS) only print ~60% of the card width.
     func bmpData() -> Data? {
         let targetWidth = 1016
         let targetHeight = 648
