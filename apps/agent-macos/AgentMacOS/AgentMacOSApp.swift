@@ -38,28 +38,11 @@ struct AgentMacOSApp: App {
         case .success:
             print("[AgentMacOS] Authenticated with Convex via Better Auth")
             appState.isAuthenticated = true
-            // Load user data and org memberships
-            await ConvexService.shared.loadCurrentUser()
-            autoSelectOrg()
+            // User & org loading happens in MainView's .task
         case .failure(let error):
             print("[AgentMacOS] No cached session or auth failed: \(error)")
             appState.isAuthenticated = false
         }
         appState.isAuthLoading = false
-    }
-
-    /// Auto-select the first available organization
-    private func autoSelectOrg() {
-        let service = ConvexService.shared
-        // Wait briefly for subscriptions to deliver data
-        Task {
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
-            if appState.selectedOrgId == nil {
-                if let firstOrg = service.availableOrgs.first {
-                    appState.selectedOrgId = firstOrg._id
-                    print("[AgentMacOS] Auto-selected org: \(firstOrg.name)")
-                }
-            }
-        }
     }
 }

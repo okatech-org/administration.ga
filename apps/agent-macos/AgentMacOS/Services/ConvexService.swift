@@ -36,13 +36,17 @@ struct ConvexMembership: Identifiable, Codable {
 /// User from Convex
 struct ConvexUser: Identifiable, Codable {
     let _id: String
-    let email: String
-    let name: String
+    let email: String?
+    let name: String?
     let avatarUrl: String?
-    let isSuperadmin: Bool
-    let isActive: Bool
-    
+    let isSuperadmin: Bool?
+    let isActive: Bool?
+
     var id: String { _id }
+
+    var displayName: String {
+        name ?? email ?? "Utilisateur"
+    }
 }
 
 /// Profile identity info

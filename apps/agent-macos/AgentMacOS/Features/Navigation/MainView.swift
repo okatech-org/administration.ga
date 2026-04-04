@@ -52,43 +52,48 @@ struct MainView: View {
         }
         .frame(minWidth: 1000, minHeight: 700)
         .task {
-            // Load user data when authenticated content appears
-            await ConvexService.shared.loadCurrentUser()
-            // Auto-select first org if none selected
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
-            if appState.selectedOrgId == nil {
-                if let firstOrg = ConvexService.shared.availableOrgs.first {
-                    appState.selectedOrgId = firstOrg._id
-                }
-            }
+            await appState.loadUserAndOrgs()
         }
     }
 
     @ViewBuilder
     private var orgPicker: some View {
-        let orgs = ConvexService.shared.availableOrgs
-        if orgs.count > 1 {
+        if appState.isLoadingOrgs {
+            HStack {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Chargement...")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+        } else if appState.availableOrgs.count > 1 {
             @Bindable var state = appState
             Picker("Organisation", selection: $state.selectedOrgId) {
                 Text("Sélectionner...").tag(nil as String?)
-                ForEach(orgs, id: \._id) { org in
+                ForEach(appState.availableOrgs, id: \._id) { org in
                     Text(org.name).tag(org._id as String?)
                 }
             }
             .pickerStyle(.menu)
             .labelsHidden()
-        } else if let org = orgs.first {
-            HStack {
+        } else if let org = appState.availableOrgs.first {
+            HStack(spacing: 8) {
                 Image(systemName: "building.2")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.blue)
                 Text(org.name)
                     .font(.subheadline.weight(.medium))
+                    .lineLimit(1)
                 Spacer()
             }
-            .onAppear {
-                if appState.selectedOrgId == nil {
-                    appState.selectedOrgId = org._id
-                }
+        } else {
+            HStack {
+                Image(systemName: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+                Text("Aucune organisation")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
             }
         }
     }
@@ -165,17 +170,17 @@ struct MainView: View {
 struct PlaceholderView: View {
     let title: String
     let icon: String
-    
+
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: icon)
                 .font(.system(size: 48))
                 .foregroundStyle(.secondary)
-            
+
             Text(title)
                 .font(.title)
                 .fontWeight(.medium)
-            
+
             Text("Coming soon...")
                 .font(.subheadline)
                 .foregroundStyle(.tertiary)
