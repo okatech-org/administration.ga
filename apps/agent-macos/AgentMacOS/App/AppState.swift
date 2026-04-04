@@ -127,9 +127,10 @@ final class AppState {
         )
         .receive(on: DispatchQueue.main)
         .sink(
-            receiveCompletion: { completion in
+            receiveCompletion: { [weak self] completion in
                 if case .failure(let error) = completion {
                     print("[AppState] Memberships subscription error: \(error)")
+                    self?.isLoadingOrgs = false
                 }
             },
             receiveValue: { [weak self] memberships in

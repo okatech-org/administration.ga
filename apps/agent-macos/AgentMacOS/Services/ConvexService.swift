@@ -23,13 +23,14 @@ struct ConvexOrg: Identifiable, Codable, Hashable {
 }
 
 /// Membership with org details
+/// Fields match the actual Convex `memberships` table + joined `org`
 struct ConvexMembership: Identifiable, Codable {
     let _id: String
     let userId: String
     let orgId: String
-    let role: String
+    let positionId: String?
     let org: ConvexOrg?
-    
+
     var id: String { _id }
 }
 
