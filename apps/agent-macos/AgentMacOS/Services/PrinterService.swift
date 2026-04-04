@@ -399,13 +399,10 @@ final class PrinterService {
             throw PrintError.initFailed(code: initResult)
         }
         
-        // 5. Set orientation to PORTRAIT to prevent SDK from applying
-        //    the default LANDSCAPE_CC90 rotation to our landscape BMP.
-        //    Also rotate 180° to correct the upside-down output.
-        print("🖨️ [PrinterService] Step 5/9: Setting orientation...")
-        evolis_print_set_setting(handle, EVOSETTINGS_KE_Orientation, "PORTRAIT")
-        evolis_print_set_setting(handle, EVOSETTINGS_KE_FPageRotate180, "ON")
-        evolis_print_set_setting(handle, EVOSETTINGS_KE_BPageRotate180, "ON")
+        // 5. Use default LANDSCAPE_CC90 orientation — it correctly maps
+        //    BMP width (1016) to card long edge and height (648) to short edge.
+        //    The 180° flip is handled in bmpData() pixel order.
+        print("🖨️ [PrinterService] Step 5/9: Setting orientation (LANDSCAPE_CC90 default)...")
 
         // 6. Configure duplex settings if back image is provided
         if backData != nil {
@@ -859,14 +856,20 @@ extension NSImage {
         bmpData.append(contentsOf: withUnsafeBytes(of: UInt32(0).littleEndian) { Array($0) })   // Colors used
         bmpData.append(contentsOf: withUnsafeBytes(of: UInt32(0).littleEndian) { Array($0) })   // Important colors
 
-        // -- Pixel data: RGBX (32-bit) → BGR (24-bit), bottom-up row order --
-        // CGContext stores rows top-to-bottom in memory. BMP bottom-up means we write
-        // the LAST CGContext row first, working upward.
+        // -- Pixel data: RGBX (32-bit) → BGR (24-bit), bottom-up + 180° flip --
+        //
+        // The Evolis SDK with LANDSCAPE_CC90 rotates the BMP CCW 90° which
+        // results in upside-down content. To compensate, we flip the image
+        // 180° by reversing BOTH row order and column order.
+        //
+        // Normal bottom-up BMP: rows from H-1→0, cols from 0→W-1
+        // With 180° flip:       rows from 0→H-1, cols from W-1→0
+        //
         let srcPtr = pixelData.assumingMemoryBound(to: UInt8.self)
 
-        for row in stride(from: targetHeight - 1, through: 0, by: -1) {
+        for row in 0..<targetHeight {
             let srcRowOffset = row * bytesPerRowSrc
-            for col in 0..<targetWidth {
+            for col in stride(from: targetWidth - 1, through: 0, by: -1) {
                 let srcPixelOffset = srcRowOffset + col * 4
                 let r = srcPtr[srcPixelOffset]      // R
                 let g = srcPtr[srcPixelOffset + 1]  // G
@@ -878,7 +881,7 @@ extension NSImage {
             }
         }
 
-        print("✅ [bmpData] Created Evolis-compatible BMP: \(bmpData.count) bytes (1016×648, bottom-up, 24-bit, 300 DPI)")
+        print("✅ [bmpData] Created Evolis-compatible BMP: \(bmpData.count) bytes (1016×648, bottom-up, 180° flip, 300 DPI)")
         return bmpData
     }
 }
