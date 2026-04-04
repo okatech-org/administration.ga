@@ -234,152 +234,85 @@ struct PrintTestView: View {
         }
     }
 
-    /// Test card front design — CR80 proportions
+    /// Test card front — minimal design, white background to save ink
     private var testCardFront: some View {
         ZStack {
-            // Background gradient
-            LinearGradient(
-                colors: [Color(red: 0.0, green: 0.45, blue: 0.25), Color(red: 0.0, green: 0.3, blue: 0.15)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            Color.white
 
             VStack(spacing: 0) {
-                // Header
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("RÉPUBLIQUE GABONAISE")
-                            .font(.system(size: 7, weight: .bold))
-                            .foregroundStyle(.white)
-                        Text("Consulat Général du Gabon")
-                            .font(.system(size: 5.5))
-                            .foregroundStyle(.white.opacity(0.8))
-                    }
-                    Spacer()
-                    Image(systemName: "checkmark.seal.fill")
-                        .font(.system(size: 18))
-                        .foregroundStyle(.yellow)
-                }
-                .padding(.horizontal, 12)
-                .padding(.top, 10)
+                // Thin colored header bar
+                Rectangle()
+                    .fill(Color(red: 0.0, green: 0.45, blue: 0.25))
+                    .frame(height: 16)
 
                 Spacer()
 
-                // Center content
-                HStack(spacing: 12) {
-                    // Photo placeholder
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(.white.opacity(0.2))
-                        .frame(width: 55, height: 70)
-                        .overlay(
-                            Image(systemName: "person.fill")
-                                .font(.system(size: 24))
-                                .foregroundStyle(.white.opacity(0.5))
-                        )
+                VStack(spacing: 6) {
+                    Text("CARTE DE TEST")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.black)
 
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("CARTE DE TEST")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(.yellow)
-                        Text("Agent macOS")
-                            .font(.system(size: 7, weight: .semibold))
-                            .foregroundStyle(.white)
+                    Text("Agent macOS — \(Date.now.formatted(date: .abbreviated, time: .omitted))")
+                        .font(.system(size: 6))
+                        .foregroundStyle(.gray)
 
-                        Spacer().frame(height: 4)
-
-                        Group {
-                            Text("N° CG-TEST-2026-001")
-                            Text("Émise le: \(Date.now.formatted(date: .abbreviated, time: .omitted))")
-                            Text("Expire le: 31/12/2026")
+                    // Small color swatches
+                    HStack(spacing: 3) {
+                        ForEach(["red", "green", "blue", "yellow", "cyan", "magenta", "black"], id: \.self) { c in
+                            colorForName(c)
+                                .frame(width: 18, height: 10)
                         }
-                        .font(.system(size: 5.5))
-                        .foregroundStyle(.white.opacity(0.8))
                     }
-
-                    Spacer()
                 }
-                .padding(.horizontal, 12)
 
                 Spacer()
 
-                // Footer
-                HStack {
-                    Text("TEST — IMPRESSION UNIQUEMENT")
-                        .font(.system(size: 5, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.5))
-                    Spacer()
-                }
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
+                // Thin footer
+                Text("TEST IMPRESSION")
+                    .font(.system(size: 5))
+                    .foregroundStyle(.gray)
+                    .padding(.bottom, 6)
             }
         }
     }
 
-    /// Test card back design
+    /// Test card back — grayscale + text check on white
     private var testCardBack: some View {
         ZStack {
-            Color(red: 0.95, green: 0.95, blue: 0.92)
+            Color.white
 
             VStack(spacing: 8) {
-                // Color test bars
-                HStack(spacing: 0) {
-                    ForEach(["red", "green", "blue", "yellow", "cyan", "magenta", "black", "white"], id: \.self) { colorName in
-                        colorForName(colorName)
-                            .frame(maxWidth: .infinity, maxHeight: 14)
-                    }
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 2))
-                .padding(.horizontal, 12)
-                .padding(.top, 12)
+                Spacer()
 
                 // Grayscale ramp
                 HStack(spacing: 0) {
-                    ForEach(0..<16, id: \.self) { i in
-                        Color(white: Double(i) / 15.0)
+                    ForEach(0..<8, id: \.self) { i in
+                        Color(white: Double(i) / 7.0)
                             .frame(maxWidth: .infinity, maxHeight: 10)
                     }
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 2))
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 20)
 
-                Spacer()
+                // Text
+                Text("ABCDEFGHIJKLM 0123456789")
+                    .font(.system(size: 6, design: .monospaced))
+                    .foregroundStyle(.black)
 
-                // Text test
-                VStack(spacing: 2) {
-                    Text("Test d'impression Agent macOS")
-                        .font(.system(size: 7, weight: .bold))
-                        .foregroundStyle(.black)
-                    Text("ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789")
-                        .font(.system(size: 5, weight: .regular, design: .monospaced))
-                        .foregroundStyle(.black)
-                    Text("Vérifiez la qualité des couleurs, du texte et de l'alignement")
-                        .font(.system(size: 5))
-                        .foregroundStyle(.gray)
-                }
-
-                Spacer()
-
-                // Fine lines test
-                VStack(spacing: 2) {
-                    ForEach([1.0, 0.5, 0.25], id: \.self) { width in
+                // Fine lines
+                VStack(spacing: 3) {
+                    ForEach([1.0, 0.5], id: \.self) { w in
                         Rectangle()
                             .fill(.black)
-                            .frame(height: width)
-                            .padding(.horizontal, 20)
+                            .frame(height: w)
+                            .padding(.horizontal, 30)
                     }
                 }
 
-                HStack {
-                    Text("diplomate.ga")
-                        .font(.system(size: 5))
-                        .foregroundStyle(.gray)
-                    Spacer()
-                    Text("v1.0")
-                        .font(.system(size: 5))
-                        .foregroundStyle(.gray)
-                }
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
+                Text("diplomate.ga")
+                    .font(.system(size: 5))
+                    .foregroundStyle(.gray)
+
+                Spacer()
             }
         }
     }
@@ -555,130 +488,103 @@ struct PrintTestView: View {
         return image
     }
 
-    /// Draw the front of the test card at full resolution
+    /// Draw the front — white background, thin green bar, centered text, small color swatches
     private func drawTestCardFront(in ctx: CGContext, size: CGSize) {
         let w = size.width
         let h = size.height
 
-        // Background gradient (green)
-        let colors = [
-            CGColor(red: 0.0, green: 0.45, blue: 0.25, alpha: 1.0),
-            CGColor(red: 0.0, green: 0.3, blue: 0.15, alpha: 1.0)
-        ]
-        let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                                   colors: colors as CFArray,
-                                   locations: [0, 1])!
-        ctx.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: w, y: h), options: [])
-
-        // Header text
-        let headerAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 28, weight: .bold),
-            .foregroundColor: NSColor.white
-        ]
-        let title = "RÉPUBLIQUE GABONAISE" as NSString
-        title.draw(at: CGPoint(x: 40, y: h - 60), withAttributes: headerAttrs)
-
-        let subAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 20),
-            .foregroundColor: NSColor.white.withAlphaComponent(0.8)
-        ]
-        let subtitle = "Consulat Général du Gabon" as NSString
-        subtitle.draw(at: CGPoint(x: 40, y: h - 90), withAttributes: subAttrs)
-
-        // Photo placeholder
-        ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 0.2))
-        ctx.fill(CGRect(x: 40, y: h - 370, width: 200, height: 250))
-
-        // Name
-        let nameAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 32, weight: .bold),
-            .foregroundColor: NSColor(red: 1, green: 0.85, blue: 0, alpha: 1)
-        ]
-        ("CARTE DE TEST" as NSString).draw(at: CGPoint(x: 270, y: h - 170), withAttributes: nameAttrs)
-
-        let infoAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 22, weight: .semibold),
-            .foregroundColor: NSColor.white
-        ]
-        ("Agent macOS" as NSString).draw(at: CGPoint(x: 270, y: h - 205), withAttributes: infoAttrs)
-
-        let detailAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 18),
-            .foregroundColor: NSColor.white.withAlphaComponent(0.8)
-        ]
-        let dateStr = Date.now.formatted(date: .abbreviated, time: .omitted)
-        ("N° CG-TEST-2026-001" as NSString).draw(at: CGPoint(x: 270, y: h - 260), withAttributes: detailAttrs)
-        ("Émise le: \(dateStr)" as NSString).draw(at: CGPoint(x: 270, y: h - 290), withAttributes: detailAttrs)
-        ("Expire le: 31/12/2026" as NSString).draw(at: CGPoint(x: 270, y: h - 320), withAttributes: detailAttrs)
-
-        // Footer
-        let footerAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 14),
-            .foregroundColor: NSColor.white.withAlphaComponent(0.5)
-        ]
-        ("TEST — IMPRESSION UNIQUEMENT" as NSString).draw(at: CGPoint(x: 40, y: 20), withAttributes: footerAttrs)
-    }
-
-    /// Draw the back of the test card at full resolution
-    private func drawTestCardBack(in ctx: CGContext, size: CGSize) {
-        let w = size.width
-        let h = size.height
-
-        // Background
-        ctx.setFillColor(CGColor(red: 0.95, green: 0.95, blue: 0.92, alpha: 1.0))
+        // White background
+        ctx.setFillColor(CGColor.white)
         ctx.fill(CGRect(origin: .zero, size: size))
 
-        // Color bars
-        let barColors: [CGColor] = [
+        // Thin green header bar (40px out of 648)
+        ctx.setFillColor(CGColor(red: 0, green: 0.45, blue: 0.25, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: h - 40, width: w, height: 40))
+
+        // Title
+        let titleAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 36, weight: .bold),
+            .foregroundColor: NSColor.black
+        ]
+        let title = "CARTE DE TEST" as NSString
+        let titleSize = title.size(withAttributes: titleAttrs)
+        title.draw(at: CGPoint(x: (w - titleSize.width) / 2, y: h / 2 + 30), withAttributes: titleAttrs)
+
+        // Subtitle
+        let subAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 20),
+            .foregroundColor: NSColor.gray
+        ]
+        let dateStr = Date.now.formatted(date: .abbreviated, time: .omitted)
+        let sub = "Agent macOS — \(dateStr)" as NSString
+        let subSize = sub.size(withAttributes: subAttrs)
+        sub.draw(at: CGPoint(x: (w - subSize.width) / 2, y: h / 2 - 5), withAttributes: subAttrs)
+
+        // Small color swatches centered
+        let swatchColors: [CGColor] = [
             .init(red: 1, green: 0, blue: 0, alpha: 1),
-            .init(red: 0, green: 1, blue: 0, alpha: 1),
+            .init(red: 0, green: 0.7, blue: 0, alpha: 1),
             .init(red: 0, green: 0, blue: 1, alpha: 1),
             .init(red: 1, green: 1, blue: 0, alpha: 1),
             .init(red: 0, green: 1, blue: 1, alpha: 1),
             .init(red: 1, green: 0, blue: 1, alpha: 1),
             .init(red: 0, green: 0, blue: 0, alpha: 1),
-            .init(red: 1, green: 1, blue: 1, alpha: 1),
         ]
-        let barWidth = (w - 80) / CGFloat(barColors.count)
-        for (i, color) in barColors.enumerated() {
+        let swatchW: CGFloat = 60
+        let swatchH: CGFloat = 30
+        let gap: CGFloat = 10
+        let totalW = CGFloat(swatchColors.count) * swatchW + CGFloat(swatchColors.count - 1) * gap
+        let startX = (w - totalW) / 2
+        let swatchY = h / 2 - 60
+        for (i, color) in swatchColors.enumerated() {
             ctx.setFillColor(color)
-            ctx.fill(CGRect(x: 40 + barWidth * CGFloat(i), y: h - 80, width: barWidth, height: 50))
+            ctx.fill(CGRect(x: startX + CGFloat(i) * (swatchW + gap), y: swatchY, width: swatchW, height: swatchH))
         }
+
+        // Footer
+        let footerAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 14),
+            .foregroundColor: NSColor.lightGray
+        ]
+        let footer = "TEST IMPRESSION" as NSString
+        let footerSize = footer.size(withAttributes: footerAttrs)
+        footer.draw(at: CGPoint(x: (w - footerSize.width) / 2, y: 20), withAttributes: footerAttrs)
+    }
+
+    /// Draw the back — white background, grayscale ramp, text, fine lines
+    private func drawTestCardBack(in ctx: CGContext, size: CGSize) {
+        let w = size.width
+        let h = size.height
+
+        // White background
+        ctx.setFillColor(CGColor.white)
+        ctx.fill(CGRect(origin: .zero, size: size))
 
         // Grayscale ramp
-        for i in 0..<16 {
-            let gray = CGFloat(i) / 15.0
+        let rampCount = 8
+        let rampW = (w - 160) / CGFloat(rampCount)
+        for i in 0..<rampCount {
+            let gray = CGFloat(i) / CGFloat(rampCount - 1)
             ctx.setFillColor(CGColor(gray: gray, alpha: 1))
-            let rampW = (w - 80) / 16.0
-            ctx.fill(CGRect(x: 40 + rampW * CGFloat(i), y: h - 120, width: rampW, height: 30))
+            ctx.fill(CGRect(x: 80 + rampW * CGFloat(i), y: h / 2 + 40, width: rampW, height: 40))
         }
 
-        // Text tests
-        let textAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 24, weight: .bold),
-            .foregroundColor: NSColor.black
-        ]
-        ("Test d'impression Agent macOS" as NSString).draw(at: CGPoint(x: 40, y: h / 2 + 20), withAttributes: textAttrs)
-
+        // Text
         let monoAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedSystemFont(ofSize: 16, weight: .regular),
+            .font: NSFont.monospacedSystemFont(ofSize: 18, weight: .regular),
             .foregroundColor: NSColor.black
         ]
-        ("ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789" as NSString).draw(at: CGPoint(x: 40, y: h / 2 - 10), withAttributes: monoAttrs)
-
-        let smallAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 14),
-            .foregroundColor: NSColor.gray
-        ]
-        ("Vérifiez la qualité des couleurs, du texte et de l'alignement" as NSString).draw(at: CGPoint(x: 40, y: h / 2 - 40), withAttributes: smallAttrs)
+        let text = "ABCDEFGHIJKLM 0123456789" as NSString
+        let textSize = text.size(withAttributes: monoAttrs)
+        text.draw(at: CGPoint(x: (w - textSize.width) / 2, y: h / 2 - 10), withAttributes: monoAttrs)
 
         // Fine lines
-        for (i, lineWidth) in [2.0, 1.0, 0.5].enumerated() {
+        for (i, lineWidth) in [2.0, 1.0].enumerated() {
             ctx.setStrokeColor(CGColor(gray: 0, alpha: 1))
             ctx.setLineWidth(lineWidth)
-            let y = 100 - CGFloat(i) * 20
-            ctx.move(to: CGPoint(x: 80, y: y))
-            ctx.addLine(to: CGPoint(x: w - 80, y: y))
+            let y = h / 2 - 50 - CGFloat(i) * 25
+            ctx.move(to: CGPoint(x: 120, y: y))
+            ctx.addLine(to: CGPoint(x: w - 120, y: y))
             ctx.strokePath()
         }
 
@@ -687,8 +593,9 @@ struct PrintTestView: View {
             .font: NSFont.systemFont(ofSize: 14),
             .foregroundColor: NSColor.gray
         ]
-        ("diplomate.ga" as NSString).draw(at: CGPoint(x: 40, y: 20), withAttributes: footerAttrs)
-        ("v1.0" as NSString).draw(at: CGPoint(x: w - 80, y: 20), withAttributes: footerAttrs)
+        let footer = "diplomate.ga" as NSString
+        let footerSize = footer.size(withAttributes: footerAttrs)
+        footer.draw(at: CGPoint(x: (w - footerSize.width) / 2, y: 20), withAttributes: footerAttrs)
     }
 
     // MARK: - Helpers
