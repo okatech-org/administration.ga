@@ -376,14 +376,19 @@ final class PrinterService {
         
         // 4. Initialize print session using driver settings
         // evolis_print_init_from_driver_settings() loads ALL settings from the
-        // CUPS driver, including orientation, ribbon type, etc. This is what
-        // EasyCard used and it worked correctly.
+        // CUPS driver (ribbon type, paper size, etc.)
         print("🖨️ [PrinterService] Step 4/8: Calling evolis_print_init_from_driver_settings...")
         let initResult = evolis_print_init_from_driver_settings(handle)
         guard initResult == EVOLIS_RC_OK.rawValue else {
             print("❌ [PrinterService] Print init failed with code: \(initResult)")
             throw PrintError.initFailed(code: initResult)
         }
+
+        // Override orientation: the CUPS PPD defaults to PORTRAIT, but our
+        // BMP images are landscape (1016×648). Without this, the SDK maps
+        // 1016px into a 648px portrait viewport → 63% visible = cropping.
+        evolis_print_set_setting(handle, EVOSETTINGS_KE_Orientation, "LANDSCAPE_CC90")
+        print("🖨️ [PrinterService] Orientation set to LANDSCAPE_CC90")
 
         // 5. Configure duplex settings if back image is provided
         if backData != nil {
