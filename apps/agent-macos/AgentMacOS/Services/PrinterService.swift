@@ -374,43 +374,24 @@ final class PrinterService {
         evolis_set_output_tray(handle, outputTray.evoValue)
         evolis_set_error_tray(handle, EVOLIS_OT_ERROR)
         
-        // 4. Initialize print session
-        // Use evolis_print_init() first (auto-detects ribbon).
-        // Fall back to evolis_print_init_with_ribbon() if that fails.
-        // Avoid evolis_print_init_from_driver_settings() — on macOS it reads
-        // CUPS driver settings which may be empty or stale.
-        print("🖨️ [PrinterService] Step 4/8: Initializing print session...")
-        var initResult = evolis_print_init(handle)
-        print("🖨️ [PrinterService] evolis_print_init result: \(initResult)")
-
-        if initResult != EVOLIS_RC_OK.rawValue {
-            // Fallback: init with the detected ribbon type
-            print("⚠️ [PrinterService] print_init failed, trying with ribbon type...")
-            var ribbon = evolis_ribbon_t()
-            if evolis_get_ribbon(handle, &ribbon) == EVOLIS_RC_OK.rawValue {
-                print("🖨️ [PrinterService] Detected ribbon: \(ribbon.type.rawValue)")
-                initResult = evolis_print_init_with_ribbon(handle, ribbon.type)
-                print("🖨️ [PrinterService] evolis_print_init_with_ribbon result: \(initResult)")
-            }
-        }
-
+        // 4. Initialize print session using driver settings
+        // evolis_print_init_from_driver_settings() loads ALL settings from the
+        // CUPS driver, including orientation, ribbon type, etc. This is what
+        // EasyCard used and it worked correctly.
+        print("🖨️ [PrinterService] Step 4/8: Calling evolis_print_init_from_driver_settings...")
+        let initResult = evolis_print_init_from_driver_settings(handle)
         guard initResult == EVOLIS_RC_OK.rawValue else {
             print("❌ [PrinterService] Print init failed with code: \(initResult)")
             throw PrintError.initFailed(code: initResult)
         }
-        
-        // 5. Use default LANDSCAPE_CC90 orientation — it correctly maps
-        //    BMP width (1016) to card long edge and height (648) to short edge.
-        //    The 180° flip is handled in bmpData() pixel order.
-        print("🖨️ [PrinterService] Step 5/9: Setting orientation (LANDSCAPE_CC90 default)...")
 
-        // 6. Configure duplex settings if back image is provided
+        // 5. Configure duplex settings if back image is provided
         if backData != nil {
-            print("🖨️ [PrinterService] Step 6/9: Enabling duplex mode (\(duplexType.rawValue))...")
+            print("🖨️ [PrinterService] Step 5/8: Enabling duplex mode (\(duplexType.rawValue))...")
             evolis_print_set_setting(handle, EVOSETTINGS_KE_Duplex, "HORIZONTAL")
             evolis_print_set_setting(handle, EVOSETTINGS_KE_GDuplexType, duplexType.rawValue)
         } else {
-            print("🖨️ [PrinterService] Step 6/9: Simplex mode (no back image)")
+            print("🖨️ [PrinterService] Step 5/8: Simplex mode (no back image)")
         }
         
         // 6. Magnetic encoding (before printing, as per cardflow standard)
@@ -453,20 +434,20 @@ final class PrinterService {
             }
             print("✅ [PrinterService] Magnetic encoding completed")
         } else {
-            print("🖨️ [PrinterService] Step 7/9: No magnetic tracks to encode")
+            print("🖨️ [PrinterService] Step 6/8: No magnetic tracks to encode")
         }
 
-        // 8. NFC/Contactless encoding (before printing, as per cardflow standard)
+        // 7. NFC/Contactless encoding (before printing, as per cardflow standard)
         if let payload = nfcPayload {
-            print("🖨️ [PrinterService] Step 8/9: NFC encoding...")
+            print("🖨️ [PrinterService] Step 7/8: NFC encoding...")
             try NFCEncodingService.shared.encodeCard(printer: handle, payload: payload)
             print("✅ [PrinterService] NFC encoding completed")
         } else {
-            print("🖨️ [PrinterService] Step 8/9: No NFC payload to encode")
+            print("🖨️ [PrinterService] Step 7/8: No NFC payload to encode")
         }
 
-        // 9. Set images and execute print
-        print("🖨️ [PrinterService] Step 9/9: Setting images and printing...")
+        // 8. Set images and execute print
+        print("🖨️ [PrinterService] Step 8/8: Setting images and printing...")
         
         // Set front image
         print("🖨️ [PrinterService] Setting front image (\(frontData.count) bytes)...")
@@ -856,20 +837,14 @@ extension NSImage {
         bmpData.append(contentsOf: withUnsafeBytes(of: UInt32(0).littleEndian) { Array($0) })   // Colors used
         bmpData.append(contentsOf: withUnsafeBytes(of: UInt32(0).littleEndian) { Array($0) })   // Important colors
 
-        // -- Pixel data: RGBX (32-bit) → BGR (24-bit), bottom-up + 180° flip --
-        //
-        // The Evolis SDK with LANDSCAPE_CC90 rotates the BMP CCW 90° which
-        // results in upside-down content. To compensate, we flip the image
-        // 180° by reversing BOTH row order and column order.
-        //
-        // Normal bottom-up BMP: rows from H-1→0, cols from 0→W-1
-        // With 180° flip:       rows from 0→H-1, cols from W-1→0
-        //
+        // -- Pixel data: RGBX (32-bit) → BGR (24-bit), bottom-up row order --
+        // CGContext stores rows top-to-bottom. BMP bottom-up means we write
+        // the LAST CGContext row first, working upward.
         let srcPtr = pixelData.assumingMemoryBound(to: UInt8.self)
 
-        for row in 0..<targetHeight {
+        for row in stride(from: targetHeight - 1, through: 0, by: -1) {
             let srcRowOffset = row * bytesPerRowSrc
-            for col in stride(from: targetWidth - 1, through: 0, by: -1) {
+            for col in 0..<targetWidth {
                 let srcPixelOffset = srcRowOffset + col * 4
                 let r = srcPtr[srcPixelOffset]      // R
                 let g = srcPtr[srcPixelOffset + 1]  // G
@@ -881,7 +856,7 @@ extension NSImage {
             }
         }
 
-        print("✅ [bmpData] Created Evolis-compatible BMP: \(bmpData.count) bytes (1016×648, bottom-up, 180° flip, 300 DPI)")
+        print("✅ [bmpData] Created Evolis-compatible BMP: \(bmpData.count) bytes (bottom-up, 24-bit, 300 DPI)")
         return bmpData
     }
 }
