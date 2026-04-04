@@ -1,0 +1,5 @@
+{
+  "name": "agent-macos",
+  "private": true,
+  "description": "Agent macOS — Native SwiftUI desktop app for consular agents"
+}
