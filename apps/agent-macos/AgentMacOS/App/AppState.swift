@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import ConvexMobile
 
 /// Main application state - shared across views
 @Observable
