@@ -401,9 +401,11 @@ final class PrinterService {
         
         // 5. Set orientation to PORTRAIT to prevent SDK from applying
         //    the default LANDSCAPE_CC90 rotation to our landscape BMP.
-        //    Our BMP is already in the correct orientation for printing.
-        print("🖨️ [PrinterService] Step 5/9: Setting orientation to PORTRAIT...")
+        //    Also rotate 180° to correct the upside-down output.
+        print("🖨️ [PrinterService] Step 5/9: Setting orientation...")
         evolis_print_set_setting(handle, EVOSETTINGS_KE_Orientation, "PORTRAIT")
+        evolis_print_set_setting(handle, EVOSETTINGS_KE_FPageRotate180, "ON")
+        evolis_print_set_setting(handle, EVOSETTINGS_KE_BPageRotate180, "ON")
 
         // 6. Configure duplex settings if back image is provided
         if backData != nil {
@@ -513,6 +515,8 @@ final class PrinterService {
         let settingsToCheck: [(evosettings_key_e, String)] = [
             (EVOSETTINGS_KE_GRibbonType, "GRibbonType"),
             (EVOSETTINGS_KE_Orientation, "Orientation"),
+            (EVOSETTINGS_KE_FPageRotate180, "FPageRotate180"),
+            (EVOSETTINGS_KE_BPageRotate180, "BPageRotate180"),
             (EVOSETTINGS_KE_Duplex, "Duplex"),
             (EVOSETTINGS_KE_GDuplexType, "GDuplexType"),
             (EVOSETTINGS_KE_Resolution, "Resolution"),
