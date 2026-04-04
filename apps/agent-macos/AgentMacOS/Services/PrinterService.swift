@@ -495,10 +495,33 @@ final class PrinterService {
             print("⚠️ [PrinterService] Could not get printer state: \(stateResult)")
         }
         
-        // Execute print with timeout
-        // NOTE: evolis_print_exec/exect returns 0 (RC_OK) or a positive value on success,
-        //       negative values indicate errors. All EVOLIS_RC error codes are < 0.
-        // Use evolis_print_exect with 60s timeout to wait for completion.
+        // Log all current print settings for diagnostics
+        print("🖨️ [PrinterService] Current settings dump:")
+        let settingsToCheck: [(evosettings_key_e, String)] = [
+            (EVOSETTINGS_KE_GRibbonType, "GRibbonType"),
+            (EVOSETTINGS_KE_Duplex, "Duplex"),
+            (EVOSETTINGS_KE_GDuplexType, "GDuplexType"),
+            (EVOSETTINGS_KE_Resolution, "Resolution"),
+            (EVOSETTINGS_KE_InputTray, "InputTray"),
+            (EVOSETTINGS_KE_OutputTray, "OutputTray"),
+        ]
+        for (key, name) in settingsToCheck {
+            var buf = [CChar](repeating: 0, count: 256)
+            evolis_print_get_setting(handle, key, &buf, 256)
+            let val = String(cString: buf)
+            print("   \(name) = \(val.isEmpty ? "(empty)" : val)")
+        }
+
+        // First try writing PRN to file for diagnostics
+        let prnPath = NSTemporaryDirectory() + "evolis_test.prn"
+        let fileResult = evolis_print_to_file(handle, prnPath)
+        print("🖨️ [PrinterService] PRN file result: \(fileResult), path: \(prnPath)")
+        if fileResult >= 0 {
+            let fileSize = (try? FileManager.default.attributesOfItem(atPath: prnPath)[.size] as? Int) ?? 0
+            print("🖨️ [PrinterService] PRN file size: \(fileSize) bytes")
+        }
+
+        // Now execute the actual print
         print("🖨️ [PrinterService] Executing print (60s timeout)...")
         let printResult = evolis_print_exect(handle, 60)
         print("🖨️ [PrinterService] Print exec result: \(printResult)")
