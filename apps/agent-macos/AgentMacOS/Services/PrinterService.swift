@@ -586,16 +586,6 @@ final class PrinterService {
             print("🧹 [PrinterService] Cleaned up PRN file: \(prnPath)")
         }
 
-        // Optionally pause CUPS queue again to prevent conflicts with SDK
-        DispatchQueue.global().asyncAfter(deadline: .now() + 30) {
-            let disableProcess = Process()
-            disableProcess.executableURL = URL(fileURLWithPath: "/usr/sbin/cupsdisable")
-            disableProcess.arguments = [cupsQueue]
-            try? disableProcess.run()
-            disableProcess.waitUntilExit()
-            print("🖨️ [PrinterService] Re-paused CUPS queue '\(cupsQueue)' to prevent SDK conflicts")
-        }
-
         print("✅ [PrinterService] Print job sent to CUPS successfully")
     }
     
@@ -775,27 +765,38 @@ extension NSImage {
     /// macOS `NSBitmapImageRep.representation(using: .bmp)` generates **top-down** BMPs
     /// (height < 0), which causes PRINT_EMECHANICAL (-22) errors.
     ///
-    /// This method manually constructs the BMP to match the SDK's expected format:
+    /// **Important**: The Evolis Primacy feeds cards short-edge first (portrait).
+    /// The SDK expects the BMP in portrait orientation (648×1016), but our
+    /// card designs are landscape (1016×648). This method renders the image
+    /// landscape, then rotates 90° clockwise to produce the portrait BMP
+    /// the printer expects.
+    ///
+    /// Format:
     /// - BITMAPINFOHEADER (40 bytes), positive height (bottom-up row order)
     /// - 24-bit BGR pixels, no compression
     /// - 300 DPI (11811 pixels/meter)
-    /// - Dimensions: 1016×648 (CR-80 card)
+    /// - Output dimensions: 648×1016 (portrait, after 90° CW rotation)
     func bmpData() -> Data? {
-        let targetWidth = 1016
-        let targetHeight = 648
-        
+        // Source: landscape card dimensions
+        let srcWidth = 1016
+        let srcHeight = 648
+
+        // Destination: portrait (rotated 90° CW for Evolis printer)
+        let dstWidth = srcHeight   // 648
+        let dstHeight = srcWidth   // 1016
+
         // Create color space
         guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) else {
             print("❌ [bmpData] Failed to create color space")
             return nil
         }
-        
-        // Create CGContext — 32-bit RGBX (CGContext doesn't support 24-bit)
-        let bytesPerRowSrc = targetWidth * 4
+
+        // Create CGContext in landscape orientation — 32-bit RGBX
+        let bytesPerRowSrc = srcWidth * 4
         guard let cgContext = CGContext(
             data: nil,
-            width: targetWidth,
-            height: targetHeight,
+            width: srcWidth,
+            height: srcHeight,
             bitsPerComponent: 8,
             bytesPerRow: bytesPerRowSrc,
             space: colorSpace,
@@ -804,48 +805,48 @@ extension NSImage {
             print("❌ [bmpData] Failed to create CGContext")
             return nil
         }
-        
+
         // Fill with white background (in case image has transparency)
         cgContext.setFillColor(CGColor.white)
-        cgContext.fill(CGRect(x: 0, y: 0, width: targetWidth, height: targetHeight))
-        
-        // Draw NSImage into CGContext
+        cgContext.fill(CGRect(x: 0, y: 0, width: srcWidth, height: srcHeight))
+
+        // Draw NSImage into CGContext (landscape)
         let nsContext = NSGraphicsContext(cgContext: cgContext, flipped: false)
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = nsContext
-        
-        let targetRect = NSRect(x: 0, y: 0, width: targetWidth, height: targetHeight)
+
+        let targetRect = NSRect(x: 0, y: 0, width: srcWidth, height: srcHeight)
         self.draw(in: targetRect, from: .zero, operation: .sourceOver, fraction: 1.0)
-        
+
         NSGraphicsContext.restoreGraphicsState()
-        
+
         // Get raw pixel data from CGContext
         guard let pixelData = cgContext.data else {
             print("❌ [bmpData] Failed to get pixel data from CGContext")
             return nil
         }
-        
-        // --- Manually construct bottom-up 24-bit BMP ---
-        
+
+        // --- Manually construct bottom-up 24-bit BMP (portrait) ---
+
         // BMP row size must be aligned to 4 bytes
-        let bytesPerRowBmp = targetWidth * 3  // 1016 * 3 = 3048 (already divisible by 4)
-        let pixelDataSize = bytesPerRowBmp * targetHeight
+        let bytesPerRowBmp = dstWidth * 3  // 648 * 3 = 1944 (divisible by 4 ✓)
+        let pixelDataSize = bytesPerRowBmp * dstHeight
         let headerSize = 14 + 40  // BMP file header + BITMAPINFOHEADER
         let fileSize = headerSize + pixelDataSize
-        
+
         var bmpData = Data(capacity: fileSize)
-        
+
         // -- BMP File Header (14 bytes) --
         bmpData.append(contentsOf: [0x42, 0x4D])                        // "BM" magic
         bmpData.append(contentsOf: withUnsafeBytes(of: UInt32(fileSize).littleEndian) { Array($0) })  // File size
         bmpData.append(contentsOf: [0x00, 0x00])                        // Reserved1
         bmpData.append(contentsOf: [0x00, 0x00])                        // Reserved2
         bmpData.append(contentsOf: withUnsafeBytes(of: UInt32(headerSize).littleEndian) { Array($0) })  // Data offset
-        
-        // -- BITMAPINFOHEADER (40 bytes) --
+
+        // -- BITMAPINFOHEADER (40 bytes) — portrait dimensions --
         bmpData.append(contentsOf: withUnsafeBytes(of: UInt32(40).littleEndian) { Array($0) })  // Header size
-        bmpData.append(contentsOf: withUnsafeBytes(of: Int32(targetWidth).littleEndian) { Array($0) })  // Width
-        bmpData.append(contentsOf: withUnsafeBytes(of: Int32(targetHeight).littleEndian) { Array($0) })  // Height (POSITIVE = bottom-up!)
+        bmpData.append(contentsOf: withUnsafeBytes(of: Int32(dstWidth).littleEndian) { Array($0) })   // Width: 648
+        bmpData.append(contentsOf: withUnsafeBytes(of: Int32(dstHeight).littleEndian) { Array($0) })  // Height: 1016 (POSITIVE = bottom-up!)
         bmpData.append(contentsOf: withUnsafeBytes(of: UInt16(1).littleEndian) { Array($0) })   // Planes
         bmpData.append(contentsOf: withUnsafeBytes(of: UInt16(24).littleEndian) { Array($0) })  // Bits per pixel
         bmpData.append(contentsOf: withUnsafeBytes(of: UInt32(0).littleEndian) { Array($0) })   // Compression (none)
@@ -854,27 +855,35 @@ extension NSImage {
         bmpData.append(contentsOf: withUnsafeBytes(of: Int32(11811).littleEndian) { Array($0) })  // Y pixels/meter (300 DPI)
         bmpData.append(contentsOf: withUnsafeBytes(of: UInt32(0).littleEndian) { Array($0) })   // Colors used
         bmpData.append(contentsOf: withUnsafeBytes(of: UInt32(0).littleEndian) { Array($0) })   // Important colors
-        
-        // -- Pixel data: RGBX (32-bit) → BGR (24-bit), bottom-up row order --
-        // CGContext stores rows top-to-bottom. BMP bottom-up means we write
-        // the LAST CGContext row first, working upward.
+
+        // -- Pixel data: Rotate 90° CW from landscape to portrait --
+        //
+        // 90° CW rotation: dest(dx, dy) ← source(dy, srcHeight - 1 - dx)
+        //   dx ∈ [0, dstWidth-1]  = [0, 647]
+        //   dy ∈ [0, dstHeight-1] = [0, 1015]
+        //
+        // CGContext data layout: row 0 = top of visual image (memory is top-to-bottom)
+        // BMP bottom-up: write dest rows from bottom (dy=dstHeight-1) to top (dy=0)
+        //
         let srcPtr = pixelData.assumingMemoryBound(to: UInt8.self)
-        
-        for row in stride(from: targetHeight - 1, through: 0, by: -1) {
-            let srcRowOffset = row * bytesPerRowSrc
-            for col in 0..<targetWidth {
-                let srcPixelOffset = srcRowOffset + col * 4
-                let r = srcPtr[srcPixelOffset]      // R
-                let g = srcPtr[srcPixelOffset + 1]  // G
-                let b = srcPtr[srcPixelOffset + 2]  // B
+
+        for dy in stride(from: dstHeight - 1, through: 0, by: -1) {
+            for dx in 0..<dstWidth {
+                // 90° CW: source pixel for dest(dx, dy)
+                let sx = dy                           // source x = dest y
+                let sy = (srcHeight - 1) - dx         // source y = srcHeight - 1 - dest x
+                let srcOffset = sy * bytesPerRowSrc + sx * 4
+                let r = srcPtr[srcOffset]
+                let g = srcPtr[srcOffset + 1]
+                let b = srcPtr[srcOffset + 2]
                 // Write BGR (BMP byte order)
                 bmpData.append(b)
                 bmpData.append(g)
                 bmpData.append(r)
             }
         }
-        
-        print("✅ [bmpData] Created Evolis-compatible BMP: \(bmpData.count) bytes (bottom-up, 24-bit, 300 DPI)")
+
+        print("✅ [bmpData] Created Evolis-compatible BMP: \(bmpData.count) bytes (portrait 648×1016, bottom-up, 24-bit, 300 DPI)")
         return bmpData
     }
 }
