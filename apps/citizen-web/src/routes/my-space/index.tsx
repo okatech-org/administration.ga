@@ -173,7 +173,7 @@ function UserDashboard() {
 
 						{/* ── Mobile : Hero compact avec photo à gauche + boutons Ma Carte/iCV ── */}
 						<FlatCard className="shrink-0 relative lg:hidden">
-							<div className="p-4 flex flex-col gap-3">
+							<div className="p-3 min-[400px]:p-4 flex flex-col gap-3">
 								{/* Row : Photo + Infos */}
 								<div className="flex items-center gap-4">
 									<Avatar className="h-20 w-20 bg-muted shrink-0">
@@ -514,7 +514,7 @@ function UserDashboard() {
 										<Link to="/my-space/services-demarches">Mes Démarches</Link>
 									</Button>
 								</div>
-								<div className="grid grid-cols-2 gap-2.5 flex-1">
+								<div className="grid grid-cols-2 gap-2 min-[400px]:gap-2.5 flex-1">
 									{latestRequest ? (
 										<Link
 											to="/my-space/requests/$reference"
@@ -567,7 +567,7 @@ function UserDashboard() {
 										<Link to="/my-space/iagenda">iAgenda</Link>
 									</Button>
 								</div>
-								<div className="grid grid-cols-2 gap-2.5 flex-1">
+								<div className="grid grid-cols-2 gap-2 min-[400px]:gap-2.5 flex-1">
 									{appointments && appointments.length > 0 ? (
 										appointments.filter((a: any) => a.date).slice(0, 3).map((a: any) => (
 											<Link
@@ -750,37 +750,38 @@ function UserDashboard() {
 				</div>
 				</div>
 
-				{/* Badge flottant Actualités — mobile uniquement */}
-				<AnimatePresence>
-					{mobilePageIndex === 0 && (
-						<motion.button
-							initial={{ opacity: 0, x: 20 }}
-							animate={{ opacity: 1, x: 0 }}
-							exit={{ opacity: 0, x: 20 }}
-							transition={{ type: "spring", damping: 20, stiffness: 300 }}
-							onClick={scrollToActualites}
-							className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-30 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-3 shadow-xl rounded-l-xl"
-						>
-							<span className="block" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Actualités</span>
-						</motion.button>
-					)}
-				</AnimatePresence>
-				{/* Indicateur retour — mobile page 2 */}
-				<AnimatePresence>
-					{mobilePageIndex === 1 && (
-						<motion.button
-							initial={{ opacity: 0, x: -20 }}
-							animate={{ opacity: 1, x: 0 }}
-							exit={{ opacity: 0, x: -20 }}
-							transition={{ type: "spring", damping: 20, stiffness: 300 }}
-							onClick={scrollToDashboard}
-							className="fixed left-0 top-1/2 -translate-y-1/2 lg:hidden z-30 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-3 shadow-xl rounded-r-xl"
-						>
-							<span className="block" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Tableau de bord</span>
-						</motion.button>
-					)}
-				</AnimatePresence>
 			</motion.div>
+
+			{/* Badge flottant Actualités — mobile uniquement (hors motion.div pour éviter le clip par overflow-hidden + transform) */}
+			<AnimatePresence>
+				{mobilePageIndex === 0 && (
+					<motion.button
+						initial={{ opacity: 0, x: 20 }}
+						animate={{ opacity: 1, x: 0 }}
+						exit={{ opacity: 0, x: 20 }}
+						transition={{ type: "spring", damping: 20, stiffness: 300 }}
+						onClick={scrollToActualites}
+						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-30 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-3 shadow-xl rounded-l-xl"
+					>
+						<span className="block" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Actualités</span>
+					</motion.button>
+				)}
+			</AnimatePresence>
+			{/* Indicateur retour — mobile page 2 */}
+			<AnimatePresence>
+				{mobilePageIndex === 1 && (
+					<motion.button
+						initial={{ opacity: 0, x: -20 }}
+						animate={{ opacity: 1, x: 0 }}
+						exit={{ opacity: 0, x: -20 }}
+						transition={{ type: "spring", damping: 20, stiffness: 300 }}
+						onClick={scrollToDashboard}
+						className="fixed left-0 top-1/2 -translate-y-1/2 lg:hidden z-30 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-3 shadow-xl rounded-r-xl"
+					>
+						<span className="block" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Tableau de bord</span>
+					</motion.button>
+				)}
+			</AnimatePresence>
 
 			{/* Floating Consular Card Dialog */}
 			<AnimatePresence>

@@ -104,7 +104,7 @@ export function AssistanceContactsWidget() {
 										key={rep.id}
 										className={cn(
 											"bg-muted rounded-xl hover:bg-muted/80 transition-colors group snap-start shrink-0",
-											"flex items-center gap-3 p-3 w-full lg:flex-col lg:gap-2.5 lg:p-4",
+											"flex items-center gap-3 p-3 w-full min-w-[85%] sm:min-w-0 lg:flex-col lg:gap-2.5 lg:p-4",
 											items.length <= 2
 												? "lg:flex-1 lg:min-w-0"
 												: "lg:min-w-[220px]",
