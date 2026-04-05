@@ -234,6 +234,40 @@ struct iCorrespondanceView: View {
                             }
                         }
 
+                        // Workflow Actions
+                        Divider()
+                        Text("Actions").font(.headline)
+
+                        HStack(spacing: 8) {
+                            if item.status == .draft {
+                                Button("Envoyer") {
+                                    Task { await performAction("sendCorrespondance", item) }
+                                }
+                                .buttonStyle(.borderedProminent)
+                            }
+
+                            if item.status == .pending {
+                                Button("Approuver") {
+                                    Task { await performAction("approveAndSend", item) }
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .tint(.green)
+
+                                Button("Rejeter") {
+                                    Task { await performAction("rejectCorrespondance", item) }
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(.red)
+                            }
+
+                            if item.status == .sent || item.status == .received {
+                                Button("Archiver") {
+                                    Task { await performAction("archiveCorrespondance", item) }
+                                }
+                                .buttonStyle(.bordered)
+                            }
+                        }
+
                         Spacer(minLength: 24)
                     }
                     .padding(24)
@@ -297,6 +331,17 @@ struct iCorrespondanceView: View {
         }
 
         isLoading = false
+    }
+
+    private func performAction(_ action: String, _ item: ConvexCorrespondance) async {
+        do {
+            try await convexMutation("functions/correspondanceCore:\(action)", with: [
+                "correspondanceId": item._id,
+            ])
+            await loadCorrespondance()
+        } catch {
+            print("[iCorrespondance] \(action) error: \(error)")
+        }
     }
 
     private func corrStatusColor(_ status: CorrespondanceStatus) -> Color {

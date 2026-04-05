@@ -26,6 +26,7 @@ struct CitizenProfilesView: View {
     @State private var errorMessage: String?
     @State private var searchText = ""
     @State private var searchTask: Task<Void, Never>?
+    @State private var selectedProfile: CitizenProfile?
 
     // Pagination state
     @State private var currentCursor: String? = nil
@@ -87,6 +88,9 @@ struct CitizenProfilesView: View {
                         LazyVGrid(columns: columns, spacing: 16) {
                             ForEach(profiles) { profile in
                                 citizenCard(profile)
+                                    .onTapGesture {
+                                        selectedProfile = profile
+                                    }
                             }
                         }
                     }
@@ -106,6 +110,9 @@ struct CitizenProfilesView: View {
             .onChange(of: appState.selectedOrgId) { _, _ in
                 resetPagination()
                 Task { await loadPage(cursor: nil) }
+            }
+            .sheet(item: $selectedProfile) { profile in
+                CitizenProfileDetailSheet(profile: profile)
             }
             .onChange(of: searchText) { _, _ in
                 searchTask?.cancel()
@@ -420,6 +427,190 @@ struct CitizenProfilesView: View {
         }
 
         isLoading = false
+    }
+}
+
+// MARK: - Citizen Profile Detail Sheet
+
+struct CitizenProfileDetailSheet: View {
+    let profile: CitizenProfile
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack(spacing: 16) {
+                citizenAvatar(profile, size: 56)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(profile.displayName)
+                        .font(.title2.weight(.bold))
+                    if let email = profile.email {
+                        Text(email)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding()
+
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Identity
+                    detailSection("Identité", icon: "person.text.rectangle") {
+                        if let identity = profile.identity {
+                            detailRow("Prénom", identity.firstName ?? "—")
+                            detailRow("Nom", identity.lastName ?? "—")
+                            if let dob = identity.birthDate {
+                                detailRow("Date de naissance", formatDate(dob))
+                            }
+                            if let pob = identity.birthPlace {
+                                detailRow("Lieu de naissance", pob)
+                            }
+                            if let gender = identity.gender {
+                                detailRow("Genre", gender == "male" ? "Homme" : "Femme")
+                            }
+                        } else {
+                            Text("Non renseigné").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+
+                    // Passport
+                    detailSection("Passeport", icon: "passport") {
+                        if let passport = profile.passportInfo {
+                            detailRow("Numéro", passport.number ?? "—")
+                            if let issue = passport.issueDate {
+                                detailRow("Délivré le", formatDate(issue))
+                            }
+                            if let expiry = passport.expiryDate {
+                                HStack {
+                                    Text("Expire le").font(.subheadline).foregroundStyle(.secondary).frame(width: 140, alignment: .leading)
+                                    Text(formatDate(expiry))
+                                        .font(.subheadline)
+                                        .foregroundStyle(profile.isPassportUrgent ? .red : .primary)
+                                    if profile.isPassportUrgent {
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .foregroundStyle(.red)
+                                    }
+                                    Spacer()
+                                }
+                            }
+                            if let country = passport.issuingCountry {
+                                detailRow("Pays de délivrance", country)
+                            }
+                        } else {
+                            Text("Non renseigné").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+
+                    // Contacts
+                    detailSection("Contacts", icon: "phone") {
+                        if let contacts = profile.contacts {
+                            detailRow("Téléphone", contacts.phone ?? "—")
+                            detailRow("Email", contacts.email ?? "—")
+                        } else {
+                            Text("Non renseigné").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+
+                    // Consular Card
+                    detailSection("Carte consulaire", icon: "creditcard") {
+                        if let card = profile.consularCard {
+                            detailRow("Numéro", card.cardNumber ?? "—")
+                            if let issued = card.cardIssuedAt {
+                                detailRow("Délivrée le", formatDate(issued))
+                            }
+                            if let expires = card.cardExpiresAt {
+                                detailRow("Expire le", formatDate(expires))
+                            }
+                        } else {
+                            Text("Aucune carte consulaire").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+
+                    // Stats
+                    detailSection("Activité", icon: "chart.bar") {
+                        if let matricule = profile.matricule {
+                            detailRow("Matricule", matricule)
+                        }
+                        detailRow("Demandes", "\(profile.requestCount ?? 0)")
+                        detailRow("Enfants", "\(profile.childCount ?? 0)")
+                        if let createdAt = profile._creationTime {
+                            detailRow("Inscrit le", formatDate(createdAt))
+                        }
+                    }
+                }
+                .padding(24)
+            }
+        }
+        .frame(minWidth: 500, minHeight: 550)
+    }
+
+    private func detailSection(_ title: String, icon: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(title, systemImage: icon)
+                .font(.headline)
+
+            VStack(alignment: .leading, spacing: 6) {
+                content()
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+    }
+
+    private func detailRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .frame(width: 140, alignment: .leading)
+            Text(value)
+                .font(.subheadline)
+            Spacer()
+        }
+    }
+
+    private func citizenAvatar(_ profile: CitizenProfile, size: CGFloat) -> some View {
+        Group {
+            if let photoUrl = profile.photoUrl ?? profile.avatarUrl, let url = URL(string: photoUrl) {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    avatarFallback(profile, size: size)
+                }
+                .frame(width: size, height: size)
+                .clipShape(Circle())
+            } else {
+                avatarFallback(profile, size: size)
+            }
+        }
+    }
+
+    private func avatarFallback(_ profile: CitizenProfile, size: CGFloat) -> some View {
+        let first = profile.identity?.firstName?.prefix(1) ?? ""
+        let last = profile.identity?.lastName?.prefix(1) ?? ""
+        let initials = "\(first)\(last)".uppercased()
+
+        return Circle()
+            .fill(Color.blue.opacity(0.15))
+            .frame(width: size, height: size)
+            .overlay(
+                Text(initials.isEmpty ? "?" : initials)
+                    .font(.system(size: size * 0.35, weight: .semibold))
+                    .foregroundStyle(.blue)
+            )
     }
 }
 

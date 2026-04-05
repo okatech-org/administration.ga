@@ -113,7 +113,9 @@ struct iDocumentView: View {
                 Task { await loadDocuments() }
             }
             .sheet(item: $selectedDocument) { doc in
-                DocumentDetailSheet(document: doc)
+                DocumentDetailSheet(document: doc) {
+                    Task { await loadDocuments() }
+                }
             }
         }
     }
@@ -297,7 +299,14 @@ struct iDocumentView: View {
 
 struct DocumentDetailSheet: View {
     let document: ConvexDocument
+    let onUpdate: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
+    @State private var showDeleteConfirm = false
+
+    init(document: ConvexDocument, onUpdate: (() -> Void)? = nil) {
+        self.document = document
+        self.onUpdate = onUpdate
+    }
 
     var body: some View {
         VStack(spacing: 20) {
@@ -364,11 +373,44 @@ struct DocumentDetailSheet: View {
 
             Spacer()
 
-            Button("Fermer") { dismiss() }
+            // Actions
+            HStack {
+                if document.status == "pending" {
+                    Button {
+                        Task { await validateDocument() }
+                    } label: {
+                        Label("Valider", systemImage: "checkmark.circle.fill")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.green)
+
+                    Button {
+                        Task { await rejectDocument() }
+                    } label: {
+                        Label("Rejeter", systemImage: "xmark.circle.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.red)
+                }
+
+                Button("Supprimer", role: .destructive) {
+                    showDeleteConfirm = true
+                }
                 .buttonStyle(.bordered)
+                .tint(.red)
+
+                Spacer()
+
+                Button("Fermer") { dismiss() }
+                    .buttonStyle(.bordered)
+            }
         }
         .padding(24)
-        .frame(width: 450, height: 500)
+        .frame(width: 450, height: 550)
+        .alert("Supprimer ce document ?", isPresented: $showDeleteConfirm) {
+            Button("Annuler", role: .cancel) {}
+            Button("Supprimer", role: .destructive) { Task { await deleteDocument() } }
+        }
     }
 
     private func detailRow(_ label: String, _ value: String) -> some View {
@@ -379,6 +421,42 @@ struct DocumentDetailSheet: View {
                 .frame(width: 100, alignment: .leading)
             Text(value)
                 .font(.subheadline)
+        }
+    }
+
+    private func validateDocument() async {
+        do {
+            try await convexMutation("functions/documents:validate", with: [
+                "documentId": document._id,
+            ])
+            onUpdate?()
+            dismiss()
+        } catch {
+            print("[DocumentDetail] Validate error: \(error)")
+        }
+    }
+
+    private func rejectDocument() async {
+        do {
+            try await convexMutation("functions/documents:reject", with: [
+                "documentId": document._id,
+            ])
+            onUpdate?()
+            dismiss()
+        } catch {
+            print("[DocumentDetail] Reject error: \(error)")
+        }
+    }
+
+    private func deleteDocument() async {
+        do {
+            try await convexMutation("functions/documents:remove", with: [
+                "documentId": document._id,
+            ])
+            onUpdate?()
+            dismiss()
+        } catch {
+            print("[DocumentDetail] Delete error: \(error)")
         }
     }
 }

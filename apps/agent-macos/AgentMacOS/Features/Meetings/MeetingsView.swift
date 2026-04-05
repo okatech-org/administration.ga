@@ -14,12 +14,22 @@ struct MeetingsView: View {
     @State private var meetings: [ConvexMeeting] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var showCreateSheet = false
 
     var body: some View {
         OrgGatedView {
             ScrollView {
                 VStack(spacing: 24) {
-                    PageHeader(title: "Réunions", subtitle: "Gestion des réunions")
+                    PageHeader(title: "Réunions", subtitle: "Gestion des réunions") {
+                        AnyView(
+                            Button {
+                                showCreateSheet = true
+                            } label: {
+                                Label("Nouvelle réunion", systemImage: "plus")
+                            }
+                            .buttonStyle(.borderedProminent)
+                        )
+                    }
 
                     if isLoading {
                         LoadingView(message: "Chargement des réunions...")
@@ -43,6 +53,11 @@ struct MeetingsView: View {
             .task { await loadMeetings() }
             .onChange(of: appState.selectedOrgId) { _, _ in
                 Task { await loadMeetings() }
+            }
+            .sheet(isPresented: $showCreateSheet) {
+                CreateMeetingSheet(orgId: appState.selectedOrgId ?? "") {
+                    Task { await loadMeetings() }
+                }
             }
         }
     }
@@ -129,5 +144,102 @@ struct MeetingsView: View {
             errorMessage = "Erreur: \(error.localizedDescription)"
         }
         isLoading = false
+    }
+}
+
+// MARK: - Create Meeting Sheet
+
+struct CreateMeetingSheet: View {
+    let orgId: String
+    let onCreated: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var title = ""
+    @State private var type = "meeting"
+    @State private var scheduledDate = Date()
+    @State private var meetingDescription = ""
+    @State private var isSaving = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Nouvelle réunion").font(.title3.bold())
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark.circle.fill").font(.title2).foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding()
+
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    TextField("Titre *", text: $title).textFieldStyle(.roundedBorder)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Type").font(.caption).foregroundStyle(.secondary)
+                        Picker("Type", selection: $type) {
+                            Text("Réunion").tag("meeting")
+                            Text("Appel").tag("call")
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    DatePicker("Date et heure", selection: $scheduledDate, displayedComponents: [.date, .hourAndMinute])
+
+                    Text("Description").font(.caption).foregroundStyle(.secondary)
+                    TextEditor(text: $meetingDescription)
+                        .font(.body)
+                        .frame(minHeight: 80)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(.separatorColor), lineWidth: 1))
+
+                    if let errorMessage {
+                        Text(errorMessage).font(.caption).foregroundStyle(.red)
+                    }
+                }
+                .padding(24)
+            }
+
+            Divider()
+
+            HStack {
+                Button("Annuler") { dismiss() }.keyboardShortcut(.cancelAction)
+                Spacer()
+                Button { Task { await save() } } label: {
+                    if isSaving { ProgressView().controlSize(.small) }
+                    else { Label("Créer", systemImage: "plus.circle.fill") }
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+                .disabled(title.isEmpty || isSaving)
+            }
+            .padding()
+        }
+        .frame(width: 480, height: 440)
+    }
+
+    private func save() async {
+        isSaving = true
+        errorMessage = nil
+        do {
+            var args: [String: Any] = [
+                "orgId": orgId,
+                "title": title,
+                "type": type,
+                "scheduledAt": scheduledDate.timeIntervalSince1970 * 1000,
+            ]
+            if !meetingDescription.isEmpty { args["description"] = meetingDescription }
+
+            try await convexMutation("functions/meetings:create", with: args)
+            onCreated()
+            dismiss()
+        } catch {
+            errorMessage = "Erreur: \(error.localizedDescription)"
+        }
+        isSaving = false
     }
 }

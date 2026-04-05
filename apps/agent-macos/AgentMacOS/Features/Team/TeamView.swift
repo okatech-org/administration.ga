@@ -16,6 +16,7 @@ struct TeamView: View {
     @State private var errorMessage: String?
     @State private var searchText = ""
     @State private var selectedMember: ConvexTeamMember?
+    @State private var showAddMemberSheet = false
 
     var filteredMembers: [ConvexTeamMember] {
         if searchText.isEmpty { return members }
@@ -33,7 +34,16 @@ struct TeamView: View {
                     PageHeader(
                         title: "Équipe",
                         subtitle: "\(members.count) membre\(members.count > 1 ? "s" : "")"
-                    )
+                    ) {
+                        AnyView(
+                            Button {
+                                showAddMemberSheet = true
+                            } label: {
+                                Label("Ajouter un membre", systemImage: "plus")
+                            }
+                            .buttonStyle(.borderedProminent)
+                        )
+                    }
 
                     SearchFilterBar(searchText: $searchText, placeholder: "Rechercher un membre...")
 
@@ -61,7 +71,14 @@ struct TeamView: View {
                 Task { await loadMembers() }
             }
             .sheet(item: $selectedMember) { member in
-                MemberDetailSheet(member: member)
+                MemberDetailSheet(member: member, orgId: appState.selectedOrgId ?? "") {
+                    Task { await loadMembers() }
+                }
+            }
+            .sheet(isPresented: $showAddMemberSheet) {
+                AddMemberSheet(orgId: appState.selectedOrgId ?? "") {
+                    Task { await loadMembers() }
+                }
             }
         }
     }
@@ -172,11 +189,14 @@ struct TeamView: View {
     }
 }
 
-// MARK: - Member Detail Sheet
+// MARK: - Member Detail Sheet (with admin actions)
 
 struct MemberDetailSheet: View {
     let member: ConvexTeamMember
+    let orgId: String
+    let onUpdate: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var showRemoveConfirm = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -221,11 +241,27 @@ struct MemberDetailSheet: View {
 
             Spacer()
 
-            Button("Fermer") { dismiss() }
+            HStack {
+                Button("Retirer de l'équipe", role: .destructive) {
+                    showRemoveConfirm = true
+                }
                 .buttonStyle(.bordered)
+                .tint(.red)
+
+                Spacer()
+
+                Button("Fermer") { dismiss() }
+                    .buttonStyle(.bordered)
+            }
         }
         .padding(24)
-        .frame(width: 400, height: 350)
+        .frame(width: 450, height: 380)
+        .alert("Retirer ce membre ?", isPresented: $showRemoveConfirm) {
+            Button("Annuler", role: .cancel) {}
+            Button("Retirer", role: .destructive) { Task { await removeMember() } }
+        } message: {
+            Text("\(member.displayName) sera retiré de l'organisation.")
+        }
     }
 
     private func detailRow(label: String, value: String) -> some View {
@@ -237,5 +273,91 @@ struct MemberDetailSheet: View {
             Text(value)
                 .font(.subheadline)
         }
+    }
+
+    private func removeMember() async {
+        do {
+            try await convexMutation("functions/orgs:removeMember", with: [
+                "membershipId": member._id,
+            ])
+            onUpdate()
+            dismiss()
+        } catch {
+            print("[TeamDetail] Remove error: \(error)")
+        }
+    }
+}
+
+// MARK: - Add Member Sheet
+
+struct AddMemberSheet: View {
+    let orgId: String
+    let onAdded: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var email = ""
+    @State private var isSaving = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        VStack(spacing: 20) {
+            HStack {
+                Text("Ajouter un membre").font(.title3.bold())
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark.circle.fill").font(.title2).foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Entrez l'adresse email du nouveau membre. Il doit avoir un compte existant.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                TextField("Email du membre", text: $email)
+                    .textFieldStyle(.roundedBorder)
+
+                if let errorMessage {
+                    Text(errorMessage).font(.caption).foregroundStyle(.red)
+                }
+            }
+
+            Spacer()
+
+            HStack {
+                Button("Annuler") { dismiss() }.keyboardShortcut(.cancelAction)
+                Spacer()
+                Button {
+                    Task { await addMember() }
+                } label: {
+                    if isSaving { ProgressView().controlSize(.small) }
+                    else { Label("Ajouter", systemImage: "person.badge.plus") }
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+                .disabled(email.isEmpty || isSaving)
+            }
+        }
+        .padding(24)
+        .frame(width: 420, height: 280)
+    }
+
+    private func addMember() async {
+        isSaving = true
+        errorMessage = nil
+        do {
+            try await convexMutation("functions/orgs:addMember", with: [
+                "orgId": orgId,
+                "email": email,
+            ])
+            onAdded()
+            dismiss()
+        } catch {
+            errorMessage = "Erreur: \(error.localizedDescription)"
+        }
+        isSaving = false
     }
 }

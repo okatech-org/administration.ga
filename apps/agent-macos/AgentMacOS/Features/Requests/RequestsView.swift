@@ -40,6 +40,15 @@ struct RequestsView: View {
     @State private var selectedRequest: ConvexRequest? = nil
     @State private var isUpdatingStatus = false
 
+    // Batch 1: Agent workflow state
+    @State private var teamMembers: [ConvexTeamMember] = []
+    @State private var agentNotes: [AgentNote] = []
+    @State private var newNoteText = ""
+    @State private var isAddingNote = false
+    @State private var isAssigning = false
+    @State private var isSettingAction = false
+    @State private var isUpdatingPriority = false
+
     // MARK: - Filtered Requests (search only — status is server-side)
 
     private var filteredRequests: [ConvexRequest] {
@@ -265,6 +274,12 @@ struct RequestsView: View {
                 // Info cards
                 detailInfoSection(request)
 
+                // Assign agent + Priority
+                detailAssignSection(request)
+
+                // Action required indicator
+                detailActionRequiredSection(request)
+
                 // Timeline info
                 detailDatesSection(request)
 
@@ -273,9 +288,18 @@ struct RequestsView: View {
                 // Status transitions
                 detailTransitionsSection(request)
 
+                Divider()
+
+                // Agent notes
+                detailNotesSection(request)
+
                 Spacer(minLength: 24)
             }
             .padding(24)
+        }
+        .task(id: request.id) {
+            await loadTeamMembers()
+            await loadNotes(requestId: request._id)
         }
     }
 
@@ -452,6 +476,280 @@ struct RequestsView: View {
         .disabled(isUpdatingStatus)
     }
 
+    // MARK: - Assign Agent Section
+
+    private func detailAssignSection(_ request: ConvexRequest) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Affectation & Priorité")
+                .font(.headline)
+
+            HStack(spacing: 16) {
+                // Assign agent
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Agent assigné")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    HStack {
+                        if let assignedTo = request.assignedTo,
+                           let member = teamMembers.first(where: { $0._id == assignedTo }) {
+                            Label(member.displayName, systemImage: "person.fill.checkmark")
+                                .font(.subheadline)
+                                .foregroundStyle(.green)
+                        } else {
+                            Label("Non assigné", systemImage: "person.fill.questionmark")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Menu {
+                            Button("Aucun (désassigner)") {
+                                // Can't unassign via current API, skip
+                            }
+                            .disabled(true)
+
+                            Divider()
+
+                            ForEach(teamMembers) { member in
+                                Button(member.displayName) {
+                                    Task { await assignAgent(request: request, agentId: member._id) }
+                                }
+                                .disabled(member._id == request.assignedTo)
+                            }
+                        } label: {
+                            Label("Assigner", systemImage: "person.badge.plus")
+                                .font(.caption)
+                        }
+                        .menuStyle(.borderlessButton)
+                        .disabled(isAssigning)
+                    }
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(.controlBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                // Priority
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Priorité")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    HStack {
+                        priorityIndicator(request.priority ?? "normal")
+                        Text(priorityLabel(request.priority))
+                            .font(.subheadline)
+
+                        Spacer()
+
+                        Menu {
+                            ForEach(["low", "medium", "high", "urgent"], id: \.self) { p in
+                                Button(priorityLabel(p)) {
+                                    Task { await updatePriority(request: request, priority: p) }
+                                }
+                                .disabled(p == request.priority)
+                            }
+                        } label: {
+                            Label("Modifier", systemImage: "flag")
+                                .font(.caption)
+                        }
+                        .menuStyle(.borderlessButton)
+                        .disabled(isUpdatingPriority)
+                    }
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(.controlBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+        }
+    }
+
+    // MARK: - Action Required Section
+
+    private func detailActionRequiredSection(_ request: ConvexRequest) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Action requise du citoyen")
+                    .font(.headline)
+                Spacer()
+
+                if request.actionRequired != nil {
+                    // Show current action
+                    StatusBadge(
+                        label: actionTypeLabel(request.actionRequired?.type),
+                        color: .orange
+                    )
+                }
+            }
+
+            if let action = request.actionRequired {
+                HStack(spacing: 12) {
+                    Image(systemName: actionTypeIcon(action.type))
+                        .font(.title2)
+                        .foregroundStyle(.orange)
+                        .frame(width: 40, height: 40)
+                        .background(Color.orange.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(actionTypeLabel(action.type))
+                            .font(.subheadline.weight(.medium))
+                        if let msg = action.message, !msg.isEmpty {
+                            Text(msg)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        if let setAt = action.setAt {
+                            Text("Demandé le \(formatDateTime(setAt))")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+
+                    Spacer()
+                }
+                .padding(12)
+                .background(Color.orange.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            } else {
+                // Buttons to set action required
+                HStack(spacing: 8) {
+                    actionRequiredButton("Envoyer document", type: "upload_document", icon: "doc.badge.arrow.up", request: request)
+                    actionRequiredButton("Compléter infos", type: "complete_info", icon: "pencil.and.list.clipboard", request: request)
+                    actionRequiredButton("Effectuer paiement", type: "make_payment", icon: "creditcard", request: request)
+                }
+            }
+        }
+    }
+
+    private func actionRequiredButton(_ label: String, type: String, icon: String, request: ConvexRequest) -> some View {
+        Button {
+            Task { await setActionRequired(request: request, type: type) }
+        } label: {
+            VStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.title3)
+                Text(label)
+                    .font(.caption2)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(10)
+            .background(Color(.controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+        .disabled(isSettingAction)
+    }
+
+    private func actionTypeLabel(_ type: String?) -> String {
+        switch type {
+        case "upload_document": "Document requis"
+        case "complete_info": "Infos à compléter"
+        case "make_payment": "Paiement requis"
+        default: "Action requise"
+        }
+    }
+
+    private func actionTypeIcon(_ type: String?) -> String {
+        switch type {
+        case "upload_document": "doc.badge.arrow.up"
+        case "complete_info": "pencil.and.list.clipboard"
+        case "make_payment": "creditcard"
+        default: "exclamationmark.triangle"
+        }
+    }
+
+    // MARK: - Agent Notes Section
+
+    private func detailNotesSection(_ request: ConvexRequest) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Notes internes")
+                    .font(.headline)
+                Spacer()
+                Text("\(agentNotes.count)")
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Color.blue.opacity(0.15))
+                    .clipShape(Capsule())
+            }
+
+            // Add note form
+            VStack(spacing: 8) {
+                TextEditor(text: $newNoteText)
+                    .font(.body)
+                    .frame(height: 60)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(.separatorColor), lineWidth: 1)
+                    )
+
+                HStack {
+                    Spacer()
+                    Button {
+                        Task { await addNote(request: request) }
+                    } label: {
+                        if isAddingNote {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Label("Ajouter", systemImage: "plus.circle.fill")
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .disabled(newNoteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isAddingNote)
+                }
+            }
+
+            // Notes list
+            if agentNotes.isEmpty {
+                HStack {
+                    Image(systemName: "note.text")
+                        .foregroundStyle(.secondary)
+                    Text("Aucune note pour cette demande")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(.controlBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(agentNotes) { note in
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(note.content)
+                                .font(.subheadline)
+                                .textSelection(.enabled)
+
+                            HStack {
+                                if let author = note.authorName {
+                                    Label(author, systemImage: "person")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Text(note.createdDate)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(.controlBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                }
+            }
+        }
+    }
+
     // MARK: - Helpers
 
     private func priorityLabel(_ priority: String?) -> String {
@@ -531,6 +829,109 @@ struct RequestsView: View {
         }
 
         isUpdatingStatus = false
+    }
+
+    // MARK: - Assign Agent
+
+    private func loadTeamMembers() async {
+        guard let orgId = appState.selectedOrgId else { return }
+        do {
+            teamMembers = try await convexQuery(
+                "functions/memberships:listOrgMembers",
+                with: ["orgId": orgId],
+                yielding: [ConvexTeamMember].self
+            )
+        } catch {
+            // Fallback silently — assign won't work but won't crash
+            print("[Requests] Could not load team members: \(error)")
+        }
+    }
+
+    private func assignAgent(request: ConvexRequest, agentId: String) async {
+        isAssigning = true
+        do {
+            try await convex.mutation("functions/requests:assign", with: [
+                "requestId": request._id,
+                "agentId": agentId,
+            ])
+            await loadRequests()
+            if selectedRequest?.id == request.id {
+                selectedRequest = requests.first(where: { $0.id == request.id })
+            }
+        } catch {
+            print("[Requests] Error assigning agent: \(error)")
+        }
+        isAssigning = false
+    }
+
+    // MARK: - Priority
+
+    private func updatePriority(request: ConvexRequest, priority: String) async {
+        isUpdatingPriority = true
+        do {
+            try await convex.mutation("functions/requests:updatePriority", with: [
+                "requestId": request._id,
+                "priority": priority,
+            ])
+            await loadRequests()
+            if selectedRequest?.id == request.id {
+                selectedRequest = requests.first(where: { $0.id == request.id })
+            }
+        } catch {
+            print("[Requests] Error updating priority: \(error)")
+        }
+        isUpdatingPriority = false
+    }
+
+    // MARK: - Action Required
+
+    private func setActionRequired(request: ConvexRequest, type: String) async {
+        isSettingAction = true
+        do {
+            try await convex.mutation("functions/requests:setActionRequired", with: [
+                "requestId": request._id,
+                "type": type,
+            ])
+            await loadRequests()
+            if selectedRequest?.id == request.id {
+                selectedRequest = requests.first(where: { $0.id == request.id })
+            }
+        } catch {
+            print("[Requests] Error setting action required: \(error)")
+        }
+        isSettingAction = false
+    }
+
+    // MARK: - Agent Notes
+
+    private func loadNotes(requestId: String) async {
+        do {
+            agentNotes = try await convexQuery(
+                "functions/agentNotes:listByRequest",
+                with: ["requestId": requestId],
+                yielding: [AgentNote].self
+            )
+        } catch {
+            print("[Requests] Could not load notes: \(error)")
+            agentNotes = []
+        }
+    }
+
+    private func addNote(request: ConvexRequest) async {
+        let content = newNoteText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !content.isEmpty else { return }
+        isAddingNote = true
+        do {
+            try await convex.mutation("functions/agentNotes:create", with: [
+                "requestId": request._id,
+                "content": content,
+            ])
+            newNoteText = ""
+            await loadNotes(requestId: request._id)
+        } catch {
+            print("[Requests] Error adding note: \(error)")
+        }
+        isAddingNote = false
     }
 }
 

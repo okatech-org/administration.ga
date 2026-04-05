@@ -18,6 +18,7 @@ struct iBoiteView: View {
     @State private var selectedMail: ConvexMail? = nil
     @State private var searchText = ""
     @State private var showCompose = false
+    @State private var replyTo: ConvexMail? = nil
 
     enum MailFolder: String, CaseIterable {
         case inbox, sent, drafts, archive, trash
@@ -80,7 +81,10 @@ struct iBoiteView: View {
                 Task { await loadMails() }
             }
             .sheet(isPresented: $showCompose) {
-                ComposeMailSheet { await loadMails() }
+                ComposeMailSheet(replyTo: replyTo) {
+                    replyTo = nil
+                    await loadMails()
+                }
             }
         }
     }
@@ -252,6 +256,7 @@ struct iBoiteView: View {
                         // Actions
                         HStack(spacing: 12) {
                             Button {
+                                replyTo = mail
                                 showCompose = true
                             } label: {
                                 Label("Répondre", systemImage: "arrowshape.turn.up.left")
@@ -363,17 +368,25 @@ struct iBoiteView: View {
 // MARK: - Compose Mail Sheet
 
 struct ComposeMailSheet: View {
+    var replyTo: ConvexMail?
     let onSent: () async -> Void
+
+    init(replyTo: ConvexMail? = nil, onSent: @escaping () async -> Void) {
+        self.replyTo = replyTo
+        self.onSent = onSent
+    }
+
     @Environment(\.dismiss) private var dismiss
     @State private var to = ""
     @State private var subject = ""
     @State private var messageBody = ""
     @State private var isSending = false
+    @State private var didPrefill = false
 
     var body: some View {
         VStack(spacing: 16) {
             HStack {
-                Text("Nouveau message")
+                Text(replyTo != nil ? "Répondre" : "Nouveau message")
                     .font(.title3.bold())
                 Spacer()
                 Button { dismiss() } label: {
@@ -414,6 +427,16 @@ struct ComposeMailSheet: View {
         }
         .padding(24)
         .frame(width: 550, height: 450)
+        .onAppear {
+            guard !didPrefill, let reply = replyTo else { return }
+            didPrefill = true
+            to = reply.sender?.email ?? reply.senderName
+            subject = reply.subject.hasPrefix("Re:") ? reply.subject : "Re: \(reply.subject)"
+            let quotedContent = reply.content ?? reply.preview ?? ""
+            if !quotedContent.isEmpty {
+                messageBody = "\n\n--- Message original ---\n\(quotedContent)"
+            }
+        }
     }
 
     private func sendMail() async {

@@ -95,6 +95,7 @@ struct ConvexRequest: Identifiable, Codable, Hashable {
     let orgId: String
     let orgServiceId: String?
     let assignedTo: String?
+    let actionRequired: ActionRequired?
     let submittedAt: Double?
     let completedAt: Double?
     let updatedAt: Double?
@@ -122,6 +123,13 @@ struct ConvexRequest: Identifiable, Codable, Hashable {
         let email: String?
         let avatarUrl: String?
     }
+
+    struct ActionRequired: Codable, Hashable {
+        let type: String? // "upload_document" | "complete_info" | "make_payment"
+        let message: String?
+        let setAt: Double?
+        let setBy: String?
+    }
 }
 
 // MARK: - Request List Response (paginated)
@@ -130,6 +138,20 @@ struct PaginatedRequests: Codable {
     let page: [ConvexRequest]
     let isDone: Bool
     let continueCursor: String?
+}
+
+// MARK: - Agent Note
+
+struct AgentNote: Identifiable, Codable, Hashable {
+    let _id: String
+    let requestId: String
+    let content: String
+    let authorId: String?
+    let authorName: String?
+    let _creationTime: Double
+
+    var id: String { _id }
+    var createdDate: String { formatDate(_creationTime) }
 }
 
 // MARK: - Appointment Status
@@ -881,4 +903,113 @@ struct ConsularRegistrationList: Codable {
     let page: [PrintableRegistration]
     let isDone: Bool
     let continueCursor: String?
+}
+
+// MARK: - Print Job
+
+enum ConvexPrintJobStatus: String, Codable, CaseIterable {
+    case queued
+    case printing
+    case completed
+    case failed
+    case cancelled
+
+    var label: String {
+        switch self {
+        case .queued: "En attente"
+        case .printing: "En cours"
+        case .completed: "Terminé"
+        case .failed: "Échoué"
+        case .cancelled: "Annulé"
+        }
+    }
+
+    var color: String {
+        switch self {
+        case .queued: "blue"
+        case .printing: "orange"
+        case .completed: "green"
+        case .failed: "red"
+        case .cancelled: "gray"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .queued: "clock"
+        case .printing: "printer.fill"
+        case .completed: "checkmark.circle.fill"
+        case .failed: "exclamationmark.triangle.fill"
+        case .cancelled: "xmark.circle"
+        }
+    }
+}
+
+enum PrintJobPriority: String, Codable, CaseIterable {
+    case normal
+    case high
+    case urgent
+
+    var label: String {
+        switch self {
+        case .normal: "Normal"
+        case .high: "Haute"
+        case .urgent: "Urgent"
+        }
+    }
+
+    var color: String {
+        switch self {
+        case .normal: "secondary"
+        case .high: "orange"
+        case .urgent: "red"
+        }
+    }
+}
+
+struct ConvexPrintJob: Identifiable, Codable, Hashable {
+    let _id: String
+    let designId: String
+    let designName: String
+    let designVersion: Int?
+    let profileId: String?
+    let childProfileId: String?
+    let profileName: String?
+    let copies: Int
+    let printDuplex: Bool?
+    let priority: PrintJobPriority
+    let status: ConvexPrintJobStatus
+    let errorMessage: String?
+    let batchId: String?
+    let orgId: String
+    let createdBy: String?
+    let queuedAt: Double?
+    let startedAt: Double?
+    let completedAt: Double?
+    let _creationTime: Double
+
+    var id: String { _id }
+
+    var dateFormatted: String {
+        formatDate(queuedAt ?? _creationTime)
+    }
+}
+
+struct PrintQueueStats: Codable {
+    let queued: Int
+    let printing: Int
+    let failed: Int
+    let total: Int
+}
+
+struct ConvexCardDesignSummary: Identifiable, Codable, Hashable {
+    let _id: String
+    let name: String
+    let entityId: String?
+    let version: Int?
+    let printDuplex: Bool?
+    let isActive: Bool?
+    let _creationTime: Double?
+
+    var id: String { _id }
 }

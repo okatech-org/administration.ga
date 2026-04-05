@@ -190,12 +190,26 @@ struct PostDetailSheet: View {
     let onUpdate: () -> Void
     @Environment(\.dismiss) private var dismiss
 
+    @State private var isEditing = false
+    @State private var editTitle = ""
+    @State private var editExcerpt = ""
+    @State private var editContent = ""
+    @State private var editCategory = "news"
+    @State private var isSaving = false
+    @State private var showDeleteConfirm = false
+
     var body: some View {
         VStack(spacing: 20) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(post.title)
-                        .font(.title2.bold())
+                    if isEditing {
+                        TextField("Titre", text: $editTitle)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.title3)
+                    } else {
+                        Text(post.title)
+                            .font(.title2.bold())
+                    }
                     HStack(spacing: 8) {
                         StatusBadge(label: post.status.label, color: statusColor(post.status.color))
                         if let cat = post.category {
@@ -211,6 +225,12 @@ struct PostDetailSheet: View {
                     }
                 }
                 Spacer()
+                if !isEditing {
+                    Button { startEditing() } label: {
+                        Label("Modifier", systemImage: "pencil")
+                    }
+                    .buttonStyle(.bordered)
+                }
                 Button { dismiss() } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.title3)
@@ -221,70 +241,155 @@ struct PostDetailSheet: View {
 
             Divider()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    if let excerpt = post.excerpt, !excerpt.isEmpty {
-                        Text(excerpt)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    if let content = post.content, !content.isEmpty {
-                        Text(content)
-                            .font(.body)
-                            .textSelection(.enabled)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+            if isEditing {
+                editForm
+            } else {
+                readOnlyContent
             }
 
             Divider()
 
             // Actions
             HStack {
-                if post.status == .draft {
-                    Button("Publier") {
-                        Task {
-                            try? await convex.mutation("functions/posts:setStatus", with: [
-                                "postId": post._id,
-                                "status": "published"
-                            ])
-                            onUpdate()
-                            dismiss()
-                        }
+                if isEditing {
+                    Button("Annuler") { isEditing = false }.buttonStyle(.bordered)
+                    Spacer()
+                    Button {
+                        Task { await saveEdit() }
+                    } label: {
+                        if isSaving { ProgressView().controlSize(.small) }
+                        else { Label("Enregistrer", systemImage: "checkmark.circle.fill") }
                     }
                     .buttonStyle(.borderedProminent)
-                } else if post.status == .published {
-                    Button("Dépublier") {
-                        Task {
-                            try? await convex.mutation("functions/posts:setStatus", with: [
-                                "postId": post._id,
-                                "status": "draft"
-                            ])
-                            onUpdate()
-                            dismiss()
+                    .disabled(editTitle.isEmpty || isSaving)
+                } else {
+                    if post.status == .draft {
+                        Button("Publier") {
+                            Task {
+                                try? await convex.mutation("functions/posts:setStatus", with: [
+                                    "postId": post._id,
+                                    "status": "published"
+                                ])
+                                onUpdate()
+                                dismiss()
+                            }
                         }
+                        .buttonStyle(.borderedProminent)
+                    } else if post.status == .published {
+                        Button("Dépublier") {
+                            Task {
+                                try? await convex.mutation("functions/posts:setStatus", with: [
+                                    "postId": post._id,
+                                    "status": "draft"
+                                ])
+                                onUpdate()
+                                dismiss()
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                    Spacer()
+
+                    Button("Supprimer", role: .destructive) {
+                        showDeleteConfirm = true
                     }
                     .buttonStyle(.bordered)
+                    .tint(.red)
                 }
-
-                Spacer()
-
-                Button("Supprimer", role: .destructive) {
-                    Task {
-                        try? await convex.mutation("functions/posts:remove", with: [
-                            "postId": post._id
-                        ])
-                        onUpdate()
-                        dismiss()
-                    }
-                }
-                .buttonStyle(.bordered)
-                .tint(.red)
             }
         }
         .padding(24)
-        .frame(width: 600, height: 500)
+        .frame(width: 600, height: 550)
+        .alert("Supprimer cet article ?", isPresented: $showDeleteConfirm) {
+            Button("Annuler", role: .cancel) {}
+            Button("Supprimer", role: .destructive) {
+                Task {
+                    try? await convex.mutation("functions/posts:remove", with: ["postId": post._id])
+                    onUpdate()
+                    dismiss()
+                }
+            }
+        } message: {
+            Text("Cette action est irréversible.")
+        }
+    }
+
+    private var readOnlyContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                if let excerpt = post.excerpt, !excerpt.isEmpty {
+                    Text(excerpt)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let content = post.content, !content.isEmpty {
+                    Text(content)
+                        .font(.body)
+                        .textSelection(.enabled)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var editForm: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Catégorie").font(.caption).foregroundStyle(.secondary)
+                    Picker("Catégorie", selection: $editCategory) {
+                        Text("Actualité").tag("news")
+                        Text("Événement").tag("event")
+                        Text("Communiqué").tag("communique")
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Résumé").font(.caption).foregroundStyle(.secondary)
+                    TextField("Résumé", text: $editExcerpt)
+                        .textFieldStyle(.roundedBorder)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Contenu").font(.caption).foregroundStyle(.secondary)
+                    TextEditor(text: $editContent)
+                        .font(.body)
+                        .frame(minHeight: 200)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(.separatorColor), lineWidth: 1))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func startEditing() {
+        editTitle = post.title
+        editExcerpt = post.excerpt ?? ""
+        editContent = post.content ?? ""
+        editCategory = post.category ?? "news"
+        isEditing = true
+    }
+
+    private func saveEdit() async {
+        isSaving = true
+        do {
+            try await convexMutation("functions/posts:update", with: [
+                "postId": post._id,
+                "title": editTitle,
+                "excerpt": editExcerpt,
+                "content": editContent,
+                "category": editCategory,
+            ])
+            onUpdate()
+            dismiss()
+        } catch {
+            print("[PostDetail] Edit error: \(error)")
+        }
+        isSaving = false
     }
 }
 

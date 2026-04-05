@@ -59,6 +59,7 @@ struct ConsularRegistryView: View {
     @State private var selectedStatus: String? = nil
     @State private var isDone = false
     @State private var continueCursor: String?
+    @State private var selectedRegistration: PrintableRegistration? = nil
 
     private let statusFilters = ["requested", "active", "expired"]
 
@@ -120,6 +121,11 @@ struct ConsularRegistryView: View {
         .background(Color(.windowBackgroundColor))
         .task(id: appState.selectedOrgId) {
             await loadRegistrations()
+        }
+        .sheet(item: $selectedRegistration) { reg in
+            RegistrationDetailSheet(registration: reg, orgId: appState.selectedOrgId ?? "") {
+                Task { await loadRegistrations() }
+            }
         }
     }
 
@@ -233,7 +239,12 @@ struct ConsularRegistryView: View {
             // Data rows
             ForEach(filteredRegistrations) { registration in
                 VStack(spacing: 0) {
-                    registrationRow(registration)
+                    Button { selectedRegistration = registration } label: {
+                        registrationRow(registration)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
                     if registration.id != filteredRegistrations.last?.id {
                         Divider().padding(.leading, 72)
                     }
@@ -403,7 +414,7 @@ struct ConsularRegistryView: View {
             // Generate card (only if active + no card)
             if reg.status.lowercased() == "active" && reg.cardNumber == nil {
                 Button {
-                    // TODO: generate card
+                    Task { await generateCard(reg) }
                 } label: {
                     Image(systemName: "creditcard")
                         .font(.caption)
@@ -503,6 +514,134 @@ struct ConsularRegistryView: View {
         }
 
         isLoading = false
+    }
+
+    private func generateCard(_ reg: PrintableRegistration) async {
+        do {
+            try await convexMutation("functions/consularRegistrations:generateCard", with: [
+                "registrationId": reg._id,
+            ])
+            await loadRegistrations()
+        } catch {
+            print("[ConsularRegistry] Generate card error: \(error)")
+        }
+    }
+}
+
+// MARK: - Registration Detail Sheet
+
+struct RegistrationDetailSheet: View {
+    let registration: PrintableRegistration
+    let orgId: String
+    let onUpdate: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 20) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(registration.profile?.displayName ?? "Inconnu")
+                        .font(.title2.bold())
+                    if let email = registration.user?.email {
+                        Text(email).font(.subheadline).foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    // Identity
+                    Text("Identité").font(.headline)
+                    row("Prénom", registration.profile?.identity?.firstName ?? "—")
+                    row("Nom", registration.profile?.identity?.lastName ?? "—")
+                    if let gender = registration.profile?.identity?.gender {
+                        row("Genre", gender.capitalized)
+                    }
+                    if let birthDate = registration.profile?.identity?.birthDate {
+                        row("Date naissance", formatDate(birthDate))
+                    }
+                    if let birthPlace = registration.profile?.identity?.birthPlace {
+                        row("Lieu naissance", birthPlace)
+                    }
+
+                    Divider()
+
+                    // Passport
+                    if let passport = registration.profile?.passportInfo {
+                        Text("Passeport").font(.headline)
+                        row("Numéro", passport.number ?? "—")
+                        if let issueDate = passport.issueDate {
+                            row("Délivré le", formatDate(issueDate))
+                        }
+                        if let expiryDate = passport.expiryDate {
+                            row("Expire le", formatDate(expiryDate))
+                        }
+                        row("Pays délivrance", passport.issuingCountry ?? "—")
+                        Divider()
+                    }
+
+                    // Registration info
+                    Text("Inscription").font(.headline)
+                    row("Statut", registration.status.capitalized)
+                    row("Type", registration.type?.capitalized ?? "—")
+                    row("N° Carte", registration.cardNumber ?? "Non généré")
+                    row("Inscrit le", registration.registeredAt != nil ? formatDate(registration.registeredAt!) : "—")
+
+                    if let printedAt = registration.printedAt {
+                        row("Imprimé le", formatDate(printedAt))
+                    }
+
+                    Divider()
+
+                    // Contact
+                    Text("Contact").font(.headline)
+                    row("Email", registration.user?.email ?? "—")
+                }
+            }
+
+            HStack {
+                if registration.status.lowercased() == "active" && registration.cardNumber == nil {
+                    Button {
+                        Task { await generateCard() }
+                    } label: {
+                        Label("Générer carte", systemImage: "creditcard")
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+
+                Spacer()
+                Button("Fermer") { dismiss() }.buttonStyle(.bordered)
+            }
+        }
+        .padding(24)
+        .frame(width: 480, height: 550)
+    }
+
+    private func row(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label).font(.subheadline).foregroundStyle(.secondary).frame(width: 120, alignment: .leading)
+            Text(value).font(.subheadline)
+            Spacer()
+        }
+    }
+
+    private func generateCard() async {
+        do {
+            try await convexMutation("functions/consularRegistrations:generateCard", with: [
+                "registrationId": registration._id,
+            ])
+            onUpdate()
+            dismiss()
+        } catch {
+            print("[RegistrationDetail] Generate card error: \(error)")
+        }
     }
 }
 

@@ -17,6 +17,8 @@ struct iAgendaView: View {
     @State private var errorMessage: String?
     @State private var selectedDate = Date()
     @State private var displayMonth = Date()
+    @State private var showCreateEvent = false
+    @State private var selectedEvent: ConvexEvent? = nil
 
     private let calendar = Calendar.current
     private let weekdaySymbols = ["L", "M", "M", "J", "V", "S", "D"]
@@ -55,6 +57,16 @@ struct iAgendaView: View {
             .task { await loadData() }
             .onChange(of: appState.selectedOrgId) { _, _ in
                 Task { await loadData() }
+            }
+            .sheet(isPresented: $showCreateEvent) {
+                CreateEventSheet(orgId: appState.selectedOrgId ?? "") {
+                    Task { await loadData() }
+                }
+            }
+            .sheet(item: $selectedEvent) { event in
+                EventDetailSheet(event: event) {
+                    Task { await loadData() }
+                }
             }
         }
     }
@@ -170,6 +182,13 @@ struct iAgendaView: View {
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
+                    Button {
+                        showCreateEvent = true
+                    } label: {
+                        Label("Événement", systemImage: "plus")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
                 }
 
                 // Appointments
@@ -222,30 +241,34 @@ struct iAgendaView: View {
                             .font(.headline)
 
                         ForEach(filteredEvents) { event in
-                            HStack(spacing: 12) {
-                                Rectangle()
-                                    .fill(.blue)
-                                    .frame(width: 4)
-                                    .clipShape(RoundedRectangle(cornerRadius: 2))
+                            Button { selectedEvent = event } label: {
+                                HStack(spacing: 12) {
+                                    Rectangle()
+                                        .fill(.blue)
+                                        .frame(width: 4)
+                                        .clipShape(RoundedRectangle(cornerRadius: 2))
 
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(event.title)
-                                        .font(.body.bold())
-                                    if let location = event.location {
-                                        Label(location, systemImage: "mappin")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(event.title)
+                                            .font(.body.bold())
+                                        if let location = event.location {
+                                            Label(location, systemImage: "mappin")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        if let cat = event.category {
+                                            StatusBadge(label: cat.capitalized, color: .blue)
+                                        }
                                     }
-                                    if let cat = event.category {
-                                        StatusBadge(label: cat.capitalized, color: .blue)
-                                    }
+
+                                    Spacer()
                                 }
-
-                                Spacer()
+                                .padding(12)
+                                .background(Color(.controlBackgroundColor))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .contentShape(Rectangle())
                             }
-                            .padding(12)
-                            .background(Color(.controlBackgroundColor))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -349,5 +372,194 @@ struct iAgendaView: View {
         }
 
         isLoading = false
+    }
+}
+
+// MARK: - Create Event Sheet
+
+struct CreateEventSheet: View {
+    let orgId: String
+    let onCreated: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var title = ""
+    @State private var eventDate = Date()
+    @State private var location = ""
+    @State private var category = "community"
+    @State private var eventDescription = ""
+    @State private var isSaving = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Nouvel événement").font(.title3.bold())
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark.circle.fill").font(.title2).foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding()
+
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    TextField("Titre *", text: $title).textFieldStyle(.roundedBorder)
+
+                    DatePicker("Date", selection: $eventDate, displayedComponents: [.date, .hourAndMinute])
+
+                    TextField("Lieu", text: $location).textFieldStyle(.roundedBorder)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Catégorie").font(.caption).foregroundStyle(.secondary)
+                        Picker("Catégorie", selection: $category) {
+                            Text("Communautaire").tag("community")
+                            Text("Culturel").tag("cultural")
+                            Text("Diplomatique").tag("diplomatic")
+                            Text("Officiel").tag("official")
+                        }
+                    }
+
+                    Text("Description").font(.caption).foregroundStyle(.secondary)
+                    TextEditor(text: $eventDescription)
+                        .font(.body)
+                        .frame(minHeight: 80)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(.separatorColor), lineWidth: 1))
+
+                    if let errorMessage {
+                        Text(errorMessage).font(.caption).foregroundStyle(.red)
+                    }
+                }
+                .padding(24)
+            }
+
+            Divider()
+
+            HStack {
+                Button("Annuler") { dismiss() }.keyboardShortcut(.cancelAction)
+                Spacer()
+                Button { Task { await save() } } label: {
+                    if isSaving { ProgressView().controlSize(.small) }
+                    else { Label("Créer", systemImage: "plus.circle.fill") }
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+                .disabled(title.isEmpty || isSaving)
+            }
+            .padding()
+        }
+        .frame(width: 480, height: 520)
+    }
+
+    private func save() async {
+        isSaving = true
+        errorMessage = nil
+        do {
+            var args: [String: Any] = [
+                "orgId": orgId,
+                "title": title,
+                "date": eventDate.timeIntervalSince1970 * 1000,
+                "category": category,
+            ]
+            if !location.isEmpty { args["location"] = location }
+            if !eventDescription.isEmpty { args["description"] = eventDescription }
+
+            try await convexMutation("functions/communityEvents:create", with: args)
+            onCreated()
+            dismiss()
+        } catch {
+            errorMessage = "Erreur: \(error.localizedDescription)"
+        }
+        isSaving = false
+    }
+}
+
+// MARK: - Event Detail Sheet
+
+struct EventDetailSheet: View {
+    let event: ConvexEvent
+    let onUpdate: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var showDeleteConfirm = false
+
+    var body: some View {
+        VStack(spacing: 20) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(event.title).font(.title2.bold())
+                    HStack(spacing: 8) {
+                        if let cat = event.category {
+                            StatusBadge(label: cat.capitalized, color: .blue)
+                        }
+                        if let status = event.status {
+                            StatusBadge(label: status.capitalized, color: status == "published" ? .green : .gray)
+                        }
+                    }
+                }
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 10) {
+                row("Date", event.dateFormatted)
+                row("Lieu", event.location ?? "—")
+                row("Catégorie", event.category?.capitalized ?? "—")
+                row("Statut", event.status?.capitalized ?? "—")
+                row("Créé le", formatDate(event.createdAt ?? event._creationTime))
+
+                if let desc = event.description {
+                    Divider()
+                    Text("Description").font(.headline)
+                    Text(desc).font(.body)
+                }
+            }
+
+            Spacer()
+
+            HStack {
+                Button("Supprimer", role: .destructive) {
+                    showDeleteConfirm = true
+                }
+                .buttonStyle(.bordered)
+                .tint(.red)
+
+                Spacer()
+                Button("Fermer") { dismiss() }.buttonStyle(.bordered)
+            }
+        }
+        .padding(24)
+        .frame(width: 480, height: 450)
+        .alert("Supprimer cet événement ?", isPresented: $showDeleteConfirm) {
+            Button("Annuler", role: .cancel) {}
+            Button("Supprimer", role: .destructive) { Task { await deleteEvent() } }
+        }
+    }
+
+    private func row(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label).font(.subheadline).foregroundStyle(.secondary).frame(width: 100, alignment: .leading)
+            Text(value).font(.subheadline)
+            Spacer()
+        }
+    }
+
+    private func deleteEvent() async {
+        do {
+            try await convexMutation("functions/communityEvents:remove", with: [
+                "eventId": event._id,
+            ])
+            onUpdate()
+            dismiss()
+        } catch {
+            print("[EventDetail] Delete error: \(error)")
+        }
     }
 }

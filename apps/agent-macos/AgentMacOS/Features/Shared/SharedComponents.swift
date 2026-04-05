@@ -75,8 +75,35 @@ func convexQuery<T: Decodable>(_ name: String, with args: [String: Any] = [:], y
     }
 }
 
+/// Fire-and-forget mutation with [String: Any] args (supports nested dicts).
+func convexMutation(_ name: String, with args: [String: Any]) async throws {
+    var convexArgs: [String: (any ConvexEncodable)?] = [:]
+    for (key, value) in args {
+        if value is NSNull {
+            convexArgs.updateValue(nil, forKey: key)
+        } else if let s = value as? String {
+            convexArgs[key] = s
+        } else if let i = value as? Int {
+            convexArgs[key] = i
+        } else if let d = value as? Double {
+            convexArgs[key] = d
+        } else if let b = value as? Bool {
+            convexArgs[key] = b
+        } else if let e = value as? (any ConvexEncodable) {
+            convexArgs[key] = e
+        } else if let dict = value as? [String: Any] {
+            convexArgs[key] = convertToConvexEncodable(dict)
+        } else if let arr = value as? [Any] {
+            convexArgs[key] = convertArrayToConvexEncodable(arr)
+        } else {
+            print("⚠️ [convexMutation] Skipping unsupported arg type for key '\(key)': \(Swift.type(of: value))")
+        }
+    }
+    try await convex.mutation(name, with: convexArgs)
+}
+
 /// Recursively convert [String: Any] to [String: ConvexEncodable?]
-private func convertToConvexEncodable(_ dict: [String: Any]) -> [String: (any ConvexEncodable)?] {
+func convertToConvexEncodable(_ dict: [String: Any]) -> [String: (any ConvexEncodable)?] {
     var result: [String: (any ConvexEncodable)?] = [:]
     for (key, value) in dict {
         if value is NSNull {
@@ -101,7 +128,7 @@ private func convertToConvexEncodable(_ dict: [String: Any]) -> [String: (any Co
 }
 
 /// Convert [Any] to [ConvexEncodable?]
-private func convertArrayToConvexEncodable(_ arr: [Any]) -> [(any ConvexEncodable)?] {
+func convertArrayToConvexEncodable(_ arr: [Any]) -> [(any ConvexEncodable)?] {
     arr.map { value -> (any ConvexEncodable)? in
         if value is NSNull { return nil }
         if let s = value as? String { return s }
