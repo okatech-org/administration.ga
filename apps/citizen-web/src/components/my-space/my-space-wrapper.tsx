@@ -77,7 +77,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
 				<main
 					className={cn(
 						"flex-1 overflow-y-auto citizen-scrollbar",
-						"px-4 pt-4 pb-28 md:px-4 md:pt-4 md:pb-4",
+						"px-3 min-[400px]:px-4 pt-4 pb-28 md:px-4 md:pt-4 md:pb-4",
 						className,
 					)}
 				>
@@ -179,8 +179,8 @@ export function MySpaceHeader() {
 					>
 						<Link to="/services">
 							<Plus className="mr-1 h-3.5 w-3.5 shrink-0" />
-							<span className="hidden min-[420px]:inline truncate">Nouvelle démarche</span>
-							<span className="inline min-[420px]:hidden truncate">Démarche</span>
+							<span className="hidden min-[460px]:inline truncate">Nouvelle démarche</span>
+							<span className="inline min-[460px]:hidden truncate">Démarche</span>
 						</Link>
 					</Button>
 					<NotificationDropdown className="h-10 w-10 min-w-10 bg-card rounded-full shrink-0" />
