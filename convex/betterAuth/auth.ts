@@ -128,12 +128,21 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
           const lang = detectLangFromHeaders(reqCtx?.request?.headers as Headers | undefined);
           const { subject, html } = otpEmail({ otp, type, platform, lang });
 
-          await resend.sendEmail(ctx as any, {
-            from: fromEmail(platform),
-            to: email,
-            subject,
-            html,
-          });
+          const sender = fromEmail(platform);
+          console.log(`[OTP] Sending ${type} OTP to ${email} from ${sender} (platform: ${platform.platform})`);
+
+          try {
+            await resend.sendEmail(ctx as any, {
+              from: sender,
+              to: email,
+              subject,
+              html,
+            });
+            console.log(`[OTP] ✅ Email queued successfully for ${email}`);
+          } catch (err: any) {
+            console.error(`[OTP] ❌ Failed to send OTP email to ${email}:`, err?.message ?? err);
+            throw err; // relancer pour que Better Auth retourne une erreur au client
+          }
         },
       }),
 

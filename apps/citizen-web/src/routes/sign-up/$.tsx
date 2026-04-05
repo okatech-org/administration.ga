@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useLocation } from "@tanstack/react-router";
 import { ArrowLeft, Loader2, Mail } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -18,6 +18,8 @@ type SignUpStep = "form" | "verify-email";
 function SignUpPage() {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
+	const location = useLocation();
+	const searchStr = location.searchStr ?? "";
 	const [step, setStep] = useState<SignUpStep>("form");
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
@@ -93,7 +95,7 @@ function SignUpPage() {
 				} else {
 					// ensureUser (via AuthSync) handles firstName/lastName/phone sync
 					captureEvent("user_signed_up", { method: "email" });
-					const params = new URLSearchParams(window.location.search);
+					const params = new URLSearchParams(searchStr);
 					const redirectTo = params.get("redirect");
 					await new Promise((r) => setTimeout(r, 500));
 					navigate({ to: redirectTo || "/post-login-redirect" });
@@ -264,7 +266,7 @@ function SignUpPage() {
 							<div className="text-center text-sm text-muted-foreground">
 								{t("errors.auth.alreadyHaveAccount")}{" "}
 								<a
-									href={`/sign-in${window.location.search}`}
+									href={`/sign-in${searchStr}`}
 									className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline"
 								>
 									{t("header.nav.signIn")}

@@ -10,9 +10,12 @@ import { getPlatformConfig, fromEmail } from "../lib/platform";
 import type { PlatformConfig } from "../lib/platform";
 import { emailLayout } from "../lib/emailTemplates";
 
-// Initialize Resend with test mode off for production
+// Resend — testMode TOUJOURS false dans Convex.
+// Le runtime Convex (V8 isolé) ne garantit PAS process.env.NODE_ENV.
+// On ne peut pas se fier à NODE_ENV pour décider d'envoyer ou non des emails.
+// En testMode: true, @convex-dev/resend refuse tout email qui n'est pas @resend.dev.
 export const resend = new Resend(components.resend, {
-  testMode: process.env.NODE_ENV !== "production" ? true : false,
+  testMode: false,
 });
 
 // Default platform config (citizen) — overridden per-call when platform is known

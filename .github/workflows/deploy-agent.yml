@@ -68,4 +68,4 @@ jobs:
             --cpu=1 \
             --min-instances=0 \
             --max-instances=10 \
-            --set-env-vars="NODE_ENV=production"
+            --set-env-vars="NODE_ENV=production,CONVEX_SITE_URL=${{ secrets.VITE_CONVEX_SITE_URL }}"
