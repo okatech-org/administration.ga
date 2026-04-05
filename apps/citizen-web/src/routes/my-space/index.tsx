@@ -759,7 +759,7 @@ function UserDashboard() {
 							exit={{ opacity: 0, x: 20 }}
 							transition={{ type: "spring", damping: 20, stiffness: 300 }}
 							onClick={scrollToActualites}
-							className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-30 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[11px] font-bold uppercase tracking-widest px-2 py-5 shadow-xl rounded-l-2xl"
+							className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-30 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-3 shadow-xl rounded-l-xl"
 						>
 							<span className="block" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Actualités</span>
 						</motion.button>
@@ -774,7 +774,7 @@ function UserDashboard() {
 							exit={{ opacity: 0, x: -20 }}
 							transition={{ type: "spring", damping: 20, stiffness: 300 }}
 							onClick={scrollToDashboard}
-							className="fixed left-0 top-1/2 -translate-y-1/2 lg:hidden z-30 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[11px] font-bold uppercase tracking-widest px-2 py-5 shadow-xl rounded-r-2xl"
+							className="fixed left-0 top-1/2 -translate-y-1/2 lg:hidden z-30 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-3 shadow-xl rounded-r-xl"
 						>
 							<span className="block" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Tableau de bord</span>
 						</motion.button>
