@@ -31,7 +31,6 @@ import { Route as AppPostsIndexRouteImport } from './routes/_app/posts/index'
 import { Route as AppMeetingsIndexRouteImport } from './routes/_app/meetings/index'
 import { Route as AppConsularRegistryIndexRouteImport } from './routes/_app/consular-registry/index'
 import { Route as AppAppointmentsIndexRouteImport } from './routes/_app/appointments/index'
-import { Route as ApiDevSignInRouteImport } from './routes/api/dev/sign-in'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AppRequestsReferenceRouteImport } from './routes/_app/requests/$reference'
 import { Route as AppProfilesProfileIdRouteImport } from './routes/_app/profiles/$profileId'
@@ -155,11 +154,6 @@ const AppAppointmentsIndexRoute = AppAppointmentsIndexRouteImport.update({
   path: '/appointments/',
   getParentRoute: () => AppRoute,
 } as any)
-const ApiDevSignInRoute = ApiDevSignInRouteImport.update({
-  id: '/api/dev/sign-in',
-  path: '/api/dev/sign-in',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -243,7 +237,6 @@ export interface FileRoutesByFullPath {
   '/profiles/$profileId': typeof AppProfilesProfileIdRoute
   '/requests/$reference': typeof AppRequestsReferenceRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/dev/sign-in': typeof ApiDevSignInRoute
   '/appointments/': typeof AppAppointmentsIndexRoute
   '/consular-registry/': typeof AppConsularRegistryIndexRoute
   '/meetings/': typeof AppMeetingsIndexRoute
@@ -278,7 +271,6 @@ export interface FileRoutesByTo {
   '/profiles/$profileId': typeof AppProfilesProfileIdRoute
   '/requests/$reference': typeof AppRequestsReferenceRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/dev/sign-in': typeof ApiDevSignInRoute
   '/appointments': typeof AppAppointmentsIndexRoute
   '/consular-registry': typeof AppConsularRegistryIndexRoute
   '/meetings': typeof AppMeetingsIndexRoute
@@ -315,7 +307,6 @@ export interface FileRoutesById {
   '/_app/profiles/$profileId': typeof AppProfilesProfileIdRoute
   '/_app/requests/$reference': typeof AppRequestsReferenceRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/dev/sign-in': typeof ApiDevSignInRoute
   '/_app/appointments/': typeof AppAppointmentsIndexRoute
   '/_app/consular-registry/': typeof AppConsularRegistryIndexRoute
   '/_app/meetings/': typeof AppMeetingsIndexRoute
@@ -352,7 +343,6 @@ export interface FileRouteTypes {
     | '/profiles/$profileId'
     | '/requests/$reference'
     | '/api/auth/$'
-    | '/api/dev/sign-in'
     | '/appointments/'
     | '/consular-registry/'
     | '/meetings/'
@@ -387,7 +377,6 @@ export interface FileRouteTypes {
     | '/profiles/$profileId'
     | '/requests/$reference'
     | '/api/auth/$'
-    | '/api/dev/sign-in'
     | '/appointments'
     | '/consular-registry'
     | '/meetings'
@@ -423,7 +412,6 @@ export interface FileRouteTypes {
     | '/_app/profiles/$profileId'
     | '/_app/requests/$reference'
     | '/api/auth/$'
-    | '/api/dev/sign-in'
     | '/_app/appointments/'
     | '/_app/consular-registry/'
     | '/_app/meetings/'
@@ -441,7 +429,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiDevSignInRoute: typeof ApiDevSignInRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -599,13 +586,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/appointments/'
       preLoaderRoute: typeof AppAppointmentsIndexRouteImport
       parentRoute: typeof AppRoute
-    }
-    '/api/dev/sign-in': {
-      id: '/api/dev/sign-in'
-      path: '/api/dev/sign-in'
-      fullPath: '/api/dev/sign-in'
-      preLoaderRoute: typeof ApiDevSignInRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -774,7 +754,6 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiDevSignInRoute: ApiDevSignInRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -77,15 +77,15 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 				{/* 1. Header: Titre + Bouton de bascule */}
 				<div className="flex items-center justify-between">
 					<span className="text-xs font-bold flex items-center gap-1.5">
-						<div className="p-1 rounded-md bg-green-500/10">
-							<CreditCard className="h-3 w-3 text-green-600 dark:text-green-400" />
+						<div className="p-1 rounded-md bg-foreground/5">
+							<CreditCard className="h-3 w-3 text-muted-foreground" />
 						</div>
 						{t("mySpace.consularCard.title")}
 					</span>
 					<Button
 						variant="ghost"
 						size="sm"
-						className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+						className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
 						onClick={(e) => {
 							e.stopPropagation();
 							handleFlip();
@@ -227,7 +227,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 				</div>
 
 				{/* 3. Bouton Attestation */}
-				<Button asChild variant="outline" className="w-full h-8 text-[11px] border-border gap-2">
+				<Button asChild variant="outline" className="w-full h-8 text-xs border-border gap-2">
 					<Link to="/services/$slug" params={{ slug: "attestation-carte-consulaire" }}>
 						<FileText className="h-3.5 w-3.5" />
 						Attestation de Carte Consulaire
@@ -295,7 +295,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 						<p className="text-xs text-muted-foreground">
 							{t(
 								"mySpace.consularCard.pendingDesc",
-								"Demande en cours de traitement",
+								"Démarche en cours de traitement",
 							)}
 						</p>
 					</CardContent>

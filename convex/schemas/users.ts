@@ -26,6 +26,7 @@ export const usersTable = defineTable({
   // Platform-level role (not org-specific)
   role: v.optional(v.union(
     v.literal(UserRole.User),
+    v.literal(UserRole.SousAdmin),
     v.literal(UserRole.Admin),
     v.literal(UserRole.AdminSystem),
     v.literal(UserRole.SuperAdmin),

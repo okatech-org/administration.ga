@@ -23,9 +23,10 @@ import {
 	Settings,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useDraggable } from "@/hooks/use-draggable";
 
 import { CitizenChatTab } from "./CitizenChatTab";
 import { CitizenCallTab } from "./CitizenCallTab";
@@ -47,6 +48,13 @@ export function CitizenIAstedWindow() {
 	const [open, setOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<TabId>("ichat");
 	const navigate = useNavigate();
+
+	// Ecoute l'événement du footer mobile pour ouvrir la fenêtre
+	useEffect(() => {
+		const handler = () => setOpen(true);
+		window.addEventListener("iasted:open", handler);
+		return () => window.removeEventListener("iasted:open", handler);
+	}, []);
 
 	const handleExpand = () => {
 		setOpen(false);
@@ -173,6 +181,7 @@ export function CitizenIAstedFAB({
 }) {
 	// Si isOpen est undefined (ancien usage), toujours montrer
 	const shouldShow = isOpen === undefined ? true : !isOpen;
+	const draggable = useDraggable("iasted-fab-pos");
 
 	return (
 		<AnimatePresence>
@@ -182,12 +191,15 @@ export function CitizenIAstedFAB({
 					animate={{ scale: 1, opacity: 1 }}
 					exit={{ scale: 0, opacity: 0 }}
 					transition={{ type: "spring", damping: 20, stiffness: 300 }}
-					className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:bottom-6 right-4 md:right-6 z-40"
+					ref={draggable.ref}
+					style={draggable.style}
+					className={`${draggable.style ? "" : "fixed bottom-6 right-6"} z-40 touch-none select-none cursor-grab active:cursor-grabbing hidden lg:block`}
+					{...draggable.handlers}
 				>
 					<Button
 						size="lg"
 						className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow bg-emerald-600 hover:bg-emerald-700 relative"
-						onClick={onClick}
+						onClick={(e) => { if (!draggable.isDragged) onClick(); }}
 						aria-label="Ouvrir iAsted"
 					>
 						<Bot className="h-6 w-6" />

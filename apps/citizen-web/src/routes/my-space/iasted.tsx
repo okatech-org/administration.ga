@@ -224,7 +224,10 @@ function IAstedCitizenPage() {
 				<Button
 					variant="outline"
 					size="sm"
-					onClick={() => navigate({ to: "/my-space" })}
+					onClick={() => {
+						navigate({ to: "/my-space" });
+						setTimeout(() => window.dispatchEvent(new CustomEvent("iasted:open")), 100);
+					}}
 					className="gap-1.5"
 				>
 					<Minimize2 className="h-3.5 w-3.5" />

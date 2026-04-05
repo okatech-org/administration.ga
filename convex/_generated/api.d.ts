@@ -212,6 +212,7 @@ import type * as seeds_tutorials from "../seeds/tutorials.js";
 import type * as sensoriel from "../sensoriel.js";
 import type * as testDumpRecords from "../testDumpRecords.js";
 import type * as testQuery from "../testQuery.js";
+import type * as testUser from "../testUser.js";
 import type * as triggers_index from "../triggers/index.js";
 import type * as visuel from "../visuel.js";
 
@@ -426,6 +427,7 @@ declare const fullApi: ApiFromModules<{
   sensoriel: typeof sensoriel;
   testDumpRecords: typeof testDumpRecords;
   testQuery: typeof testQuery;
+  testUser: typeof testUser;
   "triggers/index": typeof triggers_index;
   visuel: typeof visuel;
 }>;

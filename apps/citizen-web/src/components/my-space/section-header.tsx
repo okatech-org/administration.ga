@@ -22,7 +22,7 @@ interface SectionHeaderProps {
  */
 export function SectionHeader({
 	icon,
-	iconBgClass = "bg-teal-500/10",
+	iconBgClass = "bg-foreground/8 dark:bg-foreground/5",
 	iconTextClass,
 	title,
 	actions,
@@ -30,7 +30,7 @@ export function SectionHeader({
 }: SectionHeaderProps) {
 	return (
 		<div className={cn("flex items-center justify-between mb-2", className)}>
-			<span className="text-[13px] font-bold flex items-center gap-2">
+			<span className="text-sm font-bold flex items-center gap-2">
 				<div className={cn("p-1 rounded-md", iconBgClass)}>
 					<span className={cn("h-3.5 w-3.5 shrink-0 [&>svg]:h-3.5 [&>svg]:w-3.5", iconTextClass)}>
 						{icon}

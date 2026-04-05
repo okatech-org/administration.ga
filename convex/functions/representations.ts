@@ -16,6 +16,12 @@ interface RepresentationResult {
   role: RepresentationRole;
   badge: string;
   description: string;
+  address?: {
+    street: string;
+    city: string;
+    postalCode: string;
+    country: string;
+  };
 }
 
 /**
@@ -45,7 +51,7 @@ export const getMyRepresentations = authQuery({
 
     // Helper to add an org to results without duplicates
     const addOrg = (
-      org: { _id: any; name: string; slug: string; type: string; country: string },
+      org: { _id: any; name: string; slug: string; type: string; country: string; address?: any },
       role: RepresentationRole,
     ) => {
       const id = org._id as string;
@@ -72,6 +78,12 @@ export const getMyRepresentations = authQuery({
         role,
         badge: badgeMap[role],
         description: descMap[role],
+        address: org.address ? {
+          street: org.address.street,
+          city: org.address.city,
+          postalCode: org.address.postalCode,
+          country: org.address.country,
+        } : undefined,
       });
     };
 

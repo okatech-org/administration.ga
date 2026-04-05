@@ -18,9 +18,10 @@ import {
 // Role hierarchy rank (higher = more privileged)
 const ROLE_RANK: Record<string, number> = {
   [UserRole.User]: 0,
-  [UserRole.Admin]: 1,
-  [UserRole.AdminSystem]: 2,
-  [UserRole.SuperAdmin]: 3,
+  [UserRole.SousAdmin]: 1,
+  [UserRole.Admin]: 2,
+  [UserRole.AdminSystem]: 3,
+  [UserRole.SuperAdmin]: 4,
 };
 
 // Helper to enrich user with profile + membership data
@@ -692,6 +693,7 @@ export const updateUserRole = backofficeMutation({
     userId: v.id("users"),
     role: v.union(
       v.literal(UserRole.User),
+      v.literal(UserRole.SousAdmin),
       v.literal(UserRole.Admin),
       v.literal(UserRole.AdminSystem),
     ),

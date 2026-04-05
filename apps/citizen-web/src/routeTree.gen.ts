@@ -64,7 +64,6 @@ import { Route as MySpaceAppointmentsNewRouteImport } from './routes/my-space/ap
 import { Route as MySpaceAppointmentsBookRouteImport } from './routes/my-space/appointments/book'
 import { Route as MySpaceAppointmentsAppointmentIdRouteImport } from './routes/my-space/appointments/$appointmentId'
 import { Route as ListingProfilesIdRouteImport } from './routes/listing.profiles.$id'
-import { Route as ApiDevSignInRouteImport } from './routes/api/dev/sign-in'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as MySpaceServicesSlugNewRouteImport } from './routes/my-space/services/$slug.new'
 import { Route as MySpaceRequestsRequestIdAppointmentRouteImport } from './routes/my-space/requests/$requestId_.appointment'
@@ -349,11 +348,6 @@ const ListingProfilesIdRoute = ListingProfilesIdRouteImport.update({
   path: '/listing/profiles/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiDevSignInRoute = ApiDevSignInRouteImport.update({
-  id: '/api/dev/sign-in',
-  path: '/api/dev/sign-in',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -412,7 +406,6 @@ export interface FileRoutesByFullPath {
   '/reps/': typeof RepsIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/dev/sign-in': typeof ApiDevSignInRoute
   '/listing/profiles/$id': typeof ListingProfilesIdRoute
   '/my-space/appointments/$appointmentId': typeof MySpaceAppointmentsAppointmentIdRoute
   '/my-space/appointments/book': typeof MySpaceAppointmentsBookRoute
@@ -472,7 +465,6 @@ export interface FileRoutesByTo {
   '/reps': typeof RepsIndexRoute
   '/services': typeof ServicesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/dev/sign-in': typeof ApiDevSignInRoute
   '/listing/profiles/$id': typeof ListingProfilesIdRoute
   '/my-space/appointments/$appointmentId': typeof MySpaceAppointmentsAppointmentIdRoute
   '/my-space/appointments/book': typeof MySpaceAppointmentsBookRoute
@@ -534,7 +526,6 @@ export interface FileRoutesById {
   '/reps/': typeof RepsIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/dev/sign-in': typeof ApiDevSignInRoute
   '/listing/profiles/$id': typeof ListingProfilesIdRoute
   '/my-space/appointments/$appointmentId': typeof MySpaceAppointmentsAppointmentIdRoute
   '/my-space/appointments/book': typeof MySpaceAppointmentsBookRoute
@@ -597,7 +588,6 @@ export interface FileRouteTypes {
     | '/reps/'
     | '/services/'
     | '/api/auth/$'
-    | '/api/dev/sign-in'
     | '/listing/profiles/$id'
     | '/my-space/appointments/$appointmentId'
     | '/my-space/appointments/book'
@@ -657,7 +647,6 @@ export interface FileRouteTypes {
     | '/reps'
     | '/services'
     | '/api/auth/$'
-    | '/api/dev/sign-in'
     | '/listing/profiles/$id'
     | '/my-space/appointments/$appointmentId'
     | '/my-space/appointments/book'
@@ -718,7 +707,6 @@ export interface FileRouteTypes {
     | '/reps/'
     | '/services/'
     | '/api/auth/$'
-    | '/api/dev/sign-in'
     | '/listing/profiles/$id'
     | '/my-space/appointments/$appointmentId'
     | '/my-space/appointments/book'
@@ -764,7 +752,6 @@ export interface RootRouteChildren {
   RepsIndexRoute: typeof RepsIndexRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiDevSignInRoute: typeof ApiDevSignInRoute
   ListingProfilesIdRoute: typeof ListingProfilesIdRoute
 }
 
@@ -1155,13 +1142,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ListingProfilesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/dev/sign-in': {
-      id: '/api/dev/sign-in'
-      path: '/api/dev/sign-in'
-      fullPath: '/api/dev/sign-in'
-      preLoaderRoute: typeof ApiDevSignInRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -1316,7 +1296,6 @@ const rootRouteChildren: RootRouteChildren = {
   RepsIndexRoute: RepsIndexRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiDevSignInRoute: ApiDevSignInRoute,
   ListingProfilesIdRoute: ListingProfilesIdRoute,
 }
 export const routeTree = rootRouteImport

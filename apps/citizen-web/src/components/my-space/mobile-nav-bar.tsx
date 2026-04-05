@@ -28,12 +28,6 @@ interface NavItem {
 	title: string;
 	url: string;
 	icon: React.ElementType;
-	color?: string;
-}
-
-interface NavSection {
-	label: string;
-	items: NavItem[];
 }
 
 export function MobileNavBar() {
@@ -41,132 +35,140 @@ export function MobileNavBar() {
 	const { t } = useTranslation();
 	const [sheetOpen, setSheetOpen] = useState(false);
 
-	// All links organized in sections for the sheet — matches desktop sidebar
-	const allSections: NavSection[] = [
+	// Items principaux du footer (5 slots)
+	const mainItems: NavItem[] = [
+		{ title: "iProfil", url: "/my-space", icon: User },
+		{ title: "iBoite", url: "/my-space/iboite", icon: Mail },
+		// iAsted au centre (index 2) — rendu séparément
+		{ title: "iDocument", url: "/my-space/idocument", icon: FileText },
+		// Menu (index 4) — rendu séparément
+	];
+
+	// Items secondaires dans le Sheet
+	const sheetSections = [
 		{
 			label: t("mySpace.nav.sectionIdentity"),
 			items: [
-				{
-					title: "iProfil",
-					url: "/my-space",
-					icon: User,
-					color: "text-gabon-green",
-				},
-				{
-					title: t("mySpace.nav.iboite"),
-					url: "/my-space/iboite",
-					icon: Mail,
-					color: "text-gabon-blue",
-				},
-				{
-					title: "iAsted",
-					url: "/my-space/iasted",
-					icon: Bot,
-					color: "text-gabon-yellow",
-				},
-				{
-					title: "iDocument",
-					url: "/my-space/idocument",
-					icon: FileText,
-					color: "text-gabon-green",
-				},
-				{
-					title: "iAgenda",
-					url: "/my-space/iagenda",
-					icon: Calendar,
-					color: "text-gabon-blue",
-				},
+				{ title: "iAgenda", url: "/my-space/iagenda", icon: Calendar },
 			],
 		},
 		{
 			label: t("mySpace.nav.sectionServices"),
 			items: [
-				{
-					title: "Mes Démarches",
-					url: "/my-space/services-demarches",
-					icon: Briefcase,
-					color: "text-gabon-green",
-				},
-				{
-					title: t("mySpace.nav.settings"),
-					url: "/my-space/settings",
-					icon: Settings,
-				},
+				{ title: "Mes Démarches", url: "/my-space/services-demarches", icon: Briefcase },
+				{ title: t("mySpace.nav.settings"), url: "/my-space/settings", icon: Settings },
 			],
 		},
 	];
 
 	const isActive = (url: string) => {
 		if (url === "/my-space") {
-			return (
-				location.pathname === "/my-space" ||
-				location.pathname === "/my-space/"
-			);
+			return location.pathname === "/my-space" || location.pathname === "/my-space/";
 		}
 		return location.pathname.startsWith(url);
 	};
 
+	const isIAstedActive = isActive("/my-space/iasted");
+	const hasSheetActive = sheetSections.some(s => s.items.some(i => isActive(i.url)));
+
 	return (
 		<>
-			{/* Floating Action Button — Neumorphic with Gabon green */}
-			<button
-				type="button"
-				onClick={() => setSheetOpen((prev) => !prev)}
-				className={cn(
-					"fixed bottom-5 right-4 z-50 md:hidden",
-					"flex items-center justify-center",
-					"h-13 w-13 rounded-2xl",
-					"bg-gabon-green text-white",
-					"shadow-[4px_4px_10px_rgba(0,0,0,0.2),-2px_-2px_6px_rgba(0,158,96,0.3)]",
-					"active:scale-95 transition-all duration-200",
-					sheetOpen && "rotate-90 bg-rose-500 shadow-[4px_4px_10px_rgba(0,0,0,0.2),-2px_-2px_6px_rgba(225,29,72,0.3)]",
-				)}
-			>
-				{sheetOpen ? <X className="size-6" /> : <Menu className="size-6" />}
-			</button>
+			{/* ── Footer bar fixe — mobile uniquement ── */}
+			<nav className="fixed bottom-3 left-3 right-3 z-40 md:hidden" style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }}>
+				<div className="bg-card/95 backdrop-blur-md border border-border rounded-2xl shadow-lg">
+					<div className="flex items-end justify-around px-2 h-14">
+						{/* iProfil */}
+						<NavBarItem item={mainItems[0]} active={isActive(mainItems[0].url)} onClick={() => setSheetOpen(false)} />
 
-			{/* Navigation sheet — Neumorphic styled */}
+						{/* iBoite */}
+						<NavBarItem item={mainItems[1]} active={isActive(mainItems[1].url)} onClick={() => setSheetOpen(false)} />
+
+						{/* iAsted — centre surélevé, ouvre la fenêtre de chat */}
+						<button
+							type="button"
+							onClick={() => {
+								setSheetOpen(false);
+								window.dispatchEvent(new CustomEvent("iasted:open"));
+							}}
+							className="flex flex-col items-center -mt-4"
+						>
+							<div className={cn(
+								"h-12 w-12 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95",
+								isIAstedActive
+									? "bg-emerald-500 ring-2 ring-emerald-500/30"
+									: "bg-emerald-600 hover:bg-emerald-500",
+							)}>
+								<Bot className="h-6 w-6 text-white" />
+							</div>
+						</button>
+
+						{/* iDocument */}
+						<NavBarItem item={mainItems[2]} active={isActive(mainItems[2].url)} onClick={() => setSheetOpen(false)} />
+
+						{/* Menu */}
+						<button
+							type="button"
+							onClick={() => setSheetOpen(prev => !prev)}
+							className="flex flex-col items-center justify-center gap-0.5 py-2 px-1 min-w-[48px]"
+						>
+							<div className={cn(
+								"h-7 w-7 rounded-lg flex items-center justify-center transition-colors",
+								sheetOpen || hasSheetActive ? "bg-primary/10" : "",
+							)}>
+								{sheetOpen ? (
+									<X className={cn("h-4.5 w-4.5", "text-primary")} />
+								) : (
+									<Menu className={cn("h-4.5 w-4.5", hasSheetActive ? "text-primary" : "text-muted-foreground")} />
+								)}
+							</div>
+							<span className={cn(
+								"text-[9px] font-medium",
+								sheetOpen || hasSheetActive ? "text-primary" : "text-muted-foreground",
+							)}>
+								Menu
+							</span>
+						</button>
+					</div>
+				</div>
+			</nav>
+
+			{/* ── Sheet menu secondaire ── */}
 			<Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-				<SheetContent side="bottom" className="rounded-t-3xl max-h-[80vh] px-4 bg-(--neu-surface) border-t-0">
-					{/* Gabon stripe at top of sheet */}
-					<div className="" />
-
+				<SheetContent side="bottom" className="rounded-t-2xl max-h-[60vh] px-4 bg-card border-t border-border">
 					<SheetHeader className="pb-3 pt-1">
-						<SheetTitle className="text-base heading-official text-gradient-official">
+						<SheetTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
 							{t("mySpace.nav.navigation")}
 						</SheetTitle>
 					</SheetHeader>
 
-					<div className="overflow-y-auto citizen-scrollbar space-y-5 pb-10">
-						{allSections.map((section) => (
+					<div className="overflow-y-auto citizen-scrollbar space-y-4 pb-6">
+						{sheetSections.map((section) => (
 							<div key={section.label}>
-								<p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 px-1 mb-2.5">
+								<p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 px-1 mb-2">
 									{section.label}
 								</p>
-								<div className="grid grid-cols-3 gap-2.5">
+								<div className="grid grid-cols-3 gap-2">
 									{section.items.map((item) => (
 										<Link
 											key={item.url}
 											to={item.url}
 											onClick={() => setSheetOpen(false)}
 											className={cn(
-												"neu-nav-item flex flex-col items-center justify-center gap-2.5 p-4 text-center h-auto min-h-[90px]",
+												"flex flex-col items-center justify-center gap-2 p-3 text-center rounded-xl min-h-[76px] transition-colors",
 												isActive(item.url)
-													? "active text-gabon-green font-semibold"
-													: "text-muted-foreground",
-												"bg-(--neu-surface-card)",
+													? "bg-primary/10 text-primary font-semibold"
+													: "bg-muted text-muted-foreground hover:bg-muted/70",
 											)}
 										>
 											<item.icon className={cn(
-												"size-6",
-												isActive(item.url) ? "text-gabon-green" : item.color,
+												"size-5",
+												isActive(item.url) ? "text-primary" : "text-muted-foreground",
 											)} />
 											<span className="text-[11px] font-medium leading-tight">
 												{item.title}
 											</span>
-											{/* Active dot indicator */}
 											{isActive(item.url) && (
-												<div className="w-1.5 h-1.5 rounded-full bg-gabon-green -mt-1" />
+												<div className="w-1.5 h-1.5 rounded-full bg-primary -mt-0.5" />
 											)}
 										</Link>
 									))}
@@ -175,21 +177,46 @@ export function MobileNavBar() {
 						))}
 					</div>
 
-					{/* Fixed Bottom Action in Menu */}
+					{/* Bouton action principal */}
 					<div className="pb-4 mt-auto">
 						<Button
-							className="w-full h-12 rounded-xl text-base font-medium bg-gabon-green hover:bg-gabon-green/90 text-white neu-raised border-0"
+							className="w-full h-11 rounded-xl text-sm font-semibold bg-primary hover:bg-primary/90 text-white border-0"
 							onClick={() => setSheetOpen(false)}
 							asChild
 						>
 							<Link to="/my-space/services">
-								<Plus className="mr-2 h-5 w-5" />
-								{t("mySpace.actions.newRequest", "Nouvelle demande")}
+								<Plus className="mr-2 h-4 w-4" />
+								{t("mySpace.actions.newRequest", "Nouvelle démarche")}
 							</Link>
 						</Button>
 					</div>
 				</SheetContent>
 			</Sheet>
 		</>
+	);
+}
+
+// Composant pour les items standard du footer
+function NavBarItem({ item, active, onClick }: { item: NavItem; active: boolean; onClick: () => void }) {
+	return (
+		<Link
+			to={item.url}
+			onClick={onClick}
+			className="flex flex-col items-center justify-center gap-0.5 py-2 px-1 min-w-[48px]"
+		>
+			<div className={cn(
+				"h-7 w-7 rounded-lg flex items-center justify-center transition-colors",
+				active && "bg-primary/10",
+			)}>
+				<item.icon className={cn("h-4.5 w-4.5", active ? "text-primary" : "text-muted-foreground")} />
+			</div>
+			<span className={cn(
+				"text-[9px] font-medium",
+				active ? "text-primary" : "text-muted-foreground",
+			)}>
+				{item.title}
+			</span>
+			{active && <div className="w-1 h-1 rounded-full bg-primary" />}
+		</Link>
 	);
 }

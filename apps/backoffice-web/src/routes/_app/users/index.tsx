@@ -41,7 +41,7 @@ const TABS: { id: UserTab; label: string; emoji: string }[] = [
   { id: "inactive", label: "Inactifs", emoji: "" },
 ];
 
-const BACKOFFICE_ROLES = ["super_admin", "admin_system", "admin"] as const;
+const BACKOFFICE_ROLES = ["super_admin", "admin_system", "admin", "sous_admin"] as const;
 const AGENT_ROLES = ["intel_agent", "education_agent"] as const;
 const PRIVILEGED_ROLES = [...BACKOFFICE_ROLES, ...AGENT_ROLES] as const;
 
@@ -49,6 +49,7 @@ const ROLE_META: Record<string, { label: string; emoji: string; color: string }>
   super_admin: { label: "Super Admin", emoji: "", color: "bg-amber-500/10 text-amber-700 border-amber-300 dark:text-amber-400" },
   admin_system: { label: "Admin Système", emoji: "", color: "bg-violet-500/10 text-violet-700 border-violet-300 dark:text-violet-400" },
   admin: { label: "Admin", emoji: "", color: "bg-blue-500/10 text-blue-700 border-blue-300 dark:text-blue-400" },
+  sous_admin: { label: "Sous-Admin", emoji: "", color: "bg-cyan-500/10 text-cyan-700 border-cyan-300 dark:text-cyan-400" },
   intel_agent: { label: "Agent Intel", emoji: "", color: "bg-emerald-500/10 text-emerald-700 border-emerald-300 dark:text-emerald-400" },
   education_agent: { label: "Agent Éducation", emoji: "", color: "bg-teal-500/10 text-teal-700 border-teal-300 dark:text-teal-400" },
 };
@@ -113,15 +114,30 @@ function UsersPage() {
     return () => { active = false; };
   }, [convex]);
 
-  // Tab filtering
+  // Rang hierarchique pour le tri par role
+  const ROLE_RANK: Record<string, number> = {
+    super_admin: 4, admin_system: 3, admin: 2, sous_admin: 1, user: 0,
+    intel_agent: 1, education_agent: 1,
+  };
+
+  // Tab filtering + tri intelligent
   const tabFilteredUsers = useMemo(() => {
     if (!users) return [];
     switch (activeTab) {
       case "backoffice":
-        return users.filter((u: any) => BACKOFFICE_ROLES.includes(u.role));
+        // Filtrer + trier par hierarchie (Super Admin en premier)
+        return users
+          .filter((u: any) => BACKOFFICE_ROLES.includes(u.role))
+          .sort((a: any, b: any) => (ROLE_RANK[b.role] ?? 0) - (ROLE_RANK[a.role] ?? 0));
       case "corps":
-      	// Include anyone with a membership in Corps Administratif (even if they have privileged roles)
-        return users.filter((u: any) => u.hasMembership);
+        // Filtrer + trier par representation (orgName) pour regrouper visuellement
+        return users
+          .filter((u: any) => u.hasMembership)
+          .sort((a: any, b: any) => {
+            const orgA = a.membershipInfo?.orgName ?? "";
+            const orgB = b.membershipInfo?.orgName ?? "";
+            return orgA.localeCompare(orgB, "fr");
+          });
       case "agents":
         return users.filter((u: any) => AGENT_ROLES.includes(u.role));
       case "users":

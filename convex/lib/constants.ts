@@ -87,10 +87,11 @@ export enum TicketCategory {
 /**
  * Platform-level roles (inherent to user, not org-specific)
  * These roles grant access/permissions across ALL organizations
- * Hierarchy: SuperAdmin > AdminSystem > Admin > User
+ * Hierarchy: SuperAdmin > AdminSystem > Admin > SousAdmin > User
  */
 export enum UserRole {
   User = "user", // Standard citizen
+  SousAdmin = "sous_admin", // Back-office sous-admin (acces restreint)
   Admin = "admin", // Back-office admin (assigned by SuperAdmin)
   AdminSystem = "admin_system", // System admin (all access except delete SuperAdmin)
   SuperAdmin = "super_admin", // Full platform access (unique: iasted@me.com)

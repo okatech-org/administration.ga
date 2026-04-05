@@ -7,7 +7,8 @@ import {
 } from "@livekit/components-react";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import type { VariantProps } from "class-variance-authority";
-import { Loader2, Phone, PhoneOff, ChevronDown } from "lucide-react";
+import { Loader2, Phone, PhoneOff, ChevronDown, MapPin, MessageCircle } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -22,6 +23,7 @@ import { useConvexMutationQuery, useConvexQuery } from "@/integrations/convex/ho
 interface OrgCallButtonProps {
 	orgId: Id<"orgs">;
 	orgName: string;
+	orgAddress?: { street: string; city: string; postalCode: string; country: string };
 	className?: string;
 	variant?: VariantProps<typeof buttonVariants>["variant"];
 	label?: string;
@@ -35,6 +37,7 @@ interface OrgCallButtonProps {
 export function OrgCallButton({
 	orgId,
 	orgName,
+	orgAddress,
 	className,
 	variant = "default",
 	label,
@@ -145,16 +148,19 @@ export function OrgCallButton({
 			<Dialog open={showLineSelector} onOpenChange={setShowLineSelector}>
 				<DialogContent className="sm:max-w-sm">
 					<div className="flex flex-col gap-4">
-						<div className="space-y-1">
-							<h2 className="text-lg font-semibold flex items-center gap-2">
-								<Phone className="w-5 h-5 text-primary" />
-								{t("meetings.selectLine", "Choisir une ligne")}
-							</h2>
-							<p className="text-sm text-muted-foreground border-b pb-3">
-								{t("meetings.selectLineDesc", "Sur quelle ligne souhaitez-vous appeler ?")}
-							</p>
+						{/* En-tête : nom complet de la représentation */}
+						<div className="space-y-2">
+							<h2 className="text-lg font-bold">{orgName}</h2>
+							{orgAddress && (
+								<div className="flex items-start gap-2 text-xs text-muted-foreground">
+									<MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+									<span className="leading-tight">{orgAddress.street}, {orgAddress.postalCode} {orgAddress.city}</span>
+								</div>
+							)}
+							<div className="border-b pt-1" />
 						</div>
 
+						{/* Lignes téléphoniques */}
 						<div className="space-y-2">
 							{activeLines.map((line) => {
 								const isPersonal = line.type === "personal";
@@ -190,6 +196,14 @@ export function OrgCallButton({
 								);
 							})}
 						</div>
+
+						{/* Bouton Chat — redirige vers iChat */}
+						<Button asChild variant="outline" size="sm" className="w-full h-9 text-sm font-medium rounded-xl">
+							<Link to="/my-space/iasted">
+								<MessageCircle className="w-4 h-4 mr-2" />
+								{t("meetings.chatWithOrg", "Discuter avec la représentation")}
+							</Link>
+						</Button>
 					</div>
 				</DialogContent>
 			</Dialog>

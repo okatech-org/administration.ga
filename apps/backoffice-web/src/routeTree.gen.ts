@@ -30,7 +30,6 @@ import { Route as AppMonitoringIndexRouteImport } from './routes/_app/monitoring
 import { Route as AppEventsIndexRouteImport } from './routes/_app/events/index'
 import { Route as AppAuditLogsIndexRouteImport } from './routes/_app/audit-logs/index'
 import { Route as AppAffairesConsulairesIndexRouteImport } from './routes/_app/affaires-consulaires/index'
-import { Route as ApiDevSignInRouteImport } from './routes/api/dev/sign-in'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AppUsersUserIdRouteImport } from './routes/_app/users/$userId'
 import { Route as AppTutorialsNewRouteImport } from './routes/_app/tutorials/new'
@@ -159,11 +158,6 @@ const AppAffairesConsulairesIndexRoute =
     path: '/affaires-consulaires/',
     getParentRoute: () => AppRoute,
   } as any)
-const ApiDevSignInRoute = ApiDevSignInRouteImport.update({
-  id: '/api/dev/sign-in',
-  path: '/api/dev/sign-in',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -303,7 +297,6 @@ export interface FileRoutesByFullPath {
   '/tutorials/new': typeof AppTutorialsNewRoute
   '/users/$userId': typeof AppUsersUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/dev/sign-in': typeof ApiDevSignInRoute
   '/affaires-consulaires/': typeof AppAffairesConsulairesIndexRoute
   '/audit-logs/': typeof AppAuditLogsIndexRoute
   '/events/': typeof AppEventsIndexRoute
@@ -348,7 +341,6 @@ export interface FileRoutesByTo {
   '/tutorials/new': typeof AppTutorialsNewRoute
   '/users/$userId': typeof AppUsersUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/dev/sign-in': typeof ApiDevSignInRoute
   '/affaires-consulaires': typeof AppAffairesConsulairesIndexRoute
   '/audit-logs': typeof AppAuditLogsIndexRoute
   '/events': typeof AppEventsIndexRoute
@@ -395,7 +387,6 @@ export interface FileRoutesById {
   '/_app/tutorials/new': typeof AppTutorialsNewRoute
   '/_app/users/$userId': typeof AppUsersUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/dev/sign-in': typeof ApiDevSignInRoute
   '/_app/affaires-consulaires/': typeof AppAffairesConsulairesIndexRoute
   '/_app/audit-logs/': typeof AppAuditLogsIndexRoute
   '/_app/events/': typeof AppEventsIndexRoute
@@ -442,7 +433,6 @@ export interface FileRouteTypes {
     | '/tutorials/new'
     | '/users/$userId'
     | '/api/auth/$'
-    | '/api/dev/sign-in'
     | '/affaires-consulaires/'
     | '/audit-logs/'
     | '/events/'
@@ -487,7 +477,6 @@ export interface FileRouteTypes {
     | '/tutorials/new'
     | '/users/$userId'
     | '/api/auth/$'
-    | '/api/dev/sign-in'
     | '/affaires-consulaires'
     | '/audit-logs'
     | '/events'
@@ -533,7 +522,6 @@ export interface FileRouteTypes {
     | '/_app/tutorials/new'
     | '/_app/users/$userId'
     | '/api/auth/$'
-    | '/api/dev/sign-in'
     | '/_app/affaires-consulaires/'
     | '/_app/audit-logs/'
     | '/_app/events/'
@@ -559,7 +547,6 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   SignInSplatRoute: typeof SignInSplatRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiDevSignInRoute: typeof ApiDevSignInRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -710,13 +697,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/affaires-consulaires/'
       preLoaderRoute: typeof AppAffairesConsulairesIndexRouteImport
       parentRoute: typeof AppRoute
-    }
-    '/api/dev/sign-in': {
-      id: '/api/dev/sign-in'
-      path: '/api/dev/sign-in'
-      fullPath: '/api/dev/sign-in'
-      preLoaderRoute: typeof ApiDevSignInRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -967,7 +947,6 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   SignInSplatRoute: SignInSplatRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiDevSignInRoute: ApiDevSignInRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

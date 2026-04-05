@@ -31,7 +31,7 @@ export function PageHeader({
 	title,
 	subtitle,
 	icon,
-	iconBgClass = "bg-primary/10",
+	iconBgClass = "bg-foreground/8 dark:bg-foreground/5",
 	actions,
 	showBackButton = false,
 	onBack,

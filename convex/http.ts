@@ -196,7 +196,18 @@ http.route({
       const user = users[0];
       const userId = String(user._id ?? user.id);
 
-      // 2. Find or create a credential account with a temp password
+      // 2. Ensure emailVerified is true (required because requireEmailVerification: true)
+      if (!user.emailVerified) {
+        await ctx.runMutation(components.betterAuth.adapter.updateOne, {
+          input: {
+            model: "user",
+            where: [{ field: "_id", value: user._id ?? user.id }],
+            update: { emailVerified: true },
+          },
+        } as any);
+      }
+
+      // 3. Find or create a credential account with a temp password
       const tempPassword = "__dev_temp_" + crypto.randomUUID();
       const accountsResult = await ctx.runQuery(
         components.betterAuth.adapter.findMany,
@@ -240,14 +251,14 @@ http.route({
         } as any);
       }
 
-      // 3. Return the temp password to the client.
-      // The client will call authClient.signIn.email() with it,
-      // which goes through the proper crossDomain flow and sets cookies correctly.
-      // The password will be cleared automatically after 30s via scheduler.
-      await ctx.scheduler.runAfter(5_000, internal.functions.roleConfig.clearTempPassword, {
-        accountId: accounts[0]?._id ?? accounts[0]?.id ?? null,
+      // 4. Schedule cleanup of temp password after 30s
+      const accountId = accounts[0]?._id ?? accounts[0]?.id ?? null;
+      await ctx.scheduler.runAfter(30_000, internal.functions.roleConfig.clearTempPassword, {
+        accountId,
       });
 
+      // 5. Return the tempPassword — the client will use authClient.signIn.email()
+      // which goes through the /api/auth/* proxy → crossDomain flow for proper cookies.
       return new Response(
         JSON.stringify({ email, tempPassword }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
@@ -411,7 +422,7 @@ http.route({
       }
 
       // 4. Clean up temp password after 30s
-      await ctx.scheduler.runAfter(5_000, internal.functions.roleConfig.clearTempPassword, {
+      await ctx.scheduler.runAfter(30_000, internal.functions.roleConfig.clearTempPassword, {
         accountId: accounts[0]?._id ?? accounts[0]?.id ?? null,
       });
 

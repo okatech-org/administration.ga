@@ -152,7 +152,7 @@ export function ConsularNotificationDialog({
 					<DialogDescription>
 						{t(
 							"mySpace.notification.dialog.description",
-							"Signalez votre présence temporaire auprès du consulat compétent.",
+							"Signalez votre déplacement temporaire auprès de la Représentation consulaire ou diplomatique compétente.",
 						)}
 					</DialogDescription>
 				</DialogHeader>

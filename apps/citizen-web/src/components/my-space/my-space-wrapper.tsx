@@ -1,6 +1,6 @@
 import { api } from "@convex/_generated/api";
 import { Link } from "@tanstack/react-router";
-import { Building2, Plane, Plus } from "lucide-react";
+import { Building2, Info, Plane, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
@@ -12,6 +12,12 @@ import {
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ConsularNotificationDialog } from "./ConsularNotificationDialog";
 import { ConsularRegistrationDialog } from "./ConsularRegistrationDialog";
 import { MobileNavBar } from "./mobile-nav-bar";
@@ -58,8 +64,8 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
 				<div className="" />
 
 				{/* Sidebar */}
-				<div className="hidden md:block p-3 pr-0">
-					<div className="h-full rounded-2xl border border-border bg-card overflow-hidden">
+				<div className="hidden md:block p-4 pr-0">
+					<div className="h-full rounded-2xl bg-card overflow-hidden">
 						<MySpaceSidebar
 							isExpanded={isExpanded}
 							onToggle={() => setIsExpanded((prev) => !prev)}
@@ -71,7 +77,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
 				<main
 					className={cn(
 						"flex-1 overflow-y-auto citizen-scrollbar",
-						"px-3 pt-3 pb-20 md:px-5 md:pt-3 md:pb-3 md:pl-3",
+						"px-4 pt-4 pb-20 md:px-4 md:pt-4 md:pb-4",
 						className,
 					)}
 				>
@@ -86,26 +92,15 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
 }
 
 export function MySpaceHeader() {
-	const { userData, profile } = useCitizenData();
+	const { profile } = useCitizenData();
 	const { t } = useTranslation();
 
-	// Get consular registration data for "Dossier consulaire" display
+	// Get consular registration data
 	const { data: registrations } = useAuthenticatedConvexQuery(
 		api.functions.consularRegistrations.listByProfile,
 		{},
 	);
 	const latestRegistration = registrations?.[0];
-
-	// Get the request linked to the registration for reference & org
-	const { data: registrationRequest } = useAuthenticatedConvexQuery(
-		api.functions.requests.getById,
-		latestRegistration?.requestId
-			? { requestId: latestRegistration.requestId }
-			: "skip",
-	);
-
-	const requestReference = registrationRequest?.reference;
-	const orgName = (registrationRequest?.org as any)?.name;
 
 	// Check if user needs consular registration CTA
 	const needsRegistration =
@@ -123,72 +118,113 @@ export function MySpaceHeader() {
 
 	return (
 		<>
-			<header className="w-full flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-				<div className="flex w-full items-start justify-between md:w-auto">
-					{/* Left: Greeting + Dossier */}
-					<div className="flex flex-col gap-3">
-						<h1 className="text-lg md:text-2xl font-bold ">
-							{t("common.greeting", {
-								firstName: userData?.firstName ?? userData?.name ?? "",
-							})}
-						</h1>
-
+			<header className="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+				{/* ── Desktop : matricule + badge à gauche ── */}
+				<div className="hidden md:flex w-full items-center justify-between md:w-auto">
+					<div className="flex items-center gap-4 flex-wrap">
+						{profile?.matricule && (
+							<span className="text-sm font-mono font-semibold text-muted-foreground uppercase tracking-wide">
+								{profile.matricule}
+							</span>
+						)}
+						{profile?.userType && (
+							<span className="text-sm px-3 py-1 rounded-full bg-amber-500/35 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 font-medium">
+								{profile.userType === "long_stay" ? "Long séjour" : profile.userType === "short_stay" ? "Court séjour" : "De passage"}
+							</span>
+						)}
 						{needsRegistration && (
 							<Button
 								variant="outline"
 								size="xs"
-								className="w-max rounded-full border-teal-500/30 text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 gap-1.5"
+								className="w-max rounded-full text-primary dark:text-primary hover:bg-blue-500/10 gap-1.5"
 								onClick={() => setShowRegistrationDialog(true)}
 							>
 								<Building2 className="h-3.5 w-3.5" />
-								{t(
-									"mySpace.registration.cta",
-									"Faire mon inscription consulaire",
-								)}
+								{t("mySpace.registration.cta", "Faire mon inscription consulaire")}
 							</Button>
 						)}
 					</div>
-
-					{/* Notification Bell - Mobile only (Top Right) */}
-					<NotificationDropdown className="md:hidden h-10 w-10  bg-card rounded-full shrink-0" />
 				</div>
 
-				{/* Right: Action buttons - Desktop only */}
-				<div className="hidden md:flex items-center gap-3">
-					{/* Organisation consulaire */}
-					{orgName && (
-						<span className="inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20 text-xs font-semibold mr-2">
-							<Building2 className="h-3.5 w-3.5" />
-							{t("mySpace.header.managedBy", "Géré par")} : {orgName}
-						</span>
-					)}
-
-					{/* Signaler mon déplacement */}
+				{/* ── Mobile : tous les boutons sur une ligne ── */}
+				<div className="flex md:hidden items-center gap-2">
 					{canNotify && (
 						<Button
-							variant="outline"
+							variant="ghost"
 							size="sm"
-							className="h-8 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 hover:text-amber-800 dark:hover:text-amber-300 border border-amber-500/20 font-semibold"
+							className="h-9 rounded-full bg-amber-500/35 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 hover:bg-amber-500/45 dark:hover:bg-amber-500/25 font-semibold text-xs min-w-0 flex-1 overflow-hidden"
 							onClick={() => setShowNotificationDialog(true)}
 						>
-							<Plane className="mr-1.5 h-3.5 w-3.5" />
-							Signaler ma présence
+							<Plane className="mr-1 h-3.5 w-3.5 shrink-0" />
+							<span className="hidden min-[380px]:inline truncate">Signaler ma présence</span>
+							<span className="inline min-[380px]:hidden truncate">Signaler</span>
 						</Button>
 					)}
-					{/* Nouvelle demande */}
-					<Button 
-						variant="outline"
-						size="sm" 
-						className="h-8 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 hover:text-blue-700 dark:hover:text-blue-300 border border-blue-500/20 font-semibold" 
+					{needsRegistration && (
+						<Button
+							variant="outline"
+							size="xs"
+							className="rounded-full text-primary dark:text-primary hover:bg-blue-500/10 gap-1.5 min-w-0 flex-1 overflow-hidden"
+							onClick={() => setShowRegistrationDialog(true)}
+						>
+							<Building2 className="h-3.5 w-3.5 shrink-0" />
+							<span className="truncate">Inscription</span>
+						</Button>
+					)}
+					<Button
+						variant="ghost"
+						size="sm"
+						className="h-9 rounded-full bg-primary text-white hover:bg-primary/90 font-semibold text-xs min-w-0 flex-1 overflow-hidden"
+						asChild
+					>
+						<Link to="/services">
+							<Plus className="mr-1 h-3.5 w-3.5 shrink-0" />
+							<span className="hidden min-[420px]:inline truncate">Nouvelle démarche</span>
+							<span className="inline min-[420px]:hidden truncate">Démarche</span>
+						</Link>
+					</Button>
+					<NotificationDropdown className="h-10 w-10 min-w-10 bg-card rounded-full shrink-0" />
+				</div>
+
+				{/* ── Desktop : boutons d'action à droite (inchangé) ── */}
+				<div className="hidden md:flex items-center gap-4">
+					{canNotify && (
+						<div className="flex items-center gap-2">
+							<Button
+								variant="ghost"
+								size="sm"
+								className="h-8 rounded-full bg-amber-500/35 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 hover:bg-amber-500/45 dark:hover:bg-amber-500/25 font-semibold"
+								onClick={() => setShowNotificationDialog(true)}
+							>
+								<Plane className="mr-1.5 h-3.5 w-3.5" />
+								Signaler ma présence
+							</Button>
+							<TooltipProvider delayDuration={100}>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<button type="button" title="Info signalement" className="h-6 w-6 rounded-full bg-amber-500/35 dark:bg-amber-500/15 flex items-center justify-center text-amber-700 dark:text-amber-400 hover:bg-amber-500/45 dark:hover:bg-amber-500/25 transition-colors">
+											<Info className="h-3.5 w-3.5" />
+										</button>
+									</TooltipTrigger>
+									<TooltipContent side="bottom" className="max-w-xs text-xs">
+										Signalez votre déplacement temporaire auprès de la Représentation consulaire ou diplomatique compétente.
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+						</div>
+					)}
+					<Button
+						variant="ghost"
+						size="sm"
+						className="h-8 rounded-full bg-primary text-white hover:bg-primary/90 font-semibold"
 						asChild
 					>
 						<Link to="/services">
 							<Plus className="mr-1.5 h-3.5 w-3.5" />
-							Nouvelle demande
+							Nouvelle démarche
 						</Link>
 					</Button>
-					{/* Notifications - Desktop */}
-					<NotificationDropdown className="h-10 w-10  bg-card rounded-full shrink-0" />
+					<NotificationDropdown className="h-10 w-10 bg-card rounded-full shrink-0" />
 				</div>
 			</header>
 

@@ -16,6 +16,7 @@ const ROLE_DISPLAY: Record<string, { label: string; variant: "default" | "second
   super_admin: { label: "Super Admin", variant: "default", className: "bg-amber-600 hover:bg-amber-700 text-white" },
   admin_system: { label: "Admin Système", variant: "default", className: "bg-violet-600 hover:bg-violet-700 text-white" },
   admin: { label: "Admin", variant: "default", className: "bg-blue-600 hover:bg-blue-700 text-white" },
+  sous_admin: { label: "Sous-Admin", variant: "default", className: "bg-cyan-600 hover:bg-cyan-700 text-white" },
   intel_agent: { label: "Agent Intel", variant: "default", className: "bg-emerald-600 hover:bg-emerald-700 text-white" },
   education_agent: { label: "Agent Éducation", variant: "default", className: "bg-teal-600 hover:bg-teal-700 text-white" },
   user: { label: "Utilisateur", variant: "secondary" },

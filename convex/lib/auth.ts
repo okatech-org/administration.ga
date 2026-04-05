@@ -77,7 +77,7 @@ export async function getMembership(
 // ============================================
 
 /** Back-office roles (all admin-level roles) */
-const BACK_OFFICE_ROLES = [UserRole.SuperAdmin, UserRole.AdminSystem, UserRole.Admin] as string[];
+const BACK_OFFICE_ROLES = [UserRole.SuperAdmin, UserRole.AdminSystem, UserRole.Admin, UserRole.SousAdmin] as string[];
 
 /**
  * Get the effective role of a user (from role field or isSuperadmin flag)

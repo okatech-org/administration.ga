@@ -350,7 +350,7 @@ function AgentProfileDetailPage() {
 
 						{/* Tab: Profil complet */}
 						<TabsContent value="profile">
-							<ProfileDetailView profileId={profileId} />
+							<ProfileDetailView profileId={profileId} context="agent" />
 						</TabsContent>
 
 						{/* Tab: Notes Agent (INTERNE — jamais visible côté citoyen) */}

@@ -1582,6 +1582,50 @@ export const getProfileDetail = authQuery({
           .withIndex("by_profile", (q) => q.eq("profileId", profile._id))
           .collect();
 
+    // Representations: orgs with jurisdiction over the profile's country of residence
+    const residenceCountry =
+      profile.countryOfResidence || profile.addresses?.residence?.country;
+
+    let representations: {
+      name: string;
+      type: string;
+      country: string;
+      slug: string;
+    }[] = [];
+
+    if (residenceCountry) {
+      const allOrgs = await ctx.db
+        .query("orgs")
+        .withIndex("by_active_notDeleted", (q) =>
+          q.eq("isActive", true).eq("deletedAt", undefined),
+        )
+        .take(200);
+
+      const diplomaticTypes = [
+        "embassy",
+        "consulate",
+        "general_consulate",
+        "high_representation",
+        "high_commission",
+        "permanent_mission",
+      ];
+
+      representations = allOrgs
+        .filter(
+          (org) =>
+            diplomaticTypes.includes(org.type) &&
+            org.jurisdictionCountries &&
+            org.jurisdictionCountries.length > 0 &&
+            org.jurisdictionCountries.includes(residenceCountry as any),
+        )
+        .map((org) => ({
+          name: org.name,
+          type: org.type,
+          country: org.country,
+          slug: org.slug,
+        }));
+    }
+
     return {
       profile,
       user: user ? { _id: user._id, email: user.email, name: user.name } : null,
@@ -1589,6 +1633,7 @@ export const getProfileDetail = authQuery({
       documents: uniqueDocs,
       requests: enrichedRequests,
       registrations,
+      representations,
     };
   },
 });

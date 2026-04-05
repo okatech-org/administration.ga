@@ -1,22 +1,47 @@
 import { api } from "@convex/_generated/api";
-import { CountryCode } from "@convex/lib/constants";
+import type { Doc } from "@convex/_generated/dataModel";
+import {
+	CountryCode,
+	Gender,
+	MaritalStatus,
+	NationalityAcquisition,
+} from "@convex/lib/constants";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import {
 	Bell,
+	Briefcase,
 	Check,
+	ChevronDown,
+	FileText,
+	FolderOpen,
 	KeyRound,
 	Loader2,
 	Lock,
 	LogOut,
 	Mail,
+	MapPin,
 	Palette,
+	Save,
 	Trash2,
 	User,
+	Users,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { FormProvider, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import {
+	PROFILE_FIELD_MAPPING,
+	useFormFillEffect,
+} from "@/components/ai/useFormFillEffect";
+import { ContactsStep } from "@/components/registration/steps/ContactsStep";
+import { DocumentsStep } from "@/components/registration/steps/DocumentsStep";
+import { FamilyStep } from "@/components/registration/steps/FamilyStep";
+import { IdentityStep } from "@/components/registration/steps/IdentityStep";
+import { ProfessionalStep } from "@/components/registration/steps/ProfessionalStep";
 import {
 	SettingsDivider,
 	SettingsLayout,
@@ -40,12 +65,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { type ConsularTheme, useConsularTheme } from "@/hooks/useConsularTheme";
+import {
+	useAuthenticatedConvexQuery,
+	useConvexMutationQuery,
+} from "@/integrations/convex/hooks";
 import { captureEvent } from "@/lib/analytics";
 import { authClient } from "@/lib/auth-client";
+import {
+	getChangedFields,
+	transformFormDataToPayload,
+} from "@/lib/profile-utils";
 import { cn } from "@/lib/utils";
+import {
+	type ProfileFormValues,
+	profileFormSchema,
+} from "@/lib/validation/profile";
 
 export const Route = createFileRoute("/my-space/settings")({
 	component: SettingsPage,
+	validateSearch: (search: Record<string, unknown>) => ({
+		tab: (search.tab as string) || undefined,
+	}),
 });
 
 function ThemePreview({
@@ -134,12 +174,445 @@ function ThemePreview({
 	);
 }
 
+// ─── Accordion Section ────────────────────────────────────────
+interface AccordionSectionProps {
+	icon: React.ReactNode;
+	title: string;
+	description?: string;
+	isOpen: boolean;
+	onToggle: () => void;
+	children: React.ReactNode;
+	color?: string;
+}
+
+function AccordionSection({
+	icon,
+	title,
+	description,
+	isOpen,
+	onToggle,
+	children,
+	color = "text-teal-600 dark:text-teal-400",
+}: AccordionSectionProps) {
+	return (
+		<div className="border border-border/60 rounded-xl overflow-hidden transition-all duration-200">
+			<button
+				type="button"
+				onClick={onToggle}
+				className={cn(
+					"w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors",
+					isOpen
+						? "bg-primary/5 border-b border-border/40"
+						: "hover:bg-muted/50",
+				)}
+			>
+				<div
+					className={cn(
+						"p-1.5 rounded-lg shrink-0",
+						isOpen ? "bg-primary/10" : "bg-muted",
+					)}
+				>
+					<span className={cn("block", isOpen ? color : "text-muted-foreground")}>
+						{icon}
+					</span>
+				</div>
+				<div className="flex-1 min-w-0">
+					<p className="text-sm font-semibold">{title}</p>
+					{description && (
+						<p className="text-xs text-muted-foreground mt-0.5 truncate">
+							{description}
+						</p>
+					)}
+				</div>
+				<ChevronDown
+					className={cn(
+						"h-4 w-4 text-muted-foreground transition-transform duration-200 shrink-0",
+						isOpen && "rotate-180",
+					)}
+				/>
+			</button>
+			<div
+				className={cn(
+					"transition-all duration-300 ease-in-out overflow-hidden",
+					isOpen ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0",
+				)}
+			>
+				<div className="p-4">{children}</div>
+			</div>
+		</div>
+	);
+}
+
+// ─── Mon Dossier Tab ──────────────────────────────────────────
+function MonDossierTab() {
+	const { t } = useTranslation();
+	const {
+		data: profile,
+		isPending,
+	} = useAuthenticatedConvexQuery(api.functions.profiles.getMine, {});
+	const { mutateAsync: updateProfile, isPending: isSaving } =
+		useConvexMutationQuery(api.functions.profiles.update);
+
+	const [openSections, setOpenSections] = useState<Set<string>>(
+		new Set(["identity"]),
+	);
+
+	const toggleSection = (id: string) => {
+		setOpenSections((prev) => {
+			const next = new Set(prev);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			return next;
+		});
+	};
+
+	const form = useForm<ProfileFormValues>({
+		resolver: zodResolver(profileFormSchema),
+		mode: "onChange",
+		defaultValues: {
+			countryOfResidence: (profile as any)?.countryOfResidence || undefined,
+			identity: {
+				firstName: (profile as any)?.identity?.firstName || "",
+				lastName: (profile as any)?.identity?.lastName || "",
+				birthDate: (profile as any)?.identity?.birthDate
+					? new Date((profile as any).identity.birthDate)
+					: undefined,
+				birthPlace: (profile as any)?.identity?.birthPlace || "",
+				birthCountry:
+					(profile as any)?.identity?.birthCountry || CountryCode.GA,
+				gender: (profile as any)?.identity?.gender || Gender.Male,
+				nationality: (profile as any)?.identity?.nationality || CountryCode.GA,
+				nationalityAcquisition:
+					(profile as any)?.identity?.nationalityAcquisition ||
+					NationalityAcquisition.Birth,
+			},
+			passportInfo: (profile as any)?.passportInfo
+				? {
+						number: (profile as any).passportInfo.number || "",
+						issueDate: (profile as any).passportInfo.issueDate
+							? new Date((profile as any).passportInfo.issueDate)
+							: undefined,
+						expiryDate: (profile as any).passportInfo.expiryDate
+							? new Date((profile as any).passportInfo.expiryDate)
+							: undefined,
+						issuingAuthority:
+							(profile as any).passportInfo.issuingAuthority || "",
+					}
+				: undefined,
+			addresses: {
+				homeland: (profile as any)?.addresses?.homeland
+					? {
+							street: (profile as any).addresses.homeland.street || "",
+							city: (profile as any).addresses.homeland.city || "",
+							postalCode:
+								(profile as any).addresses.homeland.postalCode || "",
+							country:
+								(profile as any).addresses.homeland.country ||
+								CountryCode.GA,
+						}
+					: { street: "", city: "", postalCode: "", country: CountryCode.GA },
+				residence: (profile as any)?.addresses?.residence
+					? {
+							street: (profile as any).addresses.residence.street || "",
+							city: (profile as any).addresses.residence.city || "",
+							postalCode:
+								(profile as any).addresses.residence.postalCode || "",
+							country:
+								(profile as any).addresses.residence.country ||
+								CountryCode.FR,
+						}
+					: { street: "", city: "", postalCode: "", country: CountryCode.FR },
+			},
+			contacts: {
+				email: (profile as any)?.contacts?.email || "",
+				phone: (profile as any)?.contacts?.phone || "",
+				emergencyResidence:
+					(profile as any)?.contacts?.emergencyResidence || undefined,
+				emergencyHomeland:
+					(profile as any)?.contacts?.emergencyHomeland || undefined,
+			},
+			family: {
+				maritalStatus:
+					(profile as any)?.family?.maritalStatus || MaritalStatus.Single,
+				father: (profile as any)?.family?.father || {
+					firstName: "",
+					lastName: "",
+				},
+				mother: (profile as any)?.family?.mother || {
+					firstName: "",
+					lastName: "",
+				},
+				spouse: (profile as any)?.family?.spouse || {
+					firstName: "",
+					lastName: "",
+				},
+			},
+			profession: (profile as any)?.profession
+				? {
+						status: (profile as any).profession.status || undefined,
+						title: (profile as any).profession.title || "",
+						employer: (profile as any).profession.employer || "",
+					}
+				: { status: undefined, title: "", employer: "" },
+		},
+	});
+
+	// Reset form when profile loads
+	useEffect(() => {
+		if (profile) {
+			const p = profile as any;
+			form.reset({
+				countryOfResidence: p?.countryOfResidence || undefined,
+				identity: {
+					firstName: p?.identity?.firstName || "",
+					lastName: p?.identity?.lastName || "",
+					birthDate: p?.identity?.birthDate
+						? new Date(p.identity.birthDate)
+						: undefined,
+					birthPlace: p?.identity?.birthPlace || "",
+					birthCountry: p?.identity?.birthCountry || CountryCode.GA,
+					gender: p?.identity?.gender || Gender.Male,
+					nationality: p?.identity?.nationality || CountryCode.GA,
+					nationalityAcquisition:
+						p?.identity?.nationalityAcquisition ||
+						NationalityAcquisition.Birth,
+				},
+				passportInfo: p?.passportInfo
+					? {
+							number: p.passportInfo.number || "",
+							issueDate: p.passportInfo.issueDate
+								? new Date(p.passportInfo.issueDate)
+								: undefined,
+							expiryDate: p.passportInfo.expiryDate
+								? new Date(p.passportInfo.expiryDate)
+								: undefined,
+							issuingAuthority: p.passportInfo.issuingAuthority || "",
+						}
+					: undefined,
+				addresses: {
+					homeland: p?.addresses?.homeland
+						? {
+								street: p.addresses.homeland.street || "",
+								city: p.addresses.homeland.city || "",
+								postalCode: p.addresses.homeland.postalCode || "",
+								country: p.addresses.homeland.country || CountryCode.GA,
+							}
+						: {
+								street: "",
+								city: "",
+								postalCode: "",
+								country: CountryCode.GA,
+							},
+					residence: p?.addresses?.residence
+						? {
+								street: p.addresses.residence.street || "",
+								city: p.addresses.residence.city || "",
+								postalCode: p.addresses.residence.postalCode || "",
+								country: p.addresses.residence.country || CountryCode.FR,
+							}
+						: {
+								street: "",
+								city: "",
+								postalCode: "",
+								country: CountryCode.FR,
+							},
+				},
+				contacts: {
+					email: p?.contacts?.email || "",
+					phone: p?.contacts?.phone || "",
+					emergencyResidence: p?.contacts?.emergencyResidence || undefined,
+					emergencyHomeland: p?.contacts?.emergencyHomeland || undefined,
+				},
+				family: {
+					maritalStatus: p?.family?.maritalStatus || MaritalStatus.Single,
+					father: p?.family?.father || { firstName: "", lastName: "" },
+					mother: p?.family?.mother || { firstName: "", lastName: "" },
+					spouse: p?.family?.spouse || { firstName: "", lastName: "" },
+				},
+				profession: p?.profession
+					? {
+							status: p.profession.status || undefined,
+							title: p.profession.title || "",
+							employer: p.profession.employer || "",
+						}
+					: { status: undefined, title: "", employer: "" },
+			});
+		}
+	}, [profile]);
+
+	// AI form fill
+	useFormFillEffect(form, "profile", PROFILE_FIELD_MAPPING);
+
+	const handleSaveAll = async () => {
+		if (!profile) return;
+		try {
+			const data = form.getValues();
+			const changedFields = getChangedFields(
+				data,
+				profile as Doc<"profiles">,
+			);
+			const payload = transformFormDataToPayload(changedFields);
+
+			if (Object.keys(payload).length > 0) {
+				await updateProfile({
+					id: (profile as any)._id,
+					...payload,
+				});
+				captureEvent("myspace_profile_updated");
+				toast.success(t("common.saved"));
+			} else {
+				toast.info("Aucune modification détectée");
+			}
+		} catch (e: unknown) {
+			const error = e as Error;
+			console.error(error);
+			toast.error(error.message || "Erreur lors de l'enregistrement");
+		}
+	};
+
+	if (isPending) {
+		return (
+			<div className="flex items-center justify-center py-12">
+				<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+			</div>
+		);
+	}
+
+	if (!profile) {
+		return (
+			<div className="text-center py-12 text-muted-foreground text-sm">
+				{t("profile.notFound")}
+			</div>
+		);
+	}
+
+	const SECTIONS = [
+		{
+			id: "identity",
+			icon: <User className="h-4 w-4" />,
+			title: t("profile.tabs.personal"),
+			description: t("registration.steps.identity.description"),
+			color: "text-teal-600 dark:text-teal-400",
+			content: (
+				<IdentityStep
+					control={form.control}
+					errors={form.formState.errors}
+				/>
+			),
+		},
+		{
+			id: "contacts",
+			icon: <MapPin className="h-4 w-4" />,
+			title: t("profile.tabs.contacts"),
+			description: t("registration.steps.contacts.description"),
+			color: "text-blue-500",
+			content: (
+				<ContactsStep
+					control={form.control}
+					errors={form.formState.errors}
+				/>
+			),
+		},
+		{
+			id: "family",
+			icon: <Users className="h-4 w-4" />,
+			title: t("profile.tabs.family"),
+			description: "Situation familiale et filiation",
+			color: "text-amber-500",
+			content: (
+				<FamilyStep
+					control={form.control}
+					errors={form.formState.errors}
+				/>
+			),
+		},
+		{
+			id: "profession",
+			icon: <Briefcase className="h-4 w-4" />,
+			title: t("profile.tabs.profession"),
+			description: "Statut professionnel et employeur",
+			color: "text-teal-600 dark:text-teal-400",
+			content: (
+				<ProfessionalStep
+					control={form.control}
+					errors={form.formState.errors}
+				/>
+			),
+		},
+		{
+			id: "documents",
+			icon: <FileText className="h-4 w-4" />,
+			title: t("profile.tabs.documents"),
+			description: "Pièces justificatives du dossier",
+			color: "text-purple-500",
+			content: (
+				<DocumentsStep
+					profileId={(profile as any)._id}
+					documents={(profile as any).documents}
+				/>
+			),
+		},
+	];
+
+	return (
+		<div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+			<SettingsSectionHeader
+				title="Mon Dossier Consulaire"
+				description="Gérez vos informations personnelles et documents consulaires"
+				action={
+					<Button
+						onClick={handleSaveAll}
+						disabled={isSaving}
+						size="sm"
+						className="gap-2"
+					>
+						{isSaving ? (
+							<Loader2 className="h-3.5 w-3.5 animate-spin" />
+						) : (
+							<Save className="h-3.5 w-3.5" />
+						)}
+						{t("common.save")}
+					</Button>
+				}
+			/>
+
+			<FormProvider {...form}>
+				<form
+					id="settings-dossier-form"
+					onSubmit={(e) => {
+						e.preventDefault();
+						handleSaveAll();
+					}}
+				>
+					<div className="space-y-2">
+						{SECTIONS.map((section) => (
+							<AccordionSection
+								key={section.id}
+								icon={section.icon}
+								title={section.title}
+								description={section.description}
+								color={section.color}
+								isOpen={openSections.has(section.id)}
+								onToggle={() => toggleSection(section.id)}
+							>
+								{section.content}
+							</AccordionSection>
+						))}
+					</div>
+				</form>
+			</FormProvider>
+		</div>
+	);
+}
+
 function SettingsPage() {
 	const { t, i18n } = useTranslation();
 	const { theme, setTheme } = useTheme();
 	const { consularTheme, setConsularTheme } = useConsularTheme();
 
-	const [activeTab, setActiveTab] = useState("accountSecurity");
+	// Read tab from URL search params
+	const { tab: urlTab } = Route.useSearch();
+	const [activeTab, setActiveTab] = useState(urlTab === "dossier" ? "dossier" : "dossier");
 
 	const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
@@ -159,6 +632,13 @@ function SettingsPage() {
 	const updatePreferences = useMutation(
 		api.functions.userPreferences.updateMyPreferences,
 	);
+
+	// Sync URL tab param with active tab
+	useEffect(() => {
+		if (urlTab === "dossier") {
+			setActiveTab("dossier");
+		}
+	}, [urlTab]);
 
 	const handlePrefToggle = (
 		key:
@@ -246,6 +726,11 @@ function SettingsPage() {
 
 	const TABS: SettingsTab[] = [
 		{
+			id: "dossier",
+			label: "Mon Dossier",
+			icon: <FolderOpen className="size-4" />,
+		},
+		{
 			id: "accountSecurity",
 			label: t("settings.security.accountInfo"),
 			icon: <User className="size-4" />,
@@ -272,6 +757,8 @@ function SettingsPage() {
 				onTabChange={setActiveTab}
 			>
 				<div className="max-w-3xl">
+					{activeTab === "dossier" && <MonDossierTab />}
+
 					{activeTab === "accountSecurity" && (
 						<div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
 							<SettingsSectionHeader

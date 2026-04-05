@@ -1,5 +1,5 @@
 import { Bug, Loader2, LogIn, UserCircle } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
 	Dialog,
@@ -15,24 +15,33 @@ import { authClient } from "@/lib/auth-client";
 interface DevAccount {
 	label: string;
 	email: string;
-	org: string;
+	group: string;
+	role?: string;
 }
 
-interface OrgGroup {
-	org: string;
+interface DevAccountGroup {
+	group: string;
 	accounts: DevAccount[];
 }
 
-/* ─── Dev accounts — NE JAMAIS utiliser d'emails réels ─── */
-const DEV_ACCOUNTS: OrgGroup[] = [
-	{
-		org: "Dev — Back-Office",
-		accounts: [
-			{ label: "Super Admin Test", email: "dev-superadmin@test.local", org: "Dev — Back-Office" },
-			{ label: "Admin Test", email: "dev-admin@test.local", org: "Dev — Back-Office" },
-		],
-	},
-];
+/** Parse les comptes dev depuis VITE_DEV_ACCOUNTS et les groupe par group. */
+function parseDevAccounts(): DevAccountGroup[] {
+	try {
+		const raw = import.meta.env.VITE_DEV_ACCOUNTS;
+		if (!raw) return [];
+		const accounts: DevAccount[] = JSON.parse(raw);
+		const grouped = new Map<string, DevAccount[]>();
+		for (const account of accounts) {
+			const group = account.group || "Dev";
+			if (!grouped.has(group)) grouped.set(group, []);
+			grouped.get(group)!.push(account);
+		}
+		return Array.from(grouped.entries()).map(([group, accounts]) => ({ group, accounts }));
+	} catch {
+		console.error("[DevAccountSwitcher] Impossible de parser VITE_DEV_ACCOUNTS");
+		return [];
+	}
+}
 
 /**
  * SÉCURITÉ : Triple gate pour éviter toute fuite en production.
@@ -49,8 +58,11 @@ function DevAccountSwitcherInner() {
 	const [open, setOpen] = useState(false);
 	const [loading, setLoading] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	const devAccounts = useMemo(() => parseDevAccounts(), []);
 
 	const currentEmail = session?.user?.email;
+
+	if (devAccounts.length === 0) return null;
 
 	const handleSignIn = async (account: DevAccount) => {
 		setLoading(account.email);
@@ -62,42 +74,36 @@ function DevAccountSwitcherInner() {
 				await new Promise((r) => setTimeout(r, 300));
 			}
 
-			// Étape 1 : Préparer les credentials temporaires côté Convex
-			const res = await fetch("/api/dev/sign-in", {
+			// Step 1: Get temp password from Convex via proxy
+			const devRes = await fetch("/api/dev/sign-in", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				credentials: "include",
 				body: JSON.stringify({ email: account.email }),
 			});
 
-			const data = await res.json();
-
-			if (!res.ok || data.error) {
-				const msg = data.error || `Erreur ${res.status}`;
-				setError(msg);
-				toast.error("Échec de connexion", { description: msg });
-				return;
+			if (!devRes.ok) {
+				const data = await devRes.json().catch(() => ({}));
+				throw new Error(data.error || `Échec connexion (${devRes.status})`);
 			}
 
-			// Étape 2 : Sign-in via authClient (flow crossDomain complet)
+			const { tempPassword } = await devRes.json();
+
+			// Step 2: Sign in via Better Auth (goes through /api/auth/* proxy → crossDomain flow)
 			const signInResult = await authClient.signIn.email({
-				email: data.email,
-				password: data.tempPassword,
+				email: account.email,
+				password: tempPassword,
 			});
 
 			if (signInResult.error) {
-				const msg = signInResult.error.message || "Échec de connexion";
-				setError(msg);
-				toast.error("Échec de connexion", { description: msg });
-			} else {
-				setOpen(false);
-				toast.success(`Connecté en tant que ${account.label}`, {
-					description: account.email,
-				});
-				// Laisser le crossDomain poser le token, puis hard-navigate
-				await new Promise((r) => setTimeout(r, 1000));
-				window.location.href = "/";
+				throw new Error(signInResult.error.message || "Échec de connexion Better Auth");
 			}
+
+			setOpen(false);
+			toast.success(`Connecté en tant que ${account.label}`, {
+				description: account.email,
+			});
+			await new Promise((r) => setTimeout(r, 500));
+			window.location.reload();
 		} catch (err: unknown) {
 			const message =
 				err instanceof Error ? err.message : "Erreur de connexion";
@@ -113,7 +119,7 @@ function DevAccountSwitcherInner() {
 			<DialogTrigger asChild>
 				<button
 					type="button"
-					className="fixed bottom-4 left-4 z-9999 flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-2 text-xs font-bold text-black shadow-lg transition-all hover:bg-amber-400 hover:scale-105 active:scale-95"
+					className="fixed bottom-4 left-4 z-9999 flex items-center gap-1.5 rounded-full bg-violet-500 px-3 py-2 text-xs font-bold text-black shadow-lg transition-all hover:bg-violet-400 hover:scale-105 active:scale-95"
 					title="Dev Account Switcher"
 				>
 					<Bug className="size-4" />
@@ -145,12 +151,12 @@ function DevAccountSwitcherInner() {
 
 				<ScrollArea className="max-h-[60vh]">
 					<div className="flex flex-col gap-1 px-5 pb-5">
-						{DEV_ACCOUNTS.map((group, gi) => (
-							<div key={group.org}>
+						{devAccounts.map((group, gi) => (
+							<div key={group.group}>
 								<div
 									className={`sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-2 text-xs font-semibold text-muted-foreground tracking-wide ${gi > 0 ? "mt-2 border-t border-border pt-3" : ""}`}
 								>
-									{group.org}
+									{group.group}
 								</div>
 
 								<div className="flex flex-col gap-1">
@@ -186,6 +192,11 @@ function DevAccountSwitcherInner() {
 														{isCurrentUser && (
 															<span className="ml-2 text-xs text-emerald-500">
 																● actif
+															</span>
+														)}
+														{account.role && (
+															<span className="ml-1.5 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
+																{account.role}
 															</span>
 														)}
 													</div>

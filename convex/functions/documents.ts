@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { query } from "../_generated/server";
-import { authMutation, authQuery } from "../lib/customFunctions";
+import { authMutation, authQuery, backofficeMutation } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
@@ -791,5 +791,29 @@ export const getUrlsByStorageIds = authQuery({
     );
 
     return urls;
+  },
+});
+
+/**
+ * Mettre a jour le statut d'un document (validation/rejet par un agent).
+ * Protege par requireBackOfficeAccess.
+ */
+export const updateDocumentStatus = backofficeMutation({
+  args: {
+    documentId: v.id("documents"),
+    status: v.union(v.literal(DocumentStatus.Validated), v.literal(DocumentStatus.Rejected), v.literal(DocumentStatus.Pending)),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const doc = await ctx.db.get(args.documentId);
+    if (!doc) throw error(ErrorCode.NOT_FOUND);
+
+    await ctx.db.patch(args.documentId, {
+      status: args.status,
+      ...(args.reason ? { rejectionReason: args.reason } : {}),
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
   },
 });

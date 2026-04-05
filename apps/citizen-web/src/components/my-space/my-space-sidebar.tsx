@@ -65,7 +65,7 @@ function SidebarText({
 	return (
 		<span
 			className={cn(
-				"truncate text-[15px] whitespace-nowrap transition-opacity duration-200",
+				"truncate text-[15.5px] whitespace-nowrap transition-opacity duration-200",
 				isExpanded ? "opacity-100 delay-100" : "opacity-0 w-0 overflow-hidden",
 				className,
 			)}
@@ -154,7 +154,7 @@ export function MySpaceSidebar({
 			<aside
 				data-slot="sidebar"
 				className={cn(
-					" flex flex-col py-3 px-3 h-full overflow-hidden",
+					" flex flex-col py-3 px-3 h-full overflow-y-auto overflow-x-hidden",
 					"transition-[width] duration-300 ease-in-out",
 					isExpanded ? "w-56 items-stretch" : "w-[68px] items-center",
 				)}
@@ -165,7 +165,7 @@ export function MySpaceSidebar({
 						to="/"
 						className={cn("flex items-center", isExpanded && "gap-2.5")}
 					>
-						<div className="size-11 shrink-0 rounded-xl  flex items-center justify-center overflow-hidden bg-white dark:bg-gray-800">
+						<div className="size-11 shrink-0 rounded-xl flex items-center justify-center overflow-hidden">
 							<img
 								src="/icons/apple-icon.png"
 								alt="Logo"
@@ -178,10 +178,10 @@ export function MySpaceSidebar({
 								isExpanded ? "opacity-100 delay-100" : "opacity-0 w-0",
 							)}
 						>
-							<span className="text-sm font-bold  ">
+							<span className="text-base font-black tracking-[0.2em]">
 								CONSULAT
 							</span>
-							<span className="text-[10px] text-muted-foreground font-medium">
+							<span className="text-[10px] text-muted-foreground font-medium tracking-[0.12em]">
 								Espace Numérique
 							</span>
 						</div>
@@ -214,7 +214,7 @@ export function MySpaceSidebar({
 
 							{/* Section label (expanded only) */}
 							{isExpanded && section.label && (
-								<span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 px-3 mb-1.5 block">
+								<span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/70 px-3 mb-1.5 block">
 									{section.label}
 								</span>
 							)}
@@ -228,17 +228,17 @@ export function MySpaceSidebar({
 										className={cn(
 											" flex items-center transition-all duration-200",
 											isExpanded
-												? "w-full gap-3 px-3 h-10"
+												? "w-full gap-3 px-3 h-11"
 												: "w-11 h-11 justify-center",
 											active && "active",
 											active
-												? "font-semibold text-teal-600 dark:text-teal-400"
-												: "text-muted-foreground hover:text-foreground",
+												? "font-bold text-primary dark:text-primary"
+												: "font-semibold text-muted-foreground hover:text-foreground",
 										)}
 									>
 										<item.icon className={cn(
-											"size-[18px] shrink-0 transition-colors",
-											active && "text-teal-600 dark:text-teal-400",
+											"size-5 shrink-0 transition-colors",
+											active && "text-primary dark:text-primary",
 										)} />
 										<SidebarText isExpanded={isExpanded}>
 											{item.title}
@@ -248,7 +248,7 @@ export function MySpaceSidebar({
 										)}
 										{/* Active indicator dot */}
 										{active && isExpanded && (
-											<div className="ml-auto w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" />
+											<div className="ml-auto w-1.5 h-1.5 rounded-full bg-primaryshrink-0" />
 										)}
 									</Link>
 								);
@@ -257,7 +257,7 @@ export function MySpaceSidebar({
 									return (
 										<Tooltip key={item.title}>
 											<TooltipTrigger asChild>{button}</TooltipTrigger>
-											<TooltipContent side="right" sideOffset={10} className=" bg-card border-0">
+											<TooltipContent side="right" sideOffset={10} className=" bg-card border-0 font-semibold">
 												{item.title}
 											</TooltipContent>
 										</Tooltip>
@@ -275,7 +275,7 @@ export function MySpaceSidebar({
 							<div className={cn("my-2.5", isExpanded ? "border-t border-foreground/5 pt-2" : "border-t border-foreground/5 pt-2 w-8")} />
 
 							{isExpanded && (
-								<span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 px-3 mb-1.5 block">
+								<span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/70 px-3 mb-1.5 block">
 									{t("mySpace.nav.sectionTutor", "Tuteur")}
 								</span>
 							)}
@@ -287,15 +287,15 @@ export function MySpaceSidebar({
 										type="button"
 										onClick={() => setChildrenOpen(!childrenOpen)}
 										className={cn(
-											" w-full flex items-center gap-3 px-3 h-10 transition-all duration-200 text-[15px]",
+											" w-full flex items-center gap-3 px-3 h-11 transition-all duration-200 text-[15.5px]",
 											childrenOpen
-												? "active bg-pink-500/8 text-pink-600 font-semibold"
-												: "text-muted-foreground hover:text-foreground",
+												? "active bg-rose-500/8 text-rose-600 font-black"
+												: "font-semibold text-muted-foreground hover:text-foreground",
 										)}
 									>
-										<Users className="size-[18px] shrink-0" />
+										<Users className="size-5 shrink-0" />
 										<span className="flex-1 text-left truncate">Mes Enfants</span>
-										<span className="text-[8px] bg-pink-500/12 text-pink-500 font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+										<span className="text-[8px] bg-rose-500/12 text-rose-500 font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
 											{children.length}
 										</span>
 										<ChevronDown className={cn("size-3 transition-transform duration-200", childrenOpen && "rotate-180")} />
@@ -315,13 +315,13 @@ export function MySpaceSidebar({
 														key={child._id}
 														to={childUrl as any}
 														className={cn(
-															" flex items-center gap-2.5 px-3 h-9 text-[14px]",
+															" flex items-center gap-2.5 px-3 h-10 text-[14px]",
 															active
-																? "active text-pink-600 font-semibold"
-																: "text-muted-foreground hover:text-foreground",
+																? "active text-rose-600 font-black"
+																: "font-semibold text-muted-foreground hover:text-foreground",
 														)}
 													>
-														<Baby className="size-4 shrink-0" />
+														<Baby className="size-[18px] shrink-0" />
 														<span className="truncate">{child.identity?.firstName ?? "Enfant"}</span>
 													</Link>
 												);
@@ -340,12 +340,12 @@ export function MySpaceSidebar({
 											className={cn(
 												"flex items-center justify-center w-11 h-11",
 												children.some((c: any) => isActive(`/my-space/children/${c._id}`))
-													? "active text-pink-600"
+													? "active text-rose-600"
 													: "text-muted-foreground hover:text-foreground",
 											)}
 											onClick={() => setChildrenOpen(!childrenOpen)}
 										>
-											<Users className="size-[18px]" />
+											<Users className="size-5" />
 										</button>
 									</TooltipTrigger>
 									<TooltipContent side="right" sideOffset={10} className=" bg-card border-0">
@@ -362,13 +362,13 @@ export function MySpaceSidebar({
 							<Link
 								to="/my-space/settings"
 								className={cn(
-									" flex items-center transition-all duration-200 w-full gap-3 px-3 h-10",
-									isActive("/my-space/settings") ? "active text-teal-600 dark:text-teal-400 font-semibold" : "text-muted-foreground hover:text-foreground"
+									" flex items-center transition-all duration-200 w-full gap-3 px-3 h-11",
+									isActive("/my-space/settings") ? "active text-primary dark:text-primary font-black" : "font-semibold text-muted-foreground hover:text-foreground"
 								)}
 							>
-								<Settings className={cn("size-[18px] shrink-0 transition-colors", isActive("/my-space/settings") && "text-teal-600 dark:text-teal-400")} />
+								<Settings className={cn("size-5 shrink-0 transition-colors", isActive("/my-space/settings") && "text-primary dark:text-primary")} />
 								<SidebarText isExpanded={isExpanded}>{t("mySpace.nav.settings")}</SidebarText>
-								{isActive("/my-space/settings") && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" />}
+								{isActive("/my-space/settings") && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primaryshrink-0" />}
 							</Link>
 						) : (
 							<Tooltip>
@@ -377,10 +377,10 @@ export function MySpaceSidebar({
 										to="/my-space/settings"
 										className={cn(
 											" flex items-center transition-all duration-200 w-11 h-11 justify-center",
-											isActive("/my-space/settings") ? "active text-teal-600 dark:text-teal-400 font-semibold" : "text-muted-foreground hover:text-foreground"
+											isActive("/my-space/settings") ? "active text-primary dark:text-primary font-black" : "font-semibold text-muted-foreground hover:text-foreground"
 										)}
 									>
-										<Settings className={cn("size-[18px] shrink-0 transition-colors", isActive("/my-space/settings") && "text-teal-600 dark:text-teal-400")} />
+										<Settings className={cn("size-5 shrink-0 transition-colors", isActive("/my-space/settings") && "text-primary dark:text-primary")} />
 										<span className="sr-only">{t("mySpace.nav.settings")}</span>
 									</Link>
 								</TooltipTrigger>
@@ -395,101 +395,117 @@ export function MySpaceSidebar({
 				{/* ─── Bottom Controls ─── */}
 				<div
 					className={cn(
-						"flex flex-col gap-1.5 pt-3",
+						"flex flex-col gap-1 pt-3",
 						!isExpanded && "items-center",
 					)}
 				>
 					{/* Separator */}
 					<div className={cn("border-t border-border mb-2", !isExpanded && "w-8")} />
 
-					{/* Language + Collapse + Dark Mode row */}
-					<div
-						className={cn(
-							"flex items-center gap-0.5 px-0.5",
-							!isExpanded && "flex-col",
-						)}
-					>
-						{/* Language Toggle */}
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<button
-									type="button"
-									onClick={toggleLanguage}
-									className=" flex items-center gap-1.5 h-9 px-2 text-muted-foreground hover:text-foreground"
-								>
-									<Globe className="size-3.5" />
-									<span className="text-[10px] font-bold uppercase">
-										{currentLang}
-									</span>
-								</button>
-							</TooltipTrigger>
-							<TooltipContent side="top">
-								{currentLang === "fr" ? "Switch to English" : "Passer en Français"}
-							</TooltipContent>
-						</Tooltip>
+					{/* Expanded : row — Collapsed : compact column */}
+					{isExpanded ? (
+						<div className="flex items-center gap-0.5 px-0.5">
+							{/* Language Toggle */}
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<button
+										type="button"
+										onClick={toggleLanguage}
+										className="flex items-center gap-1.5 h-9 px-2 text-muted-foreground hover:text-foreground"
+									>
+										<Globe className="size-3.5" />
+										<span className="text-[10px] font-bold uppercase">{currentLang}</span>
+									</button>
+								</TooltipTrigger>
+								<TooltipContent side="top">
+									{currentLang === "fr" ? "Switch to English" : "Passer en Français"}
+								</TooltipContent>
+							</Tooltip>
 
-						{isExpanded && <div className="flex-1" />}
+							<div className="flex-1" />
 
-						{/* Toggle Sidebar Button */}
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<button
-									type="button"
-									className=" flex items-center justify-center h-9 w-9 text-muted-foreground hover:text-foreground"
-									onClick={onToggle}
-								>
-									{isExpanded ? (
+							{/* Collapse */}
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<button
+										type="button"
+										className="flex items-center justify-center h-9 w-9 text-muted-foreground hover:text-foreground"
+										onClick={onToggle}
+									>
 										<ChevronsLeft className="size-4" />
-									) : (
-										<ChevronsRight className="size-4" />
-									)}
-								</button>
-							</TooltipTrigger>
-							<TooltipContent side="top">
-								{isExpanded
-									? t("mySpace.nav.collapse")
-									: t("mySpace.nav.expand")}
-							</TooltipContent>
-						</Tooltip>
+									</button>
+								</TooltipTrigger>
+								<TooltipContent side="top">{t("mySpace.nav.collapse")}</TooltipContent>
+							</Tooltip>
 
-						{/* Dark Mode Toggle */}
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<button
-									type="button"
-									onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-									className=" flex items-center justify-center h-9 w-9 text-muted-foreground hover:text-foreground"
-								>
-									{theme === "dark" ? (
-										<Sun className="size-4 text-amber-500" />
-									) : (
-										<Moon className="size-4" />
-									)}
-								</button>
-							</TooltipTrigger>
-							<TooltipContent side="top">
-								{theme === "dark" ? t("theme.light") : t("theme.dark")}
-							</TooltipContent>
-						</Tooltip>
-					</div>
+							{/* Dark Mode */}
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<button
+										type="button"
+										onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+										className="flex items-center justify-center h-9 w-9 text-muted-foreground hover:text-foreground"
+									>
+										{theme === "dark" ? <Sun className="size-4 text-amber-500" /> : <Moon className="size-4" />}
+									</button>
+								</TooltipTrigger>
+								<TooltipContent side="top">{theme === "dark" ? t("theme.light") : t("theme.dark")}</TooltipContent>
+							</Tooltip>
+						</div>
+					) : (
+						/* Collapsed : boutons empilés verticalement, taille visible */
+						<div className="flex flex-col items-center gap-0.5">
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<button
+										type="button"
+										onClick={onToggle}
+										className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+									>
+										<ChevronsRight className="size-4" />
+									</button>
+								</TooltipTrigger>
+								<TooltipContent side="right">{t("mySpace.nav.expand")}</TooltipContent>
+							</Tooltip>
+
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<button
+										type="button"
+										onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+										className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+									>
+										{theme === "dark" ? <Sun className="size-4 text-amber-500" /> : <Moon className="size-4" />}
+									</button>
+								</TooltipTrigger>
+								<TooltipContent side="right">{theme === "dark" ? t("theme.light") : t("theme.dark")}</TooltipContent>
+							</Tooltip>
+						</div>
+					)}
 
 					{/* User info + Logout */}
 					<div
 						className={cn(
-							"flex items-center gap-3 pt-2 mt-1",
-							isExpanded ? "px-1" : "justify-center",
+							"flex items-center pt-2 mt-1",
+							isExpanded ? "gap-3 px-1" : "flex-col gap-1.5 justify-center",
 						)}
 					>
-						{/* Avatar with Gabon ring */}
-						<div className="relative">
-							<div className="size-9 rounded-xl  bg-teal-500/10 flex items-center justify-center shrink-0">
-								<span className="text-xs font-bold text-teal-600 dark:text-teal-400">
-									{session?.user?.name?.[0] || "U"}
-								</span>
-							</div>
-							{/* Online indicator */}
-							<div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-teal-500 border-2 border-card" />
-						</div>
+						{/* Avatar */}
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<div className="relative">
+									<div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+										<span className="text-xs font-bold text-primary dark:text-primary">
+											{session?.user?.name?.[0] || "U"}
+										</span>
+									</div>
+									<div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-primary border-2 border-card" />
+								</div>
+							</TooltipTrigger>
+							{!isExpanded && (
+								<TooltipContent side="right">{session?.user?.name || "Utilisateur"}</TooltipContent>
+							)}
+						</Tooltip>
 						{isExpanded && (
 							<>
 								<div className="flex-1 min-w-0">
