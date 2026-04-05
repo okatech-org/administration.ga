@@ -10,13 +10,14 @@ interface FlatCardProps extends HTMLAttributes<HTMLDivElement> {
  * Flat card container matching the iProfil design language.
  * Consistent rounded-xl card with subtle border.
  */
-export function FlatCard({ children, className, ...props }: FlatCardProps) {
+export function FlatCard({ children, className, style, ...props }: FlatCardProps) {
 	return (
 		<div
 			className={cn(
-				"rounded-xl bg-card p-0 overflow-hidden border border-transparent dark:border-border/50",
+				"rounded-xl bg-card p-0 overflow-hidden border flat-card-border",
 				className,
 			)}
+			style={style}
 			{...props}
 		>
 			{children}

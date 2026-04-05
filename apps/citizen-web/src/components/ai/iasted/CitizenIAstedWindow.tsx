@@ -101,7 +101,7 @@ export function CitizenIAstedWindow() {
 									size="icon"
 									onClick={handleExpand}
 									title="Plein écran"
-									className="h-7 w-7 text-white hover:bg-white/20"
+									className="h-7 w-7 text-white hover:bg-white/20 hidden lg:flex"
 								>
 									<Maximize2 className="h-3.5 w-3.5" />
 								</Button>

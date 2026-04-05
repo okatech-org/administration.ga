@@ -96,6 +96,15 @@ function IAstedCitizenPage() {
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const navigate = useNavigate();
 
+	// En mobile, rediriger vers le dashboard et ouvrir la fenêtre chat
+	useEffect(() => {
+		const isMobile = window.innerWidth < 1024;
+		if (isMobile) {
+			navigate({ to: "/my-space" });
+			setTimeout(() => window.dispatchEvent(new CustomEvent("iasted:open")), 150);
+		}
+	}, [navigate]);
+
 	// ── Threads agents (temps réel) ──
 	const { data: chatThreads, isPending: threadsLoading } =
 		useAuthenticatedConvexQuery(api.functions.chats.listMyChats, {});

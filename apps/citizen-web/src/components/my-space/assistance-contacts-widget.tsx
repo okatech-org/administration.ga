@@ -63,7 +63,7 @@ export function AssistanceContactsWidget() {
 	}, [items.length]);
 
 	return (
-		<div className="bg-card rounded-2xl flex flex-col shrink-0 overflow-hidden lg:h-full">
+		<div className="bg-card rounded-2xl flex flex-col shrink-0 overflow-hidden lg:h-full border flat-card-border">
 			{/* Géré par — affichage de l'organisation consulaire */}
 			{orgName && (
 				<div className="hidden lg:block px-4 pt-4 pb-0">

@@ -25,9 +25,9 @@
   --neu-shadow-subtle: 2px 2px 4px rgba(0, 0, 0, 0.05), -2px -2px 4px rgba(255, 255, 255, 0.8);
 
   /* Surface colors — Charte stricte gris achromatic */
-  --neu-surface: #E3E3E3;         /* Gris cl.1 — fond page, écarts */
-  --neu-surface-card: #EBEBEB;    /* Gris cl.2 — sous-cartes */
-  --neu-surface-sidebar: #E3E3E3; /* Gris cl.1 — fond sidebar */
+  --neu-surface: #EFEFEF;         /* Gris cl.1 — fond page, écarts (luminosité 94%) */
+  --neu-surface-card: #F5F5F5;    /* Gris cl.2 — sous-cartes */
+  --neu-surface-sidebar: #EFEFEF; /* Gris cl.1 — fond sidebar */
 }
 
 .dark {
@@ -37,9 +37,17 @@
   --neu-shadow-pressed: inset 2px 2px 5px rgba(0, 0, 0, 0.35), inset -2px -2px 5px rgba(60, 60, 60, 0.08);
   --neu-shadow-subtle: 2px 2px 4px rgba(0, 0, 0, 0.3), -2px -2px 4px rgba(60, 60, 60, 0.1);
 
-  --neu-surface: #1C1C1C;
-  --neu-surface-card: #272727;
-  --neu-surface-sidebar: #1A1A1A;
+  --neu-surface: #141414;           /* Fond page — plus foncé pour profondeur (luminosité 8%) */
+  --neu-surface-card: #1E1E1E;      /* Cartes — contraste +6% avec le fond */
+  --neu-surface-sidebar: #121212;   /* Sidebar — légèrement plus foncé */
+}
+
+/* ─── Flat Card Border ─── */
+.flat-card-border {
+  border-color: rgba(0, 0, 0, 0.07);
+}
+.dark .flat-card-border {
+  border-color: rgba(255, 255, 255, 0.023);
 }
 
 /* ─── Neumorphic Utility Classes ─── */
