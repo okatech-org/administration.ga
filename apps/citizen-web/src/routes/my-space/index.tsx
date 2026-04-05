@@ -145,7 +145,7 @@ function UserDashboard() {
 	);
 
 	return (
-		<div className="flex flex-col h-full overflow-hidden">
+		<div className="flex flex-col h-full overflow-hidden relative">
 			<div className="shrink-0">
 				<MySpaceHeader />
 			</div>
@@ -908,7 +908,7 @@ function UserDashboard() {
 						exit={{ opacity: 0, x: 20 }}
 						transition={{ type: "spring", damping: 20, stiffness: 300 }}
 						onClick={scrollToActualites}
-						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-30 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-5 shadow-xl rounded-l-xl"
+						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-50 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[8px] font-bold uppercase tracking-wider px-1 py-4 shadow-xl rounded-l-lg"
 					>
 						<span className="block" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Actualités</span>
 					</motion.button>
@@ -923,7 +923,7 @@ function UserDashboard() {
 						exit={{ opacity: 0, x: 20 }}
 						transition={{ type: "spring", damping: 20, stiffness: 300 }}
 						onClick={scrollToDashboard}
-						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-30 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-5 shadow-xl rounded-l-xl"
+						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-50 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[8px] font-bold uppercase tracking-wider px-1 py-4 shadow-xl rounded-l-lg"
 					>
 						<span className="block" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Tableau de bord</span>
 					</motion.button>

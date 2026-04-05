@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.prompt // \"\"' | grep -qiE '(deploy|déploie|déployer|push.*prod|met.*en.*prod|production|met.*en.*ligne)' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"RAPPEL DEPLOIEMENT CLOUD RUN:\\n- Plateforme: Google Cloud Run (PAS Vercel)\\n- Push direct sur main: BLOQUE\\n- Flux obligatoire:\\n  1. git checkout -b fix/description-courte\\n  2. git add <fichiers> && git commit\\n  3. git push -u origin fix/description-courte\\n  4. gh pr create --title \\\"...\\\" --body \\\"...\\\"\\n  5. Informer l utilisateur de merger le PR sur GitHub\\n  6. Le merge dans main declenche automatiquement le deploiement Cloud Run\\n- NE JAMAIS faire: git push origin main\"}}' || echo '{}'",
+            "timeout": 5,
+            "statusMessage": "Vérification du flux de déploiement..."
+          }
+        ]
+      }
+    ]
+  }
+}
