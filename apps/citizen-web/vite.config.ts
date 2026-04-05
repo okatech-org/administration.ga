@@ -128,10 +128,21 @@ function devApiProxy(): PluginOption {
   }
 }
 
+// URL du backend Convex pour le proxy auth en production
+const CONVEX_SITE_URL_PROD = env.VITE_CONVEX_SITE_URL || ""
+
 const config = defineConfig({
   plugins: [
     devApiProxy(),
-    nitro(),
+    nitro({
+      // Proxy /api/auth/** vers Convex en production (Nitro routeRules)
+      // En dev, le plugin Vite devApiProxy() gère ce proxy
+      routeRules: CONVEX_SITE_URL_PROD ? {
+        "/api/auth/**": {
+          proxy: `${CONVEX_SITE_URL_PROD}/api/auth/**`,
+        },
+      } : {},
+    }),
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
     }),
