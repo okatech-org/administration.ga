@@ -164,12 +164,11 @@ function UserDashboard() {
 			)}
 
 			<motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex-1 min-h-0 overflow-hidden mt-3 lg:mt-4 relative">
-				<div ref={mobileScrollRef} onScroll={handleMobileScroll} className="flex lg:block h-full overflow-x-auto lg:overflow-x-hidden snap-x snap-mandatory lg:snap-none disable-scrollbars">
-				<div className="w-full shrink-0 snap-start lg:w-auto lg:shrink h-full">
-				<div className="grid grid-cols-1 lg:grid-cols-12 gap-3 md:gap-5 h-full overflow-hidden">
+				{/* Desktop : grille 3 colonnes */}
+				<div className="hidden lg:grid lg:grid-cols-12 gap-5 h-full overflow-hidden">
 
 					{/* ─── COL 1: Hero & Carte (3/12) ─── */}
-					<div className="lg:col-span-3 flex flex-col gap-3 md:gap-4 min-h-0 overflow-y-auto citizen-scrollbar stagger-children">
+					<div className="lg:col-span-3 flex flex-col gap-4 min-h-0 overflow-y-auto citizen-scrollbar stagger-children">
 
 						{/* ── Mobile : Hero compact avec photo à gauche + boutons Ma Carte/iCV ── */}
 						<FlatCard className="shrink-0 relative lg:hidden">
@@ -497,7 +496,7 @@ function UserDashboard() {
 					</div>
 
 					{/* ─── COL 2: Données Profil (5/12) ─── */}
-					<div className="lg:col-span-5 flex flex-col gap-3 md:gap-4 min-h-0 overflow-y-auto citizen-scrollbar stagger-children">
+					<div className="lg:col-span-5 flex flex-col gap-4 min-h-0 overflow-y-auto citizen-scrollbar stagger-children">
 
 
 						{/* Démarches en cours */}
@@ -611,7 +610,7 @@ function UserDashboard() {
 					</div>
 
 					{/* ─── COL 3: Activity Widgets (4/12) ─── */}
-					<div className="lg:col-span-4 flex flex-col gap-3 md:gap-4 min-h-0 overflow-y-auto citizen-scrollbar stagger-children">
+					<div className="lg:col-span-4 flex flex-col gap-4 min-h-0 overflow-y-auto citizen-scrollbar stagger-children">
 
 
 						{/* Notifications (Horizontal scroll) — masqué quand déplacé vers col1 */}
@@ -716,43 +715,191 @@ function UserDashboard() {
 
 					</div>
 				</div>
+
+				{/* ═══ Mobile : pages horizontales snap (pas de scroll vertical) ═══ */}
+				<div ref={mobileScrollRef} onScroll={handleMobileScroll} className="flex lg:hidden overflow-x-auto snap-x snap-mandatory disable-scrollbars" style={{ height: "calc(100% - 0.5rem)" }}>
+
+					{/* Page 1 mobile : Profil — non-scrollable, cartes flex */}
+					<div className="w-full shrink-0 snap-start h-full overflow-hidden px-0">
+						<div className="flex flex-col gap-2 h-full">
+							{/* Hero mobile — modèle vertical */}
+							<FlatCard className="flex-[2.5] min-h-0 relative">
+								<div className="p-3 min-[400px]:p-4 flex flex-col h-full">
+									{/* Ligne 1 : Matricule / Badge / Score */}
+									<div className="flex items-center justify-between shrink-0">
+										{p?.matricule && (
+											<span className="text-[9px] min-[400px]:text-[10px] font-mono font-semibold text-muted-foreground uppercase tracking-wide">{p.matricule}</span>
+										)}
+										{p?.userType && (
+											<span className="text-[9px] min-[400px]:text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/35 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 font-medium">
+												{p.userType === "long_stay" ? "Long séjour" : p.userType === "short_stay" ? "Court séjour" : "De passage"}
+											</span>
+										)}
+										<span className="text-[10px] min-[400px]:text-xs font-bold text-muted-foreground">{completionScore}%</span>
+									</div>
+
+									{/* Zone centrale flex : Photo + Nom + Tel */}
+									<div className="flex-1 flex items-center gap-4 min-h-0 my-2">
+										<Avatar className="h-[100px] w-[100px] bg-muted shrink-0">
+											<AvatarImage src={avatarUrl} />
+											<AvatarFallback className="text-3xl font-bold bg-primary text-white">{firstName?.[0]}{lastName?.[0]}</AvatarFallback>
+										</Avatar>
+										<div className="flex flex-col min-w-0 flex-1 justify-center">
+											<h2 className="text-lg font-black uppercase text-foreground leading-tight truncate">{lastName}</h2>
+											<p className="text-sm font-medium text-muted-foreground capitalize truncate">{firstName}</p>
+											{contacts?.phone && (
+												<div className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground">
+													<Phone className="h-3.5 w-3.5 shrink-0" />
+													<span className="truncate font-semibold text-foreground flex-1">{formatPhone(contacts.phone)}</span>
+													<Button asChild size="icon" variant="ghost" className="h-5 w-5 rounded-full hover:bg-foreground/[0.06] shrink-0">
+														<Link to="/my-space/profile/edit"><Pencil className="h-2.5 w-2.5 text-muted-foreground" /></Link>
+													</Button>
+												</div>
+											)}
+										</div>
+									</div>
+
+									{/* Boutons */}
+									<div className="grid grid-cols-2 gap-2 shrink-0">
+										<Button variant="ghost" size="sm" className="h-9 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-1.5" onClick={() => setShowConsularCard(true)}>
+											<Eye className="h-3 w-3" />
+											Ma Carte
+											{p?.consularCard?.cardNumber && p.consularCard.cardExpiresAt > Date.now() && (
+												<Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 font-medium bg-green-500/25 text-green-700 dark:text-green-400">Active</Badge>
+											)}
+										</Button>
+										<Button asChild size="sm" variant="ghost" className="h-9 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-1.5">
+											<Link to="/my-space/cv">
+												<Briefcase className="h-3 w-3" />
+												{cvData ? "Mon iCV" : "Créer iCV"}
+											</Link>
+										</Button>
+									</div>
+								</div>
+							</FlatCard>
+
+							{/* Démarches mobile */}
+							<FlatCard className="flex-[2] min-h-0">
+								<div className="p-3 flex flex-col h-full">
+									<div className="flex items-center justify-between mb-2 shrink-0">
+										<span className="text-sm font-semibold flex items-center gap-2.5 text-muted-foreground">
+											<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+												<FileText className="h-3.5 w-3.5 text-muted-foreground" />
+											</div>
+											Démarches en cours
+										</span>
+										<Button asChild variant="ghost" size="sm" className="h-7 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 rounded-full">
+											<Link to="/my-space/services-demarches">Mes Démarches</Link>
+										</Button>
+									</div>
+									<div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
+										{latestRequest ? (
+											<Link to="/my-space/requests/$reference" params={{ reference: latestRequest.reference || latestRequest._id }} className="flex flex-col gap-2 p-2.5 rounded-xl bg-amber-500/15 dark:bg-amber-500/10 hover:bg-amber-500/25 transition-colors">
+												<div className="flex items-center gap-2">
+													<div className="p-1 rounded-md bg-amber-500/10 shrink-0"><FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" /></div>
+													<p className="text-xs font-bold leading-tight text-foreground line-clamp-2 flex-1">{getLocalizedValue(latestRequest.service?.name as any, i18n.language) || "Service"}</p>
+												</div>
+												<p className="text-[10px] text-muted-foreground font-medium truncate text-center">{(latestRequest.org as any)?.name}</p>
+											</Link>
+										) : (
+											<Link to="/my-space/services-demarches" className="flex flex-col gap-2 p-2.5 rounded-xl bg-amber-500/15 dark:bg-amber-500/10">
+												<div className="flex items-center gap-2">
+													<div className="p-1 rounded-md bg-amber-500/10 shrink-0"><FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" /></div>
+													<p className="text-xs font-bold leading-tight text-foreground">Renouvellement de passeport</p>
+												</div>
+												<p className="text-[10px] text-muted-foreground font-medium text-center">Suggestion</p>
+											</Link>
+										)}
+										<Link to="/services" className="flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-xl hover:bg-muted transition-colors text-muted-foreground">
+											<div className="h-7 w-7 rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12] flex items-center justify-center">
+												<Plus className="h-3.5 w-3.5" />
+											</div>
+											<p className="text-[10px] font-medium">Nouvelle démarche</p>
+										</Link>
+									</div>
+								</div>
+							</FlatCard>
+
+							{/* RDV mobile */}
+							<FlatCard className="flex-[2] min-h-0">
+								<div className="p-3 flex flex-col h-full">
+									<div className="flex items-center justify-between mb-2 shrink-0">
+										<span className="text-sm font-semibold flex items-center gap-2.5 text-muted-foreground">
+											<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+												<Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+											</div>
+											RDV
+										</span>
+										<Button asChild variant="ghost" size="sm" className="h-7 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 rounded-full">
+											<Link to="/my-space/iagenda">iAgenda</Link>
+										</Button>
+									</div>
+									<div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
+										{appointments && appointments.length > 0 ? (
+											<Link to="/my-space/iagenda" className="flex flex-col gap-2 p-2.5 rounded-xl bg-amber-500/15 dark:bg-amber-500/10 hover:bg-amber-500/25 transition-colors">
+												<div className="flex items-center gap-2">
+													<div className="p-1 rounded-md bg-amber-500/10 shrink-0"><Calendar className="h-4 w-4 text-amber-600 dark:text-amber-400" /></div>
+													<p className="text-xs font-bold leading-tight text-foreground line-clamp-2">{(appointments[0] as any).service?.name || "RDV Consulaire"}</p>
+												</div>
+												<p className="text-[10px] text-muted-foreground font-medium text-center">{format(new Date((appointments[0] as any).date), "dd MMM HH:mm", { locale: fr })}</p>
+											</Link>
+										) : (
+											<div className="flex flex-col gap-2 p-2.5 rounded-xl bg-amber-500/15 dark:bg-amber-500/10">
+												<div className="flex items-center gap-2">
+													<div className="p-1 rounded-md bg-amber-500/10 shrink-0"><Calendar className="h-4 w-4 text-amber-600 dark:text-amber-400" /></div>
+													<p className="text-xs font-medium text-muted-foreground">Aucun RDV</p>
+												</div>
+											</div>
+										)}
+										<Link to="/my-space/iagenda" className="flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-xl hover:bg-muted transition-colors text-muted-foreground">
+											<div className="h-7 w-7 rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12] flex items-center justify-center">
+												<Plus className="h-3.5 w-3.5" />
+											</div>
+											<p className="text-[10px] font-medium">Prendre RDV</p>
+										</Link>
+									</div>
+								</div>
+							</FlatCard>
+
+						</div>
+					</div>
+
+					{/* Page 2 mobile : Actualités */}
+					<div className="w-full shrink-0 snap-start h-full overflow-y-auto citizen-scrollbar p-1">
+						<FlatCard className="min-h-full flex flex-col">
+							<div className="p-4 flex-1 flex flex-col">
+								<div className="flex items-center justify-between mb-4">
+									<span className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
+										<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+											<Megaphone className="h-3.5 w-3.5 text-muted-foreground" />
+										</div>
+										Actualités
+									</span>
+									<Button asChild variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 rounded-full">
+										<Link to="/news">Tout voir</Link>
+									</Button>
+								</div>
+								{posts && posts.length > 0 ? (
+									<div className="space-y-3 flex-1">
+										{posts.map((post: any) => (
+											<Link key={post._id} to="/news/$slug" params={{ slug: post.slug }} className="block group bg-muted p-4 rounded-xl hover:bg-muted/80 transition-colors">
+												<p className="text-sm font-semibold leading-snug line-clamp-2 group-hover:text-primary dark:group-hover:text-blue-400 mb-1.5">{post.title}</p>
+												<p className="text-xs font-medium text-muted-foreground uppercase">{format(new Date(post.publishedAt ?? post._creationTime), "dd MMM yyyy", { locale: fr })}</p>
+											</Link>
+										))}
+									</div>
+								) : (
+									<p className="text-sm text-muted-foreground text-center py-8">Aucune annonce pour le moment</p>
+								)}
+							</div>
+						</FlatCard>
+					</div>
 				</div>
 
-				{/* Page 2: Actualités (mobile uniquement) */}
-				<div className="w-full shrink-0 snap-start h-full overflow-y-auto citizen-scrollbar p-1 lg:hidden">
-					<FlatCard className="min-h-full flex flex-col">
-						<div className="p-4 flex-1 flex flex-col">
-							<div className="flex items-center justify-between mb-4">
-								<span className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
-									<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
-										<Megaphone className="h-3.5 w-3.5 text-muted-foreground" />
-									</div>
-									Actualités
-								</span>
-								<Button asChild variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full">
-									<Link to="/news">Tout voir</Link>
-								</Button>
-							</div>
-							{posts && posts.length > 0 ? (
-								<div className="space-y-3 flex-1">
-									{posts.map((post: any) => (
-										<Link key={post._id} to="/news/$slug" params={{ slug: post.slug }} className="block group bg-muted p-4 rounded-xl hover:bg-muted/80 transition-colors">
-											<p className="text-sm font-semibold leading-snug line-clamp-2 group-hover:text-primary dark:group-hover:text-blue-400 mb-1.5">{post.title}</p>
-											<p className="text-xs font-medium text-muted-foreground uppercase">{format(new Date(post.publishedAt ?? post._creationTime), "dd MMM yyyy", { locale: fr })}</p>
-										</Link>
-									))}
-								</div>
-							) : (
-								<p className="text-sm text-muted-foreground text-center py-8">Aucune annonce pour le moment</p>
-							)}
-						</div>
-					</FlatCard>
-				</div>
-				</div>
 
 			</motion.div>
 
-			{/* Badge flottant Actualités — mobile uniquement (hors motion.div pour éviter le clip par overflow-hidden + transform) */}
+			{/* Badge flottant Actualités — mobile uniquement */}
 			<AnimatePresence>
 				{mobilePageIndex === 0 && (
 					<motion.button
@@ -761,7 +908,7 @@ function UserDashboard() {
 						exit={{ opacity: 0, x: 20 }}
 						transition={{ type: "spring", damping: 20, stiffness: 300 }}
 						onClick={scrollToActualites}
-						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-30 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-3 shadow-xl rounded-l-xl"
+						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-30 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-5 shadow-xl rounded-l-xl"
 					>
 						<span className="block" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Actualités</span>
 					</motion.button>
@@ -771,12 +918,12 @@ function UserDashboard() {
 			<AnimatePresence>
 				{mobilePageIndex === 1 && (
 					<motion.button
-						initial={{ opacity: 0, x: -20 }}
+						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
-						exit={{ opacity: 0, x: -20 }}
+						exit={{ opacity: 0, x: 20 }}
 						transition={{ type: "spring", damping: 20, stiffness: 300 }}
 						onClick={scrollToDashboard}
-						className="fixed left-0 top-1/2 -translate-y-1/2 lg:hidden z-30 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-3 shadow-xl rounded-r-xl"
+						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-30 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-5 shadow-xl rounded-l-xl"
 					>
 						<span className="block" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Tableau de bord</span>
 					</motion.button>
@@ -832,7 +979,7 @@ function UserDashboard() {
 							animate={{ opacity: 1, scale: 1, y: 0 }}
 							exit={{ opacity: 0, scale: 0.92, y: 20 }}
 							transition={{ type: "spring", damping: 25, stiffness: 350 }}
-							className="relative w-full max-w-lg bg-card rounded-2xl border shadow-lg overflow-hidden flex flex-col max-h-[90vh]"
+							className="relative w-full max-w-lg bg-card rounded-2xl border shadow-lg overflow-hidden flex flex-col max-h-[90dvh]"
 							onClick={(e) => e.stopPropagation()}
 						>
 							<div className="p-4 border-b flex items-center justify-between bg-muted">

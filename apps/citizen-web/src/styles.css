@@ -240,6 +240,20 @@
   line-height: 1.2;
 }
 
+/* ─── Mobile real-device fixes ─── */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.disable-scrollbars {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.disable-scrollbars::-webkit-scrollbar {
+  display: none;
+}
+
 /* ─── Scrollbar ─── */
 
 .citizen-scrollbar::-webkit-scrollbar {

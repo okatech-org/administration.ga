@@ -59,13 +59,13 @@ export function MobileNavBar() {
 		{ title: "iProfil", url: "/my-space", icon: User },
 		{ title: "iBoite", url: "/my-space/iboite", icon: Mail },
 		// iAsted au centre — rendu separement
-		{ title: "iDocument", url: "/my-space/idocument", icon: FileText },
+		{ title: "iAgenda", url: "/my-space/iagenda", icon: Calendar },
 		// Menu — rendu separement
 	];
 
 	// Items dans le sheet
 	const sheetItems: NavItem[] = [
-		{ title: "iAgenda", url: "/my-space/iagenda", icon: Calendar },
+		{ title: "iDocument", url: "/my-space/idocument", icon: FileText },
 		{ title: "Mes Démarches", url: "/my-space/services-demarches", icon: Briefcase },
 		{ title: t("mySpace.nav.settings"), url: "/my-space/settings", icon: Settings },
 	];
@@ -89,9 +89,9 @@ export function MobileNavBar() {
 	return (
 		<>
 			{/* ── Footer bar fixe — mobile uniquement ── */}
-			<nav className="fixed bottom-3 left-3 right-3 z-40 md:hidden" style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }}>
+			<nav className="fixed left-3 right-3 z-40 md:hidden" style={{ bottom: "calc(0.8rem + env(safe-area-inset-bottom, 0px))" }}>
 				<div className="bg-card/95 backdrop-blur-md border border-border rounded-2xl shadow-lg">
-					<div className="flex items-end justify-around px-2 h-14">
+					<div className="flex items-center justify-around px-2 h-[60px]">
 						{/* iProfil */}
 						<NavBarItem item={mainItems[0]} active={isActive(mainItems[0].url)} onClick={() => setSheetOpen(false)} />
 
@@ -149,14 +149,14 @@ export function MobileNavBar() {
 
 			{/* ── Sheet menu complet ── */}
 			<Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-				<SheetContent side="bottom" showCloseButton={false} className="rounded-t-2xl max-h-[75vh] px-4 bg-card border-t border-border">
+				<SheetContent side="bottom" showCloseButton={false} className="rounded-t-2xl max-h-[75dvh] px-4 bg-card border-t border-border">
 					<SheetHeader className="sr-only">
 						<SheetTitle>{t("mySpace.nav.navigation")}</SheetTitle>
 					</SheetHeader>
 
 					<div className="space-y-4 pb-6">
 
-						{/* ── Profil utilisateur + Quitter ── */}
+						{/* ── Profil utilisateur + X fermer ── */}
 						<div className="flex items-center gap-3 py-2">
 							<div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center shrink-0">
 								<span className="text-sm font-bold text-white">{userInitial}</span>
@@ -167,12 +167,11 @@ export function MobileNavBar() {
 							</div>
 							<button
 								type="button"
-								onClick={handleLogout}
-								className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-medium text-rose-500 bg-rose-500/10 hover:bg-rose-500/15 transition-colors shrink-0"
-								title="Déconnexion"
+								onClick={() => setSheetOpen(false)}
+								className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors shrink-0"
+								title="Fermer"
 							>
-								<LogOut className="h-3.5 w-3.5" />
-								<span>Quitter</span>
+								<X className="h-4 w-4" />
 							</button>
 						</div>
 
@@ -231,30 +230,38 @@ export function MobileNavBar() {
 
 						<div className="h-px bg-border/50" />
 
-						{/* ── Controles ── */}
-						<div className="flex items-center gap-2">
-							{/* Toggle langue */}
-							<button
-								type="button"
-								onClick={() => i18n.changeLanguage(currentLang === "fr" ? "en" : "fr")}
-								className="flex items-center gap-2 flex-1 h-10 px-3 rounded-xl bg-muted text-muted-foreground hover:bg-muted/70 transition-colors"
-							>
-								<Globe className="h-4 w-4 shrink-0" />
-								<span className="text-xs font-semibold uppercase">{currentLang}</span>
-							</button>
+						{/* ── Controles : Langue + Thème (gauche) | Déconnexion (droite) ── */}
+						<div className="flex items-center justify-between">
+							<div className="flex items-center gap-2">
+								<button
+									type="button"
+									onClick={() => i18n.changeLanguage(currentLang === "fr" ? "en" : "fr")}
+									className="h-10 w-10 rounded-full bg-muted text-muted-foreground hover:bg-muted/70 transition-colors flex items-center justify-center shrink-0"
+									title={currentLang === "fr" ? "Switch to English" : "Passer en Français"}
+								>
+									<span className="text-xs font-bold uppercase">{currentLang}</span>
+								</button>
+								<button
+									type="button"
+									onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+									className="h-10 w-10 rounded-full bg-muted text-muted-foreground hover:bg-muted/70 transition-colors flex items-center justify-center shrink-0"
+									title={theme === "dark" ? "Mode clair" : "Mode sombre"}
+								>
+									{theme === "dark" ? (
+										<Sun className="h-4.5 w-4.5 text-amber-500" />
+									) : (
+										<Moon className="h-4.5 w-4.5" />
+									)}
+								</button>
+							</div>
 
-							{/* Toggle theme */}
 							<button
 								type="button"
-								onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-								className="flex items-center gap-2 flex-1 h-10 px-3 rounded-xl bg-muted text-muted-foreground hover:bg-muted/70 transition-colors"
+								onClick={handleLogout}
+								className="flex items-center gap-2 h-10 px-4 rounded-full bg-rose-500/10 text-rose-500 hover:bg-rose-500/15 transition-colors"
 							>
-								{theme === "dark" ? (
-									<Sun className="h-4 w-4 text-amber-500 shrink-0" />
-								) : (
-									<Moon className="h-4 w-4 shrink-0" />
-								)}
-								<span className="text-xs font-semibold">{theme === "dark" ? "Clair" : "Sombre"}</span>
+								<LogOut className="h-4 w-4 shrink-0" />
+								<span className="text-xs font-semibold">Déconnexion</span>
 							</button>
 						</div>
 
@@ -296,7 +303,6 @@ function NavBarItem({ item, active, onClick }: { item: NavItem; active: boolean;
 			)}>
 				{item.title}
 			</span>
-			{active && <div className="w-1 h-1 rounded-full bg-primary" />}
 		</Link>
 	);
 }

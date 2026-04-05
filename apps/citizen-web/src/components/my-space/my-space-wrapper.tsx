@@ -55,7 +55,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
 			<div
 				className={cn(
 					"citizen-layout relative flex",
-					"min-h-dvh flex-col md:flex-row md:h-screen md:overflow-hidden",
+					"h-dvh flex-col overflow-hidden md:flex-row md:h-screen",
 					consularThemeValue.consularTheme === "homeomorphism" &&
 						"theme-homeomorphism",
 				)}
@@ -76,8 +76,8 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
 				{/* Main Content */}
 				<main
 					className={cn(
-						"flex-1 overflow-y-auto citizen-scrollbar",
-						"px-3 min-[400px]:px-4 pt-4 pb-28 md:px-4 md:pt-4 md:pb-4",
+						"flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar",
+						"px-3 min-[400px]:px-4 pt-4 pb-20 md:px-4 md:pt-4 md:pb-4",
 						className,
 					)}
 				>
