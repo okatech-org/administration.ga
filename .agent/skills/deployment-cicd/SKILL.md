@@ -11,6 +11,17 @@ Ce skill s'active quand :
 - Un fichier `.github/workflows/` est créé ou modifié
 - Un `Dockerfile` ou `docker-compose.yml` est impliqué
 
+> [!CAUTION]
+> ### 🛑 RÈGLE ABSOLUE POUR TOUT DÉPLOIEMENT SUR CE PROJET (GABON DIPLOMATIE)
+> À CHAQUE FOIS que l'utilisateur demande "déploie", "mets en production", ou "push", tu DOIS OBLIGATOIREMENT suivre le flux décrit dans `.agent/workflows/deploy-cloud-run-convex.md` (/deploy-cloud-run-convex).
+> 
+> **Les étapes obligatoires sont :**
+> 1. Créer une nouvelle branche (NE JAMAIS pousser sur `main` directement).
+> 2. Commit et Push sur cette branche.
+> 3. Créer une Pull Request via `gh pr create`.
+> 4. Merger la PR via `gh pr merge --merge --delete-branch`.
+> 5. Ce merge déclenche automatiquement les 3 workflows `deploy-citizen`, `deploy-agent` et `deploy-backoffice` vers Google Cloud Run (pas Vercel).
+
 ---
 
 ## Matrice de Déploiement OkaTech
