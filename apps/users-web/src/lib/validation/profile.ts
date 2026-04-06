@@ -25,7 +25,7 @@ const addressSchema = z.object({
 	postalCode: z
 		.string()
 		.min(1, { message: "errors.profile.addresses.postalCode.required" }),
-	country: z.enum(CountryCode, {
+	country: z.enum(Object.values(CountryCode) as [string, ...string[]], {
 		message: "errors.profile.addresses.country.invalid",
 	}),
 });
@@ -44,11 +44,11 @@ const emergencyContactSchema = z.object({
 		.string()
 		.email({ message: "errors.profile.contacts.emergency.email.invalid" })
 		.optional(),
-	relationship: z.enum(FamilyLink, {
+	relationship: z.enum(Object.values(FamilyLink) as [string, ...string[]], {
 		message: "errors.profile.contacts.emergency.relationship.invalid",
 	}),
 	country: z
-		.enum(CountryCode, {
+		.enum(Object.values(CountryCode) as [string, ...string[]], {
 			message: "errors.profile.contacts.emergency.country.invalid",
 		})
 		.optional(),
@@ -107,7 +107,7 @@ const passportInfoSchema = z
 export const profileFormSchema = z.object({
 	// Pays de résidence (pour filtrer les services consulaires)
 	countryOfResidence: z
-		.enum(CountryCode, { message: "errors.profile.countryOfResidence.invalid" })
+		.enum(Object.values(CountryCode) as [string, ...string[]], { message: "errors.profile.countryOfResidence.invalid" })
 		.optional(),
 	identity: z.object({
 		firstName: z
@@ -128,20 +128,20 @@ export const profileFormSchema = z.object({
 			.min(2, { message: "errors.profile.identity.birthPlace.min" })
 			.optional(),
 		birthCountry: z
-			.enum(CountryCode, {
+			.enum(Object.values(CountryCode) as [string, ...string[]], {
 				message: "errors.profile.identity.birthCountry.invalid",
 			})
 			.optional(),
 		gender: z
-			.enum(Gender, { message: "errors.profile.identity.gender.invalid" })
+			.enum(Object.values(Gender) as [string, ...string[]], { message: "errors.profile.identity.gender.invalid" })
 			.optional(),
 		nationality: z
-			.enum(CountryCode, {
+			.enum(Object.values(CountryCode) as [string, ...string[]], {
 				message: "errors.profile.identity.nationality.invalid",
 			})
 			.optional(),
 		nationalityAcquisition: z
-			.enum(NationalityAcquisition, {
+			.enum(Object.values(NationalityAcquisition) as [string, ...string[]], {
 				message: "errors.profile.identity.nationalityAcquisition.invalid",
 			})
 			.optional(),
@@ -166,7 +166,7 @@ export const profileFormSchema = z.object({
 	family: z
 		.object({
 			maritalStatus: z
-				.enum(MaritalStatus, {
+				.enum(Object.values(MaritalStatus) as [string, ...string[]], {
 					message: "errors.profile.family.maritalStatus.invalid",
 				})
 				.optional(),

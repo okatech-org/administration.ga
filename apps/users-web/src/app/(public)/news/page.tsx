@@ -14,6 +14,7 @@ import {
   Megaphone,
   Newspaper,
 } from "lucide-react"
+import { Suspense } from "react"
 import { useTranslation } from "react-i18next"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -144,7 +145,7 @@ function PostCard({ post }: { post: Post }) {
   )
 }
 
-export default function NewsPage() {
+function NewsPageContent() {
   const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -289,5 +290,13 @@ export default function NewsPage() {
         )}
       </section>
     </div>
+  )
+}
+
+export default function NewsPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewsPageContent />
+    </Suspense>
   )
 }

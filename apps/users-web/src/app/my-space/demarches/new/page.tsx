@@ -110,7 +110,7 @@ export default function NewDemarchePage() {
 	);
 	const [creating, setCreating] = useState(false);
 
-	const typeDemarches = useAuthenticatedConvexQuery(
+	const { data: typeDemarches } = useAuthenticatedConvexQuery(
 		api.functions.dossierProcedure.listTypeDemarches,
 		{ orgId: FALLBACK_ORG_ID },
 	);

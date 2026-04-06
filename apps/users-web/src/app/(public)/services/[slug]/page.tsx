@@ -400,7 +400,7 @@ export default function ServiceDetailPage() {
 											(
 												doc: {
 													type: string;
-													label: { fr: string; en?: string };
+													label: Record<string, string>;
 													required: boolean;
 												},
 												index: number,

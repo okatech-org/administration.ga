@@ -21,7 +21,7 @@ import {
 	Users,
 	Video,
 } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,7 @@ const CustomCallUI = dynamic(
 
 type ViewState = "prejoin" | "incall" | "empty";
 
-export default function MeetingsPage() {
+function MeetingsPageContent() {
 	const searchParams = useSearchParams();
 	const meetingIdParam = searchParams.get("join") ?? undefined;
 	const meetingId = meetingIdParam as Id<"meetings"> | undefined;
@@ -171,7 +171,7 @@ export default function MeetingsPage() {
 	// -- Vue vide --
 	return (
 		<div className="p-4">
-			<PageHeader title="Reunions" description="Rejoignez une reunion via un lien d'invitation" />
+			<PageHeader title="Reunions" subtitle="Rejoignez une reunion via un lien d'invitation" />
 			<FlatCard className="mt-4">
 				<div className="flex flex-col items-center py-12 text-center">
 					<Video className="h-12 w-12 text-muted-foreground/20 mb-3" />
@@ -182,5 +182,13 @@ export default function MeetingsPage() {
 				</div>
 			</FlatCard>
 		</div>
+	);
+}
+
+export default function MeetingsPage() {
+	return (
+		<Suspense fallback={null}>
+			<MeetingsPageContent />
+		</Suspense>
 	);
 }

@@ -53,7 +53,6 @@ export function WorldMapSection() {
 	const map = useRef<mapboxgl.Map | null>(null);
 	const markersRef = useRef<mapboxgl.Marker[]>([]);
 	const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
-	// @ts-expect-error — TS2589: Convex's deep recursive types hit the instantiation limit
 	const { data: orgs } = useConvexQuery(api.functions.orgs.list, {});
 
 	// Filters state

@@ -162,9 +162,7 @@ export function ConsularMap({ searchQuery = "", className }: ConsularMapProps) {
 	const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
 
 	// Data sources
-	// @ts-expect-error — TS2589: Convex's deep recursive types hit the instantiation limit
 	const { data: orgs } = useConvexQuery(api.functions.orgs.list, {});
-	// @ts-expect-error — TS2589: Convex's deep recursive types hit the instantiation limit
 	const { data: companies } = useConvexQuery(api.functions.companies.list, {});
 
 	// Filters state

@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -325,7 +325,7 @@ function MonDossierTab() {
 					(profile as any)?.contacts?.emergencyResidence || undefined,
 				emergencyHomeland:
 					(profile as any)?.contacts?.emergencyHomeland || undefined,
-			},
+			} as any,
 			family: {
 				maritalStatus:
 					(profile as any)?.family?.maritalStatus || MaritalStatus.Single,
@@ -417,7 +417,7 @@ function MonDossierTab() {
 					phone: p?.contacts?.phone || "",
 					emergencyResidence: p?.contacts?.emergencyResidence || undefined,
 					emergencyHomeland: p?.contacts?.emergencyHomeland || undefined,
-				},
+				} as any,
 				family: {
 					maritalStatus: p?.family?.maritalStatus || MaritalStatus.Single,
 					father: p?.family?.father || { firstName: "", lastName: "" },
@@ -600,7 +600,7 @@ function MonDossierTab() {
 	);
 }
 
-export default function SettingsPage() {
+function SettingsPageContent() {
 	const { t, i18n } = useTranslation();
 	const { theme, setTheme } = useTheme();
 	const { consularTheme, setConsularTheme } = useConsularTheme();
@@ -1157,5 +1157,13 @@ function PinCodeSection() {
 				)}
 			</div>
 		</div>
+	);
+}
+
+export default function SettingsPage() {
+	return (
+		<Suspense fallback={null}>
+			<SettingsPageContent />
+		</Suspense>
 	);
 }

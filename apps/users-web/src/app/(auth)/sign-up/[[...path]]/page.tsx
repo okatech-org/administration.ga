@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Loader2, Mail } from "lucide-react";
-import { useRef, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import { normalizePhone } from "@convex/lib/phone";
 
 type SignUpStep = "form" | "verify-email";
 
-export default function SignUpPage() {
+function SignUpPageContent() {
 	const { t } = useTranslation();
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -361,5 +361,13 @@ export default function SignUpPage() {
 				</div>
 			</div>
 		</div>
+	);
+}
+
+export default function SignUpPage() {
+	return (
+		<Suspense fallback={null}>
+			<SignUpPageContent />
+		</Suspense>
 	);
 }

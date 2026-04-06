@@ -561,7 +561,7 @@ export function CitizenRegistrationForm({
 		WorkStatus.Student,
 		WorkStatus.Retired,
 		WorkStatus.Entrepreneur,
-	].includes(form.watch("professionalInfo.workStatus"));
+	].includes(form.watch("professionalInfo.workStatus") as WorkStatus);
 
 	// Track registration start on mount
 	useEffect(() => {

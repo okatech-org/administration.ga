@@ -586,7 +586,7 @@ function OptimizeForJobView({
         {parsed.suggestions && parsed.suggestions.length > 0 && (
           <div className="space-y-1.5">
             <p className="text-xs font-semibold text-blue-600">
-              -> {t("icv.ai.drawer.suggestions")}
+              → {t("icv.ai.drawer.suggestions")}
             </p>
             <ul className="space-y-1">
               {parsed.suggestions.map((s, i) => (

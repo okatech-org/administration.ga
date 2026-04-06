@@ -154,7 +154,7 @@ export function AssociationDetailContent({ slug }: { slug: string }) {
             <h1 className="text-2xl font-bold">{association.name}</h1>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="secondary">
-                {typeLabels[association.associationType]}
+                {typeLabels[association.associationType as AssociationType]}
               </Badge>
               {myMembership && (
                 <Badge

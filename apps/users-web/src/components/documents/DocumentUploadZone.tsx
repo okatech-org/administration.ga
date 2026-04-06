@@ -635,7 +635,7 @@ export const DocumentUploadZone = forwardRef<
 											key={file.storageId}
 											className="flex items-center gap-2 bg-white dark:bg-muted/30 rounded-md px-3 py-2 border"
 										>
-											<File className="h-4 w-4 text-green-600 shrink-0" />
+											<FileIcon className="h-4 w-4 text-green-600 shrink-0" />
 											<span className="text-sm truncate flex-1">
 												{file.filename}
 											</span>

@@ -234,7 +234,7 @@ function ProfileForm({ profile, updateProfile }: ProfileFormProps) {
 		const maritalStatus = form.getValues("family.maritalStatus");
 		const requiresSpouse =
 			maritalStatus &&
-			[MaritalStatus.Married, MaritalStatus.CivilUnion].includes(maritalStatus);
+			[MaritalStatus.Married, MaritalStatus.CivilUnion].includes(maritalStatus as MaritalStatus);
 
 		const getFieldLabel = (path: string): string => {
 			const labelMap: Record<string, string> = {

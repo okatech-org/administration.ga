@@ -254,12 +254,12 @@ export default function DossierDetailPage() {
 	const params = useParams<{ dossierId: string }>();
 	const dossierId = params.dossierId;
 
-	const dossier = useAuthenticatedConvexQuery(
+	const { data: dossier } = useAuthenticatedConvexQuery(
 		api.functions.dossierProcedure.getDossier,
 		{ dossierId: dossierId as Id<"dossierProcedures"> },
 	);
 
-	const transitions = useAuthenticatedConvexQuery(
+	const { data: transitions } = useAuthenticatedConvexQuery(
 		api.functions.dossierProcedure.getTransitions,
 		{ dossierId: dossierId as Id<"dossierProcedures"> },
 	);

@@ -84,14 +84,12 @@ export default function VerifyProfilePage() {
 		displayId = record.consularCard?.cardNumber || "";
 	} else if (record.type === "notification") {
 		documentTypeLabel = "Signalement Consulaire";
-		// Let's consider a notification valid if it is active. We can also check stayEndDate.
-		const hasStayEnded = record.stayEndDate
-			? record.stayEndDate < Date.now()
-			: false;
-		// Some notifications might be closed/expired.
-		isExpired = record.status === "expired" || hasStayEnded;
-		isValid = record.status === "active" && !isExpired;
-		displayId = record.identifier as string;
+		const rec = record as any;
+		const stayEnd = rec.stayEndDate as number | undefined;
+		const hasStayEnded = stayEnd ? stayEnd < Date.now() : false;
+		isExpired = rec.status === "expired" || hasStayEnded;
+		isValid = rec.status === "active" && !isExpired;
+		displayId = rec.identifier as string;
 	}
 
 	return (
@@ -238,8 +236,8 @@ export default function VerifyProfilePage() {
 										<Calendar className="h-3 w-3" /> Arrivee
 									</p>
 									<p className="font-medium mt-1">
-										{record.stayStartDate
-											? new Date(record.stayStartDate).toLocaleDateString(
+										{(record as any).stayStartDate
+											? new Date((record as any).stayStartDate).toLocaleDateString(
 													"fr-FR",
 												)
 											: "\u2014"}
@@ -252,8 +250,8 @@ export default function VerifyProfilePage() {
 									<p
 										className={`font-medium mt-1 ${isExpired ? "text-red-600 dark:text-red-400" : ""}`}
 									>
-										{record.stayEndDate
-											? new Date(record.stayEndDate).toLocaleDateString("fr-FR")
+										{(record as any).stayEndDate
+											? new Date((record as any).stayEndDate).toLocaleDateString("fr-FR")
 											: "\u2014"}
 									</p>
 								</div>

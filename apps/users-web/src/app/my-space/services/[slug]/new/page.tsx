@@ -77,7 +77,7 @@ export default function NewRequestRedirect() {
 						submitNow: false,
 					});
 					captureEvent("myspace_request_started", {
-						request_type: orgService.slug,
+						request_type: slug,
 					});
 					const ref = (result as { reference: string }).reference;
 					router.replace(`/my-space/requests/${ref}`);

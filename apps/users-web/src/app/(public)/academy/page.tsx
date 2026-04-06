@@ -12,7 +12,7 @@ import {
   PlayCircle,
   Search,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,7 @@ const typeBadgeStyles: Record<string, string> = {
     "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
 };
 
-export default function AcademyPage() {
+function AcademyPageContent() {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
   const category = searchParams.get("category") ?? undefined;
@@ -256,5 +256,13 @@ export default function AcademyPage() {
         }
       </section>
     </div>
+  );
+}
+
+export default function AcademyPage() {
+  return (
+    <Suspense fallback={null}>
+      <AcademyPageContent />
+    </Suspense>
   );
 }

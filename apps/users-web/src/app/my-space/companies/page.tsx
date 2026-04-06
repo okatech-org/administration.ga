@@ -462,7 +462,7 @@ function CreateCompanyDialog({ onClose }: { onClose: () => void }) {
 				phone: formData.phone || undefined,
 				website: formData.website || undefined,
 				address: formData.city
-					? { street: "", city: formData.city, postalCode: "", country: "GA" }
+					? { street: "", city: formData.city, postalCode: "", country: "GA" as any }
 					: undefined,
 			},
 			{

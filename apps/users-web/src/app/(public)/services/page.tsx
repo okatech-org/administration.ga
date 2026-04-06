@@ -16,7 +16,7 @@ import {
   Search,
   ShieldAlert,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ServiceCard } from "@/components/home/ServiceCard";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +38,7 @@ function ServiceCardSkeleton() {
   );
 }
 
-export default function ServicesPage() {
+function ServicesPageContent() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -366,5 +366,13 @@ export default function ServicesPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function ServicesPage() {
+  return (
+    <Suspense fallback={null}>
+      <ServicesPageContent />
+    </Suspense>
   );
 }

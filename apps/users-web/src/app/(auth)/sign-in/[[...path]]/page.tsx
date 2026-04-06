@@ -11,7 +11,7 @@ import {
 	Mail,
 	Smartphone,
 } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { Suspense, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { IDNSignInButton } from "@/components/auth/IDNSignInButton";
@@ -36,7 +36,7 @@ const AUTH_ERROR_MAP: Record<string, string> = {
 	"invalid email or password": "errors.auth.invalidCredentials",
 };
 
-export default function SignInPage() {
+function SignInPageContent() {
 	const { t } = useTranslation();
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -643,5 +643,13 @@ export default function SignInPage() {
 				)}
 			</div>
 		</AuthLayout>
+	);
+}
+
+export default function SignInPage() {
+	return (
+		<Suspense fallback={null}>
+			<SignInPageContent />
+		</Suspense>
 	);
 }

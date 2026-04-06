@@ -239,7 +239,7 @@ export function NearbyOrgs({
 									<div className="flex items-center gap-3">
 										<Clock className="w-4 h-4 text-muted-foreground shrink-0" />
 										<span className="text-foreground">
-											{formatOpeningHours(org.openingHours)}
+											{formatOpeningHours(org.openingHours as any)}
 										</span>
 									</div>
 								</CardContent>

@@ -140,7 +140,7 @@ export function DynamicForm({
 
 	// 2. Form Initialization
 	const form = useForm<z.infer<typeof zodSchema>>({
-		resolver: zodResolver(zodSchema),
+		resolver: zodResolver(zodSchema as any),
 		defaultValues: defaultValues || {},
 		mode: "onChange",
 	});
@@ -347,11 +347,7 @@ export function DynamicForm({
 												const formValues = form.getValues();
 												// Evaluate first condition (simplified - could extend for AND/OR logic)
 												return evaluateCondition(
-													field.conditions[0] as {
-														fieldPath: string;
-														operator: string;
-														value?: unknown;
-													},
+													field.conditions[0] as any,
 													formValues,
 												);
 											})

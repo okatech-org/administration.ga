@@ -116,7 +116,7 @@ export function FamilyStep({ control, errors }: FamilyStepProps) {
 	const maritalStatus = useWatch({ control, name: "family.maritalStatus" });
 	const isPartnerRequired =
 		maritalStatus &&
-		[MaritalStatus.Married, MaritalStatus.CivilUnion].includes(maritalStatus);
+		[MaritalStatus.Married, MaritalStatus.CivilUnion].includes(maritalStatus as MaritalStatus);
 
 	// Réinitialiser le champ spouse quand le statut marital change et ne nécessite plus de conjoint
 	useEffect(() => {

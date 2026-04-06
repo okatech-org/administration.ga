@@ -123,7 +123,7 @@ const TYPE_COLORS: Record<string, string> = {
 // MAIN COMPONENT
 // ============================================================================
 
-export default function RepsPage() {
+function RepsPageContent() {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -573,5 +573,13 @@ function RepresentationItem({
         </div>
       </div>
     </Link>
+  );
+}
+
+export default function RepsPage() {
+  return (
+    <Suspense fallback={null}>
+      <RepsPageContent />
+    </Suspense>
   );
 }

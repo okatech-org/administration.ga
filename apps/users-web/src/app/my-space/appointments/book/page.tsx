@@ -14,7 +14,7 @@ import {
 	Loader2,
 	MapPin,
 } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -37,7 +37,7 @@ import {
 } from "@/integrations/convex/hooks";
 import { captureEvent } from "@/lib/analytics";
 
-export default function BookAppointmentPage() {
+function BookAppointmentPageContent() {
 	const { t } = useTranslation();
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -228,5 +228,13 @@ export default function BookAppointmentPage() {
 				</Card>
 			)}
 		</div>
+	);
+}
+
+export default function BookAppointmentPage() {
+	return (
+		<Suspense fallback={null}>
+			<BookAppointmentPageContent />
+		</Suspense>
 	);
 }

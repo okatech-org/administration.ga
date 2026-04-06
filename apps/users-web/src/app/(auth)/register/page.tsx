@@ -3,7 +3,7 @@
 import { PublicUserType } from "@convex/lib/constants";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useConvexAuth } from "convex/react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CitizenRegistrationForm } from "@/components/auth/CitizenRegistrationForm";
 import { ForeignerRegistrationForm } from "@/components/auth/ForeignerRegistrationForm";
@@ -21,6 +21,14 @@ const VALID_TYPES = [
 const VALID_MODES = ["sign-up", "sign-in"] as const;
 
 export default function RegisterPage() {
+	return (
+		<Suspense fallback={null}>
+			<RegisterPageContent />
+		</Suspense>
+	);
+}
+
+function RegisterPageContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { t } = useTranslation();

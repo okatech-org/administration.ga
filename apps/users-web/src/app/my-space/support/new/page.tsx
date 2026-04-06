@@ -57,7 +57,7 @@ export default function NewTicketPage() {
 		try {
 			await createTicket({
 				subject: subject.trim(),
-				category,
+				category: category as any,
 				description: description.trim(),
 			});
 			toast.success(t("support.tickets.created", "Ticket cree avec succes"));

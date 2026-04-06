@@ -238,7 +238,7 @@ export function ProfileVerificationStep({
 	const isComplete = missingFields.length === 0;
 
 	const form = useForm<InlineEditValues>({
-		resolver: zodResolver(inlineEditSchema),
+		resolver: zodResolver(inlineEditSchema as any),
 		defaultValues: {},
 	});
 
