@@ -59,6 +59,7 @@ export default function AppConvexProvider({
             queryFn: convexQueryClient.queryFn(),
             refetchOnWindowFocus: false,
             refetchOnReconnect: false,
+            staleTime: 5 * 60 * 1000, // 5 min — Convex handles real-time updates via WebSocket
           },
         },
       }),

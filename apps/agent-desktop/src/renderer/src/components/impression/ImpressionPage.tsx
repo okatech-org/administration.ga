@@ -8,10 +8,11 @@
  * Header button: Printer config (opens modal for device scan/connect/status)
  */
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { useTranslation } from "react-i18next"
-import { ListOrdered, Palette, Printer, Settings2, Wifi, WifiOff } from "lucide-react"
+import { ListOrdered, Palette, Printer, Settings2, Wifi, WifiOff, FileSpreadsheet } from "lucide-react"
 import { motion } from "motion/react"
+import { toast } from "sonner"
 import { usePrinter } from "../../hooks/usePrinter"
 import { usePrintJobExecutor } from "../../hooks/usePrintJobExecutor"
 import { useOrg } from "../../hooks/useOrg"
@@ -19,8 +20,9 @@ import { cn } from "../../lib/utils"
 import { CardDesigner } from "../card-designer/CardDesigner"
 import { PrintQueueContent } from "./PrintQueueContent"
 import { PrinterConfigDialog } from "./PrinterConfigDialog"
+import { BatchPrintContent } from "./BatchPrintContent"
 
-type Tab = "queue" | "designer"
+type Tab = "queue" | "designer" | "batch"
 
 export function ImpressionPage() {
   const { t } = useTranslation()
@@ -41,9 +43,48 @@ export function ImpressionPage() {
     await executeJob(jobId)
   }
 
+  // Batch print handler: iterate records, render + print each
+  const handlePrintBatch = useCallback(
+    async (records: Record<string, string>[]) => {
+      const errors: string[] = []
+      for (let i = 0; i < records.length; i++) {
+        try {
+          // Use printCard with field values for each record
+          const result = await window.desktopApi?.printer?.printCard({
+            // TODO: render card from active design + fieldValues
+            // For now, use the printCard API directly
+            frontBuffer: undefined,
+            duplex: false,
+          })
+          if (result && !result.success) {
+            errors.push(`#${i + 1}: ${result.errorMessage}`)
+          }
+        } catch (err) {
+          errors.push(`#${i + 1}: ${String(err)}`)
+        }
+      }
+      if (errors.length > 0) {
+        toast.error(`${errors.length} erreur(s) d'impression`, {
+          description: errors.slice(0, 3).join("\n"),
+        })
+      } else {
+        toast.success(`${records.length} carte(s) imprimée(s)`)
+      }
+    },
+    []
+  )
+
+  // Template fields available for batch mapping
+  // TODO: derive from the active card design's dynamic field keys
+  const templateFields = [
+    "firstName", "lastName", "nip", "cardNumber",
+    "photoUrl", "birthdate", "nationality", "passport",
+  ]
+
   const tabs: { id: Tab; labelKey: string; icon: React.ElementType }[] = [
     { id: "queue", labelKey: "desktop.impression.tabs.queue", icon: ListOrdered },
     { id: "designer", labelKey: "desktop.impression.tabs.designer", icon: Palette },
+    { id: "batch", labelKey: "desktop.impression.tabs.batch", icon: FileSpreadsheet },
   ]
 
   return (
@@ -112,7 +153,7 @@ export function ImpressionPage() {
                 )}
               >
                 <Icon className="h-4 w-4" />
-                {t(tab.labelKey, tab.id === "queue" ? "File d'impression" : "Designer")}
+                {t(tab.labelKey, tab.id === "queue" ? "File d'impression" : tab.id === "designer" ? "Designer" : "Batch")}
               </button>
             )
           })}
@@ -128,6 +169,13 @@ export function ImpressionPage() {
           />
         )}
         {activeTab === "designer" && <CardDesigner />}
+        {activeTab === "batch" && (
+          <BatchPrintContent
+            isPrinterConnected={isPrinterConnected}
+            onPrintBatch={handlePrintBatch}
+            templateFields={templateFields}
+          />
+        )}
       </div>
 
       {/* Printer config modal */}

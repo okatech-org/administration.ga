@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, session, nativeTheme } from "electron"
 import path from "path"
-import { registerPrinterIpc } from "./ipc/printer.ipc"
+import { registerPrinterIpc, initPrinterAutoReconnect } from "./ipc/printer.ipc"
 import { registerNotificationIpc } from "./ipc/notification.ipc"
 import { registerFileDialogIpc } from "./ipc/file-dialog.ipc"
 import { registerTrayIpc } from "./ipc/tray.ipc"
@@ -80,6 +80,7 @@ function createWindow(): BrowserWindow {
 
   // Register all IPC handlers
   registerPrinterIpc(ipcMain)
+  initPrinterAutoReconnect()
   registerNotificationIpc(ipcMain, mainWindow)
   registerFileDialogIpc(ipcMain, mainWindow)
   registerTrayIpc(ipcMain, mainWindow)
