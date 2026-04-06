@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import type { Id } from "@convex/_generated/dataModel"
@@ -7,28 +7,34 @@ import { toast } from "../lib/toast"
 
 /**
  * Hook for persisting card designs to Convex.
- * Manages the current design ID (null = new design) and provides
- * save / load / list / delete operations.
+ * Single-design-per-org model: auto-loads the org's default design.
  */
 export function useDesignPersistence(orgId: Id<"orgs"> | null) {
   const [currentDesignId, setCurrentDesignId] = useState<Id<"cardDesigns"> | null>(null)
 
-  // Queries
-  const designs = useQuery(
-    api.functions.cardDesigns.listByOrg,
-    orgId ? { orgId } : "skip"
+  // Query the org's single default design (lightweight summary)
+  const orgDesign = useQuery(
+    api.functions.cardDesigns.getByOrg,
+    orgId ? { orgId } : "skip",
   )
 
+  // Full design data for the editor (loaded when currentDesignId is set)
   const currentDesignData = useQuery(
     api.functions.cardDesigns.getById,
-    currentDesignId ? { designId: currentDesignId } : "skip"
+    currentDesignId ? { designId: currentDesignId } : "skip",
   )
+
+  // Auto-load the org's default design
+  useEffect(() => {
+    if (orgDesign && !currentDesignId) {
+      setCurrentDesignId(orgDesign._id)
+    }
+  }, [orgDesign, currentDesignId])
 
   // Mutations
   const createDesign = useMutation(api.functions.cardDesigns.create)
   const updateDesign = useMutation(api.functions.cardDesigns.update)
   const removeDesign = useMutation(api.functions.cardDesigns.remove)
-  const duplicateDesign = useMutation(api.functions.cardDesigns.duplicate)
 
   const saveDesign = useCallback(
     async (design: CardDesign) => {
@@ -56,7 +62,7 @@ export function useDesignPersistence(orgId: Id<"orgs"> | null) {
           toast.success("Design mis à jour")
           return currentDesignId
         } else {
-          // Create new design
+          // Create new design (will be auto-set as default by backend)
           const id = await createDesign({
             name: design.name,
             description: design.description,
@@ -79,14 +85,7 @@ export function useDesignPersistence(orgId: Id<"orgs"> | null) {
         return null
       }
     },
-    [orgId, currentDesignId, createDesign, updateDesign]
-  )
-
-  const loadDesign = useCallback(
-    (designId: Id<"cardDesigns">) => {
-      setCurrentDesignId(designId)
-    },
-    []
+    [orgId, currentDesignId, createDesign, updateDesign],
   )
 
   const deleteDesign = useCallback(
@@ -101,37 +100,18 @@ export function useDesignPersistence(orgId: Id<"orgs"> | null) {
         toast.error(`Erreur : ${err?.message || err}`)
       }
     },
-    [currentDesignId, removeDesign]
+    [currentDesignId, removeDesign],
   )
-
-  const duplicateDesignFn = useCallback(
-    async (designId: Id<"cardDesigns">, name?: string) => {
-      try {
-        const newId = await duplicateDesign({ designId, name })
-        setCurrentDesignId(newId)
-        toast.success("Design dupliqué")
-        return newId
-      } catch (err: any) {
-        toast.error(`Erreur : ${err?.message || err}`)
-        return null
-      }
-    },
-    [duplicateDesign]
-  )
-
-  const newDesign = useCallback(() => {
-    setCurrentDesignId(null)
-  }, [])
 
   return {
-    designs: designs ?? [],
+    /** The org's default design summary (null if none exists) */
+    orgDesign,
     currentDesignId,
     currentDesignData,
-    isLoading: designs === undefined,
+    isLoading: orgDesign === undefined,
+    /** Whether the org has a design configured */
+    hasDesign: !!orgDesign,
     saveDesign,
-    loadDesign,
     deleteDesign,
-    duplicateDesign: duplicateDesignFn,
-    newDesign,
   }
 }

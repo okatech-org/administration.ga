@@ -5,10 +5,10 @@
  * - "À imprimer": registrations with a card number but not yet printed
  * - "Imprimées": recently printed registrations
  *
- * Replaces the manual printJobs-based PrintQueueContent for the main queue tab.
+ * Uses the org's single default card design (no design selector dropdown).
  */
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import type { Id } from "@convex/_generated/dataModel"
@@ -18,7 +18,6 @@ import {
   Loader2,
   AlertCircle,
   Play,
-  Palette,
   CreditCard,
 } from "lucide-react"
 import { useDirectPrint } from "../../hooks/useDirectPrint"
@@ -34,8 +33,6 @@ interface AutoPrintQueueContentProps {
   orgId: Id<"orgs"> | null
 }
 
-const DESIGN_STORAGE_KEY = "printDesignId"
-
 export function AutoPrintQueueContent({
   printer,
   isPrinterConnected,
@@ -48,52 +45,32 @@ export function AutoPrintQueueContent({
     api.functions.consularRegistrations.getReadyForPrint,
     orgId ? { orgId } : "skip",
   )
-  // Only fetch printed list when the user views that tab (avoids crash if function not deployed yet)
+  // Only fetch printed list when the user views that tab
   const recentlyPrinted = useQuery(
     api.functions.consularRegistrations.getRecentlyPrinted,
     orgId && subTab === "printed" ? { orgId } : "skip",
   )
-  const designs = useQuery(
-    api.functions.cardDesigns.listByOrg,
+
+  // Org's default card design (single-design-per-org)
+  const orgDesign = useQuery(
+    api.functions.cardDesigns.getByOrg,
     orgId ? { orgId } : "skip",
   )
-
-  // Design selection (persisted in localStorage)
-  const [selectedDesignId, setSelectedDesignId] = useState<string>("")
-
-  useEffect(() => {
-    if (!orgId) return
-    const saved = localStorage.getItem(`${DESIGN_STORAGE_KEY}:${orgId}`)
-    if (saved && designs?.some((d: any) => d._id === saved)) {
-      setSelectedDesignId(saved)
-    } else if (designs?.length === 1) {
-      setSelectedDesignId(designs[0]._id)
-    }
-  }, [designs, orgId])
-
-  const handleDesignChange = (id: string) => {
-    setSelectedDesignId(id)
-    if (orgId) {
-      localStorage.setItem(`${DESIGN_STORAGE_KEY}:${orgId}`, id)
-    }
-  }
 
   // Printing
   const { printCard, printingId } = useDirectPrint({ printer })
 
   const handlePrint = async (reg: any) => {
-    if (!selectedDesignId) return
+    if (!orgDesign) return
     const profileData = buildProfileDataFromRegistration(reg)
-    const name = [
-      reg.profile?.identity?.firstName,
-      reg.profile?.identity?.lastName,
-    ]
-      .filter(Boolean)
-      .join(" ") || "Carte"
+    const name =
+      [reg.profile?.identity?.firstName, reg.profile?.identity?.lastName]
+        .filter(Boolean)
+        .join(" ") || "Carte"
 
     await printCard(
       reg._id as Id<"consularRegistrations">,
-      selectedDesignId as Id<"cardDesigns">,
+      orgDesign._id as Id<"cardDesigns">,
       profileData,
       name,
     )
@@ -102,6 +79,7 @@ export function AutoPrintQueueContent({
   // Loading (only wait for the active tab's data)
   const isLoading =
     readyForPrint === undefined ||
+    orgDesign === undefined ||
     (subTab === "printed" && recentlyPrinted === undefined)
 
   if (isLoading) {
@@ -118,28 +96,17 @@ export function AutoPrintQueueContent({
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
-      {/* Design selector + stats */}
+      {/* Design info + stats */}
       <div className="px-4 py-3 border-b border-border/50 flex items-center gap-3 flex-wrap">
-        {/* Design picker */}
-        <div className="flex items-center gap-2 text-sm">
-          <Palette className="size-4 text-muted-foreground" />
-          {designs && designs.length > 0 ? (
-            <select
-              value={selectedDesignId}
-              onChange={(e) => handleDesignChange(e.target.value)}
-              className="rounded-lg border border-border bg-muted px-2.5 py-1 text-xs font-medium text-foreground focus:border-primary focus:outline-none"
-            >
-              <option value="">Choisir un design...</option>
-              {designs.map((d: any) => (
-                <option key={d._id} value={d._id}>
-                  {d.name || "Sans nom"}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span className="text-xs text-muted-foreground">Aucun design</span>
-          )}
-        </div>
+        {/* Design info (read-only) */}
+        {orgDesign ? (
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground bg-muted rounded-lg px-2.5 py-1">
+            <CreditCard className="size-3.5 text-muted-foreground" />
+            {orgDesign.name}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">Aucun design</span>
+        )}
 
         <div className="w-px h-5 bg-border" />
 
@@ -150,17 +117,11 @@ export function AutoPrintQueueContent({
       </div>
 
       {/* No design warning */}
-      {!selectedDesignId && designs && designs.length > 0 && (
+      {!orgDesign && (
         <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl border border-orange-500/20 bg-orange-500/5 p-3 text-orange-600 text-sm">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          Sélectionnez un design de carte pour pouvoir imprimer.
-        </div>
-      )}
-
-      {designs && designs.length === 0 && (
-        <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl border border-orange-500/20 bg-orange-500/5 p-3 text-orange-600 text-sm">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          Aucun design de carte. Créez-en un dans l'onglet "Designer".
+          Aucun design de carte configuré. Créez-en un dans l'onglet
+          "Designer".
         </div>
       )}
 
@@ -176,7 +137,9 @@ export function AutoPrintQueueContent({
         >
           À imprimer
           {toPrintCount > 0 && (
-            <span className="ml-1.5 text-[10px] opacity-60">({toPrintCount})</span>
+            <span className="ml-1.5 text-[10px] opacity-60">
+              ({toPrintCount})
+            </span>
           )}
         </button>
         <button
@@ -189,7 +152,9 @@ export function AutoPrintQueueContent({
         >
           Imprimées
           {printedCount > 0 && (
-            <span className="ml-1.5 text-[10px] opacity-60">({printedCount})</span>
+            <span className="ml-1.5 text-[10px] opacity-60">
+              ({printedCount})
+            </span>
           )}
         </button>
       </div>
@@ -274,14 +239,18 @@ export function AutoPrintQueueContent({
                     {/* Issue date */}
                     <td className="py-2.5 px-4 text-muted-foreground text-xs">
                       {reg.cardIssuedAt
-                        ? new Date(reg.cardIssuedAt).toLocaleDateString("fr-FR")
+                        ? new Date(reg.cardIssuedAt).toLocaleDateString(
+                            "fr-FR",
+                          )
                         : "—"}
                     </td>
 
                     {/* Expiry date */}
                     <td className="py-2.5 px-4 text-muted-foreground text-xs">
                       {reg.cardExpiresAt
-                        ? new Date(reg.cardExpiresAt).toLocaleDateString("fr-FR")
+                        ? new Date(reg.cardExpiresAt).toLocaleDateString(
+                            "fr-FR",
+                          )
                         : "—"}
                     </td>
 
@@ -291,15 +260,13 @@ export function AutoPrintQueueContent({
                         <button
                           onClick={() => handlePrint(reg)}
                           disabled={
-                            !isPrinterConnected ||
-                            !selectedDesignId ||
-                            isPrintingThis
+                            !isPrinterConnected || !orgDesign || isPrintingThis
                           }
                           title={
                             !isPrinterConnected
                               ? "Aucune imprimante connectée"
-                              : !selectedDesignId
-                                ? "Sélectionnez un design"
+                              : !orgDesign
+                                ? "Aucun design configuré"
                                 : "Imprimer"
                           }
                           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-colors"
@@ -315,12 +282,15 @@ export function AutoPrintQueueContent({
                         <span className="inline-flex items-center gap-1.5 text-xs text-green-600">
                           <CheckCircle2 className="size-3.5" />
                           {reg.printedAt
-                            ? new Date(reg.printedAt).toLocaleDateString("fr-FR", {
-                                day: "2-digit",
-                                month: "short",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
+                            ? new Date(reg.printedAt).toLocaleDateString(
+                                "fr-FR",
+                                {
+                                  day: "2-digit",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )
                             : "—"}
                         </span>
                       )}

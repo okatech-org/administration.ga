@@ -54,6 +54,61 @@ export const getById = authQuery({
 	},
 });
 
+/**
+ * Get the org's default card design (single-design-per-org model).
+ * Resolves via org.settings.defaultCardDesignId with fallback to first active design.
+ * Returns a lightweight summary (no base64 image data).
+ */
+export const getByOrg = authQuery({
+	args: {
+		orgId: v.id("orgs"),
+	},
+	handler: async (ctx, args) => {
+		const org = await ctx.db.get(args.orgId);
+		if (!org) return null;
+
+		// Try the configured default design first
+		let design = null;
+		if (org.settings?.defaultCardDesignId) {
+			const d = await ctx.db.get(org.settings.defaultCardDesignId);
+			if (d && d.isActive) design = d;
+		}
+
+		// Fallback: first active design for this org
+		if (!design) {
+			design = await ctx.db
+				.query("cardDesigns")
+				.withIndex("by_org", (q) =>
+					q.eq("orgId", args.orgId).eq("isActive", true),
+				)
+				.first();
+		}
+
+		if (!design) return null;
+
+		return {
+			_id: design._id,
+			_creationTime: design._creationTime,
+			name: design.name,
+			description: design.description,
+			backgroundColor: design.backgroundColor,
+			backgroundOpacity: design.backgroundOpacity,
+			frontElements: design.frontElements.map((el: any) => ({
+				...el,
+				imageData: el.imageData ? "__has_image__" : null,
+			})),
+			backElements: design.backElements.map((el: any) => ({
+				...el,
+				imageData: el.imageData ? "__has_image__" : null,
+			})),
+			printDuplex: design.printDuplex,
+			version: design.version,
+			updatedAt: design.updatedAt,
+			createdBy: design.createdBy,
+		};
+	},
+});
+
 // ============================================================================
 // MUTATIONS
 // ============================================================================
@@ -79,13 +134,23 @@ export const create = authMutation({
 	handler: async (ctx, args) => {
 		const userId = ctx.user._id;
 
-		return await ctx.db.insert("cardDesigns", {
+		const id = await ctx.db.insert("cardDesigns", {
 			...args,
 			createdBy: userId,
 			isActive: true,
 			version: 1,
 			updatedAt: Date.now(),
 		});
+
+		// Auto-set as org's default design if none configured
+		const org = await ctx.db.get(args.orgId);
+		if (org?.settings && !org.settings.defaultCardDesignId) {
+			await ctx.db.patch(args.orgId, {
+				settings: { ...org.settings, defaultCardDesignId: id },
+			});
+		}
+
+		return id;
 	},
 });
 
@@ -150,46 +215,18 @@ export const remove = authMutation({
 			throw new Error("Card design not found");
 		}
 
+		// Prevent deleting the org's default design
+		const org = await ctx.db.get(design.orgId);
+		if (org?.settings?.defaultCardDesignId === args.designId) {
+			throw new Error(
+				"Impossible de supprimer le design par défaut de l'organisation",
+			);
+		}
+
 		await ctx.db.patch(args.designId, {
 			isActive: false,
 			updatedAt: Date.now(),
 		});
 		return true;
-	},
-});
-
-/**
- * Duplicate an existing card design
- */
-export const duplicate = authMutation({
-	args: {
-		designId: v.id("cardDesigns"),
-		name: v.optional(v.string()),
-	},
-	handler: async (ctx, args) => {
-		const userId = ctx.user._id;
-
-		const original = await ctx.db.get(args.designId);
-		if (!original || !original.isActive) {
-			throw new Error("Card design not found");
-		}
-
-		return await ctx.db.insert("cardDesigns", {
-			name: args.name || `${original.name} (copie)`,
-			description: original.description,
-			orgId: original.orgId,
-			backgroundColor: original.backgroundColor,
-			frontBackgroundImage: original.frontBackgroundImage,
-			backBackgroundImage: original.backBackgroundImage,
-			backgroundOpacity: original.backgroundOpacity,
-			frontElements: original.frontElements,
-			backElements: original.backElements,
-			printDuplex: original.printDuplex,
-			magneticTracks: original.magneticTracks,
-			createdBy: userId,
-			isActive: true,
-			version: 1,
-			updatedAt: Date.now(),
-		});
 	},
 });

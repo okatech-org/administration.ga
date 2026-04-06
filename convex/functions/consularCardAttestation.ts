@@ -33,17 +33,20 @@ export const getCardRenderData = authQuery({
     const org = await ctx.db.get(card.orgId);
     if (!org) return null;
 
-    // Get the active card design for this org
-    const designs = await ctx.db
-      .query("cardDesigns")
-      .withIndex("by_org", (q) => q.eq("orgId", card.orgId).eq("isActive", true))
-      .take(5);
-
-    // Use default design from settings or first active design
-    const defaultDesignId = org.settings?.defaultCardDesignId;
-    const design = defaultDesignId
-      ? designs.find((d) => d._id === defaultDesignId) ?? designs[0]
-      : designs[0];
+    // Get the org's default card design (single-design-per-org)
+    let design = null;
+    if (org.settings?.defaultCardDesignId) {
+      const d = await ctx.db.get(org.settings.defaultCardDesignId);
+      if (d && d.isActive) design = d;
+    }
+    if (!design) {
+      design = await ctx.db
+        .query("cardDesigns")
+        .withIndex("by_org", (q) =>
+          q.eq("orgId", card.orgId).eq("isActive", true),
+        )
+        .first();
+    }
 
     // Get identity photo
     let identityPhotoUrl: string | null = null;
@@ -193,7 +196,8 @@ export const getAttestationData = authQuery({
 });
 
 /**
- * Get active card design for an org (used by agent/backoffice to select template)
+ * Get active card design for an org (single-design-per-org model).
+ * Returns the default design and print settings.
  */
 export const getCardDesignForOrg = authQuery({
   args: {
@@ -203,16 +207,24 @@ export const getCardDesignForOrg = authQuery({
     const org = await ctx.db.get(args.orgId);
     if (!org) return null;
 
-    const designs = await ctx.db
-      .query("cardDesigns")
-      .withIndex("by_org", (q) => q.eq("orgId", args.orgId).eq("isActive", true))
-      .collect();
-
-    const defaultDesignId = org.settings?.defaultCardDesignId;
+    // Resolve default design
+    let design = null;
+    if (org.settings?.defaultCardDesignId) {
+      const d = await ctx.db.get(org.settings.defaultCardDesignId);
+      if (d && d.isActive) design = d;
+    }
+    if (!design) {
+      design = await ctx.db
+        .query("cardDesigns")
+        .withIndex("by_org", (q) =>
+          q.eq("orgId", args.orgId).eq("isActive", true),
+        )
+        .first();
+    }
 
     return {
-      designs,
-      defaultDesignId,
+      design,
+      defaultDesignId: org.settings?.defaultCardDesignId ?? null,
       printEnabled: org.settings?.printEnabled ?? false,
     };
   },

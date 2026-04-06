@@ -4,7 +4,6 @@ import {
   Eye,
   EyeOff,
   FlipHorizontal2,
-  FolderOpen,
   Image,
   Minus,
   QrCode,
@@ -45,8 +44,7 @@ interface DesignerToolbarProps {
   onTogglePreview: () => void
   previewProfile: CitizenProfileData | null
   onSelectPreviewProfile: (profile: CitizenProfileData | null) => void
-  // Design list
-  onOpenDesignList: () => void
+  // Connection
   isConnected: boolean
 }
 
@@ -72,7 +70,6 @@ export function DesignerToolbar({
   onTogglePreview,
   previewProfile,
   onSelectPreviewProfile,
-  onOpenDesignList,
   isConnected,
 }: DesignerToolbarProps) {
   const [showFieldMenu, setShowFieldMenu] = useState(false)
@@ -81,15 +78,6 @@ export function DesignerToolbar({
 
   return (
     <div className="flex items-center gap-2 px-4 py-2 bg-card border-b border-border shrink-0">
-      {/* Design list / Open */}
-      <button
-        onClick={onOpenDesignList}
-        className="flex items-center justify-center size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        title="Ouvrir un design"
-      >
-        <FolderOpen className="size-4" />
-      </button>
-
       {/* Design name */}
       <input
         type="text"
