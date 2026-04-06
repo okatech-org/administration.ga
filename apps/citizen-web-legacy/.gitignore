@@ -1,7 +1,0 @@
-
-.env.local
-
-# Playwright
-playwright-report/
-test-results/
-e2e/.auth/

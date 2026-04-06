@@ -346,6 +346,8 @@ export function CardDesigner() {
             entityId={state.entityId}
             backgroundColor={state.backgroundColor}
             backgroundOpacity={state.backgroundOpacity}
+            backgroundImage={backgroundImage}
+            activeFace={state.activeFace}
             onUpdateElement={updateElement}
             onMoveLayer={(id, dir) =>
               dispatch({ type: "MOVE_LAYER", id, direction: dir })
@@ -355,6 +357,9 @@ export function CardDesigner() {
             }
             onSetBackgroundOpacity={(opacity) =>
               dispatch({ type: "SET_BACKGROUND_OPACITY", opacity })
+            }
+            onSetBackgroundImage={(face, dataUrl) =>
+              dispatch({ type: "SET_BACKGROUND_IMAGE", face, image: dataUrl })
             }
           />
         )}

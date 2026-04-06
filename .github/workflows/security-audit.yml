@@ -91,7 +91,7 @@ jobs:
 
       - name: Check CSP headers exist in all apps
         run: |
-          for app in citizen-web-legacy agent-web backoffice-web; do
+          for app in agent-web backoffice-web; do
             FILE="apps/${app}/server/middleware/security-headers.ts"
             if [ ! -f "$FILE" ]; then
               echo "::error::Security headers missing for ${app}"

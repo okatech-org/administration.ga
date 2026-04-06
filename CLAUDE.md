@@ -12,8 +12,8 @@ Ce projet suit la **Charte Graphique Consulat.ga** — un systeme de design neum
 
 - **Charte complete :** [`DESIGN_CHARTER.md`](./DESIGN_CHARTER.md) — reference authoritative du design
 - **Tokens CSS :** `packages/ui/src/styles/globals.css` — variables OKLCh, ombres, radius
-- **Utilitaires :** `apps/citizen-web-legacy/src/styles.css` — classes `.neu-*`, `.gabon-*`, animations
-- **Reference vivante :** Pages `/my-space/*` du citizen-web-legacy
+- **Utilitaires :** `apps/citizen-web/src/app/globals.css` — classes `.neu-*`, `.gabon-*`, animations
+- **Reference vivante :** Pages `/my-space/*` du citizen-web
 - **Skill :** `consulat-design-system` — active automatiquement pour les taches design/UI
 
 ### Regles design critiques

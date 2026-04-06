@@ -284,9 +284,10 @@ async function enrichRegistrationForPrint(
 }
 
 /**
- * Get registrations ready for printing (has card, not printed)
+ * Lightweight counts for the print queue — scans without enriching.
+ * Returns totals for ready-to-print and already-printed registrations.
  */
-export const getReadyForPrint = authQuery({
+export const getPrintCounts = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
     const membership = await ctx.db
@@ -297,30 +298,33 @@ export const getReadyForPrint = authQuery({
       .unique();
     await assertCanDoTask(ctx, ctx.user, membership, TaskCode.consular_cards.manage);
 
-    const org = await ctx.db.get(args.orgId);
+    let readyCount = 0;
+    let printedCount = 0;
 
-    const registrations = await ctx.db
+    for await (const reg of ctx.db
       .query("consularRegistrations")
       .withIndex("by_org_status", (q) =>
         q.eq("orgId", args.orgId).eq("status", RegistrationStatus.Active),
-      )
-      .collect();
+      )) {
+      if (reg.cardNumber) {
+        if (reg.printedAt) printedCount++;
+        else readyCount++;
+      }
+    }
 
-    const readyForPrint = registrations.filter(
-      (r) => r.cardNumber && !r.printedAt,
-    );
-
-    return await Promise.all(
-      readyForPrint.map((reg) => enrichRegistrationForPrint(ctx, reg, org)),
-    );
+    return { readyCount, printedCount };
   },
 });
 
 /**
- * Get recently printed registrations (has printedAt, last 50)
+ * Paginated registrations ready for printing (has card, not printed).
+ * Uses Convex pagination on raw results, then filters + enriches the page.
  */
-export const getRecentlyPrinted = authQuery({
-  args: { orgId: v.id("orgs") },
+export const getReadyForPrint = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+    paginationOpts: paginationOptsValidator,
+  },
   handler: async (ctx, args) => {
     const membership = await ctx.db
       .query("memberships")
@@ -332,21 +336,60 @@ export const getRecentlyPrinted = authQuery({
 
     const org = await ctx.db.get(args.orgId);
 
-    const registrations = await ctx.db
+    const result = await ctx.db
       .query("consularRegistrations")
       .withIndex("by_org_status", (q) =>
         q.eq("orgId", args.orgId).eq("status", RegistrationStatus.Active),
       )
-      .collect();
+      .paginate(args.paginationOpts);
 
-    const printed = registrations
-      .filter((r) => r.cardNumber && r.printedAt)
-      .sort((a, b) => (b.printedAt ?? 0) - (a.printedAt ?? 0))
-      .slice(0, 50);
-
-    return await Promise.all(
-      printed.map((reg) => enrichRegistrationForPrint(ctx, reg, org)),
+    // Filter for ready-to-print, then enrich only matching items
+    const readyItems = result.page.filter((r) => r.cardNumber && !r.printedAt);
+    const enriched = await Promise.all(
+      readyItems.map((reg) => enrichRegistrationForPrint(ctx, reg, org)),
     );
+
+    return { ...result, page: enriched };
+  },
+});
+
+/**
+ * Paginated recently-printed registrations (has printedAt).
+ * Uses Convex pagination on raw results, then filters + enriches.
+ */
+export const getRecentlyPrinted = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    const membership = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_org_deletedAt", (q) =>
+        q.eq("userId", ctx.user._id).eq("orgId", args.orgId).eq("deletedAt", undefined),
+      )
+      .unique();
+    await assertCanDoTask(ctx, ctx.user, membership, TaskCode.consular_cards.manage);
+
+    const org = await ctx.db.get(args.orgId);
+
+    const result = await ctx.db
+      .query("consularRegistrations")
+      .withIndex("by_org_status", (q) =>
+        q.eq("orgId", args.orgId).eq("status", RegistrationStatus.Active),
+      )
+      .order("desc")
+      .paginate(args.paginationOpts);
+
+    // Filter for printed items, sort by printedAt desc within the page
+    const printedItems = result.page
+      .filter((r) => r.cardNumber && r.printedAt)
+      .sort((a, b) => (b.printedAt ?? 0) - (a.printedAt ?? 0));
+    const enriched = await Promise.all(
+      printedItems.map((reg) => enrichRegistrationForPrint(ctx, reg, org)),
+    );
+
+    return { ...result, page: enriched };
   },
 });
 

@@ -1,3 +1,4 @@
+import { useRef } from "react"
 import {
   AlignCenter,
   AlignLeft,
@@ -12,8 +13,10 @@ import {
   Unlock,
   Eye,
   EyeOff,
+  ImagePlus,
+  Trash2,
 } from "lucide-react"
-import type { CardElement, TextAlignment } from "../../lib/card-types"
+import type { ActiveFace, CardElement, TextAlignment } from "../../lib/card-types"
 import { getFieldsByCategory, type DynamicField } from "../../lib/dynamic-fields"
 
 interface PropertiesPanelProps {
@@ -21,10 +24,13 @@ interface PropertiesPanelProps {
   entityId?: string
   backgroundColor: string
   backgroundOpacity: number
+  backgroundImage: string | null
+  activeFace: ActiveFace
   onUpdateElement: (id: string, changes: Partial<CardElement>) => void
   onMoveLayer: (id: string, direction: "up" | "down" | "top" | "bottom") => void
   onSetBackgroundColor: (color: string) => void
   onSetBackgroundOpacity: (opacity: number) => void
+  onSetBackgroundImage: (face: ActiveFace, dataUrl: string | null) => void
 }
 
 export function PropertiesPanel({
@@ -32,12 +38,36 @@ export function PropertiesPanel({
   entityId,
   backgroundColor,
   backgroundOpacity,
+  backgroundImage,
+  activeFace,
   onUpdateElement,
   onMoveLayer,
   onSetBackgroundColor,
   onSetBackgroundOpacity,
+  onSetBackgroundImage,
 }: PropertiesPanelProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Limit to 5 MB
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image trop volumineuse (max 5 Mo)")
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      onSetBackgroundImage(activeFace, reader.result as string)
+    }
+    reader.readAsDataURL(file)
+    // Reset input so the same file can be re-selected
+    e.target.value = ""
+  }
+
   if (!element) {
+    const faceLabel = activeFace === "front" ? "Recto" : "Verso"
+
     return (
       <div className="w-64 bg-card border-l border-border p-4 overflow-y-auto shrink-0">
         <h3 className="text-sm font-semibold text-foreground mb-4">Propriétés</h3>
@@ -60,18 +90,81 @@ export function PropertiesPanel({
               />
             </div>
           </Field>
-          <Field label="Opacité image">
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={backgroundOpacity}
-              onChange={(e) => onSetBackgroundOpacity(parseFloat(e.target.value))}
-              className="w-full accent-primary"
-            />
-            <span className="text-[10px] text-muted-foreground">{Math.round(backgroundOpacity * 100)}%</span>
-          </Field>
+        </Section>
+
+        <Section title={`Image de fond — ${faceLabel}`}>
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/bmp"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+
+          {backgroundImage ? (
+            <>
+              {/* Preview thumbnail */}
+              <div className="relative rounded-lg overflow-hidden border border-border bg-muted">
+                <img
+                  src={backgroundImage}
+                  alt={`Fond ${faceLabel}`}
+                  className="w-full h-auto object-contain"
+                  style={{ maxHeight: 120 }}
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-border text-[11px] font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  <ImagePlus className="size-3" />
+                  Remplacer
+                </button>
+                <button
+                  onClick={() => onSetBackgroundImage(activeFace, null)}
+                  className="inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-destructive/30 text-[11px] font-medium text-destructive hover:bg-destructive/5 transition-colors"
+                >
+                  <Trash2 className="size-3" />
+                </button>
+              </div>
+            </>
+          ) : (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 border-dashed border-border hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer text-muted-foreground hover:text-foreground"
+            >
+              <ImagePlus className="size-5" />
+              <span className="text-[11px] font-medium">
+                Ajouter une image
+              </span>
+              <span className="text-[10px] text-muted-foreground/60">
+                PNG, JPEG, WebP — max 5 Mo
+              </span>
+            </button>
+          )}
+
+          {/* Opacity slider (only shown when an image exists) */}
+          {backgroundImage && (
+            <Field label="Opacité">
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={backgroundOpacity}
+                  onChange={(e) => onSetBackgroundOpacity(parseFloat(e.target.value))}
+                  className="flex-1 accent-primary"
+                />
+                <span className="text-[10px] text-muted-foreground w-8 text-right">
+                  {Math.round(backgroundOpacity * 100)}%
+                </span>
+              </div>
+            </Field>
+          )}
         </Section>
 
         <p className="text-xs text-muted-foreground mt-6">
