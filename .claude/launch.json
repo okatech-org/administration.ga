@@ -21,6 +21,13 @@
       "runtimeArgs": ["run", "dev"],
       "port": 3003,
       "cwd": "apps/agent-web"
+    },
+    {
+      "name": "users-web",
+      "runtimeExecutable": "/Users/berny/.bun/bin/bun",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3001,
+      "cwd": "apps/users-web"
     }
   ]
 }

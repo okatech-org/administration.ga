@@ -91,7 +91,7 @@ export function ProfilesSection() {
 }
 
 interface ProfileCardProps {
-	image: string;
+	image: { src: string };
 	title: string;
 	subtitle: string;
 	description: string;
@@ -135,7 +135,7 @@ function ProfileCard({
 				>
 					<div className="h-48 w-full overflow-hidden">
 						<img
-							src={image}
+							src={image.src}
 							alt={title}
 							className="w-full h-full object-cover object-top transition-transform duration-500 hover:scale-110"
 						/>
