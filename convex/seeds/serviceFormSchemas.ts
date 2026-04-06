@@ -218,37 +218,56 @@ const FORM_SCHEMAS: Record<
   "consular-card-registration": {
     sections: [
       {
-        id: "identity",
-        title: l("Identité", "Identity"),
+        id: "basic_info",
+        title: l("Informations d'identité", "Identity Information"),
         fields: [
           {
-            id: "lastName",
+            id: "last_name",
             type: "text",
-            label: l("Nom", "Last name"),
+            label: l("Nom de famille", "Last Name"),
             required: true,
           },
           {
-            id: "firstName",
+            id: "first_name",
             type: "text",
-            label: l("Prénom(s)", "First name(s)"),
+            label: l("Prénom(s)", "First Name(s)"),
             required: true,
           },
           {
-            id: "birthDate",
-            type: "date",
-            label: l("Date de naissance", "Date of birth"),
-            required: true,
-          },
-          {
-            id: "birthPlace",
+            id: "nip",
             type: "text",
-            label: l("Lieu de naissance", "Place of birth"),
-            required: true,
+            label: l(
+              "Numéro d'Identification Personnel (NIP)",
+              "Personal Identification Number (NIP)",
+            ),
+            required: false,
           },
           {
             id: "gender",
-            type: "gender",
+            type: "select",
             label: l("Sexe", "Gender"),
+            required: true,
+            options: [
+              { value: "male", label: l("Masculin", "Male") },
+              { value: "female", label: l("Féminin", "Female") },
+            ],
+          },
+          {
+            id: "birth_date",
+            type: "date",
+            label: l("Date de naissance", "Date of Birth"),
+            required: true,
+          },
+          {
+            id: "birth_place",
+            type: "text",
+            label: l("Lieu de naissance", "Place of Birth"),
+            required: true,
+          },
+          {
+            id: "birth_country",
+            type: "country",
+            label: l("Pays de naissance", "Country of Birth"),
             required: true,
           },
           {
@@ -257,16 +276,209 @@ const FORM_SCHEMAS: Record<
             label: l("Nationalité", "Nationality"),
             required: true,
           },
+          {
+            id: "nationality_acquisition",
+            type: "select",
+            label: l(
+              "Mode d'acquisition de la nationalité",
+              "Nationality Acquisition Method",
+            ),
+            required: false,
+            options: [
+              { value: "birth", label: l("Par la naissance", "By Birth") },
+              {
+                value: "naturalization",
+                label: l("Par naturalisation", "By Naturalization"),
+              },
+              { value: "marriage", label: l("Par mariage", "By Marriage") },
+              { value: "adoption", label: l("Par adoption", "By Adoption") },
+              { value: "other", label: l("Autre", "Other") },
+            ],
+          },
         ],
       },
       {
-        id: "residence",
-        title: l("Situation actuelle", "Current Situation"),
+        id: "passport_info",
+        title: l("Informations du passeport", "Passport Information"),
         fields: [
           {
-            id: "address",
-            type: "address",
-            label: l("Adresse de résidence", "Residential address"),
+            id: "passport_number",
+            type: "text",
+            label: l("Numéro de passeport", "Passport Number"),
+            required: true,
+          },
+          {
+            id: "passport_issue_date",
+            type: "date",
+            label: l("Date de délivrance", "Issue Date"),
+            required: false,
+          },
+          {
+            id: "passport_expiry_date",
+            type: "date",
+            label: l("Date d'expiration", "Expiry Date"),
+            required: false,
+          },
+          {
+            id: "passport_issuing_authority",
+            type: "text",
+            label: l("Autorité de délivrance", "Issuing Authority"),
+            required: false,
+          },
+        ],
+      },
+      {
+        id: "family_info",
+        title: l("Situation familiale", "Family Information"),
+        fields: [
+          {
+            id: "marital_status",
+            type: "select",
+            label: l("Situation matrimoniale", "Marital Status"),
+            required: false,
+            options: [
+              { value: "single", label: l("Célibataire", "Single") },
+              { value: "married", label: l("Marié(e)", "Married") },
+              { value: "divorced", label: l("Divorcé(e)", "Divorced") },
+              { value: "widowed", label: l("Veuf/Veuve", "Widowed") },
+              { value: "civil_union", label: l("Pacsé(e)", "Civil Union") },
+              { value: "cohabiting", label: l("Concubinage", "Cohabiting") },
+            ],
+          },
+          {
+            id: "father_last_name",
+            type: "text",
+            label: l("Nom du père", "Father's Last Name"),
+            required: false,
+          },
+          {
+            id: "father_first_name",
+            type: "text",
+            label: l("Prénom du père", "Father's First Name"),
+            required: false,
+          },
+          {
+            id: "mother_last_name",
+            type: "text",
+            label: l("Nom de la mère", "Mother's Last Name"),
+            required: false,
+          },
+          {
+            id: "mother_first_name",
+            type: "text",
+            label: l("Prénom de la mère", "Mother's First Name"),
+            required: false,
+          },
+          {
+            id: "spouse_last_name",
+            type: "text",
+            label: l("Nom du conjoint", "Spouse's Last Name"),
+            required: false,
+          },
+          {
+            id: "spouse_first_name",
+            type: "text",
+            label: l("Prénom du conjoint", "Spouse's First Name"),
+            required: false,
+          },
+        ],
+      },
+      {
+        id: "contact_info",
+        title: l("Coordonnées", "Contact Information"),
+        fields: [
+          {
+            id: "email",
+            type: "email",
+            label: l("Email", "Email"),
+            required: true,
+          },
+          {
+            id: "phone",
+            type: "tel",
+            label: l("Téléphone", "Phone"),
+            required: true,
+          },
+        ],
+      },
+      {
+        id: "residence_address",
+        title: l("Adresse de résidence", "Residence Address"),
+        fields: [
+          {
+            id: "residence_street",
+            type: "text",
+            label: l("Rue", "Street"),
+            required: true,
+          },
+          {
+            id: "residence_city",
+            type: "text",
+            label: l("Ville", "City"),
+            required: true,
+          },
+          {
+            id: "residence_postal_code",
+            type: "text",
+            label: l("Code postal", "Postal Code"),
+            required: false,
+          },
+          {
+            id: "residence_country",
+            type: "country",
+            label: l("Pays de résidence", "Country of Residence"),
+            required: true,
+          },
+        ],
+      },
+      {
+        id: "homeland_address",
+        title: l("Adresse au Gabon", "Address in Gabon"),
+        fields: [
+          {
+            id: "homeland_street",
+            type: "text",
+            label: l("Rue / Quartier", "Street / District"),
+            required: false,
+          },
+          {
+            id: "homeland_city",
+            type: "text",
+            label: l("Ville", "City"),
+            required: false,
+          },
+          {
+            id: "homeland_postal_code",
+            type: "text",
+            label: l("Code postal", "Postal Code"),
+            required: false,
+          },
+          {
+            id: "homeland_country",
+            type: "country",
+            label: l("Pays", "Country"),
+            required: false,
+          },
+        ],
+      },
+      {
+        id: "emergency_contacts",
+        title: l("Contacts d'urgence", "Emergency Contacts"),
+        description: l(
+          "Au moins un contact d'urgence est requis. Idéalement un contact dans votre pays de résidence et un au Gabon.",
+          "At least one emergency contact is required. Ideally one in your country of residence and one in Gabon.",
+        ),
+        fields: [
+          {
+            id: "last_name",
+            type: "text",
+            label: l("Nom", "Last Name"),
+            required: true,
+          },
+          {
+            id: "first_name",
+            type: "text",
+            label: l("Prénom", "First Name"),
             required: true,
           },
           {
@@ -279,21 +491,51 @@ const FORM_SCHEMAS: Record<
             id: "email",
             type: "email",
             label: l("Email", "Email"),
-            required: true,
+            required: false,
+          },
+          {
+            id: "country",
+            type: "country",
+            label: l("Pays", "Country"),
+            required: false,
+          },
+        ],
+      },
+      {
+        id: "professional_info",
+        title: l("Situation professionnelle", "Professional Information"),
+        fields: [
+          {
+            id: "work_status",
+            type: "select",
+            label: l("Statut professionnel", "Work Status"),
+            required: false,
+            options: [
+              { value: "employee", label: l("Salarié(e)", "Employee") },
+              {
+                value: "self_employed",
+                label: l("Indépendant(e)", "Self-Employed"),
+              },
+              {
+                value: "entrepreneur",
+                label: l("Entrepreneur", "Entrepreneur"),
+              },
+              { value: "student", label: l("Étudiant(e)", "Student") },
+              { value: "retired", label: l("Retraité(e)", "Retired") },
+              { value: "unemployed", label: l("Sans emploi", "Unemployed") },
+              { value: "other", label: l("Autre", "Other") },
+            ],
           },
           {
             id: "profession",
             type: "text",
-            label: l("Profession", "Profession"),
+            label: l("Profession / Métier", "Profession / Job Title"),
             required: false,
           },
           {
-            id: "arrivalDate",
-            type: "date",
-            label: l(
-              "Date d'arrivée dans le pays",
-              "Date of arrival in the country",
-            ),
+            id: "employer",
+            type: "text",
+            label: l("Employeur / Établissement", "Employer / Institution"),
             required: false,
           },
         ],

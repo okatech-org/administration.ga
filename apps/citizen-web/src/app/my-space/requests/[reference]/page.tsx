@@ -215,6 +215,7 @@ export default function UserRequestDetail() {
 				"homeland_address",
 			]);
 			const skippedIds = new Set([
+				"emergency_contacts",
 				"emergency_residence",
 				"emergency_homeland",
 				...mergedContactIds,

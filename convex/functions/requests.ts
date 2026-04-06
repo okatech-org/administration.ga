@@ -1225,7 +1225,20 @@ function buildProfilePatchFromFormData(
     patch.addresses = addresses;
   }
 
-  // emergency_residence -> contacts.emergencyContacts[0]
+  // emergency_contacts (new array format) -> contacts.emergencyContacts
+  if (Array.isArray(formData.emergency_contacts) && formData.emergency_contacts.length > 0) {
+    const contacts = (patch.contacts as Record<string, any>) ?? { ...(existingProfile.contacts ?? {}) };
+    contacts.emergencyContacts = formData.emergency_contacts.map((ec: any) => ({
+      ...(ec.last_name !== undefined && { lastName: ec.last_name }),
+      ...(ec.first_name !== undefined && { firstName: ec.first_name }),
+      ...(ec.phone !== undefined && { phone: ec.phone }),
+      ...(ec.email !== undefined && { email: ec.email }),
+      ...(ec.country !== undefined && { country: ec.country }),
+    }));
+    patch.contacts = contacts;
+  }
+
+  // Legacy: emergency_residence -> contacts.emergencyContacts[0]
   if (formData.emergency_residence) {
     const er = formData.emergency_residence;
     const contacts = (patch.contacts as Record<string, any>) ?? { ...(existingProfile.contacts ?? {}) };
@@ -1242,12 +1255,11 @@ function buildProfilePatchFromFormData(
     patch.contacts = contacts;
   }
 
-  // emergency_homeland -> contacts.emergencyContacts[1]
+  // Legacy: emergency_homeland -> contacts.emergencyContacts[1]
   if (formData.emergency_homeland) {
     const eh = formData.emergency_homeland;
     const contacts = (patch.contacts as Record<string, any>) ?? { ...(existingProfile.contacts ?? {}) };
     const emergencyContacts = [...(contacts.emergencyContacts ?? [])];
-    // Ensure index 0 exists
     if (!emergencyContacts[0]) emergencyContacts[0] = {};
     const existing = emergencyContacts[1] ?? {};
     emergencyContacts[1] = {

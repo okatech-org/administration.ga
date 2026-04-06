@@ -1,6 +1,0 @@
-{"timestamp":"00:29:55.661","source":"Browser","level":"LOG","message":"WebSocket closed with code 1006"}
-{"timestamp":"00:29:55.661","source":"Browser","level":"LOG","message":"Attempting reconnect in 605ms"}
-{"timestamp":"00:29:55.661","source":"Browser","level":"LOG","message":"WebSocket reconnected at t=1013.7s after disconnect due to closed with code 1006"}
-{"timestamp":"00:29:55.661","source":"Browser","level":"LOG","message":"WebSocket closed with code 1006"}
-{"timestamp":"00:29:55.661","source":"Browser","level":"LOG","message":"Attempting reconnect in 1078ms"}
-{"timestamp":"00:29:56.653","source":"Browser","level":"LOG","message":"WebSocket reconnected at t=653.9s after disconnect due to closed with code 1006"}
