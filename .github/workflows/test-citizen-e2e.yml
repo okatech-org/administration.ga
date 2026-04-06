@@ -3,14 +3,14 @@ name: Test Citizen Web (E2E)
 on:
   pull_request:
     paths:
-      - "apps/citizen-web/**"
+      - "apps/citizen-web-legacy/**"
       - "packages/**"
       - "convex/**"
       - ".github/workflows/test-citizen-e2e.yml"
   push:
     branches: [main]
     paths:
-      - "apps/citizen-web/**"
+      - "apps/citizen-web-legacy/**"
       - "packages/**"
       - "convex/**"
 
@@ -33,11 +33,11 @@ jobs:
 
       - name: Install Playwright Chromium
         run: bunx playwright install --with-deps chromium
-        working-directory: apps/citizen-web
+        working-directory: apps/citizen-web-legacy
 
       - name: Run E2E tests
         run: bunx playwright test
-        working-directory: apps/citizen-web
+        working-directory: apps/citizen-web-legacy
         env:
           # Point to the Convex DEV deployment (has DEV_SIGNIN_ENABLED=true)
           VITE_CONVEX_URL: ${{ secrets.E2E_CONVEX_URL }}
@@ -51,5 +51,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: apps/citizen-web/playwright-report/
+          path: apps/citizen-web-legacy/playwright-report/
           retention-days: 7

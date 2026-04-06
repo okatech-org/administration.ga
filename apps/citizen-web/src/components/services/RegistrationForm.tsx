@@ -4,7 +4,7 @@ import type { Doc, Id } from "@convex/_generated/dataModel";
 import { DetailedDocumentType } from "@convex/lib/constants";
 import { getLocalized } from "@convex/lib/utils";
 import type { FormDocument } from "@convex/lib/validators";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import {
 	ArrowLeft,
 	ArrowRight,
@@ -278,7 +278,7 @@ export function RegistrationForm({
 												return (
 													<DocumentField
 														key={doc.type}
-		
+
 														documentKey={
 															profileKey as
 																| "passport"

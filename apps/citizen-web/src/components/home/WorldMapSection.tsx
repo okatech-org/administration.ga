@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { api } from "@convex/_generated/api";
 import { OrganizationType } from "@convex/lib/constants";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { ArrowRight, Globe, Loader2, Locate } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
@@ -53,7 +53,6 @@ export function WorldMapSection() {
 	const map = useRef<mapboxgl.Map | null>(null);
 	const markersRef = useRef<mapboxgl.Marker[]>([]);
 	const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
-	// @ts-expect-error — TS2589: Convex's deep recursive types hit the instantiation limit
 	const { data: orgs } = useConvexQuery(api.functions.orgs.list, {});
 
 	// Filters state
@@ -346,7 +345,7 @@ export function WorldMapSection() {
 						</div>
 
 						<Button asChild size="lg" className="h-14 px-8 rounded-full">
-							<Link to="/reps" search={{ view: "grid" }}>
+							<Link href="/reps?view=grid">
 								{t("map.explore")} <ArrowRight className="ml-2 w-5 h-5" />
 							</Link>
 						</Button>

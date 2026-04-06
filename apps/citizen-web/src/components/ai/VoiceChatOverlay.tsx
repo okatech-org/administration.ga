@@ -174,9 +174,9 @@ function StatusMessage({
 			case "connecting":
 				return "Connexion en cours...";
 			case "listening":
-				return "Je vous écoute...";
+				return "Je vous ecoute...";
 			case "processing":
-				return "Je réfléchis...";
+				return "Je reflechis...";
 			case "speaking":
 				return "Je parle...";
 			case "error":

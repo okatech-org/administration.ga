@@ -112,7 +112,7 @@ export const captureEvent = <T extends keyof AnalyticsEvents>(
 ) => {
 	if (
 		typeof window !== "undefined" &&
-		import.meta.env.VITE_POSTHOG_KEY
+		process.env.NEXT_PUBLIC_POSTHOG_KEY
 	) {
 		try {
 			posthog.capture(eventName, properties);

@@ -1,3 +1,5 @@
+"use client";
+
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import {
@@ -5,7 +7,7 @@ import {
   CompanyRole,
   CompanyType,
 } from "@convex/lib/constants";
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Briefcase,
@@ -66,7 +68,7 @@ const roleIcons: Partial<Record<CompanyRole, typeof Crown>> = {
 
 export function CompanyDetailContent({ id }: { id: string }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { data: company, isPending } = useConvexQuery(
     api.functions.companies.getById,
     { id: id as Id<"companies"> },
@@ -84,7 +86,7 @@ export function CompanyDetailContent({ id }: { id: string }) {
       <div className="space-y-4 p-1">
         <Button
           variant="ghost"
-          onClick={() => navigate({ to: "/my-space/companies" })}
+          onClick={() => router.push("/my-space/companies")}
           className="gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -151,7 +153,7 @@ export function CompanyDetailContent({ id }: { id: string }) {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate({ to: "/my-space/companies" })}
+          onClick={() => router.push("/my-space/companies")}
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -579,7 +581,7 @@ function MembersTab({
 
 function SettingsTab({ company }: { company: any }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { mutate: update, isPending: isUpdating } = useConvexMutationQuery(
     api.functions.companies.update,
   );
@@ -644,7 +646,7 @@ function SettingsTab({ company }: { company: any }) {
       {
         onSuccess: () => {
           toast.success(t("companies.deleted"));
-          navigate({ to: "/my-space/companies" });
+          router.push("/my-space/companies");
         },
         onError: () =>
           toast.error(t("common.error")),
@@ -658,7 +660,7 @@ function SettingsTab({ company }: { company: any }) {
       {
         onSuccess: () => {
           toast.success(t("companies.left"));
-          navigate({ to: "/my-space/companies" });
+          router.push("/my-space/companies");
         },
         onError: () =>
           toast.error(t("common.error")),

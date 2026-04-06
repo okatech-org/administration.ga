@@ -163,9 +163,9 @@ export function VoiceChatContent({
       case "connecting":
         return "Connexion en cours...";
       case "listening":
-        return "Je vous écoute...";
+        return "Je vous ecoute...";
       case "processing":
-        return "Je réfléchis...";
+        return "Je reflechis...";
       case "speaking":
         return "Je parle...";
       case "error":
@@ -245,7 +245,7 @@ export function VoiceChatContent({
 
       {!pendingConfirmation && (
         <p className="mt-2 text-sm text-muted-foreground">
-          Parlez naturellement, je vous écoute
+          Parlez naturellement, je vous ecoute
         </p>
       )}
 

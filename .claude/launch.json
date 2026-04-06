@@ -5,8 +5,15 @@
       "name": "citizen-web",
       "runtimeExecutable": "/Users/berny/.bun/bin/bun",
       "runtimeArgs": ["run", "dev"],
-      "port": 3000,
+      "port": 3001,
       "cwd": "apps/citizen-web"
+    },
+    {
+      "name": "citizen-web-legacy",
+      "runtimeExecutable": "/Users/berny/.bun/bin/bun",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "cwd": "apps/citizen-web-legacy"
     },
     {
       "name": "backoffice-web",
@@ -23,11 +30,11 @@
       "cwd": "apps/agent-web"
     },
     {
-      "name": "users-web",
+      "name": "convex",
       "runtimeExecutable": "/Users/berny/.bun/bin/bun",
-      "runtimeArgs": ["run", "dev"],
-      "port": 3001,
-      "cwd": "apps/users-web"
+      "runtimeArgs": ["run", "dev:convex"],
+      "port": 3210,
+      "cwd": "."
     }
   ]
 }

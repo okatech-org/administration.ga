@@ -1,5 +1,5 @@
 import type { Id } from "@convex/_generated/dataModel";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { differenceInCalendarDays, format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -44,17 +44,17 @@ export interface AppointmentData {
 
 const STATUS_CONFIG: Record<string, { label: string; tintBg: string; iconColor: string }> = {
 	confirmed: {
-		label: "Confirmé",
+		label: "Confirme",
 		tintBg: "bg-amber-500/15 dark:bg-amber-500/10 hover:bg-amber-500/25 dark:hover:bg-amber-500/15",
 		iconColor: "text-amber-600 dark:text-amber-400",
 	},
 	completed: {
-		label: "Complété",
+		label: "Complete",
 		tintBg: "bg-foreground/[0.04] dark:bg-foreground/[0.06] hover:bg-foreground/[0.08]",
 		iconColor: "text-muted-foreground",
 	},
 	cancelled: {
-		label: "Annulé",
+		label: "Annule",
 		tintBg: "bg-rose-500/[0.06] dark:bg-rose-500/[0.06] hover:bg-rose-500/10",
 		iconColor: "text-rose-500 dark:text-rose-400",
 	},
@@ -64,14 +64,14 @@ const STATUS_CONFIG: Record<string, { label: string; tintBg: string; iconColor: 
 		iconColor: "text-rose-500 dark:text-rose-400",
 	},
 	rescheduled: {
-		label: "Reprogrammé",
+		label: "Reprogramme",
 		tintBg: "bg-amber-500/10 dark:bg-amber-500/8 hover:bg-amber-500/20",
 		iconColor: "text-amber-600 dark:text-amber-400",
 	},
 };
 
 const TYPE_LABELS: Record<string, string> = {
-	deposit: "Dépôt",
+	deposit: "Depot",
 	pickup: "Retrait",
 };
 
@@ -112,8 +112,7 @@ export function AppointmentCard({
 
 	return (
 		<Link
-			to="/my-space/appointments/$appointmentId"
-			params={{ appointmentId: apt._id }}
+			href={`/my-space/appointments/${apt._id}`}
 			className="block"
 		>
 			<div className={cn(
@@ -164,7 +163,7 @@ export function AppointmentCard({
 						)}
 						{past && apt.status === "confirmed" && (
 							<span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-foreground/[0.06] dark:bg-foreground/[0.12] text-muted-foreground">
-								Passé
+								Passe
 							</span>
 						)}
 					</div>
@@ -189,7 +188,7 @@ export function AppointmentCard({
 					{apt.requestId && (
 						<span className="flex items-center gap-1.5 text-primary dark:text-primary">
 							<FileText className="w-3.5 h-3.5" />
-							Demande liée
+							Demande liee
 						</span>
 					)}
 				</div>
@@ -211,7 +210,7 @@ export function AppointmentCard({
 							asChild
 							onClick={(e: React.MouseEvent) => e.stopPropagation()}
 						>
-							<Link to="/my-space/appointments/new">
+							<Link href="/my-space/appointments/new">
 								<Calendar className="w-3.5 h-3.5" />
 								Reprogrammer
 							</Link>
@@ -236,7 +235,7 @@ export function AppointmentCard({
 								<AlertDialogHeader>
 									<AlertDialogTitle>Annuler ce rendez-vous ?</AlertDialogTitle>
 									<AlertDialogDescription>
-										Cette action est irréversible. Vous devrez prendre un nouveau rendez-vous.
+										Cette action est irreversible. Vous devrez prendre un nouveau rendez-vous.
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<AlertDialogFooter>

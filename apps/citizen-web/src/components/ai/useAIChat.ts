@@ -1,4 +1,5 @@
-import { useLocation, useRouter } from "@tanstack/react-router";
+import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import {
 	useAuthenticatedConvexQuery,
@@ -29,7 +30,7 @@ export function useAIChat() {
 	const [conversationId, setConversationId] =
 		useState<Id<"conversations"> | null>(null);
 
-	const location = useLocation();
+	const pathname = usePathname();
 	const router = useRouter();
 	const { setFormFill } = useFormFill();
 	const { mutateAsync: chat } = useConvexActionQuery(api.ai.chat.chat);
@@ -68,7 +69,7 @@ export function useAIChat() {
 						if (action.type === "navigateTo") {
 							const route = action.args.route as string;
 							if (route) {
-								router.navigate({ to: route });
+								router.push(route);
 							}
 						}
 						// Execute form fill
@@ -87,7 +88,7 @@ export function useAIChat() {
 									request: "/requests",
 								};
 								const route = routeMap[formId] || "/profile";
-								router.navigate({ to: route });
+								router.push(route);
 							}
 
 							setFormFill({
@@ -103,8 +104,8 @@ export function useAIChat() {
 							role: "assistant",
 							content:
 								action.type === "fillForm"
-									? " Les informations ont été pré-remplies dans le formulaire."
-									: " Navigation effectuée.",
+									? " Les informations ont ete pre-remplies dans le formulaire."
+									: " Navigation effectuee.",
 							timestamp: Date.now(),
 						};
 						setMessages((prev) => [...prev, resultMessage]);
@@ -117,14 +118,14 @@ export function useAIChat() {
 
 			// Check if this is a negative response to a pending action
 			const negativePatterns =
-				/^(non|no|nope|annuler|annule|stop|arrête|pas maintenant|plus tard|refuse|refuser)$/i;
+				/^(non|no|nope|annuler|annule|stop|arrete|pas maintenant|plus tard|refuse|refuser)$/i;
 			if (pendingActions.length > 0 && negativePatterns.test(content.trim())) {
 				// Reject the first pending action inline
 				const action = pendingActions[0];
 				setPendingActions((prev) => prev.filter((a) => a !== action));
 				const rejectMessage: Message = {
 					role: "assistant",
-					content: `Action "${action.reason || action.type}" annulée.`,
+					content: `Action "${action.reason || action.type}" annulee.`,
 					timestamp: Date.now(),
 				};
 				setMessages((prev) => [...prev, rejectMessage]);
@@ -146,7 +147,7 @@ export function useAIChat() {
 				const response = await chat({
 					conversationId: conversationId ?? undefined,
 					message: content,
-					currentPage: location.pathname,
+					currentPage: pathname,
 				});
 
 				// Update conversation ID
@@ -176,7 +177,7 @@ export function useAIChat() {
 						if (action.type === "navigateTo") {
 							const route = action.args.route as string;
 							if (route) {
-								router.navigate({ to: route });
+								router.push(route);
 							}
 						} else if (action.type === "fillForm") {
 							const formId = action.args.formId as string;
@@ -193,7 +194,7 @@ export function useAIChat() {
 									request: "/requests",
 								};
 								const route = routeMap[formId] || "/profile";
-								router.navigate({ to: route });
+								router.push(route);
 							}
 
 							setFormFill({
@@ -224,9 +225,9 @@ export function useAIChat() {
 					errorMessage.includes("API")
 				) {
 					userMessage =
-						"Le service est temporairement indisponible. Réessayez dans quelques instants.";
+						"Le service est temporairement indisponible. Reessayez dans quelques instants.";
 				} else {
-					userMessage = "Une erreur est survenue. Veuillez réessayer.";
+					userMessage = "Une erreur est survenue. Veuillez reessayer.";
 				}
 
 				setError(userMessage);
@@ -240,7 +241,7 @@ export function useAIChat() {
 			chat,
 			conversationId,
 			isLoading,
-			location.pathname,
+			pathname,
 			pendingActions,
 			setFormFill,
 			router,
@@ -258,7 +259,7 @@ export function useAIChat() {
 			// Add user message with image indicator
 			const userMessage: Message = {
 				role: "user",
-				content: " Document envoyé pour analyse...",
+				content: " Document envoye pour analyse...",
 				timestamp: Date.now(),
 			};
 			setMessages((prev) => [...prev, userMessage]);
@@ -273,7 +274,7 @@ export function useAIChat() {
 				if (!result.success) {
 					const errorMsg = result.error?.startsWith("RATE_LIMITED:")
 						? result.error.replace("RATE_LIMITED:", "")
-						: "Impossible d'analyser le document. Réessayez avec une image plus claire.";
+						: "Impossible d'analyser le document. Reessayez avec une image plus claire.";
 					setError(errorMsg);
 					setMessages((prev) => prev.slice(0, -1));
 					return;
@@ -281,28 +282,28 @@ export function useAIChat() {
 
 				// French labels for human-readable display
 				const fieldLabels: Record<string, string> = {
-					firstName: "Prénom",
+					firstName: "Prenom",
 					lastName: "Nom de famille",
 					birthDate: "Date de naissance",
 					birthPlace: "Lieu de naissance",
 					gender: "Sexe",
-					nationality: "Nationalité",
-					passportNumber: "N° de passeport",
-					issueDate: "Date de délivrance",
+					nationality: "Nationalite",
+					passportNumber: "N de passeport",
+					issueDate: "Date de delivrance",
 					expiryDate: "Date d'expiration",
-					issuingAuthority: "Autorité de délivrance",
+					issuingAuthority: "Autorite de delivrance",
 				};
 
 				// Gender display values
 				const genderLabels: Record<string, string> = {
 					M: "Masculin",
-					F: "Féminin",
+					F: "Feminin",
 				};
 
 				// Document type labels
 				const documentTypeLabels: Record<string, string> = {
 					passport: "Passeport",
-					id_card: "Carte d'identité",
+					id_card: "Carte d'identite",
 					birth_certificate: "Acte de naissance",
 					unknown: "Document",
 				};
@@ -323,16 +324,16 @@ export function useAIChat() {
 								key === "gender"
 									? genderLabels[value as string] || value
 									: value;
-							responseText += `• **${label}** : ${displayValue}\n`;
+							responseText += `- **${label}** : ${displayValue}\n`;
 						}
 					}
-					responseText += `\n_Voulez-vous que je pré-remplisse votre profil avec ces informations ?_`;
+					responseText += `\n_Voulez-vous que je pre-remplisse votre profil avec ces informations ?_`;
 				}
 
 				if (result.warnings.length > 0) {
 					responseText += `\n\n **Avertissements :**\n`;
 					for (const warning of result.warnings) {
-						responseText += `• ${warning}\n`;
+						responseText += `- ${warning}\n`;
 					}
 				}
 
@@ -376,7 +377,7 @@ export function useAIChat() {
 					const docTypeLabels: Record<string, string> = {
 						passport: "passeport",
 						birth_certificate: "acte de naissance",
-						id_card: "carte d'identité",
+						id_card: "carte d'identite",
 					};
 					const docLabel = docTypeLabels[result.documentType] || "document";
 
@@ -390,7 +391,7 @@ export function useAIChat() {
 								navigateFirst: true,
 							},
 							requiresConfirmation: true,
-							reason: `Pré-remplir le profil avec les données du ${docLabel}`,
+							reason: `Pre-remplir le profil avec les donnees du ${docLabel}`,
 						},
 					]);
 				}
@@ -411,7 +412,7 @@ export function useAIChat() {
 				case "navigateTo": {
 					const route = action.args.route as string;
 					if (route) {
-						router.navigate({ to: route });
+						router.push(route);
 					}
 					break;
 				}
@@ -431,7 +432,7 @@ export function useAIChat() {
 							request: "/requests",
 						};
 						const route = routeMap[formId] || "/profile";
-						router.navigate({ to: route });
+						router.push(route);
 					}
 
 					// Set the form fill data - forms will consume it
@@ -469,8 +470,8 @@ export function useAIChat() {
 						role: "assistant",
 						content:
 							action.type === "fillForm"
-								? " Les informations ont été pré-remplies dans le formulaire."
-								: " Navigation effectuée.",
+								? " Les informations ont ete pre-remplies dans le formulaire."
+								: " Navigation effectuee.",
 						timestamp: Date.now(),
 					};
 					setMessages((prev) => [...prev, resultMessage]);
@@ -492,7 +493,7 @@ export function useAIChat() {
 				const resultMessage: Message = {
 					role: "assistant",
 					content: result.success
-						? ` Action exécutée: ${JSON.stringify(result.data)}`
+						? ` Action executee: ${JSON.stringify(result.data)}`
 						: ` Erreur: ${result.error}`,
 					timestamp: Date.now(),
 				};
@@ -500,7 +501,7 @@ export function useAIChat() {
 
 				return result;
 			} catch (err) {
-				setError((err as Error).message || "Erreur lors de l'exécution");
+				setError((err as Error).message || "Erreur lors de l'execution");
 				return { success: false, error: (err as Error).message };
 			} finally {
 				setIsLoading(false);
@@ -516,7 +517,7 @@ export function useAIChat() {
 		// Add rejection message
 		const rejectMessage: Message = {
 			role: "assistant",
-			content: `Action "${action.type}" annulée.`,
+			content: `Action "${action.type}" annulee.`,
 			timestamp: Date.now(),
 		};
 		setMessages((prev) => [...prev, rejectMessage]);

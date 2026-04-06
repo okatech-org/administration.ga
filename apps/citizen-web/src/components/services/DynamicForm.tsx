@@ -5,9 +5,10 @@ import type { CountryCode } from "@convex/lib/countryCodeValidator";
 import { getLocalized } from "@convex/lib/utils";
 import type { Address, FormSchema } from "@convex/lib/validators";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import * as z from "zod";
 import { useFormFillEffect } from "@/components/ai/useFormFillEffect";
@@ -139,13 +140,10 @@ export function DynamicForm({
 
 	// 2. Form Initialization
 	const form = useForm<z.infer<typeof zodSchema>>({
-		resolver: zodResolver(zodSchema),
+		resolver: zodResolver(zodSchema as any),
 		defaultValues: defaultValues || {},
 		mode: "onChange",
 	});
-
-	console.log("form", form.formState.errors);
-	console.log("form values", form.getValues());
 
 	// AI Fill Effect - Generate mapping from schema and apply
 	const dynamicMapping = useMemo(() => {
@@ -349,11 +347,7 @@ export function DynamicForm({
 												const formValues = form.getValues();
 												// Evaluate first condition (simplified - could extend for AND/OR logic)
 												return evaluateCondition(
-													field.conditions[0] as {
-														fieldPath: string;
-														operator: string;
-														value?: unknown;
-													},
+													field.conditions[0] as any,
 													formValues,
 												);
 											})

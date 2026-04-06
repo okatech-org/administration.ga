@@ -3,7 +3,7 @@
  * Design iProfil : FlatCard avec accent warning.
  */
 
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import {
 	AlertTriangle,
 	ArrowRight,
@@ -115,8 +115,7 @@ export function ActionsRequiredBanner({ pendingActions, className }: ActionsRequ
 					{/* CTA vers la premiere demarche */}
 					{firstAction && (
 						<Link
-							to="/my-space/requests/$reference"
-							params={{ reference: firstAction.requestReference || firstAction.requestId }}
+							href={`/my-space/requests/${firstAction.requestReference || firstAction.requestId}`}
 						>
 							<Button
 								variant="ghost"

@@ -1,6 +1,6 @@
 import { api } from "@convex/_generated/api";
 import { ServiceCategory } from "@convex/lib/validators";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import {
 	BookOpen,
 	BookOpenCheck,
@@ -132,7 +132,7 @@ export function ServicesSection() {
 						size="lg"
 						className="h-12 px-8 rounded-xl shadow-lg shadow-primary/20"
 					>
-						<Link to="/services">{t("services.viewAll")}</Link>
+						<Link href="/services">{t("services.viewAll")}</Link>
 					</Button>
 				</div>
 			</div>

@@ -2,8 +2,8 @@ import {
 	DetailedDocumentType,
 	FormFieldType,
 	ServiceCategory,
-} from "/lib/constants";
-import type { FormDocument, FormSection } from "/lib/validators";
+} from "@convex/lib/constants";
+import type { FormDocument, FormSection } from "@convex/lib/validators";
 
 export interface FormTemplate {
 	id: string;

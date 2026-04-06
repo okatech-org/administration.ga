@@ -1,5 +1,5 @@
 import { api } from "@convex/_generated/api";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -90,7 +90,7 @@ export function ProfilesSection() {
 }
 
 interface ProfileCardProps {
-	image: string;
+	image: { src: string };
 	title: string;
 	subtitle: string;
 	description: string;
@@ -123,14 +123,14 @@ function ProfileCard({
 			viewport={{ once: true }}
 			transition={{ delay, ease: "easeOut" }}
 		>
-			<Link to={to}>
+			<Link href={to}>
 				<Card
 					className="py-0 cursor-pointer border flat-card-border bg-card shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden h-full"
 					style={{ borderTop: `3px solid ${borderTopColors[color]}` }}
 				>
 					<div className="h-48 w-full overflow-hidden">
 						<img
-							src={image}
+							src={image.src}
 							alt={title}
 							className="w-full h-full object-cover object-top transition-transform duration-500 hover:scale-110"
 						/>

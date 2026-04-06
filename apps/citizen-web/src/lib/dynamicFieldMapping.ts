@@ -1,4 +1,4 @@
-import type { FormSchema } from "@/components/admin/FormBuilder";
+import type { FormSchema } from "@convex/lib/validators";
 
 /**
  * Common AI field names that can be extracted from documents
@@ -72,18 +72,19 @@ export function generateDynamicFieldMapping(
 ): Record<string, string> {
 	const mapping: Record<string, string> = {};
 
-	const properties = schema.properties || {};
+	const properties = (schema as any).properties || {};
 
 	// Iterate through each section
 	for (const [sectionKey, sectionProp] of Object.entries(properties)) {
-		if (typeof sectionProp !== "object" || sectionProp.type !== "object")
+		if (typeof sectionProp !== "object" || !sectionProp || (sectionProp as any).type !== "object")
 			continue;
 
-		const sectionProperties = sectionProp.properties || {};
+		const sectionProperties = (sectionProp as any).properties || {};
 
 		// Iterate through each field in the section
 		for (const [fieldKey, fieldProp] of Object.entries(sectionProperties)) {
-			if (typeof fieldProp !== "object") continue;
+			if (typeof fieldProp !== "object" || !fieldProp) continue;
+			const _fp = fieldProp as any;
 
 			const fieldPath = `${sectionKey}.${fieldKey}`;
 			const normalizedFieldKey = fieldKey.toLowerCase().replace(/[-_]/g, "");
@@ -101,7 +102,7 @@ export function generateDynamicFieldMapping(
 
 				// Also check against the field title if available
 				const frTitle =
-					fieldProp.title?.fr?.toLowerCase().replace(/[-_\s]/g, "") || "";
+					_fp.title?.fr?.toLowerCase().replace(/[-_\s]/g, "") || "";
 				if (
 					normalizedAliases.some((alias: string) =>
 						frTitle.includes(alias.replace(/[-_]/g, "")),

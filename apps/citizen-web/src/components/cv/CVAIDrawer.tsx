@@ -1,5 +1,5 @@
 /**
- * CVAIDrawer — Bottom sheet that slides up from the page bottom.
+ * CVAIDrawer -- Bottom sheet that slides up from the page bottom.
  *
  * Used for ALL AI interactions on the CV page:
  *  - Input forms (optimize for job, cover letter, translate)
@@ -10,6 +10,7 @@
  */
 
 import { motion, AnimatePresence } from "motion/react";
+import { useState } from "react";
 import {
   X,
   Check,
@@ -46,19 +47,19 @@ import { toast } from "sonner";
 import type { TFunction } from "i18next";
 import type { CVData } from "./types";
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 // TYPES
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 
 export type DrawerView =
   | null
-  | "improveSummary" // Input → show proposal
+  | "improveSummary" // Input -> show proposal
   | "suggestSkills" // Show suggested skills
-  | "optimizeForJob" // Input form → show job analysis
-  | "coverLetter" // Input form → show letter
+  | "optimizeForJob" // Input form -> show job analysis
+  | "coverLetter" // Input form -> show letter
   | "atsScore" // Show score card
-  | "translateCV" // Language picker → translate
-  | "importCV"; // Text/file → AI parse → import
+  | "translateCV" // Language picker -> translate
+  | "importCV"; // Text/file -> AI parse -> import
 
 export type DrawerPhase = "input" | "loading" | "result";
 
@@ -89,17 +90,17 @@ export interface DrawerState {
   // Form states held by parent
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 // CONSTANTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 
 const CV_LANGUAGES = [
-  { code: "fr", label: "Français" },
+  { code: "fr", label: "Francais" },
   { code: "en", label: "English" },
-  { code: "es", label: "Español" },
+  { code: "es", label: "Espanol" },
   { code: "de", label: "Deutsch" },
-  { code: "pt", label: "Português" },
-  { code: "ar", label: "العربية" },
+  { code: "pt", label: "Portugues" },
+  { code: "ar", label: "\u0627\u0644\u0639\u0631\u0628\u064A\u0629" },
 ];
 
 const VIEW_CONFIG: Record<
@@ -139,9 +140,9 @@ const VIEW_CONFIG: Record<
   },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 // MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 
 interface CVAIDrawerProps {
   state: DrawerState;
@@ -255,7 +256,7 @@ export function CVAIDrawer({
                 </div>
               </div>
 
-              {/* Content — scrollable */}
+              {/* Content -- scrollable */}
               <div className="flex-1 overflow-y-auto p-5">
                 {state.view && (
                   <DrawerContent
@@ -284,9 +285,9 @@ export function CVAIDrawer({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 // DRAWER CONTENT ROUTER
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 
 function DrawerContent(props: CVAIDrawerProps & { state: DrawerState }) {
   const { state } = props;
@@ -311,9 +312,9 @@ function DrawerContent(props: CVAIDrawerProps & { state: DrawerState }) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 // IMPROVE SUMMARY VIEW
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 
 function ImproveSummaryView({
   state,
@@ -375,13 +376,13 @@ function ImproveSummaryView({
     );
   }
 
-  // Input phase — just a trigger button
+  // Input phase -- just a trigger button
   return (
     <div className="space-y-4 text-center py-4">
       <div className="text-sm text-muted-foreground">
         {t(
           "icv.ai.drawer.improveSummaryDesc",
-          "L'IA va analyser votre CV et proposer un résumé professionnel amélioré.",
+          "L'IA va analyser votre CV et proposer un resume professionnel ameliore.",
         )}
       </div>
       <Button onClick={onRunImproveSummary} className="mx-auto">
@@ -392,9 +393,9 @@ function ImproveSummaryView({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 // SUGGEST SKILLS VIEW
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 
 function SuggestSkillsView({
   state,
@@ -408,7 +409,7 @@ function SuggestSkillsView({
       <LoadingState
         message={t(
           "icv.ai.drawer.findingSkills",
-          "Recherche de compétences...",
+          "Recherche de competences...",
         )}
       />
     );
@@ -420,7 +421,7 @@ function SuggestSkillsView({
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           {t(
             "icv.ai.drawer.suggestedSkillsDesc",
-            "Compétences suggérées basées sur votre expérience",
+            "Competences suggerees basees sur votre experience",
           )}
         </p>
 
@@ -446,9 +447,9 @@ function SuggestSkillsView({
               </div>
               <button
                 onClick={() => onAcceptSkill(s.name, s.level)}
-                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
+                className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
                   bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground
-                  transition-all border border-primary/20 hover:border-primary"
+                  transition-all border border-primary/20 hover:border-primary`}
               >
                 <Plus size={13} />
                 {t("icv.ai.drawer.addSkill")}
@@ -472,7 +473,7 @@ function SuggestSkillsView({
       <div className="text-sm text-muted-foreground">
         {t(
           "icv.ai.drawer.suggestSkillsDesc2",
-          "L'IA va analyser vos expériences et suggérer des compétences pertinentes à ajouter.",
+          "L'IA va analyser vos experiences et suggerer des competences pertinentes a ajouter.",
         )}
       </div>
       <Button onClick={onRunSuggestSkills} className="mx-auto">
@@ -483,11 +484,9 @@ function SuggestSkillsView({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 // OPTIMIZE FOR JOB VIEW
-// ═══════════════════════════════════════════════════════════════════════════
-
-import { useState } from "react";
+// ===================================================================
 
 function OptimizeForJobView({
   state,
@@ -517,7 +516,7 @@ function OptimizeForJobView({
     try {
       parsed = JSON.parse(state.optimizeResult);
     } catch {
-      // fallback — just show raw text
+      // fallback -- just show raw text
     }
 
     return (
@@ -538,7 +537,7 @@ function OptimizeForJobView({
               <div className="text-sm font-medium">
                 {t(
                   "icv.ai.drawer.compatibilityScore",
-                  "Score de compatibilité",
+                  "Score de compatibilite",
                 )}
               </div>
               <div className="text-xs text-muted-foreground">/100</div>
@@ -595,7 +594,7 @@ function OptimizeForJobView({
                   key={i}
                   className="text-xs text-muted-foreground flex items-start gap-1.5"
                 >
-                  <span className="shrink-0 mt-0.5">•</span>
+                  <span className="shrink-0 mt-0.5">-</span>
                   <span>{s}</span>
                 </li>
               ))}
@@ -649,7 +648,7 @@ function OptimizeForJobView({
       <p className="text-sm text-muted-foreground">
         {t(
           "icv.ai.drawer.optimizeDesc",
-          "Collez la description du poste ciblé pour analyser la compatibilité de votre CV.",
+          "Collez la description du poste cible pour analyser la compatibilite de votre CV.",
         )}
       </p>
       <Textarea
@@ -673,9 +672,9 @@ function OptimizeForJobView({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 // COVER LETTER VIEW
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 
 function CoverLetterView({
   state,
@@ -728,7 +727,7 @@ function CoverLetterView({
       <p className="text-sm text-muted-foreground">
         {t(
           "icv.ai.drawer.coverLetterDesc",
-          "Renseignez les informations pour générer une lettre de motivation personnalisée.",
+          "Renseignez les informations pour generer une lettre de motivation personnalisee.",
         )}
       </p>
       <div className="space-y-2.5">
@@ -765,7 +764,7 @@ function CoverLetterView({
           onChange={(e) => setExtra(e.target.value)}
           placeholder={t(
             "icv.ai.clExtraPlaceholder",
-            "Infos supplémentaires (optionnel)",
+            "Infos supplementaires (optionnel)",
           )}
           className="text-sm min-h-[60px]"
         />
@@ -782,9 +781,9 @@ function CoverLetterView({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 // ATS SCORE VIEW
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 
 function ATSScoreView({
   state,
@@ -856,16 +855,16 @@ function ATSScoreView({
               {score >= 80 ?
                 t(
                   "icv.ai.drawer.atsExcellent",
-                  "Excellent ! Votre CV est bien optimisé.",
+                  "Excellent ! Votre CV est bien optimise.",
                 )
               : score >= 60 ?
                 t(
                   "icv.ai.drawer.atsGood",
-                  "Correct, mais quelques améliorations possibles.",
+                  "Correct, mais quelques ameliorations possibles.",
                 )
               : t(
                   "icv.ai.drawer.atsNeedsWork",
-                  "Des améliorations sont nécessaires.",
+                  "Des ameliorations sont necessaires.",
                 )
               }
             </p>
@@ -898,7 +897,7 @@ function ATSScoreView({
             title={t("icv.ai.drawer.recommendations")}
             items={recommendations}
             color="blue"
-            icon="→"
+            icon="->"
           />
         )}
 
@@ -909,13 +908,13 @@ function ATSScoreView({
     );
   }
 
-  // Input — just trigger
+  // Input -- just trigger
   return (
     <div className="space-y-4 text-center py-4">
       <div className="text-sm text-muted-foreground">
         {t(
           "icv.ai.drawer.atsDesc",
-          "Analysez la compatibilité de votre CV avec les systèmes de suivi des candidatures (ATS).",
+          "Analysez la compatibilite de votre CV avec les systemes de suivi des candidatures (ATS).",
         )}
       </div>
       <Button onClick={onRunATSScore} className="mx-auto">
@@ -926,9 +925,9 @@ function ATSScoreView({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 // TRANSLATE VIEW
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 
 function TranslateCVView({
   state,
@@ -958,7 +957,7 @@ function TranslateCVView({
           <p className="text-xs text-muted-foreground mt-1">
             {t(
               "icv.ai.drawer.translationReadyDesc",
-              "Votre CV a été traduit. Voulez-vous appliquer les modifications ?",
+              "Votre CV a ete traduit. Voulez-vous appliquer les modifications ?",
             )}
           </p>
         </div>
@@ -982,7 +981,7 @@ function TranslateCVView({
     );
   }
 
-  // Input — language picker
+  // Input -- language picker
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
@@ -1014,9 +1013,9 @@ function TranslateCVView({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 // IMPORT CV VIEW
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 
 function ImportCVView({
   state,
@@ -1062,7 +1061,7 @@ function ImportCVView({
                 </span>
                 <span>
                   {d.firstName} {d.lastName}
-                  {d.title ? ` — ${d.title}` : ""}
+                  {d.title ? ` -- ${d.title}` : ""}
                 </span>
               </div>
             )}
@@ -1158,13 +1157,13 @@ function ImportCVView({
     );
   }
 
-  // Input phase — text or file
+  // Input phase -- text or file
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         {t(
           "icv.ai.drawer.import.desc",
-          "Collez le contenu de votre CV ou chargez un fichier (PDF, image). L'IA extraira automatiquement toutes les données.",
+          "Collez le contenu de votre CV ou chargez un fichier (PDF, image). L'IA extraira automatiquement toutes les donnees.",
         )}
       </p>
 
@@ -1202,8 +1201,8 @@ function ImportCVView({
         />
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="w-full border-2 border-dashed rounded-lg p-4 text-center cursor-pointer
-            transition-colors hover:bg-muted/50 border-muted-foreground/25 hover:border-primary/40"
+          className={`w-full border-2 border-dashed rounded-lg p-4 text-center cursor-pointer
+            transition-colors hover:bg-muted/50 border-muted-foreground/25 hover:border-primary/40`}
         >
           <div className="flex flex-col items-center gap-2">
             <div className="p-2 bg-muted rounded-full">
@@ -1246,9 +1245,9 @@ function ImportCVView({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 // SHARED SUB-COMPONENTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 
 function LoadingState({ message }: { message: string }) {
   return (
@@ -1291,7 +1290,7 @@ function Section({
           key={i}
           className="text-xs text-muted-foreground flex items-start gap-1.5 pl-3"
         >
-          <span className="shrink-0 mt-0.5">•</span>
+          <span className="shrink-0 mt-0.5">-</span>
           <span>{item}</span>
         </p>
       ))}
@@ -1299,9 +1298,9 @@ function Section({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 // AI BUTTON (used in sidebar)
-// ═══════════════════════════════════════════════════════════════════════════
+// ===================================================================
 
 export function AIFeatureButton({
   icon,

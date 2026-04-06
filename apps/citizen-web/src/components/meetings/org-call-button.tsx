@@ -8,7 +8,7 @@ import {
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import type { VariantProps } from "class-variance-authority";
 import { Loader2, Phone, PhoneOff, ChevronDown, MapPin, MessageCircle } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -199,7 +199,7 @@ export function OrgCallButton({
 
 						{/* Bouton Chat — redirige vers iChat */}
 						<Button asChild variant="outline" size="sm" className="w-full h-9 text-sm font-medium rounded-xl">
-							<Link to="/my-space/iasted">
+							<Link href="/my-space/iasted">
 								<MessageCircle className="w-4 h-4 mr-2" />
 								{t("meetings.chatWithOrg", "Discuter avec la représentation")}
 							</Link>

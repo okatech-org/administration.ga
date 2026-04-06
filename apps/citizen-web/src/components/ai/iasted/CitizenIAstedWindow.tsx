@@ -1,18 +1,18 @@
 /**
- * CitizenIAstedWindow — Fenêtre flottante iAsted citoyen
+ * CitizenIAstedWindow — Fenetre flottante iAsted citoyen
  *
- * Même structure visuelle que l'agent (WhatsApp Mobile style),
+ * Meme structure visuelle que l'agent (WhatsApp Mobile style),
  * avec restrictions citoyen :
  *   - iChat : Support consulaire (tickets + IA)
- *   - iAppel : Audio uniquement vers les représentations
- *   - iContact : Annuaire urgence + standard des représentations
- *   -  : Préférences
+ *   - iAppel : Audio uniquement vers les representations
+ *   - iContact : Annuaire urgence + standard des representations
+ *   -  : Preferences
  *
- * PAS de iRéunion (peut recevoir via GlobalCallAlert)
- * PAS d'appels vidéo sortants
+ * PAS de iReunion (peut recevoir via GlobalCallAlert)
+ * PAS d'appels video sortants
  */
 
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 import {
 	Bot,
 	Contact,
@@ -30,7 +30,7 @@ import { useDraggable } from "@/hooks/use-draggable";
 import { CitizenChatTab } from "./CitizenChatTab";
 import { CitizenCallTab } from "./CitizenCallTab";
 import { CitizenContactTab } from "./CitizenContactTab";
-// Settings tab déplacé dans le menu mobile principal
+// Settings tab deplace dans le menu mobile principal
 
 // ─── Tabs ─────────────────────────────────────────────────────
 const TABS = [
@@ -45,9 +45,9 @@ type TabId = (typeof TABS)[number]["id"];
 export function CitizenIAstedWindow() {
 	const [open, setOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<TabId>("ichat");
-	const navigate = useNavigate();
+	const router = useRouter();
 
-	// Ecoute l'événement du footer mobile pour ouvrir la fenêtre
+	// Ecoute l'evenement du footer mobile pour ouvrir la fenetre
 	useEffect(() => {
 		const handler = () => setOpen(true);
 		window.addEventListener("iasted:open", handler);
@@ -56,7 +56,7 @@ export function CitizenIAstedWindow() {
 
 	const handleExpand = () => {
 		setOpen(false);
-		navigate({ to: "/my-space/iasted" });
+		router.push("/my-space/iasted");
 	};
 
 	return (
@@ -64,7 +64,7 @@ export function CitizenIAstedWindow() {
 			{/* FAB flottant */}
 			<CitizenIAstedFAB isOpen={open} onClick={() => setOpen(true)} />
 
-			{/* Fenêtre flottante */}
+			{/* Fenetre flottante */}
 			<AnimatePresence>
 				{open && (
 					<motion.div
@@ -98,7 +98,7 @@ export function CitizenIAstedWindow() {
 									variant="ghost"
 									size="icon"
 									onClick={handleExpand}
-									title="Plein écran"
+									title="Plein ecran"
 									className="h-8 w-8 text-muted-foreground hover:bg-muted rounded-lg hidden lg:flex"
 								>
 									<Maximize2 className="h-4 w-4" />
@@ -107,7 +107,7 @@ export function CitizenIAstedWindow() {
 									variant="ghost"
 									size="icon"
 									onClick={() => setOpen(false)}
-									title="Réduire"
+									title="Reduire"
 									className="h-8 w-8 text-muted-foreground hover:bg-muted rounded-lg"
 								>
 									<Minus className="h-4 w-4" />

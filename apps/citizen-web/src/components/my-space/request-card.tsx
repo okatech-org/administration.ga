@@ -1,9 +1,11 @@
+"use client";
+
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import type { RequestStatus } from "@convex/lib/constants";
 import { RequestStatus as RequestStatusEnum } from "@convex/lib/constants";
-import { Link } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
+import Link from "next/link";
+import { useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -55,7 +57,7 @@ export function RequestCard({ request }: RequestCardProps) {
 	const { t, i18n } = useTranslation();
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [dialogOpen, setDialogOpen] = useState(false);
-	const deleteDraft = useMutation(api.functions.requests.deleteDraft);
+	const { mutateAsync: deleteDraft } = useConvexMutationQuery(api.functions.requests.deleteDraft);
 
 	const getStatusBadge = (status: string) => {
 		const typedStatus = status as RequestStatus;
@@ -81,8 +83,7 @@ export function RequestCard({ request }: RequestCardProps) {
 
 	return (
 		<Link
-			to="/my-space/requests/$reference"
-			params={{ reference: request.reference || request._id }}
+			href={`/my-space/requests/${request.reference || request._id}`}
 			className="block group h-full"
 		>
 			<Card className="h-full flex flex-col hover:border-primary/50 hover:shadow-md transition-all cursor-pointer">

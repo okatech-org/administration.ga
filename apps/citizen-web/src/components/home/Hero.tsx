@@ -1,5 +1,5 @@
 import { api } from "@convex/_generated/api";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { ChevronRight, FileText, Globe } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useConvexQuery } from "@/integrations/convex/hooks";
@@ -82,7 +82,7 @@ export function Hero() {
 							size="lg"
 							className="h-14 px-8 text-base shadow-xl shadow-primary/30 hover:scale-105 transition-transform"
 						>
-							<Link to={ctaTo}>
+							<Link href={ctaTo}>
 								{ctaLabel}
 								<ChevronRight className="w-5 h-5 ml-2" />
 							</Link>
@@ -93,7 +93,7 @@ export function Hero() {
 							size="lg"
 							className="h-14 px-8 text-base bg-white/10 backdrop-blur-sm border-white/50 text-white hover:bg-white/20 hover:text-white"
 						>
-							<Link to="/services">{t("heroCore.cta.services")}</Link>
+							<Link href="/services">{t("heroCore.cta.services")}</Link>
 						</Button>
 					</div>
 

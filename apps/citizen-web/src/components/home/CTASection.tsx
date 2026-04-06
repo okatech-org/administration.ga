@@ -17,7 +17,7 @@ export function CTASection() {
 		<section className="relative z-10 min-h-[50vh] flex items-center justify-center overflow-hidden">
 			{/* Background Image - Full Width */}
 			<img
-				src={communityHero}
+				src={communityHero.src}
 				alt="Communauté"
 				className="absolute inset-0 w-full h-full object-cover"
 			/>

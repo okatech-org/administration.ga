@@ -1,6 +1,6 @@
 import { api } from "@convex/_generated/api";
 import { OrganizationType } from "@convex/lib/constants";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import {
 	ArrowRight,
 	Building2,
@@ -164,7 +164,7 @@ export function NearbyOrgs({
 						)}
 					</div>
 					<Button asChild variant="outline" size="sm">
-						<Link to="/reps" search={{ view: "grid" }}>
+						<Link href="/reps?view=grid">
 							{t("nearbyOrgs.viewAll")}
 							<ArrowRight className="w-4 h-4 ml-1" />
 						</Link>
@@ -172,7 +172,6 @@ export function NearbyOrgs({
 				</div>
 			)}
 
-			{/* 2-column grid on desktop, same cards as homepage */}
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
 				{isLoading ? (
 					<>
@@ -240,7 +239,7 @@ export function NearbyOrgs({
 									<div className="flex items-center gap-3">
 										<Clock className="w-4 h-4 text-muted-foreground shrink-0" />
 										<span className="text-foreground">
-											{formatOpeningHours(org.openingHours)}
+											{formatOpeningHours(org.openingHours as any)}
 										</span>
 									</div>
 								</CardContent>
@@ -249,8 +248,7 @@ export function NearbyOrgs({
 
 								<CardFooter className="pt-4">
 									<Link
-										to="/reps/$slug"
-										params={{ slug: org.slug }}
+										href={`/reps/${org.slug}`}
 										className="inline-flex items-center gap-2 text-primary font-medium hover:underline text-sm"
 									>
 										{t("consulates.viewDetails")}

@@ -2,7 +2,9 @@
  * Demarche Unified Card — Card unifiee pour requests ET dossiers
  */
 
-import { useNavigate } from "@tanstack/react-router";
+"use client";
+
+import { useRouter } from "next/navigation";
 import {
 	AlertTriangle,
 	CalendarClock,
@@ -77,22 +79,16 @@ interface DemarcheUnifiedCardProps {
 }
 
 export function DemarcheUnifiedCard({ demarche }: DemarcheUnifiedCardProps) {
-	const navigate = useNavigate();
+	const router = useRouter();
 	const deadline = getDeadlineInfo(demarche.deadline);
 	const isRequest = demarche.type === "request";
 	const TypeIcon = isRequest ? FileText : FolderOpen;
 
 	const handleClick = () => {
 		if (isRequest) {
-			navigate({
-				to: "/my-space/requests/$reference",
-				params: { reference: demarche.linkParams.reference ?? demarche.id },
-			});
+			router.push(`/my-space/requests/${demarche.linkParams.reference ?? demarche.id}`);
 		} else {
-			navigate({
-				to: "/my-space/demarches/$dossierId",
-				params: { dossierId: demarche.linkParams.dossierId ?? demarche.id },
-			});
+			router.push(`/my-space/demarches/${demarche.linkParams.dossierId ?? demarche.id}`);
 		}
 	};
 

@@ -1,6 +1,6 @@
 import { api } from "@convex/_generated/api";
 import { OrganizationType } from "@convex/lib/constants";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { ArrowRight, MapPin } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useConvexQuery } from "@/integrations/convex/hooks";
@@ -129,8 +129,7 @@ export function ConsulateLocations() {
 									</CardContent>
 									<CardFooter>
 										<Link
-											to="/reps/$slug"
-											params={{ slug: org.slug }}
+											href={`/reps/${org.slug}`}
 											className="inline-flex items-center gap-2 text-primary font-medium text-sm hover:gap-3 transition-all"
 										>
 											{t("consulates.viewDetails")}
@@ -151,7 +150,7 @@ export function ConsulateLocations() {
 						size="lg"
 						className="border-primary/30 hover:bg-primary hover:text-white hover:border-primary"
 					>
-						<Link to="/reps" search={{ view: "grid" }}>
+						<Link href="/reps?view=grid">
 							<MapPin className="w-4 h-4 mr-2" />
 							{t("consulates.viewAll")}
 						</Link>

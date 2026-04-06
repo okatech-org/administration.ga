@@ -2,7 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import { PostCategory } from "@convex/lib/constants";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -65,8 +65,7 @@ function FeaturedPost({ post }: { post: Post }) {
 
 	return (
 		<Link
-			to="/news/$slug"
-			params={{ slug: post.slug }}
+			href={`/news/${post.slug}`}
 			className="group relative block h-full bg-card rounded-2xl overflow-hidden border hover:shadow-xl transition-all duration-300"
 		>
 			<div className="grid md:grid-cols-2 gap-0 h-full">
@@ -146,8 +145,7 @@ function FeaturedPost({ post }: { post: Post }) {
 function SmallPost({ post }: { post: Post }) {
 	return (
 		<Link
-			to="/news/$slug"
-			params={{ slug: post.slug }}
+			href={`/news/${post.slug}`}
 			className="group block bg-card rounded-xl overflow-hidden border hover:shadow-lg transition-all duration-300"
 		>
 			<div className="aspect-[16/9] overflow-hidden bg-muted">
@@ -212,7 +210,7 @@ export function NewsSection() {
 						<p className="text-muted-foreground">{t("home.news.subtitle")}</p>
 					</div>
 					<Button variant="outline" asChild className="hidden sm:flex">
-						<Link to="/news">
+						<Link href="/news">
 							{t("home.news.viewAll")}
 							<ArrowRight className="ml-1 h-4 w-4" />
 						</Link>
@@ -277,7 +275,7 @@ export function NewsSection() {
 				{/* Mobile CTA */}
 				<div className="sm:hidden text-center">
 					<Button variant="outline" asChild>
-						<Link to="/news">
+						<Link href="/news">
 							{t("home.news.viewAll")}
 							<ArrowRight className="ml-1 h-4 w-4" />
 						</Link>

@@ -2,7 +2,7 @@
  * Actions Pending Widget — Liste des actions en attente sur les requests
  */
 
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import {
 	AlertTriangle,
 	Calendar,
@@ -139,8 +139,7 @@ export function ActionsPendingWidget({ actions }: ActionsPendingWidgetProps) {
 						return (
 							<Link
 								key={action.actionId}
-								to="/my-space/requests/$reference"
-								params={{ reference: action.requestReference }}
+								href={`/my-space/requests/${action.requestReference}`}
 								className="group"
 							>
 								<div className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-muted/50 transition-colors">
@@ -201,7 +200,7 @@ export function ActionsPendingWidget({ actions }: ActionsPendingWidgetProps) {
 export function ActionsBanner({ count }: { count: number }) {
 	if (count === 0) return null;
 	return (
-		<Link to="/my-space/requests">
+		<Link href="/my-space/requests">
 			<div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/15">
 				<div className="p-1.5 rounded-md bg-rose-500/15">
 					<AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
