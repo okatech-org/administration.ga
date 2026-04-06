@@ -1,4 +1,4 @@
-import { useRef } from "react"
+import { useCallback, useRef, useState } from "react"
 import {
   AlignCenter,
   AlignLeft,
@@ -6,6 +6,8 @@ import {
   ArrowDown,
   ArrowUp,
   Bold,
+  ChevronDown,
+  ChevronUp,
   ChevronsDown,
   ChevronsUp,
   Italic,
@@ -207,8 +209,8 @@ export function PropertiesPanel({
         <div className="grid grid-cols-2 gap-2">
           <NumberField label="X" value={element.x} onChange={(v) => update({ x: v })} />
           <NumberField label="Y" value={element.y} onChange={(v) => update({ y: v })} />
-          <NumberField label="L" value={element.width} onChange={(v) => update({ width: v })} />
-          <NumberField label="H" value={element.height} onChange={(v) => update({ height: v })} />
+          <NumberField label="L" value={element.width} onChange={(v) => update({ width: v })} min={1} />
+          <NumberField label="H" value={element.height} onChange={(v) => update({ height: v })} min={1} />
         </div>
         <NumberField label="Rotation" value={element.rotation} onChange={(v) => update({ rotation: v })} suffix="°" />
       </Section>
@@ -267,7 +269,7 @@ export function PropertiesPanel({
             </select>
           </Field>
           <div className="flex items-center gap-2">
-            <NumberField label="Taille" value={element.fontSize} onChange={(v) => update({ fontSize: v })} />
+            <NumberField label="Taille" value={element.fontSize} onChange={(v) => update({ fontSize: v })} min={1} />
             <Field label="Couleur">
               <input
                 type="color"
@@ -341,6 +343,7 @@ export function PropertiesPanel({
             label="Arrondi"
             value={element.cornerRadius}
             onChange={(v) => update({ cornerRadius: v })}
+            min={0}
           />
         </Section>
       )}
@@ -376,6 +379,7 @@ export function PropertiesPanel({
                 label="Ép."
                 value={element.strokeWidth}
                 onChange={(v) => update({ strokeWidth: v })}
+                min={0}
               />
             </div>
           </Field>
@@ -384,6 +388,7 @@ export function PropertiesPanel({
               label="Arrondi"
               value={element.cornerRadius}
               onChange={(v) => update({ cornerRadius: v })}
+              min={0}
             />
           )}
         </Section>
@@ -404,6 +409,7 @@ export function PropertiesPanel({
             label="Épaisseur"
             value={element.strokeWidth}
             onChange={(v) => update({ strokeWidth: v })}
+            min={1}
           />
         </Section>
       )}
@@ -470,22 +476,140 @@ function NumberField({
   value,
   onChange,
   suffix,
+  min,
+  step = 1,
 }: {
   label: string
   value: number
   onChange: (v: number) => void
   suffix?: string
+  min?: number
+  step?: number
 }) {
+  const [localValue, setLocalValue] = useState<string>(String(value))
+  const [isFocused, setIsFocused] = useState(false)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const valueRef = useRef(value)
+  valueRef.current = value
+
+  // Sync external value when not editing
+  const displayValue = isFocused ? localValue : String(value)
+
+  const clamp = useCallback(
+    (v: number) => {
+      if (min !== undefined && v < min) return min
+      return v
+    },
+    [min],
+  )
+
+  const commit = useCallback(
+    (raw: string) => {
+      const parsed = Number(raw)
+      if (!Number.isNaN(parsed)) {
+        onChange(clamp(Math.round(parsed)))
+      }
+    },
+    [onChange, clamp],
+  )
+
+  const increment = useCallback(
+    (delta: number) => {
+      const next = clamp(Math.round(valueRef.current + delta))
+      onChange(next)
+      setLocalValue(String(next))
+    },
+    [onChange, clamp],
+  )
+
+  const startRepeat = useCallback(
+    (delta: number) => {
+      increment(delta)
+      intervalRef.current = setInterval(() => increment(delta), 120)
+    },
+    [increment],
+  )
+
+  const stopRepeat = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+  }, [])
+
   return (
     <div>
       <label className="text-[10px] text-muted-foreground mb-0.5 block">{label}</label>
-      <div className="flex items-center">
-        <input
-          type="number"
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="w-full text-xs px-2 py-1.5 bg-muted border border-border rounded-md text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-        />
+      <div className="flex items-center gap-0">
+        <div className="relative flex-1 flex items-center">
+          <input
+            type="text"
+            inputMode="numeric"
+            value={displayValue}
+            onFocus={() => {
+              setIsFocused(true)
+              setLocalValue(String(value))
+            }}
+            onBlur={() => {
+              setIsFocused(false)
+              commit(localValue)
+            }}
+            onChange={(e) => {
+              // Allow digits, minus, dot
+              const raw = e.target.value
+              if (raw === "" || raw === "-" || /^-?\d*\.?\d*$/.test(raw)) {
+                setLocalValue(raw)
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                commit(localValue)
+                ;(e.target as HTMLInputElement).blur()
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault()
+                const delta = e.shiftKey ? step * 10 : step
+                increment(delta)
+              } else if (e.key === "ArrowDown") {
+                e.preventDefault()
+                const delta = e.shiftKey ? step * 10 : step
+                increment(-delta)
+              }
+            }}
+            className="w-full text-xs px-2 py-1.5 pr-5 bg-muted border border-border rounded-md text-foreground tabular-nums"
+          />
+          {/* Stepper buttons */}
+          <div className="absolute right-px top-px bottom-px flex flex-col w-4 border-l border-border">
+            <button
+              type="button"
+              tabIndex={-1}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                const delta = e.shiftKey ? step * 10 : step
+                startRepeat(delta)
+              }}
+              onMouseUp={stopRepeat}
+              onMouseLeave={stopRepeat}
+              className="flex-1 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 rounded-tr-md transition-colors"
+            >
+              <ChevronUp className="size-2.5" />
+            </button>
+            <div className="h-px bg-border" />
+            <button
+              type="button"
+              tabIndex={-1}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                const delta = e.shiftKey ? step * 10 : step
+                startRepeat(-delta)
+              }}
+              onMouseUp={stopRepeat}
+              onMouseLeave={stopRepeat}
+              className="flex-1 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 rounded-br-md transition-colors"
+            >
+              <ChevronDown className="size-2.5" />
+            </button>
+          </div>
+        </div>
         {suffix && <span className="text-[10px] text-muted-foreground ml-1">{suffix}</span>}
       </div>
     </div>

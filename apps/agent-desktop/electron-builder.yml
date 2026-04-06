@@ -1,0 +1,58 @@
+appId: ga.consulat.agent
+productName: "Consulat Agent"
+copyright: "Copyright © 2025 Okatech"
+
+directories:
+  output: dist
+  buildResources: resources
+
+# Only include built output + runtime deps (workspace packages are bundled by Vite)
+files:
+  - "out/**/*"
+  - "package.json"
+  - "!src/**"
+  - "!electron.vite.config.*"
+  - "!tsconfig*"
+  - "!.env*"
+  - "!SPECS.md"
+
+asar: true
+asarUnpack:
+  # Native FFI module must be unpacked for koffi to load .dll/.dylib
+  - "node_modules/koffi/**"
+
+# ── macOS ─────────────────────────────────────────────
+mac:
+  category: public.app-category.business
+  artifactName: "${productName}-${version}-mac-${arch}.${ext}"
+  target:
+    - target: dmg
+    - target: zip # Required for auto-update (electron-updater)
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: resources/entitlements.mac.plist
+  entitlementsInherit: resources/entitlements.mac.inherit.plist
+
+dmg:
+  sign: false
+
+# ── Windows ───────────────────────────────────────────
+win:
+  artifactName: "${productName}-${version}-win-${arch}-Setup.${ext}"
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+
+# ── Auto-update via GitHub Releases ───────────────────
+publish:
+  provider: github
+  owner: okatech-org
+  repo: gabon-diplomatie
+  releaseType: release

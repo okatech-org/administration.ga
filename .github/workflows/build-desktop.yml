@@ -1,0 +1,130 @@
+name: Build Desktop App
+
+# Trigger on version tags (v1.0.0, v1.2.3, etc.) or manual dispatch
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish to GitHub Releases"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS Apple Silicon (M1/M2/M3)
+          - os: macos-latest
+            platform: mac
+            arch: arm64
+          # macOS Intel
+          - os: macos-13
+            platform: mac
+            arch: x64
+          # Windows
+          - os: windows-latest
+            platform: win
+            arch: x64
+
+    runs-on: ${{ matrix.os }}
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.17"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: bun install
+
+      # Extract version from git tag (v1.2.3 → 1.2.3)
+      - name: Set version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+          cd apps/agent-desktop
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$VERSION';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
+      # Build the Electron app (electron-vite: main + preload + renderer)
+      - name: Build electron-vite
+        run: bun run build
+        working-directory: apps/agent-desktop
+        env:
+          VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
+          VITE_CONVEX_SITE_URL: ${{ secrets.VITE_CONVEX_SITE_URL }}
+
+      # Remove workspace:* references — those packages are already bundled by Vite.
+      # electron-builder only needs runtime deps that are external (koffi, electron-updater).
+      - name: Prepare package.json for packaging
+        shell: bash
+        run: |
+          cd apps/agent-desktop
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            const keep = {};
+            for (const [name, ver] of Object.entries(pkg.dependencies)) {
+              if (!String(ver).startsWith('workspace:')) {
+                keep[name] = ver;
+              }
+            }
+            pkg.dependencies = keep;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+            console.log('Runtime dependencies:', Object.keys(keep).join(', '));
+          "
+
+      # Package with electron-builder
+      - name: Package Electron app
+        shell: bash
+        run: |
+          cd apps/agent-desktop
+          PUBLISH_FLAG="never"
+          if [[ "${{ github.ref }}" == refs/tags/v* ]] || [[ "${{ inputs.publish }}" == "true" ]]; then
+            PUBLISH_FLAG="always"
+          fi
+          bunx electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish $PUBLISH_FLAG
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Skip code signing for now (add CSC_LINK + CSC_KEY_PASSWORD secrets for signing)
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      # Upload build artifacts (always, even if not publishing to release)
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            apps/agent-desktop/dist/*.dmg
+            apps/agent-desktop/dist/*.zip
+            apps/agent-desktop/dist/*.exe
+            apps/agent-desktop/dist/*.yml
+            apps/agent-desktop/dist/*.yaml
+          retention-days: 30
+          if-no-files-found: warn
