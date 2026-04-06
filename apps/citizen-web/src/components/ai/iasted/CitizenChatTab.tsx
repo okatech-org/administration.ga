@@ -9,7 +9,11 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import {
+	AlertTriangle,
 	Bot,
+	Calendar,
+	CreditCard,
+	FileText,
 	Headset,
 	Loader2,
 	MessageSquare,
@@ -65,12 +69,57 @@ export function CitizenChatTab() {
 		api.functions.chats.markRead,
 	);
 
+	// Profil utilisateur pour les suggestions contextuelles
+	const { data: profile } = useAuthenticatedConvexQuery(api.functions.profiles.getMine, {});
+	const { data: appointments } = useAuthenticatedConvexQuery(api.functions.appointments.listByUser, {});
+
 	// Inscriptions consulaires pour trouver l'orgId du citoyen
 	const { data: registrations } = useAuthenticatedConvexQuery(
 		api.functions.consularRegistrations.listByProfile,
 		{},
 	);
 	const orgId = (registrations as any[])?.[0]?.orgId as Id<"orgs"> | undefined;
+
+	// Suggestions contextuelles basées sur le profil
+	const contextSuggestions = useMemo(() => {
+		const suggestions: { label: string; message: string; icon: typeof FileText; color: string; priority: number }[] = [];
+		const p = profile as any;
+		if (!p) return suggestions;
+
+		// Passeport expiré ou bientôt
+		if (p.passportInfo?.expiryDate) {
+			const daysLeft = Math.ceil((new Date(p.passportInfo.expiryDate).getTime() - Date.now()) / 86400000);
+			if (daysLeft < 0) {
+				suggestions.push({ label: "Renouveler mon passeport", message: "Mon passeport est expiré, comment le renouveler ?", icon: AlertTriangle, color: "text-rose-500 bg-rose-500/10 border-rose-500/20", priority: 1 });
+			} else if (daysLeft < 90) {
+				suggestions.push({ label: "Passeport bientôt expiré", message: `Mon passeport expire dans ${daysLeft} jours, que dois-je faire ?`, icon: FileText, color: "text-amber-600 bg-amber-500/10 border-amber-500/20", priority: 2 });
+			}
+		}
+
+		// Pas de carte consulaire
+		if (!p.consularCard?.cardNumber) {
+			suggestions.push({ label: "Demander ma carte", message: "Comment obtenir ma carte consulaire ?", icon: CreditCard, color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20", priority: 3 });
+		}
+
+		// Prochain RDV
+		if (appointments && (appointments as any[]).length > 0) {
+			const next = (appointments as any[])[0];
+			if (next?.date) {
+				const rdvDate = new Date(next.date);
+				if (rdvDate > new Date()) {
+					suggestions.push({ label: "Mon prochain RDV", message: `Quelles sont les informations de mon rendez-vous du ${rdvDate.toLocaleDateString("fr-FR")} ?`, icon: Calendar, color: "text-blue-600 bg-blue-500/10 border-blue-500/20", priority: 4 });
+				}
+			}
+		}
+
+		// Suggestions génériques toujours présentes
+		suggestions.push(
+			{ label: "Carte consulaire", message: "Quels sont les documents nécessaires pour la carte consulaire ?", icon: CreditCard, color: "text-teal-600 bg-teal-500/10 border-teal-500/20", priority: 10 },
+			{ label: "Horaires d'ouverture", message: "Quels sont les horaires d'ouverture du consulat ?", icon: Calendar, color: "text-teal-600 bg-teal-500/10 border-teal-500/20", priority: 11 },
+		);
+
+		return suggestions.sort((a, b) => a.priority - b.priority).slice(0, 4);
+	}, [profile, appointments]);
 
 	// Trouver le thread standard existant dans les threads
 	const mrRayThread = useMemo(() => {
@@ -205,20 +254,41 @@ export function CitizenChatTab() {
 							<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
 						</div>
 					) : !hasMessages && isStandard ? (
-						/* Zone vide Mr Ray */
-						<div className="flex flex-col items-center justify-center h-full text-center py-6">
-							<div className="h-12 w-12 rounded-full bg-teal-500/10 flex items-center justify-center mb-3">
-								<Headset className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+						/* Onboarding personnalisé Mr Ray */
+						<div className="flex flex-col items-center justify-center h-full text-center px-4 py-6">
+							<div className="h-14 w-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4">
+								<Bot className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
 							</div>
-							<h3 className="text-xs font-semibold mb-1">Bonjour, je suis Mr Ray</h3>
-							<p className="text-[10px] text-muted-foreground max-w-[250px] mb-3">
-								Votre assistant au Standard consulaire. Posez-moi vos questions sur les démarches, passeports, visas...
+							<h3 className="text-sm font-bold mb-1">
+								Bonjour{(profile as any)?.identity?.firstName ? ` ${(profile as any).identity.firstName}` : ""} !
+							</h3>
+							<p className="text-xs text-muted-foreground max-w-[280px] mb-5 leading-relaxed">
+								Je suis votre assistant consulaire. Je peux vous aider avec vos démarches, passeports, rendez-vous et bien plus.
 							</p>
-							<div className="flex flex-wrap gap-1 justify-center">
-								{["Carte consulaire", "Passeport", "Rendez-vous", "Horaires"].map((s) => (
-									<button key={s} type="button" onClick={() => setMessageInput(s)}
-										className="text-[10px] px-2 py-0.5 rounded-full border border-teal-500/20 text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 transition-colors">
-										{s}
+
+							{/* Suggestions contextuelles */}
+							<div className="w-full space-y-2">
+								{contextSuggestions.map((s) => (
+									<button
+										key={s.label}
+										type="button"
+										onClick={() => {
+											setMessageInput(s.message);
+											setTimeout(() => {
+												if (mrRayThread) {
+													sendChatMessage({ chatId: mrRayThread._id as Id<"chats">, content: s.message }).then(() => setMessageInput("")).catch(() => {});
+												} else if (orgId) {
+													initiateStandard({ orgId, initialMessage: s.message }).then(() => setMessageInput("")).catch(() => {});
+												}
+											}, 100);
+										}}
+										className={cn(
+											"w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all hover:scale-[1.01] active:scale-[0.99]",
+											s.color,
+										)}
+									>
+										<s.icon className="h-4 w-4 shrink-0" />
+										<span className="text-xs font-semibold">{s.label}</span>
 									</button>
 								))}
 							</div>
