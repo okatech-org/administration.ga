@@ -2,6 +2,9 @@ appId: ga.consulat.agent
 productName: "Consulat Agent"
 copyright: "Copyright © 2025 Okatech"
 
+# Pin electron version (hoisted to root node_modules in monorepo)
+electronVersion: "35.7.5"
+
 directories:
   output: dist
   buildResources: resources
