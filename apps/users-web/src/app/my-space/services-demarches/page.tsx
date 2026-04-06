@@ -65,7 +65,7 @@ import { captureEvent } from "@/lib/analytics";
 import { getLocalizedValue } from "@/lib/i18n-utils";
 import { cn } from "@/lib/utils";
 
-// --- Types ---
+// --- Types -------------------------------------------------------------------
 
 type CatalogService = {
 	_id: string;
@@ -97,7 +97,7 @@ type DossierStatus =
 type TabKey = "services" | "demarches";
 type DemarcheSubFilter = "tous" | "en_cours" | "en_attente" | "termines";
 
-// --- Constants ---
+// --- Constants ---------------------------------------------------------------
 
 const SERVICE_CATEGORIES: {
 	id: string;
@@ -184,42 +184,49 @@ const DOSSIER_STATUS_CONFIG: Record<
 	brouillon: {
 		label: "Brouillon",
 		color: "text-zinc-600 dark:text-zinc-400",
-		bgColor: "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700",
+		bgColor:
+			"bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700",
 	},
 	en_cours: {
 		label: "En cours",
 		color: "text-blue-600 dark:text-blue-400",
-		bgColor: "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800",
+		bgColor:
+			"bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800",
 	},
 	en_attente: {
 		label: "En attente",
 		color: "text-amber-600 dark:text-amber-400",
-		bgColor: "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800",
+		bgColor:
+			"bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800",
 	},
 	suspendu: {
 		label: "Suspendu",
 		color: "text-orange-600 dark:text-orange-400",
-		bgColor: "bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800",
+		bgColor:
+			"bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800",
 	},
 	valide: {
-		label: "Valide",
+		label: "Valid\u00e9",
 		color: "text-emerald-600 dark:text-emerald-400",
-		bgColor: "bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800",
+		bgColor:
+			"bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800",
 	},
 	rejete: {
-		label: "Rejete",
+		label: "Rejet\u00e9",
 		color: "text-red-600 dark:text-red-400",
 		bgColor: "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800",
 	},
 	clos: {
 		label: "Clos",
 		color: "text-zinc-600 dark:text-zinc-400",
-		bgColor: "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700",
+		bgColor:
+			"bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700",
 	},
 	archive: {
-		label: "Archive",
+		label: "Archiv\u00e9",
 		color: "text-violet-600 dark:text-violet-400",
-		bgColor: "bg-violet-50 dark:bg-violet-950 border-violet-200 dark:border-violet-800",
+		bgColor:
+			"bg-violet-50 dark:bg-violet-950 border-violet-200 dark:border-violet-800",
 	},
 };
 
@@ -227,10 +234,10 @@ const DEMARCHE_FILTER_TABS: { key: DemarcheSubFilter; label: string }[] = [
 	{ key: "tous", label: "Tous" },
 	{ key: "en_cours", label: "En cours" },
 	{ key: "en_attente", label: "En attente" },
-	{ key: "termines", label: "Termines" },
+	{ key: "termines", label: "Termin\u00e9s" },
 ];
 
-// --- Helpers ---
+// --- Helpers -----------------------------------------------------------------
 
 function matchDossierFilter(
 	status: DossierStatus,
@@ -288,26 +295,26 @@ function getDeadlineInfo(dateLimite?: number) {
 	};
 }
 
-// --- Main Component ---
+// --- Main Component ----------------------------------------------------------
 
 export default function ServicesDemarchesPage() {
 	const { t, i18n } = useTranslation();
 	const router = useRouter();
 
-	// Tabs state
+	// -- Tabs state --
 	const [activeTab, setActiveTab] = useState<TabKey>("services");
 
-	// Catalog state
+	// -- Catalog state --
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedCategory, setSelectedCategory] = useState("ALL");
 	const [selectedService, setSelectedService] =
 		useState<CatalogService | null>(null);
 
-	// Demarches filter state
+	// -- D\u00e9marches filter state --
 	const [demarcheFilter, setDemarcheFilter] =
 		useState<DemarcheSubFilter>("tous");
 
-	// Data: Catalog
+	// -- Data: Catalog --
 	const { data: services } = useConvexQuery(
 		api.functions.services.listCatalog,
 		{},
@@ -323,7 +330,7 @@ export default function ServicesDemarchesPage() {
 		userCountry ? { userCountry } : "skip",
 	);
 
-	// Data: Requests
+	// -- Data: Requests --
 	const {
 		results: requests,
 		status: paginationStatus,
@@ -335,13 +342,13 @@ export default function ServicesDemarchesPage() {
 		{ initialNumItems: 20 },
 	);
 
-	// Data: Dossiers
+	// -- Data: Dossiers --
 	const { data: dossiers = [] } = useAuthenticatedConvexQuery(
 		api.functions.dossierProcedure.listMyDossiers,
 		{},
 	);
 
-	// Filtered catalog
+	// -- Filtered catalog --
 	const filteredServices = useMemo(() => {
 		if (!services) return [];
 		const query = searchQuery.toLowerCase().trim();
@@ -363,10 +370,10 @@ export default function ServicesDemarchesPage() {
 		});
 	}, [services, searchQuery, selectedCategory, i18n.language, userType]);
 
-	// Combined demarches count
+	// -- Combined d\u00e9marches count --
 	const totalDemarches = requests.length + (dossiers as any[]).length;
 
-	// Catalog handlers
+	// -- Catalog handlers --
 	const handleClearSearch = () => {
 		setSearchQuery("");
 		setSelectedCategory("ALL");
@@ -382,7 +389,7 @@ export default function ServicesDemarchesPage() {
 		router.push(`/my-space/services/${selectedService.slug}/new`);
 	};
 
-	// Tabs config
+	// -- Tabs config --
 	const mainTabs: {
 		key: TabKey;
 		label: string;
@@ -396,7 +403,7 @@ export default function ServicesDemarchesPage() {
 		},
 		{
 			key: "demarches",
-			label: "Mes Demarches",
+			label: "Mes D\u00e9marches",
 			icon: FolderOpen,
 			count: totalDemarches || undefined,
 		},
@@ -406,14 +413,14 @@ export default function ServicesDemarchesPage() {
 
 	return (
 		<div className="space-y-5">
-			{/* Header */}
+			{/* -- Header -- */}
 			<PageHeader
-				title="Services & Demarches"
-				subtitle="Consultez les services consulaires disponibles et suivez vos demarches en cours"
+				title="Services & D\u00e9marches"
+				subtitle="Consultez les services consulaires disponibles et suivez vos d\u00e9marches en cours"
 				icon={<Globe className="h-6 w-6 text-primary" />}
 			/>
 
-			{/* Tab Bar */}
+			{/* -- Tab Bar -- */}
 			<div className="flex items-center gap-1 bg-card border border-border rounded-xl p-1">
 				{mainTabs.map((tab) => (
 					<button
@@ -441,7 +448,7 @@ export default function ServicesDemarchesPage() {
 				))}
 			</div>
 
-			{/* Tab Content */}
+			{/* -- Tab Content -- */}
 			{activeTab === "services" && (
 				<CatalogueTabContent
 					services={services}
@@ -473,7 +480,7 @@ export default function ServicesDemarchesPage() {
 				/>
 			)}
 
-			{/* Service Detail Modal */}
+			{/* -- Service Detail Modal -- */}
 			<ServiceDetailModal
 				service={selectedService}
 				open={!!selectedService}
@@ -495,17 +502,17 @@ export default function ServicesDemarchesPage() {
 	);
 }
 
-// --- Catalogue Tab ---
+// --- Catalogue Tab -- Featured services + collapsible others -----------------
 
 const FEATURED_SERVICE_NAMES = [
 	"Carte Consulaire",
 	"Protection et Assistance Consulaire",
-	"Declaration d'Association",
-	"Declaration d'Entreprise",
+	"D\u00e9claration d'Association",
+	"D\u00e9claration d'Entreprise",
 	"Tenant Lieu de Passeport",
 	"Laissez-Passer",
-	"Legalisation de Documents",
-	"Certificats de Coutume et de Celibat",
+	"L\u00e9galisation de Documents",
+	"Certificats de Coutume et de C\u00e9libat",
 ];
 
 function CatalogueTabContent({
@@ -587,7 +594,7 @@ function CatalogueTabContent({
 				)}
 			</div>
 
-			{/* Featured services */}
+			{/* Featured services -- prominent grid */}
 			{featured.length > 0 && (
 				<div>
 					<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2 px-0.5">Services vedettes</p>
@@ -669,15 +676,15 @@ function CatalogueTabContent({
 			{featured.length === 0 && others.length === 0 && (
 				<div className="text-center py-8 rounded-xl bg-muted/30 border-2 border-dashed">
 					<Search className="h-7 w-7 text-muted-foreground/50 mx-auto mb-2" />
-					<p className="text-sm font-semibold mb-1">Aucun service trouve</p>
-					<Button size="sm" variant="outline" onClick={handleClearSearch}>Reinitialiser</Button>
+					<p className="text-sm font-semibold mb-1">Aucun service trouv\u00e9</p>
+					<Button size="sm" variant="outline" onClick={handleClearSearch}>R\u00e9initialiser</Button>
 				</div>
 			)}
 		</div>
 	);
 }
 
-// --- Demarches Tab (merged requests + dossiers) ---
+// --- D\u00e9marches Tab (merged requests + dossiers) --------------------------------
 
 function DemarchesTabContent({
 	requests,
@@ -697,7 +704,7 @@ function DemarchesTabContent({
 	dossiers: any[];
 	demarcheFilter: DemarcheSubFilter;
 	setDemarcheFilter: (f: DemarcheSubFilter) => void;
-	router: any;
+	router: ReturnType<typeof useRouter>;
 	t: any;
 }) {
 	// Filter requests
@@ -752,10 +759,10 @@ function DemarchesTabContent({
 					<CardContent className="flex flex-col items-center justify-center py-16 text-center">
 						<FolderOpen className="h-14 w-14 mb-4 text-muted-foreground/30" />
 						<h3 className="text-lg font-medium mb-2">
-							Aucune demarche en cours
+							Aucune d\u00e9marche en cours
 						</h3>
 						<p className="text-sm text-muted-foreground mb-6 max-w-sm">
-							Vous n'avez pas encore effectue de demarche consulaire.
+							Vous n&apos;avez pas encore effectu\u00e9 de d\u00e9marche consulaire.
 							Parcourez les services disponibles pour commencer.
 						</p>
 						<Button
@@ -811,10 +818,10 @@ function DemarchesTabContent({
 						<FolderOpen className="w-7 h-7 text-muted-foreground" />
 					</div>
 					<h3 className="text-sm font-semibold mb-1">
-						Aucune demarche trouvee
+						Aucune d\u00e9marche trouv\u00e9e
 					</h3>
 					<p className="text-xs text-muted-foreground max-w-xs">
-						Aucune demarche ne correspond a ce filtre.
+						Aucune d\u00e9marche ne correspond \u00e0 ce filtre.
 					</p>
 				</motion.div>
 			) : (
@@ -839,7 +846,7 @@ function DemarchesTabContent({
 							{filteredRequests.length > 0 &&
 								filteredDossiers.length > 0 && (
 									<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide pt-2">
-										Procedures administratives
+										Proc\u00e9dures administratives
 									</p>
 								)}
 							{filteredDossiers.map(
@@ -884,7 +891,9 @@ function DemarchesTabContent({
 															<div className="flex-1 min-w-0">
 																<div className="flex items-center gap-2 mb-0.5">
 																	<span className="text-xs font-mono text-muted-foreground">
-																		{dossier.reference}
+																		{
+																			dossier.reference
+																		}
 																	</span>
 																	<Badge
 																		variant="outline"
@@ -894,14 +903,23 @@ function DemarchesTabContent({
 																			config.color,
 																		)}
 																	>
-																		{config.label}
+																		{
+																			config.label
+																		}
 																	</Badge>
 																</div>
 																<p className="text-sm font-medium truncate">
-																	{dossier.typeLabel?.fr ?? "Demarche"}
+																	{dossier
+																		.typeLabel
+																		?.fr ??
+																		"D\u00e9marche"}
 																</p>
 																<p className="text-xs text-muted-foreground mt-0.5">
-																	Etape : {dossier.etapeLabel?.fr ?? "---"}
+																	\u00c9tape :{" "}
+																	{dossier
+																		.etapeLabel
+																		?.fr ??
+																		"---"}
 																</p>
 															</div>
 														</div>
@@ -909,7 +927,11 @@ function DemarchesTabContent({
 														<div className="flex flex-col items-end gap-1 shrink-0">
 															<div className="flex items-center gap-1 text-xs text-muted-foreground">
 																<CalendarClock className="w-3 h-3" />
-																<span>{formatDateFr(dossier.dateDepot)}</span>
+																<span>
+																	{formatDateFr(
+																		dossier.dateDepot,
+																	)}
+																</span>
 															</div>
 															{deadline && (
 																<div
@@ -923,7 +945,11 @@ function DemarchesTabContent({
 																	) : (
 																		<Clock className="w-3 h-3" />
 																	)}
-																	<span>{deadline.label}</span>
+																	<span>
+																		{
+																			deadline.label
+																		}
+																	</span>
 																</div>
 															)}
 															<ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
@@ -938,7 +964,7 @@ function DemarchesTabContent({
 						</div>
 					)}
 
-					{/* Load More */}
+					{/* Load More (for paginated requests) */}
 					{paginationStatus === "CanLoadMore" && (
 						<div className="flex justify-center pt-2">
 							<Button
@@ -961,7 +987,7 @@ function DemarchesTabContent({
 	);
 }
 
-// --- Service Detail Modal ---
+// --- Service Detail Modal ----------------------------------------------------
 
 function ServiceDetailModal({
 	service,
@@ -1055,7 +1081,10 @@ function ServiceDetailModal({
 								{t("services.notAvailableOnlineTitle", "Non disponible en ligne")}
 							</p>
 							<p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-								{t("services.notAvailableOnlineDesc", "Ce service necessite une visite en personne.")}
+								{t(
+									"services.notAvailableOnlineDesc",
+									"Ce service n\u00e9cessite une visite en personne.",
+								)}
 							</p>
 						</div>
 					</div>
@@ -1076,7 +1105,7 @@ function ServiceDetailModal({
 						<Separator />
 						<div>
 							<h4 className="text-sm font-semibold mb-2">
-								{t("services.detailsTitle", "Details")}
+								{t("services.detailsTitle", "D\u00e9tails")}
 							</h4>
 							<div
 								className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground"
@@ -1090,76 +1119,99 @@ function ServiceDetailModal({
 				)}
 
 				{/* Required Documents */}
-				{service.joinedDocuments && service.joinedDocuments.length > 0 && (
-					<>
-						<Separator />
-						<div>
-							<h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-								<FileText className="h-4 w-4 text-muted-foreground" />
-								{t("services.requiredDocuments", "Documents requis")} (
-								{service.joinedDocuments.length})
-							</h4>
-							<ul className="space-y-2">
-								{service.joinedDocuments.map((doc, index) => (
-									<li
-										key={`${doc.type}-${index}`}
-										className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg"
-									>
-										<div className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium shrink-0">
-											{index + 1}
-										</div>
-										<span className="flex-1 text-sm">
-											{getLocalizedValue(doc.label, i18n.language)}
-										</span>
-										{doc.required && (
-											<Badge
-												variant="destructive"
-												className="text-[10px] shrink-0"
+				{service.joinedDocuments &&
+					service.joinedDocuments.length > 0 && (
+						<>
+							<Separator />
+							<div>
+								<h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+									<FileText className="h-4 w-4 text-muted-foreground" />
+									{t("services.requiredDocuments", "Documents requis")} (
+									{service.joinedDocuments.length})
+								</h4>
+								<ul className="space-y-2">
+									{service.joinedDocuments.map(
+										(doc, index) => (
+											<li
+												key={`${doc.type}-${index}`}
+												className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg"
 											>
-												{t("services.required", "Requis")}
-											</Badge>
-										)}
-									</li>
-								))}
-							</ul>
-						</div>
-					</>
-				)}
+												<div className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium shrink-0">
+													{index + 1}
+												</div>
+												<span className="flex-1 text-sm">
+													{getLocalizedValue(
+														doc.label,
+														i18n.language,
+													)}
+												</span>
+												{doc.required && (
+													<Badge
+														variant="destructive"
+														className="text-[10px] shrink-0"
+													>
+														{t("services.required", "Requis")}
+													</Badge>
+												)}
+											</li>
+										),
+									)}
+								</ul>
+							</div>
+						</>
+					)}
 
 				{/* Beneficiaries */}
-				{service.eligibleProfiles && service.eligibleProfiles.length > 0 && (
-					<>
-						<Separator />
-						<div>
-							<h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-								<Users className="h-4 w-4 text-muted-foreground" />
-								{t("services.modal.eligibleBeneficiaries", "Beneficiaires eligibles")}
-							</h4>
-							<div className="flex flex-wrap gap-2">
-								{service.eligibleProfiles.map((profileType: string) => {
-									const colorMap: Record<string, string> = {
-										long_stay: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-										short_stay: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-										visa_tourism: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-										visa_business: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-										visa_long_stay: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
-										admin_services: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
-									};
-									return (
-										<Badge
-											key={profileType}
-											variant="secondary"
-											className={`gap-1 ${colorMap[profileType] ?? "bg-gray-100 text-gray-700"}`}
-										>
-											<CheckCircle2 className="h-3 w-3" />
-											{t(`services.modal.profileTypes.${profileType}`)}
-										</Badge>
-									);
-								})}
+				{service.eligibleProfiles &&
+					service.eligibleProfiles.length > 0 && (
+						<>
+							<Separator />
+							<div>
+								<h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+									<Users className="h-4 w-4 text-muted-foreground" />
+									{t(
+										"services.modal.eligibleBeneficiaries",
+										"B\u00e9n\u00e9ficiaires \u00e9ligibles",
+									)}
+								</h4>
+								<div className="flex flex-wrap gap-2">
+									{service.eligibleProfiles.map(
+										(profileType: string) => {
+											const colorMap: Record<
+												string,
+												string
+											> = {
+												long_stay:
+													"bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+												short_stay:
+													"bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+												visa_tourism:
+													"bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+												visa_business:
+													"bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+												visa_long_stay:
+													"bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
+												admin_services:
+													"bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
+											};
+											return (
+												<Badge
+													key={profileType}
+													variant="secondary"
+													className={`gap-1 ${colorMap[profileType] ?? "bg-gray-100 text-gray-700"}`}
+												>
+													<CheckCircle2 className="h-3 w-3" />
+													{t(
+														`services.modal.profileTypes.${profileType}`,
+													)}
+												</Badge>
+											);
+										},
+									)}
+								</div>
 							</div>
-						</div>
-					</>
-				)}
+						</>
+					)}
 
 				{/* Important Info */}
 				<div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground">
@@ -1167,9 +1219,9 @@ function ServiceDetailModal({
 						{t("services.modal.importantInfo", "Informations importantes")}
 					</p>
 					<ul className="list-disc list-inside space-y-0.5">
-						<li>{t("services.modal.infoPoints.docs", "Preparez tous les documents requis avant de commencer")}</li>
-						<li>{t("services.modal.infoPoints.delay", "Les delais de traitement sont indicatifs")}</li>
-						<li>{t("services.modal.infoPoints.identity", "Une piece d'identite valide est toujours requise")}</li>
+						<li>{t("services.modal.infoPoints.docs", "Pr\u00e9parez tous les documents requis avant de commencer")}</li>
+						<li>{t("services.modal.infoPoints.delay", "Les d\u00e9lais de traitement sont indicatifs")}</li>
+						<li>{t("services.modal.infoPoints.identity", "Une pi\u00e8ce d'identit\u00e9 valide est toujours requise")}</li>
 					</ul>
 				</div>
 
@@ -1186,14 +1238,20 @@ function ServiceDetailModal({
 						<div className="flex items-center gap-2 p-3 rounded-md bg-muted text-muted-foreground text-sm sm:order-2">
 							<ShieldAlert className="h-4 w-4 shrink-0" />
 							<span>
-								{t("services.notAvailableInJurisdiction", "Non disponible dans votre juridiction")}
+								{t(
+									"services.notAvailableInJurisdiction",
+									"Non disponible dans votre juridiction",
+								)}
 							</span>
 						</div>
 					) : !isEligible ? (
 						<div className="flex items-center gap-2 p-3 rounded-md bg-orange-500/10 text-orange-600 dark:text-orange-400 text-sm sm:order-2">
 							<ShieldAlert className="h-4 w-4 shrink-0" />
 							<span>
-								{t("services.notEligible", "Vous n'etes pas eligible a ce service")}
+								{t(
+									"services.notEligible",
+									"Vous n'\u00eates pas \u00e9ligible \u00e0 ce service",
+								)}
 							</span>
 						</div>
 					) : (
@@ -1202,7 +1260,7 @@ function ServiceDetailModal({
 							className="gap-2 sm:order-2"
 						>
 							<PlusCircle className="h-4 w-4" />
-							Effectuer cette demarche
+							Effectuer cette d\u00e9marche
 						</Button>
 					)}
 				</DialogFooter>

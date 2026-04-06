@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * iBoite -- Messagerie Consulaire Securisee
+ * iBoîte — Messagerie Consulaire Sécurisée
  *
  * Single unified Card filling full height: Sidebar | Mail list | Detail
  * Reference: Mailbox UI with border dividers, no gaps.
@@ -54,7 +54,10 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import React, { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { captureEvent } from "@/lib/analytics";
+import { cn } from "@/lib/utils";
 
+// Dynamic imports for SSR-incompatible components
 const LiveKitRoom = dynamic(
 	() => import("@livekit/components-react").then((m) => m.LiveKitRoom),
 	{ ssr: false },
@@ -63,10 +66,8 @@ const CustomCallUI = dynamic(
 	() => import("@/components/meetings/custom-call-ui").then((m) => m.CustomCallUI),
 	{ ssr: false },
 );
-import { captureEvent } from "@/lib/analytics";
-import { cn } from "@/lib/utils";
 
-// Official org types -- shown with a special badge
+// Official org types — shown with a special badge
 const OFFICIAL_ORG_TYPES = new Set([
 	OrganizationType.Embassy,
 	OrganizationType.HighRepresentation,
@@ -127,7 +128,7 @@ import {
 	useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
 
-// -- Types ----
+// ── Types ────────────────────────────────────────────────────────────────────
 
 type ViewKey =
 	| "inbox"
@@ -147,7 +148,7 @@ const MAIL_FOLDERS: { key: ViewKey; icon: typeof Inbox }[] = [
 	{ key: "trash", icon: Trash2 },
 ];
 
-// -- Main Page ----
+// ── Main Page ────────────────────────────────────────────────────────────────
 
 export default function IBoitePage() {
 	const { t, i18n } = useTranslation();
@@ -179,7 +180,7 @@ export default function IBoitePage() {
 	const isCallsView = activeView === "calls";
 	const isMailView = !isPackageView && !isCallsView;
 
-	// -- Data fetching --
+	// ── Data fetching ──────────────────────────────────────────────────────
 
 	// Accounts with unread counts for the sidebar selector
 	const { data: accounts } = useAuthenticatedConvexQuery(
@@ -226,7 +227,7 @@ export default function IBoitePage() {
 		{},
 	);
 
-	// -- Mutations --
+	// ── Mutations ──────────────────────────────────────────────────────────
 
 	const { mutateAsync: markReadMutation } = useConvexMutationQuery(
 		api.functions.digitalMail.markRead,
@@ -244,7 +245,7 @@ export default function IBoitePage() {
 		api.functions.sendMail.send,
 	);
 
-	// -- Derived data --
+	// ── Derived data ───────────────────────────────────────────────────────
 
 	const filteredMail = useMemo(() => {
 		if (activeView === "starred") return mailItems.filter((m) => m.isStarred);
@@ -267,7 +268,7 @@ export default function IBoitePage() {
 		};
 	}, [packages]);
 
-	// -- Actions --
+	// ── Actions ────────────────────────────────────────────────────────────
 
 	const handleSelectMail = async (mailId: Id<"digitalMail">) => {
 		setSelectedMailId(mailId);
@@ -328,7 +329,7 @@ export default function IBoitePage() {
 	const isMailLoading =
 		isMailView && mailPaginationStatus === "LoadingFirstPage";
 
-	// -- Render --
+	// ── Render ─────────────────────────────────────────────────────────────
 
 	return (
 		<div className="flex flex-col gap-4 h-[calc(100dvh-3rem)] min-h-0 p-1">
@@ -341,7 +342,7 @@ export default function IBoitePage() {
 				/>
 			</div>
 
-			{/* -- Mobile: folder chips -- */}
+			{/* ── Mobile: folder chips ──────────────────────────────────────── */}
 			<div className="lg:hidden flex gap-1.5 overflow-x-auto py-3 -mx-1 px-1 scrollbar-none shrink-0">
 				{MAIL_FOLDERS.map(({ key, icon: Icon }) => (
 					<button
@@ -397,7 +398,7 @@ export default function IBoitePage() {
 				</button>
 			</div>
 
-			{/* -- Mobile: compose + account selector -- */}
+			{/* ── Mobile: compose + account selector ──────────────────────── */}
 			<div className="lg:hidden flex items-center gap-2 shrink-0">
 				<Button onClick={() => setComposeOpen(true)} className="gap-2 flex-1">
 					<PenLine className="size-4" />
@@ -452,7 +453,7 @@ export default function IBoitePage() {
 				)}
 			</div>
 
-			{/* -- Mobile: stacked content -- */}
+			{/* ── Mobile: stacked content ───────────────────────────────────── */}
 			<div className="lg:hidden flex-1 min-h-0 pb-16">
 				{isCallsView ? (
 					<CallsList dateFnsLocale={dateFnsLocale} />
@@ -522,7 +523,7 @@ export default function IBoitePage() {
 				)}
 			</div>
 
-			{/* -- Desktop: single unified card filling remaining height -- */}
+			{/* ── Desktop: single unified card filling remaining height ──── */}
 			<Card className="hidden lg:flex lg:flex-row flex-1 min-h-0 overflow-hidden p-0">
 				{/* Sidebar */}
 				<aside className="max-w-56 w-full border-r flex flex-col">
@@ -724,7 +725,7 @@ export default function IBoitePage() {
 						</div>
 					) : (
 						<>
-							{/* Mail list -- fixed width column with its own scroll */}
+							{/* Mail list — fixed width column with its own scroll */}
 							<div
 								className={cn(
 									"border-r flex flex-col min-h-0",
@@ -743,7 +744,7 @@ export default function IBoitePage() {
 								/>
 							</div>
 
-							{/* Detail -- fills remaining space, or placeholder */}
+							{/* Detail — fills remaining space, or placeholder */}
 							<div className="flex-1 min-h-0 min-w-0">
 								{selectedMail ? (
 									<MailDetail
@@ -786,7 +787,7 @@ export default function IBoitePage() {
 				</main>
 			</Card>
 
-			{/* -- Compose Dialog -- */}
+			{/* ── Compose Dialog ────────────────────────────────────────────── */}
 			<ComposeDialog
 				open={composeOpen}
 				onOpenChange={(open) => {
@@ -801,7 +802,7 @@ export default function IBoitePage() {
 	);
 }
 
-// -- ComposeDialog ----
+// ── ComposeDialog ────────────────────────────────────────────────────────────
 
 type Account = {
 	ownerId: string;
@@ -938,12 +939,14 @@ function ComposeDialog({
 
 	// Translate raw enum subtitles from backend
 	const subtitleLabels: Record<string, string> = {
+		// OrganizationType
 		embassy: t("orgs.type.embassy"),
 		high_representation: t("orgs.type.highRepresentation"),
 		general_consulate: t("orgs.type.generalConsulate"),
 		high_commission: t("orgs.type.highCommission"),
 		permanent_mission: t("orgs.type.permanentMission"),
 		third_party: t("orgs.type.thirdParty"),
+		// AssociationType
 		cultural: t("associations.type.cultural"),
 		sports: t("associations.type.sports"),
 		religious: t("associations.type.religious"),
@@ -953,6 +956,7 @@ function ComposeDialog({
 		youth: t("associations.type.youth"),
 		women: t("associations.type.women"),
 		student: t("associations.type.student"),
+		// ActivitySector
 		technology: t("companies.sector.technology"),
 		commerce: t("companies.sector.commerce"),
 		services: t("companies.sector.services"),
@@ -963,6 +967,7 @@ function ComposeDialog({
 		tourism: t("companies.sector.tourism"),
 		transport: t("companies.sector.transport"),
 		construction: t("companies.sector.construction"),
+		// Common
 		other: t("common.other"),
 	};
 
@@ -1088,7 +1093,7 @@ function ComposeDialog({
 											<CommandEmpty>
 												{t(
 													"iboite.compose.typeToSearch",
-													"Tapez au moins 2 caracteres...",
+													"Tapez au moins 2 caractères...",
 												)}
 											</CommandEmpty>
 										) : !searchResults ? (
@@ -1167,7 +1172,7 @@ function ComposeDialog({
 							onChange={(e) => setContent(e.target.value)}
 							placeholder={t(
 								"iboite.compose.messagePlaceholder",
-								"Ecrivez votre message...",
+								"Écrivez votre message...",
 							)}
 							rows={8}
 						/>
@@ -1195,7 +1200,7 @@ function ComposeDialog({
 	);
 }
 
-// -- MailListInner (no Card wrapper -- lives inside the unified card) --
+// ── MailListInner (no Card wrapper — lives inside the unified card) ──────────
 
 function MailListInner({
 	mails,
@@ -1259,7 +1264,7 @@ function MailListInner({
 										!mail.isRead && "font-semibold",
 									)}
 								>
-									{mail.sender?.name ?? "--"}
+									{mail.sender?.name ?? "\u2014"}
 								</p>
 								<span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">
 									{formatDistanceToNow(new Date(mail.createdAt), {
@@ -1335,7 +1340,7 @@ function MailListInner({
 	);
 }
 
-// -- MailDetail --
+// ── MailDetail ───────────────────────────────────────────────────────────────
 
 function MailDetail({
 	mail,
@@ -1358,7 +1363,7 @@ function MailDetail({
 }) {
 	const { t } = useTranslation();
 
-	// Thread query -- fetch all messages in the same thread
+	// Thread query — fetch all messages in the same thread
 	const threadArgs = mail.threadId
 		? { threadId: mail.threadId }
 		: ("skip" as const);
@@ -1605,7 +1610,7 @@ function MailDetail({
 	);
 }
 
-// -- PackageList --
+// ── PackageList ───────────────────────────────────────────────────────────────
 
 function PackageList({
 	packages,
@@ -1630,7 +1635,7 @@ function PackageList({
 		);
 	}
 
-	const statusConfigPkg: Record<
+	const statusConfig: Record<
 		string,
 		{ label: string; color: string; icon: typeof Package }
 	> = {
@@ -1669,7 +1674,7 @@ function PackageList({
 		<div className="space-y-3 min-h-full">
 			{packages.map((pkg) => {
 				const status =
-					statusConfigPkg[pkg.status] ?? statusConfigPkg[PackageStatus.Pending];
+					statusConfig[pkg.status] ?? statusConfig[PackageStatus.Pending];
 				const StatusIcon = status.icon;
 				return (
 					<div
@@ -1752,7 +1757,7 @@ function PackageList({
 	);
 }
 
-// -- CallsList --
+// ── CallsList ────────────────────────────────────────────────────────────────
 
 function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 	const { t } = useTranslation();
@@ -1764,11 +1769,6 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 	const calls = callsData?.meetings;
 	const participantNames = callsData?.participantNames ?? {};
 
-	const { data: currentUser } = useAuthenticatedConvexQuery(
-		api.functions.users.getMe,
-		{},
-	);
-
 	// Compute display name: show the OTHER participant's name, not our own
 	const getCallDisplayName = (call: Doc<"meetings">) => {
 		const otherParticipant = call.participants.find(
@@ -1776,13 +1776,13 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 		);
 		if (otherParticipant) {
 			const name = participantNames[otherParticipant.userId];
-			if (name) return `Appel -- ${name}`;
+			if (name) return `Appel \u2014 ${name}`;
 		}
 		// Fallback: if we created the call, the title already shows the target
 		if (call.createdBy === currentUser?._id) return call.title;
 		// Otherwise show the caller's name
 		const callerName = participantNames[call.createdBy];
-		return callerName ? `Appel -- ${callerName}` : call.title;
+		return callerName ? `Appel \u2014 ${callerName}` : call.title;
 	};
 
 	const [activeCallId, setActiveCallId] = useState<Id<"meetings"> | null>(null);
@@ -1829,6 +1829,10 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 	const callCitizen = useMutation(api.functions.meetings.callCitizenByEmail);
 	const callCitizenById = useMutation(api.functions.meetings.callCitizenById);
 	const callOrgMutation = useMutation(api.functions.meetings.callOrganization);
+	const { data: currentUser } = useAuthenticatedConvexQuery(
+		api.functions.users.getMe,
+		{},
+	);
 
 	const handleRecall = async (call: Doc<"meetings">) => {
 		try {
@@ -1837,7 +1841,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 			// For org calls: call the org back
 			if (call.orgId && call.isOrgInbound) {
 				const { meetingId } = await callOrgMutation({ orgId: call.orgId });
-				toast.success(t("iboite.call.startSuccess", "Appel lance"));
+				toast.success(t("iboite.call.startSuccess", "Appel lanc\u00e9"));
 				handleJoin(meetingId);
 				return;
 			}
@@ -1854,7 +1858,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 			}
 
 			const { meetingId } = await callCitizenById({ targetUserId });
-			toast.success(t("iboite.call.startSuccess", "Appel lance"));
+			toast.success(t("iboite.call.startSuccess", "Appel lanc\u00e9"));
 			handleJoin(meetingId);
 		} catch (err: unknown) {
 			console.error("Failed to recall:", err);
@@ -1875,17 +1879,17 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 		setIsCalling(true);
 		try {
 			const { meetingId } = await callCitizen({ email: callEmail.trim() });
-			toast.success(t("iboite.call.startSuccess", "Appel lance"));
+			toast.success(t("iboite.call.startSuccess", "Appel lanc\u00e9"));
 			setIsCallDialogOpen(false);
 			setCallEmail("");
 			handleJoin(meetingId);
-		} catch (callError: any) {
-			console.error("Failed to call:", callError);
+		} catch (error: any) {
+			console.error("Failed to call:", error);
 			const errorMessage =
-				typeof callError?.data === "string"
-					? callError.data
-					: callError?.data?.errorMessage ||
-						callError?.message?.match(/Uncaught ConvexError: (.*?)(?:\n|$)/)?.[1] ||
+				typeof error?.data === "string"
+					? error.data
+					: error?.data?.errorMessage ||
+						error?.message?.match(/Uncaught ConvexError: (.*?)(?:\n|$)/)?.[1] ||
 						t("iboite.call.error", "Erreur lors de l'appel");
 			toast.error(errorMessage);
 		} finally {
@@ -1910,7 +1914,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 						<p className="text-sm text-muted-foreground mt-1">
 							{t(
 								"iboite.calls.subtitle",
-								"Historique de vos appels audio et video",
+								"Historique de vos appels audio et vid\u00e9o",
 							)}
 						</p>
 					</div>
@@ -1986,7 +1990,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 		);
 	}
 
-	const callStatusConfig: Record<
+	const statusConfig: Record<
 		string,
 		{ label: string; color: string; icon: typeof Phone }
 	> = {
@@ -2060,7 +2064,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 						<div className="text-sm text-muted-foreground mt-1">
 							{t(
 								"iboite.calls.subtitle",
-								"Historique de vos appels audio et video",
+								"Historique de vos appels audio et vid\u00e9o",
 							)}
 						</div>
 					</div>
@@ -2075,7 +2079,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 
 				<div className="space-y-3 min-h-full">
 					{calls.map((call) => {
-						const status = callStatusConfig[call.status] ?? callStatusConfig.ended;
+						const status = statusConfig[call.status] ?? statusConfig.ended;
 						const StatusIcon = status.icon;
 						const isActive = call.status === "active";
 						const isOutgoing = call.createdBy === currentUser?._id;
@@ -2132,12 +2136,12 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 											}
 										>
 											{isMissed
-												? t("iboite.calls.missed", "Manque")
+												? t("iboite.calls.missed", "Manqu\u00e9")
 												: isOutgoing
 													? t("iboite.calls.outgoing", "Sortant")
 													: t("iboite.calls.incoming", "Entrant")}
 										</span>
-										{" . "}
+										{" \u00b7 "}
 										{call.participants.length} {t("iboite.calls.participants")}
 									</p>
 									<div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-muted-foreground">
