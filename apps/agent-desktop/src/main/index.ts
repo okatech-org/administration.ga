@@ -60,17 +60,17 @@ function createWindow(): BrowserWindow {
 
   // ── Bypass CORS for the Convex backend ────────────────────────────
   session.defaultSession.webRequest.onBeforeSendHeaders(
-    { urls: ["http://127.0.0.1:3211/*", "https://*.convex.site/*"] },
+    { urls: ["http://127.0.0.1:3270/*", "http://127.0.0.1:3271/*", "https://*.convex.cloud/*", "https://*.convex.site/*"] },
     (details, callback) => {
-      details.requestHeaders["Origin"] = "http://127.0.0.1:3211"
+      details.requestHeaders["Origin"] = "http://localhost:5173"
       callback({ requestHeaders: details.requestHeaders })
     }
   )
   session.defaultSession.webRequest.onHeadersReceived(
-    { urls: ["http://127.0.0.1:3211/*", "https://*.convex.site/*"] },
+    { urls: ["http://127.0.0.1:3270/*", "http://127.0.0.1:3271/*", "https://*.convex.cloud/*", "https://*.convex.site/*"] },
     (details, callback) => {
       const headers = details.responseHeaders ?? {}
-      headers["Access-Control-Allow-Origin"] = ["*"]
+      headers["Access-Control-Allow-Origin"] = ["http://localhost:5173"]
       headers["Access-Control-Allow-Headers"] = ["Content-Type, Authorization"]
       headers["Access-Control-Allow-Methods"] = ["GET, POST, PUT, DELETE, OPTIONS"]
       headers["Access-Control-Allow-Credentials"] = ["true"]
