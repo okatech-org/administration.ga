@@ -720,10 +720,10 @@ function UserDashboard() {
 				<div ref={mobileScrollRef} onScroll={handleMobileScroll} className="flex lg:hidden overflow-x-auto snap-x snap-mandatory disable-scrollbars" style={{ height: "calc(100% - 0.5rem)" }}>
 
 					{/* Page 1 mobile : Profil — non-scrollable, cartes flex */}
-					<div className="w-full shrink-0 snap-start h-full overflow-hidden px-0">
-						<div className="flex flex-col gap-2 h-full">
+					<div className="w-full shrink-0 snap-start h-full overflow-hidden pr-5">
+						<div className="flex flex-col gap-2.5 h-full">
 							{/* Hero mobile — modèle vertical */}
-							<FlatCard className="flex-[2.5] min-h-0 relative">
+							<FlatCard className="flex-[3] min-h-0 relative">
 								<div className="p-3 min-[400px]:p-4 flex flex-col h-full">
 									{/* Ligne 1 : Matricule / Badge / Score */}
 									<div className="flex items-center justify-between shrink-0">
@@ -908,7 +908,7 @@ function UserDashboard() {
 						exit={{ opacity: 0, x: 20 }}
 						transition={{ type: "spring", damping: 20, stiffness: 300 }}
 						onClick={scrollToActualites}
-						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-50 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[8px] font-bold uppercase tracking-wider px-1 py-4 shadow-xl rounded-l-lg"
+						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-50 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[10px] font-bold uppercase tracking-widest px-2 py-6 shadow-xl rounded-l-xl"
 					>
 						<span className="block" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Actualités</span>
 					</motion.button>
@@ -923,7 +923,7 @@ function UserDashboard() {
 						exit={{ opacity: 0, x: 20 }}
 						transition={{ type: "spring", damping: 20, stiffness: 300 }}
 						onClick={scrollToDashboard}
-						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-50 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[8px] font-bold uppercase tracking-wider px-1 py-4 shadow-xl rounded-l-lg"
+						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-50 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[10px] font-bold uppercase tracking-widest px-2 py-6 shadow-xl rounded-l-xl"
 					>
 						<span className="block" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Tableau de bord</span>
 					</motion.button>
