@@ -13,6 +13,7 @@
       }
     ],
     "paths": {
+      "@/components/ui/*": ["../../packages/ui/src/components/*", "./src/components/ui/*"],
       "@/*": ["./src/*"],
       "@convex/*": ["../../convex/*"],
       "@workspace/ui/*": ["../../packages/ui/src/*"],
