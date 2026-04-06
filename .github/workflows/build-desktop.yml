@@ -26,8 +26,8 @@ jobs:
           - os: macos-latest
             platform: mac
             arch: arm64
-          # macOS Intel
-          - os: macos-13
+          # macOS Intel (cross-compile on ARM64 runner)
+          - os: macos-latest
             platform: mac
             arch: x64
           # Windows
