@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/my-space/empty-state";
 import { FlatCard } from "@/components/my-space/flat-card";
 import { PageHeader } from "@/components/my-space/page-header";
+import { CardGridSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -72,11 +73,7 @@ export default function ChildrenPage() {
 	const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
 	if (isPending) {
-		return (
-			<div className="flex items-center justify-center h-64">
-				<Loader2 className="h-8 w-8 animate-spin text-primary" />
-			</div>
-		);
+		return <CardGridSkeleton cols={3} count={3} />;
 	}
 
 	const activeChildren = (children ?? []).filter(

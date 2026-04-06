@@ -34,6 +34,7 @@ import { useTranslation } from "react-i18next";
 
 import { FlatCard } from "@/components/my-space/flat-card";
 import { PageHeader } from "@/components/my-space/page-header";
+import { CardGridSkeleton, ListSkeleton } from "@/components/skeletons";
 import type { CatalogService } from "@/components/my-space/service-detail-sheet";
 import { ServiceDetailSheet } from "@/components/my-space/service-detail-sheet";
 import { Badge } from "@/components/ui/badge";
@@ -408,11 +409,7 @@ function CatalogueContent({
 	const { t, i18n } = useTranslation();
 
 	if (services === undefined) {
-		return (
-			<div className="flex-1 flex items-center justify-center">
-				<Loader2 className="h-8 w-8 animate-spin text-primary" />
-			</div>
-		);
+		return <CardGridSkeleton cols={3} count={6} className="flex-1" />;
 	}
 
 	const totalPages = Math.max(1, Math.ceil(filteredServices.length / SERVICES_PER_PAGE));
@@ -612,11 +609,7 @@ function DemarchesContent({
 		).length;
 
 	if (requestsLoading && requests.length === 0 && dossiers.length === 0) {
-		return (
-			<div className="flex justify-center p-8">
-				<Loader2 className="animate-spin h-8 w-8 text-primary" />
-			</div>
-		);
+		return <ListSkeleton count={4} />;
 	}
 
 	if (isEmpty) {

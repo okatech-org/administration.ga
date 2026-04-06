@@ -11,6 +11,7 @@ import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/my-space/page-header";
+import { ListSkeleton } from "@/components/skeletons";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -88,11 +89,7 @@ export default function AppointmentsPage() {
 	};
 
 	if (isPending) {
-		return (
-			<div className="flex justify-center p-8">
-				<Loader2 className="animate-spin h-8 w-8 text-primary" />
-			</div>
-		);
+		return <ListSkeleton count={4} />;
 	}
 
 	// Separate upcoming and past appointments

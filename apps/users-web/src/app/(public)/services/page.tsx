@@ -217,7 +217,7 @@ function ServicesPageContent() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="bg-linear-to-b from-primary/10 to-background py-16 px-6">
+      <section className="bg-background py-16 px-6">
         <div className="max-w-7xl mx-auto text-center">
           <Badge
             variant="secondary"

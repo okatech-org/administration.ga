@@ -40,20 +40,23 @@ export default function FAQPage() {
             <p className="text-muted-foreground text-lg">
               Retrouvez les réponses aux questions les plus fréquentes concernant vos démarches consulaires.
             </p>
+            <div className="gabon-stripe mt-6 max-w-xs mx-auto" />
           </div>
 
-          <Accordion type="single" collapsible className="w-full">
-            {faqItems.map((item, index) => (
-              <AccordionItem key={index} value={`item-${index}`}>
-                <AccordionTrigger className="text-left font-medium text-lg">
-                  {item.question}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground leading-relaxed">
-                  {item.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          <div className="bg-card rounded-xl p-6 md:p-8 border flat-card-border shadow-sm">
+            <Accordion type="single" collapsible className="w-full stagger-children">
+              {faqItems.map((item, index) => (
+                <AccordionItem key={index} value={`item-${index}`}>
+                  <AccordionTrigger className="text-left font-medium text-lg">
+                    {item.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground leading-relaxed">
+                    {item.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
         </div>
       </main>
     </div>

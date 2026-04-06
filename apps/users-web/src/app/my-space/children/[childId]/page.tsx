@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ContentDetailSkeleton } from "@/components/skeletons";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 
@@ -49,7 +50,7 @@ export default function ChildDashboardPage() {
 		{ id: childId as Id<"childProfiles"> },
 	);
 
-	if (isPending) return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+	if (isPending) return <ContentDetailSkeleton />;
 
 	if (!child) {
 		return (

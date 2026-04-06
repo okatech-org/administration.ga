@@ -29,10 +29,9 @@ const categoryConfig = [
 ] as const
 
 const badgeStyles = {
-  news: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  event: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  communique:
-    "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+  news: "badge-info",
+  event: "badge-warning",
+  communique: "badge-success",
 } as const
 
 function CategoryBadge({ category }: { category: string }) {
@@ -69,7 +68,7 @@ function PostCard({ post }: { post: Post }) {
   return (
     <Link
       href={`/news/${post.slug}`}
-      className="group block bg-card rounded-xl overflow-hidden border hover:shadow-lg transition-all duration-300"
+      className="group block bg-card rounded-xl overflow-hidden border flat-card-border hover:shadow-lg transition-all duration-300"
     >
       {/* Image */}
       <div className="aspect-[16/9] overflow-hidden bg-muted">
@@ -192,7 +191,7 @@ function NewsPageContent() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-primary/10 to-background py-16 px-6">
+      <section className="bg-background py-16 px-6">
         <div className="max-w-7xl mx-auto text-center">
           <Badge
             variant="secondary"
@@ -206,9 +205,10 @@ function NewsPageContent() {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             {t(
               "news.subtitle",
-              "Restez informe des dernieres nouvelles, evenements et communiques officiels du Consulat.",
+              "Restez informé des dernières nouvelles, événements et communiqués officiels du Consulat.",
             )}
           </p>
+          <div className="gabon-stripe mt-8 max-w-xs mx-auto" />
         </div>
       </section>
 
@@ -248,7 +248,7 @@ function NewsPageContent() {
             {[...Array(6)].map((_, i) => (
               <div
                 key={i}
-                className="bg-card rounded-xl overflow-hidden border animate-pulse"
+                className="bg-card rounded-xl overflow-hidden border flat-card-border animate-pulse"
               >
                 <div className="aspect-[16/9] bg-muted" />
                 <div className="p-5 space-y-3">

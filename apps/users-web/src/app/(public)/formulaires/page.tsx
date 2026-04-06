@@ -18,30 +18,33 @@ export default function FormsPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <main className="flex-1 py-16 px-6">
         <div className="max-w-4xl mx-auto space-y-8">
-           <div className="text-center mb-12">
-             <h1 className="text-4xl font-bold mb-4">Téléchargement de Formulaires</h1>
-             <p className="text-muted-foreground text-lg">
-               Accédez aux formulaires nécessaires pour vos démarches administratives.
-             </p>
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold mb-4">Téléchargement de Formulaires</h1>
+            <p className="text-muted-foreground text-lg">
+              Accédez aux formulaires nécessaires pour vos démarches administratives.
+            </p>
+            <div className="gabon-stripe mt-6 max-w-xs mx-auto" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {forms.map((form) => (
-              <Card key={form.title} className="hover:shadow-md transition-shadow">
-                <CardContent className="flex items-center p-6 gap-4">
-                  <div className="p-3 bg-primary/10 rounded-lg text-primary">
-                    <FileText className="w-6 h-6" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{form.title}</h3>
-                    <p className="text-sm text-muted-foreground">{form.type} • {form.size}</p>
-                  </div>
-                  <Button variant="ghost" size="icon" className="hover:text-primary">
-                    <Download className="w-5 h-5" />
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="bg-card rounded-xl p-6 md:p-8 border flat-card-border shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-children">
+              {forms.map((form) => (
+                <Card key={form.title} className="hover:shadow-md transition-shadow">
+                  <CardContent className="flex items-center p-6 gap-4">
+                    <div className="p-3 bg-primary/10 rounded-lg text-primary">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg">{form.title}</h3>
+                      <p className="text-sm text-muted-foreground">{form.type} - {form.size}</p>
+                    </div>
+                    <Button variant="ghost" size="icon" className="hover:text-primary">
+                      <Download className="w-5 h-5" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </main>

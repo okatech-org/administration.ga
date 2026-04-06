@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { OrganizationType, ServiceCategory } from "@convex/lib/constants";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
@@ -98,15 +99,10 @@ const serviceCategoryConfig: Record<
 };
 
 export default function OrgDetailPage() {
-	const { t, i18n } = useTranslation();
-	const router = useRouter();
+	const { t } = useTranslation();
 	const params = useParams();
 	const slug = params.slug as string;
 	const { data: org } = useConvexQuery(api.functions.orgs.getBySlug, { slug });
-	const { data: orgServices } = useConvexQuery(
-		api.functions.services.listByOrg,
-		org ? { orgId: org._id } : "skip",
-	)
 
 	const isLoading = org === undefined;
 
@@ -320,96 +316,105 @@ export default function OrgDetailPage() {
 
 						<Separator />
 
-						{/* Services offered by this org */}
-						<div className="mt-8">
-							<h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-								<FileText className="w-6 h-6 text-primary" />
-								{t("orgs.servicesOffered")}
-							</h2>
-
-							{orgServices && orgServices.length > 0 ? (
-								<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-									{orgServices.map((os) => {
-										const catConfig =
-											serviceCategoryConfig[os.category ?? ""] ??
-											serviceCategoryConfig[ServiceCategory.Other];
-										const serviceName = os.name
-											? getLocalizedValue(os.name as any, i18n.language)
-											: "Service"
-										const serviceDesc = os.description
-											? getLocalizedValue(os.description as any, i18n.language)
-											: ""
-										const serviceSlug = os.service?.slug;
-
-										return (
-											<ServiceCard
-												key={os._id}
-												icon={catConfig.icon}
-												title={serviceName}
-												description={serviceDesc}
-												color={catConfig.color}
-												badge={
-													os.category
-														? t(`services.categoriesMap.${os.category}`)
-														: undefined
-												}
-												price={t("services.free")}
-												delay={
-													(os.estimatedDays ?? os.service?.estimatedDays)
-														? `${os.estimatedDays ?? os.service?.estimatedDays} ${t("services.days", { count: os.estimatedDays ?? os.service?.estimatedDays, defaultValue: "jour(s)" })}`
-														: undefined
-												}
-												onClick={
-													serviceSlug
-														? () =>
-																router.push(`/services/${serviceSlug}`)
-														: undefined
-												}
-											/>
-										)
-									})}
-								</div>
-							) : orgServices && orgServices.length === 0 ? (
-								<Card className="bg-primary/5 border-primary/20">
-									<CardContent className="flex flex-col md:flex-row items-center justify-between gap-4 py-6">
-										<div className="flex items-center gap-4">
-											<FileText className="w-8 h-8 text-primary" />
-											<div>
-												<p className="font-semibold text-foreground">
-													{t("orgs.discoverServices")}
-												</p>
-												<p className="text-sm text-muted-foreground">
-													{t(
-														"orgs.servicesDesc",
-														"Consultez la liste des services consulaires disponibles.",
-													)}
-												</p>
-											</div>
-										</div>
-										<Button asChild>
-											<Link href="/services">{t("orgs.viewServices")}</Link>
-										</Button>
-									</CardContent>
-								</Card>
-							) : (
-								<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-									{Array.from({ length: 3 }).map((_, i) => (
-										<div
-											key={i}
-											className="rounded-xl border bg-card p-6 space-y-4"
-										>
-											<Skeleton className="h-12 w-12 rounded-xl" />
-											<Skeleton className="h-5 w-3/4" />
-											<Skeleton className="h-4 w-full" />
-											<Skeleton className="h-4 w-2/3" />
-										</div>
-									))}
-								</div>
-							)}
-						</div>
+						{/* Services — loads independently */}
+						<OrgServices orgId={org._id as any} />
 					</div>
 				</section>
 			</div>
         </div>
     )
+}
+
+function OrgServices({ orgId }: { orgId: Id<"orgs"> }) {
+	const { t, i18n } = useTranslation();
+	const router = useRouter();
+	const { data: orgServices } = useConvexQuery(
+		api.functions.services.listByOrg,
+		{ orgId },
+	);
+
+	return (
+		<div className="mt-8">
+			<h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+				<FileText className="w-6 h-6 text-primary" />
+				{t("orgs.servicesOffered")}
+			</h2>
+
+			{orgServices === undefined ? (
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					{Array.from({ length: 3 }).map((_, i) => (
+						<div key={i} className="rounded-xl border bg-card p-6 space-y-4">
+							<Skeleton className="h-12 w-12 rounded-xl" />
+							<Skeleton className="h-5 w-3/4" />
+							<Skeleton className="h-4 w-full" />
+							<Skeleton className="h-4 w-2/3" />
+						</div>
+					))}
+				</div>
+			) : orgServices.length > 0 ? (
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					{orgServices.map((os) => {
+						const catConfig =
+							serviceCategoryConfig[os.category ?? ""] ??
+							serviceCategoryConfig[ServiceCategory.Other];
+						const serviceName = os.name
+							? getLocalizedValue(os.name as any, i18n.language)
+							: "Service";
+						const serviceDesc = os.description
+							? getLocalizedValue(os.description as any, i18n.language)
+							: "";
+						const serviceSlug = os.service?.slug;
+
+						return (
+							<ServiceCard
+								key={os._id}
+								icon={catConfig.icon}
+								title={serviceName}
+								description={serviceDesc}
+								color={catConfig.color}
+								badge={
+									os.category
+										? t(`services.categoriesMap.${os.category}`)
+										: undefined
+								}
+								price={t("services.free")}
+								delay={
+									(os.estimatedDays ?? os.service?.estimatedDays)
+										? `${os.estimatedDays ?? os.service?.estimatedDays} ${t("services.days", { count: os.estimatedDays ?? os.service?.estimatedDays, defaultValue: "jour(s)" })}`
+										: undefined
+								}
+								onClick={
+									serviceSlug
+										? () => router.push(`/services/${serviceSlug}`)
+										: undefined
+								}
+							/>
+						);
+					})}
+				</div>
+			) : (
+				<Card className="bg-primary/5 border-primary/20">
+					<CardContent className="flex flex-col md:flex-row items-center justify-between gap-4 py-6">
+						<div className="flex items-center gap-4">
+							<FileText className="w-8 h-8 text-primary" />
+							<div>
+								<p className="font-semibold text-foreground">
+									{t("orgs.discoverServices")}
+								</p>
+								<p className="text-sm text-muted-foreground">
+									{t(
+										"orgs.servicesDesc",
+										"Consultez la liste des services consulaires disponibles.",
+									)}
+								</p>
+							</div>
+						</div>
+						<Button asChild>
+							<Link href="/services">{t("orgs.viewServices")}</Link>
+						</Button>
+					</CardContent>
+				</Card>
+			)}
+		</div>
+	);
 }

@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { FlatCardSkeleton, ProfileHeroSkeleton } from "@/components/skeletons";
 import { useAuthenticatedConvexQuery, useConvexQuery } from "@/integrations/convex/hooks";
 import { getLocalizedValue } from "@/lib/i18n-utils";
 import { REQUEST_STATUS_CONFIG } from "@/lib/request-status-config";
@@ -133,16 +134,7 @@ export default function UserDashboard() {
 		}))
 	];
 
-	if (isPending) return (
-		<div className="flex items-center justify-center h-full">
-			<div className="flex flex-col items-center gap-3">
-				<div className="rounded-xl border border-border bg-card p-6">
-					<Loader2 className="h-8 w-8 animate-spin text-primary dark:text-primary" />
-				</div>
-				<span className="text-sm text-muted-foreground">Chargement...</span>
-			</div>
-		</div>
-	);
+	const isProfileLoading = isPending || profile === undefined;
 
 	return (
 		<div className="flex flex-col h-full overflow-hidden relative">
@@ -171,6 +163,9 @@ export default function UserDashboard() {
 					<div className="lg:col-span-3 flex flex-col gap-4 min-h-0 overflow-y-auto citizen-scrollbar stagger-children">
 
 						{/* ── Mobile : Hero compact avec photo à gauche + boutons Ma Carte/iCV ── */}
+						{isProfileLoading ? (
+							<div className="lg:hidden"><ProfileHeroSkeleton /></div>
+						) : (
 						<FlatCard className="shrink-0 relative lg:hidden">
 							<div className="p-3 min-[400px]:p-4 flex flex-col gap-3">
 								{/* Row : Photo + Infos */}
@@ -237,8 +232,12 @@ export default function UserDashboard() {
 								</div>
 							</div>
 						</FlatCard>
+						)}
 
-						{/* ── Desktop : Hero vertical centré (inchangé) ── */}
+						{/* ── Desktop : Hero vertical centré ── */}
+						{isProfileLoading ? (
+							<div className="hidden lg:block"><ProfileHeroSkeleton /></div>
+						) : (
 						<FlatCard className="shrink-0 relative hidden lg:block">
 							<div className="p-4 flex flex-col relative">
 								<div className="absolute top-4 right-4">
@@ -267,6 +266,7 @@ export default function UserDashboard() {
 								)}
 							</div>
 						</FlatCard>
+						)}
 
 						{/* ── Desktop : Carte Consulaire seule (iCV dans col3) ── */}
 						<FlatCard className="shrink-0 hidden lg:block">
@@ -501,8 +501,8 @@ export default function UserDashboard() {
 
 						{/* Démarches en cours */}
 						<FlatCard className={cn("shrink-0 lg:flex-1 flex flex-col", !latestRequest && !(appointments && appointments.length > 0) && "order-2 lg:order-none")}>
-							<div className="p-3 lg:p-4 flex flex-col">
-								<div className="flex items-center justify-between mb-2 lg:mb-3">
+							<div className="p-3 lg:p-4 flex flex-col flex-1">
+								<div className="flex items-center justify-between mb-2 lg:mb-3 shrink-0">
 									<span className="text-sm font-semibold flex items-center gap-2.5 text-muted-foreground">
 										<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
 											<FileText className="h-3.5 w-3.5 text-muted-foreground" />
@@ -513,7 +513,7 @@ export default function UserDashboard() {
 										<Link href="/my-space/services-demarches">Mes Démarches</Link>
 									</Button>
 								</div>
-								<div className="grid grid-cols-2 gap-2 min-[400px]:gap-2.5 flex-1">
+								<div className="grid grid-cols-2 gap-2 min-[400px]:gap-2.5 flex-1 auto-rows-fr">
 									{latestRequest ? (
 										<Link
 											href={`/my-space/requests/${latestRequest.reference || latestRequest._id}`}
@@ -553,8 +553,8 @@ export default function UserDashboard() {
 
 						{/* Rendez-vous */}
 						<FlatCard className={cn("shrink-0 lg:flex-1 flex flex-col", !latestRequest && !(appointments && appointments.length > 0) && "order-3 lg:order-none")}>
-							<div className="p-3 lg:p-4 flex flex-col">
-								<div className="flex items-center justify-between mb-2 lg:mb-3">
+							<div className="p-3 lg:p-4 flex flex-col flex-1">
+								<div className="flex items-center justify-between mb-2 lg:mb-3 shrink-0">
 									<span className="text-sm font-semibold flex items-center gap-2.5 text-muted-foreground">
 										<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
 											<Calendar className="h-3.5 w-3.5 text-muted-foreground" />
@@ -565,21 +565,29 @@ export default function UserDashboard() {
 										<Link href="/my-space/iagenda">iAgenda</Link>
 									</Button>
 								</div>
-								<div className="grid grid-cols-2 gap-2 min-[400px]:gap-2.5 flex-1">
+								<div className="grid grid-cols-2 gap-2 min-[400px]:gap-2.5 flex-1 auto-rows-fr">
 									{appointments && appointments.length > 0 ? (
-										appointments.filter((a: any) => a.date).slice(0, 3).map((a: any) => (
-											<Link
-												key={a._id}
-												href="/my-space/iagenda"
-												className="flex flex-col gap-2 p-2.5 lg:p-3 rounded-xl lg:rounded-lg bg-amber-500/15 dark:bg-amber-500/10 hover:bg-amber-500/25 dark:hover:bg-amber-500/15 transition-colors"
-											>
-												<div className="flex items-center gap-2">
-													<div className="p-1 lg:p-1.5 rounded-md bg-amber-500/10 shrink-0"><Calendar className="h-4 w-4 lg:h-5 lg:w-5 text-amber-600 dark:text-amber-400" /></div>
-													<p className="text-xs lg:text-sm font-bold leading-tight text-foreground line-clamp-2">{a.service?.name || "RDV Consulaire"}</p>
-												</div>
-												<p className="text-[10px] lg:text-xs text-muted-foreground font-medium text-center">{format(new Date(a.date), "dd MMM HH:mm", { locale: fr })}</p>
-											</Link>
-										))
+										appointments.filter((a: any) => a.date).slice(0, 3).map((a: any) => {
+											const isPast = a.date < new Date().toISOString().split("T")[0];
+											return (
+												<Link
+													key={a._id}
+													href="/my-space/iagenda"
+													className={cn("flex flex-col gap-2 p-2.5 lg:p-3 rounded-xl lg:rounded-lg transition-colors", isPast ? "bg-muted hover:bg-muted/80" : "bg-amber-500/15 dark:bg-amber-500/10 hover:bg-amber-500/25 dark:hover:bg-amber-500/15")}
+												>
+													<div className="flex items-center gap-2">
+														<div className={cn("p-1 lg:p-1.5 rounded-md shrink-0", isPast ? "bg-foreground/[0.06] dark:bg-foreground/[0.12]" : "bg-amber-500/10")}>
+															<Calendar className={cn("h-4 w-4 lg:h-5 lg:w-5", isPast ? "text-muted-foreground" : "text-amber-600 dark:text-amber-400")} />
+														</div>
+														<p className={cn("text-xs lg:text-sm font-bold leading-tight line-clamp-2", isPast ? "text-muted-foreground" : "text-foreground")}>{a.service?.name || "RDV Consulaire"}</p>
+													</div>
+													<p className="text-[10px] lg:text-xs text-muted-foreground font-medium text-center">
+														{format(new Date(a.date + "T00:00:00"), "dd MMM yyyy", { locale: fr })} · {a.time || "—"}
+														{isPast && <span className="ml-1 text-[9px] opacity-60">(passé)</span>}
+													</p>
+												</Link>
+											);
+										})
 									) : (
 										<div className="flex flex-col gap-2 p-2.5 lg:p-3 rounded-xl lg:rounded-lg bg-amber-500/15 dark:bg-amber-500/10">
 											<div className="flex items-center gap-2">
@@ -719,10 +727,10 @@ export default function UserDashboard() {
 				<div ref={mobileScrollRef} onScroll={handleMobileScroll} className="flex lg:hidden overflow-x-auto snap-x snap-mandatory disable-scrollbars" style={{ height: "calc(100% - 0.5rem)" }}>
 
 					{/* Page 1 mobile : Profil — non-scrollable, cartes flex */}
-					<div className="w-full shrink-0 snap-start h-full overflow-hidden px-0">
-						<div className="flex flex-col gap-2 h-full">
+					<div className="w-full shrink-0 snap-start h-full overflow-hidden pr-5">
+						<div className="flex flex-col gap-2.5 h-full">
 							{/* Hero mobile — modèle vertical */}
-							<FlatCard className="flex-[2.5] min-h-0 relative">
+							<FlatCard className="flex-[3] min-h-0 relative">
 								<div className="p-3 min-[400px]:p-4 flex flex-col h-full">
 									{/* Ligne 1 : Matricule / Badge / Score */}
 									<div className="flex items-center justify-between shrink-0">
@@ -835,13 +843,23 @@ export default function UserDashboard() {
 									</div>
 									<div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
 										{appointments && appointments.length > 0 ? (
-											<Link href="/my-space/iagenda" className="flex flex-col gap-2 p-2.5 rounded-xl bg-amber-500/15 dark:bg-amber-500/10 hover:bg-amber-500/25 transition-colors">
-												<div className="flex items-center gap-2">
-													<div className="p-1 rounded-md bg-amber-500/10 shrink-0"><Calendar className="h-4 w-4 text-amber-600 dark:text-amber-400" /></div>
-													<p className="text-xs font-bold leading-tight text-foreground line-clamp-2">{(appointments[0] as any).service?.name || "RDV Consulaire"}</p>
-												</div>
-												<p className="text-[10px] text-muted-foreground font-medium text-center">{format(new Date((appointments[0] as any).date), "dd MMM HH:mm", { locale: fr })}</p>
-											</Link>
+											(() => {
+												const a = appointments[0] as any;
+												const isPast = a.date < new Date().toISOString().split("T")[0];
+												return (
+													<Link href="/my-space/iagenda" className={cn("flex flex-col gap-2 p-2.5 rounded-xl transition-colors", isPast ? "bg-muted hover:bg-muted/80" : "bg-amber-500/15 dark:bg-amber-500/10 hover:bg-amber-500/25")}>
+														<div className="flex items-center gap-2">
+															<div className={cn("p-1 rounded-md shrink-0", isPast ? "bg-foreground/[0.06] dark:bg-foreground/[0.12]" : "bg-amber-500/10")}>
+																<Calendar className={cn("h-4 w-4", isPast ? "text-muted-foreground" : "text-amber-600 dark:text-amber-400")} />
+															</div>
+															<p className={cn("text-xs font-bold leading-tight line-clamp-2", isPast ? "text-muted-foreground" : "text-foreground")}>{a.service?.name || "RDV Consulaire"}</p>
+														</div>
+														<p className="text-[10px] text-muted-foreground font-medium text-center">
+															{format(new Date(a.date + "T00:00:00"), "dd MMM yyyy", { locale: fr })} · {a.time || "—"}
+														</p>
+													</Link>
+												);
+											})()
 										) : (
 											<div className="flex flex-col gap-2 p-2.5 rounded-xl bg-amber-500/15 dark:bg-amber-500/10">
 												<div className="flex items-center gap-2">
@@ -907,7 +925,7 @@ export default function UserDashboard() {
 						exit={{ opacity: 0, x: 20 }}
 						transition={{ type: "spring", damping: 20, stiffness: 300 }}
 						onClick={scrollToActualites}
-						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-50 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[8px] font-bold uppercase tracking-wider px-1 py-4 shadow-xl rounded-l-lg"
+						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-50 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[10px] font-bold uppercase tracking-widest px-2 py-6 shadow-xl rounded-l-xl"
 					>
 						<span className="block" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Actualités</span>
 					</motion.button>
@@ -922,7 +940,7 @@ export default function UserDashboard() {
 						exit={{ opacity: 0, x: 20 }}
 						transition={{ type: "spring", damping: 20, stiffness: 300 }}
 						onClick={scrollToDashboard}
-						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-50 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[8px] font-bold uppercase tracking-wider px-1 py-4 shadow-xl rounded-l-lg"
+						className="fixed right-0 top-1/2 -translate-y-1/2 lg:hidden z-50 bg-foreground/[0.47] dark:bg-foreground/[0.25] text-background dark:text-white text-[10px] font-bold uppercase tracking-widest px-2 py-6 shadow-xl rounded-l-xl"
 					>
 						<span className="block" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Tableau de bord</span>
 					</motion.button>
@@ -952,7 +970,7 @@ export default function UserDashboard() {
 							<Button
 								variant="ghost"
 								size="icon"
-								className="absolute -top-2 -right-2 z-10 h-8 w-8 rounded-full bg-card border border-border shadow-lg hover:bg-muted"
+								className="absolute -top-2 -right-2 z-10 h-8 w-8 rounded-full bg-card border flat-card-border shadow-sm hover:bg-muted"
 								onClick={() => setShowConsularCard(false)}
 							>
 								<X className="h-4 w-4" />
@@ -978,10 +996,10 @@ export default function UserDashboard() {
 							animate={{ opacity: 1, scale: 1, y: 0 }}
 							exit={{ opacity: 0, scale: 0.92, y: 20 }}
 							transition={{ type: "spring", damping: 25, stiffness: 350 }}
-							className="relative w-full max-w-lg bg-card rounded-2xl border shadow-lg overflow-hidden flex flex-col max-h-[90dvh]"
+							className="relative w-full max-w-lg bg-card rounded-2xl border flat-card-border shadow-sm overflow-hidden flex flex-col max-h-[90dvh]"
 							onClick={(e) => e.stopPropagation()}
 						>
-							<div className="p-4 border-b flex items-center justify-between bg-muted">
+							<div className="p-4 border-b flat-card-border flex items-center justify-between bg-muted/50">
 								<div className="flex items-center gap-2">
 									<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12]">
 										<User className="w-4 h-4 text-muted-foreground" />

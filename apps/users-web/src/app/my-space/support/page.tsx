@@ -9,6 +9,7 @@ import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 
 import { PageHeader } from "@/components/my-space/page-header";
+import { CardGridSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -71,11 +72,7 @@ export default function SupportPage() {
 	};
 
 	if (isPending && tickets.length === 0) {
-		return (
-			<div className="flex justify-center p-8">
-				<Loader2 className="animate-spin h-8 w-8 text-primary" />
-			</div>
-		);
+		return <CardGridSkeleton cols={3} count={3} />;
 	}
 
 	return (
