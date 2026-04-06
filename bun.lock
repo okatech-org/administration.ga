@@ -76,6 +76,9 @@
         "vite-tsconfig-paths": "^5.1.4",
       },
     },
+    "apps/agent-macos": {
+      "name": "agent-macos",
+    },
     "apps/agent-web": {
       "name": "agent-web",
       "version": "0.0.1",
@@ -1343,6 +1346,8 @@
     "agent-base": ["agent-base@7.1.4", "", {}, "sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ=="],
 
     "agent-desktop": ["agent-desktop@workspace:apps/agent-desktop"],
+
+    "agent-macos": ["agent-macos@workspace:apps/agent-macos"],
 
     "agent-web": ["agent-web@workspace:apps/agent-web"],
 

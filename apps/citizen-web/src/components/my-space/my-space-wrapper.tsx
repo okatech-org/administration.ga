@@ -77,7 +77,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
 				<main
 					className={cn(
 						"flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar",
-						"px-3 min-[400px]:px-4 pt-3 pb-[4.5rem] md:px-4 md:pt-4 md:pb-4",
+						"px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4",
 						className,
 					)}
 				>
