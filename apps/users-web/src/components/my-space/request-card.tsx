@@ -5,7 +5,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import type { RequestStatus } from "@convex/lib/constants";
 import { RequestStatus as RequestStatusEnum } from "@convex/lib/constants";
 import Link from "next/link";
-import { useMutation } from "convex/react";
+import { useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -57,7 +57,7 @@ export function RequestCard({ request }: RequestCardProps) {
 	const { t, i18n } = useTranslation();
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [dialogOpen, setDialogOpen] = useState(false);
-	const deleteDraft = useMutation(api.functions.requests.deleteDraft);
+	const { mutateAsync: deleteDraft } = useConvexMutationQuery(api.functions.requests.deleteDraft);
 
 	const getStatusBadge = (status: string) => {
 		const typedStatus = status as RequestStatus;
@@ -152,7 +152,7 @@ export function RequestCard({ request }: RequestCardProps) {
 										<AlertDialogDescription>
 											{t(
 												"requests.deleteDraft.description",
-												"Etes-vous sur de vouloir supprimer cette demande ? Cette action est irreversible et toutes les donnees associees seront perdues.",
+												"Êtes-vous sûr de vouloir supprimer cette demande ? Cette action est irréversible et toutes les données associées seront perdues.",
 											)}
 										</AlertDialogDescription>
 									</AlertDialogHeader>

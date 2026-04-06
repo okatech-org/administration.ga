@@ -38,6 +38,7 @@ interface NavItem {
   title: string
   url: string
   icon: React.ElementType
+  color?: string
 }
 
 interface NavSection {
@@ -282,6 +283,7 @@ export function MySpaceSidebar({
                     <button
                       type="button"
                       title="Mes Enfants"
+                      aria-label="Mes Enfants"
                       className={cn(
                         "flex items-center justify-center w-11 h-11",
                         children.some((c: any) => isActive(`/my-space/children/${c._id}`))

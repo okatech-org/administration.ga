@@ -870,7 +870,7 @@ function SettingsTab({ company }: { company: any }) {
               <p className="text-xs text-muted-foreground">
                 {t(
                   "companies.delete.description",
-                  "Cette action est irreversible",
+                  "Cette action est irréversible",
                 )}
               </p>
             </div>
@@ -897,7 +897,7 @@ function SettingsTab({ company }: { company: any }) {
                 <p className="text-muted-foreground text-sm">
                   {t(
                     "companies.delete.confirmDescription",
-                    "Tous les membres seront retires et les donnees seront supprimees.",
+                    "Tous les membres seront retirés et les données seront supprimées.",
                   )}
                 </p>
                 <div className="flex justify-end gap-2 mt-4">

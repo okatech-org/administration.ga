@@ -34,7 +34,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useConvexMutationQuery } from "@/integrations/convex/hooks";
 
-// --- Types ---
+// ─── Types ──────────────────────────────────────────────────────────
 
 interface RichField {
 	fieldPath: string;
@@ -74,7 +74,7 @@ interface ActionRequiredCardProps {
 	onComplete?: () => void;
 }
 
-// --- Helpers ---
+// ─── Helpers ────────────────────────────────────────────────────────
 
 function getLabel(
 	label: { fr: string; en?: string } | string | undefined,
@@ -85,7 +85,7 @@ function getLabel(
 	return getLocalized(label, lang) || label.fr || "";
 }
 
-// --- Component ---
+// ─── Component ──────────────────────────────────────────────────────
 
 export function ActionRequiredCard({
 	requestId,
@@ -206,7 +206,7 @@ export function ActionRequiredCard({
 		[],
 	);
 
-	// --- Dynamic Field Renderer ---
+	// ─── Dynamic Field Renderer ─────────────────────────────────────
 
 	const renderDynamicField = (field: RichField) => {
 		const fieldLabel = getLabel(field.label, lang) || field.fieldPath;
@@ -255,7 +255,7 @@ export function ActionRequiredCard({
 						>
 							<SelectTrigger id={`field-${field.fieldPath}`}>
 								<SelectValue
-									placeholder={`Selectionnez ${fieldLabel.toLowerCase()}`}
+									placeholder={`Sélectionnez ${fieldLabel.toLowerCase()}`}
 								/>
 							</SelectTrigger>
 							<SelectContent>
@@ -371,7 +371,7 @@ export function ActionRequiredCard({
 		}
 	};
 
-	// --- Render form per type ---
+	// ─── Render form per type ───────────────────────────────────────
 
 	const renderForm = () => {
 		switch (actionRequired.type) {
@@ -426,7 +426,7 @@ export function ActionRequiredCard({
 							<p className="text-xs text-muted-foreground mt-2">
 								{t(
 									"requests.uploadHint",
-									"Utilisez la section 'Pieces jointes' ci-dessous pour telecharger vos documents, puis cliquez sur 'Envoyer ma reponse'.",
+									"Utilisez la section 'Pièces jointes' ci-dessous pour télécharger vos documents, puis cliquez sur 'Envoyer ma réponse'.",
 								)}
 							</p>
 						)}
@@ -489,7 +489,7 @@ export function ActionRequiredCard({
 							<p className="text-sm text-muted-foreground">
 								{t(
 									"requests.noFieldsToComplete",
-									"Aucun champ specifique a completer. Veuillez contacter le consulat pour plus d'informations.",
+									"Aucun champ spécifique à compléter. Veuillez contacter le consulat pour plus d'informations.",
 								)}
 							</p>
 						)}
@@ -518,7 +518,7 @@ export function ActionRequiredCard({
 						<p className="text-sm text-muted-foreground">
 							{t(
 								"requests.appointmentHint",
-								"Veuillez contacter le consulat pour prendre rendez-vous ou utiliser le systeme de reservation en ligne si disponible.",
+								"Veuillez contacter le consulat pour prendre rendez-vous ou utiliser le système de réservation en ligne si disponible.",
 							)}
 						</p>
 						<Button
@@ -543,7 +543,7 @@ export function ActionRequiredCard({
 						<p className="text-sm text-muted-foreground">
 							{t(
 								"requests.paymentHint",
-								"Cliquez sur le bouton ci-dessous pour proceder au paiement securise.",
+								"Cliquez sur le bouton ci-dessous pour procéder au paiement sécurisé.",
 							)}
 						</p>
 						<Button className="w-full" variant="default">
@@ -607,7 +607,7 @@ export function ActionRequiredCard({
 				<AlertDescription className="text-green-700 dark:text-green-300">
 					{t(
 						"requests.actionCompletedDesc",
-						"Votre reponse a bien ete prise en compte. Un agent la traitera dans les plus brefs delais.",
+						"Votre réponse a bien été prise en compte. Un agent la traitera dans les plus brefs délais.",
 					)}
 				</AlertDescription>
 			</Alert>

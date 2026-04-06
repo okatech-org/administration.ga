@@ -15,8 +15,8 @@ interface CountryCache {
  * Hook to get the user's country of residence.
  *
  * Priority:
- * 1. Authenticated user -> profile.countryOfResidence
- * 2. Unauthenticated user -> IP geolocation (cached 24h)
+ * 1. Authenticated user → profile.countryOfResidence
+ * 2. Unauthenticated user → IP geolocation (cached 24h)
  *
  * @returns { country: CountryCode | null, isLoading: boolean }
  */

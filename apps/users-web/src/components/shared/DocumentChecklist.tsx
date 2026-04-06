@@ -53,6 +53,11 @@ export function DocumentChecklist({
 	// State for document preview modal
 	const [previewDoc, setPreviewDoc] = useState<SubmittedDocument | null>(null);
 
+	// Helper to get localized label
+	const getLabel = (label: { fr: string; en?: string }) => {
+		return label[lang] || label.fr;
+	};
+
 	// Map submitted documents by type
 	const docsByType = submittedDocuments.reduce(
 		(acc, doc) => {
@@ -143,7 +148,7 @@ export function DocumentChecklist({
 							{t("documents.checklist.required")}
 							{pendingDocs > 0 && (
 								<span className="ml-1 text-amber-600">
-									- {pendingDocs} {t("documents.checklist.pending")}
+									&bull; {pendingDocs} {t("documents.checklist.pending")}
 								</span>
 							)}
 						</CardDescription>

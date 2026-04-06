@@ -143,7 +143,7 @@ function SignInPageContent() {
 				if (signInResult.error) {
 					setError("Erreur lors de la creation de la session");
 				} else {
-					captureEvent("user_logged_in", { method: "pin" });
+					captureEvent("user_logged_in", { method: "pin" as any });
 					await new Promise((r) => setTimeout(r, 500));
 					router.push(redirectTo);
 				}

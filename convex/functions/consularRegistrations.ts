@@ -212,12 +212,83 @@ export const getReadyForCard = authQuery({
 });
 
 /**
+ * Shared enrichment for print-related queries.
+ * Resolves profile (adult or child), user, photo URL, and org data.
+ */
+async function enrichRegistrationForPrint(
+  ctx: any,
+  reg: any,
+  org: { name: string; country?: string; address?: { city?: string } } | null,
+) {
+  const request = await ctx.db.get(reg.requestId);
+
+  // Adult profile first, then child profile
+  const adultProfile = reg.profileId ? await ctx.db.get(reg.profileId) : null;
+  const childProfile = !adultProfile && reg.childProfileId ? await ctx.db.get(reg.childProfileId) : null;
+
+  const profile = adultProfile
+    ? {
+        _id: adultProfile._id,
+        identity: adultProfile.identity,
+        passportInfo: adultProfile.passportInfo,
+      }
+    : childProfile
+      ? {
+          _id: childProfile._id,
+          identity: childProfile.identity,
+          passportInfo: childProfile.passportInfo,
+        }
+      : null;
+
+  // Resolve user
+  const userId = adultProfile?.userId ?? childProfile?.authorUserId;
+  const user = userId ? await ctx.db.get(userId) : null;
+
+  // Resolve identity photo from request documents
+  let photoUrl: string | null = null;
+  const requestDocs = (request as any)?.documents;
+  if (requestDocs && Array.isArray(requestDocs)) {
+    for (const docId of requestDocs) {
+      const doc = await ctx.db.get(docId as Id<"documents">);
+      if (
+        doc &&
+        doc.documentType === "identity_photo" &&
+        (doc as any).files?.length > 0 &&
+        (doc as any).files[0].mimeType?.startsWith("image/")
+      ) {
+        photoUrl = await ctx.storage.getUrl((doc as any).files[0].storageId);
+        break;
+      }
+    }
+  }
+
+  return {
+    ...reg,
+    profile,
+    user: user
+      ? {
+          _id: user._id,
+          email: user.email,
+          avatarUrl: user.avatarUrl,
+          photoUrl,
+        }
+      : null,
+    org: org
+      ? {
+          name: org.name,
+          city: org.address?.city ?? "",
+          country: org.country ?? "",
+        }
+      : null,
+  };
+}
+
+/**
  * Get registrations ready for printing (has card, not printed)
  */
 export const getReadyForPrint = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
-    // Permission check: must be org member with consular_cards.manage
     const membership = await ctx.db
       .query("memberships")
       .withIndex("by_user_org_deletedAt", (q) =>
@@ -225,6 +296,9 @@ export const getReadyForPrint = authQuery({
       )
       .unique();
     await assertCanDoTask(ctx, ctx.user, membership, TaskCode.consular_cards.manage);
+
+    const org = await ctx.db.get(args.orgId);
+
     const registrations = await ctx.db
       .query("consularRegistrations")
       .withIndex("by_org_status", (q) =>
@@ -232,35 +306,46 @@ export const getReadyForPrint = authQuery({
       )
       .collect();
 
-    // Filter to those with card but not printed
     const readyForPrint = registrations.filter(
       (r) => r.cardNumber && !r.printedAt,
     );
 
-    // Enrich with profile data
     return await Promise.all(
-      readyForPrint.map(async (reg) => {
-        const profile = reg.profileId ? await ctx.db.get(reg.profileId) : null;
-        let user = null;
-        if (profile?.userId) {
-          const u = await ctx.db.get(profile.userId);
-          if (u) {
-            user = { _id: u._id, email: u.email, avatarUrl: u.avatarUrl };
-          }
-        }
-        return {
-          ...reg,
-          profile:
-            profile ?
-              {
-                _id: profile._id,
-                identity: profile.identity,
-                passportInfo: profile.passportInfo,
-              }
-            : null,
-          user,
-        };
-      }),
+      readyForPrint.map((reg) => enrichRegistrationForPrint(ctx, reg, org)),
+    );
+  },
+});
+
+/**
+ * Get recently printed registrations (has printedAt, last 50)
+ */
+export const getRecentlyPrinted = authQuery({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    const membership = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_org_deletedAt", (q) =>
+        q.eq("userId", ctx.user._id).eq("orgId", args.orgId).eq("deletedAt", undefined),
+      )
+      .unique();
+    await assertCanDoTask(ctx, ctx.user, membership, TaskCode.consular_cards.manage);
+
+    const org = await ctx.db.get(args.orgId);
+
+    const registrations = await ctx.db
+      .query("consularRegistrations")
+      .withIndex("by_org_status", (q) =>
+        q.eq("orgId", args.orgId).eq("status", RegistrationStatus.Active),
+      )
+      .collect();
+
+    const printed = registrations
+      .filter((r) => r.cardNumber && r.printedAt)
+      .sort((a, b) => (b.printedAt ?? 0) - (a.printedAt ?? 0))
+      .slice(0, 50);
+
+    return await Promise.all(
+      printed.map((reg) => enrichRegistrationForPrint(ctx, reg, org)),
     );
   },
 });

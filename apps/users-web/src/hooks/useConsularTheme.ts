@@ -4,48 +4,48 @@ import {
   useContext,
   useEffect,
   useState,
-} from "react"
+} from "react";
 
-export type ConsularTheme = "default" | "homeomorphism"
+export type ConsularTheme = "default" | "homeomorphism";
 
-const STORAGE_KEY = "consulat-myspace-theme"
+const STORAGE_KEY = "consulat-myspace-theme";
 
 interface ConsularThemeContextValue {
-  consularTheme: ConsularTheme
-  setConsularTheme: (theme: ConsularTheme) => void
+  consularTheme: ConsularTheme;
+  setConsularTheme: (theme: ConsularTheme) => void;
 }
 
 export const ConsularThemeContext = createContext<ConsularThemeContextValue>({
   consularTheme: "default",
   setConsularTheme: () => {},
-})
+});
 
 export function useConsularThemeState(): ConsularThemeContextValue {
   const [consularTheme, setThemeState] = useState<ConsularTheme>(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored === "homeomorphism") return "homeomorphism"
-      return "default"
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === "homeomorphism") return "homeomorphism";
+      return "default";
     } catch {
-      return "default"
+      return "default";
     }
-  })
+  });
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, consularTheme)
+      localStorage.setItem(STORAGE_KEY, consularTheme);
     } catch {
       // Ignore localStorage errors
     }
-  }, [consularTheme])
+  }, [consularTheme]);
 
   const setConsularTheme = useCallback((theme: ConsularTheme) => {
-    setThemeState(theme)
-  }, [])
+    setThemeState(theme);
+  }, []);
 
-  return { consularTheme, setConsularTheme }
+  return { consularTheme, setConsularTheme };
 }
 
 export function useConsularTheme(): ConsularThemeContextValue {
-  return useContext(ConsularThemeContext)
+  return useContext(ConsularThemeContext);
 }

@@ -121,7 +121,7 @@ export function AssociationDetailContent({ slug }: { slug: string }) {
     ),
     [AssociationType.Solidarity]: t(
       "associations.type.solidarity",
-      "Solidarite",
+      "Solidarité",
     ),
     [AssociationType.Education]: t("associations.type.education"),
     [AssociationType.Youth]: t("associations.type.youth"),
@@ -185,13 +185,13 @@ export function AssociationDetailContent({ slug }: { slug: string }) {
               <h3 className="font-medium">
                 {t(
                   "associations.detail.notMember",
-                  "Vous n'etes pas encore membre",
+                  "Vous n'êtes pas encore membre",
                 )}
               </h3>
               <p className="text-sm text-muted-foreground">
                 {t(
                   "associations.detail.notMemberDesc",
-                  "Rejoignez cette association pour acceder a toutes ses fonctionnalites.",
+                  "Rejoignez cette association pour accéder à toutes ses fonctionnalités.",
                 )}
               </p>
             </div>
@@ -356,19 +356,19 @@ function MembersTab({
         label: {
           [AssociationRole.President]: t(
             "associations.role.president",
-            "President",
+            "Président",
           ),
           [AssociationRole.VicePresident]: t(
             "associations.role.vicePresident",
-            "Vice-President",
+            "Vice-Président",
           ),
           [AssociationRole.Secretary]: t(
             "associations.role.secretary",
-            "Secretaire",
+            "Secrétaire",
           ),
           [AssociationRole.Treasurer]: t(
             "associations.role.treasurer",
-            "Tresorier",
+            "Trésorier",
           ),
           [AssociationRole.Member]: t("associations.role.member"),
         }[r],
@@ -809,7 +809,7 @@ function SettingsTab({ association }: { association: any }) {
               <p className="text-xs text-muted-foreground">
                 {t(
                   "associations.delete.description",
-                  "Cette action est irreversible",
+                  "Cette action est irréversible",
                 )}
               </p>
             </div>
@@ -836,7 +836,7 @@ function SettingsTab({ association }: { association: any }) {
                 <p className="text-muted-foreground text-sm">
                   {t(
                     "associations.delete.confirmDescription",
-                    "Tous les membres seront retires et les donnees seront supprimees.",
+                    "Tous les membres seront retirés et les données seront supprimées.",
                   )}
                 </p>
                 <div className="flex justify-end gap-2 mt-4">
@@ -866,9 +866,9 @@ function SettingsTab({ association }: { association: any }) {
   );
 }
 
-// ===================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // CLAIM OWNERSHIP BUTTON
-// ===================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 function ClaimOwnershipButton({
   associationId,
@@ -894,7 +894,7 @@ function ClaimOwnershipButton({
           toast.success(
             t(
               "associations.claim.success",
-              "Votre demande de propriete a ete soumise",
+              "Votre demande de propriété a été soumise",
             ),
           );
           setOpen(false);
@@ -927,7 +927,7 @@ function ClaimOwnershipButton({
         <p className="text-sm text-muted-foreground">
           {t(
             "associations.claim.description",
-            "Expliquez pourquoi vous etes le responsable legitime de cette association. Un administrateur examinera votre demande.",
+            "Expliquez pourquoi vous êtes le responsable légitime de cette association. Un administrateur examinera votre demande.",
           )}
         </p>
         <div className="space-y-3 mt-2">
@@ -940,7 +940,7 @@ function ClaimOwnershipButton({
               onChange={(e) => setMessage(e.target.value)}
               placeholder={t(
                 "associations.claim.messagePlaceholder",
-                "Je suis le president de cette association depuis...",
+                "Je suis le président de cette association depuis...",
               )}
               rows={3}
             />
@@ -960,9 +960,9 @@ function ClaimOwnershipButton({
   );
 }
 
-// ===================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // JOIN REQUEST BUTTON (for non-members on the detail page)
-// ===================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 function JoinRequestButton({
   associationId,
@@ -1000,9 +1000,9 @@ function JoinRequestButton({
   );
 }
 
-// ===================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // JOIN REQUESTS TAB
-// ===================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 function JoinRequestsTab({
   associationId,
@@ -1081,7 +1081,7 @@ function JoinRequestsTab({
           const displayName =
             request.profile?.firstName && request.profile?.lastName ?
               `${request.profile.firstName} ${request.profile.lastName}`
-            : (request.user?.name ?? request.user?.email ?? "--");
+            : (request.user?.name ?? request.user?.email ?? "\u2014");
 
           return (
             <div

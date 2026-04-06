@@ -195,7 +195,7 @@ export function AppointmentSlotPicker({
 										{format(new Date(selectedSlot.date), "EEEE d MMMM yyyy", {
 											locale: fr,
 										})}{" "}
-										a {selectedSlot.startTime}
+										à {selectedSlot.startTime}
 									</p>
 								</div>
 							</div>
@@ -219,13 +219,13 @@ export function AppointmentSlotPicker({
 						{/* Calendar Navigation */}
 						<div className="flex items-center justify-between">
 							<Button variant="outline" size="sm" onClick={handlePrevMonth}>
-								&larr;
+								←
 							</Button>
 							<span className="font-medium capitalize">
 								{formatMonthYear()}
 							</span>
 							<Button variant="outline" size="sm" onClick={handleNextMonth}>
-								&rarr;
+								→
 							</Button>
 						</div>
 
@@ -300,7 +300,7 @@ export function AppointmentSlotPicker({
 														{slot.startTime}
 													</div>
 													<div className="text-xs text-muted-foreground">
-														&rarr; {slot.endTime}
+														→ {slot.endTime}
 													</div>
 													<Badge
 														variant="outline"

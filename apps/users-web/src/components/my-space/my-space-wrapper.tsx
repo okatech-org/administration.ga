@@ -76,7 +76,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
         <main
           className={cn(
             "flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar",
-            "px-3 min-[400px]:px-4 pt-4 pb-24 md:px-4 md:pt-4 md:pb-4",
+            "px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4",
             className
           )}
         >
@@ -129,7 +129,7 @@ export function MySpaceHeader() {
             {needsRegistration && (
               <Button
                 variant="outline"
-                size="sm"
+                size="xs"
                 className="w-max rounded-full text-primary dark:text-primary hover:bg-blue-500/10 gap-1.5"
                 onClick={() => setShowRegistrationDialog(true)}
               >
@@ -156,7 +156,7 @@ export function MySpaceHeader() {
           {needsRegistration && (
             <Button
               variant="outline"
-              size="sm"
+              size="xs"
               className="rounded-full text-primary dark:text-primary hover:bg-blue-500/10 gap-1.5 min-w-0 flex-1 overflow-hidden"
               onClick={() => setShowRegistrationDialog(true)}
             >

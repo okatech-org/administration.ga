@@ -179,17 +179,17 @@ export function RegistrationForm({
 					{currentStepName === "profile" &&
 						t(
 							"registration.step.profileDesc",
-							"Verifiez que vos informations sont a jour",
+							"Vérifiez que vos informations sont à jour",
 						)}
 					{currentStepName === "documents" &&
 						t(
 							"registration.step.documentsDesc",
-							"Telechargez les documents requis pour votre inscription",
+							"Téléchargez les documents requis pour votre inscription",
 						)}
 					{currentStepName === "confirmation" &&
 						t(
 							"registration.step.confirmationDesc",
-							"Verifiez vos informations avant de soumettre",
+							"Vérifiez vos informations avant de soumettre",
 						)}
 				</CardDescription>
 			</CardHeader>

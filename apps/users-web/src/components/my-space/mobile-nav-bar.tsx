@@ -4,6 +4,7 @@ import { api } from "@convex/_generated/api"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
+  Baby,
   Bot,
   Briefcase,
   Calendar,
@@ -49,8 +50,10 @@ export function MobileNavBar() {
     api.functions.childProfiles.getMine,
     {}
   )
+  const { data: chatThreads } = useAuthenticatedConvexQuery(api.functions.chats.listMyChats, {})
 
   const children = childProfiles ?? []
+  const totalUnread = (chatThreads as any[])?.reduce((acc: number, t: any) => acc + (t.unreadCount ?? 0), 0) ?? 0
   const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en"
   const userName = session?.user?.name ?? ""
   const userEmail = session?.user?.email ?? ""
@@ -103,8 +106,13 @@ export function MobileNavBar() {
                 setSheetOpen(false)
                 window.dispatchEvent(new CustomEvent("iasted:open"))
               }}
-              className="flex flex-col items-center -mt-4"
+              className="flex flex-col items-center -mt-4 relative"
             >
+              {totalUnread > 0 && (
+                <span className="absolute -top-1 -right-1 z-10 h-5 min-w-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {totalUnread > 9 ? "9+" : totalUnread}
+                </span>
+              )}
               <div
                 className={cn(
                   "h-12 w-12 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95",

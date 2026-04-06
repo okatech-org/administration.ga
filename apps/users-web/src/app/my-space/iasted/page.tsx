@@ -214,24 +214,24 @@ export default function IAstedCitizenPage() {
 			{/* Header */}
 			<div className="flex items-center justify-between shrink-0">
 				<div className="flex items-center gap-3">
-					<div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-						<ShieldCheck className="h-5 w-5 text-emerald-500" />
+					<div className="p-2 rounded-lg bg-foreground/[0.08] dark:bg-foreground/[0.05]">
+						<ShieldCheck className="h-5 w-5" />
 					</div>
 					<div>
-						<h1 className="text-xl font-bold">iAsted</h1>
-						<p className="text-sm text-muted-foreground">
+						<h1 className="text-lg font-bold tracking-tight">iAsted</h1>
+						<p className="text-xs text-muted-foreground">
 							Espace de communication consulaire
 						</p>
 					</div>
 				</div>
 				<Button
-					variant="outline"
+					variant="ghost"
 					size="sm"
 					onClick={() => {
 						router.push("/my-space");
 						setTimeout(() => window.dispatchEvent(new CustomEvent("iasted:open")), 100);
 					}}
-					className="gap-1.5"
+					className="h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-1.5"
 				>
 					<Minimize2 className="h-3.5 w-3.5" />
 					Réduire
@@ -239,11 +239,11 @@ export default function IAstedCitizenPage() {
 			</div>
 
 			{/* Card principale — 3 colonnes */}
-			<div className="flex flex-1 min-h-0 overflow-hidden rounded-2xl border shadow-sm bg-card">
+			<div className="flex flex-1 min-h-0 overflow-hidden rounded-xl bg-card border flat-card-border">
 				{/* ── Col 1 : Icônes navigation ── */}
-				<div className="w-14 border-r flex flex-col items-center py-3 gap-1 shrink-0">
-					<div className="h-9 w-9 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
-						<ShieldCheck className="h-4 w-4 text-emerald-500" />
+				<div className="w-14 border-r border-foreground/5 flex flex-col items-center py-3 gap-1 shrink-0">
+					<div className="p-1.5 rounded-lg bg-foreground/[0.08] dark:bg-foreground/[0.05] flex items-center justify-center mb-4">
+						<ShieldCheck className="h-4 w-4" />
 					</div>
 
 					{NAV_ITEMS.map((item) => {
@@ -256,10 +256,10 @@ export default function IAstedCitizenPage() {
 								onClick={() => setActiveTab(item.id)}
 								title={item.label}
 								className={cn(
-									"h-10 w-10 rounded-xl flex items-center justify-center transition-all",
+									"h-10 w-10 rounded-lg flex items-center justify-center transition-all",
 									isActive
-										? "bg-primary/10 text-primary"
-										: "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+										? "bg-foreground/[0.08] dark:bg-foreground/[0.05] text-foreground font-medium"
+										: "text-muted-foreground hover:bg-muted hover:text-foreground",
 								)}
 							>
 								<Icon className="h-5 w-5" />
@@ -273,7 +273,7 @@ export default function IAstedCitizenPage() {
 						type="button"
 						onClick={() => router.push("/my-space")}
 						title="Réduire"
-						className="h-10 w-10 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all"
+						className="h-10 w-10 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
 					>
 						<Minimize2 className="h-5 w-5" />
 					</button>
@@ -282,19 +282,24 @@ export default function IAstedCitizenPage() {
 				{activeTab === "ichat" ? (
 					<>
 						{/* ── Col 2 : Liste conversations ── */}
-						<div className="w-80 border-r flex flex-col shrink-0">
-							<div className="px-4 py-3 border-b shrink-0">
-								<h2 className="text-base font-semibold">Discussions</h2>
+						<div className="w-80 border-r border-foreground/5 flex flex-col shrink-0">
+							<div className="px-4 py-3 border-b border-foreground/5 shrink-0">
+								<span className="text-sm font-semibold flex items-center gap-2.5 text-muted-foreground">
+									<div className="p-1 rounded-md bg-foreground/[0.08] dark:bg-foreground/[0.05]">
+										<MessageSquare className="h-3.5 w-3.5" />
+									</div>
+									Discussions
+								</span>
 							</div>
 
-							<div className="p-2 border-b">
+							<div className="p-2 border-b border-foreground/5">
 								<div className="relative">
 									<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
 									<Input
 										value={search}
 										onChange={(e) => setSearch(e.target.value)}
 										placeholder="Rechercher"
-										className="h-8 pl-8 text-xs bg-muted/30 border-0"
+										className="h-8 pl-8 text-xs bg-muted/50 border-0 rounded-lg"
 									/>
 								</div>
 							</div>
@@ -305,25 +310,25 @@ export default function IAstedCitizenPage() {
 									type="button"
 									onClick={() => setSelectedContact(MR_RAY_CONTACT)}
 									className={cn(
-										"w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/20",
+										"w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-foreground/5",
 										selectedContact?.id === "__mr_ray__"
 											? "bg-primary/5"
-											: "hover:bg-muted/30",
+											: "hover:bg-muted",
 									)}
 								>
 									<div className="relative">
 										<Avatar className="h-11 w-11">
-											<AvatarFallback className="bg-teal-500/15 text-teal-600 dark:text-teal-400">
+											<AvatarFallback className="bg-primary/10 text-primary">
 												<Headset className="h-5 w-5" />
 											</AvatarFallback>
 										</Avatar>
-										<Pin className="absolute -top-0.5 -right-0.5 h-3 w-3 text-teal-500 rotate-45" />
+										<Pin className="absolute -top-0.5 -right-0.5 h-3 w-3 text-primary rotate-45" />
 									</div>
 									<div className="flex-1 min-w-0">
 										<div className="flex items-center justify-between">
 											<div className="flex items-center gap-1.5">
 												<p className="text-sm font-semibold">Mr Ray</p>
-												<Badge className="text-[7px] h-3.5 px-1 bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/20">
+												<Badge className="text-[7px] h-3.5 px-1 badge-info">
 													Standard
 												</Badge>
 											</div>
@@ -345,7 +350,7 @@ export default function IAstedCitizenPage() {
 										</p>
 									</div>
 									{(mrRayThread?.unreadCount ?? 0) > 0 && (
-										<Badge className="text-[8px] h-4 min-w-[16px] px-1 bg-teal-600 text-white">
+										<Badge className="text-[8px] h-4 min-w-[16px] px-1 bg-primary text-primary-foreground">
 											{mrRayThread.unreadCount}
 										</Badge>
 									)}
@@ -363,10 +368,10 @@ export default function IAstedCitizenPage() {
 											type="button"
 											onClick={() => setSelectedContact(thread)}
 											className={cn(
-												"w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/10",
+												"w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-foreground/5",
 												selectedContact?._id === thread._id
 													? "bg-primary/5"
-													: "hover:bg-muted/30",
+													: "hover:bg-muted",
 											)}
 										>
 											<Avatar className="h-11 w-11">
@@ -407,7 +412,7 @@ export default function IAstedCitizenPage() {
 												</p>
 											</div>
 											{thread.unreadCount > 0 && (
-												<Badge className="text-[8px] h-4 min-w-[16px] px-1 bg-emerald-600 text-white">
+												<Badge className="text-[8px] h-4 min-w-[16px] px-1 bg-primary text-primary-foreground">
 													{thread.unreadCount}
 												</Badge>
 											)}
@@ -432,10 +437,10 @@ export default function IAstedCitizenPage() {
 							{selectedContact ? (
 								<>
 									{/* Header contact */}
-									<div className="px-4 py-3 border-b flex items-center gap-3 shrink-0">
+									<div className="px-4 py-3 border-b border-foreground/5 flex items-center gap-3 shrink-0">
 										<Avatar className="h-9 w-9">
 											{selectedContact.isStandard ? (
-												<AvatarFallback className="bg-teal-500/15 text-teal-600 dark:text-teal-400">
+												<AvatarFallback className="bg-foreground/[0.08] dark:bg-foreground/[0.05] text-muted-foreground">
 													<Headset className="h-4 w-4" />
 												</AvatarFallback>
 											) : (
@@ -489,13 +494,13 @@ export default function IAstedCitizenPage() {
 											/* ── Chat Mr Ray (temps réel via P2P) ── */
 											!threadMessages || (threadMessages as any[]).length === 0 ? (
 												<div className="flex flex-col items-center justify-center h-full text-center py-12">
-													<div className="h-16 w-16 rounded-full bg-teal-500/10 flex items-center justify-center mb-4">
-														<Headset className="h-8 w-8 text-teal-600 dark:text-teal-400" />
+													<div className="rounded-full bg-muted p-4 mb-4">
+														<Headset className="h-8 w-8 text-muted-foreground" />
 													</div>
-													<h3 className="text-base font-semibold mb-1">
+													<h3 className="text-sm font-semibold text-foreground mb-1">
 														Bonjour, je suis Mr Ray
 													</h3>
-													<p className="text-sm text-muted-foreground max-w-md mb-6">
+													<p className="text-sm text-muted-foreground max-w-sm mb-6">
 														Votre assistant au Standard consulaire. Posez-moi
 														vos questions sur les démarches, passeports, visas...
 													</p>
@@ -512,7 +517,7 @@ export default function IAstedCitizenPage() {
 																onClick={() =>
 																	setMessageInput(s)
 																}
-																className="text-xs px-3 py-1.5 rounded-full border border-teal-500/20 text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 transition-colors"
+																className="text-xs px-4 py-2 rounded-full border border-foreground/10 text-foreground hover:bg-muted active:scale-[0.97] transition-all"
 															>
 																{s}
 															</button>
@@ -535,7 +540,7 @@ export default function IAstedCitizenPage() {
 															>
 																{isMrRay && (
 																	<Avatar className="h-7 w-7 shrink-0 mt-1">
-																		<AvatarFallback className="bg-teal-500/10 text-teal-600 dark:text-teal-400 text-[9px]">
+																		<AvatarFallback className="bg-foreground/[0.06] text-muted-foreground text-[9px]">
 																			<Bot className="h-3.5 w-3.5" />
 																		</AvatarFallback>
 																	</Avatar>
@@ -544,7 +549,7 @@ export default function IAstedCitizenPage() {
 																	className={cn(
 																		"max-w-[70%] rounded-xl px-3 py-2 text-sm",
 																		!isMrRay
-																			? "bg-teal-600 text-white"
+																			? "bg-primary text-primary-foreground"
 																			: "bg-card border",
 																	)}
 																>
@@ -559,7 +564,7 @@ export default function IAstedCitizenPage() {
 																		className={cn(
 																			"text-[9px] mt-1",
 																			!isMrRay
-																				? "text-white/60 text-right"
+																				? "text-primary-foreground/60 text-right"
 																				: "text-muted-foreground",
 																		)}
 																	>
@@ -633,7 +638,7 @@ export default function IAstedCitizenPage() {
 																	className={cn(
 																		"max-w-[70%] rounded-xl px-3 py-2 text-sm",
 																		isMe
-																			? "bg-emerald-600 text-white"
+																			? "bg-primary text-primary-foreground"
 																			: "bg-card border",
 																	)}
 																>
@@ -642,7 +647,7 @@ export default function IAstedCitizenPage() {
 																		className={cn(
 																			"text-[9px] mt-1",
 																			isMe
-																				? "text-white/60 text-right"
+																				? "text-primary-foreground/60 text-right"
 																				: "text-muted-foreground",
 																		)}
 																	>
@@ -667,7 +672,7 @@ export default function IAstedCitizenPage() {
 									</ScrollArea>
 
 									{/* Input */}
-									<div className="border-t px-4 py-3 flex items-end gap-3 shrink-0">
+									<div className="border-t border-foreground/5 px-4 py-3 flex items-end gap-3 shrink-0">
 										<Textarea
 											value={messageInput}
 											onChange={(e) =>
@@ -679,7 +684,7 @@ export default function IAstedCitizenPage() {
 													? "Écrivez au Standard..."
 													: "Écrire un message..."
 											}
-											className="min-h-[40px] max-h-[120px] resize-none text-sm flex-1"
+											className="min-h-[40px] max-h-[120px] resize-none text-sm flex-1 rounded-xl"
 											rows={1}
 										/>
 										<Button
@@ -690,11 +695,7 @@ export default function IAstedCitizenPage() {
 													: handleSendHuman
 											}
 											disabled={!messageInput.trim()}
-											className={cn(
-												"h-10 w-10 rounded-full shrink-0",
-												selectedContact.isStandard &&
-													"bg-teal-600 hover:bg-teal-700",
-											)}
+											className="h-10 w-10 rounded-xl shrink-0"
 										>
 											<Send className="h-4 w-4" />
 										</Button>
@@ -703,11 +704,13 @@ export default function IAstedCitizenPage() {
 							) : (
 								<div className="flex-1 flex items-center justify-center text-center">
 									<div>
-										<ShieldCheck className="h-16 w-16 text-emerald-500/20 mx-auto mb-4" />
-										<h2 className="text-lg font-semibold text-muted-foreground">
+										<div className="rounded-full bg-muted p-4 mx-auto mb-4">
+											<ShieldCheck className="h-8 w-8 text-muted-foreground" />
+										</div>
+										<h2 className="text-sm font-semibold text-foreground">
 											iAsted
 										</h2>
-										<p className="text-sm text-muted-foreground/60">
+										<p className="text-sm text-muted-foreground">
 											Sélectionnez une conversation
 										</p>
 									</div>
@@ -718,10 +721,13 @@ export default function IAstedCitizenPage() {
 				) : (
 					/* ── Onglets non-chat (iAppel, iContact) — 2 colonnes ── */
 					<div className="flex-1 flex flex-col overflow-hidden">
-						<div className="px-4 py-3 border-b shrink-0">
-							<h2 className="text-base font-semibold">
+						<div className="px-4 py-3 border-b border-foreground/5 shrink-0">
+							<span className="text-sm font-semibold flex items-center gap-2.5 text-muted-foreground">
+								<div className="p-1 rounded-md bg-foreground/[0.08] dark:bg-foreground/[0.05]">
+									{activeTab === "icall" ? <Phone className="h-3.5 w-3.5" /> : <Contact className="h-3.5 w-3.5" />}
+								</div>
 								{activeTab === "icall" ? "iAppel" : "iContact"}
-							</h2>
+							</span>
 						</div>
 						<div className="flex-1 overflow-hidden p-4">
 							{activeTab === "icall" && <IAppelContent />}
@@ -854,10 +860,10 @@ function IAppelContent() {
 		<div className="h-full flex flex-col gap-4 overflow-hidden">
 			{/* Appels entrants */}
 			{incomingCalls.length > 0 && (
-				<div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2 shrink-0">
+				<div className="rounded-xl border border-success/30 bg-success/10 p-3 space-y-2 shrink-0">
 					<div className="flex items-center gap-2">
-						<PhoneIncoming className="h-4 w-4 text-emerald-500 animate-pulse" />
-						<span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+						<PhoneIncoming className="h-4 w-4 text-success animate-pulse" />
+						<span className="text-sm font-semibold text-success">
 							Appel entrant
 						</span>
 					</div>
@@ -872,9 +878,9 @@ function IAppelContent() {
 								className="flex items-center justify-between bg-background rounded-xl p-3 border"
 							>
 								<div className="flex items-center gap-3">
-									<div className="relative h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
-										<PhoneCall className="h-5 w-5 text-emerald-500" />
-										<span className="absolute inset-0 rounded-full border border-emerald-500 animate-ping opacity-40" />
+									<div className="relative h-10 w-10 rounded-full bg-success/10 flex items-center justify-center">
+										<PhoneCall className="h-5 w-5 text-success" />
+										<span className="absolute inset-0 rounded-full border border-success animate-ping opacity-40" />
 									</div>
 									<div>
 										<p className="text-sm font-medium">
@@ -883,7 +889,7 @@ function IAppelContent() {
 										<p className="text-xs text-muted-foreground">
 											{call.title ?? "Appel"}{" "}
 											{isVideo && (
-												<Badge className="text-[9px] h-3.5 bg-blue-500/10 text-blue-500 ml-1">
+												<Badge className="text-[9px] h-3.5 badge-info ml-1">
 													Vidéo
 												</Badge>
 											)}
@@ -902,7 +908,7 @@ function IAppelContent() {
 									</Button>
 									<Button
 										size="sm"
-										className="h-8 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+										className="h-8 gap-1 bg-success hover:bg-success/90 text-white"
 										onClick={() => handleAnswer(call._id)}
 									>
 										<Phone className="h-3.5 w-3.5" />
@@ -916,11 +922,13 @@ function IAppelContent() {
 			)}
 
 			{/* Sélecteur org */}
-			<div className="rounded-xl border p-4 space-y-3 shrink-0">
-				<h3 className="text-sm font-semibold flex items-center gap-1.5">
-					<Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+			<div className="rounded-xl bg-card border flat-card-border p-4 space-y-3 shrink-0">
+				<span className="text-sm font-semibold flex items-center gap-2.5 text-muted-foreground">
+					<div className="p-1 rounded-md bg-foreground/[0.08] dark:bg-foreground/[0.05]">
+						<Building2 className="h-3.5 w-3.5" />
+					</div>
 					Appeler une représentation
-				</h3>
+				</span>
 				<div className="relative">
 					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
 					<Input
@@ -958,7 +966,7 @@ function IAppelContent() {
 											: "hover:bg-muted/50",
 									)}
 								>
-									<div className="h-7 w-7 rounded-full bg-muted/50 flex items-center justify-center shrink-0">
+									<div className="p-1 rounded-md bg-foreground/[0.08] dark:bg-foreground/[0.05] flex items-center justify-center shrink-0">
 										<Building2 className="h-3.5 w-3.5 text-muted-foreground" />
 									</div>
 									<div className="flex-1 min-w-0">
@@ -1050,18 +1058,18 @@ function IAppelContent() {
 										className={cn(
 											"h-8 w-8 rounded-full flex items-center justify-center shrink-0",
 											isMissed
-												? "bg-red-500/10"
+												? "bg-destructive/10"
 												: isOutgoing
-													? "bg-emerald-500/10"
-													: "bg-blue-500/10",
+													? "bg-success/10"
+													: "bg-primary/10",
 										)}
 									>
 										{isMissed ? (
-											<PhoneMissed className="h-3.5 w-3.5 text-red-500" />
+											<PhoneMissed className="h-3.5 w-3.5 text-destructive" />
 										) : isOutgoing ? (
-											<PhoneCall className="h-3.5 w-3.5 text-emerald-500" />
+											<PhoneCall className="h-3.5 w-3.5 text-success" />
 										) : (
-											<PhoneIncoming className="h-3.5 w-3.5 text-blue-500" />
+											<PhoneIncoming className="h-3.5 w-3.5 text-primary" />
 										)}
 									</div>
 									<div className="flex-1 min-w-0">
@@ -1084,7 +1092,7 @@ function IAppelContent() {
 										</p>
 									</div>
 									{isMissed && (
-										<Badge className="text-[9px] h-4 bg-red-500/10 text-red-500 border-red-500/20">
+										<Badge className="text-[9px] h-4 badge-destructive">
 											Manqué
 										</Badge>
 									)}
@@ -1105,7 +1113,7 @@ function IAppelContent() {
 				<DialogContent
 					onInteractOutside={(e) => e.preventDefault()}
 					onEscapeKeyDown={(e) => e.preventDefault()}
-					className="max-w-4xl w-full h-[85vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
+					className="max-w-4xl w-full h-[85vh] p-0 flex flex-col overflow-hidden bg-card border flat-card-border"
 				>
 					{token && wsUrl ? (
 						<LiveKitRoom
@@ -1133,14 +1141,14 @@ function IAppelContent() {
 							/>
 						</LiveKitRoom>
 					) : (
-						<div className="flex-1 flex items-center justify-center bg-zinc-950">
+						<div className="flex-1 flex items-center justify-center bg-card">
 							<div className="text-center space-y-3">
-								<Loader2 className="h-8 w-8 animate-spin text-zinc-500 mx-auto" />
-								<p className="text-sm text-zinc-400">
+								<Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
+								<p className="text-sm text-muted-foreground">
 									Connexion en cours...
 								</p>
 								{meetingError && (
-									<p className="text-xs text-red-400 max-w-xs">
+									<p className="text-xs text-destructive max-w-xs">
 										{meetingError}
 									</p>
 								)}
@@ -1190,9 +1198,9 @@ function IContactContent() {
 				/>
 			</div>
 
-			<div className="shrink-0 rounded-lg bg-blue-500/5 border border-blue-500/20 px-3 py-2">
-				<p className="text-[11px] text-blue-600 dark:text-blue-400 leading-relaxed">
-					<Shield className="h-3 w-3 inline mr-1 mb-0.5" />
+			<div className="shrink-0 rounded-xl bg-muted px-3 py-2.5">
+				<p className="text-[11px] text-muted-foreground leading-relaxed flex items-center gap-1.5">
+					<Shield className="h-3 w-3 shrink-0" />
 					Contacts officiels des représentations diplomatiques — urgence
 					et standard uniquement.
 				</p>
@@ -1251,13 +1259,13 @@ function OrgContactCard({ org }: { org: any }) {
 		ORG_TYPE_LABELS[org.type] ?? org.type ?? "Représentation";
 
 	return (
-		<div className="rounded-xl border bg-card overflow-hidden">
+		<div className="rounded-xl bg-card border flat-card-border overflow-hidden">
 			<button
 				type="button"
 				onClick={() => setExpanded(!expanded)}
-				className="w-full flex items-center gap-3 p-3.5 text-left hover:bg-muted/20 transition-colors"
+				className="w-full flex items-center gap-3 p-3.5 text-left hover:bg-muted transition-colors"
 			>
-				<div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+				<div className="h-10 w-10 rounded-lg bg-foreground/[0.08] dark:bg-foreground/[0.05] flex items-center justify-center shrink-0">
 					{org.flagUrl || org.logo ? (
 						<img
 							src={org.flagUrl ?? org.logo}
@@ -1287,7 +1295,7 @@ function OrgContactCard({ org }: { org: any }) {
 				</div>
 				<div className="flex flex-col items-end gap-1 shrink-0">
 					{emergency && (
-						<Badge className="text-[9px] h-4 bg-red-500/10 text-red-500 border-red-500/20">
+						<Badge className="text-[9px] h-4 badge-destructive">
 							Urgence
 						</Badge>
 					)}
@@ -1305,7 +1313,7 @@ function OrgContactCard({ org }: { org: any }) {
 			</button>
 
 			{expanded && hasContacts && (
-				<div className="px-3.5 pb-3.5 border-t border-border/40 pt-3 space-y-2">
+				<div className="px-3.5 pb-3.5 border-t border-foreground/5 pt-3 space-y-2">
 					{emergency && (
 						<ContactLine
 							icon={Phone}
@@ -1361,17 +1369,11 @@ function OrgContactCard({ org }: { org: any }) {
 // ─────────────────────────────────────────────
 
 const ACCENT_CLASSES: Record<string, { bg: string; text: string }> = {
-	red: { bg: "bg-red-500/10", text: "text-red-600 dark:text-red-400" },
-	blue: { bg: "bg-blue-500/10", text: "text-blue-600 dark:text-blue-400" },
-	green: {
-		bg: "bg-green-500/10",
-		text: "text-green-600 dark:text-green-400",
-	},
-	purple: {
-		bg: "bg-purple-500/10",
-		text: "text-purple-600 dark:text-purple-400",
-	},
-	teal: { bg: "bg-teal-500/10", text: "text-teal-600 dark:text-teal-400" },
+	red: { bg: "bg-destructive/10", text: "text-destructive" },
+	blue: { bg: "bg-primary/10", text: "text-primary" },
+	green: { bg: "bg-success/10", text: "text-success" },
+	purple: { bg: "stat-icon-purple", text: "text-[oklch(0.55_0.20_290)]" },
+	teal: { bg: "bg-primary/10", text: "text-primary" },
 };
 
 function ContactLine({
@@ -1393,7 +1395,7 @@ function ContactLine({
 		<div className="flex items-center gap-2.5">
 			<div
 				className={cn(
-					"h-6 w-6 rounded-full flex items-center justify-center shrink-0",
+					"p-1.5 rounded-md flex items-center justify-center shrink-0",
 					colors.bg,
 				)}
 			>

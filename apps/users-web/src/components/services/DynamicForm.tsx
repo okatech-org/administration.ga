@@ -273,7 +273,7 @@ export function DynamicForm({
 									<CardDescription>
 										{t(
 											"documents.checklist.description",
-											"Veuillez televerser les documents requis pour completer votre demande.",
+											"Veuillez téléverser les documents requis pour compléter votre demande.",
 										)}
 									</CardDescription>
 								</CardHeader>

@@ -1,670 +1,617 @@
 "use client";
 
 /**
- * iAgenda -- Mon Agenda
+ * iAgenda — Mon Agenda
  *
- * Appointment and calendar management for citizens.
- * Tab 1: Mini-calendar view with upcoming appointments and stats.
- * Tab 2: Full appointments list (upcoming + past) with cancel functionality.
+ * Layout single-page sans scroll vertical (comme iProfil) :
+ * Desktop  → 3 colonnes : Calendrier (4/12) | Mes RDV (5/12) | Prendre RDV (3/12)
+ * Mobile   → scroll horizontal snap entre les 3 "pages"
  */
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { RequestStatus } from "@convex/lib/constants";
 import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
 	Calendar,
-	ChevronLeft,
-	ChevronRight,
+	CalendarPlus,
+	Check,
 	ClipboardList,
 	Clock,
-	ExternalLink,
+	FileText,
 	Loader2,
-	MapPin,
-	Plus,
-	X,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+	AppointmentSlotPicker,
+	type DynamicSlotSelection,
+} from "@/components/appointments/AppointmentSlotPicker";
+import { AgendaCalendar, type CalendarDayInfo } from "@/components/my-space/agenda-calendar";
+import { AppointmentCard, type AppointmentData } from "@/components/my-space/appointment-card";
 import { EmptyState } from "@/components/my-space/empty-state";
 import { FlatCard } from "@/components/my-space/flat-card";
-import { PageHeader } from "@/components/my-space/page-header";
-import { SectionHeader } from "@/components/my-space/section-header";
-import { TabSwitcher } from "@/components/my-space/tab-switcher";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-	AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	useAuthenticatedConvexQuery,
+	useAuthenticatedPaginatedQuery,
 	useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
 import { captureEvent } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
-type ActiveTab = "calendar" | "appointments";
+type StatusFilter = "all" | "confirmed" | "completed" | "cancelled";
 
-const statusConfig: Record<
-	string,
-	{ label: string; color: string; dotColor: string }
-> = {
-	confirmed: {
-		label: "Confirme",
-		color: "bg-green-500/10 text-green-600 border-green-500/20",
-		dotColor: "bg-green-500",
-	},
-	completed: {
-		label: "Complete",
-		color: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-		dotColor: "bg-blue-500",
-	},
-	cancelled: {
-		label: "Annule",
-		color: "bg-red-500/10 text-red-600 border-red-500/20",
-		dotColor: "bg-red-500",
-	},
-	no_show: {
-		label: "Absent",
-		color: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-		dotColor: "bg-amber-500",
-	},
-	rescheduled: {
-		label: "Reprogramme",
-		color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
-		dotColor: "bg-purple-500",
-	},
-};
+// ═══════════════════════════════════════════════════════════════
 
 export default function IAgendaPage() {
-	const { t } = useTranslation();
-	const [activeTab, setActiveTab] = useState<ActiveTab>("calendar");
 	const [currentMonth, setCurrentMonth] = useState(new Date());
+	const [selectedDate, setSelectedDate] = useState<string | null>(null);
+	const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
-	// Real appointments from Convex
-	const { data: appointments, isPending } = useAuthenticatedConvexQuery(
-		api.functions.slots.listMyAppointments,
-		{},
+	// Prise de RDV
+	const [bookStep, setBookStep] = useState<"select-request" | "select-slot" | "confirm">("select-request");
+	const [selectedRequestId, setSelectedRequestId] = useState<Id<"requests"> | null>(null);
+	const [selectedSlot, setSelectedSlot] = useState<DynamicSlotSelection | null>(null);
+	const [isBooking, setIsBooking] = useState(false);
+
+	// Mobile scroll
+	const [mobilePageIndex, setMobilePageIndex] = useState(0);
+	const mobileScrollRef = useRef<HTMLDivElement>(null);
+	const handleMobileScroll = useCallback(() => {
+		const el = mobileScrollRef.current;
+		if (!el) return;
+		const idx = Math.round(el.scrollLeft / el.clientWidth);
+		setMobilePageIndex(idx);
+	}, []);
+
+	// ─── Convex ────────────────────────────────────────────────
+	const { data: appointments, isPending } = useAuthenticatedConvexQuery(api.functions.slots.listMyAppointments, {});
+	const { mutateAsync: cancelAppointment } = useConvexMutationQuery(api.functions.slots.cancelAppointment);
+	const { mutateAsync: bookDynamicAppointment } = useConvexMutationQuery(api.functions.slots.bookDynamicAppointment);
+	const { results: userRequests, isLoading: requestsLoading } = useAuthenticatedPaginatedQuery(
+		api.functions.requests.listMine, {}, { initialNumItems: 50 },
 	);
 
-	const { mutateAsync: cancelAppointment } = useConvexMutationQuery(
-		api.functions.slots.cancelAppointment,
-	);
-
+	// ─── Donnees derivees ──────────────────────────────────────
 	const today = new Date().toISOString().split("T")[0];
+	const allAppointments = useMemo(() => (appointments ?? []) as AppointmentData[], [appointments]);
 
-	// Upcoming appointments (not cancelled, in the future)
-	const upcomingAppointments = (appointments ?? [])
-		.filter(
-			(apt) =>
-				apt.status !== "cancelled" && apt.date >= today,
-		)
-		.sort((a, b) => {
-			const dateCompare = a.date.localeCompare(b.date);
-			if (dateCompare !== 0) return dateCompare;
-			return a.time.localeCompare(b.time);
-		});
-
-	// Past appointments (in the past or cancelled)
-	const pastAppointments = (appointments ?? [])
-		.filter(
-			(apt) => apt.date < today || apt.status === "cancelled",
-		);
-
-	// Appointments in the current calendar month (for calendar dots)
-	const monthAppointments = (appointments ?? []).filter(
-		(apt) =>
-			apt.status !== "cancelled" &&
-			apt.date.startsWith(
-				`${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}`,
-			),
+	const upcomingAppointments = useMemo(
+		() => allAppointments
+			.filter((a) => a.status !== "cancelled" && a.date >= today)
+			.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)),
+		[allAppointments, today],
 	);
 
-	const getDaysInMonth = (date: Date) => {
-		return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-	};
+	const pastAppointments = useMemo(
+		() => allAppointments.filter((a) => a.date < today || a.status === "cancelled"),
+		[allAppointments, today],
+	);
 
-	const getFirstDayOfMonth = (date: Date) => {
-		// Adjust for Monday-first week (0=Mon, 6=Sun)
-		const day = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-		return day === 0 ? 6 : day - 1;
-	};
-
-	const getStatusInfo = (status: string) => {
-		return statusConfig[status] ?? statusConfig.confirmed;
-	};
-
-	const handleCancel = async (appointmentId: Id<"appointments">) => {
-		try {
-			await cancelAppointment({ appointmentId });
-			captureEvent("myspace_appointment_cancelled");
-			toast.success(t("appointments.cancelled"));
-		} catch {
-			toast.error(t("appointments.cancelError"));
+	const dayInfoMap = useMemo(() => {
+		const map = new Map<string, CalendarDayInfo>();
+		for (const apt of allAppointments) {
+			if (apt.status === "cancelled") continue;
+			const existing = map.get(apt.date);
+			if (existing) { existing.count++; existing.statuses.push(apt.status); }
+			else map.set(apt.date, { date: apt.date, count: 1, statuses: [apt.status] });
 		}
-	};
+		return map;
+	}, [allAppointments]);
 
-	const getStatusBadge = (status: string) => {
-		const info = getStatusInfo(status);
-		return (
-			<Badge variant="outline" className={cn("text-[10px] border", info.color)}>
-				{info.label}
-			</Badge>
+	const selectedDayAppointments = useMemo(() => {
+		if (!selectedDate) return [];
+		return allAppointments.filter((a) => a.date === selectedDate).sort((a, b) => a.time.localeCompare(b.time));
+	}, [allAppointments, selectedDate]);
+
+	const filteredAppointments = useMemo(() => {
+		const all = [...upcomingAppointments, ...pastAppointments];
+		if (statusFilter === "all") return all;
+		return all.filter((a) => a.status === statusFilter);
+	}, [upcomingAppointments, pastAppointments, statusFilter]);
+
+	// Prise de RDV
+	const requestsWithActiveAppointment = useMemo(() => {
+		if (!appointments) return new Set<string>();
+		return new Set(
+			allAppointments.filter((a) => a.status === "confirmed" && a.date >= today)
+				.map((a) => a.requestId).filter(Boolean) as string[],
 		);
+	}, [allAppointments, appointments, today]);
+
+	const eligibleRequests = useMemo(() => {
+		if (!userRequests) return [];
+		return userRequests.filter((r) =>
+			[RequestStatus.Submitted, RequestStatus.ReadyForPickup].includes(r.status) &&
+			!requestsWithActiveAppointment.has(r._id),
+		);
+	}, [userRequests, requestsWithActiveAppointment]);
+
+	const selectedRequest = useMemo(
+		() => selectedRequestId && userRequests ? userRequests.find((r) => r._id === selectedRequestId) || null : null,
+		[selectedRequestId, userRequests],
+	);
+
+	const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}`;
+	const monthCount = allAppointments.filter((a) => a.status !== "cancelled" && a.date.startsWith(monthKey)).length;
+
+	// ─── Handlers ──────────────────────────────────────────────
+	const handleCancel = async (id: Id<"appointments">) => {
+		try {
+			await cancelAppointment({ appointmentId: id });
+			captureEvent("myspace_appointment_cancelled");
+			toast.success("Rendez-vous annulé");
+		} catch { toast.error("Erreur lors de l'annulation"); }
 	};
 
+	const handleBook = async () => {
+		if (!selectedSlot || !selectedRequestId || !selectedRequest) return;
+		setIsBooking(true);
+		try {
+			await bookDynamicAppointment({
+				orgId: selectedRequest.orgId, orgServiceId: selectedRequest.orgServiceId,
+				date: selectedSlot.date, startTime: selectedSlot.startTime,
+				appointmentType: "deposit", requestId: selectedRequestId,
+			});
+			captureEvent("myspace_appointment_scheduled", { service_type: selectedRequest.service?.name?.fr, is_online_meeting: false });
+			toast.success("Rendez-vous réservé !");
+			setBookStep("select-request"); setSelectedRequestId(null); setSelectedSlot(null);
+		} catch (err: unknown) {
+			toast.error(err instanceof Error ? err.message : "Erreur de réservation");
+		} finally { setIsBooking(false); }
+	};
+
+	// ─── Section header reusable ───────────────────────────────
+	const SectionHead = ({ icon: Icon, title, actions }: { icon: typeof Calendar; title: string; actions?: React.ReactNode }) => (
+		<div className="flex items-center justify-between mb-3 shrink-0">
+			<span className="text-sm font-bold flex items-center gap-2.5 text-muted-foreground">
+				<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+					<Icon className="h-4 w-4 text-muted-foreground" />
+				</div>
+				{title}
+			</span>
+			{actions}
+		</div>
+	);
+
+	// ═════════════════════════════════════════════════════════════
+	// RENDER
+	// ═════════════════════════════════════════════════════════════
 	return (
-		<div className="h-full flex flex-col bg-background">
-			<PageHeader
-				title="iAgenda"
-				subtitle="Mon Agenda -- Espace Citoyen"
-				icon={<Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
-				iconBgClass="bg-blue-500/10"
-				actions={
-					<Button asChild>
-						<Link href="/my-space/appointments/new">
-							<Plus className="w-4 h-4 mr-2" />
-							Prendre un rendez-vous
-						</Link>
-					</Button>
-				}
-			/>
+		<div className="flex flex-col h-full min-h-0 overflow-hidden">
+			{/* Header */}
+			<div className="flex items-center justify-between gap-3 shrink-0 mb-4">
+				<div className="flex items-center gap-3">
+					<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+						<Calendar className="h-5 w-5 text-muted-foreground" />
+					</div>
+					<div>
+						<h1 className="text-lg md:text-xl font-black tracking-tight">iAgenda</h1>
+						<p className="text-xs text-muted-foreground font-medium hidden sm:block">Mon Agenda — Espace Citoyen</p>
+					</div>
+				</div>
+				{/* Stats inline desktop */}
+				<div className="hidden lg:flex items-center gap-3">
+					{[
+						{ label: "À venir", value: upcomingAppointments.length, accent: true },
+						{ label: "Ce mois", value: monthCount },
+						{ label: "Total", value: allAppointments.length },
+					].map((s) => (
+						<div key={s.label} className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-full">
+							<span className={cn("text-sm font-black", s.accent ? "text-primary" : "text-foreground")}>{isPending ? "—" : s.value}</span>
+							<span className="text-[10px] font-bold text-muted-foreground uppercase">{s.label}</span>
+						</div>
+					))}
+				</div>
+			</div>
 
-			<div className="flex-1 flex flex-col gap-4 p-4 overflow-hidden">
-				{/* Tab Switcher */}
-				<TabSwitcher
-					tabs={[
-						{ key: "calendar", label: "Calendrier", icon: Calendar },
-						{ key: "appointments", label: "Mes Rendez-vous", icon: ClipboardList, count: upcomingAppointments.length },
-					]}
-					activeTab={activeTab}
-					onTabChange={(key) => setActiveTab(key as ActiveTab)}
-				/>
+			{/* ─── Mobile : dots indicateurs + scroll horizontal snap ─── */}
+			<div className="flex lg:hidden items-center justify-center gap-2 mb-3 shrink-0">
+				{["Agenda", "Mes RDV", "Prendre RDV"].map((label, i) => (
+					<button
+						key={label}
+						type="button"
+						onClick={() => mobileScrollRef.current?.scrollTo({ left: i * (mobileScrollRef.current?.clientWidth ?? 0), behavior: "smooth" })}
+						className={cn(
+							"px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+							mobilePageIndex === i ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+						)}
+					>
+						{label}
+					</button>
+				))}
+			</div>
 
-				{/* Tab Content */}
-				{activeTab === "calendar" ? (
-					/* ===== TAB 1: CALENDRIER ===== */
-					<div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
-						{/* Upcoming Appointments */}
-						<div className="lg:col-span-2 flex flex-col gap-3 overflow-hidden">
-							<SectionHeader
-								icon={<Calendar />}
-								iconBgClass="bg-blue-500/10"
-								iconTextClass="text-blue-600 dark:text-blue-400"
-								title="Rendez-vous a venir"
+			{/* ═══ DESKTOP : Grille 3 colonnes ═══ */}
+			<motion.div
+				initial={{ opacity: 0, y: 5 }}
+				animate={{ opacity: 1, y: 0 }}
+				className="hidden lg:grid lg:grid-cols-12 gap-4 flex-1 min-h-0 overflow-hidden"
+			>
+				{/* ─── COL 1 : Calendrier + Stats (4/12) ─── */}
+				<div className="lg:col-span-4 flex flex-col gap-4 min-h-0 overflow-y-auto citizen-scrollbar">
+					{/* Calendrier */}
+					<FlatCard className="shrink-0">
+						<div className="p-4">
+							<AgendaCalendar
+								currentMonth={currentMonth}
+								onMonthChange={setCurrentMonth}
+								selectedDate={selectedDate}
+								onDateSelect={setSelectedDate}
+								dayInfoMap={dayInfoMap}
+								today={today}
+							/>
+						</div>
+					</FlatCard>
+
+					{/* RDV du jour selectionne */}
+					{selectedDate && (
+						<FlatCard className="shrink-0">
+							<div className="p-4">
+								<div className="flex items-center justify-between mb-3">
+									<span className="text-sm font-bold flex items-center gap-2 text-foreground capitalize">
+										{format(new Date(selectedDate + "T00:00:00"), "EEE d MMM", { locale: fr })}
+										{selectedDate === today && (
+											<span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/25 text-green-700 dark:text-green-400 font-bold">
+												Aujourd&#39;hui
+											</span>
+										)}
+									</span>
+									<button type="button" onClick={() => setSelectedDate(null)} className="text-xs font-medium text-muted-foreground hover:text-foreground">
+										Effacer
+									</button>
+								</div>
+								{selectedDayAppointments.length === 0 ? (
+									<p className="text-sm text-muted-foreground py-4 text-center">Aucun RDV ce jour</p>
+								) : (
+									<div className="space-y-2">
+										{selectedDayAppointments.map((apt) => (
+											<AppointmentCard key={apt._id} appointment={apt} onCancel={handleCancel} compact />
+										))}
+									</div>
+								)}
+							</div>
+						</FlatCard>
+					)}
+
+					{/* Legende */}
+					<FlatCard className="shrink-0">
+						<div className="p-4">
+							<SectionHead icon={Calendar} title="Légende" />
+							<div className="grid grid-cols-2 gap-2">
+								{[
+									{ label: "Confirmé", dot: "bg-success" },
+									{ label: "Complété", dot: "bg-primary" },
+									{ label: "Annulé", dot: "bg-destructive" },
+									{ label: "Absent", dot: "bg-warning" },
+								].map((item) => (
+									<div key={item.label} className="flex items-center gap-2 text-xs">
+										<span className={cn("w-2 h-2 rounded-full shrink-0", item.dot)} />
+										<span className="text-muted-foreground font-medium">{item.label}</span>
+									</div>
+								))}
+							</div>
+						</div>
+					</FlatCard>
+				</div>
+
+				{/* ─── COL 2 : Mes Rendez-vous (5/12) ─── */}
+				<div className="lg:col-span-5 flex flex-col min-h-0 overflow-hidden">
+					<FlatCard className="flex-1 flex flex-col overflow-hidden">
+						<div className="p-4 flex flex-col flex-1 min-h-0">
+							<SectionHead
+								icon={ClipboardList}
+								title="Mes Rendez-vous"
 								actions={
-									<Button
-										variant="ghost"
-										size="sm"
-										className="text-xs gap-1.5"
-										onClick={() => setActiveTab("appointments")}
-									>
-										Voir tout
-										<ExternalLink className="w-3 h-3" />
-									</Button>
+									<span className="text-[10px] bg-foreground/[0.06] dark:bg-foreground/[0.12] text-muted-foreground font-bold px-2 py-0.5 rounded-full">
+										{allAppointments.length}
+									</span>
 								}
 							/>
 
-							<div className="flex-1 space-y-2 overflow-y-auto">
+							{/* Filtres */}
+							<div className="flex flex-wrap items-center gap-1.5 mb-3 shrink-0">
+								{(["all", "confirmed", "completed", "cancelled"] as StatusFilter[]).map((s) => (
+									<button key={s} type="button" onClick={() => setStatusFilter(s)}
+										className={cn("h-7 px-3 rounded-full text-[11px] font-medium transition-all active:scale-[0.97]",
+											statusFilter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70")}>
+										{{ all: "Tous", confirmed: "Confirmés", completed: "Complétés", cancelled: "Annulés" }[s]}
+									</button>
+								))}
+							</div>
+
+							{/* Liste scrollable */}
+							<div className="flex-1 overflow-y-auto citizen-scrollbar space-y-2">
 								{isPending ? (
-									<div className="flex items-center justify-center py-12">
-										<Loader2 className="h-6 w-6 animate-spin text-primary" />
-									</div>
-								) : upcomingAppointments.length === 0 ? (
-									<FlatCard>
-										<EmptyState
-											icon={<Calendar />}
-											title="Aucun rendez-vous planifie"
-											action={
-												<Button size="sm" variant="outline" asChild>
-													<Link href="/my-space/appointments/new">
-														<Plus className="w-3.5 h-3.5 mr-1.5" />
-														Prendre rendez-vous
-													</Link>
-												</Button>
-											}
-										/>
-									</FlatCard>
+									<div className="flex justify-center py-8"><Loader2 className="animate-spin h-6 w-6 text-primary" /></div>
+								) : filteredAppointments.length === 0 ? (
+									<EmptyState
+										icon={<Calendar />}
+										title="Aucun rendez-vous"
+										description={statusFilter !== "all" ? "Modifiez vos filtres" : "Prenez votre premier rendez-vous"}
+									/>
 								) : (
-									upcomingAppointments.map((apt) => {
-										const info = getStatusInfo(apt.status);
-										return (
-											<Link
-												key={apt._id}
-												href={`/my-space/appointments/${apt._id}`}
-												className="block transition-transform hover:scale-[1.005] active:scale-[0.995]"
-											>
-												<FlatCard className="bg-linear-to-r from-muted/50 to-muted/30 hover:border-primary/30 transition-colors p-3">
-													<div className="space-y-2">
-														<div className="flex items-start justify-between gap-2">
-															<div className="flex items-start gap-3 flex-1 min-w-0">
-																{/* Date block */}
-																<div className="shrink-0 text-center bg-primary/10 rounded-lg p-2 min-w-[52px]">
-																	<span className="text-lg font-bold text-primary block leading-none">
-																		{format(new Date(apt.date + "T00:00:00"), "dd")}
-																	</span>
-																	<span className="text-[10px] font-medium uppercase text-primary/70">
-																		{format(new Date(apt.date + "T00:00:00"), "MMM", { locale: fr })}
-																	</span>
-																</div>
-
-																<div className="flex-1 min-w-0">
-																	<p className="text-sm font-medium">
-																		Rendez-vous consulaire
-																	</p>
-																	{apt.org && (
-																		<p className="text-xs text-muted-foreground truncate mt-0.5">
-																			{typeof apt.org.name === "string"
-																				? apt.org.name
-																				: apt.org.name}
-																		</p>
-																	)}
-																</div>
-															</div>
-
-															<Badge
-																variant="outline"
-																className={cn(
-																	"text-[10px] border shrink-0",
-																	info.color,
-																)}
-															>
-																{info.label}
-															</Badge>
-														</div>
-
-														<div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-															<div className="flex items-center gap-1">
-																<Clock className="w-3 h-3" />
-																<span>
-																	{apt.time}
-																	{apt.endTime && ` -- ${apt.endTime}`}
-																</span>
-															</div>
-															{apt.org?.address && (
-																<div className="flex items-center gap-1">
-																	<MapPin className="w-3 h-3" />
-																	<span className="truncate">
-																		{apt.org.address.city}
-																	</span>
-																</div>
-															)}
-														</div>
-
-														{apt.notes && (
-															<p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-																{apt.notes}
-															</p>
-														)}
-													</div>
-												</FlatCard>
-											</Link>
-										);
-									})
+									filteredAppointments.map((apt) => (
+										<AppointmentCard
+											key={apt._id}
+											appointment={apt}
+											onCancel={handleCancel}
+											showActions={apt.date >= today}
+											compact
+										/>
+									))
 								)}
 							</div>
 						</div>
+					</FlatCard>
+				</div>
 
-						{/* Mini Calendar + Legend */}
-						<div className="flex flex-col gap-4">
-							<FlatCard className="p-4">
-								<div className="space-y-4">
-									{/* Month Navigation */}
-									<div className="flex items-center justify-between gap-2">
-										<Button
-											size="icon"
-											variant="ghost"
-											className="h-8 w-8"
-											onClick={() =>
-												setCurrentMonth(
-													new Date(
-														currentMonth.getFullYear(),
-														currentMonth.getMonth() - 1,
-													),
-												)
-											}
-										>
-											<ChevronLeft className="w-4 h-4" />
-										</Button>
-										<h4 className="text-sm font-semibold capitalize">
-											{format(currentMonth, "MMMM yyyy", {
-												locale: fr,
-											})}
-										</h4>
-										<Button
-											size="icon"
-											variant="ghost"
-											className="h-8 w-8"
-											onClick={() =>
-												setCurrentMonth(
-													new Date(
-														currentMonth.getFullYear(),
-														currentMonth.getMonth() + 1,
-													),
-												)
-											}
-										>
-											<ChevronRight className="w-4 h-4" />
-										</Button>
-									</div>
+				{/* ─── COL 3 : Prendre RDV (3/12) ─── */}
+				<div className="lg:col-span-3 flex flex-col min-h-0 overflow-hidden">
+					<FlatCard className="flex-1 flex flex-col overflow-hidden">
+						<div className="p-4 flex flex-col flex-1 min-h-0">
+							<SectionHead icon={CalendarPlus} title="Prendre RDV" />
 
-									{/* Weekday Headers */}
-									<div className="grid grid-cols-7 gap-1 text-xs font-semibold text-center">
-										{["L", "M", "M", "J", "V", "S", "D"].map(
-											(day, i) => (
-												<div
-													key={`${day}-${i}`}
-													className="h-6 flex items-center justify-center text-muted-foreground"
-												>
-													{day}
-												</div>
-											),
-										)}
-									</div>
-
-									{/* Calendar Days */}
-									<div className="grid grid-cols-7 gap-1">
-										{Array.from({
-											length: getFirstDayOfMonth(currentMonth),
-										}).map((_, i) => (
-											<div key={`empty-${i}`} className="h-7" />
-										))}
-										{Array.from({
-											length: getDaysInMonth(currentMonth),
-										}).map((_, i) => {
-											const day = i + 1;
-											const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-											const hasAppointment =
-												monthAppointments.some(
-													(apt) => apt.date === dateStr,
-												);
-											const isToday = dateStr === today;
-
-											return (
-												<button
-													key={day}
-													type="button"
-													className={cn(
-														"h-7 text-xs font-medium rounded-md flex flex-col items-center justify-center relative",
-														isToday
-															? "bg-primary text-primary-foreground font-bold"
-															: hasAppointment
-																? "bg-primary/15 text-foreground font-semibold"
-																: "hover:bg-muted text-foreground/70",
-													)}
-												>
-													{day}
-													{hasAppointment && !isToday && (
-														<span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-primary" />
-													)}
-												</button>
-											);
-										})}
-									</div>
-								</div>
-							</FlatCard>
-
-							{/* Legend */}
-							<FlatCard className="p-4">
-								<div className="space-y-2 text-xs">
-									<p className="font-semibold mb-2">Statuts</p>
-									{Object.entries(statusConfig).map(
-										([key, config]) => (
-											<div
-												key={key}
-												className="flex items-center gap-2"
-											>
-												<span
-													className={cn(
-														"w-2 h-2 rounded-full shrink-0",
-														config.dotColor,
-													)}
-												/>
-												<span className="text-muted-foreground">
-													{config.label}
-												</span>
-											</div>
-										),
-									)}
-								</div>
-							</FlatCard>
-
-							{/* Stats */}
-							<FlatCard className="p-4">
-								<div className="space-y-2 text-xs">
-									<p className="font-semibold mb-2">Resume</p>
-									<div className="flex justify-between">
-										<span className="text-muted-foreground">
-											A venir
-										</span>
-										<span className="font-semibold">
-											{isPending ? "--" : upcomingAppointments.length}
-										</span>
-									</div>
-									<div className="flex justify-between">
-										<span className="text-muted-foreground">
-											Ce mois
-										</span>
-										<span className="font-semibold">
-											{isPending ? "--" : monthAppointments.length}
-										</span>
-									</div>
-									<div className="flex justify-between">
-										<span className="text-muted-foreground">
-											Total
-										</span>
-										<span className="font-semibold">
-											{isPending
-												? "--"
-												: (appointments ?? []).length}
-										</span>
-									</div>
-								</div>
-							</FlatCard>
-						</div>
-					</div>
-				) : (
-					/* ===== TAB 2: MES RENDEZ-VOUS ===== */
-					<div className="flex-1 overflow-y-auto space-y-6">
-						{isPending ? (
-							<div className="flex justify-center p-8">
-								<Loader2 className="animate-spin h-8 w-8 text-primary" />
-							</div>
-						) : (
-							<>
-								{/* Upcoming Appointments */}
-								<motion.div
-									initial={{ opacity: 0, y: 10 }}
-									animate={{ opacity: 1, y: 0 }}
-									transition={{ duration: 0.2, delay: 0.1 }}
-								>
-									<h2 className="text-lg font-semibold mb-4">
-										{t("appointments.upcoming")}
-									</h2>
-									<div className="grid gap-4">
-										{upcomingAppointments.length === 0 ? (
-											<FlatCard>
-												<EmptyState
-													icon={<Calendar />}
-													title={t("appointments.empty")}
-													action={
-														<Button size="sm" variant="outline" asChild>
-															<Link href="/my-space/appointments/new">
-																<Plus className="w-3.5 h-3.5 mr-1.5" />
-																Prendre rendez-vous
-															</Link>
-														</Button>
-													}
-												/>
-											</FlatCard>
+							<div className="flex-1 overflow-y-auto citizen-scrollbar">
+								{/* Step 1 */}
+								{bookStep === "select-request" && (
+									<div className="space-y-3">
+										<p className="text-xs text-muted-foreground">
+											Sélectionnez une demande éligible.
+										</p>
+										{requestsLoading ? (
+											<div className="flex justify-center py-6"><Loader2 className="animate-spin h-5 w-5 text-primary" /></div>
+										) : eligibleRequests.length === 0 ? (
+											<EmptyState
+												icon={<FileText />}
+												title="Aucune demande éligible"
+												action={
+													<Button variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 rounded-full" asChild>
+														<Link href="/my-space/services-demarches">Mes démarches</Link>
+													</Button>
+												}
+											/>
 										) : (
-											upcomingAppointments.map((apt) => (
-												<Link
-													key={apt._id}
-													href={`/my-space/appointments/${apt._id}`}
-													className="block transition-transform hover:scale-[1.01] active:scale-[0.99]"
+											eligibleRequests.map((req) => (
+												<button
+													type="button"
+													key={req._id}
+													onClick={() => { setSelectedRequestId(req._id); setSelectedSlot(null); setBookStep("select-slot"); }}
+													className={cn(
+														"w-full p-3 rounded-xl border text-left transition-all active:scale-[0.98]",
+														selectedRequestId === req._id ? "border-primary bg-primary/5" : "flat-card-border hover:border-foreground/15",
+													)}
 												>
-													<FlatCard>
-														<div className="flex flex-col sm:flex-row border-l-4 border-l-primary h-full">
-															<div className="bg-muted p-4 flex flex-col items-center justify-center min-w-[120px] text-center border-b sm:border-b-0 sm:border-r">
-																<span className="text-3xl font-bold text-primary">
-																	{format(new Date(apt.date), "dd", { locale: fr })}
-																</span>
-																<span className="text-sm uppercase font-medium text-muted-foreground">
-																	{format(new Date(apt.date), "MMM yyyy", { locale: fr })}
-																</span>
-																<div className="mt-2 flex items-center gap-1 text-sm font-semibold">
-																	<Clock className="h-3 w-3" />
-																	{apt.time}
-																</div>
-															</div>
-															<div className="flex-1 p-4 sm:p-6 flex flex-col justify-between gap-4">
-																<div>
-																	<div className="flex justify-between items-start mb-2">
-																		<h3 className="font-semibold text-lg">
-																			{t("appointments.consularAppointment")}
-																		</h3>
-																		{getStatusBadge(apt.status)}
-																	</div>
-																	{apt.org && (
-																		<div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
-																			<MapPin className="h-4 w-4" />
-																			<span>
-																				{apt.org.name}
-																				{apt.org.address && ` -- ${apt.org.address.city}`}
-																			</span>
-																		</div>
-																	)}
-																	{apt.endTime && (
-																		<p className="text-xs text-muted-foreground">
-																			{apt.time} - {apt.endTime}
-																		</p>
-																	)}
-																	{apt.notes && (
-																		<p className="text-sm mt-3 bg-muted/50 p-2 rounded-md italic">
-																			&ldquo;{apt.notes}&rdquo;
-																		</p>
-																	)}
-																</div>
-
-																{apt.status === "confirmed" && (
-																	<div className="flex justify-end">
-																		<AlertDialog>
-																			<AlertDialogTrigger asChild>
-																				<Button
-																					variant="outline"
-																					size="sm"
-																					className="text-destructive hover:text-destructive"
-																					onClick={(e) => {
-																						e.preventDefault();
-																						e.stopPropagation();
-																					}}
-																				>
-																					<X className="mr-2 h-4 w-4" />
-																					{t("appointments.cancel")}
-																				</Button>
-																			</AlertDialogTrigger>
-																			<AlertDialogContent
-																				onClick={(e) => e.stopPropagation()}
-																			>
-																				<AlertDialogHeader>
-																					<AlertDialogTitle>
-																						{t("appointments.cancelConfirmTitle")}
-																					</AlertDialogTitle>
-																					<AlertDialogDescription>
-																						{t("appointments.cancelConfirmDesc")}
-																					</AlertDialogDescription>
-																				</AlertDialogHeader>
-																				<AlertDialogFooter>
-																					<AlertDialogCancel>
-																						{t("common.cancel")}
-																					</AlertDialogCancel>
-																					<AlertDialogAction
-																						onClick={() => handleCancel(apt._id)}
-																						className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-																					>
-																						{t("appointments.confirmCancel")}
-																					</AlertDialogAction>
-																				</AlertDialogFooter>
-																			</AlertDialogContent>
-																		</AlertDialog>
-																	</div>
-																)}
-															</div>
+													<div className="flex items-center gap-2.5">
+														<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12] shrink-0">
+															<FileText className="h-4 w-4 text-muted-foreground" />
 														</div>
-													</FlatCard>
-												</Link>
+														<div className="flex-1 min-w-0">
+															<p className="text-sm font-bold truncate">{req.service?.name?.fr || "Demande"}</p>
+															<p className="text-[11px] text-muted-foreground">Réf. {req.reference}</p>
+														</div>
+													</div>
+												</button>
 											))
 										)}
 									</div>
-								</motion.div>
-
-								{/* Past Appointments */}
-								{pastAppointments.length > 0 && (
-									<motion.div
-										initial={{ opacity: 0, y: 10 }}
-										animate={{ opacity: 1, y: 0 }}
-										transition={{ duration: 0.2, delay: 0.2 }}
-									>
-										<h2 className="text-lg font-semibold mb-4 text-muted-foreground">
-											{t("appointments.past")}
-										</h2>
-										<div className="grid gap-4 opacity-70">
-											{pastAppointments.map((apt) => (
-												<Link
-													key={apt._id}
-													href={`/my-space/appointments/${apt._id}`}
-													className="block transition-transform hover:scale-[1.01] active:scale-[0.99]"
-												>
-													<FlatCard>
-														<div className="flex flex-col sm:flex-row border-l-4 border-l-muted h-full">
-															<div className="bg-muted/50 p-4 flex flex-col items-center justify-center min-w-[120px] text-center border-b sm:border-b-0 sm:border-r">
-																<span className="text-2xl font-bold text-muted-foreground">
-																	{format(new Date(apt.date), "dd", { locale: fr })}
-																</span>
-																<span className="text-xs uppercase font-medium text-muted-foreground">
-																	{format(new Date(apt.date), "MMM yyyy", { locale: fr })}
-																</span>
-																<div className="mt-2 flex items-center gap-1 text-xs">
-																	<Clock className="h-3 w-3" />
-																	{apt.time}
-																</div>
-															</div>
-															<div className="flex-1 p-4 flex items-center justify-between">
-																<div>
-																	<h3 className="font-medium">
-																		{t("appointments.consularAppointment")}
-																	</h3>
-																	{apt.org && (
-																		<p className="text-sm text-muted-foreground">
-																			{apt.org.name}
-																		</p>
-																	)}
-																</div>
-																{getStatusBadge(apt.status)}
-															</div>
-														</div>
-													</FlatCard>
-												</Link>
-											))}
-										</div>
-									</motion.div>
 								)}
-							</>
-						)}
+
+								{/* Step 2 */}
+								{bookStep === "select-slot" && selectedRequest && (
+									<div className="space-y-3">
+										<div className="flex items-center gap-2">
+											<Button variant="ghost" size="sm" onClick={() => setBookStep("select-request")}
+												className="h-7 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 rounded-full">
+												← Retour
+											</Button>
+										</div>
+										<p className="text-xs text-muted-foreground font-medium truncate">
+											{selectedRequest.service?.name?.fr}
+										</p>
+										<AppointmentSlotPicker
+											orgId={selectedRequest.orgId}
+											orgServiceId={selectedRequest.orgServiceId}
+											appointmentType="deposit"
+											onSlotSelected={(slot) => { setSelectedSlot(slot); if (slot) setBookStep("confirm"); }}
+											selectedSlot={selectedSlot}
+										/>
+									</div>
+								)}
+
+								{/* Step 3 */}
+								{bookStep === "confirm" && selectedSlot && selectedRequest && (
+									<div className="space-y-4">
+										<div className="bg-muted rounded-xl p-3 space-y-2.5">
+											<div className="flex items-center gap-2.5">
+												<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12]"><FileText className="h-4 w-4 text-muted-foreground" /></div>
+												<div>
+													<p className="text-sm font-bold">{selectedRequest.service?.name?.fr}</p>
+													<p className="text-[11px] text-muted-foreground">Réf. {selectedRequest.reference}</p>
+												</div>
+											</div>
+											<div className="flex items-center gap-2.5">
+												<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12]"><Calendar className="h-4 w-4 text-muted-foreground" /></div>
+												<p className="text-sm font-bold capitalize">{format(new Date(selectedSlot.date), "EEE d MMM yyyy", { locale: fr })}</p>
+											</div>
+											<div className="flex items-center gap-2.5">
+												<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12]"><Clock className="h-4 w-4 text-muted-foreground" /></div>
+												<p className="text-sm font-bold">{selectedSlot.startTime} — {selectedSlot.endTime}</p>
+											</div>
+										</div>
+										<div className="flex flex-col gap-2">
+											<Button className="w-full h-10 rounded-full active:scale-[0.97]" onClick={handleBook} disabled={isBooking}>
+												{isBooking ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+												Confirmer
+											</Button>
+											<Button variant="ghost" className="w-full h-9 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 rounded-full" onClick={() => setBookStep("select-slot")}>
+												← Modifier le créneau
+											</Button>
+										</div>
+									</div>
+								)}
+							</div>
+						</div>
+					</FlatCard>
+				</div>
+			</motion.div>
+
+			{/* ═══ MOBILE : Scroll horizontal snap (comme iProfil) ═══ */}
+			<div
+				ref={mobileScrollRef}
+				onScroll={handleMobileScroll}
+				className="flex lg:hidden flex-1 min-h-0 overflow-x-auto overflow-y-hidden snap-x snap-mandatory disable-scrollbars gap-3"
+			>
+				{/* Page 1 : Calendrier */}
+				<div className="w-full shrink-0 snap-start h-full overflow-y-auto citizen-scrollbar space-y-3 p-0.5">
+					<FlatCard>
+						<div className="p-3">
+							<AgendaCalendar
+								currentMonth={currentMonth}
+								onMonthChange={setCurrentMonth}
+								selectedDate={selectedDate}
+								onDateSelect={setSelectedDate}
+								dayInfoMap={dayInfoMap}
+								today={today}
+							/>
+						</div>
+					</FlatCard>
+
+					{/* Stats mobile */}
+					<div className="grid grid-cols-3 gap-2">
+						{[
+							{ label: "À venir", value: upcomingAppointments.length, accent: true },
+							{ label: "Ce mois", value: monthCount },
+							{ label: "Total", value: allAppointments.length },
+						].map((s) => (
+							<div key={s.label} className="bg-card rounded-xl border flat-card-border p-2.5 text-center">
+								<span className={cn("text-lg font-black block", s.accent ? "text-primary" : "text-foreground")}>{isPending ? "—" : s.value}</span>
+								<span className="text-[10px] font-bold text-muted-foreground uppercase">{s.label}</span>
+							</div>
+						))}
 					</div>
-				)}
+
+					{/* RDV du jour selectionne mobile */}
+					{selectedDate && selectedDayAppointments.length > 0 && (
+						<FlatCard>
+							<div className="p-3 space-y-2">
+								<div className="flex items-center justify-between">
+									<span className="text-sm font-bold capitalize">{format(new Date(selectedDate + "T00:00:00"), "EEE d MMM", { locale: fr })}</span>
+									<button type="button" onClick={() => setSelectedDate(null)} className="text-xs text-muted-foreground">Effacer</button>
+								</div>
+								{selectedDayAppointments.map((apt) => (
+									<AppointmentCard key={apt._id} appointment={apt} onCancel={handleCancel} compact />
+								))}
+							</div>
+						</FlatCard>
+					)}
+				</div>
+
+				{/* Page 2 : Mes RDV */}
+				<div className="w-full shrink-0 snap-start h-full overflow-y-auto citizen-scrollbar p-0.5">
+					<FlatCard className="min-h-full flex flex-col">
+						<div className="p-3 flex flex-col flex-1">
+							<SectionHead
+								icon={ClipboardList}
+								title="Mes Rendez-vous"
+								actions={
+									<span className="text-[10px] bg-foreground/[0.06] dark:bg-foreground/[0.12] text-muted-foreground font-bold px-2 py-0.5 rounded-full">
+										{allAppointments.length}
+									</span>
+								}
+							/>
+							<div className="flex flex-wrap items-center gap-1.5 mb-3">
+								{(["all", "confirmed", "completed", "cancelled"] as StatusFilter[]).map((s) => (
+									<button key={s} type="button" onClick={() => setStatusFilter(s)}
+										className={cn("h-7 px-3 rounded-full text-[11px] font-medium transition-all",
+											statusFilter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+										{{ all: "Tous", confirmed: "Confirmés", completed: "Complétés", cancelled: "Annulés" }[s]}
+									</button>
+								))}
+							</div>
+							<div className="space-y-2 flex-1">
+								{isPending ? (
+									<div className="flex justify-center py-8"><Loader2 className="animate-spin h-6 w-6 text-primary" /></div>
+								) : filteredAppointments.length === 0 ? (
+									<EmptyState icon={<Calendar />} title="Aucun rendez-vous" />
+								) : (
+									filteredAppointments.map((apt) => (
+										<AppointmentCard key={apt._id} appointment={apt} onCancel={handleCancel} showActions={apt.date >= today} compact />
+									))
+								)}
+							</div>
+						</div>
+					</FlatCard>
+				</div>
+
+				{/* Page 3 : Prendre RDV */}
+				<div className="w-full shrink-0 snap-start h-full overflow-y-auto citizen-scrollbar p-0.5">
+					<FlatCard className="min-h-full flex flex-col">
+						<div className="p-3 flex flex-col flex-1">
+							<SectionHead icon={CalendarPlus} title="Prendre RDV" />
+							{bookStep === "select-request" && (
+								<div className="space-y-3 flex-1">
+									<p className="text-xs text-muted-foreground">Sélectionnez une demande éligible.</p>
+									{requestsLoading ? (
+										<div className="flex justify-center py-6"><Loader2 className="animate-spin h-5 w-5 text-primary" /></div>
+									) : eligibleRequests.length === 0 ? (
+										<EmptyState icon={<FileText />} title="Aucune demande éligible"
+											action={<Button variant="ghost" size="sm" className="h-8 px-3 text-xs bg-muted rounded-full" asChild><Link href="/my-space/services-demarches">Mes démarches</Link></Button>} />
+									) : (
+										eligibleRequests.map((req) => (
+											<button type="button" key={req._id}
+												onClick={() => { setSelectedRequestId(req._id); setSelectedSlot(null); setBookStep("select-slot"); }}
+												className={cn("w-full p-3 rounded-xl border text-left transition-all active:scale-[0.98]",
+													selectedRequestId === req._id ? "border-primary bg-primary/5" : "flat-card-border")}>
+												<div className="flex items-center gap-2.5">
+													<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12] shrink-0"><FileText className="h-4 w-4 text-muted-foreground" /></div>
+													<div className="flex-1 min-w-0">
+														<p className="text-sm font-bold truncate">{req.service?.name?.fr || "Demande"}</p>
+														<p className="text-[11px] text-muted-foreground">Réf. {req.reference}</p>
+													</div>
+												</div>
+											</button>
+										))
+									)}
+								</div>
+							)}
+							{bookStep === "select-slot" && selectedRequest && (
+								<div className="space-y-3 flex-1">
+									<Button variant="ghost" size="sm" onClick={() => setBookStep("select-request")}
+										className="h-7 px-3 text-xs bg-muted rounded-full">← Retour</Button>
+									<AppointmentSlotPicker orgId={selectedRequest.orgId} orgServiceId={selectedRequest.orgServiceId}
+										appointmentType="deposit" onSlotSelected={(slot) => { setSelectedSlot(slot); if (slot) setBookStep("confirm"); }} selectedSlot={selectedSlot} />
+								</div>
+							)}
+							{bookStep === "confirm" && selectedSlot && selectedRequest && (
+								<div className="space-y-4 flex-1">
+									<div className="bg-muted rounded-xl p-3 space-y-2.5">
+										<div className="flex items-center gap-2.5">
+											<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12]"><FileText className="h-4 w-4 text-muted-foreground" /></div>
+											<p className="text-sm font-bold">{selectedRequest.service?.name?.fr}</p>
+										</div>
+										<div className="flex items-center gap-2.5">
+											<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12]"><Calendar className="h-4 w-4 text-muted-foreground" /></div>
+											<p className="text-sm font-bold capitalize">{format(new Date(selectedSlot.date), "EEE d MMM yyyy", { locale: fr })}</p>
+										</div>
+										<div className="flex items-center gap-2.5">
+											<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12]"><Clock className="h-4 w-4 text-muted-foreground" /></div>
+											<p className="text-sm font-bold">{selectedSlot.startTime} — {selectedSlot.endTime}</p>
+										</div>
+									</div>
+									<Button className="w-full h-10 rounded-full" onClick={handleBook} disabled={isBooking}>
+										{isBooking ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}Confirmer
+									</Button>
+									<Button variant="ghost" className="w-full h-8 text-xs bg-muted rounded-full" onClick={() => setBookStep("select-slot")}>← Modifier</Button>
+								</div>
+							)}
+						</div>
+					</FlatCard>
+				</div>
 			</div>
 		</div>
 	);

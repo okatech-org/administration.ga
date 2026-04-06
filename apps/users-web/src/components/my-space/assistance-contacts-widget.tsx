@@ -77,7 +77,7 @@ export function AssistanceContactsWidget() {
 			)}
 
 			{/* Body */}
-			<div className="p-3 lg:p-4">
+			<div className="p-3 lg:p-4 flex-1 flex flex-col">
 				{isPending ? (
 					<div className="flex gap-3.5">
 						<RepresentationSkeleton />
@@ -93,7 +93,7 @@ export function AssistanceContactsWidget() {
 					</div>
 				) : (
 					<>
-						<div ref={scrollRef} onScroll={handleScroll} className="flex overflow-x-auto gap-3.5 pb-1.5 citizen-scrollbar snap-x snap-mandatory disable-scrollbars lg:scrollbars-auto">
+						<div ref={scrollRef} onScroll={handleScroll} className="flex overflow-x-auto gap-3.5 pb-1.5 citizen-scrollbar snap-x snap-mandatory disable-scrollbars lg:scrollbars-auto flex-1">
 							{items.map((rep) => {
 								const config = ROLE_CONFIG[rep.role] ?? ROLE_CONFIG.residence;
 								const Icon = config.icon;

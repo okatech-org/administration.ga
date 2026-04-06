@@ -39,7 +39,7 @@ export function ServiceCard({
 	const { t } = useTranslation();
 
 	const content = (
-		<Card className="hover:border-primary/50 hover:shadow-[0_4px_20px_rgba(59,130,246,0.12)] transition-all duration-200 hover:-translate-y-0.5 h-full">
+		<Card className="hover:border-primary/50 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 h-full">
 			<CardContent>
 				{/* Header with icon and badge */}
 				<div className="flex items-start justify-between mb-4">

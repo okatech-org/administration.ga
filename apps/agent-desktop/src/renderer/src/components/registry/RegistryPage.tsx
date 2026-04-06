@@ -17,7 +17,6 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -210,7 +209,6 @@ export function RegistryPage() {
   const [selectedRegistration, setSelectedRegistration] = useState<RegistrationRow | null>(null);
   const [selectedNotification, setSelectedNotification] = useState<NotificationRow | null>(null);
   const [showCardDialog, setShowCardDialog] = useState(false);
-  const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [showProfileSheet, setShowProfileSheet] = useState(false);
 
   // Search state
@@ -296,13 +294,6 @@ export function RegistryPage() {
   const { mutateAsync: generateCard } = useConvexMutationQuery(
     api.functions.consularRegistrations.generateCard,
   );
-  const createPrintJob = useMutation(api.functions.printJobs.create);
-
-  // Fetch available card designs for print dialog
-  const cardDesigns = useQuery(
-    api.functions.cardDesigns.listByOrg,
-    orgId ? { orgId } : "skip",
-  );
 
   // ── Handlers ─────────────────────────────────────────────────
   const handleGenerateCard = async (registrationId: Id<"consularRegistrations">) => {
@@ -325,85 +316,6 @@ export function RegistryPage() {
     }
   };
 
-  const [selectedDesignId, setSelectedDesignId] = useState<string>("");
-  const [printCopies, setPrintCopies] = useState(1);
-  const [printPriority, setPrintPriority] = useState<"normal" | "high" | "urgent">("normal");
-  const [isSendingToPrint, setIsSendingToPrint] = useState(false);
-
-  const handleSendToPrintQueue = async () => {
-    if (!selectedRegistration || !orgId || !selectedDesignId) return;
-    setIsSendingToPrint(true);
-    try {
-      const design = cardDesigns?.find((d: any) => d._id === selectedDesignId);
-      if (!design) throw new Error("Design introuvable");
-
-      // Build field values from registration data — ALL fields needed for card rendering
-      const reg = selectedRegistration as any;
-      const firstName = reg.profile?.identity?.firstName ?? "";
-      const lastName = reg.profile?.identity?.lastName ?? "";
-      const fullName = [firstName, lastName].filter(Boolean).join(" ") || "—";
-
-      const fieldValues: Record<string, string> = {};
-
-      // Identity fields
-      if (firstName) fieldValues.firstName = firstName;
-      if (lastName) fieldValues.lastName = lastName;
-      if (reg.profile?.identity?.dateOfBirth) fieldValues.dateOfBirth = reg.profile.identity.dateOfBirth;
-      if (reg.profile?.identity?.placeOfBirth) fieldValues.placeOfBirth = reg.profile.identity.placeOfBirth;
-      if (reg.profile?.identity?.nationality) fieldValues.nationality = reg.profile.identity.nationality;
-      if (reg.profile?.identity?.sex) fieldValues.sex = reg.profile.identity.sex;
-      if (reg.profile?.identity?.nip) fieldValues.nip = reg.profile.identity.nip;
-
-      // Card fields
-      if (reg.cardNumber) fieldValues.cardNumber = reg.cardNumber;
-      if (reg.registeredAt) {
-        const issuedDate = new Date(reg.registeredAt);
-        fieldValues.cardIssuedAt = issuedDate.toLocaleDateString("fr-FR");
-        // Expiry = issued + 3 years
-        const expiryDate = new Date(issuedDate);
-        expiryDate.setFullYear(expiryDate.getFullYear() + 3);
-        fieldValues.cardExpiresAt = expiryDate.toLocaleDateString("fr-FR");
-      }
-
-      // Photo URL
-      if (reg.user?.photoUrl) fieldValues.photoUrl = reg.user.photoUrl;
-
-      // Email
-      if (reg.user?.email || reg.profile?.identity?.email) {
-        fieldValues.email = reg.user?.email || reg.profile?.identity?.email;
-      }
-
-      // Store registrationId so updateStatus can mark it as printed
-      fieldValues._registrationId = String(selectedRegistration._id);
-
-      await createPrintJob({
-        designId: design._id,
-        designName: design.name ?? "Sans nom",
-        designVersion: design.version ?? 1,
-        profileId: reg.profileId ?? undefined,
-        profileName: reg.cardNumber ? `${fullName} — ${reg.cardNumber}` : fullName,
-        fieldValues,
-        copies: printCopies,
-        printDuplex: design.printDuplex ?? false,
-        priority: printPriority,
-        orgId,
-      });
-
-      toast.success("Envoyé dans la file d'impression", {
-        description: `${fullName} — ${reg.cardNumber ?? ""} — ${design.name}`,
-      });
-      setShowPrintDialog(false);
-      setSelectedDesignId("");
-      setPrintCopies(1);
-      setPrintPriority("normal");
-    } catch (err) {
-      toast.error("Erreur lors de l'envoi", {
-        description: String(err),
-      });
-    } finally {
-      setIsSendingToPrint(false);
-    }
-  };
 
   // ── Stats ────────────────────────────────────────────────────
   const { data: stats } = useAuthenticatedConvexQuery(
@@ -674,18 +586,11 @@ export function RegistryPage() {
                                 {t("dashboard.consularRegistry.actions.generate")}
                               </Button>
                             )}
-                            {reg.cardNumber && (
-                              <Button
-                                size="sm"
-                                variant={reg.printedAt ? "ghost" : "outline"}
-                                onClick={() => {
-                                  setSelectedRegistration(reg);
-                                  setShowPrintDialog(true);
-                                }}
-                              >
-                                <Printer className="h-4 w-4 mr-1" />
-                                {reg.printedAt ? "Réimprimer" : "Imprimer"}
-                              </Button>
+                            {reg.cardNumber && !reg.printedAt && (
+                              <Badge variant="outline" className="text-xs text-blue-600 border-blue-200">
+                                <Printer className="h-3 w-3 mr-1" />
+                                Dans la file d'impression
+                              </Badge>
                             )}
                             {reg.printedAt && (
                               <Badge variant="secondary" className="text-xs text-green-600">
@@ -888,86 +793,7 @@ export function RegistryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Print Dialog — Queue for printing */}
-      <Dialog open={showPrintDialog} onOpenChange={(open) => {
-        setShowPrintDialog(open);
-        if (!open) { setSelectedDesignId(""); setPrintCopies(1); setPrintPriority("normal"); }
-      }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Printer className="h-5 w-5 text-primary" />
-              Envoyer pour impression
-            </DialogTitle>
-            <DialogDescription>
-              Ajouter la carte <code className="font-mono text-foreground">{selectedRegistration?.cardNumber ?? ""}</code> à la file d'impression.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            {/* Design selector */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Modèle de carte</label>
-              {!cardDesigns || cardDesigns.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">
-                  Aucun design disponible. Créez un modèle dans le Designer.
-                </p>
-              ) : (
-                <select
-                  value={selectedDesignId}
-                  onChange={(e) => setSelectedDesignId(e.target.value)}
-                  className="w-full h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="">— Choisir un modèle —</option>
-                  {cardDesigns.map((d: any) => (
-                    <option key={d._id} value={d._id}>{d.name}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {/* Copies */}
-            <div className="flex items-center gap-4">
-              <div className="space-y-1.5 flex-1">
-                <label className="text-sm font-medium text-foreground">Copies</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={printCopies}
-                  onChange={(e) => setPrintCopies(Math.max(1, Number(e.target.value)))}
-                  className="w-full h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-              </div>
-              <div className="space-y-1.5 flex-1">
-                <label className="text-sm font-medium text-foreground">Priorité</label>
-                <select
-                  value={printPriority}
-                  onChange={(e) => setPrintPriority(e.target.value as any)}
-                  className="w-full h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="normal">Normale</option>
-                  <option value="high">Haute</option>
-                  <option value="urgent">Urgente</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPrintDialog(false)}>
-              Annuler
-            </Button>
-            <Button
-              onClick={handleSendToPrintQueue}
-              disabled={!selectedDesignId || isSendingToPrint}
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              {isSendingToPrint ? "Envoi..." : "Envoyer à la file"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Print Dialog removed — cards auto-appear in the Impression page */}
 
       {/* Profile Sheet */}
       <Sheet open={showProfileSheet} onOpenChange={setShowProfileSheet}>

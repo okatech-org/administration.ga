@@ -2,9 +2,9 @@ import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { api } from "@convex/_generated/api";
 
 /**
- * Hook leger pour le routing uniquement (post-login-redirect, header).
+ * Hook léger pour le routing uniquement (post-login-redirect, header).
  * Charge l'utilisateur courant.
- * N'appelle PAS getMine (profile) — utiliser useCitizenData pour ca.
+ * N'appelle PAS getMine (profile) — utiliser useCitizenData pour ça.
  */
 export function useUserData() {
 	const {

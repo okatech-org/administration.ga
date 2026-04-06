@@ -14,11 +14,10 @@ import { ListOrdered, Palette, Printer, Settings2, Wifi, WifiOff, FileSpreadshee
 import { motion } from "motion/react"
 import { toast } from "sonner"
 import { usePrinter } from "../../hooks/usePrinter"
-import { usePrintJobExecutor } from "../../hooks/usePrintJobExecutor"
 import { useOrg } from "../../hooks/useOrg"
 import { cn } from "../../lib/utils"
 import { CardDesigner } from "../card-designer/CardDesigner"
-import { PrintQueueContent } from "./PrintQueueContent"
+import { AutoPrintQueueContent } from "./AutoPrintQueueContent"
 import { PrinterConfigDialog } from "./PrinterConfigDialog"
 import { BatchPrintContent } from "./BatchPrintContent"
 
@@ -35,13 +34,6 @@ export function ImpressionPage() {
   const printer = usePrinter()
 
   const isPrinterConnected = !!printer.connectedInfo
-
-  // Print job executor — wires Play button to Evolis
-  const { executeJob } = usePrintJobExecutor({ printer, orgId })
-
-  const handlePrintJob = async (jobId: string) => {
-    await executeJob(jobId)
-  }
 
   // Batch print handler: iterate records, render + print each
   const handlePrintBatch = useCallback(
@@ -163,9 +155,10 @@ export function ImpressionPage() {
       {/* Tab content */}
       <div className="flex-1 min-h-0 overflow-hidden">
         {activeTab === "queue" && (
-          <PrintQueueContent
-            onPrintJob={handlePrintJob}
+          <AutoPrintQueueContent
+            printer={printer}
             isPrinterConnected={isPrinterConnected}
+            orgId={orgId}
           />
         )}
         {activeTab === "designer" && <CardDesigner />}

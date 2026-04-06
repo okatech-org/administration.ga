@@ -10,16 +10,30 @@ interface AuthLayoutProps {
   headerButton?: {
     label: string
     href: string
+    search?: Record<string, unknown>
   }
 }
 
 export function AuthLayout({ children, headerButton }: AuthLayoutProps) {
   const { t } = useTranslation()
 
+  // Build href with optional search params
+  const headerHref = headerButton
+    ? headerButton.search
+      ? `${headerButton.href}?${new URLSearchParams(
+          Object.entries(headerButton.search).reduce(
+            (acc, [k, v]) => ({ ...acc, [k]: String(v) }),
+            {} as Record<string, string>,
+          ),
+        ).toString()}`
+      : headerButton.href
+    : undefined
+
   return (
     <div className="flex min-h-dvh bg-background">
-      {/* Left side - Image (Desktop Only) */}
+      {/* Left side - Image & Text Overlay (Desktop Only) */}
       <div className="relative hidden w-1/2 lg:flex flex-col justify-end p-12 text-white">
+        {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <img
             loading="lazy"
@@ -28,15 +42,19 @@ export function AuthLayout({ children, headerButton }: AuthLayoutProps) {
             alt="Consulat Digital Gabon"
             className="h-full w-full object-cover"
           />
+          {/* Gradient Overlays for text readability */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
         </div>
 
+        {/* Content */}
         <div className="relative z-10 max-w-lg space-y-4">
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl leading-tight">
             {t("register.hero.title")}
           </h1>
           <p className="text-lg text-white/80">{t("register.hero.subtitle")}</p>
+
+          {/* Dummy Carousel Indicators */}
           <div className="flex items-center gap-2 pt-6">
             <div className="h-1.5 w-8 rounded-full bg-white transition-all" />
             <div className="h-1.5 w-2 rounded-full bg-white/40 transition-all" />
@@ -47,10 +65,11 @@ export function AuthLayout({ children, headerButton }: AuthLayoutProps) {
 
       {/* Right side - Form */}
       <div className="flex w-full flex-col lg:w-1/2">
+        {/* Header with Switch Button */}
         <header className="flex h-24 items-center justify-end px-6 sm:px-12">
-          {headerButton && (
+          {headerButton && headerHref && (
             <Button variant="secondary" className="rounded-full px-6" asChild>
-              <Link href={headerButton.href}>{headerButton.label}</Link>
+              <Link href={headerHref}>{headerButton.label}</Link>
             </Button>
           )}
         </header>
