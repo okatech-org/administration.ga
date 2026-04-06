@@ -285,7 +285,7 @@ export default function SignInPage() {
 		<AuthLayout
 			headerButton={{
 				label: t("header.nav.signUp"),
-				to: "/register",
+				href: "/register",
 			}}
 		>
 			<div className="mb-8 space-y-2">
