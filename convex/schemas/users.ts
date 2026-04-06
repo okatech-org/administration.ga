@@ -67,6 +67,9 @@ export const usersTable = defineTable({
   // Metadata (pas de _createdAt, utilise _creationTime natif)
   updatedAt: v.optional(v.number()),
 
+  // Demande de suppression de compte (RGPD) — delai 30 jours avant purge
+  deletionRequestedAt: v.optional(v.number()),
+
   // Soft-delete (trash): timestamp when user was moved to trash
   deletedAt: v.optional(v.number()),
 })

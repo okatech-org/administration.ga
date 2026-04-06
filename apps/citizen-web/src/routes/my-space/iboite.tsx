@@ -47,10 +47,13 @@ import {
 	Star,
 	Trash2,
 	Truck,
+	UploadCloud,
 	User,
 	Video,
+	X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { useDropzone } from "react-dropzone";
 import React, { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -75,10 +78,10 @@ const OWNER_TYPE_ICONS: Record<string, typeof User> = {
 
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { PageHeader } from "@/components/my-space/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
 	Command,
 	CommandEmpty,
@@ -108,7 +111,6 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useMeeting } from "@/hooks/use-meeting";
@@ -331,8 +333,8 @@ function IBoitePage() {
 				<PageHeader
 					title={t("mySpace.screens.iboite.heading")}
 					subtitle={t("mySpace.screens.iboite.subtitle")}
-					icon={<Mail className="h-5 w-5 text-teal-600 dark:text-teal-400" />}
-					iconBgClass="bg-teal-500/10"
+					icon={<Mail className="h-5 w-5 text-foreground" />}
+					iconBgClass="bg-foreground/[0.06] dark:bg-foreground/[0.12]"
 				/>
 			</div>
 
@@ -346,55 +348,25 @@ function IBoitePage() {
 						className={cn(
 							"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0",
 							activeView === key
-								? "bg-primary text-primary-foreground"
+								? "bg-foreground/[0.06] dark:bg-foreground/[0.12] text-foreground font-medium"
 								: "bg-muted text-muted-foreground hover:bg-muted/80",
 						)}
 					>
 						<Icon className="size-3.5" />
 						{t(`iboite.folders.${key}`)}
 						{key === "inbox" && unreadCount != null && unreadCount > 0 && (
-							<span className="bg-primary-foreground/20 rounded-full text-[10px] px-1.5">
+							<span className="bg-muted rounded-full text-[10px] px-1.5">
 								{unreadCount}
 							</span>
 						)}
 					</button>
 				))}
-				<button
-					type="button"
-					onClick={() => switchView("packages")}
-					className={cn(
-						"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0",
-						activeView === "packages"
-							? "bg-primary text-primary-foreground"
-							: "bg-muted text-muted-foreground hover:bg-muted/80",
-					)}
-				>
-					<Package className="size-3.5" />
-					{t("iboite.tabs.packages")}
-					{packageStats.total > 0 && (
-						<span className="bg-primary-foreground/20 rounded-full text-[10px] px-1.5">
-							{packageStats.total}
-						</span>
-					)}
-				</button>
-				<button
-					type="button"
-					onClick={() => switchView("calls")}
-					className={cn(
-						"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0",
-						activeView === "calls"
-							? "bg-primary text-primary-foreground"
-							: "bg-muted text-muted-foreground hover:bg-muted/80",
-					)}
-				>
-					<Phone className="size-3.5" />
-					{t("iboite.tabs.calls")}
-				</button>
+				{/* Colis et Appels retires — messagerie uniquement */}
 			</div>
 
 			{/* ── Mobile: compose + account selector ──────────────────────── */}
 			<div className="lg:hidden flex items-center gap-2 shrink-0">
-				<Button onClick={() => setComposeOpen(true)} className="gap-2 flex-1">
+				<Button variant="ghost" size="sm" onClick={() => setComposeOpen(true)} className="flex-1 h-9 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-1.5">
 					<PenLine className="size-4" />
 					{t("iboite.actions.compose")}
 				</Button>
@@ -427,7 +399,7 @@ function IBoitePage() {
 											setActiveOwnerType(acct.ownerType);
 											setSelectedMailId(null);
 										}}
-										className={cn(isActive && "bg-primary/10 text-primary")}
+										className={cn(isActive && "bg-foreground/[0.06] dark:bg-foreground/[0.12] text-foreground font-medium")}
 									>
 										<Icon className="size-4 mr-2" />
 										<span className="truncate">{acct.name}</span>
@@ -517,269 +489,146 @@ function IBoitePage() {
 				)}
 			</div>
 
-			{/* ── Desktop: single unified card filling remaining height ──── */}
-			<Card className="hidden lg:flex lg:flex-row flex-1 min-h-0 overflow-hidden p-0">
-				{/* Sidebar */}
-				<aside className="max-w-56 w-full border-r flex flex-col">
-					{/* Compose button */}
-					<div className="p-3">
-						<Button
-							className="w-full gap-2"
-							onClick={() => setComposeOpen(true)}
-						>
-							<PenLine className="size-4" />
-							{t("iboite.actions.compose")}
-						</Button>
-					</div>
-
-					<Separator />
-
-					{/* Account selector */}
-					{accounts && accounts.length > 0 && (
-						<>
-							<div className="p-2 space-y-0.5">
-								<p className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-									{t("iboite.accounts.title")}
-								</p>
-								{accounts.map((acct) => (
-									<button
-										type="button"
-										key={acct.ownerId}
-										onClick={() => {
-											setActiveOwnerId(acct.ownerId);
-											setActiveOwnerType(acct.ownerType);
-											setSelectedMailId(null);
-										}}
-										className={cn(
-											"flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors",
-											activeOwnerId === acct.ownerId
-												? "bg-primary/10 text-primary font-medium"
-												: !activeOwnerId &&
-														acct.ownerType === MailOwnerType.Profile
-													? "bg-primary/10 text-primary font-medium"
-													: "text-muted-foreground hover:bg-muted",
-										)}
-									>
-										<span className="flex items-center gap-2 min-w-0">
-											{(() => {
-												const Icon = OWNER_TYPE_ICONS[acct.ownerType] ?? Mail;
-												return <Icon className="size-4 shrink-0" />;
-											})()}
-											<span className="truncate">{acct.name}</span>
-											{acct.orgType &&
-												OFFICIAL_ORG_TYPES.has(
-													acct.orgType as OrganizationType,
-												) && (
-													<Badge
-														variant="secondary"
-														className="text-[9px] h-4 px-1 shrink-0 gap-0.5"
-													>
-														<BadgeCheck className="size-3" />
-														{t("iboite.accounts.official")}
-													</Badge>
-												)}
-										</span>
-										{acct.unreadCount > 0 && (
-											<Badge
-												variant="default"
-												className="text-[10px] h-5 min-w-5 flex items-center justify-center"
-											>
-												{acct.unreadCount}
-											</Badge>
-										)}
-									</button>
-								))}
-							</div>
-							<Separator className="mx-2" />
-						</>
-					)}
-
-					<nav className="p-2 space-y-0.5">
-						{MAIL_FOLDERS.map(({ key, icon: Icon }) => (
-							<button
-								type="button"
-								key={key}
-								onClick={() => switchView(key)}
-								className={cn(
-									"flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors",
-									activeView === key
-										? "bg-primary/10 text-primary font-medium"
-										: "text-muted-foreground hover:bg-muted",
-								)}
+			{/* ── Desktop: grille 2 FlatCards separees (architecture iProfil) ── */}
+			<div className="hidden lg:grid lg:grid-cols-12 gap-4 flex-1 min-h-0">
+				{/* Col gauche : liste de courriers */}
+				<FlatCard className="lg:col-span-4 flex flex-col overflow-hidden">
+					{/* Section header */}
+					<div className="p-4 pb-3 space-y-4 shrink-0">
+						<div className="flex items-center justify-between">
+							<span className="text-base font-bold flex items-center gap-2.5 text-foreground">
+								<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+									<Inbox className="h-4 w-4 text-muted-foreground" />
+								</div>
+								{t("iboite.mail.inbox", "Courrier")}
+							</span>
+							<Button
+								variant="ghost"
+								size="sm"
+								className="h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-1.5"
+								onClick={() => setComposeOpen(true)}
 							>
-								<span className="flex items-center gap-2.5">
-									<Icon className="size-4" />
-									{t(`iboite.folders.${key}`)}
-								</span>
-								{key === "inbox" && unreadCount != null && unreadCount > 0 && (
-									<Badge
-										variant="default"
-										className="text-[10px] h-5 min-w-5 flex items-center justify-center"
-									>
-										{unreadCount}
-									</Badge>
-								)}
-							</button>
-						))}
-					</nav>
+								<PenLine className="size-3.5" />
+								{t("iboite.actions.compose")}
+							</Button>
+						</div>
 
-					<Separator className="mx-2" />
-
-					<div className="p-2">
-						<p className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-							{t("iboite.tabs.packages")}
-						</p>
-						<button
-							type="button"
-							onClick={() => switchView("packages")}
-							className={cn(
-								"flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors",
-								activeView === "packages"
-									? "bg-primary/10 text-primary font-medium"
-									: "text-muted-foreground hover:bg-muted",
-							)}
-						>
-							<span className="flex items-center gap-2.5">
-								<Package className="size-4" />
-								{t("iboite.packages.title")}
-							</span>
-							{packageStats.total > 0 && (
-								<Badge
-									variant="secondary"
-									className="text-[10px] h-5 min-w-5 flex items-center justify-center"
+						{/* Tabs navigation */}
+						<div className="flex items-center gap-5">
+							{[
+								{ key: "inbox" as const, icon: Inbox, label: t("iboite.folders.inbox") },
+								{ key: "starred" as const, icon: Star, label: t("iboite.folders.starred") },
+								{ key: "sent" as const, icon: Send, label: t("iboite.folders.sent") },
+							].map((tab) => (
+								<button
+									key={tab.key}
+									type="button"
+									onClick={() => switchView(tab.key)}
+									className={cn(
+										"text-sm font-medium transition-colors flex items-center gap-1.5 pb-1",
+										activeView === tab.key
+											? "text-foreground border-b-2 border-foreground"
+											: "text-muted-foreground hover:text-foreground",
+									)}
 								>
-									{packageStats.total}
-								</Badge>
-							)}
-						</button>
-
-						{packageStats.total > 0 && (
-							<div className="px-3 mt-2 space-y-1">
-								{packageStats.inTransit > 0 && (
-									<div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
-										<Truck className="size-3" />
-										<span>
-											{packageStats.inTransit}{" "}
-											{t("iboite.packages.inTransit").toLowerCase()}
+									<tab.icon className="size-3.5" />
+									{tab.label}
+									{tab.key === "inbox" && unreadCount != null && unreadCount > 0 && (
+										<span className="text-[9px] h-4 min-w-4 flex items-center justify-center rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12] text-muted-foreground font-bold px-1">
+											{unreadCount}
 										</span>
-									</div>
-								)}
-								{packageStats.available > 0 && (
-									<div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
-										<Package className="size-3" />
-										<span>
-											{packageStats.available}{" "}
-											{t("iboite.packages.available").toLowerCase()}
-										</span>
-									</div>
-								)}
-							</div>
-						)}
+									)}
+								</button>
+							))}
+						</div>
 					</div>
 
-					{/* Calls section */}
-					<div className="p-2">
-						<p className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-							{t("iboite.tabs.calls")}
-						</p>
-						<button
-							type="button"
-							onClick={() => switchView("calls")}
-							className={cn(
-								"flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors",
-								activeView === "calls"
-									? "bg-primary/10 text-primary font-medium"
-									: "text-muted-foreground hover:bg-muted",
-							)}
-						>
-							<span className="flex items-center gap-2.5">
-								<Phone className="size-4" />
-								{t("iboite.calls.title")}
-							</span>
-						</button>
-					</div>
-				</aside>
-
-				<main className="flex-1 flex min-h-0 min-w-0">
-					{/* Main content area */}
-					{isCallsView ? (
-						<div className="flex-1 overflow-auto p-4">
-							<CallsList dateFnsLocale={dateFnsLocale} />
-						</div>
-					) : isPackageView ? (
-						<div className="flex-1 overflow-auto p-4">
-							<PackageList
-								packages={packages ?? []}
-								dateFnsLocale={dateFnsLocale}
-							/>
-						</div>
-					) : isMailLoading ? (
+					{/* Liste de mails */}
+					{isMailLoading ? (
 						<div className="flex-1 flex items-center justify-center">
-							<Loader2 className="size-8 animate-spin text-primary" />
+							<Loader2 className="size-6 animate-spin text-muted-foreground" />
 						</div>
 					) : (
-						<>
-							{/* Mail list — fixed width column with its own scroll */}
-							<div
-								className={cn(
-									"border-r flex flex-col min-h-0",
-									selectedMail ? "w-80 shrink-0" : "flex-1",
-								)}
-							>
-								<MailListInner
-									mails={filteredMail}
-									selectedMailId={selectedMailId}
-									onSelectMail={handleSelectMail}
-									onToggleStar={handleToggleStar}
-									dateFnsLocale={dateFnsLocale}
-									activeFolder={activeView as MailFolderKey}
-									paginationStatus={mailPaginationStatus}
-									onLoadMore={() => loadMoreMail(30)}
-								/>
-							</div>
-
-							{/* Detail — fills remaining space, or placeholder */}
-							<div className="flex-1 min-h-0 min-w-0">
-								{selectedMail ? (
-									<MailDetail
-										mail={selectedMail}
-										dateFnsLocale={dateFnsLocale}
-										onBack={() => setSelectedMailId(null)}
-										onArchive={handleArchive}
-										onTrash={handleTrash}
-										onDelete={handleDelete}
-										onToggleStar={handleToggleStar}
-										onReply={(mail) => {
-											setReplyData({
-												recipientOwnerId: mail.sender.entityId,
-												recipientOwnerType: mail.sender.entityType,
-												recipientName: mail.sender.name,
-												subject: mail.subject?.startsWith("Re: ")
-													? mail.subject
-													: `Re: ${mail.subject || t("iboite.mail.noSubject")}`,
-												quotedContent: `\n\n--- ${t("iboite.reply.originalMessage")} ---\n${mail.sender.name} (${format(new Date(mail.createdAt), "d MMM yyyy, HH:mm", { locale: dateFnsLocale })}):\n${mail.content}`,
-												threadId: mail.threadId || mail._id,
-												inReplyTo: mail._id,
-											});
-											setComposeOpen(true);
-										}}
-									/>
-								) : (
-									<div className="flex flex-col items-center justify-center h-full text-center px-6">
-										<Mail className="size-12 text-muted-foreground/20 mb-3" />
-										<h3 className="text-sm font-medium text-muted-foreground">
-											{t("iboite.mail.selectToRead")}
-										</h3>
-										<p className="text-xs text-muted-foreground/70 mt-1 max-w-[240px]">
-											{t("iboite.mail.selectToReadDesc")}
-										</p>
-									</div>
-								)}
-							</div>
-						</>
+						<MailListInner
+							mails={filteredMail}
+							selectedMailId={selectedMailId}
+							onSelectMail={handleSelectMail}
+							onToggleStar={handleToggleStar}
+							dateFnsLocale={dateFnsLocale}
+							activeFolder={activeView as MailFolderKey}
+							paginationStatus={mailPaginationStatus}
+							onLoadMore={() => loadMoreMail(30)}
+						/>
 					)}
-				</main>
-			</Card>
+
+					{/* Liens secondaires : Archives | Corbeille */}
+					<div className="px-4 py-3 flex items-center gap-5 shrink-0 border-t border-foreground/5">
+						<button
+							type="button"
+							onClick={() => switchView("archive")}
+							className={cn(
+								"text-sm transition-colors flex items-center gap-2",
+								activeView === "archive" ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground",
+							)}
+						>
+							<Archive className="size-4" />
+							{t("iboite.folders.archive")}
+						</button>
+						<button
+							type="button"
+							onClick={() => switchView("trash")}
+							className={cn(
+								"text-sm transition-colors flex items-center gap-2",
+								activeView === "trash" ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground",
+							)}
+						>
+							<Trash2 className="size-4" />
+							{t("iboite.folders.trash")}
+						</button>
+					</div>
+				</FlatCard>
+
+				{/* Col droite : detail du courrier */}
+				<FlatCard className="lg:col-span-8 flex flex-col overflow-hidden">
+					{selectedMail ? (
+						<MailDetail
+							mail={selectedMail}
+							dateFnsLocale={dateFnsLocale}
+							onBack={() => setSelectedMailId(null)}
+							onArchive={handleArchive}
+							onTrash={handleTrash}
+							onDelete={handleDelete}
+							onToggleStar={handleToggleStar}
+							onReply={(mail) => {
+								setReplyData({
+									recipientOwnerId: mail.sender.entityId,
+									recipientOwnerType: mail.sender.entityType,
+									recipientName: mail.sender.name,
+									subject: mail.subject?.startsWith("Re: ")
+										? mail.subject
+										: `Re: ${mail.subject || t("iboite.mail.noSubject")}`,
+									quotedContent: `\n\n--- ${t("iboite.reply.originalMessage")} ---\n${mail.sender.name} (${format(new Date(mail.createdAt), "d MMM yyyy, HH:mm", { locale: dateFnsLocale })}):\n${mail.content}`,
+									threadId: mail.threadId || mail._id,
+									inReplyTo: mail._id,
+								});
+								setComposeOpen(true);
+							}}
+						/>
+					) : (
+						<div className="flex-1 flex flex-col items-center justify-center text-center px-8">
+							<div className="rounded-full bg-muted p-5 mb-5">
+								<Mail className="size-10 text-muted-foreground" />
+							</div>
+							<h3 className="text-base font-bold text-foreground mb-2">
+								{t("iboite.mail.selectToRead")}
+							</h3>
+							<p className="text-sm text-muted-foreground max-w-md leading-relaxed">
+								{t("iboite.mail.selectToReadDesc")}
+							</p>
+						</div>
+					)}
+				</FlatCard>
+			</div>
 
 			{/* ── Compose Dialog ────────────────────────────────────────────── */}
 			<ComposeDialog
@@ -834,6 +683,34 @@ function ComposeDialog({
 	const [senderAccountIdx, setSenderAccountIdx] = useState(0);
 	const [sending, setSending] = useState(false);
 
+	// File attachment state
+	const [stagedFiles, setStagedFiles] = useState<Array<{ storageId: Id<"_storage">; filename: string; mimeType: string; sizeBytes: number }>>([]);
+	const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
+	const { mutateAsync: generateUploadUrl } = useConvexMutationQuery(api.functions.documents.generateUploadUrl);
+
+	const onDrop = React.useCallback(async (acceptedFiles: File[]) => {
+		for (const file of acceptedFiles) {
+			setUploadingFiles(prev => [...prev, file.name]);
+			try {
+				const postUrl = await generateUploadUrl({});
+				const result = await fetch(postUrl, { method: "POST", headers: { "Content-Type": file.type }, body: file });
+				if (!result.ok) throw new Error("Upload failed");
+				const { storageId } = await result.json();
+				setStagedFiles(prev => [...prev, { storageId: storageId as Id<"_storage">, filename: file.name, mimeType: file.type, sizeBytes: file.size }]);
+			} catch (err: any) {
+				toast.error(`Erreur: ${err.message}`);
+			} finally {
+				setUploadingFiles(prev => prev.filter(n => n !== file.name));
+			}
+		}
+	}, [generateUploadUrl]);
+
+	const { getRootProps, getInputProps, isDragActive } = useDropzone({
+		onDrop,
+		accept: { "image/*": [".png", ".jpg", ".jpeg", ".webp"], "application/pdf": [".pdf"] },
+		maxSize: 5 * 1024 * 1024,
+	});
+
 	// Recipient search state
 	const [recipientSearch, setRecipientSearch] = useState("");
 	const [recipientPopoverOpen, setRecipientPopoverOpen] = useState(false);
@@ -872,6 +749,8 @@ function ComposeDialog({
 			setRecipientSearch("");
 			setDebouncedSearch("");
 			setTypeFilter(null);
+			setStagedFiles([]);
+			setUploadingFiles([]);
 		}
 	}, [open, initialData]);
 
@@ -905,6 +784,8 @@ function ComposeDialog({
 				recipientOwnerType: selectedRecipient.ownerType,
 				type: MailType.Email,
 				subject: subject.trim() || t("iboite.mail.noSubject"),
+				content: content.trim(),
+				...(stagedFiles.length > 0 ? { attachments: stagedFiles.map(f => ({ name: f.filename, size: `${(f.sizeBytes / 1024).toFixed(0)} KB`, storageId: f.storageId })) } : {}),
 				...(initialData?.threadId ? { threadId: initialData.threadId } : {}),
 				...(initialData?.inReplyTo ? { inReplyTo: initialData.inReplyTo } : {}),
 			});
@@ -923,6 +804,8 @@ function ComposeDialog({
 			setRecipientSearch("");
 			setDebouncedSearch("");
 			setTypeFilter(null);
+			setStagedFiles([]);
+			setUploadingFiles([]);
 			onOpenChange(false);
 		} catch {
 			toast.error(t("iboite.error"));
@@ -969,8 +852,10 @@ function ComposeDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-h-dvh sm:max-h-[85vh] sm:max-w-lg overflow-y-auto">
 				<DialogHeader>
-					<DialogTitle className="flex items-center gap-2">
-						<PenLine className="size-5" />
+					<DialogTitle className="flex items-center gap-2.5 text-sm font-semibold">
+						<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+							<PenLine className="size-3.5 text-muted-foreground" />
+						</div>
 						{t("iboite.actions.compose")}
 					</DialogTitle>
 				</DialogHeader>
@@ -1028,8 +913,8 @@ function ComposeDialog({
 										key={chip.value ?? "all"}
 										type="button"
 										size="sm"
-										variant={isActive ? "default" : "outline"}
-										className="h-7 rounded-full px-3 text-xs gap-1"
+										variant="ghost"
+										className={cn("h-7 rounded-full px-3 text-xs gap-1", isActive ? "bg-foreground/[0.06] dark:bg-foreground/[0.12] text-foreground font-medium" : "bg-muted text-muted-foreground")}
 										onClick={() => setTypeFilter(chip.value)}
 									>
 										{ChipIcon && <ChipIcon className="size-3" />}
@@ -1044,10 +929,10 @@ function ComposeDialog({
 						>
 							<PopoverTrigger asChild>
 								<Button
-									variant="outline"
+									variant="ghost"
 									role="combobox"
 									aria-expanded={recipientPopoverOpen}
-									className="w-full justify-between font-normal"
+									className="w-full justify-between font-normal bg-muted hover:bg-muted/70 rounded-lg"
 								>
 									{selectedRecipient ? (
 										<span className="flex items-center gap-2 truncate">
@@ -1171,19 +1056,69 @@ function ComposeDialog({
 							rows={8}
 						/>
 					</div>
+					{/* Pieces jointes */}
+					<div className="space-y-2">
+						<Label className="text-xs text-muted-foreground">{t("iboite.compose.attachments", "Pièces jointes")}</Label>
+						<div
+							{...getRootProps()}
+							className={cn(
+								"border border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors hover:bg-muted/50",
+								isDragActive ? "border-primary bg-primary/5" : "border-foreground/10",
+							)}
+						>
+							<input {...getInputProps()} />
+							<div className="flex flex-col items-center gap-1.5">
+								<UploadCloud className="h-5 w-5 text-muted-foreground" />
+								<span className="text-xs text-muted-foreground">{t("iboite.compose.dropFiles", "Glissez vos fichiers ou cliquez")}</span>
+								<span className="text-[10px] text-muted-foreground/60">PDF, PNG, JPG — max 5 MB</span>
+							</div>
+						</div>
+						{uploadingFiles.length > 0 && (
+							<div className="space-y-1">
+								{uploadingFiles.map(name => (
+									<div key={name} className="flex items-center gap-2 p-2 rounded-lg bg-muted text-xs">
+										<Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+										<span className="truncate flex-1">{name}</span>
+									</div>
+								))}
+							</div>
+						)}
+						{stagedFiles.length > 0 && (
+							<div className="space-y-1">
+								{stagedFiles.map((f, idx) => (
+									<div key={f.storageId} className="flex items-center gap-2 p-2 rounded-lg bg-muted text-xs">
+										<Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+										<span className="truncate flex-1">{f.filename}</span>
+										<span className="text-muted-foreground shrink-0">{(f.sizeBytes / 1024).toFixed(0)} KB</span>
+										<button type="button" onClick={() => setStagedFiles(prev => prev.filter((_, i) => i !== idx))} className="p-0.5 hover:bg-destructive/10 rounded transition-colors shrink-0">
+											<X className="h-3 w-3 text-destructive" />
+										</button>
+									</div>
+								))}
+							</div>
+						)}
+					</div>
 					<div className="flex justify-end gap-2">
 						<Button
-							variant="outline"
+							variant="ghost"
+							size="sm"
+							className="h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full"
 							onClick={() => onOpenChange(false)}
 							disabled={sending}
 						>
 							{t("common.cancel")}
 						</Button>
-						<Button onClick={handleSend} disabled={sending} className="gap-2">
+						<Button
+							variant="ghost"
+							size="sm"
+							className="h-8 px-4 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-1.5"
+							onClick={handleSend}
+							disabled={sending}
+						>
 							{sending ? (
-								<Loader2 className="size-4 animate-spin" />
+								<Loader2 className="size-3.5 animate-spin" />
 							) : (
-								<Send className="size-4" />
+								<Send className="size-3.5" />
 							)}
 							{t("iboite.compose.send")}
 						</Button>
@@ -1220,11 +1155,13 @@ function MailListInner({
 	if (mails.length === 0) {
 		return (
 			<div className="min-h-full flex flex-col items-center justify-center text-center px-6">
-				<Inbox className="size-12 text-muted-foreground/20 mb-3" />
-				<h3 className="text-sm font-medium text-muted-foreground">
+				<div className="rounded-full bg-muted p-4 mb-4">
+					<Inbox className="size-7 text-muted-foreground" />
+				</div>
+				<h3 className="text-sm font-bold text-foreground mb-1">
 					{t(`iboite.empty.${activeFolder}`)}
 				</h3>
-				<p className="text-xs text-muted-foreground/70 mt-1 max-w-[240px]">
+				<p className="text-xs text-muted-foreground max-w-[220px] leading-relaxed">
 					{t(`iboite.empty.${activeFolder}Desc`)}
 				</p>
 			</div>
@@ -1233,7 +1170,7 @@ function MailListInner({
 
 	return (
 		<ScrollArea className="flex-1 min-h-full">
-			<div className="divide-y">
+			<div className="divide-y divide-foreground/5">
 				{mails.map((mail) => (
 					<button
 						type="button"
@@ -1282,14 +1219,23 @@ function MailListInner({
 									{mail.preview}
 								</p>
 							)}
-							{mail.attachments && mail.attachments.length > 0 && (
-								<div className="flex items-center gap-1 mt-1">
-									<Paperclip className="size-3 text-muted-foreground/50" />
-									<span className="text-[11px] text-muted-foreground/50">
-										{mail.attachments.length}
+							<div className="flex items-center gap-2 mt-1 flex-wrap">
+								{mail.type === "letter" && mail.stampColor && (
+									<span className={cn("size-2 rounded-full shrink-0", mail.stampColor === "red" ? "bg-destructive" : mail.stampColor === "green" ? "bg-success" : "bg-primary")} />
+								)}
+								{mail.letterType === "action_required" && (
+									<span className="text-[10px] font-medium text-destructive">{t("iboite.mail.actionRequired", "Action requise")}</span>
+								)}
+								{mail.dueDate && mail.letterType === "action_required" && (
+									<span className="text-[10px] text-muted-foreground">avant le {format(new Date(mail.dueDate), "dd/MM/yyyy")}</span>
+								)}
+								{mail.attachments && mail.attachments.length > 0 && (
+									<span className="flex items-center gap-0.5">
+										<Paperclip className="size-3 text-muted-foreground/50" />
+										<span className="text-[11px] text-muted-foreground/50">{mail.attachments.length}</span>
 									</span>
-								</div>
-							)}
+								)}
+							</div>
 						</div>
 						<button
 							type="button"
@@ -1304,7 +1250,7 @@ function MailListInner({
 								className={cn(
 									"size-4 transition-colors",
 									mail.isStarred
-										? "fill-amber-400 text-amber-400"
+										? "fill-warning text-warning"
 										: "text-transparent hover:text-muted-foreground/30",
 								)}
 							/>
@@ -1314,7 +1260,7 @@ function MailListInner({
 			</div>
 
 			{paginationStatus === "CanLoadMore" && (
-				<div className="p-3 text-center border-t">
+				<div className="p-3 text-center border-t border-foreground/5">
 					<Button
 						variant="ghost"
 						size="sm"
@@ -1326,7 +1272,7 @@ function MailListInner({
 				</div>
 			)}
 			{paginationStatus === "LoadingMore" && (
-				<div className="p-3 flex justify-center border-t">
+				<div className="p-3 flex justify-center border-t border-foreground/5">
 					<Loader2 className="size-4 animate-spin text-muted-foreground" />
 				</div>
 			)}
@@ -1372,7 +1318,7 @@ function MailDetail({
 	return (
 		<div className="flex flex-col flex-1 min-h-full">
 			{/* Toolbar */}
-			<div className="px-3 py-2 border-b flex items-center justify-between gap-2 shrink-0">
+			<div className="px-3 py-2 border-b border-foreground/5 flex items-center justify-between gap-2 shrink-0">
 				<Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5">
 					<ArrowLeft className="size-4" />
 					<span className="lg:hidden">{t("iboite.actions.back")}</span>
@@ -1423,7 +1369,7 @@ function MailDetail({
 						<Star
 							className={cn(
 								"size-4",
-								mail.isStarred && "fill-amber-400 text-amber-400",
+								mail.isStarred && "fill-warning text-warning",
 							)}
 						/>
 					</Button>
@@ -1457,7 +1403,7 @@ function MailDetail({
 								<Star
 									className={cn(
 										"size-4 mr-2",
-										mail.isStarred && "fill-amber-400 text-amber-400",
+										mail.isStarred && "fill-warning text-warning",
 									)}
 								/>
 								{mail.isStarred
@@ -1482,9 +1428,26 @@ function MailDetail({
 			{/* Body */}
 			<ScrollArea className="flex-1">
 				<div className="p-5 space-y-4">
-					<h2 className="text-lg font-semibold leading-tight">
-						{mail.subject || t("iboite.mail.noSubject")}
-					</h2>
+					<div className="space-y-2">
+						<h2 className="text-lg font-semibold leading-tight">
+							{mail.subject || t("iboite.mail.noSubject")}
+						</h2>
+						{/* Indicateurs officiels */}
+						<div className="flex items-center gap-2 flex-wrap">
+							{mail.type === "letter" && (
+								<span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12] text-muted-foreground">{t("iboite.mail.letter", "Courrier officiel")}</span>
+							)}
+							{mail.stampColor && (
+								<span className={cn("size-2.5 rounded-full", mail.stampColor === "red" ? "bg-destructive" : mail.stampColor === "green" ? "bg-success" : "bg-primary")} />
+							)}
+							{mail.letterType === "action_required" && mail.dueDate && (
+								<span className="text-[10px] font-medium px-2 py-0.5 rounded-full badge-warning">{t("iboite.mail.actionBefore", "Action requise avant le")} {format(new Date(mail.dueDate), "dd/MM/yyyy")}</span>
+							)}
+							{mail.letterType === "informational" && (
+								<span className="text-[10px] font-medium px-2 py-0.5 rounded-full badge-info">{t("iboite.mail.informational", "Information")}</span>
+							)}
+						</div>
+					</div>
 
 					{mail.recipient && (
 						<p className="text-xs text-muted-foreground">
@@ -1510,7 +1473,7 @@ function MailDetail({
 										{/* Message header */}
 										<div className="flex items-center justify-between gap-3 mb-2">
 											<div className="flex items-center gap-2 min-w-0">
-												<div className="size-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-xs font-semibold text-primary">
+												<div className="size-7 rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12] flex items-center justify-center shrink-0 text-xs font-semibold text-foreground">
 													{(msg.sender?.name ?? "?").charAt(0).toUpperCase()}
 												</div>
 												<p className="text-sm font-medium truncate">
@@ -1537,7 +1500,7 @@ function MailDetail({
 							{/* Sender row */}
 							<div className="flex items-center justify-between gap-4">
 								<div className="flex items-center gap-3 min-w-0">
-									<div className="size-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm font-semibold text-primary">
+									<div className="size-9 rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12] flex items-center justify-center shrink-0 text-sm font-semibold text-foreground">
 										{(mail.sender?.name ?? "?").charAt(0).toUpperCase()}
 									</div>
 									<div className="min-w-0">
@@ -1573,7 +1536,7 @@ function MailDetail({
 					)}
 
 					{mail.attachments && mail.attachments.length > 0 && (
-						<div className="pt-3 border-t">
+						<div className="pt-3 border-t border-foreground/5">
 							<p className="text-sm font-medium mb-2 flex items-center gap-1.5">
 								{t("iboite.mail.attachments")}{" "}
 								<span className="text-muted-foreground">
@@ -1585,7 +1548,7 @@ function MailDetail({
 									(att: { name: string; size: string; storageId?: string }) => (
 										<div
 											key={att.name}
-											className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/60 border text-sm hover:bg-muted transition-colors"
+											className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted border flat-card-border text-sm hover:bg-muted transition-colors"
 										>
 											<Paperclip className="size-3.5 text-muted-foreground shrink-0" />
 											<span className="truncate max-w-[180px]">{att.name}</span>
@@ -1635,20 +1598,17 @@ function PackageList({
 	> = {
 		[PackageStatus.InTransit]: {
 			label: t("iboite.packages.inTransit"),
-			color:
-				"bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/20",
+			color: "badge-info border-transparent",
 			icon: Truck,
 		},
 		[PackageStatus.Available]: {
 			label: t("iboite.packages.available"),
-			color:
-				"bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20",
+			color: "badge-warning border-transparent",
 			icon: Package,
 		},
 		[PackageStatus.Delivered]: {
 			label: t("iboite.packages.delivered"),
-			color:
-				"bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20",
+			color: "badge-success border-transparent",
 			icon: CheckCheck,
 		},
 		[PackageStatus.Pending]: {
@@ -1658,8 +1618,7 @@ function PackageList({
 		},
 		[PackageStatus.Returned]: {
 			label: t("iboite.packages.returned"),
-			color:
-				"bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20",
+			color: "badge-destructive border-transparent",
 			icon: Package,
 		},
 	};
@@ -1673,10 +1632,10 @@ function PackageList({
 				return (
 					<div
 						key={pkg._id}
-						className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/30 transition-colors"
+						className="flex items-start gap-4 p-4 border flat-card-border rounded-xl hover:bg-muted/30 transition-colors"
 					>
 						<div
-							className={cn("p-2.5 rounded-lg border shrink-0", status.color)}
+							className={cn("p-2.5 rounded-xl border flat-card-border shrink-0", status.color)}
 						>
 							<StatusIcon className="size-5" />
 						</div>
@@ -1914,7 +1873,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 					</div>
 					<Button
 						onClick={() => setIsCallDialogOpen(true)}
-						className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+						className="gap-2 bg-success hover:bg-success/90 text-white"
 					>
 						<PhoneCall className="size-4" />
 						{t("iboite.call.newCall", "Nouvel appel")}
@@ -1957,7 +1916,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 									<Button
 										type="submit"
 										disabled={isCalling || !callEmail.trim()}
-										className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+										className="gap-2 bg-success hover:bg-success/90 text-white"
 									>
 										{isCalling ? (
 											<Loader2 className="size-4 animate-spin" />
@@ -1990,8 +1949,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 	> = {
 		active: {
 			label: t("iboite.calls.status.active"),
-			color:
-				"bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20",
+			color: "badge-success border-transparent",
 			icon: PhoneCall,
 		},
 		ended: {
@@ -2001,20 +1959,18 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 		},
 		scheduled: {
 			label: t("iboite.calls.status.scheduled"),
-			color:
-				"bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/20",
+			color: "badge-info border-transparent",
 			icon: Phone,
 		},
 		cancelled: {
 			label: t("iboite.calls.status.cancelled"),
-			color:
-				"bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20",
+			color: "badge-destructive border-transparent",
 			icon: PhoneMissed,
 		},
 	};
 
 	const callContent = (
-		<div className="flex flex-col flex-1 min-h-0 h-full bg-zinc-950 overflow-hidden">
+		<div className="flex flex-col flex-1 min-h-0 h-full bg-background overflow-hidden">
 			{token && wsUrl ? (
 				<LiveKitRoom
 					token={token}
@@ -2039,8 +1995,8 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 			) : (
 				<div className="h-full flex items-center justify-center">
 					<div className="text-center space-y-3">
-						<Loader2 className="w-8 h-8 animate-spin text-zinc-500 mx-auto" />
-						<p className="text-zinc-400 text-sm">
+						<Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto" />
+						<p className="text-muted-foreground text-sm">
 							{t("meetings.connecting", "Connexion au serveur d'appel...")}
 						</p>
 					</div>
@@ -2064,7 +2020,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 					</div>
 					<Button
 						onClick={() => setIsCallDialogOpen(true)}
-						className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+						className="gap-2 bg-success hover:bg-success/90 text-white"
 					>
 						<PhoneCall className="size-4" />
 						{t("iboite.call.newCall", "Nouvel appel")}
@@ -2096,14 +2052,14 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 							<div
 								key={call._id}
 								className={cn(
-									"flex items-start gap-3 p-3 border rounded-lg transition-colors",
+									"flex items-start gap-3 p-3 border flat-card-border rounded-xl transition-colors",
 									isActive
-										? "border-emerald-300 dark:border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-500/5"
+										? "border-success/30 bg-success/5"
 										: "hover:bg-muted/30",
 								)}
 							>
 								<div
-									className={cn("p-2 rounded-lg border shrink-0", status.color)}
+									className={cn("p-2 rounded-xl border flat-card-border shrink-0", status.color)}
 								>
 									<StatusIcon className="size-4" />
 								</div>
@@ -2123,10 +2079,10 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 										<span
 											className={
 												isMissed
-													? "text-red-500 font-medium"
+													? "text-destructive font-medium"
 													: isOutgoing
-														? "text-emerald-600 dark:text-emerald-400"
-														: "text-blue-600 dark:text-blue-400"
+														? "text-success"
+														: "text-primary"
 											}
 										>
 											{isMissed
@@ -2166,7 +2122,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 											<Button
 												size="sm"
 												variant="default"
-												className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs"
+												className="gap-1.5 bg-success hover:bg-success/90 text-white h-8 text-xs"
 												onClick={() => handleJoin(call._id)}
 												disabled={isConnecting || activeCallId === call._id}
 											>
@@ -2236,7 +2192,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 							<Button
 								type="submit"
 								disabled={isCalling || !callEmail.trim()}
-								className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+								className="gap-2 bg-success hover:bg-success/90 text-white"
 							>
 								{isCalling ? (
 									<Loader2 className="size-4 animate-spin" />
@@ -2260,7 +2216,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 						side="bottom"
 						onInteractOutside={(e) => e.preventDefault()}
 						onEscapeKeyDown={(e) => e.preventDefault()}
-						className="p-0 h-dvh w-full bg-zinc-950 border-none rounded-none focus:outline-none flex flex-col pt-10"
+						className="p-0 h-dvh w-full bg-background border-none rounded-none focus:outline-none flex flex-col pt-10"
 					>
 						{callContent}
 					</SheetContent>
@@ -2276,7 +2232,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 						autoFocus={false}
 						onInteractOutside={(e) => e.preventDefault()}
 						onEscapeKeyDown={(e) => e.preventDefault()}
-						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
+						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-background border flat-card-border"
 					>
 						{callContent}
 					</DialogContent>

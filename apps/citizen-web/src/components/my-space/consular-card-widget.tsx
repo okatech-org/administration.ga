@@ -17,7 +17,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 
@@ -73,7 +73,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 		const consularCard = profile.consularCard;
 		const identity = profile.identity;
 		return (
-			<div className="bg-card rounded-2xl border border-border p-3 flex flex-col gap-3 shrink-0">
+			<FlatCard className="p-3 flex flex-col gap-3 shrink-0">
 				{/* 1. Header: Titre + Bouton de bascule */}
 				<div className="flex items-center justify-between">
 					<span className="text-xs font-bold flex items-center gap-1.5">
@@ -111,7 +111,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 							)}
 						>
 							{/* Front */}
-							<div className="absolute inset-0 w-full h-full backface-hidden rounded-xl overflow-hidden shadow-lg border border-border/20">
+							<div className="absolute inset-0 w-full h-full backface-hidden rounded-xl overflow-hidden shadow-sm border flat-card-border">
 								{CARD_RECTO_URL ? (
 									<img
 										src={CARD_RECTO_URL}
@@ -182,7 +182,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 							<div
 								className={cn(
 									"absolute inset-0 w-full h-full backface-hidden transform-[rotateY(180deg)]",
-									"rounded-xl overflow-hidden shadow-lg border border-border/20",
+									"rounded-xl overflow-hidden shadow-sm border flat-card-border",
 								)}
 							>
 								{CARD_VERSO_URL ? (
@@ -227,48 +227,40 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 				</div>
 
 				{/* 3. Bouton Attestation */}
-				<Button asChild variant="outline" className="w-full h-8 text-xs border-border gap-2">
+				<Button asChild variant="ghost" size="sm" className="w-full h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-2">
 					<Link to="/services/$slug" params={{ slug: "attestation-carte-consulaire" }}>
 						<FileText className="h-3.5 w-3.5" />
 						Attestation de Carte Consulaire
 					</Link>
 				</Button>
-			</div>
+			</FlatCard>
 		);
 	}
 
 	// Has expired card
 	if (hasExpiredCard) {
 		return (
-			<Card className="flex flex-col">
-				<CardHeader className="pb-2">
-					<CardTitle className="text-sm font-medium flex items-center gap-2">
-						<CreditCard className="h-4 w-4" />
-						{t("mySpace.consularCard.title")}
-						<Badge variant="destructive" className="ml-auto">
-							{t("mySpace.consularCard.expired")}
-						</Badge>
-					</CardTitle>
-				</CardHeader>
-				<CardContent className="flex-1 flex flex-col items-center justify-center text-center py-4 gap-3">
+			<FlatCard className="flex flex-col p-4 gap-3">
+				<div className="flex items-center gap-2">
+					<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+						<CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+					</div>
+					<span className="text-sm font-medium">{t("mySpace.consularCard.title")}</span>
+					<Badge variant="destructive" className="ml-auto">{t("mySpace.consularCard.expired")}</Badge>
+				</div>
+				<div className="flex-1 flex flex-col items-center justify-center text-center py-4 gap-3">
 					<CreditCard className="h-8 w-8 text-muted-foreground/30" />
 					<p className="text-xs text-muted-foreground">
-						{t(
-							"mySpace.consularCard.expiredDesc",
-							"Votre carte consulaire a expiré",
-						)}
+						{t("mySpace.consularCard.expiredDesc", "Votre carte consulaire a expiré")}
 					</p>
-					<Button asChild variant="outline" size="sm">
-						<Link
-							to="/services/$slug"
-							params={{ slug: "consular-card-registration" }}
-						>
+					<Button asChild variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-1.5">
+						<Link to="/services/$slug" params={{ slug: "consular-card-registration" }}>
 							{t("mySpace.consularCard.renew")}
-							<ArrowRight className="ml-1 h-4 w-4" />
+							<ArrowRight className="ml-1 h-3.5 w-3.5" />
 						</Link>
 					</Button>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 		);
 	}
 
@@ -279,27 +271,24 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 
 		if (isPending) {
 			return (
-				<Card className="flex flex-col">
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium flex items-center gap-2">
-							<CreditCard className="h-4 w-4" />
-							{t("mySpace.consularCard.title")}
-							<Badge className="ml-auto bg-amber-100 text-amber-700 border-amber-200">
-								<Clock className="h-3 w-3 mr-1" />
-								{t("mySpace.consularCard.pending")}
-							</Badge>
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="flex-1 flex flex-col items-center justify-center text-center py-6">
-						<Clock className="h-8 w-8 mb-2 text-amber-500/50" />
+				<FlatCard className="flex flex-col p-4 gap-3">
+					<div className="flex items-center gap-2">
+						<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+							<CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+						</div>
+						<span className="text-sm font-medium">{t("mySpace.consularCard.title")}</span>
+						<Badge className="ml-auto badge-warning border-transparent">
+							<Clock className="h-3 w-3 mr-1" />
+							{t("mySpace.consularCard.pending")}
+						</Badge>
+					</div>
+					<div className="flex-1 flex flex-col items-center justify-center text-center py-6">
+						<Clock className="h-8 w-8 mb-2 text-warning/50" />
 						<p className="text-xs text-muted-foreground">
-							{t(
-								"mySpace.consularCard.pendingDesc",
-								"Démarche en cours de traitement",
-							)}
+							{t("mySpace.consularCard.pendingDesc", "Démarche en cours de traitement")}
 						</p>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			);
 		}
 	}
@@ -307,56 +296,45 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 	// Not a national - not eligible
 	if (profile?.identity?.nationality !== CountryCode.GA) {
 		return (
-			<Card className="flex flex-col">
-				<CardHeader className="pb-2">
-					<CardTitle className="text-sm font-medium flex items-center gap-2">
-						<CreditCard className="h-4 w-4" />
-						{t("mySpace.consularCard.title")}
-					</CardTitle>
-				</CardHeader>
-				<CardContent className="flex-1 flex flex-col items-center justify-center text-center py-6">
+			<FlatCard className="flex flex-col p-4 gap-3">
+				<div className="flex items-center gap-2">
+					<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+						<CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+					</div>
+					<span className="text-sm font-medium">{t("mySpace.consularCard.title")}</span>
+				</div>
+				<div className="flex-1 flex flex-col items-center justify-center text-center py-6">
 					<CreditCard className="h-8 w-8 mb-2 text-muted-foreground/30" />
 					<p className="text-sm text-muted-foreground">
-						{t(
-							"mySpace.consularCard.notEligible",
-							"Réservé aux ressortissants gabonais",
-						)}
+						{t("mySpace.consularCard.notEligible", "Réservé aux ressortissants gabonais")}
 					</p>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 		);
 	}
 
 	// No card, no pending request - can request
 	return (
-		<Card className="flex flex-col">
-			<CardHeader className="pb-2">
-				<CardTitle className="text-sm font-medium flex items-center gap-2">
-					<CreditCard className="h-4 w-4" />
-					{t("mySpace.consularCard.title")}
-					<Badge variant="secondary" className="ml-auto">
-						{t("mySpace.consularCard.notIssued")}
-					</Badge>
-				</CardTitle>
-			</CardHeader>
-			<CardContent className="flex-1 flex flex-col items-center justify-center text-center py-4 gap-3">
+		<FlatCard className="flex flex-col p-4 gap-3">
+			<div className="flex items-center gap-2">
+				<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+					<CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+				</div>
+				<span className="text-sm font-medium">{t("mySpace.consularCard.title")}</span>
+				<Badge variant="secondary" className="ml-auto">{t("mySpace.consularCard.notIssued")}</Badge>
+			</div>
+			<div className="flex-1 flex flex-col items-center justify-center text-center py-4 gap-3">
 				<CreditCard className="h-8 w-8 text-muted-foreground/30" />
 				<p className="text-sm text-muted-foreground">
-					{t(
-						"mySpace.consularCard.noCardYet",
-						"Vous n'avez pas encore de carte consulaire",
-					)}
+					{t("mySpace.consularCard.noCardYet", "Vous n'avez pas encore de carte consulaire")}
 				</p>
-				<Button asChild variant="outline" size="sm">
-					<Link
-						to="/services/$slug"
-						params={{ slug: "consular-card-registration" }}
-					>
+				<Button asChild variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-1.5">
+					<Link to="/services/$slug" params={{ slug: "consular-card-registration" }}>
 						{t("mySpace.consularCard.request")}
-						<ArrowRight className="ml-1 h-4 w-4" />
+						<ArrowRight className="ml-1 h-3.5 w-3.5" />
 					</Link>
 				</Button>
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }

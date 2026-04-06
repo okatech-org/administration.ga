@@ -20,10 +20,10 @@ const AdvantageCard = ({
   const { t } = useTranslation();
 
   const colorClasses = {
-    blue: "bg-blue-500/20 text-blue-500",
-    yellow: "bg-yellow-500/20 text-yellow-500",
-    purple: "bg-purple-500/20 text-purple-500",
-    green: "bg-green-500/20 text-green-500",
+    blue: "stat-icon-blue",
+    yellow: "stat-icon-orange",
+    purple: "stat-icon-purple",
+    green: "stat-icon-green",
   };
 
   return (

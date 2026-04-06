@@ -358,3 +358,109 @@ export const getOrgMemberships = authQuery({
     return results.filter((m) => m !== null);
   },
 });
+
+// ═══════════════════════════════════════════════════════════════
+// RGPD — Export de donnees & suppression de compte
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Export all user data (RGPD Art. 20 — droit a la portabilite)
+ */
+export const exportMyData = authQuery({
+  args: {},
+  handler: async (ctx) => {
+    const userId = ctx.user._id;
+
+    // Profil
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    // Demandes (les 100 plus recentes)
+    const requests = await ctx.db
+      .query("requests")
+      .withIndex("by_user_status", (q) => q.eq("userId", userId))
+      .take(100);
+
+    // Notifications
+    const notifications = await ctx.db
+      .query("notifications")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .take(100);
+
+    // Retourner les donnees sanitisees (sans champs internes sensibles)
+    return {
+      exportedAt: new Date().toISOString(),
+      account: {
+        name: ctx.user.name,
+        email: ctx.user.email,
+        phone: ctx.user.phone ?? null,
+        firstName: ctx.user.firstName ?? null,
+        lastName: ctx.user.lastName ?? null,
+        role: ctx.user.role ?? "User",
+        createdAt: new Date(ctx.user._creationTime).toISOString(),
+        preferences: ctx.user.preferences ?? null,
+      },
+      profile: profile
+        ? {
+            userType: profile.userType,
+            identity: profile.identity ?? null,
+            passportInfo: profile.passportInfo ?? null,
+            addresses: profile.addresses ?? null,
+            contacts: profile.contacts ?? null,
+            family: profile.family ?? null,
+            profession: profile.profession ?? null,
+            consularCard: profile.consularCard ?? null,
+            countryOfResidence: profile.countryOfResidence ?? null,
+          }
+        : null,
+      requests: requests.map((r) => ({
+        reference: r.reference,
+        status: r.status,
+        createdAt: new Date(r._creationTime).toISOString(),
+      })),
+      notifications: notifications.map((n) => ({
+        title: n.title,
+        body: n.body,
+        isRead: n.isRead,
+        createdAt: n.createdAt ? new Date(n.createdAt).toISOString() : null,
+      })),
+    };
+  },
+});
+
+/**
+ * Demande de suppression de compte (RGPD Art. 17)
+ * Ne supprime pas immediatement — pose un timestamp pour purge ulterieure.
+ */
+export const requestAccountDeletion = authMutation({
+  args: {
+    confirmEmail: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (args.confirmEmail !== ctx.user.email) {
+      throw new Error("L'adresse email ne correspond pas.");
+    }
+
+    if (ctx.user.deletionRequestedAt) {
+      throw new Error("Une demande de suppression est déjà en cours.");
+    }
+
+    await ctx.db.patch(ctx.user._id, {
+      deletionRequestedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    await logCortexAction(ctx, {
+      action: "REQUEST_ACCOUNT_DELETION",
+      categorie: "UTILISATEUR",
+      entiteType: "users",
+      entiteId: ctx.user._id,
+      signalType: "TYPE_MODIFIE",
+      priorite: "HIGH",
+    });
+
+    return true;
+  },
+});

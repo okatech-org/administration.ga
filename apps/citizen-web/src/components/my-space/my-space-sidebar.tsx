@@ -360,7 +360,7 @@ export function MySpaceSidebar({
 					<div className={cn("mt-auto pb-2 min-h-[44px]", isExpanded ? "" : "")}>
 						{isExpanded ? (
 							<Link
-								to="/my-space/settings"
+								to="/my-space/settings" search={{ tab: undefined }}
 								className={cn(
 									" flex items-center transition-all duration-200 w-full gap-3 px-3 h-11",
 									isActive("/my-space/settings") ? "active text-primary dark:text-primary font-black" : "font-semibold text-muted-foreground hover:text-foreground"
@@ -374,7 +374,7 @@ export function MySpaceSidebar({
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<Link
-										to="/my-space/settings"
+										to="/my-space/settings" search={{ tab: undefined }}
 										className={cn(
 											" flex items-center transition-all duration-200 w-11 h-11 justify-center",
 											isActive("/my-space/settings") ? "active text-primary dark:text-primary font-black" : "font-semibold text-muted-foreground hover:text-foreground"

@@ -20,7 +20,6 @@ import {
 	MessageSquare,
 	Minus,
 	Phone,
-	Settings,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
@@ -31,14 +30,13 @@ import { useDraggable } from "@/hooks/use-draggable";
 import { CitizenChatTab } from "./CitizenChatTab";
 import { CitizenCallTab } from "./CitizenCallTab";
 import { CitizenContactTab } from "./CitizenContactTab";
-import { CitizenSettingsTab } from "./CitizenSettingsTab";
+// Settings tab déplacé dans le menu mobile principal
 
 // ─── Tabs ─────────────────────────────────────────────────────
 const TABS = [
 	{ id: "ichat", label: "iChat", icon: MessageSquare },
 	{ id: "icall", label: "iAppel", icon: Phone },
 	{ id: "icontact", label: "iContact", icon: Contact },
-	{ id: "settings", label: "", icon: Settings },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -70,49 +68,49 @@ export function CitizenIAstedWindow() {
 			<AnimatePresence>
 				{open && (
 					<motion.div
-						initial={{ opacity: 0, scale: 0.9, y: 20 }}
-						animate={{ opacity: 1, scale: 1, y: 0 }}
-						exit={{ opacity: 0, scale: 0.9, y: 20 }}
-						transition={{ type: "spring", damping: 25, stiffness: 300 }}
+						initial={{ opacity: 0, y: "100%" }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0, y: "100%" }}
+						transition={{ type: "spring", damping: 28, stiffness: 320 }}
 						className={cn(
-							"fixed bottom-0 right-0 z-50",
-							"w-full sm:w-[420px] sm:right-6 sm:bottom-6",
-							"h-[100dvh] sm:h-[min(640px,calc(100vh-100px))]",
-							"rounded-none sm:rounded-2xl shadow-2xl",
-							"bg-background border flex flex-col overflow-hidden",
+							"fixed bottom-0 left-0 right-0 z-50",
+							"sm:left-auto sm:w-[420px] sm:right-6 sm:bottom-6",
+							"h-[85dvh] sm:h-[min(640px,calc(100vh-100px))]",
+							"rounded-t-2xl sm:rounded-2xl shadow-2xl",
+							"bg-card border flat-card-border flex flex-col overflow-hidden",
 						)}
 					>
-						{/* ── Header compact ── */}
-						<div className="border-b px-3 py-2 flex items-center justify-between shrink-0 bg-emerald-600 text-white">
-							<div className="flex items-center gap-2.5">
-								<div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
-									<Bot className="h-4 w-4 text-white" />
+						{/* ── Header ── */}
+						<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-border/50">
+							<div className="flex items-center gap-3">
+								<div className="h-9 w-9 rounded-full bg-emerald-500/10 flex items-center justify-center">
+									<Bot className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
 								</div>
 								<div>
-									<h2 className="text-xs font-semibold leading-tight">Assistant Consulat</h2>
-									<p className="text-[9px] text-white/60 leading-tight">
-										Je suis là pour vous aider
+									<h2 className="text-sm font-bold leading-tight text-foreground">iAsted</h2>
+									<p className="text-[10px] text-muted-foreground leading-tight">
+										Assistant Consulaire
 									</p>
 								</div>
 							</div>
-							<div className="flex items-center gap-0.5">
+							<div className="flex items-center gap-1">
 								<Button
 									variant="ghost"
 									size="icon"
 									onClick={handleExpand}
 									title="Plein écran"
-									className="h-7 w-7 text-white hover:bg-white/20 hidden lg:flex"
+									className="h-8 w-8 text-muted-foreground hover:bg-muted rounded-lg hidden lg:flex"
 								>
-									<Maximize2 className="h-3.5 w-3.5" />
+									<Maximize2 className="h-4 w-4" />
 								</Button>
 								<Button
 									variant="ghost"
 									size="icon"
 									onClick={() => setOpen(false)}
 									title="Réduire"
-									className="h-7 w-7 text-white hover:bg-white/20"
+									className="h-8 w-8 text-muted-foreground hover:bg-muted rounded-lg"
 								>
-									<Minus className="h-3.5 w-3.5" />
+									<Minus className="h-4 w-4" />
 								</Button>
 							</div>
 						</div>
@@ -122,12 +120,11 @@ export function CitizenIAstedWindow() {
 							{activeTab === "ichat" && <CitizenChatTab />}
 							{activeTab === "icall" && <CitizenCallTab />}
 							{activeTab === "icontact" && <CitizenContactTab />}
-							{activeTab === "settings" && <CitizenSettingsTab />}
 						</div>
 
-						{/* ── Navigation en bas (style WhatsApp) ── */}
-						<div className="border-t bg-card shrink-0">
-							<div className="flex items-center justify-around py-1.5">
+						{/* ── Navigation tabs ── */}
+						<div className="border-t border-border/50 bg-card shrink-0">
+							<div className="flex items-center justify-around py-2">
 								{TABS.map((tab) => {
 									const Icon = tab.icon;
 									const isActive = activeTab === tab.id;
@@ -137,26 +134,19 @@ export function CitizenIAstedWindow() {
 											type="button"
 											onClick={() => setActiveTab(tab.id)}
 											className={cn(
-												"flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[52px]",
+												"flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl transition-colors min-w-[60px]",
 												isActive
-													? "text-emerald-500"
+													? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
 													: "text-muted-foreground hover:text-foreground",
 											)}
 										>
-											<Icon className={cn("h-5 w-5", isActive && "text-emerald-500")} />
+											<Icon className={cn("h-5 w-5", isActive && "text-emerald-600 dark:text-emerald-400")} />
 											<span className={cn(
-												"text-[9px] font-medium leading-none",
-												isActive && "text-emerald-500",
+												"text-[9px] font-semibold leading-none",
+												isActive && "text-emerald-600 dark:text-emerald-400",
 											)}>
 												{tab.label}
 											</span>
-											{isActive && (
-												<motion.div
-													layoutId="citizen-iasted-tab-indicator"
-													className="h-0.5 w-4 bg-emerald-500 rounded-full mt-0.5"
-													transition={{ type: "spring", stiffness: 400, damping: 30 }}
-												/>
-											)}
 										</button>
 									);
 								})}

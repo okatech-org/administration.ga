@@ -8,7 +8,6 @@ import profileResident from "@/assets/profile-resident-new.png";
 import profileVisitor from "@/assets/profile-visitor-new.png";
 import { useConvexQuery } from "@/integrations/convex/hooks";
 import { authClient } from "@/lib/auth-client";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -111,12 +110,10 @@ function ProfileCard({
 	delay,
 	ctaText,
 }: ProfileCardProps) {
-	const colorClasses = {
-		green:
-			"border-green-500 dark:border-green-600 hover:border-green-400 bg-green-50/50 dark:bg-green-950/30",
-		yellow:
-			"border-yellow-500 dark:border-yellow-500 hover:border-yellow-400 bg-yellow-100/80 dark:bg-yellow-950/50 border-2",
-		blue: "border-blue-500 dark:border-blue-600 hover:border-blue-400 bg-blue-50/50 dark:bg-blue-950/30",
+	const borderTopColors = {
+		green: "var(--gabon-green-hex)",
+		yellow: "var(--gabon-yellow-hex)",
+		blue: "var(--gabon-blue-hex)",
 	};
 
 	return (
@@ -128,10 +125,8 @@ function ProfileCard({
 		>
 			<Link to={to}>
 				<Card
-					className={cn(
-						"py-0 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 overflow-hidden h-full",
-						colorClasses[color],
-					)}
+					className="py-0 cursor-pointer border flat-card-border bg-card shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden h-full"
+					style={{ borderTop: `3px solid ${borderTopColors[color]}` }}
 				>
 					<div className="h-48 w-full overflow-hidden">
 						<img

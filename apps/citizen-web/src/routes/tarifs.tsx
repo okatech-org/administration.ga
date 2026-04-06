@@ -31,13 +31,14 @@ function TarifsPage() {
       <main className="flex-1 py-16 px-6">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="text-center mb-12">
-             <h1 className="text-4xl font-bold mb-4">Tarifs Consulaires</h1>
-             <p className="text-muted-foreground text-lg">
-               Tarifs en vigueur applicables pour les services consulaires.
-             </p>
+            <h1 className="text-4xl font-bold mb-4">Tarifs Consulaires</h1>
+            <p className="text-muted-foreground text-lg">
+              Tarifs en vigueur applicables pour les services consulaires.
+            </p>
+            <div className="gabon-stripe mt-6 max-w-xs mx-auto" />
           </div>
-          
-          <div className="rounded-xl border bg-card shadow-sm">
+
+          <div className="bg-card rounded-xl p-6 md:p-8 border flat-card-border shadow-sm">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -46,7 +47,7 @@ function TarifsPage() {
                   <TableHead className="text-right">Délai estimé</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="stagger-children">
                 {fees.map((item) => (
                   <TableRow key={item.service}>
                     <TableCell className="font-medium">{item.service}</TableCell>
@@ -57,13 +58,12 @@ function TarifsPage() {
               </TableBody>
             </Table>
           </div>
-          
+
           <p className="text-sm text-muted-foreground text-center italic mt-6">
             Les tarifs sont indicatifs et peuvent être sujets à modification sans préavis. Les paiements se font généralement en espèces ou par carte bancaire au guichet consulaire.
           </p>
         </div>
       </main>
-      
     </div>
   )
 }

@@ -29,6 +29,7 @@ export const updateMyPreferences = authMutation({
     emailNotifications: v.optional(v.boolean()),
     pushNotifications: v.optional(v.boolean()),
     smsNotifications: v.optional(v.boolean()),
+    whatsappNotifications: v.optional(v.boolean()),
     language: v.optional(v.union(v.literal("fr"), v.literal("en"))),
     shareAnalytics: v.optional(v.boolean()),
   },
