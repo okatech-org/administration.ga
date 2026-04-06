@@ -1,0 +1,3 @@
+module.exports=[39375,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(74368);a.n(d("[project]/.claude/worktrees/migrate-users-web-nextjs/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},93171,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(74368);a.n(d("[project]/.claude/worktrees/migrate-users-web-nextjs/node_modules/next/dist/client/components/builtin/global-error.js"))},12706,a=>{"use strict";a.i(39375);var b=a.i(93171);a.n(b)},50214,a=>{a.n(a.i(12706))}];
+
+//# sourceMappingURL=03g6_next_dist_client_components_builtin_global-error_0nte-cs.js.map

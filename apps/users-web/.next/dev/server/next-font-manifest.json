@@ -1,0 +1,9 @@
+{
+  "app": {
+    "[project]/.claude/worktrees/migrate-users-web-nextjs/apps/users-web/src/app/_not-found/page": [],
+    "[project]/.claude/worktrees/migrate-users-web-nextjs/apps/users-web/src/app/page": []
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}
