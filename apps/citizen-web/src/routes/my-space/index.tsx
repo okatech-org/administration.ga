@@ -501,8 +501,8 @@ function UserDashboard() {
 
 						{/* Démarches en cours */}
 						<FlatCard className={cn("shrink-0 lg:flex-1 flex flex-col", !latestRequest && !(appointments && appointments.length > 0) && "order-2 lg:order-none")}>
-							<div className="p-3 lg:p-4 flex flex-col">
-								<div className="flex items-center justify-between mb-2 lg:mb-3">
+							<div className="p-3 lg:p-4 flex flex-col flex-1">
+								<div className="flex items-center justify-between mb-2 lg:mb-3 shrink-0">
 									<span className="text-sm font-semibold flex items-center gap-2.5 text-muted-foreground">
 										<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
 											<FileText className="h-3.5 w-3.5 text-muted-foreground" />
@@ -513,7 +513,7 @@ function UserDashboard() {
 										<Link to="/my-space/services-demarches">Mes Démarches</Link>
 									</Button>
 								</div>
-								<div className="grid grid-cols-2 gap-2 min-[400px]:gap-2.5 flex-1">
+								<div className="grid grid-cols-2 gap-2 min-[400px]:gap-2.5 flex-1 auto-rows-fr">
 									{latestRequest ? (
 										<Link
 											to="/my-space/requests/$reference"
@@ -554,8 +554,8 @@ function UserDashboard() {
 
 						{/* Rendez-vous */}
 						<FlatCard className={cn("shrink-0 lg:flex-1 flex flex-col", !latestRequest && !(appointments && appointments.length > 0) && "order-3 lg:order-none")}>
-							<div className="p-3 lg:p-4 flex flex-col">
-								<div className="flex items-center justify-between mb-2 lg:mb-3">
+							<div className="p-3 lg:p-4 flex flex-col flex-1">
+								<div className="flex items-center justify-between mb-2 lg:mb-3 shrink-0">
 									<span className="text-sm font-semibold flex items-center gap-2.5 text-muted-foreground">
 										<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
 											<Calendar className="h-3.5 w-3.5 text-muted-foreground" />
@@ -566,21 +566,29 @@ function UserDashboard() {
 										<Link to="/my-space/iagenda">iAgenda</Link>
 									</Button>
 								</div>
-								<div className="grid grid-cols-2 gap-2 min-[400px]:gap-2.5 flex-1">
+								<div className="grid grid-cols-2 gap-2 min-[400px]:gap-2.5 flex-1 auto-rows-fr">
 									{appointments && appointments.length > 0 ? (
-										appointments.filter((a: any) => a.date).slice(0, 3).map((a: any) => (
-											<Link
-												key={a._id}
-												to="/my-space/iagenda"
-												className="flex flex-col gap-2 p-2.5 lg:p-3 rounded-xl lg:rounded-lg bg-amber-500/15 dark:bg-amber-500/10 hover:bg-amber-500/25 dark:hover:bg-amber-500/15 transition-colors"
-											>
-												<div className="flex items-center gap-2">
-													<div className="p-1 lg:p-1.5 rounded-md bg-amber-500/10 shrink-0"><Calendar className="h-4 w-4 lg:h-5 lg:w-5 text-amber-600 dark:text-amber-400" /></div>
-													<p className="text-xs lg:text-sm font-bold leading-tight text-foreground line-clamp-2">{a.service?.name || "RDV Consulaire"}</p>
-												</div>
-												<p className="text-[10px] lg:text-xs text-muted-foreground font-medium text-center">{format(new Date(a.date), "dd MMM HH:mm", { locale: fr })}</p>
-											</Link>
-										))
+										appointments.filter((a: any) => a.date).slice(0, 3).map((a: any) => {
+											const isPast = a.date < new Date().toISOString().split("T")[0];
+											return (
+												<Link
+													key={a._id}
+													to="/my-space/iagenda"
+													className={cn("flex flex-col gap-2 p-2.5 lg:p-3 rounded-xl lg:rounded-lg transition-colors", isPast ? "bg-muted hover:bg-muted/80" : "bg-amber-500/15 dark:bg-amber-500/10 hover:bg-amber-500/25 dark:hover:bg-amber-500/15")}
+												>
+													<div className="flex items-center gap-2">
+														<div className={cn("p-1 lg:p-1.5 rounded-md shrink-0", isPast ? "bg-foreground/[0.06] dark:bg-foreground/[0.12]" : "bg-amber-500/10")}>
+															<Calendar className={cn("h-4 w-4 lg:h-5 lg:w-5", isPast ? "text-muted-foreground" : "text-amber-600 dark:text-amber-400")} />
+														</div>
+														<p className={cn("text-xs lg:text-sm font-bold leading-tight line-clamp-2", isPast ? "text-muted-foreground" : "text-foreground")}>{a.service?.name || "RDV Consulaire"}</p>
+													</div>
+													<p className="text-[10px] lg:text-xs text-muted-foreground font-medium text-center">
+														{format(new Date(a.date + "T00:00:00"), "dd MMM yyyy", { locale: fr })} · {a.time || "—"}
+														{isPast && <span className="ml-1 text-[9px] opacity-60">(passé)</span>}
+													</p>
+												</Link>
+											);
+										})
 									) : (
 										<div className="flex flex-col gap-2 p-2.5 lg:p-3 rounded-xl lg:rounded-lg bg-amber-500/15 dark:bg-amber-500/10">
 											<div className="flex items-center gap-2">
@@ -836,13 +844,23 @@ function UserDashboard() {
 									</div>
 									<div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
 										{appointments && appointments.length > 0 ? (
-											<Link to="/my-space/iagenda" className="flex flex-col gap-2 p-2.5 rounded-xl bg-amber-500/15 dark:bg-amber-500/10 hover:bg-amber-500/25 transition-colors">
-												<div className="flex items-center gap-2">
-													<div className="p-1 rounded-md bg-amber-500/10 shrink-0"><Calendar className="h-4 w-4 text-amber-600 dark:text-amber-400" /></div>
-													<p className="text-xs font-bold leading-tight text-foreground line-clamp-2">{(appointments[0] as any).service?.name || "RDV Consulaire"}</p>
-												</div>
-												<p className="text-[10px] text-muted-foreground font-medium text-center">{format(new Date((appointments[0] as any).date), "dd MMM HH:mm", { locale: fr })}</p>
-											</Link>
+											(() => {
+												const a = appointments[0] as any;
+												const isPast = a.date < new Date().toISOString().split("T")[0];
+												return (
+													<Link to="/my-space/iagenda" className={cn("flex flex-col gap-2 p-2.5 rounded-xl transition-colors", isPast ? "bg-muted hover:bg-muted/80" : "bg-amber-500/15 dark:bg-amber-500/10 hover:bg-amber-500/25")}>
+														<div className="flex items-center gap-2">
+															<div className={cn("p-1 rounded-md shrink-0", isPast ? "bg-foreground/[0.06] dark:bg-foreground/[0.12]" : "bg-amber-500/10")}>
+																<Calendar className={cn("h-4 w-4", isPast ? "text-muted-foreground" : "text-amber-600 dark:text-amber-400")} />
+															</div>
+															<p className={cn("text-xs font-bold leading-tight line-clamp-2", isPast ? "text-muted-foreground" : "text-foreground")}>{a.service?.name || "RDV Consulaire"}</p>
+														</div>
+														<p className="text-[10px] text-muted-foreground font-medium text-center">
+															{format(new Date(a.date + "T00:00:00"), "dd MMM yyyy", { locale: fr })} · {a.time || "—"}
+														</p>
+													</Link>
+												);
+											})()
 										) : (
 											<div className="flex flex-col gap-2 p-2.5 rounded-xl bg-amber-500/15 dark:bg-amber-500/10">
 												<div className="flex items-center gap-2">
@@ -953,7 +971,7 @@ function UserDashboard() {
 							<Button
 								variant="ghost"
 								size="icon"
-								className="absolute -top-2 -right-2 z-10 h-8 w-8 rounded-full bg-card border border-border shadow-lg hover:bg-muted"
+								className="absolute -top-2 -right-2 z-10 h-8 w-8 rounded-full bg-card border flat-card-border shadow-sm hover:bg-muted"
 								onClick={() => setShowConsularCard(false)}
 							>
 								<X className="h-4 w-4" />
@@ -979,10 +997,10 @@ function UserDashboard() {
 							animate={{ opacity: 1, scale: 1, y: 0 }}
 							exit={{ opacity: 0, scale: 0.92, y: 20 }}
 							transition={{ type: "spring", damping: 25, stiffness: 350 }}
-							className="relative w-full max-w-lg bg-card rounded-2xl border shadow-lg overflow-hidden flex flex-col max-h-[90dvh]"
+							className="relative w-full max-w-lg bg-card rounded-2xl border flat-card-border shadow-sm overflow-hidden flex flex-col max-h-[90dvh]"
 							onClick={(e) => e.stopPropagation()}
 						>
-							<div className="p-4 border-b flex items-center justify-between bg-muted">
+							<div className="p-4 border-b flat-card-border flex items-center justify-between bg-muted/50">
 								<div className="flex items-center gap-2">
 									<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12]">
 										<User className="w-4 h-4 text-muted-foreground" />

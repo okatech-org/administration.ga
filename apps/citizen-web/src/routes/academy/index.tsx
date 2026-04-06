@@ -66,12 +66,9 @@ const typeIcons: Record<string, typeof PlayCircle> = {
 };
 
 const typeBadgeStyles: Record<string, string> = {
-  [TutorialType.Video]:
-    "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-  [TutorialType.Article]:
-    "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  [TutorialType.Guide]:
-    "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+  [TutorialType.Video]: "badge-destructive",
+  [TutorialType.Article]: "badge-info",
+  [TutorialType.Guide]: "badge-success",
 };
 
 function AcademyPage() {
@@ -102,7 +99,7 @@ function AcademyPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-primary/10 to-background py-16 px-6">
+      <section className="bg-background py-16 px-6">
         <div className="max-w-7xl mx-auto text-center">
           <Badge
             variant="secondary"
@@ -119,8 +116,8 @@ function AcademyPage() {
               "Guides pratiques, tutoriels vidéo et articles pour simplifier vos démarches.",
             )}
           </p>
+          <div className="gabon-stripe mt-8 max-w-xs mx-auto" />
 
-          {/* Search bar */}
           <div className="mt-8 max-w-md mx-auto relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -176,7 +173,7 @@ function AcademyPage() {
             {[...Array(6)].map((_, i) => (
               <div
                 key={i}
-                className="bg-card rounded-xl overflow-hidden border animate-pulse"
+                className="bg-card rounded-xl overflow-hidden border flat-card-border animate-pulse"
               >
                 <div className="aspect-[16/9] bg-muted" />
                 <div className="p-5 space-y-3">
@@ -210,7 +207,7 @@ function AcademyPage() {
                   params={{ slug: tutorial.slug }}
                   className="block"
                 >
-                  <Card className="pt-0 group overflow-hidden border-0 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                  <Card className="pt-0 group overflow-hidden border flat-card-border shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer">
                     {/* Cover */}
                     <div className="aspect-[16/9] bg-muted overflow-hidden relative">
                       {tutorial.coverImageUrl ?

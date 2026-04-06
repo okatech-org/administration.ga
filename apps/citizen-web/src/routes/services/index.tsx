@@ -2,16 +2,9 @@ import { api } from "@convex/_generated/api";
 import { ServiceCategory } from "@convex/lib/constants";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
-  BookOpen,
-  BookOpenCheck,
-  Building2,
-  FileCheck,
-  FileText,
-  Globe,
   LayoutGrid,
   type LucideIcon,
   Search,
-  ShieldAlert,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,6 +16,10 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConvexQuery } from "@/integrations/convex/hooks";
 import { getLocalizedValue } from "@/lib/i18n-utils";
+import {
+  CATEGORY_STYLE_MAP,
+  SERVICE_CATEGORIES_WITHOUT_ALL,
+} from "@/lib/service-categories";
 import { cn } from "@/lib/utils";
 
 const servicesSearchSchema = z.object({
@@ -55,101 +52,45 @@ function ServicesPage() {
     {},
   );
 
-  const categoryConfig: Record<
-    string,
-    {
-      icon: LucideIcon;
-      color: string;
-      bgColor: string;
-      label: string;
-      slug: string;
+  // Config derivee de la source partagee + traductions
+  const categoryConfig = useMemo(() => {
+    const result: Record<string, { icon: LucideIcon; color: string; bgColor: string; label: string; slug: string }> = {};
+    for (const cat of SERVICE_CATEGORIES_WITHOUT_ALL) {
+      const style = CATEGORY_STYLE_MAP[cat.id] ?? CATEGORY_STYLE_MAP[ServiceCategory.Other];
+      result[cat.id] = {
+        icon: cat.icon,
+        color: `${style.bgColor} ${style.color}`,
+        bgColor: style.bgColor,
+        label: t(cat.labelKey),
+        slug: cat.id,
+      };
     }
-  > = useMemo(
-    () => ({
-      [ServiceCategory.Passport]: {
-        icon: BookOpenCheck,
-        color: "text-blue-600 dark:text-blue-400",
-        bgColor: "bg-blue-500/10",
-        label: t("services.category.passport"),
-        slug: ServiceCategory.Passport,
-      },
-      [ServiceCategory.Visa]: {
-        icon: Globe,
-        color: "text-green-600 dark:text-green-400",
-        bgColor: "bg-green-500/10",
-        label: t(`services.categoriesMap.${ServiceCategory.Visa}`),
-        slug: ServiceCategory.Visa,
-      },
-      [ServiceCategory.CivilStatus]: {
-        icon: FileText,
-        color: "text-yellow-600 dark:text-yellow-400",
-        bgColor: "bg-yellow-500/10",
-        label: t(`services.categoriesMap.${ServiceCategory.CivilStatus}`),
-        slug: ServiceCategory.CivilStatus,
-      },
-      [ServiceCategory.Registration]: {
-        icon: BookOpen,
-        color: "text-purple-600 dark:text-purple-400",
-        bgColor: "bg-purple-500/10",
-        label: t(`services.categoriesMap.${ServiceCategory.Registration}`),
-        slug: ServiceCategory.Registration,
-      },
-      [ServiceCategory.Certification]: {
-        icon: FileCheck,
-        color: "text-orange-600 dark:text-orange-400",
-        bgColor: "bg-orange-500/10",
-        label: t(`services.categoriesMap.${ServiceCategory.Certification}`),
-        slug: ServiceCategory.Certification,
-      },
-      [ServiceCategory.Assistance]: {
-        icon: ShieldAlert,
-        color: "text-red-600 dark:text-red-400",
-        bgColor: "bg-red-500/10",
-        label: t(`services.categoriesMap.${ServiceCategory.Assistance}`),
-        slug: ServiceCategory.Assistance,
-      },
-      [ServiceCategory.Other]: {
-        icon: FileText,
-        color: "text-gray-600 dark:text-gray-400",
-        bgColor: "bg-gray-500/10",
-        label: t(`services.categoriesMap.${ServiceCategory.Other}`),
-        slug: ServiceCategory.Other,
-      },
-      [ServiceCategory.Declaration]: {
-        icon: Building2,
-        color: "text-indigo-600 dark:text-indigo-400",
-        bgColor: "bg-indigo-500/10",
-        label: t("services.category.declaration", "Déclarations"),
-        slug: ServiceCategory.Declaration,
-      },
-    }),
-    [ServiceCategory],
-  );
+    // Fallback pour les categories non listees (Identity, Transcript, etc.)
+    const fallbackStyle = CATEGORY_STYLE_MAP[ServiceCategory.Other];
+    result._fallback = {
+      icon: LayoutGrid,
+      color: `${fallbackStyle.bgColor} ${fallbackStyle.color}`,
+      bgColor: fallbackStyle.bgColor,
+      label: t("services.category.other", "Autre"),
+      slug: "other",
+    };
+    return result;
+  }, [t]);
 
   const [searchQuery, setSearchQuery] = useState(search.query || "");
 
-  // Category filter config for horizontal pill bar
-  const categoryFilterConfig: {
-    value: string | null;
-    key: string;
-    icon: LucideIcon;
-    label: string;
-  }[] = useMemo(
+  // Filtres categories pour la barre horizontale
+  const categoryFilterConfig = useMemo(
     () => [
-      {
-        value: null,
-        key: "all",
-        icon: LayoutGrid,
-        label: t("services.allCategories"),
-      },
-      ...Object.entries(categoryConfig).map(([key, config]) => ({
-        value: key,
-        key: config.slug,
-        icon: config.icon,
-        label: config.label,
+      { value: null as string | null, key: "all", icon: LayoutGrid, label: t("services.allCategories") },
+      ...SERVICE_CATEGORIES_WITHOUT_ALL.map((cat) => ({
+        value: cat.id as string | null,
+        key: cat.id,
+        icon: cat.icon,
+        label: t(cat.labelKey),
       })),
     ],
-    [categoryConfig, t],
+    [t],
   );
 
   // Sync state with URL params
@@ -208,7 +149,7 @@ function ServicesPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="bg-linear-to-b from-primary/10 to-background py-16 px-6">
+      <section className="bg-background py-16 px-6">
         <div className="max-w-7xl mx-auto text-center">
           <Badge
             variant="secondary"
@@ -316,7 +257,7 @@ function ServicesPage() {
             : filteredServices?.map((service) => {
                 const config =
                   categoryConfig[service.category] ||
-                  categoryConfig[ServiceCategory.Other];
+                  categoryConfig._fallback;
                 const suffix =
                   service.category === ServiceCategory.Identity ? "passport"
                   : service.category === ServiceCategory.Certification ?

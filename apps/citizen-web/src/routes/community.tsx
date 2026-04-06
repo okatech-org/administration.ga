@@ -74,7 +74,7 @@ function CommunityPage() {
 	return (
 		<div className="min-h-screen bg-background">
 			{/* Hero Section */}
-			<section className="bg-gradient-to-b from-primary/10 to-background py-16 px-6">
+			<section className="bg-background py-16 px-6">
 				<div className="max-w-7xl mx-auto text-center">
 					<Badge
 						variant="secondary"
@@ -359,7 +359,7 @@ function CommunityPage() {
 
 			{/* Map CTA */}
 			<section className="container mx-auto px-4 py-12 border-t">
-				<div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl p-8 text-center">
+				<div className="bg-card border flat-card-border shadow-sm rounded-2xl p-8 text-center">
 					<Users className="h-10 w-10 text-primary mx-auto mb-3" />
 					<h2 className="text-2xl font-bold text-foreground mb-2">
 						{t("community.map.title")}

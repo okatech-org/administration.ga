@@ -28,21 +28,19 @@ const SERVICE_CATEGORIES = [
   {
     key: "administrative",
     icon: Shield,
-    color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+    color: "stat-icon-blue",
     href: "/services?category=passport",
   },
   {
     key: "practical",
     icon: Home,
-    color:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+    color: "stat-icon-green",
     href: "/services?category=assistance",
   },
   {
     key: "education",
     icon: GraduationCap,
-    color:
-      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+    color: "stat-icon-orange",
     href: "/services?category=transcript",
   },
 ] as const;
@@ -68,7 +66,7 @@ function InformationPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-primary/10 to-background py-16 px-6">
+      <section className="bg-background py-16 px-6">
         <div className="max-w-7xl mx-auto text-center">
           <Badge
             variant="secondary"
@@ -145,7 +143,7 @@ function InformationPage() {
               <Link
                 key={link.key}
                 to={link.href}
-                className="flex flex-col items-center gap-2 p-4 rounded-xl bg-card border hover:shadow-md hover:-translate-y-0.5 transition-all group"
+                className="flex flex-col items-center gap-2 p-4 rounded-xl bg-card border flat-card-border hover:shadow-md hover:-translate-y-0.5 transition-all group"
               >
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                   <Icon className="h-5 w-5 text-primary" />

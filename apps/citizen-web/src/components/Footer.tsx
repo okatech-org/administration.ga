@@ -9,7 +9,9 @@ export const Footer = () => {
 	const { t } = useTranslation();
 
 	return (
-		<footer className="w-full border-t border-border bg-muted/30">
+		<footer className="w-full">
+			<div className="gabon-stripe" />
+			<div className="border-t border-border bg-muted/30">
 			<div className="container mx-auto px-4 sm:px-6 py-8 md:py-16">
 				<div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
 					<div>
@@ -62,6 +64,7 @@ export const Footer = () => {
 					</p>
 					<ModeToggle />
 				</div>
+			</div>
 			</div>
 		</footer>
 	);

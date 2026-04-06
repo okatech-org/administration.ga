@@ -123,7 +123,8 @@
 			"civilStatus": "État Civil",
 			"registration": "Inscription",
 			"certification": "Administratif",
-			"assistance": "Assistance"
+			"assistance": "Assistance",
+			"declaration": "Declarations"
 		},
 		"categoriesMap": {
 			"assistance": "Assistance",
@@ -138,6 +139,7 @@
 			"transcript": "Transcription",
 			"travel_document": "Titre de Voyage",
 			"emergency": "Assistance d'Urgence",
+			"declaration": "Declarations",
 			"other": "Autre"
 		},
 		"notEligible": "Votre profil n'est pas éligible pour ce service",
@@ -697,6 +699,65 @@
 		"locale": "fr-FR"
 	},
 	"settings": {
+		"tabs": {
+			"dossier": "Mon Dossier"
+		},
+		"dossier": {
+			"title": "Mon Dossier Consulaire",
+			"description": "Gérez vos informations personnelles et documents consulaires.",
+			"noChanges": "Aucune modification détectée.",
+			"saveError": "Erreur lors de l'enregistrement.",
+			"familyDesc": "Situation familiale et filiation",
+			"professionDesc": "Statut professionnel et employeur",
+			"documentsDesc": "Pièces justificatives du dossier"
+		},
+		"pin": {
+			"title": "Code PIN",
+			"activeSince": "Actif depuis le {{date}}",
+			"createDesc": "Créez un code PIN pour vous connecter plus rapidement.",
+			"create": "Créer mon code PIN",
+			"newPin": "Nouveau PIN (6 chiffres)",
+			"confirm": "Confirmer le PIN",
+			"mismatch": "Les codes ne correspondent pas.",
+			"otpRequired": "Reconnectez-vous par OTP d'abord.",
+			"currentPin": "PIN actuel",
+			"deleteConfirm": "Supprimer votre code PIN ?",
+			"invalidCurrent": "PIN actuel incorrect.",
+			"otpExpiryWarning": "Vérification OTP requise dans {{days}} jours",
+			"createSuccess": "Code PIN créé avec succès.",
+			"modifySuccess": "Code PIN modifié avec succès.",
+			"deleteSuccess": "Code PIN supprimé."
+		},
+		"accessibility": {
+			"title": "Accessibilité",
+			"description": "Adaptez l'interface à vos besoins.",
+			"fontSize": "Taille du texte",
+			"fontSizeSmall": "Petit",
+			"fontSizeDefault": "Normal",
+			"fontSizeLarge": "Grand",
+			"reduceMotion": "Réduire les animations",
+			"reduceMotionDesc": "Désactive les transitions et animations pour plus de confort."
+		},
+		"dangerZone": {
+			"tabLabel": "Zone dangereuse",
+			"title": "Zone dangereuse",
+			"exportData": {
+				"title": "Exporter mes données",
+				"description": "Téléchargez une copie de toutes vos données personnelles (RGPD Art. 20).",
+				"button": "Télécharger mes données",
+				"exporting": "Export en cours…",
+				"success": "Vos données ont été téléchargées."
+			},
+			"deleteAccount": {
+				"title": "Supprimer mon compte",
+				"description": "Demandez la suppression définitive de votre compte et de vos données.",
+				"warning": "Cette action est irréversible. Vos demandes en cours seront annulées, vos documents supprimés, et votre compte désactivé après un délai de 30 jours.",
+				"confirmLabel": "Saisissez votre adresse email pour confirmer",
+				"confirmPlaceholder": "votre@email.com",
+				"button": "Demander la suppression",
+				"success": "Votre demande de suppression a été enregistrée. Votre compte sera supprimé dans 30 jours."
+			}
+		},
 		"notifications": {
 			"title": "Notifications",
 			"description": "Gérez vos préférences de notifications.",
@@ -705,13 +766,17 @@
 			"push": "Notifications push",
 			"pushDesc": "Recevez des notifications sur votre appareil.",
 			"sms": "Notifications SMS",
-			"smsDesc": "Recevez des SMS pour les rendez-vous."
+			"smsDesc": "Recevez des SMS pour les rendez-vous.",
+			"whatsapp": "Notifications WhatsApp",
+			"whatsappDesc": "Recevez des rappels et mises à jour via WhatsApp."
 		},
 		"display": {
 			"title": "Affichage",
 			"description": "Personnalisez l'apparence de l'application.",
 			"darkMode": "Mode sombre",
-			"darkModeDesc": "Activez le thème sombre pour réduire la fatigue visuelle."
+			"darkModeDesc": "Activez le thème sombre pour réduire la fatigue visuelle.",
+			"light": "Clair",
+			"dark": "Sombre"
 		},
 		"consularTheme": {
 			"title": "Thème de l'espace consulaire",

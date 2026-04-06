@@ -123,7 +123,8 @@
 			"civilStatus": "Civil Status",
 			"registration": "Registration",
 			"certification": "Administrative",
-			"assistance": "Assistance"
+			"assistance": "Assistance",
+			"declaration": "Declarations"
 		},
 		"categoriesMap": {
 			"assistance": "Assistance",
@@ -138,6 +139,7 @@
 			"transcript": "Transcript",
 			"travel_document": "Travel Document",
 			"emergency": "Emergency Assistance",
+			"declaration": "Declarations",
 			"other": "Other"
 		},
 		"notEligible": "Your profile is not eligible for this service",
@@ -2242,6 +2244,65 @@
 		"locale": "en-US"
 	},
 	"settings": {
+		"tabs": {
+			"dossier": "My File"
+		},
+		"dossier": {
+			"title": "My Consular File",
+			"description": "Manage your personal information and consular documents.",
+			"noChanges": "No changes detected.",
+			"saveError": "Error saving changes.",
+			"familyDesc": "Family status and parentage",
+			"professionDesc": "Professional status and employer",
+			"documentsDesc": "Supporting documents"
+		},
+		"pin": {
+			"title": "PIN Code",
+			"activeSince": "Active since {{date}}",
+			"createDesc": "Create a PIN code for faster login.",
+			"create": "Create my PIN",
+			"newPin": "New PIN (6 digits)",
+			"confirm": "Confirm PIN",
+			"mismatch": "Codes do not match.",
+			"otpRequired": "Please reconnect via OTP first.",
+			"currentPin": "Current PIN",
+			"deleteConfirm": "Delete your PIN code?",
+			"invalidCurrent": "Incorrect current PIN.",
+			"otpExpiryWarning": "OTP verification required in {{days}} days",
+			"createSuccess": "PIN code created successfully.",
+			"modifySuccess": "PIN code updated successfully.",
+			"deleteSuccess": "PIN code deleted."
+		},
+		"accessibility": {
+			"title": "Accessibility",
+			"description": "Adapt the interface to your needs.",
+			"fontSize": "Text size",
+			"fontSizeSmall": "Small",
+			"fontSizeDefault": "Default",
+			"fontSizeLarge": "Large",
+			"reduceMotion": "Reduce animations",
+			"reduceMotionDesc": "Disables transitions and animations for comfort."
+		},
+		"dangerZone": {
+			"tabLabel": "Danger zone",
+			"title": "Danger zone",
+			"exportData": {
+				"title": "Export my data",
+				"description": "Download a copy of all your personal data (GDPR Art. 20).",
+				"button": "Download my data",
+				"exporting": "Exporting…",
+				"success": "Your data has been downloaded."
+			},
+			"deleteAccount": {
+				"title": "Delete my account",
+				"description": "Request permanent deletion of your account and data.",
+				"warning": "This action is irreversible. Your pending requests will be cancelled, your documents deleted, and your account deactivated after a 30-day grace period.",
+				"confirmLabel": "Type your email address to confirm",
+				"confirmPlaceholder": "your@email.com",
+				"button": "Request deletion",
+				"success": "Your deletion request has been recorded. Your account will be deleted in 30 days."
+			}
+		},
 		"notifications": {
 			"title": "Notifications",
 			"description": "Manage your notification preferences.",
@@ -2250,13 +2311,17 @@
 			"push": "Push notifications",
 			"pushDesc": "Receive notifications on your device.",
 			"sms": "SMS notifications",
-			"smsDesc": "Receive SMS for appointments."
+			"smsDesc": "Receive SMS for appointments.",
+			"whatsapp": "WhatsApp notifications",
+			"whatsappDesc": "Receive reminders and updates via WhatsApp."
 		},
 		"display": {
 			"title": "Display",
 			"description": "Customize the look and feel of the application.",
 			"darkMode": "Dark mode",
-			"darkModeDesc": "Enable dark theme to reduce eye strain."
+			"darkModeDesc": "Enable dark theme to reduce eye strain.",
+			"light": "Light",
+			"dark": "Dark"
 		},
 		"consularTheme": {
 			"title": "Consular space theme",

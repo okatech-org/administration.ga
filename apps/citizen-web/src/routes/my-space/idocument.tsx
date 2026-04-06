@@ -30,6 +30,7 @@ import {
 
 import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import { DynamicFolderIcon } from "@/components/icons/DynamicFolderIcon";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { PageHeader } from "@/components/my-space/page-header";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -92,11 +93,11 @@ type FolderId = SystemFolderId | SmartFolderId | DocumentTypeCategory;
 // ═══════════════════════════════════════════════════════════════
 
 const STATUS_CFG: Record<string, { label: string; class: string; dot: string }> = {
-	pending: { label: "En attente", class: "bg-amber-500/10 text-amber-600 border-amber-500/20", dot: "bg-amber-500" },
-	validated: { label: "Validé", class: "bg-green-500/10 text-green-600 border-green-500/20", dot: "bg-green-500" },
-	rejected: { label: "Rejeté", class: "bg-red-500/10 text-red-600 border-red-500/20", dot: "bg-red-500" },
-	expired: { label: "Expiré", class: "bg-zinc-500/10 text-zinc-600 border-zinc-500/20", dot: "bg-zinc-500" },
-	expiring: { label: "Expire bientôt", class: "bg-orange-500/10 text-orange-600 border-orange-500/20", dot: "bg-orange-500" },
+	pending: { label: "En attente", class: "badge-warning border-transparent", dot: "bg-warning" },
+	validated: { label: "Validé", class: "badge-success border-transparent", dot: "bg-success" },
+	rejected: { label: "Rejeté", class: "badge-destructive border-transparent", dot: "bg-destructive" },
+	expired: { label: "Expiré", class: "bg-muted text-muted-foreground border-transparent", dot: "bg-muted-foreground" },
+	expiring: { label: "Expire bientôt", class: "badge-warning border-transparent", dot: "bg-warning" },
 };
 
 // ─── 2 Dossiers métier consulaire ────────────────────────────
@@ -120,8 +121,8 @@ const SMART_FOLDERS: SmartFolder[] = [
 		name: "Identité & État civil",
 		description: "Passeport, acte de naissance, nationalité, résidence, emploi",
 		icon: User,
-		color: "text-blue-400",
-		iconColor: "text-violet-600",
+		color: "text-primary",
+		iconColor: "text-primary",
 		categories: [
 			DocumentTypeCategory.Identity,
 			DocumentTypeCategory.CivilStatus,
@@ -141,8 +142,8 @@ const SMART_FOLDERS: SmartFolder[] = [
 		name: "Documents officiels",
 		description: "Attestations, actes, justice, décisions, formulaires",
 		icon: Stamp,
-		color: "text-violet-400",
-		iconColor: "text-orange-600",
+		color: "text-warning",
+		iconColor: "text-warning",
 		categories: [
 			DocumentTypeCategory.Certificates,
 			DocumentTypeCategory.OfficialCertificates,
@@ -157,24 +158,24 @@ const SMART_FOLDERS: SmartFolder[] = [
 
 // Legacy mapping for individual category display on document cards
 const CATEGORY_CONFIG: Record<string, { name: string; icon: React.ElementType; color: string; iconColor: string }> = {
-	[DocumentTypeCategory.Identity]: { name: "Identité", icon: User, color: "text-blue-400", iconColor: "text-violet-600" },
-	[DocumentTypeCategory.CivilStatus]: { name: "État civil", icon: ScrollText, color: "text-purple-400", iconColor: "text-fuchsia-600" },
-	[DocumentTypeCategory.Nationality]: { name: "Nationalité", icon: Flag, color: "text-green-400", iconColor: "text-cyan-600" },
-	[DocumentTypeCategory.Residence]: { name: "Résidence", icon: Home, color: "text-amber-400", iconColor: "text-emerald-600" },
-	[DocumentTypeCategory.Employment]: { name: "Emploi", icon: Briefcase, color: "text-indigo-400", iconColor: "text-sky-600" },
-	[DocumentTypeCategory.Income]: { name: "Revenus", icon: Wallet, color: "text-emerald-400", iconColor: "text-green-600" },
-	[DocumentTypeCategory.Certificates]: { name: "Attestations", icon: Award, color: "text-cyan-400", iconColor: "text-amber-600" },
-	[DocumentTypeCategory.OfficialCertificates]: { name: "Actes officiels", icon: Stamp, color: "text-violet-400", iconColor: "text-orange-600" },
-	[DocumentTypeCategory.Justice]: { name: "Justice", icon: Scale, color: "text-red-400", iconColor: "text-red-600" },
-	[DocumentTypeCategory.AdministrativeDecisions]: { name: "Décisions admin.", icon: FileCheck, color: "text-orange-400", iconColor: "text-purple-600" },
-	[DocumentTypeCategory.Housing]: { name: "Logement", icon: Building2, color: "text-teal-400", iconColor: "text-teal-600" },
-	[DocumentTypeCategory.Vehicle]: { name: "Véhicule", icon: Car, color: "text-slate-400", iconColor: "text-slate-600" },
-	[DocumentTypeCategory.Education]: { name: "Éducation", icon: GraduationCap, color: "text-pink-400", iconColor: "text-amber-600" },
-	[DocumentTypeCategory.LanguageIntegration]: { name: "Langue & intégration", icon: Languages, color: "text-blue-400", iconColor: "text-blue-600" },
-	[DocumentTypeCategory.Health]: { name: "Santé", icon: Heart, color: "text-rose-400", iconColor: "text-rose-600" },
-	[DocumentTypeCategory.Taxation]: { name: "Fiscalité", icon: Receipt, color: "text-yellow-400", iconColor: "text-lime-600" },
-	[DocumentTypeCategory.Forms]: { name: "Formulaires", icon: ClipboardList, color: "text-zinc-400", iconColor: "text-indigo-600" },
-	[DocumentTypeCategory.Other]: { name: "Autres", icon: FileText, color: "text-gray-400", iconColor: "text-stone-600" },
+	[DocumentTypeCategory.Identity]: { name: "Identité", icon: User, color: "text-primary", iconColor: "text-primary" },
+	[DocumentTypeCategory.CivilStatus]: { name: "État civil", icon: ScrollText, color: "text-primary", iconColor: "text-primary" },
+	[DocumentTypeCategory.Nationality]: { name: "Nationalité", icon: Flag, color: "text-success", iconColor: "text-success" },
+	[DocumentTypeCategory.Residence]: { name: "Résidence", icon: Home, color: "text-warning", iconColor: "text-warning" },
+	[DocumentTypeCategory.Employment]: { name: "Emploi", icon: Briefcase, color: "text-primary", iconColor: "text-primary" },
+	[DocumentTypeCategory.Income]: { name: "Revenus", icon: Wallet, color: "text-success", iconColor: "text-success" },
+	[DocumentTypeCategory.Certificates]: { name: "Attestations", icon: Award, color: "text-warning", iconColor: "text-warning" },
+	[DocumentTypeCategory.OfficialCertificates]: { name: "Actes officiels", icon: Stamp, color: "text-warning", iconColor: "text-warning" },
+	[DocumentTypeCategory.Justice]: { name: "Justice", icon: Scale, color: "text-destructive", iconColor: "text-destructive" },
+	[DocumentTypeCategory.AdministrativeDecisions]: { name: "Décisions admin.", icon: FileCheck, color: "text-warning", iconColor: "text-warning" },
+	[DocumentTypeCategory.Housing]: { name: "Logement", icon: Building2, color: "text-success", iconColor: "text-success" },
+	[DocumentTypeCategory.Vehicle]: { name: "Véhicule", icon: Car, color: "text-muted-foreground", iconColor: "text-muted-foreground" },
+	[DocumentTypeCategory.Education]: { name: "Éducation", icon: GraduationCap, color: "text-primary", iconColor: "text-primary" },
+	[DocumentTypeCategory.LanguageIntegration]: { name: "Langue & intégration", icon: Languages, color: "text-primary", iconColor: "text-primary" },
+	[DocumentTypeCategory.Health]: { name: "Santé", icon: Heart, color: "text-destructive", iconColor: "text-destructive" },
+	[DocumentTypeCategory.Taxation]: { name: "Fiscalité", icon: Receipt, color: "text-warning", iconColor: "text-warning" },
+	[DocumentTypeCategory.Forms]: { name: "Formulaires", icon: ClipboardList, color: "text-muted-foreground", iconColor: "text-muted-foreground" },
+	[DocumentTypeCategory.Other]: { name: "Autres", icon: FileText, color: "text-muted-foreground", iconColor: "text-muted-foreground" },
 };
 
 interface SystemFolder {
@@ -236,7 +237,7 @@ function VaultFolderCard({ label, count, icon: CustomIcon, iconColor, onClick, c
 }) {
 	const [isHovered, setIsHovered] = useState(false);
 	return (
-		<div className={cn("group relative flex flex-col items-center justify-center p-2 rounded-2xl w-full h-full", isSelected && "ring-2 ring-violet-500 bg-violet-500/10", className)}>
+		<div className={cn("group relative flex flex-col items-center justify-center p-2 rounded-2xl w-full h-full", isSelected && "ring-2 ring-primary bg-foreground/[0.06] dark:bg-foreground/[0.12]", className)}>
 			<motion.div role="button" tabIndex={0} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} onClick={onClick} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} className="relative flex flex-col items-center justify-center cursor-pointer outline-none rounded-xl p-3 hover:bg-muted/40 transition-colors w-[140px]">
 				{CustomIcon ? (
 					<div className="relative mt-1 w-full flex justify-center">
@@ -253,7 +254,7 @@ function VaultFolderCard({ label, count, icon: CustomIcon, iconColor, onClick, c
 					<div className="relative mt-1 w-full flex justify-center">
 						<DynamicFolderIcon count={count} size={96} hovered={isHovered} className="drop-shadow-lg" />
 						{count > 0 && (
-							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-1 right-1 min-w-5 h-5 px-1 flex items-center justify-center gap-0.5 rounded-full bg-blue-500 text-white text-[9px] font-bold shadow-sm">
+							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-1 right-1 min-w-5 h-5 px-1 flex items-center justify-center gap-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold shadow-sm">
 								<FileText className="h-2.5 w-2.5" />{count}
 							</motion.span>
 						)}
@@ -269,11 +270,11 @@ function VaultFolderCard({ label, count, icon: CustomIcon, iconColor, onClick, c
 
 /* ── VaultFileCard — document card with A4 preview ── */
 
-function VaultFileCard({ title, iconColor = "text-stone-600", date, statusBadge, categoryBadge, fileCount, expirationBadge, contextMenu, onClick, isSelected = false }: {
+function VaultFileCard({ title, iconColor = "text-muted-foreground", date, statusBadge, categoryBadge, fileCount, expirationBadge, contextMenu, onClick, isSelected = false }: {
 	title: string; iconColor?: string; date?: string; statusBadge?: React.ReactNode; categoryBadge?: React.ReactNode; fileCount?: number; expirationBadge?: React.ReactNode; contextMenu?: React.ReactNode; onClick?: () => void; isSelected?: boolean;
 }) {
 	return (
-		<div className={cn("group hover:shadow-lg transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-card rounded-xl", isSelected && "ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/5")} onClick={onClick}>
+		<div className={cn("group hover:shadow-lg transition-all duration-300 overflow-hidden border flat-card-border cursor-pointer h-full flex flex-col bg-card rounded-xl", isSelected && "ring-2 ring-primary border-primary/50 bg-primary/5")} onClick={onClick}>
 			<div className="relative aspect-[1/1.414] bg-white/3 flex flex-col overflow-hidden">
 				<div className="relative flex items-center px-2.5 pt-2 z-10 min-h-[20px]">
 					<div className="flex items-center gap-1 shrink min-w-0">{categoryBadge}</div>
@@ -319,9 +320,9 @@ function ViewModeToggle({ value, onChange }: { value: ViewMode; onChange: (v: Vi
 		{ value: "column", icon: Columns3, label: "Colonnes" },
 	];
 	return (
-		<div className="flex items-center rounded-lg border border-border/50 bg-card p-0.5 gap-0.5">
+		<div className="flex items-center rounded-full bg-muted p-0.5 gap-0.5">
 			{modes.map((m) => (
-				<button key={m.value} onClick={() => onChange(m.value)} className={cn("h-7 w-7 flex items-center justify-center rounded-md transition-all", value === m.value ? "bg-primary/10 text-primary shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted")} title={m.label}>
+				<button key={m.value} onClick={() => onChange(m.value)} className={cn("h-7 w-7 flex items-center justify-center rounded-full transition-all", value === m.value ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")} title={m.label}>
 					<m.icon className="h-3.5 w-3.5" />
 				</button>
 			))}
@@ -371,7 +372,7 @@ function DocumentInfoDialog({ open, onClose, doc, onDownload }: {
 			<div className="w-full max-w-md border border-border/50 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
 				<div className="px-5 pt-5 pb-3 border-b border-border/50">
 					<div className="flex items-center gap-2 text-sm font-semibold">
-						<Info className="h-4 w-4 text-violet-400" />
+						<Info className="h-4 w-4 text-primary" />
 						Détails du document
 					</div>
 				</div>
@@ -405,7 +406,7 @@ function DocumentInfoDialog({ open, onClose, doc, onDownload }: {
 					{doc.expiresAt && (
 						<div className="rounded-xl bg-card border border-border/50 p-3 space-y-1">
 							<p className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-semibold">Expiration</p>
-							<p className={cn("text-sm font-medium", isExpired ? "text-red-400" : isExpiringSoon ? "text-amber-400" : "text-foreground")}>
+							<p className={cn("text-sm font-medium", isExpired ? "text-destructive" : isExpiringSoon ? "text-warning" : "text-foreground")}>
 								{formatDate(doc.expiresAt)}
 								{isExpired && " (expiré)"}
 								{isExpiringSoon && ` (dans ${differenceInDays(doc.expiresAt, new Date())} jours)`}
@@ -440,7 +441,7 @@ function DocumentInfoDialog({ open, onClose, doc, onDownload }: {
 					{/* Timestamps */}
 					<div className="rounded-xl bg-card border border-border/50 p-3 space-y-2">
 						<p className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-semibold flex items-center gap-1.5">
-							<Clock className="h-3 w-3 text-amber-400" />Horodatage
+							<Clock className="h-3 w-3 text-warning" />Horodatage
 						</p>
 						<div className="grid grid-cols-2 gap-2">
 							<div className="rounded-lg bg-muted/50 border border-border/50 p-2">
@@ -472,7 +473,7 @@ function DeleteConfirmDialog({ open, onClose, onConfirm, docName }: {
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
 			<div className="w-full max-w-sm border border-border/50 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
 				<div className="px-5 pt-5 pb-3 border-b border-border/50">
-					<div className="flex items-center gap-2 text-sm font-semibold text-red-400">
+					<div className="flex items-center gap-2 text-sm font-semibold text-destructive">
 						<Trash2 className="h-4 w-4" />
 						Confirmer la suppression
 					</div>
@@ -484,7 +485,7 @@ function DeleteConfirmDialog({ open, onClose, onConfirm, docName }: {
 				</div>
 				<div className="px-5 py-3 border-t border-border/50 flex justify-end gap-2">
 					<button onClick={onClose} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Annuler</button>
-					<button onClick={() => { onConfirm(); onClose(); }} className="px-3 py-1.5 text-xs rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors">Supprimer</button>
+					<button onClick={() => { onConfirm(); onClose(); }} className="px-3 py-1.5 text-xs rounded-md bg-destructive hover:bg-destructive/90 text-white transition-colors">Supprimer</button>
 				</div>
 			</div>
 		</div>
@@ -911,18 +912,18 @@ function IDocumentPage() {
 								return <CatIcon className={cn("h-5 w-5", CATEGORY_CONFIG[currentFolderId].iconColor)} />;
 							})()
 						) : (
-							<Shield className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+							<Shield className="h-5 w-5 text-primary dark:text-primary" />
 						)
 					}
-					iconBgClass="bg-violet-500/10"
+					iconBgClass="bg-foreground/[0.06] dark:bg-foreground/[0.12]"
 					showBackButton={!!currentFolderId}
 					onBack={handleBack}
 				/>
 				<div className="flex items-center gap-2">
 					<Dialog open={showUpload} onOpenChange={setShowUpload}>
 						<DialogTrigger asChild>
-							<Button className="gap-2 shadow-sm shrink-0">
-								<Plus className="h-4 w-4" />
+							<Button variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-1.5">
+								<Plus className="h-3.5 w-3.5" />
 								<span className="hidden sm:inline">Ajouter un document</span>
 								<span className="sm:hidden">Ajouter</span>
 							</Button>
@@ -938,16 +939,16 @@ function IDocumentPage() {
 
 			{/* ── Toolbar ── */}
 			<motion.div variants={fadeUp}>
-				<div className="border border-border/50 rounded-xl bg-card p-3">
+				<FlatCard className="p-3">
 					<div className="flex flex-wrap items-center gap-2">
 						<div className="relative flex-1 min-w-[200px] max-w-[360px]">
 							<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-							<input placeholder="Rechercher dans vos documents..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full h-8 pl-8 text-xs bg-muted/50 border border-border/50 rounded-lg px-3 focus:outline-none focus:ring-1 focus:ring-primary/30" />
+							<input placeholder="Rechercher dans vos documents..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full h-8 pl-8 text-xs bg-muted/50 border-none rounded-full px-3 focus:outline-none focus:ring-1 focus:ring-primary/30" />
 						</div>
 						{search && (
 							<>
 								<div className="h-6 w-px bg-border/50 hidden sm:block" />
-								<button className="flex items-center gap-1.5 h-7 text-[11px] text-red-400 hover:text-red-300 px-2" onClick={() => setSearch("")}>
+								<button className="flex items-center gap-1.5 h-7 text-[11px] text-destructive hover:text-destructive/80 px-2" onClick={() => setSearch("")}>
 									<X className="h-3 w-3" /> Effacer
 								</button>
 							</>
@@ -956,12 +957,12 @@ function IDocumentPage() {
 							<div className="flex items-center gap-2 text-[11px] text-muted-foreground ml-auto mr-2">
 								<span>{stats.total} documents</span>
 								{stats.expiringSoon > 0 && (
-									<span className="text-amber-400 flex items-center gap-1">
+									<span className="text-warning flex items-center gap-1">
 										<AlertTriangle className="h-3 w-3" />{stats.expiringSoon} expire(nt) bientôt
 									</span>
 								)}
 								{stats.expired > 0 && (
-									<span className="text-red-400 flex items-center gap-1">
+									<span className="text-destructive flex items-center gap-1">
 										<AlertTriangle className="h-3 w-3" />{stats.expired} expiré(s)
 									</span>
 								)}
@@ -971,7 +972,7 @@ function IDocumentPage() {
 							<ViewModeToggle value={viewMode} onChange={setViewMode} />
 						</div>
 					</div>
-				</div>
+				</FlatCard>
 			</motion.div>
 
 			{/* ── Breadcrumb ── */}
@@ -1053,7 +1054,7 @@ function IDocumentPage() {
 															}
 															expirationBadge={
 																(isExpired || isExpiringSoon) ? (
-																	<span className={cn("text-[9px] inline-flex items-center gap-1 font-medium", isExpired ? "text-red-400" : "text-amber-400")}>
+																	<span className={cn("text-[9px] inline-flex items-center gap-1 font-medium", isExpired ? "text-destructive" : "text-warning")}>
 																		<Clock className="h-2.5 w-2.5" />
 																		{isExpired ? "Expiré" : `Expire le ${formatDate(d.expiresAt)}`}
 																	</span>
@@ -1062,7 +1063,7 @@ function IDocumentPage() {
 															contextMenu={
 																<DropdownMenu>
 																	<DropdownMenuTrigger asChild>
-																		<button className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-white/10 transition-all text-muted-foreground hover:text-foreground">
+																		<button className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted transition-all text-muted-foreground hover:text-foreground">
 																			<MoreHorizontal className="h-4 w-4" />
 																		</button>
 																	</DropdownMenuTrigger>
@@ -1091,11 +1092,11 @@ function IDocumentPage() {
 											</div>
 										) : (
 											<div className="flex flex-col items-center py-16 text-center border-2 border-dashed rounded-xl bg-muted/30">
-												<div className="h-16 w-16 rounded-2xl bg-violet-500/10 flex items-center justify-center mb-4">
+												<div className="h-16 w-16 rounded-2xl bg-foreground/[0.06] dark:bg-foreground/[0.12] flex items-center justify-center mb-4">
 													{search ? (
 														<Search className="h-8 w-8 text-muted-foreground" />
 													) : (
-														<FolderOpen className="h-8 w-8 text-violet-400/60" />
+														<FolderOpen className="h-8 w-8 text-primary/60" />
 													)}
 												</div>
 												<h3 className="text-lg font-semibold mb-1">{search ? "Aucun résultat" : "Dossier vide"}</h3>
@@ -1119,7 +1120,7 @@ function IDocumentPage() {
 						{/* ── List View ── */}
 						{viewMode === "list" && (
 							<motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-								<div className="border border-border/50 rounded-xl overflow-hidden bg-card">
+								<FlatCard>
 									{/* Header */}
 									<div className="grid grid-cols-12 gap-2 px-4 py-2 border-b border-border/50 bg-muted/30 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
 										<div className="col-span-4">Nom</div>
@@ -1136,8 +1137,8 @@ function IDocumentPage() {
 											{allFolders.systemFolderEntries.map((folder) => (
 												<div key={folder.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 hover:bg-muted/30 cursor-pointer transition-colors group" onClick={() => handleOpenFolder(folder.id)}>
 													<div className="col-span-4 flex items-center gap-2">
-														<div className="h-6 w-6 rounded-md bg-violet-500/15 flex items-center justify-center shrink-0">
-															<folder.icon className="h-3 w-3 text-violet-400" />
+														<div className="h-6 w-6 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12] flex items-center justify-center shrink-0">
+															<folder.icon className="h-3 w-3 text-primary" />
 														</div>
 														<span className="text-xs font-medium truncate">{folder.name}</span>
 													</div>
@@ -1151,7 +1152,7 @@ function IDocumentPage() {
 											{allFolders.categoryFolderEntries.map((folder) => (
 												<div key={folder.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 hover:bg-muted/30 cursor-pointer transition-colors group" onClick={() => handleOpenFolder(folder.id)}>
 													<div className="col-span-4 flex items-center gap-2">
-														<div className="h-6 w-6 rounded-md bg-amber-500/15 flex items-center justify-center shrink-0"><Folder className="h-3 w-3 text-amber-400" /></div>
+														<div className="h-6 w-6 rounded-md bg-amber-500/15 flex items-center justify-center shrink-0"><Folder className="h-3 w-3 text-warning" /></div>
 														<span className="text-xs font-medium truncate">{folder.name}</span>
 													</div>
 													<div className="col-span-2 text-xs text-muted-foreground flex items-center">{folder.name}</div>
@@ -1174,7 +1175,7 @@ function IDocumentPage() {
 										return (
 											<div key={d._id} className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-border/30 hover:bg-muted/30 cursor-pointer transition-colors group" onClick={() => setPreviewDoc(d)}>
 												<div className="col-span-4 flex items-center gap-2">
-													<div className="h-6 w-6 rounded-md bg-violet-500/10 flex items-center justify-center shrink-0"><FileText className="h-3 w-3 text-violet-400" /></div>
+													<div className="h-6 w-6 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12] flex items-center justify-center shrink-0"><FileText className="h-3 w-3 text-primary" /></div>
 													<span className="text-xs font-medium truncate">{d.label || d.files[0]?.filename || "Document"}</span>
 												</div>
 												<div className="col-span-2 text-xs text-muted-foreground flex items-center">{getCategoryLabel(d.category)}</div>
@@ -1186,7 +1187,7 @@ function IDocumentPage() {
 												</div>
 												<div className="col-span-2 flex items-center">
 													{d.expiresAt ? (
-														<span className={cn("text-[10px]", isExpired ? "text-red-400" : isExpiringSoon ? "text-amber-400" : "text-muted-foreground")}>
+														<span className={cn("text-[10px]", isExpired ? "text-destructive" : isExpiringSoon ? "text-warning" : "text-muted-foreground")}>
 															{formatDate(d.expiresAt)}
 														</span>
 													) : (
@@ -1205,7 +1206,7 @@ function IDocumentPage() {
 									{!currentFolderId && !search && allFolders.systemFolderEntries.length === 0 && allFolders.categoryFolderEntries.length === 0 && (
 										<div className="py-12 text-center text-sm text-muted-foreground">Aucun contenu</div>
 									)}
-								</div>
+								</FlatCard>
 							</motion.div>
 						)}
 
@@ -1218,16 +1219,16 @@ function IDocumentPage() {
 										<div className="w-64 border-r border-border/50 overflow-y-auto">
 											<div className="p-2 text-[10px] font-semibold uppercase text-muted-foreground/60 px-3">Dossiers</div>
 											{SYSTEM_FOLDERS.map((folder) => (
-												<button key={folder.id} onClick={() => handleOpenFolder(folder.id)} className={cn("w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors text-left", currentFolderId === folder.id && "bg-primary/10 text-primary")}>
-													<folder.icon className="h-3.5 w-3.5 text-violet-400 shrink-0" />
+												<button key={folder.id} onClick={() => handleOpenFolder(folder.id)} className={cn("w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors text-left", currentFolderId === folder.id && "bg-foreground/[0.06] dark:bg-foreground/[0.12] text-primary")}>
+													<folder.icon className="h-3.5 w-3.5 text-primary shrink-0" />
 													<span className="truncate">{folder.name}</span>
 													<ChevronRight className="h-3 w-3 ml-auto text-muted-foreground/50 shrink-0" />
 												</button>
 											))}
 											<div className="my-1 border-t border-border/30" />
 											{SMART_FOLDERS.map((sf) => (
-												<button key={sf.id} onClick={() => handleOpenFolder(sf.id)} className={cn("w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors text-left", currentFolderId === sf.id && "bg-primary/10 text-primary")}>
-													<Folder className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+												<button key={sf.id} onClick={() => handleOpenFolder(sf.id)} className={cn("w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors text-left", currentFolderId === sf.id && "bg-foreground/[0.06] dark:bg-foreground/[0.12] text-primary")}>
+													<Folder className="h-3.5 w-3.5 text-warning shrink-0" />
 													<span className="truncate">{sf.name}</span>
 													<ChevronRight className="h-3 w-3 ml-auto text-muted-foreground/50 shrink-0" />
 												</button>
@@ -1242,7 +1243,7 @@ function IDocumentPage() {
 													const d = doc as unknown as VaultDocument;
 													return (
 														<button key={d._id} onClick={() => setPreviewDoc(d)} className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors text-left">
-															<FileText className="h-3.5 w-3.5 text-violet-400 shrink-0" />
+															<FileText className="h-3.5 w-3.5 text-primary shrink-0" />
 															<span className="truncate">{d.label || d.files[0]?.filename || "Document"}</span>
 														</button>
 													);
