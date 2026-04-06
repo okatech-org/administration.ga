@@ -26,8 +26,8 @@ import {
 } from "@/integrations/convex/hooks";
 
 export default function AppointmentBookingPage() {
-	const params = useParams<{ requestId: string }>();
-	const requestId = params.requestId;
+	const params = useParams<{ reference: string }>();
+	const requestId = params.reference;
 	const router = useRouter();
 	const { t } = useTranslation();
 
