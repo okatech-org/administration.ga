@@ -1,12 +1,38 @@
+"use client"
+
+import dynamic from "next/dynamic"
+import { Suspense, useRef } from "react"
+import { Hero } from "@/components/home/Hero"
+import { ProfilesSection } from "@/components/home/ProfilesSection"
+import { ServicesSection } from "@/components/home/ServicesSection"
+import { NewsSection } from "@/components/home/NewsSection"
+import { WhySection } from "@/components/home/WhySection"
+import { CTASection } from "@/components/home/CTASection"
+
+const WorldMapSection = dynamic(
+  () =>
+    import("@/components/home/WorldMapSection").then((m) => ({
+      default: m.WorldMapSection,
+    })),
+  { ssr: false },
+)
+
 export default function HomePage() {
+  const servicesRef = useRef<HTMLDivElement>(null)
+
   return (
-    <main className="flex min-h-dvh items-center justify-center">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold font-display">Consulat.ga</h1>
-        <p className="text-muted-foreground">
-          Migration en cours...
-        </p>
+    <div className="min-h-dvh bg-background">
+      <Hero />
+      <ProfilesSection />
+      <div ref={servicesRef}>
+        <ServicesSection />
       </div>
-    </main>
+      <NewsSection />
+      <Suspense fallback={<div className="h-[500px]" />}>
+        <WorldMapSection />
+      </Suspense>
+      <WhySection />
+      <CTASection />
+    </div>
   )
 }
