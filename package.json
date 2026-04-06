@@ -48,5 +48,8 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "overrides": {
+    "form-data": ">=2.5.4"
+  }
 }
