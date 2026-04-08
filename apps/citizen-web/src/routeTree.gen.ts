@@ -12,24 +12,23 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TarifsRouteImport } from './routes/tarifs'
 import { Route as MySpaceRouteImport } from './routes/my-space'
 import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
-import { Route as InformationRouteImport } from './routes/information'
 import { Route as FormulairesRouteImport } from './routes/formulaires'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
-import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AccessibiliteRouteImport } from './routes/accessibilite'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
+import { Route as RessourcesIndexRouteImport } from './routes/ressources/index'
 import { Route as RepsIndexRouteImport } from './routes/reps/index'
 import { Route as RegisterIndexRouteImport } from './routes/register/index'
 import { Route as NewsIndexRouteImport } from './routes/news/index'
 import { Route as MySpaceIndexRouteImport } from './routes/my-space/index'
-import { Route as AcademyIndexRouteImport } from './routes/academy/index'
 import { Route as VerifyTokenRouteImport } from './routes/verify.$token'
 import { Route as VerifyProfileProfileIdRouteImport } from './routes/verify-profile.$profileId'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up/$'
 import { Route as SignInSplatRouteImport } from './routes/sign-in/$'
 import { Route as ServicesSlugRouteImport } from './routes/services/$slug'
+import { Route as RessourcesSlugRouteImport } from './routes/ressources/$slug'
 import { Route as RepsSlugRouteImport } from './routes/reps/$slug'
 import { Route as NewsSlugRouteImport } from './routes/news/$slug'
 import { Route as MySpaceVaultRouteImport } from './routes/my-space/vault'
@@ -47,10 +46,12 @@ import { Route as MySpaceCvRouteImport } from './routes/my-space/cv'
 import { Route as MySpaceCompaniesRouteImport } from './routes/my-space/companies'
 import { Route as MySpaceChildrenRouteImport } from './routes/my-space/children'
 import { Route as MySpaceAssociationsRouteImport } from './routes/my-space/associations'
-import { Route as AcademySlugRouteImport } from './routes/academy/$slug'
 import { Route as MySpaceSupportIndexRouteImport } from './routes/my-space/support/index'
 import { Route as MySpaceServicesIndexRouteImport } from './routes/my-space/services/index'
 import { Route as MySpaceAppointmentsIndexRouteImport } from './routes/my-space/appointments/index'
+import { Route as RessourcesGuidesViePratiqueRouteImport } from './routes/ressources/guides/vie-pratique'
+import { Route as RessourcesGuidesRetourRouteImport } from './routes/ressources/guides/retour'
+import { Route as RessourcesGuidesArriveeRouteImport } from './routes/ressources/guides/arrivee'
 import { Route as MySpaceSupportNewRouteImport } from './routes/my-space/support/new'
 import { Route as MySpaceSupportTicketIdRouteImport } from './routes/my-space/support/$ticketId'
 import { Route as MySpaceRequestsReferenceRouteImport } from './routes/my-space/requests/$reference'
@@ -83,11 +84,6 @@ const MentionsLegalesRoute = MentionsLegalesRouteImport.update({
   path: '/mentions-legales',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InformationRoute = InformationRouteImport.update({
-  id: '/information',
-  path: '/information',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const FormulairesRoute = FormulairesRouteImport.update({
   id: '/formulaires',
   path: '/formulaires',
@@ -103,11 +99,6 @@ const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
   path: '/confidentialite',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CommunityRoute = CommunityRouteImport.update({
-  id: '/community',
-  path: '/community',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AccessibiliteRoute = AccessibiliteRouteImport.update({
   id: '/accessibilite',
   path: '/accessibilite',
@@ -121,6 +112,11 @@ const IndexRoute = IndexRouteImport.update({
 const ServicesIndexRoute = ServicesIndexRouteImport.update({
   id: '/services/',
   path: '/services/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RessourcesIndexRoute = RessourcesIndexRouteImport.update({
+  id: '/ressources/',
+  path: '/ressources/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RepsIndexRoute = RepsIndexRouteImport.update({
@@ -142,11 +138,6 @@ const MySpaceIndexRoute = MySpaceIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => MySpaceRoute,
-} as any)
-const AcademyIndexRoute = AcademyIndexRouteImport.update({
-  id: '/academy/',
-  path: '/academy/',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyTokenRoute = VerifyTokenRouteImport.update({
   id: '/verify/$token',
@@ -171,6 +162,11 @@ const SignInSplatRoute = SignInSplatRouteImport.update({
 const ServicesSlugRoute = ServicesSlugRouteImport.update({
   id: '/services/$slug',
   path: '/services/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RessourcesSlugRoute = RessourcesSlugRouteImport.update({
+  id: '/ressources/$slug',
+  path: '/ressources/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RepsSlugRoute = RepsSlugRouteImport.update({
@@ -259,11 +255,6 @@ const MySpaceAssociationsRoute = MySpaceAssociationsRouteImport.update({
   path: '/associations',
   getParentRoute: () => MySpaceRoute,
 } as any)
-const AcademySlugRoute = AcademySlugRouteImport.update({
-  id: '/academy/$slug',
-  path: '/academy/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const MySpaceSupportIndexRoute = MySpaceSupportIndexRouteImport.update({
   id: '/support/',
   path: '/support/',
@@ -280,6 +271,22 @@ const MySpaceAppointmentsIndexRoute =
     path: '/appointments/',
     getParentRoute: () => MySpaceRoute,
   } as any)
+const RessourcesGuidesViePratiqueRoute =
+  RessourcesGuidesViePratiqueRouteImport.update({
+    id: '/ressources/guides/vie-pratique',
+    path: '/ressources/guides/vie-pratique',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const RessourcesGuidesRetourRoute = RessourcesGuidesRetourRouteImport.update({
+  id: '/ressources/guides/retour',
+  path: '/ressources/guides/retour',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RessourcesGuidesArriveeRoute = RessourcesGuidesArriveeRouteImport.update({
+  id: '/ressources/guides/arrivee',
+  path: '/ressources/guides/arrivee',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MySpaceSupportNewRoute = MySpaceSupportNewRouteImport.update({
   id: '/support/new',
   path: '/support/new',
@@ -368,15 +375,12 @@ const MySpaceRequestsRequestIdAppointmentRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accessibilite': typeof AccessibiliteRoute
-  '/community': typeof CommunityRoute
   '/confidentialite': typeof ConfidentialiteRoute
   '/faq': typeof FaqRoute
   '/formulaires': typeof FormulairesRoute
-  '/information': typeof InformationRoute
   '/mentions-legales': typeof MentionsLegalesRoute
   '/my-space': typeof MySpaceRouteWithChildren
   '/tarifs': typeof TarifsRoute
-  '/academy/$slug': typeof AcademySlugRoute
   '/my-space/associations': typeof MySpaceAssociationsRoute
   '/my-space/children': typeof MySpaceChildrenRouteWithChildren
   '/my-space/companies': typeof MySpaceCompaniesRoute
@@ -394,16 +398,17 @@ export interface FileRoutesByFullPath {
   '/my-space/vault': typeof MySpaceVaultRoute
   '/news/$slug': typeof NewsSlugRoute
   '/reps/$slug': typeof RepsSlugRoute
+  '/ressources/$slug': typeof RessourcesSlugRoute
   '/services/$slug': typeof ServicesSlugRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/verify-profile/$profileId': typeof VerifyProfileProfileIdRoute
   '/verify/$token': typeof VerifyTokenRoute
-  '/academy/': typeof AcademyIndexRoute
   '/my-space/': typeof MySpaceIndexRoute
   '/news/': typeof NewsIndexRoute
   '/register/': typeof RegisterIndexRoute
   '/reps/': typeof RepsIndexRoute
+  '/ressources/': typeof RessourcesIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/listing/profiles/$id': typeof ListingProfilesIdRoute
@@ -419,6 +424,9 @@ export interface FileRoutesByFullPath {
   '/my-space/requests/$reference': typeof MySpaceRequestsReferenceRoute
   '/my-space/support/$ticketId': typeof MySpaceSupportTicketIdRoute
   '/my-space/support/new': typeof MySpaceSupportNewRoute
+  '/ressources/guides/arrivee': typeof RessourcesGuidesArriveeRoute
+  '/ressources/guides/retour': typeof RessourcesGuidesRetourRoute
+  '/ressources/guides/vie-pratique': typeof RessourcesGuidesViePratiqueRoute
   '/my-space/appointments/': typeof MySpaceAppointmentsIndexRoute
   '/my-space/services/': typeof MySpaceServicesIndexRoute
   '/my-space/support/': typeof MySpaceSupportIndexRoute
@@ -428,14 +436,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/accessibilite': typeof AccessibiliteRoute
-  '/community': typeof CommunityRoute
   '/confidentialite': typeof ConfidentialiteRoute
   '/faq': typeof FaqRoute
   '/formulaires': typeof FormulairesRoute
-  '/information': typeof InformationRoute
   '/mentions-legales': typeof MentionsLegalesRoute
   '/tarifs': typeof TarifsRoute
-  '/academy/$slug': typeof AcademySlugRoute
   '/my-space/associations': typeof MySpaceAssociationsRoute
   '/my-space/children': typeof MySpaceChildrenRouteWithChildren
   '/my-space/companies': typeof MySpaceCompaniesRoute
@@ -453,16 +458,17 @@ export interface FileRoutesByTo {
   '/my-space/vault': typeof MySpaceVaultRoute
   '/news/$slug': typeof NewsSlugRoute
   '/reps/$slug': typeof RepsSlugRoute
+  '/ressources/$slug': typeof RessourcesSlugRoute
   '/services/$slug': typeof ServicesSlugRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/verify-profile/$profileId': typeof VerifyProfileProfileIdRoute
   '/verify/$token': typeof VerifyTokenRoute
-  '/academy': typeof AcademyIndexRoute
   '/my-space': typeof MySpaceIndexRoute
   '/news': typeof NewsIndexRoute
   '/register': typeof RegisterIndexRoute
   '/reps': typeof RepsIndexRoute
+  '/ressources': typeof RessourcesIndexRoute
   '/services': typeof ServicesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/listing/profiles/$id': typeof ListingProfilesIdRoute
@@ -478,6 +484,9 @@ export interface FileRoutesByTo {
   '/my-space/requests/$reference': typeof MySpaceRequestsReferenceRoute
   '/my-space/support/$ticketId': typeof MySpaceSupportTicketIdRoute
   '/my-space/support/new': typeof MySpaceSupportNewRoute
+  '/ressources/guides/arrivee': typeof RessourcesGuidesArriveeRoute
+  '/ressources/guides/retour': typeof RessourcesGuidesRetourRoute
+  '/ressources/guides/vie-pratique': typeof RessourcesGuidesViePratiqueRoute
   '/my-space/appointments': typeof MySpaceAppointmentsIndexRoute
   '/my-space/services': typeof MySpaceServicesIndexRoute
   '/my-space/support': typeof MySpaceSupportIndexRoute
@@ -488,15 +497,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/accessibilite': typeof AccessibiliteRoute
-  '/community': typeof CommunityRoute
   '/confidentialite': typeof ConfidentialiteRoute
   '/faq': typeof FaqRoute
   '/formulaires': typeof FormulairesRoute
-  '/information': typeof InformationRoute
   '/mentions-legales': typeof MentionsLegalesRoute
   '/my-space': typeof MySpaceRouteWithChildren
   '/tarifs': typeof TarifsRoute
-  '/academy/$slug': typeof AcademySlugRoute
   '/my-space/associations': typeof MySpaceAssociationsRoute
   '/my-space/children': typeof MySpaceChildrenRouteWithChildren
   '/my-space/companies': typeof MySpaceCompaniesRoute
@@ -514,16 +520,17 @@ export interface FileRoutesById {
   '/my-space/vault': typeof MySpaceVaultRoute
   '/news/$slug': typeof NewsSlugRoute
   '/reps/$slug': typeof RepsSlugRoute
+  '/ressources/$slug': typeof RessourcesSlugRoute
   '/services/$slug': typeof ServicesSlugRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/verify-profile/$profileId': typeof VerifyProfileProfileIdRoute
   '/verify/$token': typeof VerifyTokenRoute
-  '/academy/': typeof AcademyIndexRoute
   '/my-space/': typeof MySpaceIndexRoute
   '/news/': typeof NewsIndexRoute
   '/register/': typeof RegisterIndexRoute
   '/reps/': typeof RepsIndexRoute
+  '/ressources/': typeof RessourcesIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/listing/profiles/$id': typeof ListingProfilesIdRoute
@@ -539,6 +546,9 @@ export interface FileRoutesById {
   '/my-space/requests/$reference': typeof MySpaceRequestsReferenceRoute
   '/my-space/support/$ticketId': typeof MySpaceSupportTicketIdRoute
   '/my-space/support/new': typeof MySpaceSupportNewRoute
+  '/ressources/guides/arrivee': typeof RessourcesGuidesArriveeRoute
+  '/ressources/guides/retour': typeof RessourcesGuidesRetourRoute
+  '/ressources/guides/vie-pratique': typeof RessourcesGuidesViePratiqueRoute
   '/my-space/appointments/': typeof MySpaceAppointmentsIndexRoute
   '/my-space/services/': typeof MySpaceServicesIndexRoute
   '/my-space/support/': typeof MySpaceSupportIndexRoute
@@ -550,15 +560,12 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/accessibilite'
-    | '/community'
     | '/confidentialite'
     | '/faq'
     | '/formulaires'
-    | '/information'
     | '/mentions-legales'
     | '/my-space'
     | '/tarifs'
-    | '/academy/$slug'
     | '/my-space/associations'
     | '/my-space/children'
     | '/my-space/companies'
@@ -576,16 +583,17 @@ export interface FileRouteTypes {
     | '/my-space/vault'
     | '/news/$slug'
     | '/reps/$slug'
+    | '/ressources/$slug'
     | '/services/$slug'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/verify-profile/$profileId'
     | '/verify/$token'
-    | '/academy/'
     | '/my-space/'
     | '/news/'
     | '/register/'
     | '/reps/'
+    | '/ressources/'
     | '/services/'
     | '/api/auth/$'
     | '/listing/profiles/$id'
@@ -601,6 +609,9 @@ export interface FileRouteTypes {
     | '/my-space/requests/$reference'
     | '/my-space/support/$ticketId'
     | '/my-space/support/new'
+    | '/ressources/guides/arrivee'
+    | '/ressources/guides/retour'
+    | '/ressources/guides/vie-pratique'
     | '/my-space/appointments/'
     | '/my-space/services/'
     | '/my-space/support/'
@@ -610,14 +621,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/accessibilite'
-    | '/community'
     | '/confidentialite'
     | '/faq'
     | '/formulaires'
-    | '/information'
     | '/mentions-legales'
     | '/tarifs'
-    | '/academy/$slug'
     | '/my-space/associations'
     | '/my-space/children'
     | '/my-space/companies'
@@ -635,16 +643,17 @@ export interface FileRouteTypes {
     | '/my-space/vault'
     | '/news/$slug'
     | '/reps/$slug'
+    | '/ressources/$slug'
     | '/services/$slug'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/verify-profile/$profileId'
     | '/verify/$token'
-    | '/academy'
     | '/my-space'
     | '/news'
     | '/register'
     | '/reps'
+    | '/ressources'
     | '/services'
     | '/api/auth/$'
     | '/listing/profiles/$id'
@@ -660,6 +669,9 @@ export interface FileRouteTypes {
     | '/my-space/requests/$reference'
     | '/my-space/support/$ticketId'
     | '/my-space/support/new'
+    | '/ressources/guides/arrivee'
+    | '/ressources/guides/retour'
+    | '/ressources/guides/vie-pratique'
     | '/my-space/appointments'
     | '/my-space/services'
     | '/my-space/support'
@@ -669,15 +681,12 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/accessibilite'
-    | '/community'
     | '/confidentialite'
     | '/faq'
     | '/formulaires'
-    | '/information'
     | '/mentions-legales'
     | '/my-space'
     | '/tarifs'
-    | '/academy/$slug'
     | '/my-space/associations'
     | '/my-space/children'
     | '/my-space/companies'
@@ -695,16 +704,17 @@ export interface FileRouteTypes {
     | '/my-space/vault'
     | '/news/$slug'
     | '/reps/$slug'
+    | '/ressources/$slug'
     | '/services/$slug'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/verify-profile/$profileId'
     | '/verify/$token'
-    | '/academy/'
     | '/my-space/'
     | '/news/'
     | '/register/'
     | '/reps/'
+    | '/ressources/'
     | '/services/'
     | '/api/auth/$'
     | '/listing/profiles/$id'
@@ -720,6 +730,9 @@ export interface FileRouteTypes {
     | '/my-space/requests/$reference'
     | '/my-space/support/$ticketId'
     | '/my-space/support/new'
+    | '/ressources/guides/arrivee'
+    | '/ressources/guides/retour'
+    | '/ressources/guides/vie-pratique'
     | '/my-space/appointments/'
     | '/my-space/services/'
     | '/my-space/support/'
@@ -730,29 +743,30 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccessibiliteRoute: typeof AccessibiliteRoute
-  CommunityRoute: typeof CommunityRoute
   ConfidentialiteRoute: typeof ConfidentialiteRoute
   FaqRoute: typeof FaqRoute
   FormulairesRoute: typeof FormulairesRoute
-  InformationRoute: typeof InformationRoute
   MentionsLegalesRoute: typeof MentionsLegalesRoute
   MySpaceRoute: typeof MySpaceRouteWithChildren
   TarifsRoute: typeof TarifsRoute
-  AcademySlugRoute: typeof AcademySlugRoute
   NewsSlugRoute: typeof NewsSlugRoute
   RepsSlugRoute: typeof RepsSlugRoute
+  RessourcesSlugRoute: typeof RessourcesSlugRoute
   ServicesSlugRoute: typeof ServicesSlugRoute
   SignInSplatRoute: typeof SignInSplatRoute
   SignUpSplatRoute: typeof SignUpSplatRoute
   VerifyProfileProfileIdRoute: typeof VerifyProfileProfileIdRoute
   VerifyTokenRoute: typeof VerifyTokenRoute
-  AcademyIndexRoute: typeof AcademyIndexRoute
   NewsIndexRoute: typeof NewsIndexRoute
   RegisterIndexRoute: typeof RegisterIndexRoute
   RepsIndexRoute: typeof RepsIndexRoute
+  RessourcesIndexRoute: typeof RessourcesIndexRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ListingProfilesIdRoute: typeof ListingProfilesIdRoute
+  RessourcesGuidesArriveeRoute: typeof RessourcesGuidesArriveeRoute
+  RessourcesGuidesRetourRoute: typeof RessourcesGuidesRetourRoute
+  RessourcesGuidesViePratiqueRoute: typeof RessourcesGuidesViePratiqueRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -778,13 +792,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MentionsLegalesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/information': {
-      id: '/information'
-      path: '/information'
-      fullPath: '/information'
-      preLoaderRoute: typeof InformationRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/formulaires': {
       id: '/formulaires'
       path: '/formulaires'
@@ -806,13 +813,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfidentialiteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/community': {
-      id: '/community'
-      path: '/community'
-      fullPath: '/community'
-      preLoaderRoute: typeof CommunityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/accessibilite': {
       id: '/accessibilite'
       path: '/accessibilite'
@@ -832,6 +832,13 @@ declare module '@tanstack/react-router' {
       path: '/services'
       fullPath: '/services/'
       preLoaderRoute: typeof ServicesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ressources/': {
+      id: '/ressources/'
+      path: '/ressources'
+      fullPath: '/ressources/'
+      preLoaderRoute: typeof RessourcesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reps/': {
@@ -861,13 +868,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/my-space/'
       preLoaderRoute: typeof MySpaceIndexRouteImport
       parentRoute: typeof MySpaceRoute
-    }
-    '/academy/': {
-      id: '/academy/'
-      path: '/academy'
-      fullPath: '/academy/'
-      preLoaderRoute: typeof AcademyIndexRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/verify/$token': {
       id: '/verify/$token'
@@ -902,6 +902,13 @@ declare module '@tanstack/react-router' {
       path: '/services/$slug'
       fullPath: '/services/$slug'
       preLoaderRoute: typeof ServicesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ressources/$slug': {
+      id: '/ressources/$slug'
+      path: '/ressources/$slug'
+      fullPath: '/ressources/$slug'
+      preLoaderRoute: typeof RessourcesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reps/$slug': {
@@ -1023,13 +1030,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MySpaceAssociationsRouteImport
       parentRoute: typeof MySpaceRoute
     }
-    '/academy/$slug': {
-      id: '/academy/$slug'
-      path: '/academy/$slug'
-      fullPath: '/academy/$slug'
-      preLoaderRoute: typeof AcademySlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/my-space/support/': {
       id: '/my-space/support/'
       path: '/support'
@@ -1050,6 +1050,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/my-space/appointments/'
       preLoaderRoute: typeof MySpaceAppointmentsIndexRouteImport
       parentRoute: typeof MySpaceRoute
+    }
+    '/ressources/guides/vie-pratique': {
+      id: '/ressources/guides/vie-pratique'
+      path: '/ressources/guides/vie-pratique'
+      fullPath: '/ressources/guides/vie-pratique'
+      preLoaderRoute: typeof RessourcesGuidesViePratiqueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ressources/guides/retour': {
+      id: '/ressources/guides/retour'
+      path: '/ressources/guides/retour'
+      fullPath: '/ressources/guides/retour'
+      preLoaderRoute: typeof RessourcesGuidesRetourRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ressources/guides/arrivee': {
+      id: '/ressources/guides/arrivee'
+      path: '/ressources/guides/arrivee'
+      fullPath: '/ressources/guides/arrivee'
+      preLoaderRoute: typeof RessourcesGuidesArriveeRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/my-space/support/new': {
       id: '/my-space/support/new'
@@ -1274,29 +1295,30 @@ const MySpaceRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccessibiliteRoute: AccessibiliteRoute,
-  CommunityRoute: CommunityRoute,
   ConfidentialiteRoute: ConfidentialiteRoute,
   FaqRoute: FaqRoute,
   FormulairesRoute: FormulairesRoute,
-  InformationRoute: InformationRoute,
   MentionsLegalesRoute: MentionsLegalesRoute,
   MySpaceRoute: MySpaceRouteWithChildren,
   TarifsRoute: TarifsRoute,
-  AcademySlugRoute: AcademySlugRoute,
   NewsSlugRoute: NewsSlugRoute,
   RepsSlugRoute: RepsSlugRoute,
+  RessourcesSlugRoute: RessourcesSlugRoute,
   ServicesSlugRoute: ServicesSlugRoute,
   SignInSplatRoute: SignInSplatRoute,
   SignUpSplatRoute: SignUpSplatRoute,
   VerifyProfileProfileIdRoute: VerifyProfileProfileIdRoute,
   VerifyTokenRoute: VerifyTokenRoute,
-  AcademyIndexRoute: AcademyIndexRoute,
   NewsIndexRoute: NewsIndexRoute,
   RegisterIndexRoute: RegisterIndexRoute,
   RepsIndexRoute: RepsIndexRoute,
+  RessourcesIndexRoute: RessourcesIndexRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ListingProfilesIdRoute: ListingProfilesIdRoute,
+  RessourcesGuidesArriveeRoute: RessourcesGuidesArriveeRoute,
+  RessourcesGuidesRetourRoute: RessourcesGuidesRetourRoute,
+  RessourcesGuidesViePratiqueRoute: RessourcesGuidesViePratiqueRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

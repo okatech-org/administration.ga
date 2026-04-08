@@ -17,10 +17,9 @@ function LegalPage() {
             <p className="text-muted-foreground text-lg">
               Informations légales relatives au site et à ses services.
             </p>
-            <div className="gabon-stripe mt-6 max-w-xs mx-auto" />
           </div>
 
-          <div className="bg-card rounded-xl p-6 md:p-8 border flat-card-border shadow-sm">
+          <div className="bg-card rounded-[10px] p-6 md:p-8 border border-border shadow-sm">
             <div className="prose dark:prose-invert max-w-none space-y-6 stagger-children">
               <section>
                 <h2 className="text-2xl font-semibold mb-4">Éditeur</h2>

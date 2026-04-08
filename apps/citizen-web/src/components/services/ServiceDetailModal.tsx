@@ -27,13 +27,13 @@ import { Separator } from "@/components/ui/separator";
 import { getLocalizedValue } from "@/lib/i18n-utils";
 
 const CATEGORY_CONFIG: Record<string, { icon: LucideIcon; color: string }> = {
-	[ServiceCategory.Identity]: { icon: BookOpenCheck, color: "bg-blue-500" },
-	[ServiceCategory.Visa]: { icon: Globe, color: "bg-green-500" },
-	[ServiceCategory.CivilStatus]: { icon: FileText, color: "bg-yellow-500" },
-	[ServiceCategory.Registration]: { icon: BookOpen, color: "bg-purple-500" },
-	[ServiceCategory.Certification]: { icon: FileCheck, color: "bg-orange-500" },
-	[ServiceCategory.Assistance]: { icon: ShieldAlert, color: "bg-red-500" },
-	[ServiceCategory.Other]: { icon: FileText, color: "bg-gray-500" },
+	[ServiceCategory.Identity]: { icon: BookOpenCheck, color: "bg-primary" },
+	[ServiceCategory.Visa]: { icon: Globe, color: "bg-primary" },
+	[ServiceCategory.CivilStatus]: { icon: FileText, color: "bg-primary" },
+	[ServiceCategory.Registration]: { icon: BookOpen, color: "bg-primary" },
+	[ServiceCategory.Certification]: { icon: FileCheck, color: "bg-primary" },
+	[ServiceCategory.Assistance]: { icon: ShieldAlert, color: "bg-primary" },
+	[ServiceCategory.Other]: { icon: FileText, color: "bg-primary" },
 };
 
 interface RequiredDocument {
@@ -147,13 +147,11 @@ export function ServiceDetailModal({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="md:min-w-[700px] max-h-[70vh] overflow-y-auto">
+			<DialogContent className="md:min-w-[700px] max-h-[70vh] overflow-y-auto rounded-[10px]">
 				<DialogHeader>
 					<div className="flex items-start gap-4">
-						<div className={`p-3 rounded-xl ${categoryConfig.color}/10`}>
-							<CategoryIcon
-								className={`h-8 w-8 text-${categoryConfig.color.replace("bg-", "")}`}
-							/>
+						<div className="p-3 rounded-[10px] bg-primary/10">
+							<CategoryIcon className="h-8 w-8 text-primary" />
 						</div>
 						<div className="flex-1">
 							<DialogTitle className="text-2xl">{serviceName}</DialogTitle>
@@ -193,24 +191,18 @@ export function ServiceDetailModal({
 									{((service as any).eligibleProfiles as string[]).map(
 										(profileType: string) => {
 											const colorMap: Record<string, string> = {
-												long_stay:
-													"bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-												short_stay:
-													"bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-												visa_tourism:
-													"bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-												visa_business:
-													"bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-												visa_long_stay:
-													"bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
-												admin_services:
-													"bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
+												long_stay: "bg-primary/10 text-primary",
+												short_stay: "bg-primary/10 text-primary",
+												visa_tourism: "bg-primary/10 text-primary",
+												visa_business: "bg-primary/10 text-primary",
+												visa_long_stay: "bg-primary/10 text-primary",
+												admin_services: "bg-muted text-muted-foreground",
 											};
 											return (
 												<Badge
 													key={profileType}
 													variant="secondary"
-													className={`gap-1 ${colorMap[profileType] ?? "bg-gray-100 text-gray-700"}`}
+													className={`gap-1 ${colorMap[profileType] ?? "bg-primary/10 text-primary"}`}
 												>
 													<CheckCircle2 className="h-3 w-3" />
 													{t(
@@ -240,7 +232,7 @@ export function ServiceDetailModal({
 									{defaults.requiredDocuments.map((doc, index) => (
 										<li
 											key={index}
-											className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
+											className="flex items-center gap-3 p-3 bg-muted/50 rounded-[10px]"
 										>
 											<div className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-medium">
 												{index + 1}
@@ -275,7 +267,7 @@ export function ServiceDetailModal({
 					</div>
 
 					{/* Info supplémentaire */}
-					<div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
+					<div className="bg-muted/50 rounded-[10px] p-4 text-sm text-muted-foreground">
 						<p className="font-medium text-foreground mb-1">
 							{t("services.modal.importantInfo")}
 						</p>

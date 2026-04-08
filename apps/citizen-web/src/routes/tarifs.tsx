@@ -35,10 +35,9 @@ function TarifsPage() {
             <p className="text-muted-foreground text-lg">
               Tarifs en vigueur applicables pour les services consulaires.
             </p>
-            <div className="gabon-stripe mt-6 max-w-xs mx-auto" />
           </div>
 
-          <div className="bg-card rounded-xl p-6 md:p-8 border flat-card-border shadow-sm">
+          <div className="bg-card rounded-[10px] p-6 md:p-8 border border-border shadow-sm">
             <Table>
               <TableHeader>
                 <TableRow>

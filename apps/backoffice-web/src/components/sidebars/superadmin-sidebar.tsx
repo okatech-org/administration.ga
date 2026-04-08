@@ -119,6 +119,12 @@ export function SuperadminSidebar({
 					moduleCode: "requests",
 				},
 				{
+					title: t("superadmin.nav.affairesDiplomatiques", "Affaires Diplomatiques"),
+					url: "/affaires-diplomatiques",
+					icon: Globe,
+					moduleCode: "intelligence",
+				},
+				{
 					title: t("superadmin.nav.associations", "Associations"),
 					url: "/associations",
 					icon: Building2,

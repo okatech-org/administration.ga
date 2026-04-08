@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
-import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import { usePaginatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
@@ -77,10 +77,10 @@ function PostCard({ post }: { post: Post }) {
     <Link
       to="/news/$slug"
       params={{ slug: post.slug }}
-      className="group block bg-card rounded-xl overflow-hidden border flat-card-border hover:shadow-lg transition-all duration-300"
+      className="group block bg-card rounded-[10px] overflow-hidden border border-border hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300"
     >
       {/* Image */}
-      <div className="aspect-[16/9] overflow-hidden bg-muted">
+      <div className="aspect-video overflow-hidden bg-muted">
         {post.coverImageUrl ?
           <img
             src={post.coverImageUrl}
@@ -183,37 +183,33 @@ function NewsPage() {
     if (value === null) {
       navigate({ search: {} });
     } else {
-      navigate({ search: { category: value } });
+      navigate({ search: { category: value as "news" | "event" | "communique" } });
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="bg-background py-16 px-6">
-        <div className="max-w-7xl mx-auto text-center">
-          <Badge
-            variant="secondary"
-            className="mb-4 bg-primary/10 text-primary"
-          >
+      <section className="py-20 lg:py-40 bg-[oklch(0.145_0_0)] text-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <span className="inline-block mb-4 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-white/80">
             {t("news.badge")}
-          </Badge>
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+          </span>
+          <h1 className="text-5xl md:text-7xl font-bold tracking-[-0.02em] text-white mb-4">
             {t("news.title")}
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-[oklch(0.7_0_0)] max-w-2xl mx-auto">
             {t(
               "news.subtitle",
               "Restez informé des dernières nouvelles, événements et communiqués officiels du Consulat.",
             )}
           </p>
-          <div className="gabon-stripe mt-8 max-w-xs mx-auto" />
         </div>
       </section>
 
       {/* Filters */}
-      <section className="sticky top-0 bg-background/50 backdrop-blur-sm z-10">
-        <div className="container mx-auto px-4">
+      <section className="sticky top-0 bg-background/80 backdrop-blur-md z-10 border-b border-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex gap-2 py-2 overflow-x-auto">
             {categoryConfig.map((cat) => {
               const Icon = cat.icon;
@@ -241,15 +237,16 @@ function NewsPage() {
       </section>
 
       {/* Posts Grid */}
-      <section className="container mx-auto px-4 py-12">
+      <section className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {isLoading ?
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
               <div
                 key={i}
-                className="bg-card rounded-xl overflow-hidden border flat-card-border animate-pulse"
+                className="bg-card rounded-[10px] overflow-hidden border border-border animate-pulse"
               >
-                <div className="aspect-[16/9] bg-muted" />
+                <div className="aspect-video bg-muted" />
                 <div className="p-5 space-y-3">
                   <div className="h-4 w-20 bg-muted rounded" />
                   <div className="h-6 w-full bg-muted rounded" />
@@ -286,6 +283,7 @@ function NewsPage() {
             )}
           </>
         }
+        </div>
       </section>
     </div>
   );

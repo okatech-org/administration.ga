@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useTranslation } from 'react-i18next'
+
 import {
   Accordion,
   AccordionContent,
@@ -38,18 +38,21 @@ function FAQPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <main className="flex-1 py-16 px-6">
-        <div className="max-w-3xl mx-auto space-y-8">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">Foire Aux Questions</h1>
-            <p className="text-muted-foreground text-lg">
-              Retrouvez les réponses aux questions les plus fréquentes concernant vos démarches consulaires.
-            </p>
-            <div className="gabon-stripe mt-6 max-w-xs mx-auto" />
-          </div>
+      {/* Hero Section */}
+      <section className="py-20 lg:py-40 bg-[oklch(0.145_0_0)] text-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <span className="inline-block mb-4 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-white/80">FAQ</span>
+          <h1 className="text-5xl md:text-7xl font-bold tracking-[-0.02em] text-white mb-4">Foire Aux Questions</h1>
+          <p className="text-lg md:text-xl text-[oklch(0.7_0_0)] max-w-2xl mx-auto">
+            Retrouvez les réponses aux questions les plus fréquentes concernant vos démarches consulaires.
+          </p>
+        </div>
+      </section>
 
-          <div className="bg-card rounded-xl p-6 md:p-8 border flat-card-border shadow-sm">
-            <Accordion type="single" collapsible className="w-full stagger-children">
+      <main className="flex-1 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto bg-card rounded-[10px] p-6 md:p-8 border border-border">
+            <Accordion type="single" collapsible className="w-full">
               {faqItems.map((item, index) => (
                 <AccordionItem key={index} value={`item-${index}`}>
                   <AccordionTrigger className="text-left font-medium text-lg">

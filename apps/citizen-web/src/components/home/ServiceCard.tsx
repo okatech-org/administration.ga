@@ -29,7 +29,6 @@ export function ServiceCard({
 	title,
 	description,
 	href = "/",
-	color = "bg-primary/10 text-primary",
 	badge,
 	price,
 	delay,
@@ -39,12 +38,12 @@ export function ServiceCard({
 	const { t } = useTranslation();
 
 	const content = (
-		<Card className="hover:border-primary/50 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 h-full">
-			<CardContent>
+		<Card className="bg-card border border-border rounded-[10px] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-200 hover:-translate-y-0.5 h-full">
+			<CardContent className="p-6">
 				{/* Header with icon and badge */}
 				<div className="flex items-start justify-between mb-4">
 					<div
-						className={`w-12 h-12 rounded-[10px] flex items-center justify-center ${color}`}
+						className="w-12 h-12 rounded-full flex items-center justify-center bg-primary/10 text-primary"
 					>
 						<Icon className="w-6 h-6" />
 					</div>
@@ -76,7 +75,7 @@ export function ServiceCard({
 						)}
 						{price && (
 							<span
-								className={`font-medium ${price === "Gratuit" || price === "Free" ? "text-green-600" : "text-foreground"}`}
+								className={`font-medium ${price === "Gratuit" || price === "Free" ? "text-success" : "text-foreground"}`}
 							>
 								{price}
 							</span>
@@ -88,7 +87,7 @@ export function ServiceCard({
 				{isAvailableOnline !== undefined && (
 					<div className="mb-3">
 						{isAvailableOnline ? (
-							<div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+							<div className="flex items-center gap-1.5 text-xs font-medium text-success">
 								<Globe className="w-3.5 h-3.5" />
 								<span>{t("services.availableOnline")}</span>
 							</div>

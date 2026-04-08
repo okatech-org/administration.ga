@@ -31,6 +31,7 @@ import { Route as AppPostsIndexRouteImport } from './routes/_app/posts/index'
 import { Route as AppMeetingsIndexRouteImport } from './routes/_app/meetings/index'
 import { Route as AppConsularRegistryIndexRouteImport } from './routes/_app/consular-registry/index'
 import { Route as AppAppointmentsIndexRouteImport } from './routes/_app/appointments/index'
+import { Route as AppAffairesDiplomatiquesIndexRouteImport } from './routes/_app/affaires-diplomatiques/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AppRequestsReferenceRouteImport } from './routes/_app/requests/$reference'
 import { Route as AppProfilesProfileIdRouteImport } from './routes/_app/profiles/$profileId'
@@ -38,6 +39,12 @@ import { Route as AppPostsNewRouteImport } from './routes/_app/posts/new'
 import { Route as AppConsularRegistryPrintQueueRouteImport } from './routes/_app/consular-registry/print-queue'
 import { Route as AppAppointmentsAgentSchedulesRouteImport } from './routes/_app/appointments/agent-schedules'
 import { Route as AppAppointmentsAppointmentIdRouteImport } from './routes/_app/appointments/$appointmentId'
+import { Route as AppAffairesDiplomatiquesRapportsRouteImport } from './routes/_app/affaires-diplomatiques/rapports'
+import { Route as AppAffairesDiplomatiquesProjetsRouteImport } from './routes/_app/affaires-diplomatiques/projets'
+import { Route as AppAffairesDiplomatiquesPlansRouteImport } from './routes/_app/affaires-diplomatiques/plans'
+import { Route as AppAffairesDiplomatiquesLettresRouteImport } from './routes/_app/affaires-diplomatiques/lettres'
+import { Route as AppAffairesDiplomatiquesCiblesRouteImport } from './routes/_app/affaires-diplomatiques/cibles'
+import { Route as AppAffairesDiplomatiquesTargetIdRouteImport } from './routes/_app/affaires-diplomatiques/$targetId'
 import { Route as AppAffairesConsulairesProfilesIndexRouteImport } from './routes/_app/affaires-consulaires/profiles/index'
 import { Route as AppServicesServiceIdEditRouteImport } from './routes/_app/services/$serviceId.edit'
 import { Route as AppPostsPostIdEditRouteImport } from './routes/_app/posts/$postId.edit'
@@ -154,6 +161,12 @@ const AppAppointmentsIndexRoute = AppAppointmentsIndexRouteImport.update({
   path: '/appointments/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAffairesDiplomatiquesIndexRoute =
+  AppAffairesDiplomatiquesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppAffairesDiplomatiquesRoute,
+  } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -192,6 +205,42 @@ const AppAppointmentsAppointmentIdRoute =
     path: '/appointments/$appointmentId',
     getParentRoute: () => AppRoute,
   } as any)
+const AppAffairesDiplomatiquesRapportsRoute =
+  AppAffairesDiplomatiquesRapportsRouteImport.update({
+    id: '/rapports',
+    path: '/rapports',
+    getParentRoute: () => AppAffairesDiplomatiquesRoute,
+  } as any)
+const AppAffairesDiplomatiquesProjetsRoute =
+  AppAffairesDiplomatiquesProjetsRouteImport.update({
+    id: '/projets',
+    path: '/projets',
+    getParentRoute: () => AppAffairesDiplomatiquesRoute,
+  } as any)
+const AppAffairesDiplomatiquesPlansRoute =
+  AppAffairesDiplomatiquesPlansRouteImport.update({
+    id: '/plans',
+    path: '/plans',
+    getParentRoute: () => AppAffairesDiplomatiquesRoute,
+  } as any)
+const AppAffairesDiplomatiquesLettresRoute =
+  AppAffairesDiplomatiquesLettresRouteImport.update({
+    id: '/lettres',
+    path: '/lettres',
+    getParentRoute: () => AppAffairesDiplomatiquesRoute,
+  } as any)
+const AppAffairesDiplomatiquesCiblesRoute =
+  AppAffairesDiplomatiquesCiblesRouteImport.update({
+    id: '/cibles',
+    path: '/cibles',
+    getParentRoute: () => AppAffairesDiplomatiquesRoute,
+  } as any)
+const AppAffairesDiplomatiquesTargetIdRoute =
+  AppAffairesDiplomatiquesTargetIdRouteImport.update({
+    id: '/$targetId',
+    path: '/$targetId',
+    getParentRoute: () => AppAffairesDiplomatiquesRoute,
+  } as any)
 const AppAffairesConsulairesProfilesIndexRoute =
   AppAffairesConsulairesProfilesIndexRouteImport.update({
     id: '/profiles/',
@@ -219,7 +268,7 @@ const AppAffairesConsulairesProfilesProfileIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/affaires-consulaires': typeof AppAffairesConsulairesRouteWithChildren
-  '/affaires-diplomatiques': typeof AppAffairesDiplomatiquesRoute
+  '/affaires-diplomatiques': typeof AppAffairesDiplomatiquesRouteWithChildren
   '/calls': typeof AppCallsRoute
   '/iagenda': typeof AppIagendaRoute
   '/iarchive': typeof AppIarchiveRoute
@@ -230,6 +279,12 @@ export interface FileRoutesByFullPath {
   '/iprofil': typeof AppIprofilRoute
   '/payments': typeof AppPaymentsRoute
   '/statistics': typeof AppStatisticsRoute
+  '/affaires-diplomatiques/$targetId': typeof AppAffairesDiplomatiquesTargetIdRoute
+  '/affaires-diplomatiques/cibles': typeof AppAffairesDiplomatiquesCiblesRoute
+  '/affaires-diplomatiques/lettres': typeof AppAffairesDiplomatiquesLettresRoute
+  '/affaires-diplomatiques/plans': typeof AppAffairesDiplomatiquesPlansRoute
+  '/affaires-diplomatiques/projets': typeof AppAffairesDiplomatiquesProjetsRoute
+  '/affaires-diplomatiques/rapports': typeof AppAffairesDiplomatiquesRapportsRoute
   '/appointments/$appointmentId': typeof AppAppointmentsAppointmentIdRoute
   '/appointments/agent-schedules': typeof AppAppointmentsAgentSchedulesRoute
   '/consular-registry/print-queue': typeof AppConsularRegistryPrintQueueRoute
@@ -237,6 +292,7 @@ export interface FileRoutesByFullPath {
   '/profiles/$profileId': typeof AppProfilesProfileIdRoute
   '/requests/$reference': typeof AppRequestsReferenceRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/affaires-diplomatiques/': typeof AppAffairesDiplomatiquesIndexRoute
   '/appointments/': typeof AppAppointmentsIndexRoute
   '/consular-registry/': typeof AppConsularRegistryIndexRoute
   '/meetings/': typeof AppMeetingsIndexRoute
@@ -252,7 +308,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/affaires-consulaires': typeof AppAffairesConsulairesRouteWithChildren
-  '/affaires-diplomatiques': typeof AppAffairesDiplomatiquesRoute
   '/calls': typeof AppCallsRoute
   '/iagenda': typeof AppIagendaRoute
   '/iarchive': typeof AppIarchiveRoute
@@ -264,6 +319,12 @@ export interface FileRoutesByTo {
   '/payments': typeof AppPaymentsRoute
   '/statistics': typeof AppStatisticsRoute
   '/': typeof AppIndexRoute
+  '/affaires-diplomatiques/$targetId': typeof AppAffairesDiplomatiquesTargetIdRoute
+  '/affaires-diplomatiques/cibles': typeof AppAffairesDiplomatiquesCiblesRoute
+  '/affaires-diplomatiques/lettres': typeof AppAffairesDiplomatiquesLettresRoute
+  '/affaires-diplomatiques/plans': typeof AppAffairesDiplomatiquesPlansRoute
+  '/affaires-diplomatiques/projets': typeof AppAffairesDiplomatiquesProjetsRoute
+  '/affaires-diplomatiques/rapports': typeof AppAffairesDiplomatiquesRapportsRoute
   '/appointments/$appointmentId': typeof AppAppointmentsAppointmentIdRoute
   '/appointments/agent-schedules': typeof AppAppointmentsAgentSchedulesRoute
   '/consular-registry/print-queue': typeof AppConsularRegistryPrintQueueRoute
@@ -271,6 +332,7 @@ export interface FileRoutesByTo {
   '/profiles/$profileId': typeof AppProfilesProfileIdRoute
   '/requests/$reference': typeof AppRequestsReferenceRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/affaires-diplomatiques': typeof AppAffairesDiplomatiquesIndexRoute
   '/appointments': typeof AppAppointmentsIndexRoute
   '/consular-registry': typeof AppConsularRegistryIndexRoute
   '/meetings': typeof AppMeetingsIndexRoute
@@ -288,7 +350,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/_app/affaires-consulaires': typeof AppAffairesConsulairesRouteWithChildren
-  '/_app/affaires-diplomatiques': typeof AppAffairesDiplomatiquesRoute
+  '/_app/affaires-diplomatiques': typeof AppAffairesDiplomatiquesRouteWithChildren
   '/_app/calls': typeof AppCallsRoute
   '/_app/iagenda': typeof AppIagendaRoute
   '/_app/iarchive': typeof AppIarchiveRoute
@@ -300,6 +362,12 @@ export interface FileRoutesById {
   '/_app/payments': typeof AppPaymentsRoute
   '/_app/statistics': typeof AppStatisticsRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/affaires-diplomatiques/$targetId': typeof AppAffairesDiplomatiquesTargetIdRoute
+  '/_app/affaires-diplomatiques/cibles': typeof AppAffairesDiplomatiquesCiblesRoute
+  '/_app/affaires-diplomatiques/lettres': typeof AppAffairesDiplomatiquesLettresRoute
+  '/_app/affaires-diplomatiques/plans': typeof AppAffairesDiplomatiquesPlansRoute
+  '/_app/affaires-diplomatiques/projets': typeof AppAffairesDiplomatiquesProjetsRoute
+  '/_app/affaires-diplomatiques/rapports': typeof AppAffairesDiplomatiquesRapportsRoute
   '/_app/appointments/$appointmentId': typeof AppAppointmentsAppointmentIdRoute
   '/_app/appointments/agent-schedules': typeof AppAppointmentsAgentSchedulesRoute
   '/_app/consular-registry/print-queue': typeof AppConsularRegistryPrintQueueRoute
@@ -307,6 +375,7 @@ export interface FileRoutesById {
   '/_app/profiles/$profileId': typeof AppProfilesProfileIdRoute
   '/_app/requests/$reference': typeof AppRequestsReferenceRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_app/affaires-diplomatiques/': typeof AppAffairesDiplomatiquesIndexRoute
   '/_app/appointments/': typeof AppAppointmentsIndexRoute
   '/_app/consular-registry/': typeof AppConsularRegistryIndexRoute
   '/_app/meetings/': typeof AppMeetingsIndexRoute
@@ -336,6 +405,12 @@ export interface FileRouteTypes {
     | '/iprofil'
     | '/payments'
     | '/statistics'
+    | '/affaires-diplomatiques/$targetId'
+    | '/affaires-diplomatiques/cibles'
+    | '/affaires-diplomatiques/lettres'
+    | '/affaires-diplomatiques/plans'
+    | '/affaires-diplomatiques/projets'
+    | '/affaires-diplomatiques/rapports'
     | '/appointments/$appointmentId'
     | '/appointments/agent-schedules'
     | '/consular-registry/print-queue'
@@ -343,6 +418,7 @@ export interface FileRouteTypes {
     | '/profiles/$profileId'
     | '/requests/$reference'
     | '/api/auth/$'
+    | '/affaires-diplomatiques/'
     | '/appointments/'
     | '/consular-registry/'
     | '/meetings/'
@@ -358,7 +434,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/affaires-consulaires'
-    | '/affaires-diplomatiques'
     | '/calls'
     | '/iagenda'
     | '/iarchive'
@@ -370,6 +445,12 @@ export interface FileRouteTypes {
     | '/payments'
     | '/statistics'
     | '/'
+    | '/affaires-diplomatiques/$targetId'
+    | '/affaires-diplomatiques/cibles'
+    | '/affaires-diplomatiques/lettres'
+    | '/affaires-diplomatiques/plans'
+    | '/affaires-diplomatiques/projets'
+    | '/affaires-diplomatiques/rapports'
     | '/appointments/$appointmentId'
     | '/appointments/agent-schedules'
     | '/consular-registry/print-queue'
@@ -377,6 +458,7 @@ export interface FileRouteTypes {
     | '/profiles/$profileId'
     | '/requests/$reference'
     | '/api/auth/$'
+    | '/affaires-diplomatiques'
     | '/appointments'
     | '/consular-registry'
     | '/meetings'
@@ -405,6 +487,12 @@ export interface FileRouteTypes {
     | '/_app/payments'
     | '/_app/statistics'
     | '/_app/'
+    | '/_app/affaires-diplomatiques/$targetId'
+    | '/_app/affaires-diplomatiques/cibles'
+    | '/_app/affaires-diplomatiques/lettres'
+    | '/_app/affaires-diplomatiques/plans'
+    | '/_app/affaires-diplomatiques/projets'
+    | '/_app/affaires-diplomatiques/rapports'
     | '/_app/appointments/$appointmentId'
     | '/_app/appointments/agent-schedules'
     | '/_app/consular-registry/print-queue'
@@ -412,6 +500,7 @@ export interface FileRouteTypes {
     | '/_app/profiles/$profileId'
     | '/_app/requests/$reference'
     | '/api/auth/$'
+    | '/_app/affaires-diplomatiques/'
     | '/_app/appointments/'
     | '/_app/consular-registry/'
     | '/_app/meetings/'
@@ -587,6 +676,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppointmentsIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/affaires-diplomatiques/': {
+      id: '/_app/affaires-diplomatiques/'
+      path: '/'
+      fullPath: '/affaires-diplomatiques/'
+      preLoaderRoute: typeof AppAffairesDiplomatiquesIndexRouteImport
+      parentRoute: typeof AppAffairesDiplomatiquesRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -635,6 +731,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/appointments/$appointmentId'
       preLoaderRoute: typeof AppAppointmentsAppointmentIdRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_app/affaires-diplomatiques/rapports': {
+      id: '/_app/affaires-diplomatiques/rapports'
+      path: '/rapports'
+      fullPath: '/affaires-diplomatiques/rapports'
+      preLoaderRoute: typeof AppAffairesDiplomatiquesRapportsRouteImport
+      parentRoute: typeof AppAffairesDiplomatiquesRoute
+    }
+    '/_app/affaires-diplomatiques/projets': {
+      id: '/_app/affaires-diplomatiques/projets'
+      path: '/projets'
+      fullPath: '/affaires-diplomatiques/projets'
+      preLoaderRoute: typeof AppAffairesDiplomatiquesProjetsRouteImport
+      parentRoute: typeof AppAffairesDiplomatiquesRoute
+    }
+    '/_app/affaires-diplomatiques/plans': {
+      id: '/_app/affaires-diplomatiques/plans'
+      path: '/plans'
+      fullPath: '/affaires-diplomatiques/plans'
+      preLoaderRoute: typeof AppAffairesDiplomatiquesPlansRouteImport
+      parentRoute: typeof AppAffairesDiplomatiquesRoute
+    }
+    '/_app/affaires-diplomatiques/lettres': {
+      id: '/_app/affaires-diplomatiques/lettres'
+      path: '/lettres'
+      fullPath: '/affaires-diplomatiques/lettres'
+      preLoaderRoute: typeof AppAffairesDiplomatiquesLettresRouteImport
+      parentRoute: typeof AppAffairesDiplomatiquesRoute
+    }
+    '/_app/affaires-diplomatiques/cibles': {
+      id: '/_app/affaires-diplomatiques/cibles'
+      path: '/cibles'
+      fullPath: '/affaires-diplomatiques/cibles'
+      preLoaderRoute: typeof AppAffairesDiplomatiquesCiblesRouteImport
+      parentRoute: typeof AppAffairesDiplomatiquesRoute
+    }
+    '/_app/affaires-diplomatiques/$targetId': {
+      id: '/_app/affaires-diplomatiques/$targetId'
+      path: '/$targetId'
+      fullPath: '/affaires-diplomatiques/$targetId'
+      preLoaderRoute: typeof AppAffairesDiplomatiquesTargetIdRouteImport
+      parentRoute: typeof AppAffairesDiplomatiquesRoute
     }
     '/_app/affaires-consulaires/profiles/': {
       id: '/_app/affaires-consulaires/profiles/'
@@ -685,9 +823,37 @@ const AppAffairesConsulairesRouteWithChildren =
     AppAffairesConsulairesRouteChildren,
   )
 
+interface AppAffairesDiplomatiquesRouteChildren {
+  AppAffairesDiplomatiquesTargetIdRoute: typeof AppAffairesDiplomatiquesTargetIdRoute
+  AppAffairesDiplomatiquesCiblesRoute: typeof AppAffairesDiplomatiquesCiblesRoute
+  AppAffairesDiplomatiquesLettresRoute: typeof AppAffairesDiplomatiquesLettresRoute
+  AppAffairesDiplomatiquesPlansRoute: typeof AppAffairesDiplomatiquesPlansRoute
+  AppAffairesDiplomatiquesProjetsRoute: typeof AppAffairesDiplomatiquesProjetsRoute
+  AppAffairesDiplomatiquesRapportsRoute: typeof AppAffairesDiplomatiquesRapportsRoute
+  AppAffairesDiplomatiquesIndexRoute: typeof AppAffairesDiplomatiquesIndexRoute
+}
+
+const AppAffairesDiplomatiquesRouteChildren: AppAffairesDiplomatiquesRouteChildren =
+  {
+    AppAffairesDiplomatiquesTargetIdRoute:
+      AppAffairesDiplomatiquesTargetIdRoute,
+    AppAffairesDiplomatiquesCiblesRoute: AppAffairesDiplomatiquesCiblesRoute,
+    AppAffairesDiplomatiquesLettresRoute: AppAffairesDiplomatiquesLettresRoute,
+    AppAffairesDiplomatiquesPlansRoute: AppAffairesDiplomatiquesPlansRoute,
+    AppAffairesDiplomatiquesProjetsRoute: AppAffairesDiplomatiquesProjetsRoute,
+    AppAffairesDiplomatiquesRapportsRoute:
+      AppAffairesDiplomatiquesRapportsRoute,
+    AppAffairesDiplomatiquesIndexRoute: AppAffairesDiplomatiquesIndexRoute,
+  }
+
+const AppAffairesDiplomatiquesRouteWithChildren =
+  AppAffairesDiplomatiquesRoute._addFileChildren(
+    AppAffairesDiplomatiquesRouteChildren,
+  )
+
 interface AppRouteChildren {
   AppAffairesConsulairesRoute: typeof AppAffairesConsulairesRouteWithChildren
-  AppAffairesDiplomatiquesRoute: typeof AppAffairesDiplomatiquesRoute
+  AppAffairesDiplomatiquesRoute: typeof AppAffairesDiplomatiquesRouteWithChildren
   AppCallsRoute: typeof AppCallsRoute
   AppIagendaRoute: typeof AppIagendaRoute
   AppIarchiveRoute: typeof AppIarchiveRoute
@@ -719,7 +885,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAffairesConsulairesRoute: AppAffairesConsulairesRouteWithChildren,
-  AppAffairesDiplomatiquesRoute: AppAffairesDiplomatiquesRoute,
+  AppAffairesDiplomatiquesRoute: AppAffairesDiplomatiquesRouteWithChildren,
   AppCallsRoute: AppCallsRoute,
   AppIagendaRoute: AppIagendaRoute,
   AppIarchiveRoute: AppIarchiveRoute,

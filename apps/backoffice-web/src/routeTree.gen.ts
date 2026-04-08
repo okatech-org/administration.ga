@@ -17,6 +17,7 @@ import { Route as AppIcorrespondanceRouteImport } from './routes/_app/icorrespon
 import { Route as AppIboiteRouteImport } from './routes/_app/iboite'
 import { Route as AppIagendaRouteImport } from './routes/_app/iagenda'
 import { Route as AppAssociationsRouteImport } from './routes/_app/associations'
+import { Route as AppAffairesDiplomatiquesRouteImport } from './routes/_app/affaires-diplomatiques'
 import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
 import { Route as AppTutorialsIndexRouteImport } from './routes/_app/tutorials/index'
 import { Route as AppSupportIndexRouteImport } from './routes/_app/support/index'
@@ -92,6 +93,12 @@ const AppAssociationsRoute = AppAssociationsRouteImport.update({
   path: '/associations',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAffairesDiplomatiquesRoute =
+  AppAffairesDiplomatiquesRouteImport.update({
+    id: '/affaires-diplomatiques',
+    path: '/affaires-diplomatiques',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -275,6 +282,7 @@ const AppEventsEventIdEditRoute = AppEventsEventIdEditRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/affaires-diplomatiques': typeof AppAffairesDiplomatiquesRoute
   '/associations': typeof AppAssociationsRoute
   '/iagenda': typeof AppIagendaRoute
   '/iboite': typeof AppIboiteRoute
@@ -318,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/tutorials/$tutorialId/edit': typeof AppTutorialsTutorialIdEditRoute
 }
 export interface FileRoutesByTo {
+  '/affaires-diplomatiques': typeof AppAffairesDiplomatiquesRoute
   '/associations': typeof AppAssociationsRoute
   '/iagenda': typeof AppIagendaRoute
   '/iboite': typeof AppIboiteRoute
@@ -364,6 +373,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/_app/affaires-diplomatiques': typeof AppAffairesDiplomatiquesRoute
   '/_app/associations': typeof AppAssociationsRoute
   '/_app/iagenda': typeof AppIagendaRoute
   '/_app/iboite': typeof AppIboiteRoute
@@ -411,6 +421,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/affaires-diplomatiques'
     | '/associations'
     | '/iagenda'
     | '/iboite'
@@ -454,6 +465,7 @@ export interface FileRouteTypes {
     | '/tutorials/$tutorialId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/affaires-diplomatiques'
     | '/associations'
     | '/iagenda'
     | '/iboite'
@@ -499,6 +511,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
+    | '/_app/affaires-diplomatiques'
     | '/_app/associations'
     | '/_app/iagenda'
     | '/_app/iboite'
@@ -605,6 +618,13 @@ declare module '@tanstack/react-router' {
       path: '/associations'
       fullPath: '/associations'
       preLoaderRoute: typeof AppAssociationsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/affaires-diplomatiques': {
+      id: '/_app/affaires-diplomatiques'
+      path: '/affaires-diplomatiques'
+      fullPath: '/affaires-diplomatiques'
+      preLoaderRoute: typeof AppAffairesDiplomatiquesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/users/': {
@@ -856,6 +876,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppAffairesDiplomatiquesRoute: typeof AppAffairesDiplomatiquesRoute
   AppAssociationsRoute: typeof AppAssociationsRoute
   AppIagendaRoute: typeof AppIagendaRoute
   AppIboiteRoute: typeof AppIboiteRoute
@@ -899,6 +920,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAffairesDiplomatiquesRoute: AppAffairesDiplomatiquesRoute,
   AppAssociationsRoute: AppAssociationsRoute,
   AppIagendaRoute: AppIagendaRoute,
   AppIboiteRoute: AppIboiteRoute,

@@ -29,10 +29,9 @@ function FormsPage() {
             <p className="text-muted-foreground text-lg">
               Accédez aux formulaires nécessaires pour vos démarches administratives.
             </p>
-            <div className="gabon-stripe mt-6 max-w-xs mx-auto" />
           </div>
 
-          <div className="bg-card rounded-xl p-6 md:p-8 border flat-card-border shadow-sm">
+          <div className="bg-card rounded-[10px] p-6 md:p-8 border border-border shadow-sm">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-children">
               {forms.map((form) => (
                 <Card key={form.title} className="hover:shadow-md transition-shadow">

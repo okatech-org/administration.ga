@@ -116,7 +116,7 @@ function OrgDetailPage() {
 				<div className="max-w-4xl mx-auto px-6 py-12">
 					<Skeleton className="h-8 w-32 mb-8" />
 					<div className="flex items-start gap-6 mb-8">
-						<Skeleton className="h-16 w-16 rounded-xl" />
+						<Skeleton className="h-16 w-16 rounded-[10px]" />
 						<div className="flex-1 space-y-3">
 							<Skeleton className="h-8 w-2/3" />
 							<Skeleton className="h-5 w-40" />
@@ -176,7 +176,7 @@ function OrgDetailPage() {
 						</Button>
 
 						<div className="flex items-start gap-6">
-							<div className="p-4 rounded-2xl bg-primary/10 text-primary">
+							<div className="p-4 rounded-[10px] bg-primary/10 text-primary">
 								<Building2 className="w-10 h-10" />
 							</div>
 							<div>
@@ -399,9 +399,9 @@ function OrgDetailPage() {
 									{Array.from({ length: 3 }).map((_, i) => (
 										<div
 											key={i}
-											className="rounded-xl border bg-card p-6 space-y-4"
+											className="rounded-[10px] border bg-card p-6 space-y-4"
 										>
-											<Skeleton className="h-12 w-12 rounded-xl" />
+											<Skeleton className="h-12 w-12 rounded-[10px]" />
 											<Skeleton className="h-5 w-3/4" />
 											<Skeleton className="h-4 w-full" />
 											<Skeleton className="h-4 w-2/3" />

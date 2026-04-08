@@ -66,9 +66,13 @@ import {
   diplomaticLettersTable,
   diplomaticPlansTable,
   diplomaticReportsTable,
+  diplomaticProjectsTable,
+  diplomaticPrioritiesTable,
+  diplomaticDocumentsTable,
   chatsTable,
   chatMessagesTable,
   ipThreatScoresTable,
+  guidesTable,
 } from "./schemas";
 
 export default defineSchema({
@@ -134,14 +138,19 @@ export default defineSchema({
   dossierTransitions: dossierTransitionsTable,
   copiesPassage: copiesPassageTable,
   journalActions: journalActionsTable,
-  // Affaires Diplomatiques
+  // Affaires Diplomatiques — Pipeline IA
   diplomaticTargets: diplomaticTargetsTable,
   diplomaticLetters: diplomaticLettersTable,
   diplomaticPlans: diplomaticPlansTable,
   diplomaticReports: diplomaticReportsTable,
+  diplomaticProjects: diplomaticProjectsTable,
+  diplomaticPriorities: diplomaticPrioritiesTable,
+  diplomaticDocuments: diplomaticDocumentsTable,
   // Chat peer-to-peer
   chats: chatsTable,
   chatMessages: chatMessagesTable,
   // Defense automatique
   ipThreatScores: ipThreatScoresTable,
+  // Guides
+  guides: guidesTable,
 });

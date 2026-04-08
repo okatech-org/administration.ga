@@ -111,9 +111,9 @@ function ProfileCard({
 	ctaText,
 }: ProfileCardProps) {
 	const borderTopColors = {
-		green: "var(--gabon-green-hex)",
-		yellow: "var(--gabon-yellow-hex)",
-		blue: "var(--gabon-blue-hex)",
+		green: "oklch(0.685 0.169 237.323)",
+		yellow: "oklch(0.685 0.169 237.323)",
+		blue: "oklch(0.685 0.169 237.323)",
 	};
 
 	return (
@@ -125,7 +125,7 @@ function ProfileCard({
 		>
 			<Link to={to}>
 				<Card
-					className="py-0 cursor-pointer border flat-card-border bg-card shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden h-full"
+					className="py-0 cursor-pointer border border-border bg-card shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden h-full"
 					style={{ borderTop: `3px solid ${borderTopColors[color]}` }}
 				>
 					<div className="h-48 w-full overflow-hidden">

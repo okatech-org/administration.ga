@@ -1,18 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { lazy, Suspense, useRef } from "react";
+import { useRef } from "react";
 
 import { Hero } from "../components/home/Hero";
-import { ProfilesSection } from "../components/home/ProfilesSection";
 import { ServicesSection } from "../components/home/ServicesSection";
+import { GuidesPreviewSection } from "../components/home/GuidesPreviewSection";
+import { TestimonialsSection } from "../components/home/TestimonialsSection";
 import { NewsSection } from "../components/home/NewsSection";
 import { WhySection } from "../components/home/WhySection";
-import { CTASection } from "../components/home/CTASection";
-
-const WorldMapSection = lazy(() =>
-  import("../components/home/WorldMapSection").then((m) => ({
-    default: m.WorldMapSection,
-  })),
-);
 
 export const Route = createFileRoute("/")({ component: App });
 
@@ -21,32 +15,25 @@ function App() {
 
   return (
     <div className="min-h-dvh bg-background">
-      {/* Hero Section */}
+      {/* Hero Section — mots rotatifs animes */}
       <Hero />
 
-      {/* User Profiles Section */}
-      <ProfilesSection />
-
-      {/* Services Section */}
+      {/* Services Section — accordion interactif */}
       <div ref={servicesRef}>
         <ServicesSection />
       </div>
 
-      {/* News Section */}
+      {/* Guides Section — tabs personnalises */}
+      <GuidesPreviewSection />
+
+      {/* Testimonials Section — temoignages auto-rotatifs */}
+      <TestimonialsSection />
+
+      {/* News Section — actualites */}
       <NewsSection />
 
-      {/* Map Section */}
-      <Suspense fallback={<div className="h-[500px]" />}>
-        <WorldMapSection />
-      </Suspense>
-
-      {/* Why Section */}
+      {/* About Section — grille bento + stats KPI */}
       <WhySection />
-
-      {/* CTA Section */}
-      <CTASection />
-
-      {/* Footer */}
     </div>
   );
 }

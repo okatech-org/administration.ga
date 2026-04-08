@@ -134,16 +134,6 @@ function getConsulateConfig(t: (key: string) => string): MarkerConfig {
 	};
 }
 
-function getCompanyConfig(t: (key: string) => string): MarkerConfig {
-	const color = "rgb(245, 158, 11)";
-	return {
-		color,
-		bgColor: "rgba(245, 158, 11, 0.15)",
-		typeName: t("map.company"),
-		iconSvg: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>`,
-	};
-}
-
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -162,16 +152,12 @@ export function ConsularMap({ searchQuery = "", className }: ConsularMapProps) {
 	const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
 
 	// Data sources
-	// @ts-expect-error — TS2589: Convex's deep recursive types hit the instantiation limit
 	const { data: orgs } = useConvexQuery(api.functions.orgs.list, {});
-	// @ts-expect-error — TS2589: Convex's deep recursive types hit the instantiation limit
-	const { data: companies } = useConvexQuery(api.functions.companies.list, {});
 
 	// Filters state
 	const [filters, setFilters] = useState({
 		embassy: true,
 		consulate: true,
-		company: true,
 	});
 	const [isLocating, setIsLocating] = useState(false);
 
@@ -397,38 +383,7 @@ export function ConsularMap({ searchQuery = "", className }: ConsularMapProps) {
 			});
 		}
 
-		// ──────────────────────────────────────────────────────────────────────
-		// 2) COMPANIES
-		// ──────────────────────────────────────────────────────────────────────
-		if (companies && filters.company) {
-			companies.forEach((company) => {
-				if (
-					!matchesSearch(company.name, company.address?.city, company.country)
-				)
-					return;
-
-				// Try explicit coordinates first, then city lookup
-				const coords: [number, number] | null = company.coordinates
-					? [company.coordinates.lng, company.coordinates.lat]
-					: resolveCoords(company.address?.city);
-				if (!coords) return;
-
-				const config = getCompanyConfig(t);
-				const addressLine = company.address
-					? `${company.address.street}, ${company.address.postalCode} ${company.address.city}`
-					: company.country;
-
-				addMarker(
-					coords,
-					config,
-					company.name,
-					addressLine,
-					company.slug,
-					"/community",
-				);
-			});
-		}
-	}, [orgs, companies, filters, t, searchQuery]);
+	}, [orgs, filters, t, searchQuery]);
 
 	// Geolocation
 	const handleLocate = () => {
@@ -533,19 +488,6 @@ export function ConsularMap({ searchQuery = "", className }: ConsularMapProps) {
 				>
 					<span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
 					{t("map.consulate")}
-				</button>
-				<button
-					type="button"
-					onClick={() => toggleFilter("company")}
-					className={cn(
-						"flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all backdrop-blur-md",
-						filters.company
-							? "bg-amber-500/20 border border-amber-500/50 text-amber-600 dark:text-amber-400"
-							: "bg-background/60 dark:bg-background/40 border border-border text-muted-foreground opacity-60",
-					)}
-				>
-					<span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-					{t("map.company")}
 				</button>
 			</div>
 		</div>

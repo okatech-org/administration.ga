@@ -81,6 +81,10 @@ export {
   diplomaticLettersTable,
   diplomaticPlansTable,
   diplomaticReportsTable,
+  diplomaticProjectsTable,
+  diplomaticPrioritiesTable,
+  diplomaticDocumentsTable,
 } from "./diplomaticAffairs";
 
 export { ipThreatScoresTable } from "./ipThreatScores";
+export { guidesTable } from "./guides";

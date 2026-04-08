@@ -189,7 +189,7 @@ function ServiceDetailPage() {
 				<div className="max-w-4xl mx-auto px-6 py-12">
 					<Skeleton className="h-8 w-32 mb-8" />
 					<div className="flex items-start gap-6 mb-8">
-						<Skeleton className="h-16 w-16 rounded-xl" />
+						<Skeleton className="h-16 w-16 rounded-[10px]" />
 						<div className="flex-1 space-y-3">
 							<Skeleton className="h-8 w-2/3" />
 							<Skeleton className="h-5 w-24" />
@@ -258,7 +258,7 @@ function ServiceDetailPage() {
 
 						<div className="flex items-start gap-6">
 							<div
-								className={`p-4 rounded-2xl ${config.bgColor} ${config.color}`}
+								className={`p-4 rounded-[10px] ${config.bgColor} ${config.color}`}
 							>
 								<Icon className="w-10 h-10" />
 							</div>

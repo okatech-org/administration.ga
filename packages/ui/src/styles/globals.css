@@ -17,11 +17,6 @@
        Inspiré du dashboard moderne
        ======================================== */
 
-  /* Couleurs Nationales Gabon - Officielles */
-  --gabon-green: oklch(0.5 0.18 145.5); /* #009639 - Vert officiel */
-  --gabon-yellow: oklch(0.89 0.19 95.5); /* #FCD116 - Jaune/Or officiel */
-  --gabon-blue: oklch(0.52 0.16 248); /* #3A75C4 - Bleu officiel */
-
   /* ========================================
        MODE CLAIR — CHARTE STRICTE 10 COULEURS
        6 niveaux de gris + 4 accents
@@ -36,8 +31,8 @@
   /* 6. Blanc      #FFFFFF — fond cartes */
 
   /* Backgrounds */
-  --background: oklch(0.92 0 0);           /* Gris cl.1 #E3E3E3 — fond page */
-  --background-dashboard: oklch(0.92 0 0);
+  --background: oklch(1 0 0);              /* Blanc pur — pages publiques */
+  --background-dashboard: oklch(0.97 0 0); /* Gris tres leger — dashboards */
   --foreground: oklch(0.10 0 0);           /* Noir #141414 — texte principal */
 
   /* Cards & Surfaces */
@@ -90,8 +85,8 @@
   --chart-4: oklch(0.55 0.22 15);         /* Rose */
   --chart-5: oklch(0.37 0 0);            /* Gris foncé */
 
-  /* Radius */
-  --radius: 1rem;
+  /* Radius — 10px (shadcnblocks v2 standard) */
+  --radius: 0.625rem;
 
   /* Sidebar — achromatic */
   --sidebar: oklch(1 0 0);               /* Blanc */
@@ -443,24 +438,6 @@
     @apply shadow-lg -translate-y-0.5;
   }
 
-  /* Gabon Flag Gradient (for ID card, logo, etc.) */
-  .gabon-gradient {
-    background: linear-gradient(
-      180deg,
-      var(--gabon-green) 0%,
-      var(--gabon-green) 33.33%,
-      var(--gabon-yellow) 33.33%,
-      var(--gabon-yellow) 66.66%,
-      var(--gabon-blue) 66.66%,
-      var(--gabon-blue) 100%
-    );
-  }
-
-  /* Card gradient for consular card */
-  .consular-card-gradient {
-    background: var(--card-gradient);
-  }
-
   /* Glass effect for elevated elements */
   .glass {
     @apply backdrop-blur-xl bg-card/80;
@@ -520,160 +497,6 @@
   }
 }
 
-/* ========================================
-   HOMEOMORPHISM THEME (Neumorphism)
-   Soft UI with embossed/debossed surfaces
-   ======================================== */
-
-/* --- Light mode homeomorphism --- */
-.theme-homeomorphism {
-  --background: oklch(0.92 0.005 250); /* #E0E5EC soft gray surface */
-  --background-dashboard: oklch(0.92 0.005 250);
-  --card: oklch(
-    0.92 0.005 250
-  ); /* Same as bg — elements "rise" via shadows, not color */
-  --card-foreground: oklch(0.2 0.02 250);
-  --popover: oklch(0.92 0.005 250);
-  --popover-foreground: oklch(0.2 0.02 250);
-
-  --secondary: oklch(0.92 0.005 250);
-  --secondary-foreground: oklch(0.35 0.02 250);
-  --muted: oklch(0.88 0.005 250);
-  --muted-foreground: oklch(0.45 0.02 250);
-
-  --border: transparent;
-  --border-light: transparent;
-  --input: oklch(0.92 0.005 250);
-
-  --radius: 1.25rem; /* 20px — softer, rounder edges */
-
-  /* Neumorphic shadow tokens */
-  --neu-distance: 6px;
-  --neu-blur: 12px;
-  --neu-light: oklch(1 0 0 / 0.7); /* White highlight */
-  --neu-dark: oklch(0.7 0.01 250 / 0.35); /* Gray shadow */
-
-  /* Replace standard shadows with neumorphic pairs */
-  --shadow-sm:
-    var(--neu-distance) var(--neu-distance) var(--neu-blur) var(--neu-dark),
-    calc(-1 * var(--neu-distance)) calc(-1 * var(--neu-distance))
-      var(--neu-blur) var(--neu-light);
-  --shadow-md: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light);
-  --shadow-lg:
-    10px 10px 20px var(--neu-dark), -10px -10px 20px var(--neu-light);
-  --shadow-xl:
-    14px 14px 28px var(--neu-dark), -14px -14px 28px var(--neu-light);
-
-  /* Inset shadow for pressed/active states */
-  --neu-inset:
-    inset 4px 4px 8px var(--neu-dark), inset -4px -4px 8px var(--neu-light);
-}
-
-/* --- Dark mode homeomorphism --- */
-.theme-homeomorphism:is(.dark *),
-.dark .theme-homeomorphism {
-  --background: oklch(0.2 0.01 250); /* #2D3436 dark surface */
-  --background-dashboard: oklch(0.2 0.01 250);
-  --card: oklch(0.2 0.01 250);
-  --card-foreground: oklch(0.92 0 0);
-  --popover: oklch(0.2 0.01 250);
-  --popover-foreground: oklch(0.92 0 0);
-
-  --secondary: oklch(0.22 0.01 250);
-  --secondary-foreground: oklch(0.65 0.02 250);
-  --muted: oklch(0.18 0.01 250);
-  --muted-foreground: oklch(0.55 0.02 250);
-
-  --border: transparent;
-  --border-light: transparent;
-  --input: oklch(0.2 0.01 250);
-
-  /* Dark neumorphic tokens */
-  --neu-light: oklch(0.28 0.01 250 / 0.5); /* Subtle lighter shadow */
-  --neu-dark: oklch(0.05 0 0 / 0.6); /* Deep dark shadow */
-
-  --shadow-sm:
-    var(--neu-distance) var(--neu-distance) var(--neu-blur) var(--neu-dark),
-    calc(-1 * var(--neu-distance)) calc(-1 * var(--neu-distance))
-      var(--neu-blur) var(--neu-light);
-  --shadow-md: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light);
-  --shadow-lg:
-    10px 10px 20px var(--neu-dark), -10px -10px 20px var(--neu-light);
-  --shadow-xl:
-    14px 14px 28px var(--neu-dark), -14px -14px 28px var(--neu-light);
-
-  --neu-inset:
-    inset 4px 4px 8px var(--neu-dark), inset -4px -4px 8px var(--neu-light);
-}
-
-/* Neumorphic card override — remove border, add shadow */
-.theme-homeomorphism [data-slot="card"] {
-  border: none !important;
-  box-shadow: var(--shadow-sm);
-  transition:
-    box-shadow 300ms ease-in-out,
-    background-color 300ms ease-in-out;
-}
-
-.theme-homeomorphism [data-slot="card"]:hover {
-  box-shadow: var(--shadow-md);
-}
-
-/* Neumorphic buttons (outline variant) */
-.theme-homeomorphism button[data-variant="outline"] {
-  border: none;
-  box-shadow: var(--shadow-sm);
-}
-
-.theme-homeomorphism button[data-variant="outline"]:active {
-  box-shadow: var(--neu-inset);
-}
-
-/* Neumorphic input fields */
-.theme-homeomorphism input,
-.theme-homeomorphism textarea,
-.theme-homeomorphism select {
-  border: none !important;
-  box-shadow: var(--neu-inset);
-}
-
-/* Neumorphic sidebar */
-.theme-homeomorphism aside[data-slot="sidebar"] {
-  border: none !important;
-  box-shadow: var(--shadow-sm);
-  transition:
-    box-shadow 300ms ease-in-out,
-    background-color 300ms ease-in-out;
-}
-
-@layer components {
-  /* Explicit neumorphic utility classes */
-  .neu-card {
-    border: none;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .neu-pressed {
-    box-shadow: var(--neu-inset);
-  }
-
-  .neu-button {
-    border: none;
-    box-shadow: var(--shadow-sm);
-    transition: box-shadow 150ms ease;
-  }
-  .neu-button:active {
-    box-shadow: var(--neu-inset);
-  }
-}
-
-/* Neumorphic theme preview element (settings page) */
-.neu-preview-element {
-  background: oklch(0.92 0.005 250);
-  box-shadow:
-    2px 2px 4px oklch(0.7 0.01 250 / 0.35),
-    -2px -2px 4px oklch(1 0 0 / 0.7);
-}
 
 @layer utilities {
   /* Text colors */
@@ -698,26 +521,6 @@
   /* Border utilities */
   .border-light {
     border-color: var(--border-light);
-  }
-
-  /* Gabon colors utilities */
-  .text-gabon-green {
-    color: var(--gabon-green);
-  }
-  .text-gabon-yellow {
-    color: var(--gabon-yellow);
-  }
-  .text-gabon-blue {
-    color: var(--gabon-blue);
-  }
-  .bg-gabon-green {
-    background-color: var(--gabon-green);
-  }
-  .bg-gabon-yellow {
-    background-color: var(--gabon-yellow);
-  }
-  .bg-gabon-blue {
-    background-color: var(--gabon-blue);
   }
 
   /* Mapbox Popup Overrides - Remove default styling */

@@ -68,7 +68,7 @@ function PostDetailPage() {
 					<div className="max-w-3xl mx-auto animate-pulse space-y-6">
 						<div className="h-8 w-32 bg-muted rounded" />
 						<div className="h-12 w-full bg-muted rounded" />
-						<div className="aspect-[16/9] bg-muted rounded-xl" />
+						<div className="aspect-[16/9] bg-muted rounded-[10px]" />
 						<div className="space-y-4">
 							<div className="h-4 w-full bg-muted rounded" />
 							<div className="h-4 w-full bg-muted rounded" />
@@ -140,7 +140,7 @@ function PostDetailPage() {
 
 					{/* Event Info Banner */}
 					{isEvent && (
-						<div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6 mb-8">
+						<div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-[10px] p-6 mb-8">
 							<div className="grid gap-4 sm:grid-cols-2">
 								{post.eventStartAt && (
 									<div className="flex items-start gap-3">
@@ -203,7 +203,7 @@ function PostDetailPage() {
 
 					{/* Communique Document Banner */}
 					{isCommunique && post.documentUrl && (
-						<div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-6 mb-8">
+						<div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-[10px] p-6 mb-8">
 							<div className="flex items-center gap-4">
 								<div className="p-3 bg-emerald-100 dark:bg-emerald-800 rounded-lg">
 									<FileText className="h-8 w-8 text-emerald-600 dark:text-emerald-300" />
@@ -236,7 +236,7 @@ function PostDetailPage() {
 
 					{/* Cover Image */}
 					{post.coverImageUrl && (
-						<div className="aspect-[16/9] rounded-xl overflow-hidden bg-muted mb-8">
+						<div className="aspect-[16/9] rounded-[10px] overflow-hidden bg-muted mb-8">
 							<img
 								src={post.coverImageUrl}
 								alt={post.title}

@@ -33,3 +33,6 @@ npm-debug.log*
 
 ressources
 EasyCard/
+
+# Embedded site projects
+site_web/
