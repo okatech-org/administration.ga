@@ -6,6 +6,7 @@ import i18n from "@workspace/i18n/config"
 import { Toaster } from "@workspace/ui/components/sonner"
 import AppConvexProvider from "@/lib/convex-provider"
 import { ThemeProvider } from "@/components/theme-provider"
+import { DevAccountSwitcher } from "@/components/auth/DevAccountSwitcher"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -14,8 +15,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
           <Toaster richColors />
+          <DevAccountSwitcher />
         </ThemeProvider>
       </AppConvexProvider>
     </I18nextProvider>
   )
 }
+
