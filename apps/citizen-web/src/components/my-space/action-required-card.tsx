@@ -42,6 +42,7 @@ interface RichField {
 	type?: string;
 	options?: Array<{ value: string; label: { fr: string; en?: string } }>;
 	currentValue?: unknown;
+	sectionTitle?: { fr?: string } | string;
 }
 
 interface RichDocumentType {

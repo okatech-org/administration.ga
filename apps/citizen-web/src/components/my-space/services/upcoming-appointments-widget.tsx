@@ -2,7 +2,7 @@
  * Upcoming Appointments Widget — Prochains RDV confirmes
  */
 
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import {
 	Calendar,
 	ChevronRight,
@@ -72,7 +72,7 @@ export function UpcomingAppointmentsWidget({
 				actions={
 					upcoming.length > 0 ? (
 						<Link
-							to="/my-space/iagenda"
+							href="/my-space/iagenda"
 							className="text-[10px] text-primary font-medium hover:underline"
 						>
 							Voir tous
@@ -98,8 +98,7 @@ export function UpcomingAppointmentsWidget({
 						return (
 							<Link
 								key={apt._id}
-								to="/my-space/appointments/$appointmentId"
-								params={{ appointmentId: apt._id }}
+								href={`/my-space/appointments/${apt._id}`}
 								className="group"
 							>
 								<div className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-muted/50 transition-colors">

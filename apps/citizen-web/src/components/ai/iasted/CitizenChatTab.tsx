@@ -1,9 +1,9 @@
 /**
  * CitizenChatTab — Onglet iChat pour citoyens.
  *
- * - Mr Ray (Standard IA) épinglé en haut : premier répondeur, thread P2P partagé avec agents
- * - Dessous : threads de chat avec les agents (temps réel Convex)
- * - Le citoyen peut écrire à Mr Ray (Standard) et répondre aux threads agents
+ * - Mr Ray (Standard IA) epingle en haut : premier repondeur, thread P2P partage avec agents
+ * - Dessous : threads de chat avec les agents (temps reel Convex)
+ * - Le citoyen peut ecrire a Mr Ray (Standard) et repondre aux threads agents
  */
 
 import { api } from "@convex/_generated/api";
@@ -52,7 +52,7 @@ export function CitizenChatTab() {
 	const [messageInput, setMessageInput] = useState("");
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
-	// Threads avec agents (temps réel)
+	// Threads avec agents (temps reel)
 	const { data: chatThreads, isPending: threadsLoading } = useAuthenticatedConvexQuery(
 		api.functions.chats.listMyChats,
 		{},
@@ -80,19 +80,19 @@ export function CitizenChatTab() {
 	);
 	const orgId = (registrations as any[])?.[0]?.orgId as Id<"orgs"> | undefined;
 
-	// Suggestions contextuelles basées sur le profil
+	// Suggestions contextuelles basees sur le profil
 	const contextSuggestions = useMemo(() => {
 		const suggestions: { label: string; message: string; icon: typeof FileText; color: string; priority: number }[] = [];
 		const p = profile as any;
 		if (!p) return suggestions;
 
-		// Passeport expiré ou bientôt
+		// Passeport expire ou bientot
 		if (p.passportInfo?.expiryDate) {
 			const daysLeft = Math.ceil((new Date(p.passportInfo.expiryDate).getTime() - Date.now()) / 86400000);
 			if (daysLeft < 0) {
-				suggestions.push({ label: "Renouveler mon passeport", message: "Mon passeport est expiré, comment le renouveler ?", icon: AlertTriangle, color: "text-rose-500 bg-rose-500/10 border-rose-500/20", priority: 1 });
+				suggestions.push({ label: "Renouveler mon passeport", message: "Mon passeport est expire, comment le renouveler ?", icon: AlertTriangle, color: "text-rose-500 bg-rose-500/10 border-rose-500/20", priority: 1 });
 			} else if (daysLeft < 90) {
-				suggestions.push({ label: "Passeport bientôt expiré", message: `Mon passeport expire dans ${daysLeft} jours, que dois-je faire ?`, icon: FileText, color: "text-amber-600 bg-amber-500/10 border-amber-500/20", priority: 2 });
+				suggestions.push({ label: "Passeport bientot expire", message: `Mon passeport expire dans ${daysLeft} jours, que dois-je faire ?`, icon: FileText, color: "text-amber-600 bg-amber-500/10 border-amber-500/20", priority: 2 });
 			}
 		}
 
@@ -112,9 +112,9 @@ export function CitizenChatTab() {
 			}
 		}
 
-		// Suggestions génériques toujours présentes
+		// Suggestions generiques toujours presentes
 		suggestions.push(
-			{ label: "Carte consulaire", message: "Quels sont les documents nécessaires pour la carte consulaire ?", icon: CreditCard, color: "text-teal-600 bg-teal-500/10 border-teal-500/20", priority: 10 },
+			{ label: "Carte consulaire", message: "Quels sont les documents necessaires pour la carte consulaire ?", icon: CreditCard, color: "text-teal-600 bg-teal-500/10 border-teal-500/20", priority: 10 },
 			{ label: "Horaires d'ouverture", message: "Quels sont les horaires d'ouverture du consulat ?", icon: Calendar, color: "text-teal-600 bg-teal-500/10 border-teal-500/20", priority: 11 },
 		);
 
@@ -127,7 +127,7 @@ export function CitizenChatTab() {
 		return (chatThreads as any[]).find((t: any) => t.type === "standard") ?? null;
 	}, [chatThreads]);
 
-	// Quand le thread Mr Ray est sélectionné, utiliser le vrai chatId
+	// Quand le thread Mr Ray est selectionne, utiliser le vrai chatId
 	const selectedChatId = useMemo(() => {
 		if (!selectedThread) return undefined;
 		if (selectedThread.isStandard && mrRayThread) return mrRayThread._id;
@@ -135,7 +135,7 @@ export function CitizenChatTab() {
 		return selectedThread._id;
 	}, [selectedThread, mrRayThread]);
 
-	// Messages du thread sélectionné (temps réel)
+	// Messages du thread selectionne (temps reel)
 	const { data: threadMessages, isPending: messagesLoading } = useAuthenticatedConvexQuery(
 		api.functions.chats.listMessages,
 		selectedChatId ? { chatId: selectedChatId as Id<"chats">, limit: 50 } : "skip",
@@ -163,10 +163,10 @@ export function CitizenChatTab() {
 				// Thread existant — envoyer dans le thread P2P
 				await sendChatMessage({ chatId: mrRayThread._id as Id<"chats">, content: text });
 			} else if (orgId) {
-				// Pas de thread — en créer un via initiateStandardChat
+				// Pas de thread — en creer un via initiateStandardChat
 				await initiateStandard({ orgId, initialMessage: text });
 			} else {
-				toast.error("Vous devez être inscrit à une représentation consulaire pour utiliser le Standard.");
+				toast.error("Vous devez etre inscrit a une representation consulaire pour utiliser le Standard.");
 				return;
 			}
 			setMessageInput("");
@@ -196,8 +196,7 @@ export function CitizenChatTab() {
 		}
 	};
 
-	// Filtrer les threads : séparer Mr Ray des threads P2P
-	// ⚠️ Doit être avant tout early return (règle des hooks React)
+	// Filtrer les threads : separer Mr Ray des threads P2P
 	const p2pThreads = useMemo(() => {
 		if (!chatThreads) return [];
 		return (chatThreads as any[]).filter((t: any) => t.type !== "standard");
@@ -218,7 +217,7 @@ export function CitizenChatTab() {
 				{/* Header */}
 				<div className="border-b px-3 py-2 flex items-center gap-2 shrink-0">
 					<button type="button" onClick={() => setSelectedThread(null)} className="text-xs text-muted-foreground hover:text-foreground">
-						←
+						&larr;
 					</button>
 					<Avatar className="h-7 w-7">
 						{isStandard ? (
@@ -254,7 +253,7 @@ export function CitizenChatTab() {
 							<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
 						</div>
 					) : !hasMessages && isStandard ? (
-						/* Onboarding personnalisé Mr Ray */
+						/* Onboarding personnalise Mr Ray */
 						<div className="flex flex-col items-center justify-center h-full text-center px-4 py-6">
 							<div className="h-14 w-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4">
 								<Bot className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
@@ -263,7 +262,7 @@ export function CitizenChatTab() {
 								Bonjour{(profile as any)?.identity?.firstName ? ` ${(profile as any).identity.firstName}` : ""} !
 							</h3>
 							<p className="text-xs text-muted-foreground max-w-[280px] mb-5 leading-relaxed">
-								Je suis votre assistant consulaire. Je peux vous aider avec vos démarches, passeports, rendez-vous et bien plus.
+								Je suis votre assistant consulaire. Je peux vous aider avec vos demarches, passeports, rendez-vous et bien plus.
 							</p>
 
 							{/* Suggestions contextuelles */}
@@ -299,7 +298,7 @@ export function CitizenChatTab() {
 							<p className="text-xs text-muted-foreground">Aucun message encore</p>
 						</div>
 					) : (
-						/* Messages temps réel */
+						/* Messages temps reel */
 						<div className="space-y-2.5">
 							{(threadMessages as any[]).map((msg: any) => {
 								const isMrRay = msg.senderEmail === MR_RAY_EMAIL || msg.senderName?.includes("Ray");
@@ -348,7 +347,7 @@ export function CitizenChatTab() {
 						value={messageInput}
 						onChange={(e) => setMessageInput(e.target.value)}
 						onKeyDown={handleKeyDown}
-						placeholder={isStandard ? "Écrivez au Standard..." : "Répondre..."}
+						placeholder={isStandard ? "Ecrivez au Standard..." : "Repondre..."}
 						className="min-h-[32px] max-h-[80px] resize-none text-xs"
 						rows={1}
 					/>
@@ -366,13 +365,13 @@ export function CitizenChatTab() {
 	}
 
 	// ════════════════════════════════════════════════════════
-	// VUE LISTE (Mr Ray épinglé + threads agents)
+	// VUE LISTE (Mr Ray epingle + threads agents)
 	// ════════════════════════════════════════════════════════
 
 	return (
 		<div className="flex flex-col flex-1 overflow-hidden">
 			<ScrollArea className="flex-1">
-				{/* Mr Ray — Contact Standard épinglé */}
+				{/* Mr Ray — Contact Standard epingle */}
 				<button
 					type="button"
 					onClick={() => setSelectedThread(MR_RAY_CONTACT)}

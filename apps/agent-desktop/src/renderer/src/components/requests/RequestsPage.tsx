@@ -1224,7 +1224,7 @@ function RequestDetailView({
       });
 
     const mergedContactIds = new Set(["contact_info", "residence_address", "homeland_address"]);
-    const skippedIds = new Set(["emergency_residence", "emergency_homeland", ...mergedContactIds]);
+    const skippedIds = new Set(["emergency_contacts", "emergency_residence", "emergency_homeland", ...mergedContactIds]);
 
     const templateSections = formSchema.sections
       .filter((s) => !skippedIds.has(s.id))

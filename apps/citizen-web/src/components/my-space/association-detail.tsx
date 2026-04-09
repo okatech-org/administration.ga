@@ -1,7 +1,9 @@
+"use client";
+
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { AssociationRole, AssociationType } from "@convex/lib/constants";
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Building2,
@@ -63,7 +65,7 @@ const roleIcons: Partial<Record<AssociationRole, typeof Crown>> = {
 
 export function AssociationDetailContent({ slug }: { slug: string }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { data: association, isPending } = useConvexQuery(
     api.functions.associations.getBySlug,
     { slug },
@@ -82,7 +84,7 @@ export function AssociationDetailContent({ slug }: { slug: string }) {
       <div className="space-y-4 p-1">
         <Button
           variant="ghost"
-          onClick={() => navigate({ to: "/my-space/associations" })}
+          onClick={() => router.push("/my-space/associations")}
           className="gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -134,7 +136,7 @@ export function AssociationDetailContent({ slug }: { slug: string }) {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate({ to: "/my-space/associations" })}
+          onClick={() => router.push("/my-space/associations")}
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -152,7 +154,7 @@ export function AssociationDetailContent({ slug }: { slug: string }) {
             <h1 className="text-2xl font-bold">{association.name}</h1>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="secondary">
-                {typeLabels[association.associationType]}
+                {typeLabels[association.associationType as AssociationType]}
               </Badge>
               {myMembership && (
                 <Badge
@@ -574,7 +576,7 @@ function MembersTab({
 
 function SettingsTab({ association }: { association: any }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { mutate: update, isPending: isUpdating } = useConvexMutationQuery(
     api.functions.associations.update,
   );
@@ -621,7 +623,7 @@ function SettingsTab({ association }: { association: any }) {
       {
         onSuccess: () => {
           toast.success(t("associations.deleted"));
-          navigate({ to: "/my-space/associations" });
+          router.push("/my-space/associations");
         },
         onError: () =>
           toast.error(t("common.error")),
@@ -637,7 +639,7 @@ function SettingsTab({ association }: { association: any }) {
           toast.success(
             t("associations.left"),
           );
-          navigate({ to: "/my-space/associations" });
+          router.push("/my-space/associations");
         },
         onError: () =>
           toast.error(t("common.error")),
@@ -1079,7 +1081,7 @@ function JoinRequestsTab({
           const displayName =
             request.profile?.firstName && request.profile?.lastName ?
               `${request.profile.firstName} ${request.profile.lastName}`
-            : (request.user?.name ?? request.user?.email ?? "—");
+            : (request.user?.name ?? request.user?.email ?? "\u2014");
 
           return (
             <div

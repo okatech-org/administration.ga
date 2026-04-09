@@ -92,7 +92,7 @@ Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni texte autour :
 }
 
 IMPORTANT pour missingFields et invalidValues :
-- Retourne UNIQUEMENT des identifiants au format "sectionId.fieldId" tel qu'indiqué entre crochets dans la structure du formulaire (ex: "basic_info.last_name", "emergency_residence.emergency_residence_phone")
+- Retourne UNIQUEMENT des identifiants au format "sectionId.fieldId" tel qu'indiqué entre crochets dans la structure du formulaire (ex: "basic_info.last_name", "contact_info.phone")
 - N'invente PAS d'identifiants — utilise UNIQUEMENT ceux listés dans le schéma
 - Ne retourne PAS de titres de sections — retourne les identifiants de champs individuels
 
@@ -467,7 +467,26 @@ function formatFormDataForPrompt(
     const sectionLabel = sectionSchema?.title?.fr || sectionId
     lines.push(`\n### ${sectionLabel}`)
 
-    if (typeof sectionData === "object" && sectionData !== null) {
+    // Handle array sections (e.g. emergency_contacts)
+    if (Array.isArray(sectionData)) {
+      if (sectionData.length === 0) {
+        lines.push(`- (aucun contact renseigné)`)
+      } else {
+        sectionData.forEach((item: unknown, index: number) => {
+          lines.push(`\n**Contact ${index + 1}**`)
+          if (typeof item === "object" && item !== null) {
+            for (const [fieldId, fieldValue] of Object.entries(
+              item as Record<string, unknown>
+            )) {
+              const fieldSchema = sectionSchema?.fields?.find((f) => f.id === fieldId)
+              const fieldLabel = fieldSchema?.label?.fr || fieldId
+              const displayValue = fieldValue ?? "(non renseigné)"
+              lines.push(`- ${fieldLabel}: ${displayValue}`)
+            }
+          }
+        })
+      }
+    } else if (typeof sectionData === "object" && sectionData !== null) {
       for (const [fieldId, fieldValue] of Object.entries(
         sectionData as Record<string, unknown>
       )) {
@@ -492,6 +511,7 @@ function formatFormSchemaForPrompt(
   sections: Array<{
     id: string;
     title: { fr?: string; en?: string };
+    description?: { fr?: string; en?: string };
     fields: Array<{
       id: string;
       type?: string;
@@ -507,6 +527,9 @@ function formatFormSchemaForPrompt(
   for (const section of sections) {
     const sectionLabel = section.title?.fr || section.id;
     lines.push(`\n### ${sectionLabel} (section: ${section.id})`);
+    if (section.description?.fr) {
+      lines.push(`> ${section.description.fr}`);
+    }
     for (const field of section.fields) {
       const fieldLabel = field.label?.fr || field.id;
       const requiredMark = field.required ? " (obligatoire)" : " (optionnel)";

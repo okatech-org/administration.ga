@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import {
 	ArrowRight,
 	Clock,
@@ -122,7 +122,7 @@ export function ServiceCard({
 	}
 
 	return (
-		<Link to={href} className="block group">
+		<Link href={href} className="block group">
 			{content}
 		</Link>
 	);

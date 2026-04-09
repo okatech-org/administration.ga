@@ -153,6 +153,7 @@ export function ConsularMap({ searchQuery = "", className }: ConsularMapProps) {
 
 	// Data sources
 	const { data: orgs } = useConvexQuery(api.functions.orgs.list, {});
+	const { data: companies } = useConvexQuery(api.functions.companies.list, {});
 
 	// Filters state
 	const [filters, setFilters] = useState({

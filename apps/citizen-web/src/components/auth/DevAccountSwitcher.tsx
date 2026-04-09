@@ -25,10 +25,10 @@ interface DevAccountGroup {
 	accounts: DevAccount[];
 }
 
-/** Parse les comptes dev depuis VITE_DEV_ACCOUNTS et les groupe par group. */
+/** Parse les comptes dev depuis NEXT_PUBLIC_DEV_ACCOUNTS et les groupe par group. */
 function parseDevAccounts(): DevAccountGroup[] {
 	try {
-		const raw = import.meta.env.VITE_DEV_ACCOUNTS;
+		const raw = process.env.NEXT_PUBLIC_DEV_ACCOUNTS;
 		if (!raw) return [];
 		const accounts: DevAccount[] = JSON.parse(raw);
 		const grouped = new Map<string, DevAccount[]>();
@@ -39,20 +39,19 @@ function parseDevAccounts(): DevAccountGroup[] {
 		}
 		return Array.from(grouped.entries()).map(([group, accounts]) => ({ group, accounts }));
 	} catch {
-		console.error("[DevAccountSwitcher] Impossible de parser VITE_DEV_ACCOUNTS");
+		console.error("[DevAccountSwitcher] Impossible de parser NEXT_PUBLIC_DEV_ACCOUNTS");
 		return [];
 	}
 }
 
 /**
  * SÉCURITÉ : Triple gate pour éviter toute fuite en production.
- * 1. import.meta.env.DEV (build-time, stripped en prod)
- * 2. import.meta.env.PROD doit être false
- * 3. VITE_E2E_MODE pour les tests E2E uniquement
+ * 1. NODE_ENV !== "production" (build-time)
+ * 2. NEXT_PUBLIC_E2E_MODE pour les tests E2E uniquement
  */
 export function DevAccountSwitcher() {
-	if (import.meta.env.PROD) return null;
-	if (!import.meta.env.DEV && import.meta.env.VITE_E2E_MODE !== "true") return null;
+	if (process.env.NODE_ENV === "production") return null;
+	if (process.env.NODE_ENV !== "development" && process.env.NEXT_PUBLIC_E2E_MODE !== "true") return null;
 
 	return <DevAccountSwitcherInner />;
 }
@@ -70,7 +69,7 @@ function DevAccountSwitcherInner() {
 	if (devAccounts.length === 0) return null;
 
 	// ── Expose sign-in function for E2E tests (dev/test only) ──
-	if (typeof window !== "undefined" && !import.meta.env.PROD) {
+	if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
 		(window as any).__e2eDevSignIn = async (email: string) => {
 			try {
 				if (session) {

@@ -1,8 +1,6 @@
 import { api } from "@convex/_generated/api";
-import { Link } from "@tanstack/react-router";
-import { FileText, Globe, MoveRight } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import Link from "next/link";
+import { ChevronRight, FileText, Globe } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useConvexQuery } from "@/integrations/convex/hooks";
 import { authClient } from "@/lib/auth-client";
@@ -111,18 +109,24 @@ export function Hero() {
 					</motion.div>
 
 					{/* CTAs */}
-					<motion.div variants={itemVariants} className="flex flex-row gap-3">
-						<Button size="lg" className="gap-4 rounded-full border-white/20 text-white hover:bg-white/10" variant="outline" asChild>
-							<Link to="/services">
-								{t("heroCore.cta.services", "Decouvrir les services")}
-								<Globe className="w-4 h-4" />
+					<div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+						<Button
+							asChild
+							size="lg"
+							className="h-14 px-8 text-base shadow-xl shadow-primary/30 hover:scale-105 transition-transform"
+						>
+							<Link href={ctaTo}>
+								{ctaLabel}
+								<ChevronRight className="w-5 h-5 ml-2" />
 							</Link>
 						</Button>
-						<Button size="lg" className="gap-4 rounded-full" asChild>
-							<Link to={ctaTo}>
-								{ctaLabel}
-								<MoveRight className="w-4 h-4" />
-							</Link>
+						<Button
+							asChild
+							variant="outline"
+							size="lg"
+							className="h-14 px-8 text-base bg-white/10 backdrop-blur-sm border-white/50 text-white hover:bg-white/20 hover:text-white"
+						>
+							<Link href="/services">{t("heroCore.cta.services")}</Link>
 						</Button>
 					</motion.div>
 

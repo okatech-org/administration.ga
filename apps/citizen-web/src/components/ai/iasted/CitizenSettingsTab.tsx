@@ -1,7 +1,7 @@
 /**
- * CitizenSettingsTab — Préférences iAsted pour citoyens.
+ * CitizenSettingsTab — Preferences iAsted pour citoyens.
  *
- * - Langue (français/anglais)
+ * - Langue (francais/anglais)
  * - Notifications
  * - Version info
  */
@@ -67,7 +67,7 @@ export function CitizenSettingsTab() {
 				<div className="space-y-2">
 					<div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
 						<Info className="h-3.5 w-3.5" />
-						À propos
+						A propos
 					</div>
 					<div className="rounded-lg border p-3 space-y-1">
 						<p className="text-xs font-medium">iAsted v1.0</p>

@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 
 interface DynamicFolderIconProps {
-  /** Number of documents in the folder (0–3 max visually) */
+  /** Number of documents in the folder (0-3 max visually) */
   count: number;
   /** Icon size in pixels (default 64) */
   size?: number;
@@ -13,7 +13,7 @@ interface DynamicFolderIconProps {
 
 /**
  * Dynamic folder icon inspired by `open-folder.svg`.
- * Renders 0–3 document sheets inside the folder based on the `count` prop.
+ * Renders 0-3 document sheets inside the folder based on the `count` prop.
  */
 export function DynamicFolderIcon({
   count,
@@ -26,7 +26,7 @@ export function DynamicFolderIcon({
   // Each sheet config: x, y, width, height, rotation, fill
   const sheetConfigs = [
     {
-      // Sheet 1 — back-left, slightly rotated
+      // Sheet 1 -- back-left, slightly rotated
       x: 62,
       y: 148,
       w: 300,
@@ -37,7 +37,7 @@ export function DynamicFolderIcon({
       hoverY: -18,
     },
     {
-      // Sheet 2 — center
+      // Sheet 2 -- center
       x: 42,
       y: 168,
       w: 300,
@@ -48,7 +48,7 @@ export function DynamicFolderIcon({
       hoverY: -14,
     },
     {
-      // Sheet 3 — front-right, slightly rotated
+      // Sheet 3 -- front-right, slightly rotated
       x: 52,
       y: 158,
       w: 290,
@@ -86,7 +86,7 @@ export function DynamicFolderIcon({
         fill="#f6c012"
       />
 
-      {/* Document sheets — dynamic */}
+      {/* Document sheets -- dynamic */}
       {visibleSheets.map((sheet, i) => (
         <motion.rect
           key={`sheet-${i}`}

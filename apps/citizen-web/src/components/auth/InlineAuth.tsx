@@ -116,7 +116,7 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 
 	// Separate forms for sign-up and sign-in (different schemas)
 	const signUpForm = useForm<SignUpValues>({
-		resolver: zodResolver(signUpSchema),
+		resolver: zodResolver(signUpSchema as any),
 		mode: "onSubmit",
 		defaultValues: {
 			firstName: "",
@@ -128,7 +128,7 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 	});
 
 	const signInForm = useForm<SignInValues>({
-		resolver: zodResolver(signInSchema),
+		resolver: zodResolver(signInSchema as any),
 		mode: "onSubmit",
 		defaultValues: {
 			email: "",

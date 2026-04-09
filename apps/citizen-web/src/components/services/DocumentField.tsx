@@ -71,7 +71,7 @@ export function DocumentField({
         {/* Document list */}
         {hasDocuments && (
           <DocumentList
-            documentIds={documentIds}
+            documentIds={documentIds as any}
             docType={docType}
             onRemove={async (documentId) => {
               onRemove(documentId);

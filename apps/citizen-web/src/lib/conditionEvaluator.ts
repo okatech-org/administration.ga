@@ -1,4 +1,4 @@
-import type { FieldCondition } from "@/components/admin/FormBuilder";
+import type { FormCondition } from "@convex/lib/validators";
 
 /**
  * Evaluate a condition against form data
@@ -6,7 +6,7 @@ import type { FieldCondition } from "@/components/admin/FormBuilder";
  * Returns true if no condition is provided (unconditionally visible)
  */
 export function evaluateCondition(
-	condition: FieldCondition | undefined,
+	condition: FormCondition | undefined,
 	formData: Record<string, unknown>,
 ): boolean {
 	// No condition = always visible
@@ -90,7 +90,7 @@ function getValueByPath(obj: Record<string, unknown>, path: string): unknown {
 /**
  * Filter visible sections based on conditions
  */
-export function getVisibleSections<T extends { condition?: FieldCondition }>(
+export function getVisibleSections<T extends { condition?: FormCondition }>(
 	sections: T[],
 	formData: Record<string, unknown>,
 ): T[] {
@@ -102,7 +102,7 @@ export function getVisibleSections<T extends { condition?: FieldCondition }>(
 /**
  * Filter visible fields based on conditions
  */
-export function getVisibleFields<T extends { condition?: FieldCondition }>(
+export function getVisibleFields<T extends { condition?: FormCondition }>(
 	fields: T[],
 	formData: Record<string, unknown>,
 ): T[] {

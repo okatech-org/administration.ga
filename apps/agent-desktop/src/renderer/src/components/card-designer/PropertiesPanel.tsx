@@ -1,3 +1,4 @@
+import { useCallback, useRef, useState } from "react"
 import {
   AlignCenter,
   AlignLeft,
@@ -5,6 +6,8 @@ import {
   ArrowDown,
   ArrowUp,
   Bold,
+  ChevronDown,
+  ChevronUp,
   ChevronsDown,
   ChevronsUp,
   Italic,
@@ -12,8 +15,10 @@ import {
   Unlock,
   Eye,
   EyeOff,
+  ImagePlus,
+  Trash2,
 } from "lucide-react"
-import type { CardElement, TextAlignment } from "../../lib/card-types"
+import type { ActiveFace, CardElement, TextAlignment } from "../../lib/card-types"
 import { getFieldsByCategory, type DynamicField } from "../../lib/dynamic-fields"
 
 interface PropertiesPanelProps {
@@ -21,10 +26,13 @@ interface PropertiesPanelProps {
   entityId?: string
   backgroundColor: string
   backgroundOpacity: number
+  backgroundImage: string | null
+  activeFace: ActiveFace
   onUpdateElement: (id: string, changes: Partial<CardElement>) => void
   onMoveLayer: (id: string, direction: "up" | "down" | "top" | "bottom") => void
   onSetBackgroundColor: (color: string) => void
   onSetBackgroundOpacity: (opacity: number) => void
+  onSetBackgroundImage: (face: ActiveFace, dataUrl: string | null) => void
 }
 
 export function PropertiesPanel({
@@ -32,12 +40,36 @@ export function PropertiesPanel({
   entityId,
   backgroundColor,
   backgroundOpacity,
+  backgroundImage,
+  activeFace,
   onUpdateElement,
   onMoveLayer,
   onSetBackgroundColor,
   onSetBackgroundOpacity,
+  onSetBackgroundImage,
 }: PropertiesPanelProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Limit to 5 MB
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image trop volumineuse (max 5 Mo)")
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      onSetBackgroundImage(activeFace, reader.result as string)
+    }
+    reader.readAsDataURL(file)
+    // Reset input so the same file can be re-selected
+    e.target.value = ""
+  }
+
   if (!element) {
+    const faceLabel = activeFace === "front" ? "Recto" : "Verso"
+
     return (
       <div className="w-64 bg-card border-l border-border p-4 overflow-y-auto shrink-0">
         <h3 className="text-sm font-semibold text-foreground mb-4">Propriétés</h3>
@@ -60,18 +92,81 @@ export function PropertiesPanel({
               />
             </div>
           </Field>
-          <Field label="Opacité image">
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={backgroundOpacity}
-              onChange={(e) => onSetBackgroundOpacity(parseFloat(e.target.value))}
-              className="w-full accent-primary"
-            />
-            <span className="text-[10px] text-muted-foreground">{Math.round(backgroundOpacity * 100)}%</span>
-          </Field>
+        </Section>
+
+        <Section title={`Image de fond — ${faceLabel}`}>
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/bmp"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+
+          {backgroundImage ? (
+            <>
+              {/* Preview thumbnail */}
+              <div className="relative rounded-lg overflow-hidden border border-border bg-muted">
+                <img
+                  src={backgroundImage}
+                  alt={`Fond ${faceLabel}`}
+                  className="w-full h-auto object-contain"
+                  style={{ maxHeight: 120 }}
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-border text-[11px] font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  <ImagePlus className="size-3" />
+                  Remplacer
+                </button>
+                <button
+                  onClick={() => onSetBackgroundImage(activeFace, null)}
+                  className="inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-destructive/30 text-[11px] font-medium text-destructive hover:bg-destructive/5 transition-colors"
+                >
+                  <Trash2 className="size-3" />
+                </button>
+              </div>
+            </>
+          ) : (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 border-dashed border-border hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer text-muted-foreground hover:text-foreground"
+            >
+              <ImagePlus className="size-5" />
+              <span className="text-[11px] font-medium">
+                Ajouter une image
+              </span>
+              <span className="text-[10px] text-muted-foreground/60">
+                PNG, JPEG, WebP — max 5 Mo
+              </span>
+            </button>
+          )}
+
+          {/* Opacity slider (only shown when an image exists) */}
+          {backgroundImage && (
+            <Field label="Opacité">
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={backgroundOpacity}
+                  onChange={(e) => onSetBackgroundOpacity(parseFloat(e.target.value))}
+                  className="flex-1 accent-primary"
+                />
+                <span className="text-[10px] text-muted-foreground w-8 text-right">
+                  {Math.round(backgroundOpacity * 100)}%
+                </span>
+              </div>
+            </Field>
+          )}
         </Section>
 
         <p className="text-xs text-muted-foreground mt-6">
@@ -114,8 +209,8 @@ export function PropertiesPanel({
         <div className="grid grid-cols-2 gap-2">
           <NumberField label="X" value={element.x} onChange={(v) => update({ x: v })} />
           <NumberField label="Y" value={element.y} onChange={(v) => update({ y: v })} />
-          <NumberField label="L" value={element.width} onChange={(v) => update({ width: v })} />
-          <NumberField label="H" value={element.height} onChange={(v) => update({ height: v })} />
+          <NumberField label="L" value={element.width} onChange={(v) => update({ width: v })} min={1} />
+          <NumberField label="H" value={element.height} onChange={(v) => update({ height: v })} min={1} />
         </div>
         <NumberField label="Rotation" value={element.rotation} onChange={(v) => update({ rotation: v })} suffix="°" />
       </Section>
@@ -174,7 +269,7 @@ export function PropertiesPanel({
             </select>
           </Field>
           <div className="flex items-center gap-2">
-            <NumberField label="Taille" value={element.fontSize} onChange={(v) => update({ fontSize: v })} />
+            <NumberField label="Taille" value={element.fontSize} onChange={(v) => update({ fontSize: v })} min={1} />
             <Field label="Couleur">
               <input
                 type="color"
@@ -248,6 +343,7 @@ export function PropertiesPanel({
             label="Arrondi"
             value={element.cornerRadius}
             onChange={(v) => update({ cornerRadius: v })}
+            min={0}
           />
         </Section>
       )}
@@ -283,6 +379,7 @@ export function PropertiesPanel({
                 label="Ép."
                 value={element.strokeWidth}
                 onChange={(v) => update({ strokeWidth: v })}
+                min={0}
               />
             </div>
           </Field>
@@ -291,6 +388,7 @@ export function PropertiesPanel({
               label="Arrondi"
               value={element.cornerRadius}
               onChange={(v) => update({ cornerRadius: v })}
+              min={0}
             />
           )}
         </Section>
@@ -311,6 +409,7 @@ export function PropertiesPanel({
             label="Épaisseur"
             value={element.strokeWidth}
             onChange={(v) => update({ strokeWidth: v })}
+            min={1}
           />
         </Section>
       )}
@@ -377,22 +476,140 @@ function NumberField({
   value,
   onChange,
   suffix,
+  min,
+  step = 1,
 }: {
   label: string
   value: number
   onChange: (v: number) => void
   suffix?: string
+  min?: number
+  step?: number
 }) {
+  const [localValue, setLocalValue] = useState<string>(String(value))
+  const [isFocused, setIsFocused] = useState(false)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const valueRef = useRef(value)
+  valueRef.current = value
+
+  // Sync external value when not editing
+  const displayValue = isFocused ? localValue : String(value)
+
+  const clamp = useCallback(
+    (v: number) => {
+      if (min !== undefined && v < min) return min
+      return v
+    },
+    [min],
+  )
+
+  const commit = useCallback(
+    (raw: string) => {
+      const parsed = Number(raw)
+      if (!Number.isNaN(parsed)) {
+        onChange(clamp(Math.round(parsed)))
+      }
+    },
+    [onChange, clamp],
+  )
+
+  const increment = useCallback(
+    (delta: number) => {
+      const next = clamp(Math.round(valueRef.current + delta))
+      onChange(next)
+      setLocalValue(String(next))
+    },
+    [onChange, clamp],
+  )
+
+  const startRepeat = useCallback(
+    (delta: number) => {
+      increment(delta)
+      intervalRef.current = setInterval(() => increment(delta), 120)
+    },
+    [increment],
+  )
+
+  const stopRepeat = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+  }, [])
+
   return (
     <div>
       <label className="text-[10px] text-muted-foreground mb-0.5 block">{label}</label>
-      <div className="flex items-center">
-        <input
-          type="number"
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="w-full text-xs px-2 py-1.5 bg-muted border border-border rounded-md text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-        />
+      <div className="flex items-center gap-0">
+        <div className="relative flex-1 flex items-center">
+          <input
+            type="text"
+            inputMode="numeric"
+            value={displayValue}
+            onFocus={() => {
+              setIsFocused(true)
+              setLocalValue(String(value))
+            }}
+            onBlur={() => {
+              setIsFocused(false)
+              commit(localValue)
+            }}
+            onChange={(e) => {
+              // Allow digits, minus, dot
+              const raw = e.target.value
+              if (raw === "" || raw === "-" || /^-?\d*\.?\d*$/.test(raw)) {
+                setLocalValue(raw)
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                commit(localValue)
+                ;(e.target as HTMLInputElement).blur()
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault()
+                const delta = e.shiftKey ? step * 10 : step
+                increment(delta)
+              } else if (e.key === "ArrowDown") {
+                e.preventDefault()
+                const delta = e.shiftKey ? step * 10 : step
+                increment(-delta)
+              }
+            }}
+            className="w-full text-xs px-2 py-1.5 pr-5 bg-muted border border-border rounded-md text-foreground tabular-nums"
+          />
+          {/* Stepper buttons */}
+          <div className="absolute right-px top-px bottom-px flex flex-col w-4 border-l border-border">
+            <button
+              type="button"
+              tabIndex={-1}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                const delta = e.shiftKey ? step * 10 : step
+                startRepeat(delta)
+              }}
+              onMouseUp={stopRepeat}
+              onMouseLeave={stopRepeat}
+              className="flex-1 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 rounded-tr-md transition-colors"
+            >
+              <ChevronUp className="size-2.5" />
+            </button>
+            <div className="h-px bg-border" />
+            <button
+              type="button"
+              tabIndex={-1}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                const delta = e.shiftKey ? step * 10 : step
+                startRepeat(-delta)
+              }}
+              onMouseUp={stopRepeat}
+              onMouseLeave={stopRepeat}
+              className="flex-1 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 rounded-br-md transition-colors"
+            >
+              <ChevronDown className="size-2.5" />
+            </button>
+          </div>
+        </div>
         {suffix && <span className="text-[10px] text-muted-foreground ml-1">{suffix}</span>}
       </div>
     </div>

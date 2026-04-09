@@ -22,7 +22,7 @@ export interface StatusConfig {
  * Complete status configuration for UI display
  */
 export const REQUEST_STATUS_CONFIG: Record<RequestStatus, StatusConfig> = {
-	// === Création ===
+	// === Creation ===
 	[RequestStatus.Draft]: {
 		i18nKey: "requests.statuses.draft",
 		fallback: "Brouillon",
@@ -59,25 +59,25 @@ export const REQUEST_STATUS_CONFIG: Record<RequestStatus, StatusConfig> = {
 	// === Finalisation ===
 	[RequestStatus.Validated]: {
 		i18nKey: "requests.statuses.validated",
-		fallback: "Validée",
+		fallback: "Validee",
 		className: "bg-green-100 text-green-700 border-green-200",
 		variant: "default",
 	},
 	[RequestStatus.Rejected]: {
 		i18nKey: "requests.statuses.rejected",
-		fallback: "Rejetée",
+		fallback: "Rejetee",
 		className: "bg-red-100 text-red-700 border-red-200",
 		variant: "destructive",
 	},
 	[RequestStatus.AppointmentScheduled]: {
 		i18nKey: "requests.statuses.appointment_scheduled",
-		fallback: "RDV planifié",
+		fallback: "RDV planifie",
 		className: "bg-indigo-100 text-indigo-700 border-indigo-200",
 		variant: "secondary",
 	},
 	[RequestStatus.ReadyForPickup]: {
 		i18nKey: "requests.statuses.ready_for_pickup",
-		fallback: "Prête à retirer",
+		fallback: "Prete a retirer",
 		className: "bg-teal-100 text-teal-700 border-teal-200",
 		variant: "default",
 	},
@@ -85,13 +85,13 @@ export const REQUEST_STATUS_CONFIG: Record<RequestStatus, StatusConfig> = {
 	// === Terminal ===
 	[RequestStatus.Completed]: {
 		i18nKey: "requests.statuses.completed",
-		fallback: "Terminée",
+		fallback: "Terminee",
 		className: "bg-green-100 text-green-700 border-green-200",
 		variant: "default",
 	},
 	[RequestStatus.Cancelled]: {
 		i18nKey: "requests.statuses.cancelled",
-		fallback: "Annulée",
+		fallback: "Annulee",
 		className: "bg-gray-100 text-gray-500 border-gray-200",
 		variant: "outline",
 	},

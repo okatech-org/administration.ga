@@ -1,8 +1,8 @@
 /**
- * CitizenContactTab — Annuaire des représentations pour la fenêtre flottante.
+ * CitizenContactTab — Annuaire des representations pour la fenetre flottante.
  *
- * Affiche les contacts urgence + standard des représentations.
- * Version compacte adaptée à la fenêtre iAsted.
+ * Affiche les contacts urgence + standard des representations.
+ * Version compacte adaptee a la fenetre iAsted.
  */
 
 import { api } from "@convex/_generated/api";
@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 
 const ORG_TYPE_LABELS: Record<string, string> = {
 	embassy: "Ambassade",
-	general_consulate: "Consulat Général",
+	general_consulate: "Consulat General",
 	consulate: "Consulat",
 	permanent_mission: "Mission Permanente",
 	high_commission: "Haut-Commissariat",
@@ -87,7 +87,7 @@ export function CitizenContactTab() {
 					<div className="flex flex-col items-center py-8 text-center">
 						<Building2 className="h-6 w-6 text-muted-foreground/30 mb-2" />
 						<p className="text-[11px] text-muted-foreground">
-							{search ? "Aucun résultat" : "Aucune représentation"}
+							{search ? "Aucun resultat" : "Aucune representation"}
 						</p>
 					</div>
 				) : (
@@ -108,7 +108,7 @@ function CompactOrgCard({ org }: { org: any }) {
 	const emergency = org.emergencyPhone ?? org.emergencyContact;
 	const phone = org.phone ?? org.mainPhone;
 	const email = org.email;
-	const typeLabel = ORG_TYPE_LABELS[org.type] ?? "Représentation";
+	const typeLabel = ORG_TYPE_LABELS[org.type] ?? "Representation";
 
 	return (
 		<div className="rounded-lg border bg-card overflow-hidden">

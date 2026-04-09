@@ -1,8 +1,8 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
- * Full-page loading skeleton shown by TanStack Router while routes load
- * in SPA mode. This gives users an immediate sense of the page structure
+ * Full-page loading skeleton shown while routes load.
+ * This gives users an immediate sense of the page structure
  * instead of a blank white screen.
  */
 export function PageLoadingSkeleton() {

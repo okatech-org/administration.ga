@@ -1,4 +1,5 @@
 import type { IpcMain, BrowserWindow } from "electron"
+import { readFile } from "node:fs/promises"
 import { FileDialogService } from "../services/file-dialog.service"
 import type {
   SaveDialogOptions,
@@ -24,6 +25,13 @@ export function registerFileDialogIpc(
     "file:open-dialog",
     async (_event, options: OpenDialogOptions) => {
       return fileDialogService.openWithDialog(options)
+    }
+  )
+
+  ipcMain.handle(
+    "file:read-text",
+    async (_event, filePath: string) => {
+      return readFile(filePath, "utf-8")
     }
   )
 }

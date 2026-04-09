@@ -3,7 +3,7 @@
 import { api } from "@convex/_generated/api";
 import type { Doc } from "@convex/_generated/dataModel";
 import { CountryCode } from "@convex/lib/constants";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -168,7 +168,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 										</div>
 									</div>
 								</div>
-								
+
 								{/* Flip hint overlay */}
 								<div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
 									<div className="flex flex-col items-center gap-2 text-white">
@@ -228,7 +228,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 
 				{/* 3. Bouton Attestation */}
 				<Button asChild variant="ghost" size="sm" className="w-full h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-2">
-					<Link to="/services/$slug" params={{ slug: "attestation-carte-consulaire" }}>
+					<Link href="/services/attestation-carte-consulaire">
 						<FileText className="h-3.5 w-3.5" />
 						Attestation de Carte Consulaire
 					</Link>
@@ -254,7 +254,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 						{t("mySpace.consularCard.expiredDesc", "Votre carte consulaire a expiré")}
 					</p>
 					<Button asChild variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-1.5">
-						<Link to="/services/$slug" params={{ slug: "consular-card-registration" }}>
+						<Link href="/services/consular-card-registration">
 							{t("mySpace.consularCard.renew")}
 							<ArrowRight className="ml-1 h-3.5 w-3.5" />
 						</Link>
@@ -329,7 +329,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 					{t("mySpace.consularCard.noCardYet", "Vous n'avez pas encore de carte consulaire")}
 				</p>
 				<Button asChild variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-1.5">
-					<Link to="/services/$slug" params={{ slug: "consular-card-registration" }}>
+					<Link href="/services/consular-card-registration">
 						{t("mySpace.consularCard.request")}
 						<ArrowRight className="ml-1 h-3.5 w-3.5" />
 					</Link>

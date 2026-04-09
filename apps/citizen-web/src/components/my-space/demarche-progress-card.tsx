@@ -4,7 +4,7 @@
  */
 
 import type { Id } from "@convex/_generated/dataModel";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import {
 	AlertTriangle,
 	CalendarClock,
@@ -99,8 +99,7 @@ function RequestProgressCard({
 
 	return (
 		<Link
-			to="/my-space/requests/$reference"
-			params={{ reference: request.reference || request._id }}
+			href={`/my-space/requests/${request.reference || request._id}`}
 			className="block group"
 		>
 			<FlatCard className={cn("border-l-[3px] hover:shadow-sm transition-all", borderColorMap[request.status] ?? "border-l-muted-foreground/30")}>
@@ -184,8 +183,7 @@ function DossierProgressCard({
 
 	return (
 		<Link
-			to="/my-space/demarches/$dossierId"
-			params={{ dossierId: dossier._id }}
+			href={`/my-space/demarches/${dossier._id}`}
 			className="block group"
 		>
 			<FlatCard className={cn("border-l-[3px] hover:shadow-sm transition-all", statusConfig?.borderColor ?? "border-l-muted-foreground/30")}>

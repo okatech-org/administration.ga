@@ -1,0 +1,15 @@
+# Security audit documentation files (contain example/documented keys, not live secrets)
+59e44262bb3163943c1e9567e09dcfe2c5e506e6:SECURITY_AUDIT.md:generic-api-key:107
+59e44262bb3163943c1e9567e09dcfe2c5e506e6:SECURITY_AUDIT.md:generic-api-key:108
+59e44262bb3163943c1e9567e09dcfe2c5e506e6:SECURITY_AUDIT.md:generic-api-key:109
+59e44262bb3163943c1e9567e09dcfe2c5e506e6:security_audit_gabon_diplomatie.md:generic-api-key:315
+59e44262bb3163943c1e9567e09dcfe2c5e506e6:security_audit_gabon_diplomatie.md:generic-api-key:316
+
+# Next.js build cache committed by mistake (users-web/.next/)
+ac539f299a3a1b043e8e9afc51b2a76a5ce8f010:apps/users-web/.next/cache/.previewinfo:generic-api-key:1
+ac539f299a3a1b043e8e9afc51b2a76a5ce8f010:apps/users-web/.next/cache/.rscinfo:generic-api-key:1
+ac539f299a3a1b043e8e9afc51b2a76a5ce8f010:apps/users-web/.next/dev/prerender-manifest.json:generic-api-key:8
+ac539f299a3a1b043e8e9afc51b2a76a5ce8f010:apps/users-web/.next/dev/prerender-manifest.json:generic-api-key:9
+ac539f299a3a1b043e8e9afc51b2a76a5ce8f010:apps/users-web/.next/prerender-manifest.json:generic-api-key:82
+ac539f299a3a1b043e8e9afc51b2a76a5ce8f010:apps/users-web/.next/prerender-manifest.json:generic-api-key:83
+ac539f299a3a1b043e8e9afc51b2a76a5ce8f010:apps/users-web/.next/server/server-reference-manifest.json:generic-api-key:4

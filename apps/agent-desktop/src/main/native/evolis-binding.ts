@@ -40,6 +40,9 @@ function getLib(): koffi.IKoffiLib {
 
 // --- Define C types ---
 
+// evobuf is typedef'd as char in the SDK
+// #define evobuf char
+
 // Opaque pointer for evolis_t*
 const evolis_t_ptr = "void *"
 
@@ -104,6 +107,35 @@ const evolis_ribbon_t = koffi.struct("evolis_ribbon_t", {
   buildAt: koffi.array("char", 24),
   serialNumber: koffi.array("char", 24),
   internalCode: koffi.array("char", 24),
+})
+
+// evolis_status_t struct (from evo-printers.h)
+const EVOLIS_STATUS_EX_COUNT = 4
+const evolis_status_t = koffi.struct("evolis_status_t", {
+  config: "uint32",
+  information: "uint32",
+  warning: "uint32",
+  error: "uint32",
+  exts: koffi.array("uint32", EVOLIS_STATUS_EX_COUNT),
+  session: "uint16",
+})
+
+// evolis_mag_tracks_t struct
+// char tracks[3][256] — flattened as 3 separate char[256] fields for correct layout
+const evolis_mag_tracks_t = koffi.struct("evolis_mag_tracks_t", {
+  track0: koffi.array("char", 256),
+  track1: koffi.array("char", 256),
+  track2: koffi.array("char", 256),
+  formats: koffi.array("int", 3),
+  coercivity: "int",
+  results: koffi.array("int", 3),
+  processTrack: koffi.array("bool", 3),
+})
+
+// evolis_pcsc_encoder_t struct
+const evolis_pcsc_encoder_t = koffi.struct("evolis_pcsc_encoder_t", {
+  name: koffi.array("char", 128),
+  uid: "uint16",
 })
 
 // --- Declare functions ---
@@ -201,6 +233,50 @@ function declareAll() {
     evolis_print_exect: l.func(
       "int evolis_print_exect(void* printer, int timeout)"
     ),
+
+    // --- Status (evo-printers.h) ---
+    evolis_status: l.func(
+      "int evolis_status(void* printer, _Out_ evolis_status_t* status)"
+    ),
+
+    // --- Card positioning ---
+    evolis_set_card_pos: l.func(
+      "int evolis_set_card_pos(void* printer, int pos)"
+    ),
+
+    // --- Magnetic encoding ---
+    evolis_mag_init: l.func(
+      "void evolis_mag_init(_Out_ evolis_mag_tracks_t* tracks)"
+    ),
+    evolis_mag_set_track: l.func(
+      "int evolis_mag_set_track(_Inout_ evolis_mag_tracks_t* tracks, int track, int fmt, const char* data)"
+    ),
+    evolis_mag_write: l.func(
+      "int evolis_mag_write(void* printer, _Inout_ evolis_mag_tracks_t* tracks)"
+    ),
+    evolis_mag_read: l.func(
+      "int evolis_mag_read(void* printer, _Inout_ evolis_mag_tracks_t* tracks)"
+    ),
+
+    // --- PC/SC (NFC/Contactless) ---
+    evolis_pcsc_list: l.func(
+      "int evolis_pcsc_list(void* printer, _Out_ evolis_pcsc_encoder_t* encoders, size_t max_size)"
+    ),
+    evolis_pcsc_wait_card_presentt: l.func(
+      "int evolis_pcsc_wait_card_presentt(void* printer, uint16 uid, int timeout_ms)"
+    ),
+    evolis_pcsc_connect: l.func(
+      "int evolis_pcsc_connect(void* printer, uint16 uid, int protocol)"
+    ),
+    evolis_pcsc_send_apdu: l.func(
+      "int evolis_pcsc_send_apdu(void* printer, const char* apdu, size_t apdu_size, _Out_ char* reply, size_t reply_max_size)"
+    ),
+    evolis_pcsc_disconnect: l.func(
+      "int evolis_pcsc_disconnect(void* printer, int disposition)"
+    ),
+    evolis_pcsc_read_atr: l.func(
+      "int evolis_pcsc_read_atr(void* printer, uint16 uid, _Out_ char* atr)"
+    ),
   }
 }
 
@@ -218,9 +294,24 @@ function getFns() {
 // Enums
 const EVOLIS_IT_FEEDER = 1
 const EVOLIS_OT_STANDARD = 1
+export const EVOLIS_OT_REAR = 512
 const EVOLIS_OT_ERROR = 8
 const EVOLIS_FA_FRONT = 0
 const EVOLIS_FA_BACK = 1
+
+// Card positions
+export const EVOLIS_CP_CONTACTLESS = 6
+
+// Magnetic encoding formats
+export const EVOLIS_MF_ISO1 = 1
+export const EVOLIS_MF_ISO2 = 2
+export const EVOLIS_MF_ISO3 = 3
+
+// PC/SC protocols
+export const EVOLIS_PCSC_PCL_ANY = 4
+
+// PC/SC disposition
+export const EVOLIS_PCSC_DSP_RESET = 2
 
 // Settings keys from evosettings_keys.h — values are enum indices in evosettings_key_e
 // IMPORTANT: counted from the X-macro in evosettings_keys.h, starting at Unknown=0
@@ -343,6 +434,7 @@ export interface NativeEvolisInfo {
   hasLaminator: boolean
   hasScanner: boolean
   hasLock: boolean
+  hasLcd: boolean
 }
 
 function charArrayToString(val: unknown): string {
@@ -374,6 +466,7 @@ export function evolisGetInfo(printer: unknown): NativeEvolisInfo {
     hasLaminator: !!info.hasLaminator,
     hasScanner: !!info.hasScanner,
     hasLock: !!info.hasLock,
+    hasLcd: !!info.hasLcd,
   }
 }
 
@@ -431,6 +524,14 @@ export function evolisSetTrays(printer: unknown): void {
   getFns().evolis_set_input_tray(printer, EVOLIS_IT_FEEDER)
   getFns().evolis_set_output_tray(printer, EVOLIS_OT_STANDARD)
   getFns().evolis_set_error_tray(printer, EVOLIS_OT_ERROR)
+}
+
+export function evolisSetInputTray(printer: unknown, tray: number): void {
+  getFns().evolis_set_input_tray(printer, tray)
+}
+
+export function evolisSetErrorTray(printer: unknown, tray: number): void {
+  getFns().evolis_set_error_tray(printer, tray)
 }
 
 /** Log a single print setting for diagnostics. */
@@ -587,10 +688,183 @@ export function evolisPrintFromBuffer(
   return f.evolis_print_exec(printer)
 }
 
+// --- Print building blocks (for 8-step cardflow) ---
+
+export function evolisPrintInitFromDriverSettings(printer: unknown): number {
+  return getFns().evolis_print_init_from_driver_settings(printer)
+}
+
+export function evolisPrintInit(printer: unknown): number {
+  return getFns().evolis_print_init(printer)
+}
+
+export function evolisPrintSetSetting(printer: unknown, key: number, value: string): boolean {
+  return getFns().evolis_print_set_setting(printer, key, value)
+}
+
+export function evolisPrintSetImageP(printer: unknown, face: number, path: string): number {
+  return getFns().evolis_print_set_imagep(printer, face, path)
+}
+
+export function evolisPrintExec(printer: unknown): number {
+  return getFns().evolis_print_exec(printer)
+}
+
+// Re-export setting keys for the service to use
+export {
+  EVOSETTINGS_KE_Duplex,
+  EVOSETTINGS_KE_GDuplexType,
+  EVOSETTINGS_KE_Orientation,
+  EVOSETTINGS_KE_Resolution,
+  EVOSETTINGS_KE_PaperSize,
+  EVOSETTINGS_KE_FBlackManagement,
+  EVOSETTINGS_KE_FOverlayManagement,
+}
+
+export { EVOLIS_FA_FRONT, EVOLIS_FA_BACK }
+
 export function evolisEject(printer: unknown): number {
   return getFns().evolis_eject(printer)
 }
 
 export function evolisReject(printer: unknown): number {
   return getFns().evolis_reject(printer)
+}
+
+// --- Status ---
+
+export interface NativeEvolisStatus {
+  config: number
+  information: number
+  warning: number
+  error: number
+  exts: number[]
+  session: number
+}
+
+export function evolisGetFullStatus(printer: unknown): NativeEvolisStatus {
+  const status: Record<string, unknown> = {}
+  const rc = getFns().evolis_status(printer, status)
+  if (rc !== 0) {
+    throw new Error(`evolis_status failed: ${evolisGetErrorName(rc)} (${rc})`)
+  }
+  return {
+    config: (status.config as number) ?? 0,
+    information: (status.information as number) ?? 0,
+    warning: (status.warning as number) ?? 0,
+    error: (status.error as number) ?? 0,
+    exts: (status.exts as number[]) ?? [0, 0, 0, 0],
+    session: (status.session as number) ?? 0,
+  }
+}
+
+// --- Output tray ---
+
+export function evolisSetOutputTray(printer: unknown, tray: number): void {
+  getFns().evolis_set_output_tray(printer, tray)
+}
+
+// --- Card position ---
+
+export function evolisSetCardPos(printer: unknown, pos: number): number {
+  return getFns().evolis_set_card_pos(printer, pos)
+}
+
+// --- Magnetic encoding ---
+
+export interface MagTracksHandle {
+  _raw: Record<string, unknown>
+}
+
+export function evolisMagInit(): MagTracksHandle {
+  const tracks: Record<string, unknown> = {}
+  getFns().evolis_mag_init(tracks)
+  return { _raw: tracks }
+}
+
+export function evolisMagSetTrack(
+  handle: MagTracksHandle,
+  trackNum: 0 | 1 | 2,
+  format: number,
+  data: string,
+): number {
+  return getFns().evolis_mag_set_track(handle._raw, trackNum, format, data)
+}
+
+export function evolisMagWrite(printer: unknown, handle: MagTracksHandle): number {
+  return getFns().evolis_mag_write(printer, handle._raw)
+}
+
+export function evolisMagRead(printer: unknown): { tracks: MagTracksHandle; rc: number } {
+  const tracks: Record<string, unknown> = {}
+  getFns().evolis_mag_init(tracks)
+  const rc = getFns().evolis_mag_read(printer, tracks)
+  return { tracks: { _raw: tracks }, rc }
+}
+
+// --- PC/SC (NFC/Contactless) ---
+
+export interface NativePcscEncoder {
+  name: string
+  uid: number
+}
+
+export function evolisPcscList(printer: unknown): NativePcscEncoder[] {
+  const maxEncoders = 8
+  const encodersBuf = new Array(maxEncoders).fill(null).map(() => ({}))
+  const count = getFns().evolis_pcsc_list(printer, encodersBuf, maxEncoders)
+
+  if (count <= 0) return []
+
+  const rawArray = koffi.decode(encodersBuf, evolis_pcsc_encoder_t, count)
+  const items = Array.isArray(rawArray) ? rawArray : [rawArray]
+
+  return items.map((e: Record<string, unknown>) => ({
+    name: charArrayToString(e.name),
+    uid: e.uid as number,
+  }))
+}
+
+export function evolisPcscWaitCard(
+  printer: unknown,
+  uid: number,
+  timeoutMs: number = 10000,
+): number {
+  return getFns().evolis_pcsc_wait_card_presentt(printer, uid, timeoutMs)
+}
+
+export function evolisPcscConnect(printer: unknown, uid: number): number {
+  return getFns().evolis_pcsc_connect(printer, uid, EVOLIS_PCSC_PCL_ANY)
+}
+
+export function evolisPcscSendApdu(
+  printer: unknown,
+  command: Buffer,
+): { response: Buffer; rc: number } {
+  const replyBuf = Buffer.alloc(256)
+  const rc = getFns().evolis_pcsc_send_apdu(
+    printer,
+    command,
+    command.length,
+    replyBuf,
+    replyBuf.length,
+  )
+  // rc is the number of bytes in the response (or negative on error)
+  if (rc < 0) {
+    return { response: Buffer.alloc(0), rc }
+  }
+  return { response: replyBuf.subarray(0, rc), rc }
+}
+
+export function evolisPcscDisconnect(printer: unknown): number {
+  return getFns().evolis_pcsc_disconnect(printer, EVOLIS_PCSC_DSP_RESET)
+}
+
+export function evolisPcscReadAtr(printer: unknown, uid: number): Buffer | null {
+  const atrBuf = Buffer.alloc(33)
+  const rc = getFns().evolis_pcsc_read_atr(printer, uid, atrBuf)
+  if (rc !== 0) return null
+  // Find null terminator
+  const nullIdx = atrBuf.indexOf(0)
+  return nullIdx >= 0 ? atrBuf.subarray(0, nullIdx) : atrBuf
 }

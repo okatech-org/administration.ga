@@ -1,11 +1,11 @@
 /**
  * CitizenCallTab — Onglet iAppel pour citoyens.
  *
- * Restrictions métier :
- *   - Audio uniquement (pas de vidéo sortante)
- *   - Appels uniquement vers les lignes d'appel des représentations
+ * Restrictions metier :
+ *   - Audio uniquement (pas de video sortante)
+ *   - Appels uniquement vers les lignes d'appel des representations
  *   - Pas d'appels entre citoyens
- *   - Lignes priorité ≤ 2 → "Urgent", > 2 → "Standard"
+ *   - Lignes priorite <= 2 -> "Urgent", > 2 -> "Standard"
  *
  * Utilise OrgCallButton pattern existant + callLines.listByOrg.
  */
@@ -54,7 +54,7 @@ export function CitizenCallTab() {
 		{},
 	);
 
-	// Mes demandes (pour trouver les orgs associées)
+	// Mes demandes (pour trouver les orgs associees)
 	const { data: myRequests } = useAuthenticatedConvexQuery(
 		api.functions.requests.listMine,
 		{ paginationOpts: { numItems: 20, cursor: null } },
@@ -79,7 +79,7 @@ export function CitizenCallTab() {
 	// ── Lancer un appel audio vers une org/ligne ──
 	const handleCallOrg = useCallback(async (orgId: string, callLineId?: string) => {
 		if (activeMeetingId) {
-			toast.error("Un appel est déjà en cours");
+			toast.error("Un appel est deja en cours");
 			return;
 		}
 		try {
@@ -110,17 +110,17 @@ export function CitizenCallTab() {
 	return (
 		<div className="flex flex-col flex-1 overflow-hidden">
 			<ScrollArea className="flex-1">
-				{/* En-tête */}
+				{/* En-tete */}
 				<div className="px-3 pt-3 pb-2">
-					<p className="text-xs font-semibold">Appeler une représentation</p>
-					<p className="text-[10px] text-muted-foreground">Audio uniquement · Sélectionnez une ligne</p>
+					<p className="text-xs font-semibold">Appeler une representation</p>
+					<p className="text-[10px] text-muted-foreground">Audio uniquement - Selectionnez une ligne</p>
 				</div>
 
 				{/* Lignes d'appel par org */}
 				{orgIds.length === 0 ? (
 					<div className="flex flex-col items-center py-8 text-center px-4">
 						<Phone className="h-8 w-8 text-muted-foreground/20 mb-2" />
-						<p className="text-xs text-muted-foreground">Aucune représentation disponible</p>
+						<p className="text-xs text-muted-foreground">Aucune representation disponible</p>
 						<p className="text-[10px] text-muted-foreground/60 mt-1">
 							Faites une demande de service pour voir les contacts
 						</p>
@@ -142,12 +142,12 @@ export function CitizenCallTab() {
 				{/* Historique d'appels */}
 				<div className="border-t mt-3">
 					<div className="px-3 pt-3 pb-1">
-						<p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Récents</p>
+						<p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Recents</p>
 					</div>
 					{callHistory.length === 0 ? (
 						<div className="flex flex-col items-center py-4 text-center">
 							<Clock className="h-5 w-5 text-muted-foreground/20 mb-1" />
-							<p className="text-[10px] text-muted-foreground">Aucun appel récent</p>
+							<p className="text-[10px] text-muted-foreground">Aucun appel recent</p>
 						</div>
 					) : (
 						<div className="px-3 pb-3 space-y-1">
@@ -166,7 +166,7 @@ export function CitizenCallTab() {
 											<p className="text-[10px] font-medium truncate">{item.title ?? "Appel"}</p>
 											<p className="text-[8px] text-muted-foreground">
 												{date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
-												{duration > 0 && ` · ${duration}min`}
+												{duration > 0 && ` - ${duration}min`}
 											</p>
 										</div>
 									</div>
@@ -184,7 +184,7 @@ export function CitizenCallTab() {
 						<div className="flex flex-col flex-1 bg-zinc-950">
 							<div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0">
 								<div className="flex items-center gap-2">
-									<Badge className="text-[9px] bg-emerald-500/15 text-emerald-400">● En attente</Badge>
+									<Badge className="text-[9px] bg-emerald-500/15 text-emerald-400">En attente</Badge>
 									<span className="text-xs text-zinc-400">Appel audio</span>
 								</div>
 								<Button variant="destructive" size="sm" onClick={handleHangUp} className="h-7 text-[10px] gap-1">
@@ -224,7 +224,7 @@ function OrgCallLines({ orgId, onCall, isCalling, isInCall }: {
 	isCalling: boolean;
 	isInCall: boolean;
 }) {
-	// Données org (public query, pas besoin d'auth)
+	// Donnees org (public query, pas besoin d'auth)
 	const { data: org } = useAuthenticatedConvexQuery(
 		api.functions.orgs.getById,
 		{ orgId },
@@ -251,13 +251,13 @@ function OrgCallLines({ orgId, onCall, isCalling, isInCall }: {
 
 	return (
 		<div className="border rounded-xl p-3 space-y-2">
-			{/* En-tête org */}
+			{/* En-tete org */}
 			<div className="flex items-center gap-2">
 				<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
 					<Phone className="h-4 w-4 text-primary" />
 				</div>
 				<div className="flex-1 min-w-0">
-					<p className="text-xs font-semibold truncate">{(org as any)?.name ?? "Représentation"}</p>
+					<p className="text-xs font-semibold truncate">{(org as any)?.name ?? "Representation"}</p>
 					<p className="text-[9px] text-muted-foreground">{(org as any)?.country}</p>
 				</div>
 			</div>

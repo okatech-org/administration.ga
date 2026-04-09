@@ -1,30 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useConvexAuth } from "convex/react"
 import type Konva from "konva"
+import { CreditCard, FlipHorizontal, File, FileText, Loader2 } from "lucide-react"
 import { useCardDesigner } from "../../hooks/useCardDesigner"
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts"
 import { useDesignPersistence } from "../../hooks/useDesignPersistence"
 import { useOrg } from "../../hooks/useOrg"
-import type { CardElement, ElementType } from "../../lib/card-types"
+import type { CardElement, CardDesign, ElementType } from "../../lib/card-types"
 import { createDefaultElement } from "../../lib/card-types"
 import { canvasToBmp } from "../../lib/bmp-encoder"
 import { SAMPLE_PROFILES, type CitizenProfileData } from "../../lib/dynamic-fields"
+import { DEFAULT_TEMPLATES } from "../../lib/default-card-templates"
 import { DesignerCanvas } from "./DesignerCanvas"
 import { DesignerToolbar } from "./DesignerToolbar"
 import { PropertiesPanel } from "./PropertiesPanel"
-import { DesignListDialog } from "./DesignListDialog"
 import { toast } from "../../lib/toast"
 
 export function CardDesigner() {
   const stageRef = useRef<Konva.Stage>(null)
   const [zoom, setZoom] = useState(0.7)
   const [clipboard, setClipboard] = useState<CardElement | null>(null)
-  const [showDesignList, setShowDesignList] = useState(false)
 
   // Preview mode
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [previewProfile, setPreviewProfile] = useState<CitizenProfileData | null>(
-    SAMPLE_PROFILES[0].data
+    SAMPLE_PROFILES[0].data,
   )
 
   // Auth & org
@@ -47,7 +47,7 @@ export function CardDesigner() {
     canRedo,
   } = useCardDesigner()
 
-  // Convex persistence
+  // Convex persistence (single-design-per-org)
   const persistence = useDesignPersistence(orgId)
 
   // Load design from Convex when selected
@@ -83,7 +83,7 @@ export function CardDesigner() {
       }
       dispatch({ type: "ADD_ELEMENT", element: el })
     },
-    [dispatch]
+    [dispatch],
   )
 
   const handleSave = useCallback(async () => {
@@ -105,6 +105,18 @@ export function CardDesigner() {
       toast.success("Design sauvegardé localement")
     }
   }, [getDesignForSave, isAuthenticated, orgId, persistence])
+
+  // Template picker: create design from template
+  const handleCreateFromTemplate = useCallback(
+    async (template: CardDesign) => {
+      dispatch({ type: "LOAD_DESIGN", design: template })
+      // Save immediately to Convex (creates the design + auto-sets as default)
+      if (isAuthenticated && orgId) {
+        await persistence.saveDesign(template)
+      }
+    },
+    [dispatch, isAuthenticated, orgId, persistence],
+  )
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _handleExportBmp = useCallback(
@@ -136,7 +148,7 @@ export function CardDesigner() {
         toast.success(`BMP ${face} exporté`)
       }
     },
-    [state.activeFace, state.name, dispatch]
+    [state.activeFace, state.name, dispatch],
   )
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -213,8 +225,73 @@ export function CardDesigner() {
     onPaste: handlePaste,
   })
 
+  // --- Loading state ---
+  if (persistence.isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  // --- No design yet: show template picker ---
+  if (!persistence.hasDesign && !persistence.currentDesignId) {
+    const IconMap: Record<string, React.ElementType> = {
+      card: CreditCard,
+      "card-duplex": FlipHorizontal,
+      blank: File,
+    }
+
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="max-w-lg w-full space-y-6">
+          <div className="text-center space-y-2">
+            <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <CreditCard className="h-7 w-7 text-primary" />
+            </div>
+            <h2 className="text-lg font-bold text-foreground">
+              Créer le design de carte
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Choisissez un modèle de départ pour votre organisation. Vous
+              pourrez le personnaliser ensuite.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2">
+            {DEFAULT_TEMPLATES.map((tpl) => {
+              const Icon = IconMap[tpl.icon] || FileText
+              return (
+                <button
+                  key={tpl.id}
+                  onClick={() => handleCreateFromTemplate(tpl.create())}
+                  className="flex items-start gap-4 p-4 rounded-xl border border-border hover:border-primary/30 hover:bg-primary/5 transition-all text-left group"
+                >
+                  <div className="shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-foreground">
+                      {tpl.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                      {tpl.description}
+                    </p>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // --- Normal editor view ---
   const backgroundImage =
-    state.activeFace === "front" ? state.frontBackgroundImage : state.backBackgroundImage
+    state.activeFace === "front"
+      ? state.frontBackgroundImage
+      : state.backBackgroundImage
 
   return (
     <div className="flex flex-col h-full">
@@ -231,8 +308,12 @@ export function CardDesigner() {
         onSetDuplex={(duplex) => dispatch({ type: "SET_DUPLEX", duplex })}
         onAddElement={addElement}
         onAddDynamicField={handleAddDynamicField}
-        onDuplicateElement={() => state.selectedElementId && duplicateElement(state.selectedElementId)}
-        onRemoveElement={() => state.selectedElementId && removeElement(state.selectedElementId)}
+        onDuplicateElement={() =>
+          state.selectedElementId && duplicateElement(state.selectedElementId)
+        }
+        onRemoveElement={() =>
+          state.selectedElementId && removeElement(state.selectedElementId)
+        }
         onUndo={() => dispatch({ type: "UNDO" })}
         onRedo={() => dispatch({ type: "REDO" })}
         onSave={handleSave}
@@ -240,7 +321,6 @@ export function CardDesigner() {
         onTogglePreview={togglePreview}
         previewProfile={previewProfile}
         onSelectPreviewProfile={setPreviewProfile}
-        onOpenDesignList={() => setShowDesignList(true)}
         isConnected={isAuthenticated}
       />
 
@@ -266,10 +346,21 @@ export function CardDesigner() {
             entityId={state.entityId}
             backgroundColor={state.backgroundColor}
             backgroundOpacity={state.backgroundOpacity}
+            backgroundImage={backgroundImage}
+            activeFace={state.activeFace}
             onUpdateElement={updateElement}
-            onMoveLayer={(id, dir) => dispatch({ type: "MOVE_LAYER", id, direction: dir })}
-            onSetBackgroundColor={(color) => dispatch({ type: "SET_BACKGROUND_COLOR", color })}
-            onSetBackgroundOpacity={(opacity) => dispatch({ type: "SET_BACKGROUND_OPACITY", opacity })}
+            onMoveLayer={(id, dir) =>
+              dispatch({ type: "MOVE_LAYER", id, direction: dir })
+            }
+            onSetBackgroundColor={(color) =>
+              dispatch({ type: "SET_BACKGROUND_COLOR", color })
+            }
+            onSetBackgroundOpacity={(opacity) =>
+              dispatch({ type: "SET_BACKGROUND_OPACITY", opacity })
+            }
+            onSetBackgroundImage={(face, dataUrl) =>
+              dispatch({ type: "SET_BACKGROUND_IMAGE", face, image: dataUrl })
+            }
           />
         )}
       </div>
@@ -287,45 +378,6 @@ export function CardDesigner() {
         <span>⌘[/] Ordre</span>
         <span>⌘+/- Zoom</span>
       </div>
-
-      {/* Design list dialog */}
-      <DesignListDialog
-        open={showDesignList}
-        onClose={() => setShowDesignList(false)}
-        designs={persistence.designs as any}
-        currentDesignId={persistence.currentDesignId}
-        isLoading={persistence.isLoading}
-        onLoad={(id) => {
-          persistence.loadDesign(id)
-          setShowDesignList(false)
-        }}
-        onDelete={persistence.deleteDesign}
-        onDuplicate={persistence.duplicateDesign}
-        onNew={() => {
-          persistence.newDesign()
-          dispatch({
-            type: "LOAD_DESIGN",
-            design: {
-              name: "Nouveau design",
-              backgroundColor: "#ffffff",
-              frontBackgroundImage: null,
-              backBackgroundImage: null,
-              backgroundOpacity: 1,
-              frontElements: [],
-              backElements: [],
-              printDuplex: false,
-              magneticTracks: ["", "", ""],
-              version: 1,
-            },
-          })
-          setShowDesignList(false)
-        }}
-        onNewFromTemplate={(design) => {
-          persistence.newDesign()
-          dispatch({ type: "LOAD_DESIGN", design })
-          setShowDesignList(false)
-        }}
-      />
     </div>
   )
 }

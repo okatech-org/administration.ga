@@ -1,6 +1,6 @@
-
-import { Link } from "@tanstack/react-router";
-import { motion, AnimatePresence } from "motion/react";
+import { api } from "@convex/_generated/api";
+import { ServiceCategory } from "@convex/lib/validators";
+import Link from "next/link";
 import {
 	ArrowRight,
 	BookOpenCheck,
@@ -268,10 +268,7 @@ export function ServicesSection() {
 						size="lg"
 						className="h-14 px-8 rounded-full text-base font-semibold"
 					>
-						<Link to="/services">
-							{t("services.viewAll", "Voir tous les services")}
-							<ArrowRight className="w-5 h-5 ml-2" />
-						</Link>
+						<Link href="/services">{t("services.viewAll")}</Link>
 					</Button>
 				</motion.div>
 			</div>

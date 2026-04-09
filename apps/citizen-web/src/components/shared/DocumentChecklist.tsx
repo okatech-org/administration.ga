@@ -148,7 +148,7 @@ export function DocumentChecklist({
 							{t("documents.checklist.required")}
 							{pendingDocs > 0 && (
 								<span className="ml-1 text-amber-600">
-									• {pendingDocs} {t("documents.checklist.pending")}
+									&bull; {pendingDocs} {t("documents.checklist.pending")}
 								</span>
 							)}
 						</CardDescription>

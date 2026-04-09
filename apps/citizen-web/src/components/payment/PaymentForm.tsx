@@ -25,7 +25,7 @@ import {
 import { useConvexActionQuery } from "@/integrations/convex/hooks";
 
 // Initialize Stripe
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface PaymentFormProps {
 	requestId: Id<"requests">;
@@ -114,7 +114,7 @@ function CheckoutForm({
 					<p className="text-sm text-green-600 dark:text-green-500 mt-2">
 						{t(
 							"payment.successDescription",
-							"Votre paiement a été traité avec succès.",
+							"Votre paiement a ete traite avec succes.",
 						)}
 					</p>
 				</CardContent>
@@ -181,7 +181,7 @@ function CheckoutForm({
 					<p className="text-xs text-muted-foreground text-center">
 						{t(
 							"payment.secure",
-							"Paiement sécurisé par Stripe. Vos informations sont protégées.",
+							"Paiement securise par Stripe. Vos informations sont protegees.",
 						)}
 					</p>
 				</CardContent>

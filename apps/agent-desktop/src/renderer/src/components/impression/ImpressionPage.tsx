@@ -8,19 +8,54 @@
  * Header button: Printer config (opens modal for device scan/connect/status)
  */
 
-import { useState } from "react"
+import { Component, useState, useCallback } from "react"
+import type { ReactNode, ErrorInfo } from "react"
 import { useTranslation } from "react-i18next"
-import { ListOrdered, Palette, Printer, Settings2, Wifi, WifiOff } from "lucide-react"
+import { ListOrdered, Palette, Printer, Settings2, Wifi, WifiOff, FileSpreadsheet, AlertTriangle, RefreshCw } from "lucide-react"
 import { motion } from "motion/react"
+import { toast } from "sonner"
 import { usePrinter } from "../../hooks/usePrinter"
-import { usePrintJobExecutor } from "../../hooks/usePrintJobExecutor"
 import { useOrg } from "../../hooks/useOrg"
 import { cn } from "../../lib/utils"
 import { CardDesigner } from "../card-designer/CardDesigner"
-import { PrintQueueContent } from "./PrintQueueContent"
+import { AutoPrintQueueContent } from "./AutoPrintQueueContent"
 import { PrinterConfigDialog } from "./PrinterConfigDialog"
+import { BatchPrintContent } from "./BatchPrintContent"
 
-type Tab = "queue" | "designer"
+// Error boundary to catch Convex query failures (e.g. functions not deployed yet)
+class PrintErrorBoundary extends Component<
+  { children: ReactNode; label: string },
+  { hasError: boolean; error: string }
+> {
+  state = { hasError: false, error: "" }
+  static getDerivedStateFromError(err: Error) {
+    return { hasError: true, error: err.message }
+  }
+  componentDidCatch(err: Error, info: ErrorInfo) {
+    console.error(`[${this.props.label}]`, err, info)
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-muted-foreground">
+          <AlertTriangle className="h-8 w-8 text-orange-500/60" />
+          <p className="text-sm font-medium text-foreground">Erreur de chargement</p>
+          <p className="text-xs text-center max-w-md">{this.state.error}</p>
+          <button
+            onClick={() => this.setState({ hasError: false, error: "" })}
+            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Réessayer
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
+type Tab = "queue" | "designer" | "batch"
 
 export function ImpressionPage() {
   const { t } = useTranslation()
@@ -34,16 +69,48 @@ export function ImpressionPage() {
 
   const isPrinterConnected = !!printer.connectedInfo
 
-  // Print job executor — wires Play button to Evolis
-  const { executeJob } = usePrintJobExecutor({ printer, orgId })
+  // Batch print handler: iterate records, render + print each
+  const handlePrintBatch = useCallback(
+    async (records: Record<string, string>[]) => {
+      const errors: string[] = []
+      for (let i = 0; i < records.length; i++) {
+        try {
+          // Use printCard with field values for each record
+          const result = await window.desktopApi?.printer?.printCard({
+            // TODO: render card from active design + fieldValues
+            // For now, use the printCard API directly
+            frontBuffer: undefined,
+            duplex: false,
+          })
+          if (result && !result.success) {
+            errors.push(`#${i + 1}: ${result.errorMessage}`)
+          }
+        } catch (err) {
+          errors.push(`#${i + 1}: ${String(err)}`)
+        }
+      }
+      if (errors.length > 0) {
+        toast.error(`${errors.length} erreur(s) d'impression`, {
+          description: errors.slice(0, 3).join("\n"),
+        })
+      } else {
+        toast.success(`${records.length} carte(s) imprimée(s)`)
+      }
+    },
+    []
+  )
 
-  const handlePrintJob = async (jobId: string) => {
-    await executeJob(jobId)
-  }
+  // Template fields available for batch mapping
+  // TODO: derive from the active card design's dynamic field keys
+  const templateFields = [
+    "firstName", "lastName", "nip", "cardNumber",
+    "photoUrl", "birthdate", "nationality", "passport",
+  ]
 
   const tabs: { id: Tab; labelKey: string; icon: React.ElementType }[] = [
     { id: "queue", labelKey: "desktop.impression.tabs.queue", icon: ListOrdered },
     { id: "designer", labelKey: "desktop.impression.tabs.designer", icon: Palette },
+    { id: "batch", labelKey: "desktop.impression.tabs.batch", icon: FileSpreadsheet },
   ]
 
   return (
@@ -112,7 +179,7 @@ export function ImpressionPage() {
                 )}
               >
                 <Icon className="h-4 w-4" />
-                {t(tab.labelKey, tab.id === "queue" ? "File d'impression" : "Designer")}
+                {t(tab.labelKey, tab.id === "queue" ? "File d'impression" : tab.id === "designer" ? "Designer" : "Batch")}
               </button>
             )
           })}
@@ -120,14 +187,28 @@ export function ImpressionPage() {
       </div>
 
       {/* Tab content */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
         {activeTab === "queue" && (
-          <PrintQueueContent
-            onPrintJob={handlePrintJob}
+          <PrintErrorBoundary label="PrintQueue">
+            <AutoPrintQueueContent
+              printer={printer}
+              isPrinterConnected={isPrinterConnected}
+              orgId={orgId}
+            />
+          </PrintErrorBoundary>
+        )}
+        {activeTab === "designer" && (
+          <PrintErrorBoundary label="CardDesigner">
+            <CardDesigner />
+          </PrintErrorBoundary>
+        )}
+        {activeTab === "batch" && (
+          <BatchPrintContent
             isPrinterConnected={isPrinterConnected}
+            onPrintBatch={handlePrintBatch}
+            templateFields={templateFields}
           />
         )}
-        {activeTab === "designer" && <CardDesigner />}
       </div>
 
       {/* Printer config modal */}

@@ -3,7 +3,7 @@
  * Manages real-time voice communication with Gemini Live API
  */
 
-import { useRouter } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 import { api } from "@convex/_generated/api";
 import { useConvex } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -30,28 +30,28 @@ const TOOL_DESCRIPTIONS: Record<
   (args: Record<string, unknown>) => string
 > = {
   updateProfile: (a) =>
-    `Mettre à jour votre profil: ${Object.keys(a).join(", ")}`,
-  createRequest: (a) => `Créer une demande pour le service "${a.serviceSlug}"`,
+    `Mettre a jour votre profil: ${Object.keys(a).join(", ")}`,
+  createRequest: (a) => `Creer une demande pour le service "${a.serviceSlug}"`,
   cancelRequest: (a) => `Annuler la demande ${a.requestId}`,
   markNotificationRead: () => "Marquer la notification comme lue",
   markAllNotificationsRead: () => "Marquer toutes les notifications comme lues",
   sendMail: (a) => `Envoyer un courrier: ${a.subject}`,
   markMailRead: () => "Marquer ce courrier comme lu",
-  createAssociation: (a) => `Créer l'association "${a.name}"`,
-  createCompany: (a) => `Créer l'entreprise "${a.name}"`,
+  createAssociation: (a) => `Creer l'association "${a.name}"`,
+  createCompany: (a) => `Creer l'entreprise "${a.name}"`,
   respondToAssociationInvite: (a) =>
-    `${a.accept ? "Accepter" : "Refuser"} l'invitation à l'association`,
-  updateCV: (a) => `Mettre à jour votre CV: ${Object.keys(a).join(", ")}`,
-  addCVExperience: (a) => `Ajouter l'expérience "${a.title}" chez ${a.company}`,
-  addCVEducation: (a) => `Ajouter la formation "${a.degree}" à ${a.school}`,
-  addCVSkill: (a) => `Ajouter la compétence "${a.name}"`,
+    `${a.accept ? "Accepter" : "Refuser"} l'invitation a l'association`,
+  updateCV: (a) => `Mettre a jour votre CV: ${Object.keys(a).join(", ")}`,
+  addCVExperience: (a) => `Ajouter l'experience "${a.title}" chez ${a.company}`,
+  addCVEducation: (a) => `Ajouter la formation "${a.degree}" a ${a.school}`,
+  addCVSkill: (a) => `Ajouter la competence "${a.name}"`,
   addCVLanguage: (a) => `Ajouter la langue "${a.name}" (${a.level})`,
-  improveCVSummary: () => "Améliorer le résumé de votre CV avec l'IA",
-  suggestCVSkills: () => "Suggérer des compétences pour votre CV",
+  improveCVSummary: () => "Ameliorer le resume de votre CV avec l'IA",
+  suggestCVSkills: () => "Suggerer des competences pour votre CV",
   optimizeCV: (a) => `Optimiser votre CV pour: ${a.jobDescription}`,
   generateCoverLetter: (a) =>
-    `Générer une lettre de motivation pour: ${a.jobDescription}`,
-  getCVATSScore: () => "Analyser la compatibilité ATS de votre CV",
+    `Generer une lettre de motivation pour: ${a.jobDescription}`,
+  getCVATSScore: () => "Analyser la compatibilite ATS de votre CV",
 };
 
 type VoiceState =
@@ -137,7 +137,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
       if (toolName === "navigateTo") {
         const route = toolArgs.route as string;
         if (route) {
-          router.navigate({ to: route });
+          router.push(route);
           return { success: true, message: `Navigation vers ${route}` };
         }
         return { success: false, message: "Route manquante" };
@@ -157,7 +157,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
             request: "/requests",
           };
           const route = routeMap[formId] || "/profile";
-          router.navigate({ to: route });
+          router.push(route);
         }
 
         setFormFill({
@@ -165,14 +165,14 @@ export function useVoiceChat(): UseVoiceChatReturn {
           fields,
           timestamp: Date.now(),
         });
-        return { success: true, message: `Formulaire ${formId} pré-rempli` };
+        return { success: true, message: `Formulaire ${formId} pre-rempli` };
       }
       if (toolName === "endVoiceSession") {
         // Set flag — we'll close when Gemini finishes speaking (turnComplete)
         pendingCloseRef.current = true;
         return {
           success: true,
-          message: "Session vocale terminée. Au revoir !",
+          message: "Session vocale terminee. Au revoir !",
         };
       }
       return { success: false, message: "Outil UI inconnu" };
@@ -409,13 +409,13 @@ export function useVoiceChat(): UseVoiceChatReturn {
             const { functionCalls } = data.toolCall;
             if (functionCalls && functionCalls.length > 0) {
               for (const call of functionCalls) {
-                // Check if this is a mutative tool → show confirmation
+                // Check if this is a mutative tool -> show confirmation
                 if ((MUTATIVE_TOOLS as readonly string[]).includes(call.name)) {
                   const descFn = TOOL_DESCRIPTIONS[call.name];
                   const description =
                     descFn ?
                       descFn(call.args || {})
-                    : `Exécuter l'action: ${call.name}`;
+                    : `Executer l'action: ${call.name}`;
                   setPendingConfirmation({
                     toolName: call.name,
                     toolArgs: call.args || {},
@@ -435,7 +435,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
                               response: {
                                 output: {
                                   status: "pending_confirmation",
-                                  message: `Action "${description}" en attente de confirmation par l'utilisateur. Dis-lui que tu as besoin de sa confirmation via le bouton qui s'affiche à l'écran.`,
+                                  message: `Action "${description}" en attente de confirmation par l'utilisateur. Dis-lui que tu as besoin de sa confirmation via le bouton qui s'affiche a l'ecran.`,
                                 },
                               },
                             },
@@ -509,7 +509,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
     } catch (err) {
       console.error("[Voice] Start error:", err);
       setError(
-        err instanceof Error ? err.message : "Erreur de démarrage vocal",
+        err instanceof Error ? err.message : "Erreur de demarrage vocal",
       );
       setState("error");
     }
@@ -603,7 +603,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
                   role: "user",
                   parts: [
                     {
-                      text: `[CONFIRMATION] L'utilisateur a confirmé l'action "${pendingConfirmation.toolName}". Résultat: ${JSON.stringify(result)}. Annonce-lui que c'est fait.`,
+                      text: `[CONFIRMATION] L'utilisateur a confirme l'action "${pendingConfirmation.toolName}". Resultat: ${JSON.stringify(result)}. Annonce-lui que c'est fait.`,
                     },
                   ],
                 },
@@ -624,7 +624,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
                   role: "user",
                   parts: [
                     {
-                      text: `[ERREUR] L'action "${pendingConfirmation.toolName}" a échoué: ${(err as Error).message}. Explique l'erreur à l'utilisateur.`,
+                      text: `[ERREUR] L'action "${pendingConfirmation.toolName}" a echoue: ${(err as Error).message}. Explique l'erreur a l'utilisateur.`,
                     },
                   ],
                 },
@@ -655,7 +655,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
                 role: "user",
                 parts: [
                   {
-                    text: `[ANNULATION] L'utilisateur a annulé l'action "${pendingConfirmation.toolName}". Informe-le que l'action a été annulée.`,
+                    text: `[ANNULATION] L'utilisateur a annule l'action "${pendingConfirmation.toolName}". Informe-le que l'action a ete annulee.`,
                   },
                 ],
               },

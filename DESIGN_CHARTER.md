@@ -3,7 +3,7 @@
 > **Version:** 1.0
 > **Derniere mise a jour:** 2026-04-06
 > **Reference vivante:** Page `/my-space` du citizen-web
-> **Fichiers sources:** `packages/ui/src/styles/globals.css` | `apps/citizen-web/src/styles.css`
+> **Fichiers sources:** `packages/ui/src/styles/globals.css` | `apps/citizen-web/src/app/globals.css`
 
 ---
 

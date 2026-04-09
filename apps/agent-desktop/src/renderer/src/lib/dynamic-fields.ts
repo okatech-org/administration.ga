@@ -203,6 +203,46 @@ export function resolveFieldValue(
 }
 
 // --------------------------------------------------------------------------
+// Build CitizenProfileData from enriched registration (getReadyForPrint)
+// --------------------------------------------------------------------------
+
+function formatTimestamp(ts?: number): string | undefined {
+  if (!ts) return undefined
+  return new Date(ts).toLocaleDateString("fr-FR")
+}
+
+/**
+ * Convert an enriched registration (from getReadyForPrint / getRecentlyPrinted)
+ * into a CitizenProfileData for card rendering.
+ */
+export function buildProfileDataFromRegistration(reg: {
+  profile?: { identity?: any; passportInfo?: any } | null
+  user?: { photoUrl?: string | null } | null
+  org?: { name?: string; city?: string; country?: string } | null
+  cardNumber?: string
+  cardIssuedAt?: number
+  cardExpiresAt?: number
+}): CitizenProfileData {
+  const identity = reg.profile?.identity
+  return {
+    firstName: identity?.firstName,
+    lastName: identity?.lastName,
+    dateOfBirth: identity?.dateOfBirth,
+    placeOfBirth: identity?.placeOfBirth,
+    nationality: identity?.nationality,
+    sex: identity?.sex,
+    nip: identity?.nip,
+    photoUrl: reg.user?.photoUrl ?? undefined,
+    cardNumber: reg.cardNumber,
+    cardIssuedAt: formatTimestamp(reg.cardIssuedAt),
+    cardExpiresAt: formatTimestamp(reg.cardExpiresAt),
+    consulateName: reg.org?.name,
+    consulateCity: reg.org?.city,
+    consulateCountry: reg.org?.country,
+  }
+}
+
+// --------------------------------------------------------------------------
 // Sample profiles for preview mode — sourced from entity definitions
 // --------------------------------------------------------------------------
 

@@ -2,8 +2,8 @@ import {
 	DetailedDocumentType,
 	FormFieldType,
 	ServiceCategory,
-} from "/lib/constants";
-import type { FormDocument, FormSection } from "/lib/validators";
+} from "@convex/lib/constants";
+import type { FormDocument, FormSection } from "@convex/lib/validators";
 
 export interface FormTemplate {
 	id: string;
@@ -1854,70 +1854,46 @@ export const formTemplates: FormTemplate[] = [
 					},
 				],
 			},
-			// ── Section 7 : Contact d'urgence (résidence) ──
+			// ── Section 7 : Contacts d'urgence ──
 			{
-				id: "emergency_residence",
+				id: "emergency_contacts",
 				title: {
-					fr: "Contact d'urgence (résidence)",
-					en: "Emergency Contact (Residence)",
+					fr: "Contacts d'urgence",
+					en: "Emergency Contacts",
+				},
+				description: {
+					fr: "Au moins un contact d'urgence est requis. Idéalement un contact dans votre pays de résidence et un au Gabon.",
+					en: "At least one emergency contact is required. Ideally one in your country of residence and one in Gabon.",
 				},
 				fields: [
 					{
-						id: "emergency_residence_last_name",
+						id: "last_name",
 						type: FormFieldType.Text,
 						label: { fr: "Nom", en: "Last Name" },
 						required: true,
 					},
 					{
-						id: "emergency_residence_first_name",
+						id: "first_name",
 						type: FormFieldType.Text,
 						label: { fr: "Prénom", en: "First Name" },
 						required: true,
 					},
 					{
-						id: "emergency_residence_phone",
+						id: "phone",
 						type: FormFieldType.Phone,
 						label: { fr: "Téléphone", en: "Phone" },
 						required: true,
 					},
 					{
-						id: "emergency_residence_email",
+						id: "email",
 						type: FormFieldType.Email,
 						label: { fr: "Email", en: "Email" },
 						required: false,
 					},
-				],
-			},
-			// ── Section 8 : Contact d'urgence (pays d'origine) ──
-			{
-				id: "emergency_homeland",
-				title: {
-					fr: "Contact d'urgence (au Gabon)",
-					en: "Emergency Contact (in Gabon)",
-				},
-				fields: [
 					{
-						id: "emergency_homeland_last_name",
-						type: FormFieldType.Text,
-						label: { fr: "Nom", en: "Last Name" },
-						required: true,
-					},
-					{
-						id: "emergency_homeland_first_name",
-						type: FormFieldType.Text,
-						label: { fr: "Prénom", en: "First Name" },
-						required: true,
-					},
-					{
-						id: "emergency_homeland_phone",
-						type: FormFieldType.Phone,
-						label: { fr: "Téléphone", en: "Phone" },
-						required: true,
-					},
-					{
-						id: "emergency_homeland_email",
-						type: FormFieldType.Email,
-						label: { fr: "Email", en: "Email" },
+						id: "country",
+						type: FormFieldType.Country,
+						label: { fr: "Pays", en: "Country" },
 						required: false,
 					},
 				],

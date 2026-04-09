@@ -2,7 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import { PostCategory } from "@convex/lib/constants";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -64,9 +64,8 @@ function FeaturedPost({ post }: { post: Post }) {
 
 	return (
 		<Link
-			to="/news/$slug"
-			params={{ slug: post.slug }}
-			className="group relative block h-full bg-card rounded-[10px] overflow-hidden border border-border hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-300"
+			href={`/news/${post.slug}`}
+			className="group relative block h-full bg-card rounded-2xl overflow-hidden border hover:shadow-xl transition-all duration-300"
 		>
 			<div className="grid md:grid-cols-2 gap-0 h-full">
 				{/* Image */}
@@ -145,9 +144,8 @@ function FeaturedPost({ post }: { post: Post }) {
 function SmallPost({ post }: { post: Post }) {
 	return (
 		<Link
-			to="/news/$slug"
-			params={{ slug: post.slug }}
-			className="group block bg-card rounded-[10px] overflow-hidden border border-border hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-300"
+			href={`/news/${post.slug}`}
+			className="group block bg-card rounded-xl overflow-hidden border hover:shadow-lg transition-all duration-300"
 		>
 			<div className="aspect-video overflow-hidden bg-muted">
 				{post.coverImageUrl ? (
@@ -228,8 +226,8 @@ export function NewsSection() {
 						</h2>
 						<p className="text-lg text-muted-foreground">{t("home.news.subtitle")}</p>
 					</div>
-					<Button variant="outline" size="lg" asChild className="hidden sm:flex rounded-full">
-						<Link to="/news">
+					<Button variant="outline" asChild className="hidden sm:flex">
+						<Link href="/news">
 							{t("home.news.viewAll")}
 							<ArrowRight className="ml-1 h-4 w-4" />
 						</Link>
@@ -304,8 +302,8 @@ export function NewsSection() {
 
 				{/* Mobile CTA */}
 				<div className="sm:hidden text-center">
-					<Button variant="outline" size="lg" className="rounded-full" asChild>
-						<Link to="/news">
+					<Button variant="outline" asChild>
+						<Link href="/news">
 							{t("home.news.viewAll")}
 							<ArrowRight className="ml-1 h-4 w-4" />
 						</Link>
