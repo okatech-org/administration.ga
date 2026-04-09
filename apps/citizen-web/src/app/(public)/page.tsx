@@ -1,40 +1,38 @@
 "use client"
 
-import dynamic from "next/dynamic"
-import { Suspense, useRef } from "react"
+import { useRef } from "react"
 import { Hero } from "@/components/home/Hero"
-import { ProfilesSection } from "@/components/home/ProfilesSection"
 import { ServicesSection } from "@/components/home/ServicesSection"
 import { NewsSection } from "@/components/home/NewsSection"
 import { WhySection } from "@/components/home/WhySection"
-import { CTASection } from "@/components/home/CTASection"
 import { GuidesPreviewSection } from "@/components/home/GuidesPreviewSection"
-
-const WorldMapSection = dynamic(
-  () =>
-    import("@/components/home/WorldMapSection").then((m) => ({
-      default: m.WorldMapSection,
-    })),
-  { ssr: false },
-)
+import { TestimonialsSection } from "@/components/home/TestimonialsSection"
 
 export default function HomePage() {
   const servicesRef = useRef<HTMLDivElement>(null)
 
   return (
     <div className="min-h-dvh bg-background">
+      {/* Hero Section — mots rotatifs animés */}
       <Hero />
-      <ProfilesSection />
+
+      {/* Services Section — accordion interactif */}
       <div ref={servicesRef}>
         <ServicesSection />
       </div>
-      <NewsSection />
+
+      {/* Guides Section — tabs personnalisés */}
       <GuidesPreviewSection />
-      <Suspense fallback={<div className="h-[500px]" />}>
-        <WorldMapSection />
-      </Suspense>
+
+      {/* Testimonials Section — témoignages auto-rotatifs */}
+      <TestimonialsSection />
+
+      {/* News Section — actualités */}
+      <NewsSection />
+
+      {/* About Section — grille bento + stats KPI */}
       <WhySection />
-      <CTASection />
     </div>
   )
 }
+

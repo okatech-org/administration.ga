@@ -10,10 +10,8 @@ import {
   ChevronDown,
   FileText,
   Globe,
-  GraduationCap,
   Menu,
   Newspaper,
-  Users,
   X,
 } from "lucide-react"
 import { useState } from "react"
@@ -45,9 +43,6 @@ export default function Header() {
     { label: t("header.nav.worldNetwork"), href: "/reps", icon: Globe },
     { label: t("header.nav.news"), href: "/news", icon: Newspaper },
     { label: t("header.nav.resources", "Ressources"), href: "/ressources", icon: BookOpen },
-    { label: t("header.nav.information"), href: "/information", icon: FileText },
-    { label: t("header.nav.academy"), href: "/academy", icon: GraduationCap },
-    { label: t("header.nav.community"), href: "/community", icon: Users },
   ]
 
   const isActive = (href: string) => pathname.startsWith(href)
