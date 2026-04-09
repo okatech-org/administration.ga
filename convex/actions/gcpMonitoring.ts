@@ -96,7 +96,25 @@ async function fetchCloudRunStatusForService(serviceName: string) {
 
 async function fetchAllCloudRunStatuses() {
   return Promise.all(
-    CLOUD_RUN_SERVICES.map((s) => fetchCloudRunStatusForService(s)),
+    CLOUD_RUN_SERVICES.map(async (s) => {
+      try {
+        return await fetchCloudRunStatusForService(s);
+      } catch (err: any) {
+        // Retourne un état dégradé si GCP refuse l'accès (403, 404, etc.)
+        return {
+          name: s,
+          uri: "",
+          latestRevision: "unknown",
+          isReady: false,
+          conditions: [],
+          createTime: null,
+          updateTime: null,
+          ingress: "",
+          launchStage: "",
+          error: err?.message ?? String(err),
+        };
+      }
+    }),
   );
 }
 
@@ -104,27 +122,45 @@ async function fetchAllCloudRunStatuses() {
 
 async function fetchVmStatus() {
   const url = `https://compute.googleapis.com/compute/v1/projects/${PROJECT_ID}/zones/${ZONE}/instances/${LIVEKIT_VM}`;
-  const data = await fetchWithAuth(url);
 
-  const networkInterface = data.networkInterfaces?.[0];
-  const externalIp =
-    networkInterface?.accessConfigs?.[0]?.natIP || "No external IP";
+  try {
+    const data = await fetchWithAuth(url);
 
-  return {
-    name: LIVEKIT_VM,
-    status: data.status,
-    machineType: data.machineType?.split("/").pop() || "unknown",
-    zone: ZONE,
-    externalIp,
-    creationTimestamp: data.creationTimestamp,
-    lastStartTimestamp: data.lastStartTimestamp || null,
-    cpuPlatform: data.cpuPlatform || "",
-    disks: (data.disks || []).map((d: any) => ({
-      name: d.source?.split("/").pop() || "",
-      sizeGb: d.diskSizeGb,
-      type: d.type,
-    })),
-  };
+    const networkInterface = data.networkInterfaces?.[0];
+    const externalIp =
+      networkInterface?.accessConfigs?.[0]?.natIP || "No external IP";
+
+    return {
+      name: LIVEKIT_VM,
+      status: data.status,
+      machineType: data.machineType?.split("/").pop() || "unknown",
+      zone: ZONE,
+      externalIp,
+      creationTimestamp: data.creationTimestamp,
+      lastStartTimestamp: data.lastStartTimestamp || null,
+      cpuPlatform: data.cpuPlatform || "",
+      disks: (data.disks || []).map((d: any) => ({
+        name: d.source?.split("/").pop() || "",
+        sizeGb: d.diskSizeGb,
+        type: d.type,
+      })),
+    };
+  } catch (err: any) {
+    // Graceful degradation — SA may lack compute.instances.get permission
+    console.warn(`[GCP Monitoring] LiveKit VM fetch failed: ${err?.message ?? err}`);
+    return {
+      name: LIVEKIT_VM,
+      status: "UNKNOWN",
+      machineType: "unknown",
+      zone: ZONE,
+      externalIp: "",
+      creationTimestamp: null,
+      lastStartTimestamp: null,
+      cpuPlatform: "",
+      disks: [],
+      error: err?.message ?? String(err),
+    };
+  }
 }
 
 // ─── Cloud Monitoring Metrics ────────────────────────────────
@@ -244,7 +280,7 @@ export const fetchInfrastructureHealth = action({
       return cache.data;
     }
 
-    // Fetch all data in parallel
+    // Fetch all data in parallel — erreurs GCP gérées individuellement
     const [cloudRunStatuses, vmStatus, cloudRunMetricsMap, vmMetrics] =
       await Promise.all([
         fetchAllCloudRunStatuses(),
@@ -369,7 +405,13 @@ export const fetchLogs = action({
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Cloud Logging API error (${response.status}): ${errorText}`);
+      // Dégradation gracieuse — le SA n'a peut-être pas roles/logging.viewer
+      console.warn(`[GCP Monitoring] Cloud Logging API error (${response.status}): ${errorText}`);
+      return {
+        entries: [],
+        totalCount: 0,
+        error: `Cloud Logging API error (${response.status}): Permission denied. Le service account a besoin du rôle "Logs Viewer" (roles/logging.viewer).`,
+      };
     }
 
     const data = await response.json();

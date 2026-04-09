@@ -3,21 +3,25 @@
  */
 
 import { api } from "@convex/_generated/api";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   BookOpen,
-  Plus,
   Sparkles,
   Loader2,
   CheckCircle2,
   Clock,
   AlertCircle,
   XCircle,
+  Mail,
+  RefreshCw,
+  FileText,
 } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
 import { AIActionButton } from "@/components/diplomatic/AIActionPanel";
+import {
+  useConvexMutationQuery,
+} from "@/integrations/convex/hooks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,6 +70,20 @@ function PlansPhase() {
     api.functions.diplomaticAffairs.listPlans,
     activeOrgId ? { orgId: activeOrgId } : "skip",
   );
+
+  const regenerateDocs = useConvexMutationQuery(
+    api.functions.diplomaticAffairs.regeneratePlanDocuments,
+  );
+
+  const handleRegenerate = async (planId: string) => {
+    try {
+      await regenerateDocs.mutateAsync({ planId: planId as Parameters<typeof regenerateDocs.mutateAsync>[0]["planId"] });
+      toast.success("Generation des documents lancee — ils apparaitront dans le dossier iDocument");
+    } catch (error) {
+      toast.error("Erreur lors de la regeneration des documents");
+      console.error(error);
+    }
+  };
 
   if (isPending) {
     return (
@@ -137,7 +155,7 @@ function PlansPhase() {
                           {plan.aiGeneratedContent.countryNeeds
                             .slice(0, 3)
                             .map((n, i) => (
-                              <li key={i}>• {n}</li>
+                              <li key={i}>• {typeof n === "string" ? n : (n as { title?: string }).title ?? JSON.stringify(n)}</li>
                             ))}
                         </ul>
                       </div>
@@ -147,7 +165,7 @@ function PlansPhase() {
                           {plan.aiGeneratedContent.mutualBenefits
                             .slice(0, 3)
                             .map((b, i) => (
-                              <li key={i}>• {b}</li>
+                              <li key={i}>• {typeof b === "string" ? b : (b as { title?: string }).title ?? JSON.stringify(b)}</li>
                             ))}
                         </ul>
                       </div>
@@ -184,9 +202,39 @@ function PlansPhase() {
                 {plan.objectives.length === 0 &&
                   !plan.aiGeneratedContent && (
                     <p className="text-xs text-muted-foreground italic">
-                      Aucun objectif défini
+                      Aucun objectif defini
                     </p>
                   )}
+
+                {/* CTAs : Actions sur le plan */}
+                {plan.targetId && (
+                  <div className="flex gap-2 mt-1">
+                    <Link
+                      to="/affaires-diplomatiques/lettres"
+                      search={{ targetId: plan.targetId, planId: plan._id }}
+                      className="flex-1"
+                    >
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-1.5 text-xs"
+                      >
+                        <Mail className="h-3.5 w-3.5" />
+                        Rediger une lettre
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-xs"
+                      onClick={() => handleRegenerate(plan._id)}
+                      title="Generer le document Word dans iDocument"
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      Générer le .docx
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

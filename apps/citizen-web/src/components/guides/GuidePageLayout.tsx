@@ -1,5 +1,5 @@
 import { api } from "@convex/_generated/api";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { ArrowLeft, ArrowRight, BookOpen } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -162,7 +162,7 @@ export function GuidePageLayout({ type }: GuidePageLayoutProps) {
             {t("guides.notAvailableDesc", "Ce guide n'est pas encore disponible pour votre pays de residence. Consultez les autres ressources disponibles.")}
           </p>
           <Button asChild className="mt-6">
-            <Link to="/ressources">{t("guides.seeRessources", "Voir les ressources")}</Link>
+            <Link href="/ressources">{t("guides.seeRessources", "Voir les ressources")}</Link>
           </Button>
         </div>
       ) : (
@@ -216,7 +216,7 @@ export function GuidePageLayout({ type }: GuidePageLayoutProps) {
               {/* CTA retour */}
               <div className="text-center pt-8 pb-4">
                 <Button asChild variant="outline" size="lg" className="gap-2">
-                  <Link to="/ressources">
+                  <Link href="/ressources">
                     {t("guides.seeAllGuides", "Consulter les autres guides")}
                     <ArrowRight className="h-4 w-4" />
                   </Link>

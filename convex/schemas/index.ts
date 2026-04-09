@@ -7,7 +7,7 @@ export { orgServicesTable } from "./orgServices";
 export { profilesTable } from "./profiles";
 export { requestsTable } from "./requests";
 export { eventsTable } from "./events";
-export { documentsTable } from "./documents";
+export { documentsTable, documentFoldersTable } from "./documents";
 export { postsTable } from "./posts";
 export { conversationsTable } from "./conversations";
 export { formTemplatesTable } from "./formTemplates";
@@ -88,3 +88,4 @@ export {
 
 export { ipThreatScoresTable } from "./ipThreatScores";
 export { guidesTable } from "./guides";
+export { archivePoliciesTable, archiveAuditLogTable } from "./archivePolicies";

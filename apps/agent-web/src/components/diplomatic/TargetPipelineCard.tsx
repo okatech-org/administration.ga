@@ -13,13 +13,19 @@ import {
   MapPin,
   ArrowRight,
   Sparkles,
+  Archive,
+  User,
+  Briefcase,
+  Loader2,
+  Mail,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -82,12 +88,30 @@ interface TargetData {
   matchReason?: string;
 }
 
+// Configuration des actions par phase
+const PHASE_ACTION_CONFIG: Record<
+  string,
+  { label: string; icon: LucideIcon }
+> = {
+  strategy: { label: "Rediger une lettre", icon: Mail },
+  outreach: { label: "Compiler un rapport", icon: BarChart3 },
+  reporting: { label: "Structurer un projet", icon: Briefcase },
+};
+
 export function TargetPipelineCard({
   target,
   showPhase = true,
+  onArchive,
+  onGenerateStrategy,
+  isGeneratingStrategy,
+  onPhaseAction,
 }: {
   target: TargetData;
   showPhase?: boolean;
+  onArchive?: (targetId: Id<"diplomaticTargets">) => void;
+  onGenerateStrategy?: (targetId: Id<"diplomaticTargets">) => void;
+  isGeneratingStrategy?: boolean;
+  onPhaseAction?: (targetId: Id<"diplomaticTargets">, phase: string) => void;
 }) {
   const st = TARGET_STATUS[target.status] ?? TARGET_STATUS.identified;
   const tp = TARGET_TYPE[target.type] ?? TARGET_TYPE.other;
@@ -103,46 +127,79 @@ export function TargetPipelineCard({
       className="block"
     >
       <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-        <CardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <TpIcon className="h-4 w-4 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <CardTitle className="text-sm truncate">{target.name}</CardTitle>
-                <CardDescription className="text-[10px]">
-                  {tp.label}
-                  {target.sector && ` • ${target.sector}`}
-                </CardDescription>
-              </div>
+        <CardHeader className="pb-2 space-y-1.5">
+          {/* Ligne 1 : Icone + Nom + Bouton archive */}
+          <div className="flex items-start gap-2">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <TpIcon className="h-4 w-4 text-primary" />
             </div>
-            <div className="flex items-center gap-1 shrink-0">
-              {showPhase && phase && (
-                <Badge className={cn("text-[9px]", phase.color)}>
-                  {phase.label}
-                </Badge>
-              )}
-              <Badge className={cn("text-[9px]", st.color)}>{st.label}</Badge>
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-sm font-medium line-clamp-2 leading-tight">
+                {target.name}
+              </CardTitle>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {tp.label}
+              </p>
             </div>
+            {onArchive && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10"
+                title="Archiver cette cible"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onArchive(target._id);
+                }}
+              >
+                <Archive className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+          {/* Ligne 2 : Badges phase + statut */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {showPhase && phase && (
+              <Badge className={cn("text-[9px]", phase.color)}>
+                {phase.label}
+              </Badge>
+            )}
+            <Badge className={cn("text-[9px]", st.color)}>{st.label}</Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {target.country && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              {target.city ? `${target.city}, ${target.country}` : target.country}
-            </div>
-          )}
-          {target.contactName && (
-            <p className="text-xs text-muted-foreground">
-              Contact : {target.contactName}
-            </p>
-          )}
+
+        <CardContent className="space-y-2.5">
+          {/* Section metadata structuree */}
+          <div className="space-y-1">
+            {target.sector && (
+              <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                <Briefcase className="h-3 w-3 shrink-0 mt-0.5" />
+                <span className="line-clamp-2">{target.sector}</span>
+              </div>
+            )}
+            {target.country && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <MapPin className="h-3 w-3 shrink-0" />
+                {target.city
+                  ? `${target.city}, ${target.country}`
+                  : target.country}
+              </div>
+            )}
+            {target.contactName && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <User className="h-3 w-3 shrink-0" />
+                Contact : {target.contactName}
+              </div>
+            )}
+          </div>
+
+          {/* Section AI insight */}
           {target.matchReason && (
-            <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-              <Sparkles className="h-3 w-3 text-primary shrink-0 mt-0.5" />
-              <span className="line-clamp-2">{target.matchReason}</span>
+            <div className="rounded-lg bg-primary/5 p-2">
+              <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                <Sparkles className="h-3 w-3 text-primary shrink-0 mt-0.5" />
+                <span className="line-clamp-3">{target.matchReason}</span>
+              </div>
             </div>
           )}
           {target.description && !target.matchReason && (
@@ -150,6 +207,8 @@ export function TargetPipelineCard({
               {target.description}
             </p>
           )}
+
+          {/* Footer : priorite + score + tags */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 flex-wrap">
               <Badge
@@ -171,6 +230,55 @@ export function TargetPipelineCard({
             </div>
             <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/0 group-hover:text-muted-foreground transition-colors" />
           </div>
+
+          {/* CTA : Generer plan strategique (phase targeting uniquement) */}
+          {target.pipelinePhase === "targeting" && onGenerateStrategy && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-1.5 text-xs"
+              disabled={isGeneratingStrategy}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onGenerateStrategy(target._id);
+              }}
+            >
+              {isGeneratingStrategy ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              {isGeneratingStrategy
+                ? "Elaboration en cours..."
+                : "Generer plan strategique"}
+            </Button>
+          )}
+
+          {/* CTA : Actions pour les phases suivantes */}
+          {target.pipelinePhase &&
+            target.pipelinePhase !== "targeting" &&
+            target.pipelinePhase !== "project" &&
+            onPhaseAction &&
+            PHASE_ACTION_CONFIG[target.pipelinePhase] && (() => {
+              const actionConfig = PHASE_ACTION_CONFIG[target.pipelinePhase!];
+              const ActionIcon = actionConfig.icon;
+              return (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-1.5 text-xs"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onPhaseAction(target._id, target.pipelinePhase!);
+                  }}
+                >
+                  <ActionIcon className="h-3.5 w-3.5" />
+                  {actionConfig.label}
+                </Button>
+              );
+            })()}
         </CardContent>
       </Card>
     </Link>

@@ -1,3 +1,5 @@
+"use client"
+
 import { api } from "@convex/_generated/api";
 import { ServiceCategory } from "@convex/lib/validators";
 import Link from "next/link";
@@ -11,6 +13,7 @@ import {
 	Shield,
 	ShieldAlert,
 } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 

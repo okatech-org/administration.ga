@@ -9,7 +9,6 @@ import type { Id } from "@convex/_generated/dataModel";
 import {
   FolderOpen,
   FileText,
-  FileSpreadsheet,
   Download,
   Loader2,
   Presentation,
@@ -20,7 +19,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
-import { cn } from "@/lib/utils";
 import { ExportZipButton } from "./ExportZipButton";
 
 // Icône par format
@@ -146,38 +144,44 @@ export function FolderExplorer({
                     key={doc._id}
                     className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/30 transition-colors group"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <FormatIcon format={doc.format} />
-                      <span className="text-xs truncate max-w-[280px]">
-                        {doc.filename}
-                      </span>
+                      <div className="min-w-0 flex-1">
+                        <span
+                          className="text-xs truncate block max-w-[280px]"
+                          title={doc.filename}
+                        >
+                          {doc.filename}
+                        </span>
+                        {/* Metadata toujours visible (important pour mobile) */}
+                        <span className="text-[10px] text-muted-foreground">
+                          {formatSize(doc.sizeBytes)} · {formatDate(doc.generatedAt)}
+                        </span>
+                      </div>
                       {doc.version > 1 && (
-                        <Badge variant="outline" className="text-[8px]">
+                        <Badge variant="outline" className="text-[8px] shrink-0">
                           v{doc.version}
                         </Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-muted-foreground hidden group-hover:inline">
-                        {formatSize(doc.sizeBytes)} · {formatDate(doc.generatedAt)}
-                      </span>
-                      {doc.url && (
-                        <a
-                          href={doc.url}
-                          download={doc.filename}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                    {doc.url && (
+                      <a
+                        href={doc.url}
+                        download={doc.filename}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 ml-2"
+                      >
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          aria-label={`Télécharger ${doc.filename}`}
                         >
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <Download className="h-3 w-3" />
-                          </Button>
-                        </a>
-                      )}
-                    </div>
+                          <Download className="h-3 w-3" />
+                        </Button>
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>

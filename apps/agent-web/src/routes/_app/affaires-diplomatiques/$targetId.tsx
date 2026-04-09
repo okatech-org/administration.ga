@@ -7,7 +7,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
   Target,
@@ -20,22 +20,16 @@ import {
   Globe2,
   Building2,
   FileText,
-  ExternalLink,
   CheckCircle2,
   Clock,
   FolderOpen,
+  ArrowRight,
+  BarChart3,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useOrg } from "@/components/org/org-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 import { FolderExplorer } from "@/components/diplomatic/FolderExplorer";
@@ -46,44 +40,86 @@ export const Route = createFileRoute(
   component: TargetPipelineDetail,
 });
 
+// Couleurs mappees vers les tokens du design system (voir DESIGN_CHARTER.md)
+// 4 accents autorisees : primary (bleu), success (vert), warning (amber), destructive (rose)
 const PHASE_CONFIG: Record<
   string,
   { label: string; color: string; bg: string; icon: typeof Target }
 > = {
   targeting: {
     label: "Ciblage",
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
+    color: "text-primary",
+    bg: "bg-primary/10",
     icon: Target,
   },
   strategy: {
     label: "Stratégie",
-    color: "text-amber-500",
-    bg: "bg-amber-500/10",
+    color: "text-warning",
+    bg: "bg-warning/10",
     icon: BookOpen,
   },
   outreach: {
     label: "Contact",
-    color: "text-cyan-500",
-    bg: "bg-cyan-500/10",
+    color: "text-success",
+    bg: "bg-success/10",
     icon: Mail,
   },
   reporting: {
     label: "Rapport",
-    color: "text-violet-500",
-    bg: "bg-violet-500/10",
+    color: "text-destructive",
+    bg: "bg-destructive/10",
     icon: FileText,
   },
   project: {
     label: "Projet",
-    color: "text-emerald-500",
-    bg: "bg-emerald-500/10",
+    color: "text-primary",
+    bg: "bg-primary/10",
     icon: Briefcase,
+  },
+};
+
+// Configuration des actions par phase
+const PHASE_ACTIONS: Record<
+  string,
+  { label: string; nextLabel: string; icon: typeof Mail; route: string; color: string; bg: string }
+> = {
+  targeting: {
+    label: "Phase Ciblage",
+    nextLabel: "Generer un plan strategique",
+    icon: BookOpen,
+    route: "/affaires-diplomatiques/cibles",
+    color: "text-primary",
+    bg: "bg-primary/10",
+  },
+  strategy: {
+    label: "Phase Strategie",
+    nextLabel: "Rediger une lettre de contact",
+    icon: Mail,
+    route: "/affaires-diplomatiques/lettres",
+    color: "text-success",
+    bg: "bg-success/10",
+  },
+  outreach: {
+    label: "Phase Contact",
+    nextLabel: "Compiler un rapport d'activite",
+    icon: BarChart3,
+    route: "/affaires-diplomatiques/rapports",
+    color: "text-destructive",
+    bg: "bg-destructive/10",
+  },
+  reporting: {
+    label: "Phase Rapport",
+    nextLabel: "Structurer un projet de cooperation",
+    icon: Briefcase,
+    route: "/affaires-diplomatiques/projets",
+    color: "text-primary",
+    bg: "bg-primary/10",
   },
 };
 
 function TargetPipelineDetail() {
   const { targetId } = Route.useParams();
+  const navigate = useNavigate();
 
   const { data: pipeline, isPending } = useAuthenticatedConvexQuery(
     api.functions.diplomaticAffairs.getTargetPipeline,
@@ -177,9 +213,59 @@ function TargetPipelineDetail() {
         </div>
       </motion.div>
 
+      {/* Bandeau action : prochaine etape du pipeline */}
+      {target.pipelinePhase &&
+        target.pipelinePhase !== "project" &&
+        PHASE_ACTIONS[target.pipelinePhase] && (
+          <motion.div
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.1 }}
+          >
+            {(() => {
+              const action = PHASE_ACTIONS[target.pipelinePhase!];
+              const ActionIcon = action.icon;
+              return (
+                <Card className="border-dashed border-primary/30 bg-primary/5">
+                  <CardContent className="flex items-center gap-3 py-3">
+                    <div
+                      className={cn(
+                        "h-9 w-9 rounded-lg flex items-center justify-center shrink-0",
+                        action.bg,
+                      )}
+                    >
+                      <ActionIcon className={cn("h-4.5 w-4.5", action.color)} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium">Prochaine etape</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {action.nextLabel}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="gap-1.5 text-xs shrink-0"
+                      onClick={() => {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        void navigate({
+                          to: action.route,
+                          search: { targetId: target._id },
+                        } as any);
+                      }}
+                    >
+                      {action.nextLabel.split(" ").slice(0, 2).join(" ")}
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+          </motion.div>
+        )}
+
       {/* Timeline du pipeline */}
       <div className="space-y-4">
-        {/* Plans stratégiques liés */}
+        {/* Plans strategiques lies */}
         <TimelineSection
           title="Plans Stratégiques"
           icon={BookOpen}

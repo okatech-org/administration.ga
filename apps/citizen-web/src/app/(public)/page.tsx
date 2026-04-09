@@ -8,6 +8,7 @@ import { ServicesSection } from "@/components/home/ServicesSection"
 import { NewsSection } from "@/components/home/NewsSection"
 import { WhySection } from "@/components/home/WhySection"
 import { CTASection } from "@/components/home/CTASection"
+import { GuidesPreviewSection } from "@/components/home/GuidesPreviewSection"
 
 const WorldMapSection = dynamic(
   () =>
@@ -28,6 +29,7 @@ export default function HomePage() {
         <ServicesSection />
       </div>
       <NewsSection />
+      <GuidesPreviewSection />
       <Suspense fallback={<div className="h-[500px]" />}>
         <WorldMapSection />
       </Suspense>

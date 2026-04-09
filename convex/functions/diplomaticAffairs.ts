@@ -6,12 +6,14 @@
  */
 
 import { v } from "convex/values";
+import { internalMutation as rawInternalMutation } from "../_generated/server";
 import { authMutation, authQuery, superadminMutation, superadminQuery } from "../lib/customFunctions";
 import {
   pipelinePhaseValidator,
   targetTypeValidator,
   targetStatusValidator,
   priorityValidator,
+  strategicAnalysisValidator,
 } from "../schemas/diplomaticAffairs";
 import { internal } from "../_generated/api";
 
@@ -35,8 +37,209 @@ export const listTargets = authQuery({
     return await ctx.db
       .query("diplomaticTargets")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
-      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("deletedAt"), undefined),
+          q.eq(q.field("archivedAt"), undefined),
+        ),
+      )
       .collect();
+  },
+});
+
+/** Liste les cibles archivées par la représentation (pas supprimées) */
+export const listArchivedTargets = authQuery({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("diplomaticTargets")
+      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .filter((q) =>
+        q.and(
+          q.neq(q.field("archivedAt"), undefined),
+          q.eq(q.field("deletedAt"), undefined),
+        ),
+      )
+      .collect();
+  },
+});
+
+/** Restaure une cible archivée (remet en cible active) */
+/** Restaure une cible archivée + ses documents reviennent de iArchive */
+export const restoreTarget = authMutation({
+  args: { targetId: v.id("diplomaticTargets") },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const target = await ctx.db.get(args.targetId);
+    if (!target) throw new Error("Cible introuvable");
+
+    // 1. Restaurer la cible
+    await ctx.db.patch(args.targetId, {
+      archivedAt: undefined,
+      updatedAt: now,
+    });
+
+    // 2. Cascade : restaurer les plans lies
+    const plans = await ctx.db
+      .query("diplomaticPlans")
+      .withIndex("by_target", (q) => q.eq("targetId", args.targetId))
+      .collect();
+    for (const plan of plans) {
+      if (plan.deletedAt) {
+        await ctx.db.patch(plan._id, { deletedAt: undefined, updatedAt: now });
+      }
+    }
+
+    // 3. Cascade : restaurer les lettres liees
+    const letters = await ctx.db
+      .query("diplomaticLetters")
+      .withIndex("by_target", (q) => q.eq("targetId", args.targetId))
+      .collect();
+    for (const letter of letters) {
+      if (letter.deletedAt) {
+        await ctx.db.patch(letter._id, { deletedAt: undefined, updatedAt: now });
+      }
+    }
+
+    // 4. Cascade : restaurer les projets lies
+    const projects = await ctx.db
+      .query("diplomaticProjects")
+      .withIndex("by_target", (q) => q.eq("targetId", args.targetId))
+      .collect();
+    for (const project of projects) {
+      if (project.deletedAt) {
+        await ctx.db.patch(project._id, { deletedAt: undefined, updatedAt: now });
+      }
+    }
+
+    // 5. Restaurer les documents iDocument depuis iArchive
+    const targetTag = `diplomatic:target:${args.targetId}`;
+    const folders = await ctx.db
+      .query("documentFolders")
+      .withIndex("by_org", (q) => q.eq("orgId", target.orgId))
+      .collect();
+    const targetFolder = folders.find((f) => f.tags.includes(targetTag));
+
+    if (targetFolder) {
+      if (targetFolder.deletedAt) {
+        await ctx.db.patch(targetFolder._id, {
+          deletedAt: undefined,
+          updatedAt: now,
+        });
+      }
+
+      const docs = await ctx.db
+        .query("documents")
+        .withIndex("by_folder", (q) => q.eq("folderId", targetFolder._id))
+        .collect();
+      for (const doc of docs) {
+        if (doc.archivedAt) {
+          await ctx.db.patch(doc._id, {
+            archivedAt: undefined,
+            archivedBy: undefined,
+            archiveCategorySlug: undefined,
+            updatedAt: now,
+          });
+        }
+      }
+    }
+  },
+});
+
+/** Supprime definitivement une cible archivee → corbeille superadmin + cascade sur tout le pipeline */
+export const permanentlyDeleteArchivedTarget = authMutation({
+  args: { targetId: v.id("diplomaticTargets") },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const target = await ctx.db.get(args.targetId);
+    if (!target?.archivedAt)
+      throw new Error("La cible doit etre archivee avant d'etre supprimee");
+
+    // 1. Mettre la cible en corbeille superadmin
+    await ctx.db.patch(args.targetId, {
+      deletedAt: now,
+      updatedAt: now,
+    });
+
+    // 2. Cascade : supprimer les plans lies
+    const plans = await ctx.db
+      .query("diplomaticPlans")
+      .withIndex("by_target", (q) => q.eq("targetId", args.targetId))
+      .collect();
+    for (const plan of plans) {
+      if (!plan.deletedAt) {
+        await ctx.db.patch(plan._id, { deletedAt: now, updatedAt: now });
+      }
+    }
+
+    // 3. Cascade : supprimer les lettres liees
+    const letters = await ctx.db
+      .query("diplomaticLetters")
+      .withIndex("by_target", (q) => q.eq("targetId", args.targetId))
+      .collect();
+    for (const letter of letters) {
+      if (!letter.deletedAt) {
+        await ctx.db.patch(letter._id, { deletedAt: now, updatedAt: now });
+      }
+    }
+
+    // 4. Cascade : supprimer les projets lies
+    const projects = await ctx.db
+      .query("diplomaticProjects")
+      .withIndex("by_target", (q) => q.eq("targetId", args.targetId))
+      .collect();
+    for (const project of projects) {
+      if (!project.deletedAt) {
+        await ctx.db.patch(project._id, { deletedAt: now, updatedAt: now });
+      }
+    }
+
+    // 5. Cascade : nettoyer les rapports (retirer la reference)
+    const allReports = await ctx.db
+      .query("diplomaticReports")
+      .withIndex("by_org", (q) => q.eq("orgId", target.orgId))
+      .collect();
+    for (const report of allReports) {
+      if (report.targetIds?.includes(args.targetId)) {
+        const newTargetIds = report.targetIds.filter(
+          (id) => id !== args.targetId,
+        );
+        if (newTargetIds.length === 0 && !report.deletedAt) {
+          await ctx.db.patch(report._id, { deletedAt: now, updatedAt: now });
+        } else if (newTargetIds.length > 0) {
+          await ctx.db.patch(report._id, {
+            targetIds: newTargetIds,
+            updatedAt: now,
+          });
+        }
+      }
+    }
+
+    // 6. Supprimer le dossier cible dans documentFolders
+    const targetTag = `diplomatic:target:${args.targetId}`;
+    const folders = await ctx.db
+      .query("documentFolders")
+      .withIndex("by_org", (q) => q.eq("orgId", target.orgId))
+      .collect();
+    const targetFolder = folders.find((f) => f.tags.includes(targetTag));
+
+    if (targetFolder) {
+      await ctx.db.patch(targetFolder._id, {
+        deletedAt: now,
+        updatedAt: now,
+      });
+
+      // Supprimer aussi les documents diplomatiques du registre
+      const dipDocs = await ctx.db
+        .query("diplomaticDocuments")
+        .withIndex("by_folder", (q) => q.eq("folderId", targetFolder._id))
+        .collect();
+      for (const dd of dipDocs) {
+        if (!dd.deletedAt) {
+          await ctx.db.patch(dd._id, { deletedAt: now });
+        }
+      }
+    }
   },
 });
 
@@ -96,21 +299,26 @@ export const createTarget = authMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    // Dédoublonnage : vérifier si une cible avec le même nom existe déjà
+    // Dedoublonnage : verifier si une cible ACTIVE (non-archivee, non-supprimee) existe deja
     const normalizedName = args.name.trim().toLowerCase();
     const existingTargets = await ctx.db
       .query("diplomaticTargets")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
-      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .collect();
 
-    const duplicate = existingTargets.find(
-      (t) => t.name.trim().toLowerCase() === normalizedName,
+    const activeDuplicate = existingTargets.find(
+      (t) =>
+        t.name.trim().toLowerCase() === normalizedName &&
+        !t.deletedAt &&
+        !t.archivedAt,
     );
-    if (duplicate) {
-      // Retourner l'ID existant au lieu de créer un doublon
-      return duplicate._id;
+    if (activeDuplicate) {
+      // Une cible active avec ce nom existe → retourner l'ID existant
+      return activeDuplicate._id;
     }
+
+    // Si une cible archivee/supprimee existe avec ce nom, on cree quand meme
+    // une NOUVELLE cible (nouveau pipeline, pas d'anciens plans lies)
 
     const targetId = await ctx.db.insert("diplomaticTargets", {
       ...args,
@@ -202,13 +410,102 @@ export const advancePhase = authMutation({
   },
 });
 
+/** Archive une cible + ses documents vont dans iArchive */
 export const deleteTarget = authMutation({
   args: { targetId: v.id("diplomaticTargets") },
   handler: async (ctx, args) => {
+    const now = Date.now();
+    const target = await ctx.db.get(args.targetId);
+    if (!target) throw new Error("Cible introuvable");
+
+    // 1. Archiver la cible
     await ctx.db.patch(args.targetId, {
-      deletedAt: Date.now(),
-      updatedAt: Date.now(),
+      archivedAt: now,
+      updatedAt: now,
     });
+
+    // 2. Cascade : archiver les plans lies
+    const plans = await ctx.db
+      .query("diplomaticPlans")
+      .withIndex("by_target", (q) => q.eq("targetId", args.targetId))
+      .collect();
+    for (const plan of plans) {
+      if (!plan.deletedAt) {
+        await ctx.db.patch(plan._id, { deletedAt: now, updatedAt: now });
+      }
+    }
+
+    // 3. Cascade : archiver les lettres liees
+    const letters = await ctx.db
+      .query("diplomaticLetters")
+      .withIndex("by_target", (q) => q.eq("targetId", args.targetId))
+      .collect();
+    for (const letter of letters) {
+      if (!letter.deletedAt) {
+        await ctx.db.patch(letter._id, { deletedAt: now, updatedAt: now });
+      }
+    }
+
+    // 4. Cascade : archiver les projets lies
+    const projects = await ctx.db
+      .query("diplomaticProjects")
+      .withIndex("by_target", (q) => q.eq("targetId", args.targetId))
+      .collect();
+    for (const project of projects) {
+      if (!project.deletedAt) {
+        await ctx.db.patch(project._id, { deletedAt: now, updatedAt: now });
+      }
+    }
+
+    // 5. Cascade : archiver les rapports qui referencent cette cible
+    //    (rapports multi-cibles — on ne supprime pas, on retire la reference)
+    const allReports = await ctx.db
+      .query("diplomaticReports")
+      .withIndex("by_org", (q) => q.eq("orgId", target.orgId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .collect();
+    for (const report of allReports) {
+      if (report.targetIds?.includes(args.targetId)) {
+        const newTargetIds = report.targetIds.filter(
+          (id) => id !== args.targetId,
+        );
+        // Si plus aucune cible active, archiver le rapport aussi
+        if (newTargetIds.length === 0) {
+          await ctx.db.patch(report._id, { deletedAt: now, updatedAt: now });
+        } else {
+          await ctx.db.patch(report._id, {
+            targetIds: newTargetIds,
+            updatedAt: now,
+          });
+        }
+      }
+    }
+
+    // 6. Archiver les documents iDocument lies (les envoyer dans iArchive)
+    const targetTag = `diplomatic:target:${args.targetId}`;
+    const folders = await ctx.db
+      .query("documentFolders")
+      .withIndex("by_org", (q) => q.eq("orgId", target.orgId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .collect();
+    const targetFolder = folders.find((f) => f.tags.includes(targetTag));
+
+    if (targetFolder) {
+      const docs = await ctx.db
+        .query("documents")
+        .withIndex("by_folder", (q) => q.eq("folderId", targetFolder._id))
+        .collect();
+      for (const doc of docs) {
+        if (!doc.archivedAt) {
+          await ctx.db.patch(doc._id, {
+            archivedAt: now,
+            archivedBy: ctx.user._id,
+            archiveCategorySlug: "consulaire",
+            updatedAt: now,
+          });
+        }
+      }
+    }
   },
 });
 
@@ -342,6 +639,7 @@ export const createPlan = authMutation({
         risks: v.array(v.string()),
       }),
     ),
+    strategicAnalysis: v.optional(strategicAnalysisValidator),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -413,6 +711,26 @@ export const updatePlan = authMutation({
       if (val !== undefined) patch[k] = val;
     }
     await ctx.db.patch(planId, patch);
+  },
+});
+
+/** Regenere les documents (PPTX, DOCX, PDF) d'un plan existant */
+export const regeneratePlanDocuments = authMutation({
+  args: {
+    planId: v.id("diplomaticPlans"),
+  },
+  handler: async (ctx, args) => {
+    const plan = await ctx.db.get(args.planId);
+    if (!plan) throw new Error("Plan introuvable");
+    if (!plan.targetId) throw new Error("Plan sans cible associee");
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.functions.diplomaticFoldersActions.generatePlanDocument,
+      { planId: args.planId, targetId: plan.targetId },
+    );
+
+    return { scheduled: true };
   },
 });
 
@@ -566,6 +884,24 @@ export const updateLetterStatus = authMutation({
   },
 });
 
+/** Déclenche la génération du DOCX pour une lettre (bouton UI) */
+export const requestLetterDocxGeneration = authMutation({
+  args: { letterId: v.id("diplomaticLetters") },
+  handler: async (ctx, args) => {
+    const letter = await ctx.db.get(args.letterId);
+    if (!letter) throw new Error("Lettre introuvable");
+    if (!letter.targetId) throw new Error("Lettre sans cible associee");
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.functions.diplomaticFoldersActions.generateLetterDocument,
+      { letterId: args.letterId, targetId: letter.targetId },
+    );
+
+    return { scheduled: true };
+  },
+});
+
 export const deleteLetter = authMutation({
   args: { letterId: v.id("diplomaticLetters") },
   handler: async (ctx, args) => {
@@ -685,11 +1021,14 @@ export const updateReportStatus = authMutation({
     if (args.status === "submitted") patch.submittedAt = Date.now();
     await ctx.db.patch(args.reportId, patch);
 
-    // Hook : générer le PDF du rapport soumis
+    // Hook : generer le PDF du rapport soumis (avec validation des cibles)
     if (args.status === "submitted") {
       const report = await ctx.db.get(args.reportId);
       if (report?.targetIds?.length) {
         for (const targetId of report.targetIds) {
+          // Verifier que la cible existe encore et n'est pas supprimee
+          const target = await ctx.db.get(targetId);
+          if (!target || target.deletedAt || target.archivedAt) continue;
           await ctx.scheduler.runAfter(
             0,
             internal.functions.diplomaticFoldersActions.generateReportDocument,
@@ -787,7 +1126,7 @@ export const createProject = authMutation({
     const n = crypto.randomUUID().replace(/-/g, "").substring(0, 5).toUpperCase();
     const reference = `PC/${year}/${n}`;
 
-    return await ctx.db.insert("diplomaticProjects", {
+    const projectId = await ctx.db.insert("diplomaticProjects", {
       ...args,
       reference,
       objectives: args.objectives ?? [],
@@ -798,6 +1137,49 @@ export const createProject = authMutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    // Hook : générer le PDF automatiquement → dossier cible
+    await ctx.scheduler.runAfter(
+      0,
+      internal.functions.diplomaticFoldersActions.generateProjectDocument,
+      { projectId, targetId: args.targetId },
+    );
+
+    return projectId;
+  },
+});
+
+/** Déclenche la génération du DOCX brouillon pour un projet (appelé par le bouton UI) */
+export const requestProjectDocxGeneration = authMutation({
+  args: { projectId: v.id("diplomaticProjects") },
+  handler: async (ctx, args) => {
+    const project = await ctx.db.get(args.projectId);
+    if (!project) throw new Error("Projet introuvable");
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.functions.diplomaticFoldersActions.generateProjectDocxDraft,
+      { projectId: args.projectId, targetId: project.targetId },
+    );
+
+    return { scheduled: true };
+  },
+});
+
+/** Déclenche la génération du PDF pour un projet → dossier cible (appelé par le bouton UI) */
+export const requestProjectPdfGeneration = authMutation({
+  args: { projectId: v.id("diplomaticProjects") },
+  handler: async (ctx, args) => {
+    const project = await ctx.db.get(args.projectId);
+    if (!project) throw new Error("Projet introuvable");
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.functions.diplomaticFoldersActions.generateProjectDocument,
+      { projectId: args.projectId, targetId: project.targetId },
+    );
+
+    return { scheduled: true };
   },
 });
 
@@ -1273,4 +1655,243 @@ function groupBy<T extends Record<string, unknown>>(
   }
   return result;
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SUPERADMIN — Suppression de cibles
+// ═════════════════════════════════════════════════════════════════════════════
+
+/** Soft delete d'une cible (envoie dans la corbeille) */
+export const superadminDeleteTarget = superadminMutation({
+  args: { targetId: v.id("diplomaticTargets") },
+  handler: async (ctx, args) => {
+    const target = await ctx.db.get(args.targetId);
+    if (!target) throw new Error("Cible introuvable");
+
+    await ctx.db.patch(args.targetId, {
+      deletedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    return { deleted: true, name: target.name };
+  },
+});
+
+/** Purge (soft delete) toutes les cibles d'une représentation */
+export const superadminPurgeTargets = superadminMutation({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    const targets = await ctx.db
+      .query("diplomaticTargets")
+      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .collect();
+
+    const now = Date.now();
+    for (const target of targets) {
+      await ctx.db.patch(target._id, { deletedAt: now, updatedAt: now });
+    }
+
+    return { scheduledCount: targets.length };
+  },
+});
+
+/** Suppression définitive depuis la corbeille (hard delete) */
+export const superadminPermanentlyDeleteTarget = superadminMutation({
+  args: { targetId: v.id("diplomaticTargets") },
+  handler: async (ctx, args) => {
+    await ctx.scheduler.runAfter(
+      0,
+      internal.functions.diplomaticAffairs.internalHardDeleteTarget,
+      { targetId: args.targetId },
+    );
+    return { deleted: true };
+  },
+});
+
+/** Hard delete interne d'une cible et toutes ses données associées */
+export const internalHardDeleteTarget = rawInternalMutation({
+  args: { targetId: v.id("diplomaticTargets") },
+  handler: async (ctx, args) => {
+    const target = await ctx.db.get(args.targetId);
+    if (!target) return;
+
+    // 1. Supprimer les documents diplomatiques + fichiers storage
+    const dipDocs = await ctx.db
+      .query("diplomaticDocuments")
+      .withIndex("by_target", (q) => q.eq("targetId", args.targetId))
+      .collect();
+    for (const doc of dipDocs) {
+      try { await ctx.storage.delete(doc.storageId); } catch { /* fichier déjà supprimé */ }
+      await ctx.db.delete(doc._id);
+    }
+
+    // 2. Supprimer le dossier documentFolders lié (via tag) — inclut ceux dans la poubelle
+    const allFolders = await ctx.db
+      .query("documentFolders")
+      .withIndex("by_org", (q) => q.eq("orgId", target.orgId))
+      .collect();
+    const targetTag = `diplomatic:target:${args.targetId}`;
+    for (const f of allFolders) {
+      if (f.tags.includes(targetTag)) {
+        // Supprimer aussi les documents iDocument liés à ce dossier
+        const folderDocs = await ctx.db
+          .query("documents")
+          .withIndex("by_folder", (q) => q.eq("folderId", f._id))
+          .collect();
+        for (const doc of folderDocs) {
+          for (const file of doc.files) {
+            try { await ctx.storage.delete(file.storageId); } catch { /* déjà supprimé */ }
+          }
+          await ctx.db.delete(doc._id);
+        }
+        // Hard delete le dossier
+        await ctx.db.delete(f._id);
+      }
+    }
+
+    // 3. Supprimer les plans liés
+    const plans = await ctx.db
+      .query("diplomaticPlans")
+      .withIndex("by_target", (q) => q.eq("targetId", args.targetId))
+      .collect();
+    for (const p of plans) await ctx.db.delete(p._id);
+
+    // 4. Supprimer les lettres liées
+    const letters = await ctx.db
+      .query("diplomaticLetters")
+      .withIndex("by_target", (q) => q.eq("targetId", args.targetId))
+      .collect();
+    for (const l of letters) await ctx.db.delete(l._id);
+
+    // 5. Supprimer les projets liés
+    const projects = await ctx.db
+      .query("diplomaticProjects")
+      .withIndex("by_target", (q) => q.eq("targetId", args.targetId))
+      .collect();
+    for (const p of projects) await ctx.db.delete(p._id);
+
+    // 6. Supprimer la cible elle-même
+    await ctx.db.delete(args.targetId);
+  },
+});
+
+/** Liste toutes les cibles actives de toutes les orgs (superadmin) */
+export const superadminListAllTargets = superadminQuery({
+  args: {},
+  handler: async (ctx) => {
+    const targets = await ctx.db
+      .query("diplomaticTargets")
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .collect();
+
+    return await Promise.all(
+      targets.map(async (t) => {
+        const org = await ctx.db.get(t.orgId);
+        return { ...t, orgName: org?.name ?? "Inconnue", orgSlug: org?.slug ?? "" };
+      }),
+    );
+  },
+});
+
+/** Liste tous les éléments supprimés (soft delete) de toutes les tables diplomatiques */
+export const superadminListDeletedItems = superadminQuery({
+  args: {},
+  handler: async (ctx) => {
+    const enrichWithOrg = async <T extends { orgId: any }>(items: T[]) =>
+      Promise.all(
+        items.map(async (item) => {
+          const org = await ctx.db.get(item.orgId) as any;
+          return { ...item, orgName: org?.name ?? "Inconnue" };
+        }),
+      );
+
+    const targets = await ctx.db
+      .query("diplomaticTargets")
+      .filter((q) => q.neq(q.field("deletedAt"), undefined))
+      .collect();
+
+    const plans = await ctx.db
+      .query("diplomaticPlans")
+      .filter((q) => q.neq(q.field("deletedAt"), undefined))
+      .collect();
+
+    const letters = await ctx.db
+      .query("diplomaticLetters")
+      .filter((q) => q.neq(q.field("deletedAt"), undefined))
+      .collect();
+
+    const reports = await ctx.db
+      .query("diplomaticReports")
+      .filter((q) => q.neq(q.field("deletedAt"), undefined))
+      .collect();
+
+    const projects = await ctx.db
+      .query("diplomaticProjects")
+      .filter((q) => q.neq(q.field("deletedAt"), undefined))
+      .collect();
+
+    return {
+      targets: await enrichWithOrg(targets),
+      plans: await enrichWithOrg(plans),
+      letters: await enrichWithOrg(letters),
+      reports: await enrichWithOrg(reports),
+      projects: await enrichWithOrg(projects),
+    };
+  },
+});
+
+/** Restaure une cible supprimée (remet deletedAt à undefined) */
+export const superadminRestoreTarget = superadminMutation({
+  args: { targetId: v.id("diplomaticTargets") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.targetId, {
+      deletedAt: undefined,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/** Restaure un plan supprimé */
+export const superadminRestorePlan = superadminMutation({
+  args: { planId: v.id("diplomaticPlans") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.planId, {
+      deletedAt: undefined,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/** Restaure une lettre supprimée */
+export const superadminRestoreLetter = superadminMutation({
+  args: { letterId: v.id("diplomaticLetters") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.letterId, {
+      deletedAt: undefined,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/** Restaure un rapport supprimé */
+export const superadminRestoreReport = superadminMutation({
+  args: { reportId: v.id("diplomaticReports") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.reportId, {
+      deletedAt: undefined,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/** Restaure un projet supprimé */
+export const superadminRestoreProject = superadminMutation({
+  args: { projectId: v.id("diplomaticProjects") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.projectId, {
+      deletedAt: undefined,
+      updatedAt: Date.now(),
+    });
+  },
+});
 

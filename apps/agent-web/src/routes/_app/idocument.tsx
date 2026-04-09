@@ -4,6 +4,7 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { useOrg } from "@/components/org/org-provider";
 import { useModuleAccess } from "@/components/shared/access-gate";
@@ -18,14 +19,13 @@ import {
 	Building2, FileText, Folder, FolderOpen, FolderPlus, Hash,
 	CheckCircle2, AlertTriangle, XCircle, Loader2, X, Download,
 	MoreHorizontal, Share2, Send, Edit3, Info, KeyRound, Tag,
-	Trash2, CalendarClock, GitBranch, Sparkles, User,
+	Trash2, CalendarClock, GitBranch, Sparkles, User, Undo2,
 	LayoutGrid, List, Columns3, ChevronRight, GripVertical,
 	FileSpreadsheet, ImageIcon, Plus, Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DocumentViewerModal } from "@/components/shared/DocumentViewerModal";
 import type { ViewerDoc } from "@/components/shared/DocumentViewerModal";
-
 export const Route = createFileRoute("/_app/idocument")({
 	component: IDocumentPage,
 });
@@ -200,32 +200,44 @@ const stagger = {
 
 /* ── DynamicFolderIcon — yellow macOS folder with animated sheets ── */
 
-function DynamicFolderIcon({ count, size = 64, hovered = false, className = "" }: { count: number; size?: number; className?: string; hovered?: boolean }) {
+const FOLDER_COLORS = {
+	default: { back: "#f6c012", front: "#fbd87c", sheets: ["#ffeac5", "#fff7e6", "#ffffff"] },
+	blue: { back: "#3b82f6", front: "#60a5fa", sheets: ["#dbeafe", "#eff6ff", "#ffffff"] },
+	gray: { back: "#71717a", front: "#a1a1aa", sheets: ["#e4e4e7", "#f4f4f5", "#ffffff"] },
+} as const;
+
+function DynamicFolderIcon({ count, size = 64, hovered = false, className = "", colorScheme = "default" }: { count: number; size?: number; className?: string; hovered?: boolean; colorScheme?: keyof typeof FOLDER_COLORS }) {
 	const sheets = Math.min(Math.max(count, 0), 3);
+	const colors = FOLDER_COLORS[colorScheme];
 	const sheetConfigs = [
-		{ x: 62, y: 148, w: 300, h: 200, rx: 15, rotate: -3, fill: "#ffeac5", hoverY: -18 },
-		{ x: 42, y: 168, w: 300, h: 200, rx: 15, rotate: 0, fill: "#fff7e6", hoverY: -14 },
-		{ x: 52, y: 158, w: 290, h: 195, rx: 15, rotate: 3, fill: "#ffffff", hoverY: -22 },
+		{ x: 62, y: 148, w: 300, h: 200, rx: 15, rotate: -3, fill: colors.sheets[0], hoverY: -18 },
+		{ x: 42, y: 168, w: 300, h: 200, rx: 15, rotate: 0, fill: colors.sheets[1], hoverY: -14 },
+		{ x: 52, y: 158, w: 290, h: 195, rx: 15, rotate: 3, fill: colors.sheets[2], hoverY: -22 },
 	];
 	const visibleSheets = sheets === 0 ? [] : sheets === 1 ? [sheetConfigs[1]] : sheets === 2 ? [sheetConfigs[0], sheetConfigs[1]] : [sheetConfigs[0], sheetConfigs[1], sheetConfigs[2]];
 
 	return (
 		<motion.svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" width={size} height={size} className={className} initial={{ scale: 1 }} whileHover={{ scale: 1.08 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
-			<path d="m214.2 107-40.2-29.9c-9.5-7-20.9-10.8-32.7-10.8h-110.2c-16.6 0-30 13.4-30 30v349.5h404.1c15.2 0 27.4-12.3 27.4-27.4v-270.6c0-16.6-13.4-30-30-30h-155.6c-11.8 0-23.3-3.8-32.8-10.8z" fill="#f6c012" />
+			<path d="m214.2 107-40.2-29.9c-9.5-7-20.9-10.8-32.7-10.8h-110.2c-16.6 0-30 13.4-30 30v349.5h404.1c15.2 0 27.4-12.3 27.4-27.4v-270.6c0-16.6-13.4-30-30-30h-155.6c-11.8 0-23.3-3.8-32.8-10.8z" fill={colors.back} />
 			{visibleSheets.map((sheet, i) => (
 				<motion.rect key={i} x={sheet.x} y={sheet.y} width={sheet.w} height={sheet.h} rx={sheet.rx} fill={sheet.fill} style={{ transformOrigin: `${sheet.x + sheet.w / 2}px ${sheet.y + sheet.h}px` }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: hovered ? sheet.hoverY : 0, rotate: sheet.rotate + (hovered ? sheet.rotate * 0.5 : 0) }} transition={{ opacity: { duration: 0.3, delay: i * 0.08 }, y: { type: "spring", stiffness: 300, damping: 20 }, rotate: { type: "spring", stiffness: 300, damping: 20 } }} />
 			))}
-			<path d="m85.2 220.1-84.1 225.6h410.8c12.5 0 23.7-7.8 28.1-19.5l69-185.2c7.3-19.6-7.2-40.5-28.1-40.5h-367.6c-12.5.1-23.7 7.8-28.1 19.6z" fill="#fbd87c" />
+			<path d="m85.2 220.1-84.1 225.6h410.8c12.5 0 23.7-7.8 28.1-19.5l69-185.2c7.3-19.6-7.2-40.5-28.1-40.5h-367.6c-12.5.1-23.7 7.8-28.1 19.6z" fill={colors.front} />
 		</motion.svg>
 	);
 }
 
 /* ── VaultFolderCard — folder card with yellow icon ── */
 
-function VaultFolderCard({ label, count, subfolderCount = 0, onClick, className, contextMenu, badges, tags, isDragOver, isSelected = false }: {
-	label: string; count: number; subfolderCount?: number; onClick?: () => void; className?: string; contextMenu?: React.ReactNode; badges?: React.ReactNode; tags?: React.ReactNode; isDragOver?: boolean; isSelected?: boolean;
+function VaultFolderCard({ label, count, subfolderCount = 0, onClick, className, contextMenu, badges, tags, isDragOver, isSelected = false, systemType }: {
+	label: string; count: number; subfolderCount?: number; onClick?: () => void; className?: string; contextMenu?: React.ReactNode; badges?: React.ReactNode; tags?: React.ReactNode; isDragOver?: boolean; isSelected?: boolean; systemType?: "mes-documents" | "brouillons" | "poubelle";
 }) {
 	const [isHovered, setIsHovered] = useState(false);
+
+	const folderColorScheme = systemType === "mes-documents" ? "blue"
+		: systemType === "brouillons" ? "gray"
+		: "default";
+
 	return (
 		<div className={cn("group relative flex flex-col items-center justify-center p-2 rounded-2xl w-full h-full", isDragOver ? "bg-primary/10 ring-2 ring-primary/50" : "", isSelected && !isDragOver && "ring-2 ring-violet-500 bg-violet-500/10", className)}>
 			<motion.div role="button" tabIndex={0} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} onClick={onClick} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} className="relative flex flex-col items-center justify-center cursor-pointer outline-none rounded-xl p-3 hover:bg-muted/40 transition-colors w-[140px]">
@@ -233,7 +245,20 @@ function VaultFolderCard({ label, count, subfolderCount = 0, onClick, className,
 					<div className="flex flex-col gap-0.5 items-center justify-center pointer-events-auto scale-90 -mt-2">{badges}</div>
 				</div>
 				<div className="relative mt-1 w-full flex justify-center">
-					<DynamicFolderIcon count={count + subfolderCount} size={96} hovered={isHovered} className="drop-shadow-lg" />
+					{systemType === "poubelle" ? (
+						<div className="w-24 h-24 flex items-center justify-center">
+							<svg width="72" height="80" viewBox="0 0 72 80" fill="none" className={cn("drop-shadow-lg transition-transform", isHovered && "scale-110")}>
+								<rect x="10" y="6" width="52" height="6" rx="2" fill={isHovered ? "#ef4444" : "#3a3a3a"} className="transition-colors" />
+								<rect x="28" y="2" width="16" height="6" rx="2" fill={isHovered ? "#dc2626" : "#2a2a2a"} className="transition-colors" />
+								<path d="M14 16h44l-4 56a4 4 0 01-4 4H22a4 4 0 01-4-4L14 16z" fill={isHovered ? "#fca5a5" : "#333333"} className="transition-colors" />
+								<line x1="28" y1="26" x2="28" y2="66" stroke={isHovered ? "#ef4444" : "#252525"} strokeWidth="2" strokeLinecap="round" className="transition-colors" />
+								<line x1="36" y1="26" x2="36" y2="66" stroke={isHovered ? "#ef4444" : "#252525"} strokeWidth="2" strokeLinecap="round" className="transition-colors" />
+								<line x1="44" y1="26" x2="44" y2="66" stroke={isHovered ? "#ef4444" : "#252525"} strokeWidth="2" strokeLinecap="round" className="transition-colors" />
+							</svg>
+						</div>
+					) : (
+						<DynamicFolderIcon count={count + subfolderCount} size={96} hovered={isHovered} className="drop-shadow-lg" colorScheme={folderColorScheme} />
+					)}
 					<div className="absolute -top-1 right-1 flex flex-col gap-0.5 items-end z-10">
 						{subfolderCount > 0 && (
 							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="min-w-5 h-5 px-1 flex items-center justify-center gap-0.5 rounded-full bg-violet-500 text-white text-[9px] font-bold shadow-sm">
@@ -358,18 +383,35 @@ function FolderContextMenu({ itemId, itemName, itemType, onShare, onSavePolicy, 
 	itemId: string; itemName: string; itemType: "folder" | "document"; onShare?: (id: string, type: string) => void; onSavePolicy?: (id: string) => void; onInfo?: (id: string) => void; onManageAccess?: (id: string) => void; onCreateSubfolder?: (id: string) => void; onDelete?: (id: string) => void; isSystem?: boolean;
 }) {
 	const [open, setOpen] = useState(false);
+	const [pos, setPos] = useState({ top: 0, left: 0 });
+
+	const handleToggle = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		if (!open) {
+			const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+			const menuH = 250; // hauteur estimée du menu
+			const spaceBelow = window.innerHeight - rect.bottom;
+			const openUp = spaceBelow < menuH && rect.top > menuH;
+			setPos({
+				top: openUp ? rect.top - menuH : rect.bottom + 4,
+				left: Math.min(rect.left, window.innerWidth - 220),
+			});
+		}
+		setOpen(!open);
+	};
+
 	return (
 		<div className="relative">
-			<button onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="h-7 w-7 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-muted-foreground hover:text-foreground" aria-label="Actions">
+			<button onClick={handleToggle} className="h-7 w-7 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-muted-foreground hover:text-foreground" aria-label="Actions">
 				<MoreHorizontal className="h-4 w-4" />
 			</button>
-			{open && (
+			{open && createPortal(
 				<>
-					<div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-					<div className="absolute right-0 top-8 z-50 w-52 bg-popover border border-border rounded-lg shadow-xl py-1" onClick={(e) => e.stopPropagation()}>
+					<div className="fixed inset-0 z-[9998]" onClick={() => setOpen(false)} />
+					<div className="fixed z-[9999] w-52 bg-popover border border-border rounded-lg shadow-xl py-1" style={{ top: pos.top, left: pos.left }} onClick={(e) => e.stopPropagation()}>
 						<div className="px-3 py-1.5 text-[10px] text-muted-foreground/60">{itemType === "folder" ? "Dossier" : "Document"} — Actions</div>
 						{onShare && <button onClick={() => { onShare(itemId, itemType); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors"><Share2 className="h-3.5 w-3.5 text-blue-400" />Partager</button>}
-						{onSavePolicy && <button onClick={() => { onSavePolicy(itemId); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors"><Archive className="h-3.5 w-3.5 text-cyan-400" />Politique d'archivage</button>}
+						{onSavePolicy && <button onClick={() => { onSavePolicy(itemId); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors"><Archive className="h-3.5 w-3.5 text-cyan-400" />{itemType === "document" ? "Archiver" : "Politique d'archivage"}</button>}
 						{onInfo && <button onClick={() => { onInfo(itemId); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors"><Info className="h-3.5 w-3.5 text-sky-400" />Informations</button>}
 						{itemType === "folder" && !isSystem && onCreateSubfolder && <button onClick={() => { onCreateSubfolder(itemId); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors"><FolderPlus className="h-3.5 w-3.5 text-emerald-400" />Créer sous-dossier</button>}
 						{itemType === "folder" && onManageAccess && <button onClick={() => { onManageAccess(itemId); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors"><KeyRound className="h-3.5 w-3.5 text-amber-400" />Gérer accès</button>}
@@ -380,7 +422,8 @@ function FolderContextMenu({ itemId, itemName, itemType, onShare, onSavePolicy, 
 							</>
 						)}
 					</div>
-				</>
+				</>,
+				document.body,
 			)}
 		</div>
 	);
@@ -481,13 +524,26 @@ function ManageAccessDialog({ open, onClose, targetName }: { open: boolean; onCl
 
 /* ── ArchivePolicyDialog ── */
 
-function ArchivePolicyDialog({ open, onClose, targetName, itemType }: { open: boolean; onClose: () => void; targetName: string; itemType: "folder" | "document" }) {
+function ArchivePolicyDialog({ open, onClose, targetName, itemType, onArchive, isSubmitting }: { open: boolean; onClose: () => void; targetName: string; itemType: "folder" | "document"; onArchive?: (data: { categorySlug: string; confidentiality: string; countingStartEvent: string }) => void; isSubmitting?: boolean }) {
 	const [selectedCategoryId, setSelectedCategoryId] = useState("");
 	const [countingStart, setCountingStart] = useState<CountingStartEvent>("date_creation");
 	const [manualDate, setManualDate] = useState(new Date().toISOString().split("T")[0]);
 	const [confidentiality, setConfidentiality] = useState<ConfidentialityLevel>("internal");
 	const [inheritChildren, setInheritChildren] = useState(true);
 	const [inheritDocuments, setInheritDocuments] = useState(true);
+
+	const handleSubmit = () => {
+		const selectedCat = ARCHIVE_CATEGORIES.find((c) => c._id === selectedCategoryId);
+		if (!selectedCat) {
+			toast.error("Veuillez sélectionner une catégorie");
+			return;
+		}
+		if (onArchive) {
+			onArchive({ categorySlug: selectedCat.slug, confidentiality, countingStartEvent: countingStart });
+		} else {
+			onClose();
+		}
+	};
 
 	if (!open) return null;
 	return (
@@ -587,8 +643,8 @@ function ArchivePolicyDialog({ open, onClose, targetName, itemType }: { open: bo
 				</div>
 				<div className="px-6 py-4 border-t border-border/50 flex justify-end gap-2">
 					<button onClick={onClose} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Annuler</button>
-					<button onClick={onClose} className="px-3 py-1.5 text-xs rounded-md bg-linear-to-r from-cyan-600 to-teal-500 hover:from-cyan-700 hover:to-teal-600 text-white transition-colors flex items-center gap-1.5">
-						<Archive className="h-4 w-4" />Enregistrer la politique
+					<button onClick={handleSubmit} disabled={isSubmitting} className="px-3 py-1.5 text-xs rounded-md bg-linear-to-r from-cyan-600 to-teal-500 hover:from-cyan-700 hover:to-teal-600 text-white transition-colors flex items-center gap-1.5 disabled:opacity-50">
+						<Archive className="h-4 w-4" />{isSubmitting ? "Archivage..." : itemType === "document" ? "Archiver le document" : "Enregistrer la politique"}
 					</button>
 				</div>
 			</div>
@@ -694,6 +750,56 @@ function IDocumentPage() {
 	const { mutateAsync: deleteDoc } = useConvexMutationQuery(
 		api.functions.documentVault.deleteFromOrgVault,
 	);
+	const { mutateAsync: createFolderMut } = useConvexMutationQuery(
+		api.functions.documentVault.createFolder,
+	);
+	const { mutateAsync: ensureSystemFoldersMut } = useConvexMutationQuery(
+		api.functions.documentVault.ensureSystemFolders,
+	);
+
+	// Archive mutations
+	const { mutateAsync: archiveDocMut } = useConvexMutationQuery(
+		api.functions.archive.archiveDocument,
+	);
+	const { mutateAsync: setFolderPolicyMut } = useConvexMutationQuery(
+		api.functions.archive.setFolderArchivePolicy,
+	);
+
+	// Trash mutations
+	const { mutateAsync: softDeleteDocMut } = useConvexMutationQuery(
+		api.functions.documentVault.softDeleteDocument,
+	);
+	const { mutateAsync: softDeleteFolderMut } = useConvexMutationQuery(
+		api.functions.documentVault.softDeleteFolder,
+	);
+	const { mutateAsync: restoreDocMut } = useConvexMutationQuery(
+		api.functions.documentVault.restoreFromTrash,
+	);
+	const { mutateAsync: restoreFolderMut } = useConvexMutationQuery(
+		api.functions.documentVault.restoreFolderFromTrash,
+	);
+	const { mutateAsync: permanentDeleteDocMut } = useConvexMutationQuery(
+		api.functions.documentVault.permanentlyDeleteFromTrash,
+	);
+	const { mutateAsync: permanentDeleteFolderMut } = useConvexMutationQuery(
+		api.functions.documentVault.permanentlyDeleteFolderFromTrash,
+	);
+	const { mutateAsync: emptyTrashMut } = useConvexMutationQuery(
+		api.functions.documentVault.emptyTrash,
+	);
+
+	// Trash query
+	const { data: trashData } = useAuthenticatedConvexQuery(
+		api.functions.documentVault.getTrashItems,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+
+	// Super admin check
+	const { data: me } = useAuthenticatedConvexQuery(
+		api.functions.users.getMe,
+		{},
+	);
+	const isSuperAdmin = Boolean(me?.isSuperadmin);
 
 	// Mapper les données Convex → types UI
 	const documents = useMemo((): DocItem[] =>
@@ -707,7 +813,7 @@ function IDocumentPage() {
 			status: (doc.status === "validated" ? "approved" : doc.status === "pending" ? "draft" : doc.status) as DocStatus,
 			tags: [],
 			version: 1,
-			folderId: null,
+			folderId: doc.folderId ?? null,
 			archiveCategorySlug: doc.category ?? null,
 			mimeType: doc.files?.[0]?.mimeType ?? "application/pdf",
 			url: doc.files?.[0]?.url,
@@ -715,7 +821,34 @@ function IDocumentPage() {
 		[rawDocuments],
 	);
 
-	const folders = useMemo((): FolderItem[] => [...DEFAULT_FOLDERS], []);
+	// Dossiers réels depuis Convex (avec fallback mock pendant le chargement)
+	const { data: dbFolders } = useAuthenticatedConvexQuery(
+		api.functions.documentVault.getOrgFolders,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+
+	// Seed auto : créer les dossiers système si la table est vide
+	const [seedDone, setSeedDone] = useState(false);
+	useEffect(() => {
+		if (activeOrgId && dbFolders && dbFolders.length === 0 && !seedDone) {
+			setSeedDone(true);
+			ensureSystemFoldersMut({ orgId: activeOrgId }).catch(() => {});
+		}
+	}, [activeOrgId, dbFolders, seedDone, ensureSystemFoldersMut]);
+	const folders = useMemo((): FolderItem[] => {
+		if (!dbFolders || dbFolders.length === 0) return [...DEFAULT_FOLDERS];
+		return dbFolders.map((f) => ({
+			id: f._id,
+			name: f.name,
+			parentFolderId: (f.parentFolderId as string) ?? null,
+			tags: f.tags,
+			fileCount: f.documentCount ?? 0,
+			subfolderCount: f.subfolderCount ?? 0,
+			updatedAt: f.updatedAt ? new Date(f.updatedAt).toLocaleDateString("fr-FR") : "",
+			createdBy: f.isSystem ? "Système" : "Agent",
+			isSystem: f.isSystem,
+		}));
+	}, [dbFolders]);
 
 	// Dialog states
 	const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -725,12 +858,77 @@ function IDocumentPage() {
 	const [policyDialogOpen, setPolicyDialogOpen] = useState(false);
 	const [policyTargetName, setPolicyTargetName] = useState("");
 	const [policyItemType, setPolicyItemType] = useState<"folder" | "document">("folder");
+	const [policyTargetId, setPolicyTargetId] = useState<string>("");
 	const [infoDialogOpen, setInfoDialogOpen] = useState(false);
 	const [infoItem, setInfoItem] = useState<any>(null);
 	const [infoItemType, setInfoItemType] = useState<"folder" | "document">("folder");
 	const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
 	const [newFolderName, setNewFolderName] = useState("");
 	const [selectedDocViewer, setSelectedDocViewer] = useState<ViewerDoc | null>(null);
+	const [trashConfirm, setTrashConfirm] = useState<{ type: "soft_delete" | "permanent_delete" | "empty_trash"; itemType: "folder" | "document"; itemId: string; itemName: string } | null>(null);
+
+	// ─── Detecter le dossier Poubelle ───────────────────────
+	const poubelleFolder = useMemo(() => folders.find((f) => f.name === "Poubelle" && f.isSystem), [folders]);
+	const isInPoubelle = currentFolderId === poubelleFolder?.id;
+
+	// ─── Trash handlers ─────────────────────────────────────
+	const handleSoftDeleteDoc = useCallback((docId: string) => {
+		const doc = documents.find((d) => d.id === docId);
+		setTrashConfirm({ type: "soft_delete", itemType: "document", itemId: docId, itemName: doc?.title ?? "Document" });
+	}, [documents]);
+
+	const handleSoftDeleteFolder = useCallback((folderId: string) => {
+		const folder = folders.find((f) => f.id === folderId);
+		setTrashConfirm({ type: "soft_delete", itemType: "folder", itemId: folderId, itemName: folder?.name ?? "Dossier" });
+	}, [folders]);
+
+	const handleConfirmTrashAction = useCallback(async () => {
+		if (!trashConfirm) return;
+		try {
+			if (trashConfirm.type === "soft_delete") {
+				if (trashConfirm.itemType === "document") {
+					await softDeleteDocMut({ documentId: trashConfirm.itemId as Id<"documents"> });
+					toast.success("Document deplace dans la corbeille");
+				} else {
+					await softDeleteFolderMut({ folderId: trashConfirm.itemId as Id<"documentFolders"> });
+					toast.success("Dossier et contenu deplaces dans la corbeille");
+				}
+			} else if (trashConfirm.type === "permanent_delete") {
+				if (trashConfirm.itemType === "document") {
+					await permanentDeleteDocMut({ documentId: trashConfirm.itemId as Id<"documents"> });
+					toast.success("Document supprime definitivement");
+				} else {
+					await permanentDeleteFolderMut({ folderId: trashConfirm.itemId as Id<"documentFolders"> });
+					toast.success("Dossier supprime definitivement");
+				}
+			} else if (trashConfirm.type === "empty_trash" && activeOrgId) {
+				const result = await emptyTrashMut({ orgId: activeOrgId });
+				toast.success(`Corbeille videe (${result.deletedDocs} documents, ${result.deletedFolders} dossiers)`);
+			}
+		} catch (e: any) {
+			const msg = e?.data ?? e?.message ?? "Erreur";
+			toast.error(typeof msg === "string" ? msg : "Une erreur est survenue");
+		}
+		setTrashConfirm(null);
+	}, [trashConfirm, softDeleteDocMut, softDeleteFolderMut, permanentDeleteDocMut, permanentDeleteFolderMut, emptyTrashMut, activeOrgId]);
+
+	const handleRestoreDoc = useCallback(async (docId: string) => {
+		try {
+			await restoreDocMut({ documentId: docId as Id<"documents"> });
+			toast.success("Document restaure");
+		} catch (e: any) {
+			toast.error(e?.data ?? "Erreur lors de la restauration");
+		}
+	}, [restoreDocMut]);
+
+	const handleRestoreFolder = useCallback(async (folderId: string) => {
+		try {
+			await restoreFolderMut({ folderId: folderId as Id<"documentFolders"> });
+			toast.success("Dossier restaure");
+		} catch (e: any) {
+			toast.error(e?.data ?? "Erreur lors de la restauration");
+		}
+	}, [restoreFolderMut]);
 
 	// ─── Breadcrumb path ────────────────────────────────────
 	const breadcrumbPath = useMemo(() => {
@@ -816,6 +1014,7 @@ function IDocumentPage() {
 		const doc = documents.find((d) => d.id === id);
 		setPolicyTargetName(folder?.name || doc?.title || "");
 		setPolicyItemType(folder ? "folder" : "document");
+		setPolicyTargetId(id);
 		setPolicyDialogOpen(true);
 	}, [folders, documents]);
 
@@ -898,19 +1097,10 @@ function IDocumentPage() {
 							<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
 							<input placeholder="Rechercher dans les documents…" value={search} onChange={(e) => setSearch(e.target.value)} className="w-full h-8 pl-8 text-xs bg-muted/50 border border-border/50 rounded-lg px-3 focus:outline-none focus:ring-1 focus:ring-primary/30" />
 						</div>
-						<div className="h-6 w-px bg-border/50 hidden sm:block" />
-						<div className="flex items-center gap-1">
-							{STATUS_FILTERS.map((f) => (
-								<button key={f.value} onClick={() => setStatusFilter(f.value)} className={cn("px-2.5 py-1 rounded-full text-[11px] font-medium transition-all", statusFilter === f.value ? "bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/30" : "text-muted-foreground hover:bg-muted")}>
-									{f.label}
-									{statusCounts[f.value] !== undefined && <span className="ml-1 text-[9px] opacity-60">({statusCounts[f.value]})</span>}
-								</button>
-							))}
-						</div>
-						{hasActiveFilters && (
+						{search && (
 							<>
 								<div className="h-6 w-px bg-border/50 hidden sm:block" />
-								<button className="flex items-center gap-1.5 h-7 text-[11px] text-red-400 hover:text-red-300 px-2" onClick={() => { setSearch(""); setStatusFilter("all"); }}>
+								<button className="flex items-center gap-1.5 h-7 text-[11px] text-red-400 hover:text-red-300 px-2" onClick={() => setSearch("")}>
 									<X className="h-3 w-3" /> Effacer
 								</button>
 							</>
@@ -925,6 +1115,100 @@ function IDocumentPage() {
 			{/* ── Breadcrumb ── */}
 			<BreadcrumbPath path={breadcrumbPath} onNavigate={handleNavigate} rootLabel="Documents" rootIcon={FileText} />
 
+			{/* ── Vue Poubelle ── */}
+			{isInPoubelle && trashData ? (
+				<motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+					{/* Toolbar Poubelle */}
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-2">
+							<Trash2 className="h-4 w-4 text-red-400" />
+							<span className="text-sm font-medium">{trashData.totalCount} element{trashData.totalCount > 1 ? "s" : ""} dans la corbeille</span>
+						</div>
+						{isSuperAdmin && trashData.totalCount > 0 && (
+							<button
+								onClick={() => setTrashConfirm({ type: "empty_trash", itemType: "document", itemId: "", itemName: "" })}
+								className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
+							>
+								<Trash2 className="h-3.5 w-3.5" />Vider la corbeille
+							</button>
+						)}
+					</div>
+
+					{/* Dossiers en corbeille */}
+					{trashData.folders.length > 0 && (
+						<div>
+							<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2 px-1">Dossiers supprimes</p>
+							<div className="space-y-1">
+								{trashData.folders.map((folder: any) => (
+									<div key={folder._id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/30 transition-colors">
+										<div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+											<Folder className="h-4 w-4 text-amber-400/60" />
+										</div>
+										<div className="flex-1 min-w-0">
+											<p className="text-sm font-medium truncate">{folder.name}</p>
+											<p className="text-[10px] text-muted-foreground">
+												{folder.documentCount} doc{folder.documentCount > 1 ? "s" : ""} · Supprime le {new Date(folder.deletedAt).toLocaleDateString("fr-FR")}
+												{folder.deletedByName && <span> par {folder.deletedByName}</span>}
+											</p>
+										</div>
+										<div className="flex items-center gap-1">
+											<button onClick={() => handleRestoreFolder(folder._id)} className="h-7 px-2 rounded-md text-[11px] hover:bg-emerald-500/10 text-emerald-400 transition-colors flex items-center gap-1" title="Restaurer">
+												<Undo2 className="h-3.5 w-3.5" />Restaurer
+											</button>
+											<button onClick={() => setTrashConfirm({ type: "permanent_delete", itemType: "folder", itemId: folder._id, itemName: folder.name })} className="h-7 px-2 rounded-md text-[11px] hover:bg-red-500/10 text-red-400 transition-colors flex items-center gap-1" title="Supprimer definitivement">
+												<Trash2 className="h-3.5 w-3.5" />
+											</button>
+										</div>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
+
+					{/* Documents en corbeille */}
+					{trashData.documents.length > 0 && (
+						<div>
+							<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2 px-1">Documents supprimes</p>
+							<div className="space-y-1">
+								{trashData.documents.map((doc: any) => (
+									<div key={doc._id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/30 transition-colors">
+										<div className="h-8 w-8 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0">
+											<FileText className="h-4 w-4 text-violet-400/60" />
+										</div>
+										<div className="flex-1 min-w-0">
+											<p className="text-sm font-medium truncate">{doc.label ?? doc.files?.[0]?.filename ?? "Document"}</p>
+											<p className="text-[10px] text-muted-foreground">
+												Supprime le {new Date(doc.deletedAt).toLocaleDateString("fr-FR")}
+												{doc.deletedByName && <span> par {doc.deletedByName}</span>}
+											</p>
+										</div>
+										<div className="flex items-center gap-1">
+											<button onClick={() => handleRestoreDoc(doc._id)} className="h-7 px-2 rounded-md text-[11px] hover:bg-emerald-500/10 text-emerald-400 transition-colors flex items-center gap-1" title="Restaurer">
+												<Undo2 className="h-3.5 w-3.5" />Restaurer
+											</button>
+											<button onClick={() => setTrashConfirm({ type: "permanent_delete", itemType: "document", itemId: doc._id, itemName: doc.label ?? doc.files?.[0]?.filename ?? "Document" })} className="h-7 px-2 rounded-md text-[11px] hover:bg-red-500/10 text-red-400 transition-colors flex items-center gap-1" title="Supprimer definitivement">
+												<Trash2 className="h-3.5 w-3.5" />
+											</button>
+										</div>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
+
+					{/* Empty trash state */}
+					{trashData.totalCount === 0 && (
+						<div className="flex flex-col items-center py-16 text-center">
+							<div className="h-16 w-16 rounded-2xl bg-zinc-500/10 flex items-center justify-center mb-4">
+								<Trash2 className="h-8 w-8 text-zinc-400/40" />
+							</div>
+							<h3 className="text-lg font-semibold mb-1">Corbeille vide</h3>
+							<p className="text-sm text-muted-foreground">Aucun element dans la corbeille.</p>
+						</div>
+					)}
+				</motion.div>
+			) : (
+			<>
 			{/* ── Content — Grid View ── */}
 			<AnimatePresence mode="wait">
 				{viewMode === "grid" && (
@@ -941,6 +1225,12 @@ function IDocumentPage() {
 											count={folder.fileCount}
 											subfolderCount={folder.subfolderCount}
 											onClick={() => handleOpenFolder(folder.id)}
+											systemType={
+												folder.name === "Mes Documents" ? "mes-documents"
+													: folder.name === "Brouillons" ? "brouillons"
+													: folder.name === "Poubelle" ? "poubelle"
+													: undefined
+											}
 											contextMenu={
 												<FolderContextMenu
 													itemId={folder.id}
@@ -951,6 +1241,7 @@ function IDocumentPage() {
 													onInfo={handleOpenInfo}
 													onManageAccess={handleManageAccess}
 													onCreateSubfolder={(id) => { setCurrentFolderId(id); setShowNewFolderDialog(true); }}
+													onDelete={handleSoftDeleteFolder}
 													isSystem={folder.isSystem}
 												/>
 											}
@@ -960,9 +1251,10 @@ function IDocumentPage() {
 												) : null
 											}
 											tags={
-												folder.tags.length > 0 ? folder.tags.slice(0, 2).map((t) => (
-													<span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground border">{t}</span>
-												)) : null
+												folder.tags.filter((t) => !t.startsWith("diplomatic:")).length > 0
+													? folder.tags.filter((t) => !t.startsWith("diplomatic:")).slice(0, 2).map((t) => (
+														<span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground border">{t}</span>
+													)) : null
 											}
 										/>
 									))}
@@ -1002,10 +1294,11 @@ function IDocumentPage() {
 														onShare={handleShare}
 														onSavePolicy={handleOpenPolicy}
 														onInfo={handleOpenInfo}
+														onDelete={handleSoftDeleteDoc}
 													/>
 												}
 												tags={doc.tags}
-												onClick={() => setSelectedDocViewer({ id: doc.id, title: doc.title, mimeType: doc.mimeType })}
+												onClick={() => setSelectedDocViewer({ id: doc.id, title: doc.title, url: doc.url ?? undefined, mimeType: doc.mimeType })}
 											/>
 										);
 									})}
@@ -1133,6 +1426,43 @@ function IDocumentPage() {
 					</motion.div>
 				)}
 			</AnimatePresence>
+			</>
+			)}
+
+			{/* ── Trash Confirm Dialog ── */}
+			{trashConfirm && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setTrashConfirm(null)}>
+					<div className="w-full max-w-sm border border-border/50 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+						<div className="px-5 pt-5 pb-3 border-b border-border/50">
+							<div className="flex items-center gap-2 text-sm font-semibold">
+								<Trash2 className="h-4 w-4 text-red-400" />
+								{trashConfirm.type === "soft_delete" ? "Deplacer vers la corbeille" : trashConfirm.type === "empty_trash" ? "Vider la corbeille" : "Suppression definitive"}
+							</div>
+						</div>
+						<div className="p-5">
+							{trashConfirm.type === "soft_delete" ? (
+								<p className="text-sm text-muted-foreground">
+									Voulez-vous deplacer <span className="font-medium text-foreground">{trashConfirm.itemName}</span> dans la corbeille ?
+								</p>
+							) : trashConfirm.type === "empty_trash" ? (
+								<p className="text-sm text-muted-foreground">
+									Voulez-vous supprimer definitivement <span className="font-medium text-red-400">tous les elements</span> de la corbeille ? Cette action est irreversible.
+								</p>
+							) : (
+								<p className="text-sm text-muted-foreground">
+									Voulez-vous supprimer definitivement <span className="font-medium text-red-400">{trashConfirm.itemName}</span> ? Cette action est irreversible.
+								</p>
+							)}
+						</div>
+						<div className="px-5 py-3 border-t border-border/50 flex justify-end gap-2">
+							<button onClick={() => setTrashConfirm(null)} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Annuler</button>
+							<button onClick={handleConfirmTrashAction} className={cn("px-3 py-1.5 text-xs rounded-md text-white transition-colors", trashConfirm.type === "soft_delete" ? "bg-amber-600 hover:bg-amber-700" : "bg-red-600 hover:bg-red-700")}>
+								{trashConfirm.type === "soft_delete" ? "Deplacer" : "Supprimer"}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{/* ── New Folder Dialog ── */}
 			{showNewFolderDialog && (
@@ -1149,7 +1479,21 @@ function IDocumentPage() {
 						</div>
 						<div className="px-5 py-3 border-t border-border/50 flex justify-end gap-2">
 							<button onClick={() => setShowNewFolderDialog(false)} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Annuler</button>
-							<button onClick={() => setShowNewFolderDialog(false)} disabled={!newFolderName.trim()} className="px-3 py-1.5 text-xs rounded-md bg-linear-to-r from-violet-600 to-indigo-500 text-white disabled:opacity-50 transition-colors flex items-center gap-1.5">
+							<button onClick={async () => {
+								if (!activeOrgId || !newFolderName.trim()) return;
+								try {
+									await createFolderMut({
+										orgId: activeOrgId,
+										name: newFolderName.trim(),
+										parentFolderId: currentFolderId ? currentFolderId as any : undefined,
+									});
+									toast.success(`Dossier "${newFolderName.trim()}" créé`);
+									setNewFolderName("");
+									setShowNewFolderDialog(false);
+								} catch (e) {
+									toast.error("Erreur lors de la création du dossier");
+								}
+							}} disabled={!newFolderName.trim()} className="px-3 py-1.5 text-xs rounded-md bg-linear-to-r from-violet-600 to-indigo-500 text-white disabled:opacity-50 transition-colors flex items-center gap-1.5">
 								<FolderPlus className="h-4 w-4" />Créer
 							</button>
 						</div>
@@ -1160,7 +1504,36 @@ function IDocumentPage() {
 			{/* ── Dialogs ── */}
 			<ShareDialog open={shareDialogOpen} onClose={() => setShareDialogOpen(false)} targetName={shareTargetName} />
 			<ManageAccessDialog open={manageAccessOpen} onClose={() => setManageAccessOpen(false)} targetName={manageAccessTargetName} />
-			<ArchivePolicyDialog open={policyDialogOpen} onClose={() => setPolicyDialogOpen(false)} targetName={policyTargetName} itemType={policyItemType} />
+			<ArchivePolicyDialog
+				open={policyDialogOpen}
+				onClose={() => setPolicyDialogOpen(false)}
+				targetName={policyTargetName}
+				itemType={policyItemType}
+				onArchive={async (data) => {
+					try {
+						if (policyItemType === "document" && policyTargetId) {
+							await archiveDocMut({
+								documentId: policyTargetId as Id<"documents">,
+								categorySlug: data.categorySlug,
+								confidentiality: data.confidentiality,
+								countingStartEvent: data.countingStartEvent,
+							});
+							toast.success("Document archivé avec succès");
+						} else if (policyItemType === "folder" && policyTargetId) {
+							await setFolderPolicyMut({
+								folderId: policyTargetId as Id<"documentFolders">,
+								archiveCategorySlug: data.categorySlug,
+								confidentiality: data.confidentiality,
+								countingStartEvent: data.countingStartEvent,
+							});
+							toast.success("Politique d'archivage enregistrée");
+						}
+						setPolicyDialogOpen(false);
+					} catch {
+						toast.error("Erreur lors de l'opération d'archivage");
+					}
+				}}
+			/>
 			<InfoDialog open={infoDialogOpen} onClose={() => setInfoDialogOpen(false)} item={infoItem || { id: "", name: "" }} itemType={infoItemType} />
 			<DocumentViewerModal isOpen={!!selectedDocViewer} onClose={() => setSelectedDocViewer(null)} document={selectedDocViewer} />
 		</motion.div>

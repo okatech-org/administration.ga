@@ -1,3 +1,5 @@
+"use client"
+
 import { api } from "@convex/_generated/api";
 import { OrganizationType } from "@convex/lib/constants";
 import Link from "next/link";

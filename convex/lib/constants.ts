@@ -211,6 +211,8 @@ export enum NotificationType {
   MeetingInvitation = "meeting_invitation",
   CallIncoming = "call_incoming",
   ChatMessage = "chat_message",
+  // Archive
+  ArchiveExpiration = "archive_expiration",
 }
 
 export enum ProfileCategory {

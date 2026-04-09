@@ -87,4 +87,12 @@ crons.daily(
   internal.functions.autoDefense.cleanupExpired,
 );
 
+// --- iArchive ---
+// Verification quotidienne des retentions d'archivage (8h30 UTC = 9h30 Paris)
+crons.daily(
+  "check-archive-expiration",
+  { hourUTC: 8, minuteUTC: 30 },
+  internal.crons.archiveExpiration.checkArchiveExpiration,
+);
+
 export default crons;

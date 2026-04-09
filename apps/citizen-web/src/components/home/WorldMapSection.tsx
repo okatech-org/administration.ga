@@ -1,3 +1,5 @@
+"use client"
+
 import * as mapboxgl from "mapbox-gl";
 import { useEffect, useRef, useState } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -69,7 +71,7 @@ export function WorldMapSection() {
 		if (map.current) return;
 
 		if (!MAPBOX_CONFIG.accessToken) {
-			console.error("Mapbox token missing");
+			console.warn("Mapbox token missing — set NEXT_PUBLIC_MAPBOX_TOKEN in .env.local");
 			return;
 		}
 

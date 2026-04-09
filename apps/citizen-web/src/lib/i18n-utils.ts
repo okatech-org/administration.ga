@@ -13,7 +13,7 @@ export function getLocalizedValue(
 	if (typeof value === "string") return value;
 
 	// Normalized language code (e.g. 'en-US' -> 'en')
-	const lang = i18nLanguage.split("-")[0].toLowerCase();
+	const lang = (i18nLanguage ?? "fr").split("-")[0].toLowerCase();
 
 	if (lang === "en" && value.en) {
 		return value.en;
