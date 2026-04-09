@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { changeLanguage } from "i18next"
 import {
+  BookOpen,
   Check,
   ChevronDown,
   FileText,
@@ -43,6 +44,7 @@ export default function Header() {
   const navLinks = [
     { label: t("header.nav.worldNetwork"), href: "/reps", icon: Globe },
     { label: t("header.nav.news"), href: "/news", icon: Newspaper },
+    { label: t("header.nav.resources", "Ressources"), href: "/ressources", icon: BookOpen },
     { label: t("header.nav.information"), href: "/information", icon: FileText },
     { label: t("header.nav.academy"), href: "/academy", icon: GraduationCap },
     { label: t("header.nav.community"), href: "/community", icon: Users },

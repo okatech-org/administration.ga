@@ -31,7 +31,7 @@ npm-debug.log*
 *.pem
 .certs
 
-ressources
+/ressources
 EasyCard/
 
 # Embedded site projects
