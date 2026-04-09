@@ -80,19 +80,13 @@ function getAge(bd?: string | number | null): number | null {
 function lbl(map: Record<string, string>, code?: string) {
   return code ? map[code] || code : undefined
 }
-function formatPhone(phone?: string) {
-  if (!phone) return ""
+function formatPhone(phone?: string | null): string {
+  if (!phone) return "—"
   const c = phone.replace(/\s+/g, "")
   if (c.startsWith("+33") && c.length === 12)
     return `+33 (0) ${c[3]} ${c.slice(4, 6)} ${c.slice(6, 8)} ${c.slice(8, 10)} ${c.slice(10, 12)}`
   if (c.startsWith("+241") && c.length >= 11)
     return `+241 ${c.slice(4, 6)} ${c.slice(6, 8)} ${c.slice(8, 10)} ${c.slice(10, 12)}`
-  return phone
-}
-
-function formatPhone(phone?: string | null): string {
-  if (!phone) return "—"
-  // If it's a French/Gabonese number with no spaces, we could format it, but returning as is works best for now
   return phone
 }
 
