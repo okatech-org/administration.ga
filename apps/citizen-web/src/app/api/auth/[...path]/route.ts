@@ -22,7 +22,8 @@ async function proxyToConvex(req: NextRequest): Promise<NextResponse> {
   }
 
   const url = new URL(req.url)
-  const targetUrl = `${CONVEX_SITE_URL}${url.pathname}${url.search}`
+  const rewrittenPathname = url.pathname.replace('/api/auth', '/api/my-auth')
+  const targetUrl = `${CONVEX_SITE_URL}${rewrittenPathname}${url.search}`
 
   const proxyHeaders: Record<string, string> = {}
   req.headers.forEach((value, key) => {
@@ -38,6 +39,8 @@ async function proxyToConvex(req: NextRequest): Promise<NextResponse> {
       req.method !== "GET" && req.method !== "HEAD"
         ? await req.arrayBuffer()
         : undefined
+
+    console.log(">>>> NEXTJS PROXYING TO: ", targetUrl);
 
     const upstream = await fetch(targetUrl, {
       method: req.method,

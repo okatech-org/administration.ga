@@ -1,0 +1,6 @@
+$ bash scripts/fix-convex-local-ports.sh 2>/dev/null; bunx convex dev
+ℹ️  Pas de config convex-local trouvée (/Users/okatech/.convex-local/projects/gabon-diplomatie/.env)
+   Ce script est uniquement nécessaire pour le développement en self-hosted.
+   Si vous utilisez Convex Cloud, ignorez ce script.
+/bin/bash: bunx: command not found
+error: script "dev:convex" exited with code 127

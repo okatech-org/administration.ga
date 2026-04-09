@@ -1,0 +1,77 @@
+$ turbo dev
+• turbo 2.9.5
+
+   • Packages in scope: @workspace/api, @workspace/desktop-shared, @workspace/i18n, @workspace/shared, @workspace/tsconfig, @workspace/ui, agent-desktop, agent-macos, agent-web, backoffice-web, citizen-web
+   • Running dev in 11 packages
+   • Remote caching disabled
+
+backoffice-web:dev: cache bypass, force executing 41f52bbe0c5ec8af
+agent-web:dev: cache bypass, force executing ec9c16787f0749f2
+citizen-web:dev: cache bypass, force executing 900b07878f163d5b
+agent-desktop:dev: cache bypass, force executing 7fd8dc63687dbe56
+backoffice-web:dev: $ vite dev --port 3002
+agent-web:dev: $ vite dev --port 3003
+citizen-web:dev: $ next dev --port 3000
+agent-desktop:dev: $ electron-vite dev
+citizen-web:dev: ▲ Next.js 16.2.2 (Turbopack)
+citizen-web:dev: - Local:         http://localhost:3000
+citizen-web:dev: - Network:       http://172.20.10.2:3000
+citizen-web:dev: - Environments: .env.local, .env
+citizen-web:dev: ✓ Ready in 239ms
+agent-desktop:dev: vite v6.4.2 building SSR bundle for development...
+agent-desktop:dev: transforming...
+citizen-web:dev: ⚠ Invalid next.config.ts options detected: 
+citizen-web:dev: ⚠     Unrecognized key(s) in object: 'turbo' at "experimental"
+citizen-web:dev: ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+agent-desktop:dev: ✓ 21 modules transformed.
+agent-desktop:dev: rendering chunks...
+agent-desktop:dev: out/main/index.js  68.09 kB
+agent-desktop:dev: ✓ built in 124ms
+agent-desktop:dev: 
+agent-desktop:dev: build the electron main process successfully
+agent-desktop:dev: 
+agent-desktop:dev: -----
+agent-desktop:dev: 
+agent-desktop:dev: vite v6.4.2 building SSR bundle for development...
+agent-desktop:dev: transforming...
+agent-desktop:dev: ✓ 1 modules transformed.
+agent-desktop:dev: rendering chunks...
+agent-desktop:dev: out/preload/index.js  5.10 kB
+agent-desktop:dev: ✓ built in 8ms
+agent-desktop:dev: 
+agent-desktop:dev: build the electron preload files successfully
+agent-desktop:dev: 
+agent-desktop:dev: -----
+agent-desktop:dev: 
+agent-desktop:dev: dev server running for the electron renderer process at:
+agent-desktop:dev: 
+agent-desktop:dev:   ➜  Local:   http://localhost:5173/
+agent-desktop:dev:   ➜  Network: use --host to expose
+agent-desktop:dev: 
+agent-desktop:dev: start electron app...
+agent-desktop:dev: 
+citizen-web:dev: - Experiments (use with caution):
+citizen-web:dev:   ? turbo (invalid experimental key)
+citizen-web:dev: 
+backoffice-web:dev: 
+backoffice-web:dev:   VITE v7.3.2  ready in 2004 ms
+backoffice-web:dev: 
+backoffice-web:dev:   ➜  Local:   http://localhost:3002/
+backoffice-web:dev:   ➜  Network: http://172.20.10.2:3002/
+agent-web:dev: 
+agent-web:dev:   VITE v7.3.2  ready in 2042 ms
+agent-web:dev: 
+agent-web:dev:   ➜  Local:   http://localhost:3003/
+agent-web:dev:   ➜  Network: http://172.20.10.2:3003/
+citizen-web:dev:  POST /api/dev/sign-in 200 in 1622ms (next.js: 64ms, application-code: 1558ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/sign-in/email
+citizen-web:dev:  POST /api/auth/sign-in/email 500 in 719ms (next.js: 383ms, application-code: 337ms)
+citizen-web:dev:  POST /api/dev/sign-in 200 in 1235ms (next.js: 2ms, application-code: 1233ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/sign-in/email
+citizen-web:dev:  POST /api/auth/sign-in/email 200 in 664ms (next.js: 3ms, application-code: 661ms)
+error: script "dev" was terminated by signal SIGTERM (Polite quit request)
+backoffice-web:dev: error: script "dev" exited with code 143
+agent-web:dev: error: script "dev" exited with code 143
+citizen-web:dev: [?25h
+ ERROR  backoffice-web#dev: command (/Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/backoffice-web) /private/tmp/bun-node-b64edcb49/bun run dev exited (143)
+ ERROR  run failed: command  exited (1)
