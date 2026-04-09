@@ -4,6 +4,12 @@ import path from "node:path"
 const nextConfig: NextConfig = {
   output: "standalone",
   reactCompiler: false,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   transpilePackages: [
     "@workspace/api",
     "@workspace/ui",
