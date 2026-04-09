@@ -1,7 +1,7 @@
 import { Button } from "@workspace/ui/components/button";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, type Variants } from "motion/react";
 
 export interface Achievement {
   label: string;
@@ -55,7 +55,7 @@ export function AboutSection({
     { label: "Assistance permanente", value: "24/7" },
   ],
 }: AboutSectionProps) {
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -63,7 +63,7 @@ export function AboutSection({
     },
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,

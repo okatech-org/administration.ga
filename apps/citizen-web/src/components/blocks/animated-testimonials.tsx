@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
 import { Separator } from "@workspace/ui/components/separator";
 import { Quote, Star } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, type Variants } from "motion/react";
 import { useEffect, useState } from "react";
 
 export interface Testimonial {
@@ -80,7 +80,7 @@ export function AnimatedTestimonials({
 }: AnimatedTestimonialsProps) {
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -88,7 +88,7 @@ export function AnimatedTestimonials({
     },
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,

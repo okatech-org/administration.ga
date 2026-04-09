@@ -155,6 +155,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
       useSecureCookies: isDev ? false : undefined,
     },
     plugins: [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- @convex-dev/better-auth type mismatch with better-auth generics
       convex({
         authConfig,
         jwt: {
@@ -163,7 +164,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
           // using the Better Auth session cookie.
           expirationSeconds: 60 * 30, // 30 minutes
         },
-      }),
+      }) as any,
       crossDomain({
         // Dynamic per-request: each app gets redirected to its own origin
         siteUrl: resolveSiteUrl(requestOrigin),

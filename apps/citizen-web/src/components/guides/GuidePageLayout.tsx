@@ -107,7 +107,7 @@ export function GuidePageLayout({ type }: GuidePageLayoutProps) {
       <section className="bg-background py-16 px-6">
         <div className="max-w-7xl mx-auto">
           <Link
-            to="/ressources"
+            href="/ressources"
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="h-4 w-4" />

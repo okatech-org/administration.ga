@@ -53,6 +53,22 @@ import { getLocalizedValue } from "@/lib/i18n-utils"
 import { REQUEST_STATUS_CONFIG } from "@/lib/request-status-config"
 import { cn } from "@/lib/utils"
 
+// ─── Helpers ─────────────────────────────────────────────────
+const COUNTRY_LABELS: Record<string, string> = {
+  GA: "Gabon",
+  FR: "France",
+  CM: "Cameroun",
+  CG: "Congo",
+  CD: "RD Congo",
+  SN: "Sénégal",
+  CI: "Côte d'Ivoire",
+  MA: "Maroc",
+  BE: "Belgique",
+  CH: "Suisse",
+  CA: "Canada",
+  US: "États-Unis",
+}
+
 function getAge(bd?: string | number | null): number | null {
   if (!bd) return null
   try {
@@ -60,6 +76,18 @@ function getAge(bd?: string | number | null): number | null {
   } catch {
     return null
   }
+}
+function lbl(map: Record<string, string>, code?: string) {
+  return code ? map[code] || code : undefined
+}
+function formatPhone(phone?: string) {
+  if (!phone) return ""
+  const c = phone.replace(/\s+/g, "")
+  if (c.startsWith("+33") && c.length === 12)
+    return `+33 (0) ${c[3]} ${c.slice(4, 6)} ${c.slice(6, 8)} ${c.slice(8, 10)} ${c.slice(10, 12)}`
+  if (c.startsWith("+241") && c.length >= 11)
+    return `+241 ${c.slice(4, 6)} ${c.slice(6, 8)} ${c.slice(8, 10)} ${c.slice(10, 12)}`
+  return phone
 }
 
 function formatPhone(phone?: string | null): string {

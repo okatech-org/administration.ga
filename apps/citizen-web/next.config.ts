@@ -19,17 +19,14 @@ const nextConfig: NextConfig = {
         __dirname,
         "node_modules/@tanstack/react-query",
       ),
+      i18next: path.resolve(__dirname, "node_modules/i18next"),
     }
     return config
   },
-  experimental: {
-    turbo: {
-      resolveAlias: {
-        "@tanstack/react-query": path.resolve(
-          __dirname,
-          "node_modules/@tanstack/react-query",
-        ),
-      },
+  turbopack: {
+    resolveAlias: {
+      "@tanstack/react-query": "./node_modules/@tanstack/react-query",
+      i18next: "./node_modules/i18next",
     },
   },
 }

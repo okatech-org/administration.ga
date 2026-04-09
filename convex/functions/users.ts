@@ -366,20 +366,21 @@ export const getOrgMemberships = authQuery({
         if (m.positionId) {
           const position: any = await ctx.db.get(m.positionId as any);
           if (position) {
-            positionGrade = position.grade;
+            positionGrade = (position as any).grade;
           }
         }
-        
+
+        const orgDoc = org as any;
         return {
           ...m,
           positionGrade,
           org: {
-            name: org.name,
-            slug: org.slug,
-            logoUrl: org.logoUrl,
-            modules: org.modules ?? [],
-            orgModuleConfig: org.orgModuleConfig ?? null,
-            type: org.type,
+            name: orgDoc.name,
+            slug: orgDoc.slug,
+            logoUrl: orgDoc.logoUrl,
+            modules: orgDoc.modules ?? [],
+            orgModuleConfig: orgDoc.orgModuleConfig ?? null,
+            type: orgDoc.type,
           },
         };
       })
