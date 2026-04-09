@@ -2,7 +2,7 @@
 
 import { api } from "@convex/_generated/api"
 import { I18nextProvider } from "react-i18next"
-import i18n from "@/lib/i18n"
+import i18n from "@workspace/i18n/config"
 import { Toaster } from "@workspace/ui/components/sonner"
 import AppConvexProvider from "@/lib/convex-provider"
 import { ThemeProvider } from "@/components/theme-provider"
