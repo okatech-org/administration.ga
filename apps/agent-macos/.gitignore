@@ -1,0 +1,17 @@
+# Evolis SDK binaries (too large for git, download separately)
+evolis-sdk/
+libevolis.dylib
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcuserdatad/
+
+# Swift Package Manager
+.build/
+Packages/
+
+# macOS
+.DS_Store
+.cursor/
