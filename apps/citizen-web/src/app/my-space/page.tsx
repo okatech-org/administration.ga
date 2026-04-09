@@ -62,6 +62,12 @@ function getAge(bd?: string | number | null): number | null {
   }
 }
 
+function formatPhone(phone?: string | null): string {
+  if (!phone) return "—"
+  // If it's a French/Gabonese number with no spaces, we could format it, but returning as is works best for now
+  return phone
+}
+
 // FlatCard is now imported from @/components/my-space/flat-card
 
 // ═════════════════════════════════════════════════════════════

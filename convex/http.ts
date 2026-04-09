@@ -109,7 +109,7 @@ function isProductionDeployment(): boolean {
 // so we can pass the request Origin to `createAuth`, allowing crossDomain's
 // `siteUrl` to match the calling app (citizen, agent, or backoffice).
 
-const AUTH_PATH = "/api/auth";
+const AUTH_PATH = "/api/my-auth";
 
 // OIDC well-known redirect (required for Convex JWT validation)
 http.route({
@@ -122,9 +122,59 @@ http.route({
 });
 
 const authRequestHandler = httpAction(async (ctx, request) => {
+  const proxiedCtx = {
+    ...ctx,
+    runQuery: async (ref: any, args: any) => {
+      let strippedArgs = args;
+      if (args && args.where) {
+        const processClause = (w: any) => {
+          if (w && typeof w === 'object' && 'mode' in w) {
+            const { mode, ...rest } = w;
+            return rest;
+          }
+          return w;
+        };
+        strippedArgs = { ...args };
+        if (Array.isArray(args.where)) {
+          strippedArgs.where = args.where.map(processClause);
+        } else {
+          strippedArgs.where = processClause(args.where);
+        }
+      }
+      return ctx.runQuery(ref, strippedArgs);
+    },
+    runMutation: async (ref: any, args: any) => {
+      let strippedArgs = args;
+      if (args) {
+        const processClause = (w: any) => {
+          if (w && typeof w === 'object' && 'mode' in w) {
+            const { mode, ...rest } = w;
+            return rest;
+          }
+          return w;
+        };
+        strippedArgs = { ...args };
+        if (args.where) {
+          strippedArgs.where = Array.isArray(args.where) 
+            ? args.where.map(processClause) 
+            : processClause(args.where);
+        }
+        if (args.input && args.input.where) {
+          strippedArgs.input = { ...args.input };
+          strippedArgs.input.where = Array.isArray(args.input.where) 
+            ? args.input.where.map(processClause) 
+            : processClause(args.input.where);
+        }
+      }
+      return ctx.runMutation(ref, strippedArgs);
+    }
+  };
+
   const origin = request.headers.get("origin");
-  const auth = createAuth(ctx, origin);
-  return auth.handler(request);
+  const auth = createAuth(proxiedCtx as any, origin);
+  const rewrittenUrl = request.url.replace("/api/my-auth", "/api/auth");
+  const newRequest = new Request(rewrittenUrl, request);
+  return auth.handler(newRequest);
 });
 
 http.route({ pathPrefix: `${AUTH_PATH}/`, method: "GET", handler: authRequestHandler });

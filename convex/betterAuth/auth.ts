@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth/minimal";
 import { emailOTP, genericOAuth, phoneNumber } from "better-auth/plugins";
 import { createClient } from "@convex-dev/better-auth";
 import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
+// TRIGGER REBUILD GLOBAL PATCH ALL
 import authConfig from "../auth.config";
 import { components } from "../_generated/api";
 import { internalMutation, mutation, query } from "../_generated/server";
@@ -93,7 +94,57 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
           return origins;
         }
       : parseTrustedOrigins(),
-    database: authComponent.adapter(ctx),
+    database: authComponent.adapter({
+      ...ctx,
+      runQuery: async (ref: any, args: any) => {
+        if (args && args.where) {
+          const processClause = (w: any) => {
+            if (w && typeof w === 'object' && 'mode' in w) {
+              const { mode, ...rest } = w;
+              return rest;
+            }
+            return w;
+          };
+          if (Array.isArray(args.where)) {
+            args.where = args.where.map(processClause);
+          } else {
+            args.where = processClause(args.where);
+          }
+        }
+        return ctx.runQuery(ref, args);
+      },
+      runMutation: async (ref: any, args: any) => {
+        if (args && args.where) {
+          const processClause = (w: any) => {
+            if (w && typeof w === 'object' && 'mode' in w) {
+              const { mode, ...rest } = w;
+              return rest;
+            }
+            return w;
+          };
+          if (Array.isArray(args.where)) {
+            args.where = args.where.map(processClause);
+          } else {
+            args.where = processClause(args.where);
+          }
+        }
+        if (args && args.input && args.input.where) {
+          const processClause = (w: any) => {
+            if (w && typeof w === 'object' && 'mode' in w) {
+              const { mode, ...rest } = w;
+              return rest;
+            }
+            return w;
+          };
+          if (Array.isArray(args.input.where)) {
+            args.input.where = args.input.where.map(processClause);
+          } else {
+            args.input.where = processClause(args.input.where);
+          }
+        }
+        return (ctx as any).runMutation(ref, args);
+      }
+    } as any),
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,

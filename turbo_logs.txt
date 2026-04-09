@@ -1,0 +1,1574 @@
+$ turbo dev
+• turbo 2.9.5
+
+   • Packages in scope: @workspace/api, @workspace/desktop-shared, @workspace/i18n, @workspace/shared, @workspace/tsconfig, @workspace/ui, agent-desktop, agent-macos, agent-web, backoffice-web, citizen-web
+   • Running dev in 11 packages
+   • Remote caching disabled
+
+agent-web:dev: cache bypass, force executing ec9c16787f0749f2
+citizen-web:dev: cache bypass, force executing 900b07878f163d5b
+backoffice-web:dev: cache bypass, force executing 41f52bbe0c5ec8af
+agent-desktop:dev: cache bypass, force executing 7fd8dc63687dbe56
+agent-web:dev: $ vite dev --port 3003
+citizen-web:dev: $ next dev --port 3000
+agent-desktop:dev: $ electron-vite dev
+backoffice-web:dev: $ vite dev --port 3002
+citizen-web:dev: ▲ Next.js 16.2.2 (Turbopack)
+citizen-web:dev: - Local:         http://localhost:3000
+citizen-web:dev: - Network:       http://172.20.10.2:3000
+citizen-web:dev: - Environments: .env.local, .env
+citizen-web:dev: ✓ Ready in 194ms
+citizen-web:dev: ⚠ Invalid next.config.ts options detected: 
+citizen-web:dev: ⚠     Unrecognized key(s) in object: 'turbo' at "experimental"
+citizen-web:dev: ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+agent-desktop:dev: vite v6.4.2 building SSR bundle for development...
+agent-desktop:dev: transforming...
+agent-desktop:dev: ✓ 21 modules transformed.
+agent-desktop:dev: rendering chunks...
+agent-desktop:dev: out/main/index.js  68.09 kB
+agent-desktop:dev: ✓ built in 139ms
+agent-desktop:dev: 
+agent-desktop:dev: build the electron main process successfully
+agent-desktop:dev: 
+agent-desktop:dev: -----
+agent-desktop:dev: 
+agent-desktop:dev: vite v6.4.2 building SSR bundle for development...
+agent-desktop:dev: transforming...
+agent-desktop:dev: ✓ 1 modules transformed.
+agent-desktop:dev: rendering chunks...
+agent-desktop:dev: out/preload/index.js  5.10 kB
+agent-desktop:dev: ✓ built in 8ms
+agent-desktop:dev: 
+agent-desktop:dev: build the electron preload files successfully
+agent-desktop:dev: 
+agent-desktop:dev: -----
+agent-desktop:dev: 
+agent-desktop:dev: dev server running for the electron renderer process at:
+agent-desktop:dev: 
+agent-desktop:dev:   ➜  Local:   http://localhost:5173/
+agent-desktop:dev:   ➜  Network: use --host to expose
+agent-desktop:dev: 
+agent-desktop:dev: start electron app...
+agent-desktop:dev: 
+citizen-web:dev: - Experiments (use with caution):
+citizen-web:dev:   ? turbo (invalid experimental key)
+citizen-web:dev: 
+backoffice-web:dev: 
+backoffice-web:dev:   VITE v7.3.2  ready in 1626 ms
+backoffice-web:dev: 
+backoffice-web:dev:   ➜  Local:   http://localhost:3002/
+backoffice-web:dev:   ➜  Network: http://172.20.10.2:3002/
+agent-web:dev: 
+agent-web:dev:   VITE v7.3.2  ready in 1675 ms
+agent-web:dev: 
+agent-web:dev:   ➜  Local:   http://localhost:3003/
+agent-web:dev:   ➜  Network: http://172.20.10.2:3003/
+citizen-web:dev:  POST /api/dev/sign-in 200 in 1155ms (next.js: 66ms, application-code: 1089ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/sign-in/email
+citizen-web:dev:  POST /api/auth/sign-in/email 200 in 967ms (next.js: 339ms, application-code: 628ms)
+citizen-web:dev: 🌐 i18next is made possible by our own product, Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+citizen-web:dev:  GET / 200 in 214ms (next.js: 53ms, application-code: 161ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 287ms (next.js: 4ms, application-code: 283ms)
+citizen-web:dev:  POST /api/dev/sign-in 200 in 543ms (next.js: 5ms, application-code: 539ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/sign-in/email
+citizen-web:dev:  POST /api/auth/sign-in/email 200 in 476ms (next.js: 1990µs, application-code: 474ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET / 200 in 39ms (next.js: 3ms, application-code: 35ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 236ms (next.js: 1646µs, application-code: 235ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/convex/token
+citizen-web:dev:  GET /api/auth/convex/token 200 in 162ms (next.js: 3ms, application-code: 160ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/convex/token
+citizen-web:dev:  GET /api/auth/convex/token 200 in 203ms (next.js: 42ms, application-code: 161ms)
+citizen-web:dev: ⨯ ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:3:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:   [90m 1 |[0m [32m"use client"[0m;
+citizen-web:dev:   [90m 2 |[0m
+citizen-web:dev: [31m[1m>[0m [90m 3 |[0m [36mimport[0m {
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 4 |[0m 	[33mRoomAudioRenderer[0m,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 5 |[0m 	useConnectionState,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 6 |[0m 	useLocalParticipant,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 7 |[0m 	useRemoteParticipants,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 8 |[0m 	useTracks,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 9 |[0m 	useTrackToggle,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m10 |[0m 	[33mVideoTrack[0m,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@livekit/components-react"[0m;
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev:   [90m12 |[0m [36mimport[0m { [33mConnectionState[0m, [33mTrack[0m } [36mfrom[0m [32m"livekit-client"[0m;
+citizen-web:dev:   [90m13 |[0m [36mimport[0m {
+citizen-web:dev:   [90m14 |[0m 	[33mCamera[0m,
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: ./apps/citizen-web/src/components/meetings/org-call-button.tsx:5:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:   [90m 3 |[0m [36mimport[0m { api } [36mfrom[0m [32m"@convex/_generated/api"[0m;
+citizen-web:dev:   [90m 4 |[0m [36mimport[0m [36mtype[0m { [33mId[0m } [36mfrom[0m [32m"@convex/_generated/dataModel"[0m;
+citizen-web:dev: [31m[1m>[0m [90m 5 |[0m [36mimport[0m {
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 6 |[0m 	[33mLiveKitRoom[0m,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 7 |[0m } [36mfrom[0m [32m"@livekit/components-react"[0m;
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev:   [90m 8 |[0m [36mimport[0m { [33mCustomCallUI[0m } [36mfrom[0m [32m"@/components/meetings/custom-call-ui"[0m;
+citizen-web:dev:   [90m 9 |[0m [36mimport[0m [36mtype[0m { [33mVariantProps[0m } [36mfrom[0m [32m"class-variance-authority"[0m;
+citizen-web:dev:   [90m10 |[0m [36mimport[0m { [33mLoader2[0m, [33mPhone[0m, [33mPhoneOff[0m, [33mChevronDown[0m, [33mMapPin[0m, [33mMessageCircle[0m } [36mfrom[0m [32m"lucide-react"[0m;
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:12:1
+citizen-web:dev: Module not found: Can't resolve 'livekit-client'
+citizen-web:dev:   [90m10 |[0m 	[33mVideoTrack[0m,
+citizen-web:dev:   [90m11 |[0m } [36mfrom[0m [32m"@livekit/components-react"[0m;
+citizen-web:dev: [31m[1m>[0m [90m12 |[0m [36mimport[0m { [33mConnectionState[0m, [33mTrack[0m } [36mfrom[0m [32m"livekit-client"[0m;
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev:   [90m13 |[0m [36mimport[0m {
+citizen-web:dev:   [90m14 |[0m 	[33mCamera[0m,
+citizen-web:dev:   [90m15 |[0m 	[33mCameraOff[0m,
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: ./apps/citizen-web/src/lib/analytics.ts:1:1
+citizen-web:dev: Module not found: Can't resolve 'posthog-js'
+citizen-web:dev: [31m[1m>[0m [90m1 |[0m [36mimport[0m posthog [36mfrom[0m [32m"posthog-js"[0m;
+citizen-web:dev:   [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev:   [90m2 |[0m
+citizen-web:dev:   [90m3 |[0m [90m// Définition des événements et de leurs propriétés typées[0m
+citizen-web:dev:   [90m4 |[0m [36mexport[0m [36mtype[0m [33mAnalyticsEvents[0m = {
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:3:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    1 | "use client";
+citizen-web:dev:    2 |
+citizen-web:dev: >  3 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  4 | 	RoomAudioRenderer,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  5 | 	useConnectionState,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  6 | 	useLocalParticipant,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  7 | 	useRemoteParticipants,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  8 | 	useTracks,
+citizen-web:dev:      | ^^^^^^^^^^
+citizen-web:dev: >  9 | 	useTrackToggle,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^
+citizen-web:dev: > 10 | 	VideoTrack,
+citizen-web:dev:      | ^^^^^^^^^^^
+citizen-web:dev: > 11 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13891:21)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13335:52) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/org-call-button.tsx:5:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    3 | import { api } from "@convex/_generated/api";
+citizen-web:dev:    4 | import type { Id } from "@convex/_generated/dataModel";
+citizen-web:dev: >  5 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  6 | 	LiveKitRoom,
+citizen-web:dev:      | ^^^^^^^^^^^^
+citizen-web:dev: >  7 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:    8 | import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+citizen-web:dev:    9 | import type { VariantProps } from "class-variance-authority";
+citizen-web:dev:   10 | import { Loader2, Phone, PhoneOff, ChevronDown, MapPin, MessageCircle } from "lucide-react";
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13891:21)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13335:52) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:12:1
+citizen-web:dev: Module not found: Can't resolve 'livekit-client'
+citizen-web:dev:   10 | 	VideoTrack,
+citizen-web:dev:   11 | } from "@livekit/components-react";
+citizen-web:dev: > 12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev:   15 | 	CameraOff,
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13891:21)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13335:52) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/lib/analytics.ts:1:1
+citizen-web:dev: Module not found: Can't resolve 'posthog-js'
+citizen-web:dev: > 1 | import posthog from "posthog-js";
+citizen-web:dev:     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   2 |
+citizen-web:dev:   3 | // Définition des événements et de leurs propriétés typées
+citizen-web:dev:   4 | export type AnalyticsEvents = {
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13891:21)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13335:52) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:  GET /my-space 500 in 1898ms (next.js: 1800ms, application-code: 97ms)
+citizen-web:dev: ⨯ ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:3:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:   [90m 1 |[0m [32m"use client"[0m;
+citizen-web:dev:   [90m 2 |[0m
+citizen-web:dev: [31m[1m>[0m [90m 3 |[0m [36mimport[0m {
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 4 |[0m 	[33mRoomAudioRenderer[0m,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 5 |[0m 	useConnectionState,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 6 |[0m 	useLocalParticipant,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 7 |[0m 	useRemoteParticipants,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 8 |[0m 	useTracks,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 9 |[0m 	useTrackToggle,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m10 |[0m 	[33mVideoTrack[0m,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@livekit/components-react"[0m;
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev:   [90m12 |[0m [36mimport[0m { [33mConnectionState[0m, [33mTrack[0m } [36mfrom[0m [32m"livekit-client"[0m;
+citizen-web:dev:   [90m13 |[0m [36mimport[0m {
+citizen-web:dev:   [90m14 |[0m 	[33mCamera[0m,
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: ./apps/citizen-web/src/components/meetings/org-call-button.tsx:5:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:   [90m 3 |[0m [36mimport[0m { api } [36mfrom[0m [32m"@convex/_generated/api"[0m;
+citizen-web:dev:   [90m 4 |[0m [36mimport[0m [36mtype[0m { [33mId[0m } [36mfrom[0m [32m"@convex/_generated/dataModel"[0m;
+citizen-web:dev: [31m[1m>[0m [90m 5 |[0m [36mimport[0m {
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 6 |[0m 	[33mLiveKitRoom[0m,
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^[0m
+citizen-web:dev: [31m[1m>[0m [90m 7 |[0m } [36mfrom[0m [32m"@livekit/components-react"[0m;
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev:   [90m 8 |[0m [36mimport[0m { [33mCustomCallUI[0m } [36mfrom[0m [32m"@/components/meetings/custom-call-ui"[0m;
+citizen-web:dev:   [90m 9 |[0m [36mimport[0m [36mtype[0m { [33mVariantProps[0m } [36mfrom[0m [32m"class-variance-authority"[0m;
+citizen-web:dev:   [90m10 |[0m [36mimport[0m { [33mLoader2[0m, [33mPhone[0m, [33mPhoneOff[0m, [33mChevronDown[0m, [33mMapPin[0m, [33mMessageCircle[0m } [36mfrom[0m [32m"lucide-react"[0m;
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:12:1
+citizen-web:dev: Module not found: Can't resolve 'livekit-client'
+citizen-web:dev:   [90m10 |[0m 	[33mVideoTrack[0m,
+citizen-web:dev:   [90m11 |[0m } [36mfrom[0m [32m"@livekit/components-react"[0m;
+citizen-web:dev: [31m[1m>[0m [90m12 |[0m [36mimport[0m { [33mConnectionState[0m, [33mTrack[0m } [36mfrom[0m [32m"livekit-client"[0m;
+citizen-web:dev:   [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev:   [90m13 |[0m [36mimport[0m {
+citizen-web:dev:   [90m14 |[0m 	[33mCamera[0m,
+citizen-web:dev:   [90m15 |[0m 	[33mCameraOff[0m,
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: ./apps/citizen-web/src/lib/analytics.ts:1:1
+citizen-web:dev: Module not found: Can't resolve 'posthog-js'
+citizen-web:dev: [31m[1m>[0m [90m1 |[0m [36mimport[0m posthog [36mfrom[0m [32m"posthog-js"[0m;
+citizen-web:dev:   [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+citizen-web:dev:   [90m2 |[0m
+citizen-web:dev:   [90m3 |[0m [90m// Définition des événements et de leurs propriétés typées[0m
+citizen-web:dev:   [90m4 |[0m [36mexport[0m [36mtype[0m [33mAnalyticsEvents[0m = {
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev:  GET /my-space 500 in 70ms (next.js: 12ms, application-code: 58ms)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:3:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    1 | "use client";
+citizen-web:dev:    2 |
+citizen-web:dev: >  3 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  4 | 	RoomAudioRenderer,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  5 | 	useConnectionState,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  6 | 	useLocalParticipant,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  7 | 	useRemoteParticipants,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  8 | 	useTracks,
+citizen-web:dev:      | ^^^^^^^^^^
+citizen-web:dev: >  9 | 	useTrackToggle,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^
+citizen-web:dev: > 10 | 	VideoTrack,
+citizen-web:dev:      | ^^^^^^^^^^^
+citizen-web:dev: > 11 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13891:21)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13335:52) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/org-call-button.tsx:5:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    3 | import { api } from "@convex/_generated/api";
+citizen-web:dev:    4 | import type { Id } from "@convex/_generated/dataModel";
+citizen-web:dev: >  5 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  6 | 	LiveKitRoom,
+citizen-web:dev:      | ^^^^^^^^^^^^
+citizen-web:dev: >  7 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:    8 | import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+citizen-web:dev:    9 | import type { VariantProps } from "class-variance-authority";
+citizen-web:dev:   10 | import { Loader2, Phone, PhoneOff, ChevronDown, MapPin, MessageCircle } from "lucide-react";
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13891:21)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13335:52) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:12:1
+citizen-web:dev: Module not found: Can't resolve 'livekit-client'
+citizen-web:dev:   10 | 	VideoTrack,
+citizen-web:dev:   11 | } from "@livekit/components-react";
+citizen-web:dev: > 12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev:   15 | 	CameraOff,
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13891:21)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13335:52) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/lib/analytics.ts:1:1
+citizen-web:dev: Module not found: Can't resolve 'posthog-js'
+citizen-web:dev: > 1 | import posthog from "posthog-js";
+citizen-web:dev:     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   2 |
+citizen-web:dev:   3 | // Définition des événements et de leurs propriétés typées
+citizen-web:dev:   4 | export type AnalyticsEvents = {
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13891:21)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13335:52) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:3:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    1 | "use client";
+citizen-web:dev:    2 |
+citizen-web:dev: >  3 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  4 | 	RoomAudioRenderer,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  5 | 	useConnectionState,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  6 | 	useLocalParticipant,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  7 | 	useRemoteParticipants,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  8 | 	useTracks,
+citizen-web:dev:      | ^^^^^^^^^^
+citizen-web:dev: >  9 | 	useTrackToggle,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^
+citizen-web:dev: > 10 | 	VideoTrack,
+citizen-web:dev:      | ^^^^^^^^^^^
+citizen-web:dev: > 11 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13891:21)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13335:52) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/org-call-button.tsx:5:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    3 | import { api } from "@convex/_generated/api";
+citizen-web:dev:    4 | import type { Id } from "@convex/_generated/dataModel";
+citizen-web:dev: >  5 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  6 | 	LiveKitRoom,
+citizen-web:dev:      | ^^^^^^^^^^^^
+citizen-web:dev: >  7 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:    8 | import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+citizen-web:dev:    9 | import type { VariantProps } from "class-variance-authority";
+citizen-web:dev:   10 | import { Loader2, Phone, PhoneOff, ChevronDown, MapPin, MessageCircle } from "lucide-react";
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13891:21)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13335:52) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:12:1
+citizen-web:dev: Module not found: Can't resolve 'livekit-client'
+citizen-web:dev:   10 | 	VideoTrack,
+citizen-web:dev:   11 | } from "@livekit/components-react";
+citizen-web:dev: > 12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev:   15 | 	CameraOff,
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13891:21)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13335:52) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/lib/analytics.ts:1:1
+citizen-web:dev: Module not found: Can't resolve 'posthog-js'
+citizen-web:dev: > 1 | import posthog from "posthog-js";
+citizen-web:dev:     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   2 |
+citizen-web:dev:   3 | // Définition des événements et de leurs propriétés typées
+citizen-web:dev:   4 | export type AnalyticsEvents = {
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13891:21)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13335:52) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev: [browser] Uncaught Error: ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:3:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    1 | "use client";
+citizen-web:dev:    2 |
+citizen-web:dev: >  3 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  4 | 	RoomAudioRenderer,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  5 | 	useConnectionState,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  6 | 	useLocalParticipant,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  7 | 	useRemoteParticipants,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  8 | 	useTracks,
+citizen-web:dev:      | ^^^^^^^^^^
+citizen-web:dev: >  9 | 	useTrackToggle,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^
+citizen-web:dev: > 10 | 	VideoTrack,
+citizen-web:dev:      | ^^^^^^^^^^^
+citizen-web:dev: > 11 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev:     at <unknown> (Error: ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:3:1)
+citizen-web:dev:     at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+citizen-web:dev:     at <unknown> (Error: (./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:3:1)
+citizen-web:dev:     at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:3:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    1 | "use client";
+citizen-web:dev:    2 |
+citizen-web:dev: >  3 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  4 | 	RoomAudioRenderer,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  5 | 	useConnectionState,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  6 | 	useLocalParticipant,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  7 | 	useRemoteParticipants,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  8 | 	useTracks,
+citizen-web:dev:      | ^^^^^^^^^^
+citizen-web:dev: >  9 | 	useTrackToggle,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^
+citizen-web:dev: > 10 | 	VideoTrack,
+citizen-web:dev:      | ^^^^^^^^^^^
+citizen-web:dev: > 11 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/org-call-button.tsx:5:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    3 | import { api } from "@convex/_generated/api";
+citizen-web:dev:    4 | import type { Id } from "@convex/_generated/dataModel";
+citizen-web:dev: >  5 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  6 | 	LiveKitRoom,
+citizen-web:dev:      | ^^^^^^^^^^^^
+citizen-web:dev: >  7 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:    8 | import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+citizen-web:dev:    9 | import type { VariantProps } from "class-variance-authority";
+citizen-web:dev:   10 | import { Loader2, Phone, PhoneOff, ChevronDown, MapPin, MessageCircle } from "lucide-react";
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:12:1
+citizen-web:dev: Module not found: Can't resolve 'livekit-client'
+citizen-web:dev:   10 | 	VideoTrack,
+citizen-web:dev:   11 | } from "@livekit/components-react";
+citizen-web:dev: > 12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev:   15 | 	CameraOff,
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/lib/analytics.ts:1:1
+citizen-web:dev: Module not found: Can't resolve 'posthog-js'
+citizen-web:dev: > 1 | import posthog from "posthog-js";
+citizen-web:dev:     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   2 |
+citizen-web:dev:   3 | // Définition des événements et de leurs propriétés typées
+citizen-web:dev:   4 | export type AnalyticsEvents = {
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:3:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    1 | "use client";
+citizen-web:dev:    2 |
+citizen-web:dev: >  3 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  4 | 	RoomAudioRenderer,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  5 | 	useConnectionState,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  6 | 	useLocalParticipant,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  7 | 	useRemoteParticipants,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  8 | 	useTracks,
+citizen-web:dev:      | ^^^^^^^^^^
+citizen-web:dev: >  9 | 	useTrackToggle,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^
+citizen-web:dev: > 10 | 	VideoTrack,
+citizen-web:dev:      | ^^^^^^^^^^^
+citizen-web:dev: > 11 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/org-call-button.tsx:5:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    3 | import { api } from "@convex/_generated/api";
+citizen-web:dev:    4 | import type { Id } from "@convex/_generated/dataModel";
+citizen-web:dev: >  5 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  6 | 	LiveKitRoom,
+citizen-web:dev:      | ^^^^^^^^^^^^
+citizen-web:dev: >  7 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:    8 | import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+citizen-web:dev:    9 | import type { VariantProps } from "class-variance-authority";
+citizen-web:dev:   10 | import { Loader2, Phone, PhoneOff, ChevronDown, MapPin, MessageCircle } from "lucide-react";
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:12:1
+citizen-web:dev: Module not found: Can't resolve 'livekit-client'
+citizen-web:dev:   10 | 	VideoTrack,
+citizen-web:dev:   11 | } from "@livekit/components-react";
+citizen-web:dev: > 12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev:   15 | 	CameraOff,
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/lib/analytics.ts:1:1
+citizen-web:dev: Module not found: Can't resolve 'posthog-js'
+citizen-web:dev: > 1 | import posthog from "posthog-js";
+citizen-web:dev:     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   2 |
+citizen-web:dev:   3 | // Définition des événements et de leurs propriétés typées
+citizen-web:dev:   4 | export type AnalyticsEvents = {
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:  GET / 500 in 50ms (next.js: 9ms, application-code: 41ms)
+citizen-web:dev: [browser] Uncaught Error: ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:3:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    1 | "use client";
+citizen-web:dev:    2 |
+citizen-web:dev: >  3 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  4 | 	RoomAudioRenderer,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  5 | 	useConnectionState,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  6 | 	useLocalParticipant,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  7 | 	useRemoteParticipants,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  8 | 	useTracks,
+citizen-web:dev:      | ^^^^^^^^^^
+citizen-web:dev: >  9 | 	useTrackToggle,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^
+citizen-web:dev: > 10 | 	VideoTrack,
+citizen-web:dev:      | ^^^^^^^^^^^
+citizen-web:dev: > 11 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found
+citizen-web:dev: 
+citizen-web:dev: 
+citizen-web:dev:     at <unknown> (Error: ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:3:1)
+citizen-web:dev:     at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+citizen-web:dev:     at <unknown> (Error: (./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:3:1)
+citizen-web:dev:     at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:3:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    1 | "use client";
+citizen-web:dev:    2 |
+citizen-web:dev: >  3 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  4 | 	RoomAudioRenderer,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  5 | 	useConnectionState,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  6 | 	useLocalParticipant,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  7 | 	useRemoteParticipants,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  8 | 	useTracks,
+citizen-web:dev:      | ^^^^^^^^^^
+citizen-web:dev: >  9 | 	useTrackToggle,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^
+citizen-web:dev: > 10 | 	VideoTrack,
+citizen-web:dev:      | ^^^^^^^^^^^
+citizen-web:dev: > 11 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/org-call-button.tsx:5:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    3 | import { api } from "@convex/_generated/api";
+citizen-web:dev:    4 | import type { Id } from "@convex/_generated/dataModel";
+citizen-web:dev: >  5 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  6 | 	LiveKitRoom,
+citizen-web:dev:      | ^^^^^^^^^^^^
+citizen-web:dev: >  7 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:    8 | import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+citizen-web:dev:    9 | import type { VariantProps } from "class-variance-authority";
+citizen-web:dev:   10 | import { Loader2, Phone, PhoneOff, ChevronDown, MapPin, MessageCircle } from "lucide-react";
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:12:1
+citizen-web:dev: Module not found: Can't resolve 'livekit-client'
+citizen-web:dev:   10 | 	VideoTrack,
+citizen-web:dev:   11 | } from "@livekit/components-react";
+citizen-web:dev: > 12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev:   15 | 	CameraOff,
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/lib/analytics.ts:1:1
+citizen-web:dev: Module not found: Can't resolve 'posthog-js'
+citizen-web:dev: > 1 | import posthog from "posthog-js";
+citizen-web:dev:     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   2 |
+citizen-web:dev:   3 | // Définition des événements et de leurs propriétés typées
+citizen-web:dev:   4 | export type AnalyticsEvents = {
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:3:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    1 | "use client";
+citizen-web:dev:    2 |
+citizen-web:dev: >  3 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  4 | 	RoomAudioRenderer,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  5 | 	useConnectionState,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  6 | 	useLocalParticipant,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  7 | 	useRemoteParticipants,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev: >  8 | 	useTracks,
+citizen-web:dev:      | ^^^^^^^^^^
+citizen-web:dev: >  9 | 	useTrackToggle,
+citizen-web:dev:      | ^^^^^^^^^^^^^^^
+citizen-web:dev: > 10 | 	VideoTrack,
+citizen-web:dev:      | ^^^^^^^^^^^
+citizen-web:dev: > 11 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/org-call-button.tsx:5:1
+citizen-web:dev: Module not found: Can't resolve '@livekit/components-react'
+citizen-web:dev:    3 | import { api } from "@convex/_generated/api";
+citizen-web:dev:    4 | import type { Id } from "@convex/_generated/dataModel";
+citizen-web:dev: >  5 | import {
+citizen-web:dev:      | ^^^^^^^
+citizen-web:dev: >  6 | 	LiveKitRoom,
+citizen-web:dev:      | ^^^^^^^^^^^^
+citizen-web:dev: >  7 | } from "@livekit/components-react";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:    8 | import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+citizen-web:dev:    9 | import type { VariantProps } from "class-variance-authority";
+citizen-web:dev:   10 | import { Loader2, Phone, PhoneOff, ChevronDown, MapPin, MessageCircle } from "lucide-react";
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx:12:1
+citizen-web:dev: Module not found: Can't resolve 'livekit-client'
+citizen-web:dev:   10 | 	VideoTrack,
+citizen-web:dev:   11 | } from "@livekit/components-react";
+citizen-web:dev: > 12 | import { ConnectionState, Track } from "livekit-client";
+citizen-web:dev:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   13 | import {
+citizen-web:dev:   14 | 	Camera,
+citizen-web:dev:   15 | 	CameraOff,
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/custom-call-ui.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/meetings/org-call-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/assistance-contacts-widget.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/lib/analytics.ts:1:1
+citizen-web:dev: Module not found: Can't resolve 'posthog-js'
+citizen-web:dev: > 1 | import posthog from "posthog-js";
+citizen-web:dev:     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+citizen-web:dev:   2 |
+citizen-web:dev:   3 | // Définition des événements et de leurs propriétés typées
+citizen-web:dev:   4 | export type AnalyticsEvents = {
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/lib/analytics.ts [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/sidebars/logout-button.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-sidebar.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/components/my-space/my-space-wrapper.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/layout.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev: https://nextjs.org/docs/messages/module-not-found 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2834:28)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2679:13)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2324:17) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0jl8xq5._.js:2773:21)
+citizen-web:dev: ✓ Compiled in 433ms
+citizen-web:dev:  GET / 200 in 487ms (next.js: 1524µs, application-code: 486ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 801ms (next.js: 18ms, application-code: 783ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/convex/token
+citizen-web:dev:  GET /api/auth/convex/token 200 in 167ms (next.js: 6ms, application-code: 161ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/convex/token
+citizen-web:dev:  GET /api/auth/convex/token 200 in 262ms (next.js: 1824µs, application-code: 261ms)
+citizen-web:dev:  GET / 200 in 66ms (next.js: 6ms, application-code: 60ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 160ms (next.js: 2ms, application-code: 157ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 236ms (next.js: 22ms, application-code: 214ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 151ms (next.js: 1473µs, application-code: 150ms)
+agent-web:dev: 🌐 i18next is made possible by our own product, Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+citizen-web:dev:  GET / 200 in 549ms (next.js: 3ms, application-code: 546ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 165ms (next.js: 3ms, application-code: 162ms)
+citizen-web:dev:  POST /api/dev/sign-in 200 in 995ms (next.js: 15ms, application-code: 979ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/sign-in/email
+citizen-web:dev:  POST /api/auth/sign-in/email 200 in 639ms (next.js: 2ms, application-code: 637ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 267ms (next.js: 4ms, application-code: 263ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/convex/token
+citizen-web:dev:  GET /api/auth/convex/token 200 in 175ms (next.js: 1347µs, application-code: 173ms)
+citizen-web:dev:  GET / 200 in 1270ms (next.js: 4ms, application-code: 1265ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 233ms (next.js: 1647µs, application-code: 232ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/convex/token
+citizen-web:dev:  GET /api/auth/convex/token 200 in 165ms (next.js: 3ms, application-code: 162ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/convex/token
+citizen-web:dev:  GET /api/auth/convex/token 200 in 159ms (next.js: 3ms, application-code: 156ms)
+citizen-web:dev:  GET /my-space 200 in 115ms (next.js: 34ms, application-code: 81ms)
+citizen-web:dev: [browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_02zodwq._.js:2431:13)
+citizen-web:dev: [browser] Uncaught ReferenceError: formatPhone is not defined
+citizen-web:dev:     at UserDashboard (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/_0iifr0n._.js:3264:87)
+citizen-web:dev:     at Object.react_stack_bottom_frame (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_compiled_react-dom_0.nf88a._.js:15037:24)
+citizen-web:dev:     at renderWithHooks (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_compiled_react-dom_0.nf88a._.js:4620:24)
+citizen-web:dev:     at updateFunctionComponent (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_compiled_react-dom_0.nf88a._.js:6081:21)
+citizen-web:dev:     at beginWork (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_compiled_react-dom_0.nf88a._.js:6691:24)
+citizen-web:dev:     at runWithFiberInDEV (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_compiled_react-dom_0.nf88a._.js:965:74)
+citizen-web:dev:     at performUnitOfWork (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_compiled_react-dom_0.nf88a._.js:9555:97)
+citizen-web:dev:     at workLoopSync (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_compiled_react-dom_0.nf88a._.js:9449:40)
+citizen-web:dev:     at renderRootSync (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_compiled_react-dom_0.nf88a._.js:9433:13)
+citizen-web:dev:     at performWorkOnRoot (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_compiled_react-dom_0.nf88a._.js:9098:47)
+citizen-web:dev:     at performSyncWorkOnRoot (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_compiled_react-dom_0.nf88a._.js:10263:9)
+citizen-web:dev:     at flushSyncWorkAcrossRoots_impl (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_compiled_react-dom_0.nf88a._.js:10179:316)
+citizen-web:dev:     at processRootScheduleInMicrotask (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_compiled_react-dom_0.nf88a._.js:10200:106)
+citizen-web:dev:     at <unknown> (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_compiled_react-dom_0.nf88a._.js:10274:158)
+citizen-web:dev:     at ClientPageRoot (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_0.2.2mr._.js:4688:50)
+citizen-web:dev: ✓ Compiled in 633ms
+citizen-web:dev: [browser] ./apps/citizen-web/src/app/my-space/page.tsx:61:5
+citizen-web:dev: Expected a semicolon
+citizen-web:dev:   59 |     return differenceInYears(new Date(), new Date(bd))
+citizen-web:dev:   60 |   } catch {
+citizen-web:dev: > 61 |   } catch {
+citizen-web:dev:      |     ^^^^^
+citizen-web:dev:   62 |     return null
+citizen-web:dev:   63 |   }
+citizen-web:dev:   64 | }
+citizen-web:dev: 
+citizen-web:dev: Parsing ecmascript source code failed
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component] 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13891:21)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13335:52) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/app/my-space/page.tsx:58:5
+citizen-web:dev: Expected a semicolon
+citizen-web:dev:   56 | function getAge(bd?: string | number | null): number | null {
+citizen-web:dev:   57 |   if (!bd) return null
+citizen-web:dev: > 58 |   } catch {
+citizen-web:dev:      |     ^^^^^
+citizen-web:dev:   59 |     return null
+citizen-web:dev:   60 |   }
+citizen-web:dev:   61 | }
+citizen-web:dev: 
+citizen-web:dev: Parsing ecmascript source code failed
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component] 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13891:21)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13335:52) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev: [browser] ./apps/citizen-web/src/app/my-space/page.tsx:59:5
+citizen-web:dev: Return statement is not allowed here
+citizen-web:dev:   57 |   if (!bd) return null
+citizen-web:dev:   58 |   } catch {
+citizen-web:dev: > 59 |     return null
+citizen-web:dev:      |     ^^^^^^^^^^^
+citizen-web:dev:   60 |   }
+citizen-web:dev:   61 | }
+citizen-web:dev:   62 |
+citizen-web:dev: 
+citizen-web:dev: Parsing ecmascript source code failed
+citizen-web:dev: 
+citizen-web:dev: Import traces:
+citizen-web:dev:   Client Component Browser:
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component Browser]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component]
+citizen-web:dev: 
+citizen-web:dev:   Client Component SSR:
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Client Component SSR]
+citizen-web:dev:     ./apps/citizen-web/src/app/my-space/page.tsx [Server Component] 
+citizen-web:dev:     at handleErrors (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev:     at processMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13891:21)
+citizen-web:dev:     at WebSocket.handleMessage (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13335:52) (file:///Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/apps/citizen-web/.next/dev/static/chunks/0hq0_next_dist_client_0vi9fc7._.js:13828:21)
+citizen-web:dev: ✓ Compiled in 202ms
+citizen-web:dev: ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+citizen-web:dev:  GET / 200 in 114ms (next.js: 46ms, application-code: 68ms)
+citizen-web:dev:  GET /my-space 200 in 1799ms (next.js: 76ms, application-code: 1723ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 515ms (next.js: 62ms, application-code: 453ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/convex/token
+citizen-web:dev:  GET /api/auth/convex/token 200 in 226ms (next.js: 3ms, application-code: 223ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/convex/token
+citizen-web:dev:  GET /api/auth/convex/token 200 in 284ms (next.js: 14ms, application-code: 270ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 363ms (next.js: 13ms, application-code: 350ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 167ms (next.js: 2ms, application-code: 165ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 199ms (next.js: 23ms, application-code: 177ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 309ms (next.js: 1042µs, application-code: 308ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 514ms (next.js: 10ms, application-code: 505ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 177ms (next.js: 3ms, application-code: 175ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 245ms (next.js: 32ms, application-code: 213ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 200ms (next.js: 2ms, application-code: 198ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 185ms (next.js: 11ms, application-code: 174ms)
+citizen-web:dev: >>>> NEXTJS PROXYING TO:  https://acrobatic-mole-132.eu-west-1.convex.site/api/my-auth/get-session
+citizen-web:dev:  GET /api/auth/get-session 200 in 173ms (next.js: 1012µs, application-code: 172ms)
+backoffice-web:dev: 🌐 i18next is made possible by our own product, Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
