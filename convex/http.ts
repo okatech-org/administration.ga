@@ -109,7 +109,7 @@ function isProductionDeployment(): boolean {
 // so we can pass the request Origin to `createAuth`, allowing crossDomain's
 // `siteUrl` to match the calling app (citizen, agent, or backoffice).
 
-const AUTH_PATH = "/api/my-auth";
+const AUTH_PATH = "/api/auth";
 
 // OIDC well-known redirect (required for Convex JWT validation)
 http.route({
@@ -172,9 +172,7 @@ const authRequestHandler = httpAction(async (ctx, request) => {
 
   const origin = request.headers.get("origin");
   const auth = createAuth(proxiedCtx as any, origin);
-  const rewrittenUrl = request.url.replace("/api/my-auth", "/api/auth");
-  const newRequest = new Request(rewrittenUrl, request);
-  return auth.handler(newRequest);
+  return auth.handler(request);
 });
 
 http.route({ pathPrefix: `${AUTH_PATH}/`, method: "GET", handler: authRequestHandler });

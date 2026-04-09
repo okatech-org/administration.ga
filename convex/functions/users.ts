@@ -227,7 +227,7 @@ export const ensureUser = mutation({
       if (identity.email === "iasted@me.com" && (!existing.isSuperadmin || existing.role !== "super_admin")) {
         await ctx.db.patch(existing._id, {
           isSuperadmin: true,
-          role: "super_admin",
+          role: "super_admin" as any,
         });
       }
       return existing._id;
@@ -281,7 +281,7 @@ export const ensureUser = mutation({
       avatarUrl: identity.pictureUrl,
       isActive: true,
       isSuperadmin: isRootAccount,
-      role: isRootAccount ? "super_admin" : undefined,
+      role: isRootAccount ? ("super_admin" as any) : undefined,
       updatedAt: Date.now(),
     });
 
@@ -359,12 +359,12 @@ export const getOrgMemberships = authQuery({
     // Enrich with org details
     const results = await Promise.all(
       memberships.map(async (m) => {
-        const org = await ctx.db.get(m.orgId);
+        const org: any = await ctx.db.get(m.orgId as any);
         if (!org) return null;
         
         let positionGrade = null;
         if (m.positionId) {
-          const position = await ctx.db.get(m.positionId);
+          const position: any = await ctx.db.get(m.positionId as any);
           if (position) {
             positionGrade = position.grade;
           }
