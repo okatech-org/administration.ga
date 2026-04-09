@@ -60,6 +60,7 @@ type PlanDoc = {
 type PrioritiesDoc = {
   hostCountry: string;
   priorities: Array<{ title: string; sector: string; keywords: string[] }>;
+  sourceDocuments?: Array<{ filename: string; aiSummary?: string }>;
 } | null;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -76,11 +77,47 @@ const generateJSON = async (prompt: string): Promise<unknown> => {
     model: "gemini-2.5-flash",
     generationConfig: {
       responseMimeType: "application/json",
+      maxOutputTokens: 65536,
     },
   });
   const result = await model.generateContent(prompt);
-  const text = result.response.text();
-  return JSON.parse(text);
+  let text = result.response.text();
+
+  // Gemini peut tronquer le JSON — tenter de reparer les fermetures manquantes
+  try {
+    return JSON.parse(text);
+  } catch {
+    // Essayer de fermer les crochets/accolades manquants
+    let open = 0;
+    let openArr = 0;
+    for (const ch of text) {
+      if (ch === "{") open++;
+      else if (ch === "}") open--;
+      else if (ch === "[") openArr++;
+      else if (ch === "]") openArr--;
+    }
+    // Couper le dernier element incomplet (souvent une string tronquee)
+    const lastComplete = Math.max(
+      text.lastIndexOf("},"),
+      text.lastIndexOf("],"),
+      text.lastIndexOf('",'),
+    );
+    if (lastComplete > text.length * 0.7) {
+      text = text.substring(0, lastComplete + 1);
+      // Recompter
+      open = 0;
+      openArr = 0;
+      for (const ch of text) {
+        if (ch === "{") open++;
+        else if (ch === "}") open--;
+        else if (ch === "[") openArr++;
+        else if (ch === "]") openArr--;
+      }
+    }
+    text += "]".repeat(Math.max(0, openArr)) + "}".repeat(Math.max(0, open));
+    console.warn(`[generateJSON] JSON repare (${open} accolades, ${openArr} crochets fermes)`);
+    return JSON.parse(text);
+  }
 };
 
 const generateText = async (prompt: string): Promise<string> => {
@@ -167,7 +204,7 @@ Retourne un objet JSON: { "targets": [...] }`;
       }>;
     };
 
-    // Insérer les cibles en base
+    // Inserer les cibles en base
     const insertedIds: string[] = [];
     for (const t of result.targets) {
       const validTypes = [
@@ -288,8 +325,19 @@ export const generateStrategy = action({
   args: {
     orgId: v.id("orgs"),
     targetId: v.id("diplomaticTargets"),
+    depth: v.optional(
+      v.union(v.literal("standard"), v.literal("complet")),
+    ),
   },
-  handler: async (ctx, args): Promise<{ planId: Id<"diplomaticPlans">; title: string; category: string; summary: string; aiGeneratedContent: Record<string, string[]>; objectives: Array<{ title: string; description?: string; status: string }> }> => {
+  handler: async (ctx, args): Promise<{
+    planId: Id<"diplomaticPlans">;
+    title: string;
+    category: string;
+    summary: string;
+    aiGeneratedContent: Record<string, string[]>;
+    objectives: Array<{ title: string; description?: string; status: string }>;
+  }> => {
+    const depth = args.depth ?? "complet";
     const target: TargetDoc | null = await ctx.runQuery(
       api.functions.diplomaticAffairs.getTarget,
       { targetId: args.targetId },
@@ -303,43 +351,392 @@ export const generateStrategy = action({
 
     const priorityContext = priorities
       ? priorities.priorities
-          .map((p: { title: string; sector: string }) => `- ${p.title} (${p.sector})`)
+          .map(
+            (p: { title: string; sector: string }) =>
+              `- ${p.title} (${p.sector})`,
+          )
           .join("\n")
-      : "Développement économique général";
+      : "Developpement economique general";
 
-    // Contexte des documents sources (base de connaissances)
     const knowledgeBase = priorities?.sourceDocuments?.length
-      ? `\nBASE DE CONNAISSANCES:\n${priorities.sourceDocuments.filter((d: { aiSummary?: string }) => d.aiSummary).map((d: { filename: string; aiSummary?: string }) => `- ${d.filename}: ${d.aiSummary}`).join("\n")}\n`
+      ? `\nBASE DE CONNAISSANCES:\n${priorities.sourceDocuments
+          .filter((d: { aiSummary?: string }) => d.aiSummary)
+          .map(
+            (d: { filename: string; aiSummary?: string }) =>
+              `- ${d.filename}: ${d.aiSummary}`,
+          )
+          .join("\n")}\n`
       : "";
 
-    const prompt = `Tu es un conseiller diplomatique de haut niveau spécialisé dans les partenariats internationaux africains.
+    // ─── Helpers de normalisation Gemini ───────────────────────────────────
+    const toStringArray = (arr: unknown): string[] => {
+      if (!Array.isArray(arr)) return [];
+      return arr.map((item) =>
+        typeof item === "string" ? item : JSON.stringify(item),
+      );
+    };
+
+    const toStr = (val: unknown): string =>
+      typeof val === "string" ? val : val ? JSON.stringify(val) : "";
+
+    const validCategories = [
+      "bilateral",
+      "economic",
+      "cultural",
+      "security",
+      "multilateral",
+      "other",
+    ];
+
+    // ═══ MODE COMPLET — Methodologie OkaTech Phase 0 ═══════════════════════
+    if (depth === "complet") {
+      const completPrompt = `Tu es un conseiller diplomatique et economique de haut niveau,
+expert en partenariats internationaux africains et en financement du developpement.
+
+Tu suis la METHODOLOGIE OKATECH adaptee au contexte diplomatique :
+- Phase R1 : Diagnostic sectoriel (macro, forces/contraintes, parties prenantes, benchmark)
+- Phase R2 : Points aveugles (economie politique, risques, facteurs sociaux)
+- Phase R3 : Analyse approfondie de l'operateur
+- Phase R4 : Cadre de partenariat (besoins vs offre, scenarios, financement)
+
+═══ CIBLE ═══
+- Nom: ${target.name}
+- Type: ${target.type}
+- Secteur: ${target.sector ?? "Non specifie"}
+- Pays: ${target.country ?? "Non specifie"} · ${target.city ?? ""}
+- Site web: ${target.website ?? "Non disponible"}
+- Contact: ${target.contactName ?? "Non identifie"} (${target.contactTitle ?? ""})
+- Description: ${target.description ?? "Non disponible"}
+${target.matchReason ? `- Raison du ciblage: ${target.matchReason}` : ""}
+- Score d'opportunite: ${target.opportunityScore ?? "Non evalue"}%
+- Tags: ${target.tags?.join(", ") ?? "Aucun"}
+
+═══ PRIORITES DU GABON ═══
+${priorityContext}
+${knowledgeBase}
+
+═══ CONTEXTE GABON ═══
+Le Gabon est engage dans une politique de diversification economique post-petrole,
+de developpement des infrastructures, et d'attraction des investissements etrangers.
+Les axes prioritaires incluent : energie, infrastructures, numerique, agriculture,
+tourisme, formation professionnelle, et gouvernance.
+
+═══ MISSION ═══
+Produis une analyse strategique COMPLETE de partenariat entre le Gabon et ${target.name},
+structuree selon la methodologie OkaTech Phase 0.
+
+Ce plan doit servir de document de travail operationnel pour l'Ambassadeur du Gabon
+en ${target.country ?? "poste"} et son equipe diplomatique.
+
+Retourne un objet JSON avec EXACTEMENT cette structure :
+
+{
+  "title": "titre du plan strategique",
+  "category": "bilateral" | "economic" | "cultural" | "security" | "multilateral" | "other",
+  "summary": "resume executif complet (1 paragraphe de 5-7 phrases)",
+
+  "strategicAnalysis": {
+    "diagnosticSectoriel": {
+      "contexteMacro": "analyse macro du secteur et sa pertinence pour le Gabon (2-3 paragraphes)",
+      "forcesGabon": ["5-7 atouts du Gabon dans ce secteur"],
+      "contraintesGabon": ["4-6 contraintes/faiblesses a adresser"],
+      "partiesPrenantes": [
+        { "nom": "...", "role": "...", "influence": "forte" | "moyenne" | "faible" }
+      ],
+      "benchmark": [
+        { "pays": "...", "description": "...", "leconsApprises": "..." }
+      ]
+    },
+    "pointsAveugles": {
+      "economiePolitique": "analyse des rapports de force lies a ce partenariat",
+      "risquesGeopolitiques": "risques geopolitiques specifiques",
+      "facteursSociaux": "impact social et acceptabilite au Gabon",
+      "contraintesTerrain": ["3-5 realites operationnelles a anticiper"]
+    },
+    "analyseOperateur": {
+      "profilComplet": "profil enrichi de l'operateur (2-3 paragraphes)",
+      "capacitesCles": ["5-7 competences et moyens de l'operateur"],
+      "realisationsMarquantes": [
+        { "projet": "...", "pays": "...", "resultat": "..." }
+      ],
+      "presenceAfrique": "experience en Afrique si applicable",
+      "alignementPriorites": "comment l'operateur s'aligne sur les priorites gabonaises"
+    },
+    "cadrePartenariat": {
+      "besoinsGabon": [
+        { "besoin": "...", "secteur": "...", "urgence": "immediate" | "court_terme" | "moyen_terme", "estimationBudget": "..." }
+      ],
+      "offreOperateur": [
+        { "capacite": "...", "instrument": "PPP, IDE, AT, credit, fonds...", "conditions": "..." }
+      ],
+      "beneficesMutuels": ["5-7 benefices mutuels"],
+      "modelesFinancement": [
+        { "type": "...", "description": "...", "montantEstime": "..." }
+      ],
+      "scenariosPartenariat": [
+        { "scenario": "ambitieux", "description": "...", "investissementEstime": "...", "delaiMiseEnOeuvre": "..." },
+        { "scenario": "realiste", "description": "...", "investissementEstime": "...", "delaiMiseEnOeuvre": "..." },
+        { "scenario": "minimal", "description": "...", "investissementEstime": "...", "delaiMiseEnOeuvre": "..." }
+      ]
+    },
+    "strategieApproche": {
+      "argumentaire": ["5-7 arguments cles pour convaincre l'operateur"],
+      "negotiationPoints": ["5-7 points de negociation"],
+      "concessions": ["3-5 concessions possibles cote gabonais"],
+      "lignesRouges": ["3-5 limites non-negociables"],
+      "chronologieApproche": [
+        { "etape": "1", "action": "...", "responsable": "...", "delai": "..." }
+      ]
+    },
+    "preparationReunion": {
+      "agenda": [
+        { "point": "...", "duree": "...", "objectif": "..." }
+      ],
+      "dossiersAFournir": ["5-7 documents a preparer"],
+      "questionsStrategiques": ["5-7 questions a poser a l'operateur"],
+      "profilsAInviter": ["3-5 profils gabonais a avoir en reunion"]
+    },
+    "risques": [
+      { "risque": "...", "probabilite": "faible" | "moyenne" | "elevee", "impact": "faible" | "moyen" | "eleve", "mitigation": "..." }
+    ]
+  },
+
+  "aiGeneratedContent": {
+    "countryNeeds": ["version simplifiee des besoins (5-7)"],
+    "operatorCapabilities": ["version simplifiee des capacites (5-7)"],
+    "mutualBenefits": ["version simplifiee (4-6)"],
+    "negotiationPoints": ["version simplifiee (4-6)"],
+    "meetingAgenda": ["version simplifiee (5-8)"],
+    "risks": ["version simplifiee (3-5)"]
+  },
+
+  "objectives": [
+    { "title": "...", "description": "...", "status": "planned" }
+  ]
+}
+
+IMPORTANT:
+- Sois CONCRET et SPECIFIQUE au cas ${target.name} / Gabon
+- Cite des chiffres realistes (montants, delais, volumes)
+- Les scenarios doivent etre veritablement differencies
+- Les risques doivent etre specifiques, pas generiques
+- Les partiesPrenantes influence: EXACTEMENT "forte", "moyenne" ou "faible"
+- Les urgences: EXACTEMENT "immediate", "court_terme" ou "moyen_terme"
+- Les probabilites: EXACTEMENT "faible", "moyenne" ou "elevee"
+- Les impacts: EXACTEMENT "faible", "moyen" ou "eleve"
+- Les scenarios: EXACTEMENT "ambitieux", "realiste" ou "minimal"`;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = (await generateJSON(completPrompt)) as any;
+
+      // Normaliser aiGeneratedContent
+      const normalizedContent = {
+        countryNeeds: toStringArray(raw.aiGeneratedContent?.countryNeeds),
+        operatorCapabilities: toStringArray(raw.aiGeneratedContent?.operatorCapabilities),
+        mutualBenefits: toStringArray(raw.aiGeneratedContent?.mutualBenefits),
+        negotiationPoints: toStringArray(raw.aiGeneratedContent?.negotiationPoints),
+        meetingAgenda: toStringArray(raw.aiGeneratedContent?.meetingAgenda),
+        risks: toStringArray(raw.aiGeneratedContent?.risks),
+      };
+
+      // Normaliser strategicAnalysis avec fallbacks robustes
+      const validInfluence = ["forte", "moyenne", "faible"];
+      const validUrgence = ["immediate", "court_terme", "moyen_terme"];
+      const validProba = ["faible", "moyenne", "elevee"];
+      const validImpact = ["faible", "moyen", "eleve"];
+      const validScenario = ["ambitieux", "realiste", "minimal"];
+
+      const sa = raw.strategicAnalysis;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const normalizedAnalysis = sa ? {
+        diagnosticSectoriel: {
+          contexteMacro: toStr(sa.diagnosticSectoriel?.contexteMacro),
+          forcesGabon: toStringArray(sa.diagnosticSectoriel?.forcesGabon),
+          contraintesGabon: toStringArray(sa.diagnosticSectoriel?.contraintesGabon),
+          partiesPrenantes: Array.isArray(sa.diagnosticSectoriel?.partiesPrenantes)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ? sa.diagnosticSectoriel.partiesPrenantes.map((pp: any) => ({
+                nom: toStr(pp.nom),
+                role: toStr(pp.role),
+                influence: validInfluence.includes(pp.influence) ? pp.influence : "moyenne",
+              }))
+            : [],
+          benchmark: Array.isArray(sa.diagnosticSectoriel?.benchmark)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ? sa.diagnosticSectoriel.benchmark.map((b: any) => ({
+                pays: toStr(b.pays),
+                description: toStr(b.description),
+                leconsApprises: toStr(b.leconsApprises),
+              }))
+            : [],
+        },
+        pointsAveugles: {
+          economiePolitique: toStr(sa.pointsAveugles?.economiePolitique),
+          risquesGeopolitiques: toStr(sa.pointsAveugles?.risquesGeopolitiques),
+          facteursSociaux: toStr(sa.pointsAveugles?.facteursSociaux),
+          contraintesTerrain: toStringArray(sa.pointsAveugles?.contraintesTerrain),
+        },
+        analyseOperateur: {
+          profilComplet: toStr(sa.analyseOperateur?.profilComplet),
+          capacitesCles: toStringArray(sa.analyseOperateur?.capacitesCles),
+          realisationsMarquantes: Array.isArray(sa.analyseOperateur?.realisationsMarquantes)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ? sa.analyseOperateur.realisationsMarquantes.map((r: any) => ({
+                projet: toStr(r.projet),
+                pays: toStr(r.pays),
+                resultat: toStr(r.resultat),
+              }))
+            : [],
+          presenceAfrique: sa.analyseOperateur?.presenceAfrique
+            ? toStr(sa.analyseOperateur.presenceAfrique)
+            : undefined,
+          alignementPriorites: toStr(sa.analyseOperateur?.alignementPriorites),
+        },
+        cadrePartenariat: {
+          besoinsGabon: Array.isArray(sa.cadrePartenariat?.besoinsGabon)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ? sa.cadrePartenariat.besoinsGabon.map((b: any) => ({
+                besoin: toStr(b.besoin),
+                secteur: toStr(b.secteur),
+                urgence: validUrgence.includes(b.urgence) ? b.urgence : "moyen_terme",
+                estimationBudget: b.estimationBudget ? toStr(b.estimationBudget) : undefined,
+              }))
+            : [],
+          offreOperateur: Array.isArray(sa.cadrePartenariat?.offreOperateur)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ? sa.cadrePartenariat.offreOperateur.map((o: any) => ({
+                capacite: toStr(o.capacite),
+                instrument: toStr(o.instrument),
+                conditions: o.conditions ? toStr(o.conditions) : undefined,
+              }))
+            : [],
+          beneficesMutuels: toStringArray(sa.cadrePartenariat?.beneficesMutuels),
+          modelesFinancement: Array.isArray(sa.cadrePartenariat?.modelesFinancement)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ? sa.cadrePartenariat.modelesFinancement.map((m: any) => ({
+                type: toStr(m.type),
+                description: toStr(m.description),
+                montantEstime: m.montantEstime ? toStr(m.montantEstime) : undefined,
+              }))
+            : [],
+          scenariosPartenariat: Array.isArray(sa.cadrePartenariat?.scenariosPartenariat)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ? sa.cadrePartenariat.scenariosPartenariat.map((s: any) => ({
+                scenario: validScenario.includes(s.scenario) ? s.scenario : "realiste",
+                description: toStr(s.description),
+                investissementEstime: s.investissementEstime ? toStr(s.investissementEstime) : undefined,
+                delaiMiseEnOeuvre: s.delaiMiseEnOeuvre ? toStr(s.delaiMiseEnOeuvre) : undefined,
+              }))
+            : [],
+        },
+        strategieApproche: {
+          argumentaire: toStringArray(sa.strategieApproche?.argumentaire),
+          negotiationPoints: toStringArray(sa.strategieApproche?.negotiationPoints),
+          concessions: toStringArray(sa.strategieApproche?.concessions),
+          lignesRouges: toStringArray(sa.strategieApproche?.lignesRouges),
+          chronologieApproche: Array.isArray(sa.strategieApproche?.chronologieApproche)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ? sa.strategieApproche.chronologieApproche.map((c: any) => ({
+                etape: toStr(c.etape),
+                action: toStr(c.action),
+                responsable: toStr(c.responsable),
+                delai: toStr(c.delai),
+              }))
+            : [],
+        },
+        preparationReunion: {
+          agenda: Array.isArray(sa.preparationReunion?.agenda)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ? sa.preparationReunion.agenda.map((a: any) => ({
+                point: toStr(a.point),
+                duree: toStr(a.duree),
+                objectif: toStr(a.objectif),
+              }))
+            : [],
+          dossiersAFournir: toStringArray(sa.preparationReunion?.dossiersAFournir),
+          questionsStrategiques: toStringArray(sa.preparationReunion?.questionsStrategiques),
+          profilsAInviter: toStringArray(sa.preparationReunion?.profilsAInviter),
+        },
+        risques: Array.isArray(sa.risques)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ? sa.risques.map((r: any) => ({
+              risque: toStr(r.risque),
+              probabilite: validProba.includes(r.probabilite) ? r.probabilite : "moyenne",
+              impact: validImpact.includes(r.impact) ? r.impact : "moyen",
+              mitigation: toStr(r.mitigation),
+            }))
+          : [],
+      } : undefined;
+
+      // Creer le plan en base avec l'analyse enrichie
+      const planId: Id<"diplomaticPlans"> = await ctx.runMutation(
+        api.functions.diplomaticAffairs.createPlan,
+        {
+          orgId: args.orgId,
+          targetId: args.targetId,
+          title: raw.title ?? "Plan strategique",
+          category: (validCategories.includes(raw.category)
+            ? raw.category
+            : "economic") as "economic",
+          summary: raw.summary ?? "",
+          objectives: Array.isArray(raw.objectives)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ? raw.objectives.map((o: any) => ({
+                title: toStr(o.title),
+                description: o.description ? toStr(o.description) : undefined,
+                status: "planned" as const,
+              }))
+            : [],
+          aiGeneratedContent: normalizedContent,
+          strategicAnalysis: normalizedAnalysis,
+        },
+      );
+
+      // Avancer la phase de la cible
+      await ctx.runMutation(api.functions.diplomaticAffairs.advancePhase, {
+        targetId: args.targetId,
+        newPhase: "strategy",
+      });
+
+      return {
+        planId,
+        title: raw.title ?? "Plan strategique",
+        category: raw.category ?? "economic",
+        summary: raw.summary ?? "",
+        aiGeneratedContent: normalizedContent,
+        objectives: Array.isArray(raw.objectives) ? raw.objectives : [],
+      };
+    }
+
+    // ═══ MODE STANDARD — Comportement actuel (retrocompatibilite) ═══════════
+    const prompt = `Tu es un conseiller diplomatique de haut niveau specialise dans les partenariats internationaux africains.
 
 CIBLE:
 - Nom: ${target.name}
 - Type: ${target.type}
-- Secteur: ${target.sector ?? "Non spécifié"}
-- Pays: ${target.country ?? "Non spécifié"}
+- Secteur: ${target.sector ?? "Non specifie"}
+- Pays: ${target.country ?? "Non specifie"}
 - Description: ${target.description ?? "Non disponible"}
 ${target.matchReason ? `- Raison du ciblage: ${target.matchReason}` : ""}
 
-PRIORITÉS DU GABON:
+PRIORITES DU GABON:
 ${priorityContext}
 ${knowledgeBase}
 MISSION:
-Élabore un plan stratégique de partenariat complet entre le Gabon et ${target.name}.
-Ce plan doit préparer l'ambassadeur pour une réunion d'affaires productive.
+Elabore un plan strategique de partenariat complet entre le Gabon et ${target.name}.
+Ce plan doit preparer l'ambassadeur pour une reunion d'affaires productive.
 
 Retourne un objet JSON avec :
-- title: titre du plan stratégique
+- title: titre du plan strategique
 - category: "bilateral" | "economic" | "cultural" | "security" | "multilateral" | "other"
-- summary: résumé exécutif (3-5 phrases)
+- summary: resume executif (3-5 phrases)
 - aiGeneratedContent: {
     countryNeeds: besoins du Gabon que ce partenaire peut adresser (5-7 items),
-    operatorCapabilities: capacités et forces de ${target.name} (5-7 items),
-    mutualBenefits: bénéfices mutuels du partenariat (4-6 items),
-    negotiationPoints: points clés de négociation pour l'ambassadeur (4-6 items),
-    meetingAgenda: agenda proposé pour la première réunion (5-8 points),
-    risks: risques identifiés et moyens de mitigation (3-5 items)
+    operatorCapabilities: capacites et forces de ${target.name} (5-7 items),
+    mutualBenefits: benefices mutuels du partenariat (4-6 items),
+    negotiationPoints: points cles de negociation pour l'ambassadeur (4-6 items),
+    meetingAgenda: agenda propose pour la premiere reunion (5-8 points),
+    risks: risques identifies et moyens de mitigation (3-5 items)
   }
 - objectives: tableau d'objectifs [{ title, description, status: "planned" }] (4-6 objectifs)`;
 
@@ -362,10 +759,15 @@ Retourne un objet JSON avec :
       }>;
     };
 
-    // Créer le plan en base
-    const validCategories = [
-      "bilateral", "economic", "cultural", "security", "multilateral", "other",
-    ];
+    const normalizedContent = {
+      countryNeeds: toStringArray(result.aiGeneratedContent.countryNeeds ?? []),
+      operatorCapabilities: toStringArray(result.aiGeneratedContent.operatorCapabilities ?? []),
+      mutualBenefits: toStringArray(result.aiGeneratedContent.mutualBenefits ?? []),
+      negotiationPoints: toStringArray(result.aiGeneratedContent.negotiationPoints ?? []),
+      meetingAgenda: toStringArray(result.aiGeneratedContent.meetingAgenda ?? []),
+      risks: toStringArray(result.aiGeneratedContent.risks ?? []),
+    };
+
     const planId: Id<"diplomaticPlans"> = await ctx.runMutation(
       api.functions.diplomaticAffairs.createPlan,
       {
@@ -381,11 +783,10 @@ Retourne un objet JSON avec :
           description: o.description,
           status: "planned" as const,
         })),
-        aiGeneratedContent: result.aiGeneratedContent,
+        aiGeneratedContent: normalizedContent,
       },
     );
 
-    // Avancer la phase de la cible
     await ctx.runMutation(api.functions.diplomaticAffairs.advancePhase, {
       targetId: args.targetId,
       newPhase: "strategy",

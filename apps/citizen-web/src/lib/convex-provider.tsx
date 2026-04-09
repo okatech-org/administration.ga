@@ -78,13 +78,13 @@ export default function AppConvexProvider({
   }, [queryClient])
 
   return (
-    <ConvexBetterAuthProvider
-      client={convexQueryClient.convexClient}
-      authClient={authClient}
-    >
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <ConvexBetterAuthProvider
+        client={convexQueryClient.convexClient}
+        authClient={authClient}
+      >
         <AuthSync ensureUserMutation={ensureUserMutation}>{children}</AuthSync>
-      </QueryClientProvider>
-    </ConvexBetterAuthProvider>
+      </ConvexBetterAuthProvider>
+    </QueryClientProvider>
   )
 }

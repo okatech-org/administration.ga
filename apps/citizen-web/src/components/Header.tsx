@@ -125,7 +125,7 @@ export default function Header() {
                   <Button variant="ghost" size="sm" className="h-8 px-2 gap-1.5">
                     <FlagIcon
                       countryCode={
-                        languages.find((l) => i18n.language.startsWith(l.value))
+                        languages.find((l) => (i18n.language ?? "fr").startsWith(l.value))
                           ?.country || CountryCode.FR
                       }
                       size={16}
@@ -152,7 +152,7 @@ export default function Header() {
                         />
                         <span>{lang.label}</span>
                       </span>
-                      {i18n.language.startsWith(lang.value) && (
+                      {(i18n.language ?? "fr").startsWith(lang.value) && (
                         <Check className="w-4 h-4 text-primary" />
                       )}
                     </DropdownMenuItem>
@@ -219,7 +219,7 @@ export default function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-9 px-3 gap-2 bg-background">
                 <FlagIcon
-                  countryCode={languages.find((l) => i18n.language.startsWith(l.value))?.country || CountryCode.FR}
+                  countryCode={languages.find((l) => (i18n.language ?? "fr").startsWith(l.value))?.country || CountryCode.FR}
                   size={16}
                   className="w-5 h-auto rounded-sm"
                 />
@@ -240,7 +240,7 @@ export default function Header() {
                     <FlagIcon countryCode={lang.country} size={18} className="w-5 h-auto rounded-sm shadow-sm" />
                     <span className="font-medium">{lang.label}</span>
                   </span>
-                  {i18n.language.startsWith(lang.value) && <Check className="w-4 h-4 text-primary" />}
+                  {(i18n.language ?? "fr").startsWith(lang.value) && <Check className="w-4 h-4 text-primary" />}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>

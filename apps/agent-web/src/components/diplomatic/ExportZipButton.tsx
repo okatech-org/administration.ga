@@ -6,7 +6,7 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useState } from "react";
-import { Package, Download, Loader2 } from "lucide-react";
+import { Package, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { toast } from "sonner";
@@ -27,10 +27,11 @@ export function ExportZipButton({
     try {
       await requestExport.mutateAsync({ targetId });
       toast.success(
-        "Export en cours. Le fichier ZIP sera disponible dans quelques secondes.",
+        "Export lancé ! Le fichier ZIP apparaîtra dans le dossier opérateur une fois prêt.",
+        { duration: 5000 },
       );
     } catch {
-      toast.error("Erreur lors de l'export du dossier.");
+      toast.error("Erreur lors de l'export du dossier. Veuillez réessayer.");
     } finally {
       setExporting(false);
     }

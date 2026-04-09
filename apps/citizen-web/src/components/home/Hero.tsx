@@ -1,6 +1,10 @@
+"use client"
+
 import { api } from "@convex/_generated/api";
 import Link from "next/link";
-import { ChevronRight, FileText, Globe } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { ChevronRight, FileText, Globe, MoveRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useConvexQuery } from "@/integrations/convex/hooks";
 import { authClient } from "@/lib/auth-client";
@@ -69,7 +73,7 @@ export function Hero() {
 					{/* Badge CTA */}
 					<motion.div variants={itemVariants}>
 						<Link
-							to="/services"
+							href="/services"
 							className="inline-flex items-center gap-4 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/10"
 						>
 							{t("heroCore.badge", "Plateforme Consulaire Officielle")}
@@ -128,7 +132,7 @@ export function Hero() {
 						>
 							<Link href="/services">{t("heroCore.cta.services")}</Link>
 						</Button>
-					</motion.div>
+					</div>
 
 					{/* Stats inline */}
 					<motion.div

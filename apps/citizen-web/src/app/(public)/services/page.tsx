@@ -13,6 +13,7 @@ import {
   Globe,
   LayoutGrid,
   type LucideIcon,
+  ArrowRight,
   Search,
   ShieldAlert,
 } from "lucide-react";
@@ -29,6 +30,10 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConvexQuery } from "@/integrations/convex/hooks";
 import { getLocalizedValue } from "@/lib/i18n-utils";
+import {
+  CATEGORY_STYLE_MAP,
+  SERVICE_CATEGORIES_WITHOUT_ALL,
+} from "@/lib/service-categories";
 import { cn } from "@/lib/utils";
 
 function ServiceCardSkeleton() {
@@ -210,8 +215,8 @@ function ServicesPageContent() {
       serviceDesc.toLowerCase().includes(searchQuery$.toLowerCase());
 
     const matchesCategory =
-      selectedCategories.length === 0 ||
-      selectedCategories.includes(service.category);
+      !selectedCategory ||
+      selectedCategory === service.category;
 
     return matchesQuery && matchesCategory;
   });
@@ -289,11 +294,11 @@ function ServicesPageContent() {
                   CATEGORY_STYLE_MAP[cat.id] ??
                   CATEGORY_STYLE_MAP[ServiceCategory.Other];
                 const Icon = cat.icon;
-                const isSelected = selectedCategories.includes(cat.id);
+                const isSelected = selectedCategory === cat.id;
                 return (
                   <button
                     key={cat.id}
-                    onClick={() => toggleCategory(cat.id)}
+                    onClick={() => selectCategory(isSelected ? null : cat.id)}
                     className={cn(
                       "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border transition-all duration-200",
                       isSelected
@@ -311,112 +316,72 @@ function ServicesPageContent() {
             <DGDIServiceBanner />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading ?
-              Array.from({ length: 6 }).map((_, i) => (
-                <ServiceCardSkeleton key={i} />
-              ))
-            : filteredServices?.length === 0 ?
-              <div className="col-span-full py-12 text-center rounded-xl bg-muted/30 border-2 border-dashed">
-                <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4 border">
-                  <Search className="w-8 h-8 text-muted-foreground" />
+          {/* ── Desktop: sidebar + grid ── */}
+          <div className="hidden lg:flex gap-8">
+            {/* Sidebar */}
+            <aside className="w-64 shrink-0 space-y-6">
+              <div className="sticky top-24 space-y-6">
+                {/* Search — sidebar */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    className="h-9 pl-9 text-sm rounded-lg border border-border"
+                    placeholder={t("services.searchPlaceholder", "Rechercher...")}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">
-                  Aucun service trouve
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  Essayez de modifier vos filtres ou votre recherche.
-                </p>
-                <Button onClick={clearFilters} variant="outline">
-                  Voir tous les services
-                </Button>
-              </div>
-            : filteredServices?.map((service) => {
-                const config =
-                  categoryConfig[service.category] ||
-                  categoryConfig[ServiceCategory.Other];
-                const suffix =
-                  service.category === ServiceCategory.Identity ? "passport"
-                  : service.category === ServiceCategory.Certification ?
-                    "legalization"
-                  : service.category === ServiceCategory.Assistance ?
-                    "emergency"
-                  : service.category;
-                const categoryLabel = t(`services.categoriesMap.${suffix}`);
-                const serviceName = getLocalizedValue(
-                  service.name,
-                  i18n.language,
-                );
-                const serviceDesc = getLocalizedValue(
-                  service.description,
-                  i18n.language,
-                );
 
-                  {/* Search — sidebar */}
-                  <div className="relative mb-5">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                    <Input
-                      className="h-9 pl-9 text-sm rounded-lg border border-border"
-                      placeholder={t(
-                        "services.searchPlaceholder",
-                        "Rechercher...",
-                      )}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+                {/* Category checkboxes */}
+                <div className="space-y-1">
+                  <div className="font-medium text-[10px] text-muted-foreground uppercase tracking-wider mb-3 pl-1">
+                    {t("services.categories", "Catégories")}
                   </div>
-
-                  {/* Category checkboxes */}
-                  <div className="space-y-1">
-                    <div className="font-medium text-[10px] text-muted-foreground uppercase tracking-wider mb-3 pl-1">
-                      {t("services.categories", "Catégories")}
-                    </div>
-                    {SERVICE_CATEGORIES_WITHOUT_ALL.map((cat) => {
-                      const style =
-                        CATEGORY_STYLE_MAP[cat.id] ??
-                        CATEGORY_STYLE_MAP[ServiceCategory.Other];
-                      const Icon = cat.icon;
-                      const isSelected = selectedCategories.includes(cat.id);
-                      return (
-                        <Label
-                          key={cat.id}
-                          htmlFor={`cat-${cat.id}`}
+                  {SERVICE_CATEGORIES_WITHOUT_ALL.map((cat) => {
+                    const style =
+                      CATEGORY_STYLE_MAP[cat.id] ??
+                      CATEGORY_STYLE_MAP[ServiceCategory.Other];
+                    const Icon = cat.icon;
+                    const isSelected = selectedCategory === cat.id;
+                    return (
+                      <Label
+                        key={cat.id}
+                        htmlFor={`cat-${cat.id}`}
+                        className={cn(
+                          "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all duration-200",
+                          isSelected
+                            ? "bg-primary/10 shadow-sm"
+                            : "hover:bg-muted/50",
+                        )}
+                      >
+                        <Checkbox
+                          id={`cat-${cat.id}`}
+                          checked={isSelected}
+                          onCheckedChange={() => selectCategory(isSelected ? null : cat.id)}
+                          className="border-border/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                        />
+                        <span
                           className={cn(
-                            "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all duration-200",
-                            isSelected
-                              ? "bg-primary/10 shadow-sm"
-                              : "hover:bg-muted/50",
+                            "p-1.5 rounded-md",
+                            style.bgColor,
+                            style.color.split(" ")[0],
                           )}
                         >
-                          <Checkbox
-                            id={`cat-${cat.id}`}
-                            checked={isSelected}
-                            onCheckedChange={() => toggleCategory(cat.id)}
-                            className="border-border/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                          />
-                          <span
-                            className={cn(
-                              "p-1.5 rounded-md",
-                              style.bgColor,
-                              style.color.split(" ")[0],
-                            )}
-                          >
-                            <Icon className="w-3.5 h-3.5" />
-                          </span>
-                          <span
-                            className={cn(
-                              "text-sm",
-                              isSelected
-                                ? "font-medium text-foreground"
-                                : "text-muted-foreground",
-                            )}
-                          >
-                            {t(cat.labelKey)}
-                          </span>
-                        </Label>
-                      );
-                    })}
-                  </div>
+                          <Icon className="w-3.5 h-3.5" />
+                        </span>
+                        <span
+                          className={cn(
+                            "text-sm",
+                            isSelected
+                              ? "font-medium text-foreground"
+                              : "text-muted-foreground",
+                          )}
+                        >
+                          {t(cat.labelKey)}
+                        </span>
+                      </Label>
+                    );
+                  })}
                 </div>
 
                 {/* DGDI Passeports & Visas — desktop sidebar */}
@@ -446,7 +411,7 @@ function ServicesPageContent() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* DGDI Banner horizontal — desktop, quand pas de filtres */}
-                {!isLoading && !search.query && selectedCategories.length === 0 && (
+                {!isLoading && !searchQuery$ && !selectedCategory && (
                   <a
                     href="https://www.dgdi.ga/"
                     target="_blank"
@@ -512,7 +477,7 @@ function ServicesPageContent() {
                   filteredServices?.map((service) => {
                     const config =
                       categoryConfig[service.category] ||
-                      categoryConfig._fallback;
+                      categoryConfig[ServiceCategory.Other];
                     const suffix =
                       service.category === ServiceCategory.Identity
                         ? "passport"
@@ -558,12 +523,6 @@ function ServicesPageContent() {
         </div>
       </section>
 
-      {/* Service Detail Modal */}
-      <ServiceDetailModal
-        service={selectedService as any}
-        open={modalOpen}
-        onOpenChange={handleModalClose}
-      />
     </div>
   );
 }

@@ -4,19 +4,27 @@
  */
 
 import { api } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
 import { Link } from "@tanstack/react-router";
 import {
   FolderOpen,
   FileText,
   Loader2,
   Building2,
+  Target,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useOrg } from "@/components/org/org-provider";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
+
+const PHASE_LABEL: Record<string, { label: string; className: string }> = {
+  targeting: { label: "Ciblage", className: "bg-primary/10 text-primary" },
+  strategy: { label: "Stratégie", className: "bg-warning/10 text-warning" },
+  outreach: { label: "Contact", className: "bg-success/10 text-success" },
+  reporting: { label: "Rapport", className: "bg-destructive/10 text-destructive" },
+  project: { label: "Projet", className: "bg-primary/10 text-primary" },
+};
 
 export function SectorGrid() {
   const { activeOrgId } = useOrg();
@@ -83,25 +91,44 @@ export function SectorGrid() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-            {folders.map((folder) => (
-              <Link
-                key={folder.folderId}
-                to="/affaires-diplomatiques/$targetId"
-                params={{ targetId: folder.targetId ?? "" }}
-              >
-                <Card className="hover:bg-muted/30 transition-colors cursor-pointer">
-                  <CardContent className="py-3 px-3">
-                    <p className="text-sm font-medium truncate">
-                      {folder.name}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-1 text-[10px] text-muted-foreground">
-                      <FileText className="h-3 w-3" />
-                      {folder.documentCount} doc{folder.documentCount > 1 ? "s" : ""}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+            {folders.map((folder) => {
+              const phase = folder.pipelinePhase
+                ? PHASE_LABEL[folder.pipelinePhase]
+                : null;
+
+              return (
+                <Link
+                  key={folder.folderId}
+                  to="/affaires-diplomatiques/$targetId"
+                  params={{ targetId: folder.targetId ?? "" }}
+                >
+                  <Card className="hover:bg-muted/30 transition-colors cursor-pointer shadow-sm">
+                    <CardContent className="py-3 px-3">
+                      <p className="text-sm font-medium truncate" title={folder.name}>
+                        {folder.name}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        {phase && (
+                          <Badge className={`text-[8px] ${phase.className}`}>
+                            {phase.label}
+                          </Badge>
+                        )}
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <FileText className="h-3 w-3" />
+                          {folder.documentCount} doc{folder.documentCount > 1 ? "s" : ""}
+                        </span>
+                        {folder.opportunityScore != null && (
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                            <Target className="h-3 w-3" />
+                            {folder.opportunityScore}%
+                          </span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
         </motion.div>
       ))}

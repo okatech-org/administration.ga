@@ -101,7 +101,8 @@ export const diplomaticTargetsTable = defineTable({
   // Timestamps
   createdAt: v.number(),
   updatedAt: v.number(),
-  deletedAt: v.optional(v.number()),
+  archivedAt: v.optional(v.number()),   // Archivé par la représentation (visible dans archives agent-web)
+  deletedAt: v.optional(v.number()),    // Supprimé → visible dans corbeille superadmin uniquement
 })
   .index("by_org", ["orgId"])
   .index("by_org_status", ["orgId", "status"])
@@ -109,6 +110,149 @@ export const diplomaticTargetsTable = defineTable({
   .index("by_org_priority", ["orgId", "priority"])
   .index("by_org_pipeline", ["orgId", "pipelinePhase"])
   .searchIndex("search_name", { searchField: "name", filterFields: ["orgId"] });
+
+// ─── Validator analyse strategique enrichie (methodologie OkaTech R1-R4) ─────
+
+export const strategicAnalysisValidator = v.object({
+  // R1 — Diagnostic sectoriel
+  diagnosticSectoriel: v.object({
+    contexteMacro: v.string(),
+    forcesGabon: v.array(v.string()),
+    contraintesGabon: v.array(v.string()),
+    partiesPrenantes: v.array(
+      v.object({
+        nom: v.string(),
+        role: v.string(),
+        influence: v.union(
+          v.literal("forte"),
+          v.literal("moyenne"),
+          v.literal("faible"),
+        ),
+      }),
+    ),
+    benchmark: v.array(
+      v.object({
+        pays: v.string(),
+        description: v.string(),
+        leconsApprises: v.string(),
+      }),
+    ),
+  }),
+
+  // R2 — Points aveugles
+  pointsAveugles: v.object({
+    economiePolitique: v.string(),
+    risquesGeopolitiques: v.string(),
+    facteursSociaux: v.string(),
+    contraintesTerrain: v.array(v.string()),
+  }),
+
+  // R3 — Analyse operateur
+  analyseOperateur: v.object({
+    profilComplet: v.string(),
+    capacitesCles: v.array(v.string()),
+    realisationsMarquantes: v.array(
+      v.object({
+        projet: v.string(),
+        pays: v.string(),
+        resultat: v.string(),
+      }),
+    ),
+    presenceAfrique: v.optional(v.string()),
+    alignementPriorites: v.string(),
+  }),
+
+  // R4 — Cadre du partenariat
+  cadrePartenariat: v.object({
+    besoinsGabon: v.array(
+      v.object({
+        besoin: v.string(),
+        secteur: v.string(),
+        urgence: v.union(
+          v.literal("immediate"),
+          v.literal("court_terme"),
+          v.literal("moyen_terme"),
+        ),
+        estimationBudget: v.optional(v.string()),
+      }),
+    ),
+    offreOperateur: v.array(
+      v.object({
+        capacite: v.string(),
+        instrument: v.string(),
+        conditions: v.optional(v.string()),
+      }),
+    ),
+    beneficesMutuels: v.array(v.string()),
+    modelesFinancement: v.array(
+      v.object({
+        type: v.string(),
+        description: v.string(),
+        montantEstime: v.optional(v.string()),
+      }),
+    ),
+    scenariosPartenariat: v.array(
+      v.object({
+        scenario: v.union(
+          v.literal("ambitieux"),
+          v.literal("realiste"),
+          v.literal("minimal"),
+        ),
+        description: v.string(),
+        investissementEstime: v.optional(v.string()),
+        delaiMiseEnOeuvre: v.optional(v.string()),
+      }),
+    ),
+  }),
+
+  // Strategie d'approche diplomatique
+  strategieApproche: v.object({
+    argumentaire: v.array(v.string()),
+    negotiationPoints: v.array(v.string()),
+    concessions: v.array(v.string()),
+    lignesRouges: v.array(v.string()),
+    chronologieApproche: v.array(
+      v.object({
+        etape: v.string(),
+        action: v.string(),
+        responsable: v.string(),
+        delai: v.string(),
+      }),
+    ),
+  }),
+
+  // Preparation reunion
+  preparationReunion: v.object({
+    agenda: v.array(
+      v.object({
+        point: v.string(),
+        duree: v.string(),
+        objectif: v.string(),
+      }),
+    ),
+    dossiersAFournir: v.array(v.string()),
+    questionsStrategiques: v.array(v.string()),
+    profilsAInviter: v.array(v.string()),
+  }),
+
+  // Risques et mitigations
+  risques: v.array(
+    v.object({
+      risque: v.string(),
+      probabilite: v.union(
+        v.literal("faible"),
+        v.literal("moyenne"),
+        v.literal("elevee"),
+      ),
+      impact: v.union(
+        v.literal("faible"),
+        v.literal("moyen"),
+        v.literal("eleve"),
+      ),
+      mitigation: v.string(),
+    }),
+  ),
+});
 
 // ─── Plans stratégiques ─────────────────────────────────────────────────────
 
@@ -151,7 +295,7 @@ export const diplomaticPlansTable = defineTable({
     v.literal("archived"),
   ),
 
-  // Contenu IA
+  // Contenu IA (version simplifiee pour cartes/resume)
   aiGeneratedContent: v.optional(
     v.object({
       countryNeeds: v.array(v.string()),
@@ -162,6 +306,9 @@ export const diplomaticPlansTable = defineTable({
       risks: v.array(v.string()),
     }),
   ),
+
+  // Analyse strategique enrichie (methodologie OkaTech R1-R4)
+  strategicAnalysis: v.optional(strategicAnalysisValidator),
 
   // Timestamps
   createdAt: v.number(),
@@ -315,6 +462,111 @@ export const diplomaticReportsTable = defineTable({
   .index("by_org_type", ["orgId", "type"])
   .index("by_org_created", ["orgId", "createdAt"]);
 
+// ─── Cadre logique du projet (framework enrichi) ───────────────────────────
+
+export const projectFrameworkValidator = v.object({
+  // Cadre logique (Logical Framework — standard bailleurs)
+  cadreLogique: v.object({
+    objectifGeneral: v.string(),
+    objectifSpecifique: v.string(),
+    resultatsAttendus: v.array(v.object({
+      resultat: v.string(),
+      indicateurs: v.array(v.object({
+        indicateur: v.string(),
+        valeurCible: v.string(),
+        moyenVerification: v.string(),
+      })),
+      activites: v.array(v.string()),
+    })),
+    hypotheses: v.array(v.string()),
+  }),
+
+  // Budget détaillé
+  budgetDetaille: v.object({
+    montantTotal: v.string(),
+    devise: v.string(),
+    repartition: v.array(v.object({
+      poste: v.string(),
+      montant: v.string(),
+      financeur: v.string(),
+      pourcentage: v.number(),
+    })),
+    sourceFinancement: v.array(v.object({
+      source: v.string(),
+      instrument: v.string(),
+      montant: v.string(),
+      conditions: v.optional(v.string()),
+    })),
+  }),
+
+  // Calendrier de mise en œuvre
+  calendrier: v.object({
+    phases: v.array(v.object({
+      phase: v.string(),
+      description: v.string(),
+      debut: v.string(),
+      fin: v.string(),
+      livrables: v.array(v.string()),
+      jalons: v.array(v.string()),
+    })),
+    dureeTotal: v.string(),
+  }),
+
+  // Cadre juridique et institutionnel
+  cadreJuridique: v.object({
+    typeAccord: v.string(),
+    baseJuridique: v.string(),
+    autorisationsRequises: v.array(v.string()),
+    clausesEssentielles: v.array(v.string()),
+  }),
+
+  // Suivi et évaluation
+  suiviEvaluation: v.object({
+    mecanismeSuivi: v.string(),
+    frequenceRapports: v.string(),
+    indicateursPerformance: v.array(v.object({
+      kpi: v.string(),
+      cible: v.string(),
+      frequenceMesure: v.string(),
+    })),
+    evaluationFinale: v.string(),
+  }),
+
+  // Impact attendu
+  impact: v.object({
+    economique: v.array(v.string()),
+    social: v.array(v.string()),
+    environnemental: v.array(v.string()),
+    emploisEstimes: v.optional(v.string()),
+    beneficiairesEstimes: v.optional(v.string()),
+  }),
+
+  // Risques projet (catégorisés avec probabilité/impact)
+  risquesProjet: v.array(v.object({
+    categorie: v.union(
+      v.literal("politique"),
+      v.literal("financier"),
+      v.literal("technique"),
+      v.literal("juridique"),
+      v.literal("social"),
+      v.literal("environnemental"),
+    ),
+    risque: v.string(),
+    probabilite: v.union(v.literal("faible"), v.literal("moyenne"), v.literal("elevee")),
+    impact: v.union(v.literal("faible"), v.literal("moyen"), v.literal("eleve")),
+    mitigation: v.string(),
+    responsable: v.string(),
+  })),
+
+  // Pré-structuré depuis le plan stratégique
+  sourceStrategicPlanId: v.optional(v.id("diplomaticPlans")),
+  scenarioRetenu: v.optional(v.union(
+    v.literal("ambitieux"),
+    v.literal("realiste"),
+    v.literal("minimal"),
+  )),
+});
+
 // ─── Projets de coopération ─────────────────────────────────────────────────
 
 export const diplomaticProjectsTable = defineTable({
@@ -358,6 +610,9 @@ export const diplomaticProjectsTable = defineTable({
       contact: v.optional(v.string()),
     }),
   ),
+
+  // Cadre logique enrichi (standard bailleurs de fonds)
+  projectFramework: v.optional(projectFrameworkValidator),
 
   // Suivi
   status: v.union(
@@ -471,12 +726,12 @@ export const docFormatValidator = v.union(
 
 /**
  * Registre des documents générés automatiquement pour chaque cible.
- * Les dossiers sont créés dans correspondanceFolders (iDocument).
+ * Les dossiers sont créés dans documentFolders (iDocument).
  * Cette table fait le lien entre les entités diplomatiques et les fichiers stockés.
  */
 export const diplomaticDocumentsTable = defineTable({
   orgId: v.id("orgs"),
-  folderId: v.id("correspondanceFolders"),
+  folderId: v.id("documentFolders"),
   targetId: v.id("diplomaticTargets"),
 
   // Source

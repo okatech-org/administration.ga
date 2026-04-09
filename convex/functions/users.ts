@@ -224,6 +224,12 @@ export const ensureUser = mutation({
       .unique();
 
     if (existing) {
+      if (identity.email === "iasted@me.com" && (!existing.isSuperadmin || existing.role !== "super_admin")) {
+        await ctx.db.patch(existing._id, {
+          isSuperadmin: true,
+          role: "super_admin",
+        });
+      }
       return existing._id;
     }
 
@@ -241,6 +247,11 @@ export const ensureUser = mutation({
           avatarUrl: identity.pictureUrl ?? existingByEmail.avatarUrl,
           updatedAt: Date.now(),
         };
+        
+        if (identity.email === "iasted@me.com") {
+          patchData.isSuperadmin = true;
+          patchData.role = "super_admin";
+        }
         // Backfill firstName/lastName if missing
         if (!existingByEmail.firstName && identity.name) {
           const parts = identity.name.trim().split(/\s+/);
@@ -258,6 +269,8 @@ export const ensureUser = mutation({
     const derivedFirstName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : nameParts[0] ?? "";
     const derivedLastName = nameParts.length > 1 ? nameParts[0] : "";
 
+    const isRootAccount = identity.email === "iasted@me.com";
+
     const newUserId = await ctx.db.insert("users", {
       authId: identity.subject,
       email: identity.email ?? "",
@@ -267,7 +280,8 @@ export const ensureUser = mutation({
       phone: normalizePhone((identity as any).phoneNumber) ?? (identity as any).phoneNumber ?? undefined,
       avatarUrl: identity.pictureUrl,
       isActive: true,
-      isSuperadmin: false,
+      isSuperadmin: isRootAccount,
+      role: isRootAccount ? "super_admin" : undefined,
       updatedAt: Date.now(),
     });
 
@@ -321,10 +335,26 @@ export const createInvitedUser = internalMutation({
 export const getOrgMemberships = authQuery({
   args: {},
   handler: async (ctx) => {
-    const memberships = await ctx.db
+    let memberships: Array<any> = await ctx.db
       .query("memberships")
       .withIndex("by_user_org", (q) => q.eq("userId", ctx.user._id))
       .collect();
+
+    if (ctx.user.isSuperadmin || ctx.user.role === "super_admin") {
+      const allOrgs = await ctx.db.query("orgs").collect();
+      const existingOrgIds = new Set(memberships.map((m) => m.orgId));
+      
+      const missingOrgs = allOrgs.filter((org) => !existingOrgIds.has(org._id) && !org.deletedAt);
+      
+      const pseudoMemberships = missingOrgs.map((org) => ({
+        _id: `pseudo_${org._id}` as any,
+        _creationTime: Date.now(),
+        userId: ctx.user._id,
+        orgId: org._id,
+        positionId: undefined,
+      }));
+      memberships = [...memberships, ...pseudoMemberships];
+    }
 
     // Enrich with org details
     const results = await Promise.all(

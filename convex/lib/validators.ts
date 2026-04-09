@@ -974,6 +974,8 @@ export const notificationTypeValidator = v.union(
   v.literal(NotificationType.MeetingInvitation),
   v.literal(NotificationType.CallIncoming),
   v.literal(NotificationType.ChatMessage),
+  // Archive
+  v.literal(NotificationType.ArchiveExpiration),
 );
 
 // ============================================================================

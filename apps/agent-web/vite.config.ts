@@ -13,7 +13,13 @@ const keyFile = path.join(certsDir, "localhost+2-key.pem")
 const hasLocalCerts = fs.existsSync(certFile) && fs.existsSync(keyFile)
 
 // Charger les variables d'env pour le proxy dev (process.env n'est pas peuplé par Vite)
-const env = loadEnv("development", process.cwd(), "VITE_")
+const env = loadEnv("development", __dirname, "VITE_")
+
+// Expose VITE_ env vars to process.env pour le handler Nitro auth-proxy
+if (env.VITE_CONVEX_SITE_URL) {
+  process.env.VITE_CONVEX_SITE_URL = env.VITE_CONVEX_SITE_URL
+  process.env.CONVEX_SITE_URL = env.VITE_CONVEX_SITE_URL
+}
 
 /**
  * Plugin Vite qui intercepte /api/dev/sign-in et /api/auth/*

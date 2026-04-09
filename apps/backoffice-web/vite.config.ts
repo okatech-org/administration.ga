@@ -12,7 +12,13 @@ const certFile = path.join(certsDir, "localhost+2.pem")
 const keyFile = path.join(certsDir, "localhost+2-key.pem")
 const hasLocalCerts = fs.existsSync(certFile) && fs.existsSync(keyFile)
 
-const env = loadEnv("development", process.cwd(), "VITE_")
+const env = loadEnv("development", __dirname, "VITE_")
+
+// Expose VITE_ env vars to process.env pour le handler Nitro auth-proxy
+if (env.VITE_CONVEX_SITE_URL) {
+  process.env.VITE_CONVEX_SITE_URL = env.VITE_CONVEX_SITE_URL
+  process.env.CONVEX_SITE_URL = env.VITE_CONVEX_SITE_URL
+}
 
 /**
  * Plugin Vite qui intercepte /api/dev/sign-in et /api/auth/*
@@ -133,8 +139,6 @@ const config = defineConfig({
   plugins: [
     devApiProxy(),
     nitro({
-      // Proxy /api/auth/** vers Convex en production (Nitro routeRules)
-      // En dev, le plugin Vite devApiProxy() gère ce proxy
       routeRules: CONVEX_SITE_URL_PROD ? {
         "/api/auth/**": {
           proxy: `${CONVEX_SITE_URL_PROD}/api/auth/**`,

@@ -1,5 +1,5 @@
 import { Button } from "@workspace/ui/components/button";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -108,7 +108,7 @@ export function AboutSection({
                 <p className="text-muted-foreground">{breakout.description}</p>
               </div>
               <Button variant="outline" className="mr-auto gap-2 rounded-[10px]" asChild>
-                <Link to={breakout.buttonHref}>
+                <Link href={breakout.buttonHref}>
                   {breakout.buttonText}
                   <ArrowRight className="w-4 h-4" />
                 </Link>

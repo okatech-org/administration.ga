@@ -1,4 +1,6 @@
-import { Link } from "@tanstack/react-router";
+"use client"
+
+import Link from "next/link";
 import { ArrowRight, Compass, Globe, Plane } from "lucide-react";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
@@ -106,7 +108,7 @@ export function GuidesPreviewSection() {
 						const Icon = guide.icon;
 						return (
 							<motion.div key={guide.type} variants={itemVariants} className="h-full">
-								<Link to={guide.href} className="block h-full">
+								<Link href={guide.href} className="block h-full">
 									<Card
 										className="group py-0 overflow-hidden bg-[oklch(0.205_0_0)] border border-white/10 rounded-[10px] hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full"
 									>
@@ -142,7 +144,7 @@ export function GuidesPreviewSection() {
 					className="text-center mt-12"
 				>
 					<Button asChild variant="ghost" className="gap-2 text-[oklch(0.7_0_0)] hover:text-white hover:bg-white/10 rounded-full px-6">
-						<Link to="/ressources">
+						<Link href="/ressources">
 							{t("home.guides.seeAll", "Voir toutes les ressources")}
 							<ArrowRight className="h-4 w-4" />
 						</Link>

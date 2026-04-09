@@ -10,7 +10,7 @@ import {
 	Building2, FileText, Folder, FolderOpen, FolderPlus, Hash,
 	CheckCircle2, AlertTriangle, XCircle, Loader2, X, Download,
 	MoreHorizontal, Share2, Send, Edit3, Info, KeyRound, Tag,
-	Trash2, CalendarClock, GitBranch, Sparkles, User,
+	Trash2, CalendarClock, GitBranch, Sparkles, User, Undo2,
 	LayoutGrid, List, Columns3, ChevronRight, GripVertical,
 	FileSpreadsheet, ImageIcon, Plus, Filter,
 } from "lucide-react";
@@ -21,6 +21,7 @@ import {
 	useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
+import { useCurrentAdminRole } from "@/hooks/use-current-admin-role";
 
 export const Route = createFileRoute("/_app/idocument")({
 	component: IDocumentPage,
@@ -699,6 +700,29 @@ function IDocumentPage() {
 
 	const folders = useMemo(() => DEFAULT_FOLDERS, []);
 
+	// Trash mutations
+	const { mutateAsync: softDeleteDocMut } = useConvexMutationQuery(
+		api.functions.documentVault.softDeleteDocument,
+	);
+	const { mutateAsync: restoreDocMut } = useConvexMutationQuery(
+		api.functions.documentVault.restoreFromTrash,
+	);
+	const { mutateAsync: permanentDeleteDocMut } = useConvexMutationQuery(
+		api.functions.documentVault.permanentlyDeleteFromTrash,
+	);
+	const { mutateAsync: emptyTrashMut } = useConvexMutationQuery(
+		api.functions.documentVault.emptyTrash,
+	);
+
+	// Trash query
+	const { data: trashData } = useAuthenticatedConvexQuery(
+		api.functions.documentVault.getTrashItems,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+
+	// Super admin check
+	const { isSuperAdmin } = useCurrentAdminRole();
+
 	// Dialog states
 	const [shareDialogOpen, setShareDialogOpen] = useState(false);
 	const [shareTargetName, setShareTargetName] = useState("");
@@ -712,6 +736,45 @@ function IDocumentPage() {
 	const [infoItemType, setInfoItemType] = useState<"folder" | "document">("folder");
 	const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
 	const [newFolderName, setNewFolderName] = useState("");
+	const [trashConfirm, setTrashConfirm] = useState<{ type: "soft_delete" | "permanent_delete" | "empty_trash"; itemType: "folder" | "document"; itemId: string; itemName: string } | null>(null);
+
+	// ─── Detecter le dossier Poubelle ───────────────────────
+	const isInPoubelle = currentFolderId === "__poubelle";
+
+	// ─── Trash handlers ─────────────────────────────────────
+	const handleSoftDeleteDoc = useCallback((docId: string) => {
+		const doc = documents.find((d) => d.id === docId);
+		setTrashConfirm({ type: "soft_delete", itemType: "document", itemId: docId, itemName: doc?.title ?? "Document" });
+	}, [documents]);
+
+	const handleConfirmTrashAction = useCallback(async () => {
+		if (!trashConfirm) return;
+		try {
+			if (trashConfirm.type === "soft_delete" && trashConfirm.itemType === "document") {
+				await softDeleteDocMut({ documentId: trashConfirm.itemId as Id<"documents"> });
+				toast.success("Document deplace dans la corbeille");
+			} else if (trashConfirm.type === "permanent_delete" && trashConfirm.itemType === "document") {
+				await permanentDeleteDocMut({ documentId: trashConfirm.itemId as Id<"documents"> });
+				toast.success("Document supprime definitivement");
+			} else if (trashConfirm.type === "empty_trash" && activeOrgId) {
+				const result = await emptyTrashMut({ orgId: activeOrgId });
+				toast.success(`Corbeille videe (${result.deletedDocs} documents, ${result.deletedFolders} dossiers)`);
+			}
+		} catch (e: any) {
+			const msg = e?.data ?? e?.message ?? "Erreur";
+			toast.error(typeof msg === "string" ? msg : "Une erreur est survenue");
+		}
+		setTrashConfirm(null);
+	}, [trashConfirm, softDeleteDocMut, permanentDeleteDocMut, emptyTrashMut, activeOrgId]);
+
+	const handleRestoreDoc = useCallback(async (docId: string) => {
+		try {
+			await restoreDocMut({ documentId: docId as Id<"documents"> });
+			toast.success("Document restaure");
+		} catch (e: any) {
+			toast.error(e?.data ?? "Erreur lors de la restauration");
+		}
+	}, [restoreDocMut]);
 
 	// ─── Breadcrumb path ────────────────────────────────────
 	const breadcrumbPath = useMemo(() => {
@@ -878,6 +941,71 @@ function IDocumentPage() {
 			{/* ── Breadcrumb ── */}
 			<BreadcrumbPath path={breadcrumbPath} onNavigate={handleNavigate} rootLabel="Documents" rootIcon={FileText} />
 
+			{/* ── Vue Poubelle ── */}
+			{isInPoubelle && trashData ? (
+				<motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-2">
+							<Trash2 className="h-4 w-4 text-red-400" />
+							<span className="text-sm font-medium">{trashData.totalCount} element{trashData.totalCount > 1 ? "s" : ""} dans la corbeille</span>
+						</div>
+						{isSuperAdmin && trashData.totalCount > 0 && (
+							<button onClick={() => setTrashConfirm({ type: "empty_trash", itemType: "document", itemId: "", itemName: "" })} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors">
+								<Trash2 className="h-3.5 w-3.5" />Vider la corbeille
+							</button>
+						)}
+					</div>
+					{trashData.folders.length > 0 && (
+						<div>
+							<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2 px-1">Dossiers supprimes</p>
+							<div className="space-y-1">
+								{trashData.folders.map((folder: any) => (
+									<div key={folder._id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/30 transition-colors">
+										<div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0"><Folder className="h-4 w-4 text-amber-400/60" /></div>
+										<div className="flex-1 min-w-0">
+											<p className="text-sm font-medium truncate">{folder.name}</p>
+											<p className="text-[10px] text-muted-foreground">Supprime le {new Date(folder.deletedAt).toLocaleDateString("fr-FR")}{folder.deletedByName && <span> par {folder.deletedByName}</span>}</p>
+										</div>
+										<div className="flex items-center gap-1">
+											<button onClick={() => handleRestoreDoc(folder._id)} className="h-7 px-2 rounded-md text-[11px] hover:bg-emerald-500/10 text-emerald-400 transition-colors flex items-center gap-1"><Undo2 className="h-3.5 w-3.5" />Restaurer</button>
+										</div>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
+					{trashData.documents.length > 0 && (
+						<div>
+							<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2 px-1">Documents supprimes</p>
+							<div className="space-y-1">
+								{trashData.documents.map((doc: any) => (
+									<div key={doc._id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/30 transition-colors">
+										<div className="h-8 w-8 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0"><FileText className="h-4 w-4 text-violet-400/60" /></div>
+										<div className="flex-1 min-w-0">
+											<p className="text-sm font-medium truncate">{doc.label ?? doc.files?.[0]?.filename ?? "Document"}</p>
+											<p className="text-[10px] text-muted-foreground">Supprime le {new Date(doc.deletedAt).toLocaleDateString("fr-FR")}{doc.deletedByName && <span> par {doc.deletedByName}</span>}</p>
+										</div>
+										<div className="flex items-center gap-1">
+											<button onClick={() => handleRestoreDoc(doc._id)} className="h-7 px-2 rounded-md text-[11px] hover:bg-emerald-500/10 text-emerald-400 transition-colors flex items-center gap-1"><Undo2 className="h-3.5 w-3.5" />Restaurer</button>
+											{isSuperAdmin && (
+												<button onClick={() => setTrashConfirm({ type: "permanent_delete", itemType: "document", itemId: doc._id, itemName: doc.label ?? "Document" })} className="h-7 px-2 rounded-md text-[11px] hover:bg-red-500/10 text-red-400 transition-colors flex items-center gap-1"><Trash2 className="h-3.5 w-3.5" /></button>
+											)}
+										</div>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
+					{trashData.totalCount === 0 && (
+						<div className="flex flex-col items-center py-16 text-center">
+							<div className="h-16 w-16 rounded-2xl bg-zinc-500/10 flex items-center justify-center mb-4"><Trash2 className="h-8 w-8 text-zinc-400/40" /></div>
+							<h3 className="text-lg font-semibold mb-1">Corbeille vide</h3>
+							<p className="text-sm text-muted-foreground">Aucun element dans la corbeille.</p>
+						</div>
+					)}
+				</motion.div>
+			) : (
+			<>
 			{/* ── Content — Grid View ── */}
 			<AnimatePresence mode="wait">
 				{viewMode === "grid" && (
@@ -954,6 +1082,7 @@ function IDocumentPage() {
 														onShare={handleShare}
 														onSavePolicy={handleOpenPolicy}
 														onInfo={handleOpenInfo}
+														onDelete={handleSoftDeleteDoc}
 													/>
 												}
 												tags={doc.tags}
@@ -1085,6 +1214,37 @@ function IDocumentPage() {
 					</motion.div>
 				)}
 			</AnimatePresence>
+			</>
+			)}
+
+			{/* ── Trash Confirm Dialog ── */}
+			{trashConfirm && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setTrashConfirm(null)}>
+					<div className="w-full max-w-sm border border-border/50 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+						<div className="px-5 pt-5 pb-3 border-b border-border/50">
+							<div className="flex items-center gap-2 text-sm font-semibold">
+								<Trash2 className="h-4 w-4 text-red-400" />
+								{trashConfirm.type === "soft_delete" ? "Deplacer vers la corbeille" : trashConfirm.type === "empty_trash" ? "Vider la corbeille" : "Suppression definitive"}
+							</div>
+						</div>
+						<div className="p-5">
+							{trashConfirm.type === "soft_delete" ? (
+								<p className="text-sm text-muted-foreground">Voulez-vous deplacer <span className="font-medium text-foreground">{trashConfirm.itemName}</span> dans la corbeille ?</p>
+							) : trashConfirm.type === "empty_trash" ? (
+								<p className="text-sm text-muted-foreground">Voulez-vous supprimer definitivement <span className="font-medium text-red-400">tous les elements</span> de la corbeille ? Cette action est irreversible.</p>
+							) : (
+								<p className="text-sm text-muted-foreground">Voulez-vous supprimer definitivement <span className="font-medium text-red-400">{trashConfirm.itemName}</span> ? Cette action est irreversible.</p>
+							)}
+						</div>
+						<div className="px-5 py-3 border-t border-border/50 flex justify-end gap-2">
+							<button onClick={() => setTrashConfirm(null)} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Annuler</button>
+							<button onClick={handleConfirmTrashAction} className={cn("px-3 py-1.5 text-xs rounded-md text-white transition-colors", trashConfirm.type === "soft_delete" ? "bg-amber-600 hover:bg-amber-700" : "bg-red-600 hover:bg-red-700")}>
+								{trashConfirm.type === "soft_delete" ? "Deplacer" : "Supprimer"}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{/* ── New Folder Dialog ── */}
 			{showNewFolderDialog && (

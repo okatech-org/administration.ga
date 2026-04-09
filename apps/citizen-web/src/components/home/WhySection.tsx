@@ -1,3 +1,5 @@
+"use client"
+
 import { api } from "@convex/_generated/api";
 import { useConvexQuery } from "@/integrations/convex/hooks";
 import { AboutSection } from "@/components/blocks/about-section";

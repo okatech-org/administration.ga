@@ -1,7 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { Plane, Compass, Globe } from "lucide-react";
 
 interface TabContent {
@@ -117,7 +117,7 @@ export const FeatureGuides = ({
                     {tab.content.description}
                   </p>
                   <Button asChild className="mt-4 w-fit h-12 px-8 rounded-full shadow-sm hover:shadow-md transition-all gap-2" size="lg">
-                    <Link to={tab.content.buttonHref}>
+                    <Link href={tab.content.buttonHref}>
                         {tab.content.buttonText}
                     </Link>
                   </Button>

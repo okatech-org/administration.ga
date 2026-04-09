@@ -1,6 +1,8 @@
+"use client"
+
 import { api } from "@convex/_generated/api";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import profilePassage from "@/assets/profile-passage-new.png";

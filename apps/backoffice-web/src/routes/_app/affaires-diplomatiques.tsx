@@ -18,9 +18,23 @@ import {
   Loader2,
   Search,
   X,
+  Target,
+  RotateCcw,
+  MapPin,
+  AlertTriangle,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -437,10 +451,17 @@ function PriorityStrip({
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 
+type TabId = "global" | "representations" | "targets" | "trash";
+
+const TABS: Array<{ id: TabId; label: string; icon: typeof Globe2 }> = [
+  { id: "global", label: "Priorités Générales", icon: Globe2 },
+  { id: "representations", label: "Par Représentation", icon: Building2 },
+  { id: "targets", label: "Cibles", icon: Target },
+  { id: "trash", label: "Corbeille", icon: Trash2 },
+];
+
 function AffairesDiplomatiquesSettings() {
-  const [activeTab, setActiveTab] = useState<"global" | "representations">(
-    "global",
-  );
+  const [activeTab, setActiveTab] = useState<TabId>("global");
 
   return (
     <div className="flex flex-1 flex-col p-3 md:p-6 min-h-full overflow-auto w-full max-w-[1400px] mx-auto">
@@ -457,37 +478,32 @@ function AffairesDiplomatiquesSettings() {
 
       {/* Onglets horizontaux */}
       <div className="flex items-center gap-1 mb-6 border-b pb-px">
-        <button
-          type="button"
-          onClick={() => setActiveTab("global")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 text-sm rounded-t-lg transition-colors border-b-2 -mb-px",
-            activeTab === "global"
-              ? "border-primary text-foreground font-medium"
-              : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
-          )}
-        >
-          <Globe2 className="h-4 w-4" />
-          Priorités Générales
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("representations")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 text-sm rounded-t-lg transition-colors border-b-2 -mb-px",
-            activeTab === "representations"
-              ? "border-primary text-foreground font-medium"
-              : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
-          )}
-        >
-          <Building2 className="h-4 w-4" />
-          Par Représentation
-        </button>
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 text-sm rounded-t-lg transition-colors border-b-2 -mb-px",
+                activeTab === tab.id
+                  ? "border-primary text-foreground font-medium"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Contenu */}
       {activeTab === "global" && <GlobalPrioritiesTab />}
       {activeTab === "representations" && <RepresentationsTab />}
+      {activeTab === "targets" && <TargetsByRepresentationTab />}
+      {activeTab === "trash" && <TrashTab />}
     </div>
   );
 }
@@ -1092,5 +1108,504 @@ function OrgLocalPriorityDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ONGLET 3 : Cibles par Représentation
+// ═════════════════════════════════════════════════════════════════════════════
+
+function TargetsByRepresentationTab() {
+  const { data: allTargets, isPending } = useAuthenticatedConvexQuery(
+    api.functions.diplomaticAffairs.superadminListAllTargets,
+    {},
+  );
+
+  const { mutateAsync: deleteTarget } = useConvexMutationQuery(
+    api.functions.diplomaticAffairs.superadminDeleteTarget,
+  );
+  const { mutateAsync: purgeTargets } = useConvexMutationQuery(
+    api.functions.diplomaticAffairs.superadminPurgeTargets,
+  );
+
+  const [filter, setFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "archived">("all");
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+  const [confirmPurge, setConfirmPurge] = useState<{ orgId: string; orgName: string; count: number } | null>(null);
+
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const targets = allTargets ?? [];
+  const activeCount = targets.filter((t) => !t.archivedAt).length;
+  const archivedCount = targets.filter((t) => !!t.archivedAt).length;
+
+  const filtered = targets.filter((t) => {
+    // Filtre par statut
+    if (statusFilter === "active" && t.archivedAt) return false;
+    if (statusFilter === "archived" && !t.archivedAt) return false;
+    // Filtre par texte
+    if (!filter) return true;
+    const q = filter.toLowerCase();
+    return (
+      t.name.toLowerCase().includes(q) ||
+      t.orgName.toLowerCase().includes(q) ||
+      t.sector?.toLowerCase().includes(q)
+    );
+  });
+
+  // Grouper par org
+  const byOrg: Record<string, { orgName: string; orgId: string; targets: typeof filtered }> = {};
+  for (const t of filtered) {
+    const key = t.orgId;
+    if (!byOrg[key]) byOrg[key] = { orgName: t.orgName, orgId: t.orgId, targets: [] };
+    byOrg[key].targets.push(t);
+  }
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    try {
+      await deleteTarget({ targetId: confirmDelete.id as Id<"diplomaticTargets"> });
+      toast.success(`${confirmDelete.name} supprimée`);
+      setConfirmDelete(null);
+    } catch {
+      toast.error("Erreur lors de la suppression");
+    }
+  };
+
+  const handlePurge = async () => {
+    if (!confirmPurge) return;
+    try {
+      const result = await purgeTargets({ orgId: confirmPurge.orgId as Id<"orgs"> });
+      toast.success(`${result.scheduledCount} cible(s) supprimée(s)`);
+      setConfirmPurge(null);
+    } catch {
+      toast.error("Erreur lors de la purge");
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher une cible ou représentation..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="pl-9"
+          />
+          {filter && (
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted"
+              onClick={() => setFilter("")}
+            >
+              <X className="h-3.5 w-3.5 text-muted-foreground" />
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          {(
+            [
+              { id: "all" as const, label: "Toutes", count: targets.length },
+              { id: "active" as const, label: "Actives", count: activeCount },
+              { id: "archived" as const, label: "Archivées", count: archivedCount },
+            ] as const
+          ).map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setStatusFilter(s.id)}
+              className={cn(
+                "px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors",
+                statusFilter === s.id
+                  ? "bg-primary text-primary-foreground font-medium"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              {s.label} ({s.count})
+            </button>
+          ))}
+        </div>
+        <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+          {filtered.length} résultat{filtered.length > 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {Object.keys(byOrg).length === 0 ? (
+        <div className="text-center py-12 text-sm text-muted-foreground">
+          <Target className="h-8 w-8 mx-auto mb-2 opacity-30" />
+          Aucune cible trouvée
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {Object.entries(byOrg).map(([orgId, group]) => (
+            <div key={orgId} className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  {group.orgName}
+                  <Badge variant="secondary" className="text-[9px]">
+                    {group.targets.length}
+                  </Badge>
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-xs text-destructive hover:text-destructive"
+                  onClick={() =>
+                    setConfirmPurge({
+                      orgId: group.orgId,
+                      orgName: group.orgName,
+                      count: group.targets.length,
+                    })
+                  }
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Purger
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                {group.targets.map((t) => (
+                  <div
+                    key={t._id}
+                    className={cn(
+                      "flex items-start justify-between gap-2 p-3 rounded-lg border hover:shadow-sm transition-shadow",
+                      t.archivedAt ? "bg-amber-500/5 border-amber-500/20" : "bg-card",
+                    )}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium truncate">{t.name}</p>
+                        {t.archivedAt && (
+                          <Badge variant="outline" className="text-[8px] text-amber-500 border-amber-500/30 shrink-0">
+                            Archivé
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {t.type} {t.sector && `· ${t.sector}`}
+                      </p>
+                      {t.country && (
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <MapPin className="h-2.5 w-2.5" />
+                          {t.city ? `${t.city}, ${t.country}` : t.country}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-1 mt-1">
+                        <Badge variant="outline" className="text-[8px]">
+                          {t.priority}
+                        </Badge>
+                        {t.opportunityScore != null && (
+                          <Badge variant="outline" className="text-[8px] text-primary">
+                            {t.opportunityScore}%
+                          </Badge>
+                        )}
+                        {t.pipelinePhase && (
+                          <Badge variant="secondary" className="text-[8px]">
+                            {t.pipelinePhase}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setConfirmDelete({ id: t._id, name: t.name })}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Confirmation suppression individuelle */}
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cette cible ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{confirmDelete?.name}</strong> sera définitivement
+              supprimée avec tous ses documents, plans, lettres et projets.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDelete}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmation purge */}
+      <AlertDialog open={!!confirmPurge} onOpenChange={(o) => !o && setConfirmPurge(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Purger les cibles de {confirmPurge?.orgName} ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmPurge?.count} cible(s) seront définitivement supprimées
+              avec tous leurs documents associés. Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handlePurge}
+            >
+              Purger toutes les cibles
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ONGLET 4 : Corbeille
+// ═════════════════════════════════════════════════════════════════════════════
+
+function TrashTab() {
+  const { data: deletedItems, isPending } = useAuthenticatedConvexQuery(
+    api.functions.diplomaticAffairs.superadminListDeletedItems,
+    {},
+  );
+
+  const { mutateAsync: restoreTarget } = useConvexMutationQuery(
+    api.functions.diplomaticAffairs.superadminRestoreTarget,
+  );
+  const { mutateAsync: restorePlan } = useConvexMutationQuery(
+    api.functions.diplomaticAffairs.superadminRestorePlan,
+  );
+  const { mutateAsync: restoreLetter } = useConvexMutationQuery(
+    api.functions.diplomaticAffairs.superadminRestoreLetter,
+  );
+  const { mutateAsync: restoreReport } = useConvexMutationQuery(
+    api.functions.diplomaticAffairs.superadminRestoreReport,
+  );
+  const { mutateAsync: restoreProject } = useConvexMutationQuery(
+    api.functions.diplomaticAffairs.superadminRestoreProject,
+  );
+  const { mutateAsync: hardDelete } = useConvexMutationQuery(
+    api.functions.diplomaticAffairs.superadminPermanentlyDeleteTarget,
+  );
+
+  const [filter, setFilter] = useState("");
+
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const items = deletedItems ?? { targets: [], plans: [], letters: [], reports: [], projects: [] };
+
+  const totalDeleted =
+    items.targets.length +
+    items.plans.length +
+    items.letters.length +
+    items.reports.length +
+    items.projects.length;
+
+  if (totalDeleted === 0) {
+    return (
+      <div className="text-center py-16 text-sm text-muted-foreground">
+        <Trash2 className="h-10 w-10 mx-auto mb-3 opacity-20" />
+        <p className="font-medium">Corbeille vide</p>
+        <p className="text-xs mt-1">Les éléments supprimés apparaîtront ici.</p>
+      </div>
+    );
+  }
+
+  const formatDeletedAt = (ts: number | undefined) => {
+    if (!ts) return "";
+    return new Date(ts).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const matchesFilter = (name: string, orgName: string) => {
+    if (!filter) return true;
+    const q = filter.toLowerCase();
+    return name.toLowerCase().includes(q) || orgName.toLowerCase().includes(q);
+  };
+
+  const handleRestore = async (type: string, id: string) => {
+    try {
+      switch (type) {
+        case "target":
+          await restoreTarget({ targetId: id as Id<"diplomaticTargets"> });
+          break;
+        case "plan":
+          await restorePlan({ planId: id as Id<"diplomaticPlans"> });
+          break;
+        case "letter":
+          await restoreLetter({ letterId: id as Id<"diplomaticLetters"> });
+          break;
+        case "report":
+          await restoreReport({ reportId: id as Id<"diplomaticReports"> });
+          break;
+        case "project":
+          await restoreProject({ projectId: id as Id<"diplomaticProjects"> });
+          break;
+      }
+      toast.success("Élément restauré");
+    } catch {
+      toast.error("Erreur lors de la restauration");
+    }
+  };
+
+  const handleHardDelete = async (targetId: string) => {
+    try {
+      await hardDelete({ targetId: targetId as Id<"diplomaticTargets"> });
+      toast.success("Supprimé définitivement");
+    } catch {
+      toast.error("Erreur lors de la suppression");
+    }
+  };
+
+  const renderSection = (
+    title: string,
+    items: Array<{ _id: string; deletedAt?: number; orgName: string; [key: string]: any }>,
+    type: string,
+    getLabel: (item: any) => string,
+    getSublabel: (item: any) => string,
+  ) => {
+    const matching = items.filter((i) => matchesFilter(getLabel(i), i.orgName));
+    if (matching.length === 0) return null;
+
+    return (
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          {title}
+          <Badge variant="secondary" className="text-[9px]">
+            {matching.length}
+          </Badge>
+        </h3>
+        <div className="space-y-1">
+          {matching.map((item) => (
+            <div
+              key={item._id}
+              className="flex items-center justify-between gap-3 p-2.5 rounded-lg border border-dashed border-destructive/20 bg-destructive/5"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">{getLabel(item)}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {getSublabel(item)} · {item.orgName} · Supprimé le{" "}
+                  {formatDeletedAt(item.deletedAt)}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 text-xs h-7"
+                  onClick={() => handleRestore(type, item._id)}
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Restaurer
+                </Button>
+                {type === "target" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1 text-xs h-7 text-destructive hover:text-destructive"
+                    onClick={() => handleHardDelete(item._id)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Définitif
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher dans la corbeille..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="pl-9"
+          />
+          {filter && (
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted"
+              onClick={() => setFilter("")}
+            >
+              <X className="h-3.5 w-3.5 text-muted-foreground" />
+            </button>
+          )}
+        </div>
+        <span className="text-[10px] text-muted-foreground tabular-nums">
+          {totalDeleted} élément{totalDeleted > 1 ? "s" : ""} dans la corbeille
+        </span>
+      </div>
+
+      {renderSection(
+        "Cibles supprimées",
+        items.targets,
+        "target",
+        (t) => t.name,
+        (t) => `${t.type} · ${t.sector ?? ""}`,
+      )}
+      {renderSection(
+        "Plans supprimés",
+        items.plans,
+        "plan",
+        (p) => p.title,
+        (p) => p.category ?? "",
+      )}
+      {renderSection(
+        "Lettres supprimées",
+        items.letters,
+        "letter",
+        (l) => l.subject ?? l.reference,
+        (l) => l.type ?? "",
+      )}
+      {renderSection(
+        "Rapports supprimés",
+        items.reports,
+        "report",
+        (r) => r.title,
+        (r) => r.type ?? "",
+      )}
+      {renderSection(
+        "Projets supprimés",
+        items.projects,
+        "project",
+        (p) => p.title,
+        (p) => p.projectType ?? "",
+      )}
+    </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   requestsTable,
   eventsTable,
   documentsTable,
+  documentFoldersTable,
   postsTable,
   conversationsTable,
   formTemplatesTable,
@@ -73,6 +74,8 @@ import {
   chatMessagesTable,
   ipThreatScoresTable,
   guidesTable,
+  archivePoliciesTable,
+  archiveAuditLogTable,
 } from "./schemas";
 
 export default defineSchema({
@@ -85,6 +88,7 @@ export default defineSchema({
   requests: requestsTable,
   events: eventsTable,
   documents: documentsTable,
+  documentFolders: documentFoldersTable,
   posts: postsTable,
   conversations: conversationsTable,
   formTemplates: formTemplatesTable,
@@ -153,4 +157,7 @@ export default defineSchema({
   ipThreatScores: ipThreatScoresTable,
   // Guides
   guides: guidesTable,
+  // iArchive — Politiques et audit d'archivage
+  archivePolicies: archivePoliciesTable,
+  archiveAuditLog: archiveAuditLogTable,
 });
