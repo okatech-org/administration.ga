@@ -572,7 +572,7 @@ export const internalAddDocument = rawInternalMutation({
       docInsert.folderId = args.folderId;
     }
 
-    await ctx.db.insert("documents", docInsert);
+    await ctx.db.insert("documents", docInsert as any);
 
     return dipDocId;
   },
