@@ -1249,10 +1249,23 @@ export default function UserDashboard() {
           className="disable-scrollbars flex h-[calc(100%-0.5rem)] snap-x snap-mandatory overflow-x-auto lg:hidden"
         >
           {/* Page 1 mobile : Profil — non-scrollable, cartes flex */}
-          <div className="h-full w-full shrink-0 snap-start overflow-hidden">
+          <div className="h-full w-full shrink-0 snap-start">
             <div className="flex h-full flex-col gap-2.5">
               {/* Hero mobile — modèle vertical */}
-              <FlatCard className="relative min-h-0 flex-3">
+              <FlatCard className="relative min-h-0 flex-3 !overflow-visible">
+                {/* Floating "Appeler" Button (Mobile only) */}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="absolute -right-4 top-[85px] flex h-[34px] items-center justify-center rounded-l-full bg-[#659FCD] hover:bg-[#588CBA] pl-4 pr-3 text-sm font-bold text-white shadow-lg transition-colors z-20">
+                      Appeler
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="w-[95%] max-w-sm rounded-[1.5rem] border-none p-0 bg-transparent shadow-none gap-0">
+                    <DialogTitle className="sr-only">Contacts Consulaires</DialogTitle>
+                    <AssistanceContactsWidget />
+                  </DialogContent>
+                </Dialog>
+
                 <div className="flex h-full flex-col p-3 min-[400px]:p-4">
                   {/* Ligne 1 : Matricule / Badge / Score */}
                   <div className="flex shrink-0 items-center justify-between">
@@ -1579,39 +1592,18 @@ export default function UserDashboard() {
       {/* Badge flottant Actualités — mobile uniquement */}
       <AnimatePresence>
         {mobilePageIndex === 0 && (
-          <>
-            {/* Floating "Appeler" Button (Mobile only) */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <motion.button
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ type: "spring", damping: 20, stiffness: 300, delay: 0.1 }}
-                  className="fixed top-[116px] right-0 z-50 flex h-[34px] items-center justify-center rounded-l-full bg-[#659FCD]/90 hover:bg-[#659FCD] pl-3.5 pr-2.5 text-xs font-bold text-white shadow-md transition-colors lg:hidden"
-                >
-                  Appeler
-                </motion.button>
-              </DialogTrigger>
-              <DialogContent className="w-[95%] max-w-sm rounded-[1.5rem] border-none p-0 bg-transparent shadow-none gap-0">
-                <DialogTitle className="sr-only">Contacts Consulaires</DialogTitle>
-                <AssistanceContactsWidget />
-              </DialogContent>
-            </Dialog>
-
-            <motion.button
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ type: "spring", damping: 20, stiffness: 300 }}
-              onClick={scrollToActualites}
-              className="fixed top-1/2 right-0 z-50 flex -translate-y-1/2 items-center justify-center rounded-l-xl bg-foreground/47 px-1.5 py-8 text-xs font-bold tracking-widest text-background uppercase shadow-xl lg:hidden dark:bg-foreground/25 dark:text-white"
-            >
-              <span className="block rotate-180 whitespace-nowrap [writing-mode:vertical-rl]">
-                Actualités
-              </span>
-            </motion.button>
-          </>
+          <motion.button
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            onClick={scrollToActualites}
+            className="fixed top-1/2 right-0 z-50 flex -translate-y-1/2 items-center justify-center rounded-l-xl bg-foreground/47 px-1.5 py-8 text-xs font-bold tracking-widest text-background uppercase shadow-xl lg:hidden dark:bg-foreground/25 dark:text-white"
+          >
+            <span className="block rotate-180 whitespace-nowrap [writing-mode:vertical-rl]">
+              Actualités
+            </span>
+          </motion.button>
         )}
       </AnimatePresence>
       {/* Indicateur retour — mobile page 2 */}
