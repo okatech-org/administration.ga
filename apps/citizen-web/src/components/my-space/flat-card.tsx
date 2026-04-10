@@ -14,7 +14,7 @@ export function FlatCard({ children, className, ...props }: FlatCardProps) {
 	return (
 		<div
 			className={cn(
-				"rounded-xl bg-[#F4F3ED] dark:bg-[#1C1A18] p-0 overflow-hidden",
+				"rounded-xl bg-card/95 backdrop-blur-md border border-border p-0 overflow-hidden",
 				className,
 			)}
 			{...props}
