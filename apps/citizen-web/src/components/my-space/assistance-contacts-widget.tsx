@@ -6,7 +6,7 @@ import { OrgCallButton } from "@/components/meetings/org-call-button";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-
+import { FlatCard } from "@/components/my-space/flat-card";
 // ── Icon & color per role ────────────────────────────────────────────────────
 const ROLE_CONFIG: Record<string, {
 	icon: typeof Building2;
@@ -63,7 +63,7 @@ export function AssistanceContactsWidget() {
 	}, [items.length]);
 
 	return (
-		<div className="bg-[#F4F3ED] dark:bg-card/95 dark:backdrop-blur-md rounded-2xl flex flex-col shrink-0 overflow-hidden lg:h-full">
+		<FlatCard className="flex flex-col shrink-0 lg:h-full">
 			{/* Géré par — affichage de l'organisation consulaire */}
 			{orgName && (
 				<div className="hidden lg:block px-4 pt-4 pb-0">
@@ -148,7 +148,7 @@ export function AssistanceContactsWidget() {
 					</>
 				)}
 			</div>
-		</div>
+		</FlatCard>
 	);
 }
 
