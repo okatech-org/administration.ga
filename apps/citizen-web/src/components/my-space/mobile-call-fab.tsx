@@ -110,7 +110,7 @@ export function MobileCallFAB() {
 							animate={{ y: 0 }}
 							exit={{ y: "100%" }}
 							transition={{ type: "spring", damping: 28, stiffness: 350 }}
-							className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl bg-[#F4F3ED] dark:bg-card/95 dark:backdrop-blur-md shadow-2xl lg:hidden"
+							className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl bg-[#F4F3ED] dark:bg-[#2B2A28]/27 shadow-2xl lg:hidden"
 						>
 							{/* Drag handle */}
 							<div className="flex justify-center pt-3 pb-1">
