@@ -1571,7 +1571,7 @@ export default function UserDashboard() {
             exit={{ opacity: 0, x: 20 }}
             transition={{ type: "spring", damping: 20, stiffness: 300 }}
             onClick={scrollToActualites}
-            className="fixed top-1/2 right-0 z-50 flex -translate-y-1/2 items-center justify-center rounded-l-full bg-foreground/47 px-1.5 py-8 text-xs font-bold tracking-widest text-background uppercase shadow-xl lg:hidden dark:bg-foreground/25 dark:text-white"
+            className="fixed top-1/2 right-0 z-50 flex -translate-y-1/2 items-center justify-center rounded-l-full bg-foreground/47 px-1 py-8 text-xs font-bold tracking-widest text-background uppercase shadow-xl lg:hidden dark:bg-foreground/25 dark:text-white"
           >
             <span className="block rotate-180 whitespace-nowrap [writing-mode:vertical-rl]">
               Actualités
@@ -1588,7 +1588,7 @@ export default function UserDashboard() {
             exit={{ opacity: 0, x: 20 }}
             transition={{ type: "spring", damping: 20, stiffness: 300 }}
             onClick={scrollToDashboard}
-            className="fixed top-1/2 right-0 z-50 flex -translate-y-1/2 items-center justify-center rounded-l-full bg-foreground/47 px-1.5 py-8 text-xs font-bold tracking-widest text-background uppercase shadow-xl lg:hidden dark:bg-foreground/25 dark:text-white"
+            className="fixed top-1/2 right-0 z-50 flex -translate-y-1/2 items-center justify-center rounded-l-full bg-foreground/47 px-1 py-8 text-xs font-bold tracking-widest text-background uppercase shadow-xl lg:hidden dark:bg-foreground/25 dark:text-white"
           >
             <span className="block rotate-180 whitespace-nowrap [writing-mode:vertical-rl]">
               Tableau de bord
