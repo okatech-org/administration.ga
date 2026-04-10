@@ -1232,25 +1232,28 @@ export default function UserDashboard() {
               {/* Hero mobile — modèle vertical */}
               <FlatCard className="relative min-h-0 flex-3">
                 <div className="flex h-full flex-col p-3 min-[400px]:p-4">
-                  {/* Ligne 1 : Matricule / Badge / Score */}
-                  <div className="flex shrink-0 items-center justify-between">
-                    {p?.matricule && (
-                      <span className="font-mono text-[9px] font-semibold tracking-wide text-muted-foreground uppercase min-[400px]:text-[10px]">
-                        {p.matricule}
+                  <div className="flex shrink-0 flex-col gap-1.5">
+                    <div className="flex items-center gap-2">
+                      {p?.matricule && (
+                        <span className="font-mono text-[9px] font-semibold tracking-wide text-muted-foreground uppercase min-[400px]:text-[10px]">
+                          {p.matricule}
+                        </span>
+                      )}
+                      {p?.userType && (
+                        <span className="rounded-lg bg-amber-500/35 px-1.5 py-0.5 text-[9px] font-medium text-amber-700 min-[400px]:text-[10px] dark:bg-amber-500/15 dark:text-amber-400">
+                          {p.userType === "long_stay"
+                            ? "Long séjour"
+                            : p.userType === "short_stay"
+                              ? "Court séjour"
+                              : "De passage"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center">
+                      <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                        {completionScore}%
                       </span>
-                    )}
-                    {p?.userType && (
-                      <span className="rounded-lg bg-amber-500/35 px-1.5 py-0.5 text-[9px] font-medium text-amber-700 min-[400px]:text-[10px] dark:bg-amber-500/15 dark:text-amber-400">
-                        {p.userType === "long_stay"
-                          ? "Long séjour"
-                          : p.userType === "short_stay"
-                            ? "Court séjour"
-                            : "De passage"}
-                      </span>
-                    )}
-                    <span className="text-[10px] font-bold text-muted-foreground min-[400px]:text-xs">
-                      {completionScore}%
-                    </span>
+                    </div>
                   </div>
 
                   {/* Zone centrale flex : Photo + Nom + Tel */}
