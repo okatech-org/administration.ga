@@ -38,6 +38,7 @@ import { AssistanceContactsWidget } from "@/components/my-space/assistance-conta
 import { ConsularCardWidget } from "@/components/my-space/consular-card-widget"
 import { FlatCard } from "@/components/my-space/flat-card"
 import { MySpaceHeader } from "@/components/my-space/my-space-wrapper"
+import { MobileCallFAB } from "@/components/my-space/mobile-call-fab"
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -48,12 +49,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
 import { ProfileHeroSkeleton } from "@/components/skeletons"
 import {
   useAuthenticatedConvexQuery,
@@ -107,7 +102,6 @@ export default function UserDashboard() {
   const { t, i18n } = useTranslation()
   const [showConsularCard, setShowConsularCard] = useState(false)
   const [showDossierDetails, setShowDossierDetails] = useState(false)
-  const [showContactsSheet, setShowContactsSheet] = useState(false)
   const [mobilePageIndex, setMobilePageIndex] = useState(0)
   const mobileScrollRef = useRef<HTMLDivElement>(null)
 
@@ -1577,33 +1571,8 @@ export default function UserDashboard() {
         </div>
       </motion.div>
 
-      {/* ═══ Floating Call Button — mobile uniquement ═══ */}
-      <motion.button
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: "spring", damping: 18, stiffness: 260, delay: 0.3 }}
-        onClick={() => setShowContactsSheet(true)}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#009E60] text-white shadow-lg shadow-[#009E60]/30 active:scale-95 transition-transform lg:hidden"
-        aria-label="Appeler une représentation"
-      >
-        <Phone className="h-6 w-6" />
-      </motion.button>
-
-      {/* Bottom sheet contacts — mobile */}
-      <Sheet open={showContactsSheet} onOpenChange={setShowContactsSheet}>
-        <SheetContent
-          side="bottom"
-          showCloseButton={true}
-          className="rounded-t-2xl max-h-[70dvh] overflow-y-auto bg-card border-t border-border px-0 pb-[env(safe-area-inset-bottom,16px)]"
-        >
-          <SheetHeader className="px-4 pb-0">
-            <SheetTitle className="text-base font-bold">Contacter une représentation</SheetTitle>
-          </SheetHeader>
-          <div className="px-1">
-            <AssistanceContactsWidget />
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Bouton flottant Appeler — mobile uniquement */}
+      <MobileCallFAB />
 
       {/* Badge flottant Actualités — mobile uniquement */}
       <AnimatePresence>
