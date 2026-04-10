@@ -275,7 +275,7 @@ export default function UserDashboard() {
         {activeAlerts.length > 0 ? (
           <Link
             href="/my-space/settings?tab=dossier"
-            className="flex-1 flex items-center gap-2.5 rounded-xl border border-rose-500/15 bg-rose-500/10 px-3 py-2.5 transition-colors hover:bg-rose-500/15 overflow-hidden"
+            className="flex-1 flex items-center gap-2.5 rounded-xl bg-rose-500/10 px-3 py-2.5 transition-colors hover:bg-rose-500/15 overflow-hidden"
           >
             <div className="shrink-0 rounded-md bg-rose-500/15 p-1">
               <AlertTriangle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
