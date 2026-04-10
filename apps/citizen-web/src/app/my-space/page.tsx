@@ -307,26 +307,28 @@ export default function UserDashboard() {
                     </Avatar>
                     <div className="flex min-w-0 flex-1 flex-col">
                       {/* Matricule + Badge userType */}
-                      <div className="mb-1 flex items-center gap-2">
-                        {p?.matricule && (
-                          <span className="font-mono text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
-                            {p.matricule}
+                      <div className="mb-1 flex shrink-0 flex-col gap-1.5">
+                        <div className="flex items-center">
+                          {p?.matricule && (
+                            <span className="font-mono text-xs font-bold tracking-wide text-muted-foreground uppercase min-[400px]:text-sm">
+                              {p.matricule}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {p?.userType && (
+                            <span className="rounded-lg bg-amber-500/35 px-1.5 py-0.5 text-[9px] font-medium text-amber-700 min-[400px]:text-[10px] dark:bg-amber-500/15 dark:text-amber-400">
+                              {p.userType === "long_stay"
+                                ? "Long séjour"
+                                : p.userType === "short_stay"
+                                  ? "Court séjour"
+                                  : "De passage"}
+                            </span>
+                          )}
+                          <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                            {completionScore}%
                           </span>
-                        )}
-                        {p?.userType && (
-                          <span className="rounded-lg bg-amber-500/35 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
-                            {p.userType === "long_stay"
-                              ? "Long séjour"
-                              : p.userType === "short_stay"
-                                ? "Court séjour"
-                                : "De passage"}
-                          </span>
-                        )}
-                      </div>
-                      <div className="mb-1.5 flex items-center">
-                        <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
-                          {completionScore}%
-                        </span>
+                        </div>
                       </div>
                       <div className="flex items-center justify-between">
                         <h2 className="truncate text-base leading-none font-black text-foreground uppercase">
@@ -1233,12 +1235,14 @@ export default function UserDashboard() {
               <FlatCard className="relative min-h-0 flex-3">
                 <div className="flex h-full flex-col p-3 min-[400px]:p-4">
                   <div className="flex shrink-0 flex-col gap-1.5">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center">
                       {p?.matricule && (
-                        <span className="font-mono text-[9px] font-semibold tracking-wide text-muted-foreground uppercase min-[400px]:text-[10px]">
+                        <span className="font-mono text-xs font-bold tracking-wide text-muted-foreground uppercase min-[400px]:text-sm">
                           {p.matricule}
                         </span>
                       )}
+                    </div>
+                    <div className="flex items-center gap-2">
                       {p?.userType && (
                         <span className="rounded-lg bg-amber-500/35 px-1.5 py-0.5 text-[9px] font-medium text-amber-700 min-[400px]:text-[10px] dark:bg-amber-500/15 dark:text-amber-400">
                           {p.userType === "long_stay"
@@ -1248,8 +1252,6 @@ export default function UserDashboard() {
                               : "De passage"}
                         </span>
                       )}
-                    </div>
-                    <div className="flex items-center">
                       <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
                         {completionScore}%
                       </span>
