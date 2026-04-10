@@ -72,3 +72,9 @@ jobs:
             --min-instances=0 \
             --max-instances=10 \
             --set-env-vars="NODE_ENV=production,CONVEX_SITE_URL=${{ secrets.VITE_CONVEX_SITE_URL }}"
+
+          # Force 100% traffic to the latest deployment (prevents manual pinning issues)
+          gcloud run services update-traffic ${{ env.SERVICE_NAME }} \
+            --to-latest \
+            --region=${{ env.REGION }} \
+            --project=${{ env.PROJECT_ID }}
