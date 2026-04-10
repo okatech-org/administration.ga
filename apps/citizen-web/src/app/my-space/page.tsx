@@ -43,6 +43,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -1247,6 +1253,19 @@ export default function UserDashboard() {
             <div className="flex h-full flex-col gap-2.5">
               {/* Hero mobile — modèle vertical */}
               <FlatCard className="relative min-h-0 flex-3">
+                {/* Floating "Appeler" Button (Mobile only) */}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="absolute right-0 top-[60px] flex h-[34px] items-center justify-center rounded-l-full bg-[#659FCD]/90 hover:bg-[#659FCD] pl-3.5 pr-2.5 text-xs font-bold text-white shadow-sm transition-colors z-10">
+                      Appeler
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="w-[95%] max-w-sm rounded-[1.5rem] border-none p-0 bg-transparent shadow-none gap-0">
+                    <DialogTitle className="sr-only">Contacts Consulaires</DialogTitle>
+                    <AssistanceContactsWidget />
+                  </DialogContent>
+                </Dialog>
+
                 <div className="flex h-full flex-col p-3 min-[400px]:p-4">
                   {/* Ligne 1 : Matricule / Badge / Score */}
                   <div className="flex shrink-0 items-center justify-between">
