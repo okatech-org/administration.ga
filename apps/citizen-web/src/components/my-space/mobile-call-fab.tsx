@@ -148,7 +148,7 @@ export function MobileCallFAB() {
 							)}
 
 							{/* Representations list */}
-							<div className="px-5 pb-6 pt-1">
+							<div className="px-5 pb-24 pt-1">
 								<div
 									ref={scrollRef}
 									onScroll={handleScroll}
