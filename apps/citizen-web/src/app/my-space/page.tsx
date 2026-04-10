@@ -1588,7 +1588,7 @@ export default function UserDashboard() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ type: "spring", damping: 20, stiffness: 300, delay: 0.1 }}
-                  className="fixed top-[128px] right-0 z-50 flex h-[34px] items-center justify-center rounded-l-full bg-[#659FCD]/90 hover:bg-[#659FCD] pl-3.5 pr-2.5 text-xs font-bold text-white shadow-md transition-colors lg:hidden"
+                  className="fixed top-[138px] right-0 z-50 flex h-[34px] items-center justify-center rounded-l-full bg-[#659FCD]/90 hover:bg-[#659FCD] pl-3.5 pr-2.5 text-xs font-bold text-white shadow-md transition-colors lg:hidden"
                 >
                   Appeler
                 </motion.button>
