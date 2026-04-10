@@ -181,7 +181,6 @@ export function MySpaceHeader() {
               <span className="inline min-[460px]:hidden truncate">Démarche</span>
             </Link>
           </Button>
-          <NotificationDropdown className="h-10 w-10 min-w-10 bg-card rounded-lg shrink-0" />
         </div>
 
         <div className="hidden md:flex items-center gap-4">
