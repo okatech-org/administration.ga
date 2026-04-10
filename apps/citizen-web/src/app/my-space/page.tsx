@@ -307,7 +307,7 @@ export default function UserDashboard() {
                     </Avatar>
                     <div className="flex min-w-0 flex-1 flex-col">
                       {/* Matricule + Badge userType */}
-                      <div className="mb-1.5 flex items-center gap-2">
+                      <div className="mb-1 flex items-center gap-2">
                         {p?.matricule && (
                           <span className="font-mono text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
                             {p.matricule}
@@ -323,13 +323,15 @@ export default function UserDashboard() {
                           </span>
                         )}
                       </div>
+                      <div className="mb-1.5 flex items-center">
+                        <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                          {completionScore}%
+                        </span>
+                      </div>
                       <div className="flex items-center justify-between">
                         <h2 className="truncate text-base leading-none font-black text-foreground uppercase">
                           {lastName}
                         </h2>
-                        <span className="shrink-0 text-xs font-bold text-muted-foreground">
-                          {completionScore}%
-                        </span>
                       </div>
                       <p className="mt-0.5 truncate text-sm font-medium text-muted-foreground capitalize">
                         {firstName}
