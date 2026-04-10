@@ -3,7 +3,7 @@
 import { api } from "@convex/_generated/api"
 import Link from "next/link"
 import { Building2, Info, Plane, Plus } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useSyncExternalStore, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown"
 import { useCitizenData } from "@/hooks/use-citizen-data"
@@ -35,18 +35,16 @@ interface MySpaceWrapperProps {
 export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
   const consularThemeValue = useConsularThemeState()
 
-  const [isExpanded, setIsExpanded] = useState(true)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
+  const [isExpanded, setIsExpanded] = useState(() => {
+    if (typeof window === "undefined") return true
     try {
       const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY)
-      if (stored !== null) setIsExpanded(stored === "true")
+      return stored !== null ? stored === "true" : true
     } catch {
-      // Ignore
+      return true
     }
-  }, [])
+  })
 
   useEffect(() => {
     if (!mounted) return
@@ -70,7 +68,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
         <div className="" />
 
         <div className="hidden md:block p-4 pr-0">
-          <div className="h-full rounded-2xl bg-[#F4F3ED] dark:bg-[#2B2A28] overflow-hidden">
+          <div className="h-full rounded-2xl bg-[#F4F3ED] dark:bg-[#2B2A28]/37 overflow-hidden">
             <MySpaceSidebar
               isExpanded={isExpanded}
               onToggle={() => setIsExpanded((prev) => !prev)}
