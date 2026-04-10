@@ -181,14 +181,16 @@ export function MobileCallFAB() {
 													</div>
 												</div>
 
-												{/* Call button */}
-												<OrgCallButton
-													orgId={rep.id as Id<"orgs">}
-													orgName={rep.name}
-													orgAddress={rep.address}
-													className="h-10 text-sm font-semibold bg-[#0072B9] hover:bg-[#0072B9]/90 text-white transition-transform active:scale-[0.97] rounded-lg w-full"
-													label="Appeler"
-												/>
+												{/* Call button — close sheet on click so dialogs don't overlap */}
+												<div onClickCapture={() => setIsOpen(false)}>
+													<OrgCallButton
+														orgId={rep.id as Id<"orgs">}
+														orgName={rep.name}
+														orgAddress={rep.address}
+														className="h-10 text-sm font-semibold bg-[#0072B9] hover:bg-[#0072B9]/90 text-white transition-transform active:scale-[0.97] rounded-lg w-full"
+														label="Appeler"
+													/>
+												</div>
 											</div>
 										)
 									})}
