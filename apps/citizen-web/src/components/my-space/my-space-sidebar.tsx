@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -20,7 +21,7 @@ import {
   Users,
 } from "lucide-react"
 import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
+import { useSyncExternalStore, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { api } from "@convex/_generated/api"
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks"
@@ -81,8 +82,7 @@ export function MySpaceSidebar({
   const { data: session } = authClient.useSession()
   const { t, i18n } = useTranslation()
   const { resolvedTheme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
   const isDark = mounted && resolvedTheme === "dark"
 
   const isActive = (url: string) => {
@@ -96,7 +96,7 @@ export function MySpaceSidebar({
     api.functions.childProfiles.getMine,
     {}
   )
-  const children = (childProfiles ?? []) as any[]
+  const children = (childProfiles ?? []) as Array<{ _id: string; firstName?: string; lastName?: string }>
   const [childrenOpen, setChildrenOpen] = useState(false)
 
   const navSections: NavSection[] = [
@@ -142,7 +142,7 @@ export function MySpaceSidebar({
         <div className={cn("mb-3", isExpanded ? "px-1" : "")}>
           <Link href="/" className={cn("flex items-center", isExpanded && "gap-2.5")}>
             <div className="size-11 shrink-0 rounded-xl flex items-center justify-center overflow-hidden">
-              <img src="/icons/apple-icon.png" alt="Logo" className="w-full h-full object-contain" />
+              <Image src="/icons/apple-icon.png" alt="Logo" width={44} height={44} className="w-full h-full object-contain" />
             </div>
             <div
               className={cn(
@@ -192,7 +192,7 @@ export function MySpaceSidebar({
                   <Link
                     href={item.url}
                     className={cn(
-                      "flex items-center transition-all duration-200 rounded-full",
+                      "flex items-center transition-all duration-200 rounded-xl",
                       isExpanded ? "w-full gap-3 px-3 h-11" : "w-11 h-11 justify-center",
                       active
                         ? "font-bold text-primary bg-primary/10 dark:bg-primary/20 dark:text-primary"
@@ -239,7 +239,7 @@ export function MySpaceSidebar({
                     type="button"
                     onClick={() => setChildrenOpen(!childrenOpen)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-3 h-11 transition-all duration-200 text-[15.5px] rounded-full",
+                      "w-full flex items-center gap-3 px-3 h-11 transition-all duration-200 text-[15.5px] rounded-xl",
                       childrenOpen
                         ? "active bg-rose-500/10 text-rose-600 font-bold border border-rose-500/10"
                         : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -255,7 +255,7 @@ export function MySpaceSidebar({
 
                   <div className={cn("overflow-hidden transition-all duration-200 ease-in-out", childrenOpen ? "max-h-60 opacity-100 mt-0.5" : "max-h-0 opacity-0")}>
                     <div className="pl-4 space-y-0.5">
-                      {children.map((child: any) => {
+                      {children.map((child) => {
                         const childUrl = `/my-space/children/${child._id}`
                         const active = isActive(childUrl)
                         return (
@@ -263,7 +263,7 @@ export function MySpaceSidebar({
                             key={child._id}
                             href={childUrl}
                             className={cn(
-                              "flex items-center gap-2.5 px-3 h-10 text-[14px] rounded-full",
+                              "flex items-center gap-2.5 px-3 h-10 text-[14px] rounded-xl",
                               active
                                 ? "active text-rose-600 font-bold bg-rose-500/10 border border-rose-500/10"
                                 : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -286,7 +286,7 @@ export function MySpaceSidebar({
                       aria-label="Mes Enfants"
                       className={cn(
                         "flex items-center justify-center w-11 h-11",
-                        children.some((c: any) => isActive(`/my-space/children/${c._id}`))
+                        children.some((c) => isActive(`/my-space/children/${c._id}`))
                           ? "active text-rose-600"
                           : "text-muted-foreground hover:text-foreground"
                       )}
@@ -309,7 +309,7 @@ export function MySpaceSidebar({
               <Link
                 href="/my-space/settings"
                 className={cn(
-                  "flex items-center transition-all duration-200 rounded-full",
+                  "flex items-center transition-all duration-200 rounded-xl",
                   isExpanded ? "w-full gap-3 px-3 h-11" : "w-11 h-11 justify-center",
                   isActive("/my-space/settings")
                     ? "font-bold text-primary bg-primary/10 dark:bg-primary/20 dark:text-primary"
