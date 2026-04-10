@@ -68,7 +68,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
         <div className="" />
 
         <div className="hidden md:block p-4 pr-0">
-          <div className="h-full rounded-2xl bg-[#F4F3ED] dark:bg-[#2B2A28]/37 overflow-hidden">
+          <div className="h-full rounded-2xl bg-[#F4F3ED] dark:bg-[#2B2A28]/27 overflow-hidden">
             <MySpaceSidebar
               isExpanded={isExpanded}
               onToggle={() => setIsExpanded((prev) => !prev)}
