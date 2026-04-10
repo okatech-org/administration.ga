@@ -81,7 +81,7 @@ export function MobileCallFAB() {
 				animate={{ opacity: 1, x: 0 }}
 				transition={{ type: "spring", damping: 20, stiffness: 300, delay: 0.15 }}
 				onClick={() => setIsOpen(true)}
-				className="fixed right-0 z-50 flex items-center gap-1.5 rounded-l-xl bg-[#0072B9] pl-3 pr-2.5 py-2 shadow-xl lg:hidden"
+				className="fixed right-0 z-50 flex items-center gap-1.5 rounded-l-xl bg-[#0072B9] pl-3 pr-2.5 py-2 shadow-xl opacity-[0.47] lg:hidden"
 				style={{ top: "calc(env(safe-area-inset-top, 0px) + 155px)" }}
 			>
 				<Phone className="h-4 w-4 text-white shrink-0" />
