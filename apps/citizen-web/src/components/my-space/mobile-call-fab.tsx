@@ -128,6 +128,7 @@ export function MobileCallFAB() {
 								<button
 									type="button"
 									onClick={() => setIsOpen(false)}
+									aria-label="Fermer"
 									className="rounded-lg p-1.5 transition-colors hover:bg-muted-foreground/10"
 								>
 									<X className="h-4.5 w-4.5 text-muted-foreground" />

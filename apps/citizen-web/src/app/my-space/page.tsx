@@ -58,21 +58,6 @@ import { getLocalizedValue } from "@/lib/i18n-utils"
 import { REQUEST_STATUS_CONFIG } from "@/lib/request-status-config"
 import { cn } from "@/lib/utils"
 
-// ─── Helpers ─────────────────────────────────────────────────
-const COUNTRY_LABELS: Record<string, string> = {
-  GA: "Gabon",
-  FR: "France",
-  CM: "Cameroun",
-  CG: "Congo",
-  CD: "RD Congo",
-  SN: "Sénégal",
-  CI: "Côte d'Ivoire",
-  MA: "Maroc",
-  BE: "Belgique",
-  CH: "Suisse",
-  CA: "Canada",
-  US: "États-Unis",
-}
 
 function getAge(bd?: string | number | null): number | null {
   if (!bd) return null
@@ -81,9 +66,6 @@ function getAge(bd?: string | number | null): number | null {
   } catch {
     return null
   }
-}
-function lbl(map: Record<string, string>, code?: string) {
-  return code ? map[code] || code : undefined
 }
 function formatPhone(phone?: string | null): string {
   if (!phone) return "—"
@@ -158,7 +140,6 @@ export default function UserDashboard() {
   const addresses = p?.addresses
   const firstName = identity?.firstName ?? ""
   const lastName = identity?.lastName ?? ""
-  const _age = getAge(identity?.birthDate)
   const avatarUrl = identityPhotoUrl ?? p?.avatarUrl
 
   const cvScore = (() => {

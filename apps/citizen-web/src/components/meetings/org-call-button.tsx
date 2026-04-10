@@ -14,7 +14,7 @@ import { useTranslation } from "react-i18next";
 
 import type { buttonVariants } from "@/components/ui/button";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useMeeting } from "@/hooks/use-meeting";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -146,11 +146,11 @@ export function OrgCallButton({
 
 			{/* Line Selector Dialog */}
 			<Dialog open={showLineSelector} onOpenChange={setShowLineSelector}>
-				<DialogContent className="sm:max-w-sm">
+				<DialogContent className="sm:max-w-sm" aria-describedby={undefined}>
+					<DialogTitle className="text-lg font-bold">{orgName}</DialogTitle>
 					<div className="flex flex-col gap-4">
 						{/* En-tête : nom complet de la représentation */}
 						<div className="space-y-2">
-							<h2 className="text-lg font-bold">{orgName}</h2>
 							{orgAddress && (
 								<div className="flex items-start gap-2 text-xs text-muted-foreground">
 									<MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5" />
@@ -213,7 +213,7 @@ export function OrgCallButton({
 				<Sheet open={isInCall} onOpenChange={(o) => !o && handleHangUp()}>
 					<SheetContent
 						side="bottom"
-						className="p-0 h-[100dvh] w-full bg-zinc-950 border-none rounded-none focus:outline-none flex flex-col pt-10"
+						className="p-0 h-dvh w-full bg-zinc-950 border-none rounded-none focus:outline-none flex flex-col pt-10"
 					>
 						{callContent}
 					</SheetContent>
@@ -222,8 +222,10 @@ export function OrgCallButton({
 				<Dialog open={isInCall} onOpenChange={(o) => !o && handleHangUp()}>
 					<DialogContent
 						autoFocus={false}
+						aria-describedby={undefined}
 						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 					>
+						<DialogTitle className="sr-only">{t("meetings.callInProgress", "Appel en cours")}</DialogTitle>
 						{callContent}
 					</DialogContent>
 				</Dialog>
