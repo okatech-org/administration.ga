@@ -43,17 +43,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { ProfileHeroSkeleton } from "@/components/skeletons"
 import {
   useAuthenticatedConvexQuery,
@@ -107,6 +107,7 @@ export default function UserDashboard() {
   const { t, i18n } = useTranslation()
   const [showConsularCard, setShowConsularCard] = useState(false)
   const [showDossierDetails, setShowDossierDetails] = useState(false)
+  const [showContactsSheet, setShowContactsSheet] = useState(false)
   const [mobilePageIndex, setMobilePageIndex] = useState(0)
   const mobileScrollRef = useRef<HTMLDivElement>(null)
 
@@ -1249,23 +1250,10 @@ export default function UserDashboard() {
           className="disable-scrollbars flex h-[calc(100%-0.5rem)] snap-x snap-mandatory overflow-x-auto lg:hidden"
         >
           {/* Page 1 mobile : Profil — non-scrollable, cartes flex */}
-          <div className="h-full w-full shrink-0 snap-start">
+          <div className="h-full w-full shrink-0 snap-start overflow-hidden">
             <div className="flex h-full flex-col gap-2.5">
               {/* Hero mobile — modèle vertical */}
-              <FlatCard className="relative min-h-0 flex-3 !overflow-visible">
-                {/* Floating "Appeler" Button (Mobile only) */}
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <button className="absolute -right-4 top-[85px] flex h-[34px] items-center justify-center rounded-l-full bg-[#659FCD] hover:bg-[#588CBA] pl-4 pr-3 text-sm font-bold text-white shadow-lg transition-colors z-20">
-                      Appeler
-                    </button>
-                  </DialogTrigger>
-                  <DialogContent className="w-[95%] max-w-sm rounded-[1.5rem] border-none p-0 bg-transparent shadow-none gap-0">
-                    <DialogTitle className="sr-only">Contacts Consulaires</DialogTitle>
-                    <AssistanceContactsWidget />
-                  </DialogContent>
-                </Dialog>
-
+              <FlatCard className="relative min-h-0 flex-3">
                 <div className="flex h-full flex-col p-3 min-[400px]:p-4">
                   {/* Ligne 1 : Matricule / Badge / Score */}
                   <div className="flex shrink-0 items-center justify-between">
@@ -1588,6 +1576,34 @@ export default function UserDashboard() {
           </div>
         </div>
       </motion.div>
+
+      {/* ═══ Floating Call Button — mobile uniquement ═══ */}
+      <motion.button
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: "spring", damping: 18, stiffness: 260, delay: 0.3 }}
+        onClick={() => setShowContactsSheet(true)}
+        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#009E60] text-white shadow-lg shadow-[#009E60]/30 active:scale-95 transition-transform lg:hidden"
+        aria-label="Appeler une représentation"
+      >
+        <Phone className="h-6 w-6" />
+      </motion.button>
+
+      {/* Bottom sheet contacts — mobile */}
+      <Sheet open={showContactsSheet} onOpenChange={setShowContactsSheet}>
+        <SheetContent
+          side="bottom"
+          showCloseButton={true}
+          className="rounded-t-2xl max-h-[70dvh] overflow-y-auto bg-card border-t border-border px-0 pb-[env(safe-area-inset-bottom,16px)]"
+        >
+          <SheetHeader className="px-4 pb-0">
+            <SheetTitle className="text-base font-bold">Contacter une représentation</SheetTitle>
+          </SheetHeader>
+          <div className="px-1">
+            <AssistanceContactsWidget />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Badge flottant Actualités — mobile uniquement */}
       <AnimatePresence>
