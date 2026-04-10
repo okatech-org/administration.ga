@@ -129,7 +129,7 @@
 /* ─── Citizen Space Layout ─── */
 
 .citizen-layout { background: var(--card); min-height: 100dvh; }
-.dark .citizen-layout { background: var(--card); }
+.dark .citizen-layout { background: #0C0B0A; }
 
 /* ─── Animations ─── */
 
