@@ -78,7 +78,7 @@ export function MobileCallFAB() {
 			{/* Floating button — right edge, horizontal, at hero card level */}
 			<motion.button
 				initial={{ opacity: 0, x: 20 }}
-				animate={{ opacity: 0.47, x: 0 }}
+				animate={{ opacity: 0.57, x: 0 }}
 				transition={{ type: "spring", damping: 20, stiffness: 300, delay: 0.15 }}
 				onClick={() => setIsOpen(true)}
 				className="fixed right-0 z-50 flex items-center gap-1.5 rounded-l-xl bg-[#0072B9] pl-3 pr-2.5 py-2 shadow-xl lg:hidden"
