@@ -1241,7 +1241,7 @@ export default function UserDashboard() {
             <div className="flex h-full flex-col gap-2.5">
               {/* Hero mobile — modèle vertical */}
               <FlatCard className="relative min-h-0 flex-3">
-                <div className="flex h-full flex-col p-3 min-[400px]:p-4">
+                <div className="flex h-full flex-col p-3 pr-7 min-[400px]:p-4 min-[400px]:pr-8">
                   {/* Ligne 1 : Matricule / Badge / Score */}
                   <div className="flex shrink-0 items-center justify-between">
                     {p?.matricule && (
@@ -1337,7 +1337,7 @@ export default function UserDashboard() {
 
               {/* Démarches mobile */}
               <FlatCard className="min-h-0 flex-2">
-                <div className="flex h-full flex-col p-3">
+                <div className="flex h-full flex-col p-3 pr-7">
                   <div className="mb-2 flex shrink-0 items-center justify-between">
                     <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
                       <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
@@ -1412,7 +1412,7 @@ export default function UserDashboard() {
 
               {/* RDV mobile */}
               <FlatCard className="min-h-0 flex-2">
-                <div className="flex h-full flex-col p-3">
+                <div className="flex h-full flex-col p-3 pr-7">
                   <div className="mb-2 flex shrink-0 items-center justify-between">
                     <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
                       <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
@@ -1515,7 +1515,7 @@ export default function UserDashboard() {
           {/* Page 2 mobile : Actualités */}
           <div className="citizen-scrollbar h-full w-full shrink-0 snap-start overflow-y-auto p-1">
             <FlatCard className="flex min-h-full flex-col">
-              <div className="flex flex-1 flex-col p-4">
+              <div className="flex flex-1 flex-col p-4 pr-7">
                 <div className="mb-4 flex items-center justify-between">
                   <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                     <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
