@@ -269,15 +269,11 @@ export default function UserDashboard() {
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden">
-      <div className="shrink-0">
-        <MySpaceHeader />
-      </div>
-
       {/* Bandeau alerte mobile — remplace le bouton Démarche quand il y a des alertes */}
       {activeAlerts.length > 0 && (
         <Link
           href="/my-space/settings?tab=dossier"
-          className="mt-3 flex items-center gap-2.5 rounded-xl border border-rose-500/15 bg-rose-500/10 px-3 py-2.5 transition-colors hover:bg-rose-500/15 lg:hidden"
+          className="mb-3 flex items-center gap-2.5 rounded-xl border border-rose-500/15 bg-rose-500/10 px-3 py-2.5 transition-colors hover:bg-rose-500/15 lg:hidden"
         >
           <div className="shrink-0 rounded-md bg-rose-500/15 p-1">
             <AlertTriangle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
@@ -290,6 +286,10 @@ export default function UserDashboard() {
           <ArrowRight className="h-3 w-3 shrink-0 text-rose-500/60" />
         </Link>
       )}
+
+      <div className="shrink-0">
+        <MySpaceHeader />
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 5 }}
