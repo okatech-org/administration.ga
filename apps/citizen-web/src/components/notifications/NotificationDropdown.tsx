@@ -13,13 +13,15 @@ export function NotificationDropdown({
   count?: number
 }) {
   return (
-    <Button variant="ghost" size="icon" className={cn("relative", className)}>
-      <Bell className="size-5" />
-      {count > 0 && (
-        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white shadow-sm ring-2 ring-background">
-          {count}
-        </span>
-      )}
+    <Button variant="ghost" size="icon" className={cn(className)}>
+      <div className="relative inline-flex items-center justify-center">
+        <Bell className="size-[22px]" />
+        {count > 0 && (
+          <span className="absolute -top-1 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white shadow-sm ring-2 ring-background">
+            {count}
+          </span>
+        )}
+      </div>
     </Button>
   )
 }
