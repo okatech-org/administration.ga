@@ -192,11 +192,11 @@ export function MySpaceSidebar({
                   <Link
                     href={item.url}
                     className={cn(
-                      "flex items-center transition-all duration-200",
+                      "flex items-center transition-all duration-200 rounded-full",
                       isExpanded ? "w-full gap-3 px-3 h-11" : "w-11 h-11 justify-center",
                       active
-                        ? "font-bold text-primary dark:text-primary"
-                        : "font-semibold text-muted-foreground hover:text-foreground"
+                        ? "font-bold text-primary bg-primary/10 dark:bg-primary/20 dark:text-primary"
+                        : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     )}
                   >
                     <item.icon
@@ -204,9 +204,6 @@ export function MySpaceSidebar({
                     />
                     <SidebarText isExpanded={isExpanded}>{item.title}</SidebarText>
                     {!isExpanded && <span className="sr-only">{item.title}</span>}
-                    {active && isExpanded && (
-                      <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                    )}
                   </Link>
                 )
 
@@ -242,10 +239,10 @@ export function MySpaceSidebar({
                     type="button"
                     onClick={() => setChildrenOpen(!childrenOpen)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-3 h-11 transition-all duration-200 text-[15.5px]",
+                      "w-full flex items-center gap-3 px-3 h-11 transition-all duration-200 text-[15.5px] rounded-full",
                       childrenOpen
-                        ? "active bg-rose-500/8 text-rose-600 font-black"
-                        : "font-semibold text-muted-foreground hover:text-foreground"
+                        ? "active bg-rose-500/10 text-rose-600 font-bold border border-rose-500/10"
+                        : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     )}
                   >
                     <Users className="size-5 shrink-0" />
@@ -266,10 +263,10 @@ export function MySpaceSidebar({
                             key={child._id}
                             href={childUrl}
                             className={cn(
-                              "flex items-center gap-2.5 px-3 h-10 text-[14px]",
+                              "flex items-center gap-2.5 px-3 h-10 text-[14px] rounded-full",
                               active
-                                ? "active text-rose-600 font-black"
-                                : "font-semibold text-muted-foreground hover:text-foreground"
+                                ? "active text-rose-600 font-bold bg-rose-500/10 border border-rose-500/10"
+                                : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
                             )}
                           >
                             <Baby className="size-[18px] shrink-0" />
@@ -312,15 +309,15 @@ export function MySpaceSidebar({
               <Link
                 href="/my-space/settings"
                 className={cn(
-                  "flex items-center transition-all duration-200 w-full gap-3 px-3 h-11",
+                  "flex items-center transition-all duration-200 rounded-full",
+                  isExpanded ? "w-full gap-3 px-3 h-11" : "w-11 h-11 justify-center",
                   isActive("/my-space/settings")
-                    ? "active text-primary dark:text-primary font-black"
-                    : "font-semibold text-muted-foreground hover:text-foreground"
+                    ? "font-bold text-primary bg-primary/10 dark:bg-primary/20 dark:text-primary"
+                    : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
                 <Settings className={cn("size-5 shrink-0 transition-colors", isActive("/my-space/settings") && "text-primary dark:text-primary")} />
                 <SidebarText isExpanded={isExpanded}>{t("mySpace.nav.settings")}</SidebarText>
-                {isActive("/my-space/settings") && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
               </Link>
             ) : (
               <Tooltip>
