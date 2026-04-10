@@ -20,7 +20,7 @@ import {
   Users,
 } from "lucide-react"
 import { useTheme } from "next-themes"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { api } from "@convex/_generated/api"
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks"
@@ -80,7 +80,10 @@ export function MySpaceSidebar({
   const pathname = usePathname()
   const { data: session } = authClient.useSession()
   const { t, i18n } = useTranslation()
-  const { theme, setTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const isDark = mounted && resolvedTheme === "dark"
 
   const isActive = (url: string) => {
     if (url === "/my-space") {
@@ -363,7 +366,7 @@ export function MySpaceSidebar({
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button type="button" className="flex items-center justify-center h-9 w-9 text-muted-foreground hover:text-foreground" onClick={onToggle}>
+                  <button type="button" title={t("mySpace.nav.collapse")} className="flex items-center justify-center h-9 w-9 text-muted-foreground hover:text-foreground" onClick={onToggle}>
                     <ChevronsLeft className="size-4" />
                   </button>
                 </TooltipTrigger>
@@ -372,18 +375,18 @@ export function MySpaceSidebar({
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="flex items-center justify-center h-9 w-9 text-muted-foreground hover:text-foreground">
-                    {theme === "dark" ? <Sun className="size-4 text-amber-500" /> : <Moon className="size-4" />}
+                  <button type="button" onClick={() => setTheme(isDark ? "light" : "dark")} className="flex items-center justify-center h-9 w-9 text-muted-foreground hover:text-foreground">
+                    {isDark ? <Sun className="size-4 text-amber-500" /> : <Moon className="size-4" />}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top">{theme === "dark" ? t("theme.light") : t("theme.dark")}</TooltipContent>
+                <TooltipContent side="top">{isDark ? t("theme.light") : t("theme.dark")}</TooltipContent>
               </Tooltip>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-0.5">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button type="button" onClick={onToggle} className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
+                  <button type="button" title={t("mySpace.nav.expand")} onClick={onToggle} className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
                     <ChevronsRight className="size-4" />
                   </button>
                 </TooltipTrigger>
@@ -392,11 +395,11 @@ export function MySpaceSidebar({
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
-                    {theme === "dark" ? <Sun className="size-4 text-amber-500" /> : <Moon className="size-4" />}
+                  <button type="button" onClick={() => setTheme(isDark ? "light" : "dark")} className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
+                    {isDark ? <Sun className="size-4 text-amber-500" /> : <Moon className="size-4" />}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="right">{theme === "dark" ? t("theme.light") : t("theme.dark")}</TooltipContent>
+                <TooltipContent side="right">{isDark ? t("theme.light") : t("theme.dark")}</TooltipContent>
               </Tooltip>
             </div>
           )}

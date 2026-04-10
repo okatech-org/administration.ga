@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
     "@workspace/i18n",
     "@workspace/shared",
   ],
+  turbopack: {
+    resolveAlias: {
+      "@tanstack/react-query": "./node_modules/@tanstack/react-query",
+      i18next: "./node_modules/i18next",
+    },
+  },
   webpack: (config) => {
     // Force single copy of packages that rely on React context
     // to avoid "No QueryClient set" errors from duplicate instances
@@ -29,12 +35,7 @@ const nextConfig: NextConfig = {
     }
     return config
   },
-  turbopack: {
-    resolveAlias: {
-      "@tanstack/react-query": "./node_modules/@tanstack/react-query",
-      i18next: "./node_modules/i18next",
-    },
-  },
+  experimental: {},
 }
 
 export default nextConfig

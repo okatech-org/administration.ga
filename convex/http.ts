@@ -172,11 +172,48 @@ const authRequestHandler = httpAction(async (ctx, request) => {
 
   const origin = request.headers.get("origin");
   const auth = createAuth(proxiedCtx as any, origin);
-  return auth.handler(request);
+  const response = await auth.handler(request);
+  
+  if (response.status === 500) {
+    const errorBody = await response.clone().text();
+    console.error("[BetterAuth 500 Error]:", errorBody);
+    await ctx.runMutation(internal.functions.warehouse.logAccess, {
+      tableName: "better_auth_debug",
+      rowCount: 1,
+      cursor: null,
+    }).catch(() => {}); // Optional fallback to log to convex db if console.error is hard to see
+  }
+  
+  return response;
 });
 
 http.route({ pathPrefix: `${AUTH_PATH}/`, method: "GET", handler: authRequestHandler });
 http.route({ pathPrefix: `${AUTH_PATH}/`, method: "POST", handler: authRequestHandler });
+http.route({
+  pathPrefix: `${AUTH_PATH}/`,
+  method: "OPTIONS",
+  handler: httpAction(async (_ctx, request) => {
+    const headers = buildPreflightHeaders(request.headers.get("origin"));
+    return new Response(null, { status: 204, headers });
+  }),
+});
+
+http.route({
+  path: "/api/debug-auth-error",
+  method: "GET",
+  handler: httpAction(async (ctx) => {
+    try {
+      const logs = await ctx.runQuery(internal.functions.warehouse.paginatedTableExport, {
+        tableName: "auditLog",
+        cursor: null,
+        limit: 50,
+      });
+      return new Response(JSON.stringify(logs), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    } catch (e: any) {
+      return new Response(e.message, { status: 500 });
+    }
+  }),
+});
 
 // ============================================================================
 // DEV-ONLY: Passwordless sign-in for the Dev Account Switcher

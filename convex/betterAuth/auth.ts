@@ -21,11 +21,21 @@ export const authComponent = createClient<DataModel>(components.betterAuth);
 // ============================================================================
 
 /** Trusted origins parsed once from the environment. */
-const parseTrustedOrigins = () =>
-  (process.env.TRUSTED_ORIGINS ?? "")
+const parseTrustedOrigins = () => {
+  const origins = (process.env.TRUSTED_ORIGINS ?? "")
     .split(",")
     .map((o) => o.trim())
     .filter(Boolean);
+    
+  if (process.env.DEV_SIGNIN_ENABLED === "true") {
+    for (const port of [3000, 3001, 3002, 3003]) {
+      origins.push(`http://localhost:${port}`);
+      origins.push(`https://localhost:${port}`);
+      origins.push(`https://diplomate.local:${port}`);
+    }
+  }
+  return origins;
+};
 
 /**
  * Derive the crossDomain `siteUrl` from the request Origin header.

@@ -92,8 +92,7 @@ export function MobileNavBar() {
   return (
     <>
       <nav
-        className="fixed left-3 right-3 z-40 md:hidden"
-        style={{ bottom: "calc(0.8rem + env(safe-area-inset-bottom, 0px))" }}
+        className="fixed left-3 right-3 z-40 md:hidden bottom-[calc(0.8rem+env(safe-area-inset-bottom,0px))]"
       >
         <div className="bg-card/95 backdrop-blur-md border border-border rounded-2xl shadow-lg">
           <div className="flex items-center justify-around px-2 h-[60px]">
@@ -255,7 +254,6 @@ export function MobileNavBar() {
               asChild
             >
               <Link href="/services">
-                <Plus className="mr-2 h-4 w-4" />
                 {t("mySpace.actions.newRequest", "Nouvelle démarche")}
               </Link>
             </Button>

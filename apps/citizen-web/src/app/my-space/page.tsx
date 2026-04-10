@@ -1,5 +1,8 @@
 "use client"
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/purity */
+
 import { api } from "@convex/_generated/api"
 import { RequestStatus } from "@convex/lib/constants"
 import Link from "next/link"
@@ -153,7 +156,7 @@ export default function UserDashboard() {
   const addresses = p?.addresses
   const firstName = identity?.firstName ?? ""
   const lastName = identity?.lastName ?? ""
-  const age = getAge(identity?.birthDate)
+  const _age = getAge(identity?.birthDate)
   const avatarUrl = identityPhotoUrl ?? p?.avatarUrl
 
   const cvScore = (() => {
@@ -353,7 +356,7 @@ export default function UserDashboard() {
                             asChild
                             size="icon"
                             variant="ghost"
-                            className="ml-auto h-5 w-5 shrink-0 rounded-full hover:bg-foreground/[0.06]"
+                            className="ml-auto h-5 w-5 shrink-0 rounded-full hover:bg-[#EBE6DC] dark:hover:bg-[#383633]"
                           >
                             <Link href="/my-space/profile/edit">
                               <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
@@ -368,7 +371,7 @@ export default function UserDashboard() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground transition-transform hover:bg-muted/70 active:scale-[0.97]"
+                      className="h-8 gap-1.5 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
                       onClick={() => setShowConsularCard(true)}
                     >
                       <Eye className="h-3 w-3" />
@@ -396,7 +399,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-8 gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground transition-transform hover:bg-muted/70 active:scale-[0.97]"
+                      className="h-8 gap-1.5 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
                     >
                       <Link href="/my-space/cv">
                         <Briefcase className="h-3 w-3" />
@@ -439,7 +442,7 @@ export default function UserDashboard() {
                     </p>
                   </div>
                   {contacts?.phone && (
-                    <div className="mt-4 w-full rounded-lg bg-muted p-2.5">
+                    <div className="mt-4 w-full rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2.5">
                       <div className="flex items-center gap-2.5 text-sm font-medium">
                         <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                         <span className="flex-1 truncate text-sm font-bold">
@@ -449,7 +452,7 @@ export default function UserDashboard() {
                           asChild
                           size="icon"
                           variant="ghost"
-                          className="h-6 w-6 shrink-0 rounded-full hover:bg-foreground/[0.06]"
+                          className="h-6 w-6 shrink-0 rounded-full hover:bg-[#EBE6DC] dark:hover:bg-[#383633]"
                         >
                           <Link href="/my-space/profile/edit">
                             <Pencil className="h-3 w-3 text-muted-foreground" />
@@ -467,7 +470,7 @@ export default function UserDashboard() {
               <div className="p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
-                    <div className="rounded-md bg-foreground/[0.06] p-1 dark:bg-foreground/[0.12]">
+                    <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
                       <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                     {t("mySpace.consularCard.title")}
@@ -495,7 +498,7 @@ export default function UserDashboard() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="mt-3 h-7 w-full gap-2 rounded-full bg-muted px-3 text-xs font-medium text-foreground transition-transform hover:bg-muted/70 active:scale-[0.97]"
+                    className="mt-3 h-7 w-full gap-2 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
                     onClick={() => setShowConsularCard(true)}
                   >
                     <Eye className="h-3 w-3" />
@@ -527,7 +530,7 @@ export default function UserDashboard() {
                 <FlatCard className="hidden shrink-0 lg:block">
                   <div className="flex flex-col p-4">
                     <div className="mb-3 flex items-center justify-between">
-                      <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground text-rose-600 dark:text-rose-400">
+                      <span className="flex items-center gap-2.5 text-sm font-semibold text-rose-600 dark:text-rose-400">
                         <div className="rounded-md bg-rose-500/10 p-1">
                           <AlertTriangle className="h-3.5 w-3.5" />
                         </div>
@@ -560,7 +563,7 @@ export default function UserDashboard() {
                           return (
                             <Link
                               href="/my-space/services-demarches"
-                              className="flex flex-col rounded-xl border border-rose-500/10 bg-rose-500/[0.06] p-3.5 transition-colors hover:bg-rose-500/10"
+                              className="flex flex-col rounded-xl border border-rose-500/10 bg-rose-500/6 p-3.5 transition-colors hover:bg-rose-500/10"
                             >
                               <div className="mb-3 flex items-center gap-2">
                                 <div className="rounded-lg bg-rose-500/10 p-1.5">
@@ -599,7 +602,7 @@ export default function UserDashboard() {
                 <div className="p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                      <div className="rounded-md bg-foreground/[0.06] p-1 dark:bg-foreground/[0.12]">
+                      <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
                         <Briefcase className="h-3 w-3 text-muted-foreground" />
                       </div>
                       Mon iCV
@@ -608,7 +611,7 @@ export default function UserDashboard() {
                       asChild
                       variant="ghost"
                       size="sm"
-                      className="h-5 w-5 p-0 hover:bg-foreground/[0.06]"
+                      className="h-5 w-5 p-0 hover:bg-[#EBE6DC] dark:hover:bg-[#383633]"
                     >
                       <Link href="/my-space/cv">
                         <Pencil className="h-3 w-3 text-muted-foreground" />
@@ -659,7 +662,7 @@ export default function UserDashboard() {
                         ].map((i) => (
                           <div
                             key={i.l}
-                            className="flex items-center gap-2 rounded-lg bg-muted p-2 text-xs"
+                            className="flex items-center gap-2 rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2 text-xs"
                           >
                             <i.icon className={cn("h-3 w-3", i.color)} />
                             <span className="flex-1 text-muted-foreground">
@@ -675,7 +678,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-7 w-full rounded-full bg-muted px-3 text-xs font-medium text-foreground transition-transform hover:bg-muted/70 active:scale-[0.97]"
+                      className="h-7 w-full rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
                     >
                       <Link href="/my-space/cv">Créer mon CV</Link>
                     </Button>
@@ -689,7 +692,7 @@ export default function UserDashboard() {
               <FlatCard className="flex flex-1 shrink-0 flex-col overflow-hidden">
                 <div className="flex shrink-0 items-center justify-between border-b border-foreground/5 p-3.5">
                   <div className="flex items-center gap-2.5">
-                    <div className="rounded-lg bg-foreground/[0.06] p-1.5 dark:bg-foreground/[0.12]">
+                    <div className="rounded-lg bg-[#EBE6DC] p-1.5 dark:bg-[#383633]">
                       <User className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                     <span className="text-sm font-bold text-muted-foreground">
@@ -720,7 +723,7 @@ export default function UserDashboard() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between rounded-lg bg-muted p-3">
+                  <div className="flex items-center justify-between rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-3">
                     <div className="flex items-center gap-2.5">
                       <div className="rounded bg-background p-1.5">
                         <FileText className="h-4 w-4 text-muted-foreground" />
@@ -737,10 +740,10 @@ export default function UserDashboard() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 rounded-full bg-muted px-3 text-xs font-medium text-foreground transition-transform hover:bg-muted/70 active:scale-[0.97] md:h-7"
+                      className="h-8 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97] md:h-7"
                       onClick={() => setShowDossierDetails(true)}
                     >
-                      <Eye className="mr-1 h-3 w-3" /> Voir l'état
+                      <Eye className="mr-1 h-3 w-3" /> Voir l&apos;état
                     </Button>
                   </div>
                 </div>
@@ -753,7 +756,7 @@ export default function UserDashboard() {
                 <div className="flex flex-col p-3 lg:p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
-                      <div className="rounded-md bg-foreground/[0.06] p-1 dark:bg-foreground/[0.12]">
+                      <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
                         <Users className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                       Enfants
@@ -773,7 +776,7 @@ export default function UserDashboard() {
                         </Tooltip>
                       </TooltipProvider>
                     </span>
-                    <span className="rounded-full bg-foreground/[0.06] px-2 py-0.5 text-xs font-bold text-muted-foreground dark:bg-foreground/[0.12]">
+                    <span className="rounded-full bg-[#EBE6DC] px-2 py-0.5 text-xs font-bold text-muted-foreground dark:bg-[#383633]">
                       {children.length}
                     </span>
                   </div>
@@ -784,9 +787,9 @@ export default function UserDashboard() {
                         <Link
                           key={child._id}
                           href={`/my-space/children/${child._id}`}
-                          className="flex min-w-[85%] flex-1 shrink-0 snap-start items-center gap-3 rounded-lg bg-muted p-2.5 pr-4 transition-colors hover:bg-muted md:min-w-[220px]"
+                          className="flex min-w-[85%] flex-1 shrink-0 snap-start items-center gap-3 rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2.5 pr-4 transition-colors hover:bg-[#FDFCFA]/80 dark:hover:bg-[#21201E]/80 md:min-w-[220px]"
                         >
-                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#EBE6DC] dark:bg-[#383633]">
                             <Baby className="h-3 w-3 text-muted-foreground" />
                           </div>
                           <div className="min-w-0 flex-1">
@@ -816,13 +819,13 @@ export default function UserDashboard() {
                 "flex shrink-0 flex-col lg:flex-1",
                 !latestRequest &&
                   !(appointments && appointments.length > 0) &&
-                  "order-2 lg:order-none"
+                  "order-2 lg:order-0"
               )}
             >
               <div className="flex flex-1 flex-col p-3 lg:p-4">
                 <div className="mb-2 flex shrink-0 items-center justify-between lg:mb-3">
                   <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
-                    <div className="rounded-md bg-foreground/[0.06] p-1 dark:bg-foreground/[0.12]">
+                    <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
                       <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                     Démarches en cours
@@ -831,7 +834,7 @@ export default function UserDashboard() {
                     asChild
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-full bg-muted px-3 text-xs font-medium text-foreground transition-transform hover:bg-muted/70 active:scale-[0.97] md:h-7"
+                    className="h-8 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97] md:h-7"
                   >
                     <Link href="/my-space/services-demarches">
                       Mes Démarches
@@ -896,9 +899,9 @@ export default function UserDashboard() {
                   )}
                   <Link
                     href="/services"
-                    className="flex flex-col items-center justify-center gap-2 rounded-lg p-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:p-3"
+                    className="flex flex-col items-center justify-center gap-2 rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 dark:hover:bg-[#21201E]/80 hover:text-foreground lg:p-3"
                   >
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-foreground/[0.06] lg:h-8 lg:w-8 dark:bg-foreground/[0.12]">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EBE6DC] lg:h-8 lg:w-8 dark:bg-[#383633]">
                       <Plus className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
                     </div>
                     <p className="text-[10px] font-medium lg:text-xs">
@@ -915,13 +918,13 @@ export default function UserDashboard() {
                 "flex shrink-0 flex-col lg:flex-1",
                 !latestRequest &&
                   !(appointments && appointments.length > 0) &&
-                  "order-3 lg:order-none"
+                  "order-3 lg:order-0"
               )}
             >
               <div className="flex flex-1 flex-col p-3 lg:p-4">
                 <div className="mb-2 flex shrink-0 items-center justify-between lg:mb-3">
                   <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
-                    <div className="rounded-md bg-foreground/[0.06] p-1 dark:bg-foreground/[0.12]">
+                    <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
                       <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                     RDV
@@ -930,7 +933,7 @@ export default function UserDashboard() {
                     asChild
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-full bg-muted px-3 text-xs font-medium text-foreground transition-transform hover:bg-muted/70 active:scale-[0.97] md:h-7"
+                    className="h-8 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97] md:h-7"
                   >
                     <Link href="/my-space/iagenda">iAgenda</Link>
                   </Button>
@@ -950,7 +953,7 @@ export default function UserDashboard() {
                             className={cn(
                               "flex flex-col gap-2 rounded-xl p-2.5 transition-colors lg:rounded-lg lg:p-3",
                               isPast
-                                ? "bg-muted hover:bg-muted/80"
+                                ? "bg-[#EBE6DC] dark:bg-[#383633] hover:bg-[#EBE6DC] dark:hover:bg-[#383633]/80 dark:hover:bg-[#2B2A28]/70"
                                 : "bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/10 dark:hover:bg-amber-500/15"
                             )}
                           >
@@ -959,7 +962,7 @@ export default function UserDashboard() {
                                 className={cn(
                                   "shrink-0 rounded-md p-1 lg:p-1.5",
                                   isPast
-                                    ? "bg-foreground/[0.06] dark:bg-foreground/[0.12]"
+                                    ? "bg-[#EBE6DC] dark:bg-[#383633]"
                                     : "bg-amber-500/10"
                                 )}
                               >
@@ -1013,9 +1016,9 @@ export default function UserDashboard() {
                   )}
                   <Link
                     href="/my-space/iagenda"
-                    className="flex flex-col items-center justify-center gap-2 rounded-lg p-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:p-3"
+                    className="flex flex-col items-center justify-center gap-2 rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 dark:hover:bg-[#21201E]/80 hover:text-foreground lg:p-3"
                   >
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-foreground/[0.06] lg:h-8 lg:w-8 dark:bg-foreground/[0.12]">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EBE6DC] lg:h-8 lg:w-8 dark:bg-[#383633]">
                       <Plus className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
                     </div>
                     <p className="text-[10px] font-medium lg:text-xs">
@@ -1032,7 +1035,7 @@ export default function UserDashboard() {
                 "shrink-0 lg:flex-1",
                 !latestRequest &&
                   !(appointments && appointments.length > 0) &&
-                  "order-1 lg:order-none"
+                  "order-1 lg:order-0"
               )}
             >
               <AssistanceContactsWidget />
@@ -1047,7 +1050,7 @@ export default function UserDashboard() {
                 <FlatCard className="shrink-0 overflow-hidden">
                   <div className="p-4">
                     <div className="mb-3 flex items-center justify-between">
-                      <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground text-rose-600 dark:text-rose-400">
+                      <span className="flex items-center gap-2.5 text-sm font-semibold text-rose-600 dark:text-rose-400">
                         <div className="rounded-md bg-rose-500/10 p-1">
                           <AlertTriangle className="h-3.5 w-3.5" />
                         </div>
@@ -1092,7 +1095,7 @@ export default function UserDashboard() {
                 <div className="p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                      <div className="rounded-md bg-foreground/[0.06] p-1 dark:bg-foreground/[0.12]">
+                      <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
                         <Briefcase className="h-3 w-3 text-muted-foreground" />
                       </div>
                       Mon iCV
@@ -1101,7 +1104,7 @@ export default function UserDashboard() {
                       asChild
                       variant="ghost"
                       size="sm"
-                      className="h-5 w-5 p-0 hover:bg-foreground/[0.06]"
+                      className="h-5 w-5 p-0 hover:bg-[#EBE6DC] dark:hover:bg-[#383633]"
                     >
                       <Link href="/my-space/cv">
                         <Pencil className="h-3 w-3 text-muted-foreground" />
@@ -1152,7 +1155,7 @@ export default function UserDashboard() {
                         ].map((i) => (
                           <div
                             key={i.l}
-                            className="flex items-center gap-2 rounded-lg bg-muted p-2 text-xs"
+                            className="flex items-center gap-2 rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2 text-xs"
                           >
                             <i.icon className={cn("h-3 w-3", i.color)} />
                             <span className="flex-1 text-muted-foreground">
@@ -1168,7 +1171,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-7 w-full rounded-full bg-muted px-3 text-xs font-medium text-foreground transition-transform hover:bg-muted/70 active:scale-[0.97]"
+                      className="h-7 w-full rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
                     >
                       <Link href="/my-space/cv">Créer mon CV</Link>
                     </Button>
@@ -1182,7 +1185,7 @@ export default function UserDashboard() {
               <div className="flex flex-1 flex-col p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                    <div className="rounded-md bg-foreground/[0.06] p-1 dark:bg-foreground/[0.12]">
+                    <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
                       <Megaphone className="h-3 w-3 text-muted-foreground" />
                     </div>
                     Actualités
@@ -1191,7 +1194,7 @@ export default function UserDashboard() {
                     asChild
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-full bg-muted px-3 text-xs font-medium text-foreground transition-transform hover:bg-muted/70 active:scale-[0.97] md:h-7"
+                    className="h-8 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97] md:h-7"
                   >
                     <Link href="/news">Tout voir</Link>
                   </Button>
@@ -1202,7 +1205,7 @@ export default function UserDashboard() {
                       <Link
                         key={post._id}
                         href={`/news/${post.slug}`}
-                        className="group block rounded-lg bg-muted p-3 transition-colors hover:bg-muted"
+                        className="group block rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-3 transition-colors hover:bg-[#FDFCFA]/80 dark:hover:bg-[#21201E]/80"
                       >
                         <p className="mb-1 line-clamp-2 text-sm leading-snug font-semibold group-hover:text-primary dark:group-hover:text-blue-400">
                           {post.title}
@@ -1231,14 +1234,13 @@ export default function UserDashboard() {
         <div
           ref={mobileScrollRef}
           onScroll={handleMobileScroll}
-          className="disable-scrollbars flex snap-x snap-mandatory overflow-x-auto lg:hidden"
-          style={{ height: "calc(100% - 0.5rem)" }}
+          className="disable-scrollbars flex h-[calc(100%-0.5rem)] snap-x snap-mandatory overflow-x-auto lg:hidden"
         >
           {/* Page 1 mobile : Profil — non-scrollable, cartes flex */}
           <div className="h-full w-full shrink-0 snap-start overflow-hidden">
             <div className="flex h-full flex-col gap-2.5">
               {/* Hero mobile — modèle vertical */}
-              <FlatCard className="relative min-h-0 flex-[3]">
+              <FlatCard className="relative min-h-0 flex-3">
                 <div className="flex h-full flex-col p-3 min-[400px]:p-4">
                   {/* Ligne 1 : Matricule / Badge / Score */}
                   <div className="flex shrink-0 items-center justify-between">
@@ -1287,7 +1289,7 @@ export default function UserDashboard() {
                             asChild
                             size="icon"
                             variant="ghost"
-                            className="h-5 w-5 shrink-0 rounded-full hover:bg-foreground/[0.06]"
+                            className="h-5 w-5 shrink-0 rounded-full hover:bg-[#EBE6DC] dark:hover:bg-[#383633]"
                           >
                             <Link href="/my-space/profile/edit">
                               <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
@@ -1303,7 +1305,7 @@ export default function UserDashboard() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-9 gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground transition-transform hover:bg-muted/70 active:scale-[0.97]"
+                      className="h-9 gap-1.5 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
                       onClick={() => setShowConsularCard(true)}
                     >
                       <Eye className="h-3 w-3" />
@@ -1322,7 +1324,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-9 gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground transition-transform hover:bg-muted/70 active:scale-[0.97]"
+                      className="h-9 gap-1.5 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
                     >
                       <Link href="/my-space/cv">
                         <Briefcase className="h-3 w-3" />
@@ -1334,11 +1336,11 @@ export default function UserDashboard() {
               </FlatCard>
 
               {/* Démarches mobile */}
-              <FlatCard className="min-h-0 flex-[2]">
+              <FlatCard className="min-h-0 flex-2">
                 <div className="flex h-full flex-col p-3">
                   <div className="mb-2 flex shrink-0 items-center justify-between">
                     <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
-                      <div className="rounded-md bg-foreground/[0.06] p-1 dark:bg-foreground/[0.12]">
+                      <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
                         <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                       Démarches en cours
@@ -1347,7 +1349,7 @@ export default function UserDashboard() {
                       asChild
                       variant="ghost"
                       size="sm"
-                      className="h-7 rounded-full bg-muted px-3 text-xs font-medium text-foreground hover:bg-muted/70"
+                      className="h-7 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80"
                     >
                       <Link href="/my-space/services-demarches">
                         Mes Démarches
@@ -1395,9 +1397,9 @@ export default function UserDashboard() {
                     )}
                     <Link
                       href="/services"
-                      className="flex flex-col items-center justify-center gap-1.5 rounded-xl p-2.5 text-muted-foreground transition-colors hover:bg-muted"
+                      className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 dark:hover:bg-[#21201E]/80"
                     >
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EBE6DC] dark:bg-[#383633]">
                         <Plus className="h-3.5 w-3.5" />
                       </div>
                       <p className="text-[10px] font-medium">
@@ -1409,11 +1411,11 @@ export default function UserDashboard() {
               </FlatCard>
 
               {/* RDV mobile */}
-              <FlatCard className="min-h-0 flex-[2]">
+              <FlatCard className="min-h-0 flex-2">
                 <div className="flex h-full flex-col p-3">
                   <div className="mb-2 flex shrink-0 items-center justify-between">
                     <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
-                      <div className="rounded-md bg-foreground/[0.06] p-1 dark:bg-foreground/[0.12]">
+                      <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
                         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                       RDV
@@ -1422,7 +1424,7 @@ export default function UserDashboard() {
                       asChild
                       variant="ghost"
                       size="sm"
-                      className="h-7 rounded-full bg-muted px-3 text-xs font-medium text-foreground hover:bg-muted/70"
+                      className="h-7 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80"
                     >
                       <Link href="/my-space/iagenda">iAgenda</Link>
                     </Button>
@@ -1439,7 +1441,7 @@ export default function UserDashboard() {
                             className={cn(
                               "flex flex-col gap-2 rounded-xl p-2.5 transition-colors",
                               isPast
-                                ? "bg-muted hover:bg-muted/80"
+                                ? "bg-[#EBE6DC] dark:bg-[#383633] hover:bg-[#EBE6DC] dark:hover:bg-[#383633]/80 dark:hover:bg-[#2B2A28]/70"
                                 : "bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/10"
                             )}
                           >
@@ -1448,7 +1450,7 @@ export default function UserDashboard() {
                                 className={cn(
                                   "shrink-0 rounded-md p-1",
                                   isPast
-                                    ? "bg-foreground/[0.06] dark:bg-foreground/[0.12]"
+                                    ? "bg-[#EBE6DC] dark:bg-[#383633]"
                                     : "bg-amber-500/10"
                                 )}
                               >
@@ -1497,9 +1499,9 @@ export default function UserDashboard() {
                     )}
                     <Link
                       href="/my-space/iagenda"
-                      className="flex flex-col items-center justify-center gap-1.5 rounded-xl p-2.5 text-muted-foreground transition-colors hover:bg-muted"
+                      className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 dark:hover:bg-[#21201E]/80"
                     >
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EBE6DC] dark:bg-[#383633]">
                         <Plus className="h-3.5 w-3.5" />
                       </div>
                       <p className="text-[10px] font-medium">Prendre RDV</p>
@@ -1516,7 +1518,7 @@ export default function UserDashboard() {
               <div className="flex flex-1 flex-col p-4">
                 <div className="mb-4 flex items-center justify-between">
                   <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                    <div className="rounded-md bg-foreground/[0.06] p-1 dark:bg-foreground/[0.12]">
+                    <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
                       <Megaphone className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                     Actualités
@@ -1525,7 +1527,7 @@ export default function UserDashboard() {
                     asChild
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-full bg-muted px-3 text-xs font-medium text-foreground hover:bg-muted/70"
+                    className="h-8 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80"
                   >
                     <Link href="/news">Tout voir</Link>
                   </Button>
@@ -1536,7 +1538,7 @@ export default function UserDashboard() {
                       <Link
                         key={post._id}
                         href={`/news/${post.slug}`}
-                        className="group block rounded-xl bg-muted p-4 transition-colors hover:bg-muted/80"
+                        className="group block rounded-xl bg-[#FDFCFA] dark:bg-[#21201E]/77 p-4 transition-colors hover:bg-[#FDFCFA]/80 dark:hover:bg-[#21201E]/80"
                       >
                         <p className="mb-1.5 line-clamp-2 text-sm leading-snug font-semibold group-hover:text-primary dark:group-hover:text-blue-400">
                           {post.title}
@@ -1571,15 +1573,9 @@ export default function UserDashboard() {
             exit={{ opacity: 0, x: 20 }}
             transition={{ type: "spring", damping: 20, stiffness: 300 }}
             onClick={scrollToActualites}
-            className="fixed top-1/2 right-0 z-50 -translate-y-1/2 rounded-l-xl bg-foreground/[0.47] px-2 py-6 text-[10px] font-bold tracking-widest text-background uppercase shadow-xl lg:hidden dark:bg-foreground/[0.25] dark:text-white"
+            className="fixed top-1/2 right-0 z-50 -translate-y-1/2 rounded-l-xl bg-foreground/47 px-2 py-6 text-[10px] font-bold tracking-widest text-background uppercase shadow-xl lg:hidden dark:bg-foreground/25 dark:text-white"
           >
-            <span
-              className="block"
-              style={{
-                writingMode: "vertical-rl",
-                transform: "rotate(180deg)",
-              }}
-            >
+            <span className="block rotate-180 [writing-mode:vertical-rl]">
               Actualités
             </span>
           </motion.button>
@@ -1594,15 +1590,9 @@ export default function UserDashboard() {
             exit={{ opacity: 0, x: 20 }}
             transition={{ type: "spring", damping: 20, stiffness: 300 }}
             onClick={scrollToDashboard}
-            className="fixed top-1/2 right-0 z-50 -translate-y-1/2 rounded-l-xl bg-foreground/[0.47] px-2 py-6 text-[10px] font-bold tracking-widest text-background uppercase shadow-xl lg:hidden dark:bg-foreground/[0.25] dark:text-white"
+            className="fixed top-1/2 right-0 z-50 -translate-y-1/2 rounded-l-xl bg-foreground/47 px-2 py-6 text-[10px] font-bold tracking-widest text-background uppercase shadow-xl lg:hidden dark:bg-foreground/25 dark:text-white"
           >
-            <span
-              className="block"
-              style={{
-                writingMode: "vertical-rl",
-                transform: "rotate(180deg)",
-              }}
-            >
+            <span className="block rotate-180 [writing-mode:vertical-rl]">
               Tableau de bord
             </span>
           </motion.button>
@@ -1663,7 +1653,7 @@ export default function UserDashboard() {
             >
               <div className="flat-card-border flex items-center justify-between border-b bg-muted/50 p-4">
                 <div className="flex items-center gap-2">
-                  <div className="rounded-lg bg-foreground/[0.06] p-1.5 dark:bg-foreground/[0.12]">
+                  <div className="rounded-lg bg-[#EBE6DC] p-1.5 dark:bg-[#383633]">
                     <User className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div>
@@ -1688,7 +1678,7 @@ export default function UserDashboard() {
                   {dossierItems.map((item) => (
                     <div
                       key={item.label}
-                      className="relative flex flex-col items-center gap-1.5 rounded-xl bg-muted px-2 py-3 text-center"
+                      className="relative flex flex-col items-center gap-1.5 rounded-xl bg-[#FDFCFA] dark:bg-[#21201E]/77 px-2 py-3 text-center"
                     >
                       <div
                         className={cn(
@@ -1711,7 +1701,7 @@ export default function UserDashboard() {
                         {item.label}
                       </span>
                       {item.done ? (
-                        <div className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500/[0.12]">
+                        <div className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500/12">
                           <svg
                             className="h-3 w-3 text-primary dark:text-primary"
                             viewBox="0 0 24 24"

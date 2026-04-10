@@ -78,7 +78,7 @@ function devApiProxy(): PluginOption {
         if (url.startsWith("/api/auth/")) {
           const CONVEX_SITE_URL = env.VITE_CONVEX_SITE_URL
           if (!CONVEX_SITE_URL) {
-            res.statusCode = 500
+            res.statusCode = 503
             res.setHeader("content-type", "application/json")
             res.end(JSON.stringify({ error: "VITE_CONVEX_SITE_URL not configured" }))
             return
@@ -92,7 +92,7 @@ function devApiProxy(): PluginOption {
                 proxyHeaders[key] = Array.isArray(value) ? value.join(", ") : value
               }
             }
-            proxyHeaders["accept-encoding"] = "application/json"
+            proxyHeaders["accept-encoding"] = "identity"
             proxyHeaders["host"] = new URL(CONVEX_SITE_URL).host
 
             // NOTE: No outbound cookie rewriting needed.
@@ -100,20 +100,24 @@ function devApiProxy(): PluginOption {
             // "better-auth.session_token" (without __Secure- prefix) everywhere.
 
             let body: string | undefined
-            if (method !== "GET" && method !== "HEAD") {
+            if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
               const chunks: Buffer[] = []
               for await (const chunk of req) chunks.push(chunk as Buffer)
               body = Buffer.concat(chunks).toString()
             }
 
-            const upstream = await fetch(targetUrl, {
+            const fetchOptions: RequestInit = {
               method,
               headers: proxyHeaders,
               redirect: "manual",
-              body,
-              // @ts-expect-error duplex nécessaire pour les streaming bodies
-              duplex: "half",
-            })
+              body: body || undefined,
+            }
+            if (body !== undefined) {
+              // @ts-expect-error duplex nécessaire pour les streaming bodies dans Node.js
+              fetchOptions.duplex = "half"
+            }
+
+            const upstream = await fetch(targetUrl, fetchOptions)
 
             const responseBody = await upstream.arrayBuffer()
             res.statusCode = upstream.status
@@ -130,6 +134,8 @@ function devApiProxy(): PluginOption {
               if (lk === "set-cookie" || ["transfer-encoding", "connection", "keep-alive", "upgrade"].includes(lk)) continue
               res.setHeader(key, value)
             }
+            
+            res.setHeader("x-dev-api-proxy", "true")
 
             res.end(Buffer.from(responseBody))
           } catch (error) {

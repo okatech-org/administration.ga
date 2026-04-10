@@ -35,22 +35,27 @@ interface MySpaceWrapperProps {
 export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
   const consularThemeValue = useConsularThemeState()
 
-  const [isExpanded, setIsExpanded] = useState(() => {
-    try {
-      const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY)
-      return stored === null ? true : stored === "true"
-    } catch {
-      return true
-    }
-  })
+  const [isExpanded, setIsExpanded] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
+    try {
+      const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY)
+      if (stored !== null) setIsExpanded(stored === "true")
+    } catch {
+      // Ignore
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
     try {
       localStorage.setItem(SIDEBAR_STORAGE_KEY, String(isExpanded))
     } catch {
       // Ignore localStorage errors
     }
-  }, [isExpanded])
+  }, [isExpanded, mounted])
 
   return (
     <ConsularThemeContext.Provider value={consularThemeValue}>
@@ -65,7 +70,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
         <div className="" />
 
         <div className="hidden md:block p-4 pr-0">
-          <div className="h-full rounded-2xl bg-card overflow-hidden border flat-card-border">
+          <div className="h-full rounded-2xl bg-[#F4F3ED] dark:bg-[#2B2A28]/37 overflow-hidden">
             <MySpaceSidebar
               isExpanded={isExpanded}
               onToggle={() => setIsExpanded((prev) => !prev)}
@@ -171,7 +176,6 @@ export function MySpaceHeader() {
             asChild
           >
             <Link href="/services">
-              <Plus className="mr-1 h-3.5 w-3.5 shrink-0" />
               <span className="hidden min-[460px]:inline truncate">Nouvelle démarche</span>
               <span className="inline min-[460px]:hidden truncate">Démarche</span>
             </Link>
@@ -212,7 +216,6 @@ export function MySpaceHeader() {
             asChild
           >
             <Link href="/services">
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
               Nouvelle démarche
             </Link>
           </Button>

@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
 
 	if (!CONVEX_SITE_URL) {
 		console.error("[auth-proxy] CONVEX_SITE_URL not configured");
-		setResponseStatus(event, 500);
+		setResponseStatus(event, 503);
 		return { error: "CONVEX_SITE_URL not configured" };
 	}
 

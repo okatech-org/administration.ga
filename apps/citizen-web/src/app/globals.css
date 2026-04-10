@@ -46,10 +46,10 @@
 
 /* ─── Flat Card Border ─── */
 .flat-card-border {
-  border-color: oklch(0.922 0 0);
+  border-color: oklch(0 0 0 / 0.05);
 }
 .dark .flat-card-border {
-  border-color: oklch(1 0 0 / 0.1);
+  border-color: oklch(1 0 0 / 0.05);
 }
 
 /* ─── Neumorphic Utility Classes ─── */
@@ -128,8 +128,8 @@
 
 /* ─── Citizen Space Layout ─── */
 
-.citizen-layout { background: var(--neu-surface); min-height: 100dvh; }
-.dark .citizen-layout { background: var(--neu-surface); }
+.citizen-layout { background: var(--card); min-height: 100dvh; }
+.dark .citizen-layout { background: var(--card); }
 
 /* ─── Animations ─── */
 

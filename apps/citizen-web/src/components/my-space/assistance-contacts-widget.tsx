@@ -13,9 +13,9 @@ const ROLE_CONFIG: Record<string, {
 	color: string;
 	bg: string;
 }> = {
-	demarches: { icon: Building2, color: "text-muted-foreground", bg: "bg-foreground/[0.06] dark:bg-foreground/[0.08]" },
-	residence: { icon: Landmark, color: "text-muted-foreground", bg: "bg-foreground/[0.06] dark:bg-foreground/[0.08]" },
-	sejour: { icon: MapPin, color: "text-muted-foreground", bg: "bg-foreground/[0.06] dark:bg-foreground/[0.08]" },
+	demarches: { icon: Building2, color: "text-muted-foreground", bg: "bg-[#EBE6DC] dark:bg-[#383633]" },
+	residence: { icon: Landmark, color: "text-muted-foreground", bg: "bg-[#EBE6DC] dark:bg-[#383633]" },
+	sejour: { icon: MapPin, color: "text-muted-foreground", bg: "bg-[#EBE6DC] dark:bg-[#383633]" },
 };
 
 // Extrait le type (ex: "Consulat Général") et la localisation (ex: "du Gabon à Paris")
@@ -63,13 +63,13 @@ export function AssistanceContactsWidget() {
 	}, [items.length]);
 
 	return (
-		<div className="bg-card rounded-2xl flex flex-col shrink-0 overflow-hidden lg:h-full border flat-card-border">
+		<div className="bg-[#F4F3ED] dark:bg-[#2B2A28]/37 rounded-2xl flex flex-col shrink-0 overflow-hidden lg:h-full">
 			{/* Géré par — affichage de l'organisation consulaire */}
 			{orgName && (
 				<div className="hidden lg:block px-4 pt-4 pb-0">
-					<div className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg bg-muted">
-						<Building2 className="h-3.5 w-3.5 text-primary dark:text-primary shrink-0" />
-						<span className="text-xs font-semibold text-primary dark:text-primary truncate">
+					<div className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77">
+						<Building2 className="h-3.5 w-3.5 text-[#0072B9] shrink-0" />
+						<span className="text-xs font-semibold text-[#0072B9] truncate">
 							Géré par : {orgName}
 						</span>
 					</div>
@@ -103,7 +103,7 @@ export function AssistanceContactsWidget() {
 									<div
 										key={rep.id}
 										className={cn(
-											"bg-muted rounded-xl hover:bg-muted/80 transition-colors group snap-start shrink-0",
+											"bg-[#FDFCFA] dark:bg-[#21201E]/77 rounded-xl hover:bg-[#FDFCFA]/80 dark:hover:bg-[#21201E]/80 transition-colors group snap-start shrink-0",
 											"flex items-center gap-3 p-3 w-full min-w-[85%] sm:min-w-0 lg:flex-col lg:gap-2.5 lg:p-4",
 											items.length <= 2
 												? "lg:flex-1 lg:min-w-0"
@@ -130,7 +130,7 @@ export function AssistanceContactsWidget() {
 											orgId={rep.id as Id<"orgs">}
 											orgName={rep.name}
 											orgAddress={rep.address}
-											className="h-8 text-xs font-semibold bg-primary hover:bg-primary/90 text-white rounded-lg shrink-0 w-auto px-4 lg:w-full lg:mt-1"
+											className="h-8 text-xs font-semibold bg-[#0072B9] hover:bg-[#0072B9]/90 text-white transition-transform active:scale-[0.97] rounded-full shrink-0 w-auto px-4 lg:w-full lg:mt-1"
 											label="Appeler"
 										/>
 									</div>
@@ -141,7 +141,7 @@ export function AssistanceContactsWidget() {
 						{items.length > 1 && (
 							<div className="flex lg:hidden justify-center gap-1.5 pt-2">
 								{items.map((_, idx) => (
-									<div key={idx} className={cn("h-1.5 rounded-full transition-all", idx === activeIndex ? "w-4 bg-primary" : "w-1.5 bg-muted-foreground/30")} />
+									<div key={idx} className={cn("h-1.5 rounded-full transition-all", idx === activeIndex ? "w-4 bg-[#0072B9]" : "w-1.5 bg-muted-foreground/30")} />
 								))}
 							</div>
 						)}
@@ -154,7 +154,7 @@ export function AssistanceContactsWidget() {
 
 function RepresentationSkeleton() {
 	return (
-		<div className="flex flex-col gap-2.5 p-4 bg-muted rounded-xl flex-1 min-w-0">
+		<div className="flex flex-col gap-2.5 p-4 bg-[#FDFCFA] dark:bg-[#21201E]/77 rounded-xl flex-1 min-w-0">
 			<div className="flex items-start justify-between">
 				<Skeleton className="h-7 w-7 rounded-lg" />
 				<Skeleton className="h-4.5 w-16 rounded-full" />
