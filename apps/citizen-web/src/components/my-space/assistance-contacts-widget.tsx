@@ -130,7 +130,7 @@ export function AssistanceContactsWidget() {
 											orgId={rep.id as Id<"orgs">}
 											orgName={rep.name}
 											orgAddress={rep.address}
-											className="h-8 text-xs font-semibold bg-[#0072B9] hover:bg-[#0072B9]/90 text-white transition-transform active:scale-[0.97] rounded-full shrink-0 w-auto px-4 lg:w-full lg:mt-1"
+											className="h-8 text-xs font-semibold bg-[#0072B9] hover:bg-[#0072B9]/90 text-white transition-transform active:scale-[0.97] rounded-lg shrink-0 w-auto px-4 lg:w-full lg:mt-1"
 											label="Appeler"
 										/>
 									</div>

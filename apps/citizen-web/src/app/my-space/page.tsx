@@ -371,7 +371,7 @@ export default function UserDashboard() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 gap-1.5 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
+                      className="h-8 gap-1.5 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
                       onClick={() => setShowConsularCard(true)}
                     >
                       <Eye className="h-3 w-3" />
@@ -399,7 +399,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-8 gap-1.5 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
+                      className="h-8 gap-1.5 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
                     >
                       <Link href="/my-space/cv">
                         <Briefcase className="h-3 w-3" />
@@ -498,7 +498,7 @@ export default function UserDashboard() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="mt-3 h-7 w-full gap-2 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
+                    className="mt-3 h-7 w-full gap-2 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
                     onClick={() => setShowConsularCard(true)}
                   >
                     <Eye className="h-3 w-3" />
@@ -678,7 +678,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-7 w-full rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
+                      className="h-7 w-full rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
                     >
                       <Link href="/my-space/cv">Créer mon CV</Link>
                     </Button>
@@ -740,7 +740,7 @@ export default function UserDashboard() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97] md:h-7"
+                      className="h-8 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97] md:h-7"
                       onClick={() => setShowDossierDetails(true)}
                     >
                       <Eye className="mr-1 h-3 w-3" /> Voir l&apos;état
@@ -834,7 +834,7 @@ export default function UserDashboard() {
                     asChild
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97] md:h-7"
+                    className="h-8 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97] md:h-7"
                   >
                     <Link href="/my-space/services-demarches">
                       Mes Démarches
@@ -933,7 +933,7 @@ export default function UserDashboard() {
                     asChild
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97] md:h-7"
+                    className="h-8 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97] md:h-7"
                   >
                     <Link href="/my-space/iagenda">iAgenda</Link>
                   </Button>
@@ -953,7 +953,7 @@ export default function UserDashboard() {
                             className={cn(
                               "flex flex-col gap-2 rounded-xl p-2.5 transition-colors lg:rounded-lg lg:p-3",
                               isPast
-                                ? "bg-[#EBE6DC] dark:bg-[#383633] hover:bg-[#EBE6DC] dark:hover:bg-[#383633]/80 dark:hover:bg-[#2B2A28]/70"
+                                ? "bg-[#EBE6DC] dark:bg-[#383633] hover:bg-[#EBE6DC] dark:hover:bg-[#2B2A28]/70"
                                 : "bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/10 dark:hover:bg-amber-500/15"
                             )}
                           >
@@ -1171,7 +1171,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-7 w-full rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
+                      className="h-7 w-full rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
                     >
                       <Link href="/my-space/cv">Créer mon CV</Link>
                     </Button>
@@ -1194,7 +1194,7 @@ export default function UserDashboard() {
                     asChild
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97] md:h-7"
+                    className="h-8 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97] md:h-7"
                   >
                     <Link href="/news">Tout voir</Link>
                   </Button>
@@ -1305,7 +1305,7 @@ export default function UserDashboard() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-9 gap-1.5 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
+                      className="h-9 gap-1.5 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
                       onClick={() => setShowConsularCard(true)}
                     >
                       <Eye className="h-3 w-3" />
@@ -1324,7 +1324,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-9 gap-1.5 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
+                      className="h-9 gap-1.5 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80 active:scale-[0.97]"
                     >
                       <Link href="/my-space/cv">
                         <Briefcase className="h-3 w-3" />
@@ -1349,7 +1349,7 @@ export default function UserDashboard() {
                       asChild
                       variant="ghost"
                       size="sm"
-                      className="h-7 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80"
+                      className="h-7 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80"
                     >
                       <Link href="/my-space/services-demarches">
                         Mes Démarches
@@ -1424,7 +1424,7 @@ export default function UserDashboard() {
                       asChild
                       variant="ghost"
                       size="sm"
-                      className="h-7 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80"
+                      className="h-7 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80"
                     >
                       <Link href="/my-space/iagenda">iAgenda</Link>
                     </Button>
@@ -1441,7 +1441,7 @@ export default function UserDashboard() {
                             className={cn(
                               "flex flex-col gap-2 rounded-xl p-2.5 transition-colors",
                               isPast
-                                ? "bg-[#EBE6DC] dark:bg-[#383633] hover:bg-[#EBE6DC] dark:hover:bg-[#383633]/80 dark:hover:bg-[#2B2A28]/70"
+                                ? "bg-[#EBE6DC] dark:bg-[#383633] hover:bg-[#EBE6DC] dark:hover:bg-[#2B2A28]/70"
                                 : "bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/10"
                             )}
                           >
@@ -1527,7 +1527,7 @@ export default function UserDashboard() {
                     asChild
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-full bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80"
+                    className="h-8 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744] px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/80"
                   >
                     <Link href="/news">Tout voir</Link>
                   </Button>
