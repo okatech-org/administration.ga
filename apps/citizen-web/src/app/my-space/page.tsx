@@ -1639,10 +1639,10 @@ export default function UserDashboard() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 350 }}
-              className="flat-card-border relative flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border bg-card shadow-sm"
+              className="relative flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border-none bg-[#F4F3ED] dark:bg-[#2B2A28] shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flat-card-border flex items-center justify-between border-b bg-muted/50 p-4">
+              <div className="flex items-center justify-between border-b border-border/50 bg-background/5 p-4">
                 <div className="flex items-center gap-2">
                   <div className="rounded-lg bg-[#EBE6DC] p-1.5 dark:bg-[#383633]">
                     <User className="h-4 w-4 text-muted-foreground" />

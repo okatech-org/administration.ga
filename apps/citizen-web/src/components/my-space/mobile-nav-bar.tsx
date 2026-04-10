@@ -152,12 +152,12 @@ export function MobileNavBar() {
       </nav>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="bottom" showCloseButton={false} className="rounded-t-2xl max-h-[75dvh] px-4 bg-card border-t border-border">
+        <SheetContent side="bottom" showCloseButton={false} className="rounded-t-2xl max-h-[75dvh] px-4 bg-[#F4F3ED] dark:bg-[#2B2A28] border-none shadow-2xl flex flex-col">
           <SheetHeader className="sr-only">
             <SheetTitle>{t("mySpace.nav.navigation")}</SheetTitle>
           </SheetHeader>
 
-          <div className="space-y-4 pb-6">
+          <div className="flex-1 overflow-y-auto disable-scrollbars space-y-4 pb-28 pt-2">
             <div className="flex items-center gap-3 py-2">
               <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center shrink-0">
                 <span className="text-sm font-bold text-white">{userInitial}</span>
