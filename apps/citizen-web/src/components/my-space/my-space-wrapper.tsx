@@ -127,7 +127,7 @@ export function MySpaceHeader() {
               </span>
             )}
             {profile?.userType && (
-              <span className="text-sm px-3 py-1 rounded-full bg-amber-500/35 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 font-medium">
+              <span className="text-sm px-3 py-1 rounded-lg bg-amber-500/35 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 font-medium">
                 {profile.userType === "long_stay" ? "Long séjour" : profile.userType === "short_stay" ? "Court séjour" : "De passage"}
               </span>
             )}
@@ -135,7 +135,7 @@ export function MySpaceHeader() {
               <Button
                 variant="outline"
                 size="xs"
-                className="w-max rounded-full text-primary dark:text-primary hover:bg-blue-500/10 gap-1.5"
+                className="w-max rounded-lg text-primary dark:text-primary hover:bg-blue-500/10 gap-1.5"
                 onClick={() => setShowRegistrationDialog(true)}
               >
                 <Building2 className="h-3.5 w-3.5" />
@@ -150,7 +150,7 @@ export function MySpaceHeader() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-9 rounded-full bg-amber-500/35 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 hover:bg-amber-500/45 dark:hover:bg-amber-500/25 font-semibold text-xs min-w-0 flex-1 overflow-hidden"
+              className="h-9 rounded-lg bg-amber-500/35 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 hover:bg-amber-500/45 dark:hover:bg-amber-500/25 font-semibold text-xs min-w-0 flex-1 overflow-hidden"
               onClick={() => setShowNotificationDialog(true)}
             >
               <Plane className="mr-1 h-3.5 w-3.5 shrink-0" />

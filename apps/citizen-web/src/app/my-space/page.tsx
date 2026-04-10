@@ -326,7 +326,7 @@ export default function UserDashboard() {
                           </span>
                         )}
                         {p?.userType && (
-                          <span className="rounded-full bg-amber-500/35 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                          <span className="rounded-lg bg-amber-500/35 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
                             {p.userType === "long_stay"
                               ? "Long séjour"
                               : p.userType === "short_stay"
@@ -1250,7 +1250,7 @@ export default function UserDashboard() {
                       </span>
                     )}
                     {p?.userType && (
-                      <span className="rounded-full bg-amber-500/35 px-1.5 py-0.5 text-[9px] font-medium text-amber-700 min-[400px]:text-[10px] dark:bg-amber-500/15 dark:text-amber-400">
+                      <span className="rounded-lg bg-amber-500/35 px-1.5 py-0.5 text-[9px] font-medium text-amber-700 min-[400px]:text-[10px] dark:bg-amber-500/15 dark:text-amber-400">
                         {p.userType === "long_stay"
                           ? "Long séjour"
                           : p.userType === "short_stay"
