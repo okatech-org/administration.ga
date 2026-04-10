@@ -1646,7 +1646,7 @@ export default function UserDashboard() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 350 }}
-              className="relative flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border-none bg-[#F4F3ED] dark:bg-[#2B2A28] shadow-2xl"
+              className="relative flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border-none bg-[#F4F3ED] dark:bg-card/95 dark:backdrop-blur-md shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-border/50 bg-background/5 p-4">
