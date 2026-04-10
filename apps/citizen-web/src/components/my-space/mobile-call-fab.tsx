@@ -100,7 +100,7 @@ export function MobileCallFAB() {
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
 							transition={{ duration: 0.2 }}
-							className="fixed inset-0 z-[60] bg-black/40 lg:hidden"
+							className="fixed inset-0 z-40 bg-black/40 lg:hidden"
 							onClick={() => setIsOpen(false)}
 						/>
 
@@ -110,7 +110,7 @@ export function MobileCallFAB() {
 							animate={{ y: 0 }}
 							exit={{ y: "100%" }}
 							transition={{ type: "spring", damping: 28, stiffness: 350 }}
-							className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-2xl bg-[#F4F3ED] dark:bg-[#2B2A28] shadow-2xl lg:hidden"
+							className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl bg-[#F4F3ED] dark:bg-[#2B2A28] shadow-2xl lg:hidden"
 						>
 							{/* Drag handle */}
 							<div className="flex justify-center pt-3 pb-1">
@@ -181,16 +181,14 @@ export function MobileCallFAB() {
 													</div>
 												</div>
 
-												{/* Call button — close sheet on click so dialogs don't overlap */}
-												<div onClickCapture={() => setIsOpen(false)}>
-													<OrgCallButton
-														orgId={rep.id as Id<"orgs">}
-														orgName={rep.name}
-														orgAddress={rep.address}
-														className="h-10 text-sm font-semibold bg-[#0072B9] hover:bg-[#0072B9]/90 text-white transition-transform active:scale-[0.97] rounded-lg w-full"
-														label="Appeler"
-													/>
-												</div>
+												{/* Call button */}
+												<OrgCallButton
+													orgId={rep.id as Id<"orgs">}
+													orgName={rep.name}
+													orgAddress={rep.address}
+													className="h-10 text-sm font-semibold bg-[#0072B9] hover:bg-[#0072B9]/90 text-white transition-transform active:scale-[0.97] rounded-lg w-full"
+													label="Appeler"
+												/>
 											</div>
 										)
 									})}
