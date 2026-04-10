@@ -1249,22 +1249,23 @@ export default function UserDashboard() {
           className="disable-scrollbars flex h-[calc(100%-0.5rem)] snap-x snap-mandatory overflow-x-auto lg:hidden"
         >
           {/* Page 1 mobile : Profil — non-scrollable, cartes flex */}
-          <div className="h-full w-full shrink-0 snap-start overflow-hidden">
-            <div className="flex h-full flex-col gap-2.5">
+          <div className="h-full w-full shrink-0 snap-start overflow-visible">
+            <div className="relative flex h-full flex-col gap-2.5">
+              {/* Floating "Appeler" Button (Mobile only) - Collé extrémité droite */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button className="absolute -right-3 min-[400px]:-right-4 top-6 z-10 flex h-[34px] items-center justify-center rounded-l-full bg-[#659FCD]/90 pl-3.5 pr-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#659FCD]">
+                    Appeler
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="w-[95%] max-w-sm gap-0 border-none bg-transparent p-0 shadow-none rounded-[1.5rem]">
+                  <DialogTitle className="sr-only">Contacts Consulaires</DialogTitle>
+                  <AssistanceContactsWidget />
+                </DialogContent>
+              </Dialog>
+
               {/* Hero mobile — modèle vertical */}
               <FlatCard className="relative min-h-0 flex-3">
-                {/* Floating "Appeler" Button (Mobile only) */}
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <button className="absolute right-0 top-[60px] flex h-[34px] items-center justify-center rounded-l-full bg-[#659FCD]/90 hover:bg-[#659FCD] pl-3.5 pr-2.5 text-xs font-bold text-white shadow-sm transition-colors z-10">
-                      Appeler
-                    </button>
-                  </DialogTrigger>
-                  <DialogContent className="w-[95%] max-w-sm rounded-[1.5rem] border-none p-0 bg-transparent shadow-none gap-0">
-                    <DialogTitle className="sr-only">Contacts Consulaires</DialogTitle>
-                    <AssistanceContactsWidget />
-                  </DialogContent>
-                </Dialog>
 
                 <div className="flex h-full flex-col p-3 min-[400px]:p-4">
                   {/* Ligne 1 : Matricule / Badge / Score */}
