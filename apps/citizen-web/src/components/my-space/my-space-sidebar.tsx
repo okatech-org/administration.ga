@@ -192,7 +192,7 @@ export function MySpaceSidebar({
                   <Link
                     href={item.url}
                     className={cn(
-                      "flex items-center transition-all duration-200 rounded-xl",
+                      "flex items-center transition-all duration-200 rounded-lg",
                       isExpanded ? "w-full gap-3 px-3 h-11" : "w-11 h-11 justify-center",
                       active
                         ? "font-bold text-primary bg-primary/10 dark:bg-primary/20 dark:text-primary"
@@ -239,7 +239,7 @@ export function MySpaceSidebar({
                     type="button"
                     onClick={() => setChildrenOpen(!childrenOpen)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-3 h-11 transition-all duration-200 text-[15.5px] rounded-xl",
+                      "w-full flex items-center gap-3 px-3 h-11 transition-all duration-200 text-[15.5px] rounded-lg",
                       childrenOpen
                         ? "active bg-rose-500/10 text-rose-600 font-bold border border-rose-500/10"
                         : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -263,7 +263,7 @@ export function MySpaceSidebar({
                             key={child._id}
                             href={childUrl}
                             className={cn(
-                              "flex items-center gap-2.5 px-3 h-10 text-[14px] rounded-xl",
+                              "flex items-center gap-2.5 px-3 h-10 text-[14px] rounded-lg",
                               active
                                 ? "active text-rose-600 font-bold bg-rose-500/10 border border-rose-500/10"
                                 : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -309,7 +309,7 @@ export function MySpaceSidebar({
               <Link
                 href="/my-space/settings"
                 className={cn(
-                  "flex items-center transition-all duration-200 rounded-xl",
+                  "flex items-center transition-all duration-200 rounded-lg",
                   isExpanded ? "w-full gap-3 px-3 h-11" : "w-11 h-11 justify-center",
                   isActive("/my-space/settings")
                     ? "font-bold text-primary bg-primary/10 dark:bg-primary/20 dark:text-primary"

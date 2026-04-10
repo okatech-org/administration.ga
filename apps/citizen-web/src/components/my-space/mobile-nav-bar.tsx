@@ -249,11 +249,12 @@ export function MobileNavBar() {
             </div>
 
             <Button
-              className="w-full h-11 rounded-xl text-sm font-semibold bg-primary hover:bg-primary/90 text-white border-0"
+              className="w-full h-11 rounded-lg text-sm font-medium bg-primary hover:bg-primary/90 text-white border-0"
               onClick={() => setSheetOpen(false)}
               asChild
             >
-              <Link href="/services">
+              <Link href="/services" className="flex items-center gap-1.5 justify-center">
+                <Plus className="h-4 w-4 shrink-0" />
                 {t("mySpace.actions.newRequest", "Nouvelle démarche")}
               </Link>
             </Button>

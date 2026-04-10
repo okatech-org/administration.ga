@@ -162,7 +162,7 @@ export function MySpaceHeader() {
             <Button
               variant="outline"
               size="xs"
-              className="rounded-full text-primary dark:text-primary hover:bg-blue-500/10 gap-1.5 min-w-0 flex-1 overflow-hidden"
+              className="rounded-lg text-primary dark:text-primary hover:bg-blue-500/10 gap-1.5 min-w-0 flex-1 overflow-hidden"
               onClick={() => setShowRegistrationDialog(true)}
             >
               <Building2 className="h-3.5 w-3.5 shrink-0" />
@@ -172,15 +172,16 @@ export function MySpaceHeader() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-9 rounded-full bg-primary text-white hover:bg-primary/90 font-semibold text-xs min-w-0 flex-1 overflow-hidden"
+            className="h-9 rounded-lg bg-primary text-white hover:bg-primary/90 font-medium text-xs min-w-0 flex-1 overflow-hidden px-3"
             asChild
           >
-            <Link href="/services">
+            <Link href="/services" className="flex items-center gap-1.5 justify-center">
+              <Plus className="h-4 w-4 shrink-0" />
               <span className="hidden min-[460px]:inline truncate">Nouvelle démarche</span>
               <span className="inline min-[460px]:hidden truncate">Démarche</span>
             </Link>
           </Button>
-          <NotificationDropdown className="h-10 w-10 min-w-10 bg-card rounded-full shrink-0" />
+          <NotificationDropdown className="h-10 w-10 min-w-10 bg-card rounded-lg shrink-0" />
         </div>
 
         <div className="hidden md:flex items-center gap-4">
@@ -189,17 +190,17 @@ export function MySpaceHeader() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 rounded-full bg-amber-500/35 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 hover:bg-amber-500/45 dark:hover:bg-amber-500/25 font-semibold"
+                className="h-9 rounded-lg bg-amber-500/35 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 hover:bg-amber-500/45 dark:hover:bg-amber-500/25 font-semibold px-3"
                 onClick={() => setShowNotificationDialog(true)}
               >
-                <Plane className="mr-1.5 h-3.5 w-3.5" />
+                <Plane className="mr-1.5 h-4 w-4" />
                 Signaler ma présence
               </Button>
               <TooltipProvider delayDuration={100}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type="button" title="Info signalement" className="h-6 w-6 rounded-full bg-amber-500/35 dark:bg-amber-500/15 flex items-center justify-center text-amber-700 dark:text-amber-400 hover:bg-amber-500/45 dark:hover:bg-amber-500/25 transition-colors">
-                      <Info className="h-3.5 w-3.5" />
+                    <button type="button" title="Info signalement" className="h-7 w-7 rounded-lg bg-amber-500/35 dark:bg-amber-500/15 flex items-center justify-center text-amber-700 dark:text-amber-400 hover:bg-amber-500/45 dark:hover:bg-amber-500/25 transition-colors">
+                      <Info className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="max-w-xs text-xs">
@@ -212,14 +213,15 @@ export function MySpaceHeader() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 rounded-full bg-primary text-white hover:bg-primary/90 font-semibold"
+            className="h-9 px-4 rounded-lg bg-primary text-white hover:bg-primary/90 font-medium"
             asChild
           >
-            <Link href="/services">
+            <Link href="/services" className="flex items-center gap-1.5">
+              <Plus className="h-4 w-4 shrink-0" />
               Nouvelle démarche
             </Link>
           </Button>
-          <NotificationDropdown className="h-10 w-10 bg-card rounded-full shrink-0" />
+          <NotificationDropdown className="h-10 w-10 bg-card rounded-lg shrink-0" />
         </div>
       </header>
 
