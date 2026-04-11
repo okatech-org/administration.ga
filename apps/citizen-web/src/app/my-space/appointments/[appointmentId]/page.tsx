@@ -18,7 +18,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 
@@ -115,16 +115,16 @@ export default function AppointmentDetail() {
 				{/* Left Column: Main Details */}
 				<div className="md:col-span-2 space-y-6">
 					{appointment.request && (
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
+						<FlatCard>
+							<div className="p-3 lg:p-4 pb-0">
+								<h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight">
 									<LinkIcon className="h-5 w-5" />
 									<span>
 										{t("dashboard.appointments.detail.linkedRequest")}
 									</span>
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-3">
+								</h3>
+							</div>
+							<div className="p-3 lg:p-4 space-y-3">
 								<div className="flex items-center justify-between">
 									<span className="font-medium font-mono text-sm">
 										{appointment.request.reference}
@@ -146,42 +146,42 @@ export default function AppointmentDetail() {
 								>
 									{t("dashboard.appointments.detail.viewRequest")}
 								</Button>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 
 					{((appointment.appointmentType === "deposit" &&
 						appointment.orgService?.depositInstructions) ||
 						(appointment.appointmentType === "pickup" &&
 							appointment.orgService?.pickupInstructions)) && (
-						<Card className="bg-primary/5 border-primary/20">
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2 text-primary">
+						<FlatCard className="bg-primary/5">
+							<div className="p-3 lg:p-4 pb-0">
+								<h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight text-primary">
 									<Info className="h-5 w-5" />
 									<span>
 										{t("dashboard.appointments.detail.instructionsTitle")}
 									</span>
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
+								</h3>
+							</div>
+							<div className="p-3 lg:p-4">
 								<p className="text-sm whitespace-pre-wrap">
 									{appointment.appointmentType === "deposit"
 										? appointment.orgService.depositInstructions
 										: appointment.orgService.pickupInstructions}
 								</p>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 
 					{appointment.org && (
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
+						<FlatCard>
+							<div className="p-3 lg:p-4 pb-0">
+								<h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight">
 									<MapPin className="h-5 w-5" />
 									<span>{t("dashboard.appointments.detail.location")}</span>
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-4">
+								</h3>
+							</div>
+							<div className="p-3 lg:p-4 space-y-4">
 								<div>
 									<p className="font-medium">{appointment.org.name}</p>
 									<p className="text-sm text-muted-foreground whitespace-pre-wrap">
@@ -222,34 +222,34 @@ export default function AppointmentDetail() {
 											</Button>
 										) : null;
 									})()}
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 
 					{appointment.notes && (
-						<Card>
-							<CardHeader>
-								<CardTitle>
+						<FlatCard>
+							<div className="p-3 lg:p-4 pb-0">
+								<h3 className="font-semibold leading-none tracking-tight">
 									{t("dashboard.appointments.detail.notes")}
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
+								</h3>
+							</div>
+							<div className="p-3 lg:p-4">
 								<p className="text-sm">{appointment.notes}</p>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 				</div>
 
 				{/* Right Column: Metadata */}
 				<div className="space-y-6">
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
+					<FlatCard>
+						<div className="p-3 lg:p-4 pb-0">
+							<h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight">
 								<Calendar className="h-5 w-5" />
 								<span>{t("dashboard.appointments.detail.dateTime")}</span>
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-2">
+							</h3>
+						</div>
+						<div className="p-3 lg:p-4 space-y-2">
 							<div className="flex items-center justify-between">
 								<span className="font-medium text-muted-foreground">
 									{t("dashboard.appointments.detail.date")}:
@@ -270,17 +270,17 @@ export default function AppointmentDetail() {
 									{appointment.time} - {appointment.endTime}
 								</span>
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
+					<FlatCard>
+						<div className="p-3 lg:p-4 pb-0">
+							<h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight">
 								<User className="h-5 w-5" />
 								<span>{t("dashboard.appointments.detail.user")}</span>
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-2">
+							</h3>
+						</div>
+						<div className="p-3 lg:p-4 space-y-2">
 							{appointment.attendee ? (
 								<div className="flex flex-col">
 									<p className="font-medium">
@@ -293,23 +293,23 @@ export default function AppointmentDetail() {
 							) : (
 								<p className="text-muted-foreground">-</p>
 							)}
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
 					{appointment.service && (
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
+						<FlatCard>
+							<div className="p-3 lg:p-4 pb-0">
+								<h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight">
 									<FileText className="h-5 w-5" />
 									<span>{t("dashboard.appointments.detail.service")}</span>
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
+								</h3>
+							</div>
+							<div className="p-3 lg:p-4">
 								<p className="font-medium">
 									{appointment.service.name?.fr || "-"}
 								</p>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 				</div>
 			</div>

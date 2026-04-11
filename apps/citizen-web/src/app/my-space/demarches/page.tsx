@@ -259,7 +259,7 @@ export default function DemarchesPage() {
 									<Link
 										href={`/my-space/demarches/${dossier._id}`}
 									>
-										<FlatCard className="p-4 hover:shadow-sm transition-all cursor-pointer group">
+										<FlatCard className="p-4 transition-all cursor-pointer group">
 											<div className="flex items-start justify-between gap-3">
 												<div className="flex items-start gap-3 flex-1 min-w-0">
 													<div

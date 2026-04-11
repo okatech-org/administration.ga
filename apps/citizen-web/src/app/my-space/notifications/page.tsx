@@ -20,7 +20,7 @@ import { useTranslation } from "react-i18next"
 import { PageHeader } from "@/components/my-space/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { FlatCard } from "@/components/my-space/flat-card"
 import {
   useAuthenticatedConvexQuery,
   useAuthenticatedPaginatedQuery,
@@ -86,8 +86,8 @@ export default function NotificationsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+          <FlatCard>
+            <div className="p-3 lg:p-4 flex flex-col items-center justify-center py-16 text-center">
               <div className="relative mb-6">
                 <Inbox className="h-16 w-16 text-muted-foreground/30" />
               </div>
@@ -97,8 +97,8 @@ export default function NotificationsPage() {
               <p className="text-sm text-muted-foreground max-w-sm">
                 {t("notifications.empty.description", "Vous n'avez aucune notification pour le moment. Les mises a jour de vos demandes apparaitront ici.")}
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          </FlatCard>
         </motion.div>
       ) : (
         <motion.div
@@ -121,14 +121,14 @@ export default function NotificationsPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.2, delay: index * 0.03 }}
               >
-                <Card
+                <FlatCard
                   className={cn(
-                    "cursor-pointer transition-all hover:shadow-md",
-                    !notification.isRead && "border-primary/30 bg-primary/5",
+                    "cursor-pointer transition-all active:scale-[0.97] transition-transform",
+                    !notification.isRead && "bg-primary/5",
                   )}
                   onClick={() => handleMarkAsRead(notification._id)}
                 >
-                  <CardContent className="p-4">
+                  <div className="p-3 lg:p-4">
                     <Link
                       href={notification.link || "/my-space/notifications"}
                       className="flex items-start gap-4"
@@ -163,8 +163,8 @@ export default function NotificationsPage() {
                         </p>
                       </div>
                     </Link>
-                  </CardContent>
-                </Card>
+                  </div>
+                </FlatCard>
               </motion.div>
             )
           })}

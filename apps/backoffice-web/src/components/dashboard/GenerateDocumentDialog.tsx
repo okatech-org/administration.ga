@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
 import {
 	Dialog,
 	DialogContent,
@@ -242,8 +242,8 @@ export function GenerateDocumentDialog({
 
 					{/* Selected template preview */}
 					{selectedTemplate && (
-						<Card>
-							<CardContent className="pt-4">
+						<FlatCard>
+							<div className="p-3 lg:p-4">
 								<h4 className="font-medium mb-1">
 									{(selectedTemplate.name as any)?.[lang] ||
 										(selectedTemplate.name as any)?.fr}
@@ -262,8 +262,8 @@ export function GenerateDocumentDialog({
 										{selectedTemplate.paperSize || "A4"}
 									</Badge>
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 
 					{/* Generate button */}

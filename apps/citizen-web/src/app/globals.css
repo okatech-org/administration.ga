@@ -19,29 +19,24 @@
   --gabon-blue: 214 52% 50%;
   --gabon-blue-hex: #3A75C4;
 
-  /* Neumorphic shadows — light mode */
-  --neu-shadow-light: 6px 6px 12px rgba(0, 0, 0, 0.08), -6px -6px 12px rgba(255, 255, 255, 0.9);
-  --neu-shadow-raised: 4px 4px 8px rgba(0, 0, 0, 0.1), -4px -4px 8px rgba(255, 255, 255, 0.95);
-  --neu-shadow-inset: inset 3px 3px 6px rgba(0, 0, 0, 0.06), inset -3px -3px 6px rgba(255, 255, 255, 0.8);
-  --neu-shadow-pressed: inset 2px 2px 5px rgba(0, 0, 0, 0.08), inset -2px -2px 5px rgba(255, 255, 255, 0.7);
-  --neu-shadow-subtle: 2px 2px 4px rgba(0, 0, 0, 0.05), -2px -2px 4px rgba(255, 255, 255, 0.8);
+  /* Surface tokens */
+  --citizen-surface-s1: #F4F3ED;
+  --citizen-surface-s2: #EBE6DC;
+  --citizen-surface-s3: #DCD7C7;
+  --citizen-surface-s4: #FDFCFA;
 
-  /* Surface colors */
-  --neu-surface: #EFEFEF;
-  --neu-surface-card: #F5F5F5;
-  --neu-surface-sidebar: #EFEFEF;
+  /* Citizen shared surface — cartes principales + menu latéral mobile */
+  --citizen-surface-card: #F4F3ED;
 }
 
 .dark {
-  --neu-shadow-light: 6px 6px 12px rgba(0, 0, 0, 0.35), -6px -6px 12px rgba(60, 60, 60, 0.15);
-  --neu-shadow-raised: 4px 4px 8px rgba(0, 0, 0, 0.4), -4px -4px 8px rgba(60, 60, 60, 0.12);
-  --neu-shadow-inset: inset 3px 3px 6px rgba(0, 0, 0, 0.3), inset -3px -3px 6px rgba(60, 60, 60, 0.1);
-  --neu-shadow-pressed: inset 2px 2px 5px rgba(0, 0, 0, 0.35), inset -2px -2px 5px rgba(60, 60, 60, 0.08);
-  --neu-shadow-subtle: 2px 2px 4px rgba(0, 0, 0, 0.3), -2px -2px 4px rgba(60, 60, 60, 0.1);
+  --citizen-surface-s1: #171616;
+  --citizen-surface-s2: #383633;
+  --citizen-surface-s3: rgba(74, 71, 68, 0.40);
+  --citizen-surface-s4: rgba(33, 32, 30, 0.77);
 
-  --neu-surface: #141414;
-  --neu-surface-card: #1E1E1E;
-  --neu-surface-sidebar: #121212;
+  /* Citizen shared surface — cartes principales + menu latéral mobile */
+  --citizen-surface-card: rgba(28, 27, 26, 0.57); /* Equivalent to #1C1B1A with 57% opacity */
 }
 
 /* ─── Flat Card Border ─── */
@@ -52,36 +47,24 @@
   border-color: oklch(1 0 0 / 0.05);
 }
 
-/* ─── Neumorphic Utility Classes ─── */
-
-.neu-card {
-  background: var(--neu-surface-card);
-  box-shadow: var(--neu-shadow-light);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  transition: box-shadow 0.3s ease, transform 0.2s ease;
+/* ─── Global: No shadows anywhere ─── */
+*,
+*::before,
+*::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
 }
-.dark .neu-card { border-color: rgba(255, 255, 255, 0.04); }
-.neu-card:hover { box-shadow: var(--neu-shadow-raised); transform: translateY(-1px); }
 
-.neu-raised { box-shadow: var(--neu-shadow-raised); border-radius: 12px; transition: box-shadow 0.2s ease; }
-.neu-inset { box-shadow: var(--neu-shadow-inset); border-radius: 12px; }
-.neu-pressed { box-shadow: var(--neu-shadow-pressed); border-radius: 10px; }
-.neu-subtle { box-shadow: var(--neu-shadow-subtle); border-radius: 10px; }
+/* ─── Design System v3.0 Surface Utilities ─── */
 
-.neu-sidebar {
-  background: var(--neu-surface-sidebar);
-  box-shadow: var(--neu-shadow-raised);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-.dark .neu-sidebar { border-color: rgba(255, 255, 255, 0.03); }
-
-.neu-nav-item { border-radius: 12px; transition: all 0.2s ease; position: relative; }
-.neu-nav-item:hover { box-shadow: var(--neu-shadow-subtle); background: rgba(0, 158, 96, 0.06); }
-.neu-nav-item.active { box-shadow: var(--neu-shadow-inset); background: rgba(0, 158, 96, 0.1); }
-.dark .neu-nav-item:hover { background: rgba(0, 158, 96, 0.12); }
-.dark .neu-nav-item.active { background: rgba(0, 158, 96, 0.18); }
+.citizen-s1 { background: #F4F3ED; }
+.dark .citizen-s1 { background: #171616; }
+.citizen-s2 { background: #EBE6DC; }
+.dark .citizen-s2 { background: #383633; }
+.citizen-s3 { background: #DCD7C7; }
+.dark .citizen-s3 { background: rgba(74, 71, 68, 0.40); }
+.citizen-s4 { background: #FDFCFA; }
+.dark .citizen-s4 { background: rgba(33, 32, 30, 0.77); }
 
 /* ─── Gabon Color Utilities ─── */
 
@@ -124,12 +107,18 @@
   border-radius: 2px;
 }
 
-.neu-surface { background: var(--neu-surface); }
-
 /* ─── Citizen Space Layout ─── */
 
-.citizen-layout { background: var(--card); min-height: 100dvh; }
-.dark .citizen-layout { background: #111111; }
+/* Scoped overrides : bg-muted → warm gray S2 dans l'espace citoyen */
+.citizen-layout {
+  background: var(--card);
+  min-height: 100dvh;
+  --muted: 40 8% 90%;
+}
+.dark .citizen-layout {
+  background: #111111;
+  --muted: 30 4% 22%;
+}
 
 /* ─── Animations ─── */
 
@@ -160,6 +149,18 @@
 .stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
 
 .heading-official { font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
+
+/* ─── Compact form override pour settings ─── */
+.settings-compact-form .space-y-8 > * + * { margin-top: 0.5rem; }
+.settings-compact-form .space-y-6 > * + * { margin-top: 0.375rem; }
+.settings-compact-form .space-y-4 > * + * { margin-top: 0.25rem; }
+.settings-compact-form .gap-4 { gap: 0.5rem; }
+.settings-compact-form .gap-6 { gap: 0.375rem; }
+.settings-compact-form .p-4 { padding: 0.5rem; }
+.settings-compact-form .p-6 { padding: 0.75rem; }
+.settings-compact-form .py-4 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+.settings-compact-form .mb-4 { margin-bottom: 0.25rem; }
+.settings-compact-form .mb-6 { margin-bottom: 0.375rem; }
 
 /* ─── Mobile real-device fixes ─── */
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }

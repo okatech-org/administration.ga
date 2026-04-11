@@ -48,14 +48,10 @@ import {
 } from "recharts";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { SectionHeader } from "@/components/design-system/section-header";
+import { PageHeader } from "@/components/design-system/page-header";
 import {
 	Table,
 	TableBody,
@@ -155,15 +151,15 @@ function KpiCard({
 	accentBg: string; accentBgLight: string; accentText: string; loading?: boolean;
 }) {
 	return (
-		<Card className="relative overflow-hidden">
+		<FlatCard className="relative overflow-hidden">
 			<div className={`absolute left-0 top-0 h-full w-1 rounded-l-xl ${accentBg}`} />
-			<CardHeader className="flex flex-row items-center justify-between pb-2">
-				<CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-				<div className={`flex h-9 w-9 items-center justify-center rounded-lg ${accentBgLight}`}>
-					<Icon className={`h-4 w-4 ${accentText}`} />
+			<div className="p-3 lg:p-4">
+				<div className="flex flex-row items-center justify-between pb-2">
+					<span className="text-sm font-medium text-muted-foreground">{label}</span>
+					<div className={`flex h-9 w-9 items-center justify-center rounded-lg ${accentBgLight}`}>
+						<Icon className={`h-4 w-4 ${accentText}`} />
+					</div>
 				</div>
-			</CardHeader>
-			<CardContent>
 				{loading ? <Skeleton className="h-8 w-20" /> : (
 					<div className="flex items-end gap-2">
 						<div className="text-3xl font-bold tracking-tight">{value}</div>
@@ -175,8 +171,8 @@ function KpiCard({
 					</div>
 				)}
 				<p className="mt-1 text-xs text-muted-foreground">{sub}</p>
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }
 
@@ -410,9 +406,9 @@ function RegistrationStatusChart({ byStatus }: { byStatus: Record<string, number
 // ═══════════════════════════════════════════════════════════════════════════
 
 function SecurityPanel({ data, loading }: { data?: any; loading: boolean }) {
-	if (loading || !data) return <Card><CardContent className="py-8"><Skeleton className="h-48 w-full" /></CardContent></Card>;
+	if (loading || !data) return <FlatCard><div className="p-3 lg:p-4 py-8"><Skeleton className="h-48 w-full" /></div></FlatCard>;
 	const hasCritical = data.criticalAlerts?.length > 0;
-	const borderClass = hasCritical ? "border-red-500/30 shadow-red-500/5 shadow-lg" : data.systemHealth === "DEGRADED" ? "border-amber-500/30" : "border-emerald-500/20";
+	const borderClass = hasCritical ? "ring-1 ring-red-500/30" : data.systemHealth === "DEGRADED" ? "ring-1 ring-amber-500/30" : "";
 	const healthColors: Record<string, { dot: string; bg: string; text: string; label: string }> = {
 		HEALTHY: { dot: "bg-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400", label: "Opérationnel" },
 		DEGRADED: { dot: "bg-amber-500", bg: "bg-amber-500/10", text: "text-amber-600 dark:text-amber-400", label: "Dégradé" },
@@ -420,18 +416,22 @@ function SecurityPanel({ data, loading }: { data?: any; loading: boolean }) {
 	};
 	const hc = healthColors[data.systemHealth] ?? healthColors.HEALTHY;
 	return (
-		<Card className={borderClass}>
-			<CardHeader className="pb-3">
-				<div className="flex items-center justify-between">
-					<CardTitle className="flex items-center gap-2 text-base"><ShieldAlert className="h-5 w-5 text-red-500" />Sécurité & Alertes</CardTitle>
-					<div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 ${hc.bg}`}>
-						<span className={`h-2 w-2 rounded-full ${hc.dot} animate-pulse`} />
-						<span className={`text-xs font-semibold ${hc.text}`}>{hc.label}</span>
-					</div>
-				</div>
-				<CardDescription>Surveillance réseau, cyber-sécurité et intrusions</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-4">
+		<FlatCard className={borderClass}>
+			<div className="p-3 lg:p-4">
+				<SectionHeader
+					icon={<ShieldAlert className="h-3.5 w-3.5" />}
+					iconBgClass="bg-red-500/10"
+					iconTextClass="text-red-500"
+					title="Sécurité & Alertes"
+					actions={
+						<div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 ${hc.bg}`}>
+							<span className={`h-2 w-2 rounded-full ${hc.dot} animate-pulse`} />
+							<span className={`text-xs font-semibold ${hc.text}`}>{hc.label}</span>
+						</div>
+					}
+				/>
+				<p className="text-xs text-muted-foreground mb-4">Surveillance réseau, cyber-sécurité et intrusions</p>
+				<div className="space-y-4">
 				<div className="grid grid-cols-3 gap-3">
 					<div className="flex flex-col items-center gap-1 rounded-lg bg-muted/50 p-3">
 						<ShieldCheck className="h-4 w-4 text-muted-foreground" />
@@ -487,8 +487,9 @@ function SecurityPanel({ data, loading }: { data?: any; loading: boolean }) {
 						<p className="text-xs text-muted-foreground mt-1">Tous les systèmes sont opérationnels</p>
 					</div>
 				)}
-			</CardContent>
-		</Card>
+				</div>
+			</div>
+		</FlatCard>
 	);
 }
 
@@ -497,14 +498,18 @@ function SecurityPanel({ data, loading }: { data?: any; loading: boolean }) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function DeploymentStats({ data, loading }: { data?: any; loading: boolean }) {
-	if (loading || !data) return <Card><CardContent className="py-8"><Skeleton className="h-48 w-full" /></CardContent></Card>;
+	if (loading || !data) return <FlatCard><div className="p-3 lg:p-4 py-8"><Skeleton className="h-48 w-full" /></div></FlatCard>;
 	return (
-		<Card>
-			<CardHeader className="pb-3">
-				<CardTitle className="flex items-center gap-2 text-base"><Globe className="h-5 w-5 text-blue-500" />Déploiement Réseau Diplomatique</CardTitle>
-				<CardDescription>Couverture géographique et activation des représentations</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-5">
+		<FlatCard>
+			<div className="p-3 lg:p-4">
+				<SectionHeader
+					icon={<Globe className="h-3.5 w-3.5" />}
+					iconBgClass="bg-blue-500/10"
+					iconTextClass="text-blue-500"
+					title="Déploiement Réseau Diplomatique"
+				/>
+				<p className="text-xs text-muted-foreground mb-4">Couverture géographique et activation des représentations</p>
+				<div className="space-y-5">
 				{/* Summary */}
 				<div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
 					<div className="flex flex-col gap-1 rounded-lg bg-blue-500/5 border border-blue-500/10 p-3">
@@ -540,8 +545,9 @@ function DeploymentStats({ data, loading }: { data?: any; loading: boolean }) {
 						<div className="h-full rounded-full bg-linear-to-r from-blue-500 to-emerald-500 transition-all duration-700" style={{ width: `${data.activationRate}%` }} />
 					</div>
 				</div>
-			</CardContent>
-		</Card>
+			</div>
+			</div>
+		</FlatCard>
 	);
 }
 
@@ -613,24 +619,25 @@ function SuperadminDashboard() {
 	const terminalCount = stats?.performance?.totalTerminal ?? (completedCount + (sb.cancelled ?? 0) + (sb.rejected ?? 0));
 
 	return (
-		<div className="flex flex-1 flex-col gap-6 p-4 pt-6 md:p-6">
+		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
 			{/* ── Header ──────────────────────────────────────────── */}
-			<div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-				<div>
-					<h1 className="text-3xl font-bold tracking-tight">{t("superadmin.dashboard.title", "Centre de Commandement")}</h1>
-					<p className="text-muted-foreground flex items-center gap-2">
+			<PageHeader
+				icon={<Landmark className="h-5 w-5" />}
+				title={t("superadmin.dashboard.title", "Centre de Commandement")}
+				subtitle={
+					<span className="flex items-center gap-2">
 						{t("superadmin.dashboard.welcome", "Vue stratégique globale")}
 						<span className="inline-flex items-center gap-1.5 ml-2">
 							<span className={`h-2 w-2 rounded-full ${healthDot} animate-pulse`} />
 							<span className={`text-xs font-medium ${healthColor}`}>{systemHealth === "CRITICAL" ? "Alerte" : systemHealth === "DEGRADED" ? "Dégradé" : "Nominal"}</span>
 						</span>
-					</p>
-				</div>
-				<p className="text-sm text-muted-foreground capitalize">{currentDate}</p>
-			</div>
+					</span>
+				}
+				actions={<p className="text-sm text-muted-foreground capitalize">{currentDate}</p>}
+			/>
 
 			{/* ── KPI Cards (6) ────────────────────────────────────── */}
-			<div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6">
+			<div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 stagger-children">
 				<KpiCard icon={Users} label="Ressortissants" value={stats?.users.total ?? 0} sub="Comptes actifs"
 					trend={stats?.engagement ? { value: `+${stats.engagement.newUsers30d} / 30j`, positive: (stats.engagement.newUsers30d ?? 0) > 0 } : undefined}
 					accentBg="bg-indigo-500" accentBgLight="bg-indigo-500/10" accentText="text-indigo-500" loading={isPending} />
@@ -647,44 +654,38 @@ function SuperadminDashboard() {
 			</div>
 
 			{/* ── Row 2: Pipeline + Performance Gauge ──────────────── */}
-			<div className="grid gap-4 lg:grid-cols-3">
-				<Card className="lg:col-span-2">
-					<CardHeader className="pb-3">
-						<CardTitle className="flex items-center gap-2 text-base"><BarChart3 className="h-4 w-4 text-blue-500" />Pipeline de traitement</CardTitle>
-						<CardDescription>Répartition des demandes par étape du workflow</CardDescription>
-					</CardHeader>
-					<CardContent>
+			<div className="grid gap-4 lg:grid-cols-3 stagger-children">
+				<FlatCard className="lg:col-span-2">
+					<div className="p-3 lg:p-4">
+						<SectionHeader icon={<BarChart3 className="h-3.5 w-3.5" />} iconBgClass="bg-blue-500/10" iconTextClass="text-blue-500" title="Pipeline de traitement" />
+						<p className="text-xs text-muted-foreground mb-3">Répartition des demandes par étape du workflow</p>
 						{isPending ? <Skeleton className="h-64 w-full" /> : <PipelineBarChart pipeline={derivedPipeline} total={totalReqs} />}
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader className="pb-3">
-						<CardTitle className="flex items-center gap-2 text-base"><Gauge className="h-4 w-4 text-emerald-500" />Performance globale</CardTitle>
-						<CardDescription>Taux de résolution des demandes</CardDescription>
-					</CardHeader>
-					<CardContent className="flex items-center justify-center">
-						{isPending ? <Skeleton className="h-44 w-44 rounded-full" /> : <PerformanceGauge completionRate={derivedCompletionRate} urgentPending={urgentCount} />}
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<SectionHeader icon={<Gauge className="h-3.5 w-3.5" />} iconBgClass="bg-emerald-500/10" iconTextClass="text-emerald-500" title="Performance globale" />
+						<p className="text-xs text-muted-foreground mb-3">Taux de résolution des demandes</p>
+						<div className="flex items-center justify-center">
+							{isPending ? <Skeleton className="h-44 w-44 rounded-full" /> : <PerformanceGauge completionRate={derivedCompletionRate} urgentPending={urgentCount} />}
+						</div>
+					</div>
+				</FlatCard>
 			</div>
 
 			{/* ── Row 3: Donut statuts + Inscriptions bar ─────────── */}
-			<div className="grid gap-4 lg:grid-cols-2">
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-muted-foreground" />Demandes par statut</CardTitle>
-						<CardDescription>Répartition circulaire des statuts de traitement</CardDescription>
-					</CardHeader>
-					<CardContent>
+			<div className="grid gap-4 lg:grid-cols-2 stagger-children">
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<SectionHeader icon={<TrendingUp className="h-3.5 w-3.5" />} title="Demandes par statut" />
+						<p className="text-xs text-muted-foreground mb-3">Répartition circulaire des statuts de traitement</p>
 						{isPending ? <Skeleton className="h-56 w-full" /> : <RequestStatusDonut breakdown={stats?.requests.statusBreakdown ?? {}} />}
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2"><CalendarCheck className="h-4 w-4 text-emerald-500" />Inscriptions consulaires par statut</CardTitle>
-						<CardDescription>État des inscriptions au registre consulaire</CardDescription>
-					</CardHeader>
-					<CardContent>
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<SectionHeader icon={<CalendarCheck className="h-3.5 w-3.5" />} iconBgClass="bg-emerald-500/10" iconTextClass="text-emerald-500" title="Inscriptions consulaires par statut" />
+						<p className="text-xs text-muted-foreground mb-3">État des inscriptions au registre consulaire</p>
 						{isPending ? <Skeleton className="h-48 w-full" /> : (() => {
 							const regData = stats?.engagement?.registrationsByStatus;
 							const regTotal = stats?.registrations?.total ?? 0;
@@ -692,8 +693,8 @@ function SuperadminDashboard() {
 							const fallbackReg = hasRegData ? regData : regTotal > 0 ? { active: regTotal } : {};
 							return <RegistrationStatusChart byStatus={fallbackReg} />;
 						})()}
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</div>
 
 			{/* ── Row 4: Déploiement stats + Org type donut ─────── */}
@@ -710,29 +711,25 @@ function SuperadminDashboard() {
 				} : undefined)} loading={isPending} />
 			</WidgetErrorBoundary>
 
-			<div className="grid gap-4 lg:grid-cols-2">
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2"><Building2 className="h-4 w-4 text-indigo-500" />Types de représentation</CardTitle>
-						<CardDescription>Répartition par catégorie diplomatique</CardDescription>
-					</CardHeader>
-					<CardContent>
+			<div className="grid gap-4 lg:grid-cols-2 stagger-children">
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<SectionHeader icon={<Building2 className="h-3.5 w-3.5" />} iconBgClass="bg-indigo-500/10" iconTextClass="text-indigo-500" title="Types de représentation" />
+						<p className="text-xs text-muted-foreground mb-3">Répartition par catégorie diplomatique</p>
 						{isPending ? <Skeleton className="h-52 w-full" /> : <OrgTypeDonut byType={stats?.deployment?.byType ?? {}} />}
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2"><MapPin className="h-4 w-4 text-violet-500" />Top pays d'implantation</CardTitle>
-						<CardDescription>Représentations par pays (top 10)</CardDescription>
-					</CardHeader>
-					<CardContent>
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<SectionHeader icon={<MapPin className="h-3.5 w-3.5" />} iconBgClass="bg-violet-500/10" iconTextClass="text-violet-500" title="Top pays d'implantation" />
+						<p className="text-xs text-muted-foreground mb-3">Représentations par pays (top 10)</p>
 						{isPending ? <Skeleton className="h-64 w-full" /> : <CountryBarChart byCountry={stats?.deployment?.byCountry ?? {}} />}
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</div>
 
 			{/* ── Row 5: Security + Neocortex ──────────────────── */}
-			<div className="grid gap-4 lg:grid-cols-2">
+			<div className="grid gap-4 lg:grid-cols-2 stagger-children">
 				<WidgetErrorBoundary>
 					<SecurityPanel data={stats?.security} loading={isPending} />
 				</WidgetErrorBoundary>
@@ -742,20 +739,26 @@ function SuperadminDashboard() {
 			</div>
 
 			{/* ── Row 6: Activity + Recent Requests ────────────── */}
-			<div className="grid gap-4 lg:grid-cols-7">
-				<Card className="lg:col-span-3">
-					<CardHeader className="flex flex-row items-center justify-between">
-						<div><CardTitle>{t("superadmin.dashboard.recentActivity")}</CardTitle><CardDescription>{t("superadmin.dashboard.recentActivityDesc")}</CardDescription></div>
-						<Button variant="ghost" size="sm" asChild><Link to="/audit-logs"><ArrowRight className="h-4 w-4" /></Link></Button>
-					</CardHeader>
-					<CardContent><RecentActivityList /></CardContent>
-				</Card>
-				<Card className="lg:col-span-4">
-					<CardHeader className="flex flex-row items-center justify-between">
-						<div><CardTitle>{t("superadmin.dashboard.recentRequests")}</CardTitle><CardDescription>Les 10 dernières demandes sur la plateforme</CardDescription></div>
-						<Button variant="outline" size="sm" asChild><Link to="/requests">{t("superadmin.dashboard.viewAll")}<ArrowRight className="ml-1 h-4 w-4" /></Link></Button>
-					</CardHeader>
-					<CardContent>
+			<div className="grid gap-4 lg:grid-cols-7 stagger-children">
+				<FlatCard className="lg:col-span-3">
+					<div className="p-3 lg:p-4">
+						<SectionHeader
+							icon={<Activity className="h-3.5 w-3.5" />}
+							title={t("superadmin.dashboard.recentActivity")}
+							actions={<Button variant="ghost" size="sm" asChild><Link to="/audit-logs"><ArrowRight className="h-4 w-4" /></Link></Button>}
+						/>
+						<p className="text-xs text-muted-foreground mb-3">{t("superadmin.dashboard.recentActivityDesc")}</p>
+						<RecentActivityList />
+					</div>
+				</FlatCard>
+				<FlatCard className="lg:col-span-4">
+					<div className="p-3 lg:p-4">
+						<SectionHeader
+							icon={<ClipboardList className="h-3.5 w-3.5" />}
+							title={t("superadmin.dashboard.recentRequests")}
+							actions={<Button variant="outline" size="sm" asChild><Link to="/requests">{t("superadmin.dashboard.viewAll")}<ArrowRight className="ml-1 h-4 w-4" /></Link></Button>}
+						/>
+						<p className="text-xs text-muted-foreground mb-3">Les 10 dernières demandes sur la plateforme</p>
 						{isPending ? <div className="space-y-3">{[1,2,3,4,5].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div> : !stats?.recentRequests?.length ? (
 							<div className="flex flex-col items-center justify-center py-8 text-center"><ClipboardList className="mb-2 h-8 w-8 text-muted-foreground/40" /><p className="text-sm text-muted-foreground">Aucune demande</p></div>
 						) : (
@@ -800,20 +803,23 @@ function SuperadminDashboard() {
 								</div>
 							</>
 						)}
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</div>
 
 			{/* ── Quick Actions ────────────────────────────────────── */}
-			<Card>
-				<CardHeader><CardTitle>{t("superadmin.dashboard.quickActions")}</CardTitle><CardDescription>{t("superadmin.dashboard.quickActionsDesc")}</CardDescription></CardHeader>
-				<CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-					<Button variant="outline" asChild className="justify-start h-10"><Link to="/users"><Users className="mr-2 h-4 w-4" />{t("superadmin.nav.users")}</Link></Button>
-					<Button variant="outline" asChild className="justify-start h-10"><Link to="/reps/new"><Plus className="mr-2 h-4 w-4" />{t("superadmin.dashboard.addOrg")}</Link></Button>
-					<Button variant="outline" asChild className="justify-start h-10"><Link to="/services"><FileText className="mr-2 h-4 w-4" />{t("superadmin.nav.services")}</Link></Button>
-					<Button variant="outline" asChild className="justify-start h-10"><Link to="/audit-logs"><ClipboardList className="mr-2 h-4 w-4" />{t("superadmin.dashboard.viewLogs")}</Link></Button>
-				</CardContent>
-			</Card>
+			<FlatCard>
+				<div className="p-3 lg:p-4">
+					<SectionHeader icon={<Settings className="h-3.5 w-3.5" />} title={t("superadmin.dashboard.quickActions")} />
+					<p className="text-xs text-muted-foreground mb-3">{t("superadmin.dashboard.quickActionsDesc")}</p>
+					<div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+						<Button variant="outline" asChild className="justify-start h-10"><Link to="/users"><Users className="mr-2 h-4 w-4" />{t("superadmin.nav.users")}</Link></Button>
+						<Button variant="outline" asChild className="justify-start h-10"><Link to="/reps/new"><Plus className="mr-2 h-4 w-4" />{t("superadmin.dashboard.addOrg")}</Link></Button>
+						<Button variant="outline" asChild className="justify-start h-10"><Link to="/services"><FileText className="mr-2 h-4 w-4" />{t("superadmin.nav.services")}</Link></Button>
+						<Button variant="outline" asChild className="justify-start h-10"><Link to="/audit-logs"><ClipboardList className="mr-2 h-4 w-4" />{t("superadmin.dashboard.viewLogs")}</Link></Button>
+					</div>
+				</div>
+			</FlatCard>
 		</div>
 	);
 }

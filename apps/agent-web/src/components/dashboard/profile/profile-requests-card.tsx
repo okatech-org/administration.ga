@@ -10,7 +10,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { cn } from "@/lib/utils";
 
 // ─── Status styling ───────────────────────────────────────────
@@ -57,9 +57,9 @@ export function ProfileRequestsCard({
   });
 
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-2 pt-3 px-4">
-        <CardTitle className="text-xs font-bold flex items-center justify-between">
+    <FlatCard>
+      <div className="pb-2 pt-3 px-4">
+        <div className="text-xs font-bold flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-amber-500/10">
               <FileText className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
@@ -69,10 +69,10 @@ export function ProfileRequestsCard({
           <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
             {requests.length}
           </Badge>
-        </CardTitle>
-      </CardHeader>
+        </div>
+      </div>
 
-      <CardContent className="p-0 pt-0">
+      <div className="p-0 pt-0">
         {sortedRequests.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground px-4">
             <FileText className="h-8 w-8 mx-auto mb-2 opacity-20" />
@@ -171,7 +171,7 @@ export function ProfileRequestsCard({
             </table>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </FlatCard>
   );
 }

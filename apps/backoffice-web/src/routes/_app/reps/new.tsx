@@ -24,14 +24,8 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
 import {
 	Dialog,
 	DialogContent,
@@ -167,7 +161,7 @@ function StepIndicator({
 						<div
 							className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
 								isActive
-									? "bg-primary text-primary-foreground shadow-sm"
+									? "bg-primary text-primary-foreground"
 									: isDone
 										? "bg-primary/10 text-primary"
 										: "bg-muted text-muted-foreground"
@@ -348,29 +342,19 @@ function NewOrganizationPage() {
 	)
 
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-4 pt-6 max-w-4xl mx-auto w-full">
+		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4 max-w-4xl mx-auto w-full">
 			{/* Header */}
-			<div className="flex items-center gap-3 mb-2">
-				<Button
-					variant="ghost"
-					size="icon"
-					onClick={() => {
-						if (step === "positions") setStep("template");
-						else if (step === "details") setStep("positions");
-						else navigate({ to: "/reps" });
-					}}
-				>
-					<ArrowLeft className="h-4 w-4" />
-				</Button>
-				<div>
-					<h1 className="text-2xl font-bold tracking-tight">
-						{t("superadmin.organizations.form.create")}
-					</h1>
-					<p className="text-sm text-muted-foreground">
-						{t("superadmin.organizations.description")}
-					</p>
-				</div>
-			</div>
+			<PageHeader
+				icon={<Building className="h-5 w-5" />}
+				title={t("superadmin.organizations.form.create")}
+				subtitle={t("superadmin.organizations.description")}
+				showBackButton
+				onBack={() => {
+					if (step === "positions") setStep("template");
+					else if (step === "details") setStep("positions");
+					else navigate({ to: "/reps" });
+				}}
+			/>
 
 			<StepIndicator steps={STEPS} current={step} />
 
@@ -393,9 +377,9 @@ function NewOrganizationPage() {
 									type="button"
 									key={template.type}
 									onClick={() => handleSelectTemplate(template)}
-									className={`relative text-left p-5 rounded-xl border-2 transition-all hover:shadow-md ${
+									className={`relative text-left p-5 rounded-xl border-2 transition-all ${
 										isSelected
-											? "border-primary bg-primary/5 shadow-sm"
+											? "border-primary bg-primary/5"
 											: "border-border hover:border-primary/40"
 									}`}
 								>
@@ -493,7 +477,7 @@ function NewOrganizationPage() {
 						{sortedPositions.map((pos) => (
 							<div
 								key={pos.id}
-								className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all group hover:shadow-sm ${
+								className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all group ${
 									pos.isRequired
 										? "border-amber-500/30 bg-amber-500/5"
 										: "border-border"
@@ -594,19 +578,17 @@ function NewOrganizationPage() {
 
 			{/* ─── Step 3: Org Details ────────────────────────── */}
 			{step === "details" && (
-				<Card>
-					<CardHeader>
-						<CardTitle>{t("superadmin.organizations.form.create")}</CardTitle>
-						<CardDescription>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<h2 className="text-lg font-bold mb-1">{t("superadmin.organizations.form.create")}</h2>
+						<p className="text-xs text-muted-foreground mb-4">
 							{selectedTemplate && (
 								<span>
 									{getLocalizedValue(selectedTemplate.label, lang)} ·{" "}
 								</span>
 							)}
 							{positions.length} postes configurés
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
+						</p>
 						<form
 							id="org-form"
 							onSubmit={(e) => {
@@ -899,24 +881,24 @@ function NewOrganizationPage() {
 								</div>
 							</div>
 						</form>
-					</CardContent>
-					<CardFooter className="flex justify-between">
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => setStep("positions")}
-						>
-							<ArrowLeft className="h-4 w-4 mr-2" />
-							Retour aux postes
-						</Button>
-						<Button type="submit" form="org-form" disabled={isPending}>
-							{isPending ? (
-								<Loader2 className="h-4 w-4 animate-spin mr-2" />
-							) : null}
-							{isPending ? "Création en cours..." : "Créer l'organisation"}
-						</Button>
-					</CardFooter>
-				</Card>
+					</div>
+				<div className="flex justify-between p-3 lg:p-4 border-t border-border/40">
+					<Button
+						type="button"
+						variant="outline"
+						onClick={() => setStep("positions")}
+					>
+						<ArrowLeft className="h-4 w-4 mr-2" />
+						Retour aux postes
+					</Button>
+					<Button type="submit" form="org-form" disabled={isPending}>
+						{isPending ? (
+							<Loader2 className="h-4 w-4 animate-spin mr-2" />
+						) : null}
+						{isPending ? "Création en cours..." : "Créer l'organisation"}
+					</Button>
+				</div>
+				</FlatCard>
 			)}
 
 			{/* ─── Add Position Dialog ────────────────────────── */}

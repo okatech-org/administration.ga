@@ -77,10 +77,10 @@ const OWNER_TYPE_ICONS: Record<string, typeof User> = {
 
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { PageHeader } from "@/components/common/page-header";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
 	Command,
 	CommandEmpty,
@@ -342,7 +342,7 @@ function IBoitePage() {
 	// ── Render ─────────────────────────────────────────────────────────────
 
 	return (
-		<div className="flex flex-col gap-4 h-[calc(100dvh-3rem)] min-h-0 p-1">
+		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4 h-[calc(100dvh-3rem)] min-h-0">
 			<div className="shrink-0">
 				<PageHeader
 					title={t("mySpace.screens.iboite.heading")}
@@ -534,7 +534,7 @@ function IBoitePage() {
 			</div>
 
 			{/* ── Desktop: single unified card filling remaining height ──── */}
-			<Card className="hidden lg:flex lg:flex-row flex-1 min-h-0 overflow-hidden p-0">
+			<FlatCard className="hidden lg:flex lg:flex-row flex-1 min-h-0 overflow-hidden p-0">
 				{/* Sidebar */}
 				<aside className="max-w-56 w-full border-r flex flex-col">
 					{/* Compose button */}
@@ -795,7 +795,7 @@ function IBoitePage() {
 						</>
 					)}
 				</main>
-			</Card>
+			</FlatCard>
 
 			{/* ── Compose Dialog ────────────────────────────────────────────── */}
 			<ComposeDialog

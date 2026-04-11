@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { OrgProvider, useOrg } from "@/components/org/org-provider";
 import { OrgSidebar } from "@/components/org/org-sidebar";
+import { AgentMobileNav } from "@/components/my-space/agent-mobile-nav";
 import { IAstedWindow } from "@/components/ai/iasted/IAstedWindow";
 import { HomeLandingSignIn } from "@/components/auth/HomeLandingSignIn";
 import {
@@ -101,19 +102,22 @@ function DashboardLayout() {
   return (
     <div
       className={cn(
-        "relative overflow-hidden h-screen gap-6 flex bg-background",
+        "citizen-layout relative flex h-dvh flex-col overflow-hidden md:flex-row md:h-screen",
         consularTheme === "homeomorphism" && "theme-homeomorphism",
       )}
     >
-      <div className="hidden md:block p-6 pr-0!">
-        <OrgSidebar
-          isExpanded={isExpanded}
-          onToggle={() => setIsExpanded((prev) => !prev)}
-        />
+      <div className="hidden md:block p-4 pr-0">
+        <div className="h-full rounded-2xl bg-[#F4F3ED] dark:bg-[#171616] overflow-hidden">
+          <OrgSidebar
+            isExpanded={isExpanded}
+            onToggle={() => setIsExpanded((prev) => !prev)}
+          />
+        </div>
       </div>
-      <main className="flex-1 min-h-full overflow-y-auto md:-ml-6">
+      <main className="flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4">
         <Outlet />
       </main>
+      <AgentMobileNav />
       <IAstedWindow />
     </div>
   );

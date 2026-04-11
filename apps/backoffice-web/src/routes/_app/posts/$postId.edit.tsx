@@ -3,9 +3,8 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { PostCategory, PostStatus } from "@convex/lib/constants";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
-	ArrowLeft,
 	CalendarDays,
 	FileText,
 	Loader2,
@@ -17,14 +16,9 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { RichTextEditor } from "@/components/common/lazy-rich-text-editor";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -233,35 +227,28 @@ function AdminEditPostPage() {
 	const isCommunique = category === PostCategory.Announcement;
 
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-4">
-			<div className="flex items-center gap-4">
-				<Button variant="ghost" size="sm" asChild>
-					<Link to="/posts">
-						<ArrowLeft className="mr-2 h-4 w-4" />
-						Retour
-					</Link>
-				</Button>
-				<div className="flex-1">
-					<h1 className="text-2xl font-bold tracking-tight">
-						Modifier la publication
-					</h1>
-					<p className="text-muted-foreground line-clamp-1">{post.title}</p>
-				</div>
-				<Button
-					variant={post.status === PostStatus.Published ? "outline" : "default"}
-					onClick={handleTogglePublish}
-				>
-					{post.status === PostStatus.Published ? "Dépublier" : "Publier"}
-				</Button>
-			</div>
+		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+			<PageHeader
+				icon={<Newspaper className="h-5 w-5" />}
+				title="Modifier la publication"
+				subtitle={post.title}
+				showBackButton
+				onBack={() => navigate({ to: "/posts" })}
+				actions={
+					<Button
+						variant={post.status === PostStatus.Published ? "outline" : "default"}
+						onClick={handleTogglePublish}
+					>
+						{post.status === PostStatus.Published ? "Dépublier" : "Publier"}
+					</Button>
+				}
+			/>
 
 			<form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
 				<div className="lg:col-span-2 space-y-6">
-					<Card>
-						<CardHeader>
-							<CardTitle>Contenu</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
+					<FlatCard>
+						<div className="p-3 lg:p-4 space-y-4">
+							<h2 className="text-base font-semibold">Contenu</h2>
 							<div className="space-y-2">
 								<Label htmlFor="title">Titre *</Label>
 								<Input
@@ -298,18 +285,16 @@ function AdminEditPostPage() {
 									className="min-h-[300px]"
 								/>
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
 					{isEvent && (
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
+						<FlatCard>
+							<div className="p-3 lg:p-4 space-y-4">
+								<h2 className="text-base font-semibold flex items-center gap-2">
 									<CalendarDays className="h-5 w-5" />
 									Événement
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-4">
+								</h2>
 								<div className="grid gap-4 sm:grid-cols-2">
 									<div className="space-y-2">
 										<Label>Début</Label>
@@ -343,20 +328,20 @@ function AdminEditPostPage() {
 										onChange={(e) => setEventTicketUrl(e.target.value)}
 									/>
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 
 					{isCommunique && (
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
-									<Megaphone className="h-5 w-5" />
-									Document
-								</CardTitle>
-								<CardDescription>PDF obligatoire</CardDescription>
-							</CardHeader>
-							<CardContent>
+						<FlatCard>
+							<div className="p-3 lg:p-4 space-y-4">
+								<div>
+									<h2 className="text-base font-semibold flex items-center gap-2">
+										<Megaphone className="h-5 w-5" />
+										Document
+									</h2>
+									<p className="text-sm text-muted-foreground">PDF obligatoire</p>
+								</div>
 								<div className="border-2 border-dashed rounded-lg p-6 text-center">
 									<input
 										type="file"
@@ -391,17 +376,15 @@ function AdminEditPostPage() {
 										</label>
 									)}
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 				</div>
 
 				<div className="space-y-6">
-					<Card>
-						<CardHeader>
-							<CardTitle>Paramètres</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
+					<FlatCard>
+						<div className="p-3 lg:p-4 space-y-4">
+							<h2 className="text-base font-semibold">Paramètres</h2>
 							<div className="space-y-2">
 								<Label>Catégorie *</Label>
 								<Select
@@ -475,8 +458,8 @@ function AdminEditPostPage() {
 									)}
 								</p>
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 					<Button type="submit" className="w-full" disabled={isSubmitting}>
 						{isSubmitting ? "Enregistrement..." : "Enregistrer"}
 					</Button>

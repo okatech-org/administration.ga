@@ -90,6 +90,7 @@ export function IdentityStep({ control }: IdentityStepProps) {
 													fieldState.invalid ? errorId : undefined
 												}
 												{...field}
+												value={field.value ?? ""}
 											/>
 											{fieldState.invalid && (
 												<FieldError id={errorId} errors={[fieldState.error]} />
@@ -116,6 +117,7 @@ export function IdentityStep({ control }: IdentityStepProps) {
 													fieldState.invalid ? errorId : undefined
 												}
 												{...field}
+												value={field.value ?? ""}
 											/>
 											{fieldState.invalid && (
 												<FieldError id={errorId} errors={[fieldState.error]} />
@@ -173,6 +175,7 @@ export function IdentityStep({ control }: IdentityStepProps) {
 													fieldState.invalid ? errorId : undefined
 												}
 												{...field}
+												value={field.value ?? ""}
 											/>
 											{fieldState.invalid && (
 												<FieldError id={errorId} errors={[fieldState.error]} />
@@ -371,6 +374,7 @@ export function IdentityStep({ control }: IdentityStepProps) {
 													fieldState.invalid ? errorId : undefined
 												}
 												{...field}
+												value={field.value ?? ""}
 											/>
 											{fieldState.invalid && (
 												<FieldError id={errorId} errors={[fieldState.error]} />
@@ -397,6 +401,7 @@ export function IdentityStep({ control }: IdentityStepProps) {
 													fieldState.invalid ? errorId : undefined
 												}
 												{...field}
+												value={field.value ?? ""}
 											/>
 											{fieldState.invalid && (
 												<FieldError id={errorId} errors={[fieldState.error]} />

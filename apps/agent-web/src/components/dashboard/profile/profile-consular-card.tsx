@@ -10,7 +10,7 @@ import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { cn } from "@/lib/utils";
 
 // ─── Props ────────────────────────────────────────────────────
@@ -50,29 +50,29 @@ export function ProfileConsularCard({
   // Pas d'inscription et pas de carte
   if (!latestRegistration && !consularCard) {
     return (
-      <Card className="border-border/50">
-        <CardHeader className="pb-2 pt-3 px-4">
-          <CardTitle className="text-xs font-bold flex items-center gap-2">
+      <FlatCard>
+        <div className="pb-2 pt-3 px-4">
+          <div className="text-xs font-bold flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-muted">
               <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
             </div>
             Carte Consulaire
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center text-center py-6">
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center text-center py-6 px-4">
           <CreditCard className="h-8 w-8 mb-2 text-muted-foreground/20" />
           <p className="text-[12px] text-muted-foreground">Non inscrit au registre consulaire</p>
-        </CardContent>
-      </Card>
+        </div>
+      </FlatCard>
     );
   }
 
   // Carte expiree sans carte valide
   if (hasExpiredCard && !hasValidCard) {
     return (
-      <Card className="border-border/50">
-        <CardHeader className="pb-2 pt-3 px-4">
-          <CardTitle className="text-xs font-bold flex items-center justify-between">
+      <FlatCard>
+        <div className="pb-2 pt-3 px-4">
+          <div className="text-xs font-bold flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-1.5 rounded-lg bg-red-500/10">
                 <CreditCard className="w-3.5 h-3.5 text-red-500" />
@@ -80,9 +80,9 @@ export function ProfileConsularCard({
               Carte Consulaire
             </div>
             <Badge variant="destructive" className="text-[9px]">Expiree</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center text-center py-4 gap-2">
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center text-center py-4 gap-2 px-4">
           <CreditCard className="h-8 w-8 text-red-500/30" />
           <p className="text-[12px] text-muted-foreground">
             Carte expiree le {fmtDate(consularCard.cardExpiresAt)}
@@ -90,17 +90,17 @@ export function ProfileConsularCard({
           <p className="text-[11px] text-muted-foreground">
             N. {consularCard.cardNumber}
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </FlatCard>
     );
   }
 
   // Carte valide — affichage visuel
   if (hasValidCard) {
     return (
-      <Card className="border-border/50 overflow-hidden">
-        <CardHeader className="pb-2 pt-3 px-4">
-          <CardTitle className="text-xs font-bold flex items-center justify-between">
+      <FlatCard className="overflow-hidden">
+        <div className="pb-2 pt-3 px-4">
+          <div className="text-xs font-bold flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-1.5 rounded-lg bg-green-500/10">
                 <CreditCard className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
@@ -116,10 +116,10 @@ export function ProfileConsularCard({
               <RotateCcw className="h-3 w-3 mr-1" />
               {isFlipped ? "Recto" : "Verso"}
             </Button>
-          </CardTitle>
-        </CardHeader>
+          </div>
+        </div>
 
-        <CardContent className="p-3 pt-0">
+        <div className="p-3 pt-0">
           {/* Conteneur 3D flip */}
           <div className="w-full flex justify-center perspective-[1000px]">
             <button
@@ -238,16 +238,16 @@ export function ProfileConsularCard({
             <FileText className="h-3 w-3" />
             Attestation
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </FlatCard>
     );
   }
 
   // Inscription en cours mais pas de carte delivree
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-2 pt-3 px-4">
-        <CardTitle className="text-xs font-bold flex items-center justify-between">
+    <FlatCard>
+      <div className="pb-2 pt-3 px-4">
+        <div className="text-xs font-bold flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-amber-500/10">
               <CreditCard className="w-3.5 h-3.5 text-amber-500" />
@@ -257,9 +257,9 @@ export function ProfileConsularCard({
           <Badge className="text-[9px] bg-amber-100 text-amber-700 border-amber-200">
             En cours
           </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col items-center justify-center text-center py-4 gap-2">
+        </div>
+      </div>
+      <div className="flex flex-col items-center justify-center text-center py-4 gap-2 px-4">
         <CreditCard className="h-8 w-8 text-amber-500/30" />
         <p className="text-[12px] text-muted-foreground">Inscription consulaire enregistree</p>
         {latestRegistration?.matricule && (
@@ -267,7 +267,7 @@ export function ProfileConsularCard({
             Matricule: {latestRegistration.matricule}
           </p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </FlatCard>
   );
 }

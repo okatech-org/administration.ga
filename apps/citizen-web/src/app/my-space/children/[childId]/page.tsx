@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { ContentDetailSkeleton } from "@/components/skeletons";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
@@ -117,13 +117,13 @@ export default function ChildDashboardPage() {
 					{/* --- COL 1: Hero + Carte consulaire (3/12) --- */}
 					<div className="lg:col-span-3 flex flex-col gap-2 min-h-0 overflow-y-auto">
 						{/* Hero enfant */}
-						<Card className="shrink-0 bg-pink-500/5 border-pink-500/10 shadow-sm relative overflow-hidden">
-							<CardContent className="p-2.5 flex flex-col items-center text-center">
+						<FlatCard className="shrink-0 bg-pink-500/5 relative">
+							<div className="p-2.5 flex flex-col items-center text-center">
 								<div className="relative mb-2">
-									<Avatar className="h-14 w-14 border-2 border-background shadow-md">
+									<Avatar className="h-14 w-14 border-2 border-background">
 										<AvatarFallback className="text-xl font-bold bg-pink-500 text-white">{firstName?.[0]}{lastName?.[0]}</AvatarFallback>
 									</Avatar>
-									<div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 shadow-sm">
+									<div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5">
 										<div className="relative h-6 w-6 flex items-center justify-center bg-muted rounded-full">
 											<svg className="absolute inset-0 h-6 w-6 -rotate-90" viewBox="0 0 36 36">
 												<circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="3" className="stroke-muted/50" />
@@ -147,12 +147,12 @@ export default function ChildDashboardPage() {
 									{identity?.nationality && <div className="flex items-center gap-1.5 text-[10px]"><Shield className="h-3 w-3 text-muted-foreground shrink-0" /><span className="truncate">{lbl(COUNTRY_LABELS, identity.nationality)}</span></div>}
 									{c.countryOfResidence && <div className="flex items-center gap-1.5 text-[10px]"><MapPin className="h-3 w-3 text-muted-foreground shrink-0" /><span className="truncate">Reside en {lbl(COUNTRY_LABELS, c.countryOfResidence)}</span></div>}
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 
 						{/* Carte consulaire enfant */}
-						<Card className={cn("shrink-0", cc?.cardNumber ? (ccExpired ? "border-red-500/20 bg-red-500/5" : "border-emerald-500/20 bg-emerald-500/5") : "")}>
-							<CardContent className="p-2.5">
+						<FlatCard className={cn("shrink-0", cc?.cardNumber ? (ccExpired ? "bg-red-500/5" : "bg-emerald-500/5") : "")}>
+							<div className="p-2.5">
 								<div className="flex items-center gap-1.5 mb-2">
 									<Shield className="h-3.5 w-3.5 text-muted-foreground" />
 									<span className="text-xs font-bold">Carte Consulaire</span>
@@ -170,12 +170,12 @@ export default function ChildDashboardPage() {
 								) : (
 									<p className="text-[10px] text-muted-foreground text-center py-2">Pas encore inscrit</p>
 								)}
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 
 						{/* Parents */}
-						<Card className="shrink-0">
-							<CardContent className="p-2.5">
+						<FlatCard className="shrink-0">
+							<div className="p-2.5">
 								<div className="flex items-center gap-1.5 mb-2">
 									<Users className="h-3.5 w-3.5 text-muted-foreground" />
 									<span className="text-xs font-bold">Parents / Tuteurs</span>
@@ -198,14 +198,14 @@ export default function ChildDashboardPage() {
 										))}
 									</div>
 								) : <p className="text-[10px] text-muted-foreground text-center py-2">Non renseigne</p>}
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					</div>
 
 					{/* --- COL 2: Dossier Enfant (6/12) --- */}
 					<div className="lg:col-span-6 flex flex-col gap-2 min-h-0 overflow-y-auto">
-						<Card className="flex-1 shadow-sm flex flex-col overflow-hidden">
-							<CardContent className="p-0 flex flex-col h-full">
+						<FlatCard className="flex-1 flex flex-col">
+							<div className="flex flex-col h-full">
 								{/* Header */}
 								<div className="flex items-center justify-between p-2 border-b bg-muted/20 shrink-0">
 									<div className="flex items-center gap-2">
@@ -267,16 +267,16 @@ export default function ChildDashboardPage() {
 										)}
 									</div>
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					</div>
 
 					{/* --- COL 3: Documents + Actions (3/12) --- */}
 					<div className="lg:col-span-3 flex flex-col gap-2 min-h-0 overflow-y-auto">
 
 						{/* Documents */}
-						<Card className="shrink-0">
-							<CardContent className="p-2.5">
+						<FlatCard className="shrink-0">
+							<div className="p-2.5">
 								<div className="flex items-center gap-1.5 mb-2">
 									<FileText className="h-3.5 w-3.5 text-muted-foreground" />
 									<span className="text-xs font-bold">Documents</span>
@@ -302,12 +302,12 @@ export default function ChildDashboardPage() {
 										);
 									})}
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 
 						{/* Actions rapides */}
-						<Card className="shrink-0 bg-pink-500/5 border-pink-500/10">
-							<CardContent className="p-2.5">
+						<FlatCard className="shrink-0 bg-pink-500/5">
+							<div className="p-2.5">
 								<div className="flex items-center gap-1.5 mb-2">
 									<Baby className="h-3.5 w-3.5 text-pink-500" />
 									<span className="text-xs font-bold">Actions</span>
@@ -329,8 +329,8 @@ export default function ChildDashboardPage() {
 										</Link>
 									</Button>
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					</div>
 
 				</div>

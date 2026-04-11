@@ -40,9 +40,10 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
+import { FlatCard } from "@/components/my-space/flat-card";
+import { SectionHeader } from "@/components/my-space/section-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Select,
 	SelectContent,
@@ -234,7 +235,7 @@ function AdminDashboard() {
 	];
 
 	return (
-		<div className="flex flex-col gap-6 p-4 lg:p-6 overflow-y-auto">
+		<div className="flex flex-col gap-6 p-4 lg:p-6 overflow-y-auto citizen-scrollbar">
 			{/* ── Header + Controls ────────────────────────────────────────── */}
 			<motion.div
 				initial={{ opacity: 0, y: 10 }}
@@ -270,7 +271,7 @@ function AdminDashboard() {
 						</SelectContent>
 					</Select>
 
-					<Button variant="outline" size="icon" onClick={handleExportJSON}>
+					<Button variant="outline" size="icon" onClick={handleExportJSON} className="active:scale-[0.97] transition-transform">
 						<Download className="h-4 w-4" />
 					</Button>
 				</div>
@@ -284,11 +285,11 @@ function AdminDashboard() {
 				className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
 			>
 				{statCards.map((stat, i) => (
-					<Card
+					<FlatCard
 						key={stat.title}
-						className="overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
+						className="overflow-hidden transition-all duration-200"
 					>
-						<CardContent className="p-4">
+						<div className="p-3 lg:p-4">
 							<div className="flex items-center justify-between mb-3">
 								<div
 									className={`w-9 h-9 rounded-lg flex items-center justify-center ${stat.bgColor}`}
@@ -311,11 +312,11 @@ function AdminDashboard() {
 								)}
 							</div>
 							<p className="text-2xl font-bold tracking-tight">{stat.value}</p>
-							<p className="text-xs text-muted-foreground mt-1 truncate">
+							<p className="text-xs text-muted-foreground mt-1 truncate font-medium">
 								{stat.title}
 							</p>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				))}
 			</motion.div>
 
@@ -327,14 +328,12 @@ function AdminDashboard() {
 				className="grid grid-cols-1 lg:grid-cols-3 gap-6"
 			>
 				{/* Daily Trend — AreaChart */}
-				<Card className="lg:col-span-2">
-					<CardHeader className="pb-2">
-						<CardTitle className="text-base font-semibold flex items-center gap-2">
-							<Activity className="h-4 w-4 text-primary" />
-							{t("admin.charts.trend")}
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
+				<FlatCard className="lg:col-span-2">
+					<div className="p-3 lg:p-4">
+						<SectionHeader
+							icon={<Activity className="h-4 w-4 text-primary" />}
+							title={t("admin.charts.trend")}
+						/>
 						<div className="h-72">
 							{trendData.length > 0 ? (
 								<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
@@ -403,18 +402,16 @@ function AdminDashboard() {
 								</div>
 							)}
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 
 				{/* Request Status — PieChart */}
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-base font-semibold flex items-center gap-2">
-							<ClipboardList className="h-4 w-4 text-primary" />
-							{t("admin.charts.byStatus")}
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<SectionHeader
+							icon={<ClipboardList className="h-4 w-4 text-primary" />}
+							title={t("admin.charts.byStatus")}
+						/>
 						<div className="h-44">
 							{statusChartData.length > 0 ? (
 								<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
@@ -467,8 +464,8 @@ function AdminDashboard() {
 								</div>
 							))}
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</motion.div>
 
 			{/* ── Bottom Row ───────────────────────────────────────────────── */}
@@ -479,14 +476,12 @@ function AdminDashboard() {
 				className="grid grid-cols-1 lg:grid-cols-2 gap-6"
 			>
 				{/* Service Breakdown — Horizontal BarChart */}
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-base font-semibold flex items-center gap-2">
-							<Zap className="h-4 w-4 text-primary" />
-							{t("admin.charts.byService")}
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<SectionHeader
+							icon={<Zap className="h-4 w-4 text-primary" />}
+							title={t("admin.charts.byService")}
+						/>
 						<div className="h-64">
 							{serviceChartData.length > 0 ? (
 								<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
@@ -541,28 +536,24 @@ function AdminDashboard() {
 								</div>
 							)}
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 
 				{/* Right: Agent Performance + Quick Actions stacked */}
 				<div className="flex flex-col gap-6">
 					{/* Agent Performance */}
-					<Card>
-						<CardHeader className="pb-2">
-							<div className="flex items-center justify-between">
-								<CardTitle className="text-base font-semibold flex items-center gap-2">
-									<Users className="h-4 w-4 text-primary" />
-									{t("admin.agents.title")}
-								</CardTitle>
-								{agentData && (
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<SectionHeader
+								icon={<Users className="h-4 w-4 text-primary" />}
+								title={t("admin.agents.title")}
+								actions={agentData && (
 									<Badge variant="secondary" className="text-xs">
 										{agentData.totalAgents}{" "}
 										{t("admin.agents.members")}
 									</Badge>
 								)}
-							</div>
-						</CardHeader>
-						<CardContent>
+							/>
 							{agentData && agentData.agents.length > 0 ? (
 								<div className="space-y-3">
 									{agentData.agents.slice(0, 5).map((agent) => (
@@ -606,18 +597,16 @@ function AdminDashboard() {
 									{t("admin.agents.noData")}
 								</p>
 							)}
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
 					{/* Quick Actions */}
-					<Card>
-						<CardHeader className="pb-2">
-							<CardTitle className="text-base font-semibold flex items-center gap-2">
-								<Zap className="h-4 w-4 text-primary" />
-								{t("admin.quickActions.title")}
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<SectionHeader
+								icon={<Zap className="h-4 w-4 text-primary" />}
+								title={t("admin.quickActions.title")}
+							/>
 							<div className="grid grid-cols-2 gap-2">
 								{quickActions.map((action) => (
 									<Link
@@ -635,8 +624,8 @@ function AdminDashboard() {
 									</Link>
 								))}
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</div>
 			</motion.div>
 		</div>

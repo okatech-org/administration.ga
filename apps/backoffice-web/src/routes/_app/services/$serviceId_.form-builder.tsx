@@ -5,7 +5,6 @@ import type { Id } from "@convex/_generated/dataModel";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
 	AlignLeft,
-	ArrowLeft,
 	Calendar,
 	CheckSquare,
 	Eye,
@@ -20,19 +19,15 @@ import {
 	Sparkles,
 	Trash2,
 	Type,
+	Wrench,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -308,45 +303,37 @@ function FormBuilderPage() {
 	}
 
 	return (
-		<div className="flex flex-1 flex-col gap-6 p-4 pt-6">
+		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
 			{/* Header */}
-			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={() => navigate({ to: "/services" })}
-					>
-						<ArrowLeft className="mr-2 h-4 w-4" />
-						Retour
-					</Button>
-					<div>
-						<h1 className="text-2xl font-bold">Formulaire de demande</h1>
-						<p className="text-muted-foreground">{service?.name?.fr}</p>
+			<PageHeader
+				icon={<Wrench className="h-5 w-5" />}
+				title="Formulaire de demande"
+				subtitle={service?.name?.fr}
+				showBackButton
+				onBack={() => navigate({ to: "/services" })}
+				actions={
+					<div className="flex gap-2">
+						<Button variant="outline" onClick={() => console.log(toJsonSchema())}>
+							<Eye className="mr-2 h-4 w-4" />
+							Aperçu
+						</Button>
+						<Button onClick={handleSave} disabled={isSaving || isLoading}>
+							<Save className="mr-2 h-4 w-4" />
+							{isSaving ? "Enregistrement..." : "Enregistrer"}
+						</Button>
 					</div>
-				</div>
-				<div className="flex gap-2">
-					<Button variant="outline" onClick={() => console.log(toJsonSchema())}>
-						<Eye className="mr-2 h-4 w-4" />
-						Aperçu
-					</Button>
-					<Button onClick={handleSave} disabled={isSaving || isLoading}>
-						<Save className="mr-2 h-4 w-4" />
-						{isSaving ? "Enregistrement..." : "Enregistrer"}
-					</Button>
-				</div>
-			</div>
+				}
+			/>
 
 			<div className="grid grid-cols-12 gap-6 flex-1">
 				{/* Left Sidebar - Field Types */}
 				<div className="col-span-3 space-y-4">
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm font-medium">
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<h3 className="text-sm font-medium mb-3">
 								Ajouter un champ
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="grid grid-cols-2 gap-2">
+							</h3>
+							<div className="grid grid-cols-2 gap-2">
 							<ScrollArea className="h-full">
 								{FIELD_TYPES.map(({ type, icon: Icon, label }) => (
 									<Button
@@ -361,18 +348,17 @@ function FormBuilderPage() {
 									</Button>
 								))}
 							</ScrollArea>
-						</CardContent>
-					</Card>
+							</div>
+						</div>
+					</FlatCard>
 
 					{/* AI Assistant */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm font-medium flex items-center gap-2">
+					<FlatCard>
+						<div className="p-3 lg:p-4 space-y-3">
+							<h3 className="text-sm font-medium flex items-center gap-2">
 								<Sparkles className="h-4 w-4 text-yellow-500" />
 								Assistant IA
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-3">
+							</h3>
 							<Textarea
 								placeholder="Décrivez le service ou collez sa description... L'IA générera les champs appropriés."
 								value={aiPrompt}
@@ -387,19 +373,17 @@ function FormBuilderPage() {
 							>
 								{isGenerating ? "Génération..." : "Générer le formulaire"}
 							</Button>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</div>
 
 				{/* Center - Form Preview */}
 				<div className="col-span-5">
-					<Card className="h-full">
-						<CardHeader>
-							<CardTitle className="text-sm font-medium">
+					<FlatCard className="h-full">
+						<div className="p-3 lg:p-4 space-y-2">
+							<h3 className="text-sm font-medium mb-3">
 								Champs du formulaire
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-2">
+							</h3>
 							{fields.length === 0 ? (
 								<div className="text-center py-12 text-muted-foreground">
 									<p>Aucun champ ajouté</p>
@@ -455,19 +439,17 @@ function FormBuilderPage() {
 									)
 								})
 							)}
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</div>
 
 				{/* Right Sidebar - Field Editor */}
 				<div className="col-span-4">
-					<Card className="h-full">
-						<CardHeader>
-							<CardTitle className="text-sm font-medium">
+					<FlatCard className="h-full">
+						<div className="p-3 lg:p-4">
+							<h3 className="text-sm font-medium mb-3">
 								{selectedField ? "Éditer le champ" : "Sélectionnez un champ"}
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
+							</h3>
 							{selectedField ? (
 								<div className="space-y-4">
 									{/* Labels */}
@@ -658,8 +640,8 @@ function FormBuilderPage() {
 									Sélectionnez un champ pour l'éditer
 								</p>
 							)}
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</div>
 			</div>
 		</div>

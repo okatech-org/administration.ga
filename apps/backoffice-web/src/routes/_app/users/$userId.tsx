@@ -34,13 +34,9 @@ import { UserModulesDialog } from "@/components/admin/user-modules-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
+import { SectionHeader } from "@/components/design-system/section-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { MODULE_REGISTRY, type ModuleCodeValue } from "@convex/lib/moduleCodes";
@@ -159,7 +155,7 @@ function UserDetailPage() {
 
 	if (isLoadingUser) {
 		return (
-			<div className="flex flex-1 flex-col gap-4 p-4 pt-6">
+			<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
 				<Skeleton className="h-8 w-32" />
 				<div className="flex gap-4">
 					<Skeleton className="h-20 w-20 rounded-full" />
@@ -174,7 +170,7 @@ function UserDetailPage() {
 
 	if (!user) {
 		return (
-			<div className="flex flex-1 flex-col gap-4 p-4 pt-6">
+			<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
 				<Button
 					variant="ghost"
 					size="sm"
@@ -197,30 +193,16 @@ function UserDetailPage() {
 	const roleLabel = ROLE_LABELS[userRole] || "Utilisateur";
 
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-4 pt-6">
+		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
 			{/* Header */}
-			<div className="flex items-center gap-4">
-				<Button
-					variant="ghost"
-					size="sm"
-					onClick={() => navigate({ to: "/users" })}
-				>
-					<ArrowLeft className="mr-2 h-4 w-4" />
-					{t("superadmin.common.back")}
-				</Button>
-			</div>
-
-			{/* User Profile Header */}
-			<div className="flex items-start gap-6">
-				<Avatar className="h-20 w-20">
-					<AvatarImage src={user.profileImageUrl} />
-					<AvatarFallback className="text-2xl">{initials}</AvatarFallback>
-				</Avatar>
-				<div className="flex-1">
-					<div className="flex items-center gap-3 flex-wrap">
-						<h1 className="text-3xl font-bold tracking-tight">
-							{user.firstName} {user.lastName}
-						</h1>
+			<PageHeader
+				icon={<Eye className="h-5 w-5" />}
+				title={`${user.firstName} ${user.lastName}`}
+				subtitle={user.email}
+				showBackButton
+				onBack={() => navigate({ to: "/users" })}
+				actions={
+					<div className="flex items-center gap-2 flex-wrap">
 						<Badge variant={user.isActive ? "default" : "outline"}>
 							{user.isActive
 								? t("superadmin.common.active")
@@ -239,6 +221,16 @@ function UserDetailPage() {
 							</Badge>
 						)}
 					</div>
+				}
+			/>
+
+			{/* User Profile Header */}
+			<div className="flex items-start gap-6">
+				<Avatar className="h-20 w-20">
+					<AvatarImage src={user.profileImageUrl} />
+					<AvatarFallback className="text-2xl">{initials}</AvatarFallback>
+				</Avatar>
+				<div className="flex-1">
 					<p className="text-muted-foreground flex items-center gap-2 mt-1">
 						<Mail className="h-4 w-4" />
 						{user.email}
@@ -248,10 +240,10 @@ function UserDetailPage() {
 
 			{/* Quick Actions Bar */}
 			{canManage && (
-				<Card className="border-dashed">
-					<CardContent className="flex flex-wrap items-center gap-2 py-3">
+				<FlatCard>
+					<div className="flex flex-wrap items-center gap-2 p-3 lg:p-4">
 						<span className="text-xs font-medium text-muted-foreground mr-2">Actions rapides</span>
-						
+
 						{isTrashed ? (
 							<Button
 								variant="outline"
@@ -319,20 +311,18 @@ function UserDetailPage() {
 								</Button>
 							</>
 						)}
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			)}
 
 			<div className="grid gap-4 md:grid-cols-2">
 				{/* Details Card */}
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
-							<Shield className="h-5 w-5" />
-							{t("superadmin.users.details.infos")}
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<SectionHeader
+							icon={<Shield className="h-4 w-4" />}
+							title={t("superadmin.users.details.infos")}
+						/>
 						<dl className="grid gap-3">
 							{user.phone && (
 								<div className="flex items-center gap-2">
@@ -375,21 +365,19 @@ function UserDetailPage() {
 								</dd>
 							</div>
 						</dl>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 
 				{/* Security & Role Card */}
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
-							<ShieldCheck className="h-5 w-5" />
-							Sécurité & Rôle
-						</CardTitle>
-						<CardDescription>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<SectionHeader
+							icon={<ShieldCheck className="h-4 w-4" />}
+							title="Sécurité & Rôle"
+						/>
+						<p className="text-xs text-muted-foreground mb-3">
 							Informations de sécurité et niveau d'accès
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
+						</p>
 						<dl className="grid gap-3">
 							<div className="flex items-center justify-between">
 								<dt className="text-sm text-muted-foreground">Rôle plateforme</dt>
@@ -443,22 +431,20 @@ function UserDetailPage() {
 							{/* PIN Code Status */}
 							<PinStatusRow userId={userId as Id<"users">} />
 						</dl>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</div>
 
 			{/* Organizations Card */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2">
-						<Building2 className="h-5 w-5" />
-						{t("superadmin.users.details.organizations")}
-					</CardTitle>
-					<CardDescription>
+			<FlatCard>
+				<div className="p-3 lg:p-4">
+					<SectionHeader
+						icon={<Building2 className="h-4 w-4" />}
+						title={t("superadmin.users.details.organizations")}
+					/>
+					<p className="text-xs text-muted-foreground mb-3">
 						{t("superadmin.users.details.orgMembership")}
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
+					</p>
 					{isLoadingMemberships ? (
 						<div className="space-y-2">
 							<Skeleton className="h-10 w-full" />
@@ -532,24 +518,22 @@ function UserDetailPage() {
 							{t("superadmin.users.details.noOrg")}
 						</p>
 					)}
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* Modules Card (Back-office/Agent users only) */}
 			{isBackOfficeOrAgent && moduleData && (
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
-							<Layers className="h-5 w-5" />
-							Modules autorisés
-						</CardTitle>
-						<CardDescription>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<SectionHeader
+							icon={<Layers className="h-4 w-4" />}
+							title="Modules autorisés"
+						/>
+						<p className="text-xs text-muted-foreground mb-3">
 							{moduleData.allowedModules
 								? `${moduleData.allowedModules.length} modules activés sur ${moduleData.allModules.length}`
 								: "Tous les modules sont accessibles"}
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
+						</p>
 						{moduleData.allowedModules ? (
 							<div className="flex flex-wrap gap-1.5">
 								{moduleData.allowedModules.map((code: string) => {
@@ -572,19 +556,20 @@ function UserDetailPage() {
 								 Aucune restriction — accès à tous les modules
 							</p>
 						)}
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			)}
 
 			{/* Activity History */}
-			<Card>
-				<CardHeader>
-					<CardTitle>{t("superadmin.users.details.activity")}</CardTitle>
-					<CardDescription>
+			<FlatCard>
+				<div className="p-3 lg:p-4">
+					<SectionHeader
+						icon={<Calendar className="h-4 w-4" />}
+						title={t("superadmin.users.details.activity")}
+					/>
+					<p className="text-xs text-muted-foreground mb-3">
 						{t("superadmin.users.details.lastActions")}
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
+					</p>
 					{isLoadingLogs ? (
 						<div className="space-y-2">
 							<Skeleton className="h-8 w-full" />
@@ -615,8 +600,8 @@ function UserDetailPage() {
 							{t("superadmin.users.details.noActivity")}
 						</p>
 					)}
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* Dialogs */}
 			{editDiploMembership && (

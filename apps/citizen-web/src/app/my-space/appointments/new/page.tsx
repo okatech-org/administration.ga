@@ -18,13 +18,7 @@ import {
 import { PageHeader } from "@/components/my-space/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import {
 	useAuthenticatedConvexQuery,
 	useAuthenticatedPaginatedQuery,
@@ -228,17 +222,17 @@ export default function NewAppointmentPage() {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.2, delay: 0.1 }}
 				>
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
+					<FlatCard>
+						<div className="p-3 lg:p-4 pb-0">
+							<h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight">
 								<FileText className="h-5 w-5" />
 								{t("appointments.new.selectRequest")}
-							</CardTitle>
-							<CardDescription>
+							</h3>
+							<p className="text-sm text-muted-foreground mt-1.5">
 								{t("appointments.new.selectRequestDesc")}
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
+							</p>
+						</div>
+						<div className="p-3 lg:p-4">
 							{eligibleRequests.length === 0 ? (
 								<div className="text-center py-8 text-muted-foreground">
 									<FileText className="h-12 w-12 mx-auto mb-4 opacity-30" />
@@ -258,7 +252,7 @@ export default function NewAppointmentPage() {
 											type="button"
 											key={request._id}
 											onClick={() => handleSelectRequest(request._id)}
-											className={`w-full p-4 rounded-lg border text-left transition-all hover:border-primary/50 hover:bg-muted/50 ${
+											className={`w-full p-4 rounded-lg border text-left transition-all active:scale-[0.97] transition-transform hover:bg-muted/50 ${
 												selectedRequestId === request._id
 													? "border-primary bg-primary/5"
 													: ""
@@ -299,8 +293,8 @@ export default function NewAppointmentPage() {
 									))}
 								</div>
 							)}
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</motion.div>
 			)}
 
@@ -331,14 +325,14 @@ export default function NewAppointmentPage() {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.2, delay: 0.1 }}
 				>
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
+					<FlatCard>
+						<div className="p-3 lg:p-4 pb-0">
+							<h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight">
 								<Check className="h-5 w-5" />
 								{t("appointments.new.confirm")}
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
+							</h3>
+						</div>
+						<div className="p-3 lg:p-4 space-y-4">
 							<div className="bg-muted/50 p-4 rounded-lg space-y-3">
 								<div className="flex items-center gap-3">
 									<FileText className="h-5 w-5 text-primary" />
@@ -388,8 +382,8 @@ export default function NewAppointmentPage() {
 									{t("appointments.new.confirm")}
 								</Button>
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</motion.div>
 			)}
 		</div>

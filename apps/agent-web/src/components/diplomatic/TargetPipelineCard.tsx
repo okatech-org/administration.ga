@@ -23,12 +23,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { cn } from "@/lib/utils";
 import type { PipelinePhase } from "./PipelineStepper";
 
@@ -126,17 +121,17 @@ export function TargetPipelineCard({
       params={{ targetId: target._id }}
       className="block"
     >
-      <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-        <CardHeader className="pb-2 space-y-1.5">
+      <FlatCard className="cursor-pointer group">
+        <div className="p-3 lg:p-4 pb-2 space-y-1.5">
           {/* Ligne 1 : Icone + Nom + Bouton archive */}
           <div className="flex items-start gap-2">
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <TpIcon className="h-4 w-4 text-primary" />
             </div>
             <div className="min-w-0 flex-1">
-              <CardTitle className="text-sm font-medium line-clamp-2 leading-tight">
+              <p className="text-sm font-medium line-clamp-2 leading-tight">
                 {target.name}
-              </CardTitle>
+              </p>
               <p className="text-[10px] text-muted-foreground mt-0.5">
                 {tp.label}
               </p>
@@ -166,9 +161,9 @@ export function TargetPipelineCard({
             )}
             <Badge className={cn("text-[9px]", st.color)}>{st.label}</Badge>
           </div>
-        </CardHeader>
+        </div>
 
-        <CardContent className="space-y-2.5">
+        <div className="px-3 lg:px-4 pb-3 lg:pb-4 space-y-2.5">
           {/* Section metadata structuree */}
           <div className="space-y-1">
             {target.sector && (
@@ -279,8 +274,8 @@ export function TargetPipelineCard({
                 </Button>
               );
             })()}
-        </CardContent>
-      </Card>
+        </div>
+      </FlatCard>
     </Link>
   );
 }

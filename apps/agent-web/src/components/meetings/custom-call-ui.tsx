@@ -199,10 +199,10 @@ function ControlButton({
 	pending?: boolean;
 }) {
 	const buttonClasses = danger
-		? "w-14 h-14 rounded-full flex items-center justify-center bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/30"
+		? "w-14 h-14 rounded-full flex items-center justify-center bg-rose-600 hover:bg-rose-700 text-white active:scale-[0.97] transition-transform"
 		: active
-			? "w-14 h-14 rounded-full flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 text-white"
-			: "w-14 h-14 rounded-full flex items-center justify-center bg-rose-600/80 hover:bg-rose-700 text-white";
+			? "w-14 h-14 rounded-full flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 text-white active:scale-[0.97] transition-transform"
+			: "w-14 h-14 rounded-full flex items-center justify-center bg-rose-600/80 hover:bg-rose-700 text-white active:scale-[0.97] transition-transform";
 
 	return (
 		<button
@@ -411,7 +411,7 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 									{pipVisible ? t("meetings.hide", "Masquer") : t("meetings.show", "Afficher")}
 								</button>
 								<div
-									className={`w-28 h-36 md:w-auto md:h-full rounded-xl md:rounded-2xl bg-zinc-900 overflow-hidden shadow-2xl md:shadow-none border border-zinc-800 md:border-0 transition-all duration-200 ${pipVisible ? "opacity-100 scale-100" : "opacity-0 scale-75 pointer-events-none md:opacity-100 md:scale-100 md:pointer-events-auto"}`}
+									className={`w-28 h-36 md:w-auto md:h-full rounded-xl md:rounded-2xl bg-zinc-900 overflow-hidden border border-zinc-800 md:border-0 transition-all duration-200 ${pipVisible ? "opacity-100 scale-100" : "opacity-0 scale-75 pointer-events-none md:opacity-100 md:scale-100 md:pointer-events-auto"}`}
 									style={{ position: "relative" }}
 								>
 									{localHasVideo ? (
@@ -450,7 +450,7 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 							{/* Pulsing avatar */}
 							<div className="relative flex items-center justify-center">
 								<div className="absolute w-32 h-32 bg-emerald-500/15 rounded-full animate-ping" />
-								<div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-emerald-500/30 flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(16,185,129,0.15)]">
+								<div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-emerald-500/30 flex items-center justify-center relative z-10 ">
 									<User className="w-12 h-12 text-emerald-400/80" />
 								</div>
 							</div>

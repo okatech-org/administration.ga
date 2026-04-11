@@ -36,8 +36,11 @@ function splitRepName(name: string): { type: string; location: string } {
  * MobileCallFAB — Floating "Appeler" button on the right edge (mobile only).
  * When tapped, opens a bottom sheet displaying all user representations
  * with their call buttons, mirroring the desktop AssistanceContactsWidget.
+ *
+ * variant="horizontal" (default) — original pill shape on dashboard
+ * variant="vertical" — vertical tab shape on Actualités page
  */
-export function MobileCallFAB() {
+export function MobileCallFAB({ variant = "horizontal" }: { variant?: "horizontal" | "vertical" }) {
 	const [isOpen, setIsOpen] = useState(false)
 
 	const { data: representations, isPending } = useAuthenticatedConvexQuery(
@@ -57,7 +60,7 @@ export function MobileCallFAB() {
 			? { requestId: latestRegistration.requestId }
 			: "skip",
 	)
-	const orgName = (registrationRequest?.org as any)?.name
+	const orgName = registrationRequest?.org?.name
 
 	const items = representations ?? []
 
@@ -75,19 +78,32 @@ export function MobileCallFAB() {
 
 	return (
 		<>
-			{/* Floating button — right edge, horizontal, at hero card level */}
+			{/* Floating button — right edge */}
 			<motion.button
 				initial={{ opacity: 0, x: 20 }}
 				animate={{ opacity: 1, x: 0 }}
 				transition={{ type: "spring", damping: 20, stiffness: 300, delay: 0.15 }}
 				onClick={() => setIsOpen(true)}
-				className="fixed right-0 z-50 flex items-center gap-1.5 rounded-l-full bg-[#0072B9]/15 pl-3 pr-2.5 py-3 shadow-sm lg:hidden"
-				style={{ top: "calc(env(safe-area-inset-top, 0px) + 130px)" }}
+				className={cn(
+					"fixed right-0 z-50 lg:hidden",
+					variant === "vertical"
+						? "top-[calc(33.33%-70px)] flex -translate-y-1/2 items-center justify-center rounded-l-full bg-[#0072B9]/25 px-1 py-8 text-xs font-bold tracking-widest text-[#0072B9] uppercase dark:bg-[#0072B9]/20 dark:text-[#5BA8E0]"
+						: "flex items-center gap-1.5 rounded-l-full bg-[#0072B9]/15 pl-3 pr-2.5 py-3"
+				)}
+				style={variant === "horizontal" ? { top: "calc(env(safe-area-inset-top, 0px) + 130px)" } : undefined}
 			>
-				<Phone className="h-4 w-4 text-[#0072B9] shrink-0" />
-				<span className="text-sm font-bold text-[#0072B9] whitespace-nowrap">
-					Appeler
-				</span>
+				{variant === "vertical" ? (
+					<span className="block rotate-180 whitespace-nowrap [writing-mode:vertical-rl]">
+						Appeler
+					</span>
+				) : (
+					<>
+						<Phone className="h-4 w-4 text-[#0072B9] shrink-0" />
+						<span className="text-sm font-bold text-[#0072B9] whitespace-nowrap">
+							Appeler
+						</span>
+					</>
+				)}
 			</motion.button>
 
 			{/* Bottom sheet overlay */}
@@ -110,7 +126,7 @@ export function MobileCallFAB() {
 							animate={{ y: 0 }}
 							exit={{ y: "100%" }}
 							transition={{ type: "spring", damping: 28, stiffness: 350 }}
-							className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl bg-[#F4F3ED] dark:bg-[#2B2A28]/27 shadow-2xl lg:hidden"
+							className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl bg-(--citizen-surface-card) shadow-2xl lg:hidden"
 						>
 							{/* Drag handle */}
 							<div className="flex justify-center pt-3 pb-1">

@@ -22,7 +22,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import {
 	Dialog,
 	DialogContent,
@@ -184,8 +184,8 @@ export default function AssociationsPage() {
 								))}
 							</div>
 						) : (
-							<Card>
-								<CardContent className="flex flex-col items-center justify-center py-12">
+							<FlatCard>
+								<div className="p-3 lg:p-4 flex flex-col items-center justify-center py-12">
 									<Users className="h-16 w-16 text-muted-foreground/30 mb-4" />
 									<h3 className="text-lg font-medium text-muted-foreground">
 										{t("associations.empty.mine.title")}
@@ -196,8 +196,8 @@ export default function AssociationsPage() {
 											"Creez ou rejoignez une association pour la voir ici.",
 										)}
 									</p>
-								</CardContent>
-							</Card>
+								</div>
+							</FlatCard>
 						)}
 					</motion.div>
 				</TabsContent>
@@ -257,8 +257,8 @@ export default function AssociationsPage() {
 								))}
 							</div>
 						) : (
-							<Card>
-								<CardContent className="flex flex-col items-center justify-center py-12">
+							<FlatCard>
+								<div className="p-3 lg:p-4 flex flex-col items-center justify-center py-12">
 									<Globe className="h-16 w-16 text-muted-foreground/30 mb-4" />
 									<h3 className="text-lg font-medium text-muted-foreground">
 										{searchQuery.trim()
@@ -270,8 +270,8 @@ export default function AssociationsPage() {
 											? t("associations.empty.searchHint", "Essayez avec un autre terme de recherche")
 											: t("associations.empty.discover.description", "Soyez le premier a creer une association!")}
 									</p>
-								</CardContent>
-							</Card>
+								</div>
+							</FlatCard>
 						)}
 					</motion.div>
 				</TabsContent>
@@ -328,8 +328,8 @@ function MyAssociationCard({ association }: { association: Association }) {
 	};
 
 	return (
-		<Card className="group hover:shadow-md transition-shadow">
-			<CardHeader className="pb-2">
+		<FlatCard className="group">
+			<div className="p-3 lg:p-4 pb-0">
 				<div className="flex items-start justify-between">
 					<div className="flex items-center gap-3">
 						<div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -344,7 +344,7 @@ function MyAssociationCard({ association }: { association: Association }) {
 							)}
 						</div>
 						<div>
-							<CardTitle className="text-lg">{association.name}</CardTitle>
+							<div className="text-lg font-semibold">{association.name}</div>
 							<Badge variant="secondary" className="mt-1">
 								{associationTypeLabels[association.associationType]}
 							</Badge>
@@ -359,8 +359,8 @@ function MyAssociationCard({ association }: { association: Association }) {
 						</Badge>
 					)}
 				</div>
-			</CardHeader>
-			<CardContent className="space-y-3">
+			</div>
+			<div className="p-3 lg:p-4 space-y-3">
 				{association.description && (
 					<p className="text-sm text-muted-foreground line-clamp-2">
 						{association.description}
@@ -430,8 +430,8 @@ function MyAssociationCard({ association }: { association: Association }) {
 						</DialogContent>
 					</Dialog>
 				</div>
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }
 
@@ -454,10 +454,10 @@ function DiscoverAssociationCard({ association }: { association: Association }) 
 	return (
 		<Link
 			href={`/my-space/associations/${association.slug}`}
-			className="block"
+			className="block active:scale-[0.97] transition-transform"
 		>
-			<Card className="group hover:shadow-md hover:border-primary/30 transition-all cursor-pointer h-full overflow-hidden">
-				<CardHeader className="pb-2">
+			<FlatCard className="group cursor-pointer h-full overflow-hidden">
+				<div className="p-3 lg:p-4 pb-0">
 					<div className="flex items-center gap-3">
 						<div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
 							{association.logoUrl ? (
@@ -471,24 +471,24 @@ function DiscoverAssociationCard({ association }: { association: Association }) 
 							)}
 						</div>
 						<div className="flex-1 min-w-0">
-							<CardTitle className="text-base group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+							<div className="text-base font-semibold group-hover:text-primary transition-colors line-clamp-2 leading-tight">
 								{association.name}
-							</CardTitle>
+							</div>
 							<Badge variant="secondary" className="mt-1 text-xs">
 								{associationTypeLabels[association.associationType]}
 							</Badge>
 						</div>
 						<ChevronRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
 					</div>
-				</CardHeader>
-				<CardContent>
+				</div>
+				<div className="p-3 lg:p-4">
 					{association.description && (
 						<p className="text-sm text-muted-foreground line-clamp-2">
 							{association.description}
 						</p>
 					)}
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 		</Link>
 	);
 }

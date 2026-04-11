@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import {
   Select,
   SelectContent,
@@ -75,17 +75,17 @@ export function ProfileActionsCard({
   const [selectedRole, setSelectedRole] = useState(user?.role ?? "citizen");
 
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-2 pt-3 px-4">
-        <CardTitle className="text-xs font-bold flex items-center gap-2">
+    <FlatCard>
+      <div className="pb-2 pt-3 px-4">
+        <div className="text-xs font-bold flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-purple-500/10">
             <Settings className="w-3.5 h-3.5 text-purple-500" />
           </div>
           Actions
-        </CardTitle>
-      </CardHeader>
+        </div>
+      </div>
 
-      <CardContent className="p-3 pt-1 space-y-2">
+      <div className="p-3 pt-1 space-y-2">
         {/* === Actions Admin === */}
         {context === "admin" && (
           <>
@@ -240,8 +240,8 @@ export function ProfileActionsCard({
             </button>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </FlatCard>
   );
 }
 

@@ -26,7 +26,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
 import { Switch } from "@/components/ui/switch";
 import {
 	useAuthenticatedConvexQuery,
@@ -94,8 +94,8 @@ export function OrgCorrespondanceConfigTab({ orgId }: OrgCorrespondanceConfigTab
 	// Pas encore configuré — proposer l'initialisation
 	if (!configs || configs.length === 0) {
 		return (
-			<Card className="border-dashed">
-				<CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+			<FlatCard className="border border-dashed border-border/50">
+				<div className="flex flex-col items-center justify-center py-12 text-center space-y-4 p-3 lg:p-4">
 					<div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
 						<Mail className="h-7 w-7 text-primary" />
 					</div>
@@ -110,8 +110,8 @@ export function OrgCorrespondanceConfigTab({ orgId }: OrgCorrespondanceConfigTab
 						{isInitializing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
 						Initialiser les types standard
 					</Button>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 		);
 	}
 
@@ -144,7 +144,7 @@ export function OrgCorrespondanceConfigTab({ orgId }: OrgCorrespondanceConfigTab
 					const wf = config.workflowConfig;
 
 					return (
-						<Card
+						<FlatCard
 							key={config._id}
 							className={cn(
 								"transition-all",
@@ -275,7 +275,7 @@ export function OrgCorrespondanceConfigTab({ orgId }: OrgCorrespondanceConfigTab
 									</div>
 								</div>
 							)}
-						</Card>
+						</FlatCard>
 					);
 				})}
 			</div>

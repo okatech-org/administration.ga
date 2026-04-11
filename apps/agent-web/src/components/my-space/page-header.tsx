@@ -3,14 +3,17 @@ import { ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
 	/** Page title */
 	title: ReactNode;
 	/** Optional subtitle displayed below the title */
 	subtitle?: ReactNode;
-	/** Optional icon displayed before the title */
+	/** Optional icon displayed before the title — wrapped in a colored box */
 	icon?: ReactNode;
+	/** Background class for the icon box. Defaults to design system S2. */
+	iconBgClass?: string;
 	/** Actions to display on the right side */
 	actions?: ReactNode;
 	/** Show a back button that navigates to the previous page */
@@ -20,13 +23,14 @@ interface PageHeaderProps {
 }
 
 /**
- * Reusable page header component for MySpace pages.
- * Provides consistent styling with animated entry, title, subtitle, and action slots.
+ * Reusable page header — Citizen Design System v3.0.
+ * Animated entry, icon in S2 box, title, subtitle, actions.
  */
 export function PageHeader({
 	title,
 	subtitle,
 	icon,
+	iconBgClass = "bg-[#EBE6DC] dark:bg-[#383633]",
 	actions,
 	showBackButton = false,
 	onBack,
@@ -54,14 +58,18 @@ export function PageHeader({
 						variant="ghost"
 						size="icon"
 						onClick={handleBack}
-						className="-ml-1 mt-0.5"
+						className="-ml-1 mt-0.5 active:scale-[0.97] transition-transform"
 					>
 						<ArrowLeft className="h-5 w-5" />
 					</Button>
 				)}
 				<div>
 					<h1 className="text-lg md:text-2xl font-bold flex items-center gap-2">
-						{icon}
+						{icon && (
+							<div className={cn("p-1.5 rounded-md", iconBgClass)}>
+								{icon}
+							</div>
+						)}
 						{title}
 					</h1>
 					{subtitle && (

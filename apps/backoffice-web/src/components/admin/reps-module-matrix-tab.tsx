@@ -9,13 +9,7 @@ import { useMemo } from "react";
 import type { Id } from "@convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
 import { Switch } from "@/components/ui/switch";
 import { Check, Layers, Loader2, Lock, Save } from "lucide-react";
 import {
@@ -136,15 +130,15 @@ export function RepsModuleMatrixTab({
 		selectedOrgType !== null;
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle className="text-base flex items-center gap-2">
+		<FlatCard>
+			<div className="p-3 lg:p-4">
+				<p className="text-base font-semibold flex items-center gap-2">
 					<Layers className="h-4 w-4 text-primary" />
 					{lang === "fr"
 						? "Matrice modules \u00d7 repr\u00e9sentations"
 						: "Module \u00d7 representation matrix"}
-				</CardTitle>
-				<CardDescription>
+				</p>
+				<p className="text-sm text-muted-foreground">
 					{lang === "fr"
 						? "Distribution des modules par type de repr\u00e9sentation"
 						: "Module distribution by representation type"}
@@ -156,7 +150,7 @@ export function RepsModuleMatrixTab({
 								: "Click to toggle"}
 						</span>
 					)}
-				</CardDescription>
+				</p>
 				{/* Filtre par type */}
 				<div className="flex flex-wrap items-center gap-1.5 mt-3">
 					<button
@@ -200,8 +194,8 @@ export function RepsModuleMatrixTab({
 						</button>
 					))}
 				</div>
-			</CardHeader>
-			<CardContent>
+			</div>
+			<div className="p-3 lg:p-4 pt-0">
 				<div className="space-y-4">
 					{(
 						Object.entries(modulesByCategory) as [
@@ -400,7 +394,7 @@ export function RepsModuleMatrixTab({
 						</div>
 					</div>
 				)}
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }

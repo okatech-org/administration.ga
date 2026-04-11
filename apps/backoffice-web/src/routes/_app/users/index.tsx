@@ -18,6 +18,9 @@ import {
   CONTINENT_META,
   type Continent,
 } from "@/lib/country-utils";
+import { PageHeader } from "@/components/design-system/page-header";
+import { TabSwitcher } from "@/components/design-system/tab-switcher";
+import { FlatCard } from "@/components/design-system/flat-card";
 
 type ViewMode = "accounts" | "profiles" | "diplomatic";
 
@@ -329,44 +332,42 @@ function UsersPage() {
   const showContinentTabs = (activeTab === "all" || activeTab === "corps" || activeTab === "agents") && continentData.continents.length > 1;
   const activeColumns = activeTab === "corps" ? corpsAdminColumns : columns;
 
+  // Construire le sous-titre dynamique selon la vue active
+  const subtitleByView: Record<ViewMode, string> = {
+    accounts: "Gestion des comptes de la plateforme",
+    profiles: "Profils consulaires des citoyens et ressortissants",
+    diplomatic: "Profils diplomatiques du corps administratif",
+  };
+
+  // Tabs pour le switcher de vue principale
+  const viewModeTabs = VIEW_MODES.map((mode) => ({
+    key: mode.id,
+    label: mode.label,
+    icon: mode.icon,
+  }));
+
+  // Tabs pour les roles utilisateur (onglet comptes)
+  const userRoleTabs = TABS.map((tab) => ({
+    key: tab.id,
+    label: tab.label,
+    count: counts[tab.id],
+  }));
+
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Comptes & Profils
-          </h1>
-          <p className="text-muted-foreground">
-            {view === "accounts" && "Gestion des comptes de la plateforme"}
-            {view === "profiles" && "Profils consulaires des citoyens et ressortissants"}
-            {view === "diplomatic" && "Profils diplomatiques du corps administratif"}
-          </p>
-        </div>
-      </div>
+    <div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+      <PageHeader
+        icon={<UsersIcon className="h-5 w-5" />}
+        title="Comptes & Profils"
+        subtitle={subtitleByView[view]}
+      />
 
       {/* ── View Toggle (3 vues principales) ── */}
-      <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl w-fit">
-        {VIEW_MODES.map((mode) => {
-          const Icon = mode.icon;
-          const isActive = view === mode.id;
-          return (
-            <button
-              key={mode.id}
-              type="button"
-              onClick={() => navigate({ search: { view: mode.id } })}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                isActive
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/50",
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {mode.label}
-            </button>
-          );
-        })}
-      </div>
+      <TabSwitcher
+        tabs={viewModeTabs}
+        activeTab={view}
+        onTabChange={(key) => navigate({ search: { view: key as ViewMode } })}
+        className="w-fit"
+      />
 
       {/* ── Vue Profils Consulaires ── */}
       {view === "profiles" && <ProfilesView />}
@@ -378,39 +379,18 @@ function UsersPage() {
       {view === "accounts" && <>
 
       {/* Main Tabs */}
-      <div className="flex flex-wrap gap-1.5 p-1 bg-muted/50 rounded-xl">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => {
-              setActiveTab(tab.id);
-              setActiveContinent(null);
-              setActiveBackOfficeRole(null);
-              setActiveCorpsCountry(null);
-              setActiveCorpsOrg(null);
-            }}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
-              activeTab === tab.id
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/50",
-            )}
-          >
-            <span>{tab.emoji}</span>
-            <span>{tab.label}</span>
-            <Badge
-              variant="secondary"
-              className={cn(
-                "ml-0.5 h-5 min-w-[20px] px-1.5 text-[10px]",
-                activeTab === tab.id && "bg-primary/10 text-primary",
-              )}
-            >
-              {counts[tab.id]}
-            </Badge>
-          </button>
-        ))}
-      </div>
+      <TabSwitcher
+        tabs={userRoleTabs}
+        activeTab={activeTab}
+        onTabChange={(key) => {
+          setActiveTab(key as UserTab);
+          setActiveContinent(null);
+          setActiveBackOfficeRole(null);
+          setActiveCorpsCountry(null);
+          setActiveCorpsOrg(null);
+        }}
+        className="flex-wrap"
+      />
 
       {/* Continent Sub-Tabs (on "Tous", "Corps Admin" & "Agents" tabs) */}
       {showContinentTabs && (
@@ -562,7 +542,7 @@ function UsersPage() {
             className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all",
               !activeBackOfficeRole
-                ? "bg-primary/10 text-primary border-primary/30 shadow-sm"
+                ? "bg-primary/10 text-primary border-primary/30"
                 : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/50",
             )}
           >
@@ -583,7 +563,7 @@ function UsersPage() {
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all",
                   isActive
-                    ? cn(meta.color, "shadow-sm")
+                    ? cn(meta.color)
                     : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/50",
                 )}
               >
@@ -607,7 +587,7 @@ function UsersPage() {
             className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all",
               !activeBackOfficeRole
-                ? "bg-primary/10 text-primary border-primary/30 shadow-sm"
+                ? "bg-primary/10 text-primary border-primary/30"
                 : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/50",
             )}
           >
@@ -628,7 +608,7 @@ function UsersPage() {
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all",
                   isActive
-                    ? cn(meta.color, "shadow-sm")
+                    ? cn(meta.color)
                     : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/50",
                 )}
               >
@@ -643,14 +623,18 @@ function UsersPage() {
         </div>
       )}
 
-      <DataTable
-        columns={activeColumns}
-        data={filteredUsers}
-        searchKeys={["name", "email", "phone", "residenceCountry"]}
-        searchPlaceholder={t("superadmin.users.filters.searchPlaceholder")}
-        filterableColumns={filterableColumns}
-        isLoading={isPending}
-      />
+      <FlatCard>
+        <div className="p-3 lg:p-4">
+          <DataTable
+            columns={activeColumns}
+            data={filteredUsers}
+            searchKeys={["name", "email", "phone", "residenceCountry"]}
+            searchPlaceholder={t("superadmin.users.filters.searchPlaceholder")}
+            filterableColumns={filterableColumns}
+            isLoading={isPending}
+          />
+        </div>
+      </FlatCard>
 
       </>}
     </div>

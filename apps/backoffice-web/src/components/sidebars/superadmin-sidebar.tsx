@@ -276,9 +276,9 @@ export function SuperadminSidebar({
 			<aside
 				data-slot="sidebar"
 				className={cn(
-					"flex flex-col py-3 px-3 bg-card border border-border h-full overflow-hidden",
-					"rounded-2xl transition-[width] duration-300 ease-in-out",
-					isExpanded ? "w-64 items-stretch" : "w-16 items-center",
+					"flex flex-col py-3 px-3 h-full overflow-hidden",
+					"transition-[width] duration-300 ease-in-out",
+					isExpanded ? "w-64 items-stretch" : "w-[68px] items-center",
 				)}
 			>
 				{/* ─── Logo ─────────────────────────────────── */}
@@ -287,7 +287,7 @@ export function SuperadminSidebar({
 						to="/"
 						className={`flex items-center${isExpanded ? " gap-2" : ""}`}
 					>
-						<div className="size-10 shrink-0 rounded-full bg-white flex items-center justify-center overflow-hidden shadow-sm">
+						<div className="size-10 shrink-0 rounded-full bg-[#FDFCFA] dark:bg-[#21201E] flex items-center justify-center overflow-hidden">
 							<img
 								src="/icons/apple-icon.png"
 								alt="Logo"
@@ -315,7 +315,7 @@ export function SuperadminSidebar({
 				{/* ─── Navigation ───────────────────────────── */}
 				<nav
 					className={cn(
-						"flex flex-col gap-0.5 flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin",
+						"flex flex-col gap-0.5 flex-1 overflow-y-auto overflow-x-hidden citizen-scrollbar",
 						!isExpanded && "items-center",
 					)}
 				>
@@ -327,15 +327,15 @@ export function SuperadminSidebar({
 									className={cn(
 										"my-2",
 										isExpanded
-											? "border-t border-border/40 pt-2"
-											: "border-t border-border/40 pt-2 w-8",
+											? "border-t border-foreground/5 pt-2"
+											: "border-t border-foreground/5 pt-2 w-8",
 									)}
 								/>
 							)}
 
 							{/* Section label (expanded only) */}
 							{isExpanded && (
-								<span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-3 mb-1 block">
+								<span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/70 px-3 mb-1 block">
 									{section.label}
 								</span>
 							)}
@@ -354,8 +354,8 @@ export function SuperadminSidebar({
 												? "w-full justify-start gap-3 px-3 h-9 rounded-xl"
 												: "w-11 h-11 rounded-full",
 											active
-												? "bg-primary/10 text-primary border border-primary/20 font-semibold hover:bg-primary/15 hover:text-primary"
-												: "text-muted-foreground hover:text-foreground hover:bg-muted",
+												? "bg-primary/10 text-primary font-bold hover:bg-primary/15 hover:text-primary"
+												: "text-muted-foreground hover:text-foreground hover:bg-[#EBE6DC]/50 dark:hover:bg-[#383633]/50",
 										)}
 									>
 										<Link to={item.url}>
@@ -390,7 +390,7 @@ export function SuperadminSidebar({
 				{/* ─── Footer Controls ──────────────────────── */}
 				<div
 					className={cn(
-						"flex flex-col gap-1.5 pt-3 border-t border-border/50",
+						"flex flex-col gap-1.5 pt-3 border-t border-foreground/5",
 						!isExpanded && "items-center",
 					)}
 				>
@@ -465,7 +465,7 @@ export function SuperadminSidebar({
 					{/* User info + Logout */}
 					<div
 						className={cn(
-							"flex items-center gap-2 px-2 py-1.5 rounded-lg bg-muted/50",
+							"flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[#EBE6DC]/50 dark:bg-[#383633]/50",
 							!isExpanded && "justify-center px-0 bg-transparent",
 						)}
 					>

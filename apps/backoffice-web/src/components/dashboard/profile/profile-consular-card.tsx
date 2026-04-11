@@ -7,10 +7,11 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { FlatCard } from "@/components/design-system/flat-card";
+import { SectionHeader } from "@/components/design-system/section-header";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 // ─── Props ────────────────────────────────────────────────────
@@ -50,76 +51,70 @@ export function ProfileConsularCard({
   // Pas d'inscription et pas de carte
   if (!latestRegistration && !consularCard) {
     return (
-      <Card className="border-border/50">
-        <CardHeader className="pb-2 pt-3 px-4">
-          <CardTitle className="text-xs font-bold flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-muted">
-              <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
-            </div>
-            Carte Consulaire
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center text-center py-6">
-          <CreditCard className="h-8 w-8 mb-2 text-muted-foreground/20" />
-          <p className="text-[12px] text-muted-foreground">Non inscrit au registre consulaire</p>
-        </CardContent>
-      </Card>
+      <FlatCard>
+        <div className="p-3 lg:p-4">
+          <SectionHeader
+            icon={<CreditCard className="h-3.5 w-3.5" />}
+            iconBgClass="bg-foreground/8 dark:bg-foreground/5"
+            title="Carte Consulaire"
+          />
+          <div className="flex flex-col items-center justify-center text-center py-6">
+            <CreditCard className="h-8 w-8 mb-2 text-muted-foreground/20" />
+            <p className="text-[12px] text-muted-foreground">Non inscrit au registre consulaire</p>
+          </div>
+        </div>
+      </FlatCard>
     );
   }
 
   // Carte expiree sans carte valide
   if (hasExpiredCard && !hasValidCard) {
     return (
-      <Card className="border-border/50">
-        <CardHeader className="pb-2 pt-3 px-4">
-          <CardTitle className="text-xs font-bold flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-red-500/10">
-                <CreditCard className="w-3.5 h-3.5 text-red-500" />
-              </div>
-              Carte Consulaire
-            </div>
-            <Badge variant="destructive" className="text-[9px]">Expiree</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center text-center py-4 gap-2">
-          <CreditCard className="h-8 w-8 text-red-500/30" />
-          <p className="text-[12px] text-muted-foreground">
-            Carte expiree le {fmtDate(consularCard.cardExpiresAt)}
-          </p>
-          <p className="text-[11px] text-muted-foreground">
-            N. {consularCard.cardNumber}
-          </p>
-        </CardContent>
-      </Card>
+      <FlatCard>
+        <div className="p-3 lg:p-4">
+          <SectionHeader
+            icon={<CreditCard className="h-3.5 w-3.5" />}
+            iconBgClass="bg-red-500/10"
+            iconTextClass="text-red-500"
+            title="Carte Consulaire"
+            actions={<Badge variant="destructive" className="text-[9px]">Expiree</Badge>}
+          />
+          <div className="flex flex-col items-center justify-center text-center py-4 gap-2">
+            <CreditCard className="h-8 w-8 text-red-500/30" />
+            <p className="text-[12px] text-muted-foreground">
+              Carte expiree le {fmtDate(consularCard.cardExpiresAt)}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              N. {consularCard.cardNumber}
+            </p>
+          </div>
+        </div>
+      </FlatCard>
     );
   }
 
   // Carte valide — affichage visuel
   if (hasValidCard) {
     return (
-      <Card className="border-border/50 overflow-hidden">
-        <CardHeader className="pb-2 pt-3 px-4">
-          <CardTitle className="text-xs font-bold flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-green-500/10">
-                <CreditCard className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
-              </div>
-              Carte Consulaire
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
-              onClick={() => setIsFlipped(!isFlipped)}
-            >
-              <RotateCcw className="h-3 w-3 mr-1" />
-              {isFlipped ? "Recto" : "Verso"}
-            </Button>
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent className="p-3 pt-0">
+      <FlatCard>
+        <div className="p-3 lg:p-4">
+          <SectionHeader
+            icon={<CreditCard className="h-3.5 w-3.5" />}
+            iconBgClass="bg-green-500/10"
+            iconTextClass="text-green-600 dark:text-green-400"
+            title="Carte Consulaire"
+            actions={
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+                onClick={() => setIsFlipped(!isFlipped)}
+              >
+                <RotateCcw className="h-3 w-3 mr-1" />
+                {isFlipped ? "Recto" : "Verso"}
+              </Button>
+            }
+          />
           {/* Conteneur 3D flip */}
           <div className="w-full flex justify-center perspective-[1000px]">
             <button
@@ -134,7 +129,7 @@ export function ProfileConsularCard({
                 )}
               >
                 {/* Recto */}
-                <div className="absolute inset-0 w-full h-full backface-hidden rounded-xl overflow-hidden shadow-lg border border-border/20">
+                <div className="absolute inset-0 w-full h-full backface-hidden rounded-xl overflow-hidden border border-border/20">
                   <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-emerald-100 via-emerald-50 to-amber-50 dark:from-emerald-900/30 dark:via-emerald-800/20 dark:to-amber-900/20" />
                   <div className="absolute inset-0 p-3.5 flex flex-col justify-between">
                     {/* En-tete */}
@@ -200,10 +195,10 @@ export function ProfileConsularCard({
                 </div>
 
                 {/* Verso */}
-                <div className="absolute inset-0 w-full h-full backface-hidden transform-[rotateY(180deg)] rounded-xl overflow-hidden shadow-lg border border-border/20">
+                <div className="absolute inset-0 w-full h-full backface-hidden transform-[rotateY(180deg)] rounded-xl overflow-hidden border border-border/20">
                   <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-amber-50 via-emerald-50 to-emerald-100 dark:from-amber-900/20 dark:via-emerald-800/20 dark:to-emerald-900/30" />
                   <div className="absolute inset-0 p-4 flex flex-col justify-center items-center">
-                    <div className="bg-white/95 dark:bg-gray-800/95 rounded-lg p-3 text-center max-w-[80%] shadow-sm">
+                    <div className="bg-[#FDFCFA]/95 dark:bg-gray-800/95 rounded-lg p-3 text-center max-w-[80%]">
                       <p className="text-[10px] text-gray-700 dark:text-gray-300 font-medium mb-2 leading-tight">
                         Cette carte est la propriete du Consulat General du Gabon
                       </p>
@@ -238,36 +233,36 @@ export function ProfileConsularCard({
             <FileText className="h-3 w-3" />
             Attestation
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </FlatCard>
     );
   }
 
   // Inscription en cours mais pas de carte delivree
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-2 pt-3 px-4">
-        <CardTitle className="text-xs font-bold flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-amber-500/10">
-              <CreditCard className="w-3.5 h-3.5 text-amber-500" />
-            </div>
-            Carte Consulaire
-          </div>
-          <Badge className="text-[9px] bg-amber-100 text-amber-700 border-amber-200">
-            En cours
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col items-center justify-center text-center py-4 gap-2">
-        <CreditCard className="h-8 w-8 text-amber-500/30" />
-        <p className="text-[12px] text-muted-foreground">Inscription consulaire enregistree</p>
-        {latestRegistration?.matricule && (
-          <p className="text-[11px] font-mono text-muted-foreground">
-            Matricule: {latestRegistration.matricule}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+    <FlatCard>
+      <div className="p-3 lg:p-4">
+        <SectionHeader
+          icon={<CreditCard className="h-3.5 w-3.5" />}
+          iconBgClass="bg-amber-500/10"
+          iconTextClass="text-amber-500"
+          title="Carte Consulaire"
+          actions={
+            <Badge className="text-[9px] bg-amber-100 text-amber-700 border-amber-200">
+              En cours
+            </Badge>
+          }
+        />
+        <div className="flex flex-col items-center justify-center text-center py-4 gap-2">
+          <CreditCard className="h-8 w-8 text-amber-500/30" />
+          <p className="text-[12px] text-muted-foreground">Inscription consulaire enregistree</p>
+          {latestRegistration?.matricule && (
+            <p className="text-[11px] font-mono text-muted-foreground">
+              Matricule: {latestRegistration.matricule}
+            </p>
+          )}
+        </div>
+      </div>
+    </FlatCard>
   );
 }

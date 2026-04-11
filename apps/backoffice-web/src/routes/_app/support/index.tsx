@@ -28,6 +28,11 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { SectionHeader } from "@/components/design-system/section-header";
+import { PageHeader } from "@/components/design-system/page-header";
+import { TabSwitcher } from "@/components/design-system/tab-switcher";
+import type { TabItem } from "@/components/design-system/tab-switcher";
 import { useAuthenticatedPaginatedQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 
@@ -159,24 +164,29 @@ function SuperadminTickets() {
 
 	const totalCount = tickets?.length ?? 0;
 
-	return (
-		<div className="flex min-h-full flex-col gap-6 p-4 md:p-6">
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold tracking-tight">
-						Support & Tickets
-					</h1>
-					<p className="text-muted-foreground text-sm">
-						Gestion globale des tickets d'assistance
-					</p>
-				</div>
-				{totalCount > 0 && (
-					<Badge variant="outline" className="text-sm px-3 py-1 font-medium">
-						{totalCount} ticket{totalCount > 1 ? "s" : ""}
-					</Badge>
-				)}
-			</div>
+	const tabItems: TabItem[] = STATUS_TABS.map((tab) => ({
+		key: tab.key,
+		label: tab.label,
+		count: tab.key === "all" ? totalCount : (statusCounts[tab.key] ?? 0),
+	}));
 
+	return (
+		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+			{/* ── Header ──────────────────── */}
+			<PageHeader
+				icon={<LifeBuoy className="h-5 w-5" />}
+				title="Support & Tickets"
+				subtitle="Gestion globale des tickets d'assistance"
+				actions={
+					totalCount > 0 ? (
+						<Badge variant="outline" className="text-sm px-3 py-1 font-medium">
+							{totalCount} ticket{totalCount > 1 ? "s" : ""}
+						</Badge>
+					) : undefined
+				}
+			/>
+
+			{/* ── Search + Tabs ───────────── */}
 			<div className="space-y-4">
 				<div className="flex flex-col sm:flex-row gap-3">
 					<div className="relative flex-1">
@@ -185,198 +195,168 @@ function SuperadminTickets() {
 							placeholder="Rechercher par référence ou sujet..."
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className="pl-10 h-11 text-sm bg-card border-border shadow-sm max-w-md"
+							className="pl-10 h-11 text-sm border-border max-w-md"
 						/>
 					</div>
 				</div>
 
-				<div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-					{STATUS_TABS.map((tab) => {
-						const isActive = statusFilter === tab.key;
-						const count =
-							tab.key === "all" ? totalCount : (statusCounts[tab.key] ?? 0);
-						const config = getStatusConfig(tab.key);
-
-						return (
-							<button
-								key={tab.key}
-								onClick={() => setStatusFilter(tab.key)}
-								className={cn(
-									"inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 border",
-									isActive
-										? tab.key === "all"
-											? "bg-primary text-primary-foreground border-primary shadow-sm"
-											: `${config.bgClass} ${config.textClass} border-current/20 shadow-sm`
-										: "bg-background hover:bg-muted/60 text-muted-foreground border-transparent hover:border-border/60",
-								)}
-							>
-								{tab.label}
-								{count > 0 && (
-									<span
-										className={cn(
-											"inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold px-1",
-											isActive
-												? tab.key === "all"
-													? "bg-primary-foreground/20 text-primary-foreground"
-													: "bg-current/10"
-												: "bg-muted text-muted-foreground",
-										)}
-									>
-										{count}
-									</span>
-								)}
-							</button>
-						);
-					})}
-				</div>
+				<TabSwitcher
+					tabs={tabItems}
+					activeTab={statusFilter}
+					onTabChange={setStatusFilter}
+				/>
 			</div>
 
-			<div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm overflow-hidden">
-				<Table>
-					<TableHeader>
-						<TableRow className="bg-muted/30 hover:bg-muted/30">
-							<TableHead className="font-semibold">Référence</TableHead>
-							<TableHead className="font-semibold">Sujet</TableHead>
-							<TableHead className="font-semibold">Catégorie</TableHead>
-							<TableHead className="font-semibold">Créé le</TableHead>
-							<TableHead className="font-semibold">Statut</TableHead>
-							<TableHead className="text-right font-semibold">
-								Actions
-							</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{isLoading && (filteredTickets?.length ?? 0) === 0 ? (
-							<TableRow>
-								<TableCell colSpan={6} className="h-32 text-center">
-									<div className="flex flex-col items-center gap-2">
-										<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-										<span className="text-sm text-muted-foreground">
-											Chargement des tickets...
-										</span>
-									</div>
-								</TableCell>
+			{/* ── Table ───────────────────── */}
+			<FlatCard>
+				<div className="p-3 lg:p-4">
+					<SectionHeader icon={<MessageSquare className="h-3.5 w-3.5" />} title="Tickets" />
+					<Table>
+						<TableHeader>
+							<TableRow className="hover:bg-transparent">
+								<TableHead className="font-semibold">Référence</TableHead>
+								<TableHead className="font-semibold">Sujet</TableHead>
+								<TableHead className="font-semibold">Catégorie</TableHead>
+								<TableHead className="font-semibold">Créé le</TableHead>
+								<TableHead className="font-semibold">Statut</TableHead>
+								<TableHead className="text-right font-semibold">
+									Actions
+								</TableHead>
 							</TableRow>
-						) : filteredTickets?.length === 0 ? (
-							<TableRow>
-								<TableCell colSpan={6} className="h-32 text-center">
-									<div className="flex flex-col items-center gap-3 py-8">
-										<div className="rounded-full bg-muted/60 p-3">
-											<Inbox className="h-6 w-6 text-muted-foreground" />
-										</div>
-										<div>
-											<p className="font-medium text-foreground/80">
-												Aucun ticket trouvé
-											</p>
-											<p className="text-xs text-muted-foreground mt-1">
-												Essayez de modifier vos filtres
-											</p>
-										</div>
-									</div>
-								</TableCell>
-							</TableRow>
-						) : (
-							filteredTickets?.map((ticket: any) => {
-								const statusConf = getStatusConfig(ticket.status);
-
-								return (
-									<TableRow
-										key={ticket._id}
-										className="cursor-pointer hover:bg-muted/40 transition-colors group"
-										onClick={() =>
-											navigate({
-												to: `/support/${ticket._id}` as any,
-											})
-										}
-									>
-										<TableCell>
-											<div className="flex items-center gap-2">
-												<div className="rounded-md bg-primary/10 p-1.5">
-													<LifeBuoy className="h-3.5 w-3.5 text-primary" />
-												</div>
-												<span className="font-mono text-xs font-semibold">
-													{ticket.reference}
-												</span>
-											</div>
-										</TableCell>
-
-										<TableCell>
-											<div className="flex flex-col max-w-sm">
-												<span className="text-sm font-medium truncate">
-													{ticket.subject}
-												</span>
-												{ticket.messages?.length > 0 && (
-													<span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-														<MessageSquare className="h-3 w-3" />
-														{ticket.messages.length} réponse
-														{ticket.messages.length > 1 ? "s" : ""}
-													</span>
-												)}
-											</div>
-										</TableCell>
-
-										<TableCell>
-											<Badge variant="secondary" className="font-normal">
-												{t(`support.ticketCategory.${ticket.category}`)}
-											</Badge>
-										</TableCell>
-
-										<TableCell>
-											<div className="flex items-center gap-1.5 text-muted-foreground">
-												<Clock className="h-3.5 w-3.5 shrink-0" />
-												<span className="text-xs whitespace-nowrap">
-													{timeAgo(ticket._creationTime)}
-												</span>
-											</div>
-										</TableCell>
-
-										<TableCell>
-											<span
-												className={cn(
-													"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-													statusConf.bgClass,
-													statusConf.textClass,
-												)}
-											>
-												{statusConf.label}
+						</TableHeader>
+						<TableBody>
+							{isLoading && (filteredTickets?.length ?? 0) === 0 ? (
+								<TableRow>
+									<TableCell colSpan={6} className="h-32 text-center">
+										<div className="flex flex-col items-center gap-2">
+											<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+											<span className="text-sm text-muted-foreground">
+												Chargement des tickets...
 											</span>
-										</TableCell>
+										</div>
+									</TableCell>
+								</TableRow>
+							) : filteredTickets?.length === 0 ? (
+								<TableRow>
+									<TableCell colSpan={6} className="h-32 text-center">
+										<div className="flex flex-col items-center gap-3 py-8">
+											<div className="rounded-full bg-muted/60 p-3">
+												<Inbox className="h-6 w-6 text-muted-foreground" />
+											</div>
+											<div>
+												<p className="font-medium text-foreground/80">
+													Aucun ticket trouvé
+												</p>
+												<p className="text-xs text-muted-foreground mt-1">
+													Essayez de modifier vos filtres
+												</p>
+											</div>
+										</div>
+									</TableCell>
+								</TableRow>
+							) : (
+								filteredTickets?.map((ticket: any) => {
+									const statusConf = getStatusConfig(ticket.status);
 
-										<TableCell className="text-right">
-											<Button
-												size="sm"
-												variant="ghost"
-												className="opacity-0 group-hover:opacity-100 transition-opacity"
-											>
-												Gérer
-												<ChevronRight className="h-4 w-4 ml-1" />
-											</Button>
-										</TableCell>
-									</TableRow>
-								);
-							})
-						)}
-					</TableBody>
-				</Table>
+									return (
+										<TableRow
+											key={ticket._id}
+											className="cursor-pointer hover:bg-muted/40 transition-colors group"
+											onClick={() =>
+												navigate({
+													to: `/support/${ticket._id}` as any,
+												})
+											}
+										>
+											<TableCell>
+												<div className="flex items-center gap-2">
+													<div className="rounded-md bg-primary/10 p-1.5">
+														<LifeBuoy className="h-3.5 w-3.5 text-primary" />
+													</div>
+													<span className="font-mono text-xs font-semibold">
+														{ticket.reference}
+													</span>
+												</div>
+											</TableCell>
 
-				{paginationStatus === "CanLoadMore" && (
-					<div className="flex justify-center py-4 border-t border-border/40">
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => loadMore(25)}
-							className="gap-2"
-						>
-							Charger plus
-						</Button>
-					</div>
-				)}
-				{paginationStatus === "LoadingMore" && (
-					<div className="flex justify-center py-4 border-t border-border/40">
-						<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-					</div>
-				)}
-			</div>
+											<TableCell>
+												<div className="flex flex-col max-w-sm">
+													<span className="text-sm font-medium truncate">
+														{ticket.subject}
+													</span>
+													{ticket.messages?.length > 0 && (
+														<span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+															<MessageSquare className="h-3 w-3" />
+															{ticket.messages.length} réponse
+															{ticket.messages.length > 1 ? "s" : ""}
+														</span>
+													)}
+												</div>
+											</TableCell>
+
+											<TableCell>
+												<Badge variant="secondary" className="font-normal">
+													{t(`support.ticketCategory.${ticket.category}`)}
+												</Badge>
+											</TableCell>
+
+											<TableCell>
+												<div className="flex items-center gap-1.5 text-muted-foreground">
+													<Clock className="h-3.5 w-3.5 shrink-0" />
+													<span className="text-xs whitespace-nowrap">
+														{timeAgo(ticket._creationTime)}
+													</span>
+												</div>
+											</TableCell>
+
+											<TableCell>
+												<span
+													className={cn(
+														"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+														statusConf.bgClass,
+														statusConf.textClass,
+													)}
+												>
+													{statusConf.label}
+												</span>
+											</TableCell>
+
+											<TableCell className="text-right">
+												<Button
+													size="sm"
+													variant="ghost"
+													className="opacity-0 group-hover:opacity-100 transition-opacity"
+												>
+													Gérer
+													<ChevronRight className="h-4 w-4 ml-1" />
+												</Button>
+											</TableCell>
+										</TableRow>
+									);
+								})
+							)}
+						</TableBody>
+					</Table>
+
+					{paginationStatus === "CanLoadMore" && (
+						<div className="flex justify-center py-4">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => loadMore(25)}
+								className="gap-2"
+							>
+								Charger plus
+							</Button>
+						</div>
+					)}
+					{paginationStatus === "LoadingMore" && (
+						<div className="flex justify-center py-4">
+							<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+						</div>
+					)}
+				</div>
+			</FlatCard>
 		</div>
 	);
 }

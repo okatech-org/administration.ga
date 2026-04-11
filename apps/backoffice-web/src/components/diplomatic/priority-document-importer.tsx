@@ -20,7 +20,7 @@ import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { useAction } from "convex/react";
@@ -330,8 +330,8 @@ export function PriorityDocumentImporter({
     const totalFiles = fileProgress.length;
 
     return (
-      <Card>
-        <CardContent className="py-4 space-y-3">
+      <FlatCard>
+        <div className="p-3 lg:p-4 space-y-3">
           <div className="flex items-center gap-4">
             <div className="relative">
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -379,8 +379,8 @@ export function PriorityDocumentImporter({
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </FlatCard>
     );
   }
 
@@ -388,8 +388,8 @@ export function PriorityDocumentImporter({
   return (
     <div className="space-y-3">
       {/* En-tête résultat */}
-      <Card className="bg-primary/5 border-primary/20">
-        <CardContent className="py-3 flex items-center justify-between">
+      <FlatCard className="bg-primary/5">
+        <div className="p-3 lg:p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
               <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -426,8 +426,8 @@ export function PriorityDocumentImporter({
               <X className="h-3.5 w-3.5" />
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </FlatCard>
 
       {/* Résumé du document */}
       {documentSummary && (
@@ -439,17 +439,17 @@ export function PriorityDocumentImporter({
       {/* Liste des priorités extraites */}
       <div className="space-y-2 max-h-[300px] overflow-y-auto">
         {extractedPriorities.map((p, i) => (
-          <Card
+          <FlatCard
             key={i}
             className={cn(
               "transition-all cursor-pointer",
               p.selected
-                ? "border-primary/30 bg-primary/5"
+                ? "bg-primary/5"
                 : "opacity-50",
             )}
             onClick={() => togglePriority(i)}
           >
-            <CardContent className="py-2 px-3 flex items-start gap-3">
+            <div className="p-3 lg:p-4 flex items-start gap-3">
               <Checkbox
                 checked={p.selected}
                 onCheckedChange={() => togglePriority(i)}
@@ -481,8 +481,8 @@ export function PriorityDocumentImporter({
                   </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </FlatCard>
         ))}
       </div>
 

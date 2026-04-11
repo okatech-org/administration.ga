@@ -28,9 +28,9 @@ import {
 } from "recharts";
 import { useOrg } from "@/components/org/org-provider";
 import { useModuleAccess } from "@/components/shared/access-gate";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Select,
 	SelectContent,
@@ -224,7 +224,7 @@ function PaymentsDashboardPage() {
 						</SelectContent>
 					</Select>
 					{canManageFinance && (
-						<Button variant="outline" size="icon">
+						<Button variant="outline" size="icon" className="active:scale-[0.97] transition-transform">
 							<Download className="h-4 w-4" />
 						</Button>
 					)}
@@ -234,70 +234,68 @@ function PaymentsDashboardPage() {
 			{/* Stats Cards */}
 			{stats && (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between pb-2">
-							<CardTitle className="text-sm font-medium text-muted-foreground">
-								{t("payments.totalRevenue")}
-							</CardTitle>
-							<DollarSign className="h-4 w-4 text-muted-foreground" />
-						</CardHeader>
-						<CardContent>
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<div className="flex items-center justify-between pb-2">
+								<span className="text-sm font-medium text-muted-foreground">
+									{t("payments.totalRevenue")}
+								</span>
+								<DollarSign className="h-4 w-4 text-muted-foreground" />
+							</div>
 							<div className="text-2xl font-bold">
 								{formatCurrency(stats.totalRevenue)}
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between pb-2">
-							<CardTitle className="text-sm font-medium text-muted-foreground">
-								{t("payments.transactions")}
-							</CardTitle>
-							<CreditCard className="h-4 w-4 text-muted-foreground" />
-						</CardHeader>
-						<CardContent>
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<div className="flex items-center justify-between pb-2">
+								<span className="text-sm font-medium text-muted-foreground">
+									{t("payments.transactions")}
+								</span>
+								<CreditCard className="h-4 w-4 text-muted-foreground" />
+							</div>
 							<div className="text-2xl font-bold">{stats.transactionCount}</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between pb-2">
-							<CardTitle className="text-sm font-medium text-muted-foreground">
-								{t("payments.successRate")}
-							</CardTitle>
-							<TrendingUp className="h-4 w-4 text-muted-foreground" />
-						</CardHeader>
-						<CardContent>
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<div className="flex items-center justify-between pb-2">
+								<span className="text-sm font-medium text-muted-foreground">
+									{t("payments.successRate")}
+								</span>
+								<TrendingUp className="h-4 w-4 text-muted-foreground" />
+							</div>
 							<div className="text-2xl font-bold">{stats.successRate}%</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between pb-2">
-							<CardTitle className="text-sm font-medium text-muted-foreground">
-								{t("payments.avgTransaction")}
-							</CardTitle>
-							<DollarSign className="h-4 w-4 text-muted-foreground" />
-						</CardHeader>
-						<CardContent>
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<div className="flex items-center justify-between pb-2">
+								<span className="text-sm font-medium text-muted-foreground">
+									{t("payments.avgTransaction")}
+								</span>
+								<DollarSign className="h-4 w-4 text-muted-foreground" />
+							</div>
 							<div className="text-2xl font-bold">
 								{stats.transactionCount > 0
 									? formatCurrency(stats.totalRevenue / stats.transactionCount)
 									: formatCurrency(0)}
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</div>
 			)}
 
 			{/* Charts */}
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				{/* Revenue Chart */}
-				<Card className="lg:col-span-2">
-					<CardHeader>
-						<CardTitle>{t("payments.revenueEvolution")}</CardTitle>
-					</CardHeader>
-					<CardContent>
+				<FlatCard className="lg:col-span-2">
+					<div className="p-3 lg:p-4">
+						<div className="mb-2"><h3 className="text-sm font-bold">{t("payments.revenueEvolution")}</h3></div>
 						<div className="h-80">
 							<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 								<AreaChart data={chartData}>
@@ -320,15 +318,13 @@ function PaymentsDashboardPage() {
 								</AreaChart>
 							</ResponsiveContainer>
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 
 				{/* Status Distribution */}
-				<Card>
-					<CardHeader>
-						<CardTitle>{t("payments.statusDistribution")}</CardTitle>
-					</CardHeader>
-					<CardContent>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<div className="mb-2"><h3 className="text-sm font-bold">{t("payments.statusDistribution")}</h3></div>
 						<div className="h-48">
 							{stats && (
 								<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
@@ -370,16 +366,14 @@ function PaymentsDashboardPage() {
 								))}
 							</div>
 						)}
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</div>
 
 			{/* Transactions Table */}
-			<Card>
-				<CardHeader>
-					<CardTitle>{t("payments.recentTransactions")}</CardTitle>
-				</CardHeader>
-				<CardContent>
+			<FlatCard>
+				<div className="p-3 lg:p-4">
+					<div className="mb-2"><h3 className="text-sm font-bold">{t("payments.recentTransactions")}</h3></div>
 					<Table>
 						<TableHeader>
 							<TableRow>
@@ -422,8 +416,8 @@ function PaymentsDashboardPage() {
 							)}
 						</TableBody>
 					</Table>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 		</div>
 	);
 }

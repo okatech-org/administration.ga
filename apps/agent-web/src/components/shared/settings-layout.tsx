@@ -55,7 +55,7 @@ export function SettingsLayout({
 				)}
 			</div>
 
-			<div className="flex flex-col md:flex-row bg-card rounded-2xl border shadow-sm flex-1 overflow-hidden">
+			<div className="flex flex-col md:flex-row bg-[#FDFCFA] dark:bg-[#21201E]/77 rounded-2xl border flex-1 overflow-hidden">
 				{/* Sidebar → horizontal scroll on mobile */}
 				<aside className="w-full md:w-56 lg:w-64 border-b md:border-b-0 md:border-r px-2 py-2 md:p-4 shrink-0 flex flex-row md:flex-col gap-1 bg-muted/20 overflow-x-auto">
 					{resolvedGroups.map((group, gi) => (

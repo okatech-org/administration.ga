@@ -21,27 +21,27 @@ export function ThemePreview({
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"relative flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-200 cursor-pointer w-full text-left",
+				"relative flex items-center gap-3 p-3 rounded-xl transition-all duration-200 cursor-pointer w-full text-left active:scale-[0.97]",
 				isActive
-					? "border-primary bg-primary/5 ring-2 ring-primary/20"
-					: "border-border hover:border-muted-foreground/30 hover:bg-muted/30",
+					? "bg-primary/10 ring-2 ring-primary/20"
+					: "bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-[#EBE6DC]/50 dark:hover:bg-[#383633]/50",
 			)}
 		>
 			<div
 				className={cn(
 					"w-16 h-12 rounded-lg overflow-hidden relative shrink-0",
 					themeId === "default"
-						? "bg-card border border-border"
+						? "bg-[#FDFCFA] dark:bg-[#21201E]/77"
 						: "bg-[oklch(0.92_0.005_250)]",
 				)}
 			>
 				{themeId === "default" ? (
 					<div className="p-1.5 space-y-1">
 						<div className="h-1.5 w-5 bg-primary/20 rounded" />
-						<div className="h-2.5 bg-muted rounded border border-border" />
+						<div className="h-2.5 bg-muted rounded" />
 						<div className="flex gap-0.5">
-							<div className="h-2 flex-1 bg-muted rounded border border-border" />
-							<div className="h-2 flex-1 bg-muted rounded border border-border" />
+							<div className="h-2 flex-1 bg-muted rounded" />
+							<div className="h-2 flex-1 bg-muted rounded" />
 						</div>
 					</div>
 				) : (

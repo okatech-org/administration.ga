@@ -21,13 +21,7 @@ import { useOrg } from "@/components/org/org-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import {
 	Dialog,
 	DialogContent,
@@ -575,8 +569,8 @@ function AgentSchedules() {
 
 			{/* Schedule list */}
 			{filteredSchedules.length === 0 ? (
-				<Card>
-					<CardContent className="flex flex-col items-center justify-center py-12 text-center">
+				<FlatCard>
+					<div className="p-3 lg:p-4 flex flex-col items-center justify-center py-12 text-center">
 						<Calendar className="h-12 w-12 text-muted-foreground/50 mb-4" />
 						<p className="text-muted-foreground">
 							{t("dashboard.appointments.schedules.empty")}
@@ -584,18 +578,18 @@ function AgentSchedules() {
 						<p className="text-sm text-muted-foreground/70 mt-1">
 							{t("dashboard.appointments.schedules.emptyHint")}
 						</p>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			) : (
 				<div className="space-y-3">
 					{filteredSchedules.map((schedule: any) => {
 						const isExpanded = expandedScheduleId === schedule._id;
 						return (
-							<Card
+							<FlatCard
 								key={schedule._id}
 								className={!schedule.isActive ? "opacity-60" : ""}
 							>
-								<CardHeader className="pb-2">
+								<div className="p-3 lg:p-4 pb-2">
 									<div className="flex items-center justify-between">
 										<div className="flex items-center gap-3">
 											{schedule.agent && (
@@ -610,10 +604,10 @@ function AgentSchedules() {
 												</Avatar>
 											)}
 											<div>
-												<CardTitle className="text-base">
+												<p className="text-base font-medium">
 													{schedule.agent?.firstName} {schedule.agent?.lastName}
-												</CardTitle>
-												<CardDescription className="flex items-center gap-2">
+												</p>
+												<div className="text-xs text-muted-foreground flex items-center gap-2">
 													{schedule.serviceName ? (
 														<Badge variant="outline" className="text-xs">
 															{typeof schedule.serviceName === "object"
@@ -638,7 +632,7 @@ function AgentSchedules() {
 															? t("dashboard.appointments.schedules.active")
 															: t("dashboard.appointments.schedules.inactive")}
 													</Badge>
-												</CardDescription>
+												</div>
 											</div>
 										</div>
 										<div className="flex items-center gap-1">
@@ -706,11 +700,11 @@ function AgentSchedules() {
 											</Badge>
 										))}
 									</div>
-								</CardHeader>
+								</div>
 
 								{/* Expanded view with exceptions */}
 								{isExpanded && (
-									<CardContent className="border-t pt-4 space-y-3">
+									<div className="border-t pt-4 space-y-3 px-3 lg:px-4 pb-3 lg:pb-4">
 										<div className="flex items-center justify-between">
 											<h4 className="text-sm font-medium">
 												{t("dashboard.appointments.schedules.exceptions")}
@@ -781,9 +775,9 @@ function AgentSchedules() {
 												))}
 											</div>
 										)}
-									</CardContent>
+									</div>
 								)}
-							</Card>
+							</FlatCard>
 						);
 					})}
 				</div>

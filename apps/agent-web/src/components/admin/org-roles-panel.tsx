@@ -53,13 +53,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Collapsible,
@@ -398,31 +392,31 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 	if (!hasConfig) {
 		return (
 			<div className="space-y-4">
-				<Card className="border-dashed border-2 border-amber-300/50 bg-amber-50/30 dark:bg-amber-950/10">
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2 text-base">
+				<FlatCard className="border-dashed border-2 border-amber-300/50 bg-amber-50/30 dark:bg-amber-950/10">
+					<div className="p-3 lg:p-4">
+						<h4 className="flex items-center gap-2 text-base">
 							<AlertTriangle className="h-4 w-4 text-amber-500" />
 							{t("admin.roles.noConfig.title")}
-						</CardTitle>
-						<CardDescription>
+						</h4>
+						<p className="text-sm text-muted-foreground mt-1">
 							{t("admin.roles.noConfig.description")}
-						</CardDescription>
-					</CardHeader>
-				</Card>
+						</p>
+					</div>
+				</FlatCard>
 
 				<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 					{(templates ?? []).map((template: OrganizationTemplate) => {
 						const isMatch = template.type === orgType;
 						return (
-							<Card
+							<FlatCard
 								key={template.type}
-								className={`transition-all hover:shadow-md cursor-pointer group ${
+								className={`transition-all cursor-pointer group ${
 									isMatch
-										? "ring-2 ring-primary border-primary"
+										? "ring-2 ring-primary"
 										: "hover:border-primary/30"
 								}`}
 							>
-								<CardHeader className="pb-2">
+								<div className="pb-2">
 									<div className="flex items-center justify-between">
 										<DynamicLucideIcon
 											name={template.icon}
@@ -435,14 +429,14 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 											</Badge>
 										)}
 									</div>
-									<CardTitle className="text-sm">
+									<h4 className="text-sm">
 										{getLocalizedValue(template.label, lang)}
-									</CardTitle>
-									<CardDescription className="text-xs">
+									</h4>
+									<p className="text-xs">
 										{getLocalizedValue(template.description, lang)}
-									</CardDescription>
-								</CardHeader>
-								<CardContent className="pt-0">
+									</p>
+								</div>
+								<div className="pt-0">
 									<div className="flex items-center justify-between">
 										<span className="text-xs text-muted-foreground">
 											{t("admin.roles.positionsCount", {
@@ -464,8 +458,8 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 											{t("admin.roles.initialize")}
 										</Button>
 									</div>
-								</CardContent>
-							</Card>
+								</div>
+							</FlatCard>
 						);
 					})}
 				</div>
@@ -494,8 +488,8 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 			</div>
 
 			{/* ─── Config Status Bar ───────────────────────── */}
-			<Card>
-				<CardContent className="p-4">
+			<FlatCard>
+				<div className="p-4">
 					<div className="flex items-center justify-between flex-wrap gap-3">
 						<div className="flex items-center gap-3">
 							<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -556,23 +550,23 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 							</AlertDialog>
 						</div>
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* ─── Positions — Dual View ─────────────────────── */}
-			<Card>
-				<CardHeader>
+			<FlatCard>
+				<div className="p-3 lg:p-4">
 					<div className="flex items-center justify-between flex-wrap gap-2">
 						<div>
-							<CardTitle className="flex items-center gap-2 text-base">
+							<h4 className="flex items-center gap-2 text-base">
 								<UserCog className="h-4 w-4" />
 								{t("admin.roles.positions.title")} ({positions.length})
-							</CardTitle>
-							<CardDescription>
+							</h4>
+							<p className="text-sm text-muted-foreground mt-1">
 								{viewMode === "grade"
 									? t("admin.roles.positions.byGradeDesc")
 									: t("admin.roles.positions.byMinistryDesc")}
-							</CardDescription>
+							</p>
 						</div>
 						<div className="flex items-center gap-2">
 							{/* View mode toggle */}
@@ -716,9 +710,9 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 							)}
 						</div>
 					</div>
-				</CardHeader>
+				</div>
 
-				<CardContent className="space-y-3">
+				<div className="space-y-3">
 					{/* ─── GRADE VIEW ─────────────────────── */}
 					{viewMode === "grade" && (
 						<div className="space-y-3">
@@ -911,28 +905,28 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 							</p>
 						</div>
 					)}
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* ─── Available Role Modules ──────────────────── */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2 text-base">
+			<FlatCard>
+				<div className="p-3 lg:p-4">
+					<h4 className="flex items-center gap-2 text-base">
 						<Sparkles className="h-4 w-4" />
 						{t("admin.roles.systemModules.title")} ({systemModules.length})
-					</CardTitle>
-					<CardDescription>
+					</h4>
+					<p className="text-sm text-muted-foreground mt-1">
 						{t("admin.roles.systemModules.description")}
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
+					</p>
+				</div>
+				<div className="p-3 lg:p-4">
 					<div className="grid gap-2 sm:grid-cols-2">
 						{systemModules.map((mod) => (
 							<RoleModuleCard key={mod.code} module={mod} lang={lang} />
 						))}
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* ─── Edit Position Sheet ───────────────────── */}
 			<Sheet
@@ -1842,17 +1836,17 @@ function OrgModulesSection({
 	}
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle className="flex items-center gap-2 text-base">
+		<FlatCard>
+			<div className="p-3 lg:p-4">
+				<h4 className="flex items-center gap-2 text-base">
 					<Power className="h-4 w-4" />
 					{t("admin.roles.modules.title")}
-				</CardTitle>
-				<CardDescription>
+				</h4>
+				<p className="text-sm text-muted-foreground mt-1">
 					{t("admin.roles.modules.description")}
-				</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-4">
+				</p>
+			</div>
+			<div className="space-y-4">
 				{!isSuperAdmin && (
 					<div className="bg-muted px-4 py-3 flex gap-3 rounded-lg text-sm text-muted-foreground items-start border">
 						<AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
@@ -1912,8 +1906,8 @@ function OrgModulesSection({
 						</div>
 					);
 				})}
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }
 

@@ -28,7 +28,7 @@ import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import {
 	Dialog,
 	DialogContent,
@@ -141,8 +141,8 @@ export default function CompaniesPage() {
 							<Loader2 className="animate-spin h-8 w-8 text-primary" />
 						</div>
 					) : !myCompanies || myCompanies.length === 0 ? (
-						<Card>
-							<CardContent className="flex flex-col items-center justify-center py-12 text-center">
+						<FlatCard>
+							<div className="p-3 lg:p-4 flex flex-col items-center justify-center py-12 text-center">
 								<Building className="h-12 w-12 text-muted-foreground/30 mb-4" />
 								<h3 className="font-semibold text-lg mb-2">
 									{t("companies.empty.title")}
@@ -157,8 +157,8 @@ export default function CompaniesPage() {
 									<Plus className="h-4 w-4" />
 									{t("companies.create.button")}
 								</Button>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					) : (
 						<motion.div
 							initial={{ opacity: 0 }}
@@ -252,8 +252,8 @@ function MyCompanyCard({ company }: { company: Company }) {
 	};
 
 	return (
-		<Card className="group hover:shadow-md transition-shadow">
-			<CardHeader className="pb-2">
+		<FlatCard className="group">
+			<div className="p-3 lg:p-4 pb-0">
 				<div className="flex items-start justify-between">
 					<div className="flex items-center gap-3">
 						<div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -268,7 +268,7 @@ function MyCompanyCard({ company }: { company: Company }) {
 							)}
 						</div>
 						<div>
-							<CardTitle className="text-lg">{company.name}</CardTitle>
+							<div className="text-lg font-semibold">{company.name}</div>
 							<div className="flex gap-1 flex-wrap mt-1">
 								<Badge variant="secondary" className="text-xs">
 									{companyTypeLabels[company.companyType]}
@@ -288,8 +288,8 @@ function MyCompanyCard({ company }: { company: Company }) {
 						</Badge>
 					)}
 				</div>
-			</CardHeader>
-			<CardContent className="space-y-3">
+			</div>
+			<div className="p-3 lg:p-4 space-y-3">
 				{company.description && (
 					<p className="text-sm text-muted-foreground line-clamp-2">
 						{company.description}
@@ -323,8 +323,8 @@ function MyCompanyCard({ company }: { company: Company }) {
 						</Link>
 					</Button>
 				</div>
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }
 
@@ -347,8 +347,8 @@ function DiscoverCompanyCard({ company }: { company: Company }) {
 	};
 
 	return (
-		<Card className="group hover:shadow-md transition-shadow">
-			<CardHeader className="pb-2">
+		<FlatCard className="group">
+			<div className="p-3 lg:p-4 pb-0">
 				<div className="flex items-center gap-3">
 					<div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
 						{company.logoUrl ? (
@@ -362,14 +362,14 @@ function DiscoverCompanyCard({ company }: { company: Company }) {
 						)}
 					</div>
 					<div>
-						<CardTitle className="text-lg">{company.name}</CardTitle>
+						<div className="text-lg font-semibold">{company.name}</div>
 						<Badge variant="secondary" className="mt-1">
 							{sectorLabels[company.activitySector]}
 						</Badge>
 					</div>
 				</div>
-			</CardHeader>
-			<CardContent className="space-y-3">
+			</div>
+			<div className="p-3 lg:p-4 space-y-3">
 				{company.description && (
 					<p className="text-sm text-muted-foreground line-clamp-2">
 						{company.description}
@@ -402,8 +402,8 @@ function DiscoverCompanyCard({ company }: { company: Company }) {
 						})}
 					</p>
 				)}
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }
 

@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/my-space/page-header";
 import { CardGridSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { useAuthenticatedPaginatedQuery } from "@/integrations/convex/hooks";
 
 export default function SupportPage() {
@@ -99,8 +99,8 @@ export default function SupportPage() {
 				transition={{ duration: 0.2, delay: 0.1 }}
 			>
 				{!tickets || tickets.length === 0 ? (
-					<Card>
-						<CardContent className="flex flex-col items-center justify-center py-16 text-center">
+					<FlatCard>
+						<div className="p-3 lg:p-4 flex flex-col items-center justify-center py-16 text-center">
 							<LifeBuoy className="h-16 w-16 mb-4 text-muted-foreground/30" />
 							<h3 className="text-lg font-medium mb-2">
 								{t("support.tickets.empty.title")}
@@ -114,18 +114,18 @@ export default function SupportPage() {
 									{t("support.tickets.empty.action")}
 								</Link>
 							</Button>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				) : (
 					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 						{tickets.map((ticket: (typeof tickets)[0]) => (
 							<Link
 								key={ticket._id}
 								href={`/my-space/support/${ticket._id}`}
-								className="block transition-transform hover:scale-[1.01] active:scale-[0.99] h-full"
+								className="block transition-transform hover:scale-[1.01] active:scale-[0.97] h-full"
 							>
-								<Card className="h-full flex flex-col hover:border-primary/50 transition-colors">
-									<div className="p-5 flex-1 flex flex-col">
+								<FlatCard className="h-full flex flex-col transition-colors">
+									<div className="p-3 lg:p-4 flex-1 flex flex-col">
 										<div className="flex justify-between items-start mb-3 gap-2">
 											<div className="flex gap-2 items-center flex-wrap">
 												<Badge
@@ -161,7 +161,7 @@ export default function SupportPage() {
 											)}
 										</div>
 									</div>
-								</Card>
+								</FlatCard>
 							</Link>
 						))}
 					</div>

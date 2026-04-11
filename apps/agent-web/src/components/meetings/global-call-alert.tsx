@@ -151,7 +151,7 @@ export function GlobalCallAlert() {
 			{/* Floating Banner when a call is coming in but not yet joined globally */}
 			{!isCurrentlyInCall && !isBusyGlobally && activeCallToDisplay && (
 				<div className="fixed top-4 left-1/2 -translate-x-1/2 z-100 w-[90%] max-w-md animate-in slide-in-from-top-4 fade-in">
-					<div className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-emerald-500/40 bg-zinc-950/90 backdrop-blur-xl shadow-2xl text-white">
+					<div className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-emerald-500/40 bg-zinc-950/90 backdrop-blur-xl text-white">
 						<div className="flex items-center gap-3">
 							<div className="relative flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/20">
 								<PhoneCall className="w-5 h-5 text-emerald-400 animate-pulse" />
@@ -179,7 +179,7 @@ export function GlobalCallAlert() {
 						<Button
 							size="sm"
 							onClick={handleJoin}
-							className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 shadow-lg shadow-emerald-900/20"
+							className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 active:scale-[0.97] transition-transform"
 						>
 							<Phone className="w-4 h-4" />
 							{t("meetings.answer", "Décrocher")}

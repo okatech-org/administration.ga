@@ -279,7 +279,7 @@ export default function ServicesPage() {
 								className={cn(
 									"flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all",
 									isActive
-										? "bg-primary text-primary-foreground shadow-sm"
+										? "bg-primary text-primary-foreground"
 										: "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground",
 								)}
 							>

@@ -56,7 +56,7 @@ function ExportDataCard() {
 
 	return (
 		<FlatCard>
-			<div className="flex items-center gap-2.5 p-4 pb-3 border-b border-foreground/5">
+			<div className="flex items-center gap-2.5 p-4 pb-3 bg-[#EBE6DC]/40 dark:bg-[#383633]/25 rounded-t-xl">
 				<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
 					<Download className="h-3.5 w-3.5" />
 				</div>
@@ -98,8 +98,8 @@ function DeleteAccountCard() {
 
 	return (
 		<>
-			<FlatCard className="border-destructive/20">
-				<div className="flex items-center gap-2.5 p-4 pb-3 border-b border-destructive/10">
+			<FlatCard>
+				<div className="flex items-center gap-2.5 p-4 pb-3 bg-destructive/5 rounded-t-xl">
 					<div className="p-1 rounded-md bg-destructive/10">
 						<Trash2 className="h-3.5 w-3.5 text-destructive" />
 					</div>

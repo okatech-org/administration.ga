@@ -42,13 +42,8 @@ import { useOrg } from "@/components/org/org-provider";
 import { useModuleAccess } from "@/components/shared/access-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
+import { SectionHeader } from "@/components/my-space/section-header";
 import {
 	Select,
 	SelectContent,
@@ -299,7 +294,7 @@ function StatisticsPage() {
 	}
 
 	return (
-		<div className="flex flex-col gap-6 p-4 lg:p-6 overflow-y-auto">
+		<div className="flex flex-col gap-6 p-4 lg:p-6 overflow-y-auto citizen-scrollbar">
 			{/* ── Header ──────────────────────────────────────────────────── */}
 			<motion.div
 				initial={{ opacity: 0, y: 10 }}
@@ -336,7 +331,7 @@ function StatisticsPage() {
 					</Select>
 
 					{canExportStats && (
-						<Button variant="outline" size="icon" onClick={handleExport}>
+						<Button variant="outline" size="icon" onClick={handleExport} className="active:scale-[0.97] transition-transform">
 							<Download className="h-4 w-4" />
 						</Button>
 					)}
@@ -351,11 +346,11 @@ function StatisticsPage() {
 				className="grid grid-cols-2 md:grid-cols-4 gap-4"
 			>
 				{kpiCards.map((stat) => (
-					<Card
+					<FlatCard
 						key={stat.title}
-						className="overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
+						className="overflow-hidden transition-all duration-200"
 					>
-						<CardContent className="p-4">
+						<div className="p-3 lg:p-4">
 							<div className="flex items-center justify-between mb-3">
 								<div
 									className={`w-9 h-9 rounded-lg flex items-center justify-center ${stat.bgColor}`}
@@ -378,11 +373,11 @@ function StatisticsPage() {
 								)}
 							</div>
 							<p className="text-2xl font-bold tracking-tight">{stat.value}</p>
-							<p className="text-xs text-muted-foreground mt-1 truncate">
+							<p className="text-xs text-muted-foreground mt-1 truncate font-medium">
 								{stat.title}
 							</p>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				))}
 			</motion.div>
 
@@ -412,20 +407,15 @@ function StatisticsPage() {
 					<TabsContent value="requests" className="space-y-6">
 						<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 							{/* Trend Chart */}
-							<Card className="lg:col-span-2">
-								<CardHeader className="pb-2">
-									<CardTitle className="text-base font-semibold flex items-center gap-2">
-										<Activity className="h-4 w-4 text-primary" />
-										{t("admin.charts.trend")}
-									</CardTitle>
-									<CardDescription>
-										{t(
-											"admin.statistics.trendDesc",
-											"Nombre de demandes créées par jour",
-										)}
-									</CardDescription>
-								</CardHeader>
-								<CardContent>
+							<FlatCard className="lg:col-span-2">
+								<div className="p-3 lg:p-4">
+								<SectionHeader icon={<Activity className="h-4 w-4 text-primary" />} title={t("admin.charts.trend")} />
+								<p className="text-xs text-muted-foreground mb-3">
+									{t(
+										"admin.statistics.trendDesc",
+										"Nombre de demandes créées par jour",
+									)}
+								</p>
 									<div className="h-72">
 										{trendData.length > 0 ? (
 											<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
@@ -492,18 +482,13 @@ function StatisticsPage() {
 											</div>
 										)}
 									</div>
-								</CardContent>
-							</Card>
+								</div>
+							</FlatCard>
 
 							{/* Status Pie */}
-							<Card>
-								<CardHeader className="pb-2">
-									<CardTitle className="text-base font-semibold flex items-center gap-2">
-										<ClipboardList className="h-4 w-4 text-primary" />
-										{t("admin.charts.byStatus")}
-									</CardTitle>
-								</CardHeader>
-								<CardContent>
+							<FlatCard>
+								<div className="p-3 lg:p-4">
+								<SectionHeader icon={<ClipboardList className="h-4 w-4 text-primary" />} title={t("admin.charts.byStatus")} />
 									<div className="h-48">
 										{statusChartData.length > 0 ? (
 											<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
@@ -551,25 +536,20 @@ function StatisticsPage() {
 											</div>
 										))}
 									</div>
-								</CardContent>
-							</Card>
+								</div>
+							</FlatCard>
 						</div>
 
 						{/* Services breakdown */}
-						<Card>
-							<CardHeader className="pb-2">
-								<CardTitle className="text-base font-semibold flex items-center gap-2">
-									<Zap className="h-4 w-4 text-primary" />
-									{t("admin.charts.byService")}
-								</CardTitle>
-								<CardDescription>
-									{t(
-										"admin.statistics.serviceDesc",
-										"Répartition par type de service",
-									)}
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+							<SectionHeader icon={<Zap className="h-4 w-4 text-primary" />} title={t("admin.charts.byService")} />
+							<p className="text-xs text-muted-foreground mb-3">
+								{t(
+									"admin.statistics.serviceDesc",
+									"Répartition par type de service",
+								)}
+							</p>
 								<div className="h-72">
 									{serviceChartData.length > 0 ? (
 										<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
@@ -624,25 +604,17 @@ function StatisticsPage() {
 										</div>
 									)}
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					</TabsContent>
 
 					{/* ─── TAB: Registrations ─────────────────────────────────── */}
 					<TabsContent value="registrations" className="space-y-6">
 						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 							{/* Registration Status Pie */}
-							<Card>
-								<CardHeader className="pb-2">
-									<CardTitle className="text-base font-semibold flex items-center gap-2">
-										<IdCard className="h-4 w-4 text-primary" />
-										{t(
-											"admin.statistics.regByStatus",
-											"Inscriptions par statut",
-										)}
-									</CardTitle>
-								</CardHeader>
-								<CardContent>
+							<FlatCard>
+								<div className="p-3 lg:p-4">
+								<SectionHeader icon={<IdCard className="h-4 w-4 text-primary" />} title={t("admin.statistics.regByStatus", "Inscriptions par statut")} />
 									<div className="h-64">
 										{registrationChartData.length > 0 ? (
 											<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
@@ -675,29 +647,24 @@ function StatisticsPage() {
 											</div>
 										)}
 									</div>
-								</CardContent>
-							</Card>
+								</div>
+							</FlatCard>
 
 							{/* Registration Details Table */}
-							<Card>
-								<CardHeader className="pb-2">
-									<div className="flex items-center justify-between">
-										<CardTitle className="text-base font-semibold flex items-center gap-2">
-											<ClipboardList className="h-4 w-4 text-primary" />
-											{t(
-												"admin.statistics.regDetails",
-												"Détails des inscriptions",
-											)}
-										</CardTitle>
+							<FlatCard>
+								<div className="p-3 lg:p-4">
+								<SectionHeader
+									icon={<ClipboardList className="h-4 w-4 text-primary" />}
+									title={t("admin.statistics.regDetails", "Détails des inscriptions")}
+									actions={
 										<Link to="/consular-registry">
-											<Button variant="ghost" size="sm" className="gap-1">
+											<Button variant="ghost" size="sm" className="gap-1 active:scale-[0.97] transition-transform">
 												{t("common.viewAll")}
 												<ArrowRight className="h-3.5 w-3.5" />
 											</Button>
 										</Link>
-									</div>
-								</CardHeader>
-								<CardContent>
+									}
+								/>
 									{(() => {
 										const regPage = registrations?.page ?? [];
 										const totalRegs = regPage.length;
@@ -785,36 +752,30 @@ function StatisticsPage() {
 											</div>
 										);
 									})()}
-								</CardContent>
-							</Card>
+								</div>
+							</FlatCard>
 						</div>
 					</TabsContent>
 
 					{/* ─── TAB: Agents ────────────────────────────────────────── */}
 					<TabsContent value="agents" className="space-y-6">
-						<Card>
-							<CardHeader className="pb-2">
-								<div className="flex items-center justify-between">
-									<div>
-										<CardTitle className="text-base font-semibold flex items-center gap-2">
-											<Users className="h-4 w-4 text-primary" />
-											{t("admin.agents.title")}
-										</CardTitle>
-										<CardDescription>
-											{t(
-												"admin.statistics.agentDesc",
-												"Demandes assignées et complétées par agent",
-											)}
-										</CardDescription>
-									</div>
-									{agentData && (
-										<Badge variant="secondary" className="text-xs">
-											{agentData.totalAgents} {t("admin.agents.members")}
-										</Badge>
-									)}
-								</div>
-							</CardHeader>
-							<CardContent>
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+							<SectionHeader
+								icon={<Users className="h-4 w-4 text-primary" />}
+								title={t("admin.agents.title")}
+								actions={agentData && (
+									<Badge variant="secondary" className="text-xs">
+										{agentData.totalAgents} {t("admin.agents.members")}
+									</Badge>
+								)}
+							/>
+							<p className="text-xs text-muted-foreground mb-3">
+								{t(
+									"admin.statistics.agentDesc",
+									"Demandes assignées et complétées par agent",
+								)}
+							</p>
 								{agentData && agentData.agents.length > 0 ? (
 									<Table>
 										<TableHeader>
@@ -915,8 +876,8 @@ function StatisticsPage() {
 										</p>
 									</div>
 								)}
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					</TabsContent>
 				</Tabs>
 			</motion.div>

@@ -30,14 +30,16 @@ function SuperadminLayout() {
 
 	return (
 		<SuperadminGuard>
-			<div className="relative overflow-hidden h-screen gap-6 flex bg-background">
-				<div className="hidden md:block p-6 pr-0!">
-					<SuperadminSidebar
-						isExpanded={isExpanded}
-						onToggle={() => setIsExpanded((prev) => !prev)}
-					/>
+			<div className="backoffice-layout relative overflow-hidden h-screen flex">
+				<div className="hidden md:block p-4 pr-0">
+					<div className="h-full rounded-2xl bg-[#F4F3ED] dark:bg-[#171616] overflow-hidden">
+						<SuperadminSidebar
+							isExpanded={isExpanded}
+							onToggle={() => setIsExpanded((prev) => !prev)}
+						/>
+					</div>
 				</div>
-				<main className="flex-1 min-h-full overflow-y-auto md:-ml-6">
+				<main className="flex-1 min-h-full overflow-y-auto citizen-scrollbar">
 					<Outlet />
 				</main>
 				<BackofficeIAstedWindow />

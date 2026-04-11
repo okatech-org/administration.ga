@@ -102,7 +102,7 @@ function RequestProgressCard({
 			href={`/my-space/requests/${request.reference || request._id}`}
 			className="block group"
 		>
-			<FlatCard className={cn("border-l-[3px] hover:shadow-sm transition-all", borderColorMap[request.status] ?? "border-l-muted-foreground/30")}>
+			<FlatCard className={cn("border-l-[3px] transition-all active:scale-[0.97]", borderColorMap[request.status] ?? "border-l-muted-foreground/30")}>
 				<div className="p-3.5 space-y-2.5">
 					{/* Ligne 1 : Reference + Status */}
 					<div className="flex items-center justify-between">
@@ -186,7 +186,7 @@ function DossierProgressCard({
 			href={`/my-space/demarches/${dossier._id}`}
 			className="block group"
 		>
-			<FlatCard className={cn("border-l-[3px] hover:shadow-sm transition-all", statusConfig?.borderColor ?? "border-l-muted-foreground/30")}>
+			<FlatCard className={cn("border-l-[3px] transition-all active:scale-[0.97]", statusConfig?.borderColor ?? "border-l-muted-foreground/30")}>
 				<div className="p-3.5 space-y-2.5">
 					{/* Ligne 1 : Reference + Status */}
 					<div className="flex items-center justify-between">

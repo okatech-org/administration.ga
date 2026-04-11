@@ -46,7 +46,7 @@ export function OrgSwitcher() {
 						"text-left",
 					)}
 				>
-					<div className="bg-white flex aspect-square justify-center size-9 items-center rounded-lg shadow-sm overflow-hidden shrink-0">
+					<div className="bg-[#FDFCFA] dark:bg-[#21201E]/77 flex aspect-square justify-center size-9 items-center rounded-lg overflow-hidden shrink-0">
 						<img
 							src="/icons/apple-icon.png"
 							alt="Logo"

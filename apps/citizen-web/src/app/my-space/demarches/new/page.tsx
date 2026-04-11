@@ -28,7 +28,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/my-space/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexMutation,
@@ -259,17 +259,17 @@ export default function NewDemarchePage() {
 											</div>
 											<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
 												{(types as any[]).map((td: any) => (
-													<Card
+													<FlatCard
 														key={td._id}
 														onClick={() => setSelectedType(td)}
 														className={cn(
-															"p-4 rounded-xl cursor-pointer transition-all border-2",
+															"cursor-pointer transition-all border-2 active:scale-[0.97] transition-transform",
 															selectedType?._id === td._id
-																? "border-primary bg-primary/5 shadow-sm"
-																: "border-border/50 bg-card hover:border-border hover:shadow-sm",
+																? "border-primary bg-primary/5"
+																: "border-transparent hover:border-border",
 														)}
 													>
-														<div className="space-y-2">
+														<div className="p-3 lg:p-4 space-y-2">
 															<p className="text-sm font-medium">
 																{td.label?.fr ?? td.code}
 															</p>
@@ -303,7 +303,7 @@ export default function NewDemarchePage() {
 																</Badge>
 															</div>
 														</div>
-													</Card>
+													</FlatCard>
 												))}
 											</div>
 										</div>
@@ -350,17 +350,17 @@ export default function NewDemarchePage() {
 											},
 										] as const
 									).map((opt) => (
-										<Card
+										<FlatCard
 											key={opt.key}
 											onClick={() => setPriorite(opt.key)}
 											className={cn(
-												"p-3 rounded-xl cursor-pointer transition-all border-2 text-center",
+												"cursor-pointer transition-all border-2 text-center active:scale-[0.97] transition-transform",
 												priorite === opt.key
 													? "border-primary bg-primary/5"
-													: "border-border/50 bg-card hover:border-border",
+													: "border-transparent hover:border-border",
 											)}
 										>
-											<div className="flex flex-col items-center gap-1.5">
+											<div className="p-3 flex flex-col items-center gap-1.5">
 												<div
 													className={cn(
 														"p-2 rounded-lg",
@@ -376,7 +376,7 @@ export default function NewDemarchePage() {
 													{opt.desc}
 												</p>
 											</div>
-										</Card>
+										</FlatCard>
 									))}
 								</div>
 							</div>
@@ -406,7 +406,8 @@ export default function NewDemarchePage() {
 							transition={{ duration: 0.2 }}
 							className="max-w-lg mx-auto space-y-4"
 						>
-							<Card className="p-4 bg-card border-border/50 rounded-xl">
+							<FlatCard>
+								<div className="p-3 lg:p-4">
 								<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
 									Recapitulatif
 								</h3>
@@ -480,12 +481,14 @@ export default function NewDemarchePage() {
 										</div>
 									)}
 								</div>
-							</Card>
+								</div>
+							</FlatCard>
 
 							{/* Required documents preview */}
 							{selectedType.piecesRequises &&
 								selectedType.piecesRequises.length > 0 && (
-									<Card className="p-4 bg-card border-border/50 rounded-xl">
+									<FlatCard>
+										<div className="p-3 lg:p-4">
 										<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
 											Documents a fournir
 										</h3>
@@ -509,7 +512,8 @@ export default function NewDemarchePage() {
 												),
 											)}
 										</div>
-									</Card>
+										</div>
+									</FlatCard>
 								)}
 						</motion.div>
 					)}

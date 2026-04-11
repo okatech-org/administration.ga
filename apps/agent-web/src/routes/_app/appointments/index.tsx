@@ -26,13 +26,7 @@ import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Combobox } from "@/components/ui/combobox";
 import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
@@ -658,9 +652,9 @@ function DashboardAppointments() {
 			{viewMode === "calendar" ? (
 				<div className="flex gap-4 flex-1 min-h-0">
 					{/* Calendar grid */}
-					<Card className="flex-1 flex flex-col">
+					<FlatCard className="flex-1 flex flex-col">
 						{/* Calendar header */}
-						<CardHeader className="pb-2 border-b border-border/50">
+						<div className="pb-2 border-b border-border/50">
 							<div className="flex items-center justify-between">
 								<div className="flex items-center gap-2">
 									<Button
@@ -692,8 +686,8 @@ function DashboardAppointments() {
 									{t("dashboard.appointments.today")}
 								</Button>
 							</div>
-						</CardHeader>
-						<CardContent className="flex-1 p-3">
+						</div>
+						<div className="flex-1 p-3">
 							{/* Day headers (Mon-Sun) */}
 							<div className="grid grid-cols-7 mb-1">
 								{["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map(
@@ -812,8 +806,8 @@ function DashboardAppointments() {
 										</div>
 									))}
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
 					{/* Day detail panel */}
 					<div
@@ -823,20 +817,20 @@ function DashboardAppointments() {
 						)}
 					>
 						{selectedDay && (
-							<Card className="h-full flex flex-col w-[340px]">
-								<CardHeader className="pb-3 border-b border-border/50">
+							<FlatCard className="h-full flex flex-col w-[340px]">
+								<div className="pb-3 border-b border-border/50">
 									<div className="flex items-center justify-between">
 										<div>
-											<CardTitle className="text-sm font-semibold capitalize">
+											<p className="text-sm font-semibold capitalize">
 												{formatSelectedDay(selectedDay)}
-											</CardTitle>
-											<CardDescription className="text-xs mt-0.5">
+											</p>
+											<p className="text-xs mt-0.5">
 												{selectedDayAppointments.length}{" "}
 												{t(
 													"dashboard.appointments.appointmentsCount",
 													"rendez-vous",
 												)}
-											</CardDescription>
+											</p>
 										</div>
 										<Button
 											variant="ghost"
@@ -847,8 +841,8 @@ function DashboardAppointments() {
 											<X className="h-3.5 w-3.5" />
 										</Button>
 									</div>
-								</CardHeader>
-								<CardContent className="flex-1 overflow-y-auto p-3 space-y-2">
+								</div>
+								<div className="flex-1 overflow-y-auto p-3 space-y-2">
 									{selectedDayAppointments.length === 0 ? (
 										<div className="flex flex-col items-center justify-center py-12 text-center">
 											<Calendar className="h-8 w-8 text-muted-foreground/20 mb-3" />
@@ -872,23 +866,23 @@ function DashboardAppointments() {
 											/>
 										))
 									)}
-								</CardContent>
-							</Card>
+								</div>
+							</FlatCard>
 						)}
 					</div>
 				</div>
 			) : (
 				/* ─── List view ──────────────────────────────────────────────── */
-				<Card>
-					<CardHeader className="pb-3">
+				<FlatCard>
+					<div className="pb-3">
 						<div className="flex items-center justify-between">
 							<div className="space-y-1">
-								<CardTitle className="text-base">
+								<p className="text-base">
 									{t("dashboard.appointments.listTitle")}
-								</CardTitle>
-								<CardDescription className="text-xs">
+								</p>
+								<p className="text-xs">
 									{t("dashboard.appointments.listDescription")}
-								</CardDescription>
+								</p>
 							</div>
 							<div className="flex items-center gap-2">
 								<Input
@@ -921,15 +915,15 @@ function DashboardAppointments() {
 								/>
 							</div>
 						</div>
-					</CardHeader>
-					<CardContent>
+					</div>
+					<div>
 						<DataTable
 							columns={columns}
 							data={appointments || []}
 							isLoading={appointments === undefined}
 						/>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			)}
 		</div>
 	);
@@ -991,7 +985,7 @@ export function AppointmentDetailCard({
 		<button
 			type="button"
 			className={cn(
-				"group w-full text-left rounded-lg border p-3 transition-all hover:shadow-sm cursor-pointer",
+				"group w-full text-left rounded-lg border p-3 transition-all  cursor-pointer",
 				cfg.border,
 				"bg-card hover:bg-muted/30",
 			)}

@@ -56,7 +56,6 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useDropzone } from "react-dropzone";
 import React, { useCallback, useEffect, useId, useMemo, useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { captureEvent } from "@/lib/analytics";

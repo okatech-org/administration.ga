@@ -231,7 +231,7 @@ export function PinCodeSection() {
 
 				{/* Confirmation suppression */}
 				{mode === "delete" && (
-					<div className="space-y-3 p-3 border border-destructive/20 rounded-lg bg-destructive/5">
+					<div className="space-y-3 p-3 rounded-xl bg-destructive/5">
 						<p className="text-sm">{t("settings.pin.deleteConfirm")}</p>
 						{pinError && (
 							<p className="text-xs text-destructive">{pinError}</p>
@@ -287,7 +287,7 @@ function PinForm({
 	const { t } = useTranslation();
 
 	return (
-		<div className="space-y-3 p-3 border rounded-lg">
+		<div className="space-y-3 p-3 rounded-xl bg-[#FDFCFA] dark:bg-[#21201E]/77">
 			{fields.map((field) => (
 				<div key={field.label} className="space-y-1">
 					<Label className="text-xs">{field.label}</Label>

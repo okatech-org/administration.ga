@@ -112,7 +112,7 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 						const Icon = tab.icon;
 						const isActive = subTab === tab.id;
 						return (
-							<button key={tab.id} type="button" onClick={() => setSubTab(tab.id)} className={cn("flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-colors", isActive ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}>
+							<button key={tab.id} type="button" onClick={() => setSubTab(tab.id)} className={cn("flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-colors", isActive ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground")}>
 								<Icon className="h-3.5 w-3.5" />{tab.label}
 							</button>
 						);

@@ -13,13 +13,7 @@ import {
 	type DynamicSlotSelection,
 } from "@/components/appointments/AppointmentSlotPicker";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
@@ -128,8 +122,8 @@ export default function AppointmentBookingPage() {
 			{/* Main Content */}
 			<main className="flex-1 container py-8 px-4 max-w-2xl mx-auto space-y-6">
 				{/* Success Banner */}
-				<Card className="border-green-500/50 bg-green-50 dark:bg-green-950/20">
-					<CardContent className="flex items-center gap-4 py-4">
+				<FlatCard className="bg-green-50 dark:bg-green-950/20">
+					<div className="p-3 lg:p-4 flex items-center gap-4">
 						<CheckCircle className="h-8 w-8 text-green-600" />
 						<div>
 							<p className="font-medium text-green-800 dark:text-green-200">
@@ -139,21 +133,21 @@ export default function AppointmentBookingPage() {
 								{t("appointment.next_step")}
 							</p>
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 
 				{/* Appointment Picker */}
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
+				<FlatCard>
+					<div className="p-3 lg:p-4 pb-0">
+						<h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight">
 							<Calendar className="h-5 w-5" />
 							{t("appointment.select_title")}
-						</CardTitle>
-						<CardDescription>
+						</h3>
+						<p className="text-sm text-muted-foreground mt-1.5">
 							{t("appointment.select_description")}
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
+						</p>
+					</div>
+					<div className="p-3 lg:p-4">
 						{request.orgId && request.orgServiceId && (
 							<AppointmentSlotPicker
 								orgId={request.orgId}
@@ -163,8 +157,8 @@ export default function AppointmentBookingPage() {
 								selectedSlot={selectedSlot}
 							/>
 						)}
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 
 				{/* Actions */}
 				<div className="flex justify-between gap-4">

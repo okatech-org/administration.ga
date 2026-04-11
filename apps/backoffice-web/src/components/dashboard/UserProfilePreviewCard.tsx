@@ -7,7 +7,7 @@ import { useState } from "react";
 import { ProfileViewSheet } from "@/components/dashboard/ProfileViewSheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 
@@ -31,7 +31,7 @@ export function UserProfilePreviewCard({
 	// Loading state
 	if (profile === undefined) {
 		return (
-			<Card className="overflow-hidden">
+			<FlatCard>
 				<div className="p-3 flex items-center justify-between gap-3">
 					<div className="flex items-center gap-3 flex-1">
 						<Skeleton className="h-9 w-9 rounded-full shrink-0" />
@@ -39,21 +39,21 @@ export function UserProfilePreviewCard({
 					</div>
 					<Skeleton className="h-8 w-24 shrink-0" />
 				</div>
-			</Card>
+			</FlatCard>
 		);
 	}
 
 	// No profile state
 	if (!profile) {
 		return (
-			<Card className="overflow-hidden">
-				<div className="bg-muted/20 p-3 flex items-center gap-3">
+			<FlatCard>
+				<div className="p-3 lg:p-4 flex items-center gap-3">
 					<div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
 						<User className="h-4 w-4 text-muted-foreground/50" />
 					</div>
 					<p className="text-sm text-muted-foreground">Profil non renseigné</p>
 				</div>
-			</Card>
+			</FlatCard>
 		);
 	}
 
@@ -67,10 +67,10 @@ export function UserProfilePreviewCard({
 
 	return (
 		<>
-			<Card className="overflow-hidden py-0">
+			<FlatCard>
 				<div className="p-3 flex flex-row items-center justify-between gap-3">
 					<div className="flex flex-row items-center gap-3 min-w-0">
-						<Avatar className="h-9 w-9 border shadow-sm">
+						<Avatar className="h-9 w-9 border">
 							<AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
 								{initials || "?"}
 							</AvatarFallback>
@@ -88,7 +88,7 @@ export function UserProfilePreviewCard({
 						Voir le profil
 					</Button>
 				</div>
-			</Card>
+			</FlatCard>
 
 			{profile && (
 				<ProfileViewSheet

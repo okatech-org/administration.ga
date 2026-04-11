@@ -15,6 +15,7 @@ import {
 	FileSpreadsheet, ImageIcon, Plus, Filter,
 } from "lucide-react";
 import { toast } from "sonner";
+import { PageHeader } from "@/components/design-system/page-header";
 import { useOrgSelector } from "@/hooks/use-org-selector";
 import {
 	useAuthenticatedConvexQuery,
@@ -232,15 +233,15 @@ function VaultFolderCard({ label, count, subfolderCount = 0, onClick, className,
 					<div className="flex flex-col gap-0.5 items-center justify-center pointer-events-auto scale-90 -mt-2">{badges}</div>
 				</div>
 				<div className="relative mt-1 w-full flex justify-center">
-					<DynamicFolderIcon count={count + subfolderCount} size={96} hovered={isHovered} className="drop-shadow-lg" />
+					<DynamicFolderIcon count={count + subfolderCount} size={96} hovered={isHovered} className="" />
 					<div className="absolute -top-1 right-1 flex flex-col gap-0.5 items-end z-10">
 						{subfolderCount > 0 && (
-							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="min-w-5 h-5 px-1 flex items-center justify-center gap-0.5 rounded-full bg-violet-500 text-white text-[9px] font-bold shadow-sm">
+							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="min-w-5 h-5 px-1 flex items-center justify-center gap-0.5 rounded-full bg-violet-500 text-white text-[9px] font-bold">
 								<Folder className="h-2.5 w-2.5" />{subfolderCount}
 							</motion.span>
 						)}
 						{count > 0 && (
-							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="min-w-5 h-5 px-1 flex items-center justify-center gap-0.5 rounded-full bg-blue-500 text-white text-[9px] font-bold shadow-sm">
+							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="min-w-5 h-5 px-1 flex items-center justify-center gap-0.5 rounded-full bg-blue-500 text-white text-[9px] font-bold">
 								<FileText className="h-2.5 w-2.5" />{count}
 							</motion.span>
 						)}
@@ -266,7 +267,7 @@ function VaultFileCard({ title, iconColor = "text-stone-600", author, authorInit
 	title: string; iconColor?: string; author?: string; authorInitials?: string; date?: string; statusBadge?: React.ReactNode; version?: number | string; contextMenu?: React.ReactNode; badges?: React.ReactNode; tags?: string[]; retentionCategory?: string; retentionColor?: string; onClick?: () => void; isSelected?: boolean;
 }) {
 	return (
-		<div className={cn("group hover:shadow-lg transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-card rounded-xl", isSelected && "ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/5")} onClick={onClick}>
+		<div className={cn("group transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-card rounded-xl", isSelected && "ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/5")} onClick={onClick}>
 			<div className="relative aspect-[1/1.414] bg-white/[0.03] flex flex-col overflow-hidden">
 				<div className="relative flex items-center px-2.5 pt-2 z-10 min-h-[20px]">
 					<div className="flex items-center gap-1 shrink min-w-0">{badges}</div>
@@ -279,7 +280,7 @@ function VaultFileCard({ title, iconColor = "text-stone-600", author, authorInit
 					</div>
 				</div>
 				<div className="flex-1 flex items-center justify-center px-3 py-2">
-					<div className="relative w-14 h-[72px] bg-white shadow-sm flex flex-col items-center justify-center rounded-[2px] border border-neutral-200">
+					<div className="relative w-14 h-[72px] bg-[#FDFCFA] dark:bg-[#21201E]/77 flex flex-col items-center justify-center rounded-[2px] border border-neutral-200">
 						<div className="absolute top-0 left-0 w-full h-4 bg-neutral-50 border-b border-neutral-100" />
 						<FileText className={cn("h-7 w-7 opacity-50", iconColor)} />
 						<div className="absolute bottom-2 left-2 right-2 space-y-0.5">
@@ -316,9 +317,9 @@ function ViewModeToggle({ value, onChange }: { value: ViewMode; onChange: (v: Vi
 		{ value: "column", icon: Columns3, label: "Colonnes" },
 	];
 	return (
-		<div className="flex items-center rounded-lg border border-border/50 bg-card p-0.5 gap-0.5">
+		<div className="flex items-center rounded-lg border border-border/50 bg-[#F4F3ED] dark:bg-[#171616] p-0.5 gap-0.5">
 			{modes.map((m) => (
-				<button key={m.value} onClick={() => onChange(m.value)} className={cn("h-7 w-7 flex items-center justify-center rounded-md transition-all", value === m.value ? "bg-primary/10 text-primary shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted")} title={m.label}>
+				<button key={m.value} onClick={() => onChange(m.value)} className={cn("h-7 w-7 flex items-center justify-center rounded-md transition-all", value === m.value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted")} title={m.label}>
 					<m.icon className="h-3.5 w-3.5" />
 				</button>
 			))}
@@ -365,7 +366,7 @@ function FolderContextMenu({ itemId, itemName, itemType, onShare, onSavePolicy, 
 			{open && (
 				<>
 					<div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-					<div className="absolute right-0 top-8 z-50 w-52 bg-popover border border-border rounded-lg shadow-xl py-1" onClick={(e) => e.stopPropagation()}>
+					<div className="absolute right-0 top-8 z-50 w-52 bg-popover border border-border rounded-lg py-1" onClick={(e) => e.stopPropagation()}>
 						<div className="px-3 py-1.5 text-[10px] text-muted-foreground/60">{itemType === "folder" ? "Dossier" : "Document"} — Actions</div>
 						{onShare && <button onClick={() => { onShare(itemId, itemType); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors"><Share2 className="h-3.5 w-3.5 text-blue-400" />Partager</button>}
 						{onSavePolicy && <button onClick={() => { onSavePolicy(itemId); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors"><Archive className="h-3.5 w-3.5 text-cyan-400" />Politique d'archivage</button>}
@@ -416,7 +417,7 @@ function ShareDialog({ open, onClose, targetName }: { open: boolean; onClose: ()
 	if (!open) return null;
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-			<div className="w-full max-w-md border border-white/5 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+			<div className="w-full max-w-md border border-white/5 bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
 				<div className="px-5 pt-5 pb-3 border-b border-border/50">
 					<div className="flex items-center gap-2 text-sm font-semibold"><Share2 className="h-4 w-4 text-blue-400" />Partager — {targetName}</div>
 				</div>
@@ -455,7 +456,7 @@ function ManageAccessDialog({ open, onClose, targetName }: { open: boolean; onCl
 	if (!open) return null;
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-			<div className="w-full max-w-md border border-amber-500/20 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+			<div className="w-full max-w-md border border-amber-500/20 bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
 				<div className="px-5 pt-5 pb-3 border-b border-border/50">
 					<div className="flex items-center gap-2 text-sm font-semibold"><KeyRound className="h-4 w-4 text-amber-400" />Gérer les accès du dossier (Admin)</div>
 					<p className="text-[10px] text-muted-foreground mt-1">{targetName}</p>
@@ -491,7 +492,7 @@ function ArchivePolicyDialog({ open, onClose, targetName, itemType }: { open: bo
 	if (!open) return null;
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-			<div className="w-full max-w-2xl max-h-[90vh] border border-border/50 shadow-2xl bg-popover rounded-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+			<div className="w-full max-w-2xl max-h-[90vh] border border-border/50 bg-popover rounded-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
 				<div className="px-6 pt-6 pb-4 border-b border-border/50">
 					<div className="flex items-center gap-2 text-base font-semibold">
 						<div className="h-8 w-8 rounded-lg bg-cyan-500/15 flex items-center justify-center"><Archive className="h-4 w-4 text-cyan-400" /></div>
@@ -569,13 +570,13 @@ function ArchivePolicyDialog({ open, onClose, targetName, itemType }: { open: bo
 										<div className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border/50">
 											<div><p className="text-[11px] font-medium">Sous-dossiers</p><p className="text-[9px] text-muted-foreground">Héritent de cette politique</p></div>
 											<button onClick={() => setInheritChildren(!inheritChildren)} className={cn("w-9 h-5 rounded-full transition-colors relative", inheritChildren ? "bg-primary" : "bg-muted-foreground/30")}>
-												<span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform shadow-sm", inheritChildren ? "translate-x-4" : "translate-x-0.5")} />
+												<span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform", inheritChildren ? "translate-x-4" : "translate-x-0.5")} />
 											</button>
 										</div>
 										<div className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border/50">
 											<div><p className="text-[11px] font-medium">Documents enfants</p><p className="text-[9px] text-muted-foreground">Héritent de la catégorie</p></div>
 											<button onClick={() => setInheritDocuments(!inheritDocuments)} className={cn("w-9 h-5 rounded-full transition-colors relative", inheritDocuments ? "bg-primary" : "bg-muted-foreground/30")}>
-												<span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform shadow-sm", inheritDocuments ? "translate-x-4" : "translate-x-0.5")} />
+												<span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform", inheritDocuments ? "translate-x-4" : "translate-x-0.5")} />
 											</button>
 										</div>
 									</div>
@@ -602,7 +603,7 @@ function InfoDialog({ open, onClose, item, itemType }: { open: boolean; onClose:
 	const statusLabel = item.status === "draft" ? "Brouillon" : item.status === "review" ? "En révision" : item.status === "approved" ? "Approuvé" : item.status === "archived" ? "Archivé" : "—";
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-			<div className="w-full max-w-md border border-border/50 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+			<div className="w-full max-w-md border border-border/50 bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
 				<div className="px-5 pt-5 pb-3 border-b border-border/50">
 					<div className="flex items-center gap-2 text-sm font-semibold">
 						{itemType === "folder" ? <Folder className="h-4 w-4 text-violet-400" /> : <FileText className="h-4 w-4 text-violet-400" />}
@@ -883,32 +884,31 @@ function IDocumentPage() {
 	// ═══════════════════════════════════════════════════════
 
 	return (
-		<motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-5 max-w-[1400px] mx-auto p-4">
+		<motion.div initial="hidden" animate="visible" variants={stagger} className="flex flex-1 flex-col gap-4 p-3 md:p-4 max-w-[1400px] mx-auto w-full">
 			{/* ── Header ── */}
-			<motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-				<div className="flex items-center gap-3">
-					<div className="h-11 w-11 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
-						<FileText className="h-5 w-5 text-white" />
-					</div>
-					<div>
-						<h1 className="text-2xl font-bold tracking-tight">iDocument</h1>
-						<p className="text-sm text-muted-foreground">{documents.length} documents · {folders.filter((f) => !f.isSystem).length} dossiers</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<OrgSelector />
-					<button onClick={() => setShowNewFolderDialog(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-muted transition-colors">
-						<FolderPlus className="h-3.5 w-3.5" />Nouveau dossier
-					</button>
-					<button className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gradient-to-r from-violet-600 to-indigo-500 hover:from-violet-700 hover:to-indigo-600 text-white rounded-lg transition-colors">
-						<Plus className="h-3.5 w-3.5" />Nouveau document
-					</button>
-				</div>
+			<motion.div variants={fadeUp}>
+				<PageHeader
+					icon={<FileText className="h-5 w-5" />}
+					iconBgClass="bg-violet-500/10"
+					title="iDocument"
+					subtitle={`${documents.length} documents · ${folders.filter((f) => !f.isSystem).length} dossiers`}
+					actions={
+						<div className="flex items-center gap-2">
+							<OrgSelector />
+							<button onClick={() => setShowNewFolderDialog(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-muted transition-colors">
+								<FolderPlus className="h-3.5 w-3.5" />Nouveau dossier
+							</button>
+							<button className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors">
+								<Plus className="h-3.5 w-3.5" />Nouveau document
+							</button>
+						</div>
+					}
+				/>
 			</motion.div>
 
 			{/* ── Toolbar ── */}
 			<motion.div variants={fadeUp}>
-				<div className="border border-border/50 rounded-xl bg-card p-3">
+				<div className="rounded-xl bg-[#F4F3ED] dark:bg-[#171616] p-3">
 					<div className="flex flex-wrap items-center gap-2">
 						<div className="relative flex-1 min-w-[200px] max-w-[360px]">
 							<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -1220,7 +1220,7 @@ function IDocumentPage() {
 			{/* ── Trash Confirm Dialog ── */}
 			{trashConfirm && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setTrashConfirm(null)}>
-					<div className="w-full max-w-sm border border-border/50 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+					<div className="w-full max-w-sm border border-border/50 bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
 						<div className="px-5 pt-5 pb-3 border-b border-border/50">
 							<div className="flex items-center gap-2 text-sm font-semibold">
 								<Trash2 className="h-4 w-4 text-red-400" />
@@ -1249,7 +1249,7 @@ function IDocumentPage() {
 			{/* ── New Folder Dialog ── */}
 			{showNewFolderDialog && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowNewFolderDialog(false)}>
-					<div className="w-full max-w-md border border-border/50 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+					<div className="w-full max-w-md border border-border/50 bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
 						<div className="px-5 pt-5 pb-3 border-b border-border/50">
 							<div className="flex items-center gap-2 text-sm font-semibold"><FolderPlus className="h-5 w-5 text-violet-400" />Nouveau Dossier</div>
 						</div>
@@ -1261,7 +1261,7 @@ function IDocumentPage() {
 						</div>
 						<div className="px-5 py-3 border-t border-border/50 flex justify-end gap-2">
 							<button onClick={() => setShowNewFolderDialog(false)} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Annuler</button>
-							<button onClick={() => setShowNewFolderDialog(false)} disabled={!newFolderName.trim()} className="px-3 py-1.5 text-xs rounded-md bg-gradient-to-r from-violet-600 to-indigo-500 text-white disabled:opacity-50 transition-colors flex items-center gap-1.5">
+							<button onClick={() => setShowNewFolderDialog(false)} disabled={!newFolderName.trim()} className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground disabled:opacity-50 transition-colors flex items-center gap-1.5">
 								<FolderPlus className="h-4 w-4" />Créer
 							</button>
 						</div>

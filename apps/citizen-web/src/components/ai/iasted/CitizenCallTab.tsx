@@ -27,7 +27,7 @@ import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { useMeeting } from "@/hooks/use-meeting";
@@ -179,7 +179,8 @@ export function CitizenCallTab() {
 
 			{/* Dialog LiveKit en appel */}
 			<Dialog open={!!isInCall} onOpenChange={(open) => { if (!open) handleHangUp(); }}>
-				<DialogContent className="max-w-lg w-full h-[60vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800">
+				<DialogContent className="max-w-lg w-full h-[60vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800" aria-describedby={undefined}>
+					<DialogTitle className="sr-only">Appel en cours</DialogTitle>
 					{token && wsUrl ? (
 						<div className="flex flex-col flex-1 bg-zinc-950">
 							<div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0">

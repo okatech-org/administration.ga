@@ -241,7 +241,7 @@ function VaultFolderCard({ label, count, icon: CustomIcon, iconColor, onClick, c
 							<CustomIcon className={cn("h-8 w-8", iconColor || "text-muted-foreground")} />
 						</div>
 						{count > 0 && (
-							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold shadow-sm">
+							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold">
 								{count}
 							</motion.span>
 						)}
@@ -250,7 +250,7 @@ function VaultFolderCard({ label, count, icon: CustomIcon, iconColor, onClick, c
 					<div className="relative mt-1 w-full flex justify-center">
 						<DynamicFolderIcon count={count} size={96} hovered={isHovered} className="drop-shadow-lg" />
 						{count > 0 && (
-							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-1 right-1 min-w-5 h-5 px-1 flex items-center justify-center gap-0.5 rounded-full bg-blue-500 text-white text-[9px] font-bold shadow-sm">
+							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-1 right-1 min-w-5 h-5 px-1 flex items-center justify-center gap-0.5 rounded-full bg-blue-500 text-white text-[9px] font-bold">
 								<FileText className="h-2.5 w-2.5" />{count}
 							</motion.span>
 						)}
@@ -270,13 +270,13 @@ function VaultFileCard({ title, iconColor = "text-stone-600", date, statusBadge,
 	title: string; iconColor?: string; date?: string; statusBadge?: React.ReactNode; categoryBadge?: React.ReactNode; fileCount?: number; expirationBadge?: React.ReactNode; contextMenu?: React.ReactNode; onClick?: () => void; isSelected?: boolean;
 }) {
 	return (
-		<div className={cn("group hover:shadow-lg transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-card rounded-xl", isSelected && "ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/5")} onClick={onClick}>
+		<div className={cn("group transition-all duration-300 overflow-hidden cursor-pointer h-full flex flex-col rounded-xl bg-[#F4F3ED] dark:bg-[#171616] active:scale-[0.97] transition-transform", isSelected && "ring-2 ring-violet-500 bg-violet-500/5")} onClick={onClick}>
 			<div className="relative aspect-[1/1.414] bg-white/3 flex flex-col overflow-hidden">
 				<div className="relative flex items-center px-2.5 pt-2 z-10 min-h-[20px]">
 					<div className="flex items-center gap-1 shrink min-w-0">{categoryBadge}</div>
 				</div>
 				<div className="flex-1 flex items-center justify-center px-3 py-2">
-					<div className="relative w-14 h-[72px] bg-white shadow-sm flex flex-col items-center justify-center rounded-[2px] border border-neutral-200">
+					<div className="relative w-14 h-[72px] bg-white flex flex-col items-center justify-center rounded-[2px] border border-neutral-200">
 						<div className="absolute top-0 left-0 w-full h-4 bg-neutral-50 border-b border-neutral-100" />
 						<FileText className={cn("h-7 w-7 opacity-50", iconColor)} />
 						<div className="absolute bottom-2 left-2 right-2 space-y-0.5">
@@ -318,7 +318,7 @@ function ViewModeToggle({ value, onChange }: { value: ViewMode; onChange: (v: Vi
 	return (
 		<div className="flex items-center rounded-lg border border-border/50 bg-card p-0.5 gap-0.5">
 			{modes.map((m) => (
-				<button key={m.value} onClick={() => onChange(m.value)} className={cn("h-7 w-7 flex items-center justify-center rounded-md transition-all", value === m.value ? "bg-primary/10 text-primary shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted")} title={m.label}>
+				<button key={m.value} onClick={() => onChange(m.value)} className={cn("h-7 w-7 flex items-center justify-center rounded-md transition-all", value === m.value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted")} title={m.label}>
 					<m.icon className="h-3.5 w-3.5" />
 				</button>
 			))}
@@ -918,7 +918,7 @@ export default function IDocumentPage() {
 				<div className="flex items-center gap-2">
 					<Dialog open={showUpload} onOpenChange={setShowUpload}>
 						<DialogTrigger asChild>
-							<Button className="gap-2 shadow-sm shrink-0">
+							<Button className="gap-2 shrink-0">
 								<Plus className="h-4 w-4" />
 								<span className="hidden sm:inline">Ajouter un document</span>
 								<span className="sm:hidden">Ajouter</span>

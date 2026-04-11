@@ -24,14 +24,8 @@ import { DocumentChecklist } from "@/components/shared/DocumentChecklist";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { SectionHeader } from "@/components/design-system/section-header";
 import {
 	Select,
 	SelectContent,
@@ -367,19 +361,21 @@ function RequestDetailPage() {
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
 					{/* LEFT: Form Data */}
 					<div className="lg:col-span-2 space-y-6">
-						<Card>
-							<CardHeader>
-								<CardTitle>Données du formulaire</CardTitle>
-								<CardDescription>
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+								<SectionHeader
+									icon={<Send className="h-4 w-4" />}
+									title="Données du formulaire"
+								/>
+								<p className="text-xs text-muted-foreground mb-4">
 									Soumis le{" "}
 									{format(
 										request.submittedAt || request._creationTime || Date.now(),
 										"dd MMMM yyyy 'à' HH:mm",
 										{ locale: fr },
 									)}
-								</CardDescription>
-							</CardHeader>
-							<CardContent className="space-y-6">
+								</p>
+								<div className="space-y-6">
 								{Object.keys(formDataObj).length > 0 ? (
 									<div className="space-y-6">
 										{Object.entries(formDataObj).map(
@@ -448,8 +444,9 @@ function RequestDetailPage() {
 										Aucune donnée de formulaire
 									</div>
 								)}
-							</CardContent>
-						</Card>
+							</div>
+						</div>
+					</FlatCard>
 
 						{/* Documents Checklist */}
 						<DocumentChecklist
@@ -493,16 +490,21 @@ function RequestDetailPage() {
 						)}
 
 						{/* Notes */}
-						<Card className="flex flex-col max-h-[400px]">
-							<CardHeader className="shrink-0 pb-3">
-								<CardTitle className="text-base flex items-center gap-2">
-									Notes internes
-									<Badge variant="secondary" className="text-xs font-normal">
-										{agentNotes?.length || 0}
-									</Badge>
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="flex-1 overflow-y-auto space-y-3">
+						<FlatCard className="flex flex-col max-h-[400px]">
+							<div className="shrink-0 p-3 lg:p-4 pb-3">
+								<SectionHeader
+									icon={<Send className="h-4 w-4" />}
+									title={
+										<span className="flex items-center gap-2">
+											Notes internes
+											<Badge variant="secondary" className="text-xs font-normal">
+												{agentNotes?.length || 0}
+											</Badge>
+										</span>
+									}
+								/>
+							</div>
+							<div className="flex-1 overflow-y-auto space-y-3 px-3 lg:px-4">
 								{!agentNotes || agentNotes.length === 0 ? (
 									<p className="text-sm text-muted-foreground text-center py-4">
 										Aucune note
@@ -552,8 +554,8 @@ function RequestDetailPage() {
 										</div>
 									))
 								)}
-							</CardContent>
-							<CardFooter className="shrink-0 pt-3">
+							</div>
+							<div className="shrink-0 p-3 lg:p-4 pt-3 border-t border-border/40">
 								<div className="flex w-full gap-2">
 									<Textarea
 										placeholder="Ajouter une note..."
@@ -580,8 +582,8 @@ function RequestDetailPage() {
 										<Send className="h-4 w-4" />
 									</Button>
 								</div>
-							</CardFooter>
-						</Card>
+							</div>
+						</FlatCard>
 					</div>
 				</div>
 			</div>

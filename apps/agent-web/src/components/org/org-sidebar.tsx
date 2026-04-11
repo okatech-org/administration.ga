@@ -75,7 +75,7 @@ function SidebarText({
 	return (
 		<span
 			className={cn(
-				"truncate text-sm whitespace-nowrap transition-opacity duration-200",
+				"truncate text-[15.5px] font-semibold whitespace-nowrap transition-opacity duration-200",
 				isExpanded ? "opacity-100 delay-100" : "opacity-0 w-0 overflow-hidden",
 				className,
 			)}
@@ -171,9 +171,9 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 			<aside
 				data-slot="sidebar"
 				className={cn(
-					"flex flex-col py-3 px-4 bg-card border border-border h-full overflow-hidden",
-					"rounded-2xl transition-[width] duration-300 ease-in-out",
-					isExpanded ? "w-60 items-stretch" : "w-16 items-center",
+					"flex flex-col py-3 px-3 h-full overflow-hidden",
+					"transition-[width] duration-300 ease-in-out",
+					isExpanded ? "w-56 items-stretch" : "w-[68px] items-center",
 				)}
 			>
 				{/* Org Switcher */}
@@ -182,7 +182,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 						<OrgSwitcher />
 					) : (
 						<Link to="/" className="flex items-center justify-center">
-							<div className="size-12 shrink-0 rounded-full bg-white flex items-center justify-center overflow-hidden shadow-sm">
+							<div className="size-12 shrink-0 rounded-full bg-[#FDFCFA] dark:bg-[#21201E]/77 flex items-center justify-center overflow-hidden">
 								<img
 									src="/icons/apple-icon.png"
 									alt="Logo"
@@ -208,15 +208,15 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 									className={cn(
 										"my-2",
 										isExpanded
-											? "border-t border-border/40 pt-2"
-											: "border-t border-border/40 pt-2 w-8",
+											? "border-t border-foreground/5 pt-2"
+											: "border-t border-foreground/5 pt-2 w-8",
 									)}
 								/>
 							)}
 
 							{/* Section label (expanded only) */}
 							{isExpanded && section.label && (
-								<span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-3 mb-1 block">
+								<span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/70 px-3 mb-1 block">
 									{section.label}
 								</span>
 							)}
@@ -231,13 +231,13 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 										variant="ghost"
 										size={isExpanded ? "default" : "icon"}
 										className={cn(
-											"transition-all duration-200",
+											"transition-all duration-200 active:scale-[0.97]",
 											isExpanded
-												? "w-full justify-start gap-3 px-3 h-10 rounded-xl"
+												? "w-full justify-start gap-3 px-3 h-11 rounded-lg"
 												: "w-11 h-11 rounded-full",
 											active
-												? "bg-primary/10 text-primary border border-primary/20 font-semibold hover:bg-primary/15 hover:text-primary"
-												: "text-muted-foreground hover:text-foreground hover:bg-muted",
+												? "bg-primary/10 dark:bg-primary/20 text-primary font-bold hover:bg-primary/15 hover:text-primary"
+												: "text-muted-foreground font-semibold hover:text-foreground hover:bg-muted/50",
 											readOnly && "opacity-70",
 										)}
 									>
@@ -278,7 +278,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 				{/* Bottom Controls */}
 				<div
 					className={cn(
-						"flex flex-col gap-1.5 pt-4 border-t border-border/50",
+						"flex flex-col gap-1.5 pt-4 border-t border-foreground/5",
 						!isExpanded && "items-center",
 					)}
 				>
@@ -291,7 +291,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 							variant="ghost"
 							size="sm"
 							onClick={toggleLanguage}
-							className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground h-9 px-2"
+							className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground h-9 px-2 active:scale-[0.97] transition-transform"
 						>
 							<span className="text-base leading-none">
 								{currentLang === "fr" ? "🇫🇷" : "🇬🇧"}
@@ -309,7 +309,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 								<Button
 									variant="ghost"
 									size="icon"
-									className="h-9 w-9 text-muted-foreground hover:text-foreground"
+									className="h-9 w-9 text-muted-foreground hover:text-foreground active:scale-[0.97] transition-transform"
 									onClick={onToggle}
 								>
 									{isExpanded ? (
@@ -333,7 +333,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 									variant="ghost"
 									size="icon"
 									onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-									className="h-9 w-9 text-muted-foreground hover:text-foreground"
+									className="h-9 w-9 text-muted-foreground hover:text-foreground active:scale-[0.97] transition-transform"
 								>
 									{theme === "dark" ? (
 										<Sun className="size-4" />
@@ -350,7 +350,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 
 					<div
 						className={cn(
-							"flex items-center gap-3 pt-2 border-t border-border/50",
+							"flex items-center gap-3 pt-2 border-t border-foreground/5",
 							isExpanded ? "px-1" : "justify-center",
 						)}
 					>

@@ -388,7 +388,7 @@ function DashboardRequests() {
 							)}
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className="pl-10 h-11 text-sm bg-card border-border shadow-sm"
+							className="pl-10 h-11 text-sm bg-[#FDFCFA] dark:bg-[#21201E]/77 border-border"
 						/>
 					</div>
 					<Combobox
@@ -397,7 +397,7 @@ function DashboardRequests() {
 						placeholder={t("dashboard.requests.allServices")}
 						searchPlaceholder={t("common.search")}
 						emptyText={t("dashboard.services.noResults")}
-						className="w-full sm:w-[240px] h-11 bg-card border-border shadow-sm"
+						className="w-full sm:w-[240px] h-11 bg-[#FDFCFA] dark:bg-[#21201E]/77 border-border"
 						options={[
 							{ value: "all", label: t("dashboard.requests.allServices") },
 							...(services?.map((service: any) => ({
@@ -407,7 +407,7 @@ function DashboardRequests() {
 						]}
 					/>
 					{/* Toggle: show only my assigned requests */}
-					<div className="flex items-center gap-2 h-11 px-3 rounded-lg border border-border bg-card shadow-sm shrink-0">
+					<div className="flex items-center gap-2 h-11 px-3 rounded-lg border border-border bg-[#FDFCFA] dark:bg-[#21201E]/77 shrink-0">
 						<Switch
 							id="show-my-requests"
 							checked={showMyRequests}
@@ -439,8 +439,8 @@ function DashboardRequests() {
 										"inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 border",
 										isActive
 											? tab.key === "all"
-												? "bg-primary text-primary-foreground border-primary shadow-sm"
-												: `${config.bgClass} ${config.textClass} border-current/20 shadow-sm`
+												? "bg-primary text-primary-foreground border-primary"
+												: `${config.bgClass} ${config.textClass} border-current/20`
 											: "bg-background hover:bg-muted/60 text-muted-foreground border-transparent hover:border-border/60",
 									)}
 								>
@@ -914,7 +914,7 @@ function KanbanCard({
 			onClick={() =>
 				navigate({ to: `/requests/${request.reference}` as any })
 			}
-			className="group cursor-pointer bg-card rounded-lg border border-border/60 p-3 shadow-sm hover:shadow-md hover:border-border transition-all duration-200 hover:-translate-y-0.5"
+			className="group cursor-pointer bg-[#F4F3ED] dark:bg-[#171616] rounded-lg border border-border/60 p-3 hover:border-border transition-all duration-200"
 		>
 			{/* Service name (like "Product area" in Refero) */}
 			<div className="flex items-center justify-between gap-2 mb-2">

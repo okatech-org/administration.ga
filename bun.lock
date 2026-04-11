@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "gabon-diplomatie",
@@ -210,6 +211,10 @@
         "@stripe/react-stripe-js": "^6.1.0",
         "@stripe/stripe-js": "^9.0.1",
         "@tanstack/react-query": "^5.62.0",
+        "@tiptap/extension-image": "^3.22.3",
+        "@tiptap/extension-link": "^3.22.3",
+        "@tiptap/react": "^3.22.3",
+        "@tiptap/starter-kit": "^3.22.3",
         "@workspace/api": "workspace:*",
         "@workspace/i18n": "workspace:*",
         "@workspace/shared": "workspace:*",

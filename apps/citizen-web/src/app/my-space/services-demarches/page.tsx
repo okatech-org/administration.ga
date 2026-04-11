@@ -374,7 +374,7 @@ function TabBtn({
 			className={cn(
 				"flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold transition-all flex-1 justify-center",
 				active
-					? "bg-card text-foreground shadow-sm"
+					? "bg-[#F4F3ED] dark:bg-[#171616] text-foreground"
 					: "text-muted-foreground hover:text-foreground",
 			)}
 		>
@@ -477,7 +477,7 @@ function CatalogueContent({
 							const serviceName = getLocalizedValue(service.name, i18n.language);
 							return (
 								<button key={service._id} type="button" onClick={() => handleServiceClick(service as CatalogService)} className="group text-left h-full">
-									<FlatCard className="h-full hover:border-primary/20 hover:shadow-sm transition-all">
+									<FlatCard className="h-full transition-all">
 										<div className="p-4 flex items-center gap-3.5 h-full">
 											<div className={cn("w-11 h-11 rounded-xl flex items-center justify-center shrink-0", style.bgColor)}>
 												<SvcIcon className={cn("w-5.5 h-5.5", style.color)} />
@@ -648,7 +648,7 @@ function DemarchesContent({
 						className={cn(
 							"px-3 py-1.5 text-xs font-medium rounded-lg transition-all",
 							demarcheFilter === tab.key
-								? "bg-card text-foreground shadow-sm"
+								? "bg-[#F4F3ED] dark:bg-[#171616] text-foreground"
 								: "text-muted-foreground hover:text-foreground",
 						)}
 					>
@@ -746,7 +746,7 @@ function RequestItemCard({
 			href={`/my-space/requests/${request.reference || request._id}`}
 			className="block group"
 		>
-			<FlatCard className="hover:shadow-sm transition-all">
+			<FlatCard className="transition-all">
 				<div className="p-3.5">
 					<div className="flex items-center justify-between mb-2">
 						<div className="flex items-center gap-2">
@@ -816,7 +816,7 @@ function DossierItemCard({ dossier }: { dossier: any }) {
 			href={`/my-space/demarches/${dossier._id}`}
 			className="block group"
 		>
-			<FlatCard className="hover:shadow-sm transition-all">
+			<FlatCard className="transition-all">
 				<div className="p-3.5">
 					<div className="flex items-center justify-between mb-2">
 						<div className="flex items-center gap-2">

@@ -24,7 +24,7 @@ import {
 import { useCallback, useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
@@ -229,7 +229,7 @@ export function DiplomaticProfilesView() {
 						onClick={() => { setActiveContinent(null); setSelectedCountry(null); setSelectedOrg(null); }}
 						className={cn(
 							"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-							!activeContinent ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-background/50",
+							!activeContinent ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-background/50",
 						)}
 					>
 						Tous
@@ -247,7 +247,7 @@ export function DiplomaticProfilesView() {
 								onClick={() => { setActiveContinent(isActive ? null : cont); setSelectedCountry(null); setSelectedOrg(null); }}
 								className={cn(
 									"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-									isActive ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-background/50",
+									isActive ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-background/50",
 								)}
 							>
 								{meta?.label ?? cont}
@@ -393,8 +393,8 @@ function DiplomaticMemberCard({ member }: { member: any }) {
 			params={{ userId: user?._id }}
 			className="block"
 		>
-		<Card className="hover:border-primary/20 transition-colors cursor-pointer group">
-			<CardContent className="p-4">
+		<FlatCard className="hover:ring-1 hover:ring-primary/20 transition-colors cursor-pointer group">
+			<div className="p-3 lg:p-4">
 				<div className="flex items-start gap-3">
 					<Avatar className="h-12 w-12 rounded-xl shrink-0">
 						<AvatarImage src={user?.avatarUrl} />
@@ -471,8 +471,8 @@ function DiplomaticMemberCard({ member }: { member: any }) {
 						)}
 					</div>
 				)}
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 		</Link>
 	);
 }

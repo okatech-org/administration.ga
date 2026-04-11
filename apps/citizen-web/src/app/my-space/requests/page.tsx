@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/my-space/page-header";
 import { RequestCard } from "@/components/my-space/request-card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { useAuthenticatedPaginatedQuery } from "@/integrations/convex/hooks";
 
 export default function RequestsPage() {
@@ -59,8 +59,8 @@ export default function RequestsPage() {
 				transition={{ duration: 0.2, delay: 0.1 }}
 			>
 				{!requests || requests.length === 0 ? (
-					<Card>
-						<CardContent className="flex flex-col items-center justify-center py-16 text-center">
+					<FlatCard>
+						<div className="p-3 lg:p-4 flex flex-col items-center justify-center py-16 text-center">
 							<FileText className="h-16 w-16 mb-4 text-muted-foreground/30" />
 							<h3 className="text-lg font-medium mb-2">
 								{t("requests.empty.title")}
@@ -77,8 +77,8 @@ export default function RequestsPage() {
 									{t("requests.empty.action")}
 								</Link>
 							</Button>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				) : (
 					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 						{requests.map((request: any) => (

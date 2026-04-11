@@ -27,7 +27,7 @@ import { useOrg } from "@/components/org/org-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import {
   Dialog,
   DialogContent,
@@ -366,7 +366,7 @@ function AdminServicesPage() {
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <>
-      <div className="flex flex-col gap-6 p-4 lg:p-6 overflow-y-auto">
+      <div className="flex flex-col gap-6 p-4 lg:p-6 overflow-y-auto citizen-scrollbar">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -398,7 +398,7 @@ function AdminServicesPage() {
               setAddDialogOpen(true);
             }}
             disabled={availableForActivation.length === 0}
-            className="gap-2"
+            className="gap-2 active:scale-[0.97] transition-transform"
           >
             <Plus className="h-4 w-4" />
             {t("dashboard.services.activate")}
@@ -755,16 +755,16 @@ function ServiceAdminCard({
   const isActivated = service.activationState !== "not_activated";
 
   return (
-    <Card
+    <FlatCard
       className={cn(
-        "group relative transition-all duration-200 hover:-translate-y-0.5 cursor-pointer",
+        "group relative transition-all duration-200 cursor-pointer",
         isActivated ?
-          "hover:shadow-lg hover:border-primary/30"
-        : "border-dashed hover:shadow-md hover:border-primary/20 opacity-80 hover:opacity-100",
+          "hover:border-primary/30"
+        : "border-dashed hover:border-primary/20 opacity-80 hover:opacity-100",
       )}
       onClick={onCardClick}
     >
-      <CardContent className="p-5">
+      <div className="p-5">
         {/* Top row: icon + status */}
         <div className="flex items-start justify-between mb-3">
           <div
@@ -866,14 +866,14 @@ function ServiceAdminCard({
 
         {/* Hover: config link for activated services */}
         {isActivated && (
-          <div className="absolute inset-x-0 bottom-0 px-5 pb-4 pt-8 bg-gradient-to-t from-card to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute inset-x-0 bottom-0 px-5 pb-4 pt-8 bg-gradient-to-t from-[#F4F3ED] dark:from-[#171616] to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
             <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
               <Settings2 className="h-4 w-4" />
               {t("dashboard.services.configure")}
             </span>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </FlatCard>
   );
 }

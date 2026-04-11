@@ -257,7 +257,7 @@ export function AffairesRequestsTab() {
 							)}
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className="pl-10 h-11 text-sm bg-card border-border shadow-sm"
+							className="pl-10 h-11 text-sm bg-card border-border"
 						/>
 					</div>
 					<Combobox
@@ -276,7 +276,7 @@ export function AffairesRequestsTab() {
 							"superadmin.requests.noOrgFound",
 							"Aucun organisme trouvé",
 						)}
-						className="w-full sm:w-[300px] h-11 bg-card border-border shadow-sm"
+						className="w-full sm:w-[300px] h-11 bg-card border-border"
 					/>
 				</div>
 
@@ -296,8 +296,8 @@ export function AffairesRequestsTab() {
 									"inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 border",
 									isActive
 										? tab.key === "all"
-											? "bg-primary text-primary-foreground border-primary shadow-sm"
-											: `${config.bgClass} ${config.textClass} border-current/20 shadow-sm`
+											? "bg-primary text-primary-foreground border-primary"
+											: `${config.bgClass} ${config.textClass} border-current/20`
 										: "bg-background hover:bg-muted/60 text-muted-foreground border-transparent hover:border-border/60",
 								)}
 							>

@@ -21,7 +21,7 @@ export function AccordionSection({
 	color = "text-primary",
 }: AccordionSectionProps) {
 	return (
-		<div className="border border-border/60 rounded-xl overflow-hidden transition-all duration-200">
+		<div className="rounded-xl overflow-hidden transition-all duration-200">
 			<button
 				type="button"
 				onClick={onToggle}

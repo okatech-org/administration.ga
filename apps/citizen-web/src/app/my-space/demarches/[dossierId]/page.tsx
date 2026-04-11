@@ -29,7 +29,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/my-space/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexMutation,
@@ -333,8 +333,8 @@ export default function DossierDetailPage() {
 						initial={{ opacity: 0, y: -10 }}
 						animate={{ opacity: 1, y: 0 }}
 					>
-						<Card className="p-3 bg-red-50 dark:bg-red-950/50 border-red-200 dark:border-red-800 rounded-xl">
-							<div className="flex items-start gap-2">
+						<div className="rounded-xl bg-red-50 dark:bg-red-950/50 overflow-hidden">
+							<div className="p-3 flex items-start gap-2">
 								<AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
 								<div>
 									<p className="text-xs font-semibold text-red-600 dark:text-red-400">
@@ -348,7 +348,7 @@ export default function DossierDetailPage() {
 									</p>
 								</div>
 							</div>
-						</Card>
+						</div>
 					</motion.div>
 				)}
 
@@ -358,8 +358,8 @@ export default function DossierDetailPage() {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ delay: 0.05 }}
 				>
-					<Card className="p-4 bg-card border-border/50 rounded-xl">
-						<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+					<FlatCard>
+						<div className="p-3 lg:p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
 							<div>
 								<p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider mb-1">
 									Date de depot
@@ -397,7 +397,7 @@ export default function DossierDetailPage() {
 								</div>
 							)}
 						</div>
-					</Card>
+					</FlatCard>
 				</motion.div>
 
 				{/* Step progress tracker */}
@@ -407,7 +407,8 @@ export default function DossierDetailPage() {
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ delay: 0.1 }}
 					>
-						<Card className="p-4 bg-card border-border/50 rounded-xl">
+						<FlatCard>
+							<div className="p-3 lg:p-4">
 							<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
 								Progression
 							</h3>
@@ -469,7 +470,8 @@ export default function DossierDetailPage() {
 									);
 								})}
 							</div>
-						</Card>
+							</div>
+						</FlatCard>
 					</motion.div>
 				)}
 
@@ -479,7 +481,8 @@ export default function DossierDetailPage() {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ delay: 0.15 }}
 				>
-					<Card className="p-4 bg-card border-border/50 rounded-xl">
+					<FlatCard>
+						<div className="p-3 lg:p-4">
 						<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
 							Documents requis
 						</h3>
@@ -571,7 +574,8 @@ export default function DossierDetailPage() {
 								})
 							)}
 						</div>
-					</Card>
+						</div>
+					</FlatCard>
 				</motion.div>
 
 				{/* Timeline */}
@@ -581,7 +585,8 @@ export default function DossierDetailPage() {
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ delay: 0.2 }}
 					>
-						<Card className="p-4 bg-card border-border/50 rounded-xl">
+						<FlatCard>
+							<div className="p-3 lg:p-4">
 							<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
 								Historique
 							</h3>
@@ -622,7 +627,8 @@ export default function DossierDetailPage() {
 									)}
 								</div>
 							</div>
-						</Card>
+							</div>
+						</FlatCard>
 					</motion.div>
 				)}
 			</div>

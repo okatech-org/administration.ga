@@ -8,7 +8,7 @@ import {
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { cn } from "@/lib/utils";
 
 // ─── Labels genre ─────────────────────────────────────────────
@@ -46,9 +46,9 @@ export function ProfileChildrenCard({
   basePath = "/admin/profiles",
 }: ProfileChildrenCardProps) {
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-2 pt-3 px-4">
-        <CardTitle className="text-xs font-bold flex items-center justify-between">
+    <FlatCard>
+      <div className="pb-2 pt-3 px-4">
+        <div className="text-xs font-bold flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-pink-500/10">
               <Users className="w-3.5 h-3.5 text-pink-500" />
@@ -58,10 +58,10 @@ export function ProfileChildrenCard({
           <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-pink-500/10 text-pink-500">
             {childProfiles.length}
           </Badge>
-        </CardTitle>
-      </CardHeader>
+        </div>
+      </div>
 
-      <CardContent className="p-3 pt-1">
+      <div className="p-3 pt-1">
         {childProfiles.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
             <Baby className="h-8 w-8 mx-auto mb-2 opacity-20" />
@@ -123,7 +123,7 @@ export function ProfileChildrenCard({
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </FlatCard>
   );
 }

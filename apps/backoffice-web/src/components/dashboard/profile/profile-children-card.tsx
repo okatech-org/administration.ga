@@ -6,9 +6,10 @@ import {
   Users,
 } from "lucide-react";
 
+import { FlatCard } from "@/components/design-system/flat-card";
+import { SectionHeader } from "@/components/design-system/section-header";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 // ─── Labels genre ─────────────────────────────────────────────
@@ -46,22 +47,19 @@ export function ProfileChildrenCard({
   basePath = "/admin/profiles",
 }: ProfileChildrenCardProps) {
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-2 pt-3 px-4">
-        <CardTitle className="text-xs font-bold flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-pink-500/10">
-              <Users className="w-3.5 h-3.5 text-pink-500" />
-            </div>
-            Enfants
-          </div>
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-pink-500/10 text-pink-500">
-            {childProfiles.length}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-
-      <CardContent className="p-3 pt-1">
+    <FlatCard>
+      <div className="p-3 lg:p-4">
+        <SectionHeader
+          icon={<Users className="h-3.5 w-3.5" />}
+          iconBgClass="bg-pink-500/10"
+          iconTextClass="text-pink-500"
+          title="Enfants"
+          actions={
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-pink-500/10 text-pink-500">
+              {childProfiles.length}
+            </Badge>
+          }
+        />
         {childProfiles.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
             <Baby className="h-8 w-8 mx-auto mb-2 opacity-20" />
@@ -123,7 +121,7 @@ export function ProfileChildrenCard({
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </FlatCard>
   );
 }

@@ -35,7 +35,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FormPreview } from "@/components/admin/FormPreview";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -379,10 +379,10 @@ export function FormBuilder({
 						showPreview ? "col-span-2" : "col-span-3",
 					)}
 				>
-					<Card className="p-0 flex-1 flex flex-col min-h-0 shadow-sm border-muted">
-						<CardHeader className="p-2 px-4 border-b border-muted">
+					<FlatCard className="p-0 flex-1 flex flex-col min-h-0 border-muted">
+						<div className="p-2 px-4 border-b border-muted">
 							<div className="flex items-center justify-between">
-								<CardTitle className="text-sm font-medium">Sections</CardTitle>
+								<h4 className="text-sm font-medium">Sections</h4>
 								<Button
 									variant="ghost"
 									size="sm"
@@ -392,7 +392,7 @@ export function FormBuilder({
 									<Plus className="h-4 w-4" />
 								</Button>
 							</div>
-						</CardHeader>
+						</div>
 						<ScrollArea className="flex-1">
 							<div className="p-2 space-y-1">
 								{sections.map((section) => (
@@ -418,15 +418,15 @@ export function FormBuilder({
 								))}
 							</div>
 						</ScrollArea>
-					</Card>
+					</FlatCard>
 
 					{/* Documents Required */}
-					<Card className="py-0 flex-1 flex flex-col min-h-0 shadow-sm border-muted">
-						<CardHeader className="p-4 pb-0 border-b border-muted">
+					<FlatCard className="py-0 flex-1 flex flex-col min-h-0 border-muted">
+						<div className="p-4 pb-0 border-b border-muted">
 							<div className="flex items-center justify-between">
-								<CardTitle className="text-sm font-medium">
+								<h4 className="text-sm font-medium">
 									Documents requis
-								</CardTitle>
+								</h4>
 								<Button
 									variant="ghost"
 									size="sm"
@@ -436,7 +436,7 @@ export function FormBuilder({
 									<Plus className="h-4 w-4" />
 								</Button>
 							</div>
-						</CardHeader>
+						</div>
 						<ScrollArea className="flex-1">
 							<div className="p-2 space-y-1">
 								{joinedDocuments.map((doc) => (
@@ -484,14 +484,14 @@ export function FormBuilder({
 								)}
 							</div>
 						</ScrollArea>
-					</Card>
+					</FlatCard>
 
-					<Card className="p-0 flex-1 flex flex-col min-h-0 shadow-sm border-muted">
-						<CardHeader className="py-4 border-b border-muted bg-muted/30">
-							<CardTitle className="text-xs font-medium uppercase text-muted-foreground">
+					<FlatCard className="p-0 flex-1 flex flex-col min-h-0 border-muted">
+						<div className="py-4 border-b border-muted bg-muted/30">
+							<h4 className="text-xs font-medium uppercase text-muted-foreground">
 								{t("superadmin.services.formBuilder.addField")}
-							</CardTitle>
-						</CardHeader>
+							</h4>
+						</div>
 						<ScrollArea className="flex-1">
 							<div className="p-2 grid grid-cols-2 gap-2">
 								{Object.values(FormFieldType).map((fieldType) => {
@@ -515,7 +515,7 @@ export function FormBuilder({
 								})}
 							</div>
 						</ScrollArea>
-					</Card>
+					</FlatCard>
 				</div>
 
 				{/* CENTER: Active Section Canvas */}
@@ -525,13 +525,13 @@ export function FormBuilder({
 						showPreview ? "col-span-4" : "col-span-5",
 					)}
 				>
-					<Card className="p-0 h-full flex flex-col border-2 border-dashed border-muted shadow-sm bg-muted/5">
-						<CardHeader className="py-4 border-b bg-card">
+					<FlatCard className="p-0 h-full flex flex-col border-2 border-dashed border-muted bg-muted/5">
+						<div className="py-4 border-b bg-card">
 							<div className="flex items-center justify-between">
 								<div>
-									<CardTitle className="text-base">
+									<h4 className="text-base">
 										{activeSection?.title.fr || "Section"}
-									</CardTitle>
+									</h4>
 									<p className="text-xs text-muted-foreground">
 										{activeSection?.fields.length} champs
 									</p>
@@ -546,7 +546,7 @@ export function FormBuilder({
 									<Settings2 className="h-4 w-4" />
 								</Button>
 							</div>
-						</CardHeader>
+						</div>
 						<ScrollArea className="flex-1 p-4">
 							<div className="space-y-3">
 								{activeSection?.fields.length === 0 ? (
@@ -602,7 +602,7 @@ export function FormBuilder({
 								)}
 							</div>
 						</ScrollArea>
-					</Card>
+					</FlatCard>
 				</div>
 
 				{/* RIGHT: Properties Editor (Section OR Field) */}
@@ -612,14 +612,14 @@ export function FormBuilder({
 						showPreview ? "col-span-3" : "col-span-4",
 					)}
 				>
-					<Card className="p-0 h-full flex flex-col shadow-sm border-muted">
-						<CardHeader className="py-4 border-b border-muted">
-							<CardTitle className="text-sm font-medium">
+					<FlatCard className="p-0 h-full flex flex-col border-muted">
+						<div className="py-4 border-b border-muted">
+							<h4 className="text-sm font-medium">
 								{configPanelTitle}
-							</CardTitle>
-						</CardHeader>
+							</h4>
+						</div>
 						<ScrollArea className="flex-1">
-							<CardContent className="p-4 space-y-6">
+							<div className="p-4 space-y-6">
 								{selectedField ? (
 									// FIELD EDITOR
 									<div className="space-y-4">
@@ -835,20 +835,20 @@ export function FormBuilder({
 										propriétés.
 									</div>
 								)}
-							</CardContent>
+							</div>
 						</ScrollArea>
-					</Card>
+					</FlatCard>
 				</div>
 
 				{/* PREVIEW PANEL (conditional) */}
 				{showPreview && (
 					<div className="col-span-3 flex flex-col min-h-0">
-						<Card className="flex-1 flex flex-col overflow-hidden">
-							<CardHeader className="pb-2 border-b">
-								<CardTitle className="text-sm font-medium">
+						<FlatCard className="flex-1 flex flex-col overflow-hidden">
+							<div className="pb-2 border-b">
+								<h4 className="text-sm font-medium">
 									Prévisualisation
-								</CardTitle>
-							</CardHeader>
+								</h4>
+							</div>
 							<ScrollArea className="flex-1 p-4">
 								<FormPreview
 									sections={sections}
@@ -857,7 +857,7 @@ export function FormBuilder({
 									currentSectionId={activeSectionId ?? undefined}
 								/>
 							</ScrollArea>
-						</Card>
+						</FlatCard>
 					</div>
 				)}
 			</div>

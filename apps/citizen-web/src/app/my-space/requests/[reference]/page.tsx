@@ -49,13 +49,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCitizenData } from "@/hooks/use-citizen-data";
 import {
@@ -510,26 +504,26 @@ export default function UserRequestDetail() {
 					className="max-w-2xl mx-auto"
 				>
 					{/* Service Info Card */}
-					<Card className="mb-6 border-primary/20 bg-primary/5">
-						<CardHeader className="pb-3">
+					<FlatCard className="mb-6 bg-primary/5">
+						<div className="p-3 lg:p-4 pb-3">
 							<div className="flex items-start justify-between gap-4">
 								<div>
-									<CardTitle className="text-lg">
+									<h3 className="text-lg font-semibold leading-none tracking-tight">
 										{getLocalizedValue(
 											request.service?.name as
 												| { fr: string; en?: string }
 												| undefined,
 											i18n.language,
 										)}
-									</CardTitle>
-									<CardDescription className="mt-1">
+									</h3>
+									<p className="text-sm text-muted-foreground mt-1">
 										{getLocalizedValue(
 											request.service?.description as
 												| { fr: string; en?: string }
 												| undefined,
 											i18n.language,
 										)}
-									</CardDescription>
+									</p>
 								</div>
 								{orgService?.estimatedDays && (
 									<Badge variant="secondary" className="shrink-0">
@@ -537,8 +531,8 @@ export default function UserRequestDetail() {
 									</Badge>
 								)}
 							</div>
-						</CardHeader>
-					</Card>
+						</div>
+					</FlatCard>
 
 					{/* Form - Registration or Dynamic */}
 					{isRegistrationService && profile ? (
@@ -615,8 +609,8 @@ export default function UserRequestDetail() {
 				request.status !== RequestStatus.Completed &&
 				(orgService as any)?.requiresAppointment &&
 				!(request as any)?.depositAppointmentId && (
-					<Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
-						<CardContent className="flex items-center justify-between gap-4 py-4">
+					<FlatCard className="bg-amber-50 dark:bg-amber-950/20">
+						<div className="p-3 lg:p-4 flex items-center justify-between gap-4">
 							<div className="flex items-center gap-3">
 								<Calendar className="h-6 w-6 text-amber-600 shrink-0" />
 								<div>
@@ -637,8 +631,8 @@ export default function UserRequestDetail() {
 								<Calendar className="mr-2 h-4 w-4" />
 								{t("appointment.book_now")}
 							</Button>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				)}
 
 			{/* Action Required Cards */}
@@ -657,14 +651,14 @@ export default function UserRequestDetail() {
 				<div className="md:col-span-2 space-y-4 sm:space-y-6 min-w-0">
 					{/* Form Data - Tabbed */}
 					{sections.length > 0 && (
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
+						<FlatCard>
+							<div className="p-3 lg:p-4 pb-0">
+								<h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight">
 									<FileText className="h-5 w-5" />
 									{t("requestDetail.formData.title")}
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
+								</h3>
+							</div>
+							<div className="p-3 lg:p-4">
 								<Tabs defaultValue={sections[0].id} className="w-full">
 									<div className="overflow-x-auto scrollbar-hide -mx-1 px-1">
 										<TabsList className="h-auto justify-start w-max">
@@ -697,8 +691,8 @@ export default function UserRequestDetail() {
 										</TabsContent>
 									))}
 								</Tabs>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 					{/* Payment Section */}
 					{(() => {
@@ -716,20 +710,20 @@ export default function UserRequestDetail() {
 						if (!needsPayment) return null;
 
 						return (
-							<Card className="border-primary/20">
-								<CardHeader>
-									<CardTitle className="flex items-center gap-2">
+							<FlatCard>
+								<div className="p-3 lg:p-4 pb-0">
+									<h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight">
 										<CreditCard className="h-5 w-5" />
 										{t("payment.title")}
-									</CardTitle>
-									<CardDescription>
+									</h3>
+									<p className="text-sm text-muted-foreground mt-1.5">
 										{request.paymentStatus === "pending" ||
 										request.paymentStatus === "processing"
 											? t("payment.pending")
 											: t("payment.required")}
-									</CardDescription>
-								</CardHeader>
-								<CardContent>
+									</p>
+								</div>
+								<div className="p-3 lg:p-4">
 									{request.paymentStatus === "failed" && (
 										<Alert variant="destructive" className="mb-4">
 											<AlertTriangle className="h-4 w-4" />
@@ -745,8 +739,8 @@ export default function UserRequestDetail() {
 											toast.success(t("payment.successToast"));
 										}}
 									/>
-								</CardContent>
-							</Card>
+								</div>
+							</FlatCard>
 						);
 					})()}
 
@@ -786,14 +780,14 @@ export default function UserRequestDetail() {
 
 					{/* Organization Contact Card */}
 					{request.org && (
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2 text-base">
+						<FlatCard>
+							<div className="p-3 lg:p-4 pb-0">
+								<h3 className="flex items-center gap-2 text-base font-semibold leading-none tracking-tight">
 									<Building2 className="h-5 w-5" />
 									{t("requests.detail.orgContact.title")}
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-4">
+								</h3>
+							</div>
+							<div className="p-3 lg:p-4 space-y-4">
 								<div className="space-y-3 text-sm">
 									<p className="font-medium">{(request.org as any)?.name}</p>
 
@@ -965,19 +959,19 @@ export default function UserRequestDetail() {
 										/>
 									</div>
 								)}
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 
 					{/* Timeline */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
+					<FlatCard>
+						<div className="p-3 lg:p-4 pb-0">
+							<h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight">
 								<Calendar className="h-5 w-5" />
 								{t("requests.detail.timeline")}
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
+							</h3>
+						</div>
+						<div className="p-3 lg:p-4">
 							<div className="space-y-3 text-sm">
 								{/* Creation */}
 								<div className="flex justify-between gap-2">
@@ -1047,19 +1041,19 @@ export default function UserRequestDetail() {
 										</div>
 									)}
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
 					{/* Associated Appointments */}
 					{(request as any).appointments &&
 						(request as any).appointments.length > 0 && (
 							<div className="space-y-4">
 								{(request as any).appointments.map((apt: any) => (
-									<Card
+									<FlatCard
 										key={apt._id}
-										className="border-primary/20 bg-primary/5"
+										className="bg-primary/5"
 									>
-										<CardContent className="flex flex-col gap-4 py-4">
+										<div className="p-3 lg:p-4 flex flex-col gap-4">
 											<div className="flex items-start justify-between gap-4">
 												<div className="flex items-center gap-3">
 													<Calendar className="h-6 w-6 text-primary shrink-0" />
@@ -1098,22 +1092,22 @@ export default function UserRequestDetail() {
 												<Eye className="mr-2 h-4 w-4" />
 												{t("requests.detail.viewAppointment")}
 											</Button>
-										</CardContent>
-									</Card>
+										</div>
+									</FlatCard>
 								))}
 							</div>
 						)}
 
 					{/* Actions */}
 					{canCancel && (
-						<Card className="border-destructive/20">
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2 text-destructive">
+						<FlatCard>
+							<div className="p-3 lg:p-4 pb-0">
+								<h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight text-destructive">
 									<AlertTriangle className="h-5 w-5" />
 									{t("requests.detail.actions")}
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
+								</h3>
+							</div>
+							<div className="p-3 lg:p-4">
 								<AlertDialog>
 									<AlertDialogTrigger asChild>
 										<Button variant="destructive" className="w-full">
@@ -1151,8 +1145,8 @@ export default function UserRequestDetail() {
 										</AlertDialogFooter>
 									</AlertDialogContent>
 								</AlertDialog>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 				</div>
 			</div>

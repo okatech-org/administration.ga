@@ -2,7 +2,7 @@
 
 import type { FormSection } from "@/components/admin/FormBuilder";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,30 +71,30 @@ export function FormPreview({
 				);
 
 				return (
-					<Card
+					<FlatCard
 						key={section.id}
 						className={cn(
 							"transition-all duration-200",
-							isActive && "ring-2 ring-primary shadow-md",
+							isActive && "ring-2 ring-primary",
 						)}
 					>
-						<CardHeader className="pb-3">
+						<div className="p-3 lg:p-4 pb-3">
 							<div className="flex items-center gap-2">
 								<Badge variant="outline" className="text-xs">
 									{sectionIdx + 1}
 								</Badge>
-								<CardTitle className="text-sm">
+								<p className="text-sm font-semibold">
 									{getLocalized(section.title, language) ||
 										"Section sans titre"}
-								</CardTitle>
+								</p>
 								{section.optional && (
 									<Badge variant="secondary" className="text-[10px]">
 										Optionnel
 									</Badge>
 								)}
 							</div>
-						</CardHeader>
-						<CardContent className="space-y-4">
+						</div>
+						<div className="p-3 lg:p-4 pt-0 space-y-4">
 							{visibleFields.length === 0 ? (
 								<p className="text-xs text-muted-foreground italic">
 									Aucun champ visible
@@ -118,8 +118,8 @@ export function FormPreview({
 									</div>
 								))
 							)}
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				);
 			})}
 

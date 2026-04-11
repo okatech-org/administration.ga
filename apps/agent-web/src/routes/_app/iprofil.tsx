@@ -37,7 +37,8 @@ import { useOrg } from "@/components/org/org-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
+import { SectionHeader } from "@/components/my-space/section-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -130,10 +131,10 @@ function IProfilPage() {
 	const statusInfo = STATUS_CONFIG[status] ?? STATUS_CONFIG.en_poste;
 
 	return (
-		<div className="flex flex-col gap-6 p-4 lg:p-6 max-w-4xl mx-auto h-full overflow-y-auto">
+		<div className="flex flex-col gap-6 p-4 lg:p-6 max-w-4xl mx-auto h-full overflow-y-auto citizen-scrollbar">
 			{/* ─── Header Card ─── */}
-			<Card>
-				<CardContent className="pt-6">
+			<FlatCard>
+				<div className="p-3 lg:p-4">
 					<div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
 						<Avatar className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl shrink-0">
 							<AvatarImage src={user.avatarUrl} />
@@ -145,11 +146,11 @@ function IProfilPage() {
 							<h1 className="text-xl sm:text-2xl font-bold tracking-tight">
 								{user.lastName?.toUpperCase()} {user.firstName}
 							</h1>
-							<p className="text-muted-foreground text-sm mt-0.5">
+							<p className="text-muted-foreground text-sm mt-0.5 font-medium">
 								{position?.title?.fr ?? "Poste non assigné"}
 							</p>
 							{org && (
-								<p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+								<p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1 font-medium">
 									<MapPin className="h-3 w-3" />
 									{org.name}
 								</p>
@@ -169,14 +170,14 @@ function IProfilPage() {
 							variant="outline"
 							size="sm"
 							onClick={() => setIsEditing(!isEditing)}
-							className="shrink-0 gap-1.5"
+							className="shrink-0 gap-1.5 active:scale-[0.97] transition-transform"
 						>
 							{isEditing ? <X className="h-3.5 w-3.5" /> : <Edit className="h-3.5 w-3.5" />}
 							{isEditing ? "Annuler" : "Modifier"}
 						</Button>
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* ─── Tabs ─── */}
 			<Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -198,29 +199,27 @@ function IProfilPage() {
 				{/* ═══ Onglet Identité ═══ */}
 				<TabsContent value="identite" className="space-y-4 mt-4">
 					{/* Contact professionnel */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm flex items-center gap-2">
-								<Phone className="h-4 w-4 text-primary" />
-								Contact professionnel
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-3">
-							<InfoRow icon={Mail} label="Email officiel" value={profile?.officialEmail ?? user.email} />
-							<InfoRow icon={Phone} label="Ligne directe" value={profile?.officePhone ?? "—"} />
-							<InfoRow icon={Phone} label="Extension" value={profile?.officeExtension ?? "—"} />
-						</CardContent>
-					</Card>
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<SectionHeader
+								icon={<Phone className="h-4 w-4 text-primary" />}
+								title="Contact professionnel"
+							/>
+							<div className="space-y-3">
+								<InfoRow icon={Mail} label="Email officiel" value={profile?.officialEmail ?? user.email} />
+								<InfoRow icon={Phone} label="Ligne directe" value={profile?.officePhone ?? "—"} />
+								<InfoRow icon={Phone} label="Extension" value={profile?.officeExtension ?? "—"} />
+							</div>
+						</div>
+					</FlatCard>
 
 					{/* Langues */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm flex items-center gap-2">
-								<Languages className="h-4 w-4 text-primary" />
-								Compétences linguistiques
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<SectionHeader
+								icon={<Languages className="h-4 w-4 text-primary" />}
+								title="Compétences linguistiques"
+							/>
 							{profile?.languages?.length > 0 ? (
 								<div className="space-y-2">
 									{profile.languages.map((lang: any, i: number) => (
@@ -237,56 +236,52 @@ function IProfilPage() {
 							) : (
 								<p className="text-xs text-muted-foreground">Aucune langue renseignée</p>
 							)}
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
 					{/* Bio */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm">Biographie</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className="text-sm text-muted-foreground">
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<div className="mb-2"><h3 className="text-sm font-bold">Biographie</h3></div>
+							<p className="text-sm text-muted-foreground font-medium">
 								{profile?.bio || "Aucune biographie renseignée."}
 							</p>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</TabsContent>
 
 				{/* ═══ Onglet Poste ═══ */}
 				<TabsContent value="poste" className="space-y-4 mt-4">
 					{/* Poste actuel */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm flex items-center gap-2">
-								<Briefcase className="h-4 w-4 text-primary" />
-								Poste actuel
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-3">
-							<InfoRow icon={Shield} label="Poste" value={position?.title?.fr ?? "Non assigné"} />
-							<InfoRow icon={MapPin} label="Représentation" value={org?.name ?? "—"} />
-							<InfoRow icon={Globe} label="Pays" value={org?.country ?? "—"} />
-							{profile?.startDate && (
-								<InfoRow
-									icon={Calendar}
-									label="En poste depuis"
-									value={new Date(profile.startDate).toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}
-								/>
-							)}
-						</CardContent>
-					</Card>
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<SectionHeader
+								icon={<Briefcase className="h-4 w-4 text-primary" />}
+								title="Poste actuel"
+							/>
+							<div className="space-y-3">
+								<InfoRow icon={Shield} label="Poste" value={position?.title?.fr ?? "Non assigné"} />
+								<InfoRow icon={MapPin} label="Représentation" value={org?.name ?? "—"} />
+								<InfoRow icon={Globe} label="Pays" value={org?.country ?? "—"} />
+								{profile?.startDate && (
+									<InfoRow
+										icon={Calendar}
+										label="En poste depuis"
+										value={new Date(profile.startDate).toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}
+									/>
+								)}
+							</div>
+						</div>
+					</FlatCard>
 
 					{/* Responsabilités (moduleAccess) */}
 					{position?.moduleAccess?.length > 0 && (
-						<Card>
-							<CardHeader className="pb-3">
-								<CardTitle className="text-sm flex items-center gap-2">
-									<Shield className="h-4 w-4 text-primary" />
-									Responsabilités
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+								<SectionHeader
+									icon={<Shield className="h-4 w-4 text-primary" />}
+									title="Responsabilités"
+								/>
 								<div className="space-y-1.5">
 									{(position.moduleAccess as any[]).map((ma: any) => (
 										<div key={ma.moduleCode} className="flex items-center justify-between rounded-lg border px-3 py-1.5">
@@ -304,19 +299,17 @@ function IProfilPage() {
 										</div>
 									))}
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 
 					{/* Historique des affectations */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm flex items-center gap-2">
-								<Clock className="h-4 w-4 text-primary" />
-								Historique des affectations
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<SectionHeader
+								icon={<Clock className="h-4 w-4 text-primary" />}
+								title="Historique des affectations"
+							/>
 							{profile?.previousPostings?.length > 0 ? (
 								<div className="space-y-2">
 									{profile.previousPostings.map((posting: any, i: number) => (
@@ -337,73 +330,66 @@ function IProfilPage() {
 							) : (
 								<p className="text-xs text-muted-foreground">Aucune affectation précédente renseignée.</p>
 							)}
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</TabsContent>
 
 				{/* ═══ Onglet Accréditations ═══ */}
 				<TabsContent value="accreditations" className="space-y-4 mt-4">
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm flex items-center gap-2">
-								<Award className="h-4 w-4 text-primary" />
-								Documents diplomatiques
-							</CardTitle>
-							<CardDescription className="text-xs">
-								Accréditations et documents officiels liés à votre poste
-							</CardDescription>
-						</CardHeader>
-						<CardContent className="space-y-3">
-							{/* Lettres de créance */}
-							<CredentialCard
-								title="Lettres de créance"
-								subtitle={profile?.credentials?.lettersOfCredence?.presentedDate
-									? `Présentées le ${new Date(profile.credentials.lettersOfCredence.presentedDate).toLocaleDateString("fr-FR")}`
-									: "Non renseigné"}
-								icon=""
-								hasData={!!profile?.credentials?.lettersOfCredence?.presentedDate}
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<SectionHeader
+								icon={<Award className="h-4 w-4 text-primary" />}
+								title="Documents diplomatiques"
 							/>
+							<div className="space-y-3">
+								{/* Lettres de créance */}
+								<CredentialCard
+									title="Lettres de créance"
+									subtitle={profile?.credentials?.lettersOfCredence?.presentedDate
+										? `Présentées le ${new Date(profile.credentials.lettersOfCredence.presentedDate).toLocaleDateString("fr-FR")}`
+										: "Non renseigné"}
+									icon=""
+									hasData={!!profile?.credentials?.lettersOfCredence?.presentedDate}
+								/>
 
-							{/* Carte diplomatique */}
-							<CredentialCard
-								title="Carte diplomatique"
-								subtitle={profile?.credentials?.diplomaticCard?.number
-									? `N° ${profile.credentials.diplomaticCard.number}${profile.credentials.diplomaticCard.expiresAt ? ` — Expire: ${new Date(profile.credentials.diplomaticCard.expiresAt).toLocaleDateString("fr-FR")}` : ""}`
-									: "Non renseigné"}
-								icon=""
-								hasData={!!profile?.credentials?.diplomaticCard?.number}
-							/>
+								{/* Carte diplomatique */}
+								<CredentialCard
+									title="Carte diplomatique"
+									subtitle={profile?.credentials?.diplomaticCard?.number
+										? `N° ${profile.credentials.diplomaticCard.number}${profile.credentials.diplomaticCard.expiresAt ? ` — Expire: ${new Date(profile.credentials.diplomaticCard.expiresAt).toLocaleDateString("fr-FR")}` : ""}`
+										: "Non renseigné"}
+									icon=""
+									hasData={!!profile?.credentials?.diplomaticCard?.number}
+								/>
 
-							{/* Passeport diplomatique */}
-							<CredentialCard
-								title="Passeport diplomatique"
-								subtitle={profile?.credentials?.diplomaticPassport?.number
-									? `N° ${profile.credentials.diplomaticPassport.number}${profile.credentials.diplomaticPassport.expiresAt ? ` — Expire: ${new Date(profile.credentials.diplomaticPassport.expiresAt).toLocaleDateString("fr-FR")}` : ""}`
-									: "Non renseigné"}
-								icon=""
-								hasData={!!profile?.credentials?.diplomaticPassport?.number}
-							/>
+								{/* Passeport diplomatique */}
+								<CredentialCard
+									title="Passeport diplomatique"
+									subtitle={profile?.credentials?.diplomaticPassport?.number
+										? `N° ${profile.credentials.diplomaticPassport.number}${profile.credentials.diplomaticPassport.expiresAt ? ` — Expire: ${new Date(profile.credentials.diplomaticPassport.expiresAt).toLocaleDateString("fr-FR")}` : ""}`
+										: "Non renseigné"}
+									icon=""
+									hasData={!!profile?.credentials?.diplomaticPassport?.number}
+								/>
 
-							{/* Exequatur */}
-							<CredentialCard
-								title="Exequatur"
-								subtitle={profile?.credentials?.exequatur?.grantedDate
-									? `Accordé le ${new Date(profile.credentials.exequatur.grantedDate).toLocaleDateString("fr-FR")}`
-									: "Non renseigné"}
-								icon=""
-								hasData={!!profile?.credentials?.exequatur?.grantedDate}
-							/>
-						</CardContent>
-					</Card>
+								{/* Exequatur */}
+								<CredentialCard
+									title="Exequatur"
+									subtitle={profile?.credentials?.exequatur?.grantedDate
+										? `Accordé le ${new Date(profile.credentials.exequatur.grantedDate).toLocaleDateString("fr-FR")}`
+										: "Non renseigné"}
+									icon=""
+									hasData={!!profile?.credentials?.exequatur?.grantedDate}
+								/>
+							</div>
+						</div>
+					</FlatCard>
 
 					{/* Signature officielle */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm flex items-center gap-2">
-								 Signature officielle
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<div className="mb-2"><h3 className="text-sm font-bold">Signature officielle</h3></div>
 							{profile?.officialSignature?.title ? (
 								<div className="rounded-lg border p-3 text-center">
 									<p className="text-xs font-medium">{profile.officialSignature.title}</p>
@@ -414,41 +400,37 @@ function IProfilPage() {
 							) : (
 								<div className="rounded-lg border-2 border-dashed border-border/50 p-6 text-center">
 									<p className="text-xs text-muted-foreground">Aucune signature configurée</p>
-									<Button variant="outline" size="sm" className="mt-2 text-xs">
+									<Button variant="outline" size="sm" className="mt-2 text-xs active:scale-[0.97] transition-transform">
 										Configurer ma signature
 									</Button>
 								</div>
 							)}
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</TabsContent>
 
 				{/* ═══ Onglet Préférences ═══ */}
 				<TabsContent value="preferences" className="space-y-4 mt-4">
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm flex items-center gap-2">
-								 Notifications
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-2">
-							<PreferenceRow label="Nouvelles demandes" checked={primaryMembership?.settings?.notifyOnNewRequest ?? true} />
-							<PreferenceRow label="Assignations" checked={primaryMembership?.settings?.notifyOnAssignment ?? true} />
-							<PreferenceRow label="Résumé quotidien" checked={primaryMembership?.settings?.dailyDigest ?? false} />
-						</CardContent>
-					</Card>
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<div className="mb-2"><h3 className="text-sm font-bold">Notifications</h3></div>
+							<div className="space-y-2">
+								<PreferenceRow label="Nouvelles demandes" checked={primaryMembership?.settings?.notifyOnNewRequest ?? true} />
+								<PreferenceRow label="Assignations" checked={primaryMembership?.settings?.notifyOnAssignment ?? true} />
+								<PreferenceRow label="Résumé quotidien" checked={primaryMembership?.settings?.dailyDigest ?? false} />
+							</div>
+						</div>
+					</FlatCard>
 
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm flex items-center gap-2">
-								 Langue et apparence
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-2">
-							<InfoRow icon={Globe} label="Langue d'interface" value="Français" />
-							<InfoRow icon={Sun} label="Thème" value="Système" />
-						</CardContent>
-					</Card>
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<div className="mb-2"><h3 className="text-sm font-bold">Langue et apparence</h3></div>
+							<div className="space-y-2">
+								<InfoRow icon={Globe} label="Langue d'interface" value="Français" />
+								<InfoRow icon={Sun} label="Thème" value="Système" />
+							</div>
+						</div>
+					</FlatCard>
 				</TabsContent>
 			</Tabs>
 		</div>

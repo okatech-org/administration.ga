@@ -36,7 +36,7 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
@@ -214,7 +214,7 @@ export default function IAstedCitizenPage() {
 			{/* Header */}
 			<div className="flex items-center justify-between shrink-0">
 				<div className="flex items-center gap-3">
-					<div className="p-2 rounded-lg bg-foreground/[0.08] dark:bg-foreground/[0.05]">
+					<div className="p-2 rounded-lg bg-foreground/8 dark:bg-foreground/5">
 						<ShieldCheck className="h-5 w-5" />
 					</div>
 					<div>
@@ -242,7 +242,7 @@ export default function IAstedCitizenPage() {
 			<div className="flex flex-1 min-h-0 overflow-hidden rounded-xl bg-card border flat-card-border">
 				{/* ── Col 1 : Icônes navigation ── */}
 				<div className="w-14 border-r border-foreground/5 flex flex-col items-center py-3 gap-1 shrink-0">
-					<div className="p-1.5 rounded-lg bg-foreground/[0.08] dark:bg-foreground/[0.05] flex items-center justify-center mb-4">
+					<div className="p-1.5 rounded-lg bg-foreground/8 dark:bg-foreground/5 flex items-center justify-center mb-4">
 						<ShieldCheck className="h-4 w-4" />
 					</div>
 
@@ -258,7 +258,7 @@ export default function IAstedCitizenPage() {
 								className={cn(
 									"h-10 w-10 rounded-lg flex items-center justify-center transition-all",
 									isActive
-										? "bg-foreground/[0.08] dark:bg-foreground/[0.05] text-foreground font-medium"
+										? "bg-foreground/8 dark:bg-foreground/5 text-foreground font-medium"
 										: "text-muted-foreground hover:bg-muted hover:text-foreground",
 								)}
 							>
@@ -285,7 +285,7 @@ export default function IAstedCitizenPage() {
 						<div className="w-80 border-r border-foreground/5 flex flex-col shrink-0">
 							<div className="px-4 py-3 border-b border-foreground/5 shrink-0">
 								<span className="text-sm font-semibold flex items-center gap-2.5 text-muted-foreground">
-									<div className="p-1 rounded-md bg-foreground/[0.08] dark:bg-foreground/[0.05]">
+									<div className="p-1 rounded-md bg-foreground/8 dark:bg-foreground/5">
 										<MessageSquare className="h-3.5 w-3.5" />
 									</div>
 									Discussions
@@ -440,7 +440,7 @@ export default function IAstedCitizenPage() {
 									<div className="px-4 py-3 border-b border-foreground/5 flex items-center gap-3 shrink-0">
 										<Avatar className="h-9 w-9">
 											{selectedContact.isStandard ? (
-												<AvatarFallback className="bg-foreground/[0.08] dark:bg-foreground/[0.05] text-muted-foreground">
+												<AvatarFallback className="bg-foreground/8 dark:bg-foreground/5 text-muted-foreground">
 													<Headset className="h-4 w-4" />
 												</AvatarFallback>
 											) : (
@@ -540,7 +540,7 @@ export default function IAstedCitizenPage() {
 															>
 																{isMrRay && (
 																	<Avatar className="h-7 w-7 shrink-0 mt-1">
-																		<AvatarFallback className="bg-foreground/[0.06] text-muted-foreground text-[9px]">
+																		<AvatarFallback className="bg-foreground/6 text-muted-foreground text-[9px]">
 																			<Bot className="h-3.5 w-3.5" />
 																		</AvatarFallback>
 																	</Avatar>
@@ -723,7 +723,7 @@ export default function IAstedCitizenPage() {
 					<div className="flex-1 flex flex-col overflow-hidden">
 						<div className="px-4 py-3 border-b border-foreground/5 shrink-0">
 							<span className="text-sm font-semibold flex items-center gap-2.5 text-muted-foreground">
-								<div className="p-1 rounded-md bg-foreground/[0.08] dark:bg-foreground/[0.05]">
+								<div className="p-1 rounded-md bg-foreground/8 dark:bg-foreground/5">
 									{activeTab === "icall" ? <Phone className="h-3.5 w-3.5" /> : <Contact className="h-3.5 w-3.5" />}
 								</div>
 								{activeTab === "icall" ? "iAppel" : "iContact"}
@@ -924,7 +924,7 @@ function IAppelContent() {
 			{/* Sélecteur org */}
 			<div className="rounded-xl bg-card border flat-card-border p-4 space-y-3 shrink-0">
 				<span className="text-sm font-semibold flex items-center gap-2.5 text-muted-foreground">
-					<div className="p-1 rounded-md bg-foreground/[0.08] dark:bg-foreground/[0.05]">
+					<div className="p-1 rounded-md bg-foreground/8 dark:bg-foreground/5">
 						<Building2 className="h-3.5 w-3.5" />
 					</div>
 					Appeler une représentation
@@ -966,7 +966,7 @@ function IAppelContent() {
 											: "hover:bg-muted/50",
 									)}
 								>
-									<div className="p-1 rounded-md bg-foreground/[0.08] dark:bg-foreground/[0.05] flex items-center justify-center shrink-0">
+									<div className="p-1 rounded-md bg-foreground/8 dark:bg-foreground/5 flex items-center justify-center shrink-0">
 										<Building2 className="h-3.5 w-3.5 text-muted-foreground" />
 									</div>
 									<div className="flex-1 min-w-0">
@@ -1113,8 +1113,10 @@ function IAppelContent() {
 				<DialogContent
 					onInteractOutside={(e) => e.preventDefault()}
 					onEscapeKeyDown={(e) => e.preventDefault()}
+					aria-describedby={undefined}
 					className="max-w-4xl w-full h-[85vh] p-0 flex flex-col overflow-hidden bg-card border flat-card-border"
 				>
+					<DialogTitle className="sr-only">Appel en cours</DialogTitle>
 					{token && wsUrl ? (
 						<LiveKitRoom
 							token={token}
@@ -1265,7 +1267,7 @@ function OrgContactCard({ org }: { org: any }) {
 				onClick={() => setExpanded(!expanded)}
 				className="w-full flex items-center gap-3 p-3.5 text-left hover:bg-muted transition-colors"
 			>
-				<div className="h-10 w-10 rounded-lg bg-foreground/[0.08] dark:bg-foreground/[0.05] flex items-center justify-center shrink-0">
+				<div className="h-10 w-10 rounded-lg bg-foreground/8 dark:bg-foreground/5 flex items-center justify-center shrink-0">
 					{org.flagUrl || org.logo ? (
 						<img
 							src={org.flagUrl ?? org.logo}

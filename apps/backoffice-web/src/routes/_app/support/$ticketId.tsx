@@ -6,7 +6,6 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { enUS, fr } from "date-fns/locale";
 import {
-	ChevronLeft,
 	Clock,
 	Headset,
 	Info,
@@ -24,13 +23,9 @@ import { toast } from "sonner";
 import { ProfileViewSheet } from "@/components/dashboard/ProfileViewSheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
+import { SectionHeader } from "@/components/design-system/section-header";
 import {
 	Select,
 	SelectContent,
@@ -126,35 +121,25 @@ function SuperadminTicketDetail() {
 	}
 
 	return (
-		<div className="flex min-h-full flex-col gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full">
-			<div className="flex items-center gap-4">
-				<Button
-					variant="ghost"
-					size="icon"
-					asChild
-					className="h-8 w-8 shrink-0"
-				>
-					<Link to="/support">
-						<ChevronLeft className="h-4 w-4" />
-					</Link>
-				</Button>
-				<h1 className="text-2xl font-bold tracking-tight truncate">
-					{ticket.subject}
-				</h1>
-			</div>
+		<div className="flex min-h-full flex-col gap-4 p-3 md:p-4 max-w-5xl mx-auto w-full">
+			<PageHeader
+				icon={<LifeBuoy className="h-5 w-5" />}
+				title={ticket.subject}
+				showBackButton
+			/>
 
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-				<div className="lg:col-span-2 space-y-6">
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+				<div className="lg:col-span-2 space-y-4">
 					{/* Original Message */}
-					<Card>
-						<CardHeader className="py-4 px-5 bg-muted/40 border-b flex flex-row items-center gap-3">
+					<FlatCard>
+						<div className="py-4 px-5 bg-muted/40 border-b border-border/40 flex flex-row items-center gap-3 rounded-t-xl">
 							<div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
 								<User className="h-5 w-5" />
 							</div>
 							<div className="flex-1 min-w-0">
-								<CardTitle className="text-sm font-medium">
+								<p className="text-sm font-medium">
 									Message initial
-								</CardTitle>
+								</p>
 								<div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
 									<Clock className="h-3 w-3" />
 									{format(new Date(ticket._creationTime), "dd MMM yyyy HH:mm", {
@@ -162,11 +147,11 @@ function SuperadminTicketDetail() {
 									})}
 								</div>
 							</div>
-						</CardHeader>
-						<CardContent className="pt-5 text-sm whitespace-pre-wrap leading-relaxed">
+						</div>
+						<div className="p-3 lg:p-4 text-sm whitespace-pre-wrap leading-relaxed">
 							{ticket.description}
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
 					{/* Conversation thread */}
 					{ticket.messages && ticket.messages.length > 0 && (
@@ -176,12 +161,12 @@ function SuperadminTicketDetail() {
 								Historique des échanges
 							</h3>
 							{ticket.messages.map((msg) => (
-								<Card
+								<FlatCard
 									key={msg.id}
-									className={msg.isStaff ? "border-primary/30 shadow-sm" : ""}
+									className={msg.isStaff ? "ring-1 ring-primary/30" : ""}
 								>
-									<CardHeader
-										className={`py-3 px-5 border-b flex flex-row items-center gap-3 ${msg.isStaff ? "bg-primary/5" : "bg-muted/40"}`}
+									<div
+										className={`py-3 px-5 border-b border-border/40 flex flex-row items-center gap-3 rounded-t-xl ${msg.isStaff ? "bg-primary/5" : "bg-muted/40"}`}
 									>
 										<div
 											className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${msg.isStaff ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"}`}
@@ -193,9 +178,9 @@ function SuperadminTicketDetail() {
 											)}
 										</div>
 										<div className="flex-1 min-w-0">
-											<CardTitle className="text-sm font-medium">
+											<p className="text-sm font-medium">
 												{msg.isStaff ? "Support (Vous / Équipe)" : "Citoyen"}
-											</CardTitle>
+											</p>
 											<div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
 												<Clock className="h-3 w-3" />
 												{format(new Date(msg.createdAt), "dd MMM yyyy HH:mm", {
@@ -203,32 +188,32 @@ function SuperadminTicketDetail() {
 												})}
 											</div>
 										</div>
-									</CardHeader>
-									<CardContent className="pt-4 pb-5 text-sm whitespace-pre-wrap leading-relaxed">
+									</div>
+									<div className="p-3 lg:p-4 text-sm whitespace-pre-wrap leading-relaxed">
 										{msg.content}
-									</CardContent>
-								</Card>
+									</div>
+								</FlatCard>
 							))}
 						</div>
 					)}
 
 					{/* Reply box */}
-					<Card className="border-primary/20 shadow-sm">
-						<CardHeader className="py-4 bg-muted/20 border-b">
-							<CardTitle className="text-base flex items-center gap-2">
+					<FlatCard className="ring-1 ring-primary/20">
+						<div className="py-4 px-5 bg-muted/20 border-b border-border/40 rounded-t-xl">
+							<p className="text-base font-bold flex items-center gap-2">
 								<Send className="h-4 w-4 text-primary" />
 								Répondre
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="pt-4">
+							</p>
+						</div>
+						<div className="p-3 lg:p-4">
 							<Textarea
 								placeholder="Saisissez votre message..."
 								value={replyMessage}
 								onChange={(e) => setReplyMessage(e.target.value)}
 								className="min-h-[120px] resize-y"
 							/>
-						</CardContent>
-						<CardFooter className="flex justify-end pt-0 pb-4 pr-6">
+						</div>
+						<div className="flex justify-end px-4 pb-4">
 							<Button
 								onClick={handleSendReply}
 								disabled={isSending || !replyMessage.trim()}
@@ -236,20 +221,19 @@ function SuperadminTicketDetail() {
 								{isSending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 								Envoyer la réponse
 							</Button>
-						</CardFooter>
-					</Card>
+						</div>
+					</FlatCard>
 				</div>
 
 				{/* Sidebar Details */}
-				<div className="space-y-6">
-					<Card>
-						<CardHeader className="py-4 border-b">
-							<CardTitle className="text-base flex items-center gap-2">
-								<Info className="h-4 w-4" />
-								Détails
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="pt-4 space-y-4 text-sm">
+				<div className="space-y-4">
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<SectionHeader
+								icon={<Info className="h-4 w-4" />}
+								title="Détails"
+							/>
+							<div className="space-y-4 text-sm">
 							<div>
 								<span className="text-muted-foreground block mb-1 text-xs">
 									Référence
@@ -346,8 +330,9 @@ function SuperadminTicketDetail() {
 									</div>
 								</div>
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+						</div>
+					</FlatCard>
 				</div>
 			</div>
 

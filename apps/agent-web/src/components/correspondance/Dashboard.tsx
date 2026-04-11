@@ -17,13 +17,7 @@ import { motion } from "motion/react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -123,8 +117,8 @@ function StatCard({
 			initial="hidden"
 			animate="visible"
 		>
-			<Card className="relative overflow-hidden border-border/50 bg-card">
-				<CardContent className="flex items-center gap-4 p-5">
+			<FlatCard className="relative overflow-hidden">
+				<div className="flex items-center gap-4 p-5">
 					<div
 						className={cn(
 							"flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
@@ -145,8 +139,8 @@ function StatCard({
 							{label}
 						</p>
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 		</motion.div>
 	);
 }
@@ -367,48 +361,48 @@ export function Dashboard({
 			{/* ---------- Two-column layout ---------- */}
 			<div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
 				{/* Left: Recent Activity */}
-				<Card className="border-border/50 bg-card lg:col-span-2">
-					<CardHeader className="pb-3">
+				<FlatCard className="border-border/50 bg-card lg:col-span-2">
+					<div className="pb-3">
 						<div className="flex items-center justify-between">
 							<div>
-								<CardTitle className="text-base font-semibold text-foreground">
+								<h4 className="text-base font-semibold text-foreground">
 									Activit\u00e9 r\u00e9cente
-								</CardTitle>
-								<CardDescription className="text-sm text-muted-foreground">
+								</h4>
+								<p className="text-sm text-muted-foreground">
 									Derni\u00e8res actions sur les
 									correspondances et dossiers
-								</CardDescription>
+								</p>
 							</div>
 							<BookOpen className="h-5 w-5 text-muted-foreground/50" />
 						</div>
-					</CardHeader>
-					<CardContent>
+					</div>
+					<div className="p-3 lg:p-4">
 						<ActivityFeed
 							items={recentActivity}
 							isLoading={isLoading}
 						/>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 
 				{/* Right: Quick Actions */}
-				<Card className="border-border/50 bg-card">
-					<CardHeader className="pb-3">
-						<CardTitle className="text-base font-semibold text-foreground">
+				<FlatCard className="border-border/50 bg-card">
+					<div className="pb-3">
+						<h4 className="text-base font-semibold text-foreground">
 							Actions rapides
-						</CardTitle>
-						<CardDescription className="text-sm text-muted-foreground">
+						</h4>
+						<p className="text-sm text-muted-foreground">
 							Acc\u00e8s direct aux op\u00e9rations courantes
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
+						</p>
+					</div>
+					<div className="p-3 lg:p-4">
 						<QuickActions
 							onNavigateCorrespondance={
 								onNavigateCorrespondance
 							}
 							onNavigateDossiers={onNavigateDossiers}
 						/>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</div>
 		</div>
 	);

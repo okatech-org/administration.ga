@@ -26,13 +26,8 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { SectionHeader } from "@/components/design-system/section-header";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -304,17 +299,17 @@ function SidebarGroupCard({
 	).length;
 
 	return (
-		<Card className={cn("border", SECTION_STYLE[group.key] ?? "border-border/40")}>
-			<CardHeader className="pb-3">
-				<CardTitle className="flex items-center gap-2 text-sm">
-					<DynamicLucideIcon name={group.icon} className="h-4 w-4" />
-					{group.label[lang as "fr" | "en"]}
-					<Badge variant="secondary" className="text-[10px] ml-auto">
-						{enabledInGroup}/{group.modules.length}
-					</Badge>
-				</CardTitle>
-			</CardHeader>
-			<CardContent>
+		<FlatCard className={cn("border", SECTION_STYLE[group.key] ?? "border-border/40")}>
+			<div className="p-3 lg:p-4">
+				<SectionHeader
+					icon={<DynamicLucideIcon name={group.icon} className="h-3.5 w-3.5" />}
+					title={group.label[lang as "fr" | "en"]}
+					actions={
+						<Badge variant="secondary" className="text-[10px]">
+							{enabledInGroup}/{group.modules.length}
+						</Badge>
+					}
+				/>
 				<div className="grid gap-2">
 					{group.modules.map((moduleCode) => {
 						const def = MODULE_REGISTRY[moduleCode as ModuleCodeValue];
@@ -331,7 +326,7 @@ function SidebarGroupCard({
 								key={moduleCode}
 								className={cn(
 									"rounded-lg border transition-all",
-									isEnabled ? "border-border bg-card" : "border-border/40 bg-muted/20 opacity-60",
+									isEnabled ? "border-border bg-[#FDFCFA] dark:bg-[#21201E]/77" : "border-border/40 bg-muted/20 opacity-60",
 									isCore && "border-emerald-500/30",
 								)}
 							>
@@ -419,8 +414,8 @@ function SidebarGroupCard({
 						);
 					})}
 				</div>
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }
 

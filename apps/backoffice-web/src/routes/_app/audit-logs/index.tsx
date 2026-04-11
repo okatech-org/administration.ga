@@ -7,13 +7,10 @@ import { DataTable } from "@/components/ui/data-table";
 import { columns } from "@/components/admin/audit-logs-columns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { SectionHeader } from "@/components/design-system/section-header";
+import { PageHeader } from "@/components/design-system/page-header";
 import {
 	Download,
 	Loader2,
@@ -113,104 +110,89 @@ function AuditLogsPage() {
 	};
 
 	return (
-		<div className="flex flex-1 flex-col gap-6 p-4 pt-6 md:p-6">
+		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
 			{/* ── Header ──────────────────── */}
-			<div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-				<div>
-					<h1 className="text-3xl font-bold tracking-tight">
-						{t("superadmin.auditLogs.title")}
-					</h1>
-					<p className="text-muted-foreground">
-						{t("superadmin.auditLogs.description")}
-					</p>
-				</div>
-				<Button variant="outline" size="sm" onClick={handleExport} disabled={parsedLogs.length === 0}>
-					<Download className="mr-2 h-4 w-4" />
-					Exporter CSV
-				</Button>
-			</div>
+			<PageHeader
+				icon={<ScrollText className="h-5 w-5" />}
+				title={t("superadmin.auditLogs.title")}
+				subtitle={t("superadmin.auditLogs.description")}
+				actions={
+					<Button variant="outline" size="sm" onClick={handleExport} disabled={parsedLogs.length === 0}>
+						<Download className="mr-2 h-4 w-4" />
+						Exporter CSV
+					</Button>
+				}
+			/>
 
 			{/* ── KPI Cards ───────────────── */}
 			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-				<Card className="relative overflow-hidden">
-					<div className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-indigo-500" />
-					<CardHeader className="flex flex-row items-center justify-between pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
-							Total événements
-						</CardTitle>
-						<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500/10">
-							<ScrollText className="h-4 w-4 text-indigo-500" />
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<div className="flex items-center justify-between mb-2">
+							<span className="text-sm font-medium text-muted-foreground">Total événements</span>
+							<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500/10">
+								<ScrollText className="h-4 w-4 text-indigo-500" />
+							</div>
 						</div>
-					</CardHeader>
-					<CardContent>
 						{isLoading ? (
 							<Skeleton className="h-8 w-20" />
 						) : (
 							<div className="text-3xl font-bold tracking-tight">{stats.total}</div>
 						)}
 						<p className="mt-1 text-xs text-muted-foreground">Chargés sur cette session</p>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 
-				<Card className="relative overflow-hidden">
-					<div className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-emerald-500" />
-					<CardHeader className="flex flex-row items-center justify-between pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
-							Aujourd'hui
-						</CardTitle>
-						<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10">
-							<Activity className="h-4 w-4 text-emerald-500" />
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<div className="flex items-center justify-between mb-2">
+							<span className="text-sm font-medium text-muted-foreground">Aujourd'hui</span>
+							<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10">
+								<Activity className="h-4 w-4 text-emerald-500" />
+							</div>
 						</div>
-					</CardHeader>
-					<CardContent>
 						{isLoading ? (
 							<Skeleton className="h-8 w-20" />
 						) : (
 							<div className="text-3xl font-bold tracking-tight">{stats.todayCount}</div>
 						)}
 						<p className="mt-1 text-xs text-muted-foreground">Événements aujourd'hui</p>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 
-				<Card className="relative overflow-hidden">
-					<div className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-blue-500" />
-					<CardHeader className="flex flex-row items-center justify-between pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
-							Utilisateurs
-						</CardTitle>
-						<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10">
-							<User className="h-4 w-4 text-blue-500" />
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<div className="flex items-center justify-between mb-2">
+							<span className="text-sm font-medium text-muted-foreground">Utilisateurs</span>
+							<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10">
+								<User className="h-4 w-4 text-blue-500" />
+							</div>
 						</div>
-					</CardHeader>
-					<CardContent>
 						{isLoading ? (
 							<Skeleton className="h-8 w-20" />
 						) : (
 							<div className="text-3xl font-bold tracking-tight">{stats.groups.user ?? 0}</div>
 						)}
 						<p className="mt-1 text-xs text-muted-foreground">Actions sur les comptes</p>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 
-				<Card className="relative overflow-hidden">
-					<div className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-red-500" />
-					<CardHeader className="flex flex-row items-center justify-between pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
-							Sécurité
-						</CardTitle>
-						<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/10">
-							<Shield className="h-4 w-4 text-red-500" />
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<div className="flex items-center justify-between mb-2">
+							<span className="text-sm font-medium text-muted-foreground">Sécurité</span>
+							<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/10">
+								<Shield className="h-4 w-4 text-red-500" />
+							</div>
 						</div>
-					</CardHeader>
-					<CardContent>
 						{isLoading ? (
 							<Skeleton className="h-8 w-20" />
 						) : (
 							<div className="text-3xl font-bold tracking-tight">{stats.groups.security ?? 0}</div>
 						)}
 						<p className="mt-1 text-xs text-muted-foreground">Événements de sécurité</p>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</div>
 
 			{/* ── Action Group Filters ─────── */}
@@ -246,13 +228,18 @@ function AuditLogsPage() {
 			</div>
 
 			{/* ── DataTable ───────────────── */}
-			<DataTable
-				columns={columns}
-				data={filteredLogs}
-				searchKey="action"
-				searchPlaceholder={t("superadmin.auditLogs.filters.searchPlaceholder")}
-				isLoading={isLoading && parsedLogs.length === 0}
-			/>
+			<FlatCard>
+				<div className="p-3 lg:p-4">
+					<SectionHeader icon={<Activity className="h-3.5 w-3.5" />} title="Journal d'audit" />
+					<DataTable
+						columns={columns}
+						data={filteredLogs}
+						searchKey="action"
+						searchPlaceholder={t("superadmin.auditLogs.filters.searchPlaceholder")}
+						isLoading={isLoading && parsedLogs.length === 0}
+					/>
+				</div>
+			</FlatCard>
 
 			{/* ── Load More ───────────────── */}
 			{paginationStatus === "CanLoadMore" && (

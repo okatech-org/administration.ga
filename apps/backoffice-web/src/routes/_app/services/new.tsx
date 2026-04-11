@@ -4,13 +4,14 @@ import { api } from "@convex/_generated/api";
 import { ServiceCategory } from "@convex/lib/validators";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { Briefcase, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { RichTextEditor } from "@/components/common/lazy-rich-text-editor";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
   Field,
   FieldError,
@@ -168,29 +169,17 @@ function NewServicePage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4 pt-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate({ to: "/services" })}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {t("superadmin.common.back")}
-        </Button>
-      </div>
+    <div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+      <PageHeader
+        icon={<Briefcase className="h-5 w-5" />}
+        title={t("superadmin.services.form.create")}
+        subtitle={t("superadmin.services.description")}
+        showBackButton
+        onBack={() => navigate({ to: "/services" })}
+      />
 
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          {t("superadmin.services.form.create")}
-        </h1>
-        <p className="text-muted-foreground">
-          {t("superadmin.services.description")}
-        </p>
-      </div>
-
-      <Card className="flex-1">
-        <CardContent className="pt-6">
+      <FlatCard className="flex-1">
+        <div className="p-3 lg:p-4">
           <form
             id="service-form"
             onSubmit={(e) => {
@@ -592,8 +581,8 @@ function NewServicePage() {
               }
             </div>
           </form>
-        </CardContent>
-        <CardFooter className="flex justify-between border-t pt-6">
+        </div>
+        <div className="flex justify-between border-t p-3 lg:p-4">
           <Button
             type="button"
             variant="outline"
@@ -606,8 +595,8 @@ function NewServicePage() {
               t("superadmin.organizations.form.saving")
             : t("superadmin.services.form.save")}
           </Button>
-        </CardFooter>
-      </Card>
+        </div>
+      </FlatCard>
     </div>
   );
 }

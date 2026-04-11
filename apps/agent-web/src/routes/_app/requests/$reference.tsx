@@ -34,13 +34,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Combobox } from "@/components/ui/combobox";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -1026,16 +1020,16 @@ function RequestDetailPage() {
 						(request as any).appointments.length > 0 && (
 							<div className="space-y-4">
 								{(request as any).appointments.map((apt: any) => (
-									<Card key={apt._id} className="border-border">
-										<CardHeader className="py-3 px-4 border-b bg-muted/20 border-primary/10">
+									<FlatCard key={apt._id}>
+										<div className="py-3 px-4 border-b bg-muted/20 border-primary/10">
 											<div className="flex items-center justify-between">
-												<CardTitle className="text-sm font-semibold flex items-center gap-2 text-primary">
+												<span className="text-sm font-semibold flex items-center gap-2 text-primary">
 													<Calendar className="h-4 w-4" />
 													{t(
 														"requestDetail.appointment.title",
 														"Rendez-vous associé",
 													)}
-												</CardTitle>
+												</span>
 												<Badge
 													variant="outline"
 													className="text-[10px] shrink-0 bg-background"
@@ -1043,8 +1037,8 @@ function RequestDetailPage() {
 													{t(`dashboard.appointments.statuses.${apt.status}`)}
 												</Badge>
 											</div>
-										</CardHeader>
-										<CardContent className="p-4 flex flex-col gap-4">
+										</div>
+										<div className="p-3 lg:p-4 flex flex-col gap-4">
 											<div>
 												<p className="font-medium text-primary">
 													{new Date(apt.date).toLocaleDateString(
@@ -1077,22 +1071,22 @@ function RequestDetailPage() {
 													"Détails du rendez-vous",
 												)}
 											</Button>
-										</CardContent>
-									</Card>
+										</div>
+									</FlatCard>
 								))}
 							</div>
 						)}
 
 					{/* Agent Assigné */}
 					{(request.assignedTo || canDo("requests.assign")) && (
-						<Card>
-							<CardHeader className="py-3 px-4 border-b bg-muted/20">
-								<CardTitle className="text-sm font-semibold flex items-center gap-2">
+						<FlatCard>
+							<div className="py-3 px-4 border-b bg-muted/20">
+								<span className="text-sm font-semibold flex items-center gap-2">
 									<Users className="h-4 w-4 text-muted-foreground" />
 									{t("requestDetail.agentAssignment.title")}
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="p-4 flex flex-col gap-4">
+								</span>
+							</div>
+							<div className="p-3 lg:p-4 flex flex-col gap-4">
 								{assignedAgent ? (
 									<div className="flex items-center gap-3">
 										<Avatar className="h-10 w-10">
@@ -1150,8 +1144,8 @@ function RequestDetailPage() {
 										emptyText={t("common.noResult")}
 									/>
 								)}
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 
 					{/* Status Timeline */}
@@ -1243,9 +1237,9 @@ function RequestDetailPage() {
 					)}
 
 					{/* Internal Notes */}
-					<Card className="flex flex-col max-h-[400px]">
-						<CardHeader className="shrink-0 pb-3">
-							<CardTitle className="text-sm flex items-center gap-2">
+					<FlatCard className="flex flex-col max-h-[400px]">
+						<div className="shrink-0 p-3 lg:p-4 pb-0">
+							<div className="mb-2"><h3 className="text-sm font-bold flex items-center gap-2">
 								{t("requestDetail.notes.title")}
 								<Badge
 									variant="secondary"
@@ -1253,9 +1247,9 @@ function RequestDetailPage() {
 								>
 									{agentNotes?.length || 0}
 								</Badge>
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="flex-1 overflow-y-auto space-y-3">
+							</h3></div>
+						</div>
+						<div className="flex-1 overflow-y-auto citizen-scrollbar space-y-3 px-3 lg:px-4">
 							{!agentNotes || agentNotes.length === 0 ? (
 								<p className="text-sm text-muted-foreground text-center py-4">
 									{t("requestDetail.notes.empty")}
@@ -1304,8 +1298,8 @@ function RequestDetailPage() {
 									</div>
 								))
 							)}
-						</CardContent>
-						<CardFooter className="shrink-0 pt-3">
+						</div>
+						<div className="shrink-0 pt-3 p-3 lg:p-4">
 							{canDo("requests.process") && (
 								<div className="flex w-full gap-2">
 									<Textarea
@@ -1343,8 +1337,8 @@ function RequestDetailPage() {
 									</Button>
 								</div>
 							)}
-						</CardFooter>
-					</Card>
+						</div>
+					</FlatCard>
 				</div>
 			</div>
 		</div>

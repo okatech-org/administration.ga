@@ -11,14 +11,8 @@ import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import {
 	Field,
@@ -143,23 +137,23 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 
 	if (isLoading) {
 		return (
-			<div className="flex flex-1 flex-col gap-4 p-4 pt-6">
+			<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
 				<Skeleton className="h-8 w-64" />
 				<Skeleton className="h-4 w-48" />
-				<Card className="max-w-2xl">
-					<CardContent className="pt-6 space-y-4">
+				<FlatCard className="max-w-2xl">
+					<div className="p-3 lg:p-4 space-y-4">
 						<Skeleton className="h-10 w-full" />
 						<Skeleton className="h-10 w-full" />
 						<Skeleton className="h-10 w-full" />
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</div>
 		)
 	}
 
 	if (!org) {
 		return (
-			<div className="flex flex-1 flex-col gap-4 p-4 pt-6">
+			<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
 				<Button
 					variant="ghost"
 					size="sm"
@@ -174,24 +168,17 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 	}
 
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-4 pt-6">
-			<div className="flex items-center gap-4">
-				<Button
-					variant="ghost"
-					size="sm"
-					onClick={() => navigate({ to: `/reps/${orgId}` })}
-				>
-					<ArrowLeft className="mr-2 h-4 w-4" />
-					{t("superadmin.common.back")}
-				</Button>
-			</div>
+		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+			<PageHeader
+				icon={<ArrowLeft className="h-5 w-5" />}
+				title={t("superadmin.organizations.form.edit")}
+				subtitle={org.name}
+				showBackButton
+				onBack={() => navigate({ to: `/reps/${orgId}` })}
+			/>
 
-			<Card>
-				<CardHeader>
-					<CardTitle>{t("superadmin.organizations.form.edit")}</CardTitle>
-					<CardDescription>{org.name}</CardDescription>
-				</CardHeader>
-				<CardContent>
+			<FlatCard>
+				<div className="p-3 lg:p-4">
 					{/** biome-ignore lint/correctness/useUniqueElementIds: <explanation> */}
 					<form
 						id="org-form"
@@ -551,8 +538,8 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 							</div>
 						</div>
 					</form>
-				</CardContent>
-				<CardFooter className="flex justify-between">
+				</div>
+				<div className="flex justify-between p-3 lg:p-4 border-t border-border/40">
 					<Button
 						type="button"
 						variant="outline"
@@ -565,8 +552,8 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 							? t("superadmin.organizations.form.saving")
 							: t("superadmin.organizations.form.save")}
 					</Button>
-				</CardFooter>
-			</Card>
+				</div>
+			</FlatCard>
 		</div>
 	)
 }

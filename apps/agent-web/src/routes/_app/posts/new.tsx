@@ -21,14 +21,9 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { RichTextEditor } from "@/components/common/lazy-rich-text-editor";
 import { useOrg } from "@/components/org/org-provider";
+import { FlatCard } from "@/components/my-space/flat-card";
+import { SectionHeader } from "@/components/my-space/section-header";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -243,13 +238,9 @@ function NewPostPage() {
 			<form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
 				{/* Main content */}
 				<div className="lg:col-span-2 space-y-6">
-					<Card>
-						<CardHeader>
-							<CardTitle>
-								{t("dashboard.posts.form.content")}
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
+					<FlatCard>
+					<div className="p-3 lg:p-4 space-y-4">
+						<div className="mb-2"><h3 className="text-sm font-bold">{t("dashboard.posts.form.content")}</h3></div>
 							<div className="space-y-2">
 								<Label htmlFor="title">
 									{t("dashboard.posts.form.title")} *
@@ -306,22 +297,20 @@ function NewPostPage() {
 									className="min-h-[300px]"
 								/>
 							</div>
-						</CardContent>
-					</Card>
+					</div>
+				</FlatCard>
 
 					{/* Event-specific fields */}
 					{isEvent && (
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
-									<CalendarDays className="h-5 w-5" />
-									{t(
+						<FlatCard>
+							<div className="p-3 lg:p-4 space-y-4">
+								<SectionHeader
+									icon={<CalendarDays className="h-5 w-5" />}
+									title={t(
 										"dashboard.posts.form.eventDetails",
 										"Détails de l'événement",
 									)}
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-4">
+								/>
 								<div className="grid gap-4 sm:grid-cols-2">
 									<div className="space-y-2">
 										<Label htmlFor="eventStartAt">
@@ -381,29 +370,21 @@ function NewPostPage() {
 										placeholder="https://..."
 									/>
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 
 					{/* Communique-specific fields */}
 					{isCommunique && (
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
-									<Megaphone className="h-5 w-5" />
-									{t(
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+								<SectionHeader
+									icon={<Megaphone className="h-5 w-5" />}
+									title={t(
 										"dashboard.posts.form.communiqueDetails",
 										"Document officiel",
 									)}
-								</CardTitle>
-								<CardDescription>
-									{t(
-										"dashboard.posts.form.communiqueHint",
-										"Téléchargez le document PDF officiel (obligatoire)",
-									)}
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
+								/>
 								<div className="border-2 border-dashed rounded-lg p-6 text-center">
 									<input
 										type="file"
@@ -441,20 +422,16 @@ function NewPostPage() {
 										</label>
 									)}
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 				</div>
 
 				{/* Sidebar */}
 				<div className="space-y-6">
-					<Card>
-						<CardHeader>
-							<CardTitle>
-								{t("dashboard.posts.form.settings")}
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
+					<FlatCard>
+						<div className="p-3 lg:p-4 space-y-4">
+							<div className="mb-2"><h3 className="text-sm font-bold">{t("dashboard.posts.form.settings")}</h3></div>
 							<div className="space-y-2">
 								<Label>
 									{t("dashboard.posts.form.category")} *
@@ -543,10 +520,10 @@ function NewPostPage() {
 									onCheckedChange={setPublish}
 								/>
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
-					<Button type="submit" className="w-full" disabled={isSubmitting}>
+					<Button type="submit" className="w-full active:scale-[0.97] transition-transform" disabled={isSubmitting}>
 						{isSubmitting
 							? t("common.saving")
 							: publish

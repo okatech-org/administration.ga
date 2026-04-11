@@ -1,12 +1,11 @@
 /**
  * CitizenIAstedWindow — Fenetre flottante iAsted citoyen
  *
- * Meme structure visuelle que l'agent (WhatsApp Mobile style),
- * avec restrictions citoyen :
+ * Bouton CircleMenu avec 4 options :
+ *   - Mr Ray : Ouvre la page iAsted plein ecran
  *   - iChat : Support consulaire (tickets + IA)
  *   - iAppel : Audio uniquement vers les representations
  *   - iContact : Annuaire urgence + standard des representations
- *   -  : Preferences
  *
  * PAS de iReunion (peut recevoir via GlobalCallAlert)
  * PAS d'appels video sortants
@@ -22,15 +21,14 @@ import {
 	Phone,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { CircleMenu } from "@/components/ui/circle-menu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useDraggable } from "@/hooks/use-draggable";
 
 import { CitizenChatTab } from "./CitizenChatTab";
 import { CitizenCallTab } from "./CitizenCallTab";
 import { CitizenContactTab } from "./CitizenContactTab";
-// Settings tab deplace dans le menu mobile principal
 
 // ─── Tabs ─────────────────────────────────────────────────────
 const TABS = [
@@ -41,32 +39,80 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-// ─── Floating Window ──────────────────────────────────────────
+// ─── Floating Window + CircleMenu ─────────────────────────────
 export function CitizenIAstedWindow() {
-	const [open, setOpen] = useState(false);
+	const [windowOpen, setWindowOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<TabId>("ichat");
 	const router = useRouter();
 
-	// Ecoute l'evenement du footer mobile pour ouvrir la fenetre
-	useEffect(() => {
-		const handler = () => setOpen(true);
-		window.addEventListener("iasted:open", handler);
-		return () => window.removeEventListener("iasted:open", handler);
+	const openWithTab = useCallback((tab: TabId) => {
+		setActiveTab(tab);
+		setWindowOpen(true);
 	}, []);
 
+	// Ecoute l'evenement du footer mobile pour ouvrir la fenetre
+	useEffect(() => {
+		const handler = (e: Event) => {
+			const detail = (e as CustomEvent)?.detail;
+			if (detail?.tab) {
+				openWithTab(detail.tab as TabId);
+			} else {
+				openWithTab("ichat");
+			}
+		};
+		window.addEventListener("iasted:open", handler);
+		return () => window.removeEventListener("iasted:open", handler);
+	}, [openWithTab]);
+
 	const handleExpand = () => {
-		setOpen(false);
+		setWindowOpen(false);
 		router.push("/my-space/iasted");
 	};
 
+	// CircleMenu items
+	const menuItems = [
+		{
+			label: "Mr Ray",
+			icon: <Bot size={20} className="text-white" />,
+			className: "bg-rose-500 hover:bg-rose-600",
+			onClick: () => handleExpand(),
+		},
+		{
+			label: "iChat",
+			icon: <MessageSquare size={18} className="text-white" />,
+			className: "bg-emerald-600 hover:bg-emerald-500",
+			onClick: () => openWithTab("ichat"),
+		},
+		{
+			label: "iAppel",
+			icon: <Phone size={18} className="text-white" />,
+			className: "bg-[#0072B9] hover:bg-[#0080D0]",
+			onClick: () => openWithTab("icall"),
+		},
+		{
+			label: "iContact",
+			icon: <Contact size={18} className="text-white" />,
+			className: "bg-amber-500 hover:bg-amber-400",
+			onClick: () => openWithTab("icontact"),
+		},
+	];
+
 	return (
 		<>
-			{/* FAB flottant */}
-			<CitizenIAstedFAB isOpen={open} onClick={() => setOpen(true)} />
+			{/* CircleMenu FAB — desktop only (mobile uses nav bar) */}
+			{!windowOpen && (
+				<div suppressHydrationWarning className="fixed bottom-[62px] right-[62px] z-40 hidden lg:block">
+					<CircleMenu
+						items={menuItems}
+						openIcon={<Bot size={22} className="text-white" />}
+						triggerClassName="bg-emerald-600 hover:bg-emerald-500"
+					/>
+				</div>
+			)}
 
 			{/* Fenetre flottante */}
 			<AnimatePresence>
-				{open && (
+				{windowOpen && (
 					<motion.div
 						initial={{ opacity: 0, y: "100%" }}
 						animate={{ opacity: 1, y: 0 }}
@@ -76,7 +122,7 @@ export function CitizenIAstedWindow() {
 							"fixed bottom-0 left-0 right-0 z-50",
 							"sm:left-auto sm:w-[420px] sm:right-6 sm:bottom-6",
 							"h-[85dvh] sm:h-[min(640px,calc(100vh-100px))]",
-							"rounded-t-2xl sm:rounded-2xl shadow-2xl",
+							"rounded-t-2xl sm:rounded-2xl",
 							"bg-card border flat-card-border flex flex-col overflow-hidden",
 						)}
 					>
@@ -106,7 +152,7 @@ export function CitizenIAstedWindow() {
 								<Button
 									variant="ghost"
 									size="icon"
-									onClick={() => setOpen(false)}
+									onClick={() => setWindowOpen(false)}
 									title="Reduire"
 									className="h-8 w-8 text-muted-foreground hover:bg-muted rounded-lg"
 								>
@@ -156,51 +202,5 @@ export function CitizenIAstedWindow() {
 				)}
 			</AnimatePresence>
 		</>
-	);
-}
-
-// ─── FAB (Floating Action Button) ─────────────────────────────
-export function CitizenIAstedFAB({
-	isOpen,
-	onClick,
-	unreadCount = 0,
-}: {
-	isOpen?: boolean;
-	onClick: () => void;
-	unreadCount?: number;
-}) {
-	// Si isOpen est undefined (ancien usage), toujours montrer
-	const shouldShow = isOpen === undefined ? true : !isOpen;
-	const draggable = useDraggable("iasted-fab-pos");
-
-	return (
-		<AnimatePresence>
-			{shouldShow && (
-				<motion.div
-					initial={{ scale: 0, opacity: 0 }}
-					animate={{ scale: 1, opacity: 1 }}
-					exit={{ scale: 0, opacity: 0 }}
-					transition={{ type: "spring", damping: 20, stiffness: 300 }}
-					ref={draggable.ref}
-					style={draggable.style}
-					className={`${draggable.style ? "" : "fixed bottom-6 right-6"} z-40 touch-none select-none cursor-grab active:cursor-grabbing hidden lg:block`}
-					{...draggable.handlers}
-				>
-					<Button
-						size="lg"
-						className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow bg-emerald-600 hover:bg-emerald-700 relative"
-						onClick={(e) => { if (!draggable.isDragged) onClick(); }}
-						aria-label="Ouvrir iAsted"
-					>
-						<Bot className="h-6 w-6" />
-						{unreadCount > 0 && (
-							<span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-medium">
-								{unreadCount > 9 ? "9+" : unreadCount}
-							</span>
-						)}
-					</Button>
-				</motion.div>
-			)}
-		</AnimatePresence>
 	);
 }

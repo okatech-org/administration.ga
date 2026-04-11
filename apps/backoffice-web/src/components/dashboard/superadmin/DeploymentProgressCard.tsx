@@ -8,13 +8,8 @@ import {
 	CheckCircle2,
 	XCircle,
 } from "lucide-react";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { SectionHeader } from "@/components/design-system/section-header";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Map org type codes to French display names
@@ -65,14 +60,12 @@ export function DeploymentProgressCard({
 
 	if (loading || !data) {
 		return (
-			<Card>
-				<CardHeader className="pb-3">
-					<Skeleton className="h-5 w-56" />
-				</CardHeader>
-				<CardContent>
+			<FlatCard>
+				<div className="p-3 lg:p-4">
+					<Skeleton className="h-5 w-56 mb-3" />
 					<Skeleton className="h-48 w-full" />
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 		);
 	}
 
@@ -80,17 +73,19 @@ export function DeploymentProgressCard({
 		.sort(([, a], [, b]) => b.count - a.count);
 
 	return (
-		<Card>
-			<CardHeader className="pb-3">
-				<CardTitle className="flex items-center gap-2 text-base">
-					<Globe className="h-5 w-5 text-blue-500" />
-					{t("superadmin.dashboard.deployment.title", "Déploiement des Représentations")}
-				</CardTitle>
-				<CardDescription>
-					{t("superadmin.dashboard.deployment.description", "Couverture géographique et progression du réseau diplomatique")}
-				</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-5">
+		<FlatCard>
+			<div className="p-3 lg:p-4 space-y-5">
+				<div>
+					<SectionHeader
+						icon={<Globe className="h-3.5 w-3.5" />}
+						iconBgClass="bg-blue-500/10"
+						iconTextClass="text-blue-500"
+						title={t("superadmin.dashboard.deployment.title", "Deploiement des Representations")}
+					/>
+					<p className="text-xs text-muted-foreground -mt-1 mb-3">
+						{t("superadmin.dashboard.deployment.description", "Couverture geographique et progression du reseau diplomatique")}
+					</p>
+				</div>
 				{/* Summary Stats Row */}
 				<div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
 					<div className="flex flex-col gap-1 rounded-lg bg-blue-500/5 border border-blue-500/10 p-3">
@@ -196,7 +191,7 @@ export function DeploymentProgressCard({
 						))}
 					</div>
 				</div>
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }

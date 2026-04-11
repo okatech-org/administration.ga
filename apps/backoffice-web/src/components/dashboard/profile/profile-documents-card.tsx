@@ -11,9 +11,10 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { FlatCard } from "@/components/design-system/flat-card";
+import { SectionHeader } from "@/components/design-system/section-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -113,21 +114,21 @@ export function ProfileDocumentsCard({
   };
 
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-2 pt-3 px-4">
-        <CardTitle className="text-xs font-bold flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-blue-500/10">
-              <FileText className="w-3.5 h-3.5 text-blue-500" />
-            </div>
-            Documents
-          </div>
-          <span className="text-[10px] text-muted-foreground font-medium">
-            {validatedCount}/{totalExpected} valides
-          </span>
-        </CardTitle>
+    <FlatCard>
+      <div className="p-3 lg:p-4">
+        <SectionHeader
+          icon={<FileText className="h-3.5 w-3.5" />}
+          iconBgClass="bg-blue-500/10"
+          iconTextClass="text-blue-500"
+          title="Documents"
+          actions={
+            <span className="text-[10px] text-muted-foreground font-medium">
+              {validatedCount}/{totalExpected} valides
+            </span>
+          }
+        />
         {/* Barre de progression */}
-        <div className="h-1.5 w-full rounded-full overflow-hidden bg-muted mt-1.5">
+        <div className="h-1.5 w-full rounded-full overflow-hidden bg-muted mb-2">
           <div
             className={cn(
               "h-full rounded-full transition-all duration-500",
@@ -140,9 +141,6 @@ export function ProfileDocumentsCard({
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-      </CardHeader>
-
-      <CardContent className="p-3 pt-1">
         {documents.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
             <FileText className="h-8 w-8 mx-auto mb-2 opacity-20" />
@@ -262,7 +260,7 @@ export function ProfileDocumentsCard({
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </FlatCard>
   );
 }

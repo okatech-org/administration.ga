@@ -19,15 +19,10 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
 import { useModuleAccess } from "@/components/shared/access-gate";
+import { FlatCard } from "@/components/my-space/flat-card";
+import { SectionHeader } from "@/components/my-space/section-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -148,7 +143,7 @@ function DashboardPosts() {
           </p>
         </div>
         {canPublish && (
-          <Button asChild>
+          <Button asChild className="active:scale-[0.97] transition-transform">
             <Link to="/posts/new">
               <Plus className="mr-2 h-4 w-4" />
               {t("dashboard.posts.create")}
@@ -157,20 +152,12 @@ function DashboardPosts() {
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Newspaper className="h-5 w-5" />
-            {t("dashboard.posts.listTitle")}
-          </CardTitle>
-          <CardDescription>
-            {t(
-              "dashboard.posts.listDescription",
-              "Liste de toutes vos publications",
-            )}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <FlatCard>
+        <div className="p-3 lg:p-4">
+          <SectionHeader
+            icon={<Newspaper className="h-5 w-5" />}
+            title={t("dashboard.posts.listTitle")}
+          />
           {posts.length === 0 ?
             <div className="text-center py-12">
               <Newspaper className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
@@ -319,13 +306,13 @@ function DashboardPosts() {
           {/* Load More */}
           {paginationStatus === "CanLoadMore" && (
             <div className="flex justify-center pt-4">
-              <Button variant="outline" onClick={() => loadMore(30)}>
+              <Button variant="outline" onClick={() => loadMore(30)} className="active:scale-[0.97] transition-transform">
                 Charger plus
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </FlatCard>
     </div>
   );
 }

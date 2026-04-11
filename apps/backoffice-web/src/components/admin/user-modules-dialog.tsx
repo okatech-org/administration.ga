@@ -452,7 +452,7 @@ export function UserModulesDialog({ user, open, onOpenChange }: UserModulesDialo
 										className={cn(
 											"flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all",
 											activePreset === preset.id
-												? "bg-primary/10 border-primary/30 text-primary shadow-sm"
+												? "bg-primary/10 border-primary/30 text-primary"
 												: "border-border hover:bg-muted/50 text-muted-foreground hover:text-foreground",
 										)}
 									>

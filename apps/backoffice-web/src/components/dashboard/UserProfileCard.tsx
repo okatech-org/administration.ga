@@ -19,13 +19,7 @@ import {
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -106,12 +100,12 @@ export function UserProfileCard({
 
 	if (!profile) {
 		return (
-			<Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
-				<CardContent className="py-4 text-center text-amber-700 dark:text-amber-400">
+			<FlatCard className="border border-amber-200 dark:border-amber-800/50">
+				<div className="py-4 text-center text-amber-700 dark:text-amber-400 p-3 lg:p-4">
 					<User className="h-8 w-8 mx-auto mb-2 opacity-50" />
-					<p className="text-sm">Profil non renseigné</p>
-				</CardContent>
-			</Card>
+					<p className="text-sm">Profil non renseigne</p>
+				</div>
+			</FlatCard>
 		);
 	}
 
@@ -148,9 +142,9 @@ export function UserProfileCard({
 	if (compact) {
 		return (
 			<Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-				<Card>
+				<FlatCard>
 					<CollapsibleTrigger asChild>
-						<CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+						<div className="p-3 lg:p-4 cursor-pointer hover:bg-[#F4F3ED]/80 dark:hover:bg-[#171616]/80 transition-colors">
 							<div className="flex items-center justify-between">
 								<div className="flex items-center gap-3">
 									<Avatar className="h-10 w-10">
@@ -159,10 +153,10 @@ export function UserProfileCard({
 										</AvatarFallback>
 									</Avatar>
 									<div>
-										<CardTitle className="text-base">{fullName}</CardTitle>
-										<CardDescription className="text-xs">
-											{contacts?.email || "Email non renseigné"}
-										</CardDescription>
+										<h3 className="text-base font-semibold">{fullName}</h3>
+										<p className="text-xs text-muted-foreground">
+											{contacts?.email || "Email non renseigne"}
+										</p>
 									</div>
 								</div>
 								<div className="flex items-center gap-2">
@@ -178,10 +172,10 @@ export function UserProfileCard({
 									)}
 								</div>
 							</div>
-						</CardHeader>
+						</div>
 					</CollapsibleTrigger>
 					<CollapsibleContent>
-						<CardContent className="pt-0">
+						<div className="px-3 pb-3 lg:px-4 lg:pb-4">
 							<ProfileDetails
 								identity={identity}
 								contacts={contacts}
@@ -194,36 +188,34 @@ export function UserProfileCard({
 								getCountryLabel={getCountryLabel}
 								getMaritalStatusLabel={getMaritalStatusLabel}
 							/>
-						</CardContent>
+						</div>
 					</CollapsibleContent>
-				</Card>
+				</FlatCard>
 			</Collapsible>
 		);
 	}
 
 	return (
-		<Card>
-			<CardHeader>
-				<div className="flex items-center gap-4">
+		<FlatCard>
+			<div className="p-3 lg:p-4">
+				<div className="flex items-center gap-4 mb-4">
 					<Avatar className="h-14 w-14">
 						<AvatarFallback className="bg-primary/10 text-primary text-lg">
 							{getInitials()}
 						</AvatarFallback>
 					</Avatar>
 					<div className="flex-1">
-						<CardTitle className="flex items-center gap-2">
+						<h3 className="font-semibold flex items-center gap-2">
 							{fullName}
 							<Badge variant={completionScore >= 80 ? "default" : "secondary"}>
 								Profil {completionScore}%
 							</Badge>
-						</CardTitle>
-						<CardDescription>
-							{contacts?.email || "Email non renseigné"}
-						</CardDescription>
+						</h3>
+						<p className="text-sm text-muted-foreground">
+							{contacts?.email || "Email non renseigne"}
+						</p>
 					</div>
 				</div>
-			</CardHeader>
-			<CardContent>
 				<ProfileDetails
 					identity={identity}
 					contacts={contacts}
@@ -236,8 +228,8 @@ export function UserProfileCard({
 					getCountryLabel={getCountryLabel}
 					getMaritalStatusLabel={getMaritalStatusLabel}
 				/>
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }
 
@@ -514,20 +506,20 @@ function InfoRow({
 // Loading skeleton
 function ProfileSkeleton() {
 	return (
-		<Card>
-			<CardHeader>
-				<div className="flex items-center gap-4">
+		<FlatCard>
+			<div className="p-3 lg:p-4">
+				<div className="flex items-center gap-4 mb-4">
 					<Skeleton className="h-14 w-14 rounded-full" />
 					<div className="flex-1 space-y-2">
 						<Skeleton className="h-5 w-40" />
 						<Skeleton className="h-4 w-32" />
 					</div>
 				</div>
-			</CardHeader>
-			<CardContent className="space-y-4">
-				<Skeleton className="h-24 w-full" />
-				<Skeleton className="h-16 w-full" />
-			</CardContent>
-		</Card>
+				<div className="space-y-4">
+					<Skeleton className="h-24 w-full" />
+					<Skeleton className="h-16 w-full" />
+				</div>
+			</div>
+		</FlatCard>
 	);
 }

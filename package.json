@@ -2,6 +2,7 @@
   "name": "gabon-diplomatie",
   "version": "0.0.1",
   "private": true,
+  "packageManager": "bun@1.2.17",
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
@@ -45,7 +46,6 @@
     "turbo": "^2.8.17",
     "typescript": "5.9.3"
   },
-  "packageManager": "bun@1.2.17",
   "engines": {
     "node": ">=20"
   },

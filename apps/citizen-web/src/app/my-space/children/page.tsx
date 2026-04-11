@@ -194,7 +194,7 @@ function ChildCard({ child, index }: { child: ChildProfile; index: number }) {
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.2, delay: index * 0.05 }}
 		>
-			<FlatCard className="group hover:shadow-md transition-shadow">
+			<FlatCard className="group">
 				<div className="p-4 pb-2">
 					<div className="flex items-start justify-between">
 						<div className="flex items-center gap-3">

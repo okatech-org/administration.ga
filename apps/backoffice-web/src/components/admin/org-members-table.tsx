@@ -10,13 +10,7 @@ import { AddMemberDialog } from "@/components/org/add-member-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -95,31 +89,31 @@ export function OrgMembersTable({ orgId }: OrgMembersTableProps) {
 
 	if (error) {
 		return (
-			<Card>
-				<CardContent className="pt-6">
+			<FlatCard>
+				<div className="p-3 lg:p-4 pt-6">
 					<p className="text-destructive">{t("superadmin.common.error")}</p>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 		);
 	}
 
 	const typedMembers = (members ?? []) as MemberWithUser[];
 
 	return (
-		<Card>
-			<CardHeader className="flex flex-row items-center justify-between">
+		<FlatCard>
+			<div className="p-3 lg:p-4 flex flex-row items-center justify-between">
 				<div>
-					<CardTitle>{t("superadmin.orgMembers.title")}</CardTitle>
-					<CardDescription>
+					<p className="text-base font-semibold">{t("superadmin.orgMembers.title")}</p>
+					<p className="text-sm text-muted-foreground">
 						{t("superadmin.orgMembers.description")}
-					</CardDescription>
+					</p>
 				</div>
 				<Button onClick={() => setShowAddDialog(true)}>
 					<UserPlus className="mr-2 h-4 w-4" />
 					{t("superadmin.orgMembers.addMember")}
 				</Button>
-			</CardHeader>
-			<CardContent>
+			</div>
+			<div className="p-3 lg:p-4 pt-0">
 				{isPending ? (
 					<div className="space-y-2">
 						<Skeleton className="h-12 w-full" />
@@ -199,13 +193,13 @@ export function OrgMembersTable({ orgId }: OrgMembersTableProps) {
 						{t("superadmin.orgMembers.noMembers")}
 					</p>
 				)}
-			</CardContent>
+			</div>
 
 			<AddMemberDialog
 				orgId={orgId}
 				open={showAddDialog}
 				onOpenChange={setShowAddDialog}
 			/>
-		</Card>
+		</FlatCard>
 	);
 }

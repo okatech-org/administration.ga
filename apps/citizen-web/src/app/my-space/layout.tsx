@@ -83,7 +83,7 @@ function MySpaceProfileGate({ children }: { children: React.ReactNode }) {
   if (hasNoProfile) {
     return (
       <div className="min-h-full flex items-center justify-center">
-        <div className="max-w-md w-full text-center space-y-6 p-8 rounded-2xl border border-border bg-card shadow-lg animate-in fade-in zoom-in-95">
+        <div className="max-w-md w-full text-center space-y-6 p-8 rounded-2xl bg-[#F4F3ED] dark:bg-[#171616] animate-in fade-in zoom-in-95">
           <div className="mx-auto w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
             <AlertTriangle className="w-8 h-8 text-amber-600 dark:text-amber-400" />
           </div>

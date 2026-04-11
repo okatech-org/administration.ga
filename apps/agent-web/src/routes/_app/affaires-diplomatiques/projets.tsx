@@ -31,13 +31,7 @@ import {
 } from "@/components/diplomatic/AIActionPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -146,20 +140,20 @@ function ProjectCard({ project }: { project: any }) {
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardHeader className="pb-3">
+    <FlatCard>
+      <div className="p-3 lg:p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0 flex-1">
             <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
               <Briefcase className="h-4.5 w-4.5 text-primary" />
             </div>
             <div className="min-w-0 flex-1">
-              <CardTitle className="text-sm leading-snug">
+              <p className="text-sm font-medium leading-snug">
                 {project.title}
-              </CardTitle>
-              <CardDescription className="text-xs mt-0.5">
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {project.reference} • {PROJECT_TYPE_LABEL[project.projectType] ?? project.projectType}
-              </CardDescription>
+              </p>
             </div>
           </div>
           <Badge className={cn("text-[10px] shrink-0 whitespace-nowrap", config.color)}>
@@ -167,9 +161,6 @@ function ProjectCard({ project }: { project: any }) {
             {config.label}
           </Badge>
         </div>
-      </CardHeader>
-
-      <CardContent className="space-y-3">
         {/* Description */}
         {project.description && (
           <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
@@ -268,8 +259,8 @@ function ProjectCard({ project }: { project: any }) {
             {generatingPdf ? "Génération..." : "Générer le .pdf"}
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </FlatCard>
   );
 }
 

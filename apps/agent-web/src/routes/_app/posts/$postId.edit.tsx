@@ -23,13 +23,8 @@ import { toast } from "sonner";
 import { RichTextEditor } from "@/components/common/lazy-rich-text-editor";
 import { useOrg } from "@/components/org/org-provider";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
+import { SectionHeader } from "@/components/my-space/section-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -254,7 +249,7 @@ function EditPostPage() {
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4">
 			<div className="flex items-center gap-4">
-				<Button variant="ghost" size="sm" asChild>
+				<Button variant="ghost" size="sm" className="active:scale-[0.97] transition-transform" asChild>
 					<Link to="/posts">
 						<ArrowLeft className="mr-2 h-4 w-4" />
 						{t("common.back")}
@@ -271,13 +266,11 @@ function EditPostPage() {
 			<form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
 				{/* Main content */}
 				<div className="lg:col-span-2 space-y-6">
-					<Card>
-						<CardHeader>
-							<CardTitle>
-								{t("dashboard.posts.form.content")}
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
+					<FlatCard>
+						<div className="p-3 lg:p-4 pb-0">
+							<h3 className="text-sm font-bold">{t("dashboard.posts.form.content")}</h3>
+						</div>
+						<div className="p-3 lg:p-4 space-y-4">
 							<div className="space-y-2">
 								<Label htmlFor="title">
 									{t("dashboard.posts.form.title")} *
@@ -334,22 +327,19 @@ function EditPostPage() {
 									className="min-h-[300px]"
 								/>
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
 					{/* Event-specific fields */}
 					{isEvent && (
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
-									<CalendarDays className="h-5 w-5" />
-									{t(
-										"dashboard.posts.form.eventDetails",
-										"Détails de l'événement",
-									)}
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-4">
+						<FlatCard>
+							<div className="p-3 lg:p-4 pb-0">
+								<SectionHeader icon={<CalendarDays className="h-5 w-5" />} title={t(
+									"dashboard.posts.form.eventDetails",
+									"Détails de l'événement",
+								)} />
+							</div>
+							<div className="p-3 lg:p-4 space-y-4">
 								<div className="grid gap-4 sm:grid-cols-2">
 									<div className="space-y-2">
 										<Label htmlFor="eventStartAt">
@@ -409,29 +399,26 @@ function EditPostPage() {
 										placeholder="https://..."
 									/>
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 
 					{/* Communique-specific fields */}
 					{isCommunique && (
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
-									<Megaphone className="h-5 w-5" />
-									{t(
-										"dashboard.posts.form.communiqueDetails",
-										"Document officiel",
-									)}
-								</CardTitle>
-								<CardDescription>
+						<FlatCard>
+							<div className="p-3 lg:p-4 pb-0">
+								<SectionHeader icon={<Megaphone className="h-5 w-5" />} title={t(
+									"dashboard.posts.form.communiqueDetails",
+									"Document officiel",
+								)} />
+								<p className="text-xs text-muted-foreground mt-1">
 									{t(
 										"dashboard.posts.form.communiqueHint",
 										"Téléchargez le document PDF officiel (obligatoire)",
 									)}
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
+								</p>
+							</div>
+							<div className="p-3 lg:p-4">
 								<div className="border-2 border-dashed rounded-lg p-6 text-center">
 									<input
 										type="file"
@@ -449,6 +436,7 @@ function EditPostPage() {
 													type="button"
 													variant="link"
 													size="sm"
+													className="active:scale-[0.97] transition-transform"
 													onClick={() =>
 														document.getElementById("document-upload")?.click()
 													}
@@ -469,20 +457,18 @@ function EditPostPage() {
 										</label>
 									)}
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 				</div>
 
 				{/* Sidebar */}
 				<div className="space-y-6">
-					<Card>
-						<CardHeader>
-							<CardTitle>
-								{t("dashboard.posts.form.settings")}
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
+					<FlatCard>
+						<div className="p-3 lg:p-4 pb-0">
+							<h3 className="text-sm font-bold">{t("dashboard.posts.form.settings")}</h3>
+						</div>
+						<div className="p-3 lg:p-4 space-y-4">
 							<div className="space-y-2">
 								<Label>
 									{t("dashboard.posts.form.category")} *
@@ -543,6 +529,7 @@ function EditPostPage() {
 												type="button"
 												variant="link"
 												size="sm"
+												className="active:scale-[0.97] transition-transform"
 												onClick={() =>
 													document.getElementById("cover-upload")?.click()
 												}
@@ -577,10 +564,10 @@ function EditPostPage() {
 									)}
 								</p>
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
-					<Button type="submit" className="w-full" disabled={isSubmitting}>
+					<Button type="submit" className="w-full active:scale-[0.97] transition-transform" disabled={isSubmitting}>
 						{isSubmitting
 							? t("common.saving")
 							: t("dashboard.posts.form.save")}

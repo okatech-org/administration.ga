@@ -104,7 +104,7 @@ export function ConsularCardPreview({ userId }: ConsularCardPreviewProps) {
 							)}
 						>
 							{/* Front side (Recto) */}
-							<div className="relative aspect-[1.6/1] w-full [backface-visibility:hidden] rounded-xl overflow-hidden shadow-lg bg-gradient-to-br from-green-800 to-green-900">
+							<div className="relative aspect-[1.6/1] w-full [backface-visibility:hidden] rounded-xl overflow-hidden bg-gradient-to-br from-green-800 to-green-900">
 								{/* Background image */}
 								<img
 									src={CARD_RECTO_URL}
@@ -165,7 +165,7 @@ export function ConsularCardPreview({ userId }: ConsularCardPreviewProps) {
 								</div>
 
 								{/* QR Code */}
-								<div className="absolute bottom-3 right-3 bg-white rounded p-1 shadow-sm">
+								<div className="absolute bottom-3 right-3 bg-[#FDFCFA] dark:bg-[#21201E]/77 rounded p-1">
 									<QRCode
 										value={`${typeof window !== "undefined" ? window.location.origin : ""}/verify-profile/${profile._id}`}
 										size={48}
@@ -178,7 +178,7 @@ export function ConsularCardPreview({ userId }: ConsularCardPreviewProps) {
 							<div
 								className={cn(
 									"absolute inset-0 aspect-[1.6/1] w-full [backface-visibility:hidden] [transform:rotateY(180deg)]",
-									"rounded-xl overflow-hidden shadow-lg bg-gradient-to-br from-green-700 to-green-800",
+									"rounded-xl overflow-hidden bg-gradient-to-br from-green-700 to-green-800",
 								)}
 							>
 								<img
@@ -189,7 +189,7 @@ export function ConsularCardPreview({ userId }: ConsularCardPreviewProps) {
 
 								{/* Back content */}
 								<div className="absolute inset-0 p-4 flex flex-col justify-center items-center">
-									<div className="bg-white/90 rounded-lg p-4 text-center max-w-[80%]">
+									<div className="bg-[#FDFCFA]/90 dark:bg-[#21201E]/77 rounded-lg p-4 text-center max-w-[80%]">
 										<p className="text-xs text-gray-600 mb-2">
 											Cette carte est la propriété du Consulat Général du Gabon
 										</p>

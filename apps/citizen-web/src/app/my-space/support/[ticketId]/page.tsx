@@ -22,13 +22,7 @@ import { PageHeader } from "@/components/my-space/page-header";
 import { ContentDetailSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Textarea } from "@/components/ui/textarea";
 import {
 	useAuthenticatedConvexQuery,
@@ -161,32 +155,32 @@ export default function TicketDetailPage() {
 
 			<div className="space-y-4 pt-4">
 				{/* Initial message */}
-				<Card>
-					<CardHeader className="py-4 px-5 bg-muted/40 border-b flex flex-row items-center gap-3">
+				<FlatCard>
+					<div className="py-4 px-5 bg-muted/40 border-b flex flex-row items-center gap-3">
 						<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
 							<User className="h-4 w-4" />
 						</div>
 						<div className="flex-1">
-							<CardTitle className="text-sm font-medium">Vous</CardTitle>
+							<div className="text-sm font-medium">Vous</div>
 							<div className="text-xs text-muted-foreground mt-0.5">
 								{format(new Date(ticket._creationTime), "dd MMM yyyy HH:mm", {
 									locale: dateLocale,
 								})}
 							</div>
 						</div>
-					</CardHeader>
-					<CardContent className="pt-5 text-sm whitespace-pre-wrap leading-relaxed">
+					</div>
+					<div className="p-3 lg:p-4 pt-5 text-sm whitespace-pre-wrap leading-relaxed">
 						{ticket.description}
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 
 				{/* Conversation thread */}
 				{ticket.messages?.map((msg) => (
-					<Card
+					<FlatCard
 						key={msg.id}
-						className={msg.isStaff ? "border-primary/20 bg-primary/5" : ""}
+						className={msg.isStaff ? "bg-primary/5" : ""}
 					>
-						<CardHeader
+						<div
 							className={`py-3 px-5 border-b flex flex-row items-center gap-3 ${msg.isStaff ? "bg-primary/10" : "bg-muted/40"}`}
 						>
 							<div
@@ -199,41 +193,41 @@ export default function TicketDetailPage() {
 								)}
 							</div>
 							<div className="flex-1">
-								<CardTitle className="text-sm font-medium">
+								<div className="text-sm font-medium">
 									{msg.isStaff ? "Support Consulaire" : "Vous"}
-								</CardTitle>
+								</div>
 								<div className="text-xs text-muted-foreground mt-0.5">
 									{format(new Date(msg.createdAt), "dd MMM yyyy HH:mm", {
 										locale: dateLocale,
 									})}
 								</div>
 							</div>
-						</CardHeader>
-						<CardContent className="pt-4 pb-5 text-sm whitespace-pre-wrap leading-relaxed">
+						</div>
+						<div className="p-3 lg:p-4 pt-4 pb-5 text-sm whitespace-pre-wrap leading-relaxed">
 							{msg.content}
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				))}
 			</div>
 
 			{/* Reply box */}
 			{ticket.status !== "closed" && ticket.status !== "resolved" && (
-				<Card className="mt-8 border-primary/20 shadow-sm">
-					<CardHeader className="py-4">
-						<CardTitle className="text-base flex items-center gap-2">
+				<FlatCard className="mt-8">
+					<div className="p-3 lg:p-4 pb-0 py-4">
+						<div className="text-base flex items-center gap-2 font-semibold">
 							<Send className="h-4 w-4 text-primary" />
 							{t("support.tickets.detail.reply")}
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
+						</div>
+					</div>
+					<div className="p-3 lg:p-4">
 						<Textarea
 							placeholder={t("support.tickets.detail.replyPlaceholder")}
 							value={replyMessage}
 							onChange={(e) => setReplyMessage(e.target.value)}
 							className="min-h-[120px] resize-none"
 						/>
-					</CardContent>
-					<CardFooter className="flex justify-end pt-0 pb-4 pr-6">
+					</div>
+					<div className="flex justify-end pt-0 pb-4 pr-6">
 						<Button
 							onClick={handleSendReply}
 							disabled={isSending || !replyMessage.trim()}
@@ -241,8 +235,8 @@ export default function TicketDetailPage() {
 							{isSending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 							{t("support.tickets.detail.sendReply")}
 						</Button>
-					</CardFooter>
-				</Card>
+					</div>
+				</FlatCard>
 			)}
 
 			{(ticket.status === "closed" || ticket.status === "resolved") && (
