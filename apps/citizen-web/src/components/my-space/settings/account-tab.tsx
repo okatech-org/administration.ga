@@ -113,7 +113,7 @@ export function AccountTab({ preferences, onPrefToggle, currentLanguage, onLangu
 
 	return (
 		<>
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 stagger-children">
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
 				{/* ─── COL 1 : Compte & Securite ─── */}
 				<div className="flex flex-col gap-3">
 					{/* Info compte */}

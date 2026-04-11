@@ -125,7 +125,7 @@ export function DossierTab() {
 				</div>
 
 				{/* Grille 2x2 desktop, empile mobile */}
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-3 stagger-children">
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
 					{/* ─── Identite ─── */}
 					<FlatCard>
 						<SectionHeader icon={<User className="h-3.5 w-3.5" />} title={t("profile.tabs.personal")} />
