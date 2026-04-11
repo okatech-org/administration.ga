@@ -8,13 +8,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -118,6 +112,7 @@ function ServiceEdit() {
 					<Button
 						variant="ghost"
 						size="icon"
+						className="active:scale-[0.97] transition-transform"
 						onClick={(e) => {
 							e.preventDefault(); // Prevent form submit
 							navigate({ to: "/services" });
@@ -133,7 +128,7 @@ function ServiceEdit() {
 					</div>
 				</div>
 				<div className="flex items-center gap-2">
-					<Button type="submit">
+					<Button type="submit" className="active:scale-[0.97] transition-transform">
 						<Save className="mr-2 h-4 w-4" />
 						{t("dashboard.services.edit.save")}
 					</Button>
@@ -150,16 +145,14 @@ function ServiceEdit() {
 
 					<TabsContent value="general">
 						<div className="grid gap-6">
-							<Card>
-								<CardHeader>
-									<CardTitle>
-										{t("dashboard.services.edit.serviceInfo")}
-									</CardTitle>
-									<CardDescription>
-										Configuration générale du service
-									</CardDescription>
-								</CardHeader>
-								<CardContent className="space-y-4">
+							<FlatCard>
+								<div className="p-3 lg:p-4 pb-0">
+									<h3 className="text-sm font-bold">{t("dashboard.services.edit.serviceInfo")}</h3>
+									<p className="text-xs text-muted-foreground mt-1">
+										Configuration generale du service
+									</p>
+								</div>
+								<div className="p-3 lg:p-4 space-y-4">
 									<div className="flex items-center justify-between">
 										<div className="space-y-0.5">
 											<Label>{t("dashboard.services.edit.activate")}</Label>
@@ -350,8 +343,8 @@ function ServiceEdit() {
 											}}
 										/>
 									</div>
-								</CardContent>
-							</Card>
+								</div>
+							</FlatCard>
 						</div>
 					</TabsContent>
 				</Tabs>

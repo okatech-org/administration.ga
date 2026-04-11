@@ -27,7 +27,7 @@ export function SettingsLayout({
 	children,
 }: SettingsLayoutProps) {
 	return (
-		<div className="flex flex-1 flex-col p-3 md:p-6 min-h-full overflow-auto w-full max-w-[1400px] mx-auto">
+		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4 min-h-full overflow-auto w-full max-w-[1400px] mx-auto">
 			<div className="flex flex-col gap-1 mb-4 md:mb-6">
 				<h1 className="text-xl md:text-3xl font-semibold tracking-tight">
 					{title}
@@ -39,9 +39,9 @@ export function SettingsLayout({
 				)}
 			</div>
 
-			<div className="flex flex-col md:flex-row bg-card rounded-2xl border shadow-sm flex-1 overflow-hidden">
+			<div className="flex flex-col md:flex-row bg-[#F4F3ED] dark:bg-[#171616] rounded-2xl flex-1 overflow-hidden">
 				{/* Sidebar → horizontal scroll on mobile */}
-				<aside className="w-full md:w-56 lg:w-64 border-b md:border-b-0 md:border-r px-2 py-2 md:p-4 shrink-0 flex flex-row md:flex-col gap-1 bg-muted/20 overflow-x-auto">
+				<aside className="w-full md:w-56 lg:w-64 border-b md:border-b-0 md:border-r border-border/50 px-2 py-2 md:p-4 shrink-0 flex flex-row md:flex-col gap-1 overflow-x-auto">
 					{tabs.map((tab) => {
 						const isActive = tab.id === activeTab;
 						return (

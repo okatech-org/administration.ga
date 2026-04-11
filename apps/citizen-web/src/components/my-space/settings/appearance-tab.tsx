@@ -109,10 +109,10 @@ export function AppearanceTab({
 									captureEvent("myspace_preferences_updated");
 								}}
 								className={cn(
-									"flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+									"flex flex-col items-center gap-2 p-3 rounded-xl transition-all",
 									!isDark
-										? "border-primary bg-primary/5 ring-1 ring-primary/20"
-										: "border-border hover:border-muted-foreground/30 hover:bg-muted/30",
+										? "bg-primary/10 ring-2 ring-primary/20"
+										: "bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-[#EBE6DC]/50 dark:hover:bg-[#383633]/50",
 								)}
 							>
 								<div
@@ -146,10 +146,10 @@ export function AppearanceTab({
 									captureEvent("myspace_preferences_updated");
 								}}
 								className={cn(
-									"flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+									"flex flex-col items-center gap-2 p-3 rounded-xl transition-all",
 									isDark
-										? "border-primary bg-primary/5 ring-1 ring-primary/20"
-										: "border-border hover:border-muted-foreground/30 hover:bg-muted/30",
+										? "bg-primary/10 ring-2 ring-primary/20"
+										: "bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-[#EBE6DC]/50 dark:hover:bg-[#383633]/50",
 								)}
 							>
 								<div
@@ -247,10 +247,10 @@ export function AppearanceTab({
 												type="button"
 												onClick={() => setFontSize(size)}
 												className={cn(
-													"flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all",
+													"flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all",
 													isActive
-														? "border-primary bg-primary/5 ring-1 ring-primary/20"
-														: "border-border hover:border-muted-foreground/30 hover:bg-muted/30",
+														? "bg-primary/10 ring-2 ring-primary/20"
+														: "bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-[#EBE6DC]/50 dark:hover:bg-[#383633]/50",
 												)}
 											>
 												<Type
@@ -290,7 +290,7 @@ export function AppearanceTab({
 						</div>
 
 						{/* Reduire les animations */}
-						<div className="flex items-center justify-between py-3 border-t border-foreground/5">
+						<div className="flex items-center justify-between py-3 mt-2 rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 px-3">
 							<div className="space-y-0.5 pr-3">
 								<p className="text-xs font-semibold">
 									{t("settings.accessibility.reduceMotion")}
@@ -318,7 +318,7 @@ function CardHeader({
 	title,
 }: { icon: React.ReactNode; title: string }) {
 	return (
-		<div className="flex items-center gap-2.5 p-4 pb-3 border-b border-foreground/5">
+		<div className="flex items-center gap-2.5 p-4 pb-3 bg-[#EBE6DC]/40 dark:bg-[#383633]/25 rounded-t-xl">
 			<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
 				{icon}
 			</div>
@@ -347,10 +347,10 @@ function LangOption({
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"flex items-center gap-3 px-3 py-2.5 rounded-xl border-2 transition-all w-full text-left",
+				"flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all w-full text-left active:scale-[0.97]",
 				isActive
-					? "border-primary bg-primary/5 ring-1 ring-primary/20"
-					: "border-border hover:border-muted-foreground/30 hover:bg-muted/30",
+					? "bg-primary/10 ring-2 ring-primary/20"
+					: "bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-[#EBE6DC]/50 dark:hover:bg-[#383633]/50",
 			)}
 		>
 			<FlagIcon countryCode={flag} />

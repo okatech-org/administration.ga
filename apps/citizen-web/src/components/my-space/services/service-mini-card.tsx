@@ -53,7 +53,7 @@ export function ServiceMiniCard({
 			<FlatCard
 				className={cn(
 					"p-3 transition-all",
-					isEligible && "hover:shadow-md hover:border-primary/20 active:scale-[0.98]",
+					isEligible && "hover:bg-[#F4F3ED]/80 dark:hover:bg-[#171616]/80 active:scale-[0.97]",
 				)}
 			>
 				<div className="flex items-start gap-3">

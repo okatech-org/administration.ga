@@ -51,7 +51,7 @@ import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModa
 import { DynamicFolderIcon } from "@/components/icons/DynamicFolderIcon";
 import { PageHeader } from "@/components/my-space/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Combobox } from "@/components/ui/combobox";
 import {
 	Dialog,
@@ -85,7 +85,6 @@ const CATEGORY_CONFIG: Record<
 		label: string;
 		labelEn: string;
 		gradient: string; // The main gradient styling the folder
-		shadowColor: string; // Colored shadow for depth
 		iconColor: string; // Icon color when used outside folder
 	}
 > = {
@@ -94,7 +93,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Formulaires",
 		labelEn: "Forms",
 		gradient: "bg-gradient-to-br from-indigo-400 to-indigo-600",
-		shadowColor: "shadow-indigo-500/30",
 		iconColor: "text-indigo-600",
 	},
 	[DocumentTypeCategory.Identity]: {
@@ -102,7 +100,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Identité",
 		labelEn: "Identity",
 		gradient: "bg-gradient-to-br from-violet-400 to-purple-600",
-		shadowColor: "shadow-violet-500/30",
 		iconColor: "text-violet-600",
 	},
 	[DocumentTypeCategory.CivilStatus]: {
@@ -110,7 +107,6 @@ const CATEGORY_CONFIG: Record<
 		label: "État civil",
 		labelEn: "Civil Status",
 		gradient: "bg-gradient-to-br from-fuchsia-400 to-pink-600",
-		shadowColor: "shadow-fuchsia-500/30",
 		iconColor: "text-fuchsia-600",
 	},
 	[DocumentTypeCategory.Nationality]: {
@@ -118,7 +114,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Nationalité",
 		labelEn: "Nationality",
 		gradient: "bg-gradient-to-br from-cyan-400 to-cyan-600",
-		shadowColor: "shadow-cyan-500/30",
 		iconColor: "text-cyan-600",
 	},
 	[DocumentTypeCategory.Residence]: {
@@ -126,7 +121,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Résidence",
 		labelEn: "Residence",
 		gradient: "bg-gradient-to-br from-emerald-400 to-teal-600",
-		shadowColor: "shadow-emerald-500/30",
 		iconColor: "text-emerald-600",
 	},
 	[DocumentTypeCategory.Employment]: {
@@ -134,7 +128,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Emploi",
 		labelEn: "Employment",
 		gradient: "bg-gradient-to-br from-sky-400 to-blue-600",
-		shadowColor: "shadow-sky-500/30",
 		iconColor: "text-sky-600",
 	},
 	[DocumentTypeCategory.Income]: {
@@ -142,7 +135,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Revenus",
 		labelEn: "Income",
 		gradient: "bg-gradient-to-br from-green-400 to-emerald-600",
-		shadowColor: "shadow-green-500/30",
 		iconColor: "text-green-600",
 	},
 	[DocumentTypeCategory.Certificates]: {
@@ -150,7 +142,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Attestations",
 		labelEn: "Certificates",
 		gradient: "bg-gradient-to-br from-amber-400 to-yellow-600",
-		shadowColor: "shadow-amber-500/30",
 		iconColor: "text-amber-600",
 	},
 	[DocumentTypeCategory.OfficialCertificates]: {
@@ -158,7 +149,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Certificats officiels",
 		labelEn: "Official Certificates",
 		gradient: "bg-gradient-to-br from-orange-400 to-orange-600",
-		shadowColor: "shadow-orange-500/30",
 		iconColor: "text-orange-600",
 	},
 	[DocumentTypeCategory.Justice]: {
@@ -166,7 +156,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Justice",
 		labelEn: "Justice",
 		gradient: "bg-gradient-to-br from-red-400 to-red-600",
-		shadowColor: "shadow-red-500/30",
 		iconColor: "text-red-600",
 	},
 	[DocumentTypeCategory.AdministrativeDecisions]: {
@@ -174,7 +163,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Décisions admin.",
 		labelEn: "Administrative Decisions",
 		gradient: "bg-gradient-to-br from-purple-400 to-purple-600",
-		shadowColor: "shadow-purple-500/30",
 		iconColor: "text-purple-600",
 	},
 	[DocumentTypeCategory.Housing]: {
@@ -182,7 +170,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Logement",
 		labelEn: "Housing",
 		gradient: "bg-gradient-to-br from-teal-400 to-teal-600",
-		shadowColor: "shadow-teal-500/30",
 		iconColor: "text-teal-600",
 	},
 	[DocumentTypeCategory.Vehicle]: {
@@ -190,7 +177,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Véhicule",
 		labelEn: "Vehicle",
 		gradient: "bg-gradient-to-br from-slate-400 to-gray-600",
-		shadowColor: "shadow-slate-500/30",
 		iconColor: "text-slate-600",
 	},
 	[DocumentTypeCategory.Education]: {
@@ -198,7 +184,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Éducation",
 		labelEn: "Education",
 		gradient: "bg-gradient-to-br from-amber-300 to-orange-500",
-		shadowColor: "shadow-amber-500/30",
 		iconColor: "text-amber-600",
 	},
 	[DocumentTypeCategory.LanguageIntegration]: {
@@ -206,7 +191,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Langue & intégration",
 		labelEn: "Language & Integration",
 		gradient: "bg-gradient-to-br from-blue-400 to-blue-600",
-		shadowColor: "shadow-blue-500/30",
 		iconColor: "text-blue-600",
 	},
 	[DocumentTypeCategory.Health]: {
@@ -214,7 +198,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Santé",
 		labelEn: "Health",
 		gradient: "bg-gradient-to-br from-rose-400 to-red-600",
-		shadowColor: "shadow-rose-500/30",
 		iconColor: "text-rose-600",
 	},
 	[DocumentTypeCategory.Taxation]: {
@@ -222,7 +205,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Fiscalité",
 		labelEn: "Taxation",
 		gradient: "bg-gradient-to-br from-lime-400 to-lime-600",
-		shadowColor: "shadow-lime-500/30",
 		iconColor: "text-lime-600",
 	},
 	[DocumentTypeCategory.Other]: {
@@ -230,7 +212,6 @@ const CATEGORY_CONFIG: Record<
 		label: "Divers",
 		labelEn: "Other",
 		gradient: "bg-gradient-to-br from-stone-400 to-neutral-600",
-		shadowColor: "shadow-stone-500/30",
 		iconColor: "text-stone-600",
 	},
 };
@@ -363,7 +344,7 @@ export default function VaultPage() {
 						</div>
 						<Dialog open={showUpload} onOpenChange={setShowUpload}>
 							<DialogTrigger asChild>
-								<Button className="gap-2 shadow-sm shrink-0">
+								<Button className="gap-2 shrink-0">
 									<Plus className="h-4 w-4" />
 									<span className="hidden sm:inline">
 										{t("vault.upload.title")}
@@ -548,7 +529,7 @@ function FolderCard({
 					<motion.span
 						initial={{ scale: 0 }}
 						animate={{ scale: 1 }}
-						className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-bold shadow-sm"
+						className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-bold"
 					>
 						{count}
 					</motion.span>
@@ -671,8 +652,8 @@ function FileCard({
 	const displayTitle = document.label || filename;
 
 	return (
-		<Card
-			className="group hover:shadow-lg transition-all duration-300 overflow-hidden border-border/50 cursor-pointer h-full flex flex-col"
+		<FlatCard
+			className="group transition-all duration-300 cursor-pointer h-full flex flex-col active:scale-[0.97] transition-transform"
 			onClick={handleClick}
 		>
 			{/* Thumbnail Area */}
@@ -691,7 +672,7 @@ function FileCard({
 							</div>
 						)
 					) : (
-						<div className="relative w-20 h-28 bg-white shadow-sm flex flex-col items-center justify-center rounded-sm border">
+						<div className="relative w-20 h-28 bg-white flex flex-col items-center justify-center rounded-sm border">
 							<div className="absolute top-0 left-0 w-full h-6 bg-muted/10 border-b border-muted/10" />
 							<FileIcon
 								className={cn("h-10 w-10 opacity-60", config.iconColor)}
@@ -708,14 +689,14 @@ function FileCard({
 						<button
 							type="button"
 							onClick={goToPrev}
-							className="absolute left-1 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm rounded-full p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background z-10"
+							className="absolute left-1 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background z-10"
 						>
 							<ChevronLeft className="h-4 w-4" />
 						</button>
 						<button
 							type="button"
 							onClick={goToNext}
-							className="absolute right-1 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm rounded-full p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background z-10"
+							className="absolute right-1 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background z-10"
 						>
 							<ChevronRight className="h-4 w-4" />
 						</button>
@@ -743,20 +724,20 @@ function FileCard({
 
 				{/* Hover overlay */}
 				<div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-					<div className="bg-background/80 backdrop-blur-sm rounded-full p-2 shadow-sm">
+					<div className="bg-background/80 backdrop-blur-sm rounded-full p-2">
 						<Eye className="h-5 w-5 text-primary" />
 					</div>
 				</div>
 
 				{/* File counter badge (multi-file) */}
 				{hasMultipleFiles && (
-					<div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-full px-2 py-0.5 text-xs font-medium shadow-sm z-10">
+					<div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-full px-2 py-0.5 text-xs font-medium z-10">
 						{currentFileIndex + 1}/{fileCount}
 					</div>
 				)}
 			</div>
 
-			<CardContent className="p-3 flex-1 flex flex-col justify-between bg-card text-card-foreground">
+			<div className="p-3 flex-1 flex flex-col justify-between">
 				<div className="flex items-start justify-between gap-2">
 					<div className="min-w-0 pr-1">
 						<h3
@@ -837,8 +818,8 @@ function FileCard({
 						</div>
 					</div>
 				)}
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }
 

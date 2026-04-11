@@ -89,7 +89,7 @@ export function ContinentTabs<T>({
 					className={cn(
 						"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
 						activeContinent === null
-							? "bg-background text-foreground shadow-sm"
+							? "bg-background text-foreground"
 							: "text-muted-foreground hover:text-foreground hover:bg-background/50",
 					)}
 				>
@@ -115,7 +115,7 @@ export function ContinentTabs<T>({
 						className={cn(
 							"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
 							activeContinent === continent
-								? "bg-background text-foreground shadow-sm"
+								? "bg-background text-foreground"
 								: "text-muted-foreground hover:text-foreground hover:bg-background/50",
 						)}
 					>

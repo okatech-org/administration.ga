@@ -42,13 +42,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
 import {
 	Dialog,
 	DialogContent,
@@ -1069,19 +1063,19 @@ function TaskPresetsSection({ lang }: { lang: string }) {
 	const [expanded, setExpanded] = useState(false);
 
 	return (
-		<Card>
-			<CardHeader
-				className="cursor-pointer hover:bg-muted/30 transition-colors"
+		<FlatCard>
+			<div
+				className="p-3 lg:p-4 cursor-pointer hover:bg-muted/30 transition-colors"
 				onClick={() => setExpanded(!expanded)}
 			>
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-2">
 						<Shield className="h-4 w-4 text-primary" />
-						<CardTitle className="text-base">
+						<p className="text-base font-semibold">
 							{lang === "fr"
 								? "Profils métier"
 								: "Role profiles"}
-						</CardTitle>
+						</p>
 						<Badge variant="secondary" className="text-[10px] h-5">
 							{POSITION_TASK_PRESETS.length}
 						</Badge>
@@ -1092,14 +1086,14 @@ function TaskPresetsSection({ lang }: { lang: string }) {
 						<ChevronRight className="h-4 w-4 text-muted-foreground" />
 					)}
 				</div>
-				<CardDescription>
+				<p className="text-sm text-muted-foreground">
 					{lang === "fr"
 						? "Catalogue des profils de permissions assignables aux postes. Chaque profil regroupe un ensemble de tâches autorisées."
 						: "Catalog of permission profiles assignable to positions. Each profile groups a set of authorized tasks."}
-				</CardDescription>
-			</CardHeader>
+				</p>
+			</div>
 			{expanded && (
-				<CardContent className="pt-0">
+				<div className="p-3 lg:p-4 pt-0">
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
 						{POSITION_TASK_PRESETS.map((preset) => (
 							<div
@@ -1162,9 +1156,9 @@ function TaskPresetsSection({ lang }: { lang: string }) {
 							</div>
 						))}
 					</div>
-				</CardContent>
+				</div>
 			)}
-		</Card>
+		</FlatCard>
 	);
 }
 
@@ -1265,16 +1259,16 @@ export function RepsTypesTemplatesTab({
 
 			{/* ─── Stats ─── */}
 			<div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-				<Card className="bg-linear-to-br from-primary/5 to-transparent">
-					<CardContent className="p-4">
+				<FlatCard>
+					<div className="p-3 lg:p-4">
 						<div className="text-2xl font-bold text-primary">
 							{templates.length}
 						</div>
 						<div className="text-xs text-muted-foreground">Types</div>
-					</CardContent>
-				</Card>
-				<Card className="bg-linear-to-br from-amber-500/5 to-transparent">
-					<CardContent className="p-4">
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
 						<div className="text-2xl font-bold text-amber-600">
 							{totalPositions}
 						</div>
@@ -1283,10 +1277,10 @@ export function RepsTypesTemplatesTab({
 								? "Postes prédéfinis"
 								: "Predefined positions"}
 						</div>
-					</CardContent>
-				</Card>
-				<Card className="bg-linear-to-br from-blue-500/5 to-transparent">
-					<CardContent className="p-4">
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
 						<div className="text-2xl font-bold text-blue-600">
 							{totalModules}
 						</div>
@@ -1295,10 +1289,10 @@ export function RepsTypesTemplatesTab({
 								? "Modules disponibles"
 								: "Available modules"}
 						</div>
-					</CardContent>
-				</Card>
-				<Card className="bg-linear-to-br from-emerald-500/5 to-transparent">
-					<CardContent className="p-4">
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
 						<div className="text-2xl font-bold text-emerald-600">
 							{coreModules}
 						</div>
@@ -1307,10 +1301,10 @@ export function RepsTypesTemplatesTab({
 								? "Modules obligatoires"
 								: "Core modules"}
 						</div>
-					</CardContent>
-				</Card>
-				<Card className="bg-linear-to-br from-purple-500/5 to-transparent">
-					<CardContent className="p-4">
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
 						<div className="text-2xl font-bold text-purple-600">
 							{totalOrgs}
 						</div>
@@ -1319,13 +1313,13 @@ export function RepsTypesTemplatesTab({
 								? "Représentations actives"
 								: "Active representations"}
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</div>
 
 			{/* ─── Selecteur de representation (mode edition) ─── */}
-			<Card className="border-dashed">
-				<CardContent className="p-4">
+			<FlatCard className="border border-dashed">
+				<div className="p-3 lg:p-4">
 					<div className="flex items-center gap-4">
 						<div className="flex items-center gap-2 flex-1">
 							<Edit className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -1404,8 +1398,8 @@ export function RepsTypesTemplatesTab({
 								: `Editing "${editingOrg.name}" (${editingOrg.type}) — Positions and matrix show live data.`}
 						</p>
 					)}
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* ─── Templates par type ─── */}
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1435,15 +1429,14 @@ export function RepsTypesTemplatesTab({
 						editingOrgId !== null;
 
 					return (
-						<Card
+						<FlatCard
 							key={tpl.type}
 							className={cn(
-								"overflow-hidden",
 								isLiveMode &&
-									"ring-2 ring-primary/30 border-primary/20",
+									"ring-2 ring-primary/30",
 							)}
 						>
-							<CardHeader className="pb-3">
+							<div className="p-3 lg:p-4 pb-3">
 								<div className="flex items-start justify-between">
 									<div className="flex items-center gap-3">
 										<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -1456,16 +1449,16 @@ export function RepsTypesTemplatesTab({
 											/>
 										</div>
 										<div>
-											<CardTitle className="text-base">
+											<p className="text-base font-semibold">
 												{tpl.label[
 													lang as "fr" | "en"
 												] || tpl.label.fr}
-											</CardTitle>
-											<CardDescription className="text-xs">
+											</p>
+											<p className="text-xs text-muted-foreground">
 												{tpl.description[
 													lang as "fr" | "en"
 												] || tpl.description.fr}
-											</CardDescription>
+											</p>
 										</div>
 									</div>
 									<div className="flex items-center gap-1.5">
@@ -1522,8 +1515,8 @@ export function RepsTypesTemplatesTab({
 										</span>
 									))}
 								</div>
-							</CardHeader>
-							<CardContent className="pt-0 space-y-3">
+							</div>
+							<div className="p-3 lg:p-4 pt-0 space-y-3">
 								<div className="flex items-center gap-4 text-xs text-muted-foreground border-b pb-3">
 									<span className="flex items-center gap-1">
 										<Users className="h-3.5 w-3.5" />
@@ -1610,13 +1603,13 @@ export function RepsTypesTemplatesTab({
 										)}
 									</div>
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					);
 				})}
 
 				{/* Carte "Nouvelle Representation" */}
-				<Card className="border-2 border-dashed border-border/50 hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer group">
+				<FlatCard className="border-2 border-dashed border-border/50 hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer group">
 					<Link
 						to="/reps/new"
 						className="flex flex-col items-center justify-center h-full min-h-[280px] p-6 text-center"
@@ -1635,7 +1628,7 @@ export function RepsTypesTemplatesTab({
 								: "Create an embassy, consulate or mission"}
 						</p>
 					</Link>
-				</Card>
+				</FlatCard>
 			</div>
 
 			{/* ─── Profils metier (Task Presets) ─── */}

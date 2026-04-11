@@ -73,7 +73,7 @@ export function BackofficeIAstedWindow() {
 					>
 						<Button
 							size="lg"
-							className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow bg-emerald-600 hover:bg-emerald-700"
+							className="h-14 w-14 rounded-full transition-shadow bg-emerald-600 hover:bg-emerald-700"
 							onClick={() => setOpen(true)}
 							aria-label="Ouvrir iAsted"
 						>
@@ -95,7 +95,7 @@ export function BackofficeIAstedWindow() {
 							"fixed bottom-0 right-0 z-50",
 							"w-full sm:w-[420px] sm:right-6 sm:bottom-6",
 							"h-[100dvh] sm:h-[min(640px,calc(100vh-100px))]",
-							"rounded-none sm:rounded-2xl shadow-2xl",
+							"rounded-none sm:rounded-2xl",
 							"bg-background border flex flex-col overflow-hidden",
 						)}
 					>

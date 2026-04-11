@@ -29,7 +29,7 @@ import {
 import { motion } from "motion/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 import { FolderExplorer } from "@/components/diplomatic/FolderExplorer";
@@ -226,8 +226,8 @@ function TargetPipelineDetail() {
               const action = PHASE_ACTIONS[target.pipelinePhase!];
               const ActionIcon = action.icon;
               return (
-                <Card className="border-dashed border-primary/30 bg-primary/5">
-                  <CardContent className="flex items-center gap-3 py-3">
+                <FlatCard className="border-dashed border-primary/30 bg-primary/5">
+                  <div className="p-3 lg:p-4 flex items-center gap-3">
                     <div
                       className={cn(
                         "h-9 w-9 rounded-lg flex items-center justify-center shrink-0",
@@ -256,8 +256,8 @@ function TargetPipelineDetail() {
                       {action.nextLabel.split(" ").slice(0, 2).join(" ")}
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
-                  </CardContent>
-                </Card>
+                  </div>
+                </FlatCard>
               );
             })()}
           </motion.div>
@@ -280,8 +280,8 @@ function TargetPipelineDetail() {
           ) : (
             <div className="space-y-2">
               {plans.map((plan) => (
-                <Card key={plan._id} className="bg-muted/30">
-                  <CardContent className="py-2 px-3">
+                <FlatCard key={plan._id} className="bg-muted/30">
+                  <div className="p-3 lg:p-4">
                     <p className="text-sm font-medium">{plan.title}</p>
                     <p className="text-[10px] text-muted-foreground">
                       {plan.category} • {plan.status}
@@ -295,8 +295,8 @@ function TargetPipelineDetail() {
                         /{plan.objectives.length} objectifs
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </FlatCard>
               ))}
             </div>
           )}
@@ -317,15 +317,15 @@ function TargetPipelineDetail() {
           ) : (
             <div className="space-y-2">
               {letters.map((letter) => (
-                <Card key={letter._id} className="bg-muted/30">
-                  <CardContent className="py-2 px-3">
+                <FlatCard key={letter._id} className="bg-muted/30">
+                  <div className="p-3 lg:p-4">
                     <p className="text-sm font-medium">{letter.subject}</p>
                     <p className="text-[10px] text-muted-foreground">
                       {letter.reference} • {letter.status}
                       {letter.aiDraftContent && " • Brouillon IA"}
                     </p>
-                  </CardContent>
-                </Card>
+                  </div>
+                </FlatCard>
               ))}
             </div>
           )}
@@ -346,8 +346,8 @@ function TargetPipelineDetail() {
           ) : (
             <div className="space-y-2">
               {projects.map((project) => (
-                <Card key={project._id} className="bg-muted/30">
-                  <CardContent className="py-2 px-3">
+                <FlatCard key={project._id} className="bg-muted/30">
+                  <div className="p-3 lg:p-4">
                     <p className="text-sm font-medium">{project.title}</p>
                     <p className="text-[10px] text-muted-foreground">
                       {project.reference} • {project.status}
@@ -359,8 +359,8 @@ function TargetPipelineDetail() {
                         {project.objectives.length} objectifs
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </FlatCard>
               ))}
             </div>
           )}

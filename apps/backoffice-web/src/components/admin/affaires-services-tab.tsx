@@ -23,13 +23,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 
@@ -90,38 +84,38 @@ export function AffairesServicesTab() {
 		<div className="flex flex-col gap-6">
 			{/* ── Stats KPI ── */}
 			<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-				<Card className="bg-linear-to-br from-primary/5 to-transparent">
-					<CardContent className="p-4">
+				<FlatCard>
+					<div className="p-3 lg:p-4">
 						<div className="text-2xl font-bold text-primary">
 							{isPending ? "..." : totalServices}
 						</div>
 						<div className="text-xs text-muted-foreground">
 							{lang === "fr" ? "Total services" : "Total services"}
 						</div>
-					</CardContent>
-				</Card>
-				<Card className="bg-linear-to-br from-green-500/5 to-transparent">
-					<CardContent className="p-4">
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
 						<div className="text-2xl font-bold text-green-600">
 							{isPending ? "..." : activeServices}
 						</div>
 						<div className="text-xs text-muted-foreground">
 							{lang === "fr" ? "Services actifs" : "Active services"}
 						</div>
-					</CardContent>
-				</Card>
-				<Card className="bg-linear-to-br from-amber-500/5 to-transparent">
-					<CardContent className="p-4">
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
 						<div className="text-2xl font-bold text-amber-600">
 							{Object.keys(servicesByCategory).length}
 						</div>
 						<div className="text-xs text-muted-foreground">
 							{lang === "fr" ? "Catégories" : "Categories"}
 						</div>
-					</CardContent>
-				</Card>
-				<Card className="bg-linear-to-br from-blue-500/5 to-transparent">
-					<CardContent className="p-4">
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
 						<div className="text-2xl font-bold text-blue-600">
 							{isPending ? "..." : onlineCount}
 						</div>
@@ -129,8 +123,8 @@ export function AffairesServicesTab() {
 							<Globe className="h-3.5 w-3.5 inline mr-1" />
 							{lang === "fr" ? "En ligne" : "Online"}
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</div>
 
 			{/* ── Action : Nouveau service ── */}
@@ -149,22 +143,22 @@ export function AffairesServicesTab() {
 					const catServices = servicesByCategory[catKey] || [];
 					const IconComponent = catInfo.icon;
 					return (
-						<Card key={catKey} className="overflow-hidden">
-							<CardHeader className="pb-3">
+						<FlatCard key={catKey}>
+							<div className="p-3 lg:p-4 pb-3">
 								<div className="flex items-center gap-3">
 									<div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", catInfo.bgColor)}>
 										<IconComponent className={cn("h-5 w-5", catInfo.color)} />
 									</div>
 									<div className="flex-1">
-										<CardTitle className="text-base">{catInfo.label}</CardTitle>
-										<CardDescription className="text-xs">{catInfo.description}</CardDescription>
+										<p className="text-base font-semibold">{catInfo.label}</p>
+										<p className="text-xs text-muted-foreground">{catInfo.description}</p>
 									</div>
 									<Badge variant="outline">
 										{catServices.length} service{catServices.length !== 1 ? "s" : ""}
 									</Badge>
 								</div>
-							</CardHeader>
-							<CardContent className="pt-0">
+							</div>
+							<div className="p-3 lg:p-4 pt-0">
 								{isPending ? (
 									<div className="text-xs text-muted-foreground animate-pulse">
 										{lang === "fr" ? "Chargement..." : "Loading..."}
@@ -213,8 +207,8 @@ export function AffairesServicesTab() {
 											: "No services in this category"}
 									</p>
 								)}
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					);
 				})}
 			</div>

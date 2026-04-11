@@ -7,14 +7,15 @@ import { ServiceCategory } from "@convex/lib/validators";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { ArrowLeft, FileText as FileIcon, Upload, X } from "lucide-react";
+import { Briefcase, FileText as FileIcon, Upload, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FormBuilder } from "@/components/admin/FormBuilder";
 import { RichTextEditor } from "@/components/common/lazy-rich-text-editor";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
 	Field,
 	FieldError,
@@ -172,55 +173,42 @@ function EditServiceForm({ serviceId }: EditServiceFormProps) {
 
 	if (isLoading) {
 		return (
-			<div className="flex flex-1 flex-col gap-6 p-4 pt-6">
+			<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
 				<Skeleton className="h-8 w-64" />
-				<Card className="flex-1">
-					<CardContent className="pt-6 space-y-4">
+				<FlatCard className="flex-1">
+					<div className="p-3 lg:p-4 space-y-4">
 						<Skeleton className="h-10 w-full" />
 						<Skeleton className="h-10 w-full" />
 						<Skeleton className="h-20 w-full" />
 						<Skeleton className="h-40 w-full" />
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</div>
 		);
 	}
 
 	if (!service) {
 		return (
-			<div className="flex flex-1 flex-col gap-4 p-4 pt-6">
-				<Button
-					variant="ghost"
-					size="sm"
-					onClick={() => navigate({ to: "/services" })}
-				>
-					<ArrowLeft className="mr-2 h-4 w-4" />
-					{t("superadmin.common.back")}
-				</Button>
+			<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+				<PageHeader
+					title={t("superadmin.common.noData")}
+					showBackButton
+					onBack={() => navigate({ to: "/services" })}
+				/>
 				<div className="text-destructive">{t("superadmin.common.noData")}</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="flex flex-1 flex-col gap-6 p-4 pt-6">
-			<div className="flex items-center gap-4">
-				<Button
-					variant="ghost"
-					size="sm"
-					onClick={() => navigate({ to: "/services" })}
-				>
-					<ArrowLeft className="mr-2 h-4 w-4" />
-					{t("superadmin.common.back")}
-				</Button>
-			</div>
-
-			<div>
-				<h1 className="text-3xl font-bold tracking-tight">
-					{t("superadmin.common.edit")}
-				</h1>
-				<p className="text-muted-foreground">{service.name.fr}</p>
-			</div>
+		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+			<PageHeader
+				icon={<Briefcase className="h-5 w-5" />}
+				title={t("superadmin.common.edit")}
+				subtitle={service.name.fr}
+				showBackButton
+				onBack={() => navigate({ to: "/services" })}
+			/>
 
 			<Tabs defaultValue="general" className="flex-1">
 				<TabsList className="mb-4">
@@ -229,8 +217,8 @@ function EditServiceForm({ serviceId }: EditServiceFormProps) {
 				</TabsList>
 
 				<TabsContent value="general">
-					<Card>
-						<CardContent className="pt-6">
+					<FlatCard>
+						<div className="p-3 lg:p-4">
 							<form
 								id="service-form"
 								onSubmit={(e) => {
@@ -642,8 +630,8 @@ function EditServiceForm({ serviceId }: EditServiceFormProps) {
 									</Button>
 								</div>
 							</form>
-						</CardContent>
-						<CardFooter className="flex justify-between border-t pt-6">
+						</div>
+						<div className="flex justify-between border-t p-3 lg:p-4">
 							<Button
 								type="button"
 								variant="outline"
@@ -656,19 +644,19 @@ function EditServiceForm({ serviceId }: EditServiceFormProps) {
 									? t("superadmin.organizations.form.saving")
 									: t("superadmin.services.form.save")}
 							</Button>
-						</CardFooter>
-					</Card>
+						</div>
+					</FlatCard>
 				</TabsContent>
 
 				<TabsContent value="form">
-					<Card>
-						<CardContent className="pt-6">
+					<FlatCard>
+						<div className="p-3 lg:p-4">
 							<FormBuilder
 								initialSchema={service.formSchema as FormSchema | undefined}
 								onSchemaChange={setFormSchema}
 							/>
-						</CardContent>
-						<CardFooter className="flex justify-between border-t pt-6">
+						</div>
+						<div className="flex justify-between border-t p-3 lg:p-4">
 							<Button
 								type="button"
 								variant="outline"
@@ -699,8 +687,8 @@ function EditServiceForm({ serviceId }: EditServiceFormProps) {
 									? t("superadmin.organizations.form.saving")
 									: t("superadmin.services.form.save")}
 							</Button>
-						</CardFooter>
-					</Card>
+						</div>
+					</FlatCard>
 				</TabsContent>
 			</Tabs>
 		</div>

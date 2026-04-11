@@ -8,13 +8,7 @@ import { useTranslation } from "react-i18next";
 import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
@@ -135,15 +129,15 @@ export function DocumentChecklist({
 	};
 
 	return (
-		<Card className={className}>
-			<CardHeader className="pb-3">
+		<FlatCard className={className}>
+			<div className="p-3 lg:p-4 pb-3">
 				<div className="flex items-center justify-between">
 					<div>
-						<CardTitle className="flex items-center gap-2">
+						<h3 className="text-lg font-semibold flex items-center gap-2">
 							<FileText className="h-5 w-5" />
 							{t("documents.checklist.title")}
-						</CardTitle>
-						<CardDescription>
+						</h3>
+						<p className="text-sm text-muted-foreground">
 							{completedRequired}/{totalRequired}{" "}
 							{t("documents.checklist.required")}
 							{pendingDocs > 0 && (
@@ -151,13 +145,13 @@ export function DocumentChecklist({
 									• {pendingDocs} {t("documents.checklist.pending")}
 								</span>
 							)}
-						</CardDescription>
+						</p>
 					</div>
 				</div>
 				<Progress value={progress} className="h-2 mt-2" />
-			</CardHeader>
+			</div>
 
-			<CardContent className="space-y-3">
+			<div className="p-3 lg:p-4 pt-0 space-y-3">
 				{requiredDocuments.map((reqDoc) => {
 					const submitted = docsByType[reqDoc.type] || [];
 					const hasSubmitted = submitted.length > 0;
@@ -268,7 +262,7 @@ export function DocumentChecklist({
 						)}
 					</p>
 				)}
-			</CardContent>
+			</div>
 
 			{/* Document Preview Modal */}
 			{previewDoc?.storageId && (
@@ -280,6 +274,6 @@ export function DocumentChecklist({
 					mimeType={previewDoc.mimeType}
 				/>
 			)}
-		</Card>
+		</FlatCard>
 	);
 }

@@ -7,10 +7,12 @@ import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { DataTable } from "@/components/ui/data-table";
 import { tutorialsColumns } from "@/components/admin/tutorials-columns";
 import { Button } from "@/components/ui/button";
-import { Plus, Search } from "lucide-react";
+import { BookOpen, Plus, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
 
 export const Route = createFileRoute("/_app/tutorials/")({
   component: AdminTutorialsPage,
@@ -36,46 +38,47 @@ function AdminTutorialsPage() {
   }, [tutorials, searchQuery]);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {t("superadmin.tutorials.title")}
-          </h1>
-          <p className="text-muted-foreground">
-            {t(
-              "superadmin.tutorials.description",
-              "Gérer les guides et tutoriels de l'Académie",
-            )}
-          </p>
-        </div>
-        <Button asChild>
-          <Link to="/tutorials/new">
-            <Plus className="mr-2 h-4 w-4" />
-            {t("superadmin.tutorials.new")}
-          </Link>
-        </Button>
-      </div>
+    <div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+      <PageHeader
+        icon={<BookOpen className="h-5 w-5" />}
+        title={t("superadmin.tutorials.title")}
+        subtitle={t(
+          "superadmin.tutorials.description",
+          "Gérer les guides et tutoriels de l'Académie",
+        )}
+        actions={
+          <Button asChild>
+            <Link to="/tutorials/new">
+              <Plus className="mr-2 h-4 w-4" />
+              {t("superadmin.tutorials.new")}
+            </Link>
+          </Button>
+        }
+      />
 
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            className="pl-10"
-            placeholder={t("superadmin.tutorials.search")}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
+      <FlatCard>
+        <div className="p-3 lg:p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-10"
+                placeholder={t("superadmin.tutorials.search")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
 
-      {isLoading ?
-        <div className="space-y-3">
-          {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full" />
-          ))}
+          {isLoading ?
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          : <DataTable columns={tutorialsColumns} data={filtered} />}
         </div>
-      : <DataTable columns={tutorialsColumns} data={filtered} />}
+      </FlatCard>
     </div>
   );
 }

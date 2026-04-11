@@ -20,6 +20,8 @@ import { MODULE_REGISTRY } from "@convex/lib/moduleCodes";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
 import { columns } from "@/components/admin/orgs-columns";
 import { ContinentTabs } from "@/components/shared/ContinentTabs";
 import { getCountryFlag, getCountryName } from "@/lib/country-utils";
@@ -162,7 +164,7 @@ function RepresentationsPage() {
 
 	if (error) {
 		return (
-			<div className="flex flex-1 flex-col gap-4 p-4 pt-6">
+			<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
 				<div className="text-destructive">
 					{t("superadmin.common.error")}
 				</div>
@@ -171,34 +173,35 @@ function RepresentationsPage() {
 	}
 
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-4 pt-6">
+		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
 			{/* ─── Header ─── */}
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold tracking-tight">
-						{lang === "fr"
-							? "Représentations diplomatiques"
-							: "Diplomatic Representations"}
-					</h1>
-					<p className="text-muted-foreground text-sm">
-						{lang === "fr"
-							? "Gérer les représentations, types, postes et modules"
-							: "Manage representations, types, positions and modules"}
-					</p>
-				</div>
-				<Button asChild>
-					<Link to="/reps/new">
-						<Plus className="mr-1.5 h-4 w-4" />
-						{lang === "fr"
-							? "Nouvelle représentation"
-							: "New representation"}
-					</Link>
-				</Button>
-			</div>
+			<PageHeader
+				icon={<Building2 className="h-5 w-5" />}
+				title={
+					lang === "fr"
+						? "Représentations diplomatiques"
+						: "Diplomatic Representations"
+				}
+				subtitle={
+					lang === "fr"
+						? "Gérer les représentations, types, postes et modules"
+						: "Manage representations, types, positions and modules"
+				}
+				actions={
+					<Button asChild>
+						<Link to="/reps/new">
+							<Plus className="mr-1.5 h-4 w-4" />
+							{lang === "fr"
+								? "Nouvelle représentation"
+								: "New representation"}
+						</Link>
+					</Button>
+				}
+			/>
 
 			{/* ─── Onglets horizontaux ─── */}
 			<Tabs defaultValue="representations" className="flex-1">
-				<TabsList className="h-auto justify-start w-max gap-1 bg-muted/50 p-1">
+				<TabsList className="h-auto justify-start w-max gap-1 bg-[#F4F3ED] dark:bg-[#171616] p-1">
 					<TabsTrigger
 						value="representations"
 						className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-background"
@@ -234,23 +237,27 @@ function RepresentationsPage() {
 						getCountryCode={(org: Doc<"orgs">) => org.country}
 					>
 						{(filteredOrgs) => (
-							<DataTable
-								columns={columns}
-								data={filteredOrgs}
-								searchKeys={[
-									"name",
-									"slug",
-									"address",
-									"contact",
-								]}
-								searchPlaceholder={
-									lang === "fr"
-										? "Rechercher une représentation..."
-										: "Search representations..."
-								}
-								filterableColumns={filterableColumns}
-								isLoading={isPending}
-							/>
+							<FlatCard>
+								<div className="p-3 lg:p-4">
+									<DataTable
+										columns={columns}
+										data={filteredOrgs}
+										searchKeys={[
+											"name",
+											"slug",
+											"address",
+											"contact",
+										]}
+										searchPlaceholder={
+											lang === "fr"
+												? "Rechercher une représentation..."
+												: "Search representations..."
+										}
+										filterableColumns={filterableColumns}
+										isLoading={isPending}
+									/>
+								</div>
+							</FlatCard>
 						)}
 					</ContinentTabs>
 				</TabsContent>

@@ -9,7 +9,7 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 import { useMeeting } from "@/hooks/use-meeting";
@@ -150,8 +150,10 @@ export function ActiveCallBanner({ requestId }: ActiveCallBannerProps) {
 				>
 					<DialogContent
 						autoFocus={false}
+						aria-describedby={undefined}
 						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 					>
+						<DialogTitle className="sr-only">Appel en cours</DialogTitle>
 						{callContent}
 					</DialogContent>
 				</Dialog>

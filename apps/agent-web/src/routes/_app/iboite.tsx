@@ -80,7 +80,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/common/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import {
 	Command,
 	CommandEmpty,
@@ -531,7 +531,7 @@ function IBoitePage() {
 			</div>
 
 			{/* ── Desktop: single unified card filling remaining height ──── */}
-			<Card className="hidden lg:flex lg:flex-row flex-1 min-h-0 overflow-hidden p-0">
+			<FlatCard className="hidden lg:flex lg:flex-row flex-1 min-h-0 overflow-hidden p-0">
 				{/* Sidebar */}
 				<aside className="max-w-56 w-full border-r flex flex-col">
 					{/* Compose button (editeur+) */}
@@ -798,7 +798,7 @@ function IBoitePage() {
 						</>
 					)}
 				</main>
-			</Card>
+			</FlatCard>
 
 			{/* ── Compose Dialog ────────────────────────────────────────────── */}
 			<ComposeDialog

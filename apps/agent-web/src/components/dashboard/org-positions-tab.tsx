@@ -29,13 +29,7 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Checkbox } from "@/components/ui/checkbox";
 
 import {
@@ -1039,19 +1033,19 @@ export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 			</div>
 
 			{/* Hierarchy by Grade */}
-			<Card>
-				<CardHeader className="pb-3">
-					<CardTitle className="flex items-center gap-2 text-base">
+			<FlatCard>
+				<div className="pb-3 pt-3 px-4">
+					<div className="flex items-center gap-2 text-base font-semibold">
 						<Users className="h-4 w-4" />
 						{lang === "fr" ? "Organigramme par grade" : "Org chart by grade"}
-					</CardTitle>
-					<CardDescription>
+					</div>
+					<p className="text-sm text-muted-foreground mt-1">
 						{lang === "fr"
 							? "Postes organisés par grade hiérarchique"
 							: "Positions organized by hierarchical grade"}
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-4">
+					</p>
+				</div>
+				<div className="p-3 lg:p-4 space-y-4">
 					{GRADE_ORDER.map((gradeKey) => {
 						const grade = POSITION_GRADES[gradeKey];
 						const gradePositions = positionsByGrade[gradeKey] ?? [];
@@ -1285,19 +1279,19 @@ export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 							</div>
 						);
 					})}
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* Unassigned members */}
 			{orgChart.unassignedMembers.length > 0 && (
-				<Card className="border-amber-200 dark:border-amber-800/50">
-					<CardHeader className="pb-3">
-						<CardTitle className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+				<FlatCard className="border border-amber-200 dark:border-amber-800/50">
+					<div className="pb-3 pt-3 px-4">
+						<div className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-400">
 							<Users className="h-4 w-4" />
 							{lang === "fr" ? "Membres sans poste" : "Unassigned members"} ({orgChart.unassignedMembers.length})
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
+						</div>
+					</div>
+					<div className="p-3 lg:p-4">
 						<div className="flex flex-wrap gap-2">
 							{orgChart.unassignedMembers.map((member) => (
 								<div key={member.membershipId} className="flex items-center gap-2 rounded-lg border border-border/60 px-2 py-1.5 hover:border-primary/40 transition-colors group">
@@ -1323,8 +1317,8 @@ export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 								</div>
 							))}
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			)}
 
 			{/* Create/Edit Sheet */}

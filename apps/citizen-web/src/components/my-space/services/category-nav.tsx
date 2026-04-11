@@ -185,8 +185,8 @@ export function CategoryNavMobile({
 						className={cn(
 							"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all snap-start shrink-0 border",
 							isActive
-								? "bg-foreground/[0.06] dark:bg-foreground/[0.08] text-foreground border-border shadow-sm"
-								: "text-muted-foreground border-transparent hover:bg-muted/50",
+								? "bg-foreground/[0.06] dark:bg-foreground/[0.08] text-foreground border-foreground/5"
+								: "text-muted-foreground border-transparent hover:bg-[#EBE6DC]/50 dark:hover:bg-[#383633]/50",
 						)}
 					>
 						<cat.icon

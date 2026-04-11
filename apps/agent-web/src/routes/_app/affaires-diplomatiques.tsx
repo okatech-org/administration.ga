@@ -51,7 +51,7 @@ function AffairesDiplomatiquesLayout() {
     location.pathname === "/affaires-diplomatiques/";
 
   return (
-    <div className="flex flex-col gap-4 p-4 lg:p-6 h-full overflow-y-auto">
+    <div className="flex flex-col gap-4 p-4 lg:p-6 h-full overflow-y-auto citizen-scrollbar">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}

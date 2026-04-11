@@ -2,16 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useTranslation } from "react-i18next";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
 import {
 	Activity,
 	BarChart3,
@@ -74,25 +69,25 @@ function MetricCard({
 	const colors = colorMap[accentColor] ?? colorMap.blue;
 
 	return (
-		<Card className="relative overflow-hidden min-w-0">
+		<FlatCard className="relative overflow-hidden min-w-0">
 			<div className={`absolute left-0 top-0 h-full w-1 rounded-l-xl ${colors.bg}`} />
-			<CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-				<CardTitle className="text-xs font-medium text-muted-foreground truncate min-w-0">
-					{label}
-				</CardTitle>
-				<div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${colors.bgLight}`}>
-					<Icon className={`h-4 w-4 ${colors.text}`} />
+			<div className="p-3 lg:p-4">
+				<div className="flex flex-row items-center justify-between gap-2 pb-2">
+					<span className="text-xs font-medium text-muted-foreground truncate min-w-0">
+						{label}
+					</span>
+					<div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${colors.bgLight}`}>
+						<Icon className={`h-4 w-4 ${colors.text}`} />
+					</div>
 				</div>
-			</CardHeader>
-			<CardContent className="min-w-0">
 				{loading ? (
 					<Skeleton className="h-7 w-20" />
 				) : (
 					<div className="text-2xl font-bold tracking-tight truncate">{value}</div>
 				)}
 				<p className="mt-1 text-[11px] text-muted-foreground truncate">{sub}</p>
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }
 
@@ -163,15 +158,15 @@ function NeocortexContent() {
 			{/* ── Detail Row ──────────────────────── */}
 			<div className="grid gap-4 lg:grid-cols-2">
 				{/* Top Signal Types */}
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2 text-base">
-							<Zap className="h-4 w-4 text-yellow-500" />
-							Top signaux (24h)
-						</CardTitle>
-						<CardDescription>Types de signaux les plus émis ces dernières 24 heures</CardDescription>
-					</CardHeader>
-					<CardContent>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<div className="mb-3">
+							<p className="flex items-center gap-2 text-base font-semibold">
+								<Zap className="h-4 w-4 text-yellow-500" />
+								Top signaux (24h)
+							</p>
+							<p className="text-sm text-muted-foreground">Types de signaux les plus émis ces dernières 24 heures</p>
+						</div>
 						{loading ? (
 							<div className="space-y-3">
 								{[1, 2, 3].map((i) => <Skeleton key={i} className="h-8 w-full" />)}
@@ -200,19 +195,19 @@ function NeocortexContent() {
 								<p className="text-sm text-muted-foreground">Aucun signal dans les dernières 24h</p>
 							</div>
 						)}
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 
 				{/* Actions par catégorie */}
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2 text-base">
-							<BarChart3 className="h-4 w-4 text-blue-500" />
-							Actions par catégorie (24h)
-						</CardTitle>
-						<CardDescription>Répartition des actions enregistrées par l'hippocampe</CardDescription>
-					</CardHeader>
-					<CardContent>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<div className="mb-3">
+							<p className="flex items-center gap-2 text-base font-semibold">
+								<BarChart3 className="h-4 w-4 text-blue-500" />
+								Actions par catégorie (24h)
+							</p>
+							<p className="text-sm text-muted-foreground">Répartition des actions enregistrées par l'hippocampe</p>
+						</div>
 						{loading ? (
 							<div className="space-y-3">
 								{[1, 2, 3].map((i) => <Skeleton key={i} className="h-8 w-full" />)}
@@ -245,20 +240,20 @@ function NeocortexContent() {
 								<p className="text-sm text-muted-foreground">Aucune action tracée dans les dernières 24h</p>
 							</div>
 						)}
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</div>
 
 			{/* ── Recent Actions Log ──────────────── */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2 text-base">
-						<Activity className="h-4 w-4 text-purple-500" />
-						Dernières actions (Hippocampe)
-					</CardTitle>
-					<CardDescription>Journal temps réel des actions tracées par le système nerveux</CardDescription>
-				</CardHeader>
-				<CardContent>
+			<FlatCard>
+				<div className="p-3 lg:p-4">
+					<div className="mb-3">
+						<p className="flex items-center gap-2 text-base font-semibold">
+							<Activity className="h-4 w-4 text-purple-500" />
+							Dernières actions (Hippocampe)
+						</p>
+						<p className="text-sm text-muted-foreground">Journal temps réel des actions tracées par le système nerveux</p>
+					</div>
 					{loading ? (
 						<div className="space-y-2">
 							{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
@@ -304,23 +299,23 @@ function NeocortexContent() {
 							<p className="text-sm text-muted-foreground">Aucune action récente</p>
 						</div>
 					)}
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* ── Signaux en attente ──────────────── */}
 			{data && data.signauxEnAttente.length > 0 && (
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2 text-base">
-							<Clock className="h-4 w-4 text-amber-500" />
-							Signaux en attente
-							<Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-500/10">
-								{data.signauxEnAttente.length}
-							</Badge>
-						</CardTitle>
-						<CardDescription>Signaux non encore traités dans la queue du système limbique</CardDescription>
-					</CardHeader>
-					<CardContent>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<div className="mb-3">
+							<p className="flex items-center gap-2 text-base font-semibold">
+								<Clock className="h-4 w-4 text-amber-500" />
+								Signaux en attente
+								<Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-500/10">
+									{data.signauxEnAttente.length}
+								</Badge>
+							</p>
+							<p className="text-sm text-muted-foreground">Signaux non encore traités dans la queue du système limbique</p>
+						</div>
 						<div className="space-y-1 max-h-[300px] overflow-y-auto">
 							{data.signauxEnAttente.slice(0, 20).map((sig: { _id: string; type: string; source: string; timestamp: number; priorite: string }) => (
 								<div
@@ -351,8 +346,8 @@ function NeocortexContent() {
 								</div>
 							))}
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			)}
 		</div>
 	);
@@ -366,24 +361,18 @@ function MonitoringPage() {
 	const data = useQuery(api.monitoring.getDashboardData);
 
 	return (
-		<div className="flex flex-1 flex-col gap-6 p-4 pt-6 md:p-6">
+		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
 			{/* ── Header ──────────────────────────── */}
-			<div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-				<div>
-					<h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-						<Activity className="h-8 w-8 text-purple-500" />
-						{t("monitoring.title")}
-					</h1>
-					<p className="text-muted-foreground">
-						{t("monitoring.description")}
-					</p>
-				</div>
-				{data && <StatusIndicator status={data.sante.status} />}
-			</div>
+			<PageHeader
+				icon={<Activity className="h-5 w-5" />}
+				title={t("monitoring.title")}
+				subtitle={t("monitoring.description")}
+				actions={data && <StatusIndicator status={data.sante.status} />}
+			/>
 
 			{/* ── Tabs ────────────────────────────── */}
 			<Tabs defaultValue="neocortex">
-				<TabsList>
+				<TabsList className="bg-[#F4F3ED] dark:bg-[#171616]">
 					<TabsTrigger value="neocortex" className="gap-2">
 						<Brain className="h-4 w-4" />
 						{t("monitoring.tabs.neocortex")}

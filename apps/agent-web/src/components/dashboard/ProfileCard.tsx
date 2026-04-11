@@ -3,12 +3,7 @@ import { MapPin, ChevronRight, Baby, Building2, Phone } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import {
 	USER_TYPE_DISPLAY,
 	GENDER_DISPLAY,
@@ -45,11 +40,11 @@ export function ProfileCard({ profile }: ProfileCardProps) {
 	const isSignaled = !profile.managedByOrg && !!profile.signaledToOrg;
 
 	return (
-		<Card className="hover:border-primary/50 transition-colors group flex flex-col h-full overflow-hidden">
-			<CardHeader className="pb-3 flex-1 relative">
+		<FlatCard className="hover:border-primary/50 transition-colors group flex flex-col h-full overflow-hidden">
+			<div className="p-3 lg:p-4 pb-3 flex-1 relative">
 				<div className="flex justify-between items-start gap-3 mt-1">
 					<div className="flex gap-3 min-w-0 w-full">
-						<Avatar className="h-14 w-14 border shadow-sm shrink-0">
+						<Avatar className="h-14 w-14 border shrink-0">
 							<AvatarImage src={imgSrc} alt={firstName ?? "profil"} className="object-cover" />
 							<AvatarFallback className="bg-primary/10 text-primary font-semibold text-lg">
 								{getInitials(firstName, lastName, email)}
@@ -63,12 +58,12 @@ export function ProfileCard({ profile }: ProfileCardProps) {
 									</Badge>
 								</div>
 							)}
-							<CardTitle className="leading-tight">
+							<div className="leading-tight">
 								<div className="text-base font-bold uppercase truncate tracking-wide" title={lastName}>{lastName}</div>
 								{firstName && (
-									<div className="text-sm font-normal text-muted-foreground truncate mt-0.5" title={firstName}>{firstName}</div>
+									<div className="text-sm font-medium text-muted-foreground truncate mt-0.5" title={firstName}>{firstName}</div>
 								)}
-							</CardTitle>
+							</div>
 							
 							<div className="mt-1.5">
 								{phone ? (
@@ -116,9 +111,9 @@ export function ProfileCard({ profile }: ProfileCardProps) {
 						</div>
 					</div>
 				</div>
-			</CardHeader>
+			</div>
 
-			<CardContent className="space-y-3 pb-4 mt-auto">
+			<div className="px-3 lg:px-4 pb-4 space-y-3 mt-auto">
 				<div className="flex flex-col gap-2 text-sm bg-muted/30 p-2.5 rounded-lg border border-border/50">
 					{/* Country Row */}
 					<div className="flex items-center gap-2 text-muted-foreground">
@@ -154,7 +149,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
 					<Button
 						variant="outline"
 						size="sm"
-						className="w-full group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all shadow-sm"
+						className="w-full group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all active:scale-[0.97] transition-transform"
 						asChild
 					>
 						<Link
@@ -166,7 +161,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
 						</Link>
 					</Button>
 				</div>
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }

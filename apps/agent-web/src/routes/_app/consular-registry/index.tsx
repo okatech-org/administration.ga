@@ -36,7 +36,7 @@ import {
 import { ProfileViewSheet } from "@/components/dashboard/ProfileViewSheet";
 import { useOrg } from "@/components/org/org-provider";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { DataTable } from "@/components/ui/data-table";
 import {
 	Dialog,
@@ -390,50 +390,50 @@ function ConsularRegistryPage() {
 
 			{/* Stats Cards */}
 			<div className="grid gap-4 md:grid-cols-4">
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">
-							{t("dashboard.consularRegistry.stats.total")}
-						</CardTitle>
-						<User className="h-4 w-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<div className="flex items-center justify-between mb-2">
+							<span className="text-sm font-medium">
+								{t("dashboard.consularRegistry.stats.total")}
+							</span>
+							<User className="h-4 w-4 text-muted-foreground" />
+						</div>
 						<div className="text-2xl font-bold">{stats?.total ?? "—"}</div>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">
-							{t("dashboard.consularRegistry.stats.requested")}
-						</CardTitle>
-						<Clock className="h-4 w-4 text-amber-500" />
-					</CardHeader>
-					<CardContent>
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<div className="flex items-center justify-between mb-2">
+							<span className="text-sm font-medium">
+								{t("dashboard.consularRegistry.stats.requested")}
+							</span>
+							<Clock className="h-4 w-4 text-amber-500" />
+						</div>
 						<div className="text-2xl font-bold">{stats?.requested ?? "—"}</div>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">
-							{t("dashboard.consularRegistry.stats.active")}
-						</CardTitle>
-						<CheckCircle2 className="h-4 w-4 text-green-500" />
-					</CardHeader>
-					<CardContent>
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<div className="flex items-center justify-between mb-2">
+							<span className="text-sm font-medium">
+								{t("dashboard.consularRegistry.stats.active")}
+							</span>
+							<CheckCircle2 className="h-4 w-4 text-green-500" />
+						</div>
 						<div className="text-2xl font-bold">{stats?.active ?? "—"}</div>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">
-							{t("dashboard.consularRegistry.stats.expired")}
-						</CardTitle>
-						<CreditCard className="h-4 w-4 text-blue-500" />
-					</CardHeader>
-					<CardContent>
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<div className="flex items-center justify-between mb-2">
+							<span className="text-sm font-medium">
+								{t("dashboard.consularRegistry.stats.expired")}
+							</span>
+							<CreditCard className="h-4 w-4 text-blue-500" />
+						</div>
 						<div className="text-2xl font-bold">{stats?.expired ?? "—"}</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</div>
 
 			{/* Tabs: Registrations / Notifications */}

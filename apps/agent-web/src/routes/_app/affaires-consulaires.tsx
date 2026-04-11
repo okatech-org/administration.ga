@@ -139,7 +139,7 @@ function AffairesConsulairesPage() {
 									>
 										<Link
 											to={mod.href}
-											className={`flex items-center gap-4 p-4 rounded-xl border border-border/50 bg-card hover:bg-muted/30 ${mod.hoverBorder} hover:shadow-sm transition-all cursor-pointer group`}
+											className={`flex items-center gap-4 p-4 rounded-xl border border-border/50 bg-card hover:bg-muted/30 ${mod.hoverBorder}  transition-all cursor-pointer group`}
 										>
 											<div className={`h-10 w-10 rounded-xl ${mod.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
 												<Icon className={`h-5 w-5 ${mod.color}`} />
@@ -346,7 +346,7 @@ function ConsularOverview({
 						>
 							<Link
 								to={kpi.href as any}
-								className={`flex flex-col gap-2 p-4 rounded-xl border bg-card hover:bg-muted/30 hover:shadow-sm transition-all cursor-pointer group ${kpi.alert ? "border-amber-500/30" : "border-border/50"}`}
+								className={`flex flex-col gap-2 p-4 rounded-xl border bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-muted/30 transition-all cursor-pointer group ${kpi.alert ? "border-amber-500/30" : "border-border/50"}`}
 							>
 								<div className="flex items-center justify-between">
 									<div className={`h-8 w-8 rounded-lg ${kpi.bg} flex items-center justify-center`}>

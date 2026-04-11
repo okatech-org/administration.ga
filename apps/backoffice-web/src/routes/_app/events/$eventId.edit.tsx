@@ -3,13 +3,14 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { PostStatus } from "@convex/lib/constants";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Upload } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { CalendarDays, Upload } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -176,30 +177,21 @@ function AdminEditEventPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/events">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour
-          </Link>
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight">
-            Modifier l'événement
-          </h1>
-          <p className="text-muted-foreground">{event.title}</p>
-        </div>
-      </div>
+    <div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+      <PageHeader
+        icon={<CalendarDays className="h-5 w-5" />}
+        title="Modifier l'événement"
+        subtitle={event.title}
+        showBackButton
+        onBack={() => navigate({ to: "/events" })}
+      />
 
       <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
         {/* Main content */}
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informations</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <FlatCard>
+            <div className="p-3 lg:p-4 space-y-4">
+              <h2 className="text-base font-semibold">Informations</h2>
               <div className="space-y-2">
                 <Label htmlFor="title">Titre *</Label>
                 <Input
@@ -247,17 +239,15 @@ function AdminEditEventPage() {
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </FlatCard>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Paramètres</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <FlatCard>
+            <div className="p-3 lg:p-4 space-y-4">
+              <h2 className="text-base font-semibold">Paramètres</h2>
               <div className="space-y-2">
                 <Label>Représentation</Label>
                 <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
@@ -328,8 +318,8 @@ function AdminEditEventPage() {
                   }
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </FlatCard>
 
           <div className="flex flex-col gap-2">
             <Button type="submit" className="w-full" disabled={isSubmitting}>

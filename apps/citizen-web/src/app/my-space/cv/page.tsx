@@ -36,7 +36,7 @@ import { CVPreview } from "@/components/cv/CVPreview";
 import type { CVData, CVTheme } from "@/components/cv/types";
 import { PageHeader } from "@/components/my-space/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -759,14 +759,14 @@ export default function CVPage() {
 				{/* ─── Left Panel: Themes + AI (desktop only) ──────────────── */}
 				<div className="space-y-4 hidden lg:block max-w-70">
 					{/* AI Features */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm flex items-center gap-2">
+					<FlatCard>
+						<div className="p-3 lg:p-4 pb-0">
+							<div className="text-sm flex items-center gap-2 font-semibold">
 								<Sparkles size={15} className="text-amber-500" />
 								{t("icv.ai.title")}
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-1">
+							</div>
+						</div>
+						<div className="p-3 lg:p-4 space-y-1">
 							<AIButton
 								icon={<Wand2 size={14} />}
 								label={t("icv.ai.improveProfile")}
@@ -833,17 +833,17 @@ export default function CVPage() {
 								onClick={() => openDrawer("importCV")}
 								accent="text-teal-500"
 							/>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 					{/* Theme Selector */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm flex items-center gap-2">
+					<FlatCard>
+						<div className="p-3 lg:p-4 pb-0">
+							<div className="text-sm flex items-center gap-2 font-semibold">
 								<Palette size={15} />
 								{t("icv.themes.title")}
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-2">
+							</div>
+						</div>
+						<div className="p-3 lg:p-4 space-y-2">
 							{THEME_IDS.map((id) => (
 								<button
 									key={id}
@@ -860,8 +860,8 @@ export default function CVPage() {
 									</span>
 								</button>
 							))}
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</div>
 
 				{/* ─── Center: CV Preview or Edit Form ────────────────────── */}
@@ -961,14 +961,14 @@ function EditForm({
 	return (
 		<div className="space-y-5">
 			{/* Personal Info */}
-			<Card>
-				<CardHeader className="pb-3">
-					<CardTitle className="text-sm flex items-center gap-2">
+			<FlatCard>
+				<div className="p-3 lg:p-4 pb-0">
+					<div className="text-sm flex items-center gap-2 font-semibold">
 						<User size={15} />
 						{t("icv.form.personalInfo")}
-					</CardTitle>
-				</CardHeader>
-				<CardContent className="grid grid-cols-2 gap-3">
+					</div>
+				</div>
+				<div className="p-3 lg:p-4 grid grid-cols-2 gap-3">
 					<div>
 						<label className="text-xs font-medium mb-1 block">
 							{t("common.firstName")}
@@ -1031,31 +1031,31 @@ function EditForm({
 							className="h-9"
 						/>
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* Summary */}
-			<Card>
-				<CardHeader className="pb-3">
-					<CardTitle className="text-sm flex items-center gap-2">
+			<FlatCard>
+				<div className="p-3 lg:p-4 pb-0">
+					<div className="text-sm flex items-center gap-2 font-semibold">
 						<FileText size={15} />
 						{t("icv.form.summary")}
-					</CardTitle>
-				</CardHeader>
-				<CardContent>
+					</div>
+				</div>
+				<div className="p-3 lg:p-4">
 					<Textarea
 						value={form.summary}
 						onChange={(e) => updateField("summary", e.target.value)}
 						placeholder={t("icv.form.summaryPlaceholder")}
 						className="h-24"
 					/>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* Experiences */}
-			<Card>
-				<CardHeader className="pb-3">
-					<CardTitle className="text-sm flex items-center justify-between">
+			<FlatCard>
+				<div className="p-3 lg:p-4 pb-0">
+					<div className="text-sm flex items-center justify-between font-semibold">
 						<span className="flex items-center gap-2">
 							<Briefcase size={15} />
 							{t("icv.form.experiences")}
@@ -1085,9 +1085,9 @@ function EditForm({
 							<Plus size={13} className="mr-1" />
 							{t("icv.form.add")}
 						</Button>
-					</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-4">
+					</div>
+				</div>
+				<div className="p-3 lg:p-4 space-y-4">
 					{form.experiences.map((exp, i) => (
 						<div
 							key={i}
@@ -1183,13 +1183,13 @@ function EditForm({
 							/>
 						</div>
 					))}
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* Education */}
-			<Card>
-				<CardHeader className="pb-3">
-					<CardTitle className="text-sm flex items-center justify-between">
+			<FlatCard>
+				<div className="p-3 lg:p-4 pb-0">
+					<div className="text-sm flex items-center justify-between font-semibold">
 						<span className="flex items-center gap-2">
 							<GraduationCap size={15} />
 							{t("icv.form.education")}
@@ -1219,9 +1219,9 @@ function EditForm({
 							<Plus size={13} className="mr-1" />
 							{t("icv.form.add")}
 						</Button>
-					</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-3">
+					</div>
+				</div>
+				<div className="p-3 lg:p-4 space-y-3">
 					{form.education.map((edu, i) => (
 						<div
 							key={i}
@@ -1294,13 +1294,13 @@ function EditForm({
 							</div>
 						</div>
 					))}
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* Skills */}
-			<Card>
-				<CardHeader className="pb-3">
-					<CardTitle className="text-sm flex items-center justify-between">
+			<FlatCard>
+				<div className="p-3 lg:p-4 pb-0">
+					<div className="text-sm flex items-center justify-between font-semibold">
 						<span className="flex items-center gap-2">
 							<Award size={15} />
 							{t("icv.form.skills")}
@@ -1322,9 +1322,9 @@ function EditForm({
 							<Plus size={13} className="mr-1" />
 							{t("icv.form.add")}
 						</Button>
-					</CardTitle>
-				</CardHeader>
-				<CardContent>
+					</div>
+				</div>
+				<div className="p-3 lg:p-4">
 					<div className="flex flex-wrap gap-2">
 						{form.skills.map((s, i) => (
 							<div
@@ -1374,13 +1374,13 @@ function EditForm({
 							</div>
 						))}
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* Languages */}
-			<Card>
-				<CardHeader className="pb-3">
-					<CardTitle className="text-sm flex items-center justify-between">
+			<FlatCard>
+				<div className="p-3 lg:p-4 pb-0">
+					<div className="text-sm flex items-center justify-between font-semibold">
 						<span className="flex items-center gap-2">
 							<Languages size={15} />
 							{t("icv.form.languages")}
@@ -1402,9 +1402,9 @@ function EditForm({
 							<Plus size={13} className="mr-1" />
 							{t("icv.form.add")}
 						</Button>
-					</CardTitle>
-				</CardHeader>
-				<CardContent>
+					</div>
+				</div>
+				<div className="p-3 lg:p-4">
 					<div className="flex flex-wrap gap-2">
 						{form.languages.map((l, i) => (
 							<div
@@ -1454,18 +1454,18 @@ function EditForm({
 							</div>
 						))}
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* Links & Hobbies (compact) */}
-			<Card>
-				<CardHeader className="pb-3">
-					<CardTitle className="text-sm flex items-center gap-2">
+			<FlatCard>
+				<div className="p-3 lg:p-4 pb-0">
+					<div className="text-sm flex items-center gap-2 font-semibold">
 						<Globe size={15} />
 						{t("icv.form.additional")}
-					</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-3">
+					</div>
+				</div>
+				<div className="p-3 lg:p-4 space-y-3">
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 						<div>
 							<label className="text-xs font-medium mb-1 block">
@@ -1507,8 +1507,8 @@ function EditForm({
 							className="h-8 text-sm"
 						/>
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 		</div>
 	);
 }

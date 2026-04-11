@@ -2,13 +2,7 @@ import { useAction } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -305,10 +299,10 @@ function LogsPanel() {
 	}, [loadLogs]);
 
 	return (
-		<Card>
-			<CardHeader className="pb-3">
-				<div className="flex items-center justify-between">
-					<CardTitle className="flex items-center gap-2.5 text-lg">
+		<FlatCard>
+			<div className="p-3 lg:p-4">
+				<div className="flex items-center justify-between mb-3">
+					<div className="flex items-center gap-2.5 text-lg font-semibold">
 						<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10">
 							<Terminal className="h-5 w-5 text-emerald-500" />
 						</div>
@@ -318,7 +312,7 @@ function LogsPanel() {
 								{logs.length} {t("monitoring.logs.entries")}
 							</Badge>
 						)}
-					</CardTitle>
+					</div>
 					<div className="flex items-center gap-2">
 						<MultiSelect
 							type="single"
@@ -356,11 +350,9 @@ function LogsPanel() {
 						</Button>
 					</div>
 				</div>
-				<CardDescription>
+				<p className="text-xs text-muted-foreground mb-3">
 					{t("monitoring.logs.description")}
-				</CardDescription>
-			</CardHeader>
-			<CardContent>
+				</p>
 				{loading ? (
 					<div className="flex items-center justify-center py-12">
 						<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -388,8 +380,8 @@ function LogsPanel() {
 						</div>
 					</ScrollArea>
 				)}
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }
 
@@ -398,36 +390,34 @@ function CloudRunCard({ service, t }: { service: CloudRunData; t: (key: string) 
 	const colors = getServiceColor(service.name);
 
 	return (
-		<Card className="relative overflow-hidden">
+		<FlatCard className="relative overflow-hidden">
 			<div className={`absolute left-0 top-0 h-full w-1.5 rounded-l-xl ${colors.accent}`} />
-			<CardHeader className="pb-3">
+			<div className="p-3 lg:p-4 space-y-3">
 				<div className="flex items-center justify-between">
-					<CardTitle className="flex items-center gap-2 text-base">
+					<div className="flex items-center gap-2 text-base font-semibold">
 						<div className={`flex h-8 w-8 items-center justify-center rounded-lg ${colors.bg}`}>
 							<Cloud className={`h-4 w-4 ${colors.accent.replace("bg-", "text-")}`} />
 						</div>
 						{service.name}
-					</CardTitle>
+					</div>
 					<StatusBadge
 						status={service.isReady ? t("monitoring.cloudRun.ready") : t("monitoring.cloudRun.notReady")}
 						isReady={service.isReady}
 					/>
 				</div>
 				{service.uri && (
-					<CardDescription className="flex items-center gap-2 mt-1">
+					<div className="flex items-center gap-2 text-xs text-muted-foreground">
 						<Globe className="h-3.5 w-3.5" />
 						<a
 							href={service.uri}
 							target="_blank"
 							rel="noreferrer"
-							className="text-blue-500 hover:underline text-xs truncate"
+							className="text-blue-500 hover:underline truncate"
 						>
 							{service.uri.replace("https://", "")}
 						</a>
-					</CardDescription>
+					</div>
 				)}
-			</CardHeader>
-			<CardContent className="space-y-3">
 				{/* Info row */}
 				<div className="grid grid-cols-2 gap-2">
 					<div className="rounded-lg bg-muted/50 p-2.5 space-y-0.5">
@@ -479,8 +469,8 @@ function CloudRunCard({ service, t }: { service: CloudRunData; t: (key: string) 
 						</span>
 					)}
 				</div>
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }
 
@@ -537,8 +527,8 @@ export function InfrastructureMonitoring() {
 
 	if (error) {
 		return (
-			<Card className="border-red-500/50 mt-4">
-				<CardContent className="flex flex-col items-center justify-center py-12 text-center">
+			<FlatCard className="border border-red-500/50 mt-4">
+				<div className="flex flex-col items-center justify-center py-12 text-center p-3 lg:p-4">
 					<Activity className="mb-3 h-10 w-10 text-red-500/60" />
 					<p className="text-sm font-medium text-red-600 dark:text-red-400">
 						{error}
@@ -551,8 +541,8 @@ export function InfrastructureMonitoring() {
 					>
 						{t("monitoring.retry")}
 					</Button>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 		);
 	}
 
@@ -588,30 +578,30 @@ export function InfrastructureMonitoring() {
 			</div>
 
 			{/* ── LiveKit VM Card ──────────────────── */}
-			<Card className="relative overflow-hidden">
+			<FlatCard className="relative overflow-hidden">
 				<div className="absolute left-0 top-0 h-full w-1.5 rounded-l-xl bg-purple-500" />
-				<CardHeader className="pb-3">
-					<div className="flex items-center justify-between">
-						<CardTitle className="flex items-center gap-2.5 text-lg">
-							<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/10">
-								<Video className="h-5 w-5 text-purple-500" />
+				<div className="p-3 lg:p-4 space-y-4">
+					<div>
+						<div className="flex items-center justify-between">
+							<div className="flex items-center gap-2.5 text-lg font-semibold">
+								<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/10">
+									<Video className="h-5 w-5 text-purple-500" />
+								</div>
+								{t("monitoring.livekit.title")}
 							</div>
-							{t("monitoring.livekit.title")}
-						</CardTitle>
-						<StatusBadge status={data.livekitVm.status} />
+							<StatusBadge status={data.livekitVm.status} />
+						</div>
+						<div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+							<Server className="h-3.5 w-3.5" />
+							<span className="font-mono">
+								{data.livekitVm.name}
+							</span>
+							<span>&#8226;</span>
+							<span>{data.livekitVm.machineType}</span>
+							<span>&#8226;</span>
+							<span>{data.livekitVm.zone}</span>
+						</div>
 					</div>
-					<CardDescription className="flex items-center gap-2 mt-1">
-						<Server className="h-3.5 w-3.5" />
-						<span className="font-mono text-xs">
-							{data.livekitVm.name}
-						</span>
-						<span className="text-muted-foreground">•</span>
-						<span className="text-xs">{data.livekitVm.machineType}</span>
-						<span className="text-muted-foreground">•</span>
-						<span className="text-xs">{data.livekitVm.zone}</span>
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-4">
 					{/* Info row */}
 					<div className="grid grid-cols-3 gap-3">
 						<div className="rounded-lg bg-muted/50 p-3 space-y-1">
@@ -687,8 +677,8 @@ export function InfrastructureMonitoring() {
 							</div>
 						</div>
 					)}
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* ── Logs Panel ────────────────────────── */}
 			<LogsPanel />

@@ -2,6 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import Image from "next/image";
 import { AssociationRole, AssociationType } from "@convex/lib/constants";
 import { useRouter } from "next/navigation";
 import {
@@ -58,6 +59,39 @@ import {
   useConvexQuery,
 } from "@/integrations/convex/hooks";
 
+interface AssociationMemberUser {
+  _id: string;
+  name?: string;
+  email?: string;
+  avatarUrl?: string;
+}
+
+interface AssociationMemberProfile {
+  firstName?: string;
+  lastName?: string;
+}
+
+interface AssociationMember {
+  _id: string;
+  role: string;
+  userId: string;
+  user: AssociationMemberUser | null;
+  profile: AssociationMemberProfile | null;
+}
+
+interface EnrichedAssociation {
+  _id: Id<"associations">;
+  name: string;
+  slug: string;
+  type: AssociationType;
+  description?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+  logoUrl?: string;
+  members: AssociationMember[];
+}
+
 const roleIcons: Partial<Record<AssociationRole, typeof Crown>> = {
   [AssociationRole.President]: Crown,
   [AssociationRole.VicePresident]: Shield,
@@ -102,13 +136,14 @@ export function AssociationDetailContent({ slug }: { slug: string }) {
     );
   }
 
-  const myMembership = association.members?.find((m: any) => m.user?._id);
+  const typedAssociation = association as EnrichedAssociation;
+  const myMembership = typedAssociation.members?.find((m) => m.user?._id);
   const isAdmin =
     myMembership?.role === AssociationRole.President ||
     myMembership?.role === AssociationRole.VicePresident;
 
-  const hasPresident = association.members?.some(
-    (m: any) => m.role === AssociationRole.President,
+  const hasPresident = typedAssociation.members?.some(
+    (m) => m.role === AssociationRole.President,
   );
 
   const typeLabels: Record<AssociationType, string> = {
@@ -143,9 +178,11 @@ export function AssociationDetailContent({ slug }: { slug: string }) {
         <div className="flex items-center gap-3 flex-1">
           <div className="h-14 w-14 rounded-lg bg-primary/10 flex items-center justify-center">
             {association.logoUrl ?
-              <img
+              <Image
                 src={association.logoUrl}
                 alt={association.name}
+                width={48}
+                height={48}
                 className="h-12 w-12 rounded-lg object-cover"
               />
             : <Building2 className="h-7 w-7 text-primary" />}
@@ -259,7 +296,7 @@ export function AssociationDetailContent({ slug }: { slug: string }) {
   );
 }
 
-function InfoTab({ association }: { association: any }) {
+function InfoTab({ association }: { association: EnrichedAssociation }) {
   const { t } = useTranslation();
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -334,7 +371,7 @@ function MembersTab({
   isAdmin,
 }: {
   associationId: Id<"associations">;
-  members: any[];
+  members: AssociationMember[];
   isAdmin: boolean;
 }) {
   const { t } = useTranslation();
@@ -429,7 +466,7 @@ function MembersTab({
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {members.map((member: any) => {
+          {members.map((member) => {
             const displayName =
               member.profile?.firstName && member.profile?.lastName ?
                 `${member.profile.firstName} ${member.profile.lastName}`
@@ -574,7 +611,7 @@ function MembersTab({
   );
 }
 
-function SettingsTab({ association }: { association: any }) {
+function SettingsTab({ association }: { association: EnrichedAssociation }) {
   const { t } = useTranslation();
   const router = useRouter();
   const { mutate: update, isPending: isUpdating } = useConvexMutationQuery(
@@ -1077,7 +1114,7 @@ function JoinRequestsTab({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {requests.map((request: any) => {
+        {requests.map((request) => {
           const displayName =
             request.profile?.firstName && request.profile?.lastName ?
               `${request.profile.firstName} ${request.profile.lastName}`

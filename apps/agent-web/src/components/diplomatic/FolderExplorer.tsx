@@ -17,7 +17,7 @@ import {
 import { motion } from "motion/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { ExportZipButton } from "./ExportZipButton";
 
@@ -80,8 +80,8 @@ export function FolderExplorer({
 
   if (!data || data.totalDocuments === 0) {
     return (
-      <Card className="bg-muted/20">
-        <CardContent className="py-6 text-center">
+      <FlatCard className="bg-muted/20">
+        <div className="p-3 lg:p-4 py-6 text-center">
           <FolderOpen className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
           <p className="text-xs text-muted-foreground">
             Aucun document dans le dossier pour l'instant.
@@ -89,8 +89,8 @@ export function FolderExplorer({
           <p className="text-[10px] text-muted-foreground/70 mt-1">
             Les documents seront générés automatiquement à chaque étape du pipeline.
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </FlatCard>
     );
   }
 

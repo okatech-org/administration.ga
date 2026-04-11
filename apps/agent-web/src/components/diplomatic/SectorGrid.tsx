@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { useOrg } from "@/components/org/org-provider";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 
@@ -102,8 +102,8 @@ export function SectorGrid() {
                   to="/affaires-diplomatiques/$targetId"
                   params={{ targetId: folder.targetId ?? "" }}
                 >
-                  <Card className="hover:bg-muted/30 transition-colors cursor-pointer shadow-sm">
-                    <CardContent className="py-3 px-3">
+                  <FlatCard className="hover:bg-muted/30 transition-colors cursor-pointer">
+                    <div className="p-3 lg:p-4">
                       <p className="text-sm font-medium truncate" title={folder.name}>
                         {folder.name}
                       </p>
@@ -124,8 +124,8 @@ export function SectorGrid() {
                           </span>
                         )}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </FlatCard>
                 </Link>
               );
             })}

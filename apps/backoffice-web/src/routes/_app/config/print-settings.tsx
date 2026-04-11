@@ -13,9 +13,10 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -94,57 +95,49 @@ function PrintSettingsPage() {
 		org.modules?.includes("consular_cards" as any) ?? false;
 
 	return (
-		<div className="flex flex-1 flex-col gap-6 p-6 pt-8">
+		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
 			{/* Header */}
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
-						<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-							<Printer className="h-5 w-5 text-primary" />
-						</div>
-						Paramétrage Impression
-					</h1>
-					<p className="text-muted-foreground mt-1">
-						Gérez l'accès à l'impression des cartes consulaires par représentation
-					</p>
-				</div>
-			</div>
+			<PageHeader
+				icon={<Printer className="h-5 w-5" />}
+				title="Paramétrage Impression"
+				subtitle="Gérez l'accès à l'impression des cartes consulaires par représentation"
+			/>
 
 			{/* Stats */}
 			<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-				<Card className="bg-linear-to-br from-primary/5 to-transparent">
-					<CardContent className="p-4">
+				<FlatCard>
+					<div className="p-3 lg:p-4">
 						<div className="text-2xl font-bold text-primary">{activeOrgs.length}</div>
 						<div className="text-xs text-muted-foreground">Représentations actives</div>
-					</CardContent>
-				</Card>
-				<Card className="bg-linear-to-br from-green-500/5 to-transparent">
-					<CardContent className="p-4">
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
 						<div className="text-2xl font-bold text-green-600">{printEnabledCount}</div>
 						<div className="text-xs text-muted-foreground">Impression activée</div>
-					</CardContent>
-				</Card>
-				<Card className="bg-linear-to-br from-amber-500/5 to-transparent">
-					<CardContent className="p-4">
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
 						<div className="text-2xl font-bold text-amber-600">
 							{activeOrgs.length - printEnabledCount}
 						</div>
 						<div className="text-xs text-muted-foreground">Impression désactivée</div>
-					</CardContent>
-				</Card>
-				<Card className="bg-linear-to-br from-blue-500/5 to-transparent">
-					<CardContent className="p-4">
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
 						<div className="text-2xl font-bold text-blue-600">
 							{activeOrgs.filter(hasConsularCardsModule).length}
 						</div>
 						<div className="text-xs text-muted-foreground">Module "Cartes" actif</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</div>
 
 			{/* Info banner */}
-			<Card className="border-blue-500/20 bg-blue-500/5">
-				<CardContent className="p-4">
+			<FlatCard className="border border-blue-500/20">
+				<div className="p-3 lg:p-4">
 					<div className="flex items-start gap-3">
 						<Shield className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
 						<div className="text-sm">
@@ -159,21 +152,21 @@ function PrintSettingsPage() {
 							</p>
 						</div>
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* Orgs Table */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2">
-						<Building2 className="h-5 w-5" />
-						Représentations diplomatiques
-					</CardTitle>
-					<CardDescription>
-						Activez ou désactivez l'impression des cartes consulaires pour chaque représentation
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
+			<FlatCard>
+				<div className="p-3 lg:p-4 space-y-3">
+					<div>
+						<h3 className="text-sm font-semibold flex items-center gap-2">
+							<Building2 className="h-5 w-5" />
+							Représentations diplomatiques
+						</h3>
+						<p className="text-xs text-muted-foreground mt-1">
+							Activez ou désactivez l'impression des cartes consulaires pour chaque représentation
+						</p>
+					</div>
 					<Table>
 						<TableHeader>
 							<TableRow>
@@ -272,8 +265,8 @@ function PrintSettingsPage() {
 							)}
 						</TableBody>
 					</Table>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* Config Dialog */}
 			<Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>

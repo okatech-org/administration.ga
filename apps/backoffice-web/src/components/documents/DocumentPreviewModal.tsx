@@ -169,7 +169,7 @@ export function DocumentPreviewModal({
 									<img
 										src={documentUrl}
 										alt={filename}
-										className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+										className="max-w-full max-h-full object-contain rounded-lg"
 										onError={() => setError(true)}
 									/>
 								</div>

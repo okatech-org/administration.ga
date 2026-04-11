@@ -8,13 +8,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -112,44 +106,45 @@ export function OrgServicesTable({ orgId }: OrgServicesTableProps) {
 
 	if (isLoadingOrgServices) {
 		return (
-			<Card>
-				<CardHeader>
+			<FlatCard>
+				<div className="p-3 lg:p-4">
 					<Skeleton className="h-6 w-48" />
-					<Skeleton className="h-4 w-64" />
-				</CardHeader>
-				<CardContent>
+					<Skeleton className="h-4 w-64 mt-2" />
+				</div>
+				<div className="p-3 lg:p-4">
 					<div className="space-y-2">
 						<Skeleton className="h-10 w-full" />
 						<Skeleton className="h-10 w-full" />
 						<Skeleton className="h-10 w-full" />
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 		);
 	}
 
 	return (
 		<>
-			<Card>
-				<CardHeader className="flex flex-row items-center justify-between">
+			<FlatCard>
+				<div className="flex flex-row items-center justify-between p-3 lg:p-4">
 					<div>
-						<CardTitle className="flex items-center gap-2">
+						<div className="flex items-center gap-2 font-semibold">
 							<FileText className="h-5 w-5" />
 							{t("superadmin.organizations.tabs.services")}
-						</CardTitle>
-						<CardDescription>
+						</div>
+						<p className="text-sm text-muted-foreground mt-1">
 							{t("superadmin.organizations.servicesDesc")}
-						</CardDescription>
+						</p>
 					</div>
 					<Button
 						onClick={() => setAddDialogOpen(true)}
 						disabled={availableServices.length === 0}
+						className="active:scale-[0.97] transition-transform"
 					>
 						<Plus className="mr-2 h-4 w-4" />
 						{t("superadmin.services.form.create")}
 					</Button>
-				</CardHeader>
-				<CardContent>
+				</div>
+				<div className="p-3 lg:p-4">
 					{orgServices && orgServices.length > 0 ? (
 						<Table>
 							<TableHeader>
@@ -218,8 +213,8 @@ export function OrgServicesTable({ orgId }: OrgServicesTableProps) {
 							</Button>
 						</div>
 					)}
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* Add Service Sheet */}
 			<Sheet open={addDialogOpen} onOpenChange={setAddDialogOpen}>

@@ -8,13 +8,8 @@ import {
 	Eye,
 	Server,
 } from "lucide-react";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { SectionHeader } from "@/components/design-system/section-header";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface SecurityAlert {
@@ -79,41 +74,44 @@ export function SecurityAlertsPanel({
 
 	if (loading || !data) {
 		return (
-			<Card className="border-red-500/20">
-				<CardHeader className="pb-3">
-					<Skeleton className="h-5 w-48" />
-				</CardHeader>
-				<CardContent className="space-y-3">
-					{[1, 2, 3].map((i) => (
-						<Skeleton key={i} className="h-14 w-full" />
-					))}
-				</CardContent>
-			</Card>
+			<FlatCard>
+				<div className="p-3 lg:p-4">
+					<Skeleton className="h-5 w-48 mb-3" />
+					<div className="space-y-3">
+						{[1, 2, 3].map((i) => (
+							<Skeleton key={i} className="h-14 w-full" />
+						))}
+					</div>
+				</div>
+			</FlatCard>
 		);
 	}
 
 	const hasCritical = data.criticalAlerts.length > 0;
 	const borderClass = hasCritical
-		? "border-red-500/30 shadow-red-500/5 shadow-lg"
+		? "border border-red-500/30"
 		: data.systemHealth === "DEGRADED"
 			? "border-amber-500/30"
 			: "border-emerald-500/20";
 
 	return (
-		<Card className={borderClass}>
-			<CardHeader className="pb-3">
-				<div className="flex items-center justify-between">
-					<CardTitle className="flex items-center gap-2 text-base">
-						<ShieldAlert className="h-5 w-5 text-red-500" />
-						{t("superadmin.dashboard.security.title", "Sécurité & Alertes")}
-					</CardTitle>
-					<HealthIndicator status={data.systemHealth} />
+		<FlatCard className={borderClass}>
+			<div className="p-3 lg:p-4 space-y-4">
+				<div>
+					<div className="flex items-center justify-between mb-1">
+						<SectionHeader
+							icon={<ShieldAlert className="h-3.5 w-3.5" />}
+							iconBgClass="bg-red-500/10"
+							iconTextClass="text-red-500"
+							title={t("superadmin.dashboard.security.title", "Securite & Alertes")}
+							className="mb-0"
+						/>
+						<HealthIndicator status={data.systemHealth} />
+					</div>
+					<p className="text-xs text-muted-foreground">
+						{t("superadmin.dashboard.security.description", "Surveillance reseau, cyber-securite et intrusions")}
+					</p>
 				</div>
-				<CardDescription>
-					{t("superadmin.dashboard.security.description", "Surveillance réseau, cyber-sécurité et intrusions")}
-				</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-4">
 				{/* System Status Bar */}
 				<div className="grid grid-cols-3 gap-3">
 					<div className="flex flex-col items-center gap-1 rounded-lg bg-muted/50 p-3">
@@ -209,7 +207,7 @@ export function SecurityAlertsPanel({
 						</p>
 					</div>
 				)}
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }

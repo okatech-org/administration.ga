@@ -19,13 +19,8 @@ import { CallButton } from "@/components/meetings/call-button";
 import { useOrg } from "@/components/org/org-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
+import { SectionHeader } from "@/components/my-space/section-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	useAuthenticatedConvexQuery,
@@ -179,14 +174,9 @@ function AppointmentDetail() {
 			</div>
 
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 max-w-6xl">
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
-							<Calendar className="h-5 w-5" />
-							{t("dashboard.appointments.detail.dateTime")}
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-2">
+				<FlatCard>
+					<div className="p-3 lg:p-4 space-y-2">
+						<SectionHeader icon={Calendar} title={t("dashboard.appointments.detail.dateTime")} />
 						<div className="flex items-center gap-2">
 							<span className="font-medium">
 								{t("dashboard.appointments.detail.date")}:
@@ -199,17 +189,12 @@ function AppointmentDetail() {
 								{appointment.time} - {appointment.endTime}
 							</span>
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
-							<User className="h-5 w-5" />
-							{t("dashboard.appointments.detail.user")}
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-2">
+				<FlatCard>
+					<div className="p-3 lg:p-4 space-y-2">
+						<SectionHeader icon={User} title={t("dashboard.appointments.detail.user")} />
 						{appointment.attendee ? (
 							<>
 								<p className="font-medium">
@@ -223,37 +208,27 @@ function AppointmentDetail() {
 						) : (
 							<p className="text-muted-foreground">-</p>
 						)}
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 
 				{appointment.service && (
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<FileText className="h-5 w-5" />
-								{t("dashboard.appointments.detail.service")}
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
+					<FlatCard>
+						<div className="p-3 lg:p-4 space-y-2">
+							<SectionHeader icon={FileText} title={t("dashboard.appointments.detail.service")} />
 							<p className="font-medium">
 								{appointment.service.name?.fr || "-"}
 							</p>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				)}
 
 				{appointment.request && (
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<LinkIcon className="h-5 w-5" />
-								{t(
-									"dashboard.appointments.detail.linkedRequest",
-									"Demande associée",
-								)}
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-3">
+					<FlatCard>
+						<div className="p-3 lg:p-4 space-y-3">
+							<SectionHeader icon={LinkIcon} title={t(
+								"dashboard.appointments.detail.linkedRequest",
+								"Demande associée",
+							)} />
 							<div className="flex items-center justify-between">
 								<span className="font-medium font-mono text-sm">
 									{appointment.request.reference}
@@ -278,31 +253,28 @@ function AppointmentDetail() {
 									"Voir la demande",
 								)}
 							</Button>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				)}
 
 				{appointment.notes && (
-					<Card>
-						<CardHeader>
-							<CardTitle>{t("dashboard.appointments.detail.notes")}</CardTitle>
-						</CardHeader>
-						<CardContent>
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<p className="text-sm font-medium mb-2">{t("dashboard.appointments.detail.notes")}</p>
 							<p className="text-sm">{appointment.notes}</p>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				)}
 			</div>
 
 			{appointment.status === RequestStatus.Completed && (
-				<Card>
-					<CardHeader>
-						<CardTitle>{t("dashboard.appointments.detail.actions")}</CardTitle>
-						<CardDescription>
+				<FlatCard>
+					<div className="p-3 lg:p-4 space-y-3">
+						<p className="text-sm font-medium">{t("dashboard.appointments.detail.actions")}</p>
+						<p className="text-xs text-muted-foreground">
 							{t("dashboard.appointments.detail.actionsDescription")}
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="flex flex-wrap gap-2">
+						</p>
+						<div className="flex flex-wrap gap-2">
 						<Button variant="secondary" onClick={handleComplete}>
 							<Clock className="mr-2 h-4 w-4" />
 							{t("dashboard.appointments.complete")}
@@ -317,8 +289,9 @@ function AppointmentDetail() {
 								{t("dashboard.appointments.cancel")}
 							</Button>
 						)}
-					</CardContent>
-				</Card>
+						</div>
+					</div>
+				</FlatCard>
 			)}
 		</div>
 	);

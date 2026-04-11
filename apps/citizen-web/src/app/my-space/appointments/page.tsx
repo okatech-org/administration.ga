@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
@@ -130,12 +130,12 @@ export default function AppointmentsPage() {
 				</h2>
 				<div className="grid gap-4">
 					{upcomingAppointments.length === 0 ? (
-						<Card>
-							<CardContent className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+						<FlatCard>
+							<div className="p-3 lg:p-4 flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
 								<Calendar className="h-12 w-12 mb-4 opacity-20" />
 								<p>{t("appointments.empty")}</p>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					) : (
 						upcomingAppointments.map((apt) => (
 							<Link
@@ -143,9 +143,9 @@ export default function AppointmentsPage() {
 								href={`/my-space/appointments/${apt._id}`}
 								className="block transition-transform hover:scale-[1.01] active:scale-[0.99]"
 							>
-								<Card className="overflow-hidden">
+								<FlatCard>
 									<div className="flex flex-col sm:flex-row border-l-4 border-l-primary h-full">
-										<div className="bg-muted p-4 flex flex-col items-center justify-center min-w-[120px] text-center border-b sm:border-b-0 sm:border-r">
+										<div className="bg-muted p-4 flex flex-col items-center justify-center min-w-[120px] text-center">
 											<span className="text-3xl font-bold text-primary">
 												{format(new Date(apt.date), "dd", { locale: fr })}
 											</span>
@@ -232,7 +232,7 @@ export default function AppointmentsPage() {
 											)}
 										</div>
 									</div>
-								</Card>
+								</FlatCard>
 							</Link>
 						))
 					)}
@@ -256,9 +256,9 @@ export default function AppointmentsPage() {
 								href={`/my-space/appointments/${apt._id}`}
 								className="block transition-transform hover:scale-[1.01] active:scale-[0.99]"
 							>
-								<Card className="overflow-hidden">
+								<FlatCard>
 									<div className="flex flex-col sm:flex-row border-l-4 border-l-muted h-full">
-										<div className="bg-muted/50 p-4 flex flex-col items-center justify-center min-w-[120px] text-center border-b sm:border-b-0 sm:border-r">
+										<div className="bg-muted/50 p-4 flex flex-col items-center justify-center min-w-[120px] text-center">
 											<span className="text-2xl font-bold text-muted-foreground">
 												{format(new Date(apt.date), "dd", { locale: fr })}
 											</span>
@@ -284,7 +284,7 @@ export default function AppointmentsPage() {
 											{getStatusBadge(apt.status)}
 										</div>
 									</div>
-								</Card>
+								</FlatCard>
 							</Link>
 						))}
 					</div>

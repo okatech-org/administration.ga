@@ -26,7 +26,7 @@ import {
 } from "@/components/diplomatic/AIActionPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -261,11 +261,10 @@ function LettresPhase() {
             const status =
               STATUS_LABEL[letter.status] ?? STATUS_LABEL.draft;
             return (
-              <Card
+              <FlatCard
                 key={letter._id}
-                className="hover:shadow-md transition-shadow"
               >
-                <CardContent className="flex items-center gap-4 py-3">
+                <div className="p-3 lg:p-4 flex items-center gap-4">
                   <div className="h-10 w-10 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
                     <Mail className="h-5 w-5 text-success" />
                   </div>
@@ -307,8 +306,8 @@ function LettresPhase() {
                       {status.label}
                     </Badge>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </FlatCard>
             );
           })}
         </div>

@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/my-space/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -92,8 +92,8 @@ export default function NewTicketPage() {
 				icon={<LifeBuoy className="h-6 w-6 text-primary" />}
 			/>
 
-			<Card>
-				<CardContent className="pt-6">
+			<FlatCard>
+				<div className="p-3 lg:p-4 pt-6">
 					<form onSubmit={handleSubmit} className="space-y-6">
 						<div className="space-y-2">
 							<Label htmlFor="subject">
@@ -167,8 +167,8 @@ export default function NewTicketPage() {
 							</Button>
 						</div>
 					</form>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 		</div>
 	);
 }

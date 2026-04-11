@@ -22,7 +22,7 @@ interface TabSwitcherProps {
  */
 export function TabSwitcher({ tabs, activeTab, onTabChange, className }: TabSwitcherProps) {
 	return (
-		<div className={cn("flex items-center gap-1 bg-card border border-border rounded-xl p-1", className)}>
+		<div className={cn("flex items-center gap-1 bg-[#F4F3ED] dark:bg-[#171616] rounded-xl p-1", className)}>
 			{tabs.map((tab) => {
 				const isActive = activeTab === tab.key;
 				const Icon = tab.icon;
@@ -32,10 +32,10 @@ export function TabSwitcher({ tabs, activeTab, onTabChange, className }: TabSwit
 						type="button"
 						onClick={() => onTabChange(tab.key)}
 						className={cn(
-							"flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 justify-center",
+							"flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 justify-center active:scale-[0.97]",
 							isActive
-								? "bg-primary text-primary-foreground shadow-sm"
-								: "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+								? "bg-primary text-primary-foreground"
+								: "text-muted-foreground hover:text-foreground hover:bg-[#EBE6DC]/50 dark:hover:bg-[#383633]/50",
 						)}
 					>
 						{Icon && <Icon className="h-4 w-4 shrink-0" />}

@@ -32,13 +32,8 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { SectionHeader } from "@/components/design-system/section-header";
 import { Checkbox } from "@/components/ui/checkbox";
 
 import {
@@ -858,7 +853,7 @@ function PositionFormSheet({
 										className={cn(
 											"flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap shrink-0 border",
 											isActive
-												? "bg-primary text-primary-foreground border-primary shadow-sm"
+												? "bg-primary text-primary-foreground border-primary"
 												: "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground border-transparent",
 										)}
 										onClick={() => setSelectedOrgType(tpl.type)}
@@ -1111,7 +1106,7 @@ function PositionFormSheet({
 								</div>
 
 								{/* Summary of permissions — sticky en bas */}
-								<div className="sticky bottom-0 rounded-lg border border-border/40 bg-card/95 backdrop-blur-sm p-3 space-y-2 shadow-sm">
+								<div className="sticky bottom-0 rounded-lg border border-border/40 bg-card/95 backdrop-blur-sm p-3 space-y-2">
 									<h4 className="text-xs font-medium flex items-center gap-1.5">
 										<Shield className="h-3 w-3 text-primary" />
 										{lang === "fr" ? "Résumé des permissions" : "Permission summary"}
@@ -1374,19 +1369,19 @@ export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 			</div>
 
 			{/* Hierarchy by Grade */}
-			<Card>
-				<CardHeader className="pb-3">
-					<CardTitle className="flex items-center gap-2 text-base">
-						<Users className="h-4 w-4" />
-						{lang === "fr" ? "Organigramme par grade" : "Org chart by grade"}
-					</CardTitle>
-					<CardDescription>
-						{lang === "fr"
-							? "Postes organisés par grade hiérarchique"
-							: "Positions organized by hierarchical grade"}
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-4">
+			<FlatCard>
+				<div className="p-3 lg:p-4 space-y-4">
+					<div>
+						<SectionHeader
+							icon={<Users className="h-3.5 w-3.5" />}
+							title={lang === "fr" ? "Organigramme par grade" : "Org chart by grade"}
+						/>
+						<p className="text-xs text-muted-foreground -mt-1 mb-3">
+							{lang === "fr"
+								? "Postes organises par grade hierarchique"
+								: "Positions organized by hierarchical grade"}
+						</p>
+					</div>
 					{GRADE_ORDER.map((gradeKey) => {
 						const grade = POSITION_GRADES[gradeKey];
 						const gradePositions = positionsByGrade[gradeKey] ?? [];
@@ -1482,9 +1477,9 @@ export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 												className={cn(
 													"rounded-xl border transition-all group flex flex-col cursor-grab active:cursor-grabbing",
 													pos.occupant
-														? "border-border bg-card hover:shadow-md hover:border-primary/30"
+														? "border-border bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:border-primary/30"
 														: "border-dashed border-muted-foreground/30 bg-muted/30 hover:border-primary/40",
-													draggedPositionId === pos._id && "opacity-50 scale-95 shadow-lg",
+													draggedPositionId === pos._id && "opacity-50 scale-95",
 												)}
 											>
 												{/* Position header */}
@@ -1561,7 +1556,7 @@ export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 																		)}
 																	</div>
 																	{/* Actions (hover over occupant) */}
-																	<div className="absolute right-1 opacity-0 group-hover/occ:opacity-100 transition-opacity bg-card shadow-sm rounded-md border">
+																	<div className="absolute right-1 opacity-0 group-hover/occ:opacity-100 transition-opacity bg-card rounded-md border">
 																		<DropdownMenu>
 																			<DropdownMenuTrigger asChild>
 																				<Button variant="ghost" size="icon" className="h-6 w-6">
@@ -1620,19 +1615,19 @@ export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 							</div>
 						);
 					})}
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* Unassigned members */}
 			{orgChart.unassignedMembers.length > 0 && (
-				<Card className="border-amber-200 dark:border-amber-800/50">
-					<CardHeader className="pb-3">
-						<CardTitle className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
-							<Users className="h-4 w-4" />
-							{lang === "fr" ? "Membres sans poste" : "Unassigned members"} ({orgChart.unassignedMembers.length})
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
+				<FlatCard className="border border-amber-200 dark:border-amber-800/50">
+					<div className="p-3 lg:p-4">
+						<SectionHeader
+							icon={<Users className="h-3.5 w-3.5" />}
+							iconBgClass="bg-amber-500/10"
+							iconTextClass="text-amber-700 dark:text-amber-400"
+							title={`${lang === "fr" ? "Membres sans poste" : "Unassigned members"} (${orgChart.unassignedMembers.length})`}
+						/>
 						<div className="flex flex-wrap gap-2">
 							{orgChart.unassignedMembers.map((member) => (
 								<div key={member.membershipId} className="flex items-center gap-2 rounded-lg border border-border/60 px-2 py-1.5 hover:border-primary/40 transition-colors group">
@@ -1658,8 +1653,8 @@ export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 								</div>
 							))}
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			)}
 
 			{/* Create/Edit Sheet */}

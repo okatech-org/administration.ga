@@ -4,15 +4,17 @@ import { api } from "@convex/_generated/api"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
-  Baby,
   Bot,
   Briefcase,
   Calendar,
+  Contact,
   FileText,
   LogOut,
   Mail,
   Menu,
+  MessageSquare,
   Moon,
+  Phone,
   Plus,
   Settings,
   Sun,
@@ -20,7 +22,8 @@ import {
   Users,
   X,
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useSyncExternalStore } from "react"
+import { AnimatePresence, motion } from "motion/react"
 import { useTranslation } from "react-i18next"
 import { useTheme } from "next-themes"
 import {
@@ -29,10 +32,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { CircleMenu } from "@/components/ui/circle-menu"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { authClient } from "@/lib/auth-client"
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks"
+
+interface ChatThread {
+  unreadCount?: number
+}
 
 interface NavItem {
   title: string
@@ -45,6 +53,8 @@ export function MobileNavBar() {
   const { t, i18n } = useTranslation()
   const { theme, setTheme } = useTheme()
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [circleMenuOpen, setCircleMenuOpen] = useState(false)
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
   const { data: session } = authClient.useSession()
   const { data: childProfiles } = useAuthenticatedConvexQuery(
     api.functions.childProfiles.getMine,
@@ -53,7 +63,7 @@ export function MobileNavBar() {
   const { data: chatThreads } = useAuthenticatedConvexQuery(api.functions.chats.listMyChats, {})
 
   const children = childProfiles ?? []
-  const totalUnread = (chatThreads as any[])?.reduce((acc: number, t: any) => acc + (t.unreadCount ?? 0), 0) ?? 0
+  const totalUnread = (chatThreads as ChatThread[] | undefined)?.reduce((acc, thread) => acc + (thread.unreadCount ?? 0), 0) ?? 0
   const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en"
   const userName = session?.user?.name ?? ""
   const userEmail = session?.user?.email ?? ""
@@ -81,7 +91,7 @@ export function MobileNavBar() {
   const isIAstedActive = isActive("/my-space/iasted")
   const hasSheetActive =
     sheetItems.some((i) => isActive(i.url)) ||
-    ((children as any[]).length > 0 && pathname.startsWith("/my-space/children"))
+    (children.length > 0 && pathname.startsWith("/my-space/children"))
 
   const handleLogout = async () => {
     setSheetOpen(false)
@@ -94,7 +104,7 @@ export function MobileNavBar() {
       <nav
         className="fixed left-3 right-3 z-40 md:hidden bottom-[calc(0.8rem+env(safe-area-inset-bottom,0px))]"
       >
-        <div className="bg-card/95 backdrop-blur-md border border-border rounded-2xl shadow-lg">
+        <div className="bg-[#F4F3ED] dark:bg-[#171616] backdrop-blur-md rounded-2xl">
           <div className="flex items-center justify-around px-2 h-[60px]">
             <NavBarItem item={mainItems[0]} active={isActive(mainItems[0].url)} onClick={() => setSheetOpen(false)} />
             <NavBarItem item={mainItems[1]} active={isActive(mainItems[1].url)} onClick={() => setSheetOpen(false)} />
@@ -103,7 +113,7 @@ export function MobileNavBar() {
               type="button"
               onClick={() => {
                 setSheetOpen(false)
-                window.dispatchEvent(new CustomEvent("iasted:open"))
+                setCircleMenuOpen(true)
               }}
               className="flex flex-col items-center -mt-4 relative"
             >
@@ -112,16 +122,23 @@ export function MobileNavBar() {
                   {totalUnread > 9 ? "9+" : totalUnread}
                 </span>
               )}
-              <div
+              <motion.div
+                initial={false}
+                animate={{
+                  scale: circleMenuOpen ? 0 : 1,
+                  opacity: circleMenuOpen ? 0 : 1,
+                }}
+                transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                suppressHydrationWarning
                 className={cn(
-                  "h-12 w-12 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95",
+                  "h-12 w-12 rounded-full flex items-center justify-center active:scale-95",
                   isIAstedActive
                     ? "bg-emerald-500 ring-2 ring-emerald-500/30"
                     : "bg-emerald-600 hover:bg-emerald-500"
                 )}
               >
                 <Bot className="h-6 w-6 text-white" />
-              </div>
+              </motion.div>
             </button>
 
             <NavBarItem item={mainItems[2]} active={isActive(mainItems[2].url)} onClick={() => setSheetOpen(false)} />
@@ -152,7 +169,7 @@ export function MobileNavBar() {
       </nav>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="bottom" showCloseButton={false} className="rounded-t-2xl max-h-[75dvh] px-4 bg-[#F4F3ED] dark:bg-[#2B2A28]/27 border-none shadow-2xl flex flex-col">
+        <SheetContent side="bottom" showCloseButton={false} className="rounded-t-2xl max-h-[75dvh] px-4 bg-[#F4F3ED] dark:bg-[#171616] border-none shadow-2xl flex flex-col">
           <SheetHeader className="sr-only">
             <SheetTitle>{t("mySpace.nav.navigation")}</SheetTitle>
           </SheetHeader>
@@ -196,9 +213,9 @@ export function MobileNavBar() {
                 </Link>
               ))}
 
-              {(children as any[]).length > 0 && (
+              {children.length > 0 && (
                 <Link
-                  href={`/my-space/children/${(children as any[])[0]._id}`}
+                  href={`/my-space/children/${children[0]._id}`}
                   onClick={() => setSheetOpen(false)}
                   className={cn(
                     "flex flex-col items-center justify-center gap-1.5 p-3 text-center rounded-xl min-h-[68px] transition-colors relative",
@@ -210,7 +227,7 @@ export function MobileNavBar() {
                   <Users className={cn("size-5", pathname.startsWith("/my-space/children") ? "text-primary" : "text-muted-foreground")} />
                   <span className="text-[11px] font-medium leading-tight">Enfants</span>
                   <span className="absolute top-1.5 right-1.5 text-[9px] font-bold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full">
-                    {(children as any[]).length}
+                    {children.length}
                   </span>
                 </Link>
               )}
@@ -234,7 +251,7 @@ export function MobileNavBar() {
                   className="h-10 w-10 rounded-full bg-muted text-muted-foreground hover:bg-muted/70 transition-colors flex items-center justify-center shrink-0"
                   title={theme === "dark" ? "Mode clair" : "Mode sombre"}
                 >
-                  {theme === "dark" ? <Sun className="h-4.5 w-4.5 text-amber-500" /> : <Moon className="h-4.5 w-4.5" />}
+                  {mounted ? (theme === "dark" ? <Sun className="h-4.5 w-4.5 text-amber-500" /> : <Moon className="h-4.5 w-4.5" />) : <Moon className="h-4.5 w-4.5" />}
                 </button>
               </div>
 
@@ -261,6 +278,77 @@ export function MobileNavBar() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* ── iAsted CircleMenu Overlay ── */}
+      <AnimatePresence>
+        {circleMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-60 flex items-center justify-center backdrop-blur-xl bg-black/50 md:hidden"
+            onClick={() => setCircleMenuOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.3, opacity: 0, y: 200 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.3, opacity: 0, y: 200 }}
+              transition={{ type: "spring", damping: 22, stiffness: 260 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <CircleMenu
+                defaultOpen
+                items={[
+                  {
+                    label: "Mr Ray",
+                    icon: <Bot size={20} className="text-white" />,
+                    className: "bg-rose-500 hover:bg-rose-600",
+                    onClick: () => {
+                      setCircleMenuOpen(false)
+                      window.location.href = "/my-space/iasted"
+                    },
+                  },
+                  {
+                    label: "iChat",
+                    icon: <MessageSquare size={18} className="text-white" />,
+                    className: "bg-emerald-600 hover:bg-emerald-500",
+                    onClick: () => {
+                      setCircleMenuOpen(false)
+                      window.dispatchEvent(new CustomEvent("iasted:open", { detail: { tab: "ichat" } }))
+                    },
+                  },
+                  {
+                    label: "iAppel",
+                    icon: <Phone size={18} className="text-white" />,
+                    className: "bg-[#0072B9] hover:bg-[#0080D0]",
+                    onClick: () => {
+                      setCircleMenuOpen(false)
+                      window.dispatchEvent(new CustomEvent("iasted:open", { detail: { tab: "icall" } }))
+                    },
+                  },
+                  {
+                    label: "iContact",
+                    icon: <Contact size={18} className="text-white" />,
+                    className: "bg-amber-500 hover:bg-amber-400",
+                    onClick: () => {
+                      setCircleMenuOpen(false)
+                      window.dispatchEvent(new CustomEvent("iasted:open", { detail: { tab: "icontact" } }))
+                    },
+                  },
+                ]}
+                openIcon={<Bot size={22} className="text-white" />}
+                triggerClassName="bg-emerald-600 hover:bg-emerald-500"
+                onCloseComplete={() => setCircleMenuOpen(false)}
+                onTriggerClick={() => {
+                  setCircleMenuOpen(false)
+                  window.location.href = "/my-space/iasted"
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   )
 }

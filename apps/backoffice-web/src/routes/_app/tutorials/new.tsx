@@ -3,13 +3,14 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { TutorialCategory, TutorialType } from "@convex/lib/constants";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Upload } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { BookOpen, Upload } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -132,32 +133,21 @@ function AdminNewTutorialPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/tutorials">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {t("superadmin.tutorials.newTitle")}
-          </h1>
-          <p className="text-muted-foreground">
-            Créer un nouveau guide ou tutoriel
-          </p>
-        </div>
-      </div>
+    <div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+      <PageHeader
+        icon={<BookOpen className="h-5 w-5" />}
+        title={t("superadmin.tutorials.newTitle")}
+        subtitle="Créer un nouveau guide ou tutoriel"
+        showBackButton
+        onBack={() => navigate({ to: "/tutorials" })}
+      />
 
       <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
         {/* Main content */}
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Contenu</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <FlatCard>
+            <div className="p-3 lg:p-4 space-y-4">
+              <h2 className="text-base font-semibold">Contenu</h2>
               <div className="space-y-2">
                 <Label htmlFor="title">Titre *</Label>
                 <Input
@@ -193,17 +183,15 @@ function AdminNewTutorialPage() {
                 <Label>Contenu</Label>
                 <RichTextEditor content={content} onChange={setContent} />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </FlatCard>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Paramètres</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <FlatCard>
+            <div className="p-3 lg:p-4 space-y-4">
+              <h2 className="text-base font-semibold">Paramètres</h2>
               <div className="space-y-2">
                 <Label>Catégorie *</Label>
                 <Select value={category} onValueChange={setCategory}>
@@ -306,8 +294,8 @@ function AdminNewTutorialPage() {
                   onCheckedChange={setPublish}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </FlatCard>
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ?

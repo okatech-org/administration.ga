@@ -160,7 +160,7 @@ function IAstedFullPage() {
 			</div>
 
 			{/* Card principale — comme iBoîte */}
-			<div className="flex flex-1 min-h-0 overflow-hidden rounded-2xl border shadow-sm bg-card">
+			<div className="flex flex-1 min-h-0 overflow-hidden rounded-2xl border bg-[#FDFCFA] dark:bg-[#21201E]/77">
 			{/* ── Col 1 : Icônes navigation ── */}
 			<div className="w-14 border-r flex flex-col items-center py-3 gap-1 shrink-0">
 				{/* Logo */}

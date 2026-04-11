@@ -17,10 +17,11 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { FlatCard } from "@/components/design-system/flat-card";
+import { SectionHeader } from "@/components/design-system/section-header";
 import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 
@@ -241,8 +242,8 @@ export function ProfileDetailView({
 
 					{/* Bouton detourage photo (si photo disponible) */}
 					{identityPhotoUrl && (
-						<Card className="border-border/50">
-							<CardContent className="p-3">
+						<FlatCard>
+							<div className="p-3 lg:p-4">
 								<Button
 									onClick={handleRemoveBackground}
 									disabled={isRemovingBg}
@@ -259,8 +260,8 @@ export function ProfileDetailView({
 										</>
 									)}
 								</Button>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 
 					<ProfileActionsCard
@@ -284,20 +285,20 @@ export function ProfileDetailView({
 
 					{/* Representations diplomatiques */}
 					{representations && representations.length > 0 && (
-						<Card className="border-border/50">
-							<CardHeader className="pb-2 pt-3 px-4">
-								<CardTitle className="text-sm font-semibold flex items-center gap-2">
-									<Building2 className="h-4 w-4 text-primary" />
-									Representations diplomatiques
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="px-4 pb-4 pt-0">
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+								<SectionHeader
+									icon={<Building2 className="h-3.5 w-3.5" />}
+									iconBgClass="bg-primary/10"
+									iconTextClass="text-primary"
+									title="Representations diplomatiques"
+								/>
 								<div className="space-y-2">
 									{(representations as any[]).map(
 										(rep: { name: string; type: string; country: string; slug: string }, idx: number) => (
 											<div
 												key={rep.slug || idx}
-												className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-3 py-2"
+												className="flex items-center justify-between rounded-lg border border-border/50 bg-[#FDFCFA] dark:bg-[#21201E]/77 px-3 py-2"
 											>
 												<div className="min-w-0 flex-1">
 													<p className="text-sm font-medium truncate">
@@ -316,8 +317,8 @@ export function ProfileDetailView({
 										),
 									)}
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 
 					<ProfileRequestsCard
@@ -328,55 +329,57 @@ export function ProfileDetailView({
 
 					{/* Adresses */}
 					{(profile.addresses?.residence || profile.addresses?.homeland) && (
-						<Card className="border-border/50">
-							<CardHeader className="pb-2 pt-3 px-4">
-								<CardTitle className="text-sm font-semibold flex items-center gap-2">
-									<MapPin className="h-4 w-4 text-primary" />
-									Adresses
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="px-4 pb-4 pt-0 space-y-3">
-								{profile.addresses?.residence && (
-									<div className="rounded-lg border border-dashed bg-muted/30 p-3">
-										<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-											{t("profile.sections.addressAbroad")}
-										</p>
-										<p className="text-sm">
-											{[
-												profile.addresses.residence.street,
-												profile.addresses.residence.postalCode,
-												profile.addresses.residence.city,
-												getCountryLabel(
-													profile.addresses.residence.country,
-													t as any,
-												),
-											]
-												.filter(Boolean)
-												.join(", ")}
-										</p>
-									</div>
-								)}
-								{profile.addresses?.homeland && (
-									<div className="rounded-lg border border-dashed bg-muted/30 p-3">
-										<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-											{t("profile.sections.addressHome")}
-										</p>
-										<p className="text-sm">
-											{[
-												profile.addresses.homeland.street,
-												profile.addresses.homeland.city,
-												getCountryLabel(
-													profile.addresses.homeland.country,
-													t as any,
-												),
-											]
-												.filter(Boolean)
-												.join(", ")}
-										</p>
-									</div>
-								)}
-							</CardContent>
-						</Card>
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+								<SectionHeader
+									icon={<MapPin className="h-3.5 w-3.5" />}
+									iconBgClass="bg-primary/10"
+									iconTextClass="text-primary"
+									title="Adresses"
+								/>
+								<div className="space-y-3">
+									{profile.addresses?.residence && (
+										<div className="rounded-lg border border-dashed bg-[#FDFCFA] dark:bg-[#21201E]/77 p-3">
+											<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+												{t("profile.sections.addressAbroad")}
+											</p>
+											<p className="text-sm">
+												{[
+													profile.addresses.residence.street,
+													profile.addresses.residence.postalCode,
+													profile.addresses.residence.city,
+													getCountryLabel(
+														profile.addresses.residence.country,
+														t as any,
+													),
+												]
+													.filter(Boolean)
+													.join(", ")}
+											</p>
+										</div>
+									)}
+									{profile.addresses?.homeland && (
+										<div className="rounded-lg border border-dashed bg-[#FDFCFA] dark:bg-[#21201E]/77 p-3">
+											<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+												{t("profile.sections.addressHome")}
+											</p>
+											<p className="text-sm">
+												{[
+													profile.addresses.homeland.street,
+													profile.addresses.homeland.city,
+													getCountryLabel(
+														profile.addresses.homeland.country,
+														t as any,
+													),
+												]
+													.filter(Boolean)
+													.join(", ")}
+											</p>
+										</div>
+									)}
+								</div>
+							</div>
+						</FlatCard>
 					)}
 				</div>
 
@@ -406,72 +409,76 @@ export function ProfileDetailView({
 
 					{/* Inscriptions consulaires */}
 					{registrations.length > 0 && (
-						<Card className="border-border/50">
-							<CardHeader className="pb-2 pt-3 px-4">
-								<CardTitle className="text-sm font-semibold flex items-center gap-2">
-									<CreditCard className="h-4 w-4 text-primary" />
-									Inscriptions
-									<Badge variant="secondary" className="ml-auto text-xs">
-										{registrations.length}
-									</Badge>
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="px-4 pb-4 pt-0 space-y-2">
-								{registrations.map((reg: any) => (
-									<div
-										key={reg._id}
-										className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-3 py-2"
-									>
-										<div className="min-w-0 flex-1">
-											<p className="text-sm font-medium">
-												{
-													t(
-														`enums.registrationType.${reg.type}`,
-														reg.type,
-													) as string
-												}
-											</p>
-											<p className="text-xs text-muted-foreground">
-												{reg.cardNumber
-													? `N ${reg.cardNumber}`
-													: t("profile.registrations.pendingIssuance")}
-												{" \u00B7 "}
-												{t("profile.registrations.expiresAt")}:{" "}
-												{formatDate(reg.expiresAt)}
-											</p>
-										</div>
-										<Badge
-											variant="outline"
-											className={getRegStatusBadgeColor(reg.status)}
-										>
-											{String(
-												t(
-													`enums.registrationStatus.${reg.status}`,
-													reg.status,
-												),
-											)}
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+								<SectionHeader
+									icon={<CreditCard className="h-3.5 w-3.5" />}
+									iconBgClass="bg-primary/10"
+									iconTextClass="text-primary"
+									title="Inscriptions"
+									actions={
+										<Badge variant="secondary" className="text-xs">
+											{registrations.length}
 										</Badge>
-									</div>
-								))}
-							</CardContent>
-						</Card>
+									}
+								/>
+								<div className="space-y-2">
+									{registrations.map((reg: any) => (
+										<div
+											key={reg._id}
+											className="flex items-center justify-between rounded-lg border border-border/50 bg-[#FDFCFA] dark:bg-[#21201E]/77 px-3 py-2"
+										>
+											<div className="min-w-0 flex-1">
+												<p className="text-sm font-medium">
+													{
+														t(
+															`enums.registrationType.${reg.type}`,
+															reg.type,
+														) as string
+													}
+												</p>
+												<p className="text-xs text-muted-foreground">
+													{reg.cardNumber
+														? `N ${reg.cardNumber}`
+														: t("profile.registrations.pendingIssuance")}
+													{" \u00B7 "}
+													{t("profile.registrations.expiresAt")}:{" "}
+													{formatDate(reg.expiresAt)}
+												</p>
+											</div>
+											<Badge
+												variant="outline"
+												className={getRegStatusBadgeColor(reg.status)}
+											>
+												{String(
+													t(
+														`enums.registrationStatus.${reg.status}`,
+														reg.status,
+													),
+												)}
+											</Badge>
+										</div>
+									))}
+								</div>
+							</div>
+						</FlatCard>
 					)}
 
 					{/* Notes (contexte agent uniquement) */}
 					{context === "agent" && (
-						<Card className="border-border/50">
-							<CardHeader className="pb-2 pt-3 px-4">
-								<CardTitle className="text-sm font-semibold flex items-center gap-2">
-									<StickyNote className="h-4 w-4 text-primary" />
-									Notes internes
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="px-4 pb-4 pt-0">
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+								<SectionHeader
+									icon={<StickyNote className="h-3.5 w-3.5" />}
+									iconBgClass="bg-primary/10"
+									iconTextClass="text-primary"
+									title="Notes internes"
+								/>
 								<p className="text-sm text-muted-foreground italic">
 									Aucune note pour ce profil.
 								</p>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 				</div>
 			</div>

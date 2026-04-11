@@ -39,7 +39,7 @@ import { ProfileDetailView } from "@/components/dashboard/ProfileDetailView";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -184,14 +184,14 @@ function AgentProfileDetailPage() {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.2, delay: 0.05 }}
 				>
-					<Card className="border-primary/10 bg-card overflow-hidden">
+					<FlatCard className="border-primary/10 overflow-hidden">
 						{/* Accent bar */}
 						<div className="h-1 w-full bg-linear-to-r from-indigo-500 via-blue-500 to-cyan-500" />
 
-						<CardContent className="p-5">
+						<div className="p-5">
 							<div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
 								{/* Avatar */}
-								<Avatar className="h-16 w-16 border-2 border-border shadow-sm shrink-0">
+								<Avatar className="h-16 w-16 border-2 border-border shrink-0">
 									<AvatarFallback className="bg-indigo-500/10 text-indigo-600 text-xl font-bold">
 										{initials}
 									</AvatarFallback>
@@ -267,8 +267,8 @@ function AgentProfileDetailPage() {
 									)}
 								</div>
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</motion.div>
 
 				{/* ── Demandes en cours (rapide aperçu) ───────────────────────── */}
@@ -408,22 +408,20 @@ function AgentNotesPanel({ profileId: _profileId }: AgentNotesPanelProps) {
 			</div>
 
 			{/* Empty state */}
-			<Card className="border-dashed">
-				<CardContent className="flex flex-col items-center justify-center py-10 text-center">
+			<FlatCard className="border-dashed">
+				<div className="p-3 lg:p-4 flex flex-col items-center justify-center py-10 text-center">
 					<MessageSquare className="h-10 w-10 text-muted-foreground/30 mb-3" />
 					<p className="text-sm font-medium text-muted-foreground">Aucune note pour ce profil</p>
 					<p className="text-xs text-muted-foreground/60 mt-1 max-w-xs">
 						Ajoutez des observations, remarques ou alertes internes sur ce dossier.
 					</p>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* Add note */}
-			<Card>
-				<CardHeader className="pb-3">
-					<CardTitle className="text-sm font-medium">Ajouter une note interne</CardTitle>
-				</CardHeader>
-				<CardContent className="flex flex-col gap-3">
+			<FlatCard>
+				<div className="p-3 lg:p-4 flex flex-col gap-3">
+					<p className="text-sm font-medium">Ajouter une note interne</p>
 					<Textarea
 						value={noteContent}
 						onChange={(e) => setNoteContent(e.target.value)}
@@ -446,8 +444,8 @@ function AgentNotesPanel({ profileId: _profileId }: AgentNotesPanelProps) {
 							Enregistrer la note
 						</Button>
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 		</div>
 	);
 }

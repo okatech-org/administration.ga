@@ -33,13 +33,8 @@ import { useModuleAccess } from "@/components/shared/access-gate";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
+import { SectionHeader } from "@/components/my-space/section-header";
 import {
 	Dialog,
 	DialogContent,
@@ -306,62 +301,58 @@ function DashboardTeam() {
 
 			{/* ─── Stats ──────────────────────────────── */}
 			<div className="grid gap-3 sm:grid-cols-3">
-				<Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-					<CardContent className="p-4 flex items-center gap-3">
+				<FlatCard>
+					<div className="p-3 lg:p-4 flex items-center gap-3">
 						<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
 							<Users className="h-5 w-5 text-primary" />
 						</div>
 						<div>
 							<p className="text-2xl font-bold">{orgChart.totalPositions}</p>
-							<p className="text-xs text-muted-foreground">
+							<p className="text-xs text-muted-foreground font-medium">
 								{t("dashboard.team.stats.positions")}
 							</p>
 						</div>
-					</CardContent>
-				</Card>
-				<Card className="bg-gradient-to-br from-green-500/5 to-green-500/10 border-green-500/20">
-					<CardContent className="p-4 flex items-center gap-3">
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4 flex items-center gap-3">
 						<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/15">
 							<UserCheck className="h-5 w-5 text-green-600" />
 						</div>
 						<div>
 							<p className="text-2xl font-bold">{orgChart.filledPositions}</p>
-							<p className="text-xs text-muted-foreground">
+							<p className="text-xs text-muted-foreground font-medium">
 								{t("dashboard.team.stats.filled")}
 							</p>
 						</div>
-					</CardContent>
-				</Card>
-				<Card className="bg-gradient-to-br from-amber-500/5 to-amber-500/10 border-amber-500/20">
-					<CardContent className="p-4 flex items-center gap-3">
+					</div>
+				</FlatCard>
+				<FlatCard>
+					<div className="p-3 lg:p-4 flex items-center gap-3">
 						<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/15">
 							<CircleDot className="h-5 w-5 text-amber-600" />
 						</div>
 						<div>
 							<p className="text-2xl font-bold">{orgChart.vacantPositions}</p>
-							<p className="text-xs text-muted-foreground">
+							<p className="text-xs text-muted-foreground font-medium">
 								{t("dashboard.team.stats.vacant")}
 							</p>
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			</div>
 
 			{/* ─── Org Chart ──────────────────────────────── */}
-			<Card>
-				<CardHeader className="pb-3">
-					<CardTitle className="flex items-center gap-2 text-base">
-						<Building2 className="h-4 w-4" />
-						{t("dashboard.team.cardTitle")}
-					</CardTitle>
-					<CardDescription>
-						{t(
-							"dashboard.team.orgChartDesc",
-							"Postes et membres organisés par grade hiérarchique",
-						)}
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-4">
+			<FlatCard>
+				<div className="p-3 lg:p-4">
+				<SectionHeader icon={<Building2 className="h-4 w-4" />} title={t("dashboard.team.cardTitle")} />
+				<p className="text-xs text-muted-foreground mb-3">
+					{t(
+						"dashboard.team.orgChartDesc",
+						"Postes et membres organisés par grade hiérarchique",
+					)}
+				</p>
+				<div className="space-y-4">
 					{gradeOrder.map((gradeKey) => {
 						const grade = POSITION_GRADES[gradeKey];
 						const gradePositions = positionsByGrade[gradeKey] ?? [];
@@ -442,28 +433,33 @@ function DashboardTeam() {
 							</div>
 						);
 					})}
-				</CardContent>
-			</Card>
+				</div>
+				</div>
+			</FlatCard>
 
 			{/* ─── Unassigned Members ──────────────────────────────── */}
 			{orgChart.unassignedMembers.length > 0 && (
-				<Card className="border-amber-200 dark:border-amber-800/50">
-					<CardHeader className="pb-3">
-						<CardTitle className="flex items-center gap-2 text-base text-amber-700 dark:text-amber-400">
-							<Users className="h-4 w-4" />
-							{t("dashboard.team.unassigned.title")}
-							<Badge variant="outline" className="ml-auto text-[10px]">
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+					<SectionHeader
+						icon={<Users className="h-4 w-4 text-amber-700 dark:text-amber-400" />}
+						title={
+							<span className="text-amber-700 dark:text-amber-400">
+								{t("dashboard.team.unassigned.title")}
+							</span>
+						}
+						actions={
+							<Badge variant="outline" className="text-[10px]">
 								{orgChart.unassignedMembers.length}
 							</Badge>
-						</CardTitle>
-						<CardDescription>
-							{t(
-								"dashboard.team.unassigned.desc",
-								"Ces membres n'ont pas encore de poste assigné",
-							)}
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
+						}
+					/>
+					<p className="text-xs text-muted-foreground mb-3">
+						{t(
+							"dashboard.team.unassigned.desc",
+							"Ces membres n'ont pas encore de poste assigné",
+						)}
+					</p>
 						<div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
 							{orgChart.unassignedMembers.map((member: UnassignedMember) => (
 								<div
@@ -535,8 +531,8 @@ function DashboardTeam() {
 								</div>
 							))}
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			)}
 				</TabsContent>
 
@@ -552,17 +548,12 @@ function DashboardTeam() {
 
 				{/* ═══ Tab 3: Permissions ═══ */}
 				<TabsContent value="permissions" className="mt-4">
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2 text-base">
-								<ShieldCheck className="h-4 w-4" />
-								{t("admin.team.permissions.title", "Permissions par membre")}
-							</CardTitle>
-							<CardDescription>
-								{t("admin.team.permissions.description", "Cliquez sur un membre pour gérer ses permissions individuelles.")}
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+						<SectionHeader icon={<ShieldCheck className="h-4 w-4" />} title={t("admin.team.permissions.title", "Permissions par membre")} />
+						<p className="text-xs text-muted-foreground mb-3">
+							{t("admin.team.permissions.description", "Cliquez sur un membre pour gérer ses permissions individuelles.")}
+						</p>
 							{orgChart ? (
 								<div className="space-y-2">
 									{[...(orgChart.positions
@@ -610,8 +601,8 @@ function DashboardTeam() {
 									{t("admin.team.permissions.empty", "Aucun membre dans l'organisation.")}
 								</p>
 							)}
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</TabsContent>
 			</Tabs>
 
@@ -709,7 +700,7 @@ function PositionCard({
 			className={`rounded-xl border transition-all ${
 				isVacant
 					? "border-dashed border-muted-foreground/30 bg-muted/30 hover:border-primary/40"
-					: "border-border bg-card hover:shadow-md hover:border-primary/30"
+					: "border-border bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:border-primary/30"
 			}`}
 		>
 			{/* Position header */}

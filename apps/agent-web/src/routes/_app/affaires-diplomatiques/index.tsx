@@ -19,10 +19,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useOrg } from "@/components/org/org-provider";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 
@@ -151,13 +148,13 @@ function PipelineDashboard() {
               transition={{ duration: 0.2, delay: i * 0.05 }}
             >
               <Link to={phase.href} className="block">
-                <Card
+                <FlatCard
                   className={cn(
                     "transition-all cursor-pointer group",
                     phase.borderHover,
                   )}
                 >
-                  <CardContent className="flex items-center gap-4 py-4">
+                  <div className="p-3 lg:p-4 flex items-center gap-4">
                     <div
                       className={cn(
                         "h-12 w-12 rounded-xl flex items-center justify-center shrink-0",
@@ -187,8 +184,8 @@ function PipelineDashboard() {
                         <ArrowRight className="h-3 w-3" />
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </FlatCard>
               </Link>
             </motion.div>
           );
@@ -208,11 +205,11 @@ function StatCard({
   color: string;
 }) {
   return (
-    <Card>
-      <CardContent className="py-3 text-center">
+    <FlatCard>
+      <div className="p-3 lg:p-4 text-center">
         <p className={cn("text-2xl font-bold tabular-nums", color)}>{value}</p>
         <p className="text-[10px] text-muted-foreground">{label}</p>
-      </CardContent>
-    </Card>
+      </div>
+    </FlatCard>
   );
 }

@@ -119,7 +119,7 @@ function DevAccountSwitcherInner() {
 			<DialogTrigger asChild>
 				<button
 					type="button"
-					className="fixed bottom-4 left-4 z-9999 flex items-center gap-1.5 rounded-full bg-violet-500 px-3 py-2 text-xs font-bold text-black shadow-lg transition-all hover:bg-violet-400 hover:scale-105 active:scale-95"
+					className="fixed bottom-4 left-4 z-9999 flex items-center gap-1.5 rounded-full bg-violet-500 px-3 py-2 text-xs font-bold text-black transition-all hover:bg-violet-400 hover:scale-105 active:scale-95"
 					title="Dev Account Switcher"
 				>
 					<Bug className="size-4" />

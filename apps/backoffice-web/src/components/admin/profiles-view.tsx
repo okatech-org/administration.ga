@@ -222,7 +222,7 @@ export function ProfilesView() {
 								className={cn(
 									"p-1.5 rounded-md text-sm transition-all focus:outline-none",
 									viewMode === "table"
-										? "bg-background shadow-sm text-foreground"
+										? "bg-background text-foreground"
 										: "text-muted-foreground hover:text-foreground hover:bg-muted/80",
 								)}
 								title="Vue tableau"
@@ -235,7 +235,7 @@ export function ProfilesView() {
 								className={cn(
 									"p-1.5 rounded-md text-sm transition-all focus:outline-none",
 									viewMode === "grid"
-										? "bg-background shadow-sm text-foreground"
+										? "bg-background text-foreground"
 										: "text-muted-foreground hover:text-foreground hover:bg-muted/80",
 								)}
 								title="Vue grille"
@@ -277,7 +277,7 @@ export function ProfilesView() {
 						className={cn(
 							"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
 							activeContinent === null
-								? "bg-background text-foreground shadow-sm"
+								? "bg-background text-foreground"
 								: "text-muted-foreground hover:text-foreground hover:bg-background/50",
 						)}
 					>
@@ -302,7 +302,7 @@ export function ProfilesView() {
 							className={cn(
 								"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
 								activeContinent === continent
-									? "bg-background text-foreground shadow-sm"
+									? "bg-background text-foreground"
 									: "text-muted-foreground hover:text-foreground hover:bg-background/50",
 							)}
 						>
@@ -378,7 +378,7 @@ export function ProfilesView() {
 						<input
 							type="search"
 							placeholder="Rechercher par nom..."
-							className="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+							className="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 py-1 text-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
 						/>

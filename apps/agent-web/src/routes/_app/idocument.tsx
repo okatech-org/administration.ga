@@ -292,8 +292,8 @@ function VaultFileCard({ title, iconColor = "text-stone-600", author, authorInit
 	title: string; iconColor?: string; author?: string; authorInitials?: string; date?: string; statusBadge?: React.ReactNode; version?: number | string; contextMenu?: React.ReactNode; badges?: React.ReactNode; tags?: string[]; retentionCategory?: string; retentionColor?: string; onClick?: () => void; isSelected?: boolean; layoutId?: string;
 }) {
 	return (
-		<motion.div layoutId={layoutId} className={cn("group hover:shadow-lg transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-card rounded-xl", isSelected && "ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/5")} onClick={onClick}>
-			<div className="relative aspect-[1/1.414] bg-white/3 flex flex-col overflow-hidden">
+		<motion.div layoutId={layoutId} className={cn("group transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-[#FDFCFA] dark:bg-[#21201E]/77 rounded-xl", isSelected && "ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/5")} onClick={onClick}>
+			<div className="relative aspect-[1/1.414] bg-[#FDFCFA]/3 dark:bg-[#21201E]/3 flex flex-col overflow-hidden">
 				<div className="relative flex items-center px-2.5 pt-2 z-10 min-h-[20px]">
 					<div className="flex items-center gap-1 shrink min-w-0">{badges}</div>
 					<div className="absolute inset-x-0 flex justify-center pointer-events-none">

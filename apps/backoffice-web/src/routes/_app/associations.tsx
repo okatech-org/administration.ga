@@ -25,19 +25,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -87,21 +82,18 @@ function AssociationManagementPage() {
   const pendingClaimsCount = claims?.length ?? 0;
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">
-          {t("admin.associations.title", "Gestion des Associations")}
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          {t(
-            "admin.associations.description",
-            "Gérez les associations de la diaspora et examinez les réclamations",
-          )}
-        </p>
-      </div>
+    <div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+      <PageHeader
+        icon={<Building2 className="h-5 w-5" />}
+        title={t("admin.associations.title", "Gestion des Associations")}
+        subtitle={t(
+          "admin.associations.description",
+          "Gérez les associations de la diaspora et examinez les réclamations",
+        )}
+      />
 
       <Tabs defaultValue="associations">
-        <TabsList>
+        <TabsList className="bg-[#F4F3ED] dark:bg-[#171616]">
           <TabsTrigger value="associations" className="gap-2">
             <Building2 className="h-4 w-4" />
             {t("admin.associations.tabAssociations", "Associations")}
@@ -214,14 +206,14 @@ function AssociationsTab() {
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
+        <FlatCard>
+          <div className="p-3 lg:p-4 flex flex-col items-center justify-center py-12">
             <Building2 className="h-12 w-12 text-muted-foreground/30 mb-3" />
             <p className="text-muted-foreground">
               {t("admin.associations.empty", "Aucune association trouvée")}
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </FlatCard>
       ) : (
         <div className="rounded-xl border border-border overflow-hidden">
           <div className="overflow-x-auto">
@@ -509,14 +501,14 @@ function ClaimsTab() {
 
   if (!claims || claims.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12">
+      <FlatCard>
+        <div className="p-3 lg:p-4 flex flex-col items-center justify-center py-12">
           <Check className="h-12 w-12 text-muted-foreground/30 mb-3" />
           <p className="text-muted-foreground">
             {t("admin.claims.empty")}
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </FlatCard>
     );
   }
 
@@ -569,9 +561,9 @@ function ClaimCard({ claim }: { claim: any }) {
       : (claim.user?.name ?? claim.user?.email ?? "—");
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-4">
+    <FlatCard>
+      <div className="p-3 lg:p-4">
+        <div className="flex items-start justify-between gap-4 pb-3">
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
               {claim.user?.avatarUrl && (
@@ -582,9 +574,9 @@ function ClaimCard({ claim }: { claim: any }) {
               </AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle className="text-base">{displayName}</CardTitle>
+              <p className="text-base font-semibold">{displayName}</p>
               {claim.user?.email && (
-                <CardDescription>{claim.user.email}</CardDescription>
+                <p className="text-sm text-muted-foreground">{claim.user.email}</p>
               )}
             </div>
           </div>
@@ -593,8 +585,7 @@ function ClaimCard({ claim }: { claim: any }) {
             {new Date(claim.createdAt).toLocaleDateString("fr-FR")}
           </Badge>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
+        <div className="space-y-3">
         {/* Association info */}
         <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50">
           <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -663,7 +654,8 @@ function ClaimCard({ claim }: { claim: any }) {
             </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </FlatCard>
   );
 }

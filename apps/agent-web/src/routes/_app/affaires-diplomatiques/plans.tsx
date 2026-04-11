@@ -24,13 +24,7 @@ import {
 } from "@/integrations/convex/hooks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 
@@ -126,21 +120,19 @@ function PlansPhase() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {plans.map((plan) => (
-            <Card key={plan._id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-2">
+            <FlatCard key={plan._id}>
+              <div className="p-3 lg:p-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm">{plan.title}</CardTitle>
+                  <p className="text-sm font-medium">{plan.title}</p>
                   <Badge variant="outline" className="text-[9px]">
                     {CAT_LABEL[plan.category] ?? plan.category}
                   </Badge>
                 </div>
                 {plan.period && (
-                  <CardDescription className="text-[10px]">
+                  <p className="text-[10px] text-muted-foreground">
                     Période : {plan.period}
-                  </CardDescription>
+                  </p>
                 )}
-              </CardHeader>
-              <CardContent className="space-y-2">
                 {/* Contenu IA si disponible */}
                 {plan.aiGeneratedContent && (
                   <div className="space-y-1.5">
@@ -235,8 +227,8 @@ function PlansPhase() {
                     </Button>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </FlatCard>
           ))}
         </div>
       )}

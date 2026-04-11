@@ -13,13 +13,8 @@ import { useOrg } from "@/components/org/org-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
+import { SectionHeader } from "@/components/my-space/section-header";
 import {
 	Dialog,
 	DialogContent,
@@ -99,28 +94,26 @@ function PrintQueuePage() {
 
 			{/* Stats */}
 			<div className="grid gap-4 md:grid-cols-3">
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">En attente</CardTitle>
-						<CreditCard className="h-4 w-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent>
+				<FlatCard>
+					<div className="p-3 lg:p-4">
+						<div className="flex items-center justify-between mb-2">
+							<span className="text-sm font-medium">En attente</span>
+							<CreditCard className="h-4 w-4 text-muted-foreground" />
+						</div>
 						<div className="text-2xl font-bold">{queueCount}</div>
-						<p className="text-xs text-muted-foreground">cartes à imprimer</p>
-					</CardContent>
-				</Card>
+						<p className="text-xs text-muted-foreground font-medium">cartes à imprimer</p>
+					</div>
+				</FlatCard>
 			</div>
 
 			{/* Queue Table */}
-			<Card>
-				<CardHeader>
-					<CardTitle>Cartes en attente d'impression</CardTitle>
-					<CardDescription>
-						Marquez les cartes comme imprimées après les avoir envoyées à
-						EasyCard
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
+			<FlatCard>
+				<div className="p-3 lg:p-4">
+				<SectionHeader icon={<Printer className="h-4 w-4" />} title="Cartes en attente d'impression" />
+				<p className="text-xs text-muted-foreground mb-3">
+					Marquez les cartes comme imprimées après les avoir envoyées à
+					EasyCard
+				</p>
 					<Table>
 						<TableHeader>
 							<TableRow>
@@ -200,6 +193,7 @@ function PrintQueuePage() {
 										<TableCell className="text-right">
 											<Button
 												size="sm"
+												className="active:scale-[0.97] transition-transform"
 												onClick={() => {
 													setSelectedCard(card);
 													setShowConfirmDialog(true);
@@ -214,8 +208,8 @@ function PrintQueuePage() {
 							)}
 						</TableBody>
 					</Table>
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 
 			{/* Confirm Dialog */}
 			<Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>

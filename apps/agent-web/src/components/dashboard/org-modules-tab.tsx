@@ -16,13 +16,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Switch } from "@/components/ui/switch";
 import { useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
@@ -180,23 +174,23 @@ export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {
 				if (!modules?.length) return null;
 
 				return (
-					<Card
+					<FlatCard
 						key={category}
 						className={cn("border", CATEGORY_STYLE[category])}
 					>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm">
+						<div className="pb-3 pt-3 px-4">
+							<h4 className="text-sm font-bold">
 								{CATEGORY_LABELS[category][lang]}
-							</CardTitle>
+							</h4>
 							{category === "core" && (
-								<CardDescription className="text-xs">
+								<p className="text-xs text-muted-foreground mt-1">
 									{lang === "fr"
 										? "Ces modules sont toujours actifs et ne peuvent pas être désactivés"
 										: "These modules are always active and cannot be disabled"}
-								</CardDescription>
+								</p>
 							)}
-						</CardHeader>
-						<CardContent>
+						</div>
+						<div className="p-3 lg:p-4">
 							<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 								{modules.map((mod) => {
 									const isCore = coreModuleSet.has(mod.code);
@@ -238,8 +232,8 @@ export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {
 									);
 								})}
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				);
 			})}
 		</div>

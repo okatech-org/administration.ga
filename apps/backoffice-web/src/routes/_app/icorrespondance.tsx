@@ -21,6 +21,7 @@ import {
 	FileSpreadsheet, ImageIcon, Plus, Filter, BarChart3,
 	Settings, BookOpen, Activity, Eye, ToggleLeft, ToggleRight,
 } from "lucide-react";
+import { PageHeader } from "@/components/design-system/page-header";
 import { cn } from "@/lib/utils";
 
 type ActiveTab = "correspondance" | "types-demarches" | "dossiers" | "audit" | "statistiques";
@@ -176,15 +177,15 @@ function VaultFolderCard({ label, count, subfolderCount = 0, onClick, className,
 					<div className="flex flex-col gap-0.5 items-center justify-center pointer-events-auto scale-90 -mt-2">{badges}</div>
 				</div>
 				<div className="relative mt-1 w-full flex justify-center">
-					<DynamicFolderIcon count={count + subfolderCount} size={96} hovered={isHovered} className="drop-shadow-lg" />
+					<DynamicFolderIcon count={count + subfolderCount} size={96} hovered={isHovered} className="" />
 					<div className="absolute -top-1 right-1 flex flex-col gap-0.5 items-end z-10">
 						{subfolderCount > 0 && (
-							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="min-w-5 h-5 px-1 flex items-center justify-center gap-0.5 rounded-full bg-violet-500 text-white text-[9px] font-bold shadow-sm">
+							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="min-w-5 h-5 px-1 flex items-center justify-center gap-0.5 rounded-full bg-violet-500 text-white text-[9px] font-bold">
 								<Folder className="h-2.5 w-2.5" />{subfolderCount}
 							</motion.span>
 						)}
 						{count > 0 && (
-							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="min-w-5 h-5 px-1 flex items-center justify-center gap-0.5 rounded-full bg-blue-500 text-white text-[9px] font-bold shadow-sm">
+							<motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="min-w-5 h-5 px-1 flex items-center justify-center gap-0.5 rounded-full bg-blue-500 text-white text-[9px] font-bold">
 								<Mail className="h-2.5 w-2.5" />{count}
 							</motion.span>
 						)}
@@ -210,13 +211,13 @@ function VaultFileCard({ title, reference, iconColor = "text-stone-600", sender,
 	title: string; reference?: string; iconColor?: string; sender?: string; senderInitials?: string; date?: string; statusBadge?: React.ReactNode; typeBadge?: React.ReactNode; priorityBadge?: React.ReactNode; contextMenu?: React.ReactNode; badges?: React.ReactNode; tags?: string[]; onClick?: () => void; isSelected?: boolean;
 }) {
 	return (
-		<div className={cn("group hover:shadow-lg transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-card rounded-xl", isSelected && "ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/5")} onClick={onClick}>
+		<div className={cn("group transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-card rounded-xl", isSelected && "ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/5")} onClick={onClick}>
 			<div className="relative aspect-[1/1.414] bg-white/[0.03] flex flex-col overflow-hidden">
 				<div className="relative flex items-center px-2.5 pt-2 z-10 min-h-[20px] gap-1">
 					<div className="flex items-center gap-0.5 shrink min-w-0 flex-wrap">{badges}</div>
 				</div>
 				<div className="flex-1 flex items-center justify-center px-3 py-2">
-					<div className="relative w-14 h-[72px] bg-white shadow-sm flex flex-col items-center justify-center rounded-[2px] border border-neutral-200">
+					<div className="relative w-14 h-[72px] bg-[#FDFCFA] dark:bg-[#21201E]/77 flex flex-col items-center justify-center rounded-[2px] border border-neutral-200">
 						<div className="absolute top-0 left-0 w-full h-4 bg-neutral-50 border-b border-neutral-100" />
 						<Mail className={cn("h-7 w-7 opacity-50", iconColor)} />
 						<div className="absolute bottom-2 left-2 right-2 space-y-0.5">
@@ -255,9 +256,9 @@ function ViewModeToggle({ value, onChange }: { value: ViewMode; onChange: (v: Vi
 		{ value: "column", icon: Columns3, label: "Colonnes" },
 	];
 	return (
-		<div className="flex items-center rounded-lg border border-border/50 bg-card p-0.5 gap-0.5">
+		<div className="flex items-center rounded-lg border border-border/50 bg-[#F4F3ED] dark:bg-[#171616] p-0.5 gap-0.5">
 			{modes.map((m) => (
-				<button key={m.value} onClick={() => onChange(m.value)} className={cn("h-7 w-7 flex items-center justify-center rounded-md transition-all", value === m.value ? "bg-primary/10 text-primary shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted")} title={m.label}>
+				<button key={m.value} onClick={() => onChange(m.value)} className={cn("h-7 w-7 flex items-center justify-center rounded-md transition-all", value === m.value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted")} title={m.label}>
 					<m.icon className="h-3.5 w-3.5" />
 				</button>
 			))}
@@ -304,7 +305,7 @@ function FolderContextMenu({ itemId, itemName, itemType, onShare, onInfo, onTran
 			{open && (
 				<>
 					<div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-					<div className="absolute right-0 top-8 z-50 w-52 bg-popover border border-border rounded-lg shadow-xl py-1" onClick={(e) => e.stopPropagation()}>
+					<div className="absolute right-0 top-8 z-50 w-52 bg-popover border border-border rounded-lg py-1" onClick={(e) => e.stopPropagation()}>
 						<div className="px-3 py-1.5 text-[10px] text-muted-foreground/60">{itemType === "folder" ? "Dossier" : "Correspondance"} — Actions</div>
 						{onShare && <button onClick={() => { onShare(itemId, itemType); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors"><Share2 className="h-3.5 w-3.5 text-blue-400" />Partager</button>}
 						{onInfo && <button onClick={() => { onInfo(itemId); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors"><Info className="h-3.5 w-3.5 text-sky-400" />Informations</button>}
@@ -340,7 +341,7 @@ function ShareDialog({ open, onClose, targetName }: { open: boolean; onClose: ()
 	if (!open) return null;
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-			<div className="w-full max-w-md border border-white/5 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+			<div className="w-full max-w-md border border-white/5 bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
 				<div className="px-5 pt-5 pb-3 border-b border-border/50">
 					<div className="flex items-center gap-2 text-sm font-semibold"><Share2 className="h-4 w-4 text-blue-400" />Partager — {targetName}</div>
 				</div>
@@ -379,7 +380,7 @@ function ManageAccessDialog({ open, onClose, targetName }: { open: boolean; onCl
 	if (!open) return null;
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-			<div className="w-full max-w-md border border-amber-500/20 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+			<div className="w-full max-w-md border border-amber-500/20 bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
 				<div className="px-5 pt-5 pb-3 border-b border-border/50">
 					<div className="flex items-center gap-2 text-sm font-semibold"><KeyRound className="h-4 w-4 text-amber-400" />G\u00e9rer les acc\u00e8s du dossier (Admin)</div>
 					<p className="text-[10px] text-muted-foreground mt-1">{targetName}</p>
@@ -418,7 +419,7 @@ function TransmitDialog({ open, onClose, targetName }: { open: boolean; onClose:
 	if (!open) return null;
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-			<div className="w-full max-w-md border border-violet-500/20 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+			<div className="w-full max-w-md border border-violet-500/20 bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
 				<div className="px-5 pt-5 pb-3 border-b border-border/50">
 					<div className="flex items-center gap-2 text-sm font-semibold"><Send className="h-4 w-4 text-violet-400" />Transmettre — {targetName}</div>
 				</div>
@@ -459,7 +460,7 @@ function InfoDialog({ open, onClose, item, itemType }: { open: boolean; onClose:
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-			<div className="w-full max-w-md border border-border/50 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+			<div className="w-full max-w-md border border-border/50 bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
 				<div className="px-5 pt-5 pb-3 border-b border-border/50">
 					<div className="flex items-center gap-2 text-sm font-semibold">
 						{itemType === "folder" ? <Folder className="h-4 w-4 text-violet-400" /> : <Mail className="h-4 w-4 text-violet-400" />}
@@ -1031,40 +1032,39 @@ function ICorrespondancePage() {
 	// ═══════════════════════════════════════════════════════
 
 	return (
-		<motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-5 max-w-[1400px] mx-auto p-4">
+		<motion.div initial="hidden" animate="visible" variants={stagger} className="flex flex-1 flex-col gap-4 p-3 md:p-4 max-w-[1400px] mx-auto w-full">
 			{/* ── Header ── */}
-			<motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-				<div className="flex items-center gap-3">
-					<div className="h-11 w-11 rounded-xl bg-gradient-to-br from-violet-600 to-violet-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
-						<Mail className="h-5 w-5 text-white" />
-					</div>
-					<div>
-						<h1 className="text-2xl font-bold tracking-tight">iCorrespondance — Administration</h1>
-						<p className="text-sm text-muted-foreground">Gestion centralis\u00e9e de la correspondance diplomatique  {correspondences.length} correspondances  {dossiers.length} dossiers  {(typeDemarches as any[]).length} types</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					{activeTab === "correspondance" && (
-						<>
-							<button onClick={() => setShowNewFolderDialog(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-muted transition-colors">
-								<FolderPlus className="h-3.5 w-3.5" />Nouveau dossier
-							</button>
-							<button onClick={() => setShowNewCorrDialog(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-700 hover:to-violet-600 text-white rounded-lg transition-colors">
-								<Plus className="h-3.5 w-3.5" />Nouvelle correspondance
-							</button>
-						</>
-					)}
-					{activeTab === "types-demarches" && (
-						<button onClick={() => handleOpenTypeDemarcheForm()} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-700 hover:to-violet-600 text-white rounded-lg transition-colors">
-							<Plus className="h-3.5 w-3.5" />Nouveau type
-						</button>
-					)}
-				</div>
+			<motion.div variants={fadeUp}>
+				<PageHeader
+					icon={<Mail className="h-5 w-5" />}
+					iconBgClass="bg-violet-500/10"
+					title="iCorrespondance — Administration"
+					subtitle={`Gestion centralis\u00e9e de la correspondance diplomatique  ${correspondences.length} correspondances  ${dossiers.length} dossiers  ${(typeDemarches as any[]).length} types`}
+					actions={
+						<div className="flex items-center gap-2">
+							{activeTab === "correspondance" && (
+								<>
+									<button onClick={() => setShowNewFolderDialog(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-muted transition-colors">
+										<FolderPlus className="h-3.5 w-3.5" />Nouveau dossier
+									</button>
+									<button onClick={() => setShowNewCorrDialog(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors">
+										<Plus className="h-3.5 w-3.5" />Nouvelle correspondance
+									</button>
+								</>
+							)}
+							{activeTab === "types-demarches" && (
+								<button onClick={() => handleOpenTypeDemarcheForm()} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors">
+									<Plus className="h-3.5 w-3.5" />Nouveau type
+								</button>
+							)}
+						</div>
+					}
+				/>
 			</motion.div>
 
 			{/* ── Tab Navigation ── */}
 			<motion.div variants={fadeUp}>
-				<div className="flex items-center gap-1 border border-border/50 rounded-xl bg-card p-1">
+				<div className="flex items-center gap-1 rounded-xl bg-[#F4F3ED] dark:bg-[#171616] p-1">
 					{([
 						{ key: "correspondance" as ActiveTab, label: "Correspondance", icon: Mail },
 						{ key: "types-demarches" as ActiveTab, label: "Types de d\u00e9marches", icon: Settings },
@@ -1078,7 +1078,7 @@ function ICorrespondancePage() {
 							className={cn(
 								"flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-all flex-1 justify-center",
 								activeTab === tab.key
-									? "bg-violet-500/15 text-violet-300 shadow-sm"
+									? "bg-violet-500/15 text-violet-300"
 									: "text-muted-foreground hover:text-foreground hover:bg-muted/50",
 							)}
 						>
@@ -1100,7 +1100,7 @@ function ICorrespondancePage() {
 
 			{/* ── Toolbar ── */}
 			<motion.div variants={fadeUp}>
-				<div className="border border-border/50 rounded-xl bg-card p-3">
+				<div className="rounded-xl bg-[#F4F3ED] dark:bg-[#171616] p-3">
 					<div className="flex flex-wrap items-center gap-2">
 						<div className="relative flex-1 min-w-[200px] max-w-[360px]">
 							<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -1365,7 +1365,7 @@ function ICorrespondancePage() {
 			{/* ── New Folder Dialog ── */}
 			{showNewFolderDialog && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowNewFolderDialog(false)}>
-					<div className="w-full max-w-md border border-border/50 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+					<div className="w-full max-w-md border border-border/50 bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
 						<div className="px-5 pt-5 pb-3 border-b border-border/50">
 							<div className="flex items-center gap-2 text-sm font-semibold"><FolderPlus className="h-5 w-5 text-violet-400" />Nouveau Dossier</div>
 						</div>
@@ -1377,7 +1377,7 @@ function ICorrespondancePage() {
 						</div>
 						<div className="px-5 py-3 border-t border-border/50 flex justify-end gap-2">
 							<button onClick={() => setShowNewFolderDialog(false)} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Annuler</button>
-							<button onClick={handleCreateFolder} disabled={!newFolderName.trim() || isCreatingFolder} className="px-3 py-1.5 text-xs rounded-md bg-gradient-to-r from-violet-600 to-violet-500 text-white disabled:opacity-50 transition-colors flex items-center gap-1.5">
+							<button onClick={handleCreateFolder} disabled={!newFolderName.trim() || isCreatingFolder} className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground disabled:opacity-50 transition-colors flex items-center gap-1.5">
 								{isCreatingFolder ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}Cr\u00e9er
 							</button>
 						</div>
@@ -1388,7 +1388,7 @@ function ICorrespondancePage() {
 			{/* ── New Correspondance Dialog ── */}
 			{showNewCorrDialog && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowNewCorrDialog(false)}>
-					<div className="w-full max-w-lg border border-border/50 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+					<div className="w-full max-w-lg border border-border/50 bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
 						<div className="px-5 pt-5 pb-3 border-b border-border/50">
 							<div className="flex items-center gap-2 text-sm font-semibold"><Mail className="h-5 w-5 text-violet-400" />Nouvelle correspondance</div>
 						</div>
@@ -1438,7 +1438,7 @@ function ICorrespondancePage() {
 						</div>
 						<div className="px-5 py-3 border-t border-border/50 flex justify-end gap-2">
 							<button onClick={() => setShowNewCorrDialog(false)} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Annuler</button>
-							<button onClick={handleCreateCorrespondance} disabled={!newCorr.title.trim() || !newCorr.senderName.trim() || !newCorr.recipientName.trim() || isCreatingCorr} className="px-3 py-1.5 text-xs rounded-md bg-gradient-to-r from-violet-600 to-violet-500 text-white disabled:opacity-50 transition-colors flex items-center gap-1.5">
+							<button onClick={handleCreateCorrespondance} disabled={!newCorr.title.trim() || !newCorr.senderName.trim() || !newCorr.recipientName.trim() || isCreatingCorr} className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground disabled:opacity-50 transition-colors flex items-center gap-1.5">
 								{isCreatingCorr ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}Cr\u00e9er
 							</button>
 						</div>
@@ -1515,7 +1515,7 @@ function ICorrespondancePage() {
 					{/* TypeDemarche Form Dialog */}
 					{showTypeDemarcheForm && (
 						<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowTypeDemarcheForm(false)}>
-							<div className="w-full max-w-lg border border-border/50 shadow-2xl bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
+							<div className="w-full max-w-lg border border-border/50 bg-popover rounded-2xl" onClick={(e) => e.stopPropagation()}>
 								<div className="px-5 pt-5 pb-3 border-b border-border/50">
 									<div className="flex items-center gap-2 text-sm font-semibold">
 										<Settings className="h-5 w-5 text-violet-400" />
@@ -1552,7 +1552,7 @@ function ICorrespondancePage() {
 								</div>
 								<div className="px-5 py-3 border-t border-border/50 flex justify-end gap-2">
 									<button onClick={() => setShowTypeDemarcheForm(false)} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors">Annuler</button>
-									<button onClick={handleSubmitTypeDemarche} disabled={!typeDemarcheForm.code.trim() || !typeDemarcheForm.label.trim() || isSubmittingTypeDemarche} className="px-3 py-1.5 text-xs rounded-md bg-gradient-to-r from-violet-600 to-violet-500 text-white disabled:opacity-50 transition-colors flex items-center gap-1.5">
+									<button onClick={handleSubmitTypeDemarche} disabled={!typeDemarcheForm.code.trim() || !typeDemarcheForm.label.trim() || isSubmittingTypeDemarche} className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground disabled:opacity-50 transition-colors flex items-center gap-1.5">
 										{isSubmittingTypeDemarche ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
 										{editingTypeDemarche ? "Mettre \u00e0 jour" : "Cr\u00e9er"}
 									</button>

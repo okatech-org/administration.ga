@@ -8,8 +8,9 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
+import { FlatCard } from "@/components/design-system/flat-card";
+import { SectionHeader } from "@/components/design-system/section-header";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 // ─── Labels ───────────────────────────────────────────────────
@@ -102,17 +103,14 @@ export function ProfileDossierCard({ profile }: ProfileDossierCardProps) {
   const emergencyIsInResidence = !!contacts?.emergencyResidence;
 
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-0 pt-3 px-4">
-        <CardTitle className="text-xs font-bold flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-teal-500/10">
-            <FileBadge2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-          </div>
-          Dossier Citoyen
-        </CardTitle>
-      </CardHeader>
-
-      <CardContent className="p-3 pt-3">
+    <FlatCard>
+      <div className="p-3 lg:p-4">
+        <SectionHeader
+          icon={<FileBadge2 className="h-3.5 w-3.5" />}
+          iconBgClass="bg-teal-500/10"
+          iconTextClass="text-teal-600 dark:text-teal-400"
+          title="Dossier Citoyen"
+        />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5">
           {/* BLOC 1 : Identite */}
           <div className="space-y-2.5">
@@ -262,7 +260,7 @@ export function ProfileDossierCard({ profile }: ProfileDossierCardProps) {
             )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </FlatCard>
   );
 }

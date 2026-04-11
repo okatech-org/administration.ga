@@ -143,7 +143,7 @@ export function AccountSecurityTab({
 
 function CardHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
 	return (
-		<div className="flex items-center gap-2.5 p-4 pb-3 border-b border-foreground/5">
+		<div className="flex items-center gap-2.5 p-4 pb-3 bg-[#EBE6DC]/40 dark:bg-[#383633]/25 rounded-t-xl">
 			<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
 				{icon}
 			</div>
@@ -156,7 +156,7 @@ function CardHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
 
 function InfoRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
 	return (
-		<div className={cn("flex items-center justify-between py-2.5", !last && "border-b border-foreground/5")}>
+		<div className={cn("flex items-center justify-between py-2.5 px-3 rounded-lg", !last && "mb-1 bg-[#FDFCFA] dark:bg-[#21201E]/77")}>
 			<span className="text-xs text-muted-foreground">{label}</span>
 			<span className="text-sm font-medium truncate ml-4 max-w-[200px]">{value}</span>
 		</div>

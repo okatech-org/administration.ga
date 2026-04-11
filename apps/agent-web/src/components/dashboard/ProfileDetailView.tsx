@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
@@ -244,14 +244,14 @@ export function ProfileDetailView({
 
 					{/* Bouton detourage photo (agent-specific, si photo disponible) */}
 					{identityPhotoUrl && (
-						<Card className="border-border/50">
-							<CardContent className="p-3">
+						<FlatCard>
+							<div className="p-3 lg:p-4">
 								<Button
 									onClick={handleRemoveBackground}
 									disabled={isRemovingBg}
 									variant="secondary"
 									size="sm"
-									className="w-full"
+									className="w-full active:scale-[0.97] transition-transform"
 								>
 									{isRemovingBg ? (
 										<span className="animate-pulse">Detourage en cours...</span>
@@ -262,8 +262,8 @@ export function ProfileDetailView({
 										</>
 									)}
 								</Button>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 
 					<ProfileActionsCard
@@ -287,14 +287,14 @@ export function ProfileDetailView({
 
 					{/* Representations diplomatiques */}
 					{representations && representations.length > 0 && (
-						<Card className="border-border/50">
-							<CardHeader className="pb-2 pt-3 px-4">
-								<CardTitle className="text-sm font-semibold flex items-center gap-2">
+						<FlatCard>
+							<div className="pb-2 pt-3 px-4">
+								<div className="text-sm font-semibold flex items-center gap-2">
 									<Building2 className="h-4 w-4 text-primary" />
 									Representations diplomatiques
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="px-4 pb-4 pt-0">
+								</div>
+							</div>
+							<div className="px-4 pb-4 pt-0">
 								<div className="space-y-2">
 									{(representations as any[]).map(
 										(rep: { name: string; type: string; country: string; slug: string }, idx: number) => (
@@ -319,8 +319,8 @@ export function ProfileDetailView({
 										),
 									)}
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 
 					<ProfileRequestsCard
@@ -331,14 +331,14 @@ export function ProfileDetailView({
 
 					{/* Adresses */}
 					{(profile.addresses?.residence || profile.addresses?.homeland) && (
-						<Card className="border-border/50">
-							<CardHeader className="pb-2 pt-3 px-4">
-								<CardTitle className="text-sm font-semibold flex items-center gap-2">
+						<FlatCard>
+							<div className="pb-2 pt-3 px-4">
+								<div className="text-sm font-semibold flex items-center gap-2">
 									<MapPin className="h-4 w-4 text-primary" />
 									Adresses
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="px-4 pb-4 pt-0 space-y-3">
+								</div>
+							</div>
+							<div className="px-4 pb-4 pt-0 space-y-3">
 								{profile.addresses?.residence && (
 									<div className="rounded-lg border border-dashed bg-muted/30 p-3">
 										<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
@@ -378,8 +378,8 @@ export function ProfileDetailView({
 										</p>
 									</div>
 								)}
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 				</div>
 
@@ -409,17 +409,17 @@ export function ProfileDetailView({
 
 					{/* Inscriptions consulaires */}
 					{registrations.length > 0 && (
-						<Card className="border-border/50">
-							<CardHeader className="pb-2 pt-3 px-4">
-								<CardTitle className="text-sm font-semibold flex items-center gap-2">
+						<FlatCard>
+							<div className="pb-2 pt-3 px-4">
+								<div className="text-sm font-semibold flex items-center gap-2">
 									<CreditCard className="h-4 w-4 text-primary" />
 									Inscriptions
 									<Badge variant="secondary" className="ml-auto text-xs">
 										{registrations.length}
 									</Badge>
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="px-4 pb-4 pt-0 space-y-2">
+								</div>
+							</div>
+							<div className="px-4 pb-4 pt-0 space-y-2">
 								{registrations.map((reg: any) => (
 									<div
 										key={reg._id}
@@ -456,8 +456,8 @@ export function ProfileDetailView({
 										</Badge>
 									</div>
 								))}
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					)}
 
 					{/* Notes Agent (agent-specific) */}
@@ -499,14 +499,14 @@ function AgentNotesCard() {
 	};
 
 	return (
-		<Card className="border-border/50">
-			<CardHeader className="pb-2 pt-3 px-4">
-				<CardTitle className="text-sm font-semibold flex items-center gap-2">
+		<FlatCard>
+			<div className="pb-2 pt-3 px-4">
+				<div className="text-sm font-semibold flex items-center gap-2">
 					<StickyNote className="h-4 w-4 text-primary" />
 					Notes Agent
-				</CardTitle>
-			</CardHeader>
-			<CardContent className="px-4 pb-4 pt-0 space-y-3">
+				</div>
+			</div>
+			<div className="px-4 pb-4 pt-0 space-y-3">
 				{/* Liste des notes existantes (vide pour l'instant) */}
 				<p className="text-sm text-muted-foreground italic">
 					Aucune note pour ce profil.
@@ -526,7 +526,7 @@ function AgentNotesCard() {
 							size="sm"
 							onClick={handleSendNote}
 							disabled={isSending || !noteContent.trim()}
-							className="gap-2"
+							className="gap-2 active:scale-[0.97] transition-transform"
 						>
 							{isSending ? (
 								<Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -537,8 +537,8 @@ function AgentNotesCard() {
 						</Button>
 					</div>
 				</div>
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }
 

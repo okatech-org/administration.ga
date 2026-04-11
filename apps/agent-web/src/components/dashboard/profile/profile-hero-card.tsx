@@ -10,7 +10,7 @@ import {
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { cn } from "@/lib/utils";
 
 // ─── Constantes de labellisation ──────────────────────────────
@@ -81,8 +81,8 @@ export function ProfileHeroCard({
   })();
 
   return (
-    <Card className="overflow-hidden border-border/50">
-      <CardContent className="p-4">
+    <FlatCard className="overflow-hidden">
+      <div className="p-3 lg:p-4">
         <div className="flex items-start gap-4">
           {/* Photo + completion ring */}
           <div className="relative shrink-0">
@@ -203,7 +203,7 @@ export function ProfileHeroCard({
             </span>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </FlatCard>
   );
 }

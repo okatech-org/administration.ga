@@ -58,6 +58,7 @@ import {
 } from "@/integrations/convex/hooks";
 import { PriorityDocumentImporter } from "@/components/diplomatic/priority-document-importer";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/design-system/page-header";
 
 export const Route = createFileRoute("/_app/affaires-diplomatiques")({
   component: AffairesDiplomatiquesSettings,
@@ -173,9 +174,9 @@ function PriorityStrip({
         <button
           type="button"
           className={cn(
-            "text-left rounded-xl border bg-card transition-all group w-full",
-            "hover:shadow-md hover:border-primary/30",
-            editIndex === p._idx && "border-primary/40 shadow-md",
+            "text-left rounded-xl border bg-[#F4F3ED] dark:bg-[#171616] transition-all group w-full",
+            "hover:border-primary/30",
+            editIndex === p._idx && "border-primary/40",
             compact ? "p-3 h-[110px] flex flex-col" : "min-w-[190px] max-w-[230px] p-3",
           )}
         >
@@ -464,20 +465,16 @@ function AffairesDiplomatiquesSettings() {
   const [activeTab, setActiveTab] = useState<TabId>("global");
 
   return (
-    <div className="flex flex-1 flex-col p-3 md:p-6 min-h-full overflow-auto w-full max-w-[1400px] mx-auto">
+    <div className="flex flex-1 flex-col gap-4 p-3 md:p-4 min-h-full overflow-auto w-full max-w-[1400px] mx-auto">
       {/* En-tête */}
-      <div className="flex flex-col gap-1 mb-4 md:mb-6">
-        <h1 className="text-xl md:text-3xl font-semibold tracking-tight">
-          Affaires Diplomatiques
-        </h1>
-        <p className="text-sm md:text-base text-muted-foreground">
-          Configurez les priorités exécutives et les paramètres diplomatiques
-          pour chaque représentation.
-        </p>
-      </div>
+      <PageHeader
+        icon={<Globe2 className="h-5 w-5" />}
+        title="Affaires Diplomatiques"
+        subtitle="Configurez les priorités exécutives et les paramètres diplomatiques pour chaque représentation."
+      />
 
       {/* Onglets horizontaux */}
-      <div className="flex items-center gap-1 mb-6 border-b pb-px">
+      <div className="flex items-center gap-1 border-b pb-px">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -937,8 +934,8 @@ function OrgPriorityCard({
       type="button"
       onClick={onConfigure}
       className={cn(
-        "flex flex-col gap-2 p-3 rounded-xl border bg-card h-[108px]",
-        "hover:shadow-md hover:border-primary/30 transition-all cursor-pointer",
+        "flex flex-col gap-2 p-3 rounded-xl border bg-[#F4F3ED] dark:bg-[#171616] h-[108px]",
+        "hover:border-primary/30 transition-all cursor-pointer",
         isConfigured && "border-primary/20",
       )}
     >
@@ -1276,8 +1273,8 @@ function TargetsByRepresentationTab() {
                   <div
                     key={t._id}
                     className={cn(
-                      "flex items-start justify-between gap-2 p-3 rounded-lg border hover:shadow-sm transition-shadow",
-                      t.archivedAt ? "bg-amber-500/5 border-amber-500/20" : "bg-card",
+                      "flex items-start justify-between gap-2 p-3 rounded-lg border transition-colors",
+                      t.archivedAt ? "bg-amber-500/5 border-amber-500/20" : "bg-[#F4F3ED] dark:bg-[#171616]",
                     )}
                   >
                     <div className="min-w-0 flex-1">

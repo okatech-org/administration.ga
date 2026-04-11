@@ -30,13 +30,9 @@ import { OrgModulesTab } from "@/components/dashboard/org-modules-tab";
 import { OrgPositionsTab } from "@/components/dashboard/org-positions-tab";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
+import { SectionHeader } from "@/components/design-system/section-header";
 import { FlagIcon } from "@/components/ui/flag-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -75,12 +71,12 @@ function KpiCard({
 	loading?: boolean;
 }) {
 	return (
-		<Card className="relative overflow-hidden border-border/50">
+		<FlatCard className="relative overflow-hidden">
 			<div
 				className="absolute left-0 top-0 h-full w-1 rounded-l-xl"
 				style={{ background: accent }}
 			/>
-			<CardContent className="p-4 pl-5">
+			<div className="p-4 pl-5">
 				<div className="flex items-center justify-between">
 					<div>
 						<p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -101,8 +97,8 @@ function KpiCard({
 						<Icon className="h-5 w-5" style={{ color: accent }} />
 					</div>
 				</div>
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	)
 }
 
@@ -165,7 +161,7 @@ function OrgDetailPage() {
 	// ── Loading ─────────────────────────────────────────────────
 	if (isOrgLoading) {
 		return (
-			<div className="flex flex-1 flex-col gap-6 p-4 pt-6 md:p-6">
+			<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
 				<div className="flex items-center gap-4">
 					<Skeleton className="h-9 w-24" />
 				</div>
@@ -187,7 +183,7 @@ function OrgDetailPage() {
 
 	if (orgError || !org) {
 		return (
-			<div className="flex flex-1 flex-col items-center justify-center gap-4 p-4 pt-6">
+			<div className="flex flex-1 flex-col items-center justify-center gap-4 p-3 md:p-4">
 				<Building2 className="h-12 w-12 text-muted-foreground/30" />
 				<p className="text-muted-foreground">
 					{t("superadmin.common.error")}
@@ -210,91 +206,66 @@ function OrgDetailPage() {
 	}
 
 	return (
-		<div className="flex flex-1 flex-col gap-6 p-4 pt-6 md:p-6">
-			{/* ── Back button ──────────────────────────────────────── */}
-			<Button
-				variant="ghost"
-				size="sm"
-				className="w-fit -ml-2"
-				onClick={() => navigate({ to: "/reps" })}
-			>
-				<ArrowLeft className="mr-2 h-4 w-4" />
-				{t("superadmin.common.back")}
-			</Button>
-
+		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
 			{/* ── Header ───────────────────────────────────────────── */}
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-				<div className="flex items-start gap-4">
-					{/* Org Icon / Flag */}
-					<div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10 shrink-0">
-						{org.country ? (
-							<FlagIcon
-								countryCode={org.country as CountryCode}
-								size={40}
-								className="w-9 !h-auto rounded-sm"
-							/>
-						) : (
-							<Building2 className="h-8 w-8 text-primary" />
-						)}
-					</div>
-
-					<div>
-						<h1 className="text-2xl font-bold tracking-tight lg:text-3xl">
-							{org.name}
-						</h1>
-						<div className="flex flex-wrap items-center gap-2 mt-1.5">
-							<Badge
-								className={cn(
-									"text-xs font-medium",
-									typeStyle.bg,
-									typeStyle.color,
-								)}
-							>
-								{t(`superadmin.types.${org.type}`, org.type)}
-							</Badge>
-							<Badge
-								variant={org.isActive ? "default" : "outline"}
-								className={
-									org.isActive
-										? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/15"
-										: "text-muted-foreground"
-								}
-							>
-								{org.isActive
-									? t("superadmin.common.active")
-									: t("superadmin.common.inactive")}
-							</Badge>
-							{org.country && (
-								<span className="text-sm text-muted-foreground">
-									{t(`superadmin.countryCodes.${org.country}`, org.country)}
-								</span>
+			<PageHeader
+				icon={<Building2 className="h-5 w-5" />}
+				title={org.name}
+				subtitle={
+					<div className="flex flex-wrap items-center gap-2 mt-0.5">
+						<Badge
+							className={cn(
+								"text-xs font-medium",
+								typeStyle.bg,
+								typeStyle.color,
 							)}
-							<code className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono text-muted-foreground">
-								{org.slug}
-							</code>
-						</div>
-					</div>
-				</div>
-
-				{/* Action buttons */}
-				<div className="flex items-center gap-2 shrink-0">
-					<Button variant="outline" size="sm" asChild>
-						<a href={`/reps/${org.slug}`} target="_blank" rel="noopener noreferrer">
-							<ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-							{t("superadmin.organizations.viewPublic", "Page publique")}
-						</a>
-					</Button>
-					<Button size="sm" asChild>
-						<Link
-							to="/reps/$orgId/edit"
-							params={{ orgId }}
 						>
-							<Edit className="mr-1.5 h-3.5 w-3.5" />
-							{t("superadmin.common.edit")}
-						</Link>
-					</Button>
-				</div>
-			</div>
+							{t(`superadmin.types.${org.type}`, org.type)}
+						</Badge>
+						<Badge
+							variant={org.isActive ? "default" : "outline"}
+							className={
+								org.isActive
+									? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/15"
+									: "text-muted-foreground"
+							}
+						>
+							{org.isActive
+								? t("superadmin.common.active")
+								: t("superadmin.common.inactive")}
+						</Badge>
+						{org.country && (
+							<span className="text-sm text-muted-foreground">
+								{t(`superadmin.countryCodes.${org.country}`, org.country)}
+							</span>
+						)}
+						<code className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono text-muted-foreground">
+							{org.slug}
+						</code>
+					</div>
+				}
+				showBackButton
+				onBack={() => navigate({ to: "/reps" })}
+				actions={
+					<div className="flex items-center gap-2 shrink-0">
+						<Button variant="outline" size="sm" asChild>
+							<a href={`/reps/${org.slug}`} target="_blank" rel="noopener noreferrer">
+								<ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+								{t("superadmin.organizations.viewPublic", "Page publique")}
+							</a>
+						</Button>
+						<Button size="sm" asChild>
+							<Link
+								to="/reps/$orgId/edit"
+								params={{ orgId }}
+							>
+								<Edit className="mr-1.5 h-3.5 w-3.5" />
+								{t("superadmin.common.edit")}
+							</Link>
+						</Button>
+					</div>
+				}
+			/>
 
 			{/* ── KPI Cards ────────────────────────────────────────── */}
 			<div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
@@ -332,7 +303,7 @@ function OrgDetailPage() {
 			{/* ── Tabs ─────────────────────────────────────────────── */}
 			<Tabs defaultValue="overview" className="space-y-4">
 				<div className="overflow-x-auto overflow-y-hidden scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-					<TabsList className="h-auto justify-start w-max gap-1">
+					<TabsList className="h-auto justify-start w-max gap-1 bg-[#F4F3ED] dark:bg-[#171616]">
 						<TabsTrigger value="overview" className="gap-1.5 text-xs sm:text-sm">
 							<Building2 className="h-4 w-4" />
 							{t("superadmin.organizations.tabs.overview")}
@@ -387,94 +358,93 @@ function OrgDetailPage() {
 				<TabsContent value="overview" className="space-y-4">
 					<div className="grid gap-4 md:grid-cols-2">
 						{/* Address */}
-						<Card>
-							<CardHeader className="pb-3">
-								<CardTitle className="flex items-center gap-2 text-sm">
-									<MapPin className="h-4 w-4 text-muted-foreground" />
-									{t("superadmin.organizations.form.address")}
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-1 text-sm">
-								<p>{org.address?.street}</p>
-								<p>
-									{org.address?.city}
-									{org.address?.postalCode &&
-										", ${org.address.postalCode}"}
-								</p>
-								<p className="font-medium">
-									{org.address?.country &&
-										t(
-											`superadmin.countryCodes.${org.address.country}`,
-											org.address.country,
-										)}
-								</p>
-							</CardContent>
-						</Card>
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+								<SectionHeader
+									icon={<MapPin className="h-4 w-4" />}
+									title={t("superadmin.organizations.form.address")}
+								/>
+								<div className="space-y-1 text-sm">
+									<p>{org.address?.street}</p>
+									<p>
+										{org.address?.city}
+										{org.address?.postalCode &&
+											", ${org.address.postalCode}"}
+									</p>
+									<p className="font-medium">
+										{org.address?.country &&
+											t(
+												`superadmin.countryCodes.${org.address.country}`,
+												org.address.country,
+											)}
+									</p>
+								</div>
+							</div>
+						</FlatCard>
 
 						{/* Contact */}
-						<Card>
-							<CardHeader className="pb-3">
-								<CardTitle className="flex items-center gap-2 text-sm">
-									<Mail className="h-4 w-4 text-muted-foreground" />
-									{t("superadmin.organizations.form.contact")}
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-2.5 text-sm">
-								{org.email && (
-									<div className="flex items-center gap-2">
-										<Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-										<a
-											href={"mailto:${org.email}"}
-											className="text-primary hover:underline truncate"
-										>
-											{org.email}
-										</a>
-									</div>
-								)}
-								{org.phone && (
-									<div className="flex items-center gap-2">
-										<Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-										<a
-											href={"tel:${org.phone}"}
-											className="text-primary hover:underline"
-										>
-											{org.phone}
-										</a>
-									</div>
-								)}
-								{org.website && (
-									<div className="flex items-center gap-2">
-										<Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-										<a
-											href={org.website}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="text-primary hover:underline truncate"
-										>
-											{org.website}
-										</a>
-									</div>
-								)}
-								{!org.email && !org.phone && !org.website && (
-									<p className="text-muted-foreground italic">
-										{t("superadmin.common.noData")}
-									</p>
-								)}
-							</CardContent>
-						</Card>
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+								<SectionHeader
+									icon={<Mail className="h-4 w-4" />}
+									title={t("superadmin.organizations.form.contact")}
+								/>
+								<div className="space-y-2.5 text-sm">
+									{org.email && (
+										<div className="flex items-center gap-2">
+											<Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+											<a
+												href={"mailto:${org.email}"}
+												className="text-primary hover:underline truncate"
+											>
+												{org.email}
+											</a>
+										</div>
+									)}
+									{org.phone && (
+										<div className="flex items-center gap-2">
+											<Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+											<a
+												href={"tel:${org.phone}"}
+												className="text-primary hover:underline"
+											>
+												{org.phone}
+											</a>
+										</div>
+									)}
+									{org.website && (
+										<div className="flex items-center gap-2">
+											<Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+											<a
+												href={org.website}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="text-primary hover:underline truncate"
+											>
+												{org.website}
+											</a>
+										</div>
+									)}
+									{!org.email && !org.phone && !org.website && (
+										<p className="text-muted-foreground italic">
+											{t("superadmin.common.noData")}
+										</p>
+									)}
+								</div>
+							</div>
+						</FlatCard>
 					</div>
 
 					{/* Details */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm">
-								{t("superadmin.organizations.details")}
-							</CardTitle>
-							<CardDescription className="text-xs">
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<SectionHeader
+								icon={<Building2 className="h-4 w-4" />}
+								title={t("superadmin.organizations.details")}
+							/>
+							<p className="text-xs text-muted-foreground mb-3">
 								{t("superadmin.organizations.detailsDesc")}
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
+							</p>
 							<dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
 								<div>
 									<dt className="text-xs font-medium text-muted-foreground">
@@ -528,22 +498,20 @@ function OrgDetailPage() {
 									</dd>
 								</div>
 							</dl>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
 					{/* Jurisdiction Countries */}
 					{(org.jurisdictionCountries as string[] | undefined)?.length ? (
-						<Card>
-							<CardHeader className="pb-3">
-								<CardTitle className="flex items-center gap-2 text-sm">
-									<Globe className="h-4 w-4 text-muted-foreground" />
-									{t(
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+								<SectionHeader
+									icon={<Globe className="h-4 w-4" />}
+									title={t(
 										"superadmin.organizations.form.jurisdictionCountries",
 										"Pays de juridiction",
 									)}
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
+								/>
 								<div className="flex flex-wrap gap-2">
 									{(org.jurisdictionCountries as string[]).map((code) => (
 										<div
@@ -559,8 +527,8 @@ function OrgDetailPage() {
 										</div>
 									))}
 								</div>
-							</CardContent>
-						</Card>
+							</div>
+						</FlatCard>
 					) : null}
 				</TabsContent>
 
@@ -581,22 +549,18 @@ function OrgDetailPage() {
 
 				{/* ─── Tab: Requests ──────────────────────────────── */}
 				<TabsContent value="requests" className="space-y-4">
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between pb-3">
-							<div>
-								<CardTitle className="flex items-center gap-2 text-sm">
-									<ClipboardList className="h-4 w-4 text-muted-foreground" />
-									{t("superadmin.organizations.tabs.requests", "Demandes")}
-								</CardTitle>
-								<CardDescription className="text-xs">
-									{t(
-										"superadmin.organizations.requestsDesc",
-										"Dernières demandes de services pour cet organisme",
-									)}
-								</CardDescription>
-							</div>
-						</CardHeader>
-						<CardContent>
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<SectionHeader
+								icon={<ClipboardList className="h-4 w-4" />}
+								title={t("superadmin.organizations.tabs.requests", "Demandes")}
+							/>
+							<p className="text-xs text-muted-foreground mb-3">
+								{t(
+									"superadmin.organizations.requestsDesc",
+									"Dernières demandes de services pour cet organisme",
+								)}
+							</p>
 							{isRequestsLoading && requests.length === 0 ? (
 								<div className="space-y-2">
 									{[1, 2, 3].map((i) => (
@@ -673,8 +637,8 @@ function OrgDetailPage() {
 									</p>
 								</div>
 							)}
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</TabsContent>
 
 				{/* ─── Tab: Registry ──────────────────────────────── */}
@@ -715,8 +679,8 @@ function OrgDetailPage() {
 						/>
 					</div>
 
-					<Card>
-						<CardContent className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+					<FlatCard>
+						<div className="flex flex-col items-center justify-center py-8 text-muted-foreground p-3 lg:p-4">
 							<IdCard className="h-10 w-10 mb-3 opacity-30" />
 							<p className="text-sm">
 								{t(
@@ -734,8 +698,8 @@ function OrgDetailPage() {
 									{t("superadmin.organizations.openRegistry", "Ouvrir le registre")}
 								</Link>
 							</Button>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</TabsContent>
 
 				{/* ─── Tab: Modules ───────────────────────────────── */}
@@ -748,23 +712,21 @@ function OrgDetailPage() {
 
 				{/* ─── Tab: Settings ──────────────────────────────── */}
 				<TabsContent value="settings" className="space-y-4">
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="flex items-center gap-2 text-sm">
-								<Settings2 className="h-4 w-4 text-muted-foreground" />
-								{t(
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<SectionHeader
+								icon={<Settings2 className="h-4 w-4" />}
+								title={t(
 									"superadmin.organizations.tabs.settings",
 									"Paramètres",
 								)}
-							</CardTitle>
-							<CardDescription className="text-xs">
+							/>
+							<p className="text-xs text-muted-foreground mb-3">
 								{t(
 									"superadmin.organizations.settingsDesc",
 									"Configuration et paramètres de l'organisme",
 								)}
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
+							</p>
 							{org.settings ? (
 								<dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									{Object.entries(
@@ -798,12 +760,12 @@ function OrgDetailPage() {
 									{t("superadmin.common.noData")}
 								</p>
 							)}
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 
 					{/* Quick info */}
-					<Card>
-						<CardContent className="p-4">
+					<FlatCard>
+						<div className="p-3 lg:p-4">
 							<dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
 								<div>
 									<dt className="text-xs text-muted-foreground">
@@ -844,8 +806,8 @@ function OrgDetailPage() {
 									<dd className="font-mono text-xs">{org.slug}</dd>
 								</div>
 							</dl>
-						</CardContent>
-					</Card>
+						</div>
+					</FlatCard>
 				</TabsContent>
 			</Tabs>
 		</div>

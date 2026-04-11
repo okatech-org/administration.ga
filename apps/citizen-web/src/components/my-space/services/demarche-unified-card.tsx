@@ -94,7 +94,7 @@ export function DemarcheUnifiedCard({ demarche }: DemarcheUnifiedCardProps) {
 
 	return (
 		<button type="button" onClick={handleClick} className="group block w-full text-left">
-			<FlatCard className="p-3.5 hover:shadow-sm transition-all">
+			<FlatCard className="p-3.5 transition-all active:scale-[0.97]">
 				<div className="flex items-start gap-3">
 					{/* Icone statut */}
 					<div

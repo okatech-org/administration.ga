@@ -431,11 +431,11 @@ function ProfileCard({ profile, index, searchTerm, onOpen }: ProfileCardProps) {
 			transition={{ duration: 0.15, delay: index * 0.02 }}
 			type="button"
 			onClick={onOpen}
-			className="flex flex-col gap-3 p-4 rounded-xl border border-border/50 bg-card hover:bg-muted/40 hover:border-primary/30 hover:shadow-md transition-all text-left cursor-pointer group w-full"
+			className="flex flex-col gap-3 p-4 rounded-xl border border-border/50 bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-muted/40 hover:border-primary/30 transition-all text-left cursor-pointer group w-full"
 		>
 			{/* ── Top row: avatar + name + badges ── */}
 			<div className="flex items-start gap-3">
-				<Avatar className="h-12 w-12 border shadow-sm shrink-0">
+				<Avatar className="h-12 w-12 border shrink-0">
 					{profile.photoUrl || profile.avatarUrl ? (
 						<img
 							src={profile.photoUrl || profile.avatarUrl}

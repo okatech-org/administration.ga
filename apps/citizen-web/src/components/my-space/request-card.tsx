@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { getLocalizedValue } from "@/lib/i18n-utils";
 import { REQUEST_STATUS_CONFIG } from "@/lib/request-status-config";
 
@@ -86,8 +86,8 @@ export function RequestCard({ request }: RequestCardProps) {
 			href={`/my-space/requests/${request.reference || request._id}`}
 			className="block group h-full"
 		>
-			<Card className="h-full flex flex-col hover:border-primary/50 hover:shadow-md transition-all cursor-pointer">
-				<CardHeader className="pb-3">
+			<FlatCard className="h-full flex flex-col transition-all cursor-pointer active:scale-[0.97]">
+				<div className="p-3 lg:p-4 pb-3">
 					<div className="flex flex-col items-start justify-between">
 						{getStatusBadge(request.status)}
 						<h3 className="font-semibold mt-2 truncate group-hover:text-primary transition-colors">
@@ -103,8 +103,8 @@ export function RequestCard({ request }: RequestCardProps) {
 							{request.org?.name || t("requests.unknownOrg")}
 						</p>
 					</div>
-				</CardHeader>
-				<CardContent className="pt-0 flex-1 flex flex-col justify-end">
+				</div>
+				<div className="px-3 lg:px-4 pb-3 lg:pb-4 flex-1 flex flex-col justify-end">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-4 text-sm text-muted-foreground">
 							<span className="flex items-center gap-1">
@@ -182,8 +182,8 @@ export function RequestCard({ request }: RequestCardProps) {
 							</AlertDialog>
 						</div>
 					)}
-				</CardContent>
-			</Card>
+				</div>
+			</FlatCard>
 		</Link>
 	);
 }

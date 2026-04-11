@@ -1,6 +1,7 @@
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { SectionHeader } from "@/components/design-system/section-header";
 import {
   Activity,
   Brain,
@@ -30,20 +31,18 @@ export function NeocortexMonitoringWidget() {
       {/* KPI Cards Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Santé */}
-        <Card
+        <FlatCard
           className={
             data.sante.status === "DEGRADED"
-              ? "border-red-500"
-              : "border-green-500"
+              ? "border border-red-500"
+              : "border border-green-500"
           }
         >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center justify-between">
+          <div className="p-3 lg:p-4">
+            <div className="text-sm font-medium flex items-center justify-between mb-2">
               Etat global
               <Shield className="w-4 h-4 text-muted-foreground" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </div>
             <div
               className={`text-2xl font-bold ${data.sante.status === "DEGRADED" ? "text-red-500" : "text-green-500"}`}
             >
@@ -52,18 +51,16 @@ export function NeocortexMonitoringWidget() {
             <p className="text-xs text-muted-foreground mt-1">
               File d'attente: {data.sante.queueCount} signaux
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </FlatCard>
 
         {/* Volume 24h */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center justify-between">
+        <FlatCard>
+          <div className="p-3 lg:p-4">
+            <div className="text-sm font-medium flex items-center justify-between mb-2">
               Activite 24h
               <TrendingUp className="w-4 h-4 text-muted-foreground" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </div>
             <div className="text-2xl font-bold">
               {data.totalSignaux24h ?? 0}
             </div>
@@ -71,57 +68,53 @@ export function NeocortexMonitoringWidget() {
               signaux emis |{" "}
               {data.totalActions24h ?? 0} actions tracees
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </FlatCard>
 
         {/* Hippocampe */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center justify-between">
+        <FlatCard>
+          <div className="p-3 lg:p-4">
+            <div className="text-sm font-medium flex items-center justify-between mb-2">
               Hippocampe (Memoire)
               <History className="w-4 h-4 text-muted-foreground" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </div>
             <div className="text-2xl font-bold">
               {data.actionsRecentes.length} recentes
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Derniere: {data.actionsRecentes[0]?.action ?? "Aucune"}
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </FlatCard>
 
-        {/* Plasticité */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center justify-between">
+        {/* Plasticite */}
+        <FlatCard>
+          <div className="p-3 lg:p-4">
+            <div className="text-sm font-medium flex items-center justify-between mb-2">
               Plasticite (Apprentissage)
               <Waves className="w-4 h-4 text-muted-foreground" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </div>
             <div className="text-2xl font-bold">
               {data.poidsAdaptatifs.length} poids
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Taux lissage: 0.15 (alpha)
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </FlatCard>
       </div>
 
       {/* Detail Rows */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Top Signal Types (24h) */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Zap className="w-4 h-4 text-yellow-500" />
-              Top signaux (24h)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <FlatCard>
+          <div className="p-3 lg:p-4">
+            <SectionHeader
+              icon={<Zap className="h-3.5 w-3.5" />}
+              iconBgClass="bg-yellow-500/10"
+              iconTextClass="text-yellow-500"
+              title="Top signaux (24h)"
+            />
             {data.topSignalTypes && data.topSignalTypes.length > 0 ? (
               <div className="space-y-2">
                 {data.topSignalTypes.map(
@@ -145,18 +138,18 @@ export function NeocortexMonitoringWidget() {
                 Aucun signal dans les dernieres 24h
               </p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </FlatCard>
 
-        {/* Actions par catégorie */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-blue-500" />
-              Actions par categorie (24h)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* Actions par categorie */}
+        <FlatCard>
+          <div className="p-3 lg:p-4">
+            <SectionHeader
+              icon={<BarChart3 className="h-3.5 w-3.5" />}
+              iconBgClass="bg-blue-500/10"
+              iconTextClass="text-blue-500"
+              title="Actions par categorie (24h)"
+            />
             {data.actionCounts &&
             Object.keys(data.actionCounts).length > 0 ? (
               <div className="space-y-2">
@@ -190,20 +183,20 @@ export function NeocortexMonitoringWidget() {
                 Aucune action tracee dans les dernieres 24h
               </p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </FlatCard>
       </div>
 
       {/* Recent Actions Log */}
       {data.actionsRecentes.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Activity className="w-4 h-4 text-purple-500" />
-              Dernieres actions (Hippocampe)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <FlatCard>
+          <div className="p-3 lg:p-4">
+            <SectionHeader
+              icon={<Activity className="h-3.5 w-3.5" />}
+              iconBgClass="bg-purple-500/10"
+              iconTextClass="text-purple-500"
+              title="Dernieres actions (Hippocampe)"
+            />
             <div className="space-y-1 max-h-[200px] overflow-y-auto">
               {data.actionsRecentes.slice(0, 10).map((action: { _id: string; action: string; categorie: string; entiteType: string }) => (
                 <div
@@ -230,8 +223,8 @@ export function NeocortexMonitoringWidget() {
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </FlatCard>
       )}
     </div>
   );

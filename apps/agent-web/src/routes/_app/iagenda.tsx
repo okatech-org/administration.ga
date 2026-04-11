@@ -33,7 +33,7 @@ import { useOrg } from "@/components/org/org-provider";
 import { useModuleAccess } from "@/components/shared/access-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
@@ -215,12 +215,12 @@ function IAgendaPage() {
 									<Calendar className="h-3.5 w-3.5" /> Événements à venir
 								</h3>
 								{upcomingEvents.length === 0 ? (
-									<Card>
-										<CardContent className="flex flex-col items-center justify-center py-12 text-center">
+									<FlatCard>
+										<div className="flex flex-col items-center justify-center py-12 text-center p-3 lg:p-4">
 											<Calendar className="h-10 w-10 text-muted-foreground/30 mb-3" />
 											<p className="text-sm text-muted-foreground">Aucun événement planifié</p>
-										</CardContent>
-									</Card>
+										</div>
+									</FlatCard>
 								) : (
 									<ScrollArea className="h-[calc(100vh-340px)]">
 										<div className="space-y-2 pr-2">
@@ -235,8 +235,8 @@ function IAgendaPage() {
 							{/* Sidebar : Mini calendrier + Stats */}
 							<div className="space-y-4">
 								{/* Mini calendrier */}
-								<Card>
-									<CardContent className="p-4 space-y-4">
+								<FlatCard>
+									<div className="p-3 lg:p-4 space-y-4">
 										<div className="flex items-center justify-between">
 											<Button size="icon" variant="ghost" className="h-8 w-8"
 												onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
@@ -279,12 +279,12 @@ function IAgendaPage() {
 												);
 											})}
 										</div>
-									</CardContent>
-								</Card>
+									</div>
+								</FlatCard>
 
 								{/* Légende des statuts */}
-								<Card>
-									<CardContent className="p-4">
+								<FlatCard>
+									<div className="p-3 lg:p-4">
 										<h4 className="text-xs font-semibold text-muted-foreground mb-2">Statuts</h4>
 										<div className="space-y-1">
 											{Object.entries(STATUS_CONFIG).slice(0, 5).map(([key, { label, dotColor }]) => (
@@ -294,12 +294,12 @@ function IAgendaPage() {
 												</div>
 											))}
 										</div>
-									</CardContent>
-								</Card>
+									</div>
+								</FlatCard>
 
 								{/* Résumé */}
-								<Card>
-									<CardContent className="p-4">
+								<FlatCard>
+									<div className="p-3 lg:p-4">
 										<h4 className="text-xs font-semibold text-muted-foreground mb-2">Résumé</h4>
 										<div className="space-y-1.5 text-sm">
 											<div className="flex justify-between">
@@ -315,8 +315,8 @@ function IAgendaPage() {
 												<span className="font-semibold">{allEvents.length}</span>
 											</div>
 										</div>
-									</CardContent>
-								</Card>
+									</div>
+								</FlatCard>
 							</div>
 						</div>
 					)}
@@ -371,8 +371,8 @@ function EventCard({ event }: { event: AgendaEvent }) {
 	const typeStyle = EVENT_TYPE_STYLE[event.type] ?? EVENT_TYPE_STYLE.diplomacy;
 
 	return (
-		<Card className="hover:border-primary/20 transition-colors">
-			<CardContent className="p-3">
+		<FlatCard className="transition-colors">
+			<div className="p-3 lg:p-4">
 				<div className="flex items-start gap-3">
 					{/* Date block */}
 					<div className="shrink-0 text-center bg-primary/10 rounded-lg p-2 min-w-[52px]">
@@ -424,7 +424,7 @@ function EventCard({ event }: { event: AgendaEvent }) {
 						</div>
 					</div>
 				</div>
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }

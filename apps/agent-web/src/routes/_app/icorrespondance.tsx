@@ -222,8 +222,8 @@ function VaultFileCard({ title, reference, iconColor = "text-stone-600", sender,
 	title: string; reference?: string; iconColor?: string; sender?: string; senderInitials?: string; date?: string; statusBadge?: React.ReactNode; typeBadge?: React.ReactNode; priorityBadge?: React.ReactNode; contextMenu?: React.ReactNode; badges?: React.ReactNode; tags?: string[]; onClick?: () => void; isSelected?: boolean;
 }) {
 	return (
-		<div className={cn("group hover:shadow-lg transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-card rounded-xl", isSelected && "ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/5")} onClick={onClick}>
-			<div className="relative aspect-[1/1.414] bg-white/3 flex flex-col overflow-hidden">
+		<div className={cn("group transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-[#FDFCFA] dark:bg-[#21201E]/77 rounded-xl", isSelected && "ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/5")} onClick={onClick}>
+			<div className="relative aspect-[1/1.414] bg-[#FDFCFA]/3 dark:bg-[#21201E]/3 flex flex-col overflow-hidden">
 				<div className="relative flex items-center px-2.5 pt-2 z-10 min-h-[20px] gap-1">
 					<div className="flex items-center gap-0.5 shrink min-w-0 flex-wrap">{badges}</div>
 				</div>

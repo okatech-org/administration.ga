@@ -7,7 +7,9 @@ import { api } from "@convex/_generated/api";
 import { DataTable } from "@/components/ui/data-table";
 import { postsColumns } from "@/components/admin/posts-columns";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { FileText, Plus } from "lucide-react";
+import { FlatCard } from "@/components/design-system/flat-card";
+import { PageHeader } from "@/components/design-system/page-header";
 
 export const Route = createFileRoute("/_app/posts/")({
   component: AdminPostsPage,
@@ -51,7 +53,7 @@ function AdminPostsPage() {
 
   if (error) {
     return (
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-6">
+      <div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
         <div className="text-destructive">
           {t("superadmin.common.error")}
         </div>
@@ -60,38 +62,39 @@ function AdminPostsPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {t("admin.posts.title")}
-          </h1>
-          <p className="text-muted-foreground">
-            {t(
-              "admin.posts.description",
-              "Gérez toutes les actualités, événements et communiqués.",
-            )}
-          </p>
-        </div>
-        <Button asChild>
-          <Link to="/posts/new">
-            <Plus className="mr-2 h-4 w-4" />
-            {t("admin.posts.create")}
-          </Link>
-        </Button>
-      </div>
-
-      <DataTable
-        columns={postsColumns}
-        data={posts ?? []}
-        searchKey="title"
-        searchPlaceholder={t(
-          "admin.posts.searchPlaceholder",
-          "Rechercher un article...",
+    <div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+      <PageHeader
+        icon={<FileText className="h-5 w-5" />}
+        title={t("admin.posts.title")}
+        subtitle={t(
+          "admin.posts.description",
+          "Gérez toutes les actualités, événements et communiqués.",
         )}
-        filterableColumns={filterableColumns}
-        isLoading={isPending}
+        actions={
+          <Button asChild>
+            <Link to="/posts/new">
+              <Plus className="mr-2 h-4 w-4" />
+              {t("admin.posts.create")}
+            </Link>
+          </Button>
+        }
       />
+
+      <FlatCard>
+        <div className="p-3 lg:p-4">
+          <DataTable
+            columns={postsColumns}
+            data={posts ?? []}
+            searchKey="title"
+            searchPlaceholder={t(
+              "admin.posts.searchPlaceholder",
+              "Rechercher un article...",
+            )}
+            filterableColumns={filterableColumns}
+            isLoading={isPending}
+          />
+        </div>
+      </FlatCard>
 
       {paginationStatus === "CanLoadMore" && (
         <div className="flex justify-center pt-4">

@@ -22,13 +22,7 @@ import {
 	type DynamicSlotSelection,
 } from "@/components/appointments/AppointmentSlotPicker";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -144,17 +138,17 @@ function BookAppointmentPageContent() {
 
 			{/* Confirmation */}
 			{selectedSlot && (
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
+				<FlatCard>
+					<div className="p-3 lg:p-4 pb-0">
+						<h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight">
 							<Check className="h-5 w-5" />
 							{t("appointments.book.confirm")}
-						</CardTitle>
-						<CardDescription>
+						</h3>
+						<p className="text-sm text-muted-foreground mt-1.5">
 							{t("appointments.book.confirmDesc")}
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-6">
+						</p>
+					</div>
+					<div className="p-3 lg:p-4 space-y-6">
 						{/* Summary */}
 						<div className="bg-muted/50 p-4 rounded-lg space-y-3">
 							<div className="flex items-center gap-3">
@@ -224,8 +218,8 @@ function BookAppointmentPageContent() {
 								)}
 							</Button>
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</FlatCard>
 			)}
 		</div>
 	);

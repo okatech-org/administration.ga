@@ -111,7 +111,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 							)}
 						>
 							{/* Front */}
-							<div className="absolute inset-0 w-full h-full backface-hidden rounded-xl overflow-hidden shadow-sm border flat-card-border">
+							<div className="absolute inset-0 w-full h-full backface-hidden rounded-xl overflow-hidden flat-card-border">
 								{CARD_RECTO_URL ? (
 									<img
 										src={CARD_RECTO_URL}
@@ -182,7 +182,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 							<div
 								className={cn(
 									"absolute inset-0 w-full h-full backface-hidden transform-[rotateY(180deg)]",
-									"rounded-xl overflow-hidden shadow-sm border flat-card-border",
+									"rounded-xl overflow-hidden flat-card-border",
 								)}
 							>
 								{CARD_VERSO_URL ? (
@@ -196,7 +196,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 									<div className="absolute inset-0 w-full h-full bg-gradient-to-br from-amber-50 via-emerald-50 to-emerald-100" />
 								)}
 								<div className="absolute inset-0 p-4 flex flex-col justify-center items-center">
-									<div className="bg-white/95 rounded-lg p-3 text-center max-w-[80%] shadow-sm">
+									<div className="bg-white/95 rounded-lg p-3 text-center max-w-[80%]">
 										<p className="text-[10px] text-gray-700 font-medium mb-2 leading-tight">
 											Cette carte est la propriété du Consulat Général du Gabon
 										</p>

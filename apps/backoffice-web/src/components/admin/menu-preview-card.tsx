@@ -17,7 +17,7 @@ import {
 	X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FlatCard } from "@/components/design-system/flat-card";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 
@@ -108,13 +108,13 @@ export function MenuPreviewCard({ userId, orgId, userName, compact = false }: Me
 	}
 
 	return (
-		<Card>
-			<CardHeader className="pb-2">
-				<CardTitle className="text-sm flex items-center gap-2">
+		<FlatCard>
+			<div className="p-3 lg:p-4 pb-2">
+				<p className="text-sm font-semibold flex items-center gap-2">
 					Menu résultant
 					{userName && <span className="text-muted-foreground font-normal">— {userName}</span>}
-				</CardTitle>
-				<div className="flex items-center gap-2">
+				</p>
+				<div className="flex items-center gap-2 mt-1">
 					<Badge variant="secondary" className="text-[10px]">
 						{visibleCount}/{totalCount} volets visibles
 					</Badge>
@@ -124,8 +124,8 @@ export function MenuPreviewCard({ userId, orgId, userName, compact = false }: Me
 						</Badge>
 					)}
 				</div>
-			</CardHeader>
-			<CardContent className="space-y-3">
+			</div>
+			<div className="p-3 lg:p-4 pt-0 space-y-3">
 				{[...sections.entries()].map(([section, modules]) => (
 					<div key={section}>
 						<p className="text-[10px] font-semibold uppercase text-muted-foreground mb-1">{section}</p>
@@ -161,7 +161,7 @@ export function MenuPreviewCard({ userId, orgId, userName, compact = false }: Me
 						</div>
 					</div>
 				))}
-			</CardContent>
-		</Card>
+			</div>
+		</FlatCard>
 	);
 }
