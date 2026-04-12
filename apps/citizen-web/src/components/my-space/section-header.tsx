@@ -32,7 +32,7 @@ export function SectionHeader({
 		<div className={cn("flex items-center justify-between mb-2", className)}>
 			<span className="text-sm font-bold flex items-center gap-2">
 				<div className={cn("p-1 rounded-md", iconBgClass)}>
-					<span className={cn("h-3.5 w-3.5 shrink-0 [&>svg]:h-3.5 [&>svg]:w-3.5", iconTextClass)}>
+					<span className={cn("h-3.5 w-3.5 shrink-0 [&>svg]:h-3.5 [&>svg]:w-3.5 md:h-4 md:w-4 md:[&>svg]:h-4 md:[&>svg]:w-4", iconTextClass)}>
 						{icon}
 					</span>
 				</div>

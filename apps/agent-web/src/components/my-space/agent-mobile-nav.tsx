@@ -107,7 +107,7 @@ export function AgentMobileNav() {
 		<>
 			{/* Fixed bottom nav */}
 			<div className="fixed left-3 right-3 z-40 md:hidden bottom-[calc(0.8rem+env(safe-area-inset-bottom,0px))]">
-				<div className="bg-[#F4F3ED] dark:bg-[#171616] backdrop-blur-md rounded-2xl">
+				<div className="bg-secondary backdrop-blur-md rounded-2xl">
 					<div className="flex items-center justify-around px-2 h-[60px]">
 						{mainItems.map((item) => (
 							<NavBarItem
@@ -165,7 +165,7 @@ export function AgentMobileNav() {
 			<Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
 				<SheetContent
 					side="bottom"
-					className="rounded-t-2xl max-h-[75dvh] px-4 bg-[#F4F3ED] dark:bg-[#171616] border-none"
+					className="rounded-t-2xl max-h-[75dvh] px-4 bg-secondary border-none"
 				>
 					<SheetHeader className="pb-3">
 						<SheetTitle className="sr-only">Menu</SheetTitle>

@@ -372,7 +372,7 @@ function MonitoringPage() {
 
 			{/* ── Tabs ────────────────────────────── */}
 			<Tabs defaultValue="neocortex">
-				<TabsList className="bg-[#F4F3ED] dark:bg-[#171616]">
+				<TabsList>
 					<TabsTrigger value="neocortex" className="gap-2">
 						<Brain className="h-4 w-4" />
 						{t("monitoring.tabs.neocortex")}

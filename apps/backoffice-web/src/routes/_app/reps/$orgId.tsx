@@ -303,7 +303,7 @@ function OrgDetailPage() {
 			{/* ── Tabs ─────────────────────────────────────────────── */}
 			<Tabs defaultValue="overview" className="space-y-4">
 				<div className="overflow-x-auto overflow-y-hidden scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-					<TabsList className="h-auto justify-start w-max gap-1 bg-[#F4F3ED] dark:bg-[#171616]">
+					<TabsList className="h-auto justify-start w-max gap-1">
 						<TabsTrigger value="overview" className="gap-1.5 text-xs sm:text-sm">
 							<Building2 className="h-4 w-4" />
 							{t("superadmin.organizations.tabs.overview")}

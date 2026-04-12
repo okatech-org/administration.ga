@@ -914,7 +914,7 @@ function KanbanCard({
 			onClick={() =>
 				navigate({ to: `/requests/${request.reference}` as any })
 			}
-			className="group cursor-pointer bg-[#F4F3ED] dark:bg-[#171616] rounded-lg border border-border/60 p-3 hover:border-border transition-all duration-200"
+			className="group cursor-pointer bg-secondary rounded-lg border border-border/60 p-3 hover:border-border transition-all duration-200"
 		>
 			{/* Service name (like "Product area" in Refero) */}
 			<div className="flex items-center justify-between gap-2 mb-2">

@@ -107,7 +107,7 @@ function DashboardLayout() {
       )}
     >
       <div className="hidden md:block p-4 pr-0">
-        <div className="h-full rounded-2xl bg-[#F4F3ED] dark:bg-[#171616] overflow-hidden">
+        <div className="h-full rounded-2xl bg-secondary overflow-hidden">
           <OrgSidebar
             isExpanded={isExpanded}
             onToggle={() => setIsExpanded((prev) => !prev)}

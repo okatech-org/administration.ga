@@ -80,7 +80,7 @@ export default function RequestsPage() {
 						</div>
 					</FlatCard>
 				) : (
-					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr content-start">
 						{requests.map((request: any) => (
 							<RequestCard key={request._id} request={request} />
 						))}

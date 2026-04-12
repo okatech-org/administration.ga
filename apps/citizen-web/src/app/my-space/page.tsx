@@ -58,7 +58,6 @@ import { getLocalizedValue } from "@/lib/i18n-utils"
 import { REQUEST_STATUS_CONFIG } from "@/lib/request-status-config"
 import { cn } from "@/lib/utils"
 
-
 function getAge(bd?: string | number | null): number | null {
   if (!bd) return null
   try {
@@ -252,12 +251,16 @@ export default function UserDashboard() {
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden">
-      {/* Top mobile tools: Alert Banner (optionnel) + Notification Bell */}
-      <div className="mb-3 flex items-center gap-2 lg:hidden w-full">
-        {activeAlerts.length > 0 ? (
+      <div className="shrink-0">
+        <MySpaceHeader />
+      </div>
+
+      {/* Mobile alert banner — after header buttons */}
+      {activeAlerts.length > 0 && (
+        <div className="mt-2 lg:hidden">
           <Link
             href="/my-space/settings?tab=dossier"
-            className="flex-1 flex items-center gap-2.5 rounded-xl bg-rose-500/10 px-3 py-2.5 transition-colors hover:bg-rose-500/15 overflow-hidden"
+            className="flex items-center gap-2.5 overflow-hidden rounded-xl bg-rose-500/10 px-3 py-2.5 transition-colors hover:bg-rose-500/15"
           >
             <div className="shrink-0 rounded-md bg-rose-500/15 p-1">
               <AlertTriangle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
@@ -269,15 +272,8 @@ export default function UserDashboard() {
             </span>
             <ArrowRight className="h-3 w-3 shrink-0 text-rose-500/60" />
           </Link>
-        ) : (
-          <div className="flex-1" />
-        )}
-        <NotificationDropdown count={activeAlerts.length || 2} className="h-10 w-10 min-w-[40px] bg-card rounded-lg shrink-0" />
-      </div>
-
-      <div className="shrink-0">
-        <MySpaceHeader />
-      </div>
+        </div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 5 }}
@@ -363,7 +359,7 @@ export default function UserDashboard() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 gap-1.5 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744]/40 px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/40 active:scale-[0.97]"
+                      className="h-8 gap-1.5 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
                       onClick={() => setShowConsularCard(true)}
                     >
                       <Eye className="h-3 w-3" />
@@ -391,7 +387,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-8 gap-1.5 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744]/40 px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/40 active:scale-[0.97]"
+                      className="h-8 gap-1.5 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
                     >
                       <Link href="/my-space/cv">
                         <Briefcase className="h-3 w-3" />
@@ -434,7 +430,7 @@ export default function UserDashboard() {
                     </p>
                   </div>
                   {contacts?.phone && (
-                    <div className="mt-4 w-full rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2.5">
+                    <div className="mt-4 w-full rounded-lg bg-[#FDFCFA] p-2.5 dark:bg-[#21201E]/77">
                       <div className="flex items-center gap-2.5 text-sm font-medium">
                         <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                         <span className="flex-1 truncate text-sm font-bold">
@@ -490,7 +486,7 @@ export default function UserDashboard() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="mt-3 h-7 w-full gap-2 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744]/40 px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/40 active:scale-[0.97]"
+                    className="mt-3 h-7 w-full gap-2 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
                     onClick={() => setShowConsularCard(true)}
                   >
                     <Eye className="h-3 w-3" />
@@ -654,7 +650,7 @@ export default function UserDashboard() {
                         ].map((i) => (
                           <div
                             key={i.l}
-                            className="flex items-center gap-2 rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2 text-xs"
+                            className="flex items-center gap-2 rounded-lg bg-[#FDFCFA] p-2 text-xs dark:bg-[#21201E]/77"
                           >
                             <i.icon className={cn("h-3 w-3", i.color)} />
                             <span className="flex-1 text-muted-foreground">
@@ -670,7 +666,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-7 w-full rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744]/40 px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/40 active:scale-[0.97]"
+                      className="h-7 w-full rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
                     >
                       <Link href="/my-space/cv">Créer mon CV</Link>
                     </Button>
@@ -715,7 +711,7 @@ export default function UserDashboard() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-3">
+                  <div className="flex items-center justify-between rounded-lg bg-[#FDFCFA] p-3 dark:bg-[#21201E]/77">
                     <div className="flex items-center gap-2.5">
                       <div className="rounded bg-background p-1.5">
                         <FileText className="h-4 w-4 text-muted-foreground" />
@@ -732,7 +728,7 @@ export default function UserDashboard() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744]/40 px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/40 active:scale-[0.97] md:h-7"
+                      className="h-8 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] md:h-7 dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
                       onClick={() => setShowDossierDetails(true)}
                     >
                       <Eye className="mr-1 h-3 w-3" /> Voir l&apos;état
@@ -779,7 +775,7 @@ export default function UserDashboard() {
                         <Link
                           key={child._id}
                           href={`/my-space/children/${child._id}`}
-                          className="flex min-w-[85%] flex-1 shrink-0 snap-start items-center gap-3 rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2.5 pr-4 transition-colors hover:bg-[#FDFCFA]/80 dark:hover:bg-[#21201E]/80 md:min-w-[220px]"
+                          className="flex min-w-[85%] flex-1 shrink-0 snap-start items-center gap-3 rounded-lg bg-[#FDFCFA] p-2.5 pr-4 transition-colors hover:bg-[#FDFCFA]/80 md:min-w-[220px] dark:bg-[#21201E]/77 dark:hover:bg-[#21201E]/80"
                         >
                           <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#EBE6DC] dark:bg-[#383633]">
                             <Baby className="h-3 w-3 text-muted-foreground" />
@@ -826,7 +822,7 @@ export default function UserDashboard() {
                     asChild
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744]/40 px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/40 active:scale-[0.97] md:h-7"
+                    className="h-8 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] md:h-7 dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
                   >
                     <Link href="/my-space/services-demarches">
                       Mes Démarches
@@ -891,7 +887,7 @@ export default function UserDashboard() {
                   )}
                   <Link
                     href="/services"
-                    className="flex flex-col items-center justify-center gap-2 rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 dark:hover:bg-[#21201E]/80 hover:text-foreground lg:p-3"
+                    className="flex flex-col items-center justify-center gap-2 rounded-lg bg-[#FDFCFA] p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 hover:text-foreground lg:p-3 dark:bg-[#21201E]/77 dark:hover:bg-[#21201E]/80"
                   >
                     <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EBE6DC] lg:h-8 lg:w-8 dark:bg-[#383633]">
                       <Plus className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
@@ -925,7 +921,7 @@ export default function UserDashboard() {
                     asChild
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744]/40 px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/40 active:scale-[0.97] md:h-7"
+                    className="h-8 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] md:h-7 dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
                   >
                     <Link href="/my-space/iagenda">iAgenda</Link>
                   </Button>
@@ -945,7 +941,7 @@ export default function UserDashboard() {
                             className={cn(
                               "flex flex-col gap-2 rounded-xl p-2.5 transition-colors lg:rounded-lg lg:p-3",
                               isPast
-                                ? "bg-[#EBE6DC] dark:bg-[#383633] hover:bg-[#EBE6DC] dark:hover:bg-[#2B2A28]/70"
+                                ? "bg-[#EBE6DC] hover:bg-[#EBE6DC] dark:bg-[#383633] dark:hover:bg-[#2B2A28]/70"
                                 : "bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/10 dark:hover:bg-amber-500/15"
                             )}
                           >
@@ -1008,7 +1004,7 @@ export default function UserDashboard() {
                   )}
                   <Link
                     href="/my-space/iagenda"
-                    className="flex flex-col items-center justify-center gap-2 rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 dark:hover:bg-[#21201E]/80 hover:text-foreground lg:p-3"
+                    className="flex flex-col items-center justify-center gap-2 rounded-lg bg-[#FDFCFA] p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 hover:text-foreground lg:p-3 dark:bg-[#21201E]/77 dark:hover:bg-[#21201E]/80"
                   >
                     <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EBE6DC] lg:h-8 lg:w-8 dark:bg-[#383633]">
                       <Plus className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
@@ -1147,7 +1143,7 @@ export default function UserDashboard() {
                         ].map((i) => (
                           <div
                             key={i.l}
-                            className="flex items-center gap-2 rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2 text-xs"
+                            className="flex items-center gap-2 rounded-lg bg-[#FDFCFA] p-2 text-xs dark:bg-[#21201E]/77"
                           >
                             <i.icon className={cn("h-3 w-3", i.color)} />
                             <span className="flex-1 text-muted-foreground">
@@ -1163,7 +1159,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-7 w-full rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744]/40 px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/40 active:scale-[0.97]"
+                      className="h-7 w-full rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
                     >
                       <Link href="/my-space/cv">Créer mon CV</Link>
                     </Button>
@@ -1186,7 +1182,7 @@ export default function UserDashboard() {
                     asChild
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744]/40 px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/40 active:scale-[0.97] md:h-7"
+                    className="h-8 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] md:h-7 dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
                   >
                     <Link href="/news">Tout voir</Link>
                   </Button>
@@ -1197,7 +1193,7 @@ export default function UserDashboard() {
                       <Link
                         key={post._id}
                         href={`/news/${post.slug}`}
-                        className="group block rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 p-3 transition-colors hover:bg-[#FDFCFA]/80 dark:hover:bg-[#21201E]/80"
+                        className="group block rounded-lg bg-[#FDFCFA] p-3 transition-colors hover:bg-[#FDFCFA]/80 dark:bg-[#21201E]/77 dark:hover:bg-[#21201E]/80"
                       >
                         <p className="mb-1 line-clamp-2 text-sm leading-snug font-semibold group-hover:text-primary dark:group-hover:text-blue-400">
                           {post.title}
@@ -1300,7 +1296,7 @@ export default function UserDashboard() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-9 gap-1.5 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744]/40 px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/40 active:scale-[0.97]"
+                      className="h-9 gap-1.5 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
                       onClick={() => setShowConsularCard(true)}
                     >
                       <Eye className="h-3 w-3" />
@@ -1319,7 +1315,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-9 gap-1.5 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744]/40 px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/40 active:scale-[0.97]"
+                      className="h-9 gap-1.5 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
                     >
                       <Link href="/my-space/cv">
                         <Briefcase className="h-3 w-3" />
@@ -1344,7 +1340,7 @@ export default function UserDashboard() {
                       asChild
                       variant="ghost"
                       size="sm"
-                      className="h-7 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744]/40 px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/40"
+                      className="h-7 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
                     >
                       <Link href="/my-space/services-demarches">
                         Mes Démarches
@@ -1392,7 +1388,7 @@ export default function UserDashboard() {
                     )}
                     <Link
                       href="/services"
-                      className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 dark:hover:bg-[#21201E]/80"
+                      className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-[#FDFCFA] p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 dark:bg-[#21201E]/77 dark:hover:bg-[#21201E]/80"
                     >
                       <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EBE6DC] dark:bg-[#383633]">
                         <Plus className="h-3.5 w-3.5" />
@@ -1419,7 +1415,7 @@ export default function UserDashboard() {
                       asChild
                       variant="ghost"
                       size="sm"
-                      className="h-7 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744]/40 px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/40"
+                      className="h-7 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
                     >
                       <Link href="/my-space/iagenda">iAgenda</Link>
                     </Button>
@@ -1436,7 +1432,7 @@ export default function UserDashboard() {
                             className={cn(
                               "flex flex-col gap-2 rounded-xl p-2.5 transition-colors",
                               isPast
-                                ? "bg-[#EBE6DC] dark:bg-[#383633] hover:bg-[#EBE6DC] dark:hover:bg-[#2B2A28]/70"
+                                ? "bg-[#EBE6DC] hover:bg-[#EBE6DC] dark:bg-[#383633] dark:hover:bg-[#2B2A28]/70"
                                 : "bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/10"
                             )}
                           >
@@ -1494,7 +1490,7 @@ export default function UserDashboard() {
                     )}
                     <Link
                       href="/my-space/iagenda"
-                      className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-[#FDFCFA] dark:bg-[#21201E]/77 p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 dark:hover:bg-[#21201E]/80"
+                      className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-[#FDFCFA] p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 dark:bg-[#21201E]/77 dark:hover:bg-[#21201E]/80"
                     >
                       <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EBE6DC] dark:bg-[#383633]">
                         <Plus className="h-3.5 w-3.5" />
@@ -1522,7 +1518,7 @@ export default function UserDashboard() {
                     asChild
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-lg bg-[#DCD7C7] dark:bg-[#4A4744]/40 px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:hover:bg-[#4A4744]/40"
+                    className="h-8 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
                   >
                     <Link href="/news">Tout voir</Link>
                   </Button>
@@ -1533,7 +1529,7 @@ export default function UserDashboard() {
                       <Link
                         key={post._id}
                         href={`/news/${post.slug}`}
-                        className="group block rounded-xl bg-[#FDFCFA] dark:bg-[#21201E]/77 p-4 transition-colors hover:bg-[#FDFCFA]/80 dark:hover:bg-[#21201E]/80"
+                        className="group block rounded-xl bg-[#FDFCFA] p-4 transition-colors hover:bg-[#FDFCFA]/80 dark:bg-[#21201E]/77 dark:hover:bg-[#21201E]/80"
                       >
                         <p className="mb-1.5 line-clamp-2 text-sm leading-snug font-semibold group-hover:text-primary dark:group-hover:text-blue-400">
                           {post.title}
@@ -1560,7 +1556,9 @@ export default function UserDashboard() {
       </motion.div>
 
       {/* Bouton flottant Appeler — mobile uniquement */}
-      <MobileCallFAB variant={mobilePageIndex === 1 ? "vertical" : "horizontal"} />
+      <MobileCallFAB
+        variant={mobilePageIndex === 1 ? "vertical" : "horizontal"}
+      />
 
       {/* Badge flottant Actualités — mobile uniquement */}
       <AnimatePresence>
@@ -1646,7 +1644,7 @@ export default function UserDashboard() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 350 }}
-              className="relative flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border-none bg-[#F4F3ED] dark:bg-[#21201E]/77 shadow-2xl"
+              className="relative flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border-none bg-[#F4F3ED] shadow-2xl dark:bg-[#21201E]/77"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-border/50 bg-background/5 p-4">
@@ -1676,7 +1674,7 @@ export default function UserDashboard() {
                   {dossierItems.map((item) => (
                     <div
                       key={item.label}
-                      className="relative flex flex-col items-center gap-1.5 rounded-xl bg-[#FDFCFA] dark:bg-[#21201E]/77 px-2 py-3 text-center"
+                      className="relative flex flex-col items-center gap-1.5 rounded-xl bg-[#FDFCFA] px-2 py-3 text-center dark:bg-[#21201E]/77"
                     >
                       <div
                         className={cn(

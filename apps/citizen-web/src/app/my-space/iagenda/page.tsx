@@ -34,6 +34,7 @@ import { AgendaCalendar, type CalendarDayInfo } from "@/components/my-space/agen
 import { AppointmentCard, type AppointmentData } from "@/components/my-space/appointment-card";
 import { EmptyState } from "@/components/my-space/empty-state";
 import { FlatCard } from "@/components/my-space/flat-card";
+import { PageHeader } from "@/components/my-space/page-header";
 import { Button } from "@/components/ui/button";
 import {
 	useAuthenticatedConvexQuery,
@@ -183,30 +184,27 @@ export default function IAgendaPage() {
 	// ═════════════════════════════════════════════════════════════
 	return (
 		<div className="flex flex-col h-full min-h-0 overflow-hidden">
-			{/* Header */}
-			<div className="flex items-center justify-between gap-3 shrink-0 mb-4">
-				<div className="flex items-center gap-3">
-					<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12]">
-						<Calendar className="h-5 w-5 text-muted-foreground" />
-					</div>
-					<div>
-						<h1 className="text-lg md:text-xl font-black tracking-tight">iAgenda</h1>
-						<p className="text-xs text-muted-foreground font-medium hidden sm:block">Mon Agenda — Espace Citoyen</p>
-					</div>
-				</div>
-				{/* Stats inline desktop */}
-				<div className="hidden lg:flex items-center gap-3">
-					{[
-						{ label: "À venir", value: upcomingAppointments.length, accent: true },
-						{ label: "Ce mois", value: monthCount },
-						{ label: "Total", value: allAppointments.length },
-					].map((s) => (
-						<div key={s.label} className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-full">
-							<span className={cn("text-sm font-black", s.accent ? "text-primary" : "text-foreground")}>{isPending ? "—" : s.value}</span>
-							<span className="text-[10px] font-bold text-muted-foreground uppercase">{s.label}</span>
+			<div className="shrink-0 mb-4">
+				<PageHeader
+					title="iAgenda"
+					subtitle={<span className="hidden sm:inline">Mon Agenda — Espace Citoyen</span>}
+					icon={<Calendar className="h-5 w-5 text-muted-foreground" />}
+					iconBgClass="bg-foreground/[0.06] dark:bg-foreground/[0.12]"
+					actions={
+						<div className="hidden lg:flex items-center gap-3">
+							{[
+								{ label: "À venir", value: upcomingAppointments.length, accent: true },
+								{ label: "Ce mois", value: monthCount },
+								{ label: "Total", value: allAppointments.length },
+							].map((s) => (
+								<div key={s.label} className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-full">
+									<span className={cn("text-sm font-black", s.accent ? "text-primary" : "text-foreground")}>{isPending ? "—" : s.value}</span>
+									<span className="text-[10px] font-bold text-muted-foreground uppercase">{s.label}</span>
+								</div>
+							))}
 						</div>
-					))}
-				</div>
+					}
+				/>
 			</div>
 
 			{/* ─── Mobile : dots indicateurs + scroll horizontal snap ─── */}

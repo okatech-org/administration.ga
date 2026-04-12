@@ -33,7 +33,10 @@ import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { useOrg } from "../../hooks/useOrg"
 import { useCanDoTask } from "../../hooks/useCanDoTask"
-import { type ConsularTheme, useConsularTheme } from "../../hooks/useConsularTheme"
+import {
+  type ConsularTheme,
+  useConsularTheme,
+} from "../../hooks/useConsularTheme"
 import {
   useAuthenticatedConvexQuery,
   useConvexMutationQuery,
@@ -62,11 +65,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@workspace/ui/components/dialog"
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-} from "@workspace/ui/components/field"
+import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
 import { Label } from "@workspace/ui/components/label"
 import {
@@ -113,27 +112,31 @@ function SettingsLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex flex-1 flex-col p-3 md:p-6 min-h-full overflow-auto w-full max-w-[1400px] mx-auto">
-      <div className="flex flex-col gap-1 mb-4 md:mb-6">
-        <h1 className="text-xl md:text-3xl font-semibold tracking-tight">{title}</h1>
+    <div className="flex min-h-full w-full flex-1 flex-col overflow-auto p-3 md:p-6">
+      <div className="mb-4 flex flex-col gap-1 md:mb-6">
+        <h1 className="text-xl font-semibold tracking-tight md:text-3xl">
+          {title}
+        </h1>
         {description && (
-          <p className="text-sm md:text-base text-muted-foreground">{description}</p>
+          <p className="text-sm text-muted-foreground md:text-base">
+            {description}
+          </p>
         )}
       </div>
 
-      <div className="flex flex-col md:flex-row bg-card rounded-2xl border shadow-sm flex-1 overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border bg-card shadow-sm md:flex-row">
         {/* Sidebar */}
-        <aside className="w-full md:w-56 lg:w-64 border-b md:border-b-0 md:border-r px-2 py-2 md:p-4 shrink-0 flex flex-row md:flex-col gap-1 bg-muted/20 overflow-x-auto">
+        <aside className="flex w-full shrink-0 flex-row gap-1 overflow-x-auto border-b bg-muted/20 px-2 py-2 md:w-56 md:flex-col md:border-r md:border-b-0 md:p-4 lg:w-64">
           {groups.map((group, gi) => (
             <div
               key={group.label || gi}
               className={cn(
-                "flex flex-row md:flex-col gap-1",
-                gi > 0 && "md:mt-3 md:pt-3 md:border-t md:border-border/30",
+                "flex flex-row gap-1 md:flex-col",
+                gi > 0 && "md:mt-3 md:border-t md:border-border/30 md:pt-3"
               )}
             >
               {group.label && (
-                <p className="hidden md:block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-4 py-1">
+                <p className="hidden px-4 py-1 text-[10px] font-semibold tracking-wider text-muted-foreground/60 uppercase md:block">
                   {group.label}
                 </p>
               )}
@@ -145,12 +148,12 @@ function SettingsLayout({
                     key={tab.id}
                     onClick={() => onTabChange(tab.id)}
                     className={cn(
-                      "flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-sm transition-colors text-left whitespace-nowrap shrink-0 md:shrink md:w-full",
+                      "flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm whitespace-nowrap transition-colors md:w-full md:shrink md:gap-3 md:px-4 md:py-2.5",
                       isActive
-                        ? "bg-primary text-primary-foreground font-medium"
+                        ? "bg-primary font-medium text-primary-foreground"
                         : tab.variant === "destructive"
                           ? "text-destructive hover:bg-destructive/10"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
                     {tab.icon && <span className="shrink-0">{tab.icon}</span>}
@@ -163,7 +166,7 @@ function SettingsLayout({
         </aside>
 
         {/* Content */}
-        <main className="flex-1 p-4 md:p-8 overflow-x-hidden overflow-y-auto">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8">
           {children}
         </main>
       </div>
@@ -181,11 +184,11 @@ function SettingsSectionHeader({
   action?: React.ReactNode
 }) {
   return (
-    <div className="flex items-start justify-between mb-6">
+    <div className="mb-6 flex items-start justify-between">
       <div>
         <h2 className="text-lg font-semibold">{title}</h2>
         {description && (
-          <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
         )}
       </div>
       {action && <div>{action}</div>}
@@ -209,19 +212,19 @@ function SettingsRow({
   return (
     <div
       className={cn(
-        "flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b last:border-b-0 gap-3",
-        extraClassName,
+        "flex flex-col justify-between gap-3 border-b py-4 last:border-b-0 sm:flex-row sm:items-center",
+        extraClassName
       )}
     >
       <div className="flex-1 space-y-0.5 pr-4">
-        <div className="font-medium text-sm text-foreground">{title}</div>
+        <div className="text-sm font-medium text-foreground">{title}</div>
         {description && (
           <div className="text-sm text-muted-foreground">{description}</div>
         )}
       </div>
       <div className="flex items-center gap-4 sm:shrink-0">
         {value && (
-          <div className="text-sm font-medium truncate max-w-[200px] sm:max-w-[300px]">
+          <div className="max-w-[200px] truncate text-sm font-medium sm:max-w-[300px]">
             {value}
           </div>
         )}
@@ -266,10 +269,16 @@ export function SettingsPage() {
   const { data: session } = authClient.useSession()
 
   // ── Desktop-specific settings ──
-  const { settings: desktopSettings, updateSettings: updateDesktopSettings, resetSettings: resetDesktopSettings } = useSettings()
+  const {
+    settings: desktopSettings,
+    updateSettings: updateDesktopSettings,
+    resetSettings: resetDesktopSettings,
+  } = useSettings()
 
   // ── OTP reset state ──
-  const [resetStep, setResetStep] = useState<"idle" | "otp_sent" | "done">("idle")
+  const [resetStep, setResetStep] = useState<"idle" | "otp_sent" | "done">(
+    "idle"
+  )
   const [resetOtp, setResetOtp] = useState("")
   const [resetNewPassword, setResetNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -288,7 +297,9 @@ export function SettingsPage() {
         type: "forget-password",
       })
       if (result.error) {
-        setResetError(result.error.message || t("settings.security.changeFailed"))
+        setResetError(
+          result.error.message || t("settings.security.changeFailed")
+        )
       } else {
         setResetStep("otp_sent")
       }
@@ -320,7 +331,9 @@ export function SettingsPage() {
         password: resetNewPassword,
       })
       if (result.error) {
-        setResetError(result.error.message || t("settings.security.changeFailed"))
+        setResetError(
+          result.error.message || t("settings.security.changeFailed")
+        )
       } else {
         setResetSuccess(true)
         setResetStep("done")
@@ -345,10 +358,10 @@ export function SettingsPage() {
 
   const { data: org } = useAuthenticatedConvexQuery(
     api.functions.orgs.getById,
-    orgId ? { orgId } : "skip",
+    orgId ? { orgId } : "skip"
   )
   const { mutateAsync: updateProfile } = useConvexMutationQuery(
-    api.functions.orgs.update,
+    api.functions.orgs.update
   )
 
   // ── Form state (plain React, no @tanstack/react-form) ──
@@ -369,7 +382,10 @@ export function SettingsPage() {
     aiAnalysisEnabled: true,
   })
 
-  const setField = <K extends keyof typeof formValues>(key: K, value: (typeof formValues)[K]) => {
+  const setField = <K extends keyof typeof formValues>(
+    key: K,
+    value: (typeof formValues)[K]
+  ) => {
     setFormValues((prev) => ({ ...prev, [key]: value }))
   }
 
@@ -385,9 +401,11 @@ export function SettingsPage() {
         city: org.address?.city || "",
         postalCode: org.address?.postalCode || "",
         country: org.address?.country || "",
-        workingHours: (org.settings?.workingHours as Record<string, any[]>) || {},
+        workingHours:
+          (org.settings?.workingHours as Record<string, any[]>) || {},
         appointmentBuffer: org.settings?.appointmentBuffer || 30,
-        requestAssignment: (org.settings?.requestAssignment as string) || "manual",
+        requestAssignment:
+          (org.settings?.requestAssignment as string) || "manual",
         defaultProcessingDays: org.settings?.defaultProcessingDays || 15,
         aiAnalysisEnabled: org.settings?.aiAnalysisEnabled !== false,
       })
@@ -544,7 +562,7 @@ export function SettingsPage() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
       >
-        <div className="flex justify-end mb-6">
+        <div className="mb-6 flex justify-end">
           {canManageSettings &&
             !isEditing &&
             activeTab in { profile: 1, hours: 1, requestProcessing: 1 } && (
@@ -578,8 +596,8 @@ export function SettingsPage() {
               {/* Profile tab */}
               <div
                 className={cn(
-                  "space-y-8 animate-in fade-in duration-300",
-                  activeTab !== "profile" && "hidden",
+                  "animate-in space-y-8 duration-300 fade-in",
+                  activeTab !== "profile" && "hidden"
                 )}
               >
                 <div>
@@ -616,7 +634,9 @@ export function SettingsPage() {
                             <Textarea
                               id="description"
                               value={formValues.description}
-                              onChange={(e) => setField("description", e.target.value)}
+                              onChange={(e) =>
+                                setField("description", e.target.value)
+                              }
                               rows={3}
                             />
                           </Field>
@@ -653,7 +673,9 @@ export function SettingsPage() {
 
                 {/* Address */}
                 <div className="mt-8">
-                  <SettingsSectionHeader title={t("dashboard.settings.address")} />
+                  <SettingsSectionHeader
+                    title={t("dashboard.settings.address")}
+                  />
                   <div className="max-w-2xl px-1">
                     <FieldGroup>
                       {isEditing ? (
@@ -665,7 +687,9 @@ export function SettingsPage() {
                             <Input
                               id="street"
                               value={formValues.street}
-                              onChange={(e) => setField("street", e.target.value)}
+                              onChange={(e) =>
+                                setField("street", e.target.value)
+                              }
                             />
                           </Field>
                           <Field>
@@ -685,7 +709,9 @@ export function SettingsPage() {
                             <Input
                               id="postalCode"
                               value={formValues.postalCode}
-                              onChange={(e) => setField("postalCode", e.target.value)}
+                              onChange={(e) =>
+                                setField("postalCode", e.target.value)
+                              }
                             />
                           </Field>
                           <Field>
@@ -695,7 +721,9 @@ export function SettingsPage() {
                             <Input
                               id="country"
                               value={formValues.country}
-                              onChange={(e) => setField("country", e.target.value)}
+                              onChange={(e) =>
+                                setField("country", e.target.value)
+                              }
                             />
                           </Field>
                         </>
@@ -704,7 +732,8 @@ export function SettingsPage() {
                           {org.address.street && <p>{org.address.street}</p>}
                           <p>
                             {org.address.city}
-                            {org.address.postalCode && `, ${org.address.postalCode}`}
+                            {org.address.postalCode &&
+                              `, ${org.address.postalCode}`}
                           </p>
                           <p>{org.address.country}</p>
                         </>
@@ -719,7 +748,9 @@ export function SettingsPage() {
 
                 {/* Contact */}
                 <div className="mt-8">
-                  <SettingsSectionHeader title={t("dashboard.settings.contact")} />
+                  <SettingsSectionHeader
+                    title={t("dashboard.settings.contact")}
+                  />
                   <div className="max-w-2xl px-1">
                     <FieldGroup>
                       {isEditing ? (
@@ -731,7 +762,9 @@ export function SettingsPage() {
                             <Input
                               id="phone"
                               value={formValues.phone}
-                              onChange={(e) => setField("phone", e.target.value)}
+                              onChange={(e) =>
+                                setField("phone", e.target.value)
+                              }
                             />
                           </Field>
                           <Field>
@@ -742,7 +775,9 @@ export function SettingsPage() {
                               id="email"
                               type="email"
                               value={formValues.email}
-                              onChange={(e) => setField("email", e.target.value)}
+                              onChange={(e) =>
+                                setField("email", e.target.value)
+                              }
                             />
                           </Field>
                           <Field>
@@ -752,7 +787,9 @@ export function SettingsPage() {
                             <Input
                               id="website"
                               value={formValues.website}
-                              onChange={(e) => setField("website", e.target.value)}
+                              onChange={(e) =>
+                                setField("website", e.target.value)
+                              }
                             />
                           </Field>
                         </>
@@ -798,16 +835,18 @@ export function SettingsPage() {
               {/* Hours tab */}
               <div
                 className={cn(
-                  "space-y-8 animate-in fade-in duration-300",
-                  activeTab !== "hours" && "hidden",
+                  "animate-in space-y-8 duration-300 fade-in",
+                  activeTab !== "hours" && "hidden"
                 )}
               >
                 <div>
-                  <SettingsSectionHeader title={t("dashboard.settings.workingHours")} />
+                  <SettingsSectionHeader
+                    title={t("dashboard.settings.workingHours")}
+                  />
                   <div className="max-w-2xl px-1">
                     {isEditing ? (
                       <div className="space-y-4">
-                        <div className="flex items-center gap-4 max-w-sm">
+                        <div className="flex max-w-sm items-center gap-4">
                           <FieldLabel className="whitespace-nowrap">
                             {t("dashboard.settings.appointmentBuffer")}
                           </FieldLabel>
@@ -816,24 +855,31 @@ export function SettingsPage() {
                             min="0"
                             value={formValues.appointmentBuffer}
                             onChange={(e) =>
-                              setField("appointmentBuffer", Number(e.target.value))
+                              setField(
+                                "appointmentBuffer",
+                                Number(e.target.value)
+                              )
                             }
                             className="w-24"
                           />
-                          <span className="text-sm text-muted-foreground">min</span>
+                          <span className="text-sm text-muted-foreground">
+                            min
+                          </span>
                         </div>
 
                         <div className="grid gap-4">
                           {DAYS_OF_WEEK.map((day) => (
                             <div
                               key={day}
-                              className="flex flex-col sm:flex-row sm:items-center gap-4 p-3 border rounded-lg"
+                              className="flex flex-col gap-4 rounded-lg border p-3 sm:flex-row sm:items-center"
                             >
                               <div className="w-32 font-medium capitalize">
                                 {t(`dashboard.settings.days.${day}`)}
                               </div>
                               <WorkingHoursSlots
-                                slots={(formValues.workingHours[day] as any[]) || []}
+                                slots={
+                                  (formValues.workingHours[day] as any[]) || []
+                                }
                                 onChange={(newSlots) => {
                                   setField("workingHours", {
                                     ...formValues.workingHours,
@@ -848,8 +894,10 @@ export function SettingsPage() {
                       </div>
                     ) : (
                       <div className="grid gap-2">
-                        <div className="flex gap-2 text-sm text-muted-foreground mb-2">
-                          <span>{t("dashboard.settings.appointmentBuffer")}:</span>
+                        <div className="mb-2 flex gap-2 text-sm text-muted-foreground">
+                          <span>
+                            {t("dashboard.settings.appointmentBuffer")}:
+                          </span>
                           <span className="font-medium text-foreground">
                             {org.settings?.appointmentBuffer || 30} min
                           </span>
@@ -859,7 +907,7 @@ export function SettingsPage() {
                           return (
                             <div
                               key={day}
-                              className="flex justify-between items-center py-2 border-b last:border-0"
+                              className="flex items-center justify-between border-b py-2 last:border-0"
                             >
                               <span className="capitalize">
                                 {t(`dashboard.settings.days.${day}`)}
@@ -889,14 +937,16 @@ export function SettingsPage() {
               {/* Request Processing tab */}
               <div
                 className={cn(
-                  "space-y-8 animate-in fade-in duration-300",
-                  activeTab !== "requestProcessing" && "hidden",
+                  "animate-in space-y-8 duration-300 fade-in",
+                  activeTab !== "requestProcessing" && "hidden"
                 )}
               >
                 <div>
                   <SettingsSectionHeader
                     title={t("dashboard.settings.requestProcessing.title")}
-                    description={t("dashboard.settings.requestProcessing.description")}
+                    description={t(
+                      "dashboard.settings.requestProcessing.description"
+                    )}
                   />
                   <div className="max-w-2xl px-1">
                     <FieldGroup>
@@ -905,35 +955,49 @@ export function SettingsPage() {
                           {/* Assignment mode */}
                           <Field>
                             <FieldLabel>
-                              {t("dashboard.settings.requestProcessing.assignmentMode")}
+                              {t(
+                                "dashboard.settings.requestProcessing.assignmentMode"
+                              )}
                             </FieldLabel>
                             <Select
                               value={formValues.requestAssignment}
-                              onValueChange={(val) => setField("requestAssignment", val)}
+                              onValueChange={(val) =>
+                                setField("requestAssignment", val)
+                              }
                             >
                               <SelectTrigger>
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="manual">
-                                  {t("dashboard.settings.requestProcessing.manual")}
+                                  {t(
+                                    "dashboard.settings.requestProcessing.manual"
+                                  )}
                                 </SelectItem>
                                 <SelectItem value="auto">
-                                  {t("dashboard.settings.requestProcessing.auto")}
+                                  {t(
+                                    "dashboard.settings.requestProcessing.auto"
+                                  )}
                                 </SelectItem>
                               </SelectContent>
                             </Select>
                             <p className="text-xs text-muted-foreground">
                               {formValues.requestAssignment === "auto"
-                                ? t("dashboard.settings.requestProcessing.autoDesc")
-                                : t("dashboard.settings.requestProcessing.manualDesc")}
+                                ? t(
+                                    "dashboard.settings.requestProcessing.autoDesc"
+                                  )
+                                : t(
+                                    "dashboard.settings.requestProcessing.manualDesc"
+                                  )}
                             </p>
                           </Field>
 
                           {/* Default processing days */}
                           <Field>
                             <FieldLabel>
-                              {t("dashboard.settings.requestProcessing.processingDays")}
+                              {t(
+                                "dashboard.settings.requestProcessing.processingDays"
+                              )}
                             </FieldLabel>
                             <div className="flex items-center gap-2">
                               <Input
@@ -942,7 +1006,10 @@ export function SettingsPage() {
                                 max={365}
                                 value={formValues.defaultProcessingDays}
                                 onChange={(e) =>
-                                  setField("defaultProcessingDays", Number(e.target.value))
+                                  setField(
+                                    "defaultProcessingDays",
+                                    Number(e.target.value)
+                                  )
                                 }
                                 className="w-24"
                               />
@@ -957,10 +1024,14 @@ export function SettingsPage() {
                             <div className="space-y-0.5">
                               <Label className="flex items-center gap-2">
                                 <Bot className="h-4 w-4" />
-                                {t("dashboard.settings.requestProcessing.aiAnalysis")}
+                                {t(
+                                  "dashboard.settings.requestProcessing.aiAnalysis"
+                                )}
                               </Label>
                               <p className="text-xs text-muted-foreground">
-                                {t("dashboard.settings.requestProcessing.aiAnalysisDesc")}
+                                {t(
+                                  "dashboard.settings.requestProcessing.aiAnalysisDesc"
+                                )}
                               </p>
                             </div>
                             <Switch
@@ -973,29 +1044,37 @@ export function SettingsPage() {
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center">
+                          <div className="flex items-center justify-between">
                             <span className="text-sm text-muted-foreground">
-                              {t("dashboard.settings.requestProcessing.assignmentMode")}
+                              {t(
+                                "dashboard.settings.requestProcessing.assignmentMode"
+                              )}
                             </span>
                             <Badge variant="secondary">
                               {org.settings?.requestAssignment === "auto"
                                 ? t("dashboard.settings.requestProcessing.auto")
-                                : t("dashboard.settings.requestProcessing.manual")}
+                                : t(
+                                    "dashboard.settings.requestProcessing.manual"
+                                  )}
                             </Badge>
                           </div>
-                          <div className="flex justify-between items-center">
+                          <div className="flex items-center justify-between">
                             <span className="text-sm text-muted-foreground">
-                              {t("dashboard.settings.requestProcessing.processingDays")}
+                              {t(
+                                "dashboard.settings.requestProcessing.processingDays"
+                              )}
                             </span>
-                            <span className="font-medium text-sm">
+                            <span className="text-sm font-medium">
                               {org.settings?.defaultProcessingDays || 15}{" "}
                               {t("dashboard.settings.requestProcessing.days")}
                             </span>
                           </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground flex items-center gap-1">
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1 text-sm text-muted-foreground">
                               <Bot className="h-3.5 w-3.5" />
-                              {t("dashboard.settings.requestProcessing.aiAnalysis")}
+                              {t(
+                                "dashboard.settings.requestProcessing.aiAnalysis"
+                              )}
                             </span>
                             <Badge
                               variant={
@@ -1023,8 +1102,8 @@ export function SettingsPage() {
         {canViewOrgSettings && (
           <div
             className={cn(
-              "animate-in fade-in duration-300",
-              activeTab !== "services" && "hidden",
+              "animate-in duration-300 fade-in",
+              activeTab !== "services" && "hidden"
             )}
           >
             <ServicesSettingsPanel orgId={orgId!} />
@@ -1034,8 +1113,8 @@ export function SettingsPage() {
         {/* ─── Notifications / Preferences ─── */}
         <div
           className={cn(
-            "space-y-8 animate-in fade-in duration-300",
-            activeTab !== "preferences" && "hidden",
+            "animate-in space-y-8 duration-300 fade-in",
+            activeTab !== "preferences" && "hidden"
           )}
         >
           {orgId && <MemberPreferencesCard orgId={orgId} />}
@@ -1044,8 +1123,8 @@ export function SettingsPage() {
         {/* ─── Account Security ─── */}
         <div
           className={cn(
-            "animate-in fade-in duration-300",
-            activeTab !== "accountSecurity" && "hidden",
+            "animate-in duration-300 fade-in",
+            activeTab !== "accountSecurity" && "hidden"
           )}
         >
           <SettingsSectionHeader
@@ -1078,7 +1157,7 @@ export function SettingsPage() {
                 </div>
               )}
               {resetSuccess && (
-                <div className="rounded-lg border border-primary/50 bg-primary/10 px-3 py-2 text-sm text-primary flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-lg border border-primary/50 bg-primary/10 px-3 py-2 text-sm text-primary">
                   <Check className="size-4" />
                   {t("settings.security.resetSuccess")}
                 </div>
@@ -1185,7 +1264,7 @@ export function SettingsPage() {
               title={t("common.logout")}
               description={t(
                 "common.logoutConfirmDescription",
-                "Vous allez etre deconnecte de votre session.",
+                "Vous allez etre deconnecte de votre session."
               )}
               action={
                 <Button
@@ -1204,8 +1283,8 @@ export function SettingsPage() {
         {/* ─── Appearance ─── */}
         <div
           className={cn(
-            "space-y-8 animate-in fade-in duration-300",
-            activeTab !== "appearance" && "hidden",
+            "animate-in space-y-8 duration-300 fade-in",
+            activeTab !== "appearance" && "hidden"
           )}
         >
           <div>
@@ -1228,8 +1307,8 @@ export function SettingsPage() {
         {/* ─── Language (desktop-specific) ─── */}
         <div
           className={cn(
-            "space-y-8 animate-in fade-in duration-300",
-            activeTab !== "language" && "hidden",
+            "animate-in space-y-8 duration-300 fade-in",
+            activeTab !== "language" && "hidden"
           )}
         >
           <div>
@@ -1241,10 +1320,10 @@ export function SettingsPage() {
               <button
                 onClick={() => i18n.changeLanguage("fr")}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all",
+                  "flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all",
                   currentLang === "fr"
-                    ? "bg-primary/10 text-primary border-primary/30"
-                    : "border-border text-muted-foreground hover:text-foreground hover:bg-muted",
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 <span className="text-base">{"\uD83C\uDDEB\uD83C\uDDF7"}</span>
@@ -1253,10 +1332,10 @@ export function SettingsPage() {
               <button
                 onClick={() => i18n.changeLanguage("en")}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all",
+                  "flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all",
                   currentLang === "en"
-                    ? "bg-primary/10 text-primary border-primary/30"
-                    : "border-border text-muted-foreground hover:text-foreground hover:bg-muted",
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 <span className="text-base">{"\uD83C\uDDEC\uD83C\uDDE7"}</span>
@@ -1269,8 +1348,8 @@ export function SettingsPage() {
         {/* ─── Printer (desktop-specific) ─── */}
         <div
           className={cn(
-            "space-y-8 animate-in fade-in duration-300",
-            activeTab !== "printer" && "hidden",
+            "animate-in space-y-8 duration-300 fade-in",
+            activeTab !== "printer" && "hidden"
           )}
         >
           <div>
@@ -1289,7 +1368,9 @@ export function SettingsPage() {
                 </div>
                 <Switch
                   checked={desktopSettings.defaultDuplex}
-                  onCheckedChange={(v) => updateDesktopSettings({ defaultDuplex: v })}
+                  onCheckedChange={(v) =>
+                    updateDesktopSettings({ defaultDuplex: v })
+                  }
                 />
               </div>
               <div className="flex items-center justify-between py-3">
@@ -1334,14 +1415,16 @@ export function SettingsPage() {
                 </div>
                 <Switch
                   checked={desktopSettings.autoStartPrint}
-                  onCheckedChange={(v) => updateDesktopSettings({ autoStartPrint: v })}
+                  onCheckedChange={(v) =>
+                    updateDesktopSettings({ autoStartPrint: v })
+                  }
                 />
               </div>
 
               <div className="pt-4">
                 <button
                   onClick={resetDesktopSettings}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  className="flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <RotateCcw className="size-4" />
                   {t("desktop.settings.reset")}
@@ -1356,11 +1439,13 @@ export function SettingsPage() {
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("common.logoutConfirmTitle")}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("common.logoutConfirmTitle")}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {t(
                 "common.logoutConfirmDescription",
-                "Vous allez etre deconnecte de votre session. Vous devrez vous reconnecter pour acceder a votre espace.",
+                "Vous allez etre deconnecte de votre session. Vous devrez vous reconnecter pour acceder a votre espace."
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1493,47 +1578,47 @@ function ThemePreview({
       type="button"
       onClick={onClick}
       className={cn(
-        "relative flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-200 cursor-pointer w-full text-left",
+        "relative flex w-full cursor-pointer items-center gap-3 rounded-xl border-2 p-3 text-left transition-all duration-200",
         isActive
           ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-          : "border-border hover:border-muted-foreground/30 hover:bg-muted/30",
+          : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
       )}
     >
       <div
         className={cn(
-          "w-16 h-12 rounded-lg overflow-hidden relative shrink-0",
+          "relative h-12 w-16 shrink-0 overflow-hidden rounded-lg",
           themeId === "default"
-            ? "bg-card border border-border"
-            : "bg-[oklch(0.92_0.005_250)]",
+            ? "border border-border bg-card"
+            : "bg-[oklch(0.92_0.005_250)]"
         )}
       >
         {themeId === "default" ? (
-          <div className="p-1.5 space-y-1">
-            <div className="h-1.5 w-5 bg-primary/20 rounded" />
-            <div className="h-2.5 bg-muted rounded border border-border" />
+          <div className="space-y-1 p-1.5">
+            <div className="h-1.5 w-5 rounded bg-primary/20" />
+            <div className="h-2.5 rounded border border-border bg-muted" />
             <div className="flex gap-0.5">
-              <div className="h-2 flex-1 bg-muted rounded border border-border" />
-              <div className="h-2 flex-1 bg-muted rounded border border-border" />
+              <div className="h-2 flex-1 rounded border border-border bg-muted" />
+              <div className="h-2 flex-1 rounded border border-border bg-muted" />
             </div>
           </div>
         ) : (
-          <div className="p-1.5 space-y-1">
-            <div className="h-1.5 w-5 bg-primary/20 rounded" />
-            <div className="h-2.5 rounded neu-preview-element" />
+          <div className="space-y-1 p-1.5">
+            <div className="h-1.5 w-5 rounded bg-primary/20" />
+            <div className="neu-preview-element h-2.5 rounded" />
             <div className="flex gap-0.5">
-              <div className="h-2 flex-1 rounded neu-preview-element" />
-              <div className="h-2 flex-1 rounded neu-preview-element" />
+              <div className="neu-preview-element h-2 flex-1 rounded" />
+              <div className="neu-preview-element h-2 flex-1 rounded" />
             </div>
           </div>
         )}
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold">{label}</p>
-        <p className="text-xs text-muted-foreground leading-tight truncate">
+        <p className="truncate text-xs leading-tight text-muted-foreground">
           {description}
         </p>
       </div>
-      {isActive && <div className="w-3 h-3 rounded-full bg-primary shrink-0" />}
+      {isActive && <div className="h-3 w-3 shrink-0 rounded-full bg-primary" />}
     </button>
   )
 }
@@ -1542,7 +1627,7 @@ function ThemeSwitcher() {
   const { t } = useTranslation()
   const { consularTheme, setConsularTheme } = useConsularTheme()
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <ThemePreview
         themeId="default"
         label={t("settings.consularTheme.default")}
@@ -1570,10 +1655,10 @@ function MemberPreferencesCard({ orgId }: { orgId: Id<"orgs"> }) {
 
   const { data: memberSettings } = useAuthenticatedConvexQuery(
     api.functions.userPreferences.getMyMembershipSettings,
-    { orgId },
+    { orgId }
   )
   const { mutateAsync: updateSettings } = useConvexMutationQuery(
-    api.functions.userPreferences.updateMyMembershipSettings,
+    api.functions.userPreferences.updateMyMembershipSettings
   )
 
   const handleToggle = async (key: string, value: boolean) => {
@@ -1590,7 +1675,7 @@ function MemberPreferencesCard({ orgId }: { orgId: Id<"orgs"> }) {
 
   if (memberSettings === undefined) {
     return (
-      <div className="py-6 border rounded-xl bg-card p-6">
+      <div className="rounded-xl border bg-card p-6 py-6">
         <Skeleton className="h-[120px]" />
       </div>
     )
@@ -1627,11 +1712,11 @@ function MemberPreferencesCard({ orgId }: { orgId: Id<"orgs"> }) {
         title={t("settings.memberPreferences.title")}
         description={t("settings.memberPreferences.description")}
       />
-      <div className="space-y-0 max-w-xl">
+      <div className="max-w-xl space-y-0">
         {toggleItems.map((item) => (
           <div
             key={item.key}
-            className="flex items-center justify-between py-4 border-b last:border-0"
+            className="flex items-center justify-between border-b py-4 last:border-0"
           >
             <div className="space-y-0.5">
               <Label className="text-sm font-medium">{item.label}</Label>
@@ -1669,30 +1754,31 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
   // ── Queries ──
   const { data: catalogServices } = useAuthenticatedConvexQuery(
     api.functions.services.listCatalog,
-    {},
+    {}
   )
   const { data: orgServices } = useAuthenticatedConvexQuery(
     api.functions.services.listByOrg,
-    { orgId, activeOnly: false },
+    { orgId, activeOnly: false }
   )
 
   // ── Mutations ──
   const { mutateAsync: toggleActive } = useConvexMutationQuery(
-    api.functions.services.toggleOrgServiceActive,
+    api.functions.services.toggleOrgServiceActive
   )
   const { mutateAsync: activateService } = useConvexMutationQuery(
-    api.functions.services.activateForOrg,
+    api.functions.services.activateForOrg
   )
 
   // ── Merge catalog + org services ──
   const mergedServices = useMemo(() => {
     if (!catalogServices) return []
     const orgMap = new Map(
-      (orgServices ?? []).map((os: any) => [os.serviceId, os]),
+      (orgServices ?? []).map((os: any) => [os.serviceId, os])
     )
     return catalogServices.map((cs: any) => {
       const os = orgMap.get(cs._id) as any
-      let activationState: "active" | "inactive" | "not_activated" = "not_activated"
+      let activationState: "active" | "inactive" | "not_activated" =
+        "not_activated"
       if (os) {
         activationState = os.isActive ? "active" : "inactive"
       }
@@ -1707,14 +1793,16 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
         requiresAppointment: cs.requiresAppointment,
         activationState,
         orgServiceId: os?._id,
-        pricing: os?.pricing as { amount: number; currency: string } | undefined,
+        pricing: os?.pricing as
+          | { amount: number; currency: string }
+          | undefined,
         isActive: os?.isActive,
       }
     })
   }, [catalogServices, orgServices])
 
   const availableForActivation = mergedServices.filter(
-    (s) => s.activationState === "not_activated",
+    (s) => s.activationState === "not_activated"
   )
 
   // ── Filtering ──
@@ -1724,18 +1812,22 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
       const name =
         typeof service.name === "string"
           ? service.name
-          : ((service.name as any)?.[i18n.language] ||
-              (service.name as any)?.fr ||
-              (service.name as any)?.en ||
-              "")
+          : (service.name as any)?.[i18n.language] ||
+            (service.name as any)?.fr ||
+            (service.name as any)?.en ||
+            ""
       const desc =
         typeof service.description === "string"
           ? service.description
-          : ((service.description as any)?.[i18n.language] ||
-              (service.description as any)?.fr ||
-              (service.description as any)?.en ||
-              "")
-      return !query || name.toLowerCase().includes(query) || desc.toLowerCase().includes(query)
+          : (service.description as any)?.[i18n.language] ||
+            (service.description as any)?.fr ||
+            (service.description as any)?.en ||
+            ""
+      return (
+        !query ||
+        name.toLowerCase().includes(query) ||
+        desc.toLowerCase().includes(query)
+      )
     })
   }, [mergedServices, searchQuery, i18n.language])
 
@@ -1756,9 +1848,13 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
       await activateService({
         orgId,
         serviceId: selectedService as any,
-        pricing: { amount: activationForm.fee, currency: activationForm.currency },
+        pricing: {
+          amount: activationForm.fee,
+          currency: activationForm.currency,
+        },
         requiresAppointment: activationForm.requiresAppointment,
-        requiresAppointmentForPickup: activationForm.requiresAppointmentForPickup,
+        requiresAppointmentForPickup:
+          activationForm.requiresAppointmentForPickup,
       })
       toast.success(t("dashboard.services.activated"))
       setAddDialogOpen(false)
@@ -1783,7 +1879,9 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
     )
   }
 
-  const activeCount = mergedServices.filter((s) => s.activationState === "active").length
+  const activeCount = mergedServices.filter(
+    (s) => s.activationState === "active"
+  ).length
   const totalCount = mergedServices.length
 
   return (
@@ -1792,12 +1890,12 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
         title="Services"
         description={t(
           "dashboard.services.description",
-          "Gerez les services disponibles pour votre organisme. Activez ou desactivez les services du catalogue.",
+          "Gerez les services disponibles pour votre organisme. Activez ou desactivez les services du catalogue."
         )}
       />
 
       {/* Stats row */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="mb-6 flex items-center gap-4">
         <div className="flex items-center gap-2 text-sm">
           <div className="size-2 rounded-full bg-green-500" />
           <span className="text-muted-foreground">
@@ -1814,19 +1912,19 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
       </div>
 
       {/* Search + Add */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="mb-4 flex items-center gap-3">
         <div className="relative flex-1">
           <input
             type="text"
             placeholder={t(
               "dashboard.services.searchPlaceholder",
-              "Rechercher un service...",
+              "Rechercher un service..."
             )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background outline-none transition-all text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+            className="w-full rounded-xl border border-border bg-background py-2.5 pr-4 pl-10 text-sm transition-all outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
-          <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Briefcase className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
         </div>
         <Button
           onClick={() => {
@@ -1842,7 +1940,7 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
           }}
           disabled={availableForActivation.length === 0}
           size="sm"
-          className="gap-1.5 shrink-0"
+          className="shrink-0 gap-1.5"
         >
           <Plus className="size-4" />
           {t("dashboard.services.activate")}
@@ -1852,10 +1950,10 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
       {/* Services list */}
       <div className="space-y-2">
         {filteredServices.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground text-sm">
+          <div className="py-8 text-center text-sm text-muted-foreground">
             {t(
               "dashboard.services.empty.description",
-              "Aucun service ne correspond a votre recherche.",
+              "Aucun service ne correspond a votre recherche."
             )}
           </div>
         ) : (
@@ -1863,10 +1961,10 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
             const name =
               typeof service.name === "string"
                 ? service.name
-                : ((service.name as any)?.[i18n.language] ||
-                    (service.name as any)?.fr ||
-                    (service.name as any)?.en ||
-                    "")
+                : (service.name as any)?.[i18n.language] ||
+                  (service.name as any)?.fr ||
+                  (service.name as any)?.en ||
+                  ""
             const isActivated = service.activationState !== "not_activated"
             const isActive = service.activationState === "active"
 
@@ -1874,25 +1972,25 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
               <div
                 key={service.catalogId}
                 className={cn(
-                  "flex items-center justify-between gap-4 px-4 py-3 rounded-xl border transition-colors",
-                  isActivated ? "bg-card" : "bg-muted/30 border-dashed",
+                  "flex items-center justify-between gap-4 rounded-xl border px-4 py-3 transition-colors",
+                  isActivated ? "bg-card" : "border-dashed bg-muted/30"
                 )}
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex min-w-0 items-center gap-3">
                   <div
                     className={cn(
-                      "size-9 rounded-lg flex items-center justify-center shrink-0",
+                      "flex size-9 shrink-0 items-center justify-center rounded-lg",
                       isActive
                         ? "bg-green-500/10 text-green-600 dark:text-green-400"
                         : isActivated
                           ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
-                          : "bg-muted text-muted-foreground",
+                          : "bg-muted text-muted-foreground"
                     )}
                   >
                     <Briefcase className="size-4" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{name}</p>
+                    <p className="truncate text-sm font-medium">{name}</p>
                     <p className="text-xs text-muted-foreground">
                       {isActive
                         ? t("dashboard.services.status.active")
@@ -1912,7 +2010,7 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex shrink-0 items-center gap-2">
                   {isActivated ? (
                     <Switch
                       checked={isActive}
@@ -1922,7 +2020,7 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-xs gap-1"
+                      className="gap-1 text-xs"
                       onClick={() => {
                         setSelectedService(service.catalogId)
                         setAddDialogOpen(true)
@@ -1947,7 +2045,7 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
             <DialogDescription>
               {t(
                 "dashboard.services.dialog.description",
-                "Selectionnez un service du catalogue a activer pour votre organisme.",
+                "Selectionnez un service du catalogue a activer pour votre organisme."
               )}
             </DialogDescription>
           </DialogHeader>
@@ -1963,7 +2061,7 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
                   <SelectValue
                     placeholder={t(
                       "dashboard.services.dialog.selectPlaceholder",
-                      "Choisir un service...",
+                      "Choisir un service..."
                     )}
                   />
                 </SelectTrigger>
@@ -1972,7 +2070,7 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
                     <div className="p-2 text-center text-muted-foreground">
                       {t(
                         "dashboard.services.dialog.allActivated",
-                        "Tous les services sont deja actives",
+                        "Tous les services sont deja actives"
                       )}
                     </div>
                   ) : (
@@ -1980,10 +2078,10 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
                       const sName =
                         typeof s.name === "string"
                           ? s.name
-                          : ((s.name as any)?.[i18n.language] ||
-                              (s.name as any)?.fr ||
-                              (s.name as any)?.en ||
-                              "")
+                          : (s.name as any)?.[i18n.language] ||
+                            (s.name as any)?.fr ||
+                            (s.name as any)?.en ||
+                            ""
                       return (
                         <SelectItem key={s.catalogId} value={s.catalogId}>
                           {sName}
@@ -2031,7 +2129,7 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
               <Label>
                 {t(
                   "dashboard.services.dialog.instructions",
-                  "Instructions personnalisees",
+                  "Instructions personnalisees"
                 )}
               </Label>
               <Textarea
@@ -2044,7 +2142,7 @@ function ServicesSettingsPanel({ orgId }: { orgId: Id<"orgs"> }) {
                 }
                 placeholder={t(
                   "dashboard.services.dialog.instructionsPlaceholder",
-                  "Instructions specifiques pour ce service...",
+                  "Instructions specifiques pour ce service..."
                 )}
                 rows={3}
               />

@@ -6,9 +6,9 @@
  * 2. Configuration par Représentation — priorités locales du chef de mission
  */
 
-import { api } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
-import { createFileRoute } from "@tanstack/react-router";
+import { api } from "@convex/_generated/api"
+import type { Id } from "@convex/_generated/dataModel"
+import { createFileRoute } from "@tanstack/react-router"
 import {
   Globe2,
   Plus,
@@ -22,9 +22,9 @@ import {
   RotateCcw,
   MapPin,
   AlertTriangle,
-} from "lucide-react";
-import { useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+} from "lucide-react"
+import { useMemo, useRef, useState } from "react"
+import { toast } from "sonner"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,54 +34,54 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Textarea } from "@/components/ui/textarea";
+} from "@/components/ui/popover"
+import { Textarea } from "@/components/ui/textarea"
 import {
   useAuthenticatedConvexQuery,
   useConvexMutationQuery,
-} from "@/integrations/convex/hooks";
-import { PriorityDocumentImporter } from "@/components/diplomatic/priority-document-importer";
-import { cn } from "@/lib/utils";
-import { PageHeader } from "@/components/design-system/page-header";
+} from "@/integrations/convex/hooks"
+import { PriorityDocumentImporter } from "@/components/diplomatic/priority-document-importer"
+import { cn } from "@/lib/utils"
+import { PageHeader } from "@/components/design-system/page-header"
 
 export const Route = createFileRoute("/_app/affaires-diplomatiques")({
   component: AffairesDiplomatiquesSettings,
-});
+})
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 interface PriorityItem {
-  title: string;
-  sector: string;
-  description?: string;
-  keywords: string[];
+  title: string
+  sector: string
+  description?: string
+  keywords: string[]
 }
 
 // ─── Recherche intelligente ────────────────────────────────────────────────
 
 function matchesPriority(p: PriorityItem, query: string): boolean {
-  if (!query.trim()) return true;
-  const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!query.trim()) return true
+  const tokens = query.toLowerCase().split(/\s+/).filter(Boolean)
   const text = [p.title, p.sector, p.description ?? "", ...p.keywords]
     .join(" ")
-    .toLowerCase();
-  return tokens.every((t) => text.includes(t));
+    .toLowerCase()
+  return tokens.every((t) => text.includes(t))
 }
 
 // ─── Bande compacte de priorités (scroll horizontal + popover édition) ─────
@@ -93,74 +93,74 @@ function PriorityStrip({
   readOnly = false,
   externalSearch,
 }: {
-  priorities: PriorityItem[];
-  setPriorities?: React.Dispatch<React.SetStateAction<PriorityItem[]>>;
-  compact?: boolean;
-  readOnly?: boolean;
-  externalSearch?: string;
+  priorities: PriorityItem[]
+  setPriorities?: React.Dispatch<React.SetStateAction<PriorityItem[]>>
+  compact?: boolean
+  readOnly?: boolean
+  externalSearch?: string
 }) {
-  const [internalSearch, setInternalSearch] = useState("");
-  const [activePage, setActivePage] = useState(0);
-  const search = externalSearch ?? internalSearch;
-  const setSearch = (v: string) => setInternalSearch(v);
-  const showSearchBar = externalSearch === undefined;
-  const [editIndex, setEditIndex] = useState<number | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [internalSearch, setInternalSearch] = useState("")
+  const [activePage, setActivePage] = useState(0)
+  const search = externalSearch ?? internalSearch
+  const setSearch = (v: string) => setInternalSearch(v)
+  const showSearchBar = externalSearch === undefined
+  const [editIndex, setEditIndex] = useState<number | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   const filtered = useMemo(
     () =>
       priorities
         .map((p, i) => ({ ...p, _idx: i }))
         .filter((p) => matchesPriority(p, search)),
-    [priorities, search],
-  );
+    [priorities, search]
+  )
 
   const addPriority = () => {
-    if (readOnly || !setPriorities) return;
-    const newIdx = priorities.length;
+    if (readOnly || !setPriorities) return
+    const newIdx = priorities.length
     setPriorities((prev) => [
       ...prev,
       { title: "", sector: "", description: "", keywords: [] },
-    ]);
-    setEditIndex(newIdx);
+    ])
+    setEditIndex(newIdx)
     setTimeout(() => {
       scrollRef.current?.scrollTo({
         left: scrollRef.current.scrollWidth,
         behavior: "smooth",
-      });
-    }, 50);
-  };
+      })
+    }, 50)
+  }
 
   const removePriority = (idx: number) => {
-    if (readOnly || !setPriorities) return;
-    setPriorities((prev) => prev.filter((_, i) => i !== idx));
-    if (editIndex === idx) setEditIndex(null);
-  };
+    if (readOnly || !setPriorities) return
+    setPriorities((prev) => prev.filter((_, i) => i !== idx))
+    if (editIndex === idx) setEditIndex(null)
+  }
 
   const updatePriority = (
     idx: number,
     field: keyof PriorityItem,
-    value: string | string[],
+    value: string | string[]
   ) => {
-    if (readOnly || !setPriorities) return;
+    if (readOnly || !setPriorities) return
     setPriorities((prev) =>
-      prev.map((p, i) => (i === idx ? { ...p, [field]: value } : p)),
-    );
-  };
+      prev.map((p, i) => (i === idx ? { ...p, [field]: value } : p))
+    )
+  }
 
   if (priorities.length === 0) {
     return readOnly ? null : (
-      <p className="text-xs text-muted-foreground text-center py-3">
+      <p className="py-3 text-center text-xs text-muted-foreground">
         Aucune priorité définie. Importez un document ou ajoutez manuellement.
       </p>
-    );
+    )
   }
 
   // Découper les items en pages de 16 (4 colonnes × 4 lignes) pour le mode compact
-  const pageSize = compact ? 16 : filtered.length;
-  const pages: (typeof filtered)[] = [];
+  const pageSize = compact ? 16 : filtered.length
+  const pages: (typeof filtered)[] = []
   for (let i = 0; i < filtered.length; i += pageSize) {
-    pages.push(filtered.slice(i, i + pageSize));
+    pages.push(filtered.slice(i, i + pageSize))
   }
 
   // Carte de priorité réutilisable
@@ -174,41 +174,41 @@ function PriorityStrip({
         <button
           type="button"
           className={cn(
-            "text-left rounded-xl border bg-[#F4F3ED] dark:bg-[#171616] transition-all group w-full",
+            "group w-full rounded-xl border bg-secondary text-left transition-all",
             "hover:border-primary/30",
             editIndex === p._idx && "border-primary/40",
-            compact ? "p-3 h-[110px] flex flex-col" : "min-w-[190px] max-w-[230px] p-3",
+            compact
+              ? "flex h-[110px] flex-col p-3"
+              : "max-w-[230px] min-w-[190px] p-3"
           )}
         >
           {/* Badge P + Mots-clés sur la même ligne */}
-          <div className="flex items-center justify-between gap-1 mb-1">
+          <div className="mb-1 flex items-center justify-between gap-1">
             <Badge
               variant="outline"
-              className={cn(
-                "shrink-0",
-                compact ? "text-[9px]" : "text-[10px]",
-              )}
+              className={cn("shrink-0", compact ? "text-[9px]" : "text-[10px]")}
             >
               P{p._idx + 1}
             </Badge>
             {p.keywords.length > 0 && (
               <span className="text-[11px] text-muted-foreground">
-                {p.keywords.length} mot{p.keywords.length > 1 ? "s" : ""}-clé{p.keywords.length > 1 ? "s" : ""}
+                {p.keywords.length} mot{p.keywords.length > 1 ? "s" : ""}-clé
+                {p.keywords.length > 1 ? "s" : ""}
               </span>
             )}
             {!readOnly && (
               <span
                 role="button"
                 tabIndex={0}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-destructive/10 hover:text-destructive"
+                className="rounded p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
                 onClick={(e) => {
-                  e.stopPropagation();
-                  removePriority(p._idx);
+                  e.stopPropagation()
+                  removePriority(p._idx)
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
-                    e.stopPropagation();
-                    removePriority(p._idx);
+                    e.stopPropagation()
+                    removePriority(p._idx)
                   }
                 }}
               >
@@ -218,8 +218,8 @@ function PriorityStrip({
           </div>
           <p
             className={cn(
-              "font-medium mt-1 leading-tight",
-              compact ? "text-[13px]" : "text-sm line-clamp-2",
+              "mt-1 leading-tight font-medium",
+              compact ? "text-[13px]" : "line-clamp-2 text-sm"
             )}
           >
             {p.title || "Sans titre"}
@@ -234,7 +234,7 @@ function PriorityStrip({
               {p.sector}
             </Badge>
             {p.description && (
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-xs leading-relaxed text-muted-foreground">
                 {p.description}
               </p>
             )}
@@ -306,7 +306,7 @@ function PriorityStrip({
                     e.target.value
                       .split(",")
                       .map((k) => k.trim())
-                      .filter(Boolean),
+                      .filter(Boolean)
                   )
                 }
                 placeholder="routes, infrastructures..."
@@ -317,7 +317,7 @@ function PriorityStrip({
         )}
       </PopoverContent>
     </Popover>
-  );
+  )
 
   return (
     <div className="space-y-2.5">
@@ -325,24 +325,24 @@ function PriorityStrip({
       {showSearchBar && priorities.length > 2 && (
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher par titre, secteur, mot-clé..."
-              className="pl-9 h-8 text-xs"
+              className="h-8 pl-9 text-xs"
             />
             {search && (
               <button
                 type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted"
+                className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 hover:bg-muted"
                 onClick={() => setSearch("")}
               >
                 <X className="h-3 w-3 text-muted-foreground" />
               </button>
             )}
           </div>
-          <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+          <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
             {filtered.length}/{priorities.length}
           </span>
         </div>
@@ -353,21 +353,21 @@ function PriorityStrip({
         <>
           <div
             ref={scrollRef}
-            className="flex overflow-x-auto scroll-smooth snap-x snap-mandatory"
+            className="flex snap-x snap-mandatory overflow-x-auto scroll-smooth"
             style={{ scrollbarWidth: "none" }}
             onScroll={() => {
-              if (!scrollRef.current) return;
-              const el = scrollRef.current;
-              const page = Math.round(el.scrollLeft / el.clientWidth);
-              setActivePage(page);
+              if (!scrollRef.current) return
+              const el = scrollRef.current
+              const page = Math.round(el.scrollLeft / el.clientWidth)
+              setActivePage(page)
             }}
           >
             {pages.map((page, pageIdx) => (
               <div
                 key={pageIdx}
-                className="min-w-full w-full shrink-0 snap-start"
+                className="w-full min-w-full shrink-0 snap-start"
               >
-                <div className="grid grid-cols-4 gap-2.5 auto-rows-auto">
+                <div className="grid auto-rows-auto grid-cols-4 gap-2.5">
                   {page.map((p) => renderCard(p))}
                 </div>
               </div>
@@ -385,17 +385,17 @@ function PriorityStrip({
                     scrollRef.current?.scrollTo({
                       left: i * (scrollRef.current?.clientWidth ?? 0),
                       behavior: "smooth",
-                    });
+                    })
                   }}
                   className={cn(
                     "h-1.5 rounded-full transition-all",
                     activePage === i
                       ? "w-4 bg-primary"
-                      : "w-1.5 bg-border hover:bg-muted-foreground",
+                      : "w-1.5 bg-border hover:bg-muted-foreground"
                   )}
                 />
               ))}
-              <span className="text-[9px] text-muted-foreground ml-2">
+              <span className="ml-2 text-[9px] text-muted-foreground">
                 {activePage + 1}/{pages.length}
               </span>
             </div>
@@ -405,13 +405,13 @@ function PriorityStrip({
         /* Mode normal : une seule ligne horizontale */
         <div
           ref={scrollRef}
-          className="flex items-stretch overflow-x-auto pb-2 scroll-smooth"
+          className="flex items-stretch overflow-x-auto scroll-smooth pb-2"
           style={{ scrollbarWidth: "thin" }}
         >
           {filtered.map((p, idx) => (
-            <div key={p._idx} className="flex items-stretch shrink-0">
+            <div key={p._idx} className="flex shrink-0 items-stretch">
               {idx > 0 && (
-                <div className="w-4 flex items-center justify-center">
+                <div className="flex w-4 items-center justify-center">
                   <div className="h-3/4 border-l-2 border-dotted border-border/40" />
                 </div>
               )}
@@ -419,16 +419,16 @@ function PriorityStrip({
             </div>
           ))}
           {!readOnly && (
-            <div className="flex items-stretch shrink-0">
+            <div className="flex shrink-0 items-stretch">
               {filtered.length > 0 && (
-                <div className="w-4 flex items-center justify-center">
+                <div className="flex w-4 items-center justify-center">
                   <div className="h-3/4 border-l-2 border-dotted border-border/40" />
                 </div>
               )}
               <button
                 type="button"
                 onClick={addPriority}
-                className="min-w-[120px] min-h-[80px] p-3 rounded-xl border-2 border-dashed border-border/30 hover:border-primary/30 hover:bg-muted/30 transition-all flex flex-col items-center justify-center gap-1"
+                className="flex min-h-[80px] min-w-[120px] flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border/30 p-3 transition-all hover:border-primary/30 hover:bg-muted/30"
               >
                 <Plus className="h-4 w-4 text-muted-foreground" />
                 <span className="text-[10px] text-muted-foreground">
@@ -442,30 +442,30 @@ function PriorityStrip({
 
       {/* Message vide recherche */}
       {filtered.length === 0 && search && (
-        <p className="text-xs text-muted-foreground text-center py-3">
+        <p className="py-3 text-center text-xs text-muted-foreground">
           Aucune priorité ne correspond à « {search} »
         </p>
       )}
     </div>
-  );
+  )
 }
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 
-type TabId = "global" | "representations" | "targets" | "trash";
+type TabId = "global" | "representations" | "targets" | "trash"
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Globe2 }> = [
   { id: "global", label: "Priorités Générales", icon: Globe2 },
   { id: "representations", label: "Par Représentation", icon: Building2 },
   { id: "targets", label: "Cibles", icon: Target },
   { id: "trash", label: "Corbeille", icon: Trash2 },
-];
+]
 
 function AffairesDiplomatiquesSettings() {
-  const [activeTab, setActiveTab] = useState<TabId>("global");
+  const [activeTab, setActiveTab] = useState<TabId>("global")
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-3 md:p-4 min-h-full overflow-auto w-full max-w-[1400px] mx-auto">
+    <div className="flex min-h-full w-full flex-1 flex-col gap-4 overflow-auto p-3 md:p-4">
       {/* En-tête */}
       <PageHeader
         icon={<Globe2 className="h-5 w-5" />}
@@ -476,23 +476,23 @@ function AffairesDiplomatiquesSettings() {
       {/* Onglets horizontaux */}
       <div className="flex items-center gap-1 border-b pb-px">
         {TABS.map((tab) => {
-          const Icon = tab.icon;
+          const Icon = tab.icon
           return (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 text-sm rounded-t-lg transition-colors border-b-2 -mb-px",
+                "-mb-px flex items-center gap-2 rounded-t-lg border-b-2 px-4 py-2 text-sm transition-colors",
                 activeTab === tab.id
-                  ? "border-primary text-foreground font-medium"
-                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
+                  ? "border-primary font-medium text-foreground"
+                  : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
               )}
             >
               <Icon className="h-4 w-4" />
               {tab.label}
             </button>
-          );
+          )
         })}
       </div>
 
@@ -502,7 +502,7 @@ function AffairesDiplomatiquesSettings() {
       {activeTab === "targets" && <TargetsByRepresentationTab />}
       {activeTab === "trash" && <TrashTab />}
     </div>
-  );
+  )
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -512,70 +512,70 @@ function AffairesDiplomatiquesSettings() {
 function GlobalPrioritiesTab() {
   const { data: globalDoc, isPending } = useAuthenticatedConvexQuery(
     api.functions.diplomaticAffairs.getGlobalPriorities,
-    {},
-  );
+    {}
+  )
 
   const { mutateAsync: setGlobal, isPending: saving } = useConvexMutationQuery(
-    api.functions.diplomaticAffairs.setGlobalPriorities,
-  );
+    api.functions.diplomaticAffairs.setGlobalPriorities
+  )
 
-  const [priorities, setPriorities] = useState<PriorityItem[]>([]);
-  const [globalSearch, setGlobalSearch] = useState("");
-  const [targetsPerSearch, setTargetsPerSearch] = useState(5);
-  const [targetLimitPerYear, setTargetLimitPerYear] = useState(50);
-  const [initialized, setInitialized] = useState(false);
+  const [priorities, setPriorities] = useState<PriorityItem[]>([])
+  const [globalSearch, setGlobalSearch] = useState("")
+  const [targetsPerSearch, setTargetsPerSearch] = useState(5)
+  const [targetLimitPerYear, setTargetLimitPerYear] = useState(50)
+  const [initialized, setInitialized] = useState(false)
 
   // Charger les priorités existantes
   if (globalDoc && !initialized) {
-    setPriorities(globalDoc.priorities);
-    setTargetsPerSearch(globalDoc.defaultTargetsPerSearch ?? 5);
-    setTargetLimitPerYear(globalDoc.defaultTargetLimitPerYear ?? 50);
-    setInitialized(true);
+    setPriorities(globalDoc.priorities)
+    setTargetsPerSearch(globalDoc.defaultTargetsPerSearch ?? 5)
+    setTargetLimitPerYear(globalDoc.defaultTargetLimitPerYear ?? 50)
+    setInitialized(true)
   }
 
   const handleSave = async () => {
-    const valid = priorities.filter((p) => p.title.trim() && p.sector.trim());
+    const valid = priorities.filter((p) => p.title.trim() && p.sector.trim())
     if (valid.length === 0) {
-      toast.error("Ajoutez au moins une priorité avec un titre et un secteur.");
-      return;
+      toast.error("Ajoutez au moins une priorité avec un titre et un secteur.")
+      return
     }
     try {
       await setGlobal({
         priorities: valid,
         defaultTargetsPerSearch: targetsPerSearch,
         defaultTargetLimitPerYear: targetLimitPerYear,
-      });
-      toast.success("Priorités générales enregistrées");
+      })
+      toast.success("Priorités générales enregistrées")
     } catch (e) {
-      toast.error("Erreur lors de l'enregistrement");
+      toast.error("Erreur lors de l'enregistrement")
     }
-  };
+  }
 
   if (isPending) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
-    );
+    )
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       {/* Recherche + Import + Enregistrer sur la même ligne */}
       <div className="flex items-center gap-3">
         {priorities.length > 2 && (
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={globalSearch}
               onChange={(e) => setGlobalSearch(e.target.value)}
               placeholder="Rechercher par titre, secteur, mot-clé..."
-              className="pl-9 h-9 text-xs"
+              className="h-9 pl-9 text-xs"
             />
             {globalSearch && (
               <button
                 type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted"
+                className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 hover:bg-muted"
                 onClick={() => setGlobalSearch("")}
               >
                 <X className="h-3 w-3 text-muted-foreground" />
@@ -586,28 +586,32 @@ function GlobalPrioritiesTab() {
         {!priorities.length && <div className="flex-1" />}
 
         {/* Cibles par recherche */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-[11px] text-muted-foreground whitespace-nowrap">Cibles/recherche</span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="text-[11px] whitespace-nowrap text-muted-foreground">
+            Cibles/recherche
+          </span>
           <Input
             type="number"
             min={1}
             max={50}
             value={targetsPerSearch}
             onChange={(e) => setTargetsPerSearch(Number(e.target.value) || 1)}
-            className="w-16 h-9 text-xs text-center"
+            className="h-9 w-16 text-center text-xs"
           />
         </div>
 
         {/* Limite cibles / an */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-[11px] text-muted-foreground whitespace-nowrap">Limite/an</span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="text-[11px] whitespace-nowrap text-muted-foreground">
+            Limite/an
+          </span>
           <Input
             type="number"
             min={1}
             max={500}
             value={targetLimitPerYear}
             onChange={(e) => setTargetLimitPerYear(Number(e.target.value) || 1)}
-            className="w-16 h-9 text-xs text-center"
+            className="h-9 w-16 text-center text-xs"
           />
         </div>
 
@@ -615,12 +619,14 @@ function GlobalPrioritiesTab() {
           compact
           onPrioritiesExtracted={(imported) => {
             setPriorities((prev) => {
-              const existingTitles = new Set(prev.map((p) => p.title.toLowerCase()));
+              const existingTitles = new Set(
+                prev.map((p) => p.title.toLowerCase())
+              )
               const newOnes = imported.filter(
-                (p) => !existingTitles.has(p.title.toLowerCase()),
-              );
-              return [...prev, ...newOnes];
-            });
+                (p) => !existingTitles.has(p.title.toLowerCase())
+              )
+              return [...prev, ...newOnes]
+            })
           }}
         />
         <Button
@@ -646,7 +652,7 @@ function GlobalPrioritiesTab() {
         externalSearch={globalSearch}
       />
     </div>
-  );
+  )
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -656,157 +662,300 @@ function GlobalPrioritiesTab() {
 // Mapping code pays ISO → zone géographique
 const CONTINENT_MAP: Record<string, string> = {
   // Afrique
-  CM: "Afrique", CG: "Afrique", CD: "Afrique", GQ: "Afrique", TD: "Afrique",
-  CF: "Afrique", GA: "Afrique", ST: "Afrique", SN: "Afrique", CI: "Afrique",
-  GH: "Afrique", NG: "Afrique", BJ: "Afrique", TG: "Afrique", BF: "Afrique",
-  ML: "Afrique", GN: "Afrique", NE: "Afrique", GM: "Afrique", GW: "Afrique",
-  SL: "Afrique", LR: "Afrique", CV: "Afrique", MR: "Afrique", KE: "Afrique",
-  ET: "Afrique", TZ: "Afrique", UG: "Afrique", RW: "Afrique", BI: "Afrique",
-  DJ: "Afrique", ER: "Afrique", SO: "Afrique", SD: "Afrique", SS: "Afrique",
-  MG: "Afrique", MU: "Afrique", SC: "Afrique", KM: "Afrique", ZA: "Afrique",
-  AO: "Afrique", MZ: "Afrique", ZM: "Afrique", ZW: "Afrique", BW: "Afrique",
-  NA: "Afrique", MW: "Afrique", LS: "Afrique", SZ: "Afrique", MA: "Afrique",
-  DZ: "Afrique", TN: "Afrique", LY: "Afrique", EG: "Afrique",
+  CM: "Afrique",
+  CG: "Afrique",
+  CD: "Afrique",
+  GQ: "Afrique",
+  TD: "Afrique",
+  CF: "Afrique",
+  GA: "Afrique",
+  ST: "Afrique",
+  SN: "Afrique",
+  CI: "Afrique",
+  GH: "Afrique",
+  NG: "Afrique",
+  BJ: "Afrique",
+  TG: "Afrique",
+  BF: "Afrique",
+  ML: "Afrique",
+  GN: "Afrique",
+  NE: "Afrique",
+  GM: "Afrique",
+  GW: "Afrique",
+  SL: "Afrique",
+  LR: "Afrique",
+  CV: "Afrique",
+  MR: "Afrique",
+  KE: "Afrique",
+  ET: "Afrique",
+  TZ: "Afrique",
+  UG: "Afrique",
+  RW: "Afrique",
+  BI: "Afrique",
+  DJ: "Afrique",
+  ER: "Afrique",
+  SO: "Afrique",
+  SD: "Afrique",
+  SS: "Afrique",
+  MG: "Afrique",
+  MU: "Afrique",
+  SC: "Afrique",
+  KM: "Afrique",
+  ZA: "Afrique",
+  AO: "Afrique",
+  MZ: "Afrique",
+  ZM: "Afrique",
+  ZW: "Afrique",
+  BW: "Afrique",
+  NA: "Afrique",
+  MW: "Afrique",
+  LS: "Afrique",
+  SZ: "Afrique",
+  MA: "Afrique",
+  DZ: "Afrique",
+  TN: "Afrique",
+  LY: "Afrique",
+  EG: "Afrique",
   // Europe
-  FR: "Europe", DE: "Europe", GB: "Europe", ES: "Europe", IT: "Europe",
-  BE: "Europe", CH: "Europe", PT: "Europe", NL: "Europe", AT: "Europe",
-  SE: "Europe", NO: "Europe", DK: "Europe", FI: "Europe", IE: "Europe",
-  PL: "Europe", CZ: "Europe", RO: "Europe", HU: "Europe", GR: "Europe",
-  BG: "Europe", HR: "Europe", SK: "Europe", SI: "Europe", LT: "Europe",
-  LV: "Europe", EE: "Europe", LU: "Europe", MT: "Europe", CY: "Europe",
-  IS: "Europe", MC: "Europe", AD: "Europe", RS: "Europe", BA: "Europe",
-  ME: "Europe", MK: "Europe", AL: "Europe", MD: "Europe", UA: "Europe",
-  BY: "Europe", RU: "Europe", VA: "Europe",
+  FR: "Europe",
+  DE: "Europe",
+  GB: "Europe",
+  ES: "Europe",
+  IT: "Europe",
+  BE: "Europe",
+  CH: "Europe",
+  PT: "Europe",
+  NL: "Europe",
+  AT: "Europe",
+  SE: "Europe",
+  NO: "Europe",
+  DK: "Europe",
+  FI: "Europe",
+  IE: "Europe",
+  PL: "Europe",
+  CZ: "Europe",
+  RO: "Europe",
+  HU: "Europe",
+  GR: "Europe",
+  BG: "Europe",
+  HR: "Europe",
+  SK: "Europe",
+  SI: "Europe",
+  LT: "Europe",
+  LV: "Europe",
+  EE: "Europe",
+  LU: "Europe",
+  MT: "Europe",
+  CY: "Europe",
+  IS: "Europe",
+  MC: "Europe",
+  AD: "Europe",
+  RS: "Europe",
+  BA: "Europe",
+  ME: "Europe",
+  MK: "Europe",
+  AL: "Europe",
+  MD: "Europe",
+  UA: "Europe",
+  BY: "Europe",
+  RU: "Europe",
+  VA: "Europe",
   // Amérique du Nord
-  US: "Amérique du Nord", CA: "Amérique du Nord", MX: "Amérique du Nord",
+  US: "Amérique du Nord",
+  CA: "Amérique du Nord",
+  MX: "Amérique du Nord",
   // Amérique Latine & Caraïbes
-  BR: "Amérique Latine", AR: "Amérique Latine", CL: "Amérique Latine",
-  CO: "Amérique Latine", PE: "Amérique Latine", VE: "Amérique Latine",
-  EC: "Amérique Latine", BO: "Amérique Latine", PY: "Amérique Latine",
-  UY: "Amérique Latine", CR: "Amérique Latine", PA: "Amérique Latine",
-  CU: "Amérique Latine", DO: "Amérique Latine", GT: "Amérique Latine",
-  HN: "Amérique Latine", SV: "Amérique Latine", NI: "Amérique Latine",
-  HT: "Amérique Latine", JM: "Amérique Latine", TT: "Amérique Latine",
+  BR: "Amérique Latine",
+  AR: "Amérique Latine",
+  CL: "Amérique Latine",
+  CO: "Amérique Latine",
+  PE: "Amérique Latine",
+  VE: "Amérique Latine",
+  EC: "Amérique Latine",
+  BO: "Amérique Latine",
+  PY: "Amérique Latine",
+  UY: "Amérique Latine",
+  CR: "Amérique Latine",
+  PA: "Amérique Latine",
+  CU: "Amérique Latine",
+  DO: "Amérique Latine",
+  GT: "Amérique Latine",
+  HN: "Amérique Latine",
+  SV: "Amérique Latine",
+  NI: "Amérique Latine",
+  HT: "Amérique Latine",
+  JM: "Amérique Latine",
+  TT: "Amérique Latine",
   // Asie
-  CN: "Asie", JP: "Asie", KR: "Asie", IN: "Asie", ID: "Asie",
-  TH: "Asie", VN: "Asie", MY: "Asie", SG: "Asie", PH: "Asie",
-  MM: "Asie", KH: "Asie", LA: "Asie", BD: "Asie", LK: "Asie",
-  NP: "Asie", PK: "Asie", AF: "Asie", KZ: "Asie", UZ: "Asie",
-  TM: "Asie", KG: "Asie", TJ: "Asie", MN: "Asie", TW: "Asie",
+  CN: "Asie",
+  JP: "Asie",
+  KR: "Asie",
+  IN: "Asie",
+  ID: "Asie",
+  TH: "Asie",
+  VN: "Asie",
+  MY: "Asie",
+  SG: "Asie",
+  PH: "Asie",
+  MM: "Asie",
+  KH: "Asie",
+  LA: "Asie",
+  BD: "Asie",
+  LK: "Asie",
+  NP: "Asie",
+  PK: "Asie",
+  AF: "Asie",
+  KZ: "Asie",
+  UZ: "Asie",
+  TM: "Asie",
+  KG: "Asie",
+  TJ: "Asie",
+  MN: "Asie",
+  TW: "Asie",
   KP: "Asie",
   // Moyen-Orient
-  SA: "Moyen-Orient", AE: "Moyen-Orient", QA: "Moyen-Orient",
-  KW: "Moyen-Orient", BH: "Moyen-Orient", OM: "Moyen-Orient",
-  IL: "Moyen-Orient", JO: "Moyen-Orient", LB: "Moyen-Orient",
-  IQ: "Moyen-Orient", IR: "Moyen-Orient", SY: "Moyen-Orient",
-  YE: "Moyen-Orient", TR: "Moyen-Orient", PS: "Moyen-Orient",
+  SA: "Moyen-Orient",
+  AE: "Moyen-Orient",
+  QA: "Moyen-Orient",
+  KW: "Moyen-Orient",
+  BH: "Moyen-Orient",
+  OM: "Moyen-Orient",
+  IL: "Moyen-Orient",
+  JO: "Moyen-Orient",
+  LB: "Moyen-Orient",
+  IQ: "Moyen-Orient",
+  IR: "Moyen-Orient",
+  SY: "Moyen-Orient",
+  YE: "Moyen-Orient",
+  TR: "Moyen-Orient",
+  PS: "Moyen-Orient",
   // Océanie
-  AU: "Océanie", NZ: "Océanie", FJ: "Océanie", PG: "Océanie",
-};
+  AU: "Océanie",
+  NZ: "Océanie",
+  FJ: "Océanie",
+  PG: "Océanie",
+}
 
 const ZONE_ORDER = [
-  "Afrique", "Europe", "Amérique du Nord", "Amérique Latine",
-  "Asie", "Moyen-Orient", "Océanie", "Autres",
-];
+  "Afrique",
+  "Europe",
+  "Amérique du Nord",
+  "Amérique Latine",
+  "Asie",
+  "Moyen-Orient",
+  "Océanie",
+  "Autres",
+]
 
 function getContinent(countryCode: string): string {
-  return CONTINENT_MAP[countryCode?.toUpperCase()] ?? "Autres";
+  return CONTINENT_MAP[countryCode?.toUpperCase()] ?? "Autres"
 }
 
 function RepresentationsTab() {
   const { data: orgs, isPending } = useAuthenticatedConvexQuery(
     api.functions.orgs.list,
-    {},
-  );
+    {}
+  )
 
-  const [selectedOrgId, setSelectedOrgId] = useState<Id<"orgs"> | null>(null);
-  const [filter, setFilter] = useState("");
-  const [activeZone, setActiveZone] = useState<string | null>(null);
-  const [repPage, setRepPage] = useState(0);
-  const repScrollRef = useRef<HTMLDivElement>(null);
+  const [selectedOrgId, setSelectedOrgId] = useState<Id<"orgs"> | null>(null)
+  const [filter, setFilter] = useState("")
+  const [activeZone, setActiveZone] = useState<string | null>(null)
+  const [repPage, setRepPage] = useState(0)
+  const repScrollRef = useRef<HTMLDivElement>(null)
 
   if (isPending) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
-    );
+    )
   }
 
   // Filtrage par recherche
-  const filteredOrgs = orgs?.filter(
-    (o) =>
-      o.isActive &&
-      (!filter ||
-        o.name.toLowerCase().includes(filter.toLowerCase()) ||
-        o.address?.country?.toLowerCase().includes(filter.toLowerCase())),
-  ) ?? [];
+  const filteredOrgs =
+    orgs?.filter(
+      (o) =>
+        o.isActive &&
+        (!filter ||
+          o.name.toLowerCase().includes(filter.toLowerCase()) ||
+          o.address?.country?.toLowerCase().includes(filter.toLowerCase()))
+    ) ?? []
 
   // Grouper par zone géographique
   const zoneGroups = useMemo(() => {
-    const groups: Record<string, typeof filteredOrgs> = {};
+    const groups: Record<string, typeof filteredOrgs> = {}
     for (const org of filteredOrgs) {
-      const zone = getContinent(org.address?.country ?? "");
-      if (!groups[zone]) groups[zone] = [];
-      groups[zone].push(org);
+      const zone = getContinent(org.address?.country ?? "")
+      if (!groups[zone]) groups[zone] = []
+      groups[zone].push(org)
     }
-    return groups;
-  }, [filteredOrgs]);
+    return groups
+  }, [filteredOrgs])
 
   // Zones disponibles triées
   const availableZones = useMemo(
     () => ZONE_ORDER.filter((z) => zoneGroups[z]?.length),
-    [zoneGroups],
-  );
+    [zoneGroups]
+  )
 
   // Organisations filtrées par zone active
-  const displayOrgs = activeZone
-    ? (zoneGroups[activeZone] ?? [])
-    : filteredOrgs;
+  const displayOrgs = activeZone ? (zoneGroups[activeZone] ?? []) : filteredOrgs
 
   // Pages de 20 (5 colonnes × 4 lignes)
-  const repPages: (typeof displayOrgs)[] = [];
+  const repPages: (typeof displayOrgs)[] = []
   for (let i = 0; i < displayOrgs.length; i += 20) {
-    repPages.push(displayOrgs.slice(i, i + 20));
+    repPages.push(displayOrgs.slice(i, i + 20))
   }
 
   return (
     <div className="space-y-4">
       {/* Ligne 1 : Recherche + Filtre par zone */}
       <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Rechercher une représentation..."
             value={filter}
-            onChange={(e) => { setFilter(e.target.value); setRepPage(0); }}
+            onChange={(e) => {
+              setFilter(e.target.value)
+              setRepPage(0)
+            }}
             className="pl-9"
           />
           {filter && (
             <button
               type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted"
-              onClick={() => { setFilter(""); setRepPage(0); }}
+              className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 hover:bg-muted"
+              onClick={() => {
+                setFilter("")
+                setRepPage(0)
+              }}
             >
               <X className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
           )}
         </div>
-        <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+        <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
           {displayOrgs.length} représentation{displayOrgs.length > 1 ? "s" : ""}
         </span>
       </div>
 
       {/* Filtres par zone géographique */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+      <div
+        className="flex items-center gap-1.5 overflow-x-auto pb-1"
+        style={{ scrollbarWidth: "none" }}
+      >
         <button
           type="button"
-          onClick={() => { setActiveZone(null); setRepPage(0); }}
+          onClick={() => {
+            setActiveZone(null)
+            setRepPage(0)
+          }}
           className={cn(
-            "px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors shrink-0",
+            "shrink-0 rounded-full px-3 py-1 text-xs whitespace-nowrap transition-colors",
             !activeZone
-              ? "bg-primary text-primary-foreground font-medium"
-              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+              ? "bg-primary font-medium text-primary-foreground"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >
           Toutes ({filteredOrgs.length})
@@ -815,12 +964,15 @@ function RepresentationsTab() {
           <button
             key={zone}
             type="button"
-            onClick={() => { setActiveZone(zone); setRepPage(0); }}
+            onClick={() => {
+              setActiveZone(zone)
+              setRepPage(0)
+            }}
             className={cn(
-              "px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors shrink-0",
+              "shrink-0 rounded-full px-3 py-1 text-xs whitespace-nowrap transition-colors",
               activeZone === zone
-                ? "bg-primary text-primary-foreground font-medium"
-                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+                ? "bg-primary font-medium text-primary-foreground"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
             {zone} ({zoneGroups[zone]?.length})
@@ -833,21 +985,21 @@ function RepresentationsTab() {
         <>
           <div
             ref={repScrollRef}
-            className="flex overflow-x-auto scroll-smooth snap-x snap-mandatory"
+            className="flex snap-x snap-mandatory overflow-x-auto scroll-smooth"
             style={{ scrollbarWidth: "none" }}
             onScroll={() => {
-              if (!repScrollRef.current) return;
-              const el = repScrollRef.current;
-              const page = Math.round(el.scrollLeft / el.clientWidth);
-              setRepPage(page);
+              if (!repScrollRef.current) return
+              const el = repScrollRef.current
+              const page = Math.round(el.scrollLeft / el.clientWidth)
+              setRepPage(page)
             }}
           >
             {repPages.map((page, pageIdx) => (
               <div
                 key={pageIdx}
-                className="min-w-full w-full shrink-0 snap-start"
+                className="w-full min-w-full shrink-0 snap-start"
               >
-                <div className="grid grid-cols-5 gap-3 auto-rows-auto">
+                <div className="grid auto-rows-auto grid-cols-5 gap-3">
                   {page.map((org) => (
                     <OrgPriorityCard
                       key={org._id}
@@ -873,42 +1025,43 @@ function RepresentationsTab() {
                     repScrollRef.current?.scrollTo({
                       left: i * (repScrollRef.current?.clientWidth ?? 0),
                       behavior: "smooth",
-                    });
+                    })
                   }}
                   className={cn(
                     "h-1.5 rounded-full transition-all",
                     repPage === i
                       ? "w-4 bg-primary"
-                      : "w-1.5 bg-border hover:bg-muted-foreground",
+                      : "w-1.5 bg-border hover:bg-muted-foreground"
                   )}
                 />
               ))}
-              <span className="text-[9px] text-muted-foreground ml-2">
+              <span className="ml-2 text-[9px] text-muted-foreground">
                 {repPage + 1}/{repPages.length}
               </span>
             </div>
           )}
         </>
       ) : (
-        <p className="text-sm text-muted-foreground text-center py-8">
+        <p className="py-8 text-center text-sm text-muted-foreground">
           Aucune représentation trouvée.
         </p>
       )}
 
       {/* Dialog de configuration locale */}
-      {selectedOrgId && (() => {
-        const selectedOrg = filteredOrgs.find((o) => o._id === selectedOrgId);
-        return (
-          <OrgLocalPriorityDialog
-            orgId={selectedOrgId}
-            orgName={selectedOrg?.name ?? ""}
-            open={!!selectedOrgId}
-            onOpenChange={(open) => !open && setSelectedOrgId(null)}
-          />
-        );
-      })()}
+      {selectedOrgId &&
+        (() => {
+          const selectedOrg = filteredOrgs.find((o) => o._id === selectedOrgId)
+          return (
+            <OrgLocalPriorityDialog
+              orgId={selectedOrgId}
+              orgName={selectedOrg?.name ?? ""}
+              open={!!selectedOrgId}
+              onOpenChange={(open) => !open && setSelectedOrgId(null)}
+            />
+          )
+        })()}
     </div>
-  );
+  )
 }
 
 function OrgPriorityCard({
@@ -917,40 +1070,40 @@ function OrgPriorityCard({
   orgCountry,
   onConfigure,
 }: {
-  orgId: Id<"orgs">;
-  orgName: string;
-  orgCountry: string;
-  onConfigure: () => void;
+  orgId: Id<"orgs">
+  orgName: string
+  orgCountry: string
+  onConfigure: () => void
 }) {
   const { data: localDoc } = useAuthenticatedConvexQuery(
     api.functions.diplomaticAffairs.getLocalPriorities,
-    { orgId },
-  );
+    { orgId }
+  )
 
-  const isConfigured = localDoc && localDoc.priorities.length > 0;
+  const isConfigured = localDoc && localDoc.priorities.length > 0
 
   return (
     <button
       type="button"
       onClick={onConfigure}
       className={cn(
-        "flex flex-col gap-2 p-3 rounded-xl border bg-[#F4F3ED] dark:bg-[#171616] h-[108px]",
-        "hover:border-primary/30 transition-all cursor-pointer",
-        isConfigured && "border-primary/20",
+        "flex h-[108px] flex-col gap-2 rounded-xl border bg-secondary p-3",
+        "cursor-pointer transition-all hover:border-primary/30",
+        isConfigured && "border-primary/20"
       )}
     >
       {/* Ligne 1 : icône — code pays — statut */}
-      <div className="flex items-center justify-between w-full">
+      <div className="flex w-full items-center justify-between">
         <div
           className={cn(
-            "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
-            isConfigured ? "bg-primary/10" : "bg-muted/50",
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+            isConfigured ? "bg-primary/10" : "bg-muted/50"
           )}
         >
           <Building2
             className={cn(
               "h-4 w-4",
-              isConfigured ? "text-primary" : "text-muted-foreground",
+              isConfigured ? "text-primary" : "text-muted-foreground"
             )}
           />
         </div>
@@ -958,24 +1111,24 @@ function OrgPriorityCard({
           {orgCountry}
         </span>
         {isConfigured ? (
-          <Badge variant="secondary" className="text-[11px] shrink-0">
+          <Badge variant="secondary" className="shrink-0 text-[11px]">
             {localDoc.priorities.length} priorités
           </Badge>
         ) : (
           <Badge
             variant="outline"
-            className="text-[11px] text-muted-foreground shrink-0"
+            className="shrink-0 text-[11px] text-muted-foreground"
           >
             Non configuré
           </Badge>
         )}
       </div>
       {/* Ligne 2 : nom */}
-      <p className="text-sm font-medium leading-tight line-clamp-2 text-left w-full">
+      <p className="line-clamp-2 w-full text-left text-sm leading-tight font-medium">
         {orgName}
       </p>
     </button>
-  );
+  )
 }
 
 function OrgLocalPriorityDialog({
@@ -984,29 +1137,29 @@ function OrgLocalPriorityDialog({
   open,
   onOpenChange,
 }: {
-  orgId: Id<"orgs">;
-  orgName: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  orgId: Id<"orgs">
+  orgName: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }) {
   const { data: localDoc } = useAuthenticatedConvexQuery(
     api.functions.diplomaticAffairs.getLocalPriorities,
-    { orgId },
-  );
+    { orgId }
+  )
 
   const { mutateAsync: setLocal, isPending: saving } = useConvexMutationQuery(
-    api.functions.diplomaticAffairs.setLocalPriorities,
-  );
+    api.functions.diplomaticAffairs.setLocalPriorities
+  )
 
   const [priorities, setPriorities] = useState<PriorityItem[]>(
-    localDoc?.priorities ?? [],
-  );
-  const [localSearch, setLocalSearch] = useState("");
-  const [initialized, setInitialized] = useState(false);
+    localDoc?.priorities ?? []
+  )
+  const [localSearch, setLocalSearch] = useState("")
+  const [initialized, setInitialized] = useState(false)
 
   if (localDoc && !initialized) {
-    setPriorities(localDoc.priorities);
-    setInitialized(true);
+    setPriorities(localDoc.priorities)
+    setInitialized(true)
   }
 
   const handleSave = async () => {
@@ -1017,17 +1170,17 @@ function OrgLocalPriorityDialog({
         hostCountryCode: localDoc?.hostCountryCode ?? "",
         coveredCountries: localDoc?.coveredCountries,
         priorities: priorities.filter((p) => p.title.trim()),
-      });
-      toast.success(`Priorités de ${orgName} enregistrées`);
-      onOpenChange(false);
+      })
+      toast.success(`Priorités de ${orgName} enregistrées`)
+      onOpenChange(false)
     } catch {
-      toast.error("Erreur lors de l'enregistrement");
+      toast.error("Erreur lors de l'enregistrement")
     }
-  };
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" />
@@ -1038,21 +1191,21 @@ function OrgLocalPriorityDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 mt-2">
+        <div className="mt-2 space-y-4">
           {/* Recherche + Import + Actions */}
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
                 placeholder="Rechercher par titre, secteur, mot-clé..."
-                className="pl-9 h-9 text-xs"
+                className="h-9 pl-9 text-xs"
               />
               {localSearch && (
                 <button
                   type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted"
+                  className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 hover:bg-muted"
                   onClick={() => setLocalSearch("")}
                 >
                   <X className="h-3 w-3 text-muted-foreground" />
@@ -1064,13 +1217,13 @@ function OrgLocalPriorityDialog({
               onPrioritiesExtracted={(imported) => {
                 setPriorities((prev) => {
                   const existingTitles = new Set(
-                    prev.map((p) => p.title.toLowerCase()),
-                  );
+                    prev.map((p) => p.title.toLowerCase())
+                  )
                   const newOnes = imported.filter(
-                    (p) => !existingTitles.has(p.title.toLowerCase()),
-                  );
-                  return [...prev, ...newOnes];
-                });
+                    (p) => !existingTitles.has(p.title.toLowerCase())
+                  )
+                  return [...prev, ...newOnes]
+                })
               }}
             />
             <Button
@@ -1105,7 +1258,7 @@ function OrgLocalPriorityDialog({
         </div>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -1115,82 +1268,99 @@ function OrgLocalPriorityDialog({
 function TargetsByRepresentationTab() {
   const { data: allTargets, isPending } = useAuthenticatedConvexQuery(
     api.functions.diplomaticAffairs.superadminListAllTargets,
-    {},
-  );
+    {}
+  )
 
   const { mutateAsync: deleteTarget } = useConvexMutationQuery(
-    api.functions.diplomaticAffairs.superadminDeleteTarget,
-  );
+    api.functions.diplomaticAffairs.superadminDeleteTarget
+  )
   const { mutateAsync: purgeTargets } = useConvexMutationQuery(
-    api.functions.diplomaticAffairs.superadminPurgeTargets,
-  );
+    api.functions.diplomaticAffairs.superadminPurgeTargets
+  )
 
-  const [filter, setFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "archived">("all");
-  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
-  const [confirmPurge, setConfirmPurge] = useState<{ orgId: string; orgName: string; count: number } | null>(null);
+  const [filter, setFilter] = useState("")
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "active" | "archived"
+  >("all")
+  const [confirmDelete, setConfirmDelete] = useState<{
+    id: string
+    name: string
+  } | null>(null)
+  const [confirmPurge, setConfirmPurge] = useState<{
+    orgId: string
+    orgName: string
+    count: number
+  } | null>(null)
 
   if (isPending) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
-    );
+    )
   }
 
-  const targets = allTargets ?? [];
-  const activeCount = targets.filter((t) => !t.archivedAt).length;
-  const archivedCount = targets.filter((t) => !!t.archivedAt).length;
+  const targets = allTargets ?? []
+  const activeCount = targets.filter((t) => !t.archivedAt).length
+  const archivedCount = targets.filter((t) => !!t.archivedAt).length
 
   const filtered = targets.filter((t) => {
     // Filtre par statut
-    if (statusFilter === "active" && t.archivedAt) return false;
-    if (statusFilter === "archived" && !t.archivedAt) return false;
+    if (statusFilter === "active" && t.archivedAt) return false
+    if (statusFilter === "archived" && !t.archivedAt) return false
     // Filtre par texte
-    if (!filter) return true;
-    const q = filter.toLowerCase();
+    if (!filter) return true
+    const q = filter.toLowerCase()
     return (
       t.name.toLowerCase().includes(q) ||
       t.orgName.toLowerCase().includes(q) ||
       t.sector?.toLowerCase().includes(q)
-    );
-  });
+    )
+  })
 
   // Grouper par org
-  const byOrg: Record<string, { orgName: string; orgId: string; targets: typeof filtered }> = {};
+  const byOrg: Record<
+    string,
+    { orgName: string; orgId: string; targets: typeof filtered }
+  > = {}
   for (const t of filtered) {
-    const key = t.orgId;
-    if (!byOrg[key]) byOrg[key] = { orgName: t.orgName, orgId: t.orgId, targets: [] };
-    byOrg[key].targets.push(t);
+    const key = t.orgId
+    if (!byOrg[key])
+      byOrg[key] = { orgName: t.orgName, orgId: t.orgId, targets: [] }
+    byOrg[key].targets.push(t)
   }
 
   const handleDelete = async () => {
-    if (!confirmDelete) return;
+    if (!confirmDelete) return
     try {
-      await deleteTarget({ targetId: confirmDelete.id as Id<"diplomaticTargets"> });
-      toast.success(`${confirmDelete.name} supprimée`);
-      setConfirmDelete(null);
+      await deleteTarget({
+        targetId: confirmDelete.id as Id<"diplomaticTargets">,
+      })
+      toast.success(`${confirmDelete.name} supprimée`)
+      setConfirmDelete(null)
     } catch {
-      toast.error("Erreur lors de la suppression");
+      toast.error("Erreur lors de la suppression")
     }
-  };
+  }
 
   const handlePurge = async () => {
-    if (!confirmPurge) return;
+    if (!confirmPurge) return
     try {
-      const result = await purgeTargets({ orgId: confirmPurge.orgId as Id<"orgs"> });
-      toast.success(`${result.scheduledCount} cible(s) supprimée(s)`);
-      setConfirmPurge(null);
+      const result = await purgeTargets({
+        orgId: confirmPurge.orgId as Id<"orgs">,
+      })
+      toast.success(`${result.scheduledCount} cible(s) supprimée(s)`)
+      setConfirmPurge(null)
     } catch {
-      toast.error("Erreur lors de la purge");
+      toast.error("Erreur lors de la purge")
     }
-  };
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Rechercher une cible ou représentation..."
             value={filter}
@@ -1200,7 +1370,7 @@ function TargetsByRepresentationTab() {
           {filter && (
             <button
               type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted"
+              className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 hover:bg-muted"
               onClick={() => setFilter("")}
             >
               <X className="h-3.5 w-3.5 text-muted-foreground" />
@@ -1212,7 +1382,11 @@ function TargetsByRepresentationTab() {
             [
               { id: "all" as const, label: "Toutes", count: targets.length },
               { id: "active" as const, label: "Actives", count: activeCount },
-              { id: "archived" as const, label: "Archivées", count: archivedCount },
+              {
+                id: "archived" as const,
+                label: "Archivées",
+                count: archivedCount,
+              },
             ] as const
           ).map((s) => (
             <button
@@ -1220,24 +1394,24 @@ function TargetsByRepresentationTab() {
               type="button"
               onClick={() => setStatusFilter(s.id)}
               className={cn(
-                "px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors",
+                "rounded-full px-3 py-1 text-xs whitespace-nowrap transition-colors",
                 statusFilter === s.id
-                  ? "bg-primary text-primary-foreground font-medium"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+                  ? "bg-primary font-medium text-primary-foreground"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
               {s.label} ({s.count})
             </button>
           ))}
         </div>
-        <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+        <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
           {filtered.length} résultat{filtered.length > 1 ? "s" : ""}
         </span>
       </div>
 
       {Object.keys(byOrg).length === 0 ? (
-        <div className="text-center py-12 text-sm text-muted-foreground">
-          <Target className="h-8 w-8 mx-auto mb-2 opacity-30" />
+        <div className="py-12 text-center text-sm text-muted-foreground">
+          <Target className="mx-auto mb-2 h-8 w-8 opacity-30" />
           Aucune cible trouvée
         </div>
       ) : (
@@ -1245,7 +1419,7 @@ function TargetsByRepresentationTab() {
           {Object.entries(byOrg).map(([orgId, group]) => (
             <div key={orgId} className="space-y-2">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium flex items-center gap-2">
+                <h3 className="flex items-center gap-2 text-sm font-medium">
                   <Building2 className="h-4 w-4 text-primary" />
                   {group.orgName}
                   <Badge variant="secondary" className="text-[9px]">
@@ -1268,39 +1442,47 @@ function TargetsByRepresentationTab() {
                   Purger
                 </Button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {group.targets.map((t) => (
                   <div
                     key={t._id}
                     className={cn(
-                      "flex items-start justify-between gap-2 p-3 rounded-lg border transition-colors",
-                      t.archivedAt ? "bg-amber-500/5 border-amber-500/20" : "bg-[#F4F3ED] dark:bg-[#171616]",
+                      "flex items-start justify-between gap-2 rounded-lg border p-3 transition-colors",
+                      t.archivedAt
+                        ? "border-amber-500/20 bg-amber-500/5"
+                        : "bg-secondary"
                     )}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-medium truncate">{t.name}</p>
+                        <p className="truncate text-sm font-medium">{t.name}</p>
                         {t.archivedAt && (
-                          <Badge variant="outline" className="text-[8px] text-amber-500 border-amber-500/30 shrink-0">
+                          <Badge
+                            variant="outline"
+                            className="shrink-0 border-amber-500/30 text-[8px] text-amber-500"
+                          >
                             Archivé
                           </Badge>
                         )}
                       </div>
-                      <p className="text-[10px] text-muted-foreground truncate">
+                      <p className="truncate text-[10px] text-muted-foreground">
                         {t.type} {t.sector && `· ${t.sector}`}
                       </p>
                       {t.country && (
-                        <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <p className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
                           <MapPin className="h-2.5 w-2.5" />
                           {t.city ? `${t.city}, ${t.country}` : t.country}
                         </p>
                       )}
-                      <div className="flex items-center gap-1 mt-1">
+                      <div className="mt-1 flex items-center gap-1">
                         <Badge variant="outline" className="text-[8px]">
                           {t.priority}
                         </Badge>
                         {t.opportunityScore != null && (
-                          <Badge variant="outline" className="text-[8px] text-primary">
+                          <Badge
+                            variant="outline"
+                            className="text-[8px] text-primary"
+                          >
                             {t.opportunityScore}%
                           </Badge>
                         )}
@@ -1314,8 +1496,10 @@ function TargetsByRepresentationTab() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => setConfirmDelete({ id: t._id, name: t.name })}
+                      className="h-7 w-7 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() =>
+                        setConfirmDelete({ id: t._id, name: t.name })
+                      }
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -1328,7 +1512,10 @@ function TargetsByRepresentationTab() {
       )}
 
       {/* Confirmation suppression individuelle */}
-      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+      <AlertDialog
+        open={!!confirmDelete}
+        onOpenChange={(o) => !o && setConfirmDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer cette cible ?</AlertDialogTitle>
@@ -1340,7 +1527,7 @@ function TargetsByRepresentationTab() {
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
               onClick={handleDelete}
             >
               Supprimer
@@ -1350,10 +1537,15 @@ function TargetsByRepresentationTab() {
       </AlertDialog>
 
       {/* Confirmation purge */}
-      <AlertDialog open={!!confirmPurge} onOpenChange={(o) => !o && setConfirmPurge(null)}>
+      <AlertDialog
+        open={!!confirmPurge}
+        onOpenChange={(o) => !o && setConfirmPurge(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Purger les cibles de {confirmPurge?.orgName} ?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Purger les cibles de {confirmPurge?.orgName} ?
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmPurge?.count} cible(s) seront définitivement supprimées
               avec tous leurs documents associés. Cette action est irréversible.
@@ -1362,7 +1554,7 @@ function TargetsByRepresentationTab() {
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
               onClick={handlePurge}
             >
               Purger toutes les cibles
@@ -1371,7 +1563,7 @@ function TargetsByRepresentationTab() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
+  )
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -1381,119 +1573,130 @@ function TargetsByRepresentationTab() {
 function TrashTab() {
   const { data: deletedItems, isPending } = useAuthenticatedConvexQuery(
     api.functions.diplomaticAffairs.superadminListDeletedItems,
-    {},
-  );
+    {}
+  )
 
   const { mutateAsync: restoreTarget } = useConvexMutationQuery(
-    api.functions.diplomaticAffairs.superadminRestoreTarget,
-  );
+    api.functions.diplomaticAffairs.superadminRestoreTarget
+  )
   const { mutateAsync: restorePlan } = useConvexMutationQuery(
-    api.functions.diplomaticAffairs.superadminRestorePlan,
-  );
+    api.functions.diplomaticAffairs.superadminRestorePlan
+  )
   const { mutateAsync: restoreLetter } = useConvexMutationQuery(
-    api.functions.diplomaticAffairs.superadminRestoreLetter,
-  );
+    api.functions.diplomaticAffairs.superadminRestoreLetter
+  )
   const { mutateAsync: restoreReport } = useConvexMutationQuery(
-    api.functions.diplomaticAffairs.superadminRestoreReport,
-  );
+    api.functions.diplomaticAffairs.superadminRestoreReport
+  )
   const { mutateAsync: restoreProject } = useConvexMutationQuery(
-    api.functions.diplomaticAffairs.superadminRestoreProject,
-  );
+    api.functions.diplomaticAffairs.superadminRestoreProject
+  )
   const { mutateAsync: hardDelete } = useConvexMutationQuery(
-    api.functions.diplomaticAffairs.superadminPermanentlyDeleteTarget,
-  );
+    api.functions.diplomaticAffairs.superadminPermanentlyDeleteTarget
+  )
 
-  const [filter, setFilter] = useState("");
+  const [filter, setFilter] = useState("")
 
   if (isPending) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
-    );
+    )
   }
 
-  const items = deletedItems ?? { targets: [], plans: [], letters: [], reports: [], projects: [] };
+  const items = deletedItems ?? {
+    targets: [],
+    plans: [],
+    letters: [],
+    reports: [],
+    projects: [],
+  }
 
   const totalDeleted =
     items.targets.length +
     items.plans.length +
     items.letters.length +
     items.reports.length +
-    items.projects.length;
+    items.projects.length
 
   if (totalDeleted === 0) {
     return (
-      <div className="text-center py-16 text-sm text-muted-foreground">
-        <Trash2 className="h-10 w-10 mx-auto mb-3 opacity-20" />
+      <div className="py-16 text-center text-sm text-muted-foreground">
+        <Trash2 className="mx-auto mb-3 h-10 w-10 opacity-20" />
         <p className="font-medium">Corbeille vide</p>
-        <p className="text-xs mt-1">Les éléments supprimés apparaîtront ici.</p>
+        <p className="mt-1 text-xs">Les éléments supprimés apparaîtront ici.</p>
       </div>
-    );
+    )
   }
 
   const formatDeletedAt = (ts: number | undefined) => {
-    if (!ts) return "";
+    if (!ts) return ""
     return new Date(ts).toLocaleDateString("fr-FR", {
       day: "numeric",
       month: "short",
       year: "numeric",
-    });
-  };
+    })
+  }
 
   const matchesFilter = (name: string, orgName: string) => {
-    if (!filter) return true;
-    const q = filter.toLowerCase();
-    return name.toLowerCase().includes(q) || orgName.toLowerCase().includes(q);
-  };
+    if (!filter) return true
+    const q = filter.toLowerCase()
+    return name.toLowerCase().includes(q) || orgName.toLowerCase().includes(q)
+  }
 
   const handleRestore = async (type: string, id: string) => {
     try {
       switch (type) {
         case "target":
-          await restoreTarget({ targetId: id as Id<"diplomaticTargets"> });
-          break;
+          await restoreTarget({ targetId: id as Id<"diplomaticTargets"> })
+          break
         case "plan":
-          await restorePlan({ planId: id as Id<"diplomaticPlans"> });
-          break;
+          await restorePlan({ planId: id as Id<"diplomaticPlans"> })
+          break
         case "letter":
-          await restoreLetter({ letterId: id as Id<"diplomaticLetters"> });
-          break;
+          await restoreLetter({ letterId: id as Id<"diplomaticLetters"> })
+          break
         case "report":
-          await restoreReport({ reportId: id as Id<"diplomaticReports"> });
-          break;
+          await restoreReport({ reportId: id as Id<"diplomaticReports"> })
+          break
         case "project":
-          await restoreProject({ projectId: id as Id<"diplomaticProjects"> });
-          break;
+          await restoreProject({ projectId: id as Id<"diplomaticProjects"> })
+          break
       }
-      toast.success("Élément restauré");
+      toast.success("Élément restauré")
     } catch {
-      toast.error("Erreur lors de la restauration");
+      toast.error("Erreur lors de la restauration")
     }
-  };
+  }
 
   const handleHardDelete = async (targetId: string) => {
     try {
-      await hardDelete({ targetId: targetId as Id<"diplomaticTargets"> });
-      toast.success("Supprimé définitivement");
+      await hardDelete({ targetId: targetId as Id<"diplomaticTargets"> })
+      toast.success("Supprimé définitivement")
     } catch {
-      toast.error("Erreur lors de la suppression");
+      toast.error("Erreur lors de la suppression")
     }
-  };
+  }
 
   const renderSection = (
     title: string,
-    items: Array<{ _id: string; deletedAt?: number; orgName: string; [key: string]: any }>,
+    items: Array<{
+      _id: string
+      deletedAt?: number
+      orgName: string
+      [key: string]: any
+    }>,
     type: string,
     getLabel: (item: any) => string,
-    getSublabel: (item: any) => string,
+    getSublabel: (item: any) => string
   ) => {
-    const matching = items.filter((i) => matchesFilter(getLabel(i), i.orgName));
-    if (matching.length === 0) return null;
+    const matching = items.filter((i) => matchesFilter(getLabel(i), i.orgName))
+    if (matching.length === 0) return null
 
     return (
       <div className="space-y-2">
-        <h3 className="text-sm font-medium flex items-center gap-2">
+        <h3 className="flex items-center gap-2 text-sm font-medium">
           <AlertTriangle className="h-4 w-4 text-amber-500" />
           {title}
           <Badge variant="secondary" className="text-[9px]">
@@ -1504,20 +1707,20 @@ function TrashTab() {
           {matching.map((item) => (
             <div
               key={item._id}
-              className="flex items-center justify-between gap-3 p-2.5 rounded-lg border border-dashed border-destructive/20 bg-destructive/5"
+              className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-destructive/20 bg-destructive/5 p-2.5"
             >
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate">{getLabel(item)}</p>
+                <p className="truncate text-sm font-medium">{getLabel(item)}</p>
                 <p className="text-[10px] text-muted-foreground">
                   {getSublabel(item)} · {item.orgName} · Supprimé le{" "}
                   {formatDeletedAt(item.deletedAt)}
                 </p>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex shrink-0 items-center gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="gap-1 text-xs h-7"
+                  className="h-7 gap-1 text-xs"
                   onClick={() => handleRestore(type, item._id)}
                 >
                   <RotateCcw className="h-3 w-3" />
@@ -1527,7 +1730,7 @@ function TrashTab() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="gap-1 text-xs h-7 text-destructive hover:text-destructive"
+                    className="h-7 gap-1 text-xs text-destructive hover:text-destructive"
                     onClick={() => handleHardDelete(item._id)}
                   >
                     <Trash2 className="h-3 w-3" />
@@ -1539,14 +1742,14 @@ function TrashTab() {
           ))}
         </div>
       </div>
-    );
-  };
+    )
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Rechercher dans la corbeille..."
             value={filter}
@@ -1556,7 +1759,7 @@ function TrashTab() {
           {filter && (
             <button
               type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted"
+              className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 hover:bg-muted"
               onClick={() => setFilter("")}
             >
               <X className="h-3.5 w-3.5 text-muted-foreground" />
@@ -1573,36 +1776,36 @@ function TrashTab() {
         items.targets,
         "target",
         (t) => t.name,
-        (t) => `${t.type} · ${t.sector ?? ""}`,
+        (t) => `${t.type} · ${t.sector ?? ""}`
       )}
       {renderSection(
         "Plans supprimés",
         items.plans,
         "plan",
         (p) => p.title,
-        (p) => p.category ?? "",
+        (p) => p.category ?? ""
       )}
       {renderSection(
         "Lettres supprimées",
         items.letters,
         "letter",
         (l) => l.subject ?? l.reference,
-        (l) => l.type ?? "",
+        (l) => l.type ?? ""
       )}
       {renderSection(
         "Rapports supprimés",
         items.reports,
         "report",
         (r) => r.title,
-        (r) => r.type ?? "",
+        (r) => r.type ?? ""
       )}
       {renderSection(
         "Projets supprimés",
         items.projects,
         "project",
         (p) => p.title,
-        (p) => p.projectType ?? "",
+        (p) => p.projectType ?? ""
       )}
     </div>
-  );
+  )
 }

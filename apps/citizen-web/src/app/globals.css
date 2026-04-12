@@ -2,7 +2,7 @@
 @import "../../../../packages/ui/src/styles/globals.css";
 
 @theme {
-  --font-sans: 'Inter', sans-serif;
+  --font-sans: "Inter", sans-serif;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -13,30 +13,35 @@
 :root {
   /* Gabon Official Colors */
   --gabon-green: 153 69% 31%;
-  --gabon-green-hex: #009E60;
+  --gabon-green-hex: #009e60;
   --gabon-yellow: 45 98% 54%;
-  --gabon-yellow-hex: #FCD116;
+  --gabon-yellow-hex: #fcd116;
   --gabon-blue: 214 52% 50%;
-  --gabon-blue-hex: #3A75C4;
+  --gabon-blue-hex: #3a75c4;
 
   /* Surface tokens */
-  --citizen-surface-s1: #F4F3ED;
-  --citizen-surface-s2: #EBE6DC;
-  --citizen-surface-s3: #DCD7C7;
-  --citizen-surface-s4: #FDFCFA;
+  --citizen-surface-s1: var(--secondary);
+  --citizen-surface-s2: #ebe6dc;
+  --citizen-surface-s3: #dcd7c7;
+  --citizen-surface-s4: #fdfcfa;
 
   /* Citizen shared surface — cartes principales + menu latéral mobile */
-  --citizen-surface-card: #F4F3ED;
+  --citizen-surface-card: var(--secondary);
 }
 
 .dark {
-  --citizen-surface-s1: #171616;
+  --citizen-surface-s1: var(--secondary);
   --citizen-surface-s2: #383633;
-  --citizen-surface-s3: rgba(74, 71, 68, 0.40);
+  --citizen-surface-s3: rgba(74, 71, 68, 0.4);
   --citizen-surface-s4: rgba(33, 32, 30, 0.77);
 
   /* Citizen shared surface — cartes principales + menu latéral mobile */
-  --citizen-surface-card: rgba(28, 27, 26, 0.57); /* Equivalent to #1C1B1A with 57% opacity */
+  --citizen-surface-card: rgba(
+    28,
+    27,
+    26,
+    0.57
+  ); /* Equivalent to #1C1B1A with 57% opacity */
 }
 
 /* ─── Flat Card Border ─── */
@@ -57,53 +62,130 @@
 
 /* ─── Design System v3.0 Surface Utilities ─── */
 
-.citizen-s1 { background: #F4F3ED; }
-.dark .citizen-s1 { background: #171616; }
-.citizen-s2 { background: #EBE6DC; }
-.dark .citizen-s2 { background: #383633; }
-.citizen-s3 { background: #DCD7C7; }
-.dark .citizen-s3 { background: rgba(74, 71, 68, 0.40); }
-.citizen-s4 { background: #FDFCFA; }
-.dark .citizen-s4 { background: rgba(33, 32, 30, 0.77); }
+.citizen-s1 {
+  background: var(--secondary);
+}
+.dark .citizen-s1 {
+  background: var(--secondary);
+}
+.citizen-s2 {
+  background: #ebe6dc;
+}
+.dark .citizen-s2 {
+  background: #383633;
+}
+.citizen-s3 {
+  background: #dcd7c7;
+}
+.dark .citizen-s3 {
+  background: rgba(74, 71, 68, 0.4);
+}
+.citizen-s4 {
+  background: #fdfcfa;
+}
+.dark .citizen-s4 {
+  background: rgba(33, 32, 30, 0.77);
+}
 
 /* ─── Gabon Color Utilities ─── */
 
-.bg-gabon-green { background-color: var(--gabon-green-hex); }
-.bg-gabon-yellow { background-color: var(--gabon-yellow-hex); }
-.bg-gabon-blue { background-color: var(--gabon-blue-hex); }
-.text-gabon-green { color: var(--gabon-green-hex); }
-.text-gabon-yellow { color: var(--gabon-yellow-hex); }
-.text-gabon-blue { color: var(--gabon-blue-hex); }
-.border-gabon-green { border-color: var(--gabon-green-hex); }
-.border-gabon-yellow { border-color: var(--gabon-yellow-hex); }
-.border-gabon-blue { border-color: var(--gabon-blue-hex); }
+.bg-gabon-green {
+  background-color: var(--gabon-green-hex);
+}
+.bg-gabon-yellow {
+  background-color: var(--gabon-yellow-hex);
+}
+.bg-gabon-blue {
+  background-color: var(--gabon-blue-hex);
+}
+.text-gabon-green {
+  color: var(--gabon-green-hex);
+}
+.text-gabon-yellow {
+  color: var(--gabon-yellow-hex);
+}
+.text-gabon-blue {
+  color: var(--gabon-blue-hex);
+}
+.border-gabon-green {
+  border-color: var(--gabon-green-hex);
+}
+.border-gabon-yellow {
+  border-color: var(--gabon-yellow-hex);
+}
+.border-gabon-blue {
+  border-color: var(--gabon-blue-hex);
+}
 
-.bg-gabon-gradient { background: linear-gradient(135deg, var(--gabon-green-hex) 0%, var(--gabon-yellow-hex) 50%, var(--gabon-blue-hex) 100%); }
-.bg-gabon-gradient-h { background: linear-gradient(90deg, var(--gabon-green-hex) 0%, var(--gabon-yellow-hex) 50%, var(--gabon-blue-hex) 100%); }
+.bg-gabon-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--gabon-green-hex) 0%,
+    var(--gabon-yellow-hex) 50%,
+    var(--gabon-blue-hex) 100%
+  );
+}
+.bg-gabon-gradient-h {
+  background: linear-gradient(
+    90deg,
+    var(--gabon-green-hex) 0%,
+    var(--gabon-yellow-hex) 50%,
+    var(--gabon-blue-hex) 100%
+  );
+}
 .text-gradient-official {
-  background: linear-gradient(135deg, var(--gabon-green-hex), var(--gabon-yellow-hex), var(--gabon-blue-hex));
+  background: linear-gradient(
+    135deg,
+    var(--gabon-green-hex),
+    var(--gabon-yellow-hex),
+    var(--gabon-blue-hex)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.bg-gabon-green-tint { background-color: rgba(0, 158, 96, 0.08); }
-.bg-gabon-yellow-tint { background-color: rgba(252, 209, 22, 0.08); }
-.bg-gabon-blue-tint { background-color: rgba(58, 117, 196, 0.08); }
-.dark .bg-gabon-green-tint { background-color: rgba(0, 158, 96, 0.15); }
-.dark .bg-gabon-yellow-tint { background-color: rgba(252, 209, 22, 0.12); }
-.dark .bg-gabon-blue-tint { background-color: rgba(58, 117, 196, 0.15); }
+.bg-gabon-green-tint {
+  background-color: rgba(0, 158, 96, 0.08);
+}
+.bg-gabon-yellow-tint {
+  background-color: rgba(252, 209, 22, 0.08);
+}
+.bg-gabon-blue-tint {
+  background-color: rgba(58, 117, 196, 0.08);
+}
+.dark .bg-gabon-green-tint {
+  background-color: rgba(0, 158, 96, 0.15);
+}
+.dark .bg-gabon-yellow-tint {
+  background-color: rgba(252, 209, 22, 0.12);
+}
+.dark .bg-gabon-blue-tint {
+  background-color: rgba(58, 117, 196, 0.15);
+}
 
 /* ─── Gabon Flag Stripe (decorative) ─── */
 
 .gabon-stripe {
   height: 3px;
-  background: linear-gradient(90deg, var(--gabon-green-hex) 33.33%, var(--gabon-yellow-hex) 33.33%, var(--gabon-yellow-hex) 66.66%, var(--gabon-blue-hex) 66.66%);
+  background: linear-gradient(
+    90deg,
+    var(--gabon-green-hex) 33.33%,
+    var(--gabon-yellow-hex) 33.33%,
+    var(--gabon-yellow-hex) 66.66%,
+    var(--gabon-blue-hex) 66.66%
+  );
   border-radius: 2px;
 }
 .gabon-stripe-vertical {
   width: 3px;
-  background: linear-gradient(180deg, var(--gabon-green-hex) 33.33%, var(--gabon-yellow-hex) 33.33%, var(--gabon-yellow-hex) 66.66%, var(--gabon-blue-hex) 66.66%);
+  background: linear-gradient(
+    180deg,
+    var(--gabon-green-hex) 33.33%,
+    var(--gabon-yellow-hex) 33.33%,
+    var(--gabon-yellow-hex) 66.66%,
+    var(--gabon-blue-hex) 66.66%
+  );
   border-radius: 2px;
 }
 
@@ -123,62 +205,199 @@
 /* ─── Animations ─── */
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
-.animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
 .animate-shimmer {
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
 
 /* Staggered children animation */
-.stagger-children > * { opacity: 0; animation: fadeInUp 0.4s ease-out forwards; }
-.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
-.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
-.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
-.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
-.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
-.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
-.stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
-.stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
+.stagger-children > * {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+.stagger-children > *:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.stagger-children > *:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.stagger-children > *:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.stagger-children > *:nth-child(4) {
+  animation-delay: 0.2s;
+}
+.stagger-children > *:nth-child(5) {
+  animation-delay: 0.25s;
+}
+.stagger-children > *:nth-child(6) {
+  animation-delay: 0.3s;
+}
+.stagger-children > *:nth-child(7) {
+  animation-delay: 0.35s;
+}
+.stagger-children > *:nth-child(8) {
+  animation-delay: 0.4s;
+}
 
-.heading-official { font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
+.heading-official {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
 
 /* ─── Compact form override pour settings ─── */
-.settings-compact-form .space-y-8 > * + * { margin-top: 0.5rem; }
-.settings-compact-form .space-y-6 > * + * { margin-top: 0.375rem; }
-.settings-compact-form .space-y-4 > * + * { margin-top: 0.25rem; }
-.settings-compact-form .gap-4 { gap: 0.5rem; }
-.settings-compact-form .gap-6 { gap: 0.375rem; }
-.settings-compact-form .p-4 { padding: 0.5rem; }
-.settings-compact-form .p-6 { padding: 0.75rem; }
-.settings-compact-form .py-4 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
-.settings-compact-form .mb-4 { margin-bottom: 0.25rem; }
-.settings-compact-form .mb-6 { margin-bottom: 0.375rem; }
+.settings-compact-form .space-y-8 > * + * {
+  margin-top: 0.75rem;
+}
+.settings-compact-form .space-y-6 > * + * {
+  margin-top: 0.5rem;
+}
+.settings-compact-form .space-y-4 > * + * {
+  margin-top: 0.375rem;
+}
+.settings-compact-form .gap-4 {
+  gap: 0.625rem;
+}
+.settings-compact-form .gap-6 {
+  gap: 0.5rem;
+}
+.settings-compact-form .p-4 {
+  padding: 0.625rem;
+}
+.settings-compact-form .p-6 {
+  padding: 1rem;
+}
+.settings-compact-form .py-4 {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+.settings-compact-form .mb-4 {
+  margin-bottom: 0.375rem;
+}
+.settings-compact-form .mb-6 {
+  margin-bottom: 0.5rem;
+}
 
 /* ─── Mobile real-device fixes ─── */
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 
-.disable-scrollbars { -ms-overflow-style: none; scrollbar-width: none; }
-.disable-scrollbars::-webkit-scrollbar { display: none; }
+.disable-scrollbars {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.disable-scrollbars::-webkit-scrollbar {
+  display: none;
+}
 
 /* ─── Scrollbar ─── */
-.citizen-scrollbar::-webkit-scrollbar { width: 5px; }
-.citizen-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.citizen-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); border-radius: 10px; }
-.dark .citizen-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); }
+.citizen-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.citizen-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.citizen-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+}
+.dark .citizen-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+}
 
 /* ── View Transition ── */
-::view-transition-old(root) { animation: fade-out 120ms ease-out; }
-::view-transition-new(root) { animation: fade-in 120ms ease-in; }
-@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
-@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+::view-transition-old(root) {
+  animation: fade-out 120ms ease-out;
+}
+::view-transition-new(root) {
+  animation: fade-in 120ms ease-in;
+}
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ─── Register forms : cards en bg-secondary, inputs blancs ─── */
+.register-forms [data-slot="card"] {
+  @apply bg-secondary ring-0 shadow-none px-4 sm:px-6;
+}
+
+.register-forms input,
+.register-forms textarea,
+.register-forms select,
+.register-forms [data-slot="select-trigger"],
+.register-forms [role="combobox"] {
+  @apply bg-background;
+}
+
+/* Select trigger plus visible en mode clair */
+.register-forms [data-slot="select-trigger"] {
+  border: 1px solid oklch(0 0 0 / 0.12);
+}
+.dark .register-forms [data-slot="select-trigger"] {
+  border-color: oklch(1 0 0 / 0.12);
+}
+
+/* ─── Settings forms : cards internes en bg-secondary, inputs blancs ─── */
+.settings-forms [data-slot="card"] {
+  @apply bg-transparent ring-0 shadow-none border border-border;
+}
+
+.settings-forms input,
+.settings-forms textarea,
+.settings-forms select,
+.settings-forms [data-slot="select-trigger"],
+.settings-forms [role="combobox"] {
+  @apply bg-background;
+}
+
+.settings-forms [data-slot="select-trigger"] {
+  border: 1px solid oklch(0 0 0 / 0.12);
+}
+.dark .settings-forms [data-slot="select-trigger"] {
+  border-color: oklch(1 0 0 / 0.12);
+}
 
 /* ─── Accessibilite : reduire les animations ─── */
 [data-reduce-motion="true"] *,

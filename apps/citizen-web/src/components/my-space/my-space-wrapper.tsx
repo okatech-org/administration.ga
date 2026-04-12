@@ -69,7 +69,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
         <div className="" />
 
         <div className="hidden md:block p-4 pr-0">
-          <div className="h-full rounded-2xl bg-[#F4F3ED] dark:bg-[#171616] overflow-hidden">
+          <div className="h-full rounded-2xl bg-secondary overflow-hidden">
             <MySpaceSidebar
               isExpanded={isExpanded}
               onToggle={() => setIsExpanded((prev) => !prev)}
@@ -79,7 +79,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
 
         <main
           className={cn(
-            "flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar",
+            "flex-1 overflow-y-auto citizen-scrollbar",
             "px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4",
             className
           )}
@@ -181,6 +181,7 @@ export function MySpaceHeader() {
               <span className="inline min-[460px]:hidden truncate">Démarche</span>
             </Link>
           </Button>
+          <NotificationDropdown className="h-9 w-9 min-w-[36px] bg-card rounded-lg shrink-0" />
         </div>
 
         <div className="hidden md:flex items-center gap-4">

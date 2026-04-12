@@ -262,6 +262,7 @@ export const nationalityAcquisitionValidator = v.union(
   v.literal(NationalityAcquisition.Birth),
   v.literal(NationalityAcquisition.Marriage),
   v.literal(NationalityAcquisition.Naturalization),
+  v.literal(NationalityAcquisition.Adoption),
   v.literal(NationalityAcquisition.Other),
 );
 

@@ -201,7 +201,7 @@ function RepresentationsPage() {
 
 			{/* ─── Onglets horizontaux ─── */}
 			<Tabs defaultValue="representations" className="flex-1">
-				<TabsList className="h-auto justify-start w-max gap-1 bg-[#F4F3ED] dark:bg-[#171616] p-1">
+				<TabsList className="h-auto justify-start w-max gap-1 p-1">
 					<TabsTrigger
 						value="representations"
 						className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-background"

@@ -93,7 +93,7 @@ function AssociationManagementPage() {
       />
 
       <Tabs defaultValue="associations">
-        <TabsList className="bg-[#F4F3ED] dark:bg-[#171616]">
+        <TabsList>
           <TabsTrigger value="associations" className="gap-2">
             <Building2 className="h-4 w-4" />
             {t("admin.associations.tabAssociations", "Associations")}

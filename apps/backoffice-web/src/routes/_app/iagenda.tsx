@@ -171,7 +171,7 @@ function IAgendaPage() {
 
 			{/* ── Tabs (même structure que agent-web) ── */}
 			<Tabs value={activeTab} onValueChange={setActiveTab}>
-				<TabsList className="grid w-full grid-cols-2 bg-[#F4F3ED] dark:bg-[#171616]">
+				<TabsList className="grid w-full grid-cols-2">
 					<TabsTrigger value="calendar" className="gap-2">
 						<Calendar className="h-4 w-4" /> Calendrier
 					</TabsTrigger>

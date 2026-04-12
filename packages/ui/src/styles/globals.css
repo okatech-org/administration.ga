@@ -46,8 +46,8 @@
   --primary-foreground: oklch(1 0 0);      /* Blanc */
   --primary-light: oklch(0.92 0 0);        /* Gris cl.2 */
 
-  /* Secondary — Gris cl.3 */
-  --secondary: oklch(0.97 0 0);            /* #F5F5F5 — hover bg */
+  /* Secondary — Beige chaud (cadres dashboard) */
+  --secondary: #F4F3ED;                    /* Warm grey — cadres, FlatCards, tabs */
   --secondary-foreground: oklch(0.40 0 0); /* Gris foncé #5A5A5A */
 
   /* Muted — Gris cl.2 */
@@ -139,8 +139,8 @@
   --primary-foreground: oklch(0.99 0 0);
   --primary-light: oklch(0.40 0.15 260);
 
-  /* Secondary */
-  --secondary: oklch(0.15 0 0); /* #222 — hover léger */
+  /* Secondary — Noir-brun chaud (cadres dashboard dark) */
+  --secondary: #171616;
   --secondary-foreground: oklch(0.7 0 0); /* #8B8B8B */
 
   /* Muted */

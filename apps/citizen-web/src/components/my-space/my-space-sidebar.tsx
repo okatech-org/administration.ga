@@ -13,7 +13,7 @@ import {
   ChevronsRight,
   FileText,
   Globe,
-  Mail,
+
   Moon,
   Settings,
   Sun,
@@ -110,7 +110,6 @@ export function MySpaceSidebar({
     {
       label: t("mySpace.nav.sectionTools", "Outils"),
       items: [
-        { title: "iBoîte", url: "/my-space/iboite", icon: Mail },
         { title: "iAsted", url: "/my-space/iasted", icon: Bot },
         { title: "iAgenda", url: "/my-space/iagenda", icon: Calendar },
       ],

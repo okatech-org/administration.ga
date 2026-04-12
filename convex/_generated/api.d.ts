@@ -146,6 +146,7 @@ import type * as lib_warehouseAuth from "../lib/warehouseAuth.js";
 import type * as limbique from "../limbique.js";
 import type * as migrations_backfillAggregates from "../migrations/backfillAggregates.js";
 import type * as migrations_backfillCopyOwnerOrgId from "../migrations/backfillCopyOwnerOrgId.js";
+import type * as migrations_backfillEmptyFormData from "../migrations/backfillEmptyFormData.js";
 import type * as migrations_fixIdentityPhotos from "../migrations/fixIdentityPhotos.js";
 import type * as migrations_fixOwnerIds from "../migrations/fixOwnerIds.js";
 import type * as migrations_initCardCounter from "../migrations/initCardCounter.js";
@@ -376,6 +377,7 @@ declare const fullApi: ApiFromModules<{
   limbique: typeof limbique;
   "migrations/backfillAggregates": typeof migrations_backfillAggregates;
   "migrations/backfillCopyOwnerOrgId": typeof migrations_backfillCopyOwnerOrgId;
+  "migrations/backfillEmptyFormData": typeof migrations_backfillEmptyFormData;
   "migrations/fixIdentityPhotos": typeof migrations_fixIdentityPhotos;
   "migrations/fixOwnerIds": typeof migrations_fixOwnerIds;
   "migrations/initCardCounter": typeof migrations_initCardCounter;

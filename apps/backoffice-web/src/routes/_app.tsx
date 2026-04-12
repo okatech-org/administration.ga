@@ -32,7 +32,7 @@ function SuperadminLayout() {
 		<SuperadminGuard>
 			<div className="backoffice-layout relative overflow-hidden h-screen flex">
 				<div className="hidden md:block p-4 pr-0">
-					<div className="h-full rounded-2xl bg-[#F4F3ED] dark:bg-[#171616] overflow-hidden">
+					<div className="h-full rounded-2xl bg-secondary overflow-hidden">
 						<SuperadminSidebar
 							isExpanded={isExpanded}
 							onToggle={() => setIsExpanded((prev) => !prev)}

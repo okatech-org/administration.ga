@@ -11,7 +11,6 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	AlertCircle,
-	ArrowLeft,
 	Briefcase,
 	ChevronLeft,
 	ChevronRight,
@@ -23,7 +22,6 @@ import {
 	User,
 	Users,
 } from "lucide-react";
-import Link from "next/link";
 import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
@@ -39,6 +37,7 @@ import { FamilyStep } from "@/components/registration/steps/FamilyStep";
 import { IdentityStep } from "@/components/registration/steps/IdentityStep";
 import { ProfessionalStep } from "@/components/registration/steps/ProfessionalStep";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PageHeader } from "@/components/my-space/page-header";
 import { Button } from "@/components/ui/button";
 import {
 	useAuthenticatedConvexQuery,
@@ -437,23 +436,11 @@ function ProfileForm({ profile, updateProfile }: ProfileFormProps) {
 
 	return (
 		<div className="space-y-6 pb-20 p-1">
-			{/* Header with back button */}
-			<motion.div
-				initial={{ opacity: 0, y: 10 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.2 }}
-			>
-				<Button variant="ghost" size="sm" asChild className="mb-4">
-					<Link href="/my-space">
-						<ArrowLeft className="h-4 w-4 mr-2" />
-						{t("common.back")}
-					</Link>
-				</Button>
-				<h1 className="text-2xl font-bold">{t("profile.edit.heading")}</h1>
-				<p className="text-muted-foreground text-sm mt-1">
-					{t("profile.edit.subtitle")}
-				</p>
-			</motion.div>
+			<PageHeader
+				title={t("profile.edit.heading")}
+				subtitle={t("profile.edit.subtitle")}
+				showBackButton
+			/>
 
 			{/* Step indicators */}
 			<motion.div

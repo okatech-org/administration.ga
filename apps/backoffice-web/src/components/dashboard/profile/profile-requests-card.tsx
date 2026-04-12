@@ -101,7 +101,7 @@ export function ProfileRequestsCard({
                   return (
                     <tr
                       key={req._id}
-                      className="bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-[#F4F3ED]/60 dark:hover:bg-[#171616]/60 transition-colors"
+                      className="bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-secondary/60 transition-colors"
                     >
                       {/* Reference (lien) */}
                       <td className="px-3 py-2.5 font-mono font-medium">

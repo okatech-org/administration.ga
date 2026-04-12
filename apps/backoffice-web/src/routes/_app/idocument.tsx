@@ -317,7 +317,7 @@ function ViewModeToggle({ value, onChange }: { value: ViewMode; onChange: (v: Vi
 		{ value: "column", icon: Columns3, label: "Colonnes" },
 	];
 	return (
-		<div className="flex items-center rounded-lg border border-border/50 bg-[#F4F3ED] dark:bg-[#171616] p-0.5 gap-0.5">
+		<div className="flex items-center rounded-lg border border-border/50 bg-secondary p-0.5 gap-0.5">
 			{modes.map((m) => (
 				<button key={m.value} onClick={() => onChange(m.value)} className={cn("h-7 w-7 flex items-center justify-center rounded-md transition-all", value === m.value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted")} title={m.label}>
 					<m.icon className="h-3.5 w-3.5" />
@@ -884,7 +884,7 @@ function IDocumentPage() {
 	// ═══════════════════════════════════════════════════════
 
 	return (
-		<motion.div initial="hidden" animate="visible" variants={stagger} className="flex flex-1 flex-col gap-4 p-3 md:p-4 max-w-[1400px] mx-auto w-full">
+		<motion.div initial="hidden" animate="visible" variants={stagger} className="flex flex-1 flex-col gap-4 p-3 md:p-4 w-full">
 			{/* ── Header ── */}
 			<motion.div variants={fadeUp}>
 				<PageHeader
@@ -908,7 +908,7 @@ function IDocumentPage() {
 
 			{/* ── Toolbar ── */}
 			<motion.div variants={fadeUp}>
-				<div className="rounded-xl bg-[#F4F3ED] dark:bg-[#171616] p-3">
+				<div className="rounded-xl bg-secondary p-3">
 					<div className="flex flex-wrap items-center gap-2">
 						<div className="relative flex-1 min-w-[200px] max-w-[360px]">
 							<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />

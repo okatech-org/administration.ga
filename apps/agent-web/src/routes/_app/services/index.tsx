@@ -866,7 +866,7 @@ function ServiceAdminCard({
 
         {/* Hover: config link for activated services */}
         {isActivated && (
-          <div className="absolute inset-x-0 bottom-0 px-5 pb-4 pt-8 bg-gradient-to-t from-[#F4F3ED] dark:from-[#171616] to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute inset-x-0 bottom-0 px-5 pb-4 pt-8 bg-gradient-to-t from-secondary to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
             <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
               <Settings2 className="h-4 w-4" />
               {t("dashboard.services.configure")}
