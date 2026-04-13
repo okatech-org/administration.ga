@@ -132,6 +132,7 @@ import type * as lib_projectDocxGenerator from "../lib/projectDocxGenerator.js";
 import type * as lib_projectPdfGenerator from "../lib/projectPdfGenerator.js";
 import type * as lib_projectPptxGenerator from "../lib/projectPptxGenerator.js";
 import type * as lib_referenceHelpers from "../lib/referenceHelpers.js";
+import type * as lib_registrationFormData from "../lib/registrationFormData.js";
 import type * as lib_requestWorkflow from "../lib/requestWorkflow.js";
 import type * as lib_roles from "../lib/roles.js";
 import type * as lib_startupChecks from "../lib/startupChecks.js";
@@ -365,6 +366,7 @@ declare const fullApi: ApiFromModules<{
   "lib/projectPdfGenerator": typeof lib_projectPdfGenerator;
   "lib/projectPptxGenerator": typeof lib_projectPptxGenerator;
   "lib/referenceHelpers": typeof lib_referenceHelpers;
+  "lib/registrationFormData": typeof lib_registrationFormData;
   "lib/requestWorkflow": typeof lib_requestWorkflow;
   "lib/roles": typeof lib_roles;
   "lib/startupChecks": typeof lib_startupChecks;

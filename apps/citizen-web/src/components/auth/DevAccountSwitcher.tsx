@@ -66,9 +66,9 @@ function DevAccountSwitcherInner() {
 
 	const currentEmail = session?.user?.email;
 
-	if (devAccounts.length === 0) return null;
-
 	// ── Expose sign-in function for E2E tests (dev/test only) ──
+	// Must be before the devAccounts early-return so CI (which has no
+	// NEXT_PUBLIC_DEV_ACCOUNTS) can still authenticate via __e2eDevSignIn.
 	if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
 		(window as any).__e2eDevSignIn = async (email: string) => {
 			try {
@@ -93,6 +93,8 @@ function DevAccountSwitcherInner() {
 			}
 		};
 	}
+
+	if (devAccounts.length === 0) return null;
 
 	const handleSignIn = async (account: DevAccount) => {
 		setLoading(account.email);
