@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { query } from "../_generated/server";
-import { authQuery, authMutation } from "../lib/customFunctions";
+import { authQuery, authMutation, backofficeQuery } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
@@ -252,5 +252,120 @@ export const removeAgent = authMutation({
     await ctx.db.patch(args.callLineId, {
       membershipIds: line.membershipIds.filter((id) => id !== args.membershipId),
     });
+  },
+});
+
+/**
+ * Replace the entire membershipIds array for a call line in one operation.
+ */
+export const updateAgents = authMutation({
+  args: {
+    callLineId: v.id("callLines"),
+    membershipIds: v.array(v.id("memberships")),
+  },
+  handler: async (ctx, args) => {
+    const line = await ctx.db.get(args.callLineId);
+    if (!line) throw error(ErrorCode.NOT_FOUND, "Ligne non trouvée");
+
+    const membership = await getMembership(ctx, ctx.user._id, line.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, TaskCode.meetings.manage);
+
+    // Validate all memberships belong to the same org
+    for (const mId of args.membershipIds) {
+      const m = await ctx.db.get(mId);
+      if (!m || m.orgId !== line.orgId || m.deletedAt) {
+        throw error(ErrorCode.INVALID_ARGUMENT, "Membre invalide ou supprimé");
+      }
+    }
+
+    await ctx.db.patch(args.callLineId, {
+      membershipIds: args.membershipIds,
+    });
+  },
+});
+
+// ============================================
+// BACKOFFICE QUERIES (SuperAdmin / AdminSystem)
+// ============================================
+
+/**
+ * List call lines for superadmin — no membership required.
+ */
+export const listForSuperAdmin = backofficeQuery({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    const lines = await ctx.db
+      .query("callLines")
+      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .collect();
+
+    const enriched = await Promise.all(
+      lines.map(async (line) => {
+        const agents = await Promise.all(
+          line.membershipIds.map(async (mId) => {
+            const m = await ctx.db.get(mId);
+            if (!m || m.deletedAt) return null;
+            const user = await ctx.db.get(m.userId);
+            if (!user) return null;
+            return {
+              membershipId: m._id,
+              userId: user._id,
+              name: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Inconnu",
+              avatarUrl: user.avatarUrl,
+            };
+          }),
+        );
+        return { ...line, agents: agents.filter(Boolean) };
+      }),
+    );
+
+    enriched.sort((a, b) => a.priority - b.priority);
+    return enriched;
+  },
+});
+
+/**
+ * Call statistics for an organization (backoffice KPI).
+ */
+export const callStats = backofficeQuery({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    // Count call lines
+    const lines = await ctx.db
+      .query("callLines")
+      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .collect();
+
+    // Count calls (meetings with type=call)
+    const calls = await ctx.db
+      .query("meetings")
+      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .collect();
+
+    const callOnly = calls.filter((m) => m.type === "call");
+    const totalCalls = callOnly.length;
+    const activeCalls = callOnly.filter(
+      (m) =>
+        m.status === "active" &&
+        (!m.callStatus || ["initiating", "ringing", "connected", "on_hold"].includes(m.callStatus)),
+    ).length;
+    const missedCalls = callOnly.filter((m) => m.callStatus === "missed").length;
+
+    // Online agents
+    const presenceRecords = await ctx.db
+      .query("agentPresence")
+      .withIndex("by_org_and_status", (q) =>
+        q.eq("orgId", args.orgId).eq("status", "online"),
+      )
+      .collect();
+
+    return {
+      totalCalls,
+      activeCalls,
+      missedCalls,
+      totalLines: lines.length,
+      activeLines: lines.filter((l) => l.isActive).length,
+      onlineAgents: presenceRecords.length,
+    };
   },
 });

@@ -33,6 +33,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
+import { CallLinesSettings } from "@/components/shared/call-lines-settings";
 import { useModuleAccess } from "@/components/shared/access-gate";
 import {
 	SettingsDivider,
@@ -360,6 +361,13 @@ export default function DashboardSettings() {
 						label: "Paiements",
 						icon: <CreditCard className="size-4" />,
 					},
+					...(canDo("meetings.manage")
+						? [{
+							id: "communications",
+							label: "Communications",
+							icon: <Phone className="size-4" />,
+						}]
+						: []),
 				],
 			}]
 			: []),
@@ -1216,6 +1224,19 @@ export default function DashboardSettings() {
 								</div>
 							</div>
 						</div>
+					</div>
+				)}
+
+				{/* ─── Communications Tab ─── */}
+				{canViewOrgSettings && activeOrgId && (
+					<div
+						id="settings-tab-communications"
+						className={cn(
+							"animate-in fade-in duration-300",
+							activeTab !== "communications" && "hidden",
+						)}
+					>
+						<CallLinesSettings orgId={activeOrgId} />
 					</div>
 				)}
 

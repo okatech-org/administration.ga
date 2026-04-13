@@ -26,6 +26,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { OrgMembersTable } from "@/components/admin/org-members-table";
 import { OrgServicesTable } from "@/components/admin/org-services-table";
+import { OrgCallsTab } from "@/components/dashboard/org-calls-tab";
 import { OrgModulesTab } from "@/components/dashboard/org-modules-tab";
 import { OrgPositionsTab } from "@/components/dashboard/org-positions-tab";
 import { Badge } from "@/components/ui/badge";
@@ -346,6 +347,10 @@ function OrgDetailPage() {
 						<TabsTrigger value="modules" className="gap-1.5 text-xs sm:text-sm">
 							<Package className="h-4 w-4" />
 							{t("superadmin.organizations.tabs.modules", "Modules")}
+						</TabsTrigger>
+						<TabsTrigger value="calls" className="gap-1.5 text-xs sm:text-sm">
+							<Phone className="h-4 w-4" />
+							{t("superadmin.organizations.tabs.calls", "Appels")}
 						</TabsTrigger>
 						<TabsTrigger value="settings" className="gap-1.5 text-xs sm:text-sm">
 							<Settings2 className="h-4 w-4" />
@@ -708,6 +713,11 @@ function OrgDetailPage() {
 						orgId={orgId as Id<"orgs">}
 						currentModules={(org.modules as string[]) ?? []}
 					/>
+				</TabsContent>
+
+				{/* ─── Tab: Calls ────────────────────────────────── */}
+				<TabsContent value="calls" className="space-y-4">
+					<OrgCallsTab orgId={orgId as Id<"orgs">} />
 				</TabsContent>
 
 				{/* ─── Tab: Settings ──────────────────────────────── */}
