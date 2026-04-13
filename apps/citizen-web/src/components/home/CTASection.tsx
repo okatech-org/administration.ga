@@ -1,6 +1,4 @@
-"use client"
-
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import communityHero from "@/assets/community-hero.jpg";
@@ -41,7 +39,7 @@ export function CTASection() {
 				<Button
 					asChild
 					size="lg"
-					className="h-16 px-10 text-lg bg-primary text-primary-foreground font-bold shadow-xl hover:scale-105 transition-all"
+					className="h-16 px-10 text-lg bg-[var(--gabon-yellow)] hover:brightness-110 text-black font-bold shadow-xl hover:scale-105 transition-all"
 				>
 					<a href="/sign-up">
 						{t("cta.button")}

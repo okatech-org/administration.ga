@@ -1,8 +1,6 @@
-"use client"
-
 import { api } from "@convex/_generated/api";
 import Link from "next/link";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import profilePassage from "@/assets/profile-passage-new.png";
@@ -113,9 +111,9 @@ function ProfileCard({
 	ctaText,
 }: ProfileCardProps) {
 	const borderTopColors = {
-		green: "oklch(0.685 0.169 237.323)",
-		yellow: "oklch(0.685 0.169 237.323)",
-		blue: "oklch(0.685 0.169 237.323)",
+		green: "var(--gabon-green-hex)",
+		yellow: "var(--gabon-yellow-hex)",
+		blue: "var(--gabon-blue-hex)",
 	};
 
 	return (
@@ -127,7 +125,7 @@ function ProfileCard({
 		>
 			<Link href={to}>
 				<Card
-					className="py-0 cursor-pointer border border-border bg-card shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden h-full"
+					className="py-0 cursor-pointer border flat-card-border bg-card shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden h-full"
 					style={{ borderTop: `3px solid ${borderTopColors[color]}` }}
 				>
 					<div className="h-48 w-full overflow-hidden">

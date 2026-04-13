@@ -14,7 +14,6 @@ import {
 	Newspaper,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { useConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
@@ -35,17 +34,19 @@ function CategoryBadge({ category }: { category: string }) {
 	const config = {
 		news: {
 			label: "Actualité",
-			class: "badge-info",
+			class: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
 		},
 		event: {
 			label: "Événement",
-			class: "badge-warning",
+			class:
+				"bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
 		},
 		communique: {
 			label: "Communiqué",
-			class: "badge-success",
+			class:
+				"bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
 		},
-	}[category] ?? { label: category, class: "bg-muted text-muted-foreground border border-border" };
+	}[category] ?? { label: category, class: "bg-gray-100 text-gray-800" };
 
 	return (
 		<span
@@ -69,12 +70,12 @@ function FeaturedPost({ post }: { post: Post }) {
 		>
 			<div className="grid md:grid-cols-2 gap-0 h-full">
 				{/* Image */}
-				<div className="aspect-4/3 md:aspect-auto md:min-h-full overflow-hidden bg-muted">
+				<div className="aspect-[4/3] md:aspect-auto md:min-h-full overflow-hidden bg-muted">
 					{post.coverImageUrl ? (
 						<img
 							src={post.coverImageUrl}
 							alt={post.title}
-							className="w-full h-full object-cover rounded-[10px] group-hover:scale-105 transition-transform duration-700"
+							className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
 						/>
 					) : (
 						<div className="w-full h-full flex items-center justify-center min-h-[250px]">
@@ -147,12 +148,12 @@ function SmallPost({ post }: { post: Post }) {
 			href={`/news/${post.slug}`}
 			className="group block bg-card rounded-xl overflow-hidden border hover:shadow-lg transition-all duration-300"
 		>
-			<div className="aspect-video overflow-hidden bg-muted">
+			<div className="aspect-[16/9] overflow-hidden bg-muted">
 				{post.coverImageUrl ? (
 					<img
 						src={post.coverImageUrl}
 						alt={post.title}
-						className="w-full h-full object-cover rounded-[10px] group-hover:scale-105 transition-transform duration-500"
+						className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
 					/>
 				) : (
 					<div className="w-full h-full flex items-center justify-center">
@@ -186,7 +187,7 @@ function SmallPost({ post }: { post: Post }) {
 export function NewsSection() {
 	const { t } = useTranslation();
 	const { data: posts } = useConvexQuery(api.functions.posts.getLatest, {
-		limit: 3,
+		limit: 4,
 	});
 
 	const isLoading = posts === undefined;
@@ -197,34 +198,16 @@ export function NewsSection() {
 
 	const [featured, ...rest] = posts ?? [];
 
-	const containerVariants = {
-		hidden: { opacity: 0 },
-		show: {
-			opacity: 1,
-			transition: { staggerChildren: 0.15 },
-		},
-	};
-
-	const itemVariants = {
-		hidden: { opacity: 0, y: 20 },
-		show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-	};
-
 	return (
-		<section className="py-20 md:py-32 bg-background">
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+		<section className="py-16 md:py-24 bg-gradient-to-b from-background to-muted/30">
+			<div className="container mx-auto px-4">
 				{/* Header */}
-				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.5 }}
-					className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-12 gap-6"
-				>
+				<div className="flex items-center justify-between mb-10">
 					<div>
-						<h2 className="text-4xl md:text-5xl font-bold tracking-[-0.02em] mb-3">
+						<h2 className="text-3xl md:text-4xl font-bold mb-2">
 							{t("home.news.title")}
 						</h2>
-						<p className="text-lg text-muted-foreground">{t("home.news.subtitle")}</p>
+						<p className="text-muted-foreground">{t("home.news.subtitle")}</p>
 					</div>
 					<Button variant="outline" asChild className="hidden sm:flex">
 						<Link href="/news">
@@ -232,21 +215,16 @@ export function NewsSection() {
 							<ArrowRight className="ml-1 h-4 w-4" />
 						</Link>
 					</Button>
-				</motion.div>
+				</div>
 
 				{/* Posts Grid */}
-				<motion.div
-					variants={containerVariants}
-					initial="hidden"
-					animate="show"
-					className="grid lg:grid-cols-2 gap-6 mb-8"
-				>
+				<div className="grid lg:grid-cols-2 gap-6 mb-6">
 					{isLoading ? (
 						<>
 							{/* Featured skeleton */}
-							<div className="rounded-[10px] border bg-card overflow-hidden">
+							<div className="rounded-2xl border bg-card overflow-hidden">
 								<div className="grid md:grid-cols-2 gap-0 h-full">
-									<div className="aspect-4/3 md:aspect-auto md:min-h-[250px] bg-muted animate-pulse" />
+									<div className="aspect-[4/3] md:aspect-auto md:min-h-[250px] bg-muted animate-pulse" />
 									<div className="p-6 md:p-8 space-y-4">
 										<div className="flex items-center gap-2">
 											<span className="h-5 w-16 rounded-full bg-muted animate-pulse" />
@@ -266,9 +244,9 @@ export function NewsSection() {
 								{[0, 1, 2].map((i) => (
 									<div
 										key={i}
-										className="rounded-[10px] border bg-card overflow-hidden"
+										className="rounded-xl border bg-card overflow-hidden"
 									>
-										<div className="aspect-video bg-muted animate-pulse" />
+										<div className="aspect-[16/9] bg-muted animate-pulse" />
 										<div className="p-4 space-y-2">
 											<span className="block h-5 w-16 rounded-full bg-muted animate-pulse" />
 											<div className="h-4 w-full rounded bg-muted animate-pulse" />
@@ -282,23 +260,17 @@ export function NewsSection() {
 					) : (
 						<>
 							{/* Featured Post */}
-							{featured && (
-								<motion.div variants={itemVariants} className="h-full">
-									<FeaturedPost post={featured} />
-								</motion.div>
-							)}
+							{featured && <FeaturedPost post={featured} />}
 
 							{/* Secondary Posts */}
 							<div className="grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
-								{rest.slice(0, 2).map((post) => (
-									<motion.div key={post._id} variants={itemVariants} className="h-full">
-										<SmallPost post={post} />
-									</motion.div>
+								{rest.slice(0, 3).map((post) => (
+									<SmallPost key={post._id} post={post} />
 								))}
 							</div>
 						</>
 					)}
-				</motion.div>
+				</div>
 
 				{/* Mobile CTA */}
 				<div className="sm:hidden text-center">
