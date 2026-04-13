@@ -1,6 +1,8 @@
 import { type ReactNode } from "react"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+import { PageHeader } from "../my-space/page-header"
+import { Globe } from "lucide-react"
 
 export interface SettingsTab {
   id: string
@@ -42,16 +44,13 @@ export function SettingsLayout({
       : []
 
   return (
-    <div className="flex min-h-full w-full flex-1 flex-col overflow-auto p-3 md:p-6">
-      <div className="mb-4 flex flex-col gap-1 md:mb-6">
-        <h1 className="text-xl font-semibold tracking-tight md:text-3xl">
-          {title}
-        </h1>
-        {description && (
-          <p className="text-sm text-muted-foreground md:text-base">
-            {description}
-          </p>
-        )}
+    <div className="flex min-h-full w-full flex-1 flex-col overflow-auto">
+      <div className="mb-4">
+        <PageHeader
+          title={title}
+          subtitle={description}
+          icon={<Globe className="h-6 w-6 text-primary" />}
+        />
       </div>
 
       <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border bg-[#FDFCFA] shadow-sm md:flex-row dark:bg-[#21201E]/77">
