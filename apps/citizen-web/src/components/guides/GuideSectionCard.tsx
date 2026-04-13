@@ -82,7 +82,7 @@ export function GuideSectionCard({ section }: { section: GuideSection }) {
               <div className="flex items-center gap-2 mb-3">
                 <Lightbulb className="w-5 h-5 text-warning" />
                 <h4 className="font-semibold text-foreground text-sm">
-                  {t("guides.practicalTips", "Conseils pratiques")}
+                  {t("guides.practicalTips")}
                 </h4>
               </div>
               <ul className="space-y-2">
@@ -104,7 +104,7 @@ export function GuideSectionCard({ section }: { section: GuideSection }) {
             <div>
               <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                 <ExternalLink className="w-4 h-4" />
-                {t("guides.usefulLinks", "Liens utiles")}
+                {t("guides.usefulLinks")}
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {section.links.map((link) => (

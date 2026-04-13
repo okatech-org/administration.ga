@@ -1750,7 +1750,7 @@ export function CitizenRegistrationForm({
 												</FieldLabel>
 												<Input
 													id="firstName"
-													placeholder="Jean"
+													placeholder={t("register.placeholders.firstName")}
 													aria-invalid={fieldState.invalid}
 													{...field}
 												/>
@@ -1770,7 +1770,7 @@ export function CitizenRegistrationForm({
 												</FieldLabel>
 												<Input
 													id="lastName"
-													placeholder="Mba"
+													placeholder={t("register.placeholders.lastName")}
 													aria-invalid={fieldState.invalid}
 													{...field}
 												/>
@@ -1813,7 +1813,7 @@ export function CitizenRegistrationForm({
 												</FieldLabel>
 												<Input
 													id="birthPlace"
-													placeholder="Libreville"
+													placeholder={t("register.placeholders.birthPlace")}
 													aria-invalid={fieldState.invalid}
 													{...field}
 												/>
@@ -1882,7 +1882,7 @@ export function CitizenRegistrationForm({
 											<FieldLabel htmlFor="nip">
 												{t("profile.fields.nip")}
 											</FieldLabel>
-											<Input id="nip" placeholder="Optionnel" {...field} />
+											<Input id="nip" placeholder={t("register.placeholders.optional")} {...field} />
 										</Field>
 									)}
 								/>
@@ -1928,7 +1928,7 @@ export function CitizenRegistrationForm({
 													<FieldLabel>
 														{t("profile.passport.number")}
 													</FieldLabel>
-													<Input placeholder="XX000000" {...field} />
+													<Input placeholder={t("register.placeholders.passportNumber")} {...field} />
 												</Field>
 											)}
 										/>
@@ -1940,7 +1940,7 @@ export function CitizenRegistrationForm({
 													<FieldLabel>
 														{t("profile.passport.issuingAuthority")}
 													</FieldLabel>
-													<Input placeholder="Préfecture de..." {...field} />
+													<Input placeholder={t("register.placeholders.issuingAuthority")} {...field} />
 												</Field>
 											)}
 										/>
@@ -2197,7 +2197,7 @@ export function CitizenRegistrationForm({
 															<FieldLabel>
 																{t("profile.address.city")}
 															</FieldLabel>
-															<Input placeholder="Libreville" {...field} />
+															<Input placeholder={t("register.placeholders.city")} {...field} />
 														</Field>
 													)}
 												/>

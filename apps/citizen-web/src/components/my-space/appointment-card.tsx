@@ -257,7 +257,7 @@ export function AppointmentCard({
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<AlertDialogFooter>
-									<AlertDialogCancel>{t("common.cancel", "Retour")}</AlertDialogCancel>
+									<AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
 									<AlertDialogAction
 										onClick={() => onCancel(apt._id)}
 										className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

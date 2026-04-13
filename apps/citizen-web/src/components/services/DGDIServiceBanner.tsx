@@ -22,11 +22,11 @@ export function DGDIServiceBanner() {
 					</div>
 					<div>
 						<h3 className="text-sm font-bold text-foreground leading-tight">
-							{t("dgdi.passportService", "Service Passeport")}{" "}
+							{t("dgdi.passportService")}{" "}
 							<span className="text-primary">(DGDI)</span>
 						</h3>
 						<h3 className="text-sm font-bold text-foreground leading-tight mt-0.5">
-							{t("dgdi.visaService", "Service Visa")}{" "}
+							{t("dgdi.visaService")}{" "}
 							<span className="text-primary">(DGDI)</span>
 						</h3>
 						<p className="text-xs text-muted-foreground font-medium mt-1.5 leading-snug">
@@ -44,8 +44,8 @@ export function DGDIServiceBanner() {
 					className="lg:hidden w-full flex items-center justify-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary py-1.5 mb-3 rounded-lg hover:bg-primary/5 transition-colors"
 				>
 					{expanded
-						? t("dgdi.hideDetails", "Masquer les details")
-						: t("dgdi.showDetails", "Voir les details")}
+						? t("dgdi.hideDetails")
+						: t("dgdi.showDetails")}
 					<ChevronDown
 						className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
 					/>
@@ -57,7 +57,7 @@ export function DGDIServiceBanner() {
 					<div className="mb-5">
 						<h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
 							<span className="w-0.5 h-3.5 rounded-full inline-block bg-primary" />
-							{t("dgdi.onlineServices", "Demarches en ligne")}
+							{t("dgdi.onlineServices")}
 						</h4>
 
 						<div className="space-y-2.5">
@@ -95,7 +95,7 @@ export function DGDIServiceBanner() {
 					<div className="mb-5">
 						<h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
 							<span className="w-0.5 h-3.5 rounded-full inline-block bg-primary" />
-							{t("dgdi.importantInfo", "Informations importantes")}
+							{t("dgdi.importantInfo")}
 						</h4>
 
 						<div className="space-y-2.5">
@@ -143,7 +143,7 @@ export function DGDIServiceBanner() {
 						target="_blank"
 						rel="noopener noreferrer"
 					>
-						{t("dgdi.bookAppointment", "Prendre Rendez-vous DGDI")}
+						{t("dgdi.bookAppointment")}
 						<ExternalLink className="w-3.5 h-3.5" />
 					</a>
 				</Button>

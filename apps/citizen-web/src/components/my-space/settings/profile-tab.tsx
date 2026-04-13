@@ -87,10 +87,7 @@ export function ProfileTab() {
     const isValid = await form.trigger()
     if (!isValid) {
       toast.error(
-        t(
-          "settings.dossier.validationError",
-          "Veuillez corriger les erreurs avant de sauvegarder"
-        )
+        t("settings.dossier.validationError")
       )
       return
     }
@@ -103,13 +100,13 @@ export function ProfileTab() {
         captureEvent("myspace_profile_updated")
         toast.success(t("common.saved"))
       } else {
-        toast.info(t("settings.dossier.noChanges", "Aucune modification"))
+        toast.info(t("settings.dossier.noChanges"))
       }
       setEditingSection(null)
     } catch (e: unknown) {
       const error = e as Error
       console.error(error)
-      toast.error(error.message || t("settings.dossier.saveError", "Erreur lors de la sauvegarde"))
+      toast.error(error.message || t("settings.dossier.saveError"))
     }
   }
 
@@ -125,13 +122,13 @@ export function ProfileTab() {
     return (
       <FlatCard>
         <div className="p-6 text-center text-sm text-muted-foreground">
-          {t("profile.notFound", "Profil non trouvé")}
+          {t("profile.notFound")}
         </div>
       </FlatCard>
     )
   }
 
-  const nd = t("profile.fields.notSpecified", "Non renseigné")
+  const nd = t("profile.fields.notSpecified")
 
   const formatDate = (ts: number | undefined) => {
     if (!ts) return nd
@@ -293,7 +290,7 @@ export function ProfileTab() {
                     <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                       <Row label={t("profile.fields.street")} value={addr.residence.street} />
                       <Row label={t("profile.fields.city")} value={addr.residence.city} />
-                      <Row label={t("profile.fields.postalCode", "Code postal")} value={addr.residence.postalCode} />
+                      <Row label={t("profile.fields.postalCode")} value={addr.residence.postalCode} />
                       <Row label={t("profile.fields.country")} value={countryLabel(addr.residence.country)} />
                     </div>
                   </div>
@@ -307,7 +304,7 @@ export function ProfileTab() {
                     <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                       <Row label={t("profile.fields.street")} value={addr.homeland.street} />
                       <Row label={t("profile.fields.city")} value={addr.homeland.city} />
-                      <Row label={t("profile.fields.postalCode", "Code postal")} value={addr.homeland.postalCode} />
+                      <Row label={t("profile.fields.postalCode")} value={addr.homeland.postalCode} />
                       <Row label={t("profile.fields.country")} value={countryLabel(addr.homeland.country)} />
                     </div>
                   </div>
@@ -457,7 +454,7 @@ function Row({
   value: string | undefined | null
 }) {
   const { t } = useTranslation()
-  const nd = t("profile.fields.notSpecified", "Non renseigné")
+  const nd = t("profile.fields.notSpecified")
   const display = value && value.trim() ? value : nd
 
   return (

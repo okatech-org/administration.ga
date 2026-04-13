@@ -236,7 +236,7 @@ export function MobileNavBar() {
                 type="button"
                 onClick={() => setSheetOpen(false)}
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted"
-                title="Fermer"
+                title={t("common.close")}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -358,7 +358,7 @@ export function MobileNavBar() {
                 className="flex items-center justify-center gap-1.5"
               >
                 <Plus className="h-4 w-4 shrink-0" />
-                {t("mySpace.actions.newRequest", "Nouvelle démarche")}
+                {t("mySpace.actions.newRequest")}
               </Link>
             </Button>
           </div>

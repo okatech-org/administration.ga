@@ -82,41 +82,41 @@ function SettingsPageContent() {
 
   const groups: SettingsTabGroup[] = [
     {
-      label: t("settings.groups.myDossier", "Dossier consulaire"),
+      label: t("settings.groups.myDossier"),
       tabs: [
         {
           id: "profile",
-          label: t("settings.tabs.profile", "Profil & Identité"),
+          label: t("settings.tabs.profile"),
           icon: <User className="h-4 w-4" />,
         },
       ],
     },
     {
-      label: t("settings.groups.mySpace", "Mon espace"),
+      label: t("settings.groups.mySpace"),
       tabs: [
         {
           id: "notifications",
-          label: t("settings.tabs.notifications", "Notifications"),
+          label: t("settings.tabs.notifications"),
           icon: <Bell className="h-4 w-4" />,
         },
         {
           id: "appearance",
-          label: t("settings.tabs.appearance", "Apparence"),
+          label: t("settings.tabs.appearance"),
           icon: <Palette className="h-4 w-4" />,
         },
       ],
     },
     {
-      label: t("settings.groups.account", "Compte"),
+      label: t("settings.groups.account"),
       tabs: [
         {
           id: "security",
-          label: t("settings.tabs.security", "Sécurité"),
+          label: t("settings.tabs.security"),
           icon: <KeyRound className="h-4 w-4" />,
         },
         {
           id: "dangerZone",
-          label: t("settings.tabs.dangerZone", "Zone dangereuse"),
+          label: t("settings.tabs.dangerZone"),
           icon: <Trash2 className="h-4 w-4" />,
           variant: "destructive" as const,
         },
@@ -127,10 +127,7 @@ function SettingsPageContent() {
   return (
     <SettingsLayout
       title={t("mySpace.screens.settings.heading")}
-      description={t(
-        "settings.description",
-        "Informations de votre dossier consulaire"
-      )}
+      description={t("settings.description")}
       groups={groups}
       activeTab={activeTab}
       onTabChange={handleTabChange}

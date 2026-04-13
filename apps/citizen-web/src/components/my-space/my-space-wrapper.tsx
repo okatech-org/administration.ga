@@ -155,7 +155,7 @@ export function MySpaceHeader() {
                 onClick={() => setShowRegistrationDialog(true)}
               >
                 <Building2 className="h-3.5 w-3.5" />
-                {t("mySpace.registration.cta", "Faire mon inscription consulaire")}
+                {t("mySpace.registration.cta")}
               </Button>
             )}
           </div>

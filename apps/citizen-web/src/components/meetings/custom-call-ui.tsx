@@ -102,13 +102,13 @@ function AvatarTile({
 				{!isSmall && isMuted && (
 					<span className="text-xs text-rose-400 flex items-center gap-1">
 						<MicOff className="w-3 h-3" />
-						{t("meetings.muted", "Micro coupé")}
+						{t("meetings.muted")}
 					</span>
 				)}
 			</div>
 			{isLocal && !isSmall && (
 				<span className="absolute top-2 left-2 text-xs bg-zinc-800/80 text-zinc-300 px-2 py-0.5 rounded-full">
-					{t("meetings.you", "Vous")}
+					{t("meetings.you")}
 				</span>
 			)}
 		</div>
@@ -136,31 +136,31 @@ function ConnectionBadge({
 	> = {
 		connected: isWaiting
 			? {
-					label: t("meetings.waiting", "En attente…"),
+					label: t("meetings.waiting"),
 					color: "text-amber-400",
 					icon: Loader2,
 					pulse: true,
 				}
 			: {
-					label: t("meetings.connected", "Connecté"),
+					label: t("meetings.connected"),
 					color: "text-emerald-400",
 					icon: Wifi,
 					pulse: false,
 				},
 		connecting: {
-			label: t("meetings.connecting", "Connexion…"),
+			label: t("meetings.connecting"),
 			color: "text-amber-400",
 			icon: Loader2,
 			pulse: true,
 		},
 		reconnecting: {
-			label: t("meetings.reconnecting", "Reconnexion…"),
+			label: t("meetings.reconnecting"),
 			color: "text-amber-400",
 			icon: WifiOff,
 			pulse: true,
 		},
 		disconnected: {
-			label: t("meetings.disconnected", "Déconnecté"),
+			label: t("meetings.disconnected"),
 			color: "text-zinc-500",
 			icon: WifiOff,
 			pulse: false,
@@ -298,7 +298,7 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 	const remoteName =
 		currentRemoteName ||
 		lastRemoteNameRef.current ||
-		t("meetings.participant", "Participant");
+		t("meetings.participant");
 
 	// Compute display title for header
 	const displayTitle = (() => {
@@ -313,11 +313,11 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 			const localName = localParticipant?.name;
 			// If the cleaned name is the local user's own name, can't determine the other
 			if (localName && cleaned === localName) {
-				return t("meetings.yourCorrespondent", "Votre correspondant");
+				return t("meetings.yourCorrespondent");
 			}
 			return cleaned || title;
 		}
-		return t("meetings.yourCorrespondent", "Votre correspondant");
+		return t("meetings.yourCorrespondent");
 	})();
 
 	// Check if remote has video
@@ -408,7 +408,7 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 									) : (
 										<ChevronUp className="w-3 h-3" />
 									)}
-									{pipVisible ? t("meetings.hide", "Masquer") : t("meetings.show", "Afficher")}
+									{pipVisible ? t("meetings.hide") : t("meetings.show")}
 								</button>
 								<div
 									className={`w-28 h-36 md:w-auto md:h-full rounded-xl md:rounded-2xl bg-zinc-900 overflow-hidden shadow-2xl md:shadow-none border border-zinc-800 md:border-0 transition-all duration-200 ${pipVisible ? "opacity-100 scale-100" : "opacity-0 scale-75 pointer-events-none md:opacity-100 md:scale-100 md:pointer-events-auto"}`}
@@ -430,14 +430,14 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 										</div>
 									) : (
 										<AvatarTile
-											name={localParticipant?.name || t("meetings.you", "Vous")}
+											name={localParticipant?.name || t("meetings.you")}
 											isMuted={!micEnabled}
 											isLocal={true}
 											size="sm"
 										/>
 									)}
 									<span className="absolute top-1.5 left-1.5 text-[10px] bg-zinc-900/80 backdrop-blur-sm text-zinc-300 px-1.5 py-0.5 rounded-md md:text-xs md:px-2 md:py-1 md:top-2 md:left-2 z-20">
-										{t("meetings.you", "Vous")}
+										{t("meetings.you")}
 									</span>
 								</div>
 							</div>
@@ -481,8 +481,8 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 						icon={micEnabled ? Mic : MicOff}
 						label={
 							micEnabled
-								? t("meetings.microphone", "Micro")
-								: t("meetings.muted", "Coupé")
+								? t("meetings.microphone")
+								: t("meetings.muted")
 						}
 						pending={micPending}
 					/>
@@ -492,8 +492,8 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 						icon={cameraEnabled ? Camera : CameraOff}
 						label={
 							cameraEnabled
-								? t("meetings.camera", "Caméra")
-								: t("meetings.cameraOff", "Caméra off")
+								? t("meetings.camera")
+								: t("meetings.cameraOff")
 						}
 						pending={cameraPending}
 					/>
@@ -502,7 +502,7 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 						active={false}
 						danger
 						icon={PhoneOff}
-						label={t("meetings.hangUp", "Raccrocher")}
+						label={t("meetings.hangUp")}
 					/>
 				</div>
 			</div>

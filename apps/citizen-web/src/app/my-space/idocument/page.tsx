@@ -117,35 +117,36 @@ type FolderId = SystemFolderId | SmartFolderId | DocumentTypeCategory
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
 
-const STATUS_CFG: Record<
-  string,
-  { label: string; class: string; dot: string }
-> = {
-  pending: {
-    label: "En attente",
-    class: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-    dot: "bg-amber-500",
-  },
-  validated: {
-    label: "Validé",
-    class: "bg-green-500/10 text-green-600 border-green-500/20",
-    dot: "bg-green-500",
-  },
-  rejected: {
-    label: "Rejeté",
-    class: "bg-red-500/10 text-red-600 border-red-500/20",
-    dot: "bg-red-500",
-  },
-  expired: {
-    label: "Expiré",
-    class: "bg-zinc-500/10 text-zinc-600 border-zinc-500/20",
-    dot: "bg-zinc-500",
-  },
-  expiring: {
-    label: "Expire bientôt",
-    class: "bg-orange-500/10 text-orange-600 border-orange-500/20",
-    dot: "bg-orange-500",
-  },
+type StatusCfg = Record<string, { label: string; class: string; dot: string }>
+
+function getStatusCfg(t: (key: string) => string): StatusCfg {
+  return {
+    pending: {
+      label: t("idocument.status.pending"),
+      class: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+      dot: "bg-amber-500",
+    },
+    validated: {
+      label: t("idocument.status.validated"),
+      class: "bg-green-500/10 text-green-600 border-green-500/20",
+      dot: "bg-green-500",
+    },
+    rejected: {
+      label: t("idocument.status.rejected"),
+      class: "bg-red-500/10 text-red-600 border-red-500/20",
+      dot: "bg-red-500",
+    },
+    expired: {
+      label: t("idocument.status.expired"),
+      class: "bg-zinc-500/10 text-zinc-600 border-zinc-500/20",
+      dot: "bg-zinc-500",
+    },
+    expiring: {
+      label: t("idocument.status.expiring"),
+      class: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+      dot: "bg-orange-500",
+    },
+  }
 }
 
 // ─── 2 Dossiers métier consulaire ────────────────────────────
@@ -163,160 +164,166 @@ interface SmartFolder {
   categories: DocumentTypeCategory[]
 }
 
-const SMART_FOLDERS: SmartFolder[] = [
-  {
-    id: "identity_civil",
-    name: "Identité & État civil",
-    description: "Passeport, acte de naissance, nationalité, résidence, emploi",
-    icon: User,
-    color: "text-blue-400",
-    iconColor: "text-violet-600",
-    categories: [
-      DocumentTypeCategory.Identity,
-      DocumentTypeCategory.CivilStatus,
-      DocumentTypeCategory.Nationality,
-      DocumentTypeCategory.Residence,
-      DocumentTypeCategory.Housing,
-      DocumentTypeCategory.Employment,
-      DocumentTypeCategory.Income,
-      DocumentTypeCategory.Education,
-      DocumentTypeCategory.LanguageIntegration,
-      DocumentTypeCategory.Health,
-      DocumentTypeCategory.Vehicle,
-    ],
-  },
-  {
-    id: "official_docs",
-    name: "Documents officiels",
-    description: "Attestations, actes, justice, décisions, formulaires",
-    icon: Stamp,
-    color: "text-violet-400",
-    iconColor: "text-orange-600",
-    categories: [
-      DocumentTypeCategory.Certificates,
-      DocumentTypeCategory.OfficialCertificates,
-      DocumentTypeCategory.Justice,
-      DocumentTypeCategory.AdministrativeDecisions,
-      DocumentTypeCategory.Forms,
-      DocumentTypeCategory.Taxation,
-      DocumentTypeCategory.Other,
-    ],
-  },
-]
+function getSmartFolders(t: (key: string) => string): SmartFolder[] {
+  return [
+    {
+      id: "identity_civil",
+      name: t("idocument.folders.identityCivil"),
+      description: t("idocument.folders.identityCivilDesc"),
+      icon: User,
+      color: "text-blue-400",
+      iconColor: "text-violet-600",
+      categories: [
+        DocumentTypeCategory.Identity,
+        DocumentTypeCategory.CivilStatus,
+        DocumentTypeCategory.Nationality,
+        DocumentTypeCategory.Residence,
+        DocumentTypeCategory.Housing,
+        DocumentTypeCategory.Employment,
+        DocumentTypeCategory.Income,
+        DocumentTypeCategory.Education,
+        DocumentTypeCategory.LanguageIntegration,
+        DocumentTypeCategory.Health,
+        DocumentTypeCategory.Vehicle,
+      ],
+    },
+    {
+      id: "official_docs",
+      name: t("idocument.folders.officialDocs"),
+      description: t("idocument.folders.officialDocsDesc"),
+      icon: Stamp,
+      color: "text-violet-400",
+      iconColor: "text-orange-600",
+      categories: [
+        DocumentTypeCategory.Certificates,
+        DocumentTypeCategory.OfficialCertificates,
+        DocumentTypeCategory.Justice,
+        DocumentTypeCategory.AdministrativeDecisions,
+        DocumentTypeCategory.Forms,
+        DocumentTypeCategory.Taxation,
+        DocumentTypeCategory.Other,
+      ],
+    },
+  ]
+}
 
 // Legacy mapping for individual category display on document cards
-const CATEGORY_CONFIG: Record<
+type CategoryConfig = Record<
   string,
   { name: string; icon: React.ElementType; color: string; iconColor: string }
-> = {
-  [DocumentTypeCategory.Identity]: {
-    name: "Identité",
-    icon: User,
-    color: "text-blue-400",
-    iconColor: "text-violet-600",
-  },
-  [DocumentTypeCategory.CivilStatus]: {
-    name: "État civil",
-    icon: ScrollText,
-    color: "text-purple-400",
-    iconColor: "text-fuchsia-600",
-  },
-  [DocumentTypeCategory.Nationality]: {
-    name: "Nationalité",
-    icon: Flag,
-    color: "text-green-400",
-    iconColor: "text-cyan-600",
-  },
-  [DocumentTypeCategory.Residence]: {
-    name: "Résidence",
-    icon: Home,
-    color: "text-amber-400",
-    iconColor: "text-emerald-600",
-  },
-  [DocumentTypeCategory.Employment]: {
-    name: "Emploi",
-    icon: Briefcase,
-    color: "text-indigo-400",
-    iconColor: "text-sky-600",
-  },
-  [DocumentTypeCategory.Income]: {
-    name: "Revenus",
-    icon: Wallet,
-    color: "text-emerald-400",
-    iconColor: "text-green-600",
-  },
-  [DocumentTypeCategory.Certificates]: {
-    name: "Attestations",
-    icon: Award,
-    color: "text-cyan-400",
-    iconColor: "text-amber-600",
-  },
-  [DocumentTypeCategory.OfficialCertificates]: {
-    name: "Actes officiels",
-    icon: Stamp,
-    color: "text-violet-400",
-    iconColor: "text-orange-600",
-  },
-  [DocumentTypeCategory.Justice]: {
-    name: "Justice",
-    icon: Scale,
-    color: "text-red-400",
-    iconColor: "text-red-600",
-  },
-  [DocumentTypeCategory.AdministrativeDecisions]: {
-    name: "Décisions admin.",
-    icon: FileCheck,
-    color: "text-orange-400",
-    iconColor: "text-purple-600",
-  },
-  [DocumentTypeCategory.Housing]: {
-    name: "Logement",
-    icon: Building2,
-    color: "text-teal-400",
-    iconColor: "text-teal-600",
-  },
-  [DocumentTypeCategory.Vehicle]: {
-    name: "Véhicule",
-    icon: Car,
-    color: "text-slate-400",
-    iconColor: "text-slate-600",
-  },
-  [DocumentTypeCategory.Education]: {
-    name: "Éducation",
-    icon: GraduationCap,
-    color: "text-pink-400",
-    iconColor: "text-amber-600",
-  },
-  [DocumentTypeCategory.LanguageIntegration]: {
-    name: "Langue & intégration",
-    icon: Languages,
-    color: "text-blue-400",
-    iconColor: "text-blue-600",
-  },
-  [DocumentTypeCategory.Health]: {
-    name: "Santé",
-    icon: Heart,
-    color: "text-rose-400",
-    iconColor: "text-rose-600",
-  },
-  [DocumentTypeCategory.Taxation]: {
-    name: "Fiscalité",
-    icon: Receipt,
-    color: "text-yellow-400",
-    iconColor: "text-lime-600",
-  },
-  [DocumentTypeCategory.Forms]: {
-    name: "Formulaires",
-    icon: ClipboardList,
-    color: "text-zinc-400",
-    iconColor: "text-indigo-600",
-  },
-  [DocumentTypeCategory.Other]: {
-    name: "Autres",
-    icon: FileText,
-    color: "text-gray-400",
-    iconColor: "text-stone-600",
-  },
+>
+
+function getCategoryConfig(t: (key: string) => string): CategoryConfig {
+  return {
+    [DocumentTypeCategory.Identity]: {
+      name: t("idocument.categories.identity"),
+      icon: User,
+      color: "text-blue-400",
+      iconColor: "text-violet-600",
+    },
+    [DocumentTypeCategory.CivilStatus]: {
+      name: t("idocument.categories.civilStatus"),
+      icon: ScrollText,
+      color: "text-purple-400",
+      iconColor: "text-fuchsia-600",
+    },
+    [DocumentTypeCategory.Nationality]: {
+      name: t("idocument.categories.nationality"),
+      icon: Flag,
+      color: "text-green-400",
+      iconColor: "text-cyan-600",
+    },
+    [DocumentTypeCategory.Residence]: {
+      name: t("idocument.categories.residence"),
+      icon: Home,
+      color: "text-amber-400",
+      iconColor: "text-emerald-600",
+    },
+    [DocumentTypeCategory.Employment]: {
+      name: t("idocument.categories.employment"),
+      icon: Briefcase,
+      color: "text-indigo-400",
+      iconColor: "text-sky-600",
+    },
+    [DocumentTypeCategory.Income]: {
+      name: t("idocument.categories.income"),
+      icon: Wallet,
+      color: "text-emerald-400",
+      iconColor: "text-green-600",
+    },
+    [DocumentTypeCategory.Certificates]: {
+      name: t("idocument.categories.certificates"),
+      icon: Award,
+      color: "text-cyan-400",
+      iconColor: "text-amber-600",
+    },
+    [DocumentTypeCategory.OfficialCertificates]: {
+      name: t("idocument.categories.officialCertificates"),
+      icon: Stamp,
+      color: "text-violet-400",
+      iconColor: "text-orange-600",
+    },
+    [DocumentTypeCategory.Justice]: {
+      name: t("idocument.categories.justice"),
+      icon: Scale,
+      color: "text-red-400",
+      iconColor: "text-red-600",
+    },
+    [DocumentTypeCategory.AdministrativeDecisions]: {
+      name: t("idocument.categories.administrativeDecisions"),
+      icon: FileCheck,
+      color: "text-orange-400",
+      iconColor: "text-purple-600",
+    },
+    [DocumentTypeCategory.Housing]: {
+      name: t("idocument.categories.housing"),
+      icon: Building2,
+      color: "text-teal-400",
+      iconColor: "text-teal-600",
+    },
+    [DocumentTypeCategory.Vehicle]: {
+      name: t("idocument.categories.vehicle"),
+      icon: Car,
+      color: "text-slate-400",
+      iconColor: "text-slate-600",
+    },
+    [DocumentTypeCategory.Education]: {
+      name: t("idocument.categories.education"),
+      icon: GraduationCap,
+      color: "text-pink-400",
+      iconColor: "text-amber-600",
+    },
+    [DocumentTypeCategory.LanguageIntegration]: {
+      name: t("idocument.categories.languageIntegration"),
+      icon: Languages,
+      color: "text-blue-400",
+      iconColor: "text-blue-600",
+    },
+    [DocumentTypeCategory.Health]: {
+      name: t("idocument.categories.health"),
+      icon: Heart,
+      color: "text-rose-400",
+      iconColor: "text-rose-600",
+    },
+    [DocumentTypeCategory.Taxation]: {
+      name: t("idocument.categories.taxation"),
+      icon: Receipt,
+      color: "text-yellow-400",
+      iconColor: "text-lime-600",
+    },
+    [DocumentTypeCategory.Forms]: {
+      name: t("idocument.categories.forms"),
+      icon: ClipboardList,
+      color: "text-zinc-400",
+      iconColor: "text-indigo-600",
+    },
+    [DocumentTypeCategory.Other]: {
+      name: t("idocument.categories.other"),
+      icon: FileText,
+      color: "text-gray-400",
+      iconColor: "text-stone-600",
+    },
+  }
 }
 
 interface SystemFolder {
@@ -325,12 +332,6 @@ interface SystemFolder {
   icon: React.ElementType
   isSystem: true
 }
-
-const SYSTEM_FOLDERS: SystemFolder[] = [
-  { id: "__all", name: "Mes Documents", icon: FolderOpen, isSystem: true },
-  { id: "__trash", name: "Poubelle", icon: Trash2, isSystem: true },
-  { id: "__vault", name: "Coffre-fort", icon: Shield, isSystem: true },
-]
 
 // ═══════════════════════════════════════════════════════════════
 // ANIMATIONS
@@ -366,9 +367,9 @@ function formatDate(ts?: number) {
   return format(ts, "dd/MM/yyyy")
 }
 
-function getCategoryLabel(cat?: string): string {
-  if (!cat) return "Non classé"
-  return CATEGORY_CONFIG[cat]?.name ?? cat
+function getCategoryLabel(cat: string | undefined, categoryConfig: CategoryConfig, fallback: string): string {
+  if (!cat) return fallback
+  return categoryConfig[cat]?.name ?? cat
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -523,7 +524,7 @@ function VaultFileCard({
           <div className="flex items-center gap-1.5 text-[8px] text-muted-foreground/50">
             {fileCount !== undefined && fileCount > 1 && (
               <span className="rounded bg-white/4 px-1 font-mono">
-                {fileCount} fichiers
+                {fileCount}
               </span>
             )}
             {date && (
@@ -557,10 +558,11 @@ function ViewModeToggle({
   value: ViewMode
   onChange: (v: ViewMode) => void
 }) {
+  const { t } = useTranslation()
   const modes: { value: ViewMode; icon: React.ElementType; label: string }[] = [
-    { value: "grid", icon: LayoutGrid, label: "Grille" },
-    { value: "list", icon: List, label: "Liste" },
-    { value: "column", icon: Columns3, label: "Colonnes" },
+    { value: "grid", icon: LayoutGrid, label: t("idocument.viewMode.grid") },
+    { value: "list", icon: List, label: t("idocument.viewMode.list") },
+    { value: "column", icon: Columns3, label: t("idocument.viewMode.column") },
   ]
   return (
     <div className="flex items-center gap-0.5 rounded-lg border border-border/50 bg-card p-0.5">
@@ -629,16 +631,21 @@ function DocumentInfoDialog({
   onClose,
   doc,
   onDownload,
+  categoryConfig,
+  statusCfg,
 }: {
   open: boolean
   onClose: () => void
   doc: VaultDocument | null
   onDownload: (storageId: Id<"_storage">) => void
+  categoryConfig: CategoryConfig
+  statusCfg: StatusCfg
 }) {
+  const { t } = useTranslation()
   if (!open || !doc) return null
 
-  const catConfig = CATEGORY_CONFIG[doc.category ?? "other"]
-  const statusConfig = STATUS_CFG[doc.status ?? "pending"] ?? STATUS_CFG.pending
+  const catConfig = categoryConfig[doc.category ?? "other"]
+  const statusConfig = statusCfg[doc.status ?? "pending"] ?? statusCfg.pending
   const isExpired =
     doc.expiresAt && isPast(doc.expiresAt) && !isToday(doc.expiresAt)
   const isExpiringSoon =
@@ -658,21 +665,21 @@ function DocumentInfoDialog({
         <div className="border-b border-border/50 px-5 pt-5 pb-3">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Info className="h-4 w-4 text-violet-400" />
-            Détails du document
+            {t("idocument.documentDetails")}
           </div>
         </div>
         <div className="space-y-4 px-5 py-4">
           {/* Title and label */}
           <div className="space-y-2 rounded-xl border border-border/50 bg-card p-3">
             <p className="text-[9px] font-semibold tracking-wider text-muted-foreground/60 uppercase">
-              Nom
+              {t("idocument.info.name")}
             </p>
             <p className="text-sm font-medium">
               {doc.label || doc.files[0]?.filename || "Document"}
             </p>
             {doc.documentType && (
               <p className="text-xs text-muted-foreground">
-                Type : {doc.documentType}
+                {t("idocument.info.type")} : {doc.documentType}
               </p>
             )}
           </div>
@@ -711,7 +718,7 @@ function DocumentInfoDialog({
           {doc.expiresAt && (
             <div className="space-y-1 rounded-xl border border-border/50 bg-card p-3">
               <p className="text-[9px] font-semibold tracking-wider text-muted-foreground/60 uppercase">
-                Expiration
+                {t("idocument.info.expiration")}
               </p>
               <p
                 className={cn(
@@ -724,9 +731,9 @@ function DocumentInfoDialog({
                 )}
               >
                 {formatDate(doc.expiresAt)}
-                {isExpired && " (expiré)"}
+                {isExpired && ` (${t("idocument.expired")})`}
                 {isExpiringSoon &&
-                  ` (dans ${differenceInDays(doc.expiresAt, new Date())} jours)`}
+                  ` (${t("idocument.inDays", { count: differenceInDays(doc.expiresAt, new Date()) })})`}
               </p>
             </div>
           )}
@@ -734,7 +741,7 @@ function DocumentInfoDialog({
           {/* Files list */}
           <div className="space-y-2 rounded-xl border border-border/50 bg-card p-3">
             <p className="text-[9px] font-semibold tracking-wider text-muted-foreground/60 uppercase">
-              {doc.files.length} fichier(s)
+              {doc.files.length} {t("idocument.info.files", { count: doc.files.length })}
             </p>
             <div className="space-y-1.5">
               {doc.files.map((file, idx) => (
@@ -769,12 +776,12 @@ function DocumentInfoDialog({
           <div className="space-y-2 rounded-xl border border-border/50 bg-card p-3">
             <p className="flex items-center gap-1.5 text-[9px] font-semibold tracking-wider text-muted-foreground/60 uppercase">
               <Clock className="h-3 w-3 text-amber-400" />
-              Horodatage
+              {t("idocument.info.timestamps")}
             </p>
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-lg border border-border/50 bg-muted/50 p-2">
                 <p className="mb-0.5 text-[8px] tracking-wider text-muted-foreground/50 uppercase">
-                  Créé le
+                  {t("idocument.info.createdAt")}
                 </p>
                 <p className="text-[11px] font-medium">
                   {formatDate(doc._creationTime)}
@@ -782,7 +789,7 @@ function DocumentInfoDialog({
               </div>
               <div className="rounded-lg border border-border/50 bg-muted/50 p-2">
                 <p className="mb-0.5 text-[8px] tracking-wider text-muted-foreground/50 uppercase">
-                  Modifié le
+                  {t("idocument.info.updatedAt")}
                 </p>
                 <p className="text-[11px] font-medium">
                   {formatDate(doc.updatedAt)}
@@ -796,7 +803,7 @@ function DocumentInfoDialog({
             onClick={onClose}
             className="rounded-md border border-border px-3 py-1.5 text-xs transition-colors hover:bg-muted"
           >
-            Fermer
+            {t("common.close")}
           </button>
         </div>
       </div>
@@ -817,6 +824,7 @@ function DeleteConfirmDialog({
   onConfirm: () => void
   docName: string
 }) {
+  const { t } = useTranslation()
   if (!open) return null
   return (
     <div
@@ -830,14 +838,12 @@ function DeleteConfirmDialog({
         <div className="border-b border-border/50 px-5 pt-5 pb-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-red-400">
             <Trash2 className="h-4 w-4" />
-            Confirmer la suppression
+            {t("idocument.delete.confirmTitle")}
           </div>
         </div>
         <div className="px-5 py-4">
           <p className="text-sm text-muted-foreground">
-            Voulez-vous vraiment supprimer{" "}
-            <span className="font-medium text-foreground">{docName}</span> ?
-            Cette action est irréversible.
+            {t("idocument.delete.confirmMessage", { name: docName })}
           </p>
         </div>
         <div className="flex justify-end gap-2 border-t border-border/50 px-5 py-3">
@@ -845,7 +851,7 @@ function DeleteConfirmDialog({
             onClick={onClose}
             className="rounded-md border border-border px-3 py-1.5 text-xs transition-colors hover:bg-muted"
           >
-            Annuler
+            {t("common.cancel")}
           </button>
           <button
             onClick={() => {
@@ -854,7 +860,7 @@ function DeleteConfirmDialog({
             }}
             className="rounded-md bg-red-600 px-3 py-1.5 text-xs text-white transition-colors hover:bg-red-700"
           >
-            Supprimer
+            {t("common.delete")}
           </button>
         </div>
       </div>
@@ -874,9 +880,11 @@ interface StagedFile {
 function UploadDialog({
   defaultCategory,
   onClose,
+  categoryConfig,
 }: {
   defaultCategory: DocumentTypeCategory
   onClose: () => void
+  categoryConfig: CategoryConfig
 }) {
   const { t } = useTranslation()
 
@@ -902,9 +910,9 @@ function UploadDialog({
     () =>
       Object.values(DocumentTypeCategory).map((cat) => ({
         value: cat,
-        label: CATEGORY_CONFIG[cat]?.name ?? cat,
+        label: categoryConfig[cat]?.name ?? cat,
       })),
-    []
+    [categoryConfig]
   )
 
   const documentTypeOptions = useMemo(() => {
@@ -943,7 +951,7 @@ function UploadDialog({
           ])
         } catch (err: any) {
           console.error(err)
-          toast.error(`Erreur: ${err.message}`)
+          toast.error(`${t("idocument.toasts.uploadError")}: ${err.message}`)
         } finally {
           setUploading((prev) => prev.filter((n) => n !== file.name))
         }
@@ -984,11 +992,11 @@ function UploadDialog({
         expiresAt: expiresAt ? new Date(expiresAt).getTime() : undefined,
       })
 
-      toast.success("Document ajouté avec succès")
+      toast.success(t("idocument.toasts.documentAdded"))
       onClose()
     } catch (err) {
       console.error(err)
-      toast.error("Erreur lors de l'enregistrement")
+      toast.error(t("idocument.toasts.saveError"))
     } finally {
       setSaving(false)
     }
@@ -999,48 +1007,48 @@ function UploadDialog({
   return (
     <DialogContent className="sm:max-w-[520px]">
       <DialogHeader>
-        <DialogTitle>Ajouter un document</DialogTitle>
+        <DialogTitle>{t("idocument.addDocument")}</DialogTitle>
       </DialogHeader>
       <div className="mt-4 space-y-4">
         {/* Category */}
         <div className="space-y-2">
-          <Label>Catégorie *</Label>
+          <Label>{t("idocument.labels.category")} *</Label>
           <Combobox
             options={categoryOptions}
             value={category}
             onValueChange={(v) => setCategory(v as DocumentTypeCategory)}
-            placeholder="Sélectionner une catégorie..."
-            searchPlaceholder="Rechercher..."
-            emptyText="Aucune catégorie trouvée"
+            placeholder={t("idocument.selectCategory")}
+            searchPlaceholder={t("common.search")}
+            emptyText={t("idocument.noCategoryFound")}
           />
         </div>
 
         {/* Document Type */}
         <div className="space-y-2">
-          <Label>Type de document</Label>
+          <Label>{t("idocument.labels.documentType")}</Label>
           <Combobox
             options={documentTypeOptions}
             value={documentType ?? null}
             onValueChange={(v) => setDocumentType(v as DetailedDocumentType)}
-            placeholder="Sélectionner un type..."
-            searchPlaceholder="Rechercher un type..."
-            emptyText="Aucun type trouvé"
+            placeholder={t("idocument.selectType")}
+            searchPlaceholder={t("idocument.searchType")}
+            emptyText={t("idocument.noTypeFound")}
           />
         </div>
 
         {/* Label */}
         <div className="space-y-2">
-          <Label>Libellé</Label>
+          <Label>{t("idocument.labels.label")}</Label>
           <Input
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            placeholder="Ex: Passeport de Jean, Facture Février 2026..."
+            placeholder={t("idocument.labelPlaceholder")}
           />
         </div>
 
         {/* Expiration */}
         <div className="space-y-2">
-          <Label>Date d'expiration (optionnel)</Label>
+          <Label>{t("idocument.labels.expiryDate")}</Label>
           <Input
             type="date"
             value={expiresAt}
@@ -1050,7 +1058,7 @@ function UploadDialog({
 
         {/* Drop zone */}
         <div className="space-y-2">
-          <Label>Fichier(s) *</Label>
+          <Label>{t("idocument.labels.files")} *</Label>
           <div
             {...getRootProps()}
             className={cn(
@@ -1066,7 +1074,7 @@ function UploadDialog({
                 <UploadCloud className="h-6 w-6 text-muted-foreground" />
               </div>
               <div className="text-sm font-medium">
-                Glissez vos fichiers ici ou cliquez pour parcourir
+                {t("idocument.dropFiles")}
               </div>
               <div className="text-xs text-muted-foreground">
                 PDF, PNG, JPG — max 5 MB
@@ -1094,7 +1102,7 @@ function UploadDialog({
         {stagedFiles.length > 0 && (
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">
-              {stagedFiles.length} fichier(s) prêt(s)
+              {stagedFiles.length} {t("idocument.filesReady", { count: stagedFiles.length })}
             </Label>
             {stagedFiles.map((f, idx) => (
               <div
@@ -1121,14 +1129,14 @@ function UploadDialog({
         {/* Actions */}
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" onClick={onClose}>
-            Annuler
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={handleSave}
             disabled={stagedFiles.length === 0 || isUploading || saving}
           >
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Enregistrer
+            {t("common.save")}
           </Button>
         </div>
       </div>
@@ -1141,7 +1149,21 @@ function UploadDialog({
 // ═══════════════════════════════════════════════════════════════
 
 export default function IDocumentPage() {
+  const { t } = useTranslation()
   const convex = useConvex()
+
+  // ─── i18n config objects ───────────────────────────────
+  const STATUS_CFG = useMemo(() => getStatusCfg(t), [t])
+  const SMART_FOLDERS = useMemo(() => getSmartFolders(t), [t])
+  const CATEGORY_CONFIG = useMemo(() => getCategoryConfig(t), [t])
+  const SYSTEM_FOLDERS: SystemFolder[] = useMemo(
+    () => [
+      { id: "__all", name: t("idocument.systemFolders.all"), icon: FolderOpen, isSystem: true },
+      { id: "__trash", name: t("idocument.systemFolders.trash"), icon: Trash2, isSystem: true },
+      { id: "__vault", name: t("idocument.systemFolders.vault"), icon: Shield, isSystem: true },
+    ],
+    [t]
+  )
 
   // ─── State ──────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<ViewMode>("grid")
@@ -1183,7 +1205,7 @@ export default function IDocumentPage() {
         const url = await getUrl({ storageId })
         if (url) window.open(url, "_blank")
       } catch {
-        toast.error("Erreur lors du téléchargement")
+        toast.error(t("idocument.toasts.downloadError"))
       }
     },
     [getUrl]
@@ -1193,9 +1215,9 @@ export default function IDocumentPage() {
     async (doc: VaultDocument) => {
       try {
         await removeFromVault({ id: doc._id })
-        toast.success("Document supprimé")
+        toast.success(t("idocument.toasts.documentDeleted"))
       } catch {
-        toast.error("Erreur lors de la suppression")
+        toast.error(t("idocument.toasts.deleteError"))
       }
     },
     [removeFromVault]
@@ -1237,7 +1259,7 @@ export default function IDocumentPage() {
     })
 
     return { systemFolderEntries, categoryFolderEntries }
-  }, [vaultDocs, stats])
+  }, [vaultDocs, stats, SYSTEM_FOLDERS, SMART_FOLDERS])
 
   // ─── Current folder label for breadcrumb ────────────────
   const currentFolderName = useMemo(() => {
@@ -1247,7 +1269,7 @@ export default function IDocumentPage() {
     const smart = SMART_FOLDERS.find((f) => f.id === currentFolderId)
     if (smart) return smart.name
     return CATEGORY_CONFIG[currentFolderId]?.name ?? currentFolderId
-  }, [currentFolderId])
+  }, [currentFolderId, SYSTEM_FOLDERS, SMART_FOLDERS, CATEGORY_CONFIG])
 
   const breadcrumbPath = useMemo(() => {
     if (!currentFolderId || !currentFolderName) return []
@@ -1267,7 +1289,7 @@ export default function IDocumentPage() {
           d.label?.toLowerCase().includes(q) ||
           d.files?.[0]?.filename?.toLowerCase().includes(q) ||
           d.documentType?.toLowerCase().includes(q) ||
-          getCategoryLabel(d.category).toLowerCase().includes(q)
+          getCategoryLabel(d.category, CATEGORY_CONFIG, t("idocument.uncategorized")).toLowerCase().includes(q)
       )
     }
 
@@ -1310,7 +1332,7 @@ export default function IDocumentPage() {
     }
 
     return docs
-  }, [vaultDocs, currentFolderId, search])
+  }, [vaultDocs, currentFolderId, search, SMART_FOLDERS, CATEGORY_CONFIG, t])
 
   // ─── Handlers ───────────────────────────────────────────
   const handleOpenFolder = useCallback((folderId: FolderId) => {
@@ -1361,7 +1383,7 @@ export default function IDocumentPage() {
           subtitle={
             currentFolderId
               ? undefined
-              : "Vos documents personnels et administratifs"
+              : t("idocument.subtitle")
           }
           icon={
             currentFolderId && CATEGORY_CONFIG[currentFolderId] ? (
@@ -1389,14 +1411,15 @@ export default function IDocumentPage() {
             <DialogTrigger asChild>
               <Button className="shrink-0 gap-2">
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Ajouter un document</span>
-                <span className="sm:hidden">Ajouter</span>
+                <span className="hidden sm:inline">{t("idocument.addDocument")}</span>
+                <span className="sm:hidden">{t("common.add")}</span>
               </Button>
             </DialogTrigger>
             <UploadDialog
               key={defaultUploadCategory}
               defaultCategory={defaultUploadCategory}
               onClose={() => setShowUpload(false)}
+              categoryConfig={CATEGORY_CONFIG}
             />
           </Dialog>
         </div>
@@ -1409,7 +1432,7 @@ export default function IDocumentPage() {
             <div className="relative max-w-[360px] min-w-[200px] flex-1">
               <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <input
-                placeholder="Rechercher dans vos documents..."
+                placeholder={t("idocument.searchDocuments")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="h-8 w-full rounded-lg border border-border/50 bg-muted/50 px-3 pl-8 text-xs focus:ring-1 focus:ring-primary/30 focus:outline-none"
@@ -1422,23 +1445,23 @@ export default function IDocumentPage() {
                   className="flex h-7 items-center gap-1.5 px-2 text-[11px] text-red-400 hover:text-red-300"
                   onClick={() => setSearch("")}
                 >
-                  <X className="h-3 w-3" /> Effacer
+                  <X className="h-3 w-3" /> {t("common.clear")}
                 </button>
               </>
             )}
             {stats && (
               <div className="mr-2 ml-auto flex items-center gap-2 text-[11px] text-muted-foreground">
-                <span>{stats.total} documents</span>
+                <span>{stats.total} {t("idocument.stats.documents")}</span>
                 {stats.expiringSoon > 0 && (
                   <span className="flex items-center gap-1 text-amber-400">
                     <AlertTriangle className="h-3 w-3" />
-                    {stats.expiringSoon} expire(nt) bientôt
+                    {stats.expiringSoon} {t("idocument.stats.expiringSoon")}
                   </span>
                 )}
                 {stats.expired > 0 && (
                   <span className="flex items-center gap-1 text-red-400">
                     <AlertTriangle className="h-3 w-3" />
-                    {stats.expired} expiré(s)
+                    {stats.expired} {t("idocument.stats.expired")}
                   </span>
                 )}
               </div>
@@ -1503,11 +1526,11 @@ export default function IDocumentPage() {
                   <div>
                     <div className="mb-3 flex items-center justify-between">
                       <p className="px-1 text-[10px] font-semibold tracking-wider text-muted-foreground/60 uppercase">
-                        {search ? "Résultats de recherche" : "Documents"}
+                        {search ? t("idocument.searchResults") : t("idocument.documents")}
                       </p>
                       {currentFiles.length > 0 && (
                         <span className="text-xs text-muted-foreground">
-                          {currentFiles.length} élément(s)
+                          {currentFiles.length} {t("idocument.items", { count: currentFiles.length })}
                         </span>
                       )}
                     </div>
@@ -1581,8 +1604,8 @@ export default function IDocumentPage() {
                                   >
                                     <Clock className="h-2.5 w-2.5" />
                                     {isExpired
-                                      ? "Expiré"
-                                      : `Expire le ${formatDate(d.expiresAt)}`}
+                                      ? t("idocument.expired")
+                                      : `${t("idocument.expiresOn")} ${formatDate(d.expiresAt)}`}
                                   </span>
                                 ) : null
                               }
@@ -1601,7 +1624,7 @@ export default function IDocumentPage() {
                                       }}
                                     >
                                       <Eye className="mr-2 h-4 w-4" />
-                                      Aperçu
+                                      {t("idocument.actions.preview")}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                       onClick={(e) => {
@@ -1610,7 +1633,7 @@ export default function IDocumentPage() {
                                       }}
                                     >
                                       <Info className="mr-2 h-4 w-4" />
-                                      Informations
+                                      {t("idocument.actions.info")}
                                     </DropdownMenuItem>
                                     {d.files[0]?.storageId && (
                                       <DropdownMenuItem
@@ -1620,7 +1643,7 @@ export default function IDocumentPage() {
                                         }}
                                       >
                                         <Download className="mr-2 h-4 w-4" />
-                                        Télécharger
+                                        {t("idocument.actions.download")}
                                       </DropdownMenuItem>
                                     )}
                                     <DropdownMenuItem
@@ -1631,7 +1654,7 @@ export default function IDocumentPage() {
                                       className="text-destructive focus:text-destructive"
                                     >
                                       <Trash2 className="mr-2 h-4 w-4" />
-                                      Supprimer
+                                      {t("idocument.actions.delete")}
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
@@ -1651,12 +1674,12 @@ export default function IDocumentPage() {
                           )}
                         </div>
                         <h3 className="mb-1 text-lg font-semibold">
-                          {search ? "Aucun résultat" : "Dossier vide"}
+                          {search ? t("idocument.empty.noResults") : t("idocument.empty.emptyFolder")}
                         </h3>
                         <p className="max-w-sm text-sm text-muted-foreground">
                           {search
-                            ? "Aucun document ne correspond à votre recherche."
-                            : "Ce dossier ne contient aucun document."}
+                            ? t("idocument.empty.noResultsDesc")
+                            : t("idocument.empty.emptyFolderDesc")}
                         </p>
                         {!search && (
                           <Button
@@ -1664,7 +1687,7 @@ export default function IDocumentPage() {
                             onClick={() => setShowUpload(true)}
                             className="mt-2 text-primary"
                           >
-                            Ajouter un document
+                            {t("idocument.addDocument")}
                           </Button>
                         )}
                       </div>
@@ -1686,12 +1709,12 @@ export default function IDocumentPage() {
                 <div className="overflow-hidden rounded-xl border border-border/50 bg-card">
                   {/* Header */}
                   <div className="grid grid-cols-12 gap-2 border-b border-border/50 bg-muted/30 px-4 py-2 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                    <div className="col-span-4">Nom</div>
-                    <div className="col-span-2">Catégorie</div>
-                    <div className="col-span-2">Modifié</div>
-                    <div className="col-span-1">Statut</div>
-                    <div className="col-span-2">Expiration</div>
-                    <div className="col-span-1">Fichiers</div>
+                    <div className="col-span-4">{t("idocument.table.name")}</div>
+                    <div className="col-span-2">{t("idocument.table.category")}</div>
+                    <div className="col-span-2">{t("idocument.table.modified")}</div>
+                    <div className="col-span-1">{t("idocument.table.status")}</div>
+                    <div className="col-span-2">{t("idocument.table.expiration")}</div>
+                    <div className="col-span-1">{t("idocument.table.files")}</div>
                   </div>
 
                   {/* Folder rows (only at root) */}
@@ -1712,7 +1735,7 @@ export default function IDocumentPage() {
                             </span>
                           </div>
                           <div className="col-span-2 flex items-center text-xs text-muted-foreground">
-                            Système
+                            {t("idocument.system")}
                           </div>
                           <div className="col-span-2" />
                           <div className="col-span-1" />
@@ -1780,7 +1803,7 @@ export default function IDocumentPage() {
                             </span>
                           </div>
                           <div className="col-span-2 flex items-center text-xs text-muted-foreground">
-                            {getCategoryLabel(d.category)}
+                            {getCategoryLabel(d.category, CATEGORY_CONFIG, t("idocument.uncategorized"))}
                           </div>
                           <div className="col-span-2 flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="h-2.5 w-2.5" />
@@ -1832,7 +1855,7 @@ export default function IDocumentPage() {
                   {/* Empty state */}
                   {(currentFolderId || search) && currentFiles.length === 0 && (
                     <div className="py-12 text-center text-sm text-muted-foreground">
-                      Aucun document trouvé
+                      {t("idocument.empty.noDocumentFound")}
                     </div>
                   )}
                   {!currentFolderId &&
@@ -1840,7 +1863,7 @@ export default function IDocumentPage() {
                     allFolders.systemFolderEntries.length === 0 &&
                     allFolders.categoryFolderEntries.length === 0 && (
                       <div className="py-12 text-center text-sm text-muted-foreground">
-                        Aucun contenu
+                        {t("idocument.empty.noContent")}
                       </div>
                     )}
                 </div>
@@ -1861,7 +1884,7 @@ export default function IDocumentPage() {
                     {/* Root column — System + Category folders */}
                     <div className="w-64 overflow-y-auto border-r border-border/50">
                       <div className="p-2 px-3 text-[10px] font-semibold text-muted-foreground/60 uppercase">
-                        Dossiers
+                        {t("idocument.folders.title")}
                       </div>
                       {SYSTEM_FOLDERS.map((folder) => (
                         <button
@@ -1922,7 +1945,7 @@ export default function IDocumentPage() {
                           })
                         ) : (
                           <div className="px-3 py-4 text-center text-xs text-muted-foreground/50">
-                            Aucun document
+                            {t("idocument.empty.noDocument")}
                           </div>
                         )}
                       </div>
@@ -1932,7 +1955,7 @@ export default function IDocumentPage() {
                     <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
                       <div className="text-center">
                         <FileText className="mx-auto mb-2 h-8 w-8 text-muted-foreground/30" />
-                        <p>Sélectionnez un document pour l'aperçu</p>
+                        <p>{t("idocument.selectForPreview")}</p>
                       </div>
                     </div>
                   </div>
@@ -1949,6 +1972,8 @@ export default function IDocumentPage() {
         onClose={() => setInfoDoc(null)}
         doc={infoDoc}
         onDownload={handleDownload}
+        categoryConfig={CATEGORY_CONFIG}
+        statusCfg={STATUS_CFG}
       />
 
       <DeleteConfirmDialog
@@ -1958,7 +1983,7 @@ export default function IDocumentPage() {
           if (deleteDoc) handleDelete(deleteDoc)
         }}
         docName={
-          deleteDoc?.label || deleteDoc?.files[0]?.filename || "ce document"
+          deleteDoc?.label || deleteDoc?.files[0]?.filename || t("idocument.thisDocument")
         }
       />
 

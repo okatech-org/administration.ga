@@ -213,22 +213,22 @@ function MyCompanyCard({ company }: { company: Company }) {
 		[CompanyType.SASU]: "SASU",
 		[CompanyType.EURL]: "EURL",
 		[CompanyType.EI]: t("companies.type.ei"),
-		[CompanyType.AutoEntrepreneur]: t("companies.type.auto", "Auto-Entrepreneur"),
+		[CompanyType.AutoEntrepreneur]: t("companies.type.auto"),
 		[CompanyType.Other]: t("companies.type.other"),
 	};
 
 	const sectorLabels: Record<ActivitySector, string> = {
-		[ActivitySector.Technology]: t("companies.sector.technology", "Technologie"),
+		[ActivitySector.Technology]: t("companies.sector.technology"),
 		[ActivitySector.Commerce]: t("companies.sector.commerce"),
 		[ActivitySector.Services]: t("companies.sector.services"),
 		[ActivitySector.Industry]: t("companies.sector.industry"),
-		[ActivitySector.Agriculture]: t("companies.sector.agriculture", "Agriculture"),
+		[ActivitySector.Agriculture]: t("companies.sector.agriculture"),
 		[ActivitySector.Health]: t("companies.sector.health"),
 		[ActivitySector.Education]: t("companies.sector.education"),
 		[ActivitySector.Culture]: t("companies.sector.culture"),
 		[ActivitySector.Tourism]: t("companies.sector.tourism"),
 		[ActivitySector.Transport]: t("companies.sector.transport"),
-		[ActivitySector.Construction]: t("companies.sector.construction", "Construction"),
+		[ActivitySector.Construction]: t("companies.sector.construction"),
 		[ActivitySector.Other]: t("companies.sector.other"),
 	};
 
@@ -325,17 +325,17 @@ function DiscoverCompanyCard({ company }: { company: Company }) {
 	const { t } = useTranslation();
 
 	const sectorLabels: Record<ActivitySector, string> = {
-		[ActivitySector.Technology]: t("companies.sector.technology", "Technologie"),
+		[ActivitySector.Technology]: t("companies.sector.technology"),
 		[ActivitySector.Commerce]: t("companies.sector.commerce"),
 		[ActivitySector.Services]: t("companies.sector.services"),
 		[ActivitySector.Industry]: t("companies.sector.industry"),
-		[ActivitySector.Agriculture]: t("companies.sector.agriculture", "Agriculture"),
+		[ActivitySector.Agriculture]: t("companies.sector.agriculture"),
 		[ActivitySector.Health]: t("companies.sector.health"),
 		[ActivitySector.Education]: t("companies.sector.education"),
 		[ActivitySector.Culture]: t("companies.sector.culture"),
 		[ActivitySector.Tourism]: t("companies.sector.tourism"),
 		[ActivitySector.Transport]: t("companies.sector.transport"),
-		[ActivitySector.Construction]: t("companies.sector.construction", "Construction"),
+		[ActivitySector.Construction]: t("companies.sector.construction"),
 		[ActivitySector.Other]: t("companies.sector.other"),
 	};
 
@@ -424,22 +424,22 @@ function CreateCompanyDialog({ onClose }: { onClose: () => void }) {
 		[CompanyType.SASU]: "SASU",
 		[CompanyType.EURL]: "EURL",
 		[CompanyType.EI]: t("companies.type.ei"),
-		[CompanyType.AutoEntrepreneur]: t("companies.type.auto", "Auto-Entrepreneur"),
+		[CompanyType.AutoEntrepreneur]: t("companies.type.auto"),
 		[CompanyType.Other]: t("companies.type.other"),
 	};
 
 	const sectorLabels: Record<ActivitySector, string> = {
-		[ActivitySector.Technology]: t("companies.sector.technology", "Technologie"),
+		[ActivitySector.Technology]: t("companies.sector.technology"),
 		[ActivitySector.Commerce]: t("companies.sector.commerce"),
 		[ActivitySector.Services]: t("companies.sector.services"),
 		[ActivitySector.Industry]: t("companies.sector.industry"),
-		[ActivitySector.Agriculture]: t("companies.sector.agriculture", "Agriculture"),
+		[ActivitySector.Agriculture]: t("companies.sector.agriculture"),
 		[ActivitySector.Health]: t("companies.sector.health"),
 		[ActivitySector.Education]: t("companies.sector.education"),
 		[ActivitySector.Culture]: t("companies.sector.culture"),
 		[ActivitySector.Tourism]: t("companies.sector.tourism"),
 		[ActivitySector.Transport]: t("companies.sector.transport"),
-		[ActivitySector.Construction]: t("companies.sector.construction", "Construction"),
+		[ActivitySector.Construction]: t("companies.sector.construction"),
 		[ActivitySector.Other]: t("companies.sector.other"),
 	};
 

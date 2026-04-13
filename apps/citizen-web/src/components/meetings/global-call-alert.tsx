@@ -159,7 +159,7 @@ export function GlobalCallAlert() {
 							</div>
 							<div>
 								<p className="font-semibold text-sm">
-									{activeCallToDisplay.title || t("meetings.incomingCall", "Appel entrant")}
+									{activeCallToDisplay.title || t("meetings.incomingCall")}
 								</p>
 								<p className="text-xs text-zinc-400">
 									{callerName
@@ -181,7 +181,7 @@ export function GlobalCallAlert() {
 							className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 shadow-lg shadow-emerald-900/20"
 						>
 							<Phone className="w-4 h-4" />
-							{t("meetings.answer", "Décrocher")}
+							{t("meetings.answer")}
 						</Button>
 					</div>
 				</div>

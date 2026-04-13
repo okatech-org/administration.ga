@@ -969,7 +969,7 @@ export default function UserDashboard() {
                       href="/my-space/services-demarches?tab=demarches"
                       className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      {t("mySpace.requests.viewAll", "Tout voir")}
+                      {t("mySpace.requests.viewAll")}
                       <ArrowRight className="h-3 w-3" />
                     </Link>
                   )}
@@ -982,14 +982,14 @@ export default function UserDashboard() {
                       <FileText className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      {t("mySpace.requests.empty", "Aucune démarche en cours")}
+                      {t("mySpace.requests.empty")}
                     </p>
                     <Button
                       asChild
                       size="sm"
                       className="h-8 rounded-lg bg-primary px-4 text-xs font-medium text-white hover:bg-primary/90"
                     >
-                      <Link href="/my-space/services-demarches">{t("mySpace.requests.newRequest", "Nouvelle démarche")}</Link>
+                      <Link href="/my-space/services-demarches">{t("mySpace.requests.newRequest")}</Link>
                     </Button>
                   </div>
                 )}
@@ -1022,7 +1022,7 @@ export default function UserDashboard() {
                     href="/my-space/iagenda?tab=prendre-rdv"
                     className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                   >
-                    {t("mySpace.appointments.viewAll", "iAgenda")}
+                    {t("mySpace.appointments.viewAll")}
                     <ArrowRight className="h-3 w-3" />
                   </Link>
                 </div>
@@ -1034,14 +1034,14 @@ export default function UserDashboard() {
                       <Calendar className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                     </div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      {t("mySpace.appointments.empty", "Aucun rendez-vous")}
+                      {t("mySpace.appointments.empty")}
                     </p>
                     <Button
                       asChild
                       size="sm"
                       className="h-8 rounded-lg bg-primary px-4 text-xs font-medium text-white hover:bg-primary/90"
                     >
-                      <Link href="/my-space/iagenda?tab=prendre-rdv">{t("mySpace.appointments.book", "Prendre RDV")}</Link>
+                      <Link href="/my-space/iagenda?tab=prendre-rdv">{t("mySpace.appointments.book")}</Link>
                     </Button>
                   </div>
                 )}
@@ -1390,7 +1390,7 @@ export default function UserDashboard() {
                         href="/my-space/services-demarches?tab=demarches"
                         className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                       >
-                        {t("mySpace.requests.viewAll", "Tout voir")}
+                        {t("mySpace.requests.viewAll")}
                         <ArrowRight className="h-3 w-3" />
                       </Link>
                     )}
@@ -1403,14 +1403,14 @@ export default function UserDashboard() {
                         <FileText className="h-4 w-4 text-muted-foreground" />
                       </div>
                       <p className="text-xs font-medium text-muted-foreground">
-                        {t("mySpace.requests.empty", "Aucune démarche en cours")}
+                        {t("mySpace.requests.empty")}
                       </p>
                       <Button
                         asChild
                         size="sm"
                         className="h-7 rounded-lg bg-primary px-3 text-xs font-medium text-white hover:bg-primary/90"
                       >
-                        <Link href="/services">{t("mySpace.requests.newRequest", "Nouvelle démarche")}</Link>
+                        <Link href="/services">{t("mySpace.requests.newRequest")}</Link>
                       </Button>
                     </div>
                   )}
@@ -1436,7 +1436,7 @@ export default function UserDashboard() {
                       href="/my-space/iagenda?tab=prendre-rdv"
                       className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      {t("mySpace.appointments.viewAll", "iAgenda")}
+                      {t("mySpace.appointments.viewAll")}
                       <ArrowRight className="h-3 w-3" />
                     </Link>
                   </div>
@@ -1448,14 +1448,14 @@ export default function UserDashboard() {
                         <Calendar className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                       </div>
                       <p className="text-xs font-medium text-muted-foreground">
-                        {t("mySpace.appointments.empty", "Aucun rendez-vous")}
+                        {t("mySpace.appointments.empty")}
                       </p>
                       <Button
                         asChild
                         size="sm"
                         className="h-7 rounded-lg bg-primary px-3 text-xs font-medium text-white hover:bg-primary/90"
                       >
-                        <Link href="/my-space/iagenda?tab=prendre-rdv">{t("mySpace.appointments.book", "Prendre RDV")}</Link>
+                        <Link href="/my-space/iagenda?tab=prendre-rdv">{t("mySpace.appointments.book")}</Link>
                       </Button>
                     </div>
                   )}

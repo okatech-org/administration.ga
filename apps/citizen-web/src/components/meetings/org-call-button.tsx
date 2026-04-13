@@ -123,7 +123,7 @@ export function OrgCallButton({
 				<div className="h-full flex flex-col items-center justify-center gap-4 text-white">
 					<Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
 					<p className="text-sm text-zinc-400">
-						{t("meetings.waitingForAgent", "En attente d'un agent...")}
+						{t("meetings.waitingForAgent")}
 					</p>
 				</div>
 			)}
@@ -143,7 +143,7 @@ export function OrgCallButton({
 				) : (
 					<Phone className="w-4 h-4 mr-2" />
 				)}
-				{label || t("meetings.callOrg", "Appeler")}
+				{label || t("meetings.callOrg")}
 				{activeLines.length > 1 && (
 					<ChevronDown className="w-3 h-3 ml-1 opacity-60" />
 				)}
@@ -194,7 +194,7 @@ export function OrgCallButton({
 										</div>
 										{isPersonal && (
 											<span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-700 shrink-0">
-												{t("meetings.directLine", "Direct")}
+												{t("meetings.directLine")}
 											</span>
 										)}
 									</button>
@@ -206,7 +206,7 @@ export function OrgCallButton({
 						<Button asChild variant="outline" size="sm" className="w-full h-9 text-sm font-medium rounded-xl">
 							<Link href="/my-space/iasted">
 								<MessageCircle className="w-4 h-4 mr-2" />
-								{t("meetings.chatWithOrg", "Discuter avec la représentation")}
+								{t("meetings.chatWithOrg")}
 							</Link>
 						</Button>
 					</div>
@@ -230,7 +230,7 @@ export function OrgCallButton({
 						aria-describedby={undefined}
 						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 					>
-						<DialogTitle className="sr-only">{t("meetings.callInProgress", "Appel en cours")}</DialogTitle>
+						<DialogTitle className="sr-only">{t("meetings.callInProgress")}</DialogTitle>
 						{callContent}
 					</DialogContent>
 				</Dialog>

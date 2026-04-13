@@ -253,7 +253,7 @@ export default function ServicesPage() {
 						<button
 							type="button"
 							onClick={() => setSearchQuery("")}
-							aria-label="Effacer la recherche"
+							aria-label={t("servicesDemarches.clearSearch")}
 							className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
 						>
 							<X className="h-4 w-4 text-muted-foreground" />

@@ -92,7 +92,7 @@ export default function ChildrenPage() {
 						<DialogTrigger asChild>
 							<Button>
 								<Plus className="h-4 w-4 mr-2" />
-								{t("children.add.button", "Ajouter un enfant")}
+								{t("children.add.button")}
 							</Button>
 						</DialogTrigger>
 						<AddChildDialog onClose={() => setIsAddDialogOpen(false)} />

@@ -264,10 +264,7 @@ export default function OrgDetailPage() {
 									)}
 									{!org.phone && !org.email && !org.website && (
 										<p className="text-muted-foreground">
-											{t(
-												"orgs.noContact",
-												"Aucune information de contact disponible.",
-											)}
+											{t("reps.noContactInfo")}
 										</p>
 									)}
 

@@ -87,17 +87,17 @@ export function ServiceDetailSheet({
 	const footerContent = !isAvailableInJurisdiction ? (
 		<div className="flex w-full items-center gap-2 rounded-xl bg-muted p-3 text-sm text-muted-foreground">
 			<ShieldAlert className="h-4 w-4 shrink-0" />
-			<span>{t("services.notAvailableInJurisdiction", "Non disponible dans votre juridiction")}</span>
+			<span>{t("services.notAvailableInJurisdiction")}</span>
 		</div>
 	) : !isEligible ? (
 		<div className="flex w-full items-center gap-2 rounded-xl bg-warning/10 p-3 text-sm text-warning">
 			<ShieldAlert className="h-4 w-4 shrink-0" />
-			<span>{t("services.notEligible", "Vous n'etes pas eligible a ce service")}</span>
+			<span>{t("services.notEligible")}</span>
 		</div>
 	) : (
 		<Button onClick={onCreateRequest} className="w-full gap-2 rounded-xl">
 			<PlusCircle className="h-4 w-4" />
-			{t("services.modal.createRequest", "Effectuer cette demarche")}
+			{t("services.modal.createRequest")}
 		</Button>
 	);
 
@@ -131,7 +131,7 @@ export function ServiceDetailSheet({
 							{service.requiresAppointment && (
 								<Badge variant="outline" className="gap-1 border-warning/20 bg-warning/10 text-[10px] text-warning">
 									<Calendar className="h-2.5 w-2.5" />
-									{t("services.appointmentRequired", "RDV requis")}
+									{t("services.appointmentRequired")}
 								</Badge>
 							)}
 						</div>
@@ -158,10 +158,10 @@ export function ServiceDetailSheet({
 						<MapPin className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
 						<div>
 							<p className="text-sm font-medium text-warning">
-								{t("services.notAvailableOnlineTitle", "Non disponible en ligne")}
+								{t("services.notAvailableOnlineTitle")}
 							</p>
 							<p className="mt-0.5 text-xs text-warning/80">
-								{t("services.notAvailableOnlineDesc", "Ce service necessite une visite en personne.")}
+								{t("services.notAvailableOnlineDesc")}
 							</p>
 						</div>
 					</div>
@@ -169,7 +169,7 @@ export function ServiceDetailSheet({
 					<div className="flex items-center gap-2 rounded-xl border border-success/20 bg-success/10 p-3">
 						<Globe className="h-4 w-4 shrink-0 text-success" />
 						<p className="text-sm font-medium text-success">
-							{t("services.availableOnline", "Disponible en ligne")}
+							{t("services.availableOnline")}
 						</p>
 					</div>
 				)}
@@ -179,7 +179,7 @@ export function ServiceDetailSheet({
 					<>
 						<Separator />
 						<div>
-							<SectionLabel icon={FileText} label={t("services.detailsTitle", "Informations détaillées")} />
+							<SectionLabel icon={FileText} label={t("services.detailsTitle")} />
 							<div
 								className="prose prose-sm dark:prose-invert mt-2 max-w-none text-muted-foreground"
 								// biome-ignore lint/security/noDangerouslySetInnerHtml: contenu sanitise
@@ -196,7 +196,7 @@ export function ServiceDetailSheet({
 						<div>
 							<SectionLabel
 								icon={FileText}
-								label={`${t("services.requiredDocuments", "Documents requis")} (${service.joinedDocuments.length})`}
+								label={`${t("services.requiredDocuments")} (${service.joinedDocuments.length})`}
 							/>
 							<ul className="mt-2 space-y-1.5">
 								{service.joinedDocuments.map((doc, index) => (
@@ -212,7 +212,7 @@ export function ServiceDetailSheet({
 										</span>
 										{doc.required && (
 											<Badge variant="destructive" className="h-4 shrink-0 px-1.5 text-[10px]">
-												{t("services.required", "Obligatoire")}
+												{t("services.required")}
 											</Badge>
 										)}
 									</li>
@@ -229,7 +229,7 @@ export function ServiceDetailSheet({
 						<div>
 							<SectionLabel
 								icon={Users}
-								label={t("services.modal.eligibleBeneficiaries", "Beneficiaires eligibles")}
+								label={t("services.modal.eligibleBeneficiaries")}
 							/>
 							<div className="mt-2 flex flex-wrap gap-1.5">
 								{service.eligibleProfiles.map((profileType: string) => (
@@ -250,12 +250,12 @@ export function ServiceDetailSheet({
 				{/* Informations importantes */}
 				<div className="rounded-xl bg-foreground/[0.03] p-3 dark:bg-foreground/[0.06]">
 					<p className="mb-1.5 text-xs font-semibold text-foreground">
-						{t("services.modal.importantInfo", "Informations importantes")}
+						{t("services.modal.importantInfo")}
 					</p>
 					<ul className="list-inside list-disc space-y-0.5 text-[11px] text-muted-foreground">
-						<li>{t("services.modal.infoPoints.docs", "Preparez tous les documents requis avant de commencer")}</li>
-						<li>{t("services.modal.infoPoints.delay", "Les delais de traitement sont indicatifs")}</li>
-						<li>{t("services.modal.infoPoints.identity", "Une piece d'identite valide est toujours requise")}</li>
+						<li>{t("services.modal.infoPoints.docs")}</li>
+						<li>{t("services.modal.infoPoints.delay")}</li>
+						<li>{t("services.modal.infoPoints.identity")}</li>
 					</ul>
 				</div>
 			</div>

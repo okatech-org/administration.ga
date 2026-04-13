@@ -153,7 +153,7 @@ export function CallButton({
 					<div className="text-center space-y-3">
 						<Loader2 className="w-8 h-8 animate-spin text-zinc-500 mx-auto" />
 						<p className="text-zinc-400 text-sm">
-							{t("meetings.connecting", "Connexion au serveur d'appel...")}
+							{t("meetings.connecting")}
 						</p>
 					</div>
 				</div>

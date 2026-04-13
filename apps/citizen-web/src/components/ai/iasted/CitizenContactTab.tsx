@@ -18,6 +18,7 @@ import {
 	Shield,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -33,6 +34,7 @@ const ORG_TYPE_LABELS: Record<string, string> = {
 };
 
 export function CitizenContactTab() {
+	const { t } = useTranslation();
 	const [search, setSearch] = useState("");
 
 	const { data: allOrgs, isPending } = useAuthenticatedConvexQuery(
@@ -61,7 +63,7 @@ export function CitizenContactTab() {
 					<Input
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
-						placeholder="Rechercher..."
+						placeholder={t("common.search")}
 						className="pl-7 h-8 text-xs"
 					/>
 				</div>

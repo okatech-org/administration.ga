@@ -115,7 +115,7 @@ function ServicesPageContent() {
         icon: Building2,
         color: "text-indigo-600 dark:text-indigo-400",
         bgColor: "bg-indigo-500/10",
-        label: t("services.category.declaration", "Declarations"),
+        label: t("services.category.declaration"),
         slug: ServiceCategory.Declaration,
       },
     }),

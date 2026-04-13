@@ -4,6 +4,7 @@
  */
 import { Mic, Phone, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -207,6 +208,7 @@ export function VoiceChatOverlay({
 	state,
 	error,
 }: VoiceChatOverlayProps) {
+	const { t } = useTranslation();
 	if (!isOpen) return null;
 
 	return (
@@ -223,7 +225,7 @@ export function VoiceChatOverlay({
 					size="icon"
 					onClick={onClose}
 					className="absolute right-4 top-4"
-					aria-label="Fermer"
+					aria-label={t("common.close")}
 				>
 					<X className="h-6 w-6" />
 				</Button>

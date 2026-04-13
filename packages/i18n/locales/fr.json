@@ -512,7 +512,11 @@
 			"photo": "Photo d'identité",
 			"passport": "Passeport",
 			"birthCertificate": "Acte de Naissance",
-			"proofOfAddress": "Justificatif de Domicile"
+			"proofOfAddress": "Justificatif de Domicile",
+			"cropPhoto": "Recadrer la photo",
+			"photoTip1": "Visage centré et dégagé",
+			"photoTip2": "Fond uni et clair",
+			"rotation": "Rotation"
 		},
 		"scan": {
 			"title": "Pré-remplissage automatique",
@@ -598,6 +602,15 @@
 			"creatingProfile": "Création de votre profil...",
 			"findingOrg": "Recherche de votre organisme de rattachement...",
 			"submitting": "Envoi de votre demande..."
+		},
+		"placeholders": {
+			"firstName": "Jean",
+			"lastName": "Mba",
+			"birthPlace": "Libreville",
+			"optional": "Optionnel",
+			"passportNumber": "XX000000",
+			"issuingAuthority": "Préfecture de...",
+			"city": "Libreville"
 		}
 	},
 	"common": {
@@ -696,11 +709,24 @@
 		"redirecting": "Redirection en cours...",
 		"email": "Email",
 		"password": "Mot de passe",
-		"locale": "fr-FR"
+		"locale": "fr-FR",
+		"loadMore": "Charger plus",
+		"sections": "Sections",
+		"clear": "Effacer",
+		"all": "Tous",
+		"reduce": "Réduire",
+		"fullscreen": "Plein écran",
+		"contact": "Contacter",
+		"add": "Ajouter"
 	},
 	"settings": {
 		"tabs": {
-			"dossier": "Mon Dossier"
+			"dossier": "Mon Dossier",
+			"appearance": "Apparence",
+			"dangerZone": "Zone dangereuse",
+			"notifications": "Notifications",
+			"profile": "Profil & Identité",
+			"security": "Sécurité"
 		},
 		"dossier": {
 			"title": "Mon Dossier Consulaire",
@@ -838,6 +864,11 @@
 			"updateSuccess": "Préférences mises à jour",
 			"updateError": "Erreur lors de la mise à jour des préférences",
 			"notMember": "Vous n'êtes pas membre de cette organisation."
+		},
+		"groups": {
+			"account": "Compte",
+			"myDossier": "Dossier consulaire",
+			"mySpace": "Mon espace"
 		}
 	},
 	"requests": {
@@ -1052,7 +1083,8 @@
 			"dashboard": "Tableau de bord",
 			"mySpace": "Mon Espace",
 			"signIn": "Se connecter",
-			"signUp": "S'inscrire"
+			"signUp": "S'inscrire",
+			"resources": "Ressources"
 		},
 		"switchSpace": "Changer d'espace",
 		"space": {
@@ -1081,7 +1113,8 @@
 		"noProfile": {
 			"title": "Profil introuvable",
 			"message": "Vous n'avez pas encore de profil. Nous vous redirigeons vers l'espace d'inscription consulaire pour compléter votre profil et vous inscrire.",
-			"countdown": "Redirection dans {{seconds}}s..."
+			"countdown": "Redirection dans {{seconds}}s...",
+			"createProfile": "Créer mon profil citoyen"
 		},
 		"header": {
 			"dossier": "Dossier N°",
@@ -1158,7 +1191,10 @@
 			"sectionNetwork": "Mon réseau",
 			"sectionAssistance": "Assistance",
 			"support": "Support",
-			"more": "Plus"
+			"more": "Plus",
+			"sectionRequests": "Demandes",
+			"sectionTools": "Outils",
+			"sectionTutor": "Tuteur"
 		},
 		"actions": {
 			"reportTravel": "Signaler mon déplacement",
@@ -1219,7 +1255,10 @@
 			"renew": "Renouveler",
 			"pending": "En cours",
 			"notIssued": "Non émise",
-			"request": "Demander"
+			"request": "Demander",
+			"expiredDesc": "Votre carte consulaire a expiré",
+			"notEligible": "Réservé aux ressortissants gabonais",
+			"pendingDesc": "Démarche en cours de traitement"
 		},
 		"currentRequest": {
 			"title": "Demande en cours",
@@ -1233,7 +1272,18 @@
 		},
 		"popularServices": {
 			"viewAll": "Tout voir"
-		}
+		},
+		"appointments": {
+			"book": "Prendre RDV",
+			"empty": "Aucun rendez-vous",
+			"viewAll": "iAgenda"
+		},
+		"requests": {
+			"empty": "Aucune démarche en cours",
+			"newRequest": "Nouvelle démarche",
+			"viewAll": "Tout voir"
+		},
+		"myChildren": "Mes Enfants"
 	},
 	"errors": {
 		"unauthorized": "Accès non autorisé",
@@ -1269,7 +1319,8 @@
 				"invalidCode": "Code invalide ou expiré. Veuillez réessayer.",
 				"forgotPassword": "Mot de passe oublié ?",
 				"phoneNotFound": "Aucun compte trouvé avec ce numéro.",
-				"expired": "Le code a expiré. Veuillez en demander un nouveau."
+				"expired": "Le code a expiré. Veuillez en demander un nouveau.",
+				"verify": "Vérifier"
 			},
 			"invalidCredentials": "Email ou mot de passe incorrect.",
 			"emailAlreadyExists": "Un compte existe déjà avec cet email.",
@@ -3862,6 +3913,10 @@
 		"empty": {
 			"title": "Aucun tutoriel disponible",
 			"description": "De nouveaux guides seront bientôt publiés."
+		},
+		"guidesTitle": "Nos Guides et Tutoriels",
+		"notFound": {
+			"title": "Guide introuvable"
 		}
 	},
 	"community": {
@@ -3915,7 +3970,8 @@
 			"unstar": "Retirer des favoris",
 			"moveTo": "Déplacer vers",
 			"back": "Retour",
-			"loadMore": "Charger plus"
+			"loadMore": "Charger plus",
+			"cancel": "Annuler"
 		},
 		"mail": {
 			"from": "De",
@@ -3926,7 +3982,12 @@
 			"unread": "non lu(s)",
 			"noSubject": "(Sans objet)",
 			"selectToRead": "Sélectionnez un courrier pour le lire",
-			"selectToReadDesc": "Cliquez sur un message dans la liste pour afficher son contenu."
+			"selectToReadDesc": "Cliquez sur un message dans la liste pour afficher son contenu.",
+			"actionBefore": "Action requise avant le",
+			"actionRequired": "Action requise",
+			"inbox": "Courrier",
+			"informational": "Information",
+			"letter": "Courrier officiel"
 		},
 		"packages": {
 			"title": "Mes Colis",
@@ -3962,7 +4023,9 @@
 			"filterAssocs": "Associations",
 			"filterCompanies": "Entreprises",
 			"noResults": "Aucun résultat.",
-			"message": "Message"
+			"message": "Message",
+			"attachments": "Pièces jointes",
+			"dropFiles": "Glissez vos fichiers ou cliquez"
 		},
 		"empty": {
 			"inbox": "Aucun courrier",
@@ -4013,7 +4076,10 @@
 			"participants": "participant(s)",
 			"join": "Rejoindre",
 			"scheduledFor": "Prévu le",
-			"duration": "Durée"
+			"duration": "Durée",
+			"incoming": "Entrant",
+			"missed": "Manqué",
+			"outgoing": "Sortant"
 		},
 		"call": {
 			"newCall": "Nouvel appel",
@@ -4022,7 +4088,8 @@
 			"emailHelp": "Saisissez l'adresse email exacte de la personne que vous souhaitez appeler. Elle recevra une notification pour rejoindre l'appel.",
 			"startCall": "Appeler",
 			"startSuccess": "Appel lancé",
-			"error": "Erreur lors de l'appel"
+			"error": "Erreur lors de l'appel",
+			"recall": "Rappeler"
 		}
 	},
 	"meetings": {
@@ -4089,7 +4156,26 @@
 		"recall": "Rappeler",
 		"error": {
 			"start": "Erreur lors de l'appel"
-		}
+		},
+		"callInProgress": "Appel en cours",
+		"callOrg": "Appeler",
+		"chatWithOrg": "Discuter avec la représentation",
+		"hide": "Masquer",
+		"incomingCall": "Appel entrant",
+		"show": "Afficher",
+		"waiting": "En attente…",
+		"yourCorrespondent": "Votre correspondant",
+		"title": "Réunions",
+		"subtitle": "Rejoignez une réunion via un lien d'invitation",
+		"unableToJoin": "Impossible de rejoindre",
+		"linkCopied": "Lien copié !",
+		"live": "En direct",
+		"meeting": "Réunion",
+		"leave": "Quitter",
+		"copied": "Copié !",
+		"copyLink": "Copier le lien",
+		"noActiveMeeting": "Aucune réunion active",
+		"useInvitationLink": "Utilisez un lien d'invitation envoyé par un agent pour rejoindre une réunion."
 	},
 	"admin": {
 		"nav": {
@@ -4299,6 +4385,15 @@
 			"title": "Actualités",
 			"subtitle": "Dernières nouvelles et événements",
 			"viewAll": "Voir tout"
+		},
+		"guides": {
+			"badge": "Guides personnalisés",
+			"seeAll": "Voir toutes les ressources",
+			"title": "Guides adaptés à votre situation"
+		},
+		"diplomaticNetwork": "Réseau Diplomatique",
+		"continents": {
+			"all": "Tous"
 		}
 	},
 	"associations": {
@@ -4328,7 +4423,8 @@
 			"select": "Rôle...",
 			"president": "Président",
 			"secretary": "Secrétaire",
-			"treasurer": "Trésorier"
+			"treasurer": "Trésorier",
+			"vicePresident": "Vice-Président"
 		},
 		"memberRemoved": "Membre retiré",
 		"roleUpdated": "Rôle mis à jour",
@@ -4381,12 +4477,20 @@
 			"mine": {
 				"title": "Aucune association"
 			},
-			"search": "Aucun résultat"
+			"search": "Aucun résultat",
+			"discover": {
+				"description": "Soyez le premier à créer une association !",
+				"title": "Aucune association disponible"
+			},
+			"searchHint": "Essayez avec un autre terme de recherche"
 		},
 		"filter": {
 			"all": "Toutes"
 		},
-		"created": "Association créée"
+		"created": "Association créée",
+		"search": {
+			"placeholder": "Rechercher une association..."
+		}
 	},
 	"companies": {
 		"notFound": "Entreprise introuvable",
@@ -4466,7 +4570,8 @@
 		},
 		"type": {
 			"ei": "Entreprise Individuelle",
-			"other": "Autre"
+			"other": "Autre",
+			"auto": "Auto-Entrepreneur"
 		},
 		"website": "Site web",
 		"created": "Entreprise créée"
@@ -4475,7 +4580,8 @@
 		"title": "Notifications",
 		"markAllRead": "Tout lire",
 		"empty": {
-			"title": "Aucune notification"
+			"title": "Aucune notification",
+			"description": "Les mises à jour de vos demandes apparaîtront ici."
 		},
 		"viewAll": "Voir toutes les notifications",
 		"new": "Nouveau",
@@ -4608,7 +4714,8 @@
 		"title": "Mes enfants",
 		"subtitle": "Gérez les profils de vos enfants mineurs",
 		"add": {
-			"title": "Ajouter un enfant"
+			"title": "Ajouter un enfant",
+			"button": "Ajouter un enfant"
 		},
 		"empty": {
 			"title": "Aucun enfant enregistré"
@@ -4633,6 +4740,63 @@
 			"birthDate": "Date de naissance",
 			"gender": "Genre",
 			"birthPlace": "Lieu de naissance"
+		},
+		"detail": {
+			"notFound": "Profil enfant introuvable",
+			"subtitle": "Espace enfant",
+			"child": "Enfant",
+			"yearsOld": "{{count}} ans",
+			"bornIn": "Né(e) à",
+			"residesIn": "Réside en",
+			"consularCard": "Carte Consulaire",
+			"expired": "Expirée",
+			"active": "Active",
+			"validUntil": "Valide jusqu'au",
+			"notRegistered": "Pas encore inscrit",
+			"parents": "Parents / Tuteurs",
+			"dossier": "Dossier Enfant",
+			"identity": "Identité",
+			"passport": "Passeport",
+			"passportExpired": "Expiré",
+			"passportExpiring": "Expire bientôt",
+			"noPassport": "Aucune information de passeport",
+			"consularRegistration": "Inscription consulaire",
+			"notConsularRegistered": "Enfant non inscrit au registre consulaire",
+			"documents": "Documents",
+			"missing": "Manquant",
+			"actions": "Actions",
+			"requestFor": "Démarche pour {{name}}",
+			"bookAppointment": "Prendre un rendez-vous",
+			"backToMySpace": "Retour à mon espace",
+			"roles": {
+				"father": "Père",
+				"mother": "Mère",
+				"guardian": "Tuteur",
+				"other": "Autre"
+			},
+			"docTypes": {
+				"passport": "Passeport",
+				"birthCertificate": "Acte de naissance",
+				"residencePermit": "Titre de séjour",
+				"addressProof": "Justificatif domicile",
+				"photo": "Photo d'identité"
+			},
+			"labels": {
+				"cardNumber": "N° carte",
+				"lastName": "Nom",
+				"firstName": "Prénom(s)",
+				"birthDate": "Date de naissance",
+				"birthPlace": "Lieu de naissance",
+				"birthCountry": "Pays de naissance",
+				"gender": "Genre",
+				"nationality": "Nationalité",
+				"nip": "NIP",
+				"residence": "Résidence",
+				"number": "Numéro",
+				"authority": "Autorité",
+				"issuedOn": "Délivré le",
+				"expiresOn": "Expire le"
+			}
 		}
 	},
 	"vault": {
@@ -4794,7 +4958,10 @@
 				"createdAt": "Créé le",
 				"updatedAt": "Mis à jour le",
 				"adminStatusUpdate": "Mettre à jour le statut"
-			}
+			},
+			"closedTitle": "Ce ticket est fermé",
+			"created": "Ticket créé avec succès",
+			"messageSent": "Message envoyé"
 		}
 	},
 	"monitoring": {
@@ -5265,5 +5432,236 @@
 			},
 			"reset": "Réinitialiser les paramètres"
 		}
+	},
+	"dgdi": {
+		"bookAppointment": "Prendre Rendez-vous DGDI",
+		"hideDetails": "Masquer les détails",
+		"importantInfo": "Informations importantes",
+		"onlineServices": "Démarches en ligne",
+		"passportService": "Service Passeport",
+		"showDetails": "Voir les détails",
+		"visaService": "Service Visa"
+	},
+	"guides": {
+		"autoDetected": "Détection automatique",
+		"autoDetectedBadge": "Auto-détecté",
+		"backToRessources": "Retour aux ressources",
+		"changeCountry": "Changer",
+		"commonMistakes": "Erreurs courantes",
+		"consult": "Consulter",
+		"dedicatedSite": "Site dédié",
+		"infoFor": "Informations pour",
+		"locationUnknown": "Localisation non détectée. Sélectionnez votre pays de résidence.",
+		"manualSelection": "Sélection manuelle",
+		"notAvailable": "Guide non disponible",
+		"practicalTips": "Conseils pratiques",
+		"reset": "Réinitialiser",
+		"savoirVivre": "Savoir-vivre",
+		"seeAllGuides": "Consulter les autres guides",
+		"seeRessources": "Voir les ressources",
+		"usefulLinks": "Liens utiles",
+		"usefulNumbers": "Numéros utiles"
+	},
+	"ressources": {
+		"backToList": "Retour aux ressources",
+		"badge": "Ressources & Informations",
+		"title": "Guides, Infos et Tutoriels"
+	},
+	"iAgenda": {
+		"tabs": {
+			"agenda": "Agenda",
+			"appointments": "Mes RDV",
+			"bookAppointment": "Prendre RDV"
+		},
+		"subtitle": "Mon Agenda — Espace Citoyen",
+		"stats": {
+			"upcoming": "À venir",
+			"thisMonth": "Ce mois",
+			"total": "Total"
+		},
+		"today": "Aujourd'hui",
+		"noAppointmentToday": "Aucun RDV ce jour",
+		"legend": "Légende",
+		"status": {
+			"confirmed": "Confirmé",
+			"completed": "Complété",
+			"cancelled": "Annulé",
+			"absent": "Absent",
+			"confirmedPlural": "Confirmés",
+			"completedPlural": "Complétés",
+			"cancelledPlural": "Annulés"
+		},
+		"myAppointments": "Mes Rendez-vous",
+		"noAppointments": "Aucun rendez-vous",
+		"changeFilters": "Modifiez vos filtres",
+		"bookFirst": "Prenez votre premier rendez-vous",
+		"selectEligibleRequest": "Sélectionnez une demande éligible.",
+		"noEligibleRequests": "Aucune demande éligible",
+		"myRequests": "Mes démarches",
+		"changeSlot": "Modifier le créneau",
+		"appointmentCancelled": "Rendez-vous annulé",
+		"cancelError": "Erreur lors de l'annulation",
+		"appointmentBooked": "Rendez-vous réservé !",
+		"bookingError": "Erreur de réservation"
+	},
+	"idocument": {
+		"status": {
+			"pending": "En attente",
+			"validated": "Validé",
+			"rejected": "Rejeté",
+			"expired": "Expiré",
+			"expiring": "Expire bientôt"
+		},
+		"folders": {
+			"identityCivil": "Identité & État civil",
+			"identityCivilDesc": "Passeport, acte de naissance, nationalité, résidence, emploi",
+			"officialDocs": "Documents officiels",
+			"officialDocsDesc": "Attestations, actes, justice, décisions, formulaires",
+			"title": "Dossiers"
+		},
+		"categories": {
+			"identity": "Identité",
+			"civilStatus": "État civil",
+			"nationality": "Nationalité",
+			"residence": "Résidence",
+			"employment": "Emploi",
+			"income": "Revenus",
+			"certificates": "Attestations",
+			"officialCertificates": "Actes officiels",
+			"justice": "Justice",
+			"administrativeDecisions": "Décisions admin.",
+			"housing": "Logement",
+			"vehicle": "Véhicule",
+			"education": "Éducation",
+			"languageIntegration": "Langue & intégration",
+			"health": "Santé",
+			"taxation": "Fiscalité",
+			"other": "Autre",
+			"forms": "Formulaires"
+		},
+		"addDocument": "Ajouter un document",
+		"searchDocuments": "Rechercher dans vos documents...",
+		"selectCategory": "Sélectionner une catégorie...",
+		"selectType": "Sélectionner un type...",
+		"labelPlaceholder": "Ex: Passeport de Jean, Facture Février 2026...",
+		"dropFiles": "Glissez vos fichiers ici ou cliquez pour parcourir",
+		"selectForPreview": "Sélectionnez un document pour l'aperçu",
+		"labels": {
+			"category": "Catégorie",
+			"documentType": "Type de document",
+			"label": "Libellé",
+			"expiryDate": "Date d'expiration (optionnel)",
+			"files": "Fichier(s)"
+		},
+		"subtitle": "Coffre-fort numérique",
+		"systemFolders": {
+			"all": "Tous les documents",
+			"trash": "Corbeille",
+			"vault": "Coffre-fort"
+		},
+		"uncategorized": "Non classé",
+		"thisDocument": "Ce document",
+		"expired": "Expiré",
+		"expiresOn": "Expire le",
+		"inDays": "dans {{count}} jours",
+		"documentDetails": "Détails du document",
+		"searchResults": "Résultats de recherche",
+		"documents": "documents",
+		"items": "éléments",
+		"system": "Système",
+		"searchType": "Rechercher un type...",
+		"noCategoryFound": "Aucune catégorie trouvée",
+		"noTypeFound": "Aucun type trouvé",
+		"filesReady": "{{count}} fichier(s) prêt(s)",
+		"info": {
+			"name": "Nom",
+			"type": "Type",
+			"expiration": "Expiration",
+			"files": "Fichiers",
+			"timestamps": "Dates",
+			"createdAt": "Créé le",
+			"updatedAt": "Modifié le"
+		},
+		"table": {
+			"name": "Nom",
+			"category": "Catégorie",
+			"modified": "Modifié",
+			"status": "Statut",
+			"expiration": "Expiration",
+			"files": "Fichiers"
+		},
+		"stats": {
+			"documents": "Documents",
+			"expiringSoon": "Expire bientôt",
+			"expired": "Expirés"
+		},
+		"empty": {
+			"noResults": "Aucun résultat",
+			"noResultsDesc": "Aucun document ne correspond à votre recherche",
+			"emptyFolder": "Dossier vide",
+			"emptyFolderDesc": "Ce dossier ne contient aucun document",
+			"noDocumentFound": "Aucun document trouvé",
+			"noContent": "Aucun contenu",
+			"noDocument": "Aucun document"
+		},
+		"actions": {
+			"preview": "Aperçu",
+			"info": "Informations",
+			"download": "Télécharger",
+			"delete": "Supprimer"
+		},
+		"delete": {
+			"confirmTitle": "Supprimer ce document ?",
+			"confirmMessage": "Cette action est irréversible."
+		},
+		"viewMode": {
+			"grid": "Grille",
+			"list": "Liste",
+			"column": "Colonnes"
+		},
+		"toasts": {
+			"documentAdded": "Document ajouté avec succès",
+			"saveError": "Erreur lors de la sauvegarde",
+			"downloadError": "Erreur lors du téléchargement",
+			"documentDeleted": "Document supprimé",
+			"deleteError": "Erreur lors de la suppression",
+			"uploadError": "Erreur lors de l'upload"
+		}
+	},
+	"demarches": {
+		"title": "Mes Démarches",
+		"subtitle": "Suivi de vos procédures administratives",
+		"noResults": "Aucune démarche trouvée",
+		"noResultsFilter": "Aucune démarche ne correspond à ce filtre.",
+		"new": {
+			"title": "Nouvelle démarche",
+			"subtitle": "Créez une nouvelle procédure administrative",
+			"noServices": "Aucune démarche disponible pour le moment",
+			"additionalInfo": "Ajoutez des informations complémentaires..."
+		}
+	},
+	"servicesDemarches": {
+		"title": "Services & Démarches",
+		"subtitle": "Consultez les services consulaires et suivez vos démarches",
+		"search": "Rechercher...",
+		"noOngoing": "Aucune démarche en cours",
+		"noResults": "Aucune démarche trouvée",
+		"noResultsFilter": "Aucune démarche ne correspond à ce filtre.",
+		"clearSearch": "Effacer la recherche"
+	},
+	"voice": {
+		"active": "Mode vocal actif",
+		"mode": "Mode vocal"
+	},
+	"iasted": {
+		"subtitle": "Espace de communication consulaire",
+		"reduce": "Réduire",
+		"discussions": "Discussions",
+		"close": "Fermer ↑",
+		"open": "Voir ↓",
+		"searchPlaceholder": "Rechercher une représentation..."
+	},
+	"reps": {
+		"noContactInfo": "Aucune information de contact disponible."
 	}
 }

@@ -33,6 +33,7 @@ import {
 	useAuthenticatedConvexQuery,
 	useConvexMutation,
 } from "@/integrations/convex/hooks";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
@@ -101,6 +102,7 @@ const FALLBACK_ORG_ID = "k17c36pq07hx2qfk3fyfsc5bns78fv1a" as Id<"orgs">;
 // --- Component ---
 
 export default function NewDemarchePage() {
+	const { t } = useTranslation();
 	const router = useRouter();
 	const [step, setStep] = useState(0);
 	const [selectedType, setSelectedType] = useState<any>(null);
@@ -158,8 +160,8 @@ export default function NewDemarchePage() {
 		<div className="h-full flex flex-col bg-background">
 			<div className="p-4 pb-0">
 				<PageHeader
-					title="Nouvelle demarche"
-					subtitle="Creez une nouvelle procedure administrative"
+					title={t("demarches.new.title")}
+					subtitle={t("demarches.new.subtitle")}
 					icon={<FolderOpen className="text-primary" size={24} />}
 					showBackButton
 					onBack={() => router.push("/my-space/demarches")}
@@ -235,7 +237,7 @@ export default function NewDemarchePage() {
 								<div className="text-center py-16">
 									<FileText className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
 									<p className="text-sm text-muted-foreground">
-										Aucune demarche disponible pour le moment
+										{t("demarches.new.noServices")}
 									</p>
 								</div>
 							) : (
@@ -389,7 +391,7 @@ export default function NewDemarchePage() {
 								<textarea
 									value={notes}
 									onChange={(e) => setNotes(e.target.value)}
-									placeholder="Ajoutez des informations complementaires..."
+									placeholder={t("demarches.new.additionalInfo")}
 									rows={4}
 									className="w-full px-3 py-2 text-sm border border-border/50 rounded-xl bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
 								/>

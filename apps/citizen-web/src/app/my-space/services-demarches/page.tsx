@@ -82,7 +82,7 @@ export default function ServicesDemarchesPage() {
 }
 
 function ServicesDemarchesContent() {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -210,8 +210,8 @@ function ServicesDemarchesContent() {
     <div className="flex flex-col md:h-full md:overflow-hidden">
       <div className="shrink-0">
         <PageHeader
-          title="Services & Demarches"
-          subtitle="Consultez les services consulaires et suivez vos demarches"
+          title={t("servicesDemarches.title")}
+          subtitle={t("servicesDemarches.subtitle")}
           icon={<Globe className="h-6 w-6 text-primary" />}
         />
       </div>
@@ -439,7 +439,7 @@ function CatalogueContent({
             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Rechercher..."
+              placeholder={t("common.search")}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value)
@@ -681,7 +681,7 @@ function DemarchesContent({
             <FolderOpen className="h-10 w-10 text-muted-foreground/30" />
           </div>
           <h3 className="mb-1.5 text-base font-semibold">
-            Aucune demarche en cours
+            {t("servicesDemarches.noOngoing")}
           </h3>
           <p className="mb-5 max-w-xs text-sm text-muted-foreground">
             Parcourez les services disponibles pour commencer.
@@ -728,10 +728,10 @@ function DemarchesContent({
               <FolderOpen className="h-6 w-6 text-muted-foreground/40" />
             </div>
             <p className="mb-1 text-sm font-semibold">
-              Aucune demarche trouvee
+              {t("servicesDemarches.noResults")}
             </p>
             <p className="text-xs text-muted-foreground">
-              Aucune demarche ne correspond a ce filtre.
+              {t("servicesDemarches.noResultsFilter")}
             </p>
           </div>
         </FlatCard>
@@ -766,7 +766,7 @@ function DemarchesContent({
           {paginationStatus === "CanLoadMore" && (
             <div className="flex justify-center pt-2">
               <Button variant="outline" onClick={() => loadMore(20)}>
-                {t("common.loadMore", "Charger plus")}
+                {t("common.loadMore")}
               </Button>
             </div>
           )}

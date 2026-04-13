@@ -101,21 +101,21 @@ export function MySpaceSidebar({
 
   const navSections: NavSection[] = [
     {
-      label: t("mySpace.nav.sectionIdentity", "Identité"),
+      label: t("mySpace.nav.sectionIdentity"),
       items: [
         { title: "iProfil", url: "/my-space", icon: User },
         { title: "iDocument", url: "/my-space/idocument", icon: FileText },
       ],
     },
     {
-      label: t("mySpace.nav.sectionTools", "Outils"),
+      label: t("mySpace.nav.sectionTools"),
       items: [
         { title: "iAsted", url: "/my-space/iasted", icon: Bot },
         { title: "iAgenda", url: "/my-space/iagenda", icon: Calendar },
       ],
     },
     {
-      label: t("mySpace.nav.sectionRequests", "Demandes"),
+      label: t("mySpace.nav.sectionRequests"),
       items: [
         { title: "Mes Démarches", url: "/my-space/services-demarches", icon: Briefcase },
       ],
@@ -228,7 +228,7 @@ export function MySpaceSidebar({
               <div className={cn("my-2.5", isExpanded ? "border-t border-foreground/5 pt-2" : "border-t border-foreground/5 pt-2 w-8")} />
               {isExpanded && (
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/70 px-3 mb-1.5 block">
-                  {t("mySpace.nav.sectionTutor", "Tuteur")}
+                  {t("mySpace.nav.sectionTutor")}
                 </span>
               )}
 
@@ -245,7 +245,7 @@ export function MySpaceSidebar({
                     )}
                   >
                     <Users className="size-5 shrink-0" />
-                    <span className="flex-1 text-left truncate">Mes Enfants</span>
+                    <span className="flex-1 text-left truncate">{t("mySpace.myChildren")}</span>
                     <span className="text-[8px] bg-rose-500/12 text-rose-500 font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
                       {children.length}
                     </span>
@@ -281,8 +281,8 @@ export function MySpaceSidebar({
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      title="Mes Enfants"
-                      aria-label="Mes Enfants"
+                      title={t("mySpace.myChildren")}
+                      aria-label={t("mySpace.myChildren")}
                       className={cn(
                         "flex items-center justify-center w-11 h-11",
                         children.some((c) => isActive(`/my-space/children/${c._id}`))
@@ -295,7 +295,7 @@ export function MySpaceSidebar({
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right" sideOffset={10} className="bg-card border-0">
-                    Mes Enfants ({children.length})
+                    {t("mySpace.myChildren")} ({children.length})
                   </TooltipContent>
                 </Tooltip>
               )}

@@ -66,15 +66,15 @@ export default function TutorialDetailPage() {
         <div className="text-center space-y-4">
           <GraduationCap className="h-16 w-16 text-muted-foreground/30 mx-auto" />
           <h1 className="text-2xl font-bold">
-            {t("academy.notFound.title", "Guide introuvable")}
+            {t("academy.notFound.title")}
           </h1>
           <p className="text-muted-foreground">
-            {t("academy.notFound.description", "Ce guide n'existe pas ou a ete retire.")}
+            {t("academy.notFound.description")}
           </p>
           <Button asChild variant="outline">
             <Link href="/ressources">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              {t("ressources.backToList", "Retour aux ressources")}
+              {t("ressources.backToList")}
             </Link>
           </Button>
         </div>
@@ -119,7 +119,7 @@ export default function TutorialDetailPage() {
         >
           <Link href="/ressources">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            {t("ressources.backToList", "Retour aux ressources")}
+            {t("ressources.backToList")}
           </Link>
         </Button>
 

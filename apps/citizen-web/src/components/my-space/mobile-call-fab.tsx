@@ -4,6 +4,7 @@ import { api } from "@convex/_generated/api"
 import type { Id } from "@convex/_generated/dataModel"
 import { Phone, Building2, Landmark, MapPin, ArrowLeft, ArrowRight } from "lucide-react"
 import { useCallback, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { motion } from "motion/react"
 import { OrgCallButton } from "@/components/meetings/org-call-button"
 import { BottomSheet } from "@/components/ui/bottom-sheet"
@@ -44,6 +45,7 @@ function formatAddress(address?: { street?: string; city?: string; postalCode?: 
  * When tapped, opens a bottom sheet with one org card at a time + carousel arrows.
  */
 export function MobileCallFAB({ variant = "horizontal" }: { variant?: "horizontal" | "vertical" }) {
+	const { t } = useTranslation()
 	const [isOpen, setIsOpen] = useState(false)
 
 	const { data: representations, isPending } = useAuthenticatedConvexQuery(
@@ -110,7 +112,7 @@ export function MobileCallFAB({ variant = "horizontal" }: { variant?: "horizonta
 			<BottomSheet
 				open={isOpen}
 				onOpenChange={setIsOpen}
-				title="Contacter"
+				title={t("common.contact")}
 				icon={
 					<div className="rounded-lg bg-[#0072B9]/10 p-1">
 						<Phone className="h-3.5 w-3.5 text-[#0072B9]" />

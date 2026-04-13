@@ -111,7 +111,7 @@ export function GuidePageLayout({ type }: GuidePageLayoutProps) {
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="h-4 w-4" />
-            {t("guides.backToRessources", "Retour aux ressources")}
+            {t("guides.backToRessources")}
           </Link>
 
           <div className="text-center">
@@ -156,13 +156,13 @@ export function GuidePageLayout({ type }: GuidePageLayoutProps) {
         <div className="container mx-auto px-4 py-20 text-center">
           <BookOpen className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-foreground mb-2">
-            {t("guides.notAvailable", "Guide non disponible")}
+            {t("guides.notAvailable")}
           </h3>
           <p className="text-muted-foreground max-w-md mx-auto">
-            {t("guides.notAvailableDesc", "Ce guide n'est pas encore disponible pour votre pays de residence. Consultez les autres ressources disponibles.")}
+            {t("guides.notAvailableDesc")}
           </p>
           <Button asChild className="mt-6">
-            <Link href="/ressources">{t("guides.seeRessources", "Voir les ressources")}</Link>
+            <Link href="/ressources">{t("guides.seeRessources")}</Link>
           </Button>
         </div>
       ) : (
@@ -189,7 +189,7 @@ export function GuidePageLayout({ type }: GuidePageLayoutProps) {
               {guide.savoirVivre && guide.savoirVivre.length > 0 && (
                 <div className="space-y-4">
                   <h2 className="text-2xl font-bold text-foreground">
-                    {t("guides.savoirVivre", "Savoir-vivre")}
+                    {t("guides.savoirVivre")}
                   </h2>
                   <SavoirVivreGrid items={guide.savoirVivre} />
                 </div>
@@ -198,7 +198,7 @@ export function GuidePageLayout({ type }: GuidePageLayoutProps) {
               {guide.erreurs && guide.erreurs.length > 0 && (
                 <div className="space-y-4">
                   <h2 className="text-2xl font-bold text-foreground">
-                    {t("guides.commonMistakes", "Erreurs courantes")}
+                    {t("guides.commonMistakes")}
                   </h2>
                   <ErreursCourantesGrid items={guide.erreurs} />
                 </div>
@@ -207,7 +207,7 @@ export function GuidePageLayout({ type }: GuidePageLayoutProps) {
               {guide.numeros && guide.numeros.length > 0 && (
                 <div className="space-y-4">
                   <h2 className="text-2xl font-bold text-foreground">
-                    {t("guides.usefulNumbers", "Numeros utiles")}
+                    {t("guides.usefulNumbers")}
                   </h2>
                   <NumerosUtilesGrid items={guide.numeros} />
                 </div>
@@ -217,7 +217,7 @@ export function GuidePageLayout({ type }: GuidePageLayoutProps) {
               <div className="text-center pt-8 pb-4">
                 <Button asChild variant="outline" size="lg" className="gap-2">
                   <Link href="/ressources">
-                    {t("guides.seeAllGuides", "Consulter les autres guides")}
+                    {t("guides.seeAllGuides")}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>

@@ -3,6 +3,7 @@
 import { api } from "@convex/_generated/api";
 import { RequestStatus, ServiceCategory } from "@convex/lib/constants";
 import { getLocalized } from "@convex/lib/utils";
+import { buildRegistrationFormData } from "@convex/lib/registrationFormData";
 import type { FormField } from "@convex/lib/validators";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
@@ -543,7 +544,11 @@ export default function UserRequestDetail() {
 								request.service?.formSchema?.joinedDocuments || []
 							}
 							onSubmit={async () => {
-								await handleSubmit({});
+								const formData = buildRegistrationFormData(
+									profile as any,
+									(profile as any).userType || "permanent",
+								);
+								await handleSubmit(formData);
 							}}
 							isSubmitting={isSubmitting}
 						/>

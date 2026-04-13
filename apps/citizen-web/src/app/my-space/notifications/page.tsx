@@ -68,7 +68,7 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       <PageHeader
         title={t("mySpace.screens.notifications.heading")}
-        subtitle={t("mySpace.screens.notifications.subtitle", "Restez informe de vos activites")}
+        subtitle={t("mySpace.screens.notifications.subtitle")}
         icon={<Bell className="size-6" />}
         actions={
           unreadCount && unreadCount > 0 && !unreadCountLoading ? (
@@ -95,7 +95,7 @@ export default function NotificationsPage() {
                 {t("notifications.empty.title")}
               </h3>
               <p className="text-sm text-muted-foreground max-w-sm">
-                {t("notifications.empty.description", "Vous n'avez aucune notification pour le moment. Les mises a jour de vos demandes apparaitront ici.")}
+                {t("notifications.empty.description")}
               </p>
             </div>
           </FlatCard>

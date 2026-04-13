@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
 	AppointmentSlotPicker,
@@ -49,17 +50,18 @@ type StatusFilter = "all" | "confirmed" | "completed" | "cancelled";
 
 const TAB_SLUGS = ["agenda", "mes-rdv", "prendre-rdv"] as const;
 type TabSlug = (typeof TAB_SLUGS)[number];
-const TAB_LABELS: Record<TabSlug, string> = {
-	agenda: "Agenda",
-	"mes-rdv": "Mes RDV",
-	"prendre-rdv": "Prendre RDV",
-};
-
 // ═══════════════════════════════════════════════════════════════
 
 export default function IAgendaPage() {
+	const { t } = useTranslation();
 	const searchParams = useSearchParams();
 	const router = useRouter();
+
+	const TAB_LABELS: Record<TabSlug, string> = {
+		agenda: t("iAgenda.tabs.agenda"),
+		"mes-rdv": t("iAgenda.tabs.appointments"),
+		"prendre-rdv": t("iAgenda.tabs.bookAppointment"),
+	};
 
 	const activeTab = useMemo(() => {
 		const param = searchParams.get("tab") as TabSlug | null;
@@ -184,8 +186,8 @@ export default function IAgendaPage() {
 		try {
 			await cancelAppointment({ appointmentId: id });
 			captureEvent("myspace_appointment_cancelled");
-			toast.success("Rendez-vous annulé");
-		} catch { toast.error("Erreur lors de l'annulation"); }
+			toast.success(t("iAgenda.appointmentCancelled"));
+		} catch { toast.error(t("iAgenda.cancelError")); }
 	};
 
 	const handleBook = async () => {
@@ -198,10 +200,10 @@ export default function IAgendaPage() {
 				appointmentType: "deposit", requestId: selectedRequestId,
 			});
 			captureEvent("myspace_appointment_scheduled", { service_type: selectedRequest.service?.name?.fr, is_online_meeting: false });
-			toast.success("Rendez-vous réservé !");
+			toast.success(t("iAgenda.appointmentBooked"));
 			setBookStep("select-request"); setSelectedRequestId(null); setSelectedSlot(null);
 		} catch (err: unknown) {
-			toast.error(err instanceof Error ? err.message : "Erreur de réservation");
+			toast.error(err instanceof Error ? err.message : t("iAgenda.bookingError"));
 		} finally { setIsBooking(false); }
 	};
 
@@ -226,15 +228,15 @@ export default function IAgendaPage() {
 			<div className="shrink-0 mb-4">
 				<PageHeader
 					title="iAgenda"
-					subtitle={<span className="hidden sm:inline">Mon Agenda — Espace Citoyen</span>}
+					subtitle={<span className="hidden sm:inline">{t("iAgenda.subtitle")}</span>}
 					icon={<Calendar className="h-5 w-5 text-muted-foreground" />}
 					iconBgClass="bg-foreground/[0.06] dark:bg-foreground/[0.12]"
 					actions={
 						<div className="hidden lg:flex items-center gap-3">
 							{[
-								{ label: "À venir", value: upcomingAppointments.length, accent: true },
-								{ label: "Ce mois", value: monthCount },
-								{ label: "Total", value: allAppointments.length },
+								{ label: t("iAgenda.stats.upcoming"), value: upcomingAppointments.length, accent: true },
+								{ label: t("iAgenda.stats.thisMonth"), value: monthCount },
+								{ label: t("iAgenda.stats.total"), value: allAppointments.length },
 							].map((s) => (
 								<div key={s.label} className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-full">
 									<span className={cn("text-sm font-black", s.accent ? "text-primary" : "text-foreground")}>{isPending ? "—" : s.value}</span>
@@ -297,16 +299,16 @@ export default function IAgendaPage() {
 										{format(new Date(selectedDate + "T00:00:00"), "EEE d MMM", { locale: fr })}
 										{selectedDate === today && (
 											<span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/25 text-green-700 dark:text-green-400 font-bold">
-												Aujourd&#39;hui
+												{t("iAgenda.today")}
 											</span>
 										)}
 									</span>
 									<button type="button" onClick={() => setSelectedDate(null)} className="text-xs font-medium text-muted-foreground hover:text-foreground">
-										Effacer
+										{t("common.clear")}
 									</button>
 								</div>
 								{selectedDayAppointments.length === 0 ? (
-									<p className="text-sm text-muted-foreground py-4 text-center">Aucun RDV ce jour</p>
+									<p className="text-sm text-muted-foreground py-4 text-center">{t("iAgenda.noAppointmentToday")}</p>
 								) : (
 									<div className="space-y-2">
 										{selectedDayAppointments.map((apt) => (
@@ -321,13 +323,13 @@ export default function IAgendaPage() {
 					{/* Legende */}
 					<FlatCard className="shrink-0">
 						<div className="p-4">
-							<SectionHead icon={Calendar} title="Légende" />
+							<SectionHead icon={Calendar} title={t("iAgenda.legend")} />
 							<div className="grid grid-cols-2 gap-2">
 								{[
-									{ label: "Confirmé", dot: "bg-success" },
-									{ label: "Complété", dot: "bg-primary" },
-									{ label: "Annulé", dot: "bg-destructive" },
-									{ label: "Absent", dot: "bg-warning" },
+									{ label: t("iAgenda.status.confirmed"), dot: "bg-success" },
+									{ label: t("iAgenda.status.completed"), dot: "bg-primary" },
+									{ label: t("iAgenda.status.cancelled"), dot: "bg-destructive" },
+									{ label: t("iAgenda.status.absent"), dot: "bg-warning" },
 								].map((item) => (
 									<div key={item.label} className="flex items-center gap-2 text-xs">
 										<span className={cn("w-2 h-2 rounded-full shrink-0", item.dot)} />
@@ -345,7 +347,7 @@ export default function IAgendaPage() {
 						<div className="p-4 flex flex-col flex-1 min-h-0">
 							<SectionHead
 								icon={ClipboardList}
-								title="Mes Rendez-vous"
+								title={t("iAgenda.myAppointments")}
 								actions={
 									<span className="text-[10px] bg-foreground/[0.06] dark:bg-foreground/[0.12] text-muted-foreground font-bold px-2 py-0.5 rounded-full">
 										{allAppointments.length}
@@ -359,7 +361,7 @@ export default function IAgendaPage() {
 									<button key={s} type="button" onClick={() => setStatusFilter(s)}
 										className={cn("h-7 px-3 rounded-full text-[11px] font-medium transition-all active:scale-[0.97]",
 											statusFilter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70")}>
-										{{ all: "Tous", confirmed: "Confirmés", completed: "Complétés", cancelled: "Annulés" }[s]}
+										{{ all: t("common.all"), confirmed: t("iAgenda.status.confirmedPlural"), completed: t("iAgenda.status.completedPlural"), cancelled: t("iAgenda.status.cancelledPlural") }[s]}
 									</button>
 								))}
 							</div>
@@ -371,8 +373,8 @@ export default function IAgendaPage() {
 								) : filteredAppointments.length === 0 ? (
 									<EmptyState
 										icon={<Calendar />}
-										title="Aucun rendez-vous"
-										description={statusFilter !== "all" ? "Modifiez vos filtres" : "Prenez votre premier rendez-vous"}
+										title={t("iAgenda.noAppointments")}
+										description={statusFilter !== "all" ? t("iAgenda.changeFilters") : t("iAgenda.bookFirst")}
 									/>
 								) : (
 									filteredAppointments.map((apt) => (
@@ -394,24 +396,24 @@ export default function IAgendaPage() {
 				<div className="lg:col-span-3 flex flex-col min-h-0 overflow-hidden">
 					<FlatCard className="flex-1 flex flex-col overflow-hidden">
 						<div className="p-4 flex flex-col flex-1 min-h-0">
-							<SectionHead icon={CalendarPlus} title="Prendre RDV" />
+							<SectionHead icon={CalendarPlus} title={t("iAgenda.tabs.bookAppointment")} />
 
 							<div className="flex-1 overflow-y-auto citizen-scrollbar">
 								{/* Step 1 */}
 								{bookStep === "select-request" && (
 									<div className="space-y-3">
 										<p className="text-xs text-muted-foreground">
-											Sélectionnez une demande éligible.
+											{t("iAgenda.selectEligibleRequest")}
 										</p>
 										{requestsLoading ? (
 											<div className="flex justify-center py-6"><Loader2 className="animate-spin h-5 w-5 text-primary" /></div>
 										) : eligibleRequests.length === 0 ? (
 											<EmptyState
 												icon={<FileText />}
-												title="Aucune demande éligible"
+												title={t("iAgenda.noEligibleRequests")}
 												action={
 													<Button variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 rounded-full" asChild>
-														<Link href="/my-space/services-demarches">Mes démarches</Link>
+														<Link href="/my-space/services-demarches">{t("iAgenda.myRequests")}</Link>
 													</Button>
 												}
 											/>
@@ -447,7 +449,7 @@ export default function IAgendaPage() {
 										<div className="flex items-center gap-2">
 											<Button variant="ghost" size="sm" onClick={() => setBookStep("select-request")}
 												className="h-7 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 rounded-full">
-												← Retour
+												← {t("common.back")}
 											</Button>
 										</div>
 										<p className="text-xs text-muted-foreground font-medium truncate">
@@ -486,10 +488,10 @@ export default function IAgendaPage() {
 										<div className="flex flex-col gap-2">
 											<Button className="w-full h-10 rounded-full active:scale-[0.97]" onClick={handleBook} disabled={isBooking}>
 												{isBooking ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
-												Confirmer
+												{t("common.confirm")}
 											</Button>
 											<Button variant="ghost" className="w-full h-9 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 rounded-full" onClick={() => setBookStep("select-slot")}>
-												← Modifier le créneau
+												← {t("iAgenda.changeSlot")}
 											</Button>
 										</div>
 									</div>
@@ -524,9 +526,9 @@ export default function IAgendaPage() {
 					{/* Stats mobile */}
 					<div className="grid grid-cols-3 gap-2">
 						{[
-							{ label: "À venir", value: upcomingAppointments.length, accent: true },
-							{ label: "Ce mois", value: monthCount },
-							{ label: "Total", value: allAppointments.length },
+							{ label: t("iAgenda.stats.upcoming"), value: upcomingAppointments.length, accent: true },
+							{ label: t("iAgenda.stats.thisMonth"), value: monthCount },
+							{ label: t("iAgenda.stats.total"), value: allAppointments.length },
 						].map((s) => (
 							<div key={s.label} className="bg-card rounded-xl border flat-card-border p-2.5 text-center">
 								<span className={cn("text-lg font-black block", s.accent ? "text-primary" : "text-foreground")}>{isPending ? "—" : s.value}</span>
@@ -541,7 +543,7 @@ export default function IAgendaPage() {
 							<div className="p-3 space-y-2">
 								<div className="flex items-center justify-between">
 									<span className="text-sm font-bold capitalize">{format(new Date(selectedDate + "T00:00:00"), "EEE d MMM", { locale: fr })}</span>
-									<button type="button" onClick={() => setSelectedDate(null)} className="text-xs text-muted-foreground">Effacer</button>
+									<button type="button" onClick={() => setSelectedDate(null)} className="text-xs text-muted-foreground">{t("common.clear")}</button>
 								</div>
 								{selectedDayAppointments.map((apt) => (
 									<AppointmentCard key={apt._id} appointment={apt} onCancel={handleCancel} compact />
@@ -557,7 +559,7 @@ export default function IAgendaPage() {
 						<div className="p-3 flex flex-col flex-1">
 							<SectionHead
 								icon={ClipboardList}
-								title="Mes Rendez-vous"
+								title={t("iAgenda.myAppointments")}
 								actions={
 									<span className="text-[10px] bg-foreground/[0.06] dark:bg-foreground/[0.12] text-muted-foreground font-bold px-2 py-0.5 rounded-full">
 										{allAppointments.length}
@@ -569,7 +571,7 @@ export default function IAgendaPage() {
 									<button key={s} type="button" onClick={() => setStatusFilter(s)}
 										className={cn("h-7 px-3 rounded-full text-[11px] font-medium transition-all",
 											statusFilter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
-										{{ all: "Tous", confirmed: "Confirmés", completed: "Complétés", cancelled: "Annulés" }[s]}
+										{{ all: t("common.all"), confirmed: t("iAgenda.status.confirmedPlural"), completed: t("iAgenda.status.completedPlural"), cancelled: t("iAgenda.status.cancelledPlural") }[s]}
 									</button>
 								))}
 							</div>
@@ -577,7 +579,7 @@ export default function IAgendaPage() {
 								{isPending ? (
 									<div className="flex justify-center py-8"><Loader2 className="animate-spin h-6 w-6 text-primary" /></div>
 								) : filteredAppointments.length === 0 ? (
-									<EmptyState icon={<Calendar />} title="Aucun rendez-vous" />
+									<EmptyState icon={<Calendar />} title={t("iAgenda.noAppointments")} />
 								) : (
 									filteredAppointments.map((apt) => (
 										<AppointmentCard key={apt._id} appointment={apt} onCancel={handleCancel} showActions={apt.date >= today} compact />
@@ -592,15 +594,15 @@ export default function IAgendaPage() {
 				<div className="w-full shrink-0 snap-start h-full overflow-y-auto citizen-scrollbar p-0.5">
 					<FlatCard className="min-h-full flex flex-col">
 						<div className="p-3 flex flex-col flex-1">
-							<SectionHead icon={CalendarPlus} title="Prendre RDV" />
+							<SectionHead icon={CalendarPlus} title={t("iAgenda.tabs.bookAppointment")} />
 							{bookStep === "select-request" && (
 								<div className="space-y-3 flex-1">
-									<p className="text-xs text-muted-foreground">Sélectionnez une demande éligible.</p>
+									<p className="text-xs text-muted-foreground">{t("iAgenda.selectEligibleRequest")}</p>
 									{requestsLoading ? (
 										<div className="flex justify-center py-6"><Loader2 className="animate-spin h-5 w-5 text-primary" /></div>
 									) : eligibleRequests.length === 0 ? (
-										<EmptyState icon={<FileText />} title="Aucune demande éligible"
-											action={<Button variant="ghost" size="sm" className="h-8 px-3 text-xs bg-muted rounded-full" asChild><Link href="/my-space/services-demarches">Mes démarches</Link></Button>} />
+										<EmptyState icon={<FileText />} title={t("iAgenda.noEligibleRequests")}
+											action={<Button variant="ghost" size="sm" className="h-8 px-3 text-xs bg-muted rounded-full" asChild><Link href="/my-space/services-demarches">{t("iAgenda.myRequests")}</Link></Button>} />
 									) : (
 										eligibleRequests.map((req) => (
 											<button type="button" key={req._id}
@@ -622,7 +624,7 @@ export default function IAgendaPage() {
 							{bookStep === "select-slot" && selectedRequest && (
 								<div className="space-y-3 flex-1">
 									<Button variant="ghost" size="sm" onClick={() => setBookStep("select-request")}
-										className="h-7 px-3 text-xs bg-muted rounded-full">← Retour</Button>
+										className="h-7 px-3 text-xs bg-muted rounded-full">← {t("common.back")}</Button>
 									<AppointmentSlotPicker orgId={selectedRequest.orgId} orgServiceId={selectedRequest.orgServiceId}
 										appointmentType="deposit" onSlotSelected={(slot) => { setSelectedSlot(slot); if (slot) setBookStep("confirm"); }} selectedSlot={selectedSlot} />
 								</div>
@@ -644,9 +646,9 @@ export default function IAgendaPage() {
 										</div>
 									</div>
 									<Button className="w-full h-10 rounded-full" onClick={handleBook} disabled={isBooking}>
-										{isBooking ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}Confirmer
+										{isBooking ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}{t("common.confirm")}
 									</Button>
-									<Button variant="ghost" className="w-full h-8 text-xs bg-muted rounded-full" onClick={() => setBookStep("select-slot")}>← Modifier</Button>
+									<Button variant="ghost" className="w-full h-8 text-xs bg-muted rounded-full" onClick={() => setBookStep("select-slot")}>← {t("iAgenda.changeSlot")}</Button>
 								</div>
 							)}
 						</div>

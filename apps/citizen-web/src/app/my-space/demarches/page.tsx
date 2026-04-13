@@ -27,6 +27,7 @@ import { TabSwitcher } from "@/components/my-space/tab-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
 
@@ -146,6 +147,7 @@ function getDeadlineInfo(dateLimite?: number) {
 // --- Component ---
 
 export default function DemarchesPage() {
+	const { t } = useTranslation();
 	const router = useRouter();
 	const [activeTab, setActiveTab] = useState<TabFilter>("tous");
 
@@ -162,8 +164,8 @@ export default function DemarchesPage() {
 		<div className="h-full flex flex-col bg-background">
 			<div className="p-4 pb-0">
 				<PageHeader
-					title="Mes Demarches"
-					subtitle="Suivi de vos procedures administratives"
+					title={t("demarches.title")}
+					subtitle={t("demarches.subtitle")}
 					icon={<FolderOpen className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
 					iconBgClass="bg-amber-500/10"
 					actions={
@@ -220,11 +222,11 @@ export default function DemarchesPage() {
 					<FlatCard>
 						<EmptyState
 							icon={<FileText />}
-							title="Aucune demarche trouvee"
+							title={t("demarches.noResults")}
 							description={
 								activeTab === "tous"
 									? "Vous n'avez pas encore de demarche en cours. Commencez par en creer une."
-									: "Aucune demarche ne correspond a ce filtre."
+									: t("demarches.noResultsFilter")
 							}
 							action={
 								activeTab === "tous" ? (

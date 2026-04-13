@@ -76,7 +76,7 @@ function RequestProgressCard({
 	const progress = getRequestProgressPercent(request.status);
 	const serviceName = request.service?.name
 		? getLocalizedValue(request.service.name, i18n.language)
-		: t("requests.unknownService", "Service inconnu");
+		: t("requests.unknownService");
 
 	// Actions non completees
 	const pendingActions = request.actionsRequired?.filter((a) => !a.completedAt) ?? [];

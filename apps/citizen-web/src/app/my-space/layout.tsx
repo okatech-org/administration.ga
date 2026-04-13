@@ -62,10 +62,7 @@ function MySpaceProfileGate({ children }: { children: React.ReactNode }) {
           {t("errors.auth.noAuthentication")}
         </h1>
         <p className="text-muted-foreground">
-          {t(
-            "errors.auth.pleaseSignIn",
-            "Veuillez vous connecter pour accéder à votre espace."
-          )}
+          {t("errors.auth.pleaseSignIn")}
         </p>
       </div>
     )
@@ -90,16 +87,13 @@ function MySpaceProfileGate({ children }: { children: React.ReactNode }) {
           <div className="space-y-2">
             <h2 className="text-xl font-bold">{t("mySpace.noProfile.title")}</h2>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              {t(
-                "mySpace.noProfile.message",
-                "Vous n'avez pas encore de profil. Rendez-vous sur l'espace d'inscription consulaire pour compléter votre profil."
-              )}
+              {t("mySpace.noProfile.message")}
             </p>
           </div>
           <Button asChild>
             <Link href="/register">
               <UserPlus className="mr-2 h-4 w-4" />
-              {t("mySpace.noProfile.createProfile", "Créer mon profil citoyen")}
+              {t("mySpace.noProfile.createProfile")}
             </Link>
           </Button>
         </div>

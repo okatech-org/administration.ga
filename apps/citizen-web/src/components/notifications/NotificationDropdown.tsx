@@ -86,7 +86,7 @@ export function NotificationDropdown({
       <BottomSheet
         open={open}
         onOpenChange={setOpen}
-        title={t("mySpace.screens.notifications.heading", "Notifications")}
+        title={t("mySpace.screens.notifications.heading")}
         icon={<Bell className="h-4 w-4" />}
         maxHeight="85vh"
         footer={
@@ -98,7 +98,7 @@ export function NotificationDropdown({
               onClick={() => markAllAsRead({})}
             >
               <CheckCheck className="h-4 w-4" />
-              {t("notifications.markAllRead", "Tout marquer comme lu")}
+              {t("notifications.markAllRead")}
             </Button>
           ) : undefined
         }
@@ -108,10 +108,10 @@ export function NotificationDropdown({
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Inbox className="mb-4 h-12 w-12 text-muted-foreground/30" />
               <h3 className="mb-1 text-sm font-medium">
-                {t("notifications.empty.title", "Aucune notification")}
+                {t("notifications.empty.title")}
               </h3>
               <p className="text-xs text-muted-foreground">
-                {t("notifications.empty.description", "Les mises à jour de vos demandes apparaîtront ici.")}
+                {t("notifications.empty.description")}
               </p>
             </div>
           ) : (
@@ -157,7 +157,7 @@ export function NotificationDropdown({
                         </p>
                         {!notification.isRead && (
                           <Badge variant="default" className="shrink-0 text-[10px]">
-                            {t("notifications.new", "Nouveau")}
+                            {t("notifications.new")}
                           </Badge>
                         )}
                       </div>
@@ -181,7 +181,7 @@ export function NotificationDropdown({
                     className="text-xs"
                     onClick={() => loadMore(30)}
                   >
-                    {t("notifications.loadMore", "Charger plus")}
+                    {t("notifications.loadMore")}
                   </Button>
                 </div>
               )}

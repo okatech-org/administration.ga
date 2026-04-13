@@ -452,7 +452,7 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 										</FieldLabel>
 										<Input
 											id={`${formId}-firstName`}
-											placeholder="Jean"
+											placeholder={t("register.placeholders.firstName")}
 											aria-invalid={fieldState.invalid}
 											autoComplete="given-name"
 											{...field}
@@ -473,7 +473,7 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
 										</FieldLabel>
 										<Input
 											id={`${formId}-lastName`}
-											placeholder="Dupont"
+											placeholder={t("register.placeholders.lastName")}
 											aria-invalid={fieldState.invalid}
 											autoComplete="family-name"
 											{...field}

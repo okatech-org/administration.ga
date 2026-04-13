@@ -46,6 +46,7 @@ import {
   useConvexMutationQuery,
 } from "@/integrations/convex/hooks"
 import { useCallStore } from "@/stores/call-store"
+import { useTranslation } from "react-i18next"
 import { PageHeader } from "@/components/my-space/page-header"
 import { cn } from "@/lib/utils"
 
@@ -87,6 +88,7 @@ const MR_RAY_CONTACT = {
 // ─────────────────────────────────────────────
 
 export default function IAstedCitizenPage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<TabId>("ichat")
   const [selectedContact, setSelectedContact] = useState<any>(MR_RAY_CONTACT)
   const [search, setSearch] = useState("")
@@ -228,7 +230,7 @@ export default function IAstedCitizenPage() {
       <div className="shrink-0">
         <PageHeader
           title="iAsted"
-          subtitle="Espace de communication consulaire"
+          subtitle={t("iasted.subtitle")}
           icon={<ShieldCheck className="h-5 w-5" />}
           actions={
             <Button
@@ -244,7 +246,7 @@ export default function IAstedCitizenPage() {
               className="h-8 gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground transition-transform hover:bg-muted/70 active:scale-[0.97]"
             >
               <Minimize2 className="h-3.5 w-3.5" />
-              Réduire
+              {t("iasted.reduce")}
             </Button>
           }
         />
@@ -284,7 +286,7 @@ export default function IAstedCitizenPage() {
           <button
             type="button"
             onClick={() => router.push("/my-space")}
-            title="Réduire"
+            title={t("iasted.reduce")}
             className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
           >
             <Minimize2 className="h-5 w-5" />
@@ -300,7 +302,7 @@ export default function IAstedCitizenPage() {
                   <div className="rounded-md bg-foreground/8 p-1 dark:bg-foreground/5">
                     <MessageSquare className="h-3.5 w-3.5" />
                   </div>
-                  Discussions
+                  {t("iasted.discussions")}
                 </span>
               </div>
 
@@ -310,7 +312,7 @@ export default function IAstedCitizenPage() {
                   <Input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Rechercher"
+                    placeholder={t("common.search")}
                     className="h-8 rounded-lg border-0 bg-muted/50 pl-8 text-xs"
                   />
                 </div>
@@ -729,6 +731,7 @@ export default function IAstedCitizenPage() {
 // ─────────────────────────────────────────────
 
 function IAppelContent() {
+  const { t } = useTranslation()
   const [activeMeetingId, setActiveMeetingId] = useState<Id<"meetings"> | null>(
     null
   )
@@ -916,7 +919,7 @@ function IAppelContent() {
           <Input
             value={searchOrg}
             onChange={(e) => setSearchOrg(e.target.value)}
-            placeholder="Rechercher une représentation..."
+            placeholder={t("iasted.searchPlaceholder")}
             className="h-8 pl-8 text-sm"
           />
         </div>
@@ -1132,6 +1135,7 @@ function IAppelContent() {
 // ─────────────────────────────────────────────
 
 function IContactContent() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState("")
 
   const { data: allOrgs, isPending } = useAuthenticatedConvexQuery(
@@ -1159,7 +1163,7 @@ function IContactContent() {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher une représentation..."
+          placeholder={t("iasted.searchPlaceholder")}
           className="pl-8 text-sm"
         />
       </div>
@@ -1210,6 +1214,7 @@ const ORG_TYPE_LABELS: Record<string, string> = {
 }
 
 function OrgContactCard({ org }: { org: any }) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
 
   const contactInfo = org.contactInfo ?? org.contacts ?? {}
@@ -1266,7 +1271,7 @@ function OrgContactCard({ org }: { org: any }) {
             variant="outline"
             className="h-4 text-[9px] text-muted-foreground"
           >
-            {hasContacts ? (expanded ? "Fermer ↑" : "Voir ↓") : "N/A"}
+            {hasContacts ? (expanded ? t("iasted.close") : t("iasted.open")) : "N/A"}
           </Badge>
         </div>
       </button>
