@@ -31,12 +31,13 @@ import {
   AlertTriangle,
 } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { AssistanceContactsWidget } from "@/components/my-space/assistance-contacts-widget"
 import { ConsularCardWidget } from "@/components/my-space/consular-card-widget"
 import { FlatCard } from "@/components/my-space/flat-card"
 import { RequestCard } from "@/components/my-space/request-card"
+import { AppointmentCard } from "@/components/my-space/appointment-card"
 import { MySpaceHeader } from "@/components/my-space/my-space-wrapper"
 import { MobileCallFAB } from "@/components/my-space/mobile-call-fab"
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown"
@@ -166,6 +167,88 @@ function ActiveRequestsCarousel({
 }
 
 // ═════════════════════════════════════════════════════════════
+// Carousel for appointments — same pattern as requests carousel
+function AppointmentsCarousel({
+  appointments,
+}: {
+  appointments: Array<any>
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [currentIndex, setCurrentIndex] = useState(0)
+
+  const scrollToIndex = useCallback(
+    (idx: number) => {
+      const el = scrollRef.current
+      if (!el) return
+      const child = el.children[idx] as HTMLElement
+      if (child) {
+        el.scrollTo({ left: child.offsetLeft, behavior: "smooth" })
+      }
+    },
+    []
+  )
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current
+    if (!el || !el.children.length) return
+    const scrollLeft = el.scrollLeft
+    const childWidth = (el.children[0] as HTMLElement).offsetWidth
+    const idx = Math.round(scrollLeft / childWidth)
+    setCurrentIndex(Math.min(idx, appointments.length - 1))
+  }, [appointments.length])
+
+  return (
+    <div className="relative flex flex-1 flex-col">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="disable-scrollbars flex flex-1 snap-x snap-mandatory gap-3 overflow-x-auto"
+      >
+        {appointments.map((apt: any) => (
+          <div key={apt._id} className="w-full shrink-0 snap-start">
+            <AppointmentCard appointment={apt} compact showActions={false} />
+          </div>
+        ))}
+      </div>
+      {appointments.length > 1 && (
+        <div className="mt-2 flex items-center justify-center gap-3">
+          <button
+            onClick={() => scrollToIndex(Math.max(0, currentIndex - 1))}
+            disabled={currentIndex === 0}
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-citizen-s2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+          >
+            <ArrowRight className="h-3 w-3 rotate-180" />
+          </button>
+          <div className="flex items-center gap-1.5">
+            {appointments.map((_: any, idx: number) => (
+              <button
+                key={idx}
+                onClick={() => scrollToIndex(idx)}
+                className={cn(
+                  "h-1.5 rounded-full transition-all",
+                  idx === currentIndex
+                    ? "w-4 bg-primary"
+                    : "w-1.5 bg-muted-foreground/30"
+                )}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() =>
+              scrollToIndex(Math.min(appointments.length - 1, currentIndex + 1))
+            }
+            disabled={currentIndex === appointments.length - 1}
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-citizen-s2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+          >
+            <ArrowRight className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ═════════════════════════════════════════════════════════════
 export default function UserDashboard() {
   const { t, i18n } = useTranslation()
   const [showConsularCard, setShowConsularCard] = useState(false)
@@ -201,6 +284,14 @@ export default function UserDashboard() {
     api.functions.documents.getMyIdentityPhotoUrl,
     {}
   )
+
+  const today = new Date().toISOString().split("T")[0]
+  const upcomingAppointments = useMemo(() => {
+    if (!appointments) return []
+    return (appointments as any[]).filter(
+      (a) => a.date && a.date >= today && a.status !== "cancelled" && a.status !== "completed" && a.status !== "no_show"
+    )
+  }, [appointments, today])
 
   const children = (childProfiles ?? []) as any[]
   const p = profile as any
@@ -324,26 +415,6 @@ export default function UserDashboard() {
       <div className="shrink-0">
         <MySpaceHeader />
       </div>
-
-      {/* Mobile alert banner — after header buttons */}
-      {activeAlerts.length > 0 && (
-        <div className="mt-2 md:hidden">
-          <Link
-            href="/my-space/settings?tab=dossier"
-            className="flex items-center gap-2.5 overflow-hidden rounded-xl bg-rose-500/10 px-3 py-2.5 transition-colors hover:bg-rose-500/15"
-          >
-            <div className="shrink-0 rounded-md bg-rose-500/15 p-1">
-              <AlertTriangle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-            </div>
-            <span className="flex-1 truncate text-xs font-bold text-rose-600 dark:text-rose-400">
-              {activeAlerts.length === 1
-                ? activeAlerts[0].text
-                : `${activeAlerts.length} éléments à vérifier`}
-            </span>
-            <ArrowRight className="h-3 w-3 shrink-0 text-rose-500/60" />
-          </Link>
-        </div>
-      )}
 
       <motion.div
         initial={{ opacity: 0, y: 5 }}
@@ -876,7 +947,7 @@ export default function UserDashboard() {
               className={cn(
                 "flex shrink-0 flex-col md:flex-1",
                 !(activeRequests && activeRequests.length > 0) &&
-                  !(appointments && appointments.length > 0) &&
+                  !(upcomingAppointments.length > 0) &&
                   "order-2 md:order-0"
               )}
             >
@@ -930,7 +1001,7 @@ export default function UserDashboard() {
               className={cn(
                 "flex shrink-0 flex-col md:flex-1",
                 !(activeRequests && activeRequests.length > 0) &&
-                  !(appointments && appointments.length > 0) &&
+                  !(upcomingAppointments.length > 0) &&
                   "order-3 md:order-0"
               )}
             >
@@ -941,104 +1012,39 @@ export default function UserDashboard() {
                       <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                     RDV
+                    {upcomingAppointments.length > 0 && (
+                      <span className="rounded-full bg-citizen-s2 px-2 py-0.5 text-xs font-bold text-muted-foreground">
+                        {upcomingAppointments.length}
+                      </span>
+                    )}
                   </span>
-                  <Button
-                    asChild
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 rounded-lg bg-citizen-s3 px-3 text-xs font-medium text-foreground transition-transform hover:bg-citizen-s3/80 active:scale-[0.97] md:h-7"
-                  >
-                    <Link href="/my-space/iagenda">iAgenda</Link>
-                  </Button>
-                </div>
-                <div className="grid flex-1 auto-rows-fr grid-cols-2 gap-2 min-[400px]:gap-2.5">
-                  {appointments && appointments.length > 0 ? (
-                    appointments
-                      .filter((a: any) => a.date)
-                      .slice(0, 3)
-                      .map((a: any) => {
-                        const isPast =
-                          a.date < new Date().toISOString().split("T")[0]
-                        return (
-                          <Link
-                            key={a._id}
-                            href="/my-space/iagenda"
-                            className={cn(
-                              "flex flex-col gap-2 rounded-xl p-2.5 transition-colors md:rounded-lg md:p-3",
-                              isPast
-                                ? "bg-citizen-s2 hover:bg-citizen-s2/80"
-                                : "bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/10 dark:hover:bg-amber-500/15"
-                            )}
-                          >
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={cn(
-                                  "shrink-0 rounded-md p-1 md:p-1.5",
-                                  isPast
-                                    ? "bg-citizen-s2"
-                                    : "bg-amber-500/10"
-                                )}
-                              >
-                                <Calendar
-                                  className={cn(
-                                    "h-4 w-4 md:h-5 md:w-5",
-                                    isPast
-                                      ? "text-muted-foreground"
-                                      : "text-amber-600 dark:text-amber-400"
-                                  )}
-                                />
-                              </div>
-                              <p
-                                className={cn(
-                                  "line-clamp-2 text-xs leading-tight font-bold md:text-sm",
-                                  isPast
-                                    ? "text-muted-foreground"
-                                    : "text-foreground"
-                                )}
-                              >
-                                {a.service?.name || "RDV Consulaire"}
-                              </p>
-                            </div>
-                            <p className="text-center text-[10px] font-medium text-muted-foreground md:text-xs">
-                              {format(
-                                new Date(a.date + "T00:00:00"),
-                                "dd MMM yyyy",
-                                { locale: fr }
-                              )}{" "}
-                              · {a.time || "—"}
-                              {isPast && (
-                                <span className="ml-1 text-[9px] opacity-60">
-                                  (passé)
-                                </span>
-                              )}
-                            </p>
-                          </Link>
-                        )
-                      })
-                  ) : (
-                    <div className="flex flex-col gap-2 rounded-xl bg-amber-500/15 p-2.5 md:rounded-lg md:p-3 dark:bg-amber-500/10">
-                      <div className="flex items-center gap-2">
-                        <div className="shrink-0 rounded-md bg-amber-500/10 p-1 md:p-1.5">
-                          <Calendar className="h-4 w-4 text-amber-600 md:h-5 md:w-5 dark:text-amber-400" />
-                        </div>
-                        <p className="text-xs font-medium text-muted-foreground md:text-sm">
-                          Aucun RDV
-                        </p>
-                      </div>
-                    </div>
-                  )}
                   <Link
-                    href="/my-space/iagenda"
-                    className="flex flex-col items-center justify-center gap-2 rounded-lg bg-citizen-s4 p-2.5 text-muted-foreground transition-colors hover:bg-citizen-s4/80 hover:text-foreground md:p-3"
+                    href="/my-space/iagenda?tab=prendre-rdv"
+                    className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                   >
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-citizen-s2 md:h-8 md:w-8">
-                      <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                    </div>
-                    <p className="text-[10px] font-medium md:text-xs">
-                      Prendre RDV
-                    </p>
+                    {t("mySpace.appointments.viewAll", "iAgenda")}
+                    <ArrowRight className="h-3 w-3" />
                   </Link>
                 </div>
+                {upcomingAppointments.length > 0 ? (
+                  <AppointmentsCarousel appointments={upcomingAppointments} />
+                ) : (
+                  <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl bg-citizen-s4 py-8">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10">
+                      <Calendar className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {t("mySpace.appointments.empty", "Aucun rendez-vous")}
+                    </p>
+                    <Button
+                      asChild
+                      size="sm"
+                      className="h-8 rounded-lg bg-primary px-4 text-xs font-medium text-white hover:bg-primary/90"
+                    >
+                      <Link href="/my-space/iagenda?tab=prendre-rdv">{t("mySpace.appointments.book", "Prendre RDV")}</Link>
+                    </Button>
+                  </div>
+                )}
               </div>
             </FlatCard>
 
@@ -1047,7 +1053,7 @@ export default function UserDashboard() {
               className={cn(
                 "shrink-0 md:flex-1",
                 !(activeRequests && activeRequests.length > 0) &&
-                  !(appointments && appointments.length > 0) &&
+                  !(upcomingAppointments.length > 0) &&
                   "order-1 md:order-0"
               )}
             >
@@ -1245,8 +1251,26 @@ export default function UserDashboard() {
 
         {/* ═══ Mobile : flux vertical unique ═══ */}
         <div
-          className="citizen-scrollbar flex h-full flex-col gap-2.5 overflow-y-auto md:hidden"
+          className="citizen-scrollbar flex h-full flex-col gap-2.5 overflow-y-auto pb-4 md:hidden"
         >
+              {/* Mobile alert banner — scrolls with content */}
+              {activeAlerts.length > 0 && (
+                <Link
+                  href="/my-space/settings?tab=dossier"
+                  className="flex shrink-0 items-center gap-2.5 overflow-hidden rounded-xl bg-rose-500/10 px-3 py-2.5 transition-colors hover:bg-rose-500/15"
+                >
+                  <div className="shrink-0 rounded-md bg-rose-500/15 p-1">
+                    <AlertTriangle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                  </div>
+                  <span className="flex-1 truncate text-xs font-bold text-rose-600 dark:text-rose-400">
+                    {activeAlerts.length === 1
+                      ? activeAlerts[0].text
+                      : `${activeAlerts.length} éléments à vérifier`}
+                  </span>
+                  <ArrowRight className="h-3 w-3 shrink-0 text-rose-500/60" />
+                </Link>
+              )}
+
               {/* Hero mobile — modèle vertical */}
               <FlatCard className="relative shrink-0">
                 <div className="flex h-full flex-col p-3 min-[400px]:p-4">
@@ -1402,94 +1426,39 @@ export default function UserDashboard() {
                         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                       RDV
+                      {upcomingAppointments.length > 0 && (
+                        <span className="rounded-full bg-citizen-s2 px-2 py-0.5 text-xs font-bold text-muted-foreground">
+                          {upcomingAppointments.length}
+                        </span>
+                      )}
                     </span>
-                    <Button
-                      asChild
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 rounded-lg bg-citizen-s3 px-3 text-xs font-medium text-foreground hover:bg-citizen-s3/80"
-                    >
-                      <Link href="/my-space/iagenda">iAgenda</Link>
-                    </Button>
-                  </div>
-                  <div className="grid min-h-0 flex-1 grid-cols-2 gap-2">
-                    {appointments && appointments.length > 0 ? (
-                      (() => {
-                        const a = appointments[0] as any
-                        const isPast =
-                          a.date < new Date().toISOString().split("T")[0]
-                        return (
-                          <Link
-                            href="/my-space/iagenda"
-                            className={cn(
-                              "flex flex-col gap-2 rounded-xl p-2.5 transition-colors",
-                              isPast
-                                ? "bg-citizen-s2 hover:bg-citizen-s2/80"
-                                : "bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/10"
-                            )}
-                          >
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={cn(
-                                  "shrink-0 rounded-md p-1",
-                                  isPast
-                                    ? "bg-citizen-s2"
-                                    : "bg-amber-500/10"
-                                )}
-                              >
-                                <Calendar
-                                  className={cn(
-                                    "h-4 w-4",
-                                    isPast
-                                      ? "text-muted-foreground"
-                                      : "text-amber-600 dark:text-amber-400"
-                                  )}
-                                />
-                              </div>
-                              <p
-                                className={cn(
-                                  "line-clamp-2 text-xs leading-tight font-bold",
-                                  isPast
-                                    ? "text-muted-foreground"
-                                    : "text-foreground"
-                                )}
-                              >
-                                {a.service?.name || "RDV Consulaire"}
-                              </p>
-                            </div>
-                            <p className="text-center text-[10px] font-medium text-muted-foreground">
-                              {format(
-                                new Date(a.date + "T00:00:00"),
-                                "dd MMM yyyy",
-                                { locale: fr }
-                              )}{" "}
-                              · {a.time || "—"}
-                            </p>
-                          </Link>
-                        )
-                      })()
-                    ) : (
-                      <div className="flex flex-col gap-2 rounded-xl bg-amber-500/15 p-2.5 dark:bg-amber-500/10">
-                        <div className="flex items-center gap-2">
-                          <div className="shrink-0 rounded-md bg-amber-500/10 p-1">
-                            <Calendar className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                          </div>
-                          <p className="text-xs font-medium text-muted-foreground">
-                            Aucun RDV
-                          </p>
-                        </div>
-                      </div>
-                    )}
                     <Link
-                      href="/my-space/iagenda"
-                      className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-citizen-s4 p-2.5 text-muted-foreground transition-colors hover:bg-citizen-s4/80"
+                      href="/my-space/iagenda?tab=prendre-rdv"
+                      className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-citizen-s2">
-                        <Plus className="h-3.5 w-3.5" />
-                      </div>
-                      <p className="text-[10px] font-medium">Prendre RDV</p>
+                      {t("mySpace.appointments.viewAll", "iAgenda")}
+                      <ArrowRight className="h-3 w-3" />
                     </Link>
                   </div>
+                  {upcomingAppointments.length > 0 ? (
+                    <AppointmentsCarousel appointments={upcomingAppointments} />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl bg-citizen-s4 py-6">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/10">
+                        <Calendar className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <p className="text-xs font-medium text-muted-foreground">
+                        {t("mySpace.appointments.empty", "Aucun rendez-vous")}
+                      </p>
+                      <Button
+                        asChild
+                        size="sm"
+                        className="h-7 rounded-lg bg-primary px-3 text-xs font-medium text-white hover:bg-primary/90"
+                      >
+                        <Link href="/my-space/iagenda?tab=prendre-rdv">{t("mySpace.appointments.book", "Prendre RDV")}</Link>
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </FlatCard>
 

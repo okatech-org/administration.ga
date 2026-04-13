@@ -12,6 +12,7 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { RequestStatus } from "@convex/lib/constants";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -24,7 +25,7 @@ import {
 	Loader2,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
 	AppointmentSlotPicker,
@@ -46,9 +47,35 @@ import { cn } from "@/lib/utils";
 
 type StatusFilter = "all" | "confirmed" | "completed" | "cancelled";
 
+const TAB_SLUGS = ["agenda", "mes-rdv", "prendre-rdv"] as const;
+type TabSlug = (typeof TAB_SLUGS)[number];
+const TAB_LABELS: Record<TabSlug, string> = {
+	agenda: "Agenda",
+	"mes-rdv": "Mes RDV",
+	"prendre-rdv": "Prendre RDV",
+};
+
 // ═══════════════════════════════════════════════════════════════
 
 export default function IAgendaPage() {
+	const searchParams = useSearchParams();
+	const router = useRouter();
+
+	const activeTab = useMemo(() => {
+		const param = searchParams.get("tab") as TabSlug | null;
+		return param && TAB_SLUGS.includes(param) ? param : "agenda";
+	}, [searchParams]);
+
+	const setActiveTab = useCallback((tab: TabSlug) => {
+		const params = new URLSearchParams(searchParams.toString());
+		if (tab === "agenda") params.delete("tab");
+		else params.set("tab", tab);
+		const qs = params.toString();
+		router.replace(`/my-space/iagenda${qs ? `?${qs}` : ""}`, { scroll: false });
+	}, [searchParams, router]);
+
+	const mobilePageIndex = TAB_SLUGS.indexOf(activeTab);
+
 	const [currentMonth, setCurrentMonth] = useState(new Date());
 	const [selectedDate, setSelectedDate] = useState<string | null>(null);
 	const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -59,15 +86,27 @@ export default function IAgendaPage() {
 	const [selectedSlot, setSelectedSlot] = useState<DynamicSlotSelection | null>(null);
 	const [isBooking, setIsBooking] = useState(false);
 
-	// Mobile scroll
-	const [mobilePageIndex, setMobilePageIndex] = useState(0);
+	// Mobile scroll — sync scroll position with activeTab on mount
 	const mobileScrollRef = useRef<HTMLDivElement>(null);
+	const initialTabApplied = useRef(false);
+	useEffect(() => {
+		if (initialTabApplied.current) return;
+		const el = mobileScrollRef.current;
+		if (!el) return;
+		const idx = TAB_SLUGS.indexOf(activeTab);
+		if (idx > 0) {
+			el.scrollTo({ left: idx * el.clientWidth, behavior: "instant" });
+		}
+		initialTabApplied.current = true;
+	}, [activeTab]);
+
 	const handleMobileScroll = useCallback(() => {
 		const el = mobileScrollRef.current;
 		if (!el) return;
 		const idx = Math.round(el.scrollLeft / el.clientWidth);
-		setMobilePageIndex(idx);
-	}, []);
+		const slug = TAB_SLUGS[idx];
+		if (slug) setActiveTab(slug);
+	}, [setActiveTab]);
 
 	// ─── Convex ────────────────────────────────────────────────
 	const { data: appointments, isPending } = useAuthenticatedConvexQuery(api.functions.slots.listMyAppointments, {});
@@ -207,19 +246,22 @@ export default function IAgendaPage() {
 				/>
 			</div>
 
-			{/* ─── Mobile : dots indicateurs + scroll horizontal snap ─── */}
+			{/* ─── Mobile : tabs indicateurs + scroll horizontal snap ─── */}
 			<div className="flex lg:hidden items-center justify-center gap-2 mb-3 shrink-0">
-				{["Agenda", "Mes RDV", "Prendre RDV"].map((label, i) => (
+				{TAB_SLUGS.map((slug, i) => (
 					<button
-						key={label}
+						key={slug}
 						type="button"
-						onClick={() => mobileScrollRef.current?.scrollTo({ left: i * (mobileScrollRef.current?.clientWidth ?? 0), behavior: "smooth" })}
+						onClick={() => {
+							setActiveTab(slug);
+							mobileScrollRef.current?.scrollTo({ left: i * (mobileScrollRef.current?.clientWidth ?? 0), behavior: "smooth" });
+						}}
 						className={cn(
 							"px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-							mobilePageIndex === i ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+							activeTab === slug ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
 						)}
 					>
-						{label}
+						{TAB_LABELS[slug]}
 					</button>
 				))}
 			</div>
