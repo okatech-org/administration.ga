@@ -1,4 +1,4 @@
-import { useNavigate } from "@tanstack/react-router"
+import { useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { motion } from "motion/react"
 import type { ReactNode } from "react"
@@ -35,13 +35,13 @@ export function PageHeader({
   showBackButton = false,
   onBack,
 }: PageHeaderProps) {
-  const navigate = useNavigate()
+  const router = useRouter()
 
   const handleBack = () => {
     if (onBack) {
       onBack()
     } else {
-      navigate({ to: ".." })
+      router.back()
     }
   }
 

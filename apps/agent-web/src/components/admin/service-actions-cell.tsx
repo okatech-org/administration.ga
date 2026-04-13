@@ -15,7 +15,7 @@ import type { Doc } from "@convex/_generated/dataModel"
 import { useConvexMutationQuery } from "@/integrations/convex/hooks"
 import { api } from "@convex/_generated/api"
 import { toast } from "sonner"
-import { useNavigate } from "@tanstack/react-router"
+import { useRouter } from "next/navigation"
 
 interface ServiceActionsCellProps {
   service: Doc<"services">
@@ -23,7 +23,7 @@ interface ServiceActionsCellProps {
 
 export function ServiceActionsCell({ service }: ServiceActionsCellProps) {
   const { t } = useTranslation()
-  const navigate = useNavigate()
+  const router = useRouter()
 
   const { mutate: toggleService, isPending } = useConvexMutationQuery(
     api.functions.services.update
@@ -42,7 +42,7 @@ export function ServiceActionsCell({ service }: ServiceActionsCellProps) {
   }
 
   const handleEdit = () => {
-    navigate({ to: `/services/${service._id}/edit` as any })
+    router.push(`/services/${service._id}/edit`)
   }
 
   return (

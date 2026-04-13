@@ -5,7 +5,7 @@
  * header compact en haut. Bouton [+] pour passer en plein écran.
  */
 
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 import { Contact, Maximize2, MessageSquare, Minus, Phone, Plus, Settings, ShieldCheck, Video } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
@@ -37,7 +37,7 @@ export function IAstedWindow() {
 	const [open, setOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<TabId>("ichat");
 	const { activeOrg } = useOrg();
-	const navigate = useNavigate();
+	const router = useRouter();
 
 	// Hooks IA existants
 	const chat = useAdminAIChat();
@@ -45,7 +45,7 @@ export function IAstedWindow() {
 
 	const handleExpand = () => {
 		setOpen(false);
-		navigate({ to: "/iasted" });
+		router.push("/iasted");
 	};
 
 	return (

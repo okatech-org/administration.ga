@@ -50,8 +50,8 @@ export function GlobalCallAlert() {
 	const incomingPersonalMeeting = meetings?.find((m) => {
 		if (m.status !== "active") return false;
 		if (user && m.createdBy === user._id) return false;
-		// Ignore stale calls (> 60s old)
-		if (Date.now() - m._creationTime > 60_000) return false;
+		// Ignore stale calls (> 2 min old)
+		if (Date.now() - m._creationTime > 120_000) return false;
 		if (user) {
 			const me = m.participants.find((p) => p.userId === user._id);
 			if (me?.leftAt) return false;

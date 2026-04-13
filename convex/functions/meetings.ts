@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { internalQuery } from "../_generated/server";
+import { internalQuery, internalMutation } from "../_generated/server";
 import { authQuery, authMutation } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
 import { error, ErrorCode } from "../lib/errors";
@@ -33,12 +33,16 @@ function generateRoomName(orgSlug: string): string {
   return `mtg-${orgSlug}-${ts}-${rand}`;
 }
 
-/** Max time (ms) a call can ring with no answer before auto-ending. */
-const CALL_RING_TIMEOUT_MS = 60_000;
+/** Max time (ms) a call can ring with no answer before hiding from agents. */
+const CALL_RING_TIMEOUT_MS = 120_000;
+
+/** Max time (ms) before a call without any connected participant is considered stale. */
+const STALE_CALL_THRESHOLD_MS = 120_000;
 
 /**
- * End any stale active calls created by the given user.
- * Called before creating a new call to prevent ghost calls accumulating.
+ * End stale active calls created by the given user.
+ * Only ends calls that are older than STALE_CALL_THRESHOLD_MS
+ * AND have no participant currently connected (joinedAt set, leftAt not set).
  */
 async function endStaleCalls(
   ctx: { db: any },
@@ -51,9 +55,15 @@ async function endStaleCalls(
 
   const now = Date.now();
   for (const m of activeCalls) {
-    if (m.type === "call" && m.status === "active") {
-      await ctx.db.patch(m._id, { status: "ended", endedAt: now });
-    }
+    if (m.type !== "call" || m.status !== "active") continue;
+    // Only end calls older than threshold with no active participants
+    const age = now - m._creationTime;
+    if (age < STALE_CALL_THRESHOLD_MS) continue;
+    const hasActiveParticipant = m.participants.some(
+      (p: any) => p.joinedAt && !p.leftAt,
+    );
+    if (hasActiveParticipant) continue;
+    await ctx.db.patch(m._id, { status: "ended", endedAt: now });
   }
 }
 
@@ -313,7 +323,8 @@ export const create = authMutation({
 });
 
 /**
- * Join a meeting — adds the user to participants if not already present.
+ * Join a meeting or answer a call — adds the user to participants if not already present.
+ * For calls with callStatus: transitions ringing → connected.
  */
 export const join = authMutation({
   args: { meetingId: v.id("meetings") },
@@ -323,6 +334,16 @@ export const join = authMutation({
 
     if (meeting.status === "ended" || meeting.status === "cancelled") {
       throw error(ErrorCode.INVALID_ARGUMENT, "Cette réunion est terminée");
+    }
+
+    // For calls: check callStatus is answerable
+    if (meeting.type === "call" && meeting.callStatus) {
+      if (meeting.callStatus === "connected") {
+        throw error(ErrorCode.INVALID_ARGUMENT, "Cet appel est déjà pris par un autre agent");
+      }
+      if (meeting.callStatus === "ended" || meeting.callStatus === "missed" || meeting.callStatus === "declined") {
+        throw error(ErrorCode.INVALID_ARGUMENT, "Cet appel est terminé");
+      }
     }
 
     // Check if user is already a participant (re-joining)
@@ -365,6 +386,13 @@ export const join = authMutation({
       patch.startedAt = Date.now();
     }
 
+    // For inbound calls: transition callStatus to "connected"
+    if (meeting.type === "call" && meeting.isOrgInbound && meeting.callStatus === "ringing") {
+      patch.callStatus = "connected";
+      patch.answeredBy = ctx.user._id;
+      patch.answeredAt = Date.now();
+    }
+
     await ctx.db.patch(args.meetingId, patch);
 
     return meeting.roomName;
@@ -394,13 +422,24 @@ export const leave = authMutation({
     // Auto-end if all participants have left, or if it's a 1-on-1 call (anyone leaving ends it)
     const stillActive = participants.filter((p) => !p.leftAt);
     const patch: any = { participants };
-    
+
     const isCall = meeting.type === "call";
     const isEmpty = stillActive.length === 0;
-    
+
     if ((isEmpty || isCall) && meeting.status === "active") {
       patch.status = "ended";
       patch.endedAt = Date.now();
+      // Update callStatus for calls
+      if (isCall && meeting.callStatus) {
+        if (meeting.callStatus === "connected") {
+          patch.callStatus = "ended";
+          patch.endReason = "normal";
+        } else if (meeting.callStatus === "ringing" || meeting.callStatus === "initiating") {
+          // Caller hung up before any agent answered
+          patch.callStatus = "ended";
+          patch.endReason = "cancelled";
+        }
+      }
     }
 
     await ctx.db.patch(args.meetingId, patch);
@@ -493,23 +532,36 @@ export const listInboundOrgCalls = authQuery({
       // Filter for inbound, unanswered calls
       for (const c of calls) {
         if (c.isOrgInbound !== true) continue;
-        // Only count participants who actually joined (have joinedAt) and haven't left
-        const joinedCount = c.participants.filter((p) => p.joinedAt && !p.leftAt).length;
-        if (joinedCount > 1) continue; // Already answered
-        // Auto-timeout: if ringing > 60s, don't show (stale call)
+
+        // New callStatus-based filtering (with backward compat for old documents)
+        if (c.callStatus) {
+          // New system: only show "ringing" calls
+          if (c.callStatus !== "ringing") continue;
+        } else {
+          // Legacy: no callStatus → use participant count heuristic
+          const joinedCount = c.participants.filter((p) => p.joinedAt && !p.leftAt).length;
+          if (joinedCount > 1) continue; // Already answered
+        }
+
+        // Auto-timeout: if ringing too long, don't show (stale call)
         if (now - c._creationTime > CALL_RING_TIMEOUT_MS) continue;
 
         // Call line filtering: if the call targets a specific line,
-        // only agents on that line should see it
+        // only agents on that line should see it.
+        // Fallback: if the line has no agents assigned, broadcast to all.
         if (c.callLineId) {
           const callLine = await ctx.db.get(c.callLineId);
           if (!callLine || !callLine.isActive) continue;
-          const isOnLine = callLine.membershipIds.some((mId) =>
-            myMembershipIds.has(mId as string),
-          );
-          if (!isOnLine) continue;
+          // Only filter by line membership if the line actually has agents
+          if (callLine.membershipIds.length > 0) {
+            const isOnLine = callLine.membershipIds.some((mId) =>
+              myMembershipIds.has(mId as string),
+            );
+            if (!isOnLine) continue;
+          }
+          // else: line has no agents → fall through to broadcast
         }
-        // else: no callLineId → broadcast to all agents with permission
+        // no callLineId or empty line → broadcast to all agents with permission
 
         inboundCalls.push(c);
       }
@@ -561,6 +613,7 @@ export const callOrganization = authMutation({
       title,
       type: "call",
       status: "active",
+      callStatus: "initiating",
       roomName,
       orgId: args.orgId,
       createdBy: ctx.user._id,
@@ -804,6 +857,7 @@ export const callRequestAgent = authMutation({
       title: `Appel demande — ${org.name}`,
       type: "call",
       status: "active",
+      callStatus: "initiating",
       roomName,
       orgId: request.orgId,
       createdBy: ctx.user._id,
@@ -819,5 +873,301 @@ export const callRequestAgent = authMutation({
     });
 
     return { meetingId, roomName };
+  },
+});
+
+// ============================================
+// CALL STATE MACHINE MUTATIONS
+// ============================================
+
+/**
+ * Transition a call from "initiating" to "ringing".
+ * Called by the citizen frontend once connected to the LiveKit room.
+ * This is what makes the call visible to agents.
+ */
+export const setCallRinging = authMutation({
+  args: { meetingId: v.id("meetings") },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) throw error(ErrorCode.NOT_FOUND, "Appel non trouvé");
+
+    // Only the caller can trigger ringing
+    if (meeting.createdBy !== ctx.user._id) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Seul l'appelant peut déclencher la sonnerie");
+    }
+
+    if (meeting.type !== "call") {
+      throw error(ErrorCode.INVALID_ARGUMENT, "Cette opération ne s'applique qu'aux appels");
+    }
+
+    // Only transition from "initiating"
+    if (meeting.callStatus !== "initiating") return;
+
+    await ctx.db.patch(args.meetingId, { callStatus: "ringing" });
+  },
+});
+
+/**
+ * Agent explicitly declines an incoming call.
+ */
+export const declineCall = authMutation({
+  args: { meetingId: v.id("meetings") },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) throw error(ErrorCode.NOT_FOUND, "Appel non trouvé");
+
+    if (meeting.type !== "call" || !meeting.isOrgInbound) {
+      throw error(ErrorCode.INVALID_ARGUMENT, "Cette opération ne s'applique qu'aux appels entrants");
+    }
+
+    if (meeting.callStatus !== "ringing") return;
+
+    const currentDeclined = meeting.declinedBy ?? [];
+    if (currentDeclined.includes(ctx.user._id)) return;
+
+    const updatedDeclined = [...currentDeclined, ctx.user._id];
+    await ctx.db.patch(args.meetingId, { declinedBy: updatedDeclined });
+  },
+});
+
+// ============================================
+// CALL HISTORY
+// ============================================
+
+/**
+ * List call history for the current user.
+ * Categorizes calls as incoming, outgoing, missed, declined.
+ */
+export const listCallHistory = authQuery({
+  args: {
+    orgId: v.optional(v.id("orgs")),
+  },
+  handler: async (ctx, args) => {
+    // Get calls created by user
+    const myCalls = await ctx.db
+      .query("meetings")
+      .withIndex("by_createdBy", (q) => q.eq("createdBy", ctx.user._id))
+      .order("desc")
+      .take(100);
+
+    // Filter to only calls (not meetings)
+    const calls = myCalls.filter((m) => m.type === "call");
+
+    // Also find calls where user was a participant (answered inbound calls)
+    let answeredCalls: typeof calls = [];
+    if (args.orgId) {
+      const orgCalls = await ctx.db
+        .query("meetings")
+        .withIndex("by_org_status", (q) => q.eq("orgId", args.orgId))
+        .order("desc")
+        .take(200);
+      answeredCalls = orgCalls.filter(
+        (m) =>
+          m.type === "call" &&
+          m.answeredBy === ctx.user._id,
+      );
+    }
+
+    // Merge and deduplicate
+    const allIds = new Set(calls.map((c) => c._id));
+    const merged = [...calls];
+    for (const c of answeredCalls) {
+      if (!allIds.has(c._id)) {
+        merged.push(c);
+        allIds.add(c._id);
+      }
+    }
+    merged.sort((a, b) => b._creationTime - a._creationTime);
+
+    // Enrich with user names
+    const userIds = new Set<string>();
+    for (const c of merged) {
+      for (const p of c.participants) userIds.add(p.userId);
+      userIds.add(c.createdBy);
+      if (c.answeredBy) userIds.add(c.answeredBy);
+    }
+    const users = await Promise.all(
+      [...userIds].map(async (uid) => {
+        const user = await ctx.db.get(uid as Id<"users">);
+        if (!user) return null;
+        const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Inconnu";
+        return { id: uid, name };
+      }),
+    );
+    const userNames: Record<string, string> = {};
+    for (const u of users) {
+      if (u) userNames[u.id] = u.name;
+    }
+
+    // Categorize
+    const categorized = merged.map((c) => {
+      let category: "incoming" | "outgoing" | "missed" | "declined";
+      if (c.callStatus === "missed") {
+        category = "missed";
+      } else if (c.callStatus === "declined") {
+        category = "declined";
+      } else if (c.isOrgInbound && c.createdBy !== ctx.user._id) {
+        category = "incoming";
+      } else {
+        category = "outgoing";
+      }
+      const duration = c.answeredAt && c.endedAt
+        ? c.endedAt - c.answeredAt
+        : c.startedAt && c.endedAt
+          ? c.endedAt - c.startedAt
+          : undefined;
+
+      return {
+        ...c,
+        category,
+        duration,
+      };
+    });
+
+    return { calls: categorized.slice(0, 50), userNames };
+  },
+});
+
+// ============================================
+// CALL ESCALATION (1:1 → multi-party)
+// ============================================
+
+/**
+ * Add a participant to an active connected call.
+ * Increases maxParticipants and notifies the new participant.
+ */
+export const addParticipant = authMutation({
+  args: {
+    meetingId: v.id("meetings"),
+    targetUserId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) throw error(ErrorCode.NOT_FOUND, "Appel non trouvé");
+
+    if (meeting.status !== "active") {
+      throw error(ErrorCode.INVALID_ARGUMENT, "L'appel n'est pas actif");
+    }
+
+    // Verify caller is a participant
+    const isParticipant = meeting.participants.some(
+      (p) => p.userId === ctx.user._id && p.joinedAt && !p.leftAt,
+    );
+    if (!isParticipant) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Vous n'êtes pas dans cet appel");
+    }
+
+    // Check target isn't already a participant
+    const alreadyIn = meeting.participants.some(
+      (p) => p.userId === args.targetUserId && !p.leftAt,
+    );
+    if (alreadyIn) {
+      throw error(ErrorCode.INVALID_ARGUMENT, "Ce participant est déjà dans l'appel");
+    }
+
+    const targetUser = await ctx.db.get(args.targetUserId);
+    if (!targetUser) throw error(ErrorCode.NOT_FOUND, "Utilisateur non trouvé");
+
+    const participants = [...meeting.participants];
+    participants.push({
+      userId: args.targetUserId,
+      role: "participant",
+    });
+
+    // Increase maxParticipants if needed
+    const newMax = Math.max(meeting.maxParticipants ?? 2, participants.length + 1);
+
+    await ctx.db.patch(args.meetingId, {
+      participants,
+      maxParticipants: newMax,
+    });
+
+    // Send notification to the new participant
+    const callerName = [ctx.user.firstName, ctx.user.lastName].filter(Boolean).join(" ") || ctx.user.email || "Un agent";
+    await ctx.db.insert("notifications", {
+      userId: args.targetUserId,
+      type: "meeting_invitation" as any,
+      title: "Appel entrant",
+      body: `${callerName} vous ajoute à un appel`,
+      link: `/meetings?join=${args.meetingId}`,
+      isRead: false,
+      relatedId: args.meetingId as string,
+      relatedType: "meeting",
+      createdAt: Date.now(),
+    });
+  },
+});
+
+// ============================================
+// INTERNAL: Stale call cleanup (called by cron)
+// ============================================
+
+/** Timeout thresholds for the cleanup cron */
+const INITIATING_TIMEOUT_MS = 30_000;  // 30s to connect to LiveKit
+const RINGING_TIMEOUT_MS = 120_000;    // 2 min for agent to answer
+
+/**
+ * Cron job: cleanup stale calls.
+ * - "initiating" > 30s → "missed" (citizen never connected to LiveKit)
+ * - "ringing" > 2 min → "missed" (no agent answered)
+ * - "connected" with 0 active participants → "ended"
+ */
+export const cleanupStaleCalls = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+
+    // Process "initiating" calls that timed out
+    const initiatingCalls = await ctx.db
+      .query("meetings")
+      .withIndex("by_callStatus_and_org", (q) => q.eq("callStatus", "initiating"))
+      .take(50);
+
+    for (const c of initiatingCalls) {
+      if (now - c._creationTime > INITIATING_TIMEOUT_MS) {
+        await ctx.db.patch(c._id, {
+          callStatus: "missed",
+          status: "ended",
+          endReason: "timeout",
+          endedAt: now,
+        });
+      }
+    }
+
+    // Process "ringing" calls that timed out
+    const ringingCalls = await ctx.db
+      .query("meetings")
+      .withIndex("by_callStatus_and_org", (q) => q.eq("callStatus", "ringing"))
+      .take(50);
+
+    for (const c of ringingCalls) {
+      if (now - c._creationTime > RINGING_TIMEOUT_MS) {
+        await ctx.db.patch(c._id, {
+          callStatus: "missed",
+          status: "ended",
+          endReason: "timeout",
+          endedAt: now,
+        });
+      }
+    }
+
+    // Process "connected" calls with no active participants
+    const connectedCalls = await ctx.db
+      .query("meetings")
+      .withIndex("by_callStatus_and_org", (q) => q.eq("callStatus", "connected"))
+      .take(50);
+
+    for (const c of connectedCalls) {
+      const hasActive = c.participants.some((p) => p.joinedAt && !p.leftAt);
+      if (!hasActive) {
+        await ctx.db.patch(c._id, {
+          callStatus: "ended",
+          status: "ended",
+          endReason: "normal",
+          endedAt: now,
+        });
+      }
+    }
+
   },
 });

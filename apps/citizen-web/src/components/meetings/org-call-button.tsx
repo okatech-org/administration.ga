@@ -58,6 +58,9 @@ export function OrgCallButton({
 	const callOrgMutation = useConvexMutationQuery(
 		api.functions.meetings.callOrganization,
 	);
+	const setCallRingingMutation = useConvexMutationQuery(
+		api.functions.meetings.setCallRinging,
+	);
 
 	const { token, wsUrl, connect, disconnect } = useMeeting(
 		activeMeetingId ?? undefined,
@@ -72,10 +75,12 @@ export function OrgCallButton({
 			});
 			setActiveMeetingId(result.meetingId);
 			await connect(result.meetingId);
+			// Transition call to "ringing" — makes it visible to agents
+			await setCallRingingMutation.mutateAsync({ meetingId: result.meetingId });
 		} catch (err) {
 			console.error("Failed to call organization:", err);
 		}
-	}, [orgId, callOrgMutation, connect]);
+	}, [orgId, callOrgMutation, setCallRingingMutation, connect]);
 
 	const handleCall = useCallback(async () => {
 		// If there are multiple active lines, show selector

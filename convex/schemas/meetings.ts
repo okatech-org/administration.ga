@@ -46,6 +46,31 @@ export const meetingsTable = defineTable({
   // Call line routing (optional — if set, only agents on this line see the call)
   callLineId: v.optional(v.id("callLines")),
 
+  // ─── Call state machine (type === "call" only) ───
+  callStatus: v.optional(
+    v.union(
+      v.literal("initiating"), // Call created, citizen connecting to LiveKit
+      v.literal("ringing"),    // Citizen connected, agents notified
+      v.literal("connected"),  // Agent answered, both parties in room
+      v.literal("on_hold"),    // Call temporarily on hold
+      v.literal("ended"),      // Normal termination
+      v.literal("missed"),     // No agent answered within timeout
+      v.literal("declined"),   // All eligible agents explicitly declined
+    ),
+  ),
+  answeredBy: v.optional(v.id("users")),
+  answeredAt: v.optional(v.number()),
+  declinedBy: v.optional(v.array(v.id("users"))),
+  endReason: v.optional(
+    v.union(
+      v.literal("normal"),    // One party hung up
+      v.literal("timeout"),   // No answer within timeout
+      v.literal("declined"),  // All agents declined
+      v.literal("error"),     // Technical error
+      v.literal("cancelled"), // Caller cancelled before answer
+    ),
+  ),
+
   // Context linking (optional)
   requestId: v.optional(v.id("requests")),
   appointmentId: v.optional(v.id("appointments")),
@@ -66,4 +91,5 @@ export const meetingsTable = defineTable({
   .index("by_roomName", ["roomName"])
   .index("by_createdBy", ["createdBy"])
   .index("by_org_status", ["orgId", "status"])
+  .index("by_callStatus_and_org", ["callStatus", "orgId"])
   .index("by_request", ["requestId"]);

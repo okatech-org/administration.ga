@@ -5,7 +5,8 @@
  * Utilisé comme barre de navigation secondaire dans le layout.
  */
 
-import { Link, useLocation } from "@tanstack/react-router";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Target,
   BookOpen,
@@ -79,8 +80,7 @@ const PHASES = [
 ] as const;
 
 export function PipelineStepper({ counts }: { counts?: PhaseCounts }) {
-  const location = useLocation();
-  const currentPath = location.pathname;
+  const currentPath = usePathname();
 
   return (
     <div className="flex items-center gap-1 overflow-x-auto pb-1">
@@ -92,7 +92,7 @@ export function PipelineStepper({ counts }: { counts?: PhaseCounts }) {
         return (
           <div key={phase.id} className="flex items-center">
             <Link
-              to={phase.href as string}
+              href={phase.href}
               className={cn(
                 "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
                 isActive

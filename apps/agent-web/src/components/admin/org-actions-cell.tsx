@@ -15,7 +15,7 @@ import type { Doc } from "@convex/_generated/dataModel"
 import { useConvexMutationQuery } from "@/integrations/convex/hooks"
 import { api } from "@convex/_generated/api"
 import { toast } from "sonner"
-import { Link } from "@tanstack/react-router"
+import Link from "next/link"
 
 interface OrgActionsCellProps {
   org: Doc<"orgs">
@@ -58,26 +58,26 @@ export function OrgActionsCell({ org }: OrgActionsCellProps) {
         <DropdownMenuLabel>{org.name}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/reps/$orgId" params={{ orgId: org._id }}>
+          <Link href={`/reps/${org._id}`}>
             <Eye className="mr-2 h-4 w-4" />
             {t("superadmin.organizations.actions.view")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/reps/$orgId/edit" params={{ orgId: org._id }}>
+          <Link href={`/reps/${org._id}/edit`}>
             <Edit className="mr-2 h-4 w-4" />
             {t("superadmin.organizations.actions.edit")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/reps/$orgId" params={{ orgId: org._id }}>
+          <Link href={`/reps/${org._id}`}>
             <Users className="mr-2 h-4 w-4" />
             {t("superadmin.organizations.actions.manageMembers")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/reps/$orgId" params={{ orgId: org._id }}>
+          <Link href={`/reps/${org._id}`}>
             <FileText className="mr-2 h-4 w-4" />
             {t("superadmin.organizations.actions.manageServices")}
           </Link>

@@ -95,6 +95,9 @@ export function CallsPage() {
   const callOrgMutation = useConvexMutationQuery(
     api.functions.meetings.callOrganization,
   );
+  const declineCallMutation = useConvexMutationQuery(
+    api.functions.meetings.declineCall,
+  );
 
   // Debounced search query for users
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -157,10 +160,11 @@ export function CallsPage() {
       for (const m of orgCalls) {
         if (m.isOrgInbound) {
           incoming.push(m);
-          if (
-            m.status === "ended" &&
-            m.participants.filter((p) => p.joinedAt).length <= 1
-          ) {
+          // Use callStatus if available, otherwise fallback to heuristic
+          const isMissed = m.callStatus
+            ? m.callStatus === "missed" || m.callStatus === "declined"
+            : m.status === "ended" && m.participants.filter((p) => p.joinedAt).length <= 1;
+          if (isMissed) {
             missed.push(m);
           }
         } else {
@@ -184,6 +188,13 @@ export function CallsPage() {
       await connect(meetingId);
     },
     [connect],
+  );
+
+  const handleDecline = useCallback(
+    async (meetingId: Id<"meetings">) => {
+      await declineCallMutation.mutateAsync({ meetingId });
+    },
+    [declineCallMutation],
   );
 
   const handleHangUp = useCallback(async () => {
@@ -379,14 +390,25 @@ export function CallsPage() {
                     </p>
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => handleAnswer(call._id)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-lg shadow-emerald-900/20"
-                >
-                  <Phone className="w-4 h-4" />
-                  {t("meetings.answer")}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDecline(call._id)}
+                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10 gap-1.5"
+                  >
+                    <PhoneOff className="w-4 h-4" />
+                    {t("meetings.decline", "Refuser")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => handleAnswer(call._id)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-lg shadow-emerald-900/20"
+                  >
+                    <Phone className="w-4 h-4" />
+                    {t("meetings.answer")}
+                  </Button>
+                </div>
               </div>
             ))}
           </CardContent>

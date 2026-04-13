@@ -1,4 +1,4 @@
-import { useLocation, useRouter } from "@tanstack/react-router";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useConvexActionQuery } from "@/integrations/convex/hooks";
 import { useOrg } from "@/components/org/org-provider";
@@ -26,7 +26,7 @@ export function useAdminAIChat() {
 	const [conversationId, setConversationId] =
 		useState<Id<"conversations"> | null>(null);
 
-	const location = useLocation();
+	const pathname = usePathname();
 	const router = useRouter();
 	const { activeOrgId } = useOrg();
 	const { mutateAsync: chat } = useConvexActionQuery(
@@ -54,7 +54,7 @@ export function useAdminAIChat() {
 					if (action.type === "navigateTo") {
 						const route = action.args.route as string;
 						if (route) {
-							router.navigate({ to: route });
+							router.push(route);
 						}
 						setPendingActions((prev) =>
 							prev.filter((a) => a !== action),
@@ -106,7 +106,7 @@ export function useAdminAIChat() {
 				const response = await chat({
 					conversationId: conversationId ?? undefined,
 					message: content,
-					currentPage: location.pathname,
+					currentPage: pathname,
 					orgId: activeOrgId,
 				});
 
@@ -135,7 +135,7 @@ export function useAdminAIChat() {
 						if (action.type === "navigateTo") {
 							const route = action.args.route as string;
 							if (route) {
-								router.navigate({ to: route });
+								router.push(route);
 							}
 						}
 					}
@@ -179,7 +179,7 @@ export function useAdminAIChat() {
 			chat,
 			conversationId,
 			isLoading,
-			location.pathname,
+			pathname,
 			pendingActions,
 			router,
 			activeOrgId,
@@ -198,7 +198,7 @@ export function useAdminAIChat() {
 				if (action.type === "navigateTo") {
 					const route = action.args.route as string;
 					if (route) {
-						router.navigate({ to: route });
+						router.push(route);
 					}
 					setPendingActions((prev) =>
 						prev.filter((a) => a !== action),

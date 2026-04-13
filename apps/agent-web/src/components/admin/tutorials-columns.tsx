@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -134,8 +134,7 @@ export const tutorialsColumns: ColumnDef<Tutorial>[] = [
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
             <Link
-              to="/tutorials/$tutorialId/edit"
-              params={{ tutorialId: row.original._id }}
+              href={`/tutorials/${row.original._id}/edit`}
             >
               <Pencil className="mr-2 h-4 w-4" />
               Modifier

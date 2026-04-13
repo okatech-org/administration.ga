@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { MapPin, ChevronRight, Baby, Building2, Phone } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -153,8 +153,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
 						asChild
 					>
 						<Link
-							to="/profiles/$profileId"
-							params={{ profileId: profile._id }}
+							href={`/profiles/${profile._id}`}
 						>
 							Dossier complet
 							<ChevronRight className="h-3.5 w-3.5 ml-1.5 opacity-70 group-hover:opacity-100" />

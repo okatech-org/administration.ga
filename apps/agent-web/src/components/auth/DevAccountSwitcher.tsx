@@ -27,7 +27,7 @@ interface DevAccountGroup {
 /** Parse les comptes dev depuis VITE_DEV_ACCOUNTS et les groupe par group. */
 function parseDevAccounts(): DevAccountGroup[] {
 	try {
-		const raw = import.meta.env.VITE_DEV_ACCOUNTS;
+		const raw = process.env.NEXT_PUBLIC_DEV_ACCOUNTS;
 		if (!raw) return [];
 		const accounts: DevAccount[] = JSON.parse(raw);
 		const grouped = new Map<string, DevAccount[]>();
@@ -47,8 +47,7 @@ function parseDevAccounts(): DevAccountGroup[] {
  * SÉCURITÉ : Triple gate pour éviter toute fuite en production.
  */
 export function DevAccountSwitcher() {
-	if (import.meta.env.PROD) return null;
-	if (!import.meta.env.DEV) return null;
+	if (process.env.NODE_ENV === "production") return null;
 
 	return <DevAccountSwitcherInner />;
 }

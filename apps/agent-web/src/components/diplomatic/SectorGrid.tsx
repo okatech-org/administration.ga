@@ -4,7 +4,7 @@
  */
 
 import { api } from "@convex/_generated/api";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import {
   FolderOpen,
   FileText,
@@ -99,8 +99,7 @@ export function SectorGrid() {
               return (
                 <Link
                   key={folder.folderId}
-                  to="/affaires-diplomatiques/$targetId"
-                  params={{ targetId: folder.targetId ?? "" }}
+                  href={`/affaires-diplomatiques/${folder.targetId ?? ""}`}
                 >
                   <FlatCard className="hover:bg-muted/30 transition-colors cursor-pointer">
                     <div className="p-3 lg:p-4">

@@ -87,6 +87,24 @@ crons.daily(
   internal.functions.autoDefense.cleanupExpired,
 );
 
+// --- iAppel (Calls) ---
+// Cleanup stale calls every 30 seconds (initiating/ringing timeouts)
+crons.interval(
+  "cleanup-stale-calls",
+  { seconds: 30 },
+  internal.functions.meetings.cleanupStaleCalls,
+  {},
+);
+
+// --- Agent Presence ---
+// Mark agents with stale heartbeats as offline (every 60s)
+crons.interval(
+  "cleanup-stale-presence",
+  { seconds: 60 },
+  internal.functions.agentPresence.cleanupStalePresence,
+  {},
+);
+
 // --- iArchive ---
 // Verification quotidienne des retentions d'archivage (8h30 UTC = 9h30 Paris)
 crons.daily(

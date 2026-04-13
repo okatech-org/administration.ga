@@ -7,7 +7,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { useLocation, useNavigate } from "@tanstack/react-router";
+import { usePathname, useRouter } from "next/navigation";
 import {
 	Bot,
 	Building2,
@@ -62,12 +62,12 @@ const SOURCE_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; icon: t
 
 export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps) {
 	const { activeOrgId } = useOrg();
-	const location = useLocation();
-	const navigate = useNavigate();
+	const pathname = usePathname();
+	const router = useRouter();
 	const [selectedContact, setSelectedContact] = useState<any>(null);
 	const [messageInput, setMessageInput] = useState("");
 	const messagesEndRef = useRef<HTMLDivElement>(null);
-	const suggestions = getSuggestions(location.pathname);
+	const suggestions = getSuggestions(pathname);
 
 	// Recherche intelligente cross-org
 	const {
@@ -170,7 +170,7 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 						{ role: "user", content: text, timestamp: Date.now() },
 						{ role: "assistant", content: `Je vous emmène sur **${intent.target}**.`, timestamp: Date.now() },
 					);
-					navigate({ to: route });
+					router.push(route);
 					toast.success(`Navigation vers ${intent.target}`);
 					return;
 				}

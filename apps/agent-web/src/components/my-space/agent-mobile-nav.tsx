@@ -1,4 +1,5 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
 	Bot,
 	Calendar,
@@ -42,7 +43,7 @@ function NavBarItem({
 	const Icon = item.icon;
 	return (
 		<Link
-			to={item.url}
+			href={item.url}
 			className="flex flex-col items-center justify-center gap-0.5 py-2 px-1 min-w-[48px]"
 		>
 			<div
@@ -71,7 +72,7 @@ function NavBarItem({
 }
 
 export function AgentMobileNav() {
-	const location = useLocation();
+	const pathname = usePathname();
 	const { t, i18n } = useTranslation();
 	const { theme, setTheme } = useTheme();
 	const [sheetOpen, setSheetOpen] = useState(false);
@@ -97,8 +98,8 @@ export function AgentMobileNav() {
 	];
 
 	const isActive = (url: string) => {
-		if (url === "/") return location.pathname === "/";
-		return location.pathname.startsWith(url);
+		if (url === "/") return pathname === "/";
+		return pathname.startsWith(url);
 	};
 
 	const hasSheetActive = sheetItems.some((i) => isActive(i.url));
@@ -196,7 +197,7 @@ export function AgentMobileNav() {
 							return (
 								<Link
 									key={item.url}
-									to={item.url}
+									href={item.url}
 									onClick={() => setSheetOpen(false)}
 									className={cn(
 										"flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl min-h-[68px]",
