@@ -1,4 +1,6 @@
-import { Link } from "@tanstack/react-router";
+"use client";
+
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -55,7 +57,7 @@ export function AuthLayout({ children, headerButton }: AuthLayoutProps) {
 				<header className="flex h-24 items-center justify-end px-6 sm:px-12">
 					{headerButton && (
 						<Button variant="secondary" className="rounded-full px-6" asChild>
-							<Link to={headerButton.to} search={headerButton.search}>
+							<Link href={headerButton.to}>
 								{headerButton.label}
 							</Link>
 						</Button>

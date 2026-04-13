@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * AffairesServicesTab — Vue d'ensemble des services consulaires
  *
@@ -6,7 +8,7 @@
  */
 
 import { api } from "@convex/_generated/api";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import {
 	FileText,
 	Folder,
@@ -130,7 +132,7 @@ export function AffairesServicesTab() {
 			{/* ── Action : Nouveau service ── */}
 			<div className="flex justify-end">
 				<Button asChild>
-					<Link to="/services/new">
+					<Link href="/services/new">
 						<Plus className="mr-2 h-4 w-4" />
 						{lang === "fr" ? "Nouveau service" : "New service"}
 					</Link>

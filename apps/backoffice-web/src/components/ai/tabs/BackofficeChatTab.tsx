@@ -7,7 +7,8 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { useLocation, useNavigate } from "@tanstack/react-router";
+import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
 	Bot,
 	Building2,
@@ -52,12 +53,12 @@ interface BackofficeChatTabProps {
 }
 
 export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
-	const location = useLocation();
-	const navigate = useNavigate();
+	const pathname = usePathname();
+	const router = useRouter();
 	const [selectedContact, setSelectedContact] = useState<any>(null);
 	const [messageInput, setMessageInput] = useState("");
 	const messagesEndRef = useRef<HTMLDivElement>(null);
-	const suggestions = getSuggestions(location.pathname);
+	const suggestions = getSuggestions(pathname);
 
 	const { groups, total, isPending: contactsLoading, filters, setSearch, setSource } = useContactSearch(orgId);
 	const allContacts = groups.flatMap((g: any) => g.contacts);
@@ -110,7 +111,7 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 				if (route) {
 					setMessageInput("");
 					chat.messages.push({ role: "user", content: text, timestamp: Date.now() }, { role: "assistant", content: `Navigation vers **${intent.target}**.`, timestamp: Date.now() });
-					navigate({ to: route });
+					router.push(route);
 					return;
 				}
 			}

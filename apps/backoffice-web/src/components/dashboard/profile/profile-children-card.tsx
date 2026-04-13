@@ -1,4 +1,6 @@
-import { Link } from "@tanstack/react-router";
+"use client";
+
+import Link from "next/link";
 import { differenceInYears } from "date-fns";
 import {
   ArrowRight,
@@ -77,7 +79,7 @@ export function ProfileChildrenCard({
               return (
                 <Link
                   key={child._id}
-                  to={`${basePath}/${child._id}` as any}
+                  href={`${basePath}/${child._id}`}
                   className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/50 transition-colors group border border-transparent hover:border-border/50"
                 >
                   {/* Avatar avec initiales */}

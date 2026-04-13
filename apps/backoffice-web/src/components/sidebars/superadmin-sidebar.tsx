@@ -1,6 +1,7 @@
 "use client";
 
-import { Link, useLocation } from "@tanstack/react-router";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
 	Activity,
 	BookOpen,
@@ -86,7 +87,7 @@ export function SuperadminSidebar({
 	isExpanded = false,
 	onToggle,
 }: SuperadminSidebarProps) {
-	const location = useLocation();
+	const pathname = usePathname();
 	const { t, i18n } = useTranslation();
 	const { theme, setTheme } = useTheme();
 	const user = useSuperAdminData();
@@ -261,9 +262,9 @@ export function SuperadminSidebar({
 
 	const isActive = (url: string) => {
 		if (url === "/") {
-			return location.pathname === "/";
+			return pathname === "/";
 		}
-		return location.pathname.startsWith(url);
+		return pathname.startsWith(url);
 	};
 
 	const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en";
@@ -284,7 +285,7 @@ export function SuperadminSidebar({
 				{/* ─── Logo ─────────────────────────────────── */}
 				<div className={cn("mb-3", isExpanded ? "px-2" : "")}>
 					<Link
-						to="/"
+						href="/"
 						className={`flex items-center${isExpanded ? " gap-2" : ""}`}
 					>
 						<div className="size-10 shrink-0 rounded-full bg-[#FDFCFA] dark:bg-[#21201E] flex items-center justify-center overflow-hidden">
@@ -358,7 +359,7 @@ export function SuperadminSidebar({
 												: "text-muted-foreground hover:text-foreground hover:bg-[#EBE6DC]/50 dark:hover:bg-[#383633]/50",
 										)}
 									>
-										<Link to={item.url}>
+										<Link href={item.url}>
 											<item.icon className="size-[18px] shrink-0" />
 											<SidebarText isExpanded={isExpanded}>
 												{item.title}

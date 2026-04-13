@@ -1,4 +1,6 @@
-import { useRouter } from "@tanstack/react-router"
+"use client"
+
+import { useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { motion } from "motion/react"
 import type { ReactNode } from "react"
@@ -41,7 +43,7 @@ export function PageHeader({
     if (onBack) {
       onBack()
     } else {
-      router.history.back()
+      router.back()
     }
   }
 

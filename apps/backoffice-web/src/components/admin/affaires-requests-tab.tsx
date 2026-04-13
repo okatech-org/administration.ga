@@ -2,7 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 import {
 	Building2,
 	ChevronRight,
@@ -175,7 +175,7 @@ function getInitials(firstName?: string, lastName?: string): string {
 // ─── Main Component ──────────────────────────────────────────────────
 
 export function AffairesRequestsTab() {
-	const navigate = useNavigate();
+	const router = useRouter();
 	const { t } = useTranslation();
 
 	const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -408,9 +408,7 @@ export function AffairesRequestsTab() {
 										key={request._id}
 										className="cursor-pointer hover:bg-muted/40 transition-colors group"
 										onClick={() =>
-											navigate({
-												to: `/requests/${request._id}` as any,
-											})
+											router.push(`/requests/${request._id}`)
 										}
 									>
 										{/* Reference */}
