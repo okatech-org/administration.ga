@@ -1,5 +1,6 @@
 "use client";
 
+import { Component, type ErrorInfo, type ReactNode } from "react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import type { CountryCode } from "@convex/lib/constants";
@@ -21,6 +22,7 @@ import {
 	Package,
 	Phone,
 	Settings2,
+	ShieldAlert,
 	Users,
 } from "lucide-react";
 
@@ -100,7 +102,41 @@ function KpiCard({
 	)
 }
 
+// ─── Error Boundary ─────────────────────────────────────────────────────────
+
+class QueryErrorBoundary extends Component<
+	{ children: ReactNode; fallback: ReactNode },
+	{ hasError: boolean }
+> {
+	constructor(props: { children: ReactNode; fallback: ReactNode }) {
+		super(props);
+		this.state = { hasError: false };
+	}
+	static getDerivedStateFromError() {
+		return { hasError: true };
+	}
+	componentDidCatch(error: Error, info: ErrorInfo) {
+		console.warn("[QueryErrorBoundary]", error.message, info.componentStack);
+	}
+	render() {
+		if (this.state.hasError) return this.props.fallback;
+		return this.props.children;
+	}
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
+
+function PermissionFallback({ message }: { message?: string }) {
+	return (
+		<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+			<ShieldAlert className="h-10 w-10 mb-3 opacity-30" />
+			<p className="text-sm font-medium">Permissions insuffisantes</p>
+			<p className="text-xs mt-1 opacity-60">
+				{message || "Vous n'avez pas les droits pour accéder à ces données."}
+			</p>
+		</div>
+	);
+}
 
 export default function OrgDetailPage() {
 	const { t, i18n } = useTranslation();
@@ -131,14 +167,6 @@ export default function OrgDetailPage() {
 		api.functions.services.listByOrg,
 		{ orgId: orgId as Id<"orgs"> },
 	)
-
-	// Requests for this org (paginated)
-	const { results: requests, isLoading: isRequestsLoading } =
-		useAuthenticatedPaginatedQuery(
-			api.functions.requests.listByOrg,
-			{ orgId: orgId as Id<"orgs"> },
-			{ initialNumItems: 10 },
-		)
 
 	// Consular registry stats
 	const { data: registryStats } = useAuthenticatedConvexQuery(
@@ -548,90 +576,9 @@ export default function OrgDetailPage() {
 
 				{/* ─── Tab: Requests ──────────────────────────────── */}
 				<TabsContent value="requests" className="space-y-4">
-					<FlatCard>
-						<div className="p-3 lg:p-4">
-							<SectionHeader
-								icon={<ClipboardList className="h-4 w-4" />}
-								title={t("superadmin.organizations.tabs.requests", "Demandes")}
-							/>
-							<p className="text-xs text-muted-foreground mb-3">
-								{t(
-									"superadmin.organizations.requestsDesc",
-									"Dernières demandes de services pour cet organisme",
-								)}
-							</p>
-							{isRequestsLoading && requests.length === 0 ? (
-								<div className="space-y-2">
-									{[1, 2, 3].map((i) => (
-										<Skeleton key={i} className="h-12 w-full" />
-									))}
-								</div>
-							) : requests.length > 0 ? (
-								<div className="space-y-2">
-									{requests.slice(0, 20).map((req: any) => (
-										<div
-											key={req._id}
-											role="button"
-											tabIndex={0}
-											className="flex items-center justify-between rounded-lg border border-border/50 p-3 hover:bg-muted/30 transition-colors cursor-pointer"
-											onClick={() =>
-												router.push(`/requests/${req._id}`)
-											}
-											onKeyDown={(e) => {
-												if (e.key === "Enter" || e.key === " ") {
-													e.preventDefault()
-													router.push(`/requests/${req._id}`)
-												}
-											}}
-										>
-											<div className="flex items-center gap-3 min-w-0">
-												<div className="rounded-md bg-primary/10 p-1.5 shrink-0">
-													<FileText className="h-3.5 w-3.5 text-primary" />
-												</div>
-												<div className="min-w-0">
-													<p className="text-sm font-medium font-mono truncate">
-														{req.reference || req._id.slice(-8)}
-													</p>
-													<p className="text-xs text-muted-foreground truncate">
-														{req.user
-															? `${req.user.firstName || ""} ${req.user.lastName || ""}`.trim()
-															: "—"}
-													</p>
-												</div>
-											</div>
-											<div className="flex items-center gap-2 shrink-0">
-												<Badge
-													variant="secondary"
-													className="text-[10px] px-1.5"
-												>
-													{String(t(
-														`fields.requestStatus.options.${req.status}`,
-														req.status,
-													))}
-												</Badge>
-												<span className="text-xs text-muted-foreground">
-													{new Date(req._creationTime).toLocaleDateString(
-														lang === "fr" ? "fr-FR" : "en-US",
-														{ day: "numeric", month: "short" },
-													)}
-												</span>
-											</div>
-										</div>
-									))}
-								</div>
-							) : (
-								<div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-									<ClipboardList className="h-10 w-10 mb-3 opacity-30" />
-									<p className="text-sm">
-										{t(
-											"superadmin.organizations.requestsEmpty",
-											"Aucune demande pour cet organisme",
-										)}
-									</p>
-								</div>
-							)}
-						</div>
-					</FlatCard>
+					<QueryErrorBoundary fallback={<PermissionFallback />}>
+						<OrgRequestsTab orgId={orgId as Id<"orgs">} lang={lang} />
+					</QueryErrorBoundary>
 				</TabsContent>
 
 				{/* ─── Tab: Registry ──────────────────────────────── */}
@@ -810,4 +757,103 @@ export default function OrgDetailPage() {
 			</Tabs>
 		</div>
 	)
+}
+
+// ─── Requests Sub-component (isolated for error boundary) ───────────────────
+
+function OrgRequestsTab({ orgId, lang }: { orgId: Id<"orgs">; lang: string }) {
+	const { t } = useTranslation();
+	const router = useRouter();
+
+	const { results: requests, isLoading: isRequestsLoading } =
+		useAuthenticatedPaginatedQuery(
+			api.functions.requests.listByOrg,
+			{ orgId },
+			{ initialNumItems: 10 },
+		);
+
+	return (
+		<FlatCard>
+			<div className="p-3 lg:p-4">
+				<SectionHeader
+					icon={<ClipboardList className="h-4 w-4" />}
+					title={t("superadmin.organizations.tabs.requests", "Demandes")}
+				/>
+				<p className="text-xs text-muted-foreground mb-3">
+					{t(
+						"superadmin.organizations.requestsDesc",
+						"Dernières demandes de services pour cet organisme",
+					)}
+				</p>
+				{isRequestsLoading && requests.length === 0 ? (
+					<div className="space-y-2">
+						{[1, 2, 3].map((i) => (
+							<Skeleton key={i} className="h-12 w-full" />
+						))}
+					</div>
+				) : requests.length > 0 ? (
+					<div className="space-y-2">
+						{requests.slice(0, 20).map((req: any) => (
+							<div
+								key={req._id}
+								role="button"
+								tabIndex={0}
+								className="flex items-center justify-between rounded-lg border border-border/50 p-3 hover:bg-muted/30 transition-colors cursor-pointer"
+								onClick={() => router.push(`/requests/${req._id}`)}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" || e.key === " ") {
+										e.preventDefault()
+										router.push(`/requests/${req._id}`)
+									}
+								}}
+							>
+								<div className="flex items-center gap-3 min-w-0">
+									<div className="rounded-md bg-primary/10 p-1.5 shrink-0">
+										<FileText className="h-3.5 w-3.5 text-primary" />
+									</div>
+									<div className="min-w-0">
+										<p className="text-sm font-medium font-mono truncate">
+											{req.reference || req._id.slice(-8)}
+										</p>
+										<p className="text-xs text-muted-foreground truncate">
+											{req.user
+												? `${req.user.firstName || ""} ${req.user.lastName || ""}`.trim()
+												: "—"}
+										</p>
+									</div>
+								</div>
+								<div className="flex items-center gap-2 shrink-0">
+									<Badge
+										variant="secondary"
+										className="text-[10px] px-1.5"
+									>
+										{String(t(
+											`fields.requestStatus.options.${req.status}`,
+											req.status,
+										))}
+									</Badge>
+									<span className="text-xs text-muted-foreground">
+										{new Date(req._creationTime).toLocaleDateString(
+											lang === "fr" ? "fr-FR" : "en-US",
+											{ day: "numeric", month: "short" },
+										)}
+									</span>
+								</div>
+							</div>
+						))}
+					</div>
+				) : (
+					<div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+						<ClipboardList className="h-10 w-10 mb-3 opacity-30" />
+						<p className="text-sm">
+							{t(
+								"superadmin.organizations.requestsEmpty",
+								"Aucune demande pour cet organisme",
+							)}
+						</p>
+					</div>
+				)}
+			</div>
+		</FlatCard>
+	);
 }
