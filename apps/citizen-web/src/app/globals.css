@@ -3,6 +3,11 @@
 
 @theme {
   --font-sans: "Inter", sans-serif;
+
+  /* Citizen surface colors — use with bg-citizen-s2, hover:bg-citizen-s3, etc. */
+  --color-citizen-s2: var(--citizen-surface-s2);
+  --color-citizen-s3: var(--citizen-surface-s3);
+  --color-citizen-s4: var(--citizen-surface-s4);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -18,6 +23,9 @@
   --gabon-yellow-hex: #fcd116;
   --gabon-blue: 214 52% 50%;
   --gabon-blue-hex: #3a75c4;
+
+  /* Layout tokens */
+  --mobile-nav-height: 60px;
 
   /* Surface tokens */
   --citizen-surface-s1: var(--secondary);

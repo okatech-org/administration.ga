@@ -44,7 +44,7 @@ export default function RequestsPage() {
 				icon={<FileText className="h-6 w-6 text-primary" />}
 				actions={
 					<Button asChild>
-						<Link href="/services">
+						<Link href="/my-space/services-demarches">
 							<PlusCircle className="mr-2 h-4 w-4" />
 							{t("requests.new")}
 						</Link>
@@ -72,7 +72,7 @@ export default function RequestsPage() {
 								)}
 							</p>
 							<Button asChild>
-								<Link href="/services">
+								<Link href="/my-space/services-demarches">
 									<PlusCircle className="mr-2 h-4 w-4" />
 									{t("requests.empty.action")}
 								</Link>

@@ -4,7 +4,6 @@
 /* eslint-disable react-hooks/purity */
 
 import { api } from "@convex/_generated/api"
-import { RequestStatus } from "@convex/lib/constants"
 import Link from "next/link"
 import { differenceInYears, format } from "date-fns"
 import { fr } from "date-fns/locale"
@@ -37,6 +36,7 @@ import { useTranslation } from "react-i18next"
 import { AssistanceContactsWidget } from "@/components/my-space/assistance-contacts-widget"
 import { ConsularCardWidget } from "@/components/my-space/consular-card-widget"
 import { FlatCard } from "@/components/my-space/flat-card"
+import { RequestCard } from "@/components/my-space/request-card"
 import { MySpaceHeader } from "@/components/my-space/my-space-wrapper"
 import { MobileCallFAB } from "@/components/my-space/mobile-call-fab"
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown"
@@ -54,8 +54,6 @@ import {
   useAuthenticatedConvexQuery,
   useConvexQuery,
 } from "@/integrations/convex/hooks"
-import { getLocalizedValue } from "@/lib/i18n-utils"
-import { REQUEST_STATUS_CONFIG } from "@/lib/request-status-config"
 import { cn } from "@/lib/utils"
 
 function getAge(bd?: string | number | null): number | null {
@@ -79,34 +77,106 @@ function formatPhone(phone?: string | null): string {
 // FlatCard is now imported from @/components/my-space/flat-card
 
 // ═════════════════════════════════════════════════════════════
+// Carousel for active requests — horizontal snap scroll, one card at a time
+function ActiveRequestsCarousel({
+  requests,
+}: {
+  requests: Array<{
+    _id: any
+    _creationTime: number
+    status: string
+    reference?: string
+    service?: { name?: Record<string, string> } | null
+    org?: { name?: string } | null
+  }>
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [currentIndex, setCurrentIndex] = useState(0)
+
+  const scrollToIndex = useCallback(
+    (idx: number) => {
+      const el = scrollRef.current
+      if (!el) return
+      const child = el.children[idx] as HTMLElement
+      if (child) {
+        el.scrollTo({ left: child.offsetLeft, behavior: "smooth" })
+      }
+    },
+    []
+  )
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current
+    if (!el || !el.children.length) return
+    const scrollLeft = el.scrollLeft
+    const childWidth = (el.children[0] as HTMLElement).offsetWidth
+    const idx = Math.round(scrollLeft / childWidth)
+    setCurrentIndex(Math.min(idx, requests.length - 1))
+  }, [requests.length])
+
+  return (
+    <div className="relative flex flex-1 flex-col">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="disable-scrollbars flex flex-1 snap-x snap-mandatory gap-3 overflow-x-auto"
+      >
+        {requests.map((req) => (
+          <div key={req._id} className="w-full shrink-0 snap-start">
+            <RequestCard request={req as any} />
+          </div>
+        ))}
+      </div>
+      {requests.length > 1 && (
+        <div className="mt-2 flex items-center justify-center gap-3">
+          <button
+            onClick={() => scrollToIndex(Math.max(0, currentIndex - 1))}
+            disabled={currentIndex === 0}
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-citizen-s2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+          >
+            <ArrowRight className="h-3 w-3 rotate-180" />
+          </button>
+          <div className="flex items-center gap-1.5">
+            {requests.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => scrollToIndex(idx)}
+                className={cn(
+                  "h-1.5 rounded-full transition-all",
+                  idx === currentIndex
+                    ? "w-4 bg-primary"
+                    : "w-1.5 bg-muted-foreground/30"
+                )}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() =>
+              scrollToIndex(Math.min(requests.length - 1, currentIndex + 1))
+            }
+            disabled={currentIndex === requests.length - 1}
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-citizen-s2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+          >
+            <ArrowRight className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ═════════════════════════════════════════════════════════════
 export default function UserDashboard() {
   const { t, i18n } = useTranslation()
   const [showConsularCard, setShowConsularCard] = useState(false)
   const [showDossierDetails, setShowDossierDetails] = useState(false)
-  const [mobilePageIndex, setMobilePageIndex] = useState(0)
-  const mobileScrollRef = useRef<HTMLDivElement>(null)
-
-  const scrollToActualites = useCallback(() => {
-    mobileScrollRef.current?.scrollTo({
-      left: mobileScrollRef.current.scrollWidth,
-      behavior: "smooth",
-    })
-  }, [])
-  const scrollToDashboard = useCallback(() => {
-    mobileScrollRef.current?.scrollTo({ left: 0, behavior: "smooth" })
-  }, [])
-  const handleMobileScroll = useCallback(() => {
-    const el = mobileScrollRef.current
-    if (!el) return
-    setMobilePageIndex(el.scrollLeft > el.clientWidth * 0.5 ? 1 : 0)
-  }, [])
 
   const { data: profile, isPending } = useAuthenticatedConvexQuery(
     api.functions.profiles.getMine,
     {}
   )
-  const { data: latestRequest } = useAuthenticatedConvexQuery(
-    api.functions.requests.getLatestActive,
+  const { data: activeRequests } = useAuthenticatedConvexQuery(
+    api.functions.requests.listMyActive,
     {}
   )
   const { data: appointments } = useAuthenticatedConvexQuery(
@@ -257,7 +327,7 @@ export default function UserDashboard() {
 
       {/* Mobile alert banner — after header buttons */}
       {activeAlerts.length > 0 && (
-        <div className="mt-2 lg:hidden">
+        <div className="mt-2 md:hidden">
           <Link
             href="/my-space/settings?tab=dossier"
             className="flex items-center gap-2.5 overflow-hidden rounded-xl bg-rose-500/10 px-3 py-2.5 transition-colors hover:bg-rose-500/15"
@@ -278,19 +348,19 @@ export default function UserDashboard() {
       <motion.div
         initial={{ opacity: 0, y: 5 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative mt-3 min-h-0 flex-1 overflow-hidden lg:mt-4"
+        className="relative mt-3 min-h-0 flex-1 overflow-hidden md:mt-4"
       >
-        {/* Desktop : grille 3 colonnes */}
-        <div className="hidden h-full gap-5 overflow-hidden lg:grid lg:grid-cols-12">
-          {/* ─── COL 1: Hero & Carte (3/12) ─── */}
+        {/* Desktop/Tablet : grille responsive — 2 colonnes (md) → 3 colonnes (lg) */}
+        <div className="hidden h-full gap-5 overflow-hidden md:grid md:grid-cols-2 lg:grid-cols-12">
+          {/* ─── COL 1: Hero & Carte — md:col-auto, lg:3/12 ─── */}
           <div className="citizen-scrollbar stagger-children flex min-h-0 flex-col gap-4 overflow-y-auto lg:col-span-3">
             {/* ── Mobile : Hero compact avec photo à gauche + boutons Ma Carte/iCV ── */}
             {isProfileLoading ? (
-              <div className="lg:hidden">
+              <div className="md:hidden">
                 <ProfileHeroSkeleton />
               </div>
             ) : (
-              <FlatCard className="relative shrink-0 lg:hidden">
+              <FlatCard className="relative shrink-0 md:hidden">
                 <div className="flex flex-col gap-3 p-3 min-[400px]:p-4">
                   {/* Row : Photo + Infos */}
                   <div className="flex items-center gap-4">
@@ -344,7 +414,7 @@ export default function UserDashboard() {
                             asChild
                             size="icon"
                             variant="ghost"
-                            className="ml-auto h-5 w-5 shrink-0 rounded-full hover:bg-[#EBE6DC] dark:hover:bg-[#383633]"
+                            className="ml-auto h-5 w-5 shrink-0 rounded-full hover:bg-citizen-s2"
                           >
                             <Link href="/my-space/profile/edit">
                               <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
@@ -359,7 +429,7 @@ export default function UserDashboard() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 gap-1.5 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
+                      className="h-8 gap-1.5 rounded-lg bg-citizen-s3 px-3 text-xs font-medium text-foreground transition-transform hover:bg-citizen-s3/80 active:scale-[0.97]"
                       onClick={() => setShowConsularCard(true)}
                     >
                       <Eye className="h-3 w-3" />
@@ -387,7 +457,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-8 gap-1.5 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
+                      className="h-8 gap-1.5 rounded-lg bg-citizen-s3 px-3 text-xs font-medium text-foreground transition-transform hover:bg-citizen-s3/80 active:scale-[0.97]"
                     >
                       <Link href="/my-space/cv">
                         <Briefcase className="h-3 w-3" />
@@ -401,11 +471,11 @@ export default function UserDashboard() {
 
             {/* ── Desktop : Hero vertical centré ── */}
             {isProfileLoading ? (
-              <div className="hidden lg:block">
+              <div className="hidden md:block">
                 <ProfileHeroSkeleton />
               </div>
             ) : (
-              <FlatCard className="relative hidden shrink-0 lg:block">
+              <FlatCard className="relative hidden shrink-0 md:block">
                 <div className="relative flex flex-col p-4">
                   <div className="absolute top-4 right-4">
                     <span className="text-xs font-bold text-muted-foreground">
@@ -430,7 +500,7 @@ export default function UserDashboard() {
                     </p>
                   </div>
                   {contacts?.phone && (
-                    <div className="mt-4 w-full rounded-lg bg-[#FDFCFA] p-2.5 dark:bg-[#21201E]/77">
+                    <div className="mt-4 w-full rounded-lg bg-citizen-s4 p-2.5">
                       <div className="flex items-center gap-2.5 text-sm font-medium">
                         <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                         <span className="flex-1 truncate text-sm font-bold">
@@ -440,7 +510,7 @@ export default function UserDashboard() {
                           asChild
                           size="icon"
                           variant="ghost"
-                          className="h-6 w-6 shrink-0 rounded-full hover:bg-[#EBE6DC] dark:hover:bg-[#383633]"
+                          className="h-6 w-6 shrink-0 rounded-full hover:bg-citizen-s2"
                         >
                           <Link href="/my-space/profile/edit">
                             <Pencil className="h-3 w-3 text-muted-foreground" />
@@ -454,11 +524,11 @@ export default function UserDashboard() {
             )}
 
             {/* ── Desktop : Carte Consulaire seule (iCV dans col3) ── */}
-            <FlatCard className="hidden shrink-0 lg:block">
+            <FlatCard className="hidden shrink-0 md:block">
               <div className="p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
-                    <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
+                    <div className="rounded-md bg-citizen-s2 p-1">
                       <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                     {t("mySpace.consularCard.title")}
@@ -486,7 +556,7 @@ export default function UserDashboard() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="mt-3 h-7 w-full gap-2 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
+                    className="mt-3 h-7 w-full gap-2 rounded-lg bg-citizen-s3 px-3 text-xs font-medium text-foreground transition-transform hover:bg-citizen-s3/80 active:scale-[0.97]"
                     onClick={() => setShowConsularCard(true)}
                   >
                     <Eye className="h-3 w-3" />
@@ -515,7 +585,7 @@ export default function UserDashboard() {
             {completionScore === 100 &&
               children.length === 0 &&
               activeAlerts.length > 0 && (
-                <FlatCard className="hidden shrink-0 lg:block">
+                <FlatCard className="hidden shrink-0 md:block">
                   <div className="flex flex-col p-4">
                     <div className="mb-3 flex items-center justify-between">
                       <span className="flex items-center gap-2.5 text-sm font-semibold text-rose-600 dark:text-rose-400">
@@ -586,11 +656,11 @@ export default function UserDashboard() {
 
             {/* Mon iCV — déplacé dans col1 quand dossier 100% */}
             {completionScore === 100 && (
-              <FlatCard className="hidden shrink-0 lg:block">
+              <FlatCard className="hidden shrink-0 md:block">
                 <div className="p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                      <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
+                      <div className="rounded-md bg-citizen-s2 p-1">
                         <Briefcase className="h-3 w-3 text-muted-foreground" />
                       </div>
                       Mon iCV
@@ -599,7 +669,7 @@ export default function UserDashboard() {
                       asChild
                       variant="ghost"
                       size="sm"
-                      className="h-5 w-5 p-0 hover:bg-[#EBE6DC] dark:hover:bg-[#383633]"
+                      className="h-5 w-5 p-0 hover:bg-citizen-s2"
                     >
                       <Link href="/my-space/cv">
                         <Pencil className="h-3 w-3 text-muted-foreground" />
@@ -650,7 +720,7 @@ export default function UserDashboard() {
                         ].map((i) => (
                           <div
                             key={i.l}
-                            className="flex items-center gap-2 rounded-lg bg-[#FDFCFA] p-2 text-xs dark:bg-[#21201E]/77"
+                            className="flex items-center gap-2 rounded-lg bg-citizen-s4 p-2 text-xs"
                           >
                             <i.icon className={cn("h-3 w-3", i.color)} />
                             <span className="flex-1 text-muted-foreground">
@@ -666,7 +736,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-7 w-full rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
+                      className="h-7 w-full rounded-lg bg-citizen-s3 px-3 text-xs font-medium text-foreground transition-transform hover:bg-citizen-s3/80 active:scale-[0.97]"
                     >
                       <Link href="/my-space/cv">Créer mon CV</Link>
                     </Button>
@@ -680,7 +750,7 @@ export default function UserDashboard() {
               <FlatCard className="flex flex-1 shrink-0 flex-col overflow-hidden">
                 <div className="flex shrink-0 items-center justify-between border-b border-foreground/5 p-3.5">
                   <div className="flex items-center gap-2.5">
-                    <div className="rounded-lg bg-[#EBE6DC] p-1.5 dark:bg-[#383633]">
+                    <div className="rounded-lg bg-citizen-s2 p-1.5">
                       <User className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                     <span className="text-sm font-bold text-muted-foreground">
@@ -711,7 +781,7 @@ export default function UserDashboard() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between rounded-lg bg-[#FDFCFA] p-3 dark:bg-[#21201E]/77">
+                  <div className="flex items-center justify-between rounded-lg bg-citizen-s4 p-3">
                     <div className="flex items-center gap-2.5">
                       <div className="rounded bg-background p-1.5">
                         <FileText className="h-4 w-4 text-muted-foreground" />
@@ -728,7 +798,7 @@ export default function UserDashboard() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] md:h-7 dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
+                      className="h-8 rounded-lg bg-citizen-s3 px-3 text-xs font-medium text-foreground transition-transform hover:bg-citizen-s3/80 active:scale-[0.97] md:h-7"
                       onClick={() => setShowDossierDetails(true)}
                     >
                       <Eye className="mr-1 h-3 w-3" /> Voir l&apos;état
@@ -741,10 +811,10 @@ export default function UserDashboard() {
             {/* Enfants — affiché uniquement si des enfants existent */}
             {children.length > 0 && (
               <FlatCard className="flex shrink-0 flex-col">
-                <div className="flex flex-col p-3 lg:p-4">
+                <div className="flex flex-col p-3 md:p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
-                      <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
+                      <div className="rounded-md bg-citizen-s2 p-1">
                         <Users className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                       Enfants
@@ -764,7 +834,7 @@ export default function UserDashboard() {
                         </Tooltip>
                       </TooltipProvider>
                     </span>
-                    <span className="rounded-full bg-[#EBE6DC] px-2 py-0.5 text-xs font-bold text-muted-foreground dark:bg-[#383633]">
+                    <span className="rounded-full bg-citizen-s2 px-2 py-0.5 text-xs font-bold text-muted-foreground">
                       {children.length}
                     </span>
                   </div>
@@ -775,9 +845,9 @@ export default function UserDashboard() {
                         <Link
                           key={child._id}
                           href={`/my-space/children/${child._id}`}
-                          className="flex min-w-[85%] flex-1 shrink-0 snap-start items-center gap-3 rounded-lg bg-[#FDFCFA] p-2.5 pr-4 transition-colors hover:bg-[#FDFCFA]/80 md:min-w-[220px] dark:bg-[#21201E]/77 dark:hover:bg-[#21201E]/80"
+                          className="flex min-w-[85%] flex-1 shrink-0 snap-start items-center gap-3 rounded-lg bg-citizen-s4 p-2.5 pr-4 transition-colors hover:bg-citizen-s4/80 md:min-w-[220px]"
                         >
-                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#EBE6DC] dark:bg-[#383633]">
+                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-citizen-s2">
                             <Baby className="h-3 w-3 text-muted-foreground" />
                           </div>
                           <div className="min-w-0 flex-1">
@@ -799,120 +869,75 @@ export default function UserDashboard() {
             )}
           </div>
 
-          {/* ─── COL 2: Données Profil (5/12) ─── */}
+          {/* ─── COL 2: Données Profil — md:col-auto, lg:5/12 ─── */}
           <div className="citizen-scrollbar stagger-children flex min-h-0 flex-col gap-4 overflow-y-auto lg:col-span-5">
-            {/* Démarches en cours */}
+            {/* Démarches en cours — carousel horizontal */}
             <FlatCard
               className={cn(
-                "flex shrink-0 flex-col lg:flex-1",
-                !latestRequest &&
+                "flex shrink-0 flex-col md:flex-1",
+                !(activeRequests && activeRequests.length > 0) &&
                   !(appointments && appointments.length > 0) &&
-                  "order-2 lg:order-0"
+                  "order-2 md:order-0"
               )}
             >
-              <div className="flex flex-1 flex-col p-3 lg:p-4">
-                <div className="mb-2 flex shrink-0 items-center justify-between lg:mb-3">
+              <div className="flex flex-1 flex-col p-3 md:p-4">
+                <div className="mb-2 flex shrink-0 items-center justify-between md:mb-3">
                   <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
-                    <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
+                    <div className="rounded-md bg-citizen-s2 p-1">
                       <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                     Démarches en cours
+                    {activeRequests && activeRequests.length > 0 && (
+                      <span className="rounded-full bg-citizen-s2 px-2 py-0.5 text-xs font-bold text-muted-foreground">
+                        {activeRequests.length}
+                      </span>
+                    )}
                   </span>
-                  <Button
-                    asChild
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] md:h-7 dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
-                  >
-                    <Link href="/my-space/services-demarches">
-                      Mes Démarches
-                    </Link>
-                  </Button>
-                </div>
-                <div className="grid flex-1 auto-rows-fr grid-cols-2 gap-2 min-[400px]:gap-2.5">
-                  {latestRequest ? (
+                  {activeRequests && activeRequests.length > 0 && (
                     <Link
-                      href={`/my-space/requests/${latestRequest.reference || latestRequest._id}`}
-                      className="flex flex-col gap-2 rounded-xl bg-amber-500/15 p-2.5 transition-colors hover:bg-amber-500/25 lg:rounded-lg lg:p-3 dark:bg-amber-500/10 dark:hover:bg-amber-500/15"
+                      href="/my-space/services-demarches?tab=demarches"
+                      className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      <div className="flex items-center gap-2">
-                        <div className="shrink-0 rounded-md bg-amber-500/10 p-1 lg:p-1.5">
-                          <FileText className="h-4 w-4 text-amber-600 lg:h-5 lg:w-5 dark:text-amber-400" />
-                        </div>
-                        <p className="line-clamp-2 flex-1 text-xs leading-tight font-bold text-foreground lg:text-sm">
-                          {getLocalizedValue(
-                            latestRequest.service?.name as any,
-                            i18n.language
-                          ) || "Service"}
-                        </p>
-                        {(() => {
-                          const cfg =
-                            REQUEST_STATUS_CONFIG[
-                              latestRequest.status as RequestStatus
-                            ]
-                          return (
-                            <Badge
-                              variant="secondary"
-                              className={cn(
-                                "h-4 shrink-0 px-1 py-0 text-[10px] font-medium lg:h-5 lg:px-1.5 lg:text-xs",
-                                cfg?.className
-                              )}
-                            >
-                              {cfg?.fallback ?? latestRequest.status}
-                            </Badge>
-                          )
-                        })()}
-                      </div>
-                      <p className="truncate text-center text-[10px] font-medium text-muted-foreground lg:text-xs">
-                        {(latestRequest.org as any)?.name}
-                      </p>
-                    </Link>
-                  ) : (
-                    <Link
-                      href="/my-space/services-demarches"
-                      className="flex flex-col gap-2 rounded-xl bg-amber-500/15 p-2.5 transition-colors hover:bg-amber-500/25 lg:rounded-lg lg:p-3 dark:bg-amber-500/10 dark:hover:bg-amber-500/15"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="shrink-0 rounded-md bg-amber-500/10 p-1 lg:p-1.5">
-                          <FileText className="h-4 w-4 text-amber-600 lg:h-5 lg:w-5 dark:text-amber-400" />
-                        </div>
-                        <p className="text-xs leading-tight font-bold text-foreground lg:text-sm">
-                          Renouvellement de passeport
-                        </p>
-                      </div>
-                      <p className="text-center text-[10px] font-medium text-muted-foreground lg:text-xs">
-                        Suggestion
-                      </p>
+                      {t("mySpace.requests.viewAll", "Tout voir")}
+                      <ArrowRight className="h-3 w-3" />
                     </Link>
                   )}
-                  <Link
-                    href="/services"
-                    className="flex flex-col items-center justify-center gap-2 rounded-lg bg-[#FDFCFA] p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 hover:text-foreground lg:p-3 dark:bg-[#21201E]/77 dark:hover:bg-[#21201E]/80"
-                  >
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EBE6DC] lg:h-8 lg:w-8 dark:bg-[#383633]">
-                      <Plus className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
-                    </div>
-                    <p className="text-[10px] font-medium lg:text-xs">
-                      Nouvelle démarche
-                    </p>
-                  </Link>
                 </div>
+                {activeRequests && activeRequests.length > 0 ? (
+                  <ActiveRequestsCarousel requests={activeRequests} />
+                ) : (
+                  <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl bg-citizen-s4 py-8">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-citizen-s2">
+                      <FileText className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {t("mySpace.requests.empty", "Aucune démarche en cours")}
+                    </p>
+                    <Button
+                      asChild
+                      size="sm"
+                      className="h-8 rounded-lg bg-primary px-4 text-xs font-medium text-white hover:bg-primary/90"
+                    >
+                      <Link href="/my-space/services-demarches">{t("mySpace.requests.newRequest", "Nouvelle démarche")}</Link>
+                    </Button>
+                  </div>
+                )}
               </div>
             </FlatCard>
 
             {/* Rendez-vous */}
             <FlatCard
               className={cn(
-                "flex shrink-0 flex-col lg:flex-1",
-                !latestRequest &&
+                "flex shrink-0 flex-col md:flex-1",
+                !(activeRequests && activeRequests.length > 0) &&
                   !(appointments && appointments.length > 0) &&
-                  "order-3 lg:order-0"
+                  "order-3 md:order-0"
               )}
             >
-              <div className="flex flex-1 flex-col p-3 lg:p-4">
-                <div className="mb-2 flex shrink-0 items-center justify-between lg:mb-3">
+              <div className="flex flex-1 flex-col p-3 md:p-4">
+                <div className="mb-2 flex shrink-0 items-center justify-between md:mb-3">
                   <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
-                    <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
+                    <div className="rounded-md bg-citizen-s2 p-1">
                       <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                     RDV
@@ -921,7 +946,7 @@ export default function UserDashboard() {
                     asChild
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] md:h-7 dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
+                    className="h-8 rounded-lg bg-citizen-s3 px-3 text-xs font-medium text-foreground transition-transform hover:bg-citizen-s3/80 active:scale-[0.97] md:h-7"
                   >
                     <Link href="/my-space/iagenda">iAgenda</Link>
                   </Button>
@@ -939,24 +964,24 @@ export default function UserDashboard() {
                             key={a._id}
                             href="/my-space/iagenda"
                             className={cn(
-                              "flex flex-col gap-2 rounded-xl p-2.5 transition-colors lg:rounded-lg lg:p-3",
+                              "flex flex-col gap-2 rounded-xl p-2.5 transition-colors md:rounded-lg md:p-3",
                               isPast
-                                ? "bg-[#EBE6DC] hover:bg-[#EBE6DC] dark:bg-[#383633] dark:hover:bg-[#2B2A28]/70"
+                                ? "bg-citizen-s2 hover:bg-citizen-s2/80"
                                 : "bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/10 dark:hover:bg-amber-500/15"
                             )}
                           >
                             <div className="flex items-center gap-2">
                               <div
                                 className={cn(
-                                  "shrink-0 rounded-md p-1 lg:p-1.5",
+                                  "shrink-0 rounded-md p-1 md:p-1.5",
                                   isPast
-                                    ? "bg-[#EBE6DC] dark:bg-[#383633]"
+                                    ? "bg-citizen-s2"
                                     : "bg-amber-500/10"
                                 )}
                               >
                                 <Calendar
                                   className={cn(
-                                    "h-4 w-4 lg:h-5 lg:w-5",
+                                    "h-4 w-4 md:h-5 md:w-5",
                                     isPast
                                       ? "text-muted-foreground"
                                       : "text-amber-600 dark:text-amber-400"
@@ -965,7 +990,7 @@ export default function UserDashboard() {
                               </div>
                               <p
                                 className={cn(
-                                  "line-clamp-2 text-xs leading-tight font-bold lg:text-sm",
+                                  "line-clamp-2 text-xs leading-tight font-bold md:text-sm",
                                   isPast
                                     ? "text-muted-foreground"
                                     : "text-foreground"
@@ -974,7 +999,7 @@ export default function UserDashboard() {
                                 {a.service?.name || "RDV Consulaire"}
                               </p>
                             </div>
-                            <p className="text-center text-[10px] font-medium text-muted-foreground lg:text-xs">
+                            <p className="text-center text-[10px] font-medium text-muted-foreground md:text-xs">
                               {format(
                                 new Date(a.date + "T00:00:00"),
                                 "dd MMM yyyy",
@@ -991,12 +1016,12 @@ export default function UserDashboard() {
                         )
                       })
                   ) : (
-                    <div className="flex flex-col gap-2 rounded-xl bg-amber-500/15 p-2.5 lg:rounded-lg lg:p-3 dark:bg-amber-500/10">
+                    <div className="flex flex-col gap-2 rounded-xl bg-amber-500/15 p-2.5 md:rounded-lg md:p-3 dark:bg-amber-500/10">
                       <div className="flex items-center gap-2">
-                        <div className="shrink-0 rounded-md bg-amber-500/10 p-1 lg:p-1.5">
-                          <Calendar className="h-4 w-4 text-amber-600 lg:h-5 lg:w-5 dark:text-amber-400" />
+                        <div className="shrink-0 rounded-md bg-amber-500/10 p-1 md:p-1.5">
+                          <Calendar className="h-4 w-4 text-amber-600 md:h-5 md:w-5 dark:text-amber-400" />
                         </div>
-                        <p className="text-xs font-medium text-muted-foreground lg:text-sm">
+                        <p className="text-xs font-medium text-muted-foreground md:text-sm">
                           Aucun RDV
                         </p>
                       </div>
@@ -1004,12 +1029,12 @@ export default function UserDashboard() {
                   )}
                   <Link
                     href="/my-space/iagenda"
-                    className="flex flex-col items-center justify-center gap-2 rounded-lg bg-[#FDFCFA] p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 hover:text-foreground lg:p-3 dark:bg-[#21201E]/77 dark:hover:bg-[#21201E]/80"
+                    className="flex flex-col items-center justify-center gap-2 rounded-lg bg-citizen-s4 p-2.5 text-muted-foreground transition-colors hover:bg-citizen-s4/80 hover:text-foreground md:p-3"
                   >
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EBE6DC] lg:h-8 lg:w-8 dark:bg-[#383633]">
-                      <Plus className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-citizen-s2 md:h-8 md:w-8">
+                      <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     </div>
-                    <p className="text-[10px] font-medium lg:text-xs">
+                    <p className="text-[10px] font-medium md:text-xs">
                       Prendre RDV
                     </p>
                   </Link>
@@ -1020,18 +1045,18 @@ export default function UserDashboard() {
             {/* Contact d'urgence et Représentations — monte en premier s'il n'y a pas d'activité */}
             <div
               className={cn(
-                "shrink-0 lg:flex-1",
-                !latestRequest &&
+                "shrink-0 md:flex-1",
+                !(activeRequests && activeRequests.length > 0) &&
                   !(appointments && appointments.length > 0) &&
-                  "order-1 lg:order-0"
+                  "order-1 md:order-0"
               )}
             >
               <AssistanceContactsWidget />
             </div>
           </div>
 
-          {/* ─── COL 3: Activity Widgets (4/12) ─── */}
-          <div className="citizen-scrollbar stagger-children flex min-h-0 flex-col gap-4 overflow-y-auto lg:col-span-4">
+          {/* ─── COL 3: Activity Widgets — hidden on tablet, lg:4/12 ─── */}
+          <div className="citizen-scrollbar stagger-children hidden min-h-0 flex-col gap-4 overflow-y-auto lg:flex lg:col-span-4">
             {/* Notifications (Horizontal scroll) — masqué quand déplacé vers col1 */}
             {activeAlerts.length > 0 &&
               !(completionScore === 100 && children.length === 0) && (
@@ -1083,7 +1108,7 @@ export default function UserDashboard() {
                 <div className="p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                      <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
+                      <div className="rounded-md bg-citizen-s2 p-1">
                         <Briefcase className="h-3 w-3 text-muted-foreground" />
                       </div>
                       Mon iCV
@@ -1092,7 +1117,7 @@ export default function UserDashboard() {
                       asChild
                       variant="ghost"
                       size="sm"
-                      className="h-5 w-5 p-0 hover:bg-[#EBE6DC] dark:hover:bg-[#383633]"
+                      className="h-5 w-5 p-0 hover:bg-citizen-s2"
                     >
                       <Link href="/my-space/cv">
                         <Pencil className="h-3 w-3 text-muted-foreground" />
@@ -1143,7 +1168,7 @@ export default function UserDashboard() {
                         ].map((i) => (
                           <div
                             key={i.l}
-                            className="flex items-center gap-2 rounded-lg bg-[#FDFCFA] p-2 text-xs dark:bg-[#21201E]/77"
+                            className="flex items-center gap-2 rounded-lg bg-citizen-s4 p-2 text-xs"
                           >
                             <i.icon className={cn("h-3 w-3", i.color)} />
                             <span className="flex-1 text-muted-foreground">
@@ -1159,7 +1184,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-7 w-full rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
+                      className="h-7 w-full rounded-lg bg-citizen-s3 px-3 text-xs font-medium text-foreground transition-transform hover:bg-citizen-s3/80 active:scale-[0.97]"
                     >
                       <Link href="/my-space/cv">Créer mon CV</Link>
                     </Button>
@@ -1173,7 +1198,7 @@ export default function UserDashboard() {
               <div className="flex flex-1 flex-col p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                    <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
+                    <div className="rounded-md bg-citizen-s2 p-1">
                       <Megaphone className="h-3 w-3 text-muted-foreground" />
                     </div>
                     Actualités
@@ -1182,7 +1207,7 @@ export default function UserDashboard() {
                     asChild
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] md:h-7 dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
+                    className="h-8 rounded-lg bg-citizen-s3 px-3 text-xs font-medium text-foreground transition-transform hover:bg-citizen-s3/80 active:scale-[0.97] md:h-7"
                   >
                     <Link href="/news">Tout voir</Link>
                   </Button>
@@ -1193,7 +1218,7 @@ export default function UserDashboard() {
                       <Link
                         key={post._id}
                         href={`/news/${post.slug}`}
-                        className="group block rounded-lg bg-[#FDFCFA] p-3 transition-colors hover:bg-[#FDFCFA]/80 dark:bg-[#21201E]/77 dark:hover:bg-[#21201E]/80"
+                        className="group block rounded-lg bg-citizen-s4 p-3 transition-colors hover:bg-citizen-s4/80"
                       >
                         <p className="mb-1 line-clamp-2 text-sm leading-snug font-semibold group-hover:text-primary dark:group-hover:text-blue-400">
                           {post.title}
@@ -1218,17 +1243,12 @@ export default function UserDashboard() {
           </div>
         </div>
 
-        {/* ═══ Mobile : pages horizontales snap (pas de scroll vertical) ═══ */}
+        {/* ═══ Mobile : flux vertical unique ═══ */}
         <div
-          ref={mobileScrollRef}
-          onScroll={handleMobileScroll}
-          className="disable-scrollbars flex h-[calc(100%-0.5rem)] snap-x snap-mandatory overflow-x-auto lg:hidden"
+          className="citizen-scrollbar flex h-full flex-col gap-2.5 overflow-y-auto md:hidden"
         >
-          {/* Page 1 mobile : Profil — non-scrollable, cartes flex */}
-          <div className="h-full w-full shrink-0 snap-start overflow-hidden">
-            <div className="flex h-full flex-col gap-2.5">
               {/* Hero mobile — modèle vertical */}
-              <FlatCard className="relative min-h-0 flex-3">
+              <FlatCard className="relative shrink-0">
                 <div className="flex h-full flex-col p-3 min-[400px]:p-4">
                   <div className="flex shrink-0 flex-col gap-1.5">
                     <div className="flex items-center">
@@ -1256,9 +1276,9 @@ export default function UserDashboard() {
 
                   {/* Zone centrale flex : Photo + Nom + Tel */}
                   <div className="my-2 flex min-h-0 flex-1 items-center gap-4">
-                    <Avatar className="h-[100px] w-[100px] shrink-0 bg-muted">
+                    <Avatar className="h-16 w-16 shrink-0 bg-muted min-[400px]:h-20 min-[400px]:w-20">
                       <AvatarImage src={avatarUrl} />
-                      <AvatarFallback className="bg-primary text-3xl font-bold text-white">
+                      <AvatarFallback className="bg-primary text-2xl font-bold text-white min-[400px]:text-3xl">
                         {firstName?.[0]}
                         {lastName?.[0]}
                       </AvatarFallback>
@@ -1280,7 +1300,7 @@ export default function UserDashboard() {
                             asChild
                             size="icon"
                             variant="ghost"
-                            className="h-5 w-5 shrink-0 rounded-full hover:bg-[#EBE6DC] dark:hover:bg-[#383633]"
+                            className="h-5 w-5 shrink-0 rounded-full hover:bg-citizen-s2"
                           >
                             <Link href="/my-space/profile/edit">
                               <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
@@ -1296,7 +1316,7 @@ export default function UserDashboard() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-9 gap-1.5 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
+                      className="h-9 gap-1.5 rounded-lg bg-citizen-s3 px-3 text-xs font-medium text-foreground transition-transform hover:bg-citizen-s3/80 active:scale-[0.97]"
                       onClick={() => setShowConsularCard(true)}
                     >
                       <Eye className="h-3 w-3" />
@@ -1315,7 +1335,7 @@ export default function UserDashboard() {
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="h-9 gap-1.5 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground transition-transform hover:bg-[#DCD7C7]/80 active:scale-[0.97] dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
+                      className="h-9 gap-1.5 rounded-lg bg-citizen-s3 px-3 text-xs font-medium text-foreground transition-transform hover:bg-citizen-s3/80 active:scale-[0.97]"
                     >
                       <Link href="/my-space/cv">
                         <Briefcase className="h-3 w-3" />
@@ -1326,87 +1346,59 @@ export default function UserDashboard() {
                 </div>
               </FlatCard>
 
-              {/* Démarches mobile */}
-              <FlatCard className="min-h-0 flex-2">
-                <div className="flex h-full flex-col p-3">
+              {/* Démarches mobile — carousel */}
+              <FlatCard className="shrink-0">
+                <div className="flex flex-col p-3">
                   <div className="mb-2 flex shrink-0 items-center justify-between">
                     <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
-                      <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
+                      <div className="rounded-md bg-citizen-s2 p-1">
                         <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                       Démarches en cours
+                      {activeRequests && activeRequests.length > 0 && (
+                        <span className="rounded-full bg-citizen-s2 px-2 py-0.5 text-xs font-bold text-muted-foreground">
+                          {activeRequests.length}
+                        </span>
+                      )}
                     </span>
-                    <Button
-                      asChild
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
-                    >
-                      <Link href="/my-space/services-demarches">
-                        Mes Démarches
-                      </Link>
-                    </Button>
-                  </div>
-                  <div className="grid min-h-0 flex-1 grid-cols-2 gap-2">
-                    {latestRequest ? (
+                    {activeRequests && activeRequests.length > 0 && (
                       <Link
-                        href={`/my-space/requests/${latestRequest.reference || latestRequest._id}`}
-                        className="flex flex-col gap-2 rounded-xl bg-amber-500/15 p-2.5 transition-colors hover:bg-amber-500/25 dark:bg-amber-500/10"
+                        href="/my-space/services-demarches?tab=demarches"
+                        className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                       >
-                        <div className="flex items-center gap-2">
-                          <div className="shrink-0 rounded-md bg-amber-500/10 p-1">
-                            <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                          </div>
-                          <p className="line-clamp-2 flex-1 text-xs leading-tight font-bold text-foreground">
-                            {getLocalizedValue(
-                              latestRequest.service?.name as any,
-                              i18n.language
-                            ) || "Service"}
-                          </p>
-                        </div>
-                        <p className="truncate text-center text-[10px] font-medium text-muted-foreground">
-                          {(latestRequest.org as any)?.name}
-                        </p>
-                      </Link>
-                    ) : (
-                      <Link
-                        href="/my-space/services-demarches"
-                        className="flex flex-col gap-2 rounded-xl bg-amber-500/15 p-2.5 dark:bg-amber-500/10"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="shrink-0 rounded-md bg-amber-500/10 p-1">
-                            <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                          </div>
-                          <p className="text-xs leading-tight font-bold text-foreground">
-                            Renouvellement de passeport
-                          </p>
-                        </div>
-                        <p className="text-center text-[10px] font-medium text-muted-foreground">
-                          Suggestion
-                        </p>
+                        {t("mySpace.requests.viewAll", "Tout voir")}
+                        <ArrowRight className="h-3 w-3" />
                       </Link>
                     )}
-                    <Link
-                      href="/services"
-                      className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-[#FDFCFA] p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 dark:bg-[#21201E]/77 dark:hover:bg-[#21201E]/80"
-                    >
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EBE6DC] dark:bg-[#383633]">
-                        <Plus className="h-3.5 w-3.5" />
-                      </div>
-                      <p className="text-[10px] font-medium">
-                        Nouvelle démarche
-                      </p>
-                    </Link>
                   </div>
+                  {activeRequests && activeRequests.length > 0 ? (
+                    <ActiveRequestsCarousel requests={activeRequests} />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl bg-citizen-s4 py-6">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-citizen-s2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <p className="text-xs font-medium text-muted-foreground">
+                        {t("mySpace.requests.empty", "Aucune démarche en cours")}
+                      </p>
+                      <Button
+                        asChild
+                        size="sm"
+                        className="h-7 rounded-lg bg-primary px-3 text-xs font-medium text-white hover:bg-primary/90"
+                      >
+                        <Link href="/services">{t("mySpace.requests.newRequest", "Nouvelle démarche")}</Link>
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </FlatCard>
 
               {/* RDV mobile */}
-              <FlatCard className="min-h-0 flex-2">
-                <div className="flex h-full flex-col p-3">
+              <FlatCard className="shrink-0">
+                <div className="flex flex-col p-3">
                   <div className="mb-2 flex shrink-0 items-center justify-between">
                     <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
-                      <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
+                      <div className="rounded-md bg-citizen-s2 p-1">
                         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                       RDV
@@ -1415,7 +1407,7 @@ export default function UserDashboard() {
                       asChild
                       variant="ghost"
                       size="sm"
-                      className="h-7 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
+                      className="h-7 rounded-lg bg-citizen-s3 px-3 text-xs font-medium text-foreground hover:bg-citizen-s3/80"
                     >
                       <Link href="/my-space/iagenda">iAgenda</Link>
                     </Button>
@@ -1432,7 +1424,7 @@ export default function UserDashboard() {
                             className={cn(
                               "flex flex-col gap-2 rounded-xl p-2.5 transition-colors",
                               isPast
-                                ? "bg-[#EBE6DC] hover:bg-[#EBE6DC] dark:bg-[#383633] dark:hover:bg-[#2B2A28]/70"
+                                ? "bg-citizen-s2 hover:bg-citizen-s2/80"
                                 : "bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/10"
                             )}
                           >
@@ -1441,7 +1433,7 @@ export default function UserDashboard() {
                                 className={cn(
                                   "shrink-0 rounded-md p-1",
                                   isPast
-                                    ? "bg-[#EBE6DC] dark:bg-[#383633]"
+                                    ? "bg-citizen-s2"
                                     : "bg-amber-500/10"
                                 )}
                               >
@@ -1490,9 +1482,9 @@ export default function UserDashboard() {
                     )}
                     <Link
                       href="/my-space/iagenda"
-                      className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-[#FDFCFA] p-2.5 text-muted-foreground transition-colors hover:bg-[#FDFCFA]/80 dark:bg-[#21201E]/77 dark:hover:bg-[#21201E]/80"
+                      className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-citizen-s4 p-2.5 text-muted-foreground transition-colors hover:bg-citizen-s4/80"
                     >
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EBE6DC] dark:bg-[#383633]">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-citizen-s2">
                         <Plus className="h-3.5 w-3.5" />
                       </div>
                       <p className="text-[10px] font-medium">Prendre RDV</p>
@@ -1500,100 +1492,59 @@ export default function UserDashboard() {
                   </div>
                 </div>
               </FlatCard>
-            </div>
-          </div>
 
-          {/* Page 2 mobile : Actualités */}
-          <div className="citizen-scrollbar h-full w-full shrink-0 snap-start overflow-y-auto p-1">
-            <FlatCard className="flex min-h-full flex-col">
-              <div className="flex flex-1 flex-col p-4">
-                <div className="mb-4 flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                    <div className="rounded-md bg-[#EBE6DC] p-1 dark:bg-[#383633]">
-                      <Megaphone className="h-3.5 w-3.5 text-muted-foreground" />
-                    </div>
-                    Actualités
-                  </span>
-                  <Button
-                    asChild
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 rounded-lg bg-[#DCD7C7] px-3 text-xs font-medium text-foreground hover:bg-[#DCD7C7]/80 dark:bg-[#4A4744]/40 dark:hover:bg-[#4A4744]/40"
-                  >
-                    <Link href="/news">Tout voir</Link>
-                  </Button>
-                </div>
-                {posts && posts.length > 0 ? (
-                  <div className="flex-1 space-y-3">
-                    {posts.map((post: any) => (
-                      <Link
-                        key={post._id}
-                        href={`/news/${post.slug}`}
-                        className="group block rounded-xl bg-[#FDFCFA] p-4 transition-colors hover:bg-[#FDFCFA]/80 dark:bg-[#21201E]/77 dark:hover:bg-[#21201E]/80"
-                      >
-                        <p className="mb-1.5 line-clamp-2 text-sm leading-snug font-semibold group-hover:text-primary dark:group-hover:text-blue-400">
-                          {post.title}
-                        </p>
-                        <p className="text-xs font-medium text-muted-foreground uppercase">
-                          {format(
-                            new Date(post.publishedAt ?? post._creationTime),
-                            "dd MMM yyyy",
-                            { locale: fr }
-                          )}
-                        </p>
-                      </Link>
-                    ))}
+              {/* Actualités mobile — dans le flux vertical */}
+              <FlatCard className="shrink-0">
+                <div className="flex flex-col p-3">
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                      <div className="rounded-md bg-citizen-s2 p-1">
+                        <Megaphone className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      Actualités
+                    </span>
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 rounded-lg bg-citizen-s3 px-3 text-xs font-medium text-foreground hover:bg-citizen-s3/80"
+                    >
+                      <Link href="/news">Tout voir</Link>
+                    </Button>
                   </div>
-                ) : (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
-                    Aucune annonce pour le moment
-                  </p>
-                )}
-              </div>
-            </FlatCard>
-          </div>
+                  {posts && posts.length > 0 ? (
+                    <div className="space-y-2.5">
+                      {posts.map((post: any) => (
+                        <Link
+                          key={post._id}
+                          href={`/news/${post.slug}`}
+                          className="group block rounded-xl bg-citizen-s4 p-3 transition-colors hover:bg-citizen-s4/80"
+                        >
+                          <p className="mb-1 line-clamp-2 text-sm leading-snug font-semibold group-hover:text-primary dark:group-hover:text-blue-400">
+                            {post.title}
+                          </p>
+                          <p className="text-xs font-medium text-muted-foreground uppercase">
+                            {format(
+                              new Date(post.publishedAt ?? post._creationTime),
+                              "dd MMM yyyy",
+                              { locale: fr }
+                            )}
+                          </p>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="py-4 text-center text-sm text-muted-foreground">
+                      Aucune annonce
+                    </p>
+                  )}
+                </div>
+              </FlatCard>
         </div>
       </motion.div>
 
       {/* Bouton flottant Appeler — mobile uniquement */}
-      <MobileCallFAB
-        variant={mobilePageIndex === 1 ? "vertical" : "horizontal"}
-      />
-
-      {/* Badge flottant Actualités — mobile uniquement */}
-      <AnimatePresence>
-        {mobilePageIndex === 0 && (
-          <motion.button
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            transition={{ type: "spring", damping: 20, stiffness: 300 }}
-            onClick={scrollToActualites}
-            className="fixed top-1/2 right-0 z-50 flex -translate-y-1/2 items-center justify-center rounded-l-full bg-foreground/47 px-1 py-8 text-xs font-bold tracking-widest text-background uppercase shadow-xl lg:hidden dark:bg-foreground/25 dark:text-white"
-          >
-            <span className="block rotate-180 whitespace-nowrap [writing-mode:vertical-rl]">
-              Actualités
-            </span>
-          </motion.button>
-        )}
-      </AnimatePresence>
-      {/* Indicateur retour — mobile page 2 */}
-      <AnimatePresence>
-        {mobilePageIndex === 1 && (
-          <motion.button
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            transition={{ type: "spring", damping: 20, stiffness: 300 }}
-            onClick={scrollToDashboard}
-            className="fixed top-1/2 right-0 z-50 flex -translate-y-1/2 items-center justify-center rounded-l-full bg-foreground/47 px-1 py-8 text-xs font-bold tracking-widest text-background uppercase shadow-xl lg:hidden dark:bg-foreground/25 dark:text-white"
-          >
-            <span className="block rotate-180 whitespace-nowrap [writing-mode:vertical-rl]">
-              Tableau de bord
-            </span>
-          </motion.button>
-        )}
-      </AnimatePresence>
+      <MobileCallFAB variant="horizontal" />
 
       {/* Floating Consular Card Dialog */}
       <AnimatePresence>
@@ -1644,12 +1595,12 @@ export default function UserDashboard() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 350 }}
-              className="relative flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border-none bg-[#F4F3ED] shadow-2xl dark:bg-[#21201E]/77"
+              className="relative flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border-none bg-secondary shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-border/50 bg-background/5 p-4">
                 <div className="flex items-center gap-2">
-                  <div className="rounded-lg bg-[#EBE6DC] p-1.5 dark:bg-[#383633]">
+                  <div className="rounded-lg bg-citizen-s2 p-1.5">
                     <User className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div>
@@ -1674,7 +1625,7 @@ export default function UserDashboard() {
                   {dossierItems.map((item) => (
                     <div
                       key={item.label}
-                      className="relative flex flex-col items-center gap-1.5 rounded-xl bg-[#FDFCFA] px-2 py-3 text-center dark:bg-[#21201E]/77"
+                      className="relative flex flex-col items-center gap-1.5 rounded-xl bg-citizen-s4 px-2 py-3 text-center"
                     >
                       <div
                         className={cn(

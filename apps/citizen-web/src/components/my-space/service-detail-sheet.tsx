@@ -1,7 +1,6 @@
 /**
- * Service Detail Sheet — panneau lateral mobile-first.
- * Remplace les ServiceDetailModal dupliques dans 3 fichiers.
- * Utilise Sheet (glisse depuis la droite) pour une meilleure UX mobile.
+ * Service Detail Sheet — bottom sheet mobile-first.
+ * Uses the reusable BottomSheet component.
  */
 
 import { sanitizeHtml } from "@workspace/shared/utils/sanitize";
@@ -15,6 +14,7 @@ import {
 	PlusCircle,
 	ShieldAlert,
 	Users,
+	X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getCategoryConfig } from "@/lib/service-categories";
@@ -23,14 +23,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -91,187 +84,191 @@ export function ServiceDetailSheet({
 		admin_services: "bg-muted text-muted-foreground",
 	};
 
+	const footerContent = !isAvailableInJurisdiction ? (
+		<div className="flex w-full items-center gap-2 rounded-xl bg-muted p-3 text-sm text-muted-foreground">
+			<ShieldAlert className="h-4 w-4 shrink-0" />
+			<span>{t("services.notAvailableInJurisdiction", "Non disponible dans votre juridiction")}</span>
+		</div>
+	) : !isEligible ? (
+		<div className="flex w-full items-center gap-2 rounded-xl bg-warning/10 p-3 text-sm text-warning">
+			<ShieldAlert className="h-4 w-4 shrink-0" />
+			<span>{t("services.notEligible", "Vous n'etes pas eligible a ce service")}</span>
+		</div>
+	) : (
+		<Button onClick={onCreateRequest} className="w-full gap-2 rounded-xl">
+			<PlusCircle className="h-4 w-4" />
+			{t("services.modal.createRequest", "Effectuer cette demarche")}
+		</Button>
+	);
+
 	return (
-		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent
-				side="right"
-				className="w-full sm:max-w-lg overflow-y-auto"
-			>
-				<SheetHeader className="pb-0">
-					{/* Header avec icon et badges */}
-					<div className="flex items-start gap-3">
-						<div className={cn("p-2.5 rounded-xl shrink-0", style.bgColor, style.color)}>
-							<Icon className="w-6 h-6" />
-						</div>
-						<div className="flex-1 min-w-0">
-							<SheetTitle className="text-lg font-bold leading-tight">
-								{serviceName}
-							</SheetTitle>
-							<div className="flex flex-wrap gap-1.5 mt-2">
-								<Badge variant="secondary" className={cn("text-[10px]", style.bgColor, style.color)}>
-									{categoryLabel}
+		<BottomSheet
+			open={open}
+			onOpenChange={onOpenChange}
+			footer={footerContent}
+			showCloseButton={false}
+		>
+			{/* Header with icon + badges + close */}
+			<div className="border-b border-border/30 px-4 pb-3 sm:px-5">
+				<div className="flex w-full items-start gap-3">
+					<div className={cn("shrink-0 rounded-xl p-2.5", style.bgColor, style.color)}>
+						<Icon className="h-5 w-5" />
+					</div>
+					<div className="min-w-0 flex-1">
+						<h3 className="text-base font-bold leading-tight sm:text-lg">
+							{serviceName}
+						</h3>
+						<div className="mt-1.5 flex flex-wrap gap-1.5">
+							<Badge variant="secondary" className={cn("text-[10px]", style.bgColor, style.color)}>
+								{categoryLabel}
+							</Badge>
+							{service.estimatedDays && (
+								<Badge variant="outline" className="gap-1 text-[10px]">
+									<Clock className="h-2.5 w-2.5" />
+									{service.estimatedDays} {t("services.days", { count: service.estimatedDays })}
 								</Badge>
-								{service.estimatedDays && (
-									<Badge variant="outline" className="gap-1 text-[10px]">
-										<Clock className="h-2.5 w-2.5" />
-										{service.estimatedDays} {t("services.days", { count: service.estimatedDays })}
-									</Badge>
-								)}
-								{service.requiresAppointment && (
-									<Badge variant="outline" className="gap-1 text-[10px] bg-warning/10 text-warning border-warning/20">
-										<Calendar className="h-2.5 w-2.5" />
-										{t("services.appointmentRequired", "RDV requis")}
-									</Badge>
-								)}
-							</div>
+							)}
+							{service.requiresAppointment && (
+								<Badge variant="outline" className="gap-1 border-warning/20 bg-warning/10 text-[10px] text-warning">
+									<Calendar className="h-2.5 w-2.5" />
+									{t("services.appointmentRequired", "RDV requis")}
+								</Badge>
+							)}
 						</div>
 					</div>
-
-					<SheetDescription className="mt-3 text-sm leading-relaxed">
-						{serviceDescription}
-					</SheetDescription>
-				</SheetHeader>
-
-				{/* Contenu scrollable */}
-				<div className="flex-1 space-y-4 px-4 pb-4">
-					{/* Disponibilite en ligne */}
-					{!isAvailableInJurisdiction ? (
-						<div className="flex items-start gap-3 p-3 rounded-xl bg-warning/10 border border-warning/20">
-							<MapPin className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-							<div>
-								<p className="text-sm font-medium text-warning">
-									{t("services.notAvailableOnlineTitle", "Non disponible en ligne")}
-								</p>
-								<p className="text-xs text-warning/80 mt-0.5">
-									{t("services.notAvailableOnlineDesc", "Ce service necessite une visite en personne.")}
-								</p>
-							</div>
-						</div>
-					) : (
-						<div className="flex items-center gap-2 p-3 rounded-xl bg-success/10 border border-success/20">
-							<Globe className="h-4 w-4 text-success shrink-0" />
-							<p className="text-sm font-medium text-success">
-								{t("services.availableOnline", "Disponible en ligne")}
-							</p>
-						</div>
-					)}
-
-					{/* Contenu detaille */}
-					{serviceContent && (
-						<>
-							<Separator />
-							<div>
-								<SectionLabel icon={FileText} label={t("services.detailsTitle", "Details")} />
-								<div
-									className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground mt-2"
-									// biome-ignore lint/security/noDangerouslySetInnerHtml: contenu sanitise
-									dangerouslySetInnerHTML={{ __html: sanitizeHtml(serviceContent) }}
-								/>
-							</div>
-						</>
-					)}
-
-					{/* Documents requis */}
-					{service.joinedDocuments && service.joinedDocuments.length > 0 && (
-						<>
-							<Separator />
-							<div>
-								<SectionLabel
-									icon={FileText}
-									label={`${t("services.requiredDocuments", "Documents requis")} (${service.joinedDocuments.length})`}
-								/>
-								<ul className="space-y-1.5 mt-2">
-									{service.joinedDocuments.map((doc, index) => (
-										<li
-											key={`${doc.type}-${index}`}
-											className="flex items-center gap-2.5 p-2 bg-foreground/[0.03] dark:bg-foreground/[0.06] rounded-lg"
-										>
-											<div className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
-												{index + 1}
-											</div>
-											<span className="flex-1 text-sm">
-												{getLocalizedValue(doc.label, i18n.language)}
-											</span>
-											{doc.required && (
-												<Badge variant="destructive" className="text-[10px] h-4 px-1.5 shrink-0">
-													{t("services.required", "Requis")}
-												</Badge>
-											)}
-										</li>
-									))}
-								</ul>
-							</div>
-						</>
-					)}
-
-					{/* Beneficiaires eligibles */}
-					{service.eligibleProfiles && service.eligibleProfiles.length > 0 && (
-						<>
-							<Separator />
-							<div>
-								<SectionLabel
-									icon={Users}
-									label={t("services.modal.eligibleBeneficiaries", "Beneficiaires eligibles")}
-								/>
-								<div className="flex flex-wrap gap-1.5 mt-2">
-									{service.eligibleProfiles.map((profileType: string) => (
-										<Badge
-											key={profileType}
-											variant="secondary"
-											className={cn("gap-1 text-[10px]", PROFILE_COLORS[profileType] ?? "bg-muted text-muted-foreground")}
-										>
-											<CheckCircle2 className="h-2.5 w-2.5" />
-											{t(`services.modal.profileTypes.${profileType}`)}
-										</Badge>
-									))}
-								</div>
-							</div>
-						</>
-					)}
-
-					{/* Informations importantes */}
-					<div className="bg-foreground/[0.03] dark:bg-foreground/[0.06] rounded-xl p-3">
-						<p className="text-xs font-semibold text-foreground mb-1.5">
-							{t("services.modal.importantInfo", "Informations importantes")}
-						</p>
-						<ul className="list-disc list-inside space-y-0.5 text-[11px] text-muted-foreground">
-							<li>{t("services.modal.infoPoints.docs", "Preparez tous les documents requis avant de commencer")}</li>
-							<li>{t("services.modal.infoPoints.delay", "Les delais de traitement sont indicatifs")}</li>
-							<li>{t("services.modal.infoPoints.identity", "Une piece d'identite valide est toujours requise")}</li>
-						</ul>
-					</div>
+					<button
+						type="button"
+						onClick={() => onOpenChange(false)}
+						className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted"
+					>
+						<X className="h-4 w-4" />
+					</button>
 				</div>
 
-				{/* Footer fixe avec CTA */}
-				<SheetFooter className="border-t bg-card">
-					{!isAvailableInJurisdiction ? (
-						<div className="flex items-center gap-2 p-3 rounded-xl bg-muted text-muted-foreground text-sm w-full">
-							<ShieldAlert className="h-4 w-4 shrink-0" />
-							<span>{t("services.notAvailableInJurisdiction", "Non disponible dans votre juridiction")}</span>
+				<p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+					{serviceDescription}
+				</p>
+			</div>
+
+			{/* Scrollable content */}
+			<div className="space-y-4 px-4 py-4 sm:px-5">
+				{/* Disponibilite en ligne */}
+				{!isAvailableInJurisdiction ? (
+					<div className="flex items-start gap-3 rounded-xl border border-warning/20 bg-warning/10 p-3">
+						<MapPin className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+						<div>
+							<p className="text-sm font-medium text-warning">
+								{t("services.notAvailableOnlineTitle", "Non disponible en ligne")}
+							</p>
+							<p className="mt-0.5 text-xs text-warning/80">
+								{t("services.notAvailableOnlineDesc", "Ce service necessite une visite en personne.")}
+							</p>
 						</div>
-					) : !isEligible ? (
-						<div className="flex items-center gap-2 p-3 rounded-xl bg-warning/10 text-warning text-sm w-full">
-							<ShieldAlert className="h-4 w-4 shrink-0" />
-							<span>{t("services.notEligible", "Vous n'etes pas eligible a ce service")}</span>
+					</div>
+				) : (
+					<div className="flex items-center gap-2 rounded-xl border border-success/20 bg-success/10 p-3">
+						<Globe className="h-4 w-4 shrink-0 text-success" />
+						<p className="text-sm font-medium text-success">
+							{t("services.availableOnline", "Disponible en ligne")}
+						</p>
+					</div>
+				)}
+
+				{/* Contenu detaille */}
+				{serviceContent && (
+					<>
+						<Separator />
+						<div>
+							<SectionLabel icon={FileText} label={t("services.detailsTitle", "Informations détaillées")} />
+							<div
+								className="prose prose-sm dark:prose-invert mt-2 max-w-none text-muted-foreground"
+								// biome-ignore lint/security/noDangerouslySetInnerHtml: contenu sanitise
+								dangerouslySetInnerHTML={{ __html: sanitizeHtml(serviceContent) }}
+							/>
 						</div>
-					) : (
-						<Button onClick={onCreateRequest} className="gap-2 w-full rounded-xl">
-							<PlusCircle className="h-4 w-4" />
-							{t("services.modal.createRequest", "Effectuer cette demarche")}
-						</Button>
-					)}
-				</SheetFooter>
-			</SheetContent>
-		</Sheet>
+					</>
+				)}
+
+				{/* Documents requis */}
+				{service.joinedDocuments && service.joinedDocuments.length > 0 && (
+					<>
+						<Separator />
+						<div>
+							<SectionLabel
+								icon={FileText}
+								label={`${t("services.requiredDocuments", "Documents requis")} (${service.joinedDocuments.length})`}
+							/>
+							<ul className="mt-2 space-y-1.5">
+								{service.joinedDocuments.map((doc, index) => (
+									<li
+										key={`${doc.type}-${index}`}
+										className="flex items-center gap-2.5 rounded-lg bg-foreground/[0.03] p-2 dark:bg-foreground/[0.06]"
+									>
+										<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+											{index + 1}
+										</div>
+										<span className="flex-1 text-sm">
+											{getLocalizedValue(doc.label, i18n.language)}
+										</span>
+										{doc.required && (
+											<Badge variant="destructive" className="h-4 shrink-0 px-1.5 text-[10px]">
+												{t("services.required", "Obligatoire")}
+											</Badge>
+										)}
+									</li>
+								))}
+							</ul>
+						</div>
+					</>
+				)}
+
+				{/* Beneficiaires eligibles */}
+				{service.eligibleProfiles && service.eligibleProfiles.length > 0 && (
+					<>
+						<Separator />
+						<div>
+							<SectionLabel
+								icon={Users}
+								label={t("services.modal.eligibleBeneficiaries", "Beneficiaires eligibles")}
+							/>
+							<div className="mt-2 flex flex-wrap gap-1.5">
+								{service.eligibleProfiles.map((profileType: string) => (
+									<Badge
+										key={profileType}
+										variant="secondary"
+										className={cn("gap-1 text-[10px]", PROFILE_COLORS[profileType] ?? "bg-muted text-muted-foreground")}
+									>
+										<CheckCircle2 className="h-2.5 w-2.5" />
+										{t(`services.modal.profileTypes.${profileType}`)}
+									</Badge>
+								))}
+							</div>
+						</div>
+					</>
+				)}
+
+				{/* Informations importantes */}
+				<div className="rounded-xl bg-foreground/[0.03] p-3 dark:bg-foreground/[0.06]">
+					<p className="mb-1.5 text-xs font-semibold text-foreground">
+						{t("services.modal.importantInfo", "Informations importantes")}
+					</p>
+					<ul className="list-inside list-disc space-y-0.5 text-[11px] text-muted-foreground">
+						<li>{t("services.modal.infoPoints.docs", "Preparez tous les documents requis avant de commencer")}</li>
+						<li>{t("services.modal.infoPoints.delay", "Les delais de traitement sont indicatifs")}</li>
+						<li>{t("services.modal.infoPoints.identity", "Une piece d'identite valide est toujours requise")}</li>
+					</ul>
+				</div>
+			</div>
+		</BottomSheet>
 	);
 }
 
-// ─── Sous-composant: Label de section iProfil ───────────────────────────────
+// ─── Sous-composant: Label de section ───────────────────────────────────────
 
 function SectionLabel({ icon: Icon, label }: { icon: React.ComponentType<{ className?: string }>; label: string }) {
 	return (
-		<span className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
-			<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+		<span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+			<div className="rounded-md bg-foreground/[0.06] p-1 dark:bg-foreground/[0.12]">
 				<Icon className="h-3.5 w-3.5 text-muted-foreground" />
 			</div>
 			{label}

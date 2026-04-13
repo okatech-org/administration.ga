@@ -121,7 +121,7 @@ export function MobileNavBar() {
     <>
       <nav className="fixed right-3 bottom-[calc(0.8rem+env(safe-area-inset-bottom,0px))] left-3 z-40 md:hidden">
         <div className="rounded-2xl bg-secondary backdrop-blur-md">
-          <div className="flex h-[60px] items-center justify-around px-2">
+          <div className="flex h-[var(--mobile-nav-height)] items-center justify-around px-2">
             <NavBarItem
               item={mainItems[0]}
               active={isActive(mainItems[0].url)}
@@ -354,7 +354,7 @@ export function MobileNavBar() {
               asChild
             >
               <Link
-                href="/services"
+                href="/my-space/services-demarches"
                 className="flex items-center justify-center gap-1.5"
               >
                 <Plus className="h-4 w-4 shrink-0" />

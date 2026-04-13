@@ -1588,6 +1588,72 @@ export const getLatestActive = authQuery({
 });
 
 /**
+ * List all active (non-terminal) requests for the current user.
+ * Used by the dashboard "Démarches en cours" widget.
+ */
+export const listMyActive = authQuery({
+  args: {},
+  handler: async (ctx) => {
+    const activeStatuses = [
+      RequestStatus.Draft,
+      RequestStatus.Submitted,
+      RequestStatus.Pending,
+      RequestStatus.UnderReview,
+      RequestStatus.InProduction,
+      RequestStatus.Validated,
+      RequestStatus.AppointmentScheduled,
+      RequestStatus.ReadyForPickup,
+    ];
+
+    // Fetch recent requests (take enough to cover active ones)
+    const requests = await ctx.db
+      .query("requests")
+      .withIndex("by_user_status", (q) => q.eq("userId", ctx.user._id))
+      .order("desc")
+      .take(50);
+
+    const activeRequests = requests.filter((r) =>
+      activeStatuses.includes(r.status),
+    );
+
+    // Batch-fetch related data
+    const orgIds = [...new Set(activeRequests.map((r) => r.orgId))];
+    const orgServiceIds = [...new Set(activeRequests.map((r) => r.orgServiceId))];
+
+    const [orgs, orgServices] = await Promise.all([
+      Promise.all(orgIds.map((id) => ctx.db.get(id))),
+      Promise.all(orgServiceIds.map((id) => ctx.db.get(id))),
+    ]);
+
+    const orgMap = new Map(orgs.filter(Boolean).map((o) => [o!._id, o!]));
+    const orgServiceMap = new Map(
+      orgServices.filter(Boolean).map((os) => [os!._id, os!]),
+    );
+
+    const serviceIds = [
+      ...new Set(orgServices.filter(Boolean).map((os) => os!.serviceId)),
+    ];
+    const services = await Promise.all(serviceIds.map((id) => ctx.db.get(id)));
+    const serviceMap = new Map(
+      services.filter(Boolean).map((s) => [s!._id, s!]),
+    );
+
+    return activeRequests.map((r) => {
+      const orgService = orgServiceMap.get(r.orgServiceId);
+      const service = orgService ? serviceMap.get(orgService.serviceId) : null;
+      return {
+        _id: r._id,
+        _creationTime: r._creationTime,
+        status: r.status,
+        reference: r.reference,
+        org: orgMap.get(r.orgId) ?? null,
+        service: service ?? null,
+      };
+    });
+  },
+});
+
+/**
  * Get dashboard stats for current user
  */
 export const getDashboardStats = authQuery({

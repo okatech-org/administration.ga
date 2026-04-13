@@ -33,11 +33,24 @@ interface MySpaceWrapperProps {
   className?: string
 }
 
+function useIsTablet() {
+  const [isTablet, setIsTablet] = useState(false)
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 768px) and (max-width: 1023px)")
+    const onChange = () => setIsTablet(mql.matches)
+    mql.addEventListener("change", onChange)
+    setIsTablet(mql.matches)
+    return () => mql.removeEventListener("change", onChange)
+  }, [])
+  return isTablet
+}
+
 export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
   const consularThemeValue = useConsularThemeState()
+  const isTablet = useIsTablet()
 
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
-  const [isExpanded, setIsExpanded] = useState(() => {
+  const [userExpanded, setUserExpanded] = useState(() => {
     if (typeof window === "undefined") return true
     try {
       const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY)
@@ -47,14 +60,17 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
     }
   })
 
+  // Force collapsed on tablet (md–lg), respect user preference on desktop (lg+)
+  const isExpanded = isTablet ? false : userExpanded
+
   useEffect(() => {
     if (!mounted) return
     try {
-      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(isExpanded))
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(userExpanded))
     } catch {
       // Ignore localStorage errors
     }
-  }, [isExpanded, mounted])
+  }, [userExpanded, mounted])
 
   return (
     <ConsularThemeContext.Provider value={consularThemeValue}>
@@ -72,7 +88,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
           <div className="h-full rounded-2xl bg-secondary overflow-hidden">
             <MySpaceSidebar
               isExpanded={isExpanded}
-              onToggle={() => setIsExpanded((prev) => !prev)}
+              onToggle={() => setUserExpanded((prev) => !prev)}
             />
           </div>
         </div>
@@ -80,7 +96,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
         <main
           className={cn(
             "flex-1 overflow-y-auto citizen-scrollbar",
-            "px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4",
+            "px-3 min-[400px]:px-4 pt-3 pb-[calc(var(--mobile-nav-height)+12px)] md:px-4 md:pt-4 md:pb-4",
             className
           )}
         >
@@ -175,7 +191,7 @@ export function MySpaceHeader() {
             className="h-9 rounded-lg bg-primary text-white hover:bg-primary/90 font-medium text-xs min-w-0 flex-1 overflow-hidden px-3"
             asChild
           >
-            <Link href="/services" className="flex items-center gap-1.5 justify-center">
+            <Link href="/my-space/services-demarches" className="flex items-center gap-1.5 justify-center">
               <Plus className="h-4 w-4 shrink-0" />
               <span className="hidden min-[460px]:inline truncate">Nouvelle démarche</span>
               <span className="inline min-[460px]:hidden truncate">Démarche</span>
@@ -216,7 +232,7 @@ export function MySpaceHeader() {
             className="h-9 px-4 rounded-lg bg-primary text-white hover:bg-primary/90 font-medium"
             asChild
           >
-            <Link href="/services" className="flex items-center gap-1.5">
+            <Link href="/my-space/services-demarches" className="flex items-center gap-1.5">
               <Plus className="h-4 w-4 shrink-0" />
               Nouvelle démarche
             </Link>
