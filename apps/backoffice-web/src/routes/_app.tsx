@@ -39,7 +39,7 @@ function SuperadminLayout() {
 						/>
 					</div>
 				</div>
-				<main className="flex-1 min-h-full overflow-y-auto citizen-scrollbar">
+				<main className="flex-1 h-full min-h-0 overflow-y-auto citizen-scrollbar">
 					<Outlet />
 				</main>
 				<BackofficeIAstedWindow />

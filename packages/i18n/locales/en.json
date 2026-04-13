@@ -3283,8 +3283,15 @@
 			"filterOrgs": "Organizations",
 			"filterAssocs": "Associations",
 			"filterCompanies": "Companies",
+			"filterDiplomatic": "Diplomatic posts",
 			"noResults": "No results.",
-			"message": "Message"
+			"message": "Message",
+			"badgeStandard": "Standard",
+			"badgeDirect": "Direct",
+			"suggestedContacts": "Suggested contacts",
+			"sectionRepresentations": "Representations",
+			"sectionMembers": "Diplomatic staff",
+			"sectionOther": "Other contacts"
 		},
 		"empty": {
 			"inbox": "No mail",

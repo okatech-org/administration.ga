@@ -45,6 +45,7 @@ import {
 	PhoneOff,
 	Reply,
 	Send,
+	Shield,
 	Star,
 	Trash2,
 	Truck,
@@ -721,7 +722,8 @@ function ComposeDialog({
 	// Recipient search state
 	const [recipientSearch, setRecipientSearch] = useState("");
 	const [recipientPopoverOpen, setRecipientPopoverOpen] = useState(false);
-	const [typeFilter, setTypeFilter] = useState<MailOwnerType | null>(null);
+	const [typeFilter, setTypeFilter] = useState<MailOwnerType | "diplomatic" | null>(null);
+	const isDiplomaticFilter = typeFilter === "diplomatic";
 	const [selectedRecipient, setSelectedRecipient] = useState<{
 		ownerId: string;
 		ownerType: string;
@@ -761,14 +763,26 @@ function ComposeDialog({
 		}
 	}, [open, initialData]);
 
-	const searchArgs =
-		debouncedSearch.trim().length >= 2
+	// Standard search (non-diplomatic)
+	const standardSearchArgs =
+		!isDiplomaticFilter && debouncedSearch.trim().length >= 2
 			? { query: debouncedSearch.trim(), ...(typeFilter ? { typeFilter } : {}) }
 			: ("skip" as const);
-	const { data: searchResults } = useAuthenticatedConvexQuery(
+	const { data: standardSearchResults } = useAuthenticatedConvexQuery(
 		api.functions.digitalMail.searchRecipients,
-		searchArgs,
+		standardSearchArgs,
 	);
+
+	// Diplomatic search (representation contacts)
+	const diplomaticSearchArgs = isDiplomaticFilter
+		? { query: debouncedSearch.trim() || undefined }
+		: ("skip" as const);
+	const { data: diplomaticSearchResults } = useAuthenticatedConvexQuery(
+		api.functions.citizenContacts.searchCitizenRecipients,
+		diplomaticSearchArgs,
+	);
+
+	const searchResults = isDiplomaticFilter ? diplomaticSearchResults : standardSearchResults;
 
 	const senderAccount = accounts[senderAccountIdx];
 
@@ -893,6 +907,11 @@ function ComposeDialog({
 							{[
 								{ value: null, label: t("iboite.compose.filterAll") },
 								{
+									value: "diplomatic" as const,
+									label: t("iboite.compose.filterDiplomatic"),
+									icon: Shield,
+								},
+								{
 									value: MailOwnerType.Profile,
 									label: t("iboite.compose.filterProfiles"),
 									icon: User,
@@ -975,63 +994,187 @@ function ComposeDialog({
 										onValueChange={handleRecipientSearchChange}
 									/>
 									<CommandList>
-										{debouncedSearch.trim().length < 2 ? (
-											<CommandEmpty>
-												{t(
-													"iboite.compose.typeToSearch",
-													"Tapez au moins 2 caractères...",
-												)}
-											</CommandEmpty>
-										) : !searchResults ? (
-											<div className="flex items-center justify-center py-4">
-												<Loader2 className="size-4 animate-spin text-muted-foreground" />
-											</div>
-										) : searchResults.length === 0 ? (
-											<CommandEmpty>
-												{t("iboite.compose.noResults")}
-											</CommandEmpty>
+										{isDiplomaticFilter ? (
+											/* ── Diplomatic mode: show representations + public members ── */
+											!searchResults ? (
+												<div className="flex items-center justify-center py-4">
+													<Loader2 className="size-4 animate-spin text-muted-foreground" />
+												</div>
+											) : searchResults.length === 0 ? (
+												<CommandEmpty>{t("iboite.compose.noResults")}</CommandEmpty>
+											) : (
+												<>
+													{/* Representations section */}
+													{searchResults.filter((r: any) => r.section === "representation").length > 0 && (
+														<CommandGroup heading={t("iboite.compose.sectionRepresentations")}>
+															{searchResults
+																.filter((r: any) => r.section === "representation")
+																.map((result: any) => (
+																	<CommandItem
+																		key={result.ownerId}
+																		value={result.ownerId}
+																		onSelect={() => {
+																			setSelectedRecipient({
+																				ownerId: result.ownerId,
+																				ownerType: result.ownerType,
+																				name: result.name,
+																			});
+																			setRecipientPopoverOpen(false);
+																		}}
+																	>
+																		<Check className={cn("mr-2 h-4 w-4", selectedRecipient?.ownerId === result.ownerId ? "opacity-100" : "opacity-0")} />
+																		<Landmark className="mr-2 size-4 text-muted-foreground" />
+																		<div className="flex flex-col min-w-0 flex-1">
+																			<span className="text-sm truncate">{result.name}</span>
+																			{result.subtitle && (
+																				<span className="text-xs text-muted-foreground truncate">
+																					{subtitleLabels[result.subtitle] ?? result.subtitle}
+																				</span>
+																			)}
+																		</div>
+																		<span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12] text-muted-foreground shrink-0">
+																			{t("iboite.compose.badgeStandard")}
+																		</span>
+																	</CommandItem>
+																))}
+														</CommandGroup>
+													)}
+													{/* Public members section */}
+													{searchResults.filter((r: any) => r.section === "member").length > 0 && (
+														<CommandGroup heading={t("iboite.compose.sectionMembers")}>
+															{searchResults
+																.filter((r: any) => r.section === "member")
+																.map((result: any) => (
+																	<CommandItem
+																		key={result.ownerId}
+																		value={result.ownerId}
+																		onSelect={() => {
+																			setSelectedRecipient({
+																				ownerId: result.ownerId,
+																				ownerType: result.ownerType,
+																				name: result.name,
+																			});
+																			setRecipientPopoverOpen(false);
+																		}}
+																	>
+																		<Check className={cn("mr-2 h-4 w-4", selectedRecipient?.ownerId === result.ownerId ? "opacity-100" : "opacity-0")} />
+																		{result.logoUrl ? (
+																			<img src={result.logoUrl} alt="" className="mr-2 size-5 rounded-full object-cover" />
+																		) : (
+																			<User className="mr-2 size-4 text-muted-foreground" />
+																		)}
+																		<div className="flex flex-col min-w-0 flex-1">
+																			<span className="text-sm truncate">{result.name}</span>
+																			{result.subtitle && (
+																				<span className="text-xs text-muted-foreground truncate">
+																					{result.subtitle}
+																				</span>
+																			)}
+																		</div>
+																		<span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+																			{t("iboite.compose.badgeDirect")}
+																		</span>
+																	</CommandItem>
+																))}
+														</CommandGroup>
+													)}
+													{/* Other contacts (from standard search) */}
+													{searchResults.filter((r: any) => r.section === "other").length > 0 && (
+														<CommandGroup heading={t("iboite.compose.sectionOther")}>
+															{searchResults
+																.filter((r: any) => r.section === "other")
+																.map((result: any) => {
+																	const Icon = OWNER_TYPE_ICONS[result.ownerType] ?? Mail;
+																	return (
+																		<CommandItem
+																			key={result.ownerId}
+																			value={result.ownerId}
+																			onSelect={() => {
+																				setSelectedRecipient({
+																					ownerId: result.ownerId,
+																					ownerType: result.ownerType,
+																					name: result.name,
+																				});
+																				setRecipientPopoverOpen(false);
+																			}}
+																		>
+																			<Check className={cn("mr-2 h-4 w-4", selectedRecipient?.ownerId === result.ownerId ? "opacity-100" : "opacity-0")} />
+																			<Icon className="mr-2 size-4 text-muted-foreground" />
+																			<div className="flex flex-col min-w-0">
+																				<span className="text-sm truncate">{result.name}</span>
+																				{result.subtitle && (
+																					<span className="text-xs text-muted-foreground truncate">
+																						{subtitleLabels[result.subtitle] ?? result.subtitle}
+																					</span>
+																				)}
+																			</div>
+																		</CommandItem>
+																	);
+																})}
+														</CommandGroup>
+													)}
+												</>
+											)
 										) : (
-											<CommandGroup>
-												{searchResults.map((result: any) => {
-													const Icon =
-														OWNER_TYPE_ICONS[result.ownerType] ?? Mail;
-													return (
-														<CommandItem
-															key={result.ownerId}
-															value={result.ownerId}
-															onSelect={() => {
-																setSelectedRecipient({
-																	ownerId: result.ownerId,
-																	ownerType: result.ownerType,
-																	name: result.name,
-																});
-																setRecipientPopoverOpen(false);
-															}}
-														>
-															<Check
-																className={cn(
-																	"mr-2 h-4 w-4",
-																	selectedRecipient?.ownerId === result.ownerId
-																		? "opacity-100"
-																		: "opacity-0",
-																)}
-															/>
-															<Icon className="mr-2 size-4 text-muted-foreground" />
-															<div className="flex flex-col min-w-0">
-																<span className="text-sm truncate">
-																	{result.name}
-																</span>
-																{result.subtitle && (
-																	<span className="text-xs text-muted-foreground truncate">
-																		{subtitleLabels[result.subtitle] ??
-																			result.subtitle}
+											/* ── Standard mode: existing search behavior ── */
+											debouncedSearch.trim().length < 2 ? (
+												<CommandEmpty>
+													{t(
+														"iboite.compose.typeToSearch",
+														"Tapez au moins 2 caractères...",
+													)}
+												</CommandEmpty>
+											) : !searchResults ? (
+												<div className="flex items-center justify-center py-4">
+													<Loader2 className="size-4 animate-spin text-muted-foreground" />
+												</div>
+											) : searchResults.length === 0 ? (
+												<CommandEmpty>
+													{t("iboite.compose.noResults")}
+												</CommandEmpty>
+											) : (
+												<CommandGroup>
+													{searchResults.map((result: any) => {
+														const Icon =
+															OWNER_TYPE_ICONS[result.ownerType] ?? Mail;
+														return (
+															<CommandItem
+																key={result.ownerId}
+																value={result.ownerId}
+																onSelect={() => {
+																	setSelectedRecipient({
+																		ownerId: result.ownerId,
+																		ownerType: result.ownerType,
+																		name: result.name,
+																	});
+																	setRecipientPopoverOpen(false);
+																}}
+															>
+																<Check
+																	className={cn(
+																		"mr-2 h-4 w-4",
+																		selectedRecipient?.ownerId === result.ownerId
+																			? "opacity-100"
+																			: "opacity-0",
+																	)}
+																/>
+																<Icon className="mr-2 size-4 text-muted-foreground" />
+																<div className="flex flex-col min-w-0">
+																	<span className="text-sm truncate">
+																		{result.name}
 																	</span>
-																)}
-															</div>
-														</CommandItem>
-													);
-												})}
-											</CommandGroup>
+																	{result.subtitle && (
+																		<span className="text-xs text-muted-foreground truncate">
+																			{subtitleLabels[result.subtitle] ??
+																				result.subtitle}
+																		</span>
+																	)}
+																</div>
+															</CommandItem>
+														);
+													})}
+												</CommandGroup>
+											)
 										)}
 									</CommandList>
 								</Command>

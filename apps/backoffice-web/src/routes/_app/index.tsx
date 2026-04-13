@@ -1,6 +1,8 @@
 import { api } from "@convex/_generated/api";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { useState } from "react";
+import { motion } from "motion/react";
 import {
 	Activity,
 	ArrowRight,
@@ -14,18 +16,19 @@ import {
 	Globe,
 	Handshake,
 	Landmark,
+	LayoutDashboard,
 	MapPin,
 	Plus,
 	Settings,
+	Shield,
 	ShieldAlert,
+	ShieldCheck,
 	TrendingUp,
 	User,
 	UserCheck,
 	Users,
 	XCircle,
 	AlertTriangle,
-	Shield,
-	ShieldCheck,
 	Lock,
 	Eye,
 	Server,
@@ -52,6 +55,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { SectionHeader } from "@/components/design-system/section-header";
 import { PageHeader } from "@/components/design-system/page-header";
+import { TabSwitcher } from "@/components/design-system/tab-switcher";
 import {
 	Table,
 	TableBody,
@@ -130,6 +134,14 @@ const COUNTRY_NAMES: Record<string, string> = {
 	TG: "Togo", BJ: "Bénin", GH: "Ghana", KE: "Kenya",
 };
 
+// ─── Façades ────────────────────────────────────────────────────────────────
+const FACADE_TABS = [
+	{ key: "overview", label: "Synthèse", icon: LayoutDashboard },
+	{ key: "requests", label: "Demandes", icon: FileText },
+	{ key: "network", label: "Réseau", icon: Globe },
+	{ key: "system", label: "Système", icon: Shield },
+];
+
 // ─── Shared tooltip style ──────────────────────────────────────────────────
 const tooltipStyle = {
 	contentStyle: {
@@ -153,16 +165,16 @@ function KpiCard({
 	return (
 		<FlatCard className="relative overflow-hidden">
 			<div className={`absolute left-0 top-0 h-full w-1 rounded-l-xl ${accentBg}`} />
-			<div className="p-3 lg:p-4">
-				<div className="flex flex-row items-center justify-between pb-2">
-					<span className="text-sm font-medium text-muted-foreground">{label}</span>
-					<div className={`flex h-9 w-9 items-center justify-center rounded-lg ${accentBgLight}`}>
-						<Icon className={`h-4 w-4 ${accentText}`} />
+			<div className="p-2.5">
+				<div className="flex flex-row items-center justify-between pb-1">
+					<span className="text-xs font-medium text-muted-foreground">{label}</span>
+					<div className={`flex h-7 w-7 items-center justify-center rounded-lg ${accentBgLight}`}>
+						<Icon className={`h-3.5 w-3.5 ${accentText}`} />
 					</div>
 				</div>
-				{loading ? <Skeleton className="h-8 w-20" /> : (
-					<div className="flex items-end gap-2">
-						<div className="text-3xl font-bold tracking-tight">{value}</div>
+				{loading ? <Skeleton className="h-6 w-16" /> : (
+					<div className="flex items-end gap-1.5">
+						<div className="text-2xl font-bold tracking-tight">{value}</div>
 						{trend && (
 							<span className={`text-xs font-medium pb-1 ${trend.positive ? "text-emerald-500" : "text-muted-foreground"}`}>
 								{trend.value}
@@ -170,7 +182,7 @@ function KpiCard({
 						)}
 					</div>
 				)}
-				<p className="mt-1 text-xs text-muted-foreground">{sub}</p>
+				<p className="text-[11px] text-muted-foreground">{sub}</p>
 			</div>
 		</FlatCard>
 	);
@@ -204,7 +216,6 @@ function timeAgo(ts: number): string {
 // CHART COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Donut chart — Request status distribution */
 function RequestStatusDonut({ breakdown }: { breakdown: Record<string, number> }) {
 	const { i18n } = useTranslation();
 	const lang = i18n.language === "fr" ? "fr" : "en";
@@ -217,9 +228,9 @@ function RequestStatusDonut({ breakdown }: { breakdown: Record<string, number> }
 		.sort((a, b) => b.value - a.value);
 	if (data.length === 0) return <p className="text-sm text-muted-foreground py-8 text-center">Aucune donnée</p>;
 	return (
-		<div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-			<div className="h-56 flex-1 min-w-0">
-				<ResponsiveContainer width="100%" height={200}>
+		<div className="flex flex-col gap-3 lg:flex-row lg:items-center h-full">
+			<div className="flex-1 min-w-0 min-h-0">
+				<ResponsiveContainer width="100%" height="100%">
 					<PieChart>
 						<Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value" strokeWidth={0}>
 							{data.map((e) => <Cell key={e.name} fill={e.fill} />)}
@@ -231,7 +242,6 @@ function RequestStatusDonut({ breakdown }: { breakdown: Record<string, number> }
 			<div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs lg:grid-cols-1">
 				{data.slice(0, 8).map((item) => (
 					<div key={item.name} className="flex items-center gap-2">
-						{/* Dynamic color from data — inline style required */}
 						{/* eslint-disable-next-line react/forbid-dom-props */}
 						<span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: item.fill }} />
 						<span className="text-muted-foreground truncate">{item.name}</span>
@@ -243,7 +253,6 @@ function RequestStatusDonut({ breakdown }: { breakdown: Record<string, number> }
 	);
 }
 
-/** Horizontal bar chart — Pipeline stages */
 function PipelineBarChart({ pipeline, total }: {
 	pipeline: Record<string, number>; total: number;
 }) {
@@ -260,8 +269,8 @@ function PipelineBarChart({ pipeline, total }: {
 	].filter((s) => s.count > 0);
 	if (stages.length === 0 || total === 0) return null;
 	return (
-		<div className="h-72">
-			<ResponsiveContainer width="100%" height={200}>
+		<div className="h-full">
+			<ResponsiveContainer width="100%" height="100%">
 				<BarChart data={stages} layout="vertical" margin={{ left: 70, right: 20, top: 5, bottom: 5 }}>
 					<CartesianGrid strokeDasharray="3 3" opacity={0.1} horizontal={false} />
 					<XAxis type="number" tick={{ fontSize: 11 }} />
@@ -276,7 +285,6 @@ function PipelineBarChart({ pipeline, total }: {
 	);
 }
 
-/** Donut chart — Org types deployment */
 function OrgTypeDonut({ byType }: { byType: Record<string, number> }) {
 	const data = Object.entries(byType)
 		.map(([type, count], i) => ({
@@ -287,9 +295,9 @@ function OrgTypeDonut({ byType }: { byType: Record<string, number> }) {
 		.sort((a, b) => b.value - a.value);
 	if (data.length === 0) return <p className="text-sm text-muted-foreground py-8 text-center">Aucune organisation</p>;
 	return (
-		<div className="flex flex-col items-center gap-4">
-			<div className="h-52 w-full">
-				<ResponsiveContainer width="100%" height={200}>
+		<div className="flex flex-col items-center gap-3 h-full">
+			<div className="flex-1 min-h-0 w-full">
+				<ResponsiveContainer width="100%" height="100%">
 					<PieChart>
 						<Pie data={data} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value" strokeWidth={0}>
 							{data.map((e) => <Cell key={e.name} fill={e.fill} />)}
@@ -301,7 +309,6 @@ function OrgTypeDonut({ byType }: { byType: Record<string, number> }) {
 			<div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs">
 				{data.map((item) => (
 					<div key={item.name} className="flex items-center gap-1.5">
-						{/* Dynamic color from data — inline style required */}
 						{/* eslint-disable-next-line react/forbid-dom-props */}
 						<span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: item.fill }} />
 						<span className="text-muted-foreground">{item.name}</span>
@@ -313,7 +320,6 @@ function OrgTypeDonut({ byType }: { byType: Record<string, number> }) {
 	);
 }
 
-/** Bar chart — Representation by country */
 function CountryBarChart({ byCountry }: { byCountry: Record<string, { count: number; names: string[] }> }) {
 	const data = Object.entries(byCountry)
 		.map(([code, info]) => ({
@@ -324,8 +330,8 @@ function CountryBarChart({ byCountry }: { byCountry: Record<string, { count: num
 		.slice(0, 10);
 	if (data.length === 0) return null;
 	return (
-		<div className="h-64">
-			<ResponsiveContainer width="100%" height={200}>
+		<div className="h-full">
+			<ResponsiveContainer width="100%" height="100%">
 				<BarChart data={data} margin={{ left: 5, right: 5, top: 5, bottom: 40 }}>
 					<CartesianGrid strokeDasharray="3 3" opacity={0.1} />
 					<XAxis dataKey="country" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" interval={0} />
@@ -340,15 +346,14 @@ function CountryBarChart({ byCountry }: { byCountry: Record<string, { count: num
 	);
 }
 
-/** Radial bar — Performance gauge */
 function PerformanceGauge({ completionRate, urgentPending }: { completionRate: number; urgentPending: number }) {
 	const data = [
 		{ name: "Résolution", value: completionRate, fill: "#22c55e" },
 	];
 	return (
-		<div className="flex flex-col items-center gap-2">
-			<div className="h-44 w-44 relative">
-				<ResponsiveContainer width="100%" height={200}>
+		<div className="flex flex-col items-center gap-2 h-full justify-center">
+			<div className="w-36 h-36 relative">
+				<ResponsiveContainer width="100%" height="100%">
 					<RadialBarChart cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" data={data} startAngle={180} endAngle={0} barSize={12}>
 						<RadialBar background={{ fill: "hsl(var(--muted))" }} dataKey="value" cornerRadius={6} />
 					</RadialBarChart>
@@ -368,7 +373,6 @@ function PerformanceGauge({ completionRate, urgentPending }: { completionRate: n
 	);
 }
 
-/** Registrations by status — bar chart */
 function RegistrationStatusChart({ byStatus }: { byStatus: Record<string, number> }) {
 	const statusColors: Record<string, string> = {
 		requested: "#f59e0b", active: "#22c55e", expired: "#ef4444", unknown: "#94a3b8",
@@ -385,8 +389,8 @@ function RegistrationStatusChart({ byStatus }: { byStatus: Record<string, number
 		.sort((a, b) => b.count - a.count);
 	if (data.length === 0) return <p className="text-sm text-muted-foreground py-4 text-center">Aucune inscription</p>;
 	return (
-		<div className="h-48">
-			<ResponsiveContainer width="100%" height={200}>
+		<div className="h-full">
+			<ResponsiveContainer width="100%" height="100%">
 				<BarChart data={data} margin={{ left: 5, right: 5, top: 5, bottom: 5 }}>
 					<CartesianGrid strokeDasharray="3 3" opacity={0.1} />
 					<XAxis dataKey="name" tick={{ fontSize: 11 }} />
@@ -406,7 +410,7 @@ function RegistrationStatusChart({ byStatus }: { byStatus: Record<string, number
 // ═══════════════════════════════════════════════════════════════════════════
 
 function SecurityPanel({ data, loading }: { data?: any; loading: boolean }) {
-	if (loading || !data) return <FlatCard><div className="p-3 lg:p-4 py-8"><Skeleton className="h-48 w-full" /></div></FlatCard>;
+	if (loading || !data) return <FlatCard className="h-full flex flex-col"><div className="p-3 py-8 flex-1"><Skeleton className="h-full w-full" /></div></FlatCard>;
 	const hasCritical = data.criticalAlerts?.length > 0;
 	const borderClass = hasCritical ? "ring-1 ring-red-500/30" : data.systemHealth === "DEGRADED" ? "ring-1 ring-amber-500/30" : "";
 	const healthColors: Record<string, { dot: string; bg: string; text: string; label: string }> = {
@@ -416,8 +420,8 @@ function SecurityPanel({ data, loading }: { data?: any; loading: boolean }) {
 	};
 	const hc = healthColors[data.systemHealth] ?? healthColors.HEALTHY;
 	return (
-		<FlatCard className={borderClass}>
-			<div className="p-3 lg:p-4">
+		<FlatCard className={`${borderClass} h-full flex flex-col`}>
+			<div className="p-3 flex flex-col flex-1 min-h-0">
 				<SectionHeader
 					icon={<ShieldAlert className="h-3.5 w-3.5" />}
 					iconBgClass="bg-red-500/10"
@@ -430,8 +434,8 @@ function SecurityPanel({ data, loading }: { data?: any; loading: boolean }) {
 						</div>
 					}
 				/>
-				<p className="text-xs text-muted-foreground mb-4">Surveillance réseau, cyber-sécurité et intrusions</p>
-				<div className="space-y-4">
+				<p className="text-xs text-muted-foreground mb-3">Surveillance réseau et cyber-sécurité</p>
+				<div className="flex-1 min-h-0 overflow-y-auto citizen-scrollbar space-y-3">
 				<div className="grid grid-cols-3 gap-3">
 					<div className="flex flex-col items-center gap-1 rounded-lg bg-muted/50 p-3">
 						<ShieldCheck className="h-4 w-4 text-muted-foreground" />
@@ -498,49 +502,46 @@ function SecurityPanel({ data, loading }: { data?: any; loading: boolean }) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function DeploymentStats({ data, loading }: { data?: any; loading: boolean }) {
-	if (loading || !data) return <FlatCard><div className="p-3 lg:p-4 py-8"><Skeleton className="h-48 w-full" /></div></FlatCard>;
+	if (loading || !data) return <FlatCard><div className="p-3 py-6"><Skeleton className="h-24 w-full" /></div></FlatCard>;
 	return (
 		<FlatCard>
-			<div className="p-3 lg:p-4">
+			<div className="p-3">
 				<SectionHeader
 					icon={<Globe className="h-3.5 w-3.5" />}
 					iconBgClass="bg-blue-500/10"
 					iconTextClass="text-blue-500"
 					title="Déploiement Réseau Diplomatique"
 				/>
-				<p className="text-xs text-muted-foreground mb-4">Couverture géographique et activation des représentations</p>
-				<div className="space-y-5">
-				{/* Summary */}
-				<div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-					<div className="flex flex-col gap-1 rounded-lg bg-blue-500/5 border border-blue-500/10 p-3">
-						<div className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5 text-blue-500" /><span className="text-[10px] text-muted-foreground uppercase tracking-wider">Actives</span></div>
-						<span className="text-2xl font-bold tabular-nums">{data.activeOrgs}</span>
+				<p className="text-xs text-muted-foreground mb-3">Couverture géographique et activation</p>
+				<div className="space-y-3">
+				<div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+					<div className="flex flex-col gap-0.5 rounded-lg bg-blue-500/5 border border-blue-500/10 p-2.5">
+						<div className="flex items-center gap-1.5"><Building2 className="h-3 w-3 text-blue-500" /><span className="text-[10px] text-muted-foreground uppercase tracking-wider">Actives</span></div>
+						<span className="text-xl font-bold tabular-nums">{data.activeOrgs}</span>
 						<span className="text-[10px] text-muted-foreground">/ {data.totalOrgs} total</span>
 					</div>
-					<div className="flex flex-col gap-1 rounded-lg bg-emerald-500/5 border border-emerald-500/10 p-3">
-						<div className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-emerald-500" /><span className="text-[10px] text-muted-foreground uppercase tracking-wider">Pays</span></div>
-						<span className="text-2xl font-bold tabular-nums">{Object.keys(data.byCountry ?? {}).length}</span>
+					<div className="flex flex-col gap-0.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10 p-2.5">
+						<div className="flex items-center gap-1.5"><MapPin className="h-3 w-3 text-emerald-500" /><span className="text-[10px] text-muted-foreground uppercase tracking-wider">Pays</span></div>
+						<span className="text-xl font-bold tabular-nums">{Object.keys(data.byCountry ?? {}).length}</span>
 						<span className="text-[10px] text-muted-foreground">{data.countriesCovered} juridictions</span>
 					</div>
-					<div className="flex flex-col gap-1 rounded-lg bg-amber-500/5 border border-amber-500/10 p-3">
-						<div className="flex items-center gap-1.5"><UserCheck className="h-3.5 w-3.5 text-amber-500" /><span className="text-[10px] text-muted-foreground uppercase tracking-wider">Chefs Mission</span></div>
-						<span className="text-2xl font-bold tabular-nums">{data.orgsWithHeadOfMission}</span>
+					<div className="flex flex-col gap-0.5 rounded-lg bg-amber-500/5 border border-amber-500/10 p-2.5">
+						<div className="flex items-center gap-1.5"><UserCheck className="h-3 w-3 text-amber-500" /><span className="text-[10px] text-muted-foreground uppercase tracking-wider">Chefs Mission</span></div>
+						<span className="text-xl font-bold tabular-nums">{data.orgsWithHeadOfMission}</span>
 						<span className="text-[10px] text-muted-foreground">/ {data.activeOrgs} postes</span>
 					</div>
-					<div className="flex flex-col gap-1 rounded-lg bg-violet-500/5 border border-violet-500/10 p-3">
-						<div className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-violet-500" /><span className="text-[10px] text-muted-foreground uppercase tracking-wider">Effectifs</span></div>
-						<span className="text-2xl font-bold tabular-nums">{data.totalStaff}</span>
+					<div className="flex flex-col gap-0.5 rounded-lg bg-violet-500/5 border border-violet-500/10 p-2.5">
+						<div className="flex items-center gap-1.5"><Users className="h-3 w-3 text-violet-500" /><span className="text-[10px] text-muted-foreground uppercase tracking-wider">Effectifs</span></div>
+						<span className="text-xl font-bold tabular-nums">{data.totalStaff}</span>
 						<span className="text-[10px] text-muted-foreground">agents déclarés</span>
 					</div>
 				</div>
-				{/* Activation Rate */}
-				<div className="space-y-2">
+				<div className="space-y-1.5">
 					<div className="flex items-center justify-between text-xs">
-						<span className="text-muted-foreground">Taux d'activation du réseau</span>
+						<span className="text-muted-foreground">Taux d'activation</span>
 						<span className="font-semibold">{data.activationRate}%</span>
 					</div>
-					<div className="h-2.5 w-full rounded-full bg-muted overflow-hidden">
-						{/* Dynamic width requires inline style — no Tailwind alternative for computed percentages */}
+					<div className="h-2 w-full rounded-full bg-muted overflow-hidden">
 						{/* eslint-disable-next-line react/forbid-dom-props */}
 						<div className="h-full rounded-full bg-linear-to-r from-blue-500 to-emerald-500 transition-all duration-700" style={{ width: `${data.activationRate}%` }} />
 					</div>
@@ -583,61 +584,14 @@ class WidgetErrorBoundary extends Component<{ children: ReactNode; fallback?: Re
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MAIN DASHBOARD
+// FAÇADES
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const Route = createFileRoute("/_app/")({ component: SuperadminDashboard });
-
-function SuperadminDashboard() {
-	const { t, i18n } = useTranslation();
-	const { data: stats, isPending } = useAuthenticatedConvexQuery(api.functions.admin.getStats, {});
-
-	const currentDate = new Date().toLocaleDateString(i18n.language === "fr" ? "fr-FR" : "en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-	const systemHealth = stats?.security?.systemHealth ?? "HEALTHY";
-	const healthColor = systemHealth === "CRITICAL" ? "text-red-500" : systemHealth === "DEGRADED" ? "text-amber-500" : "text-emerald-500";
-	const healthDot = systemHealth === "CRITICAL" ? "bg-red-500" : systemHealth === "DEGRADED" ? "bg-amber-500" : "bg-emerald-500";
-
-	// Derive pipeline data from statusBreakdown (works even if performance.pipeline is undefined)
-	const sb = stats?.requests?.statusBreakdown ?? {};
-	const derivedPipeline = stats?.performance?.pipeline ?? {
-		draft: sb.draft ?? 0,
-		submitted: sb.submitted ?? 0,
-		pending: (sb.pending ?? 0) + (sb.pending_completion ?? 0) + (sb.edited ?? 0),
-		underReview: (sb.under_review ?? 0) + (sb.processing ?? 0),
-		inProduction: sb.in_production ?? 0,
-		validated: sb.validated ?? 0,
-		readyForPickup: (sb.ready_for_pickup ?? 0) + (sb.appointment_scheduled ?? 0),
-		completed: sb.completed ?? 0,
-		rejected: (sb.rejected ?? 0) + (sb.cancelled ?? 0),
-	};
-
-	// Derive completion rate client-side as fallback
-	const totalReqs = stats?.requests?.total ?? 0;
-	const completedCount = sb.completed ?? 0;
-	const derivedCompletionRate = stats?.performance?.completionRate ?? (totalReqs > 0 ? Math.round((completedCount / totalReqs) * 100) : 0);
-	const urgentCount = stats?.performance?.urgentPending ?? (sb.pending ?? 0);
-	const terminalCount = stats?.performance?.totalTerminal ?? (completedCount + (sb.cancelled ?? 0) + (sb.rejected ?? 0));
-
+function OverviewFacade({ stats, isPending, derivedPipeline, totalReqs, derivedCompletionRate, urgentCount, terminalCount, t }: any) {
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
-			{/* ── Header ──────────────────────────────────────────── */}
-			<PageHeader
-				icon={<Landmark className="h-5 w-5" />}
-				title={t("superadmin.dashboard.title", "Centre de Commandement")}
-				subtitle={
-					<span className="flex items-center gap-2">
-						{t("superadmin.dashboard.welcome", "Vue stratégique globale")}
-						<span className="inline-flex items-center gap-1.5 ml-2">
-							<span className={`h-2 w-2 rounded-full ${healthDot} animate-pulse`} />
-							<span className={`text-xs font-medium ${healthColor}`}>{systemHealth === "CRITICAL" ? "Alerte" : systemHealth === "DEGRADED" ? "Dégradé" : "Nominal"}</span>
-						</span>
-					</span>
-				}
-				actions={<p className="text-sm text-muted-foreground capitalize">{currentDate}</p>}
-			/>
-
-			{/* ── KPI Cards (6) ────────────────────────────────────── */}
-			<div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 stagger-children">
+		<div className="h-full flex flex-col gap-3 stagger-children">
+			{/* KPI Cards */}
+			<div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6">
 				<KpiCard icon={Users} label="Ressortissants" value={stats?.users.total ?? 0} sub="Comptes actifs"
 					trend={stats?.engagement ? { value: `+${stats.engagement.newUsers30d} / 30j`, positive: (stats.engagement.newUsers30d ?? 0) > 0 } : undefined}
 					accentBg="bg-indigo-500" accentBgLight="bg-indigo-500/10" accentText="text-indigo-500" loading={isPending} />
@@ -649,118 +603,90 @@ function SuperadminDashboard() {
 					accentBg="bg-emerald-500" accentBgLight="bg-emerald-500/10" accentText="text-emerald-500" loading={isPending} />
 				<KpiCard icon={Handshake} label="Associations" value={stats?.associations?.total ?? 0} sub={`${stats?.companies?.total ?? 0} entreprises`}
 					accentBg="bg-violet-500" accentBgLight="bg-violet-500/10" accentText="text-violet-500" loading={isPending} />
-				<KpiCard icon={Gauge} label="Taux de résolution" value={`${derivedCompletionRate}%`} sub={`${terminalCount} terminées`}
+				<KpiCard icon={Gauge} label="Résolution" value={`${derivedCompletionRate}%`} sub={`${terminalCount} terminées`}
 					accentBg="bg-teal-500" accentBgLight="bg-teal-500/10" accentText="text-teal-500" loading={isPending} />
 			</div>
 
-			{/* ── Row 2: Pipeline + Performance Gauge ──────────────── */}
-			<div className="grid gap-4 lg:grid-cols-3 stagger-children">
-				<FlatCard className="lg:col-span-2">
-					<div className="p-3 lg:p-4">
+			{/* Pipeline + Performance — remplit l'espace restant */}
+			<div className="grid gap-3 lg:grid-cols-3 flex-1 min-h-0">
+				<FlatCard className="lg:col-span-2 flex flex-col">
+					<div className="p-3 flex flex-col flex-1 min-h-0">
 						<SectionHeader icon={<BarChart3 className="h-3.5 w-3.5" />} iconBgClass="bg-blue-500/10" iconTextClass="text-blue-500" title="Pipeline de traitement" />
-						<p className="text-xs text-muted-foreground mb-3">Répartition des demandes par étape du workflow</p>
-						{isPending ? <Skeleton className="h-64 w-full" /> : <PipelineBarChart pipeline={derivedPipeline} total={totalReqs} />}
+						<p className="text-xs text-muted-foreground mb-2">Répartition des demandes par étape</p>
+						<div className="flex-1 min-h-0">
+							{isPending ? <Skeleton className="h-full w-full" /> : <PipelineBarChart pipeline={derivedPipeline} total={totalReqs} />}
+						</div>
 					</div>
 				</FlatCard>
-				<FlatCard>
-					<div className="p-3 lg:p-4">
-						<SectionHeader icon={<Gauge className="h-3.5 w-3.5" />} iconBgClass="bg-emerald-500/10" iconTextClass="text-emerald-500" title="Performance globale" />
-						<p className="text-xs text-muted-foreground mb-3">Taux de résolution des demandes</p>
-						<div className="flex items-center justify-center">
-							{isPending ? <Skeleton className="h-44 w-44 rounded-full" /> : <PerformanceGauge completionRate={derivedCompletionRate} urgentPending={urgentCount} />}
+				<FlatCard className="flex flex-col">
+					<div className="p-3 flex flex-col flex-1 min-h-0">
+						<SectionHeader icon={<Gauge className="h-3.5 w-3.5" />} iconBgClass="bg-emerald-500/10" iconTextClass="text-emerald-500" title="Performance" />
+						<p className="text-xs text-muted-foreground mb-2">Taux de résolution</p>
+						<div className="flex-1 min-h-0 flex items-center justify-center">
+							{isPending ? <Skeleton className="h-32 w-32 rounded-full" /> : <PerformanceGauge completionRate={derivedCompletionRate} urgentPending={urgentCount} />}
 						</div>
 					</div>
 				</FlatCard>
 			</div>
 
-			{/* ── Row 3: Donut statuts + Inscriptions bar ─────────── */}
-			<div className="grid gap-4 lg:grid-cols-2 stagger-children">
-				<FlatCard>
-					<div className="p-3 lg:p-4">
+			{/* Actions rapides — hauteur fixe */}
+			<FlatCard>
+				<div className="p-2.5">
+					<SectionHeader icon={<Settings className="h-3.5 w-3.5" />} title={t("superadmin.dashboard.quickActions")} />
+					<div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 mt-2">
+						<Button variant="outline" asChild className="justify-start h-9 text-sm active:scale-[0.97] transition-transform"><Link to="/users"><Users className="mr-2 h-4 w-4" />{t("superadmin.nav.users")}</Link></Button>
+						<Button variant="outline" asChild className="justify-start h-9 text-sm active:scale-[0.97] transition-transform"><Link to="/reps/new"><Plus className="mr-2 h-4 w-4" />{t("superadmin.dashboard.addOrg")}</Link></Button>
+						<Button variant="outline" asChild className="justify-start h-9 text-sm active:scale-[0.97] transition-transform"><Link to="/services"><FileText className="mr-2 h-4 w-4" />{t("superadmin.nav.services")}</Link></Button>
+						<Button variant="outline" asChild className="justify-start h-9 text-sm active:scale-[0.97] transition-transform"><Link to="/audit-logs"><ClipboardList className="mr-2 h-4 w-4" />{t("superadmin.dashboard.viewLogs")}</Link></Button>
+					</div>
+				</div>
+			</FlatCard>
+		</div>
+	);
+}
+
+function RequestsFacade({ stats, isPending, i18n, t }: any) {
+	const regData = stats?.engagement?.registrationsByStatus;
+	const regTotal = stats?.registrations?.total ?? 0;
+	const hasRegData = regData && Object.keys(regData).length > 0;
+	const fallbackReg = hasRegData ? regData : regTotal > 0 ? { active: regTotal } : {};
+
+	return (
+		<div className="h-full flex flex-col gap-3 stagger-children">
+			{/* Statuts + Inscriptions — 40% de la hauteur */}
+			<div className="grid gap-3 lg:grid-cols-2 flex-[2] min-h-0">
+				<FlatCard className="flex flex-col">
+					<div className="p-3 flex flex-col flex-1 min-h-0">
 						<SectionHeader icon={<TrendingUp className="h-3.5 w-3.5" />} title="Demandes par statut" />
-						<p className="text-xs text-muted-foreground mb-3">Répartition circulaire des statuts de traitement</p>
-						{isPending ? <Skeleton className="h-56 w-full" /> : <RequestStatusDonut breakdown={stats?.requests.statusBreakdown ?? {}} />}
+						<p className="text-xs text-muted-foreground mb-2">Répartition des statuts de traitement</p>
+						<div className="flex-1 min-h-0">
+							{isPending ? <Skeleton className="h-full w-full" /> : <RequestStatusDonut breakdown={stats?.requests.statusBreakdown ?? {}} />}
+						</div>
 					</div>
 				</FlatCard>
-				<FlatCard>
-					<div className="p-3 lg:p-4">
-						<SectionHeader icon={<CalendarCheck className="h-3.5 w-3.5" />} iconBgClass="bg-emerald-500/10" iconTextClass="text-emerald-500" title="Inscriptions consulaires par statut" />
-						<p className="text-xs text-muted-foreground mb-3">État des inscriptions au registre consulaire</p>
-						{isPending ? <Skeleton className="h-48 w-full" /> : (() => {
-							const regData = stats?.engagement?.registrationsByStatus;
-							const regTotal = stats?.registrations?.total ?? 0;
-							const hasRegData = regData && Object.keys(regData).length > 0;
-							const fallbackReg = hasRegData ? regData : regTotal > 0 ? { active: regTotal } : {};
-							return <RegistrationStatusChart byStatus={fallbackReg} />;
-						})()}
-					</div>
-				</FlatCard>
-			</div>
-
-			{/* ── Row 4: Déploiement stats + Org type donut ─────── */}
-			<WidgetErrorBoundary>
-				<DeploymentStats data={stats?.deployment ?? (stats?.orgs ? {
-					activeOrgs: 0,
-					totalOrgs: stats.orgs.total,
-					activationRate: 0,
-					byType: {},
-					byCountry: {},
-					countriesCovered: 0,
-					orgsWithHeadOfMission: 0,
-					totalStaff: 0,
-				} : undefined)} loading={isPending} />
-			</WidgetErrorBoundary>
-
-			<div className="grid gap-4 lg:grid-cols-2 stagger-children">
-				<FlatCard>
-					<div className="p-3 lg:p-4">
-						<SectionHeader icon={<Building2 className="h-3.5 w-3.5" />} iconBgClass="bg-indigo-500/10" iconTextClass="text-indigo-500" title="Types de représentation" />
-						<p className="text-xs text-muted-foreground mb-3">Répartition par catégorie diplomatique</p>
-						{isPending ? <Skeleton className="h-52 w-full" /> : <OrgTypeDonut byType={stats?.deployment?.byType ?? {}} />}
-					</div>
-				</FlatCard>
-				<FlatCard>
-					<div className="p-3 lg:p-4">
-						<SectionHeader icon={<MapPin className="h-3.5 w-3.5" />} iconBgClass="bg-violet-500/10" iconTextClass="text-violet-500" title="Top pays d'implantation" />
-						<p className="text-xs text-muted-foreground mb-3">Représentations par pays (top 10)</p>
-						{isPending ? <Skeleton className="h-64 w-full" /> : <CountryBarChart byCountry={stats?.deployment?.byCountry ?? {}} />}
+				<FlatCard className="flex flex-col">
+					<div className="p-3 flex flex-col flex-1 min-h-0">
+						<SectionHeader icon={<CalendarCheck className="h-3.5 w-3.5" />} iconBgClass="bg-emerald-500/10" iconTextClass="text-emerald-500" title="Inscriptions par statut" />
+						<p className="text-xs text-muted-foreground mb-2">État des inscriptions consulaires</p>
+						<div className="flex-1 min-h-0">
+							{isPending ? <Skeleton className="h-full w-full" /> : <RegistrationStatusChart byStatus={fallbackReg} />}
+						</div>
 					</div>
 				</FlatCard>
 			</div>
 
-			{/* ── Row 5: Security + Neocortex ──────────────────── */}
-			<div className="grid gap-4 lg:grid-cols-2 stagger-children">
-				<WidgetErrorBoundary>
-					<SecurityPanel data={stats?.security} loading={isPending} />
-				</WidgetErrorBoundary>
-				<WidgetErrorBoundary>
-					<NeocortexMonitoringWidget />
-				</WidgetErrorBoundary>
-			</div>
-
-			{/* ── Row 6: Activity + Recent Requests ────────────── */}
-			<div className="grid gap-4 lg:grid-cols-7 stagger-children">
-				<FlatCard className="lg:col-span-3">
-					<div className="p-3 lg:p-4">
-						<SectionHeader
-							icon={<Activity className="h-3.5 w-3.5" />}
-							title={t("superadmin.dashboard.recentActivity")}
-							actions={<Button variant="ghost" size="sm" asChild><Link to="/audit-logs"><ArrowRight className="h-4 w-4" /></Link></Button>}
-						/>
-						<p className="text-xs text-muted-foreground mb-3">{t("superadmin.dashboard.recentActivityDesc")}</p>
-						<RecentActivityList />
-					</div>
-				</FlatCard>
-				<FlatCard className="lg:col-span-4">
-					<div className="p-3 lg:p-4">
-						<SectionHeader
-							icon={<ClipboardList className="h-3.5 w-3.5" />}
-							title={t("superadmin.dashboard.recentRequests")}
-							actions={<Button variant="outline" size="sm" asChild><Link to="/requests">{t("superadmin.dashboard.viewAll")}<ArrowRight className="ml-1 h-4 w-4" /></Link></Button>}
-						/>
-						<p className="text-xs text-muted-foreground mb-3">Les 10 dernières demandes sur la plateforme</p>
+			{/* Demandes récentes — 60% de la hauteur */}
+			<FlatCard className="flex flex-col flex-[3] min-h-0">
+				<div className="p-3 flex flex-col flex-1 min-h-0">
+					<SectionHeader
+						icon={<ClipboardList className="h-3.5 w-3.5" />}
+						title={t("superadmin.dashboard.recentRequests")}
+						actions={<Button variant="outline" size="sm" asChild className="active:scale-[0.97] transition-transform"><Link to="/requests">{t("superadmin.dashboard.viewAll")}<ArrowRight className="ml-1 h-4 w-4" /></Link></Button>}
+					/>
+					<p className="text-xs text-muted-foreground mb-2">Dernières demandes sur la plateforme</p>
+					<div className="flex-1 min-h-0 overflow-y-auto citizen-scrollbar">
 						{isPending ? <div className="space-y-3">{[1,2,3,4,5].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div> : !stats?.recentRequests?.length ? (
-							<div className="flex flex-col items-center justify-center py-8 text-center"><ClipboardList className="mb-2 h-8 w-8 text-muted-foreground/40" /><p className="text-sm text-muted-foreground">Aucune demande</p></div>
+							<div className="flex flex-col items-center justify-center py-4 text-center"><ClipboardList className="mb-2 h-8 w-8 text-muted-foreground/40" /><p className="text-sm text-muted-foreground">Aucune demande</p></div>
 						) : (
 							<>
 								<div className="hidden md:block overflow-x-auto">
@@ -781,22 +707,20 @@ function SuperadminDashboard() {
 										</TableBody>
 									</Table>
 								</div>
-
-								{/* Mobile Cards View */}
-								<div className="md:hidden space-y-3">
+								<div className="md:hidden space-y-2">
 									{stats.recentRequests.map((r: any) => (
-										<div key={r._id} className="p-3 bg-muted/30 rounded-lg border border-border/50 space-y-2">
+										<div key={r._id} className="p-2.5 bg-[#FDFCFA] dark:bg-[#21201E]/77 rounded-lg space-y-1.5">
 											<div className="flex justify-between items-start">
 												<Link to="/requests/$requestId" params={{ requestId: r._id }} className="text-primary hover:underline font-mono text-xs font-semibold">{r.reference}</Link>
 												<StatusBadge status={r.status} />
 											</div>
 											<div className="flex items-center gap-2">
-												<Avatar className="h-6 w-6"><AvatarFallback className="text-[10px] bg-primary/10">{r.userName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
-												<div className="text-sm font-medium">{r.userName}</div>
+												<Avatar className="h-5 w-5"><AvatarFallback className="text-[9px] bg-primary/10">{r.userName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+												<div className="text-xs font-medium">{r.userName}</div>
 											</div>
-											<div className="flex justify-between items-center mt-1">
-												<div className="text-xs text-muted-foreground truncate max-w-[200px]">{typeof r.serviceName === "string" ? r.serviceName : getLocalizedValue(r.serviceName, i18n.language)}</div>
-												<div className="text-[11px] text-muted-foreground tabular-nums">{new Date(r.createdAt).toLocaleDateString()}</div>
+											<div className="flex justify-between items-center">
+												<div className="text-[11px] text-muted-foreground truncate max-w-[200px]">{typeof r.serviceName === "string" ? r.serviceName : getLocalizedValue(r.serviceName, i18n.language)}</div>
+												<div className="text-[10px] text-muted-foreground tabular-nums">{new Date(r.createdAt).toLocaleDateString()}</div>
 											</div>
 										</div>
 									))}
@@ -804,22 +728,162 @@ function SuperadminDashboard() {
 							</>
 						)}
 					</div>
+				</div>
+			</FlatCard>
+		</div>
+	);
+}
+
+function NetworkFacade({ stats, isPending }: any) {
+	return (
+		<div className="h-full flex flex-col gap-3 stagger-children">
+			{/* Déploiement réseau — hauteur auto */}
+			<WidgetErrorBoundary>
+				<DeploymentStats data={stats?.deployment ?? (stats?.orgs ? {
+					activeOrgs: 0,
+					totalOrgs: stats.orgs.total,
+					activationRate: 0,
+					byType: {},
+					byCountry: {},
+					countriesCovered: 0,
+					orgsWithHeadOfMission: 0,
+					totalStaff: 0,
+				} : undefined)} loading={isPending} />
+			</WidgetErrorBoundary>
+
+			{/* Types + Pays — remplit l'espace restant */}
+			<div className="grid gap-3 lg:grid-cols-2 flex-1 min-h-0">
+				<FlatCard className="flex flex-col">
+					<div className="p-3 flex flex-col flex-1 min-h-0">
+						<SectionHeader icon={<Building2 className="h-3.5 w-3.5" />} iconBgClass="bg-indigo-500/10" iconTextClass="text-indigo-500" title="Types de représentation" />
+						<p className="text-xs text-muted-foreground mb-2">Répartition par catégorie diplomatique</p>
+						<div className="flex-1 min-h-0">
+							{isPending ? <Skeleton className="h-full w-full" /> : <OrgTypeDonut byType={stats?.deployment?.byType ?? {}} />}
+						</div>
+					</div>
+				</FlatCard>
+				<FlatCard className="flex flex-col">
+					<div className="p-3 flex flex-col flex-1 min-h-0">
+						<SectionHeader icon={<MapPin className="h-3.5 w-3.5" />} iconBgClass="bg-violet-500/10" iconTextClass="text-violet-500" title="Top pays d'implantation" />
+						<p className="text-xs text-muted-foreground mb-2">Représentations par pays (top 10)</p>
+						<div className="flex-1 min-h-0">
+							{isPending ? <Skeleton className="h-full w-full" /> : <CountryBarChart byCountry={stats?.deployment?.byCountry ?? {}} />}
+						</div>
+					</div>
 				</FlatCard>
 			</div>
+		</div>
+	);
+}
 
-			{/* ── Quick Actions ────────────────────────────────────── */}
-			<FlatCard>
-				<div className="p-3 lg:p-4">
-					<SectionHeader icon={<Settings className="h-3.5 w-3.5" />} title={t("superadmin.dashboard.quickActions")} />
-					<p className="text-xs text-muted-foreground mb-3">{t("superadmin.dashboard.quickActionsDesc")}</p>
-					<div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-						<Button variant="outline" asChild className="justify-start h-10"><Link to="/users"><Users className="mr-2 h-4 w-4" />{t("superadmin.nav.users")}</Link></Button>
-						<Button variant="outline" asChild className="justify-start h-10"><Link to="/reps/new"><Plus className="mr-2 h-4 w-4" />{t("superadmin.dashboard.addOrg")}</Link></Button>
-						<Button variant="outline" asChild className="justify-start h-10"><Link to="/services"><FileText className="mr-2 h-4 w-4" />{t("superadmin.nav.services")}</Link></Button>
-						<Button variant="outline" asChild className="justify-start h-10"><Link to="/audit-logs"><ClipboardList className="mr-2 h-4 w-4" />{t("superadmin.dashboard.viewLogs")}</Link></Button>
+function SystemFacade({ stats, isPending, t }: any) {
+	return (
+		<div className="h-full flex flex-col gap-3 stagger-children">
+			{/* Sécurité + Neocortex — moitié supérieure */}
+			<div className="grid gap-3 lg:grid-cols-2 flex-1 min-h-0">
+				<WidgetErrorBoundary>
+					<SecurityPanel data={stats?.security} loading={isPending} />
+				</WidgetErrorBoundary>
+				<div className="min-h-0 overflow-y-auto citizen-scrollbar">
+					<WidgetErrorBoundary>
+						<NeocortexMonitoringWidget />
+					</WidgetErrorBoundary>
+				</div>
+			</div>
+
+			{/* Activité récente — moitié inférieure */}
+			<FlatCard className="flex flex-col flex-1 min-h-0">
+				<div className="p-3 flex flex-col flex-1 min-h-0">
+					<SectionHeader
+						icon={<Activity className="h-3.5 w-3.5" />}
+						title={t("superadmin.dashboard.recentActivity")}
+						actions={<Button variant="ghost" size="sm" asChild className="active:scale-[0.97] transition-transform"><Link to="/audit-logs"><ArrowRight className="h-4 w-4" /></Link></Button>}
+					/>
+					<p className="text-xs text-muted-foreground mb-2">{t("superadmin.dashboard.recentActivityDesc")}</p>
+					<div className="flex-1 min-h-0 overflow-y-auto citizen-scrollbar">
+						<RecentActivityList />
 					</div>
 				</div>
 			</FlatCard>
+		</div>
+	);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIN DASHBOARD
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const Route = createFileRoute("/_app/")({ component: SuperadminDashboard });
+
+function SuperadminDashboard() {
+	const { t, i18n } = useTranslation();
+	const [activeFacade, setActiveFacade] = useState("overview");
+	const { data: stats, isPending } = useAuthenticatedConvexQuery(api.functions.admin.getStats, {});
+
+	const currentDate = new Date().toLocaleDateString(i18n.language === "fr" ? "fr-FR" : "en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+	const systemHealth = stats?.security?.systemHealth ?? "HEALTHY";
+	const healthColor = systemHealth === "CRITICAL" ? "text-red-500" : systemHealth === "DEGRADED" ? "text-amber-500" : "text-emerald-500";
+	const healthDot = systemHealth === "CRITICAL" ? "bg-red-500" : systemHealth === "DEGRADED" ? "bg-amber-500" : "bg-emerald-500";
+
+	const sb = stats?.requests?.statusBreakdown ?? {};
+	const derivedPipeline = stats?.performance?.pipeline ?? {
+		draft: sb.draft ?? 0,
+		submitted: sb.submitted ?? 0,
+		pending: (sb.pending ?? 0) + (sb.pending_completion ?? 0) + (sb.edited ?? 0),
+		underReview: (sb.under_review ?? 0) + (sb.processing ?? 0),
+		inProduction: sb.in_production ?? 0,
+		validated: sb.validated ?? 0,
+		readyForPickup: (sb.ready_for_pickup ?? 0) + (sb.appointment_scheduled ?? 0),
+		completed: sb.completed ?? 0,
+		rejected: (sb.rejected ?? 0) + (sb.cancelled ?? 0),
+	};
+
+	const totalReqs = stats?.requests?.total ?? 0;
+	const completedCount = sb.completed ?? 0;
+	const derivedCompletionRate = stats?.performance?.completionRate ?? (totalReqs > 0 ? Math.round((completedCount / totalReqs) * 100) : 0);
+	const urgentCount = stats?.performance?.urgentPending ?? (sb.pending ?? 0);
+	const terminalCount = stats?.performance?.totalTerminal ?? (completedCount + (sb.cancelled ?? 0) + (sb.rejected ?? 0));
+
+	const facadeProps = { stats, isPending, derivedPipeline, totalReqs, derivedCompletionRate, urgentCount, terminalCount, t, i18n };
+
+	return (
+		<div className="flex flex-col gap-3 p-3 md:p-4 h-full overflow-hidden">
+			{/* Header */}
+			<PageHeader
+				icon={<Landmark className="h-5 w-5" />}
+				title={t("superadmin.dashboard.title", "Centre de Commandement")}
+				subtitle={
+					<span className="flex items-center gap-2">
+						{t("superadmin.dashboard.welcome", "Vue stratégique globale")}
+						<span className="inline-flex items-center gap-1.5 ml-2">
+							<span className={`h-2 w-2 rounded-full ${healthDot} animate-pulse`} />
+							<span className={`text-xs font-medium ${healthColor}`}>{systemHealth === "CRITICAL" ? "Alerte" : systemHealth === "DEGRADED" ? "Dégradé" : "Nominal"}</span>
+						</span>
+					</span>
+				}
+				actions={<p className="text-sm text-muted-foreground capitalize">{currentDate}</p>}
+			/>
+
+			{/* Sous-menu façades */}
+			<TabSwitcher
+				tabs={FACADE_TABS}
+				activeTab={activeFacade}
+				onTabChange={setActiveFacade}
+			/>
+
+			{/* Contenu conditionnel animé */}
+			<motion.div
+				key={activeFacade}
+				initial={{ opacity: 0, y: 8 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.25, ease: "easeOut" }}
+				className="flex-1 min-h-0"
+			>
+				{activeFacade === "overview" && <OverviewFacade {...facadeProps} />}
+				{activeFacade === "requests" && <RequestsFacade {...facadeProps} />}
+				{activeFacade === "network" && <NetworkFacade {...facadeProps} />}
+				{activeFacade === "system" && <SystemFacade {...facadeProps} />}
+			</motion.div>
 		</div>
 	);
 }

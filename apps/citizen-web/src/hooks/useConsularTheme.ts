@@ -21,15 +21,16 @@ export const ConsularThemeContext = createContext<ConsularThemeContextValue>({
 });
 
 export function useConsularThemeState(): ConsularThemeContextValue {
-  const [consularTheme, setThemeState] = useState<ConsularTheme>(() => {
+  const [consularTheme, setThemeState] = useState<ConsularTheme>("default");
+
+  useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === "homeomorphism") return "homeomorphism";
-      return "default";
+      if (stored === "homeomorphism") setThemeState("homeomorphism");
     } catch {
-      return "default";
+      // Ignore
     }
-  });
+  }, []);
 
   useEffect(() => {
     try {

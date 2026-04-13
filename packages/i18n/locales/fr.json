@@ -3950,8 +3950,15 @@
 			"filterOrgs": "Représentations",
 			"filterAssocs": "Associations",
 			"filterCompanies": "Entreprises",
+			"filterDiplomatic": "Postes diplomatiques",
 			"noResults": "Aucun résultat.",
-			"message": "Message"
+			"message": "Message",
+			"badgeStandard": "Standard",
+			"badgeDirect": "Direct",
+			"suggestedContacts": "Contacts suggérés",
+			"sectionRepresentations": "Représentations",
+			"sectionMembers": "Personnel diplomatique",
+			"sectionOther": "Autres contacts"
 		},
 		"empty": {
 			"inbox": "Aucun courrier",

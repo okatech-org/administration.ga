@@ -1,98 +1,151 @@
 /**
- * DossierTab — Les 4 sections affichees simultanement en grille.
- * Desktop : 2x2 grid (Identite+Contact en haut, Famille+Profession en bas)
- * Mobile : scroll vertical, chaque section dans une FlatCard
+ * DossierTab — Fiche signalétique consulaire en lecture seule.
+ * Affichage intelligent et composé des informations de profil.
+ * Desktop : 2 colonnes. Mobile : scroll vertical.
  */
 
 import { api } from "@convex/_generated/api";
-import type { Doc } from "@convex/_generated/dataModel";
-import {
-	CountryCode,
-	Gender,
-	MaritalStatus,
-	NationalityAcquisition,
-} from "@convex/lib/constants";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import {
 	Briefcase,
 	Loader2,
 	MapPin,
-	Save,
 	User,
 	Users,
 } from "lucide-react";
-import { useEffect } from "react";
-import { FormProvider, useForm } from "react-hook-form";
-import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
-import {
-	PROFILE_FIELD_MAPPING,
-	useFormFillEffect,
-} from "@/components/ai/useFormFillEffect";
-import { ContactsStep } from "@/components/registration/steps/ContactsStep";
-import { FamilyStep } from "@/components/registration/steps/FamilyStep";
-import { IdentityStep } from "@/components/registration/steps/IdentityStep";
-import { ProfessionalStep } from "@/components/registration/steps/ProfessionalStep";
 import { FlatCard } from "@/components/my-space/flat-card";
-import { Button } from "@/components/ui/button";
-import {
-	useAuthenticatedConvexQuery,
-	useConvexMutationQuery,
-} from "@/integrations/convex/hooks";
-import { captureEvent } from "@/lib/analytics";
-import {
-	getChangedFields,
-	transformFormDataToPayload,
-} from "@/lib/profile-utils";
-import {
-	type ProfileFormValues,
-	profileFormSchema,
-} from "@/lib/validation/profile";
+import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
+
+// ─── Helpers de traduction ───────────────────────────────────
+
+const getCountryName = (code?: string): string => {
+	if (!code) return "—";
+	try {
+		return new Intl.DisplayNames(["fr"], { type: "region" }).of(code.toUpperCase()) || code;
+	} catch (e) {
+		return code;
+	}
+};
+
+const mapGender = (g?: string) => {
+	const val = g?.toLowerCase();
+	return val === "male" ? "Homme" : val === "female" ? "Femme" : "—";
+};
+
+const mapAcquisition = (a?: string) => {
+	const val = a?.toLowerCase();
+	return val === "birth" ? "De naissance" : val === "naturalization" ? "Par naturalisation" : val || "—";
+};
+
+const mapMarital = (m?: string) => {
+	const val = m?.toLowerCase();
+	if (val === "single") return "Célibataire";
+	if (val === "married") return "Marié(e)";
+	if (val === "divorced") return "Divorcé(e)";
+	if (val === "widowed") return "Veuf/Veuve";
+	if (val === "cohabiting") return "Concubinage";
+	if (val === "civilunion") return "PACS / Union civile";
+	return val || "—";
+};
+
+const mapProStatus = (s?: string) => {
+	const val = s?.toLowerCase();
+	if (val === "employed") return "Employé(e)";
+	if (val === "entrepreneur") return "Entrepreneur";
+	if (val === "student") return "Étudiant(e)";
+	if (val === "retired") return "Retraité(e)";
+	if (val === "unemployed") return "Sans emploi";
+	return val || "—";
+};
+
+const formatLastName = (n?: string) => n ? n.toUpperCase() : "";
+const formatFirstName = (n?: string) => {
+	if (!n) return "";
+	return n.split(/[\s-]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+};
+
+// ─── Composants de présentation ──────────────────────────────
+
+function InfoItem({ label, value, fullWidth = false }: { label: string; value?: string | null; fullWidth?: boolean }) {
+	return (
+		<div className={`flex flex-col gap-0.5 min-w-[120px] shrink-0 ${fullWidth ? "w-full" : "flex-1"}`}>
+			<span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">{label}</span>
+			<span className="text-sm font-medium text-foreground">{value || "—"}</span>
+		</div>
+	);
+}
+
+function SectionSubtitle({ children }: { children: React.ReactNode }) {
+	return (
+		<div className="w-full mt-1 mb-0.5 border-b border-border/40 pb-1">
+			<span className="text-[10px] font-bold text-muted-foreground uppercase">{children}</span>
+		</div>
+	);
+}
+
+function AddressBlock({ title, street, postalCode, city, country }: {
+	title: string;
+	street?: string;
+	postalCode?: string;
+	city?: string;
+	country?: string;
+}) {
+	const countryName = getCountryName(country);
+	const parts: string[] = [];
+	if (postalCode) parts.push(postalCode);
+	if (city) parts.push(city);
+	const locationLine = parts.length > 0
+		? parts.join(" ") + (countryName !== "—" ? ` - ${countryName}` : "")
+		: (countryName !== "—" ? countryName : null);
+	const hasContent = street || locationLine;
+
+	return (
+		<div className="w-full">
+			<SectionSubtitle>{title}</SectionSubtitle>
+			{hasContent ? (
+				<div className="flex flex-col gap-0.5 mt-1.5">
+					{street && <span className="text-sm font-medium text-foreground">{street}</span>}
+					{locationLine && <span className="text-sm text-muted-foreground">{locationLine}</span>}
+				</div>
+			) : (
+				<span className="text-sm text-muted-foreground mt-1 block">—</span>
+			)}
+		</div>
+	);
+}
+
+function PersonBlock({ title, firstName, lastName }: {
+	title: string;
+	firstName?: string;
+	lastName?: string;
+}) {
+	const fullName = [formatLastName(lastName), formatFirstName(firstName)].filter(Boolean).join(" ");
+	return (
+		<div className="w-full">
+			<SectionSubtitle>{title}</SectionSubtitle>
+			<span className="text-sm font-medium text-foreground mt-1 block">{fullName || "—"}</span>
+		</div>
+	);
+}
+
+// ─── DossierTab ──────────────────────────────────────────────
 
 export function DossierTab() {
-	const { t } = useTranslation();
 	const { data: profile, isPending } = useAuthenticatedConvexQuery(
 		api.functions.profiles.getMine,
 		{},
 	);
-	const { mutateAsync: updateProfile, isPending: isSaving } =
-		useConvexMutationQuery(api.functions.profiles.update);
+	const p = profile ?? {} as any;
 
-	const form = useForm<ProfileFormValues>({
-		resolver: zodResolver(profileFormSchema),
-		mode: "onChange",
-		defaultValues: buildDefaults(profile),
-	});
-
-	useEffect(() => {
-		if (profile) form.reset(buildDefaults(profile));
-	}, [profile]);
-
-	useFormFillEffect(form, "profile", PROFILE_FIELD_MAPPING);
-
-	const handleSaveAll = async () => {
-		if (!profile) return;
-		try {
-			const data = form.getValues();
-			const changedFields = getChangedFields(data, profile as Doc<"profiles">);
-			const payload = transformFormDataToPayload(changedFields);
-			if (Object.keys(payload).length > 0) {
-				await updateProfile({ id: (profile as any)._id, ...payload });
-				captureEvent("myspace_profile_updated");
-				toast.success(t("common.saved"));
-			} else {
-				toast.info(t("settings.dossier.noChanges"));
-			}
-		} catch (e: unknown) {
-			const error = e as Error;
-			console.error(error);
-			toast.error(error.message || t("settings.dossier.saveError"));
-		}
+	const formatDate = (ts?: number) => {
+		if (!ts) return "—";
+		return format(new Date(ts), "dd MMMM yyyy", { locale: fr });
 	};
 
 	if (isPending) {
 		return (
-			<div className="flex items-center justify-center h-40">
+			<div className="flex items-center justify-center h-full">
 				<Loader2 className="h-6 w-6 animate-spin text-primary" />
 			</div>
 		);
@@ -102,125 +155,150 @@ export function DossierTab() {
 		return (
 			<FlatCard>
 				<div className="p-6 text-center text-muted-foreground text-sm">
-					{t("profile.notFound")}
+					Profil introuvable
 				</div>
 			</FlatCard>
 		);
 	}
 
+	// Compose birth line: "Libreville, Gabon"
+	const birthLocation = [
+		p.identity?.birthPlace,
+		p.identity?.birthCountry ? getCountryName(p.identity.birthCountry) : null,
+	].filter(Boolean).join(", ") || "—";
+
 	return (
-		<FormProvider {...form}>
-			<form id="settings-dossier-form" onSubmit={(e) => { e.preventDefault(); handleSaveAll(); }}>
-				{/* Bouton Enregistrer flottant */}
-				<div className="flex justify-end mb-3">
-					<Button
-						onClick={handleSaveAll}
-						disabled={isSaving}
-						size="sm"
-						className="gap-1.5 rounded-lg h-8 px-4 active:scale-[0.97] transition-transform"
-					>
-						{isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-						{t("common.save")}
-					</Button>
-				</div>
-
-				{/* Grille 2x2 desktop, empile mobile */}
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-					{/* ─── Identite ─── */}
-					<FlatCard>
-						<SectionHeader icon={<User className="h-3.5 w-3.5" />} title={t("profile.tabs.personal")} />
-						<div className="p-3 settings-compact-form">
-							<IdentityStep control={form.control} errors={form.formState.errors} />
-						</div>
-					</FlatCard>
-
-					{/* ─── Contact ─── */}
-					<FlatCard>
-						<SectionHeader icon={<MapPin className="h-3.5 w-3.5" />} title={t("profile.tabs.contacts")} />
-						<div className="p-3 settings-compact-form">
-							<ContactsStep control={form.control} errors={form.formState.errors} />
-						</div>
-					</FlatCard>
-
-					{/* ─── Famille ─── */}
-					<FlatCard>
-						<SectionHeader icon={<Users className="h-3.5 w-3.5" />} title={t("profile.tabs.family")} />
-						<div className="p-3 settings-compact-form">
-							<FamilyStep control={form.control} errors={form.formState.errors} />
-						</div>
-					</FlatCard>
-
-					{/* ─── Profession ─── */}
-					<FlatCard>
-						<SectionHeader icon={<Briefcase className="h-3.5 w-3.5" />} title={t("profile.tabs.profession")} />
-						<div className="p-3 settings-compact-form">
-							<ProfessionalStep control={form.control} errors={form.formState.errors} />
-						</div>
-					</FlatCard>
-				</div>
-			</form>
-		</FormProvider>
-	);
-}
-
-// ─── Section Header ─────────────────────────────────────────
-
-function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
-	return (
-		<div className="flex items-center gap-2 px-3 py-2 bg-[#EBE6DC]/50 dark:bg-[#383633]/30 rounded-t-xl">
-			<div className="p-1 rounded-md bg-primary/10">
-				<span className="text-primary">{icon}</span>
+		<div className="h-full flex flex-col pt-1">
+			{/* Info de mise à jour */}
+			<div className="mb-3 shrink-0 rounded-xl bg-primary/5 px-4 py-2.5 border border-primary/10">
+				<p className="text-xs text-muted-foreground leading-relaxed">
+					Les informations de votre dossier proviennent des documents officiels fournis.
+					Pour toute modification, veuillez utiliser <span className="font-semibold text-foreground">iDocument</span>.
+				</p>
 			</div>
-			<span className="text-xs font-bold">{title}</span>
+
+			{/* Grille Principale */}
+			<div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-2">
+				{/* ─── Colonne 1 : Identité + Famille ─── */}
+				<div className="flex flex-col gap-2 min-h-0 overflow-y-auto citizen-scrollbar pr-1 pb-4">
+					<DossierCard icon={<User className="h-3.5 w-3.5" />} title="IDENTITÉ">
+						<div className="flex flex-col gap-3">
+							{/* Nom complet — ligne principale */}
+							<div className="flex flex-col gap-0.5">
+								<span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Nom complet</span>
+								<span className="text-base font-semibold text-foreground">
+									{[formatLastName(p.identity?.lastName), formatFirstName(p.identity?.firstName)].filter(Boolean).join(" ") || "—"}
+								</span>
+							</div>
+
+							{/* Naissance */}
+							<div className="flex flex-wrap gap-x-6 gap-y-2">
+								<InfoItem label="Né(e) le" value={formatDate(p.identity?.birthDate)} />
+								<InfoItem label="À" value={birthLocation} />
+								<InfoItem label="Genre" value={mapGender(p.identity?.gender)} />
+							</div>
+
+							{/* Nationalité */}
+							<div className="flex flex-wrap gap-x-6 gap-y-2">
+								<InfoItem label="Nationalité" value={getCountryName(p.identity?.nationality)} />
+								<InfoItem label="Acquisition" value={mapAcquisition(p.identity?.nationalityAcquisition)} />
+							</div>
+
+							{/* Passeport */}
+							{p.passportInfo && (
+								<>
+									<SectionSubtitle>Passeport</SectionSubtitle>
+									<div className="flex flex-wrap gap-x-6 gap-y-2">
+										<InfoItem label="Numéro" value={p.passportInfo.number} />
+										<InfoItem label="Délivré par" value={p.passportInfo.issuingAuthority} />
+									</div>
+									<div className="flex flex-wrap gap-x-6 gap-y-2">
+										<InfoItem label="Délivré le" value={formatDate(p.passportInfo.issueDate)} />
+										<InfoItem label="Expire le" value={formatDate(p.passportInfo.expiryDate)} />
+									</div>
+								</>
+							)}
+						</div>
+					</DossierCard>
+
+					<DossierCard icon={<Users className="h-3.5 w-3.5" />} title="FAMILLE" className="flex-1">
+						<div className="flex flex-col gap-3">
+							<InfoItem label="État civil" value={mapMarital(p.family?.maritalStatus)} />
+							<PersonBlock title="Père" firstName={p.family?.father?.lastName} lastName={p.family?.father?.firstName} />
+							<PersonBlock title="Mère" firstName={p.family?.mother?.lastName} lastName={p.family?.mother?.firstName} />
+						</div>
+					</DossierCard>
+				</div>
+
+				{/* ─── Colonne 2 : Contact + Profession ─── */}
+				<div className="flex flex-col gap-2 min-h-0 overflow-y-auto citizen-scrollbar pr-1 pb-4">
+					<DossierCard icon={<MapPin className="h-3.5 w-3.5" />} title="CONTACT">
+						<div className="flex flex-col gap-3">
+							<div className="flex flex-wrap gap-x-6 gap-y-2">
+								<InfoItem label="Email" value={p.contacts?.email} />
+								<InfoItem label="Téléphone" value={p.contacts?.phone} />
+								<InfoItem label="Pays de résidence" value={getCountryName(p.countryOfResidence)} />
+							</div>
+
+							<AddressBlock
+								title="Adresse de Résidence Actuelle"
+								street={p.addresses?.residence?.street}
+								postalCode={p.addresses?.residence?.postalCode}
+								city={p.addresses?.residence?.city}
+								country={p.addresses?.residence?.country}
+							/>
+
+							<AddressBlock
+								title="Adresse au pays d'origine"
+								street={p.addresses?.homeland?.street}
+								postalCode={p.addresses?.homeland?.postalCode}
+								city={p.addresses?.homeland?.city}
+								country={p.addresses?.homeland?.country}
+							/>
+						</div>
+					</DossierCard>
+
+					<DossierCard icon={<Briefcase className="h-3.5 w-3.5" />} title="PROFESSION" className="flex-1">
+						<div className="flex flex-col gap-3">
+							<div className="flex flex-wrap gap-x-6 gap-y-2">
+								<InfoItem label="Statut" value={mapProStatus(p.profession?.status)} />
+								<InfoItem label="Profession / Métier" value={p.profession?.title} />
+							</div>
+							{p.profession?.employer && (
+								<InfoItem label="Employeur / Entreprise" value={p.profession.employer} fullWidth />
+							)}
+						</div>
+					</DossierCard>
+				</div>
+			</div>
 		</div>
 	);
 }
 
-// ─── Helpers ─────────────────────────────────────────────────
+// ─── Carte Dossier ───────────────────────────────────────────
 
-function buildDefaults(profile: any): ProfileFormValues {
-	const p = profile ?? {};
-	return {
-		countryOfResidence: p?.countryOfResidence || undefined,
-		identity: {
-			firstName: p?.identity?.firstName || "",
-			lastName: p?.identity?.lastName || "",
-			birthDate: p?.identity?.birthDate ? new Date(p.identity.birthDate) : undefined,
-			birthPlace: p?.identity?.birthPlace || "",
-			birthCountry: p?.identity?.birthCountry || CountryCode.GA,
-			gender: p?.identity?.gender || Gender.Male,
-			nationality: p?.identity?.nationality || CountryCode.GA,
-			nationalityAcquisition: p?.identity?.nationalityAcquisition || NationalityAcquisition.Birth,
-		},
-		passportInfo: p?.passportInfo
-			? {
-					number: p.passportInfo.number || "",
-					issueDate: p.passportInfo.issueDate ? new Date(p.passportInfo.issueDate) : undefined,
-					expiryDate: p.passportInfo.expiryDate ? new Date(p.passportInfo.expiryDate) : undefined,
-					issuingAuthority: p.passportInfo.issuingAuthority || "",
-				}
-			: undefined,
-		addresses: {
-			homeland: p?.addresses?.homeland
-				? { street: p.addresses.homeland.street || "", city: p.addresses.homeland.city || "", postalCode: p.addresses.homeland.postalCode || "", country: p.addresses.homeland.country || CountryCode.GA }
-				: { street: "", city: "", postalCode: "", country: CountryCode.GA },
-			residence: p?.addresses?.residence
-				? { street: p.addresses.residence.street || "", city: p.addresses.residence.city || "", postalCode: p.addresses.residence.postalCode || "", country: p.addresses.residence.country || CountryCode.FR }
-				: { street: "", city: "", postalCode: "", country: CountryCode.FR },
-		},
-		contacts: {
-			email: p?.contacts?.email || "",
-			phone: p?.contacts?.phone || "",
-			emergencyContacts: p?.contacts?.emergencyContacts || [],
-		},
-		family: {
-			maritalStatus: p?.family?.maritalStatus || MaritalStatus.Single,
-			father: p?.family?.father || { firstName: "", lastName: "" },
-			mother: p?.family?.mother || { firstName: "", lastName: "" },
-			spouse: p?.family?.spouse || { firstName: "", lastName: "" },
-		},
-		profession: p?.profession
-			? { status: p.profession.status || undefined, title: p.profession.title || "", employer: p.profession.employer || "" }
-			: { status: undefined, title: "", employer: "" },
-	};
+function DossierCard({
+	icon,
+	title,
+	children,
+	className,
+}: {
+	icon: React.ReactNode;
+	title: string;
+	children: React.ReactNode;
+	className?: string;
+}) {
+	return (
+		<FlatCard className={`flex flex-col ${className || ""}`}>
+			<div className="flex items-center gap-2 px-3 py-2 shrink-0">
+				<div className="text-muted-foreground">
+					{icon}
+				</div>
+				<span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{title}</span>
+			</div>
+			<div className="px-3 pb-3">
+				{children}
+			</div>
+		</FlatCard>
+	);
 }

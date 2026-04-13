@@ -112,79 +112,71 @@ export function AccountTab({ preferences, onPrefToggle, currentLanguage, onLangu
 	const isDark = theme === "dark";
 
 	return (
-		<>
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+		<div className="h-full flex flex-col">
+			<div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
 				{/* ─── COL 1 : Compte & Securite ─── */}
-				<div className="flex flex-col gap-3">
-					{/* Info compte */}
+				<div className="flex flex-col gap-2 min-h-0 overflow-y-auto citizen-scrollbar">
 					<FlatCard>
 						<SH icon={<User className="h-3.5 w-3.5" />} title={t("settings.security.accountInfo")} />
-						<div className="px-3 pb-2.5 pt-1.5 space-y-1">
+						<div className="px-3 pb-3 pt-0 space-y-0.5">
 							<InfoRow label={t("common.name")} value={session?.user?.name || "—"} />
 							<InfoRow label={t("common.email")} value={session?.user?.email || "—"} />
 							<InfoRow label={t("settings.security.memberSince")} value={session?.user?.createdAt ? new Date(session.user.createdAt).toLocaleDateString(i18n.language, { year: "numeric", month: "short" }) : "—"} />
 						</div>
 					</FlatCard>
-
-					{/* Mot de passe */}
 					<PasswordResetCard />
-
-					{/* Code PIN */}
-					<FlatCard>
+					<FlatCard className="flex-1">
 						<div className="p-3">
 							<PinCodeSection />
 						</div>
 					</FlatCard>
 				</div>
 
-				{/* ─── COL 2 : Affichage ─── */}
-				<div className="flex flex-col gap-3">
-					{/* Langue */}
+				{/* ─── COL 2 : Langue, Affichage, Thème ─── */}
+				<div className="flex flex-col gap-2 min-h-0 overflow-y-auto citizen-scrollbar">
+					{/* Langue + Mode clair/sombre fusionnés */}
 					<FlatCard>
 						<SH icon={<Globe className="h-3.5 w-3.5" />} title={t("settings.language.title")} />
-						<div className="p-3 flex flex-col gap-1.5">
+						<div className="px-3 pb-2 pt-0 flex flex-col gap-1">
 							<LangBtn flag={CountryCode.FR} label="Français" isActive={effectiveLang === "fr"} onClick={() => onLanguageChange("fr")} />
 							<LangBtn flag={CountryCode.US} label="English" isActive={effectiveLang === "en"} onClick={() => onLanguageChange("en")} />
 						</div>
-					</FlatCard>
-
-					{/* Mode clair/sombre */}
-					<FlatCard>
+						{/* Séparateur visuel pour l'affichage */}
+						<div className="mx-3 border-t border-border/30" />
 						<SH icon={<Sun className="h-3.5 w-3.5" />} title={t("settings.display.title")} />
-						<div className="p-3 grid grid-cols-2 gap-1.5">
+						<div className="px-3 pb-3 pt-0 grid grid-cols-2 gap-1.5">
 							<ThemeBtn icon={<Sun className="h-4 w-4" />} label={t("settings.display.light")} isActive={!isDark} onClick={() => { setTheme("light"); captureEvent("myspace_preferences_updated"); }} />
 							<ThemeBtn icon={<Moon className="h-4 w-4" />} label={t("settings.display.dark")} isActive={isDark} onClick={() => { setTheme("dark"); captureEvent("myspace_preferences_updated"); }} />
 						</div>
 					</FlatCard>
 
 					{/* Theme consulaire */}
-					<FlatCard>
+					<FlatCard className="flex-1">
 						<SH icon={<Palette className="h-3.5 w-3.5" />} title={t("settings.consularTheme.title")} />
-						<div className="p-3 flex flex-col gap-1.5">
+						<div className="px-3 pb-3 pt-0 flex flex-col gap-1.5">
 							<ThemePreview themeId="default" label={t("settings.consularTheme.default")} description={t("settings.consularTheme.defaultDesc")} isActive={consularTheme === "default"} onClick={() => { setConsularTheme("default"); captureEvent("myspace_preferences_updated"); }} />
 							<ThemePreview themeId="homeomorphism" label={t("settings.consularTheme.homeomorphism")} description={t("settings.consularTheme.homeomorphismDesc")} isActive={consularTheme === "homeomorphism"} onClick={() => { setConsularTheme("homeomorphism"); captureEvent("myspace_preferences_updated"); }} />
 						</div>
 					</FlatCard>
 				</div>
 
-				{/* ─── COL 3 : Accessibilite & Notifications ─── */}
-				<div className="flex flex-col gap-3">
-					{/* Accessibilite */}
+				{/* ─── COL 3 : Accessibilité & Notifications ─── */}
+				<div className="flex flex-col gap-2 min-h-0 overflow-y-auto citizen-scrollbar">
 					<FlatCard>
 						<SH icon={<Eye className="h-3.5 w-3.5" />} title={t("settings.accessibility.title")} />
-						<div className="p-3 space-y-2.5">
+						<div className="px-3 pb-3 pt-0 space-y-2">
 							<div>
-								<p className="text-[10px] font-semibold text-muted-foreground mb-1.5">{t("settings.accessibility.fontSize")}</p>
-								<div className="grid grid-cols-3 gap-1.5">
+								<p className="text-[10px] font-semibold text-muted-foreground mb-1">{t("settings.accessibility.fontSize")}</p>
+								<div className="grid grid-cols-3 gap-1">
 									{(["small", "default", "large"] as const).map((size) => {
 										const isActive = fontSize === size;
 										return (
 											<button key={size} type="button" onClick={() => setFontSize(size)} className={cn(
-												"flex flex-col items-center gap-0.5 py-2 rounded-xl transition-all active:scale-[0.97]",
-												isActive ? "bg-primary/10 ring-2 ring-primary/20" : "bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-[#EBE6DC]/50 dark:hover:bg-[#383633]/50",
+												"flex flex-col items-center gap-0.5 py-2 rounded-lg transition-all active:scale-[0.97]",
+												isActive ? "bg-primary/10 text-primary font-bold border border-primary/20" : "hover:bg-black/5 dark:hover:bg-white/5 text-muted-foreground",
 											)}>
-												<Type className={cn(isActive ? "text-primary" : "text-muted-foreground", size === "small" ? "h-3 w-3" : size === "large" ? "h-5 w-5" : "h-4 w-4")} />
-												<span className={cn("font-medium", isActive ? "text-primary" : "text-muted-foreground", "text-[9px]")}>
+												<Type className={cn(isActive ? "text-primary" : "text-muted-foreground", size === "small" ? "h-3 w-3" : size === "large" ? "h-4.5 w-4.5" : "h-3.5 w-3.5")} />
+												<span className={cn(isActive ? "font-bold text-primary" : "font-medium text-muted-foreground", "text-[9px]")}>
 													{t(`settings.accessibility.fontSize${size.charAt(0).toUpperCase() + size.slice(1)}`)}
 												</span>
 											</button>
@@ -192,26 +184,25 @@ export function AccountTab({ preferences, onPrefToggle, currentLanguage, onLangu
 									})}
 								</div>
 							</div>
-							<div className="flex items-center justify-between rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 px-2.5 py-2">
-								<p className="text-[10px] font-semibold pr-2">{t("settings.accessibility.reduceMotion")}</p>
+							<div className="flex items-center justify-between rounded-lg hover:bg-black/5 dark:hover:bg-white/5 px-2.5 py-2 transition-colors">
+								<p className="text-[11px] font-semibold pr-2">{t("settings.accessibility.reduceMotion")}</p>
 								<Switch checked={reduceMotion} onCheckedChange={setReduceMotion} />
 							</div>
 						</div>
 					</FlatCard>
 
-					{/* Notifications */}
-					<FlatCard>
+					<FlatCard className="flex-1">
 						<SH icon={<Bell className="h-3.5 w-3.5" />} title={t("settings.notifications.title")} />
-						<div className="p-3 space-y-1">
+						<div className="px-3 pb-3 pt-0 space-y-1">
 							{NOTIF_CHANNELS.map((ch) => {
 								const Icon = ch.icon;
 								const isOn = preferences?.[ch.key] ?? ch.defaultValue;
 								return (
-									<div key={ch.key} className={cn("flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all", isOn ? "bg-primary/5" : "bg-[#FDFCFA] dark:bg-[#21201E]/77")}>
-										<div className={cn("p-0.5 rounded-md shrink-0", isOn ? "bg-primary/10" : "bg-foreground/[0.06] dark:bg-foreground/[0.12]")}>
-											<Icon className={cn("h-3 w-3", isOn ? "text-primary" : "text-muted-foreground")} />
+									<div key={ch.key} className={cn("flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all", isOn ? "bg-primary/5" : "hover:bg-black/5 dark:hover:bg-white/5")}>
+										<div className={cn("p-0.5 rounded shrink-0", isOn ? "text-primary" : "text-muted-foreground")}>
+											<Icon className="h-3 w-3" />
 										</div>
-										<span className="text-[10px] font-bold flex-1">{t(ch.labelKey)}</span>
+										<span className="text-[11px] font-semibold flex-1 text-foreground/90">{t(ch.labelKey)}</span>
 										<Switch checked={isOn} onCheckedChange={(v) => onPrefToggle(ch.key, v)} />
 									</div>
 								);
@@ -220,12 +211,12 @@ export function AccountTab({ preferences, onPrefToggle, currentLanguage, onLangu
 					</FlatCard>
 				</div>
 
-				{/* ─── COL 4 : Actions & Danger ─── */}
-				<div className="flex flex-col gap-3">
-					{/* Confidentialite */}
-					<FlatCard>
+				{/* ─── COL 4 : Confidentialité, Actions & Danger ─── */}
+				<div className="flex flex-col gap-2 min-h-0 overflow-y-auto citizen-scrollbar">
+					{/* Confidentialité + Compte + Export fusionnés */}
+					<FlatCard className="flex-1">
 						<SH icon={<Shield className="h-3.5 w-3.5" />} title={t("settings.privacy.title")} />
-						<div className="px-3 pb-3 pt-2">
+						<div className="px-3 pb-2 pt-0">
 							<div className="flex items-center justify-between">
 								<div className="space-y-0.5 pr-3">
 									<p className="text-[10px] font-medium">{t("settings.privacy.analytics")}</p>
@@ -234,26 +225,26 @@ export function AccountTab({ preferences, onPrefToggle, currentLanguage, onLangu
 								<Switch checked={preferences?.shareAnalytics ?? true} onCheckedChange={(v) => onPrefToggle("shareAnalytics", v)} />
 							</div>
 						</div>
-					</FlatCard>
-
-					{/* Deconnexion */}
-					<FlatCard>
+						<div className="mx-3 border-t border-border/30" />
 						<SH icon={<LogOut className="h-3.5 w-3.5" />} title={t("settings.account.title")} />
-						<div className="px-3 pb-3 pt-2">
-							<Button variant="destructive" size="sm" onClick={() => setShowLogoutDialog(true)} className="gap-2 w-full rounded-xl active:scale-[0.97] transition-transform h-8 text-xs">
+						<div className="px-3 pb-2 pt-0">
+							<Button variant="destructive" size="sm" onClick={() => setShowLogoutDialog(true)} className="gap-2 w-full rounded-xl active:scale-[0.97] transition-transform h-7 text-xs">
 								<LogOut className="size-3.5" />{t("common.logout")}
 							</Button>
 						</div>
+						<div className="mx-3 border-t border-border/30" />
+						<SH icon={<Download className="h-3.5 w-3.5" />} title={t("settings.dangerZone.exportData.title")} />
+						<div className="px-3 pb-3 pt-0">
+							<ExportDataButton />
+						</div>
 					</FlatCard>
 
-					{/* Export */}
-					<ExportDataCard />
-
-					{/* Suppression */}
+					{/* Suppression — isolée visuellement */}
 					<DeleteCard />
 				</div>
 			</div>
 
+			{/* Dialog deconnexion */}
 			{/* Dialog deconnexion */}
 			<AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
 				<AlertDialogContent>
@@ -267,7 +258,7 @@ export function AccountTab({ preferences, onPrefToggle, currentLanguage, onLangu
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
-		</>
+		</div>
 	);
 }
 
@@ -275,27 +266,27 @@ export function AccountTab({ preferences, onPrefToggle, currentLanguage, onLangu
 
 function SH({ icon, title, variant }: { icon: React.ReactNode; title: string; variant?: "destructive" }) {
 	return (
-		<div className={cn("flex items-center gap-2 px-3 py-2 rounded-t-xl", variant === "destructive" ? "bg-destructive/5" : "bg-[#EBE6DC]/40 dark:bg-[#383633]/25")}>
-			<div className={cn("p-0.5 rounded-md", variant === "destructive" ? "bg-destructive/10" : "bg-foreground/[0.06] dark:bg-foreground/[0.12]")}>{icon}</div>
-			<span className={cn("text-xs font-bold", variant === "destructive" ? "text-destructive" : "text-muted-foreground")}>{title}</span>
+		<div className="flex items-center gap-2 px-3 py-2 shrink-0">
+			<div className={cn("text-muted-foreground", variant === "destructive" && "text-destructive")}>{icon}</div>
+			<span className={cn("text-[10px] font-bold uppercase tracking-wider", variant === "destructive" ? "text-destructive" : "text-muted-foreground")}>{title}</span>
 		</div>
 	);
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
 	return (
-		<div className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77">
-			<span className="text-[9px] text-muted-foreground">{label}</span>
-			<span className="text-[10px] font-medium truncate ml-3 max-w-[140px]">{value}</span>
+		<div className="flex items-center justify-between py-1.5 px-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition-colors">
+			<span className="text-[10px] text-muted-foreground">{label}</span>
+			<span className="text-[11px] font-medium truncate ml-3 max-w-[160px] text-right">{value}</span>
 		</div>
 	);
 }
 
 function LangBtn({ flag, label, isActive, onClick }: { flag: CountryCode; label: string; isActive: boolean; onClick: () => void }) {
 	return (
-		<button type="button" onClick={onClick} className={cn("flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-all w-full text-left active:scale-[0.97]", isActive ? "bg-primary/10 ring-2 ring-primary/20" : "bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-[#EBE6DC]/50 dark:hover:bg-[#383633]/50")}>
+		<button type="button" onClick={onClick} className={cn("flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all w-full text-left active:scale-[0.97]", isActive ? "bg-primary/10 text-primary font-bold" : "hover:bg-black/5 dark:hover:bg-white/5 text-muted-foreground")}>
 			<FlagIcon countryCode={flag} />
-			<span className="text-xs font-semibold flex-1">{label}</span>
+			<span className={cn("text-[11px] flex-1", isActive ? "font-bold text-primary" : "font-semibold")}>{label}</span>
 			{isActive && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
 		</button>
 	);
@@ -303,12 +294,11 @@ function LangBtn({ flag, label, isActive, onClick }: { flag: CountryCode; label:
 
 function ThemeBtn({ icon, label, isActive, onClick }: { icon: React.ReactNode; label: string; isActive: boolean; onClick: () => void }) {
 	return (
-		<button type="button" onClick={onClick} className={cn("flex flex-col items-center gap-1 p-2.5 rounded-xl transition-all active:scale-[0.97]", isActive ? "bg-primary/10 ring-2 ring-primary/20" : "bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-[#EBE6DC]/50 dark:hover:bg-[#383633]/50")}>
-			<div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", isActive ? "bg-primary/10" : "bg-foreground/[0.06]")}>
-				<span className={isActive ? "text-primary" : "text-muted-foreground"}>{icon}</span>
+		<button type="button" onClick={onClick} className={cn("flex flex-col items-center gap-1 p-2.5 rounded-lg transition-all active:scale-[0.97]", isActive ? "bg-primary/10 text-primary border border-primary/20" : "hover:bg-black/5 dark:hover:bg-white/5 text-muted-foreground")}>
+			<div className={cn("w-7 h-7 rounded-full flex items-center justify-center", isActive ? "bg-primary/20 text-primary" : "bg-black/5 dark:bg-white/5")}>
+				<span className="opacity-80">{icon}</span>
 			</div>
-			<span className="text-[10px] font-semibold">{label}</span>
-			{isActive && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+			<span className={cn("text-[10px]", isActive ? "font-bold" : "font-semibold")}>{label}</span>
 		</button>
 	);
 }
@@ -356,7 +346,7 @@ function PasswordResetCard() {
 	return (
 		<FlatCard>
 			<SH icon={<KeyRound className="h-3.5 w-3.5" />} title={t("settings.security.changePassword")} />
-			<div className="p-3 space-y-2">
+			<div className="px-3 pb-3 pt-0 space-y-2">
 				{error && <div className="rounded-lg bg-destructive/10 px-2.5 py-1.5 text-[10px] text-destructive">{error}</div>}
 				{success && <div className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[10px] text-primary flex items-center gap-1.5"><Check className="size-3" />{t("settings.security.resetSuccess")}</div>}
 				{step === "idle" && (
@@ -383,7 +373,7 @@ function PasswordResetCard() {
 
 // ─── Export ──────────────────────────────────────────────────
 
-function ExportDataCard() {
+function ExportDataButton() {
 	const { t } = useTranslation();
 	const [exporting, setExporting] = useState(false);
 	const [fetchEnabled, setFetchEnabled] = useState(false);
@@ -405,15 +395,10 @@ function ExportDataCard() {
 	}, [exportData, fetchEnabled, exporting, t]);
 
 	return (
-		<FlatCard>
-			<SH icon={<Download className="h-3.5 w-3.5" />} title={t("settings.dangerZone.exportData.title")} />
-			<div className="p-3">
-				<Button variant="outline" size="sm" onClick={() => setFetchEnabled(true)} disabled={exporting || fetchEnabled} className="gap-2 w-full rounded-xl active:scale-[0.97] transition-transform h-8 text-xs">
-					{(exporting || fetchEnabled) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-					{(exporting || fetchEnabled) ? t("settings.dangerZone.exportData.exporting") : t("settings.dangerZone.exportData.button")}
-				</Button>
-			</div>
-		</FlatCard>
+		<Button variant="outline" size="sm" onClick={() => setFetchEnabled(true)} disabled={exporting || fetchEnabled} className="gap-2 w-full rounded-xl active:scale-[0.97] transition-transform h-7 text-xs">
+			{(exporting || fetchEnabled) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+			{(exporting || fetchEnabled) ? t("settings.dangerZone.exportData.exporting") : t("settings.dangerZone.exportData.button")}
+		</Button>
 	);
 }
 
@@ -440,12 +425,12 @@ function DeleteCard() {
 		<>
 			<FlatCard>
 				<SH icon={<Trash2 className="h-3.5 w-3.5 text-destructive" />} title={t("settings.dangerZone.deleteAccount.title")} variant="destructive" />
-				<div className="p-3 space-y-2">
+				<div className="px-3 pb-3 pt-0 space-y-2">
 					<div className="flex items-start gap-1.5">
 						<AlertTriangle className="h-3 w-3 text-destructive shrink-0 mt-0.5" />
 						<p className="text-[9px] text-muted-foreground leading-relaxed">{t("settings.dangerZone.deleteAccount.warning")}</p>
 					</div>
-					<Button variant="destructive" size="sm" onClick={() => setShowDialog(true)} className="gap-2 w-full rounded-xl active:scale-[0.97] transition-transform h-8 text-xs">
+					<Button variant="destructive" size="sm" onClick={() => setShowDialog(true)} className="gap-2 w-full rounded-xl active:scale-[0.97] transition-transform h-7 text-xs">
 						<Trash2 className="h-3.5 w-3.5" />{t("settings.dangerZone.deleteAccount.button")}
 					</Button>
 				</div>

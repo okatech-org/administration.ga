@@ -219,7 +219,7 @@ export default function IAstedCitizenPage() {
 					</div>
 					<div>
 						<h1 className="text-lg font-bold tracking-tight">iAsted</h1>
-						<p className="text-xs text-muted-foreground">
+						<p className="text-sm text-muted-foreground">
 							Espace de communication consulaire
 						</p>
 					</div>
@@ -231,7 +231,7 @@ export default function IAstedCitizenPage() {
 						router.push("/my-space");
 						setTimeout(() => window.dispatchEvent(new CustomEvent("iasted:open")), 100);
 					}}
-					className="h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-1.5"
+					className="h-8 px-3 text-sm font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-1.5"
 				>
 					<Minimize2 className="h-3.5 w-3.5" />
 					Réduire
@@ -284,7 +284,7 @@ export default function IAstedCitizenPage() {
 						{/* ── Col 2 : Liste conversations ── */}
 						<div className="w-80 border-r border-foreground/5 flex flex-col shrink-0">
 							<div className="px-4 py-3 border-b border-foreground/5 shrink-0">
-								<span className="text-sm font-semibold flex items-center gap-2.5 text-muted-foreground">
+								<span className="text-base font-semibold flex items-center gap-2.5 text-muted-foreground">
 									<div className="p-1 rounded-md bg-foreground/8 dark:bg-foreground/5">
 										<MessageSquare className="h-3.5 w-3.5" />
 									</div>
@@ -299,7 +299,7 @@ export default function IAstedCitizenPage() {
 										value={search}
 										onChange={(e) => setSearch(e.target.value)}
 										placeholder="Rechercher"
-										className="h-8 pl-8 text-xs bg-muted/50 border-0 rounded-lg"
+										className="h-8 pl-8 text-sm bg-muted/50 border-0 rounded-lg"
 									/>
 								</div>
 							</div>
@@ -327,7 +327,7 @@ export default function IAstedCitizenPage() {
 									<div className="flex-1 min-w-0">
 										<div className="flex items-center justify-between">
 											<div className="flex items-center gap-1.5">
-												<p className="text-sm font-semibold">Mr Ray</p>
+												<p className="text-base font-semibold">Mr Ray</p>
 												<Badge className="text-[7px] h-3.5 px-1 badge-info">
 													Standard
 												</Badge>
@@ -343,7 +343,7 @@ export default function IAstedCitizenPage() {
 												</span>
 											)}
 										</div>
-										<p className="text-xs text-muted-foreground truncate mt-0.5">
+										<p className="text-sm text-muted-foreground truncate mt-0.5">
 											{mrRayThread?.lastMessageText
 												? mrRayThread.lastMessageText.slice(0, 45) + "..."
 												: "Standard Consulaire — Posez une question"}
@@ -378,7 +378,7 @@ export default function IAstedCitizenPage() {
 												<AvatarImage
 													src={thread.otherUser?.avatarUrl}
 												/>
-												<AvatarFallback className="text-xs bg-primary/10 text-primary">
+												<AvatarFallback className="text-sm bg-primary/10 text-primary">
 													{(
 														(thread.otherUser?.firstName?.[0] ?? "") +
 														(thread.otherUser?.lastName?.[0] ?? "")
@@ -387,7 +387,7 @@ export default function IAstedCitizenPage() {
 											</Avatar>
 											<div className="flex-1 min-w-0">
 												<div className="flex items-center justify-between">
-													<p className="text-sm font-bold truncate">
+													<p className="text-base font-bold truncate">
 														{(
 															thread.otherUser?.lastName ?? ""
 														).toUpperCase()}
@@ -403,7 +403,7 @@ export default function IAstedCitizenPage() {
 														</span>
 													)}
 												</div>
-												<p className="text-xs text-foreground/80 truncate">
+												<p className="text-sm text-foreground/80 truncate">
 													{thread.otherUser?.firstName ?? ""}
 												</p>
 												<p className="text-[10px] text-muted-foreground truncate">
@@ -421,7 +421,7 @@ export default function IAstedCitizenPage() {
 								) : (
 									<div className="flex flex-col items-center justify-center py-8 text-center px-4">
 										<MessageSquare className="h-8 w-8 text-muted-foreground/20 mb-2" />
-										<p className="text-xs text-muted-foreground">
+										<p className="text-sm text-muted-foreground">
 											Aucune conversation avec un agent
 										</p>
 										<p className="text-[10px] text-muted-foreground/60 mt-1">
@@ -451,7 +451,7 @@ export default function IAstedCitizenPage() {
 																?.avatarUrl
 														}
 													/>
-													<AvatarFallback className="text-xs bg-primary/10 text-primary">
+													<AvatarFallback className="text-sm bg-primary/10 text-primary">
 														{(
 															(selectedContact.otherUser
 																?.firstName?.[0] ?? "") +
@@ -465,7 +465,7 @@ export default function IAstedCitizenPage() {
 										<div className="flex-1 min-w-0">
 											{selectedContact.isStandard ? (
 												<>
-													<p className="text-sm font-semibold">
+													<p className="text-base font-semibold">
 														Mr Ray
 													</p>
 													<p className="text-[11px] text-muted-foreground">
@@ -474,7 +474,7 @@ export default function IAstedCitizenPage() {
 												</>
 											) : (
 												<>
-													<p className="text-sm font-bold">
+													<p className="text-base font-bold">
 														{selectedContact.otherUser
 															?.lastName ?? ""}{" "}
 														{selectedContact.otherUser
@@ -497,10 +497,10 @@ export default function IAstedCitizenPage() {
 													<div className="rounded-full bg-muted p-4 mb-4">
 														<Headset className="h-8 w-8 text-muted-foreground" />
 													</div>
-													<h3 className="text-sm font-semibold text-foreground mb-1">
+													<h3 className="text-base font-semibold text-foreground mb-1">
 														Bonjour, je suis Mr Ray
 													</h3>
-													<p className="text-sm text-muted-foreground max-w-sm mb-6">
+													<p className="text-base text-muted-foreground max-w-sm mb-6">
 														Votre assistant au Standard consulaire. Posez-moi
 														vos questions sur les démarches, passeports, visas...
 													</p>
@@ -517,7 +517,7 @@ export default function IAstedCitizenPage() {
 																onClick={() =>
 																	setMessageInput(s)
 																}
-																className="text-xs px-4 py-2 rounded-full border border-foreground/10 text-foreground hover:bg-muted active:scale-[0.97] transition-all"
+																className="text-sm px-4 py-2 rounded-full border border-foreground/10 text-foreground hover:bg-muted active:scale-[0.97] transition-all"
 															>
 																{s}
 															</button>
@@ -547,7 +547,7 @@ export default function IAstedCitizenPage() {
 																)}
 																<div
 																	className={cn(
-																		"max-w-[70%] rounded-xl px-3 py-2 text-sm",
+																		"max-w-[70%] rounded-xl px-3 py-2 text-base",
 																		!isMrRay
 																			? "bg-primary text-primary-foreground"
 																			: "bg-card border",
@@ -594,7 +594,7 @@ export default function IAstedCitizenPage() {
 										  threadMessages.length === 0 ? (
 											<div className="flex flex-col items-center justify-center h-full text-center py-12">
 												<MessageSquare className="h-12 w-12 text-muted-foreground/20 mb-3" />
-												<p className="text-sm text-muted-foreground">
+												<p className="text-base text-muted-foreground">
 													Démarrez la conversation avec{" "}
 													{selectedContact.otherUser
 														?.firstName ?? "l'agent"}
@@ -636,7 +636,7 @@ export default function IAstedCitizenPage() {
 																)}
 																<div
 																	className={cn(
-																		"max-w-[70%] rounded-xl px-3 py-2 text-sm",
+																		"max-w-[70%] rounded-xl px-3 py-2 text-base",
 																		isMe
 																			? "bg-primary text-primary-foreground"
 																			: "bg-card border",
@@ -684,7 +684,7 @@ export default function IAstedCitizenPage() {
 													? "Écrivez au Standard..."
 													: "Écrire un message..."
 											}
-											className="min-h-[40px] max-h-[120px] resize-none text-sm flex-1 rounded-xl"
+											className="min-h-[40px] max-h-[120px] resize-none text-base flex-1 rounded-xl"
 											rows={1}
 										/>
 										<Button
@@ -707,10 +707,10 @@ export default function IAstedCitizenPage() {
 										<div className="rounded-full bg-muted p-4 mx-auto mb-4">
 											<ShieldCheck className="h-8 w-8 text-muted-foreground" />
 										</div>
-										<h2 className="text-sm font-semibold text-foreground">
+										<h2 className="text-base font-semibold text-foreground">
 											iAsted
 										</h2>
-										<p className="text-sm text-muted-foreground">
+										<p className="text-base text-muted-foreground">
 											Sélectionnez une conversation
 										</p>
 									</div>
@@ -722,7 +722,7 @@ export default function IAstedCitizenPage() {
 					/* ── Onglets non-chat (iAppel, iContact) — 2 colonnes ── */
 					<div className="flex-1 flex flex-col overflow-hidden">
 						<div className="px-4 py-3 border-b border-foreground/5 shrink-0">
-							<span className="text-sm font-semibold flex items-center gap-2.5 text-muted-foreground">
+							<span className="text-base font-semibold flex items-center gap-2.5 text-muted-foreground">
 								<div className="p-1 rounded-md bg-foreground/8 dark:bg-foreground/5">
 									{activeTab === "icall" ? <Phone className="h-3.5 w-3.5" /> : <Contact className="h-3.5 w-3.5" />}
 								</div>
@@ -863,7 +863,7 @@ function IAppelContent() {
 				<div className="rounded-xl border border-success/30 bg-success/10 p-3 space-y-2 shrink-0">
 					<div className="flex items-center gap-2">
 						<PhoneIncoming className="h-4 w-4 text-success animate-pulse" />
-						<span className="text-sm font-semibold text-success">
+						<span className="text-base font-semibold text-success">
 							Appel entrant
 						</span>
 					</div>
@@ -883,10 +883,10 @@ function IAppelContent() {
 										<span className="absolute inset-0 rounded-full border border-success animate-ping opacity-40" />
 									</div>
 									<div>
-										<p className="text-sm font-medium">
+										<p className="text-base font-medium">
 											{callerName}
 										</p>
-										<p className="text-xs text-muted-foreground">
+										<p className="text-sm text-muted-foreground">
 											{call.title ?? "Appel"}{" "}
 											{isVideo && (
 												<Badge className="text-[9px] h-3.5 badge-info ml-1">
@@ -923,7 +923,7 @@ function IAppelContent() {
 
 			{/* Sélecteur org */}
 			<div className="rounded-xl bg-card border flat-card-border p-4 space-y-3 shrink-0">
-				<span className="text-sm font-semibold flex items-center gap-2.5 text-muted-foreground">
+				<span className="text-base font-semibold flex items-center gap-2.5 text-muted-foreground">
 					<div className="p-1 rounded-md bg-foreground/8 dark:bg-foreground/5">
 						<Building2 className="h-3.5 w-3.5" />
 					</div>
@@ -935,7 +935,7 @@ function IAppelContent() {
 						value={searchOrg}
 						onChange={(e) => setSearchOrg(e.target.value)}
 						placeholder="Rechercher une représentation..."
-						className="pl-8 h-8 text-sm"
+						className="pl-8 h-8 text-base"
 					/>
 				</div>
 
@@ -946,7 +946,7 @@ function IAppelContent() {
 				) : (
 					<div className="space-y-1 max-h-44 overflow-y-auto pr-0.5">
 						{filteredOrgs.length === 0 ? (
-							<p className="text-xs text-muted-foreground text-center py-2">
+							<p className="text-sm text-muted-foreground text-center py-2">
 								Aucune représentation trouvée
 							</p>
 						) : (
@@ -970,7 +970,7 @@ function IAppelContent() {
 										<Building2 className="h-3.5 w-3.5 text-muted-foreground" />
 									</div>
 									<div className="flex-1 min-w-0">
-										<p className="text-xs font-medium truncate">
+										<p className="text-sm font-medium truncate">
 											{org.name}
 										</p>
 										{org.country && (
@@ -1027,7 +1027,7 @@ function IAppelContent() {
 				) : callHistory.length === 0 ? (
 					<div className="flex flex-col items-center py-6 text-center">
 						<PhoneMissed className="h-8 w-8 text-muted-foreground/20 mb-2" />
-						<p className="text-xs text-muted-foreground">
+						<p className="text-sm text-muted-foreground">
 							Aucun appel récent
 						</p>
 					</div>
@@ -1073,7 +1073,7 @@ function IAppelContent() {
 										)}
 									</div>
 									<div className="flex-1 min-w-0">
-										<p className="text-xs font-medium truncate">
+										<p className="text-sm font-medium truncate">
 											{call.title ?? "Appel"}
 										</p>
 										<p className="text-[10px] text-muted-foreground">
@@ -1146,11 +1146,11 @@ function IAppelContent() {
 						<div className="flex-1 flex items-center justify-center bg-card">
 							<div className="text-center space-y-3">
 								<Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
-								<p className="text-sm text-muted-foreground">
+								<p className="text-base text-muted-foreground">
 									Connexion en cours...
 								</p>
 								{meetingError && (
-									<p className="text-xs text-destructive max-w-xs">
+									<p className="text-sm text-destructive max-w-xs">
 										{meetingError}
 									</p>
 								)}
@@ -1196,7 +1196,7 @@ function IContactContent() {
 					value={search}
 					onChange={(e) => setSearch(e.target.value)}
 					placeholder="Rechercher une représentation..."
-					className="pl-8 text-sm"
+					className="pl-8 text-base"
 				/>
 			</div>
 
@@ -1216,7 +1216,7 @@ function IContactContent() {
 				) : filteredOrgs.length === 0 ? (
 					<div className="flex flex-col items-center py-10 text-center">
 						<Building2 className="h-8 w-8 text-muted-foreground/30 mb-2" />
-						<p className="text-xs text-muted-foreground">
+						<p className="text-sm text-muted-foreground">
 							{search ? "Aucun résultat" : "Aucune représentation"}
 						</p>
 					</div>
@@ -1279,7 +1279,7 @@ function OrgContactCard({ org }: { org: any }) {
 					)}
 				</div>
 				<div className="flex-1 min-w-0">
-					<p className="text-sm font-semibold truncate">{org.name}</p>
+					<p className="text-base font-semibold truncate">{org.name}</p>
 					<div className="flex items-center gap-1.5 mt-0.5">
 						<Badge
 							variant="outline"
@@ -1411,14 +1411,14 @@ function ContactLine({
 						target={href.startsWith("http") ? "_blank" : undefined}
 						rel="noopener noreferrer"
 						className={cn(
-							"text-xs font-medium hover:underline truncate block",
+							"text-sm font-medium hover:underline truncate block",
 							colors.text,
 						)}
 					>
 						{value}
 					</a>
 				) : (
-					<p className="text-xs font-medium truncate">{value}</p>
+					<p className="text-sm font-medium truncate">{value}</p>
 				)}
 			</div>
 		</div>

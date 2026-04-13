@@ -3,7 +3,7 @@
 import { api } from "@convex/_generated/api"
 import Link from "next/link"
 import { Building2, Info, Plane, Plus } from "lucide-react"
-import { useEffect, useSyncExternalStore, useState } from "react"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown"
 import { useCitizenData } from "@/hooks/use-citizen-data"
@@ -36,16 +36,23 @@ interface MySpaceWrapperProps {
 export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
   const consularThemeValue = useConsularThemeState()
 
-  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
-  const [isExpanded, setIsExpanded] = useState(() => {
-    if (typeof window === "undefined") return true
+  const [mounted, setMounted] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true)
+
+  // Hydratation terminée : on peut lire localStorage et appliquer les classes conditionnelles.
+  // On doit synchroniser depuis localStorage après hydration pour eviter un mismatch SSR/client.
+  useEffect(() => {
     try {
       const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY)
-      return stored !== null ? stored === "true" : true
+      if (stored !== null) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsExpanded(stored === "true")
+      }
     } catch {
-      return true
+      // Ignore localStorage errors
     }
-  })
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (!mounted) return
@@ -59,10 +66,11 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
   return (
     <ConsularThemeContext.Provider value={consularThemeValue}>
       <div
+        suppressHydrationWarning
         className={cn(
           "citizen-layout relative flex",
           "h-dvh flex-col overflow-hidden md:flex-row md:h-screen",
-          consularThemeValue.consularTheme === "homeomorphism" &&
+          mounted && consularThemeValue.consularTheme === "homeomorphism" &&
             "theme-homeomorphism"
         )}
       >
@@ -78,8 +86,9 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
         </div>
 
         <main
+          suppressHydrationWarning
           className={cn(
-            "flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar",
+            "myspace-main flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar",
             "px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4",
             className
           )}

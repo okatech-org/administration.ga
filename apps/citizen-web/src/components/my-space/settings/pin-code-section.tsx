@@ -287,7 +287,7 @@ function PinForm({
 	const { t } = useTranslation();
 
 	return (
-		<div className="space-y-3 p-3 rounded-xl bg-[#FDFCFA] dark:bg-[#21201E]/77">
+		<div className="space-y-3">
 			{fields.map((field) => (
 				<div key={field.label} className="space-y-1">
 					<Label className="text-xs">{field.label}</Label>

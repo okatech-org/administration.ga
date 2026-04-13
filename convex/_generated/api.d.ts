@@ -47,6 +47,7 @@ import type * as functions_callLines from "../functions/callLines.js";
 import type * as functions_cardDesigns from "../functions/cardDesigns.js";
 import type * as functions_chats from "../functions/chats.js";
 import type * as functions_childProfiles from "../functions/childProfiles.js";
+import type * as functions_citizenContacts from "../functions/citizenContacts.js";
 import type * as functions_communityEvents from "../functions/communityEvents.js";
 import type * as functions_companies from "../functions/companies.js";
 import type * as functions_consularCard from "../functions/consularCard.js";
@@ -277,6 +278,7 @@ declare const fullApi: ApiFromModules<{
   "functions/cardDesigns": typeof functions_cardDesigns;
   "functions/chats": typeof functions_chats;
   "functions/childProfiles": typeof functions_childProfiles;
+  "functions/citizenContacts": typeof functions_citizenContacts;
   "functions/communityEvents": typeof functions_communityEvents;
   "functions/companies": typeof functions_companies;
   "functions/consularCard": typeof functions_consularCard;

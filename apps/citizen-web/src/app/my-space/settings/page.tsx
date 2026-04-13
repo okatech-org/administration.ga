@@ -98,11 +98,11 @@ function SettingsPageContent() {
 				</div>
 			</div>
 
-			{/* Zone contenu */}
+			{/* Zone contenu — h-full, pas de scroll page, scroll interne par carte */}
 			<motion.div
 				initial={{ opacity: 0, y: 5 }}
 				animate={{ opacity: 1, y: 0 }}
-				className="flex-1 min-h-0 overflow-y-auto citizen-scrollbar px-3 md:px-5 pb-18 md:pb-5"
+				className="flex-1 min-h-0 overflow-hidden px-3 md:px-5 pb-18 md:pb-3"
 			>
 				{activeTab === "dossier" && <DossierTab />}
 				{activeTab === "account" && (
