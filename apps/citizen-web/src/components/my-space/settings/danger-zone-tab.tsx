@@ -56,13 +56,13 @@ function ExportDataCard() {
 
 	return (
 		<FlatCard>
-			<div className="flex items-center gap-2.5 p-4 pb-3 bg-[#EBE6DC]/40 dark:bg-[#383633]/25 rounded-t-xl">
-				<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
-					<Download className="h-3.5 w-3.5" />
+			<div className="flex items-center gap-2 rounded-t-xl bg-[#EBE6DC]/50 px-3 py-2.5 dark:bg-[#383633]/30 md:px-4">
+				<div className="rounded-md bg-primary/10 p-1">
+					<span className="text-primary"><Download className="h-3.5 w-3.5" /></span>
 				</div>
-				<span className="text-sm font-bold text-muted-foreground">{t("settings.dangerZone.exportData.title")}</span>
+				<span className="text-sm font-bold">{t("settings.dangerZone.exportData.title")}</span>
 			</div>
-			<div className="p-4 space-y-3">
+			<div className="space-y-3 p-3">
 				<p className="text-xs text-muted-foreground leading-relaxed">{t("settings.dangerZone.exportData.description")}</p>
 				<Button variant="outline" size="sm" onClick={() => setFetchEnabled(true)} disabled={exporting || fetchEnabled} className="gap-2 w-full rounded-xl">
 					{(exporting || fetchEnabled) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
@@ -99,13 +99,13 @@ function DeleteAccountCard() {
 	return (
 		<>
 			<FlatCard>
-				<div className="flex items-center gap-2.5 p-4 pb-3 bg-destructive/5 rounded-t-xl">
-					<div className="p-1 rounded-md bg-destructive/10">
+				<div className="flex items-center gap-2 rounded-t-xl bg-destructive/5 px-3 py-2.5 md:px-4">
+					<div className="rounded-md bg-destructive/10 p-1">
 						<Trash2 className="h-3.5 w-3.5 text-destructive" />
 					</div>
 					<span className="text-sm font-bold text-destructive">{t("settings.dangerZone.deleteAccount.title")}</span>
 				</div>
-				<div className="p-4 space-y-3">
+				<div className="space-y-3 p-3">
 					<div className="flex items-start gap-2.5">
 						<AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
 						<p className="text-xs text-muted-foreground leading-relaxed">{t("settings.dangerZone.deleteAccount.warning")}</p>

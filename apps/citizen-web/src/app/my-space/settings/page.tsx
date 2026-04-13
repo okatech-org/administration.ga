@@ -3,47 +3,48 @@
 import { api } from "@convex/_generated/api"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useMutation, useQuery } from "convex/react"
-import { FolderOpen, Save, Settings, Shield } from "lucide-react"
-import { motion } from "motion/react"
+import {
+  Bell,
+  KeyRound,
+  Palette,
+  Trash2,
+  User,
+} from "lucide-react"
 import { Suspense } from "react"
 import { useTranslation } from "react-i18next"
+import { AccountSecurityTab } from "@/components/my-space/settings/account-security-tab"
+import { AppearanceTab } from "@/components/my-space/settings/appearance-tab"
+import { DangerZoneTab } from "@/components/my-space/settings/danger-zone-tab"
+import { NotificationsTab } from "@/components/my-space/settings/notifications-tab"
+import { ProfileTab } from "@/components/my-space/settings/profile-tab"
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@workspace/ui/components/tabs"
-import { AccountTab } from "@/components/my-space/settings/account-tab"
-import { DossierTab } from "@/components/my-space/settings/dossier-tab"
-import { PageHeader } from "@/components/my-space/page-header"
+  SettingsLayout,
+  type SettingsTabGroup,
+} from "@/components/shared/settings-layout"
 import { captureEvent } from "@/lib/analytics"
 import { cn } from "@/lib/utils"
 
-// ─── 2 tabs uniquement ──────────────────────────────────────
-
-const TAB_IDS = ["dossier", "account"] as const
+const TAB_IDS = [
+  "profile",
+  "notifications",
+  "appearance",
+  "security",
+  "dangerZone",
+] as const
 type TabId = (typeof TAB_IDS)[number]
 
 function resolveTab(urlTab: string | undefined): TabId {
   if (urlTab && (TAB_IDS as readonly string[]).includes(urlTab))
     return urlTab as TabId
+  if (urlTab === "dossier") return "profile"
   if (
+    urlTab === "account" ||
     urlTab === "accountSecurity" ||
-    urlTab === "dangerZone" ||
-    urlTab === "appearance" ||
-    urlTab === "notifications" ||
     urlTab === "preferences"
   )
-    return "account"
-  return "dossier"
+    return "security"
+  return "profile"
 }
-
-const TAB_CONFIG: Record<TabId, { icon: typeof Settings; label: string }> = {
-  dossier: { icon: FolderOpen, label: "settings.tabs.dossier" },
-  account: { icon: Shield, label: "settings.security.accountInfo" },
-}
-
-// ─── Settings Page ───────────────────────────────────────────
 
 function SettingsPageContent() {
   const { t, i18n } = useTranslation()
@@ -79,86 +80,117 @@ function SettingsPageContent() {
     captureEvent("myspace_preferences_updated")
   }
 
-  return (
-    <Tabs
-      value={activeTab}
-      onValueChange={handleTabChange}
-      className="flex h-full flex-col gap-0 overflow-hidden"
-    >
-      <div className="shrink-0 pb-3 md:pb-4">
-        <div className="mb-2 md:mb-3">
-          <PageHeader
-            title={t("mySpace.screens.settings.heading")}
-            icon={<Settings className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />}
-            iconBgClass="bg-muted"
-            actions={
-              activeTab === "dossier" ? (
-                <button
-                  type="submit"
-                  form="settings-dossier-form"
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/80 active:scale-[0.97] md:px-4 md:py-2 md:text-base"
-                >
-                  <Save className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                  {t("common.save")}
-                </button>
-              ) : undefined
-            }
-          />
-        </div>
+  const groups: SettingsTabGroup[] = [
+    {
+      label: t("settings.groups.myDossier", "Dossier consulaire"),
+      tabs: [
+        {
+          id: "profile",
+          label: t("settings.tabs.profile", "Profil & Identité"),
+          icon: <User className="h-4 w-4" />,
+        },
+      ],
+    },
+    {
+      label: t("settings.groups.mySpace", "Mon espace"),
+      tabs: [
+        {
+          id: "notifications",
+          label: t("settings.tabs.notifications", "Notifications"),
+          icon: <Bell className="h-4 w-4" />,
+        },
+        {
+          id: "appearance",
+          label: t("settings.tabs.appearance", "Apparence"),
+          icon: <Palette className="h-4 w-4" />,
+        },
+      ],
+    },
+    {
+      label: t("settings.groups.account", "Compte"),
+      tabs: [
+        {
+          id: "security",
+          label: t("settings.tabs.security", "Sécurité"),
+          icon: <KeyRound className="h-4 w-4" />,
+        },
+        {
+          id: "dangerZone",
+          label: t("settings.tabs.dangerZone", "Zone dangereuse"),
+          icon: <Trash2 className="h-4 w-4" />,
+          variant: "destructive" as const,
+        },
+      ],
+    },
+  ]
 
-        {/* Row 2: Tabs — pill toggle with surface background */}
-        <TabsList className="flex h-auto min-h-0 w-full flex-row gap-1.5 rounded-2xl bg-foreground/[0.06] p-1.5 dark:bg-foreground/[0.08] md:gap-2 md:rounded-2xl md:p-2">
-          {TAB_IDS.map((id) => {
-            const Icon = TAB_CONFIG[id].icon
-            return (
-              <TabsTrigger
-                key={id}
-                value={id}
-                className={cn(
-                  "flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all active:scale-[0.97] md:gap-2.5 md:px-5 md:py-2.5 md:text-base",
-                  "text-muted-foreground hover:bg-background/60 hover:text-foreground",
-                  "data-[state=active]:bg-primary data-[state=active]:font-bold data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0 md:h-5 md:w-5" />
-                {t(TAB_CONFIG[id].label)}
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
+  return (
+    <SettingsLayout
+      title={t("mySpace.screens.settings.heading")}
+      description={t(
+        "settings.description",
+        "Informations de votre dossier consulaire"
+      )}
+      groups={groups}
+      activeTab={activeTab}
+      onTabChange={handleTabChange}
+    >
+      {/* Tab contents */}
+      <div
+        className={cn(
+          "animate-in fade-in duration-300",
+          activeTab !== "profile" && "hidden"
+        )}
+      >
+        <ProfileTab />
       </div>
 
-      <TabsContent
-        value="dossier"
-        className="mt-0 min-h-0 flex-1 overflow-hidden p-0 outline-none"
+      <div
+        className={cn(
+          "animate-in fade-in duration-300",
+          activeTab !== "notifications" && "hidden"
+        )}
       >
-        <motion.div
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="citizen-scrollbar h-full min-h-0 overflow-y-auto"
-        >
-          <DossierTab />
-        </motion.div>
-      </TabsContent>
+        <NotificationsTab
+          preferences={preferences}
+          onPrefToggle={handlePrefToggle}
+        />
+      </div>
 
-      <TabsContent
-        value="account"
-        className="mt-0 min-h-0 flex-1 overflow-hidden p-0 outline-none"
+      <div
+        className={cn(
+          "animate-in fade-in duration-300",
+          activeTab !== "appearance" && "hidden"
+        )}
       >
-        <motion.div
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="citizen-scrollbar h-full min-h-0 overflow-y-auto"
-        >
-          <AccountTab
-            preferences={preferences}
-            onPrefToggle={handlePrefToggle}
-            currentLanguage={i18n.language}
-            onLanguageChange={handleLanguageChange}
-          />
-        </motion.div>
-      </TabsContent>
-    </Tabs>
+        <AppearanceTab
+          preferences={preferences}
+          currentLanguage={i18n.language}
+          onLanguageChange={handleLanguageChange}
+        />
+      </div>
+
+      <div
+        className={cn(
+          "animate-in fade-in duration-300",
+          activeTab !== "security" && "hidden"
+        )}
+      >
+        <AccountSecurityTab
+          preferences={preferences}
+          onPrefToggle={handlePrefToggle}
+        />
+      </div>
+
+      <div
+        className={cn(
+          "animate-in fade-in duration-300",
+          activeTab !== "dangerZone" && "hidden"
+        )}
+      >
+        <DangerZoneTab />
+      </div>
+    </SettingsLayout>
   )
 }
 

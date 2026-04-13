@@ -3103,7 +3103,18 @@
 			"city": "Ville",
 			"street": "Adresse",
 			"nip": "NIP (Numéro d'Identification Personnel)",
-			"nationalityAcquisition": "Mode d'acquisition de la nationalité"
+			"nationalityAcquisition": "Mode d'acquisition de la nationalité",
+			"postalCode": "Code postal",
+			"father": "Père",
+			"mother": "Mère",
+			"spouse": "Conjoint(e)",
+			"professionalStatus": "Statut professionnel",
+			"jobTitle": "Profession / Métier",
+			"employer": "Employeur / Entreprise",
+			"residenceAddress": "Adresse de résidence",
+			"homelandAddress": "Adresse au pays",
+			"emergencyContacts": "Contacts d'urgence",
+			"notSpecified": "Non renseigné"
 		},
 		"placeholders": {
 			"selectCountry": "Sélectionner un pays",

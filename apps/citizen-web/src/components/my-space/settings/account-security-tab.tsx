@@ -55,13 +55,13 @@ export function AccountSecurityTab({
 
 	return (
 		<>
-			<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
+			<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 				{/* ─── Colonne gauche ─── */}
 				<div className="flex flex-col gap-4">
 					{/* Informations du compte */}
 					<FlatCard>
 						<CardHeader icon={<User className="h-3.5 w-3.5" />} title={t("settings.security.accountInfo")} />
-						<div className="px-4 pb-4">
+						<div className="space-y-1 p-3">
 							<InfoRow label={t("common.name")} value={session?.user?.name || "—"} />
 							<InfoRow label={t("common.email")} value={session?.user?.email || "—"} />
 							<InfoRow
@@ -71,7 +71,6 @@ export function AccountSecurityTab({
 										? new Date(session.user.createdAt).toLocaleDateString(i18n.language, { year: "numeric", month: "long", day: "numeric" })
 										: "—"
 								}
-								last
 							/>
 						</div>
 					</FlatCard>
@@ -79,9 +78,9 @@ export function AccountSecurityTab({
 					{/* Confidentialite */}
 					<FlatCard>
 						<CardHeader icon={<Shield className="h-3.5 w-3.5" />} title={t("settings.privacy.title")} />
-						<div className="px-4 pb-4">
-							<div className="flex items-center justify-between">
-								<div className="space-y-0.5 pr-4">
+						<div className="p-3">
+							<div className="flex items-center justify-between gap-3 rounded-lg bg-[#FDFCFA] px-3 py-2.5 dark:bg-[#21201E]/77">
+								<div className="space-y-0.5 pr-2">
 									<p className="text-sm font-medium">{t("settings.privacy.analytics")}</p>
 									<p className="text-xs text-muted-foreground">{t("settings.privacy.analyticsDesc")}</p>
 								</div>
@@ -96,9 +95,9 @@ export function AccountSecurityTab({
 					{/* Deconnexion */}
 					<FlatCard>
 						<CardHeader icon={<LogOut className="h-3.5 w-3.5" />} title={t("settings.account.title")} />
-						<div className="px-4 pb-4">
-							<p className="text-xs text-muted-foreground mb-3">{t("settings.account.description")}</p>
-							<Button variant="destructive" size="sm" onClick={() => setShowLogoutDialog(true)} className="gap-2 w-full rounded-xl">
+						<div className="p-3">
+							<p className="mb-3 text-xs text-muted-foreground">{t("settings.account.description")}</p>
+							<Button variant="destructive" size="sm" onClick={() => setShowLogoutDialog(true)} className="w-full gap-2 rounded-xl">
 								<LogOut className="size-3.5" />
 								{t("common.logout")}
 							</Button>
@@ -143,22 +142,22 @@ export function AccountSecurityTab({
 
 function CardHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
 	return (
-		<div className="flex items-center gap-2.5 p-4 pb-3 bg-[#EBE6DC]/40 dark:bg-[#383633]/25 rounded-t-xl">
-			<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
-				{icon}
+		<div className="flex items-center gap-2 rounded-t-xl bg-[#EBE6DC]/50 px-3 py-2.5 dark:bg-[#383633]/30 md:px-4">
+			<div className="rounded-md bg-primary/10 p-1">
+				<span className="text-primary">{icon}</span>
 			</div>
-			<span className="text-sm font-bold text-muted-foreground">{title}</span>
+			<span className="text-sm font-bold">{title}</span>
 		</div>
 	);
 }
 
 // ─── Info Row ────────────────────────────────────────────────
 
-function InfoRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
+function InfoRow({ label, value }: { label: string; value: string }) {
 	return (
-		<div className={cn("flex items-center justify-between py-2.5 px-3 rounded-lg", !last && "mb-1 bg-[#FDFCFA] dark:bg-[#21201E]/77")}>
+		<div className="flex items-center justify-between gap-3 rounded-lg bg-[#FDFCFA] px-3 py-2 dark:bg-[#21201E]/77">
 			<span className="text-xs text-muted-foreground">{label}</span>
-			<span className="text-sm font-medium truncate ml-4 max-w-[200px]">{value}</span>
+			<span className="ml-3 max-w-[220px] truncate text-sm font-medium">{value}</span>
 		</div>
 	);
 }
@@ -213,7 +212,7 @@ function PasswordResetCard() {
 	return (
 		<FlatCard>
 			<CardHeader icon={<KeyRound className="h-3.5 w-3.5" />} title={t("settings.security.changePassword")} />
-			<div className="p-4 space-y-3">
+			<div className="space-y-3 p-3">
 				<p className="text-xs text-muted-foreground">{t("settings.security.changePasswordDesc")}</p>
 
 				{resetError && (

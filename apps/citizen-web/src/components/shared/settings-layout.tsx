@@ -9,10 +9,18 @@ export interface SettingsTab {
   variant?: "default" | "destructive"
 }
 
+export interface SettingsTabGroup {
+  label: string
+  tabs: SettingsTab[]
+}
+
 interface SettingsLayoutProps {
   title: string
   description?: string
-  tabs: SettingsTab[]
+  /** Flat tabs list (legacy) */
+  tabs?: SettingsTab[]
+  /** Grouped tabs with section labels (preferred) */
+  groups?: SettingsTabGroup[]
   activeTab: string
   onTabChange: (tabId: string) => void
   children: ReactNode
@@ -22,10 +30,17 @@ export function SettingsLayout({
   title,
   description,
   tabs,
+  groups,
   activeTab,
   onTabChange,
   children,
 }: SettingsLayoutProps) {
+  const resolvedGroups: SettingsTabGroup[] = groups
+    ? groups
+    : tabs
+      ? [{ label: "", tabs }]
+      : []
+
   return (
     <div className="flex min-h-full w-full flex-1 flex-col overflow-auto p-3 md:p-6">
       <div className="mb-4 flex flex-col gap-1 md:mb-6">
@@ -39,30 +54,45 @@ export function SettingsLayout({
         )}
       </div>
 
-      <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border bg-card shadow-sm md:flex-row">
+      <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border bg-[#FDFCFA] shadow-sm md:flex-row dark:bg-[#21201E]/77">
         {/* Sidebar → horizontal scroll on mobile */}
         <aside className="flex w-full shrink-0 flex-row gap-1 overflow-x-auto border-b bg-muted/20 px-2 py-2 md:w-56 md:flex-col md:border-r md:border-b-0 md:p-4 lg:w-64">
-          {tabs.map((tab) => {
-            const isActive = tab.id === activeTab
-            return (
-              <button
-                type="button"
-                key={tab.id}
-                onClick={() => onTabChange(tab.id)}
-                className={cn(
-                  "flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm whitespace-nowrap transition-colors md:w-full md:shrink md:gap-3 md:px-4 md:py-2.5",
-                  isActive
-                    ? "bg-primary font-medium text-primary-foreground"
-                    : tab.variant === "destructive"
-                      ? "text-destructive hover:bg-destructive/10"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                {tab.icon && <span className="shrink-0">{tab.icon}</span>}
-                {tab.label}
-              </button>
-            )
-          })}
+          {resolvedGroups.map((group, gi) => (
+            <div
+              key={group.label || gi}
+              className={cn(
+                "flex flex-row gap-1 md:flex-col",
+                gi > 0 && "md:mt-3 md:border-t md:border-border/30 md:pt-3"
+              )}
+            >
+              {group.label && (
+                <p className="hidden px-4 py-1 text-[10px] font-semibold tracking-wider text-muted-foreground/60 uppercase md:block">
+                  {group.label}
+                </p>
+              )}
+              {group.tabs.map((tab) => {
+                const isActive = tab.id === activeTab
+                return (
+                  <button
+                    type="button"
+                    key={tab.id}
+                    onClick={() => onTabChange(tab.id)}
+                    className={cn(
+                      "flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm whitespace-nowrap transition-colors md:w-full md:shrink md:gap-3 md:px-4 md:py-2.5",
+                      isActive
+                        ? "bg-primary font-medium text-primary-foreground"
+                        : tab.variant === "destructive"
+                          ? "text-destructive hover:bg-destructive/10"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    {tab.icon && <span className="shrink-0">{tab.icon}</span>}
+                    {tab.label}
+                  </button>
+                )
+              })}
+            </div>
+          ))}
         </aside>
 
         {/* Content */}
