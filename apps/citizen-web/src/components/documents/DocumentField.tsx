@@ -49,6 +49,8 @@ interface DocumentFieldProps {
 	disabled?: boolean;
 	/** Analytics request type (if uploaded as part of a request) */
 	requestType?: string;
+	/** Compact mode for settings / inline contexts */
+	compact?: boolean;
 }
 
 /**
@@ -68,6 +70,7 @@ export function DocumentField({
 	onChange,
 	disabled = false,
 	requestType,
+	compact = false,
 }: DocumentFieldProps) {
 	const { t } = useTranslation();
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -186,6 +189,35 @@ export function DocumentField({
 
 	// No document - show upload zone
 	if (!documentId) {
+		if (compact) {
+			return (
+				<div
+					className={cn(
+						"flex items-center gap-3 rounded-lg border border-dashed px-3 py-2 transition-colors",
+						disabled
+							? "opacity-50 cursor-not-allowed"
+							: "hover:border-primary/50 cursor-pointer",
+					)}
+					onClick={disabled ? undefined : triggerUpload}
+				>
+					{fileInput}
+					<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
+						{uploading ? (
+							<Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+						) : (
+							<Upload className="h-3.5 w-3.5 text-muted-foreground" />
+						)}
+					</div>
+					<div className="min-w-0 flex-1">
+						<p className="truncate text-xs font-medium">{label}</p>
+						<p className="text-[11px] text-muted-foreground">
+							{uploading ? t("documents.uploading") : t("documents.clickToUpload")}
+						</p>
+					</div>
+				</div>
+			);
+		}
+
 		return (
 			<Card
 				className={cn(
@@ -226,6 +258,79 @@ export function DocumentField({
 	}
 
 	// Document exists - show preview with actions
+	if (compact) {
+		return (
+			<>
+				<div className="flex items-center gap-3 rounded-lg border px-3 py-2">
+					{fileInput}
+					<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-green-100 dark:bg-green-900/30">
+						<Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+					</div>
+					<div className="min-w-0 flex-1">
+						<div className="flex items-center gap-1.5">
+							<p className="truncate text-xs font-medium">{label}</p>
+							<span className="shrink-0 rounded-full bg-green-100 px-1.5 py-px text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+								{t("documents.uploaded")}
+							</span>
+						</div>
+						{firstFile && (
+							<p className="truncate text-[11px] text-muted-foreground">
+								{firstFile.filename}
+							</p>
+						)}
+					</div>
+					<div className="flex shrink-0 items-center">
+						<Button
+							variant="ghost"
+							size="icon-xs"
+							onClick={() => setPreviewOpen(true)}
+							title={t("documents.preview")}
+						>
+							<Eye className="h-3.5 w-3.5" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon-xs"
+							onClick={handleReplace}
+							disabled={disabled || uploading}
+							title={t("documents.replace")}
+						>
+							{uploading ? (
+								<Loader2 className="h-3.5 w-3.5 animate-spin" />
+							) : (
+								<RefreshCw className="h-3.5 w-3.5" />
+							)}
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon-xs"
+							onClick={handleDelete}
+							disabled={disabled || deleting}
+							className="text-destructive hover:text-destructive"
+							title={t("documents.delete")}
+						>
+							{deleting ? (
+								<Loader2 className="h-3.5 w-3.5 animate-spin" />
+							) : (
+								<Trash2 className="h-3.5 w-3.5" />
+							)}
+						</Button>
+					</div>
+				</div>
+
+				{firstFile && (
+					<DocumentPreviewModal
+						open={previewOpen}
+						onOpenChange={setPreviewOpen}
+						storageId={firstFile.storageId}
+						filename={firstFile.filename}
+						mimeType={firstFile.mimeType}
+					/>
+				)}
+			</>
+		);
+	}
+
 	return (
 		<>
 			<Card className="border">

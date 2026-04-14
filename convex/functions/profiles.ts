@@ -989,6 +989,7 @@ export const createFromRegistration = authMutation({
         proofOfAddress: v.optional(v.id("documents")),
         identityPhoto: v.optional(v.id("documents")),
         birthCertificate: v.optional(v.id("documents")),
+        proofOfResidency: v.optional(v.id("documents")),
       }),
     ),
   },

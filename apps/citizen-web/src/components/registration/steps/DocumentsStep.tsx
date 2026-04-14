@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 
 // Document configuration for profile - matches profile.documents schema keys
-const PROFILE_DOCUMENTS = [
+export const PROFILE_DOCUMENTS = [
 	{
 		key: "passport" as const,
 		labelKey: "profile.documents.passport",
@@ -45,7 +45,7 @@ const PROFILE_DOCUMENTS = [
 ];
 
 // Type matching profile.documents schema
-interface ProfileDocuments {
+export interface ProfileDocuments {
 	passport?: Id<"documents">;
 	identityPhoto?: Id<"documents">;
 	proofOfAddress?: Id<"documents">;

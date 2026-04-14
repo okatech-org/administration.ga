@@ -59,42 +59,10 @@ export function DocumentPreviewModal({
 		}
 	};
 
-	// To avoid X-Frame-Options and cross-origin iframe errors ("Unsafe attempt to load URL... from frame with URL chrome-error..."),
-	// we fetch the PDF as a Blob and create a local Object URL.
-	const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
-	const [isLoadingBlob, setIsLoadingBlob] = useState(false);
-
+	// Reset error state when modal opens/closes
 	useEffect(() => {
-		let active = true;
-		let createdUrl: string | null = null;
-		if (documentUrl && isPdf) {
-			setIsLoadingBlob(true);
-			fetch(documentUrl)
-				.then((res) => {
-					if (!res.ok) throw new Error("Network response was not ok");
-					return res.blob();
-				})
-				.then((blob) => {
-					if (!active) return;
-					const objUrl = URL.createObjectURL(blob);
-					createdUrl = objUrl;
-					setPdfBlobUrl(objUrl);
-					setIsLoadingBlob(false);
-				})
-				.catch((err) => {
-					console.error("Failed to fetch PDF blob:", err);
-					if (!active) return;
-					setError(true);
-					setIsLoadingBlob(false);
-				});
-		} else {
-			setPdfBlobUrl(null);
-		}
-		return () => {
-			active = false;
-			if (createdUrl) URL.revokeObjectURL(createdUrl);
-		};
-	}, [documentUrl, isPdf]);
+		if (open) setError(false);
+	}, [open]);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -140,28 +108,41 @@ export function DocumentPreviewModal({
 
 				{/* Content */}
 				<div className="flex-1 overflow-hidden bg-muted/30">
-					{(isLoading || isLoadingBlob) && (
+					{isLoading && (
 						<div className="h-full flex items-center justify-center">
 							<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
 						</div>
 					)}
 
 					{error && (
-						<div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-							<FileText className="h-12 w-12 mb-4 opacity-20" />
+						<div className="h-full flex flex-col items-center justify-center gap-4 text-muted-foreground">
+							<FileText className="h-12 w-12 opacity-20" />
 							<p>{t("documents.preview.loadError")}</p>
+							<Button variant="outline" size="sm" onClick={handleOpenExternal} disabled={!documentUrl}>
+								<ExternalLink className="h-4 w-4 mr-1.5" />
+								{t("documents.preview.open")}
+							</Button>
 						</div>
 					)}
 
-					{!(isLoading || isLoadingBlob) && !error && documentUrl && (
+					{!isLoading && !error && documentUrl && (
 						<>
-							{isPdf && pdfBlobUrl && (
-								<iframe
-									src={`${pdfBlobUrl}#toolbar=0`}
-									className="w-full h-full border-0"
+							{isPdf && (
+								<object
+									data={documentUrl}
+									type="application/pdf"
+									className="w-full h-full"
 									title={filename}
-									sandbox="allow-same-origin"
-								/>
+								>
+									<div className="h-full flex flex-col items-center justify-center gap-4 text-muted-foreground">
+										<FileText className="h-12 w-12 opacity-20" />
+										<p className="text-sm">{t("documents.preview.loadError")}</p>
+										<Button variant="outline" size="sm" onClick={handleOpenExternal}>
+											<ExternalLink className="h-4 w-4 mr-1.5" />
+											{t("documents.preview.open")}
+										</Button>
+									</div>
+								</object>
 							)}
 
 							{isImage && (

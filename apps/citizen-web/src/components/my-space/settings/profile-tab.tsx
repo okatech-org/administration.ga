@@ -1,7 +1,7 @@
 "use client"
 
 import { api } from "@convex/_generated/api"
-import type { Doc } from "@convex/_generated/dataModel"
+import type { Doc, Id } from "@convex/_generated/dataModel"
 import {
   CountryCode,
   Gender,
@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import {
   Briefcase,
   Edit,
+  FileText,
   Loader2,
   MapPin,
   Phone,
@@ -28,6 +29,8 @@ import {
   PROFILE_FIELD_MAPPING,
   useFormFillEffect,
 } from "@/components/ai/useFormFillEffect"
+import { DocumentField } from "@/components/documents/DocumentField"
+import { PROFILE_DOCUMENTS, type ProfileDocuments } from "@/components/registration/steps/DocumentsStep"
 import { ContactsStep } from "@/components/registration/steps/ContactsStep"
 import { FamilyStep } from "@/components/registration/steps/FamilyStep"
 import { IdentityStep } from "@/components/registration/steps/IdentityStep"
@@ -80,6 +83,24 @@ export function ProfileTab() {
 
   const handleCancelEdit = () => {
     setEditingSection(null)
+  }
+
+  const handleDocumentChange = async (
+    key: keyof ProfileDocuments,
+    documentId: Id<"documents"> | undefined,
+  ) => {
+    if (!profile) return
+    // On upload: documents.create already auto-patches profile.documents server-side
+    // On delete: we must explicitly clear the stale reference
+    if (documentId === undefined) {
+      try {
+        const currentDocs = (profile as any).documents ?? {}
+        const { [key]: _removed, ...rest } = currentDocs
+        await updateProfile({ id: (profile as any)._id, documents: rest } as any)
+      } catch (e) {
+        console.error("Failed to clear document reference:", e)
+      }
+    }
   }
 
   const handleSaveSection = async () => {
@@ -413,6 +434,27 @@ export function ProfileTab() {
                 <Row label={t("profile.fields.employer")} value={prof?.employer} />
               </div>
             )}
+          </FlatCard>
+
+          {/* ─── Documents ─── */}
+          <FlatCard>
+            <SectionHeader
+              icon={<FileText className="h-3.5 w-3.5" />}
+              title={t("profile.tabs.documents")}
+            />
+            <div className="space-y-2 p-3 md:p-4">
+              {PROFILE_DOCUMENTS.map((doc) => (
+                <DocumentField
+                  key={doc.key}
+                  compact
+                  documentKey={doc.key}
+                  documentId={(profile as any).documents?.[doc.key]}
+                  label={`${t(doc.labelKey)}${doc.required ? " *" : ""}`}
+                  description={t(doc.descriptionKey)}
+                  onChange={(newId) => handleDocumentChange(doc.key, newId)}
+                />
+              ))}
+            </div>
           </FlatCard>
         </div>
       </form>

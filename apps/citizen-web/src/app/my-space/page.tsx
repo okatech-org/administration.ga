@@ -986,8 +986,9 @@ export default function UserDashboard() {
                     </p>
                     <Button
                       asChild
+                      variant="outline"
                       size="sm"
-                      className="h-8 rounded-lg bg-primary px-4 text-xs font-medium text-white hover:bg-primary/90"
+                      className="h-8 rounded-lg px-4 text-xs font-medium"
                     >
                       <Link href="/my-space/services-demarches">{t("mySpace.requests.newRequest")}</Link>
                     </Button>
@@ -1038,8 +1039,9 @@ export default function UserDashboard() {
                     </p>
                     <Button
                       asChild
+                      variant="outline"
                       size="sm"
-                      className="h-8 rounded-lg bg-primary px-4 text-xs font-medium text-white hover:bg-primary/90"
+                      className="h-8 rounded-lg px-4 text-xs font-medium"
                     >
                       <Link href="/my-space/iagenda?tab=prendre-rdv">{t("mySpace.appointments.book")}</Link>
                     </Button>
