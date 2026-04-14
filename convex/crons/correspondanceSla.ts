@@ -98,8 +98,5 @@ export const checkOverdueSla = internalMutation({
       }
     }
 
-    console.log(
-      `[correspondanceSla] Vérification terminée : ${totalOverdue} correspondance(s) en retard, ${totalAlerted} alerte(s) créée(s)`,
-    );
   },
 });

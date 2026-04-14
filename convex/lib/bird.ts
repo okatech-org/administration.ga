@@ -85,7 +85,6 @@ export async function sendSms(
     }
 
     const data = (await response.json()) as { id?: string };
-    console.log(`[Bird SMS] Sent successfully (${data.id}) to ${phone}`);
     return { success: true, messageId: data.id };
   } catch (error: any) {
     console.error(`[Bird SMS] Network error:`, error.message);

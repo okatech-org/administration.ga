@@ -144,13 +144,18 @@ export function CitizenChatTab() {
 	// Marquer comme lu
 	useEffect(() => {
 		if (selectedChatId) {
-			markRead({ chatId: selectedChatId as Id<"chats"> }).catch(() => {});
+			markRead({ chatId: selectedChatId as Id<"chats"> }).catch((e) => {
+				console.warn("Failed to mark messages as read:", e);
+			});
 		}
 	}, [selectedChatId, markRead, threadMessages?.length]);
 
-	// Auto-scroll
+	// Auto-scroll — delayed to let ScrollArea render
 	useEffect(() => {
-		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+		const timer = setTimeout(() => {
+			messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+		}, 50);
+		return () => clearTimeout(timer);
 	}, [threadMessages]);
 
 	// ── Envoi message Mr Ray (Standard) ──
@@ -211,6 +216,8 @@ export function CitizenChatTab() {
 	if (selectedThread) {
 		const isStandard = selectedThread.isStandard;
 		const hasMessages = threadMessages && (threadMessages as any[]).length > 0;
+		// Only show loading spinner when the query is actively running (not when skipped)
+		const isActuallyLoading = messagesLoading && !!selectedChatId;
 
 		return (
 			<div className="flex flex-col flex-1 overflow-hidden">
@@ -241,14 +248,14 @@ export function CitizenChatTab() {
 							{isStandard && <Badge className="text-[7px] h-3.5 px-1 bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/20">Standard</Badge>}
 						</div>
 						<p className="text-[10px] text-muted-foreground truncate">
-							{isStandard ? "Assistance Consulaire" : "Agent consulaire"}
+							{isStandard ? "Assistance Consulaire" : selectedThread.requestRef ? `Demande ${selectedThread.requestRef}` : "Agent consulaire"}
 						</p>
 					</div>
 				</div>
 
 				{/* Messages */}
 				<ScrollArea className="flex-1 px-3 py-3">
-					{messagesLoading && !hasMessages ? (
+					{isActuallyLoading && !hasMessages ? (
 						<div className="flex items-center justify-center py-8">
 							<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
 						</div>
@@ -271,16 +278,7 @@ export function CitizenChatTab() {
 									<button
 										key={s.label}
 										type="button"
-										onClick={() => {
-											setMessageInput(s.message);
-											setTimeout(() => {
-												if (mrRayThread) {
-													sendChatMessage({ chatId: mrRayThread._id as Id<"chats">, content: s.message }).then(() => setMessageInput("")).catch(() => {});
-												} else if (orgId) {
-													initiateStandard({ orgId, initialMessage: s.message }).then(() => setMessageInput("")).catch(() => {});
-												}
-											}, 100);
-										}}
+										onClick={() => setMessageInput(s.message)}
 										className={cn(
 											"w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all hover:scale-[1.01] active:scale-[0.99]",
 											s.color,

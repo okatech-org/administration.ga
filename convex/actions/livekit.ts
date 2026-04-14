@@ -10,6 +10,7 @@ import { v } from "convex/values";
 import { internalAction, action } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { AccessToken } from "livekit-server-sdk";
+import { TrackSource } from "@livekit/protocol";
 
 /**
  * Generate a LiveKit access token for a participant.
@@ -101,7 +102,7 @@ export const requestToken = action({
       canSubscribe: true,
       canPublishData: true,
       // Restreindre les sources publiables si audio uniquement
-      ...(isAudioOnly ? { canPublishSources: [0] } : {}), // 0 = MICROPHONE in TrackSource enum
+      ...(isAudioOnly ? { canPublishSources: [TrackSource.MICROPHONE] } : {}),
     });
 
     const jwt = await token.toJwt();

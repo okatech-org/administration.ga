@@ -16,13 +16,12 @@ import {
 	Loader2,
 	MessageSquare,
 	Pin,
-	Search,
 	Send,
 	Shield,
 	User,
 	Users,
 } from "lucide-react";
-import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -88,6 +87,23 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
 
+	// Tous les threads de l'agent (P2P + standard)
+	const { data: myChats } = useAuthenticatedConvexQuery(
+		api.functions.chats.listMyChats,
+		{},
+	);
+
+	// Threads P2P (exclure les threads standard déjà affichés séparément)
+	const p2pThreads = useMemo(() => {
+		if (!myChats) return [];
+		return (myChats as any[]).filter((t: any) => t.type !== "standard");
+	}, [myChats]);
+
+	// Total non-lus P2P
+	const totalP2PUnread = useMemo(() => {
+		return p2pThreads.reduce((acc: number, t: any) => acc + (t.unreadCount ?? 0), 0);
+	}, [p2pThreads]);
+
 	// Chat peer-to-peer — mutations
 	const { mutateAsync: initiateChat } = useConvexMutationQuery(
 		api.functions.chats.initiateChat,
@@ -132,6 +148,13 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 			messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 		}
 	}, [chat.messages, selectedContact]);
+
+	// Auto-scroll quand on ouvre une conversation P2P existante
+	useEffect(() => {
+		if (selectedContact && !selectedContact.isAI && existingChat) {
+			setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+		}
+	}, [selectedContact, existingChat]);
 
 	// Callback pour basculer vers l'onglet iContact avec un terme de recherche
 	const handleSearchContact = (searchTerm: string) => {
@@ -278,21 +301,21 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 	// ════════════════════════════════════════════════════════════
 	if (selectedContact) {
 		return (
-			<div className="flex flex-col flex-1 overflow-hidden">
+			<div className="flex flex-col flex-1 min-h-0">
 				{/* Header contact */}
-				<div className="border-b px-3 py-2 flex items-center gap-2 shrink-0">
-					<button type="button" onClick={() => setSelectedContact(null)} className="text-xs text-muted-foreground hover:text-foreground">
+				<div className="border-b px-3 py-2.5 flex items-center gap-2.5 shrink-0">
+					<button type="button" onClick={() => setSelectedContact(null)} className="text-sm text-muted-foreground hover:text-foreground p-1">
 						←
 					</button>
-					<Avatar className="h-7 w-7">
+					<Avatar className="h-9 w-9">
 						{selectedContact.isAI ? (
 							<AvatarFallback className="bg-emerald-500/15 text-emerald-500">
-								<Bot className="h-3.5 w-3.5" />
+								<Bot className="h-4 w-4" />
 							</AvatarFallback>
 						) : (
 							<>
 								<AvatarImage src={selectedContact.avatar} />
-								<AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+								<AvatarFallback className="text-xs bg-primary/10 text-primary">
 									{selectedContact.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
 								</AvatarFallback>
 							</>
@@ -300,60 +323,60 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 					</Avatar>
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-1.5">
-							<p className="text-xs font-medium truncate">{selectedContact.name}</p>
+							<p className="text-sm font-medium truncate">{selectedContact.name}</p>
 							{selectedContact.isAI && (
-								<Badge className="text-[7px] h-3.5 px-1 bg-emerald-500/15 text-emerald-500 border-emerald-500/20">IA</Badge>
+								<Badge className="text-[10px] h-4 px-1.5 bg-emerald-500/15 text-emerald-500 border-emerald-500/20">IA</Badge>
 							)}
 						</div>
-						<p className="text-[10px] text-muted-foreground truncate">
-							{selectedContact.isAI ? "Agent IA Diplomate" : selectedContact.position}
+						<p className="text-xs text-muted-foreground truncate">
+							{selectedContact.isAI ? "Agent IA Diplomate" : selectedContact.requestRef ? `Demande ${selectedContact.requestRef}` : (selectedContact.position ?? "Agent consulaire")}
 						</p>
 					</div>
 				</div>
 
 				{/* Messages */}
-				<ScrollArea className="flex-1 px-3 py-3">
+				<ScrollArea className="flex-1 min-h-0 px-3 py-3">
 					{selectedContact.isAI ? (
 						/* ── Chat IA ── */
 						chat.messages.length === 0 ? (
 							<div className="flex flex-col items-center justify-center h-full text-center py-6">
-								<div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center mb-3">
-									<Bot className="h-6 w-6 text-emerald-500" />
+								<div className="h-14 w-14 rounded-full bg-emerald-500/10 flex items-center justify-center mb-3">
+									<Bot className="h-7 w-7 text-emerald-500" />
 								</div>
-								<h3 className="text-xs font-semibold mb-1">Bonjour, je suis iAsted</h3>
-								<p className="text-[10px] text-muted-foreground max-w-[250px] mb-3">
+								<h3 className="text-sm font-semibold mb-1">Bonjour, je suis iAsted</h3>
+								<p className="text-xs text-muted-foreground max-w-[280px] mb-4">
 									Posez-moi une question ou choisissez une suggestion.
 								</p>
-								<div className="flex flex-wrap gap-1 justify-center">
+								<div className="flex flex-wrap gap-1.5 justify-center">
 									{suggestions.map((s) => (
 										<button key={s} type="button" onClick={() => setMessageInput(s)}
-											className="text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
+											className="text-xs px-3 py-1 rounded-full border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
 											{s}
 										</button>
 									))}
 								</div>
 							</div>
 						) : (
-							<div className="space-y-2.5">
+							<div className="space-y-3">
 								{chat.messages.map((msg, i) => (
 									<div key={i} className={cn("flex gap-2", msg.role === "user" ? "justify-end" : "justify-start")}>
 										{msg.role === "assistant" && (
-											<Avatar className="h-6 w-6 shrink-0">
-												<AvatarFallback className="bg-emerald-500/10 text-emerald-600 text-[9px]">
-													<Bot className="h-3 w-3" />
+											<Avatar className="h-7 w-7 shrink-0">
+												<AvatarFallback className="bg-emerald-500/10 text-emerald-600">
+													<Bot className="h-3.5 w-3.5" />
 												</AvatarFallback>
 											</Avatar>
 										)}
-										<div className={cn("max-w-[80%] rounded-xl px-3 py-1.5 text-xs",
+										<div className={cn("max-w-[80%] rounded-xl px-3 py-2 text-sm",
 											msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted")}>
 											{msg.role === "assistant" ? (
-												<Markdown className="prose prose-xs dark:prose-invert max-w-none [&>p]:m-0">{msg.content}</Markdown>
+												<Markdown className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">{msg.content}</Markdown>
 											) : msg.content}
 										</div>
 										{msg.role === "user" && (
-											<Avatar className="h-6 w-6 shrink-0">
-												<AvatarFallback className="bg-primary/10 text-primary text-[9px]">
-													<User className="h-3 w-3" />
+											<Avatar className="h-7 w-7 shrink-0">
+												<AvatarFallback className="bg-primary/10 text-primary">
+													<User className="h-3.5 w-3.5" />
 												</AvatarFallback>
 											</Avatar>
 										)}
@@ -361,8 +384,8 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 								))}
 								{chat.isLoading && (
 									<div className="flex items-center gap-2">
-										<Avatar className="h-6 w-6"><AvatarFallback className="bg-emerald-500/10 text-emerald-600 text-[9px]"><Bot className="h-3 w-3" /></AvatarFallback></Avatar>
-										<div className="bg-muted rounded-xl px-3 py-1.5"><Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /></div>
+										<Avatar className="h-7 w-7"><AvatarFallback className="bg-emerald-500/10 text-emerald-600"><Bot className="h-3.5 w-3.5" /></AvatarFallback></Avatar>
+										<div className="bg-muted rounded-xl px-3 py-2"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
 									</div>
 								)}
 								<div ref={messagesEndRef} />
@@ -376,13 +399,13 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 
 				{/* Actions IA en attente */}
 				{selectedContact.isAI && chat.pendingActions.length > 0 && (
-					<div className="border-t bg-amber-50 dark:bg-amber-950/20 p-2 space-y-1">
+					<div className="border-t bg-amber-50 dark:bg-amber-950/20 p-2.5 space-y-1.5">
 						{chat.pendingActions.map((action, i) => (
-							<div key={i} className="flex items-center justify-between bg-background rounded-md p-1.5 border border-amber-200 text-[10px]">
+							<div key={i} className="flex items-center justify-between bg-background rounded-md p-2 border border-amber-200 text-xs">
 								<span className="font-medium truncate">{action.reason ?? action.type}</span>
-								<div className="flex gap-1">
-									<Button size="sm" variant="outline" onClick={() => chat.rejectAction(action)} className="h-5 text-[9px] px-1.5">Non</Button>
-									<Button size="sm" onClick={() => chat.confirmAction(action)} className="h-5 text-[9px] px-1.5">Oui</Button>
+								<div className="flex gap-1.5">
+									<Button size="sm" variant="outline" onClick={() => chat.rejectAction(action)} className="h-7 text-xs px-2.5">Non</Button>
+									<Button size="sm" onClick={() => chat.confirmAction(action)} className="h-7 text-xs px-2.5">Oui</Button>
 								</div>
 							</div>
 						))}
@@ -390,19 +413,19 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 				)}
 
 				{/* Input */}
-				<div className="border-t p-2 flex items-end gap-1.5 shrink-0">
+				<div className="border-t p-2.5 flex items-end gap-2 shrink-0">
 					<Textarea
 						value={messageInput}
 						onChange={(e) => setMessageInput(e.target.value)}
 						onKeyDown={handleKeyDown}
 						placeholder={selectedContact.isAI ? "Demandez à iAsted..." : "Écrire un message..."}
-						className="min-h-[32px] max-h-[80px] resize-none text-xs"
+						className="min-h-[40px] max-h-[100px] resize-none text-sm"
 						rows={1}
 					/>
-					<Button size="icon" className={cn("h-8 w-8 shrink-0", selectedContact.isAI && "bg-emerald-600 hover:bg-emerald-700")}
+					<Button size="icon" className={cn("h-10 w-10 shrink-0", selectedContact.isAI && "bg-emerald-600 hover:bg-emerald-700")}
 						disabled={!messageInput.trim() || (selectedContact.isAI && chat.isLoading)}
 						onClick={selectedContact.isAI ? handleSendAI : () => handleSendHuman(messageInput)}>
-						{selectedContact.isAI && chat.isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+						{selectedContact.isAI && chat.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
 					</Button>
 				</div>
 			</div>
@@ -413,27 +436,24 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 	// VUE LISTE DES CONTACTS (avec iAsted épinglé en premier)
 	// ════════════════════════════════════════════════════════════
 	return (
-		<div className="flex flex-col flex-1 overflow-hidden">
+		<div className="flex flex-col flex-1 min-h-0">
 			{/* Recherche + segments */}
-			<div className="p-2 border-b space-y-1.5">
-				<div className="relative">
-					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-					<Input
-						value={filters.searchTerm}
-						onChange={(e) => setSearch(e.target.value)}
-						placeholder="Rechercher (nom, email, poste, org)..."
-						className="h-8 pl-8 text-xs"
-					/>
-				</div>
+			<div className="p-3 border-b space-y-2">
+				<Input
+					value={filters.searchTerm}
+					onChange={(e) => setSearch(e.target.value)}
+					placeholder="Rechercher (nom, email, poste, org)..."
+					className="h-10 text-sm"
+				/>
 				{/* Segments source */}
-				<div className="flex items-center gap-1">
+				<div className="flex items-center gap-1.5">
 					{SOURCE_SEGMENTS.map((seg) => (
 						<button
 							key={seg.id}
 							type="button"
 							onClick={() => setSource(seg.id)}
 							className={cn(
-								"text-[10px] px-2 py-0.5 rounded-md font-medium transition-colors",
+								"text-xs px-3 py-1 rounded-md font-medium transition-colors",
 								filters.source === seg.id
 									? "bg-primary text-primary-foreground"
 									: "text-muted-foreground hover:bg-muted",
@@ -445,35 +465,35 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 				</div>
 			</div>
 
-			<ScrollArea className="flex-1">
+			<ScrollArea className="flex-1 min-h-0">
 				{/* iAsted — Contact IA épinglé */}
 				{(!filters.searchTerm || "iasted ia assistant".includes(filters.searchTerm.toLowerCase())) && (
 					<button
 						type="button"
 						onClick={() => setSelectedContact(IASTED_CONTACT)}
-						className="w-full flex items-center gap-3 px-3 py-3 hover:bg-emerald-500/5 transition-colors text-left border-b border-border/30"
+						className="w-full flex items-center gap-3 px-3 py-3.5 hover:bg-emerald-500/5 transition-colors text-left border-b border-border/30"
 					>
 						<div className="relative">
-							<Avatar className="h-10 w-10">
+							<Avatar className="h-11 w-11">
 								<AvatarFallback className="bg-emerald-500/15 text-emerald-500">
 									<Bot className="h-5 w-5" />
 								</AvatarFallback>
 							</Avatar>
-							<Pin className="absolute -top-0.5 -right-0.5 h-3 w-3 text-emerald-500 rotate-45" />
+							<Pin className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 text-emerald-500 rotate-45" />
 						</div>
 						<div className="flex-1 min-w-0">
 							<div className="flex items-center gap-1.5">
 								<p className="text-sm font-semibold">iAsted</p>
-								<Badge className="text-[7px] h-3.5 px-1 bg-emerald-500/15 text-emerald-500 border-emerald-500/20">IA</Badge>
+								<Badge className="text-[10px] h-4 px-1.5 bg-emerald-500/15 text-emerald-500 border-emerald-500/20">IA</Badge>
 							</div>
-							<p className="text-[11px] text-muted-foreground truncate">
+							<p className="text-xs text-muted-foreground truncate">
 								{chat.messages.length > 0
-									? chat.messages[chat.messages.length - 1].content.slice(0, 50) + "..."
+									? chat.messages[chat.messages.length - 1].content.slice(0, 45) + "..."
 									: "Agent IA Diplomate — Posez une question"}
 							</p>
 						</div>
 						{chat.messages.length > 0 && (
-							<span className="text-[9px] text-muted-foreground shrink-0">
+							<span className="text-[11px] text-muted-foreground shrink-0">
 								{new Date(chat.messages[chat.messages.length - 1].timestamp).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
 							</span>
 						)}
@@ -483,12 +503,12 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 				{/* Threads Standard (Mr Ray) — citoyens en attente */}
 				{(standardChats as any[])?.length > 0 && (
 					<div className="border-b border-border/30">
-						<div className="flex items-center gap-2 px-3 py-1.5">
-							<Headset className="h-3 w-3 text-teal-600 dark:text-teal-400 shrink-0" />
-							<span className="text-[9px] font-semibold text-teal-600 dark:text-teal-400 uppercase tracking-wider">
+						<div className="flex items-center gap-2 px-3 py-2">
+							<Headset className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+							<span className="text-[11px] font-semibold text-teal-600 dark:text-teal-400 uppercase tracking-wider">
 								Standard
 							</span>
-							<Badge variant="outline" className="text-[7px] h-3.5 px-1 ml-auto border-teal-500/30 text-teal-600 dark:text-teal-400">
+							<Badge variant="outline" className="text-[10px] h-4 px-1.5 ml-auto border-teal-500/30 text-teal-600 dark:text-teal-400">
 								{(standardChats as any[]).length}
 							</Badge>
 						</div>
@@ -504,38 +524,90 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 									isAI: false,
 									isStandard: true,
 								})}
-								className="w-full flex items-center gap-3 px-3 py-2 hover:bg-teal-500/5 transition-colors text-left"
+								className="w-full flex items-center gap-3 px-3 py-3 hover:bg-teal-500/5 transition-colors text-left"
 							>
-								<Avatar className="h-9 w-9">
+								<Avatar className="h-10 w-10">
 									<AvatarImage src={thread.otherUser?.avatarUrl} />
-									<AvatarFallback className="text-[10px] bg-teal-500/10 text-teal-600 dark:text-teal-400">
+									<AvatarFallback className="text-xs bg-teal-500/10 text-teal-600 dark:text-teal-400">
 										{(thread.otherUser?.firstName?.[0] ?? "") + (thread.otherUser?.lastName?.[0] ?? "")}
 									</AvatarFallback>
 								</Avatar>
 								<div className="flex-1 min-w-0">
-									<div className="flex items-center justify-between">
-										<div className="flex items-center gap-1.5">
-											<p className="text-xs font-medium truncate">
-												{thread.otherUser?.firstName ?? ""} {thread.otherUser?.lastName ?? ""}
-											</p>
-											{!thread.claimedBy && (
-												<Badge className="text-[7px] h-3.5 px-1 bg-amber-500/15 text-amber-600 border-amber-500/20">
-													En attente
-												</Badge>
-											)}
-										</div>
-										{thread.lastMessageAt && (
-											<span className="text-[9px] text-muted-foreground shrink-0 ml-2">
-												{new Date(thread.lastMessageAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-											</span>
+									<div className="flex items-center gap-1.5">
+										<p className="text-sm font-medium truncate flex-1 min-w-0">
+											{thread.otherUser?.firstName ?? ""} {thread.otherUser?.lastName ?? ""}
+										</p>
+										{!thread.claimedBy && (
+											<Badge className="text-[10px] h-4 px-1.5 shrink-0 bg-amber-500/15 text-amber-600 border-amber-500/20">
+												En attente
+											</Badge>
 										)}
 									</div>
-									<p className="text-[10px] text-muted-foreground truncate">
+									<p className="text-xs text-muted-foreground truncate">
 										{thread.lastMessageText ?? "Conversation Standard"}
 									</p>
 								</div>
 								{thread.unreadCount > 0 && (
-									<Badge className="text-[8px] h-4 min-w-[16px] px-1 bg-teal-600 text-white">
+									<Badge className="text-[10px] h-5 min-w-[20px] px-1.5 bg-teal-600 text-white">
+										{thread.unreadCount}
+									</Badge>
+								)}
+							</button>
+						))}
+					</div>
+				)}
+
+				{/* Conversations P2P actives */}
+				{p2pThreads.length > 0 && !filters.searchTerm && (
+					<div className="border-b border-border/30">
+						<div className="flex items-center gap-2 px-3 py-2">
+							<MessageSquare className="h-3.5 w-3.5 text-primary shrink-0" />
+							<span className="text-[11px] font-semibold text-primary uppercase tracking-wider">
+								Conversations
+							</span>
+							{totalP2PUnread > 0 && (
+								<Badge className="text-[10px] h-4 px-1.5 ml-auto bg-primary text-primary-foreground">
+									{totalP2PUnread}
+								</Badge>
+							)}
+						</div>
+						{p2pThreads.map((thread: any) => (
+							<button
+								key={thread._id}
+								type="button"
+								onClick={() => setSelectedContact({
+									...thread.otherUser,
+									name: `${thread.otherUser?.firstName ?? ""} ${thread.otherUser?.lastName ?? ""}`.trim(),
+									userId: thread.otherUser?.id,
+									_chatId: thread._id,
+									requestRef: thread.requestRef,
+									isAI: false,
+								})}
+								className="w-full flex items-center gap-3 px-3 py-3 hover:bg-muted/30 transition-colors text-left"
+							>
+								<Avatar className="h-10 w-10">
+									<AvatarImage src={thread.otherUser?.avatarUrl} />
+									<AvatarFallback className="text-xs bg-primary/10 text-primary">
+										{(thread.otherUser?.firstName?.[0] ?? "") + (thread.otherUser?.lastName?.[0] ?? "")}
+									</AvatarFallback>
+								</Avatar>
+								<div className="flex-1 min-w-0">
+									<div className="flex items-center gap-1.5">
+										<p className="text-sm font-medium truncate flex-1 min-w-0">
+											{thread.otherUser?.firstName ?? ""} {thread.otherUser?.lastName ?? ""}
+										</p>
+										{thread.requestRef && (
+											<Badge variant="outline" className="text-[10px] h-4 px-1.5 shrink-0">
+												{thread.requestRef}
+											</Badge>
+										)}
+									</div>
+									<p className="text-xs text-muted-foreground truncate">
+										{thread.lastMessageText ?? "Nouvelle conversation"}
+									</p>
+								</div>
+								{thread.unreadCount > 0 && (
+									<Badge className="text-[10px] h-5 min-w-[20px] px-1.5 bg-primary text-primary-foreground">
 										{thread.unreadCount}
 									</Badge>
 								)}
@@ -552,22 +624,22 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 				) : groups.length === 0 && filters.searchTerm ? (
 					<div className="flex flex-col items-center justify-center py-8 text-center">
 						<User className="h-8 w-8 text-muted-foreground/30 mb-2" />
-						<p className="text-xs text-muted-foreground">Aucun résultat</p>
+						<p className="text-sm text-muted-foreground">Aucun résultat</p>
 					</div>
 				) : (
 					<div className="divide-y">
 						{groups.map((group: any) => (
 							<div key={group.org.id} className="py-1">
 								{/* En-tête org */}
-								<div className="flex items-center gap-2 px-3 py-1">
-									<Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
-									<span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
+								<div className="flex items-center gap-2 px-3 py-1.5">
+									<Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+									<span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
 										{group.org.name}
 									</span>
 									{group.org.country && (
-										<span className="text-[8px] text-muted-foreground/60">{group.org.country}</span>
+										<span className="text-[10px] text-muted-foreground/60">{group.org.country}</span>
 									)}
-									<Badge variant="outline" className="text-[7px] h-3.5 px-1 ml-auto shrink-0">
+									<Badge variant="outline" className="text-[10px] h-4 px-1.5 ml-auto shrink-0">
 										{group.contacts.length}
 									</Badge>
 								</div>
@@ -577,11 +649,11 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 										key={contact.id}
 										type="button"
 										onClick={() => setSelectedContact({ ...contact, isAI: false })}
-										className="w-full flex items-center gap-3 px-3 py-2 hover:bg-muted/30 transition-colors text-left"
+										className="w-full flex items-center gap-3 px-3 py-3 hover:bg-muted/30 transition-colors text-left"
 									>
-										<Avatar className="h-9 w-9">
+										<Avatar className="h-10 w-10">
 											<AvatarImage src={contact.avatar} />
-											<AvatarFallback className={cn("text-[10px]",
+											<AvatarFallback className={cn("text-xs",
 												contact.source === "team" ? "bg-primary/10 text-primary"
 													: contact.source === "citizen" ? "bg-amber-500/10 text-amber-600"
 													: "bg-blue-500/10 text-blue-600",
@@ -591,14 +663,14 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 										</Avatar>
 										<div className="flex-1 min-w-0">
 											<div className="flex items-center gap-1">
-												<p className="text-xs font-bold truncate">{contact.lastName}</p>
-												<p className="text-xs text-foreground/80 truncate">{contact.firstName}</p>
+												<p className="text-sm font-bold truncate">{contact.lastName}</p>
+												<p className="text-sm text-foreground/80 truncate">{contact.firstName}</p>
 											</div>
 											{contact.position && (
-												<p className="text-[10px] text-muted-foreground truncate">{contact.position}</p>
+												<p className="text-xs text-muted-foreground truncate">{contact.position}</p>
 											)}
 										</div>
-										<MessageSquare className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0" />
+										<MessageSquare className="h-4 w-4 text-muted-foreground/30 shrink-0" />
 									</button>
 								))}
 							</div>
@@ -608,7 +680,7 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 			</ScrollArea>
 
 			{/* Footer stats */}
-			<div className="border-t px-3 py-1 text-[9px] text-muted-foreground flex items-center justify-between shrink-0">
+			<div className="border-t px-3 py-1.5 text-xs text-muted-foreground flex items-center justify-between shrink-0">
 				<span>{total} contact{total > 1 ? "s" : ""}</span>
 				<span>{groups.length} org{groups.length > 1 ? "s" : ""}</span>
 			</div>
@@ -644,14 +716,19 @@ function HumanChatView({ contact }: { contact: any }) {
 	// Auto-mark read quand on ouvre la conversation
 	useEffect(() => {
 		if (resolvedChatId) {
-			markRead({ chatId: resolvedChatId }).catch(() => {});
+			markRead({ chatId: resolvedChatId }).catch((e) => {
+				console.warn("Failed to mark messages as read:", e);
+			});
 		}
 	}, [resolvedChatId, markRead, messages?.length]);
 
-	// Scroll en bas
+	// Scroll en bas — delayed to let ScrollArea render
 	const scrollRef = useRef<HTMLDivElement>(null);
 	useEffect(() => {
-		scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+		const timer = setTimeout(() => {
+			scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+		}, 50);
+		return () => clearTimeout(timer);
 	}, [messages]);
 
 	if (messagesLoading) {
@@ -672,27 +749,27 @@ function HumanChatView({ contact }: { contact: any }) {
 	}
 
 	return (
-		<div className="space-y-2.5">
+		<div className="space-y-3">
 			{messages.map((msg: any) => {
 				const isMe = msg.senderId !== contact.userId;
 				return (
 					<div key={msg._id} className={cn("flex gap-2", isMe ? "justify-end" : "justify-start")}>
 						{!isMe && (
-							<Avatar className="h-6 w-6 shrink-0">
+							<Avatar className="h-7 w-7 shrink-0">
 								<AvatarImage src={contact.avatar} />
-								<AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+								<AvatarFallback className="text-xs bg-primary/10 text-primary">
 									{contact.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
 								</AvatarFallback>
 							</Avatar>
 						)}
-						<div className={cn("max-w-[80%] rounded-xl px-3 py-1.5 text-xs",
+						<div className={cn("max-w-[80%] rounded-xl px-3 py-2 text-sm",
 							isMe ? "bg-primary text-primary-foreground" : "bg-muted")}>
 							{msg.content}
 						</div>
 						{isMe && (
-							<Avatar className="h-6 w-6 shrink-0">
-								<AvatarFallback className="bg-primary/10 text-primary text-[9px]">
-									<User className="h-3 w-3" />
+							<Avatar className="h-7 w-7 shrink-0">
+								<AvatarFallback className="bg-primary/10 text-primary">
+									<User className="h-3.5 w-3.5" />
 								</AvatarFallback>
 							</Avatar>
 						)}

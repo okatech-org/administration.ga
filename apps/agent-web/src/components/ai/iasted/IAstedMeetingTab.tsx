@@ -226,7 +226,7 @@ export function IAstedMeetingTab() {
 					onDisconnected={handleDisconnect}
 					className="flex flex-col flex-1"
 				>
-					<CustomCallUI onDisconnect={handleDisconnect} />
+					<CustomCallUI onHangUp={handleDisconnect} />
 				</LiveKitRoom>
 			</div>
 		);

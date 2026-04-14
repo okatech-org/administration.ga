@@ -9,6 +9,7 @@ import { fr } from "date-fns/locale";
 import {
 	AlertTriangle,
 	ArrowLeft,
+	Baby,
 	Bot,
 	CheckCircle,
 	Loader2,
@@ -276,6 +277,12 @@ function RequestDetailPage() {
 						<Badge variant="outline" className="ml-1 font-mono text-xs">
 							{request.reference}
 						</Badge>
+						{(request as any).isChildRequest && (request as any).childProfile && (
+							<Badge variant="outline" className="text-xs text-pink-500 dark:text-pink-400 border-pink-300 dark:border-pink-700">
+								<Baby className="h-3 w-3 mr-1" />
+								{`${(request as any).childProfile.identity?.firstName ?? ""} ${(request as any).childProfile.identity?.lastName ?? ""}`.trim()}
+							</Badge>
+						)}
 					</h1>
 				</div>
 				<div className="flex items-center gap-2">

@@ -619,6 +619,57 @@ export const orgSettingsValidator = v.object({
   defaultProcessingDays: v.optional(v.number()), // SLA in days
   aiAnalysisEnabled: v.optional(v.boolean()), // Default: true
 
+  // ── Calls (LiveKit) ──
+  calls: v.optional(v.object({
+    acceptanceWindows: v.optional(v.object({
+      businessHours: v.boolean(),
+      emergencyOverride: v.boolean(),
+    })),
+    adaptiveStreaming: v.optional(v.boolean()),
+    audioCodec: v.optional(v.string()),
+    defaultCallMediaType: v.optional(
+      v.union(v.literal("audio"), v.literal("video")),
+    ),
+    maxCallDurationMinutes: v.optional(v.number()),
+    maxParticipantsCall: v.optional(v.number()),
+    maxParticipantsMeeting: v.optional(v.number()),
+    noAgentAvailableAction: v.optional(
+      v.union(
+        v.literal("voicemail"),
+        v.literal("callback_request"),
+        v.literal("disconnect"),
+      ),
+    ),
+    recording: v.optional(v.object({
+      autoStart: v.optional(v.boolean()),
+      citizenConsentRequired: v.boolean(),
+      enabled: v.boolean(),
+      retentionDays: v.number(),
+      storageProvider: v.optional(
+        v.union(v.literal("livekit"), v.literal("s3")),
+      ),
+    })),
+    ringTimeoutSeconds: v.optional(v.number()),
+    videoCodec: v.optional(v.string()),
+    voicemailGreeting: v.optional(v.string()),
+  })),
+
+  // ── Chats ──
+  chats: v.optional(v.object({
+    allowCitizenInitiated: v.optional(v.boolean()),
+    allowFileAttachments: v.optional(v.boolean()),
+    autoArchiveAfterInactiveDays: v.optional(v.number()),
+    maxAttachmentSizeMb: v.optional(v.number()),
+    standardRoutingRules: v.optional(v.object({
+      enabledByDefault: v.boolean(),
+      fairAssignment: v.union(
+        v.literal("round_robin"),
+        v.literal("least_busy"),
+      ),
+      routingMembershipIds: v.array(v.id("memberships")),
+    })),
+  })),
+
   // ── iCorrespondance ──
   correspondanceConfig: v.optional(v.object({
     isEnabled: v.boolean(),
@@ -632,11 +683,121 @@ export const orgSettingsValidator = v.object({
       autoRouteByHierarchy: v.boolean(),
       chefDePosteRequired: v.boolean(),
     })),
+    deadlinesByType: v.optional(v.array(v.object({
+      typeCode: v.string(),
+      standardDays: v.number(),
+      urgentDays: v.optional(v.number()),
+      maxDays: v.optional(v.number()),
+      escalationMembershipIds: v.optional(v.array(v.id("memberships"))),
+    }))),
     typesActifs: v.optional(v.array(v.string())),
     signatureConfig: v.optional(v.object({
       signatureElectronique: v.boolean(),
       cachetOrganisme: v.boolean(),
       cachetStorageId: v.optional(v.id("_storage")),
+    })),
+    watermarkConfig: v.optional(v.object({
+      enabled: v.boolean(),
+      text: v.string(),
+      opacity: v.number(),
+      rotation: v.optional(v.number()),
+    })),
+  })),
+
+  // ── Internal Mail (iBoîte) ──
+  internalMail: v.optional(v.object({
+    autoCategorization: v.optional(v.object({
+      enabled: v.boolean(),
+      rules: v.array(v.object({
+        folder: v.string(),
+        keywords: v.array(v.string()),
+        priority: v.number(),
+      })),
+    })),
+    autoResponder: v.optional(v.object({
+      enabled: v.boolean(),
+      message: v.string(),
+      startAt: v.optional(v.number()),
+      endAt: v.optional(v.number()),
+      applyToCategories: v.optional(v.array(v.string())),
+    })),
+    defaultSignature: v.optional(v.object({
+      html: v.string(),
+      imageStorageId: v.optional(v.id("_storage")),
+    })),
+    replyTemplates: v.optional(v.array(v.object({
+      code: v.string(),
+      label: v.string(),
+      subject: v.string(),
+      bodyHtml: v.string(),
+      category: v.optional(v.union(
+        v.literal("accueil"),
+        v.literal("refus"),
+        v.literal("information"),
+        v.literal("urgence"),
+      )),
+    }))),
+    stamps: v.optional(v.array(v.object({
+      code: v.string(),
+      label: v.string(),
+      storageId: v.id("_storage"),
+      opacity: v.number(),
+      position: v.union(
+        v.literal("top_right"),
+        v.literal("bottom_center"),
+        v.literal("signature_area"),
+      ),
+      colorVariant: v.optional(v.union(
+        v.literal("red"),
+        v.literal("blue"),
+        v.literal("green"),
+      )),
+    }))),
+  })),
+
+  // ── Notifications ──
+  notifications: v.optional(v.object({
+    channels: v.object({
+      email: v.boolean(),
+      sms: v.boolean(),
+      inApp: v.boolean(),
+      push: v.optional(v.boolean()),
+      whatsapp: v.optional(v.boolean()),
+    }),
+    escalation: v.optional(v.object({
+      enabled: v.boolean(),
+      noResponseAfterHours: v.number(),
+      maxReminders: v.number(),
+      escalateToMembershipIds: v.array(v.id("memberships")),
+    })),
+    events: v.optional(v.array(v.object({
+      eventCode: v.string(),
+      enabledChannels: v.array(v.string()),
+      priority: v.optional(v.union(
+        v.literal("low"),
+        v.literal("normal"),
+        v.literal("high"),
+        v.literal("critical"),
+      )),
+      templateOverrides: v.optional(v.object({
+        subjectFr: v.optional(v.string()),
+        subjectEn: v.optional(v.string()),
+        bodyFr: v.optional(v.string()),
+        bodyEn: v.optional(v.string()),
+      })),
+    }))),
+    quietHours: v.optional(v.object({
+      enabled: v.boolean(),
+      startHour: v.number(),
+      endHour: v.number(),
+      channelsAffected: v.array(v.string()),
+      timezone: v.optional(v.string()),
+    })),
+    senderConfig: v.optional(v.object({
+      emailFromName: v.optional(v.string()),
+      emailReplyTo: v.optional(v.string()),
+      smsSenderName: v.optional(v.string()),
+      smsBirdChannelId: v.optional(v.string()),
     })),
   })),
 

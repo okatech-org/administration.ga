@@ -190,7 +190,6 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
           const { subject, html } = otpEmail({ otp, type, platform, lang });
 
           const sender = fromEmail(platform);
-          console.log(`[OTP] Sending ${type} OTP to ${email} from ${sender} (platform: ${platform.platform})`);
 
           try {
             await resend.sendEmail(ctx as any, {
@@ -199,7 +198,6 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
               subject,
               html,
             });
-            console.log(`[OTP] ✅ Email queued successfully for ${email}`);
           } catch (err: any) {
             console.error(`[OTP] ❌ Failed to send OTP email to ${email}:`, err?.message ?? err);
             throw err; // relancer pour que Better Auth retourne une erreur au client
@@ -224,7 +222,6 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
       phoneNumber({
         sendOTP: async ({ phoneNumber: phone, code }) => {
           if (!process.env.BIRD_API_KEY) {
-            console.log("[Auth SMS] BIRD_API_KEY not configured, skipping");
             return;
           }
           try {

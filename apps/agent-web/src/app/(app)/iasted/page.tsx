@@ -8,7 +8,9 @@
  */
 
 import { api } from "@convex/_generated/api"
+import type { Id } from "@convex/_generated/dataModel"
 import { useRouter } from "next/navigation";
+import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import {
   Bot,
   Contact,
@@ -46,7 +48,6 @@ import { IAstedContactTab } from "@/components/ai/iasted/IAstedContactTab"
 import { IAstedCallTab } from "@/components/ai/iasted/IAstedCallTab"
 import { IAstedMeetingTab } from "@/components/ai/iasted/IAstedMeetingTab"
 import { IAstedSettingsTab } from "@/components/ai/iasted/IAstedSettingsTab"
-import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks"
 import { cn } from "@/lib/utils"
 
 
@@ -79,6 +80,30 @@ export default function IAstedFullPage() {
   const chat = useAdminAIChat()
   const voice = useAdminVoiceChat()
   const suggestions = getSuggestions("/iasted")
+
+  // Inbound calls count for badge
+  const { data: inboundCalls } = useAuthenticatedConvexQuery(
+    api.functions.meetings.listInboundOrgCalls,
+    {},
+  )
+  const inboundCount = inboundCalls?.length ?? 0
+
+  // Tous les threads de l'agent (P2P + standard)
+  const { data: myChats } = useAuthenticatedConvexQuery(
+    api.functions.chats.listMyChats,
+    {},
+  )
+
+  // Threads P2P uniquement
+  const p2pThreads = useMemo(() => {
+    if (!myChats) return []
+    return (myChats as any[]).filter((t: any) => t.type !== "standard")
+  }, [myChats])
+
+  // Total non-lus P2P pour badge sur iChat
+  const totalChatUnread = useMemo(() => {
+    return p2pThreads.reduce((acc: number, t: any) => acc + (t.unreadCount ?? 0), 0)
+  }, [p2pThreads])
 
   // Contacts
   const { data: orgChart } = useAuthenticatedConvexQuery(
@@ -150,7 +175,12 @@ export default function IAstedFullPage() {
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      if (selectedContact?.isAI) handleSendAI()
+      if (selectedContact?.isAI) {
+        handleSendAI()
+      } else if (selectedContact) {
+        window.dispatchEvent(new CustomEvent("iasted:send-human", { detail: { text: messageInput } }))
+        setMessageInput("")
+      }
     }
   }
 
@@ -193,6 +223,8 @@ export default function IAstedFullPage() {
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon
             const isActive = activeTab === item.id
+            const showBadge = (item.id === "icall" && inboundCount > 0) || (item.id === "ichat" && totalChatUnread > 0)
+            const badgeCount = item.id === "icall" ? inboundCount : totalChatUnread
             return (
               <button
                 key={item.id}
@@ -200,13 +232,18 @@ export default function IAstedFullPage() {
                 onClick={() => setActiveTab(item.id)}
                 title={item.label}
                 className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-xl transition-all",
+                  "relative flex h-10 w-10 items-center justify-center rounded-xl transition-all",
                   isActive
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 )}
               >
                 <Icon className="h-5 w-5" />
+                {showBadge && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                    {badgeCount}
+                  </span>
+                )}
               </button>
             )
           })}
@@ -298,6 +335,78 @@ export default function IAstedFullPage() {
                   </div>
                 </button>
 
+                {/* Conversations P2P actives */}
+                {p2pThreads.length > 0 && !search && (
+                  <div className="border-b border-border/20">
+                    <div className="flex items-center gap-2 px-4 py-1.5">
+                      <MessageSquare className="h-3 w-3 text-primary shrink-0" />
+                      <span className="text-[9px] font-semibold text-primary uppercase tracking-wider">
+                        Conversations
+                      </span>
+                      {totalChatUnread > 0 && (
+                        <Badge className="text-[7px] h-3.5 px-1 ml-auto bg-primary text-primary-foreground">
+                          {totalChatUnread}
+                        </Badge>
+                      )}
+                    </div>
+                    {p2pThreads.map((thread: any) => (
+                      <button
+                        key={thread._id}
+                        type="button"
+                        onClick={() => setSelectedContact({
+                          ...thread.otherUser,
+                          name: `${thread.otherUser?.firstName ?? ""} ${thread.otherUser?.lastName ?? ""}`.trim(),
+                          lastName: thread.otherUser?.lastName,
+                          firstName: thread.otherUser?.firstName,
+                          avatar: thread.otherUser?.avatarUrl,
+                          userId: thread.otherUser?.id,
+                          _chatId: thread._id,
+                          requestRef: thread.requestRef,
+                          isAI: false,
+                        })}
+                        className={cn(
+                          "flex w-full items-center gap-3 border-b border-border/10 px-4 py-3 text-left transition-colors",
+                          selectedContact?.userId === thread.otherUser?.id
+                            ? "bg-primary/5"
+                            : "hover:bg-muted/30"
+                        )}
+                      >
+                        <Avatar className="h-11 w-11">
+                          <AvatarImage src={thread.otherUser?.avatarUrl} />
+                          <AvatarFallback className="bg-primary/10 text-xs text-primary">
+                            {(thread.otherUser?.firstName?.[0] ?? "") + (thread.otherUser?.lastName?.[0] ?? "")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between">
+                            <p className="truncate text-sm font-medium">
+                              {thread.otherUser?.firstName ?? ""} {thread.otherUser?.lastName ?? ""}
+                            </p>
+                            {thread.requestRef && (
+                              <Badge variant="outline" className="text-[7px] h-3.5 px-1 shrink-0">
+                                {thread.requestRef}
+                              </Badge>
+                            )}
+                            {thread.lastMessageAt && (
+                              <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
+                                {new Date(thread.lastMessageAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            )}
+                          </div>
+                          <p className="truncate text-xs text-muted-foreground mt-0.5">
+                            {thread.lastMessageText ?? "Nouvelle conversation"}
+                          </p>
+                        </div>
+                        {thread.unreadCount > 0 && (
+                          <Badge className="text-[8px] h-4 min-w-[16px] px-1 bg-primary text-primary-foreground">
+                            {thread.unreadCount}
+                          </Badge>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {/* Contacts humains */}
                 {filteredContacts.map((c: any) => (
                   <button
@@ -376,7 +485,7 @@ export default function IAstedFullPage() {
                             {selectedContact.firstName}
                           </p>
                           <p className="text-[11px] text-muted-foreground">
-                            {selectedContact.position}
+                            {selectedContact.requestRef ? `Demande ${selectedContact.requestRef}` : (selectedContact.position ?? "Agent consulaire")}
                           </p>
                         </>
                       )}
@@ -487,12 +596,7 @@ export default function IAstedFullPage() {
                         </div>
                       )
                     ) : (
-                      <div className="flex h-full flex-col items-center justify-center py-12 text-center">
-                        <MessageSquare className="mb-3 h-12 w-12 text-muted-foreground/20" />
-                        <p className="text-sm text-muted-foreground">
-                          Démarrez la conversation avec {selectedContact.name}
-                        </p>
-                      </div>
+                      <FullPageHumanChat contact={selectedContact} />
                     )}
                   </ScrollArea>
 
@@ -545,7 +649,11 @@ export default function IAstedFullPage() {
                     />
                     <Button
                       size="icon"
-                      onClick={selectedContact.isAI ? handleSendAI : undefined}
+                      onClick={selectedContact.isAI ? handleSendAI : () => {
+                        // P2P send handled by FullPageHumanChat via custom event
+                        window.dispatchEvent(new CustomEvent("iasted:send-human", { detail: { text: messageInput } }))
+                        setMessageInput("")
+                      }}
                       disabled={
                         !messageInput.trim() ||
                         (selectedContact.isAI && chat.isLoading)
@@ -603,6 +711,132 @@ export default function IAstedFullPage() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════
+// Composant chat humain plein écran (P2P via Convex)
+// ════════════════════════════════════════════════════════════
+function FullPageHumanChat({ contact }: { contact: any }) {
+  const { activeOrgId } = useOrg()
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Chercher le thread existant
+  const { data: existingChat } = useAuthenticatedConvexQuery(
+    api.functions.chats.findChatWith,
+    contact?.userId ? { targetUserId: contact.userId as Id<"users"> } : "skip",
+  )
+
+  const resolvedChatId = (contact?._chatId as Id<"chats"> | undefined) ?? existingChat?._id
+
+  // Messages temps réel
+  const { data: messages, isPending: messagesLoading } = useAuthenticatedConvexQuery(
+    api.functions.chats.listMessages,
+    resolvedChatId ? { chatId: resolvedChatId, limit: 50 } : "skip",
+  )
+
+  // Mutations
+  const { mutateAsync: initiateChat } = useConvexMutationQuery(api.functions.chats.initiateChat)
+  const { mutateAsync: sendChatMessage } = useConvexMutationQuery(api.functions.chats.sendMessage)
+  const { mutateAsync: markRead } = useConvexMutationQuery(api.functions.chats.markRead)
+
+  // Marquer lu
+  useEffect(() => {
+    if (resolvedChatId) {
+      markRead({ chatId: resolvedChatId }).catch((e) => {
+        console.warn("Failed to mark messages as read:", e)
+      })
+    }
+  }, [resolvedChatId, markRead, messages?.length])
+
+  // Auto-scroll
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollIntoView({ behavior: "smooth" })
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [messages])
+
+  // Écouter les événements d'envoi depuis le parent
+  useEffect(() => {
+    const handler = async (e: Event) => {
+      const text = (e as CustomEvent).detail?.text?.trim()
+      if (!text || !contact?.userId) return
+      try {
+        if (resolvedChatId) {
+          await sendChatMessage({ chatId: resolvedChatId, content: text })
+        } else {
+          await initiateChat({
+            targetUserId: contact.userId as Id<"users">,
+            orgId: activeOrgId ?? undefined,
+            initialMessage: text,
+          })
+        }
+      } catch (err: any) {
+        toast.error(err?.message ?? "Erreur d'envoi")
+      }
+    }
+    window.addEventListener("iasted:send-human", handler)
+    return () => window.removeEventListener("iasted:send-human", handler)
+  }, [contact, resolvedChatId, sendChatMessage, initiateChat, activeOrgId])
+
+  const isActuallyLoading = messagesLoading && !!resolvedChatId
+
+  if (isActuallyLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (!messages || messages.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center py-12">
+        <MessageSquare className="h-10 w-10 text-muted-foreground/30 mb-3" />
+        <p className="text-sm text-muted-foreground">Envoyez le premier message</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3 p-4">
+      {messages.map((msg: any) => {
+        const isMe = msg.senderId !== contact.userId
+        return (
+          <div key={msg._id} className={cn("flex gap-2.5", isMe ? "justify-end" : "justify-start")}>
+            {!isMe && (
+              <Avatar className="h-8 w-8 shrink-0">
+                <AvatarImage src={contact.avatar} />
+                <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                  {contact.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
+                </AvatarFallback>
+              </Avatar>
+            )}
+            <div className={cn(
+              "max-w-[70%] rounded-2xl px-4 py-2.5 text-sm",
+              isMe ? "bg-primary text-primary-foreground" : "bg-muted",
+            )}>
+              {msg.content}
+              <div className={cn(
+                "text-[10px] mt-1",
+                isMe ? "text-primary-foreground/60" : "text-muted-foreground/60",
+              )}>
+                {new Date(msg._creationTime).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+              </div>
+            </div>
+            {isMe && (
+              <Avatar className="h-8 w-8 shrink-0">
+                <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                  <User className="h-3.5 w-3.5" />
+                </AvatarFallback>
+              </Avatar>
+            )}
+          </div>
+        )
+      })}
+      <div ref={scrollRef} />
     </div>
   )
 }

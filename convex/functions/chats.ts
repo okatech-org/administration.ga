@@ -35,6 +35,8 @@ function sortParticipants(
 
 /**
  * Vérifie que l'utilisateur est bien un participant du chat.
+ * Pour les threads "standard" (citoyen ↔ Mr Ray), les agents membres
+ * de l'org du chat sont aussi autorisés (supervision / prise en charge).
  */
 async function validateParticipation(
   ctx: { db: any },
@@ -43,10 +45,22 @@ async function validateParticipation(
 ) {
   const chat = await ctx.db.get(chatId);
   if (!chat) throw error(ErrorCode.NOT_FOUND, "Conversation non trouvée");
-  if (chat.participantA !== userId && chat.participantB !== userId) {
-    throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Vous ne faites pas partie de cette conversation");
+  if (chat.participantA === userId || chat.participantB === userId) {
+    return chat;
   }
-  return chat;
+  // Pour les threads standard, autoriser les agents de l'org
+  if (chat.type === "standard" && chat.orgId) {
+    const membership = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_org", (q: any) =>
+        q.eq("userId", userId).eq("orgId", chat.orgId),
+      )
+      .first();
+    if (membership && !membership.deletedAt) {
+      return chat;
+    }
+  }
+  throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Vous ne faites pas partie de cette conversation");
 }
 
 // ============================================
@@ -102,6 +116,13 @@ export const listMyChats = authQuery({
           (m: any) => m.senderId !== userId && !m.readAt,
         ).length;
 
+        // Enrichir avec la référence de la demande liée
+        let requestRef: string | null = null;
+        if (chat.requestId) {
+          const request = await ctx.db.get(chat.requestId) as any;
+          if (request) requestRef = request.reference ?? null;
+        }
+
         return {
           ...chat,
           otherUser: otherUser
@@ -115,6 +136,7 @@ export const listMyChats = authQuery({
               }
             : null,
           unreadCount,
+          requestRef,
         };
       }),
     );

@@ -48,13 +48,11 @@ export const sendSmsNotification = internalAction({
 
     // Skip if no phone number
     if (!phone) {
-      console.log("[SMS] No phone number provided, skipping");
       return { success: false, error: "No phone number" };
     }
 
     // Skip if Bird is not configured (dev environments)
     if (!process.env.BIRD_API_KEY) {
-      console.log("[SMS] BIRD_API_KEY not configured, skipping");
       return { success: false, error: "Bird not configured" };
     }
 
