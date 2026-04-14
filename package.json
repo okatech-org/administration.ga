@@ -12,7 +12,7 @@
     "dev:citizen-web": "bun run dev --filter=citizen-web",
     "dev:agent-web": "bun run dev --filter=agent-web",
     "dev:backoffice-web": "bun run dev --filter=backoffice-web",
-    "dev:convex": "bash scripts/fix-convex-local-ports.sh 2>/dev/null; bunx convex dev",
+    "dev:convex": "bunx convex dev",
     "fix:convex-local": "bash scripts/fix-convex-local-ports.sh"
   },
   "dependencies": {

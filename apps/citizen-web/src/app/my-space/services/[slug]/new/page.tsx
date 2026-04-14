@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "@convex/_generated/api";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -24,6 +24,8 @@ export default function NewRequestRedirect() {
 	const params = useParams<{ slug: string }>();
 	const slug = params.slug;
 	const router = useRouter();
+	const searchParams = useSearchParams();
+	const childId = searchParams.get("childId") || undefined;
 	const { t } = useTranslation();
 
 	const [error, setError] = useState<string | null>(null);
@@ -40,7 +42,9 @@ export default function NewRequestRedirect() {
 	// Check for existing draft
 	const { data: existingDraft } = useAuthenticatedConvexQuery(
 		api.functions.requests.getDraftForService,
-		orgService ? { orgServiceId: orgService._id } : "skip",
+		orgService
+			? { orgServiceId: orgService._id, childProfileId: childId as any }
+			: "skip",
 	);
 
 	const { mutateAsync: createDraft } = useConvexMutationQuery(
@@ -75,6 +79,7 @@ export default function NewRequestRedirect() {
 					const result = await createDraft({
 						orgServiceId: orgService._id,
 						submitNow: false,
+						childProfileId: childId as any,
 					});
 					captureEvent("myspace_request_started", {
 						request_type: slug,

@@ -86,13 +86,15 @@ function ServicesDemarchesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
+  const childId = searchParams.get("childId")
   const activeTab: TabKey =
     searchParams.get("tab") === "demarches" ? "demarches" : "services"
   const setActiveTab = useCallback(
     (tab: TabKey) => {
-      router.replace(`/my-space/services-demarches?tab=${tab}`)
+      const childParam = childId ? `&childId=${childId}` : ""
+      router.replace(`/my-space/services-demarches?tab=${tab}${childParam}`)
     },
-    [router]
+    [router, childId]
   )
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("ALL")
@@ -132,6 +134,15 @@ function ServicesDemarchesContent() {
     api.functions.dossierProcedure.listMyDossiers,
     {}
   )
+
+  // ── Child profile context (when browsing services for a child) ──
+  const { data: childProfile } = useAuthenticatedConvexQuery(
+    api.functions.childProfiles.getById,
+    childId ? { id: childId as any } : "skip"
+  )
+  const childName = childProfile
+    ? `${(childProfile as any).identity?.firstName ?? ""} ${(childProfile as any).identity?.lastName ?? ""}`.trim()
+    : null
 
   // ── Services disponibles pour l'utilisateur (representation + eligibilite) ──
   const userServices = useMemo(() => {
@@ -201,7 +212,8 @@ function ServicesDemarchesContent() {
   }
   const handleCreateRequest = () => {
     if (!selectedService) return
-    router.push(`/my-space/services/${selectedService.slug}/new`)
+    const childParam = childId ? `?childId=${childId}` : ""
+    router.push(`/my-space/services/${selectedService.slug}/new${childParam}`)
   }
 
   // ─── Render ─────────────────────────────────────────────────────────────
@@ -214,6 +226,22 @@ function ServicesDemarchesContent() {
           subtitle={t("servicesDemarches.subtitle")}
           icon={<Globe className="h-6 w-6 text-primary" />}
         />
+        {childName && (
+          <div className="mt-2 flex items-center gap-2 rounded-lg border border-pink-500/20 bg-pink-500/5 px-3 py-2 text-sm">
+            <span className="font-medium text-pink-600">
+              {t("servicesDemarches.childContext", "Services pour {{name}}", { name: childName })}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto h-6 px-2 text-xs text-muted-foreground"
+              onClick={() => router.replace("/my-space/services-demarches")}
+            >
+              <X className="h-3 w-3 mr-1" />
+              {t("common.cancel")}
+            </Button>
+          </div>
+        )}
       </div>
 
       <motion.div

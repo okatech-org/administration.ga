@@ -457,16 +457,27 @@ export const create = authMutation({
  */
 export const createFromRequest = internalMutation({
   args: {
-    profileId: v.id("profiles"),
+    profileId: v.optional(v.id("profiles")),
+    childProfileId: v.optional(v.id("childProfiles")),
     orgId: v.id("orgs"),
     requestId: v.id("requests"),
   },
   handler: async (ctx, args) => {
+    const isChild = !!args.childProfileId;
+
     // Check for existing active or pending registration
-    const existing = await ctx.db
-      .query("consularRegistrations")
-      .withIndex("by_profile", (q) => q.eq("profileId", args.profileId))
-      .collect();
+    let existing;
+    if (isChild) {
+      existing = await ctx.db
+        .query("consularRegistrations")
+        .withIndex("by_childProfile", (q) => q.eq("childProfileId", args.childProfileId!))
+        .collect();
+    } else {
+      existing = await ctx.db
+        .query("consularRegistrations")
+        .withIndex("by_profile", (q) => q.eq("profileId", args.profileId!))
+        .collect();
+    }
 
     const activeAtOrg = existing.find(
       (r) =>
@@ -482,7 +493,9 @@ export const createFromRequest = internalMutation({
 
     // Create new registration entry
     const registrationId = await ctx.db.insert("consularRegistrations", {
-      profileId: args.profileId,
+      ...(isChild
+        ? { childProfileId: args.childProfileId }
+        : { profileId: args.profileId }),
       orgId: args.orgId,
       requestId: args.requestId,
       type: RegistrationType.Inscription,
@@ -491,6 +504,7 @@ export const createFromRequest = internalMutation({
     });
 
     // NEOCORTEX: Signal inscription consulaire créée (internal — appel direct)
+    const profileRef = isChild ? args.childProfileId : args.profileId;
     await ctx.scheduler.runAfter(0, internal.hippocampe.loguerAction, {
       action: "CREATE_CONSULAR_REGISTRATION",
       categorie: "METIER",
@@ -499,7 +513,9 @@ export const createFromRequest = internalMutation({
       details: {
         avant: null,
         apres: {
-          profileId: args.profileId,
+          ...(isChild
+            ? { childProfileId: args.childProfileId }
+            : { profileId: args.profileId }),
           orgId: args.orgId,
           requestId: args.requestId,
           status: RegistrationStatus.Requested,
@@ -513,7 +529,7 @@ export const createFromRequest = internalMutation({
       entiteId: registrationId,
       payload: {
         action: "CREATE_CONSULAR_REGISTRATION",
-        profileId: args.profileId,
+        profileId: profileRef,
         orgId: args.orgId,
         requestId: args.requestId,
       },

@@ -12,12 +12,14 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useConvex } from "convex/react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/my-space/flat-card";
+import { ChildConsularRegistrationDialog } from "@/components/my-space/ChildConsularRegistrationDialog";
 import { PageHeader } from "@/components/my-space/page-header";
 import { ContentDetailSkeleton } from "@/components/skeletons";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
@@ -50,6 +52,8 @@ export default function ChildDashboardPage() {
 		api.functions.childProfiles.getById,
 		{ id: childId as Id<"childProfiles"> },
 	);
+
+	const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
 
 	if (isPending) return <ContentDetailSkeleton />;
 
@@ -318,8 +322,11 @@ export default function ChildDashboardPage() {
 									<span className="text-sm font-bold">{t("children.detail.actions")}</span>
 								</div>
 								<div className="space-y-2">
+									<Button variant="outline" size="sm" className="w-full h-9 text-sm justify-start" onClick={() => setShowRegistrationDialog(true)}>
+										<Shield className="h-4 w-4 mr-2" />{t("children.detail.consularRegistration", "Inscription consulaire")}
+									</Button>
 									<Button asChild variant="outline" size="sm" className="w-full h-9 text-sm justify-start">
-										<Link href="/my-space/services-demarches">
+										<Link href={`/my-space/services-demarches?childId=${childId}`}>
 											<FileText className="h-4 w-4 mr-2" />{t("children.detail.requestFor", { name: firstName })}
 										</Link>
 									</Button>
@@ -340,6 +347,13 @@ export default function ChildDashboardPage() {
 
 				</div>
 			</motion.div>
+
+			<ChildConsularRegistrationDialog
+				open={showRegistrationDialog}
+				onOpenChange={setShowRegistrationDialog}
+				childProfileId={childId as Id<"childProfiles">}
+				childName={firstName}
+			/>
 		</div>
 	);
 }

@@ -125,6 +125,100 @@ export function buildRegistrationFormData(
 }
 
 /**
+ * Build formData for a child profile's consular registration request.
+ * Child profiles have a different shape: no addresses, contacts, or profession.
+ * Parent's contact/address data is used as fallback.
+ */
+export function buildChildRegistrationFormData(
+  childProfile: Record<string, any>,
+  parentProfile: Record<string, any>,
+  duration: string,
+): Record<string, unknown> {
+  const identity = childProfile.identity ?? {};
+  const passportInfo = childProfile.passportInfo ?? {};
+  const parents = childProfile.parents ?? [];
+
+  // Extract parent info from child's parents array
+  const father = parents.find((p: any) => p.role === "Father");
+  const mother = parents.find((p: any) => p.role === "Mother");
+
+  // Use parent profile for contact & address info
+  const contacts = parentProfile.contacts ?? {};
+  const addresses = parentProfile.addresses ?? {};
+  const residence = addresses.residence ?? {};
+  const homeland = addresses.homeland ?? {};
+  const emergencyContacts = contacts.emergencyContacts ?? [];
+
+  return {
+    // Meta
+    type: "registration",
+    profileId: childProfile._id,
+    isChildProfile: true,
+    duration,
+
+    // Section: basic_info
+    basic_info: {
+      last_name: identity.lastName || undefined,
+      first_name: identity.firstName || undefined,
+      nip: childProfile.nipCode || undefined,
+      gender: identity.gender || undefined,
+      birth_date: formatDate(identity.birthDate),
+      birth_place: identity.birthPlace || undefined,
+      birth_country: identity.birthCountry || undefined,
+      nationality: identity.nationality || undefined,
+      nationality_acquisition: identity.nationalityAcquisition || undefined,
+    },
+
+    // Section: passport_info
+    passport_info: {
+      passport_number: passportInfo.number || undefined,
+      passport_issue_date: formatDate(passportInfo.issueDate),
+      passport_expiry_date: formatDate(passportInfo.expiryDate),
+      passport_issuing_authority: passportInfo.issuingAuthority || undefined,
+    },
+
+    // Section: family_info (from child's parents array)
+    family_info: {
+      father_last_name: father?.lastName || undefined,
+      father_first_name: father?.firstName || undefined,
+      mother_last_name: mother?.lastName || undefined,
+      mother_first_name: mother?.firstName || undefined,
+    },
+
+    // Section: contact_info (from parent profile)
+    contact_info: {
+      email: contacts.email || parentProfile.email || undefined,
+      phone: contacts.phone || parentProfile.phone || undefined,
+    },
+
+    // Section: residence_address (from parent profile)
+    residence_address: {
+      residence_street: residence.street || undefined,
+      residence_city: residence.city || undefined,
+      residence_postal_code: residence.postalCode || undefined,
+      residence_country: residence.country || undefined,
+    },
+
+    // Section: homeland_address (from parent profile)
+    homeland_address: {
+      homeland_street: homeland.street || undefined,
+      homeland_city: homeland.city || undefined,
+      homeland_postal_code: homeland.postalCode || undefined,
+      homeland_country: homeland.country || undefined,
+    },
+
+    // Section: emergency contacts (from parent profile)
+    emergency_contacts: emergencyContacts.map((c: any) => ({
+      last_name: c.lastName || undefined,
+      first_name: c.firstName || undefined,
+      phone: c.phone || undefined,
+      email: c.email || undefined,
+      country: c.country || undefined,
+    })),
+  };
+}
+
+/**
  * Check if formData is empty or effectively empty.
  * Returns true if formData is null/undefined, {}, or has only meta keys.
  */

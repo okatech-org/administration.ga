@@ -3,7 +3,7 @@
 import { api } from "@convex/_generated/api";
 import { RequestStatus, ServiceCategory } from "@convex/lib/constants";
 import { getLocalized } from "@convex/lib/utils";
-import { buildRegistrationFormData } from "@convex/lib/registrationFormData";
+import { buildRegistrationFormData, buildChildRegistrationFormData } from "@convex/lib/registrationFormData";
 import type { FormField } from "@convex/lib/validators";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
@@ -142,6 +142,14 @@ export default function UserRequestDetail() {
 	const router = useRouter();
 
 	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	// Detect if this request is for a child profile
+	const isChildRequest = !!(request?.formData as any)?.isChildProfile;
+	const childProfileId = isChildRequest ? (request?.profileId as any) : undefined;
+	const { data: childProfile } = useAuthenticatedConvexQuery(
+		api.functions.childProfiles.getById,
+		childProfileId ? { id: childProfileId } : "skip",
+	);
 
 	const isDraft = request?.status === RequestStatus.Draft;
 	const canCancel =
@@ -536,18 +544,31 @@ export default function UserRequestDetail() {
 					</FlatCard>
 
 					{/* Form - Registration or Dynamic */}
-					{isRegistrationService && profile ? (
+					{isRegistrationService && (isChildRequest ? childProfile : profile) ? (
 						<RegistrationForm
-							profile={profile}
+							profile={(isChildRequest && childProfile
+								? {
+									...childProfile,
+									// Adapt child profile shape for RegistrationForm
+									documents: (childProfile as any).documents ?? {},
+									userType: (profile as any)?.userType ?? "permanent",
+								}
+								: profile) as any}
 							requestType={(request.service as { slug: string })?.slug}
 							requiredDocuments={
 								request.service?.formSchema?.joinedDocuments || []
 							}
 							onSubmit={async () => {
-								const formData = buildRegistrationFormData(
-									profile as any,
-									(profile as any).userType || "permanent",
-								);
+								const formData = isChildRequest && childProfile
+									? buildChildRegistrationFormData(
+										childProfile as any,
+										(profile ?? {}) as any,
+										(profile as any)?.userType || "permanent",
+									)
+									: buildRegistrationFormData(
+										profile as any,
+										(profile as any).userType || "permanent",
+									);
 								await handleSubmit(formData);
 							}}
 							isSubmitting={isSubmitting}
