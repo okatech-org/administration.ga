@@ -513,6 +513,7 @@
 			"passport": "Passeport",
 			"birthCertificate": "Acte de Naissance",
 			"proofOfAddress": "Justificatif de Domicile",
+			"proofOfResidency": "Titre de séjour",
 			"cropPhoto": "Recadrer la photo",
 			"photoTip1": "Visage centré et dégagé",
 			"photoTip2": "Fond uni et clair",

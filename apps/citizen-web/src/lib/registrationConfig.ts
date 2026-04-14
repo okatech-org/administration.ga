@@ -163,6 +163,18 @@ const DOC_PROOF_OF_ADDRESS: RequiredDocumentDef = {
 	required: true,
 };
 
+const DOC_PROOF_OF_RESIDENCY: RequiredDocumentDef = {
+	key: "proofOfResidency",
+	labelKey: "register.documents.proofOfResidency",
+	labelFallback: "Titre de séjour",
+	documentType: DetailedDocumentType.ResidencePermit,
+	category: DocumentTypeCategory.Identity,
+	formatHint: "PDF, JPG - Max 20MB",
+	accept: "image/*,application/pdf",
+	maxSize: 20 * 1024 * 1024,
+	required: false,
+};
+
 // ============================================================================
 // VISIBLE SECTIONS (fine-grained control within a step)
 // ============================================================================
@@ -238,6 +250,7 @@ const LONG_STAY_CONFIG: RegistrationConfig = {
 		DOC_PASSPORT,
 		DOC_BIRTH_CERT,
 		DOC_PROOF_OF_ADDRESS,
+		DOC_PROOF_OF_RESIDENCY,
 	],
 	visibleSections: {
 		residenceAddress: true,
