@@ -63,7 +63,7 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
               `connect-src 'self' ${isDev ? "http://127.0.0.1:* ws://127.0.0.1:* ws://localhost:*" : ""} https://*.convex.cloud https://*.convex.site wss://*.convex.cloud https://*.posthog.com https://*.stripe.com https://*.mapbox.com https://api.livekit.cloud wss://*.livekit.cloud`,
-              "frame-src https://*.stripe.com",
+              "frame-src 'self' blob: https://*.stripe.com",
               "media-src 'self' blob:",
               "object-src 'none'",
               "base-uri 'self'",

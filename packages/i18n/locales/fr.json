@@ -947,7 +947,21 @@
 			"payment": "Paiement requis",
 			"confirm": "Confirmation requise"
 		},
-		"actionSent": "Réponse envoyée avec succès",
+		"actionButton": {
+				"documents": "Joindre les documents",
+				"info": "Compléter les informations",
+				"appointment": "Prendre rendez-vous",
+				"payment": "Procéder au paiement",
+				"confirm": "Confirmer les informations"
+			},
+			"actionSheet": {
+				"documents": "Documents à fournir",
+				"info": "Informations manquantes",
+				"appointment": "Rendez-vous",
+				"payment": "Paiement",
+				"confirm": "Confirmation requise"
+			},
+			"actionSent": "Réponse envoyée avec succès",
 		"actionError": "Erreur lors de l'envoi",
 		"required": "Requis",
 		"uploaded": "Téléchargé",
@@ -959,6 +973,11 @@
 		"actionCompleted": "Réponse envoyée",
 		"unknownService": "Service inconnu",
 		"unknownOrg": "Organisme",
+		"forChild": "Pour {{name}}",
+		"childRequest": "Demande enfant",
+		"pendingActions_one": "{{count}} action requise",
+		"pendingActions_other": "{{count}} actions requises",
+		"pendingActions": "{{count}} action(s) requise(s)",
 		"resumeDraft": "Reprendre la demande",
 		"chat": {
 			"title": "Messages",

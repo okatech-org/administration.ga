@@ -64,6 +64,42 @@ export function DocumentPreviewModal({
 		if (open) setError(false);
 	}, [open]);
 
+	// Fetch PDF as blob to avoid X-Frame-Options / cross-origin iframe issues
+	const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+	const [isLoadingBlob, setIsLoadingBlob] = useState(false);
+
+	useEffect(() => {
+		let active = true;
+		let createdUrl: string | null = null;
+		if (documentUrl && isPdf) {
+			setIsLoadingBlob(true);
+			fetch(documentUrl)
+				.then((res) => {
+					if (!res.ok) throw new Error("Network response was not ok");
+					return res.blob();
+				})
+				.then((blob) => {
+					if (!active) return;
+					const objUrl = URL.createObjectURL(blob);
+					createdUrl = objUrl;
+					setPdfBlobUrl(objUrl);
+					setIsLoadingBlob(false);
+				})
+				.catch((err) => {
+					console.error("Failed to fetch PDF blob:", err);
+					if (!active) return;
+					setError(true);
+					setIsLoadingBlob(false);
+				});
+		} else {
+			setPdfBlobUrl(null);
+		}
+		return () => {
+			active = false;
+			if (createdUrl) URL.revokeObjectURL(createdUrl);
+		};
+	}, [documentUrl, isPdf]);
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-[700px]! w-[95vw] h-[90vh] flex flex-col p-0 gap-0">
@@ -108,7 +144,7 @@ export function DocumentPreviewModal({
 
 				{/* Content */}
 				<div className="flex-1 overflow-hidden bg-muted/30">
-					{isLoading && (
+					{(isLoading || isLoadingBlob) && (
 						<div className="h-full flex items-center justify-center">
 							<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
 						</div>
@@ -125,24 +161,14 @@ export function DocumentPreviewModal({
 						</div>
 					)}
 
-					{!isLoading && !error && documentUrl && (
+					{!(isLoading || isLoadingBlob) && !error && documentUrl && (
 						<>
-							{isPdf && (
-								<object
-									data={documentUrl}
-									type="application/pdf"
-									className="w-full h-full"
+							{isPdf && pdfBlobUrl && (
+								<iframe
+									src={`${pdfBlobUrl}#toolbar=0`}
+									className="w-full h-full border-0"
 									title={filename}
-								>
-									<div className="h-full flex flex-col items-center justify-center gap-4 text-muted-foreground">
-										<FileText className="h-12 w-12 opacity-20" />
-										<p className="text-sm">{t("documents.preview.loadError")}</p>
-										<Button variant="outline" size="sm" onClick={handleOpenExternal}>
-											<ExternalLink className="h-4 w-4 mr-1.5" />
-											{t("documents.preview.open")}
-										</Button>
-									</div>
-								</object>
+								/>
 							)}
 
 							{isImage && (

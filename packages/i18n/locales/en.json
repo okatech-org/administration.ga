@@ -2518,7 +2518,21 @@
 			"payment": "Payment required",
 			"confirm": "Confirmation required"
 		},
-		"actionSent": "Response sent successfully",
+		"actionButton": {
+				"documents": "Attach documents",
+				"info": "Complete information",
+				"appointment": "Book appointment",
+				"payment": "Proceed to payment",
+				"confirm": "Confirm information"
+			},
+			"actionSheet": {
+				"documents": "Documents required",
+				"info": "Missing information",
+				"appointment": "Appointment",
+				"payment": "Payment",
+				"confirm": "Confirmation required"
+			},
+			"actionSent": "Response sent successfully",
 		"actionError": "Error sending response",
 		"required": "Required",
 		"uploaded": "Uploaded",
@@ -2530,6 +2544,11 @@
 		"actionCompleted": "Response sent",
 		"unknownService": "Unknown service",
 		"unknownOrg": "Organization",
+		"forChild": "For {{name}}",
+		"childRequest": "Child request",
+		"pendingActions_one": "{{count}} action required",
+		"pendingActions_other": "{{count}} actions required",
+		"pendingActions": "{{count}} action(s) required",
 		"resumeDraft": "Resume request",
 		"chat": {
 			"title": "Messages",

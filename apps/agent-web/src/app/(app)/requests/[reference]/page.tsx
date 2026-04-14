@@ -10,6 +10,7 @@ import { enUS, fr } from "date-fns/locale";
 import {
 	AlertTriangle,
 	ArrowLeft,
+	Baby,
 	Bot,
 	Calendar,
 	Check,
@@ -27,6 +28,7 @@ import { toast } from "sonner";
 import { RequestActionModal } from "@/components/admin/RequestActionModal";
 import { UserProfilePreviewCard } from "@/components/dashboard/UserProfilePreviewCard";
 import { CallButton } from "@/components/meetings/call-button";
+import { ChatButton } from "@/components/meetings/chat-button";
 import { PageHeader } from "@/components/my-space/page-header";
 import { useOrg } from "@/components/org/org-provider";
 import { DocumentChecklist } from "@/components/shared/DocumentChecklist";
@@ -40,7 +42,6 @@ import { Combobox } from "@/components/ui/combobox";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useCanDoTask } from "@/hooks/useCanDoTask";
 import {
@@ -248,6 +249,7 @@ export default function RequestDetailPage() {
 
 	const [noteContent, setNoteContent] = useState("");
 	const [isStatusUpdating, setIsStatusUpdating] = useState(false);
+	const [activeFormSection, setActiveFormSection] = useState("");
 	const viewedRequestId = useRef<string | null>(null);
 
 	const lang = i18n.language;
@@ -549,107 +551,110 @@ export default function RequestDetailPage() {
 								formData={formDataObj}
 							/>
 						)}
-						{/* Call Button */}
+						{/* Chat & Call Buttons */}
 						{request.userId && activeOrgId && (
-							<CallButton
-								orgId={activeOrgId}
-								participantUserId={request.userId as any}
-								requestId={request._id}
-								variant="outline"
-								size="sm"
-							/>
+							<>
+								<ChatButton
+									orgId={activeOrgId}
+									participantUserId={request.userId as any}
+									requestId={request._id}
+									variant="outline"
+									size="sm"
+								/>
+								<CallButton
+									orgId={activeOrgId}
+									participantUserId={request.userId as any}
+									requestId={request._id}
+									variant="outline"
+									size="sm"
+								/>
+							</>
 						)}
 					</div>
 				}
 			/>
 
-			{/* ── Action Banners ─────────────────────────────────────── */}
-			{request.actionsRequired
-				?.filter((a: any) => !a.completedAt)
-				.map((action: any) => (
-					<Alert
-						key={action.id}
-						variant="destructive"
-						className="border-amber-500 bg-amber-50 dark:bg-amber-950/20"
-					>
-						<AlertTriangle className="h-4 w-4 text-amber-600" />
-						<AlertTitle className="text-amber-800 dark:text-amber-400">
-							{t(
-								"requestDetail.actionRequired.title",
-								"Action requise du citoyen",
-							)}
-							<Badge variant="outline" className="ml-1 text-xs">
-								{String(
-									t(
-										`requestDetail.actionRequired.types.${action.type}`,
-										action.type,
-									),
-								)}
-							</Badge>
-						</AlertTitle>
-						<AlertDescription className="text-amber-700 dark:text-amber-300">
-							{action.message}
-							{/* Structured details: documents requested */}
-							{action.documentTypes?.length > 0 && (
-								<ul className="mt-2 ml-4 list-disc text-xs space-y-0.5">
-									{action.documentTypes.map((doc: any) => (
-										<li key={doc.type}>
-											{getLocalized(doc.label, lang) || doc.type}
-											{doc.required && (
-												<span className="text-amber-600 ml-1">*</span>
-											)}
-										</li>
-									))}
-								</ul>
-							)}
-							{/* Structured details: fields requested */}
-							{action.fields?.length > 0 && (
-								<ul className="mt-2 ml-4 list-disc text-xs space-y-0.5">
-									{action.fields.map((field: any) => (
-										<li key={field.fieldPath}>
-											{getLocalized(field.label, lang) || field.fieldPath}
-											{field.currentValue != null && (
-												<span className="text-muted-foreground ml-1">
-													({t("requestDetail.actionRequired.currentValue", "actuel")}: {String(field.currentValue)})
-												</span>
-											)}
-										</li>
-									))}
-								</ul>
-							)}
-						</AlertDescription>
-					</Alert>
-				))}
+			{/* ── Child Profile Banner ──────────────────────────────── */}
+			{(request as any).isChildRequest && (request as any).childProfile && (
+				<Alert className="border-pink-300 dark:border-pink-700 bg-pink-50 dark:bg-pink-950/20">
+					<Baby className="h-4 w-4 text-pink-500" />
+					<AlertTitle className="text-pink-700 dark:text-pink-300">
+						{t("requests.childRequest", "Demande enfant")}
+					</AlertTitle>
+					<AlertDescription className="text-pink-600 dark:text-pink-400">
+						{t("requests.forChild", {
+							name: `${(request as any).childProfile.identity?.firstName ?? ""} ${(request as any).childProfile.identity?.lastName ?? ""}`.trim(),
+						})}
+					</AlertDescription>
+				</Alert>
+			)}
 
-			{request.actionsRequired
-				?.filter((a: any) => a.completedAt)
-				.map((action: any) => (
-					<Alert key={action.id} className="border-border bg-muted/30">
-						<CheckCircle className="h-4 w-4 text-green-600" />
-						<AlertTitle>
-							{t(
-								"requestDetail.actionCompleted.title",
-								"Réponse reçue du citoyen",
+			{/* ── Compact Actions Required Summary ──────────────────── */}
+			{(() => {
+				const pendingActions = request.actionsRequired?.filter((a: any) => !a.completedAt) ?? [];
+				const completedActions = request.actionsRequired?.filter((a: any) => a.completedAt) ?? [];
+				if (pendingActions.length === 0 && completedActions.length === 0) return null;
+				return (
+					<div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm overflow-hidden">
+						<div className="px-4 py-3 border-b border-border/40 bg-muted/20 flex items-center justify-between">
+							<div className="flex items-center gap-2">
+								<div className="rounded-md bg-amber-500/10 p-1.5">
+									<AlertTriangle className="h-4 w-4 text-amber-600" />
+								</div>
+								<div>
+									<h3 className="font-semibold text-sm">{t("requestDetail.actionRequired.title", "Actions requises")}</h3>
+									<p className="text-xs text-muted-foreground">
+										{pendingActions.length > 0
+											? t("requests.pendingActions", { count: pendingActions.length, defaultValue: "{{count}} action(s) en attente" })
+											: t("requestDetail.actionCompleted.allDone", "Toutes les actions ont été traitées")}
+									</p>
+								</div>
+							</div>
+							{completedActions.length > 0 && (
+								<Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30 text-xs">
+									<CheckCircle className="h-3 w-3 mr-1" />
+									{completedActions.length} {t("requestDetail.actionCompleted.done", "traitée(s)")}
+								</Badge>
 							)}
-							<Badge variant="outline" className="ml-1 text-xs text-green-600">
-								{t("requestDetail.actionCompleted.badge")}
-							</Badge>
-						</AlertTitle>
-						<AlertDescription className="text-muted-foreground">
-							{t(
-								"requestDetail.actionCompleted.description",
-								"Le citoyen a fourni les éléments demandés. Vérifiez et validez sa réponse.",
-							)}
-						</AlertDescription>
-					</Alert>
-				))}
+						</div>
+						<div className="divide-y divide-border/40">
+							{pendingActions.map((action: any) => (
+								<div key={action.id} className="px-4 py-3 flex items-start gap-3">
+									<div className="mt-0.5 rounded-full bg-amber-500/15 p-1">
+										<AlertTriangle className="h-3 w-3 text-amber-600" />
+									</div>
+									<div className="flex-1 min-w-0">
+										<div className="flex items-center gap-2">
+											<Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-700 dark:text-amber-300">
+												{String(t(`requestDetail.actionRequired.types.${action.type}`, action.type))}
+											</Badge>
+										</div>
+										<p className="text-sm text-muted-foreground mt-1 line-clamp-2">{action.message}</p>
+									</div>
+								</div>
+							))}
+							{completedActions.map((action: any) => (
+								<div key={action.id} className="px-4 py-2.5 flex items-center gap-3 bg-muted/10">
+									<CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+									<span className="text-sm text-muted-foreground">
+										{String(t(`requestDetail.actionRequired.types.${action.type}`, action.type))}
+									</span>
+									<Badge variant="outline" className="text-[10px] text-green-600 border-green-500/30 ml-auto">
+										{t("requestDetail.actionCompleted.badge", "Traité")}
+									</Badge>
+								</div>
+							))}
+						</div>
+					</div>
+				);
+			})()}
 
 			{/* ── Main Content ───────────────────────────────────────── */}
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-w-0">
 				{/* ── LEFT: Form Data + Documents ── */}
 				<div className="lg:col-span-2 space-y-6 min-w-0">
 					{/* Form Data */}
-					<div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm overflow-hidden">
+					<FlatCard>
 						<div className="px-5 py-4 border-b border-border/40 bg-muted/20">
 							<div className="flex items-center justify-between">
 								<div className="flex items-center gap-2">
@@ -687,256 +692,271 @@ export default function RequestDetailPage() {
 
 						<div className="p-5">
 							{sections.length > 0 ? (
-								<Tabs defaultValue={sections[0].id} className="w-full">
-									<div className="overflow-x-auto overflow-y-hidden scrollbar-hide">
-										<TabsList className="h-auto justify-start w-max">
-											{sections.map((section) => {
-												const sectionValidated = section.fields.filter(
-													(f) => fieldValidations[f.fieldPath],
-												).length;
-												const sectionTotal = section.fields.length;
-												return (
-													<TabsTrigger
-														key={section.id}
-														value={section.id}
-														className="shrink-0 gap-1.5 text-xs sm:text-sm"
-													>
-														{section.title}
-														<Badge
-															variant="secondary"
+								(() => {
+									const currentSection = activeFormSection || sections[0]?.id;
+									return (
+										<div className="flex flex-col md:flex-row md:gap-4">
+											{/* Section nav — horizontal scroll on mobile, vertical sidebar on desktop */}
+											<nav className="flex shrink-0 flex-row gap-1 overflow-x-auto pb-3 md:w-fit md:min-w-48 md:max-w-72 md:flex-col md:gap-0.5 md:border-r md:border-border/30 md:pr-4 md:pb-0">
+												{sections.map((section) => {
+													const sectionValidated = section.fields.filter(
+														(f) => fieldValidations[f.fieldPath],
+													).length;
+													const sectionTotal = section.fields.length;
+													return (
+														<button
+															key={section.id}
+															type="button"
+															onClick={() => setActiveFormSection(section.id)}
 															className={cn(
-																"text-[10px] px-1.5 py-0 h-4 min-w-[28px] justify-center",
-																sectionValidated === sectionTotal
-																	? "bg-green-500/20 text-green-600"
-																	: "",
+																"flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-xs whitespace-nowrap transition-colors sm:text-sm md:w-full md:whitespace-normal",
+																currentSection === section.id
+																	? "bg-primary font-medium text-primary-foreground"
+																	: "text-muted-foreground hover:bg-muted hover:text-foreground",
 															)}
 														>
-															{sectionValidated}/{sectionTotal}
-														</Badge>
-													</TabsTrigger>
-												);
-											})}
-										</TabsList>
-									</div>
-
-									{sections.map((section) => (
-										<TabsContent key={section.id} value={section.id}>
-											{(() => {
-												// ── Helper: validated checkbox field row ──
-												const ValidatedField = ({ fieldPath, label, value }: { fieldPath: string; label: string; value: string }) => {
-													const isValidated = !!fieldValidations[fieldPath];
-													return (
-														<div className="flex items-center gap-2 py-1">
-															<Checkbox
-																checked={isValidated}
-																disabled={!canDo("requests.validate")}
-																onCheckedChange={(checked) => {
-																	toggleFieldValidation({ requestId: request._id, fieldPath, validated: !!checked });
-																}}
-																className="shrink-0 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
-															/>
-															<span className="text-muted-foreground text-sm w-28 shrink-0">{label}</span>
-															<span className="text-sm truncate">{value}</span>
-														</div>
+															<span className="flex-1 truncate md:truncate-none">{section.title}</span>
+															<Badge
+																variant="secondary"
+																className={cn(
+																	"text-[10px] px-1.5 py-0 h-4 min-w-[28px] justify-center shrink-0",
+																	sectionValidated === sectionTotal
+																		? "bg-green-500/20 text-green-600"
+																		: currentSection === section.id
+																			? "bg-primary-foreground/20 text-primary-foreground"
+																			: "",
+																)}
+															>
+																{sectionValidated}/{sectionTotal}
+															</Badge>
+														</button>
 													);
-												};
+												})}
+											</nav>
 
-												// ── Card wrapper ──
-												const Card = ({ title, badge, children }: { title: string; badge?: React.ReactNode; children: React.ReactNode }) => (
-													<div className="rounded-lg border border-border/60 bg-muted/30 p-4">
-														<div className="flex items-center justify-between mb-3">
-															<span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-																{title}
-															</span>
-															{badge}
-														</div>
-														<div className="space-y-1">
-															{children}
-														</div>
-													</div>
-												);
-
-												// ── Emergency Contacts ──
-												if (section.id === "emergency_contacts") {
-													const ecData = formDataObj["emergency_contacts"] as any[] | undefined;
-													if (!ecData || !Array.isArray(ecData)) return null;
-													const ecLabels: Record<string, { fr: string; en: string }> = {
-														last_name: { fr: "Nom", en: "Last Name" },
-														first_name: { fr: "Prénom", en: "First Name" },
-														phone: { fr: "Téléphone", en: "Phone" },
-														email: { fr: "Email", en: "Email" },
-													};
-													return (
-														<div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
-															{ecData.map((contact: any, idx: number) => {
-																if (!contact || typeof contact !== "object") return null;
+											{/* Content */}
+											<div className="flex-1 min-w-0">
+												{sections.map((section) => (
+													<div key={section.id} className={cn(currentSection !== section.id && "hidden")}>
+														{(() => {
+															// ── Helper: validated checkbox field row ──
+															const ValidatedField = ({ fieldPath, label, value }: { fieldPath: string; label: string; value: string }) => {
+																const isValidated = !!fieldValidations[fieldPath];
 																return (
-																	<Card
-																		key={idx}
-																		title={`Contact ${idx + 1}`}
-																		badge={contact.country ? (
-																			<span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-																				{renderValue(contact.country, lang)}
-																			</span>
-																		) : undefined}
-																	>
-																		{(["last_name", "first_name", "phone", "email"] as const).map((key) => {
-																			const val = contact[key];
-																			if (!val) return null;
+																	<div className="flex items-center gap-2 py-1">
+																		<Checkbox
+																			checked={isValidated}
+																			disabled={!canDo("requests.validate")}
+																			onCheckedChange={(checked) => {
+																				toggleFieldValidation({ requestId: request._id, fieldPath, validated: !!checked });
+																			}}
+																			className="shrink-0 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+																		/>
+																		<span className="text-muted-foreground text-sm w-28 shrink-0">{label}</span>
+																		<span className="text-sm truncate">{value}</span>
+																	</div>
+																);
+															};
+
+															// ── Card wrapper ──
+															const Card = ({ title, badge, children }: { title: string; badge?: React.ReactNode; children: React.ReactNode }) => (
+																<div className="rounded-lg border border-border/60 bg-muted/30 p-4">
+																	<div className="flex items-center justify-between mb-3">
+																		<span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+																			{title}
+																		</span>
+																		{badge}
+																	</div>
+																	<div className="space-y-1">
+																		{children}
+																	</div>
+																</div>
+															);
+
+															// ── Emergency Contacts ──
+															if (section.id === "emergency_contacts") {
+																const ecData = formDataObj["emergency_contacts"] as any[] | undefined;
+																if (!ecData || !Array.isArray(ecData)) return null;
+																const ecLabels: Record<string, { fr: string; en: string }> = {
+																	last_name: { fr: "Nom", en: "Last Name" },
+																	first_name: { fr: "Prénom", en: "First Name" },
+																	phone: { fr: "Téléphone", en: "Phone" },
+																	email: { fr: "Email", en: "Email" },
+																};
+																return (
+																	<div className="space-y-4 pt-3">
+																		{ecData.map((contact: any, idx: number) => {
+																			if (!contact || typeof contact !== "object") return null;
 																			return (
-																				<ValidatedField
-																					key={key}
-																					fieldPath={`emergency_contacts.${idx}.${key}`}
-																					label={lang === "fr" ? ecLabels[key].fr : ecLabels[key].en}
-																					value={renderValue(val, lang)}
-																				/>
+																				<Card
+																					key={idx}
+																					title={`Contact ${idx + 1}`}
+																					badge={contact.country ? (
+																						<span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+																							{renderValue(contact.country, lang)}
+																						</span>
+																					) : undefined}
+																				>
+																					{(["last_name", "first_name", "phone", "email"] as const).map((key) => {
+																						const val = contact[key];
+																						if (!val) return null;
+																						return (
+																							<ValidatedField
+																								key={key}
+																								fieldPath={`emergency_contacts.${idx}.${key}`}
+																								label={lang === "fr" ? ecLabels[key].fr : ecLabels[key].en}
+																								value={renderValue(val, lang)}
+																							/>
+																						);
+																					})}
+																				</Card>
 																			);
 																		})}
-																	</Card>
+																	</div>
 																);
-															})}
-														</div>
-													);
-												}
+															}
 
-												// ── Family Info ──
-												if (section.id === "family_info") {
-													const fam = formDataObj["family_info"] as Record<string, any> | undefined;
-													if (!fam || typeof fam !== "object") return null;
+															// ── Family Info ──
+															if (section.id === "family_info") {
+																const fam = formDataObj["family_info"] as Record<string, any> | undefined;
+																if (!fam || typeof fam !== "object") return null;
 
-													const maritalField = section.fields.find((f) => f.id === "marital_status");
-													const maritalDisplay = maritalField ? maritalField.display : renderValue(fam.marital_status, lang);
+																const maritalField = section.fields.find((f) => f.id === "marital_status");
+																const maritalDisplay = maritalField ? maritalField.display : renderValue(fam.marital_status, lang);
 
-													const familyCards: Array<{ title: string; content: React.ReactNode[] }> = [];
+																const familyCards: Array<{ title: string; content: React.ReactNode[] }> = [];
 
-													if (fam.father_last_name || fam.father_first_name) {
-														familyCards.push({
-															title: lang === "fr" ? "Père" : "Father",
-															content: [
-																fam.father_last_name && <ValidatedField key="fln" fieldPath="family_info.father_last_name" label={lang === "fr" ? "Nom" : "Last Name"} value={fam.father_last_name} />,
-																fam.father_first_name && <ValidatedField key="ffn" fieldPath="family_info.father_first_name" label={lang === "fr" ? "Prénom" : "First Name"} value={fam.father_first_name} />,
-															].filter(Boolean),
-														});
-													}
+																if (fam.father_last_name || fam.father_first_name) {
+																	familyCards.push({
+																		title: lang === "fr" ? "Père" : "Father",
+																		content: [
+																			fam.father_last_name && <ValidatedField key="fln" fieldPath="family_info.father_last_name" label={lang === "fr" ? "Nom" : "Last Name"} value={fam.father_last_name} />,
+																			fam.father_first_name && <ValidatedField key="ffn" fieldPath="family_info.father_first_name" label={lang === "fr" ? "Prénom" : "First Name"} value={fam.father_first_name} />,
+																		].filter(Boolean),
+																	});
+																}
 
-													if (fam.mother_last_name || fam.mother_first_name) {
-														familyCards.push({
-															title: lang === "fr" ? "Mère" : "Mother",
-															content: [
-																fam.mother_last_name && <ValidatedField key="mln" fieldPath="family_info.mother_last_name" label={lang === "fr" ? "Nom" : "Last Name"} value={fam.mother_last_name} />,
-																fam.mother_first_name && <ValidatedField key="mfn" fieldPath="family_info.mother_first_name" label={lang === "fr" ? "Prénom" : "First Name"} value={fam.mother_first_name} />,
-															].filter(Boolean),
-														});
-													}
+																if (fam.mother_last_name || fam.mother_first_name) {
+																	familyCards.push({
+																		title: lang === "fr" ? "Mère" : "Mother",
+																		content: [
+																			fam.mother_last_name && <ValidatedField key="mln" fieldPath="family_info.mother_last_name" label={lang === "fr" ? "Nom" : "Last Name"} value={fam.mother_last_name} />,
+																			fam.mother_first_name && <ValidatedField key="mfn" fieldPath="family_info.mother_first_name" label={lang === "fr" ? "Prénom" : "First Name"} value={fam.mother_first_name} />,
+																		].filter(Boolean),
+																	});
+																}
 
-													if (fam.spouse_last_name || fam.spouse_first_name) {
-														familyCards.push({
-															title: lang === "fr" ? "Conjoint(e)" : "Spouse",
-															content: [
-																fam.spouse_last_name && <ValidatedField key="sln" fieldPath="family_info.spouse_last_name" label={lang === "fr" ? "Nom" : "Last Name"} value={fam.spouse_last_name} />,
-																fam.spouse_first_name && <ValidatedField key="sfn" fieldPath="family_info.spouse_first_name" label={lang === "fr" ? "Prénom" : "First Name"} value={fam.spouse_first_name} />,
-															].filter(Boolean),
-														});
-													}
+																if (fam.spouse_last_name || fam.spouse_first_name) {
+																	familyCards.push({
+																		title: lang === "fr" ? "Conjoint(e)" : "Spouse",
+																		content: [
+																			fam.spouse_last_name && <ValidatedField key="sln" fieldPath="family_info.spouse_last_name" label={lang === "fr" ? "Nom" : "Last Name"} value={fam.spouse_last_name} />,
+																			fam.spouse_first_name && <ValidatedField key="sfn" fieldPath="family_info.spouse_first_name" label={lang === "fr" ? "Prénom" : "First Name"} value={fam.spouse_first_name} />,
+																		].filter(Boolean),
+																	});
+																}
 
-													return (
-														<div className="space-y-4 pt-3">
-															{fam.marital_status && (
-																<ValidatedField
-																	fieldPath="family_info.marital_status"
-																	label={lang === "fr" ? "Situation" : "Status"}
-																	value={maritalDisplay}
-																/>
-															)}
-															{familyCards.length > 0 && (
-																<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-																	{familyCards.map((card) => (
-																		<Card key={card.title} title={card.title}>
-																			{card.content}
-																		</Card>
-																	))}
-																</div>
-															)}
-														</div>
-													);
-												}
-
-												// ── Coordinates (merged contact + addresses) ──
-												if (section.id === "coordinates") {
-													const contact = formDataObj["contact_info"] as Record<string, any> | undefined;
-													const residence = formDataObj["residence_address"] as Record<string, any> | undefined;
-													const homeland = formDataObj["homeland_address"] as Record<string, any> | undefined;
-
-													return (
-														<div className="space-y-4 pt-3">
-															{/* Phone & Email */}
-															{contact && (
-																<div className="space-y-1">
-																	{contact.phone && <ValidatedField fieldPath="contact_info.phone" label={lang === "fr" ? "Téléphone" : "Phone"} value={contact.phone} />}
-																	{contact.email && <ValidatedField fieldPath="contact_info.email" label={lang === "fr" ? "Email" : "Email"} value={contact.email} />}
-																</div>
-															)}
-															{/* Address cards */}
-															<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-																{residence && Object.values(residence).some(Boolean) && (
-																	<Card title={lang === "fr" ? "Adresse de résidence" : "Residence Address"}>
-																		{residence.residence_street && <ValidatedField fieldPath="residence_address.residence_street" label={lang === "fr" ? "Rue" : "Street"} value={residence.residence_street} />}
-																		{residence.residence_city && <ValidatedField fieldPath="residence_address.residence_city" label={lang === "fr" ? "Ville" : "City"} value={residence.residence_city} />}
-																		{residence.residence_postal_code && <ValidatedField fieldPath="residence_address.residence_postal_code" label={lang === "fr" ? "Code postal" : "Postal Code"} value={residence.residence_postal_code} />}
-																		{residence.residence_country && <ValidatedField fieldPath="residence_address.residence_country" label={lang === "fr" ? "Pays" : "Country"} value={renderValue(residence.residence_country, lang)} />}
-																	</Card>
-																)}
-																{homeland && Object.values(homeland).some(Boolean) && (
-																	<Card title={lang === "fr" ? "Adresse au Gabon" : "Address in Gabon"}>
-																		{homeland.homeland_street && <ValidatedField fieldPath="homeland_address.homeland_street" label={lang === "fr" ? "Rue" : "Street"} value={homeland.homeland_street} />}
-																		{homeland.homeland_city && <ValidatedField fieldPath="homeland_address.homeland_city" label={lang === "fr" ? "Ville" : "City"} value={homeland.homeland_city} />}
-																		{homeland.homeland_postal_code && <ValidatedField fieldPath="homeland_address.homeland_postal_code" label={lang === "fr" ? "Code postal" : "Postal Code"} value={homeland.homeland_postal_code} />}
-																		{homeland.homeland_country && <ValidatedField fieldPath="homeland_address.homeland_country" label={lang === "fr" ? "Pays" : "Country"} value={renderValue(homeland.homeland_country, lang)} />}
-																	</Card>
-																)}
-															</div>
-														</div>
-													);
-												}
-
-												// ── Default: Table ──
-												return (
-													<Table className="table-fixed w-full">
-														<TableBody>
-															{section.fields.map((field) => {
-																const isValidated = !!fieldValidations[field.fieldPath];
 																return (
-																	<TableRow key={field.id} className="transition-colors">
-																		<TableCell className="w-8 pr-0 align-top">
-																			<Checkbox
-																				checked={isValidated}
-																				disabled={!canDo("requests.validate")}
-																				onCheckedChange={(checked) => {
-																					toggleFieldValidation({
-																						requestId: request._id,
-																						fieldPath: field.fieldPath,
-																						validated: !!checked,
-																					});
-																				}}
-																				className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+																	<div className="space-y-4 pt-3">
+																		{fam.marital_status && (
+																			<ValidatedField
+																				fieldPath="family_info.marital_status"
+																				label={lang === "fr" ? "Situation" : "Status"}
+																				value={maritalDisplay}
 																			/>
-																		</TableCell>
-																		<TableCell className="text-muted-foreground font-medium w-[40%] truncate">
-																			{field.label}
-																		</TableCell>
-																		<TableCell className="truncate">
-																			{field.display}
-																		</TableCell>
-																	</TableRow>
+																		)}
+																		{familyCards.length > 0 && (
+																			<div className="space-y-4">
+																				{familyCards.map((card) => (
+																					<Card key={card.title} title={card.title}>
+																						{card.content}
+																					</Card>
+																				))}
+																			</div>
+																		)}
+																	</div>
 																);
-															})}
-														</TableBody>
-													</Table>
-												);
-											})()}
-										</TabsContent>
-									))}
-								</Tabs>
+															}
+
+															// ── Coordinates (merged contact + addresses) ──
+															if (section.id === "coordinates") {
+																const contact = formDataObj["contact_info"] as Record<string, any> | undefined;
+																const residence = formDataObj["residence_address"] as Record<string, any> | undefined;
+																const homeland = formDataObj["homeland_address"] as Record<string, any> | undefined;
+
+																return (
+																	<div className="space-y-4 pt-3">
+																		{/* Phone & Email */}
+																		{contact && (
+																			<div className="space-y-1">
+																				{contact.phone && <ValidatedField fieldPath="contact_info.phone" label={lang === "fr" ? "Téléphone" : "Phone"} value={contact.phone} />}
+																				{contact.email && <ValidatedField fieldPath="contact_info.email" label={lang === "fr" ? "Email" : "Email"} value={contact.email} />}
+																			</div>
+																		)}
+																		{/* Address cards */}
+																		<div className="space-y-4">
+																			{residence && Object.values(residence).some(Boolean) && (
+																				<Card title={lang === "fr" ? "Adresse de résidence" : "Residence Address"}>
+																					{residence.residence_street && <ValidatedField fieldPath="residence_address.residence_street" label={lang === "fr" ? "Rue" : "Street"} value={residence.residence_street} />}
+																					{residence.residence_city && <ValidatedField fieldPath="residence_address.residence_city" label={lang === "fr" ? "Ville" : "City"} value={residence.residence_city} />}
+																					{residence.residence_postal_code && <ValidatedField fieldPath="residence_address.residence_postal_code" label={lang === "fr" ? "Code postal" : "Postal Code"} value={residence.residence_postal_code} />}
+																					{residence.residence_country && <ValidatedField fieldPath="residence_address.residence_country" label={lang === "fr" ? "Pays" : "Country"} value={renderValue(residence.residence_country, lang)} />}
+																				</Card>
+																			)}
+																			{homeland && Object.values(homeland).some(Boolean) && (
+																				<Card title={lang === "fr" ? "Adresse au Gabon" : "Address in Gabon"}>
+																					{homeland.homeland_street && <ValidatedField fieldPath="homeland_address.homeland_street" label={lang === "fr" ? "Rue" : "Street"} value={homeland.homeland_street} />}
+																					{homeland.homeland_city && <ValidatedField fieldPath="homeland_address.homeland_city" label={lang === "fr" ? "Ville" : "City"} value={homeland.homeland_city} />}
+																					{homeland.homeland_postal_code && <ValidatedField fieldPath="homeland_address.homeland_postal_code" label={lang === "fr" ? "Code postal" : "Postal Code"} value={homeland.homeland_postal_code} />}
+																					{homeland.homeland_country && <ValidatedField fieldPath="homeland_address.homeland_country" label={lang === "fr" ? "Pays" : "Country"} value={renderValue(homeland.homeland_country, lang)} />}
+																				</Card>
+																			)}
+																		</div>
+																	</div>
+																);
+															}
+
+															// ── Default: Table ──
+															return (
+																<Table className="table-fixed w-full">
+																	<TableBody>
+																		{section.fields.map((field) => {
+																			const isValidated = !!fieldValidations[field.fieldPath];
+																			return (
+																				<TableRow key={field.id} className="transition-colors">
+																					<TableCell className="w-8 pr-0 align-top">
+																						<Checkbox
+																							checked={isValidated}
+																							disabled={!canDo("requests.validate")}
+																							onCheckedChange={(checked) => {
+																								toggleFieldValidation({
+																									requestId: request._id,
+																									fieldPath: field.fieldPath,
+																									validated: !!checked,
+																								});
+																							}}
+																							className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+																						/>
+																					</TableCell>
+																					<TableCell className="text-muted-foreground font-medium w-[40%] truncate">
+																						{field.label}
+																					</TableCell>
+																					<TableCell className="truncate">
+																						{field.display}
+																					</TableCell>
+																				</TableRow>
+																			);
+																		})}
+																	</TableBody>
+																</Table>
+															);
+														})()}
+													</div>
+												))}
+											</div>
+										</div>
+									);
+								})()
 							) : (
 								<div className="text-muted-foreground italic text-center py-8 text-sm">
 									{t(
@@ -946,7 +966,7 @@ export default function RequestDetailPage() {
 								</div>
 							)}
 						</div>
-					</div>
+					</FlatCard>
 
 					{/* Documents Checklist */}
 					<DocumentChecklist

@@ -466,6 +466,9 @@ export const listMine = authQuery({
               }
             : null,
           isChildRequest: !!childProfile,
+          pendingActionsCount: (request.actionsRequired ?? []).filter(
+            (a: { completedAt?: number }) => !a.completedAt,
+          ).length,
         };
       }),
     };
@@ -543,18 +546,54 @@ export const listByOrg = authQuery({
       services.filter(Boolean).map((s) => [s!._id, s!]),
     );
 
+    // Resolve child profiles for requests made on behalf of children
+    const childProfileIds = [
+      ...new Set(
+        paginatedResult.page
+          .map((r) => r.profileId)
+          .filter((id): id is NonNullable<typeof id> => !!id),
+      ),
+    ];
+    const childProfileResults = await Promise.all(
+      childProfileIds.map(async (id) => {
+        const maybeChild = await ctx.db.get(id as Id<"childProfiles">);
+        if (maybeChild && "authorUserId" in maybeChild) {
+          return { id, child: maybeChild };
+        }
+        return null;
+      }),
+    );
+    const childProfileMap = new Map(
+      childProfileResults
+        .filter((c): c is NonNullable<typeof c> => c !== null)
+        .map((c) => [c.id, c.child]),
+    );
+
     return {
       ...paginatedResult,
       page: paginatedResult.page.map((request) => {
         const orgService = orgServiceMap.get(request.orgServiceId);
         const service =
           orgService ? serviceMap.get(orgService.serviceId) : null;
+        const childProfile = request.profileId
+          ? childProfileMap.get(request.profileId)
+          : null;
         return {
           ...request,
           user: userMap.get(request.userId),
           orgService,
           service,
           serviceName: service?.name,
+          childProfile: childProfile
+            ? {
+                firstName: childProfile.identity.firstName,
+                lastName: childProfile.identity.lastName,
+              }
+            : null,
+          isChildRequest: !!childProfile,
+          pendingActionsCount: (request.actionsRequired ?? []).filter(
+            (a: { completedAt?: number }) => !a.completedAt,
+          ).length,
         };
       }),
     };
@@ -637,6 +676,9 @@ export const listByOrgStatuses = authQuery({
           orgService,
           service,
           serviceName: service?.name,
+          pendingActionsCount: (request.actionsRequired ?? []).filter(
+            (a: { completedAt?: number }) => !a.completedAt,
+          ).length,
         };
       }),
     };
@@ -1718,9 +1760,35 @@ export const listMyActive = authQuery({
       services.filter(Boolean).map((s) => [s!._id, s!]),
     );
 
+    // Resolve child profiles
+    const childProfileIds = [
+      ...new Set(
+        activeRequests
+          .map((r) => r.profileId)
+          .filter((id): id is NonNullable<typeof id> => !!id),
+      ),
+    ];
+    const childProfileResults = await Promise.all(
+      childProfileIds.map(async (id) => {
+        const maybeChild = await ctx.db.get(id as Id<"childProfiles">);
+        if (maybeChild && "authorUserId" in maybeChild) {
+          return { id, child: maybeChild };
+        }
+        return null;
+      }),
+    );
+    const childProfileMap = new Map(
+      childProfileResults
+        .filter((c): c is NonNullable<typeof c> => c !== null)
+        .map((c) => [c.id, c.child]),
+    );
+
     return activeRequests.map((r) => {
       const orgService = orgServiceMap.get(r.orgServiceId);
       const service = orgService ? serviceMap.get(orgService.serviceId) : null;
+      const childProfile = r.profileId
+        ? childProfileMap.get(r.profileId)
+        : null;
       return {
         _id: r._id,
         _creationTime: r._creationTime,
@@ -1728,6 +1796,16 @@ export const listMyActive = authQuery({
         reference: r.reference,
         org: orgMap.get(r.orgId) ?? null,
         service: service ?? null,
+        childProfile: childProfile
+          ? {
+              firstName: childProfile.identity.firstName,
+              lastName: childProfile.identity.lastName,
+            }
+          : null,
+        isChildRequest: !!childProfile,
+        pendingActionsCount: (r.actionsRequired ?? []).filter(
+          (a: { completedAt?: number }) => !a.completedAt,
+        ).length,
       };
     });
   },

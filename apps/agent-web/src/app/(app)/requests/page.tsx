@@ -6,6 +6,7 @@ import { RequestStatus } from "@convex/lib/constants";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+	AlertCircle,
 	Calendar,
 	ChevronRight,
 	Clock,
@@ -653,15 +654,23 @@ function TableView({
 
 									{/* Status */}
 									<TableCell>
-										<span
-											className={cn(
-												"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-												statusConf.bgClass,
-												statusConf.textClass,
+										<div className="flex items-center gap-2">
+											<span
+												className={cn(
+													"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+													statusConf.bgClass,
+													statusConf.textClass,
+												)}
+											>
+												{t(statusConf.i18nKey)}
+											</span>
+											{request.pendingActionsCount > 0 && (
+												<span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+													<AlertCircle className="h-3 w-3" />
+													{request.pendingActionsCount}
+												</span>
 											)}
-										>
-											{t(statusConf.i18nKey)}
-										</span>
+										</div>
 									</TableCell>
 
 									{/* Actions */}
@@ -923,10 +932,20 @@ function KanbanCard({
 			{/* Service tag */}
 			<Badge
 				variant="secondary"
-				className="text-[10px] font-normal mb-3 max-w-full truncate"
+				className="text-[10px] font-normal mb-2 max-w-full truncate"
 			>
 				{serviceName}
 			</Badge>
+
+			{/* Pending actions indicator */}
+			{request.pendingActionsCount > 0 && (
+				<div className="flex items-center gap-1.5 mb-2 rounded-md bg-amber-500/10 px-2 py-1">
+					<AlertCircle className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400" />
+					<span className="text-[10px] font-medium text-amber-700 dark:text-amber-300">
+						{request.pendingActionsCount} action{request.pendingActionsCount > 1 ? "s" : ""} en attente
+					</span>
+				</div>
+			)}
 
 			{/* Footer: user avatar + metadata */}
 			<div className="flex items-center justify-between pt-2 border-t border-border/40">

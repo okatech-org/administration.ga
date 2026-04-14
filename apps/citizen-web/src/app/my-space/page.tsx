@@ -89,6 +89,9 @@ function ActiveRequestsCarousel({
     reference?: string
     service?: { name?: Record<string, string> } | null
     org?: { name?: string } | null
+    isChildRequest?: boolean
+    childProfile?: { firstName: string; lastName: string } | null
+    pendingActionsCount?: number
   }>
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -945,7 +948,7 @@ export default function UserDashboard() {
             {/* Démarches en cours — carousel horizontal */}
             <FlatCard
               className={cn(
-                "flex shrink-0 flex-col md:flex-1",
+                "flex shrink-0 flex-col overflow-hidden md:grow",
                 !(activeRequests && activeRequests.length > 0) &&
                   !(upcomingAppointments.length > 0) &&
                   "order-2 md:order-0"
@@ -1000,7 +1003,7 @@ export default function UserDashboard() {
             {/* Rendez-vous */}
             <FlatCard
               className={cn(
-                "flex shrink-0 flex-col md:flex-1",
+                "flex shrink-0 flex-col md:grow",
                 !(activeRequests && activeRequests.length > 0) &&
                   !(upcomingAppointments.length > 0) &&
                   "order-3 md:order-0"
@@ -1373,7 +1376,7 @@ export default function UserDashboard() {
               </FlatCard>
 
               {/* Démarches mobile — carousel */}
-              <FlatCard className="shrink-0">
+              <FlatCard className="shrink-0 overflow-hidden">
                 <div className="flex flex-col p-3">
                   <div className="mb-2 flex shrink-0 items-center justify-between">
                     <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
@@ -1409,8 +1412,9 @@ export default function UserDashboard() {
                       </p>
                       <Button
                         asChild
+                        variant="outline"
                         size="sm"
-                        className="h-7 rounded-lg bg-primary px-3 text-xs font-medium text-white hover:bg-primary/90"
+                        className="h-7 rounded-lg px-3 text-xs font-medium"
                       >
                         <Link href="/services">{t("mySpace.requests.newRequest")}</Link>
                       </Button>
@@ -1454,8 +1458,9 @@ export default function UserDashboard() {
                       </p>
                       <Button
                         asChild
+                        variant="outline"
                         size="sm"
-                        className="h-7 rounded-lg bg-primary px-3 text-xs font-medium text-white hover:bg-primary/90"
+                        className="h-7 rounded-lg px-3 text-xs font-medium"
                       >
                         <Link href="/my-space/iagenda?tab=prendre-rdv">{t("mySpace.appointments.book")}</Link>
                       </Button>
