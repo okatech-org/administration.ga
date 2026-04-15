@@ -63,8 +63,15 @@ export function ZonedTabsLayout({
       onValueChange={onValueChange}
       className={cn("space-y-4", className)}
     >
-      <div className="overflow-x-auto overflow-y-hidden scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-        <TabsList className="h-auto justify-start w-max gap-1 bg-[#F4F3ED] dark:bg-[#171616] p-1">
+      <div
+        className="overflow-x-auto overflow-y-hidden scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0"
+        role="navigation"
+        aria-label="Zones de navigation"
+      >
+        <TabsList
+          className="h-auto justify-start w-max gap-1 bg-[#F4F3ED] dark:bg-[#171616] p-1"
+          aria-orientation="horizontal"
+        >
           {zones.map((zone, zoneIdx) => (
             <ZoneSection
               key={zone.title}
@@ -109,8 +116,9 @@ function ZoneSection({
               value={tab.value}
               className="gap-1.5 text-xs sm:text-sm"
               title={zone.description}
+              aria-label={`${zone.title} — ${tab.label}`}
             >
-              {Icon && <Icon className="h-4 w-4" />}
+              {Icon && <Icon className="h-4 w-4" aria-hidden="true" />}
               <span>{tab.label}</span>
               {tab.badge}
             </TabsTrigger>
