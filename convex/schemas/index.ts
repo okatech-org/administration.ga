@@ -90,3 +90,18 @@ export {
 export { ipThreatScoresTable } from "./ipThreatScores";
 export { guidesTable } from "./guides";
 export { archivePoliciesTable, archiveAuditLogTable } from "./archivePolicies";
+
+// Phase 1 Fondations — Paramétrage représentation
+export { orgCalendarTable } from "./orgCalendar";
+
+// Phase 2 Communication — Extensions iAppel
+export { missedCallsTable } from "./missedCalls";
+
+// Phase 3 iAsted par org — Configuration chatbot par représentation
+export { orgIAstedConfigTable } from "./orgIAstedConfig";
+
+// Phase C3 — Templates de rôles personnalisables par org
+export { orgRoleTemplatesTable } from "./orgRoleTemplates";
+
+// Phase D3 — Politique d'escalation unifiée (chatbot + callcenter)
+export { orgEscalationPolicyTable } from "./orgEscalationPolicy";

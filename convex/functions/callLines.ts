@@ -1,10 +1,12 @@
 import { v } from "convex/values";
 import { query } from "../_generated/server";
-import { authQuery, authMutation, backofficeQuery } from "../lib/customFunctions";
+import { authQuery, authMutation } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
 import { TaskCode } from "../lib/taskCodes";
+import { logCortexAction } from "../lib/neocortex";
+import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
 
 // ============================================
 // QUERIES
@@ -256,116 +258,68 @@ export const removeAgent = authMutation({
 });
 
 /**
- * Replace the entire membershipIds array for a call line in one operation.
+ * Rétrocompatibilité — crée les lignes personnelles manquantes pour les membres existants.
+ * À appeler une seule fois par org depuis le backoffice admin.
  */
-export const updateAgents = authMutation({
-  args: {
-    callLineId: v.id("callLines"),
-    membershipIds: v.array(v.id("memberships")),
-  },
+export const backfillPersonalLines = authMutation({
+  args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
-    const line = await ctx.db.get(args.callLineId);
-    if (!line) throw error(ErrorCode.NOT_FOUND, "Ligne non trouvée");
-
-    const membership = await getMembership(ctx, ctx.user._id, line.orgId);
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(ctx, ctx.user, membership, TaskCode.meetings.manage);
 
-    // Validate all memberships belong to the same org
-    for (const mId of args.membershipIds) {
-      const m = await ctx.db.get(mId);
-      if (!m || m.orgId !== line.orgId || m.deletedAt) {
-        throw error(ErrorCode.INVALID_ARGUMENT, "Membre invalide ou supprimé");
-      }
-    }
-
-    await ctx.db.patch(args.callLineId, {
-      membershipIds: args.membershipIds,
-    });
-  },
-});
-
-// ============================================
-// BACKOFFICE QUERIES (SuperAdmin / AdminSystem)
-// ============================================
-
-/**
- * List call lines for superadmin — no membership required.
- */
-export const listForSuperAdmin = backofficeQuery({
-  args: { orgId: v.id("orgs") },
-  handler: async (ctx, args) => {
-    const lines = await ctx.db
-      .query("callLines")
-      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
-      .collect();
-
-    const enriched = await Promise.all(
-      lines.map(async (line) => {
-        const agents = await Promise.all(
-          line.membershipIds.map(async (mId) => {
-            const m = await ctx.db.get(mId);
-            if (!m || m.deletedAt) return null;
-            const user = await ctx.db.get(m.userId);
-            if (!user) return null;
-            return {
-              membershipId: m._id,
-              userId: user._id,
-              name: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Inconnu",
-              avatarUrl: user.avatarUrl,
-            };
-          }),
-        );
-        return { ...line, agents: agents.filter(Boolean) };
-      }),
-    );
-
-    enriched.sort((a, b) => a.priority - b.priority);
-    return enriched;
-  },
-});
-
-/**
- * Call statistics for an organization (backoffice KPI).
- */
-export const callStats = backofficeQuery({
-  args: { orgId: v.id("orgs") },
-  handler: async (ctx, args) => {
-    // Count call lines
-    const lines = await ctx.db
-      .query("callLines")
-      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
-      .collect();
-
-    // Count calls (meetings with type=call)
-    const calls = await ctx.db
-      .query("meetings")
-      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
-      .collect();
-
-    const callOnly = calls.filter((m) => m.type === "call");
-    const totalCalls = callOnly.length;
-    const activeCalls = callOnly.filter(
-      (m) =>
-        m.status === "active" &&
-        (!m.callStatus || ["initiating", "ringing", "connected", "on_hold"].includes(m.callStatus)),
-    ).length;
-    const missedCalls = callOnly.filter((m) => m.callStatus === "missed").length;
-
-    // Online agents
-    const presenceRecords = await ctx.db
-      .query("agentPresence")
-      .withIndex("by_org_and_status", (q) =>
-        q.eq("orgId", args.orgId).eq("status", "online"),
+    // Récupérer tous les membres actifs
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_org_deletedAt", (q) =>
+        q.eq("orgId", args.orgId).eq("deletedAt", undefined),
       )
       .collect();
 
-    return {
-      totalCalls,
-      activeCalls,
-      missedCalls,
-      totalLines: lines.length,
-      activeLines: lines.filter((l) => l.isActive).length,
-      onlineAgents: presenceRecords.length,
-    };
+    let created = 0;
+    const createdIds: string[] = [];
+    for (const m of memberships) {
+      const existing = await ctx.db
+        .query("callLines")
+        .withIndex("by_user", (q) => q.eq("userId", m.userId))
+        .filter((q) => q.eq(q.field("orgId"), args.orgId))
+        .first();
+
+      if (!existing) {
+        const user = await ctx.db.get(m.userId);
+        const label = user
+          ? [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Agent"
+          : "Agent";
+        const newId = await ctx.db.insert("callLines", {
+          type: "personal",
+          orgId: args.orgId,
+          label,
+          priority: 999,
+          isActive: true,
+          membershipIds: [m._id],
+          userId: m.userId,
+        });
+        createdIds.push(newId);
+        created++;
+      }
+    }
+
+    // Audit backfill (Phase D4)
+    if (created > 0) {
+      await logCortexAction(ctx, {
+        action: "BACKFILL_PERSONAL_CALL_LINES",
+        categorie: CATEGORIES_ACTION.METIER,
+        entiteType: "callLines",
+        entiteId: args.orgId,
+        userId: ctx.user._id,
+        apres: {
+          orgId: args.orgId,
+          createdCount: created,
+          createdIds,
+        },
+        signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+      });
+    }
+
+    return { created };
   },
 });

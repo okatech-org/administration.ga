@@ -2,7 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { FileText, Plus } from "lucide-react";
+import { Edit3, FileText, Plus, Timer } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -28,6 +28,7 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EditOrgServiceDialog } from "./services/EditOrgServiceDialog";
 import {
 	Table,
 	TableBody,
@@ -55,6 +56,13 @@ export function OrgServicesTable({ orgId }: OrgServicesTableProps) {
 		currency: "XAF",
 		requiresAppointment: true,
 	});
+	// Phase B7 : édition rapide pricing/SLA
+	const [serviceToEdit, setServiceToEdit] = useState<{
+		id: Id<"orgServices">;
+		name: string;
+		pricing?: { amount: number; currency: string };
+		estimatedDays?: number;
+	} | null>(null);
 
 	const { data: orgServices, isPending: isLoadingOrgServices } =
 		useAuthenticatedConvexQuery(api.functions.services.listByOrg, { orgId });
@@ -153,12 +161,14 @@ export function OrgServicesTable({ orgId }: OrgServicesTableProps) {
 										{t("superadmin.services.columns.category")}
 									</TableHead>
 									<TableHead>{t("superadmin.services.table.fee")}</TableHead>
+									<TableHead>SLA</TableHead>
 									<TableHead>
 										{t("superadmin.services.table.appointmentRequired")}
 									</TableHead>
 									<TableHead>
 										{t("superadmin.services.columns.status")}
 									</TableHead>
+									<TableHead className="text-right">Actions</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -177,7 +187,33 @@ export function OrgServicesTable({ orgId }: OrgServicesTableProps) {
 											)}
 										</TableCell>
 										<TableCell>
-											{service.pricing?.amount} {service.pricing?.currency}
+											<button
+												type="button"
+												className="text-left hover:underline cursor-pointer"
+												onClick={() =>
+													setServiceToEdit({
+														id: service._id,
+														name: service.service?.name?.fr ?? "Service",
+														pricing: service.pricing,
+														estimatedDays: service.estimatedDays,
+													})
+												}
+												title="Cliquer pour modifier"
+											>
+												{service.pricing?.amount && service.pricing.amount > 0
+													? `${service.pricing.amount} ${(service.pricing.currency ?? "EUR").toUpperCase()}`
+													: <span className="text-muted-foreground italic text-xs">Gratuit</span>}
+											</button>
+										</TableCell>
+										<TableCell>
+											{service.estimatedDays ? (
+												<span className="inline-flex items-center gap-1 text-xs">
+													<Timer className="h-3 w-3 text-muted-foreground" />
+													{service.estimatedDays}j
+												</span>
+											) : (
+												<span className="text-muted-foreground text-xs">—</span>
+											)}
 										</TableCell>
 										<TableCell>
 											{service.service?.requiresAppointment
@@ -190,6 +226,24 @@ export function OrgServicesTable({ orgId }: OrgServicesTableProps) {
 												onCheckedChange={() => handleToggleActive(service._id)}
 												disabled={isToggling}
 											/>
+										</TableCell>
+										<TableCell className="text-right">
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() =>
+													setServiceToEdit({
+														id: service._id,
+														name: service.service?.name?.fr ?? "Service",
+														pricing: service.pricing,
+														estimatedDays: service.estimatedDays,
+													})
+												}
+												className="h-7 px-2 text-xs"
+												title="Modifier tarif et SLA"
+											>
+												<Edit3 className="h-3 w-3" />
+											</Button>
 										</TableCell>
 									</TableRow>
 								))}
@@ -326,6 +380,15 @@ export function OrgServicesTable({ orgId }: OrgServicesTableProps) {
 					</SheetFooter>
 				</SheetContent>
 			</Sheet>
+
+			{/* ─── Dialog édition rapide pricing/SLA (Phase B7) ─── */}
+			<EditOrgServiceDialog
+				orgServiceId={serviceToEdit?.id ?? null}
+				serviceName={serviceToEdit?.name ?? ""}
+				initialPricing={serviceToEdit?.pricing}
+				initialEstimatedDays={serviceToEdit?.estimatedDays}
+				onClose={() => setServiceToEdit(null)}
+			/>
 		</>
 	);
 }

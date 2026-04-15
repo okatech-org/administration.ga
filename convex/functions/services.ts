@@ -343,8 +343,26 @@ export const activateForOrg = authMutation({
       )
       .unique();
 
+    // Si enregistrement existant :
+    //  - s'il est déjà actif → erreur (on ne peut pas re-activer un service actif)
+    //  - s'il est inactif → on le réactive avec les nouveaux paramètres
     if (existing) {
-      throw error(ErrorCode.SERVICE_ALREADY_ACTIVATED);
+      if (existing.isActive) {
+        throw error(ErrorCode.SERVICE_ALREADY_ACTIVATED);
+      }
+      // Réactivation : met à jour avec les nouveaux paramètres
+      await ctx.db.patch(existing._id, {
+        pricing: args.pricing,
+        estimatedDays: args.estimatedDays,
+        depositInstructions: args.depositInstructions,
+        pickupInstructions: args.pickupInstructions,
+        requiresAppointment: args.requiresAppointment ?? false,
+        requiresAppointmentForPickup:
+          args.requiresAppointmentForPickup ?? false,
+        isActive: true,
+        updatedAt: Date.now(),
+      });
+      return existing._id;
     }
 
     return await ctx.db.insert("orgServices", {

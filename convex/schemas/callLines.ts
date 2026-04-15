@@ -32,6 +32,43 @@ export const callLinesTable = defineTable({
 
   // For personal lines: direct link to the user
   userId: v.optional(v.id("users")),
+
+  // ─── PHASE 2 : SLA, Load balancing, Fallback ────────────────
+  // Stratégie de distribution des appels entrants aux agents assignés
+  loadBalancingStrategy: v.optional(
+    v.union(
+      v.literal("broadcast"), // actuel — tous agents reçoivent simultanément
+      v.literal("round_robin"), // tour à tour, équitable
+      v.literal("least_busy"), // agent le moins occupé
+      v.literal("priority_order"), // ordre de priorité dans membershipIds
+    ),
+  ),
+
+  // Timeout spécifique à cette ligne (override du défaut 60s)
+  ringTimeoutSeconds: v.optional(v.number()),
+
+  // SLA : temps max pour qu'un agent décroche
+  slaResponseSeconds: v.optional(v.number()),
+
+  // Si personne ne décroche : basculer sur une autre ligne
+  fallbackCallLineId: v.optional(v.id("callLines")),
+  fallbackAction: v.optional(
+    v.union(
+      v.literal("voicemail"),
+      v.literal("other_line"),
+      v.literal("notification_only"),
+    ),
+  ),
+
+  // Statistiques (dénormalisées pour affichage rapide)
+  stats: v.optional(
+    v.object({
+      totalCallsLast30Days: v.number(),
+      missedCallsLast30Days: v.number(),
+      averageResponseSeconds: v.optional(v.number()),
+      lastUpdatedAt: v.number(),
+    }),
+  ),
 })
   .index("by_org", ["orgId"])
   .index("by_org_active", ["orgId", "isActive"])

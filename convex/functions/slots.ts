@@ -3,6 +3,7 @@ import { authQuery, authMutation } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
+import { getOrgSchedule } from "../lib/orgHelpers";
 import { AppointmentStatus, appointmentStatusValidator } from "../schemas/appointments";
 
 /**
@@ -52,7 +53,11 @@ export const computeAvailableSlots = authQuery({
     const dayOfWeek = new Date(args.date + "T00:00:00").getDay();
     const dayName = DAY_NAMES[dayOfWeek];
 
-    const openingHours = org.openingHours as Record<string, { open?: string; close?: string; closed?: boolean }> | undefined;
+    // Phase E.4 — Utilisation du helper unifié (orgCalendar > openingHours fallback).
+    const openingHours = (await getOrgSchedule(ctx, org)) as
+      | Record<string, { open?: string; close?: string; closed?: boolean }>
+      | undefined
+      | null;
     if (!openingHours) return [];
 
     const dayHours = openingHours[dayName];
@@ -205,7 +210,11 @@ export const computeAvailableDates = authQuery({
     const org = await ctx.db.get(args.orgId);
     if (!org) return [];
 
-    const openingHours = org.openingHours as Record<string, { open?: string; close?: string; closed?: boolean }> | undefined;
+    // Phase E.4 — Utilisation du helper unifié (orgCalendar > openingHours fallback).
+    const openingHours = (await getOrgSchedule(ctx, org)) as
+      | Record<string, { open?: string; close?: string; closed?: boolean }>
+      | undefined
+      | null;
     if (!openingHours) return [];
 
     // Get org service config
@@ -317,7 +326,11 @@ export const bookDynamicAppointment = authMutation({
     const dayOfWeek = new Date(args.date + "T00:00:00").getDay();
     const dayName = DAY_NAMES[dayOfWeek];
 
-    const openingHours = org.openingHours as Record<string, { open?: string; close?: string; closed?: boolean }> | undefined;
+    // Phase E.4 — Utilisation du helper unifié (orgCalendar > openingHours fallback).
+    const openingHours = (await getOrgSchedule(ctx, org)) as
+      | Record<string, { open?: string; close?: string; closed?: boolean }>
+      | undefined
+      | null;
     const dayHours = openingHours?.[dayName];
     if (!dayHours || dayHours.closed || !dayHours.open || !dayHours.close) {
       throw error(ErrorCode.SLOT_NOT_AVAILABLE, "Organization is closed on this day");

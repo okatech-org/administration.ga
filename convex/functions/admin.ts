@@ -1277,3 +1277,30 @@ export const getUserModules = backofficeQuery({
     };
   },
 });
+
+// ============================================================================
+// PHASE 2 — Gestion visibilité contacts publics
+// ============================================================================
+
+/**
+ * Toggle `isPublicContact` d'un membership (annuaire public de la représentation).
+ * Permission : settings.manage sur l'org du membership.
+ */
+export const updateMembershipContactVisibility = backofficeMutation({
+  args: {
+    membershipId: v.id("memberships"),
+    isPublicContact: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const membership = await ctx.db.get(args.membershipId);
+    if (!membership) {
+      throw error(ErrorCode.NOT_FOUND, "Membership introuvable");
+    }
+
+    await ctx.db.patch(args.membershipId, {
+      isPublicContact: args.isPublicContact,
+    });
+
+    return args.membershipId;
+  },
+});

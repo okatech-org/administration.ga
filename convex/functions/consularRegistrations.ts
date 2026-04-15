@@ -3,7 +3,7 @@ import { paginationOptsValidator } from "convex/server";
 import { query, internalMutation } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { authQuery, authMutation } from "../lib/customFunctions";
-import { Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 import {
   RegistrationStatus,
   RegistrationType,
@@ -800,6 +800,98 @@ export const getStatsByOrg = authQuery({
       active: adultActive + childActive,
       expired: adultExpired + childExpired,
     };
+  },
+});
+
+/**
+ * Phase E.5 — Breakdown des enregistrements consulaires par catégorie de service.
+ *
+ * Retourne une liste `[{ category, total, active, expired, requested }]`
+ * agrégée en joignant `consularRegistrations → requests → orgServices → services.category`.
+ *
+ * Les catégories sont normalisées (fallback "other" pour les services sans catégorie).
+ * Utilisé dans l'onglet « Registre » du backoffice pour afficher un breakdown visuel.
+ */
+export const getStatsByCategoryForOrg = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+  },
+  handler: async (ctx, args) => {
+    const membership = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_org_deletedAt", (q) =>
+        q.eq("userId", ctx.user._id).eq("orgId", args.orgId).eq("deletedAt", undefined),
+      )
+      .unique();
+    await assertCanDoTask(
+      ctx,
+      ctx.user,
+      membership,
+      TaskCode.consular_registrations.view,
+    );
+
+    // Récupère toutes les registrations de l'org (max 10k — raisonnable pour une org).
+    const registrations = await ctx.db
+      .query("consularRegistrations")
+      .withIndex("by_org_status", (q) => q.eq("orgId", args.orgId))
+      .take(10000);
+
+    // Cache pour éviter des lectures répétées sur les mêmes orgServices/services.
+    const orgServiceCache = new Map<
+      Id<"orgServices">,
+      { serviceId: Id<"services"> } | null
+    >();
+    const serviceCache = new Map<Id<"services">, { category?: string } | null>();
+
+    const byCategory: Record<
+      string,
+      { total: number; active: number; expired: number; requested: number }
+    > = {};
+
+    for (const reg of registrations) {
+      // Résolution de la requête d'origine
+      const request = await ctx.db.get(reg.requestId);
+      if (!request) continue;
+
+      // Lookup orgService (avec cache)
+      let osEntry = orgServiceCache.get(request.orgServiceId);
+      if (osEntry === undefined) {
+        const os = await ctx.db.get(request.orgServiceId);
+        osEntry = os ? { serviceId: os.serviceId } : null;
+        orgServiceCache.set(request.orgServiceId, osEntry);
+      }
+      if (!osEntry) continue;
+
+      // Lookup service (avec cache)
+      let svcEntry = serviceCache.get(osEntry.serviceId);
+      if (svcEntry === undefined) {
+        const svc = await ctx.db.get(osEntry.serviceId);
+        svcEntry = svc ? { category: svc.category } : null;
+        serviceCache.set(osEntry.serviceId, svcEntry);
+      }
+
+      const category = svcEntry?.category ?? "other";
+
+      if (!byCategory[category]) {
+        byCategory[category] = {
+          total: 0,
+          active: 0,
+          expired: 0,
+          requested: 0,
+        };
+      }
+
+      byCategory[category].total++;
+      if (reg.status === RegistrationStatus.Active) byCategory[category].active++;
+      else if (reg.status === RegistrationStatus.Expired)
+        byCategory[category].expired++;
+      else if (reg.status === RegistrationStatus.Requested)
+        byCategory[category].requested++;
+    }
+
+    return Object.entries(byCategory)
+      .map(([category, stats]) => ({ category, ...stats }))
+      .sort((a, b) => b.total - a.total);
   },
 });
 

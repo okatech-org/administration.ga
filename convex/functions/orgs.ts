@@ -17,6 +17,15 @@ import {
   addressValidator,
   orgSettingsValidator,
   localizedStringValidator,
+  orgIdentityExtendedValidator,
+  orgProtocolValidator,
+  orgAddressesValidator,
+  orgJurisdictionValidator,
+  orgBrandingValidator,
+  callsConfigValidator,
+  internalMailConfigValidator,
+  notificationsConfigValidator,
+  chatsConfigValidator,
 } from "../lib/validators";
 import { taskCodeValidator } from "../lib/taskCodes";
 import { moduleCodeValidator } from "../lib/moduleCodes";
@@ -28,6 +37,7 @@ import {
   orgServicesByOrg,
   appointmentsByOrg,
 } from "../lib/aggregates";
+import { getOrgSchedule } from "../lib/orgHelpers";
 
 /**
  * List all active organizations
@@ -113,6 +123,22 @@ export const getById = query({
     const org = await ctx.db.get(args.orgId);
     if (org?.deletedAt) return null;
     return org;
+  },
+});
+
+/**
+ * Phase E.4 — Query publique qui retourne le schedule unifié d'une org,
+ * en passant par le helper (orgCalendar > openingHours fallback).
+ *
+ * À utiliser côté admin (backoffice + agent-web) au lieu de lire
+ * `org.openingHours` directement.
+ */
+export const getSchedule = query({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.orgId);
+    if (!org || org.deletedAt) return null;
+    return await getOrgSchedule(ctx, org);
   },
 });
 
@@ -253,6 +279,506 @@ export const update = authMutation({
     });
 
     return orgId;
+  },
+});
+
+// ============================================================================
+// PHASE 1 — Mutations granulaires par section (paramétrage représentation)
+// ============================================================================
+// Chaque mutation met à jour un sous-objet spécifique pour permettre l'auto-save
+// par section dans l'UI (SettingsTabsLayout). Toutes vérifient settings.manage.
+// ============================================================================
+
+/**
+ * Met à jour le bloc identité étendue (nom officiel, accréditation, cycle de vie).
+ */
+export const updateIdentityExtended = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    identityExtended: orgIdentityExtendedValidator,
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.manage");
+
+    await ctx.db.patch(args.orgId, {
+      identityExtended: args.identityExtended,
+      updatedAt: Date.now(),
+    });
+
+    await logCortexAction(ctx, {
+      action: "UPDATE_ORG_IDENTITY",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgs",
+      entiteId: args.orgId,
+      userId: ctx.user._id,
+      apres: { identityExtended: args.identityExtended },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
+    return args.orgId;
+  },
+});
+
+/**
+ * Met à jour le protocole diplomatique (chef de poste, grade, credentials).
+ */
+export const updateProtocol = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    protocol: orgProtocolValidator,
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.manage");
+
+    // Validation : si headOfMissionMembershipId fourni, il doit exister pour cette org
+    if (args.protocol.headOfMissionMembershipId) {
+      const hom = await ctx.db.get(args.protocol.headOfMissionMembershipId);
+      if (!hom || hom.orgId !== args.orgId) {
+        throw error(
+          ErrorCode.VALIDATION_ERROR,
+          "Le chef de poste doit être membre de cette représentation",
+        );
+      }
+    }
+
+    await ctx.db.patch(args.orgId, {
+      protocol: args.protocol,
+      updatedAt: Date.now(),
+    });
+
+    await logCortexAction(ctx, {
+      action: "UPDATE_ORG_PROTOCOL",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgs",
+      entiteId: args.orgId,
+      userId: ctx.user._id,
+      apres: { protocol: args.protocol },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
+    return args.orgId;
+  },
+});
+
+/**
+ * Met à jour les adresses structurées (physique + postale + correspondance).
+ * Garde aussi `orgs.address` synchronisé avec `addresses.physical` pour la
+ * rétrocompatibilité avec le code qui lit encore le champ plat.
+ */
+export const updateAddresses = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    addresses: orgAddressesValidator,
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.manage");
+
+    await ctx.db.patch(args.orgId, {
+      addresses: args.addresses,
+      // Sync du champ plat historique pour compatibilité ascendante
+      address: args.addresses.physical,
+      updatedAt: Date.now(),
+    });
+
+    await logCortexAction(ctx, {
+      action: "UPDATE_ORG_ADDRESSES",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgs",
+      entiteId: args.orgId,
+      userId: ctx.user._id,
+      apres: { addresses: args.addresses },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
+    return args.orgId;
+  },
+});
+
+/**
+ * Met à jour la juridiction enrichie (primaire, secondaire, sous-juridictions).
+ * Garde aussi `orgs.jurisdictionCountries` synchronisé avec `jurisdiction.primary`
+ * pour la rétrocompatibilité.
+ */
+export const updateJurisdiction = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    jurisdiction: orgJurisdictionValidator,
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.manage");
+
+    // Validation : les sous-juridictions doivent pointer vers des orgs existantes si fournies
+    if (args.jurisdiction.subJurisdictions) {
+      for (const sub of args.jurisdiction.subJurisdictions) {
+        if (sub.honoraryConsulateOrgId) {
+          const ref = await ctx.db.get(sub.honoraryConsulateOrgId);
+          if (!ref) {
+            throw error(
+              ErrorCode.VALIDATION_ERROR,
+              `Consulat honoraire introuvable pour la sous-juridiction "${sub.name}"`,
+            );
+          }
+        }
+      }
+    }
+
+    await ctx.db.patch(args.orgId, {
+      jurisdiction: args.jurisdiction,
+      jurisdictionCountries: args.jurisdiction.primary,
+      jurisdictionNotes: args.jurisdiction.notes,
+      updatedAt: Date.now(),
+    });
+
+    await logCortexAction(ctx, {
+      action: "UPDATE_ORG_JURISDICTION",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgs",
+      entiteId: args.orgId,
+      userId: ctx.user._id,
+      apres: { jurisdiction: args.jurisdiction },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
+    return args.orgId;
+  },
+});
+
+/**
+ * Met à jour le branding (logo, couleurs, photos, réseaux sociaux, description publique).
+ */
+export const updateBranding = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    branding: orgBrandingValidator,
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.manage");
+
+    await ctx.db.patch(args.orgId, {
+      branding: args.branding,
+      updatedAt: Date.now(),
+    });
+
+    await logCortexAction(ctx, {
+      action: "UPDATE_ORG_BRANDING",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgs",
+      entiteId: args.orgId,
+      userId: ctx.user._id,
+      apres: { branding: args.branding },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
+    return args.orgId;
+  },
+});
+
+/**
+ * Change le statut de cycle de vie d'une représentation (active/maintenance/archived/...).
+ * Met à jour uniquement identityExtended.status pour audit clair.
+ */
+export const updateStatus = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    status: v.union(
+      v.literal("active"),
+      v.literal("inactive"),
+      v.literal("draft"),
+      v.literal("maintenance"),
+      v.literal("archived"),
+      v.literal("suspended"),
+    ),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.manage");
+
+    const org = await ctx.db.get(args.orgId);
+    if (!org) throw error(ErrorCode.NOT_FOUND, "Représentation introuvable");
+
+    const currentIdentity = org.identityExtended ?? {};
+    const newIdentity = { ...currentIdentity, status: args.status };
+
+    // Synchronise le flag historique isActive
+    const isActive =
+      args.status === "active" || args.status === "maintenance";
+
+    await ctx.db.patch(args.orgId, {
+      identityExtended: newIdentity,
+      isActive,
+      updatedAt: Date.now(),
+    });
+
+    await logCortexAction(ctx, {
+      action: "UPDATE_ORG_STATUS",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgs",
+      entiteId: args.orgId,
+      userId: ctx.user._id,
+      apres: { status: args.status, reason: args.reason, isActive },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
+    return args.orgId;
+  },
+});
+
+// ============================================================================
+// PHASE A4 — Validation cascade désactivation module
+// ============================================================================
+
+/**
+ * Analyse l'impact d'une désactivation de module pour une org.
+ *
+ * Retourne :
+ *   - positions ayant des tasks de ce module (count + liste de codes)
+ *   - orgServices actifs liés à ce module (count)
+ *   - requests en cours non clôturées sur ces services (count)
+ *
+ * Utilisé pour afficher une modale de confirmation avant désactivation.
+ */
+export const getModuleImpactAnalysis = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+    moduleCode: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.view");
+
+    // 1. Positions ayant des tasks préfixées par "{moduleCode}."
+    const positions = await ctx.db
+      .query("positions")
+      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .collect();
+
+    const positionsImpacted = positions
+      .filter((p) => !p.deletedAt)
+      .filter((p) => {
+        const tasks = (p as { tasks?: string[] }).tasks ?? [];
+        const moduleAccess = (p as { moduleAccess?: { moduleCode: string }[] })
+          .moduleAccess ?? [];
+        return (
+          tasks.some((t: string) => t.startsWith(`${args.moduleCode}.`)) ||
+          moduleAccess.some((m) => m.moduleCode === args.moduleCode)
+        );
+      })
+      .map((p) => ({
+        positionId: p._id,
+        title: (p as { title?: { fr?: string; en?: string } }).title,
+        code: (p as { code?: string }).code,
+      }));
+
+    // 2. orgServices actifs dont la catégorie correspond au module
+    // Les catégories ServiceCategory mappent généralement aux moduleCodes
+    // (ex: "passports" module ↔ "passport" category ↔ services passport)
+    const orgServices = await ctx.db
+      .query("orgServices")
+      .withIndex("by_org_active", (q) => q.eq("orgId", args.orgId))
+      .collect();
+
+    const services = await Promise.all(
+      orgServices
+        .filter((os) => os.isActive !== false)
+        .map(async (os) => {
+          const service = await ctx.db.get(os.serviceId);
+          return { os, service };
+        }),
+    );
+
+    const servicesImpacted = services.filter(({ service }) => {
+      if (!service) return false;
+      const cat = (service as { category?: string }).category ?? "";
+      // Heuristique : module "passports" couvre catégorie "passport", etc.
+      return (
+        cat === args.moduleCode ||
+        cat === args.moduleCode.replace(/s$/, "") ||
+        `${cat}s` === args.moduleCode
+      );
+    });
+
+    // 3. Requests en cours sur ces services
+    const serviceIds = servicesImpacted.map(({ os }) => os.serviceId);
+    let requestsCount = 0;
+    if (serviceIds.length > 0) {
+      const allRequests = await ctx.db
+        .query("requests")
+        .withIndex("by_org_status", (q) => q.eq("orgId", args.orgId))
+        .collect();
+      requestsCount = allRequests.filter((r) => {
+        const status = (r as { status?: string }).status;
+        const sId = (r as { serviceId?: unknown }).serviceId;
+        return (
+          status !== RequestStatus.Completed &&
+          status !== RequestStatus.Cancelled &&
+          serviceIds.some((id) => id === sId)
+        );
+      }).length;
+    }
+
+    return {
+      moduleCode: args.moduleCode,
+      positionsCount: positionsImpacted.length,
+      positions: positionsImpacted,
+      servicesCount: servicesImpacted.length,
+      services: servicesImpacted.map(({ os, service }) => ({
+        orgServiceId: os._id,
+        serviceId: os.serviceId,
+        name: (service as { name?: { fr?: string; en?: string } } | null)?.name,
+      })),
+      requestsCount,
+      hasImpact:
+        positionsImpacted.length > 0 ||
+        servicesImpacted.length > 0 ||
+        requestsCount > 0,
+    };
+  },
+});
+
+// ============================================================================
+// PHASE 2 — Mutations config Communication
+// ============================================================================
+
+/**
+ * Helper pour merger un sous-objet dans orgSettings sans écraser les autres.
+ */
+async function patchOrgSettings(
+  ctx: any,
+  orgId: any,
+  patch: Record<string, unknown>,
+) {
+  const org = await ctx.db.get(orgId);
+  if (!org) throw error(ErrorCode.NOT_FOUND, "Représentation introuvable");
+
+  const currentSettings = (org.settings ?? {
+    appointmentBuffer: 24,
+    maxActiveRequests: 10,
+    workingHours: {},
+  }) as Record<string, unknown>;
+
+  await ctx.db.patch(orgId, {
+    settings: { ...currentSettings, ...patch },
+    updatedAt: Date.now(),
+  });
+}
+
+/**
+ * Met à jour la config iAppel globale (ring timeout, recording, fallback).
+ */
+export const updateCallsConfig = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    calls: callsConfigValidator,
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.manage");
+
+    await patchOrgSettings(ctx, args.orgId, { calls: args.calls });
+
+    await logCortexAction(ctx, {
+      action: "UPDATE_ORG_CALLS_CONFIG",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgs",
+      entiteId: args.orgId,
+      userId: ctx.user._id,
+      apres: { calls: args.calls },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
+    return args.orgId;
+  },
+});
+
+/**
+ * Met à jour la config iBoîte (tampons, signatures, templates, auto-répondeur).
+ */
+export const updateInternalMailConfig = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    internalMail: internalMailConfigValidator,
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.manage");
+
+    await patchOrgSettings(ctx, args.orgId, { internalMail: args.internalMail });
+
+    await logCortexAction(ctx, {
+      action: "UPDATE_ORG_INTERNAL_MAIL_CONFIG",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgs",
+      entiteId: args.orgId,
+      userId: ctx.user._id,
+      apres: { internalMail: args.internalMail },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
+    return args.orgId;
+  },
+});
+
+/**
+ * Met à jour la config notifications (canaux, events, quiet hours, escalation).
+ */
+export const updateNotificationsConfig = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    notifications: notificationsConfigValidator,
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.manage");
+
+    await patchOrgSettings(ctx, args.orgId, {
+      notifications: args.notifications,
+    });
+
+    await logCortexAction(ctx, {
+      action: "UPDATE_ORG_NOTIFICATIONS_CONFIG",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgs",
+      entiteId: args.orgId,
+      userId: ctx.user._id,
+      apres: { notifications: args.notifications },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
+    return args.orgId;
+  },
+});
+
+/**
+ * Met à jour la config chats (routage standard, auto-archive).
+ */
+export const updateChatsConfig = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    chats: chatsConfigValidator,
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.manage");
+
+    await patchOrgSettings(ctx, args.orgId, { chats: args.chats });
+
+    await logCortexAction(ctx, {
+      action: "UPDATE_ORG_CHATS_CONFIG",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgs",
+      entiteId: args.orgId,
+      userId: ctx.user._id,
+      apres: { chats: args.chats },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
+    return args.orgId;
   },
 });
 
@@ -523,11 +1049,63 @@ export const addMember = authMutation({
       }
     }
 
-    return await ctx.db.insert("memberships", {
+    const membershipId = await ctx.db.insert("memberships", {
       orgId: args.orgId,
       userId: args.userId,
       positionId: args.positionId,
     });
+
+    // Audit création membership (Phase D4)
+    await logCortexAction(ctx, {
+      action: "ADD_MEMBER",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "memberships",
+      entiteId: membershipId,
+      userId: ctx.user._id,
+      apres: { orgId: args.orgId, userId: args.userId, positionId: args.positionId },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
+    // Auto-créer la ligne personnelle (iAppel) si elle n'existe pas encore
+    const existingPersonal = await ctx.db
+      .query("callLines")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .filter((q) => q.eq(q.field("orgId"), args.orgId))
+      .first();
+
+    if (!existingPersonal) {
+      const user = await ctx.db.get(args.userId);
+      const label = user
+        ? [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Agent"
+        : "Agent";
+      const callLineId = await ctx.db.insert("callLines", {
+        type: "personal",
+        orgId: args.orgId,
+        label,
+        priority: 999,
+        isActive: true,
+        membershipIds: [membershipId],
+        userId: args.userId,
+      });
+
+      // Audit auto-création ligne iAppel (Phase D4)
+      await logCortexAction(ctx, {
+        action: "AUTO_CREATE_PERSONAL_CALL_LINE",
+        categorie: CATEGORIES_ACTION.METIER,
+        entiteType: "callLines",
+        entiteId: callLineId,
+        userId: ctx.user._id,
+        apres: {
+          trigger: "addMember",
+          orgId: args.orgId,
+          userId: args.userId,
+          membershipId,
+        },
+        signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+      });
+    }
+
+    return membershipId;
   },
 });
 
