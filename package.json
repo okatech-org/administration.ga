@@ -9,6 +9,7 @@
     "lint": "turbo lint",
     "format": "turbo format",
     "typecheck": "turbo typecheck",
+    "dev:users-web": "bun run dev --filter=users-web",
     "dev:citizen-web": "bun run dev --filter=citizen-web",
     "dev:agent-web": "bun run dev --filter=agent-web",
     "dev:backoffice-web": "bun run dev --filter=backoffice-web",
