@@ -699,6 +699,96 @@ export const listOverdueByOrg = authQuery({
 });
 
 /**
+ * Phase F3.1 — Forecast SLA breach : retourne les demandes qui vont
+ * approcher leur deadline SLA dans les N prochains jours.
+ *
+ * Utilisé par le RepDashboard pour afficher un widget d'anticipation
+ * « X demandes à risque dans les 3 prochains jours ».
+ *
+ * Différence avec listOverdueByOrg : retourne les demandes NON ENCORE
+ * en retard, avec un score de risque (daysUntilBreach décroissant).
+ */
+export const forecastSlaBreach = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+    withinDays: v.optional(v.number()), // défaut : 7 jours
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "requests.view");
+
+    const withinDays = args.withinDays ?? 7;
+    const limit = args.limit ?? 20;
+
+    const allActive = await ctx.db
+      .query("requests")
+      .withIndex("by_org_status", (q) => q.eq("orgId", args.orgId))
+      .filter((q) =>
+        q.and(
+          q.neq(q.field("status"), RequestStatus.Completed),
+          q.neq(q.field("status"), RequestStatus.Cancelled),
+          q.neq(q.field("status"), RequestStatus.Rejected),
+        ),
+      )
+      .collect();
+
+    const now = Date.now();
+    const atRisk = await Promise.all(
+      allActive.map(async (req) => {
+        const orgService = await ctx.db.get(req.orgServiceId);
+        if (!orgService) return null;
+        const service = await ctx.db.get(orgService.serviceId);
+        if (!service) return null;
+
+        const sla =
+          (orgService as { estimatedDays?: number }).estimatedDays ??
+          (service as { estimatedDays?: number }).estimatedDays ??
+          null;
+        if (!sla || sla <= 0) return null;
+
+        const ageDays = (now - req._creationTime) / (24 * 60 * 60 * 1000);
+        const daysRemaining = sla - ageDays;
+
+        // Filtre : uniquement celles qui vont breach dans withinDays
+        // mais qui ne sont PAS encore en retard
+        if (daysRemaining <= 0 || daysRemaining > withinDays) return null;
+
+        const user = await ctx.db.get(req.userId);
+        const riskLevel: "critical" | "high" | "medium" =
+          daysRemaining <= 1 ? "critical" : daysRemaining <= 3 ? "high" : "medium";
+
+        return {
+          _id: req._id,
+          reference: req.reference,
+          status: req.status,
+          createdAt: req._creationTime,
+          ageDays: Math.floor(ageDays),
+          slaDays: sla,
+          daysUntilBreach: Math.floor(daysRemaining * 10) / 10,
+          riskLevel,
+          serviceName: (service as { name?: { fr?: string; en?: string } })
+            ?.name,
+          user: user
+            ? {
+                _id: user._id,
+                firstName: (user as { firstName?: string }).firstName,
+                lastName: (user as { lastName?: string }).lastName,
+                email: user.email,
+              }
+            : null,
+        };
+      }),
+    );
+
+    return atRisk
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+      .sort((a, b) => a.daysUntilBreach - b.daysUntilBreach)
+      .slice(0, limit);
+  },
+});
+
+/**
  * List requests for an organization filtered by multiple statuses (for Kanban columns).
  * Uses index prefix on orgId + runtime filter for status array.
  */
