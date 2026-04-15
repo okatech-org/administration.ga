@@ -3,12 +3,14 @@
 import { api } from "@convex/_generated/api";
 import { RequestStatus, ServiceCategory } from "@convex/lib/constants";
 import { getLocalized } from "@convex/lib/utils";
+import { buildRegistrationFormData, buildChildRegistrationFormData } from "@convex/lib/registrationFormData";
 import type { FormField } from "@convex/lib/validators";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import {
 	AlertTriangle,
 	ArrowLeft,
+	Baby,
 	Building2,
 	Calendar,
 	Clock,
@@ -50,7 +52,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/my-space/flat-card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { useCitizenData } from "@/hooks/use-citizen-data";
 import {
 	useAuthenticatedConvexQuery,
@@ -58,6 +60,7 @@ import {
 } from "@/integrations/convex/hooks";
 import { captureEvent } from "@/lib/analytics";
 import { getLocalizedValue } from "@/lib/i18n-utils";
+import { cn } from "@/lib/utils";
 
 function resolveFieldValue(
 	value: unknown,
@@ -141,6 +144,20 @@ export default function UserRequestDetail() {
 	const router = useRouter();
 
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [activeSection, setActiveSection] = useState("");
+
+	// Detect if this request is for a child profile (use backend's detection from loadRequestDetails)
+	const isChildRequest = !!(request as any)?.isChildRequest || !!(request?.formData as any)?.isChildProfile;
+	const childProfileId = isChildRequest ? (request?.profileId as any) : undefined;
+	const { data: childProfile } = useAuthenticatedConvexQuery(
+		api.functions.childProfiles.getById,
+		childProfileId ? { id: childProfileId } : "skip",
+	);
+	const childName = childProfile
+		? `${(childProfile as any).identity?.firstName ?? ""} ${(childProfile as any).identity?.lastName ?? ""}`.trim()
+		: (request as any)?.childProfile
+			? `${(request as any).childProfile.identity?.firstName ?? ""} ${(request as any).childProfile.identity?.lastName ?? ""}`.trim()
+			: null;
 
 	const isDraft = request?.status === RequestStatus.Draft;
 	const canCancel =
@@ -256,23 +273,36 @@ export default function UserRequestDetail() {
 
 			// Inject "Emergency Contacts" section from formData array
 			const ecArray = formData["emergency_contacts"];
+			const ecLabels: Record<string, { fr: string; en: string }> = {
+				last_name: { fr: "Nom", en: "Last Name" },
+				first_name: { fr: "Prénom", en: "First Name" },
+				phone: { fr: "Téléphone", en: "Phone" },
+				email: { fr: "Email", en: "Email" },
+				country: { fr: "Pays", en: "Country" },
+			};
 			if (Array.isArray(ecArray) && ecArray.length > 0) {
 				const ecRows: typeof templateSections[0]["rows"] = [];
 				ecArray.forEach((c: any, i: number) => {
 					if (!c || typeof c !== "object") return;
+					// Add a separator row with the contact header
+					const countryDisplay = c.country ? resolveFieldValue(c.country, lang, t) : "";
+					ecRows.push({
+						key: `ec_${i}_header`,
+						label: `__contact_header__`,
+						value: `Contact ${i + 1}${countryDisplay ? ` — ${countryDisplay}` : ""}`,
+					});
 					for (const key of [
 						"last_name",
 						"first_name",
 						"phone",
 						"email",
-						"country",
 					]) {
 						const val = c[key];
 						const display = resolveFieldValue(val, lang, t);
 						if (display !== "\u2014") {
 							ecRows.push({
 								key: `ec_${i}_${key}`,
-								label: key,
+								label: lang === "fr" ? ecLabels[key].fr : ecLabels[key].en,
 								value: display,
 							});
 						}
@@ -480,6 +510,12 @@ export default function UserRequestDetail() {
 								i18n.language,
 							) || t("requests.detail.newRequest")}
 						</h1>
+						{isChildRequest && childName && (
+							<p className="text-sm text-pink-500 dark:text-pink-400 flex items-center gap-1.5 mt-1">
+								<Baby className="h-4 w-4" />
+								{t("requests.forChild", { name: childName })}
+							</p>
+						)}
 						<p className="text-muted-foreground text-sm mt-1">
 							{t("requests.draft.subtitle")}
 						</p>
@@ -535,15 +571,32 @@ export default function UserRequestDetail() {
 					</FlatCard>
 
 					{/* Form - Registration or Dynamic */}
-					{isRegistrationService && profile ? (
+					{isRegistrationService && (isChildRequest ? childProfile : profile) ? (
 						<RegistrationForm
-							profile={profile}
+							profile={(isChildRequest && childProfile
+								? {
+									...childProfile,
+									// Adapt child profile shape for RegistrationForm
+									documents: (childProfile as any).documents ?? {},
+									userType: (profile as any)?.userType ?? "permanent",
+								}
+								: profile) as any}
 							requestType={(request.service as { slug: string })?.slug}
 							requiredDocuments={
 								request.service?.formSchema?.joinedDocuments || []
 							}
 							onSubmit={async () => {
-								await handleSubmit({});
+								const formData = isChildRequest && childProfile
+									? buildChildRegistrationFormData(
+										childProfile as any,
+										(profile ?? {}) as any,
+										(profile as any)?.userType || "permanent",
+									)
+									: buildRegistrationFormData(
+										profile as any,
+										(profile as any).userType || "permanent",
+									);
+								await handleSubmit(formData);
 							}}
 							isSubmitting={isSubmitting}
 						/>
@@ -584,6 +637,12 @@ export default function UserRequestDetail() {
 						{request.reference && (
 							<Badge variant="outline" className="font-mono text-xs">
 								{request.reference}
+							</Badge>
+						)}
+						{isChildRequest && childName && (
+							<Badge variant="outline" className="text-xs text-pink-500 dark:text-pink-400 border-pink-300 dark:border-pink-700">
+								<Baby className="h-3 w-3 mr-1" />
+								{t("requests.forChild", { name: childName })}
 							</Badge>
 						)}
 						<p className="text-sm text-muted-foreground">
@@ -659,38 +718,65 @@ export default function UserRequestDetail() {
 								</h3>
 							</div>
 							<div className="p-3 lg:p-4">
-								<Tabs defaultValue={sections[0].id} className="w-full">
-									<div className="overflow-x-auto scrollbar-hide -mx-1 px-1">
-										<TabsList className="h-auto justify-start w-max">
-											{sections.map((section) => (
-												<TabsTrigger
-													key={section.id}
-													value={section.id}
-													className="shrink-0 text-xs sm:text-sm"
-												>
-													{section.title}
-												</TabsTrigger>
-											))}
-										</TabsList>
-									</div>
+								{(() => {
+									const currentSection = activeSection || sections[0]?.id;
+									return (
+										<div className="flex flex-col md:flex-row md:gap-4">
+											{/* Section nav — horizontal scroll on mobile, vertical sidebar on desktop */}
+											<nav className="flex shrink-0 flex-row gap-1 overflow-x-auto pb-3 md:w-fit md:min-w-44 md:max-w-64 md:flex-col md:gap-0.5 md:border-r md:border-border/30 md:pr-4 md:pb-0">
+												{sections.map((section) => (
+													<button
+														key={section.id}
+														type="button"
+														onClick={() => setActiveSection(section.id)}
+														className={cn(
+															"flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-xs whitespace-nowrap transition-colors sm:text-sm md:w-full md:whitespace-normal",
+															currentSection === section.id
+																? "bg-primary font-medium text-primary-foreground"
+																: "text-muted-foreground hover:bg-muted hover:text-foreground",
+														)}
+													>
+														{section.title}
+														<span className={cn(
+															"ml-auto hidden text-[10px] md:inline",
+															currentSection === section.id ? "text-primary-foreground/70" : "text-muted-foreground/50",
+														)}>
+															{section.rows.length}
+														</span>
+													</button>
+												))}
+											</nav>
 
-									{sections.map((section) => (
-										<TabsContent key={section.id} value={section.id}>
-											<div className="divide-y">
-												{section.rows.map((row) => (
-													<div key={row.key} className="flex flex-col sm:flex-row sm:justify-between py-1 text-sm gap-0.5 sm:gap-4">
-														<span className="text-muted-foreground text-xs sm:text-sm shrink-0">
-															{row.label}
-														</span>
-														<span className="font-medium sm:text-right break-words">
-															{row.value}
-														</span>
+											{/* Content */}
+											<div className="flex-1 min-w-0">
+												{sections.map((section) => (
+													<div key={section.id} className={cn(currentSection !== section.id && "hidden")}>
+														<div className="divide-y">
+															{section.rows.map((row) =>
+																row.label === "__contact_header__" ? (
+																	<div key={row.key} className="pt-4 pb-2 first:pt-0">
+																		<span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+																			{row.value}
+																		</span>
+																	</div>
+																) : (
+																	<div key={row.key} className="flex flex-col sm:flex-row sm:justify-between py-1 text-sm gap-0.5 sm:gap-4">
+																		<span className="text-muted-foreground text-xs sm:text-sm shrink-0">
+																			{row.label}
+																		</span>
+																		<span className="font-medium sm:text-right break-words">
+																			{row.value}
+																		</span>
+																	</div>
+																),
+															)}
+														</div>
 													</div>
 												))}
 											</div>
-										</TabsContent>
-									))}
-								</Tabs>
+										</div>
+									);
+								})()}
 							</div>
 						</FlatCard>
 					)}
@@ -766,7 +852,7 @@ export default function UserRequestDetail() {
 									sizeBytes:
 										doc.files?.[0]?.sizeBytes || doc.sizeBytes || 0,
 									url: doc.fileUrls?.[0]?.url || doc.url,
-									storageId: doc.storageId,
+									storageId: doc.storageId || doc.files?.[0]?.storageId,
 									rejectionReason: doc.rejectionReason,
 								}))
 							}
@@ -950,6 +1036,7 @@ export default function UserRequestDetail() {
 										<OrgCallButton
 											orgId={request.org._id}
 											orgName={(request.org as any).name}
+											requestId={request._id}
 											className="w-full"
 											variant="secondary"
 											label={t(

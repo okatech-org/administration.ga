@@ -524,9 +524,9 @@ export function transformFormDataToPayload(
 ): any {
 	const payload: any = {};
 
-	// countryOfResidence
+	// countryOfResidence — sanitize empty string to undefined
 	if (formData.countryOfResidence !== undefined) {
-		payload.countryOfResidence = formData.countryOfResidence;
+		payload.countryOfResidence = formData.countryOfResidence || undefined;
 	}
 
 	if (formData.identity) {
@@ -544,17 +544,18 @@ export function transformFormDataToPayload(
 		};
 	}
 
-	if (formData.passportInfo) {
+	if (formData.passportInfo && formData.passportInfo.number) {
 		payload.passportInfo = {
-			...formData.passportInfo,
+			number: formData.passportInfo.number,
+			issuingAuthority: formData.passportInfo.issuingAuthority || "",
 			issueDate:
 				formData.passportInfo.issueDate instanceof Date
 					? formData.passportInfo.issueDate.getTime()
-					: formData.passportInfo.issueDate,
+					: (formData.passportInfo.issueDate ?? 0),
 			expiryDate:
 				formData.passportInfo.expiryDate instanceof Date
 					? formData.passportInfo.expiryDate.getTime()
-					: formData.passportInfo.expiryDate,
+					: (formData.passportInfo.expiryDate ?? 0),
 		};
 	}
 
@@ -563,18 +564,32 @@ export function transformFormDataToPayload(
 	}
 
 	if (formData.contacts) {
-		// Les champs emergencyHomeland et emergencyResidence sont maintenant directement dans le schéma
-		payload.contacts = formData.contacts;
+		payload.contacts = {
+			...formData.contacts,
+			// Sanitize emergency contacts relationship enum
+			emergencyContacts: formData.contacts.emergencyContacts?.map((c) => ({
+				...c,
+				relationship: c.relationship || undefined,
+			})),
+		};
 	}
 
 	if (formData.family) {
-		payload.family = formData.family;
+		payload.family = {
+			...formData.family,
+			// Sanitize maritalStatus enum — empty string → undefined
+			maritalStatus: formData.family.maritalStatus || undefined,
+		};
 	}
 
 	// Note: Documents are now attached to requests, not profiles
 
 	if (formData.profession) {
-		payload.profession = formData.profession;
+		payload.profession = {
+			...formData.profession,
+			// Sanitize status enum — empty string → undefined
+			status: formData.profession.status || undefined,
+		};
 	}
 
 	return payload;

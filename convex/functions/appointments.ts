@@ -58,7 +58,7 @@ export const listByUser = authQuery({
           service: service
             ? { name: typeof service.name === "object" ? service.name.fr : service.name }
             : null,
-          org: org ? { name: org.name, _id: org._id } : null,
+          org: org ? { name: org.name, _id: org._id, address: org.address } : null,
           requestId: apt.requestId,
         };
       }),

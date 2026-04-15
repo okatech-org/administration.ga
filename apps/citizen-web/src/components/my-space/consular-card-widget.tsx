@@ -251,7 +251,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 				<div className="flex-1 flex flex-col items-center justify-center text-center py-4 gap-3">
 					<CreditCard className="h-8 w-8 text-muted-foreground/30" />
 					<p className="text-xs text-muted-foreground">
-						{t("mySpace.consularCard.expiredDesc", "Votre carte consulaire a expiré")}
+						{t("mySpace.consularCard.expiredDesc")}
 					</p>
 					<Button asChild variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-1.5">
 						<Link href="/services/consular-card-registration">
@@ -285,7 +285,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 					<div className="flex-1 flex flex-col items-center justify-center text-center py-6">
 						<Clock className="h-8 w-8 mb-2 text-warning/50" />
 						<p className="text-xs text-muted-foreground">
-							{t("mySpace.consularCard.pendingDesc", "Démarche en cours de traitement")}
+							{t("mySpace.consularCard.pendingDesc")}
 						</p>
 					</div>
 				</FlatCard>
@@ -306,7 +306,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 				<div className="flex-1 flex flex-col items-center justify-center text-center py-6">
 					<CreditCard className="h-8 w-8 mb-2 text-muted-foreground/30" />
 					<p className="text-sm text-muted-foreground">
-						{t("mySpace.consularCard.notEligible", "Réservé aux ressortissants gabonais")}
+						{t("mySpace.consularCard.notEligible")}
 					</p>
 				</div>
 			</FlatCard>
@@ -326,7 +326,7 @@ export function ConsularCardWidget({ profile }: ConsularCardWidgetProps) {
 			<div className="flex-1 flex flex-col items-center justify-center text-center py-4 gap-3">
 				<CreditCard className="h-8 w-8 text-muted-foreground/30" />
 				<p className="text-sm text-muted-foreground">
-					{t("mySpace.consularCard.noCardYet", "Vous n'avez pas encore de carte consulaire")}
+					{t("mySpace.consularCard.noCardYet")}
 				</p>
 				<Button asChild variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium text-foreground bg-muted hover:bg-muted/70 active:scale-[0.97] transition-transform rounded-full gap-1.5">
 					<Link href="/services/consular-card-registration">

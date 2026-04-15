@@ -1,10 +1,12 @@
+"use client"
+
 /**
  * useBackofficeAIChat — Hook de chat IA pour le backoffice.
  *
  * Adapté de agent-web useAdminAIChat : accepte orgId en paramètre.
  */
 
-import { useLocation, useRouter } from "@tanstack/react-router";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useConvexActionQuery } from "@/integrations/convex/hooks";
 import { api } from "@convex/_generated/api";
@@ -30,7 +32,7 @@ export function useBackofficeAIChat(orgId: Id<"orgs"> | null) {
 	const [pendingActions, setPendingActions] = useState<AdminAIAction[]>([]);
 	const [conversationId, setConversationId] = useState<Id<"conversations"> | null>(null);
 
-	const location = useLocation();
+	const pathname = usePathname();
 	const router = useRouter();
 	const { mutateAsync: chat } = useConvexActionQuery(api.ai.adminChat.chat);
 	const { mutateAsync: executeActionMutation } = useConvexActionQuery(api.ai.adminChat.executeAction);
@@ -48,7 +50,7 @@ export function useBackofficeAIChat(orgId: Id<"orgs"> | null) {
 				try {
 					if (action.type === "navigateTo") {
 						const route = action.args.route as string;
-						if (route) router.navigate({ to: route });
+						if (route) router.push(route);
 						setPendingActions((prev) => prev.filter((a) => a !== action));
 						setMessages((prev) => [...prev, { role: "assistant", content: " Navigation effectuée.", timestamp: Date.now() }]);
 					}
@@ -76,7 +78,7 @@ export function useBackofficeAIChat(orgId: Id<"orgs"> | null) {
 				const response = await chat({
 					conversationId: conversationId ?? undefined,
 					message: content,
-					currentPage: location.pathname,
+					currentPage: pathname,
 					orgId,
 				});
 
@@ -91,7 +93,7 @@ export function useBackofficeAIChat(orgId: Id<"orgs"> | null) {
 					for (const action of uiActions) {
 						if (action.type === "navigateTo") {
 							const route = action.args.route as string;
-							if (route) router.navigate({ to: route });
+							if (route) router.push(route);
 						}
 					}
 					if (confirmableActions.length > 0) setPendingActions(confirmableActions);
@@ -114,7 +116,7 @@ export function useBackofficeAIChat(orgId: Id<"orgs"> | null) {
 				setIsLoading(false);
 			}
 		},
-		[chat, conversationId, isLoading, location.pathname, pendingActions, router, orgId],
+		[chat, conversationId, isLoading, pathname, pendingActions, router, orgId],
 	);
 
 	const confirmAction = useCallback(
@@ -125,7 +127,7 @@ export function useBackofficeAIChat(orgId: Id<"orgs"> | null) {
 			try {
 				if (action.type === "navigateTo") {
 					const route = action.args.route as string;
-					if (route) router.navigate({ to: route });
+					if (route) router.push(route);
 					setPendingActions((prev) => prev.filter((a) => a !== action));
 					setMessages((prev) => [...prev, { role: "assistant", content: " Navigation effectuée.", timestamp: Date.now() }]);
 					return { success: true };

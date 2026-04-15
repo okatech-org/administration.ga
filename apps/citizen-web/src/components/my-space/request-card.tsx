@@ -9,7 +9,9 @@ import { useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
+	AlertCircle,
 	ArrowRight,
+	Baby,
 	Building2,
 	Calendar,
 	PlayCircle,
@@ -47,6 +49,12 @@ export interface RequestCardData {
 		name?: string;
 		[key: string]: unknown;
 	} | null;
+	isChildRequest?: boolean;
+	childProfile?: {
+		firstName: string;
+		lastName: string;
+	} | null;
+	pendingActionsCount?: number;
 }
 
 interface RequestCardProps {
@@ -89,7 +97,18 @@ export function RequestCard({ request }: RequestCardProps) {
 			<FlatCard className="h-full flex flex-col transition-all cursor-pointer active:scale-[0.97]">
 				<div className="p-3 lg:p-4 pb-3">
 					<div className="flex flex-col items-start justify-between">
-						{getStatusBadge(request.status)}
+						<div className="flex items-center gap-2 flex-wrap">
+							{getStatusBadge(request.status)}
+							{!!request.pendingActionsCount && request.pendingActionsCount > 0 && (
+								<Badge variant="outline" className="gap-1 border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300">
+									<AlertCircle className="h-3 w-3" />
+									{t("requests.pendingActions", {
+										count: request.pendingActionsCount,
+										defaultValue: "{{count}} action(s) requise(s)",
+									})}
+								</Badge>
+							)}
+						</div>
 						<h3 className="font-semibold mt-2 truncate group-hover:text-primary transition-colors">
 							{getLocalizedValue(
 								request.service?.name as
@@ -98,6 +117,14 @@ export function RequestCard({ request }: RequestCardProps) {
 								i18n.language,
 							) || t("requests.unknownService")}
 						</h3>
+						{request.isChildRequest && request.childProfile && (
+							<p className="text-xs text-pink-500 dark:text-pink-400 flex items-center gap-1 mt-0.5">
+								<Baby className="h-3 w-3 shrink-0" />
+								{t("requests.forChild", {
+									name: `${request.childProfile.firstName} ${request.childProfile.lastName}`,
+								})}
+							</p>
+						)}
 						<p className="text-sm text-muted-foreground truncate flex items-center gap-1 mt-1">
 							<Building2 className="h-3 w-3 shrink-0" />
 							{request.org?.name || t("requests.unknownOrg")}

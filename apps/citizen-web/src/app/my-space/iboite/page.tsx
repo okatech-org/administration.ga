@@ -508,7 +508,7 @@ export default function IBoitePage() {
 								<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12]">
 									<Inbox className="h-4 w-4 text-muted-foreground" />
 								</div>
-								{t("iboite.mail.inbox", "Courrier")}
+								{t("iboite.mail.inbox")}
 							</span>
 							<Button
 								variant="ghost"
@@ -1208,7 +1208,7 @@ function ComposeDialog({
 					</div>
 					{/* Pieces jointes */}
 					<div className="space-y-2">
-						<Label className="text-xs text-muted-foreground">{t("iboite.compose.attachments", "Pièces jointes")}</Label>
+						<Label className="text-xs text-muted-foreground">{t("iboite.compose.attachments")}</Label>
 						<div
 							{...getRootProps()}
 							className={cn(
@@ -1219,7 +1219,7 @@ function ComposeDialog({
 							<input {...getInputProps()} />
 							<div className="flex flex-col items-center gap-1.5">
 								<UploadCloud className="h-5 w-5 text-muted-foreground" />
-								<span className="text-xs text-muted-foreground">{t("iboite.compose.dropFiles", "Glissez vos fichiers ou cliquez")}</span>
+								<span className="text-xs text-muted-foreground">{t("iboite.compose.dropFiles")}</span>
 								<span className="text-[10px] text-muted-foreground/60">PDF, PNG, JPG — max 5 MB</span>
 							</div>
 						</div>
@@ -1374,7 +1374,7 @@ function MailListInner({
 									<span className={cn("size-2 rounded-full shrink-0", mail.stampColor === "red" ? "bg-destructive" : mail.stampColor === "green" ? "bg-success" : "bg-primary")} />
 								)}
 								{mail.letterType === "action_required" && (
-									<span className="text-[10px] font-medium text-destructive">{t("iboite.mail.actionRequired", "Action requise")}</span>
+									<span className="text-[10px] font-medium text-destructive">{t("iboite.mail.actionRequired")}</span>
 								)}
 								{mail.dueDate && mail.letterType === "action_required" && (
 									<span className="text-[10px] text-muted-foreground">avant le {format(new Date(mail.dueDate), "dd/MM/yyyy")}</span>
@@ -1585,16 +1585,16 @@ function MailDetail({
 						{/* Indicateurs officiels */}
 						<div className="flex items-center gap-2 flex-wrap">
 							{mail.type === "letter" && (
-								<span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12] text-muted-foreground">{t("iboite.mail.letter", "Courrier officiel")}</span>
+								<span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12] text-muted-foreground">{t("iboite.mail.letter")}</span>
 							)}
 							{mail.stampColor && (
 								<span className={cn("size-2.5 rounded-full", mail.stampColor === "red" ? "bg-destructive" : mail.stampColor === "green" ? "bg-success" : "bg-primary")} />
 							)}
 							{mail.letterType === "action_required" && mail.dueDate && (
-								<span className="text-[10px] font-medium px-2 py-0.5 rounded-full badge-warning">{t("iboite.mail.actionBefore", "Action requise avant le")} {format(new Date(mail.dueDate), "dd/MM/yyyy")}</span>
+								<span className="text-[10px] font-medium px-2 py-0.5 rounded-full badge-warning">{t("iboite.mail.actionBefore")} {format(new Date(mail.dueDate), "dd/MM/yyyy")}</span>
 							)}
 							{mail.letterType === "informational" && (
-								<span className="text-[10px] font-medium px-2 py-0.5 rounded-full badge-info">{t("iboite.mail.informational", "Information")}</span>
+								<span className="text-[10px] font-medium px-2 py-0.5 rounded-full badge-info">{t("iboite.mail.informational")}</span>
 							)}
 						</div>
 					</div>
@@ -1944,7 +1944,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 			// For org calls: call the org back
 			if (call.orgId && call.isOrgInbound) {
 				const { meetingId } = await callOrgMutation({ orgId: call.orgId });
-				toast.success(t("iboite.call.startSuccess", "Appel lanc\u00e9"));
+				toast.success(t("iboite.call.startSuccess"));
 				handleJoin(meetingId);
 				return;
 			}
@@ -1961,15 +1961,15 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 			}
 
 			const { meetingId } = await callCitizenById({ targetUserId });
-			toast.success(t("iboite.call.startSuccess", "Appel lanc\u00e9"));
+			toast.success(t("iboite.call.startSuccess"));
 			handleJoin(meetingId);
 		} catch (err: unknown) {
 			console.error("Failed to recall:", err);
 			const errorMessage =
 				err instanceof Error
 					? (err.message.match(/Uncaught ConvexError: (.*?)(?:\n|$)/)?.[1] ??
-						t("iboite.call.error", "Erreur lors de l'appel"))
-					: t("iboite.call.error", "Erreur lors de l'appel");
+						t("iboite.call.error"))
+					: t("iboite.call.error");
 			toast.error(errorMessage);
 		} finally {
 			setIsCalling(false);
@@ -1982,7 +1982,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 		setIsCalling(true);
 		try {
 			const { meetingId } = await callCitizen({ email: callEmail.trim() });
-			toast.success(t("iboite.call.startSuccess", "Appel lanc\u00e9"));
+			toast.success(t("iboite.call.startSuccess"));
 			setIsCallDialogOpen(false);
 			setCallEmail("");
 			handleJoin(meetingId);
@@ -1993,7 +1993,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 					? error.data
 					: error?.data?.errorMessage ||
 						error?.message?.match(/Uncaught ConvexError: (.*?)(?:\n|$)/)?.[1] ||
-						t("iboite.call.error", "Erreur lors de l'appel");
+						t("iboite.call.error");
 			toast.error(errorMessage);
 		} finally {
 			setIsCalling(false);
@@ -2026,14 +2026,14 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 						className="gap-2 bg-success hover:bg-success/90 text-white"
 					>
 						<PhoneCall className="size-4" />
-						{t("iboite.call.newCall", "Nouvel appel")}
+						{t("iboite.call.newCall")}
 					</Button>
 
 					<Dialog open={isCallDialogOpen} onOpenChange={setIsCallDialogOpen}>
 						<DialogContent className="sm:max-w-[425px]">
 							<DialogHeader>
 								<DialogTitle>
-									{t("iboite.call.newCallTitle", "Appeler un contact")}
+									{t("iboite.call.newCallTitle")}
 								</DialogTitle>
 							</DialogHeader>
 							<form onSubmit={handleInitiateCall} className="space-y-4 pt-4">
@@ -2061,7 +2061,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 										variant="outline"
 										onClick={() => setIsCallDialogOpen(false)}
 									>
-										{t("iboite.actions.cancel", "Annuler")}
+										{t("iboite.actions.cancel")}
 									</Button>
 									<Button
 										type="submit"
@@ -2073,7 +2073,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 										) : (
 											<PhoneCall className="size-4" />
 										)}
-										{t("iboite.call.startCall", "Appeler")}
+										{t("iboite.call.startCall")}
 									</Button>
 								</div>
 							</form>
@@ -2147,7 +2147,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 					<div className="text-center space-y-3">
 						<Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto" />
 						<p className="text-muted-foreground text-sm">
-							{t("meetings.connecting", "Connexion au serveur d'appel...")}
+							{t("meetings.connecting")}
 						</p>
 					</div>
 				</div>
@@ -2173,7 +2173,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 						className="gap-2 bg-success hover:bg-success/90 text-white"
 					>
 						<PhoneCall className="size-4" />
-						{t("iboite.call.newCall", "Nouvel appel")}
+						{t("iboite.call.newCall")}
 					</Button>
 				</div>
 
@@ -2236,10 +2236,10 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 											}
 										>
 											{isMissed
-												? t("iboite.calls.missed", "Manqu\u00e9")
+												? t("iboite.calls.missed")
 												: isOutgoing
-													? t("iboite.calls.outgoing", "Sortant")
-													: t("iboite.calls.incoming", "Entrant")}
+													? t("iboite.calls.outgoing")
+													: t("iboite.calls.incoming")}
 										</span>
 										{" \u00b7 "}
 										{call.participants.length} {t("iboite.calls.participants")}
@@ -2294,7 +2294,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 												disabled={isCalling}
 											>
 												<PhoneCall className="size-3.5" />
-												{t("iboite.call.recall", "Rappeler")}
+												{t("iboite.call.recall")}
 											</Button>
 										)}
 									</div>
@@ -2309,7 +2309,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 				<DialogContent className="sm:max-w-[425px]">
 					<DialogHeader>
 						<DialogTitle>
-							{t("iboite.call.newCallTitle", "Appeler un contact")}
+							{t("iboite.call.newCallTitle")}
 						</DialogTitle>
 					</DialogHeader>
 					<form onSubmit={handleInitiateCall} className="space-y-4 pt-4">
@@ -2337,7 +2337,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 								variant="outline"
 								onClick={() => setIsCallDialogOpen(false)}
 							>
-								{t("iboite.actions.cancel", "Annuler")}
+								{t("iboite.actions.cancel")}
 							</Button>
 							<Button
 								type="submit"
@@ -2349,7 +2349,7 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 								) : (
 									<PhoneCall className="size-4" />
 								)}
-								{t("iboite.call.startCall", "Appeler")}
+								{t("iboite.call.startCall")}
 							</Button>
 						</div>
 					</form>

@@ -111,12 +111,12 @@ const CONTINENTS = [
 ];
 
 const TYPE_COLORS: Record<string, string> = {
-  embassy: "bg-primary text-primary-foreground",
-  general_consulate: "bg-primary/80 text-primary-foreground",
-  consulate: "bg-primary/60 text-primary-foreground",
-  high_commission: "bg-primary/90 text-primary-foreground",
-  permanent_mission: "bg-primary/70 text-primary-foreground",
-  honorary_consulate: "bg-muted-foreground/50 text-white",
+  embassy: "bg-emerald-500 text-white",
+  general_consulate: "bg-blue-500 text-white",
+  consulate: "bg-sky-500 text-white",
+  high_commission: "bg-purple-500 text-white",
+  permanent_mission: "bg-indigo-500 text-white",
+  honorary_consulate: "bg-gray-400 text-white",
 };
 
 // ============================================================================
@@ -238,15 +238,18 @@ function RepsPageContent() {
   return (
     <div className="min-h-screen bg-background">
       {/* ==================== HERO SECTION ==================== */}
-      <section className="py-20 lg:py-40 bg-[oklch(0.145_0_0)] text-center">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <span className="inline-block mb-4 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-white/80">
+      <section className="bg-gradient-to-b from-primary/10 to-background py-10 md:py-16 px-4 md:px-6">
+        <div className="max-w-7xl mx-auto text-center">
+          <Badge
+            variant="secondary"
+            className="mb-4 bg-primary/10 text-primary"
+          >
             {t("consulates.badge")}
-          </span>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-[-0.02em] text-white mb-3 md:mb-4">
+          </Badge>
+          <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-3 md:mb-4">
             {t("orgs.pageTitle")}
           </h1>
-          <p className="text-lg md:text-xl text-[oklch(0.7_0_0)] max-w-2xl mx-auto mb-6 md:mb-8">
+          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-6 md:mb-8">
             {t(
               "orgs.pageDescription",
               "Retrouvez l'ensemble des représentations diplomatiques et consulaires de la République Gabonaise à travers le monde.",
@@ -255,9 +258,9 @@ function RepsPageContent() {
 
           {/* Search Bar */}
           <div className="max-w-2xl mx-auto relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 w-5 h-5" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
-              className="h-14 pl-12 pr-4 rounded-[10px] bg-white/5 border border-white/10 text-white text-lg placeholder:text-white/40 focus-visible:ring-white/20"
+              className="h-14 pl-12 pr-4 rounded-2xl bg-background shadow-lg border-primary/10 text-lg placeholder:text-muted-foreground/50 focus-visible:ring-primary/20"
               placeholder={t(
                 "orgs.searchPlaceholder",
                 "Rechercher une ambassade, un consulat, une ville...",
@@ -270,8 +273,8 @@ function RepsPageContent() {
       </section>
 
       {/* ==================== CONTENT ==================== */}
-      <section className="py-6 md:py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-6 md:py-12 px-4 md:px-6">
+        <div className="max-w-7xl mx-auto">
           {/* Stats + View Toggle */}
           <div className="flex flex-col gap-4 items-center mb-6 md:mb-8">
             <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 text-sm text-muted-foreground">
@@ -310,10 +313,10 @@ function RepsPageContent() {
           {/* ==================== MAP VIEW ==================== */}
           {viewMode === "map" && (
             <div className="max-w-6xl mx-auto">
-              <Suspense fallback={<Skeleton className="h-[400px] md:h-[70vh] rounded-[10px]" />}>
+              <Suspense fallback={<Skeleton className="h-[400px] md:h-[70vh] rounded-xl md:rounded-2xl" />}>
                 <ConsularMap
                   searchQuery={searchQuery}
-                  className="h-[400px] md:h-[70vh] rounded-[10px]"
+                  className="h-[400px] md:h-[70vh] rounded-xl md:rounded-2xl"
                 />
               </Suspense>
             </div>
@@ -543,7 +546,7 @@ function RepresentationItem({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <Badge
-                className={TYPE_COLORS[rep.type] || "bg-muted-foreground/50 text-white"}
+                className={TYPE_COLORS[rep.type] || "bg-gray-500"}
                 variant="secondary"
               >
                 {t(`superadmin.types.${rep.type}`, rep.type)}

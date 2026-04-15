@@ -36,7 +36,6 @@ export const quickActionBatch = internalMutation({
 
       // Need a profileId to rebuild formData
       if (!req.profileId) {
-        console.log(`[SKIP] Request ${req.reference} — no profileId`);
         continue;
       }
 
@@ -48,7 +47,6 @@ export const quickActionBatch = internalMutation({
 
       const profile = adultProfile ?? childProfile;
       if (!profile) {
-        console.log(`[SKIP] Request ${req.reference} — profile ${req.profileId} not found`);
         continue;
       }
 
@@ -56,7 +54,6 @@ export const quickActionBatch = internalMutation({
 
       await ctx.db.patch(req._id, { formData });
       patched++;
-      console.log(`[PATCHED] Request ${req.reference} (${req.status}) — formData rebuilt from profile`);
     }
 
     return {
@@ -89,8 +86,6 @@ export const runQuickAction = internalAction({
     let totalPatched = 0;
     let isDone = false;
 
-    console.log(` Starting quick action with batch size ${batchSize}...`);
-
     while (!isDone) {
       const result: any = await ctx.runMutation(internal.functions.quickActions.quickActionBatch, {
         cursor,
@@ -102,11 +97,7 @@ export const runQuickAction = internalAction({
       totalPatched += result.patched;
       cursor = result.continueCursor;
       isDone = result.isDone;
-
-      console.log(`Processed: ${totalProcessed} | Empty: ${totalMatched} | Patched: ${totalPatched}`);
     }
-
-    console.log(` Quick action finished. ${totalProcessed} requests scanned, ${totalMatched} empty, ${totalPatched} patched.`);
 
     return {
       message: "Quick action completed",
@@ -199,11 +190,9 @@ export const backfillEmailPhoneBatch = internalMutation({
 
         if (recoveredEmail) {
           patchedEmail++;
-          console.log(`[PATCHED EMAIL] ${profile.identity?.firstName} ${profile.identity?.lastName} → ${recoveredEmail}`);
         }
         if (recoveredPhone) {
           patchedPhone++;
-          console.log(`[PATCHED PHONE] ${profile.identity?.firstName} ${profile.identity?.lastName} → ${recoveredPhone}`);
         }
       }
     }
@@ -241,8 +230,6 @@ export const runBackfillEmailPhone = internalAction({
     let totalPatchedEmail = 0;
     let totalPatchedPhone = 0;
 
-    console.log(` Starting email/phone backfill with batch size ${batchSize}...`);
-
     while (!isDone) {
       const result: any = await ctx.runMutation(internal.functions.quickActions.backfillEmailPhoneBatch, {
         cursor,
@@ -256,15 +243,7 @@ export const runBackfillEmailPhone = internalAction({
       totalPatchedPhone += result.patchedPhone;
       cursor = result.continueCursor;
       isDone = result.isDone;
-
-      console.log(
-        `Scanned: ${totalProcessed} | Missing email: ${totalMissingEmail} (fixed: ${totalPatchedEmail}) | Missing phone: ${totalMissingPhone} (fixed: ${totalPatchedPhone})`
-      );
     }
-
-    console.log(` Backfill finished. ${totalProcessed} profiles scanned.`);
-    console.log(`   Email: ${totalMissingEmail} missing → ${totalPatchedEmail} recovered`);
-    console.log(`   Phone: ${totalMissingPhone} missing → ${totalPatchedPhone} recovered`);
 
     return {
       message: "Email/phone backfill completed",

@@ -1,7 +1,7 @@
 "use client";
 
 import type { Id } from "@convex/_generated/dataModel";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
 	BadgeCheck,
@@ -98,10 +98,7 @@ export function NotificationActionsCell({
 				title={t("dashboard.consularRegistry.actions.viewRequest")}
 			>
 				<Link
-					to="/requests/$reference"
-					params={{
-						reference: row.requestReference ?? row.requestId,
-					}}
+					href={`/requests/${row.requestReference ?? row.requestId}`}
 				>
 					<ExternalLink className="h-4 w-4" />
 				</Link>

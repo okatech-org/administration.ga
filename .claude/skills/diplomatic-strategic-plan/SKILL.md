@@ -21,7 +21,7 @@ Ce skill s'active quand la requete contient :
 ## Reference Principale
 
 Lire IMPERATIVEMENT avant toute action :
-1. `PROMPT_PLAN_STRATEGIQUE_ET_PROJET.md` — Partie 1 (Plan Strategique Complet)
+1. `.claude/skills/diplomatic-pipeline/PROMPT_PLAN_STRATEGIQUE_ET_PROJET.md` — Partie 1 (Plan Strategique Complet)
 2. `convex/schemas/diplomaticAffairs.ts` — Tables et validators existants
 3. `convex/ai/diplomaticAI.ts` — Actions IA Gemini actuelles
 

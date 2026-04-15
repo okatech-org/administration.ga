@@ -20,7 +20,7 @@ Ce skill s'active quand la requete contient :
 ## Reference Principale
 
 Lire IMPERATIVEMENT avant toute action :
-1. `PROMPT_PLAN_STRATEGIQUE_ET_PROJET.md` — Partie 2 (Projet de Cooperation)
+1. `.claude/skills/diplomatic-pipeline/PROMPT_PLAN_STRATEGIQUE_ET_PROJET.md` — Partie 2 (Projet de Cooperation)
 2. `convex/schemas/diplomaticAffairs.ts` — `diplomaticProjectsTable` et validators
 3. `convex/ai/diplomaticAI.ts` — Action `structureProject`
 

@@ -144,7 +144,7 @@ export function UserProfileCard({
 			<Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
 				<FlatCard>
 					<CollapsibleTrigger asChild>
-						<div className="p-3 lg:p-4 cursor-pointer hover:bg-[#F4F3ED]/80 dark:hover:bg-[#171616]/80 transition-colors">
+						<div className="p-3 lg:p-4 cursor-pointer hover:bg-secondary/80 transition-colors">
 							<div className="flex items-center justify-between">
 								<div className="flex items-center gap-3">
 									<Avatar className="h-10 w-10">

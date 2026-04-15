@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CircleMenu } from "@/components/ui/circle-menu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ export function CitizenIAstedWindow() {
 	const [windowOpen, setWindowOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<TabId>("ichat");
 	const router = useRouter();
+	const { t } = useTranslation();
 
 	const openWithTab = useCallback((tab: TabId) => {
 		setActiveTab(tab);
@@ -144,7 +146,7 @@ export function CitizenIAstedWindow() {
 									variant="ghost"
 									size="icon"
 									onClick={handleExpand}
-									title="Plein ecran"
+									title={t("common.fullscreen")}
 									className="h-8 w-8 text-muted-foreground hover:bg-muted rounded-lg hidden lg:flex"
 								>
 									<Maximize2 className="h-4 w-4" />
@@ -153,7 +155,7 @@ export function CitizenIAstedWindow() {
 									variant="ghost"
 									size="icon"
 									onClick={() => setWindowOpen(false)}
-									title="Reduire"
+									title={t("common.reduce")}
 									className="h-8 w-8 text-muted-foreground hover:bg-muted rounded-lg"
 								>
 									<Minus className="h-4 w-4" />

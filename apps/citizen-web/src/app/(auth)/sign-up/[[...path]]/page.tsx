@@ -201,7 +201,7 @@ function SignUpPageContent() {
 									htmlFor="sign-up-phone"
 									className="text-foreground font-medium"
 								>
-									{t("profile.fields.phone", "Telephone")}
+									{t("profile.fields.phone")}
 								</Label>
 								<Input
 									id="sign-up-phone"
@@ -287,7 +287,7 @@ function SignUpPageContent() {
 								className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
 							>
 								<ArrowLeft className="mr-1 h-4 w-4" />
-								{t("common.back", "Retour")}
+								{t("common.back")}
 							</button>
 
 							<div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-sm text-foreground">
@@ -337,7 +337,7 @@ function SignUpPageContent() {
 									{loading && (
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 									)}
-									{t("errors.auth.otp.verify", "Verifier")}
+									{t("errors.auth.otp.verify")}
 								</Button>
 
 								<button

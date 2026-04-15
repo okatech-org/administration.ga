@@ -7,16 +7,26 @@
 
 import { v } from "convex/values";
 import { query } from "../_generated/server";
+import { internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
 import { authQuery, authMutation } from "../lib/customFunctions";
 import { error, ErrorCode } from "../lib/errors";
-import { ChildProfileStatus } from "../lib/constants";
+import { ChildProfileStatus, ServiceCategory, PublicUserType } from "../lib/constants";
 import {
   genderValidator,
   childProfileStatusValidator,
   nationalityAcquisitionValidator,
+  RequestStatus,
+  RequestPriority,
+  RegistrationType,
+  RegistrationStatus,
+  CountryCode,
 } from "../lib/validators";
 import { countryCodeValidator } from "../lib/countryCodeValidator";
 import { parentInfoValidator } from "../schemas/childProfiles";
+import { buildChildRegistrationFormData } from "../lib/registrationFormData";
+import { logCortexAction } from "../lib/neocortex";
+import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERIES
@@ -350,5 +360,246 @@ export const remove = authMutation({
     });
 
     return args.id;
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONSULAR REGISTRATION FOR CHILDREN
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Find the registration org for a child profile.
+ * Uses child's countryOfResidence, falling back to parent's.
+ */
+export const findRegistrationOrg = authQuery({
+  args: {
+    childProfileId: v.id("childProfiles"),
+  },
+  handler: async (ctx, args) => {
+    const child = await ctx.db.get(args.childProfileId);
+    if (!child || child.authorUserId !== ctx.user._id) {
+      return { status: "no_profile" as const };
+    }
+
+    // Determine country: child's own, or fallback to parent's
+    let userCountry = child.countryOfResidence;
+    if (!userCountry) {
+      const parentProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+        .unique();
+      userCountry =
+        parentProfile?.countryOfResidence ||
+        parentProfile?.addresses?.residence?.country;
+    }
+
+    if (!userCountry) {
+      return { status: "no_country" as const };
+    }
+
+    // Find registration services
+    const allServices = await ctx.db
+      .query("services")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("category"), ServiceCategory.Registration),
+          q.eq(q.field("isActive"), true),
+        ),
+      )
+      .collect();
+
+    if (allServices.length === 0) {
+      return { status: "no_service" as const, country: userCountry };
+    }
+
+    // Find an org with this service that has jurisdiction over the country
+    for (const service of allServices) {
+      const orgServices = await ctx.db
+        .query("orgServices")
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("serviceId"), service._id),
+            q.eq(q.field("isActive"), true),
+          ),
+        )
+        .collect();
+
+      for (const orgService of orgServices) {
+        const org = await ctx.db.get(orgService.orgId);
+        if (!org || !org.isActive || org.deletedAt) continue;
+
+        const jurisdictions = org.jurisdictionCountries ?? [];
+        if (jurisdictions.includes(userCountry as CountryCode)) {
+          return {
+            status: "found" as const,
+            orgId: org._id,
+            orgName: org.name,
+            country: userCountry,
+          };
+        }
+      }
+    }
+
+    return { status: "no_org_found" as const, country: userCountry };
+  },
+});
+
+/**
+ * Submit registration request for a child profile.
+ * Finds the appropriate org, creates a request + consularRegistration entry,
+ * and delegates submission to internalSubmit.
+ */
+export const submitRegistrationRequest = authMutation({
+  args: {
+    childProfileId: v.id("childProfiles"),
+  },
+  handler: async (ctx, args) => {
+    const child = await ctx.db.get(args.childProfileId);
+    if (!child || child.authorUserId !== ctx.user._id) {
+      return { status: "no_profile" as const };
+    }
+
+    // Get parent profile for contact/address data and country fallback
+    const parentProfile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+      .unique();
+
+    // Determine country
+    let userCountry = child.countryOfResidence;
+    if (!userCountry && parentProfile) {
+      userCountry =
+        parentProfile.countryOfResidence ||
+        parentProfile.addresses?.residence?.country;
+    }
+
+    if (!userCountry) {
+      return { status: "no_country" as const };
+    }
+
+    // Find registration services
+    const allServices = await ctx.db
+      .query("services")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("category"), ServiceCategory.Registration),
+          q.eq(q.field("isActive"), true),
+        ),
+      )
+      .collect();
+
+    if (allServices.length === 0) {
+      return { status: "no_service" as const, country: userCountry };
+    }
+
+    // Find an org with this service that has jurisdiction
+    for (const service of allServices) {
+      const orgServices = await ctx.db
+        .query("orgServices")
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("serviceId"), service._id),
+            q.eq(q.field("isActive"), true),
+          ),
+        )
+        .collect();
+
+      for (const orgService of orgServices) {
+        const org = await ctx.db.get(orgService.orgId);
+        if (!org || !org.isActive || org.deletedAt) continue;
+
+        const jurisdictions = org.jurisdictionCountries ?? [];
+        if (jurisdictions.includes(userCountry as CountryCode)) {
+          const now = Date.now();
+
+          // Auto-attach documents from child's Document Vault
+          const childDocs = child.documents ?? {};
+          const documentIds = Object.values(childDocs).filter(
+            (id): id is Id<"documents"> => id !== undefined,
+          );
+
+          // Build form data from child + parent profiles
+          const durationStr = parentProfile?.userType || "long_stay";
+          const formData = buildChildRegistrationFormData(
+            child as any,
+            (parentProfile ?? {}) as any,
+            durationStr,
+          );
+
+          // Map userType to valid registration duration
+          const registrationDuration =
+            parentProfile?.userType === PublicUserType.ShortStay
+              ? PublicUserType.ShortStay
+              : PublicUserType.LongStay;
+
+          // Create request as Draft — internalSubmit will transition to Submitted
+          const requestId = await ctx.db.insert("requests", {
+            userId: ctx.user._id,
+            profileId: child._id,
+            orgId: org._id,
+            orgServiceId: orgService._id,
+            reference: "",
+            status: RequestStatus.Draft,
+            priority: RequestPriority.Normal,
+            formData,
+            documents: documentIds,
+            updatedAt: now,
+          });
+
+          // Create consularRegistration with childProfileId
+          await ctx.db.insert("consularRegistrations", {
+            childProfileId: child._id,
+            orgId: org._id,
+            requestId: requestId,
+            duration: registrationDuration,
+            type: RegistrationType.Inscription,
+            status: RegistrationStatus.Requested,
+            registeredAt: now,
+          });
+
+          // Update child profile with registration request reference
+          await ctx.db.patch(args.childProfileId, {
+            registrationRequestId: requestId,
+            updatedAt: now,
+          });
+
+          // Delegate submission to centralized internalSubmit
+          await ctx.scheduler.runAfter(0, internal.functions.requests.internalSubmit, {
+            requestId,
+            actorId: ctx.user._id,
+            extraEventData: {
+              orgId: org._id,
+              serviceCategory: "registration",
+              childProfileId: args.childProfileId,
+            },
+          });
+
+          // NEOCORTEX: Signal
+          await logCortexAction(ctx, {
+            action: "SUBMIT_CHILD_REGISTRATION_REQUEST",
+            categorie: CATEGORIES_ACTION.METIER,
+            entiteType: "childProfiles",
+            entiteId: args.childProfileId,
+            userId: ctx.user._id,
+            apres: {
+              orgId: org._id,
+              requestId,
+              childProfileId: args.childProfileId,
+            },
+            signalType: SIGNAL_TYPES.INSCRIPTION_CONSULAIRE_CREEE,
+          });
+
+          return {
+            status: "success" as const,
+            orgId: org._id,
+            orgName: org.name,
+            reference: "(generating...)",
+            requestId,
+          };
+        }
+      }
+    }
+
+    return { status: "no_org_found" as const, country: userCountry };
   },
 });

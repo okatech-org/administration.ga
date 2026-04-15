@@ -59,8 +59,12 @@ export function DocumentPreviewModal({
 		}
 	};
 
-	// To avoid X-Frame-Options and cross-origin iframe errors ("Unsafe attempt to load URL... from frame with URL chrome-error..."),
-	// we fetch the PDF as a Blob and create a local Object URL.
+	// Reset error state when modal opens/closes
+	useEffect(() => {
+		if (open) setError(false);
+	}, [open]);
+
+	// Fetch PDF as blob to avoid X-Frame-Options / cross-origin iframe issues
 	const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
 	const [isLoadingBlob, setIsLoadingBlob] = useState(false);
 
@@ -147,9 +151,13 @@ export function DocumentPreviewModal({
 					)}
 
 					{error && (
-						<div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-							<FileText className="h-12 w-12 mb-4 opacity-20" />
+						<div className="h-full flex flex-col items-center justify-center gap-4 text-muted-foreground">
+							<FileText className="h-12 w-12 opacity-20" />
 							<p>{t("documents.preview.loadError")}</p>
+							<Button variant="outline" size="sm" onClick={handleOpenExternal} disabled={!documentUrl}>
+								<ExternalLink className="h-4 w-4 mr-1.5" />
+								{t("documents.preview.open")}
+							</Button>
 						</div>
 					)}
 
@@ -160,7 +168,6 @@ export function DocumentPreviewModal({
 									src={`${pdfBlobUrl}#toolbar=0`}
 									className="w-full h-full border-0"
 									title={filename}
-									sandbox="allow-same-origin"
 								/>
 							)}
 

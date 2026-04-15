@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { getCountryFlag, getCountryName, getOrgTypeEmoji, getOrgTypeLabel } from "@/lib/country-utils"
 import { Baby, Building2, Eye, Phone } from "lucide-react"
-import { Link } from "@tanstack/react-router"
+import Link from "next/link"
 
 // ── Types ──────────────────────────────────────────────
 type ProfileRow = {
@@ -252,8 +252,7 @@ const actionsCol: ColumnDef<ProfileRow> = {
   cell: ({ row }) => {
     return (
       <Link
-        to="/profiles/$profileId"
-        params={{ profileId: row.original._id }}
+        href={`/profiles/${row.original._id}`}
         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
         <Eye className="h-3.5 w-3.5" />

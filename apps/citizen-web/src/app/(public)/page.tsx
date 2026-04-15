@@ -1,38 +1,38 @@
 "use client"
 
-import { useRef } from "react"
+import dynamic from "next/dynamic"
+import { Suspense, useRef } from "react"
 import { Hero } from "@/components/home/Hero"
+import { ProfilesSection } from "@/components/home/ProfilesSection"
 import { ServicesSection } from "@/components/home/ServicesSection"
 import { NewsSection } from "@/components/home/NewsSection"
 import { WhySection } from "@/components/home/WhySection"
-import { GuidesPreviewSection } from "@/components/home/GuidesPreviewSection"
-import { TestimonialsSection } from "@/components/home/TestimonialsSection"
+import { CTASection } from "@/components/home/CTASection"
+
+const WorldMapSection = dynamic(
+  () =>
+    import("@/components/home/WorldMapSection").then((m) => ({
+      default: m.WorldMapSection,
+    })),
+  { ssr: false },
+)
 
 export default function HomePage() {
   const servicesRef = useRef<HTMLDivElement>(null)
 
   return (
     <div className="min-h-dvh bg-background">
-      {/* Hero Section — mots rotatifs animés */}
       <Hero />
-
-      {/* Services Section — accordion interactif */}
+      <ProfilesSection />
       <div ref={servicesRef}>
         <ServicesSection />
       </div>
-
-      {/* Guides Section — tabs personnalisés */}
-      <GuidesPreviewSection />
-
-      {/* Testimonials Section — témoignages auto-rotatifs */}
-      <TestimonialsSection />
-
-      {/* News Section — actualités */}
       <NewsSection />
-
-      {/* About Section — grille bento + stats KPI */}
+      <Suspense fallback={<div className="h-[500px]" />}>
+        <WorldMapSection />
+      </Suspense>
       <WhySection />
+      <CTASection />
     </div>
   )
 }
-

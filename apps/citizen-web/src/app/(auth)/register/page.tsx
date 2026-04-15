@@ -8,6 +8,8 @@ import { useTranslation } from "react-i18next";
 import { CitizenRegistrationForm } from "@/components/auth/CitizenRegistrationForm";
 import { ForeignerRegistrationForm } from "@/components/auth/ForeignerRegistrationForm";
 import { ProfileTypeSelector } from "@/components/auth/ProfileTypeSelector";
+import Header from "@/components/Header";
+import { Footer } from "@/components/Footer";
 
 const VALID_TYPES = [
 	PublicUserType.LongStay,
@@ -93,54 +95,55 @@ function RegisterPageContent() {
 		[PublicUserType.LongStay, PublicUserType.ShortStay].includes(selectedType);
 
 	return (
-		<div className="min-h-[calc(100vh-200px)] py-4 px-3 sm:py-8 sm:px-4 bg-gradient-to-br from-background via-background to-muted/30">
-			{/* Background decoration */}
-			<div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-				<div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
-				<div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl" />
-			</div>
+		<div className="flex flex-col min-h-dvh">
+			<Header />
+			<main className="flex-1 py-4 px-0 sm:py-8 sm:px-4">
+				{/* Step 0: Profile selection (always shown first if no type selected) */}
+				{!selectedType && (
+					<div className="flex items-center justify-center min-h-[calc(100vh-300px)] px-3 sm:px-0">
+						<ProfileTypeSelector onSelect={handleProfileSelect} />
+					</div>
+				)}
 
-			{/* Step 0: Profile selection (always shown first if no type selected) */}
-			{!selectedType && (
-				<div className="flex items-center justify-center min-h-[calc(100vh-300px)]">
-					<ProfileTypeSelector onSelect={handleProfileSelect} />
-				</div>
-			)}
+				{/* Citizen Registration Form */}
+				{isCitizen && isAuthenticated && (
+					<div className="register-forms max-w-4xl mx-auto px-3 sm:px-0">
+						<button
+							onClick={handleBack}
+							className="mb-4 text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+						>
+							{t("register.backToProfile")}
+						</button>
+						<CitizenRegistrationForm
+							userType={
+								selectedType as PublicUserType.LongStay | PublicUserType.ShortStay
+							}
+							authMode={urlMode || "sign-up"}
+							onComplete={handleComplete}
+						/>
+					</div>
+				)}
 
-			{/* Citizen Registration Form */}
-			{isCitizen && isAuthenticated && (
-				<div className="max-w-4xl mx-auto">
-					<button
-						onClick={handleBack}
-						className="mb-4 text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-					>
-						{t("register.backToProfile")}
-					</button>
-					<CitizenRegistrationForm
-						userType={
-							selectedType as PublicUserType.LongStay | PublicUserType.ShortStay
-						}
-						authMode={urlMode || "sign-up"}
-						onComplete={handleComplete}
-					/>
-				</div>
-			)}
+				{/* Foreigner Registration Form */}
+				{isForeigner && isAuthenticated && (
+					<div className="register-forms max-w-4xl mx-auto px-3 sm:px-0">
+						<button
+							onClick={handleBack}
+							className="mb-4 text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+						>
+							{t("register.backToProfile")}
+						</button>
+						<ForeignerRegistrationForm
+							initialVisaType={selectedType}
+							onComplete={handleComplete}
+						/>
+					</div>
+				)}
 
-			{/* Foreigner Registration Form */}
-			{isForeigner && isAuthenticated && (
-				<div className="max-w-4xl mx-auto">
-					<button
-						onClick={handleBack}
-						className="mb-4 text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-					>
-						{t("register.backToProfile")}
-					</button>
-					<ForeignerRegistrationForm
-						initialVisaType={selectedType}
-						onComplete={handleComplete}
-					/>
+				<div className="mt-12">
+					<Footer />
 				</div>
-			)}
+			</main>
 		</div>
 	);
 }

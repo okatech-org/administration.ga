@@ -318,13 +318,11 @@ function CardHeader({
 	title,
 }: { icon: React.ReactNode; title: string }) {
 	return (
-		<div className="flex items-center gap-2.5 p-4 pb-3 bg-[#EBE6DC]/40 dark:bg-[#383633]/25 rounded-t-xl">
-			<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
-				{icon}
+		<div className="flex items-center gap-2 rounded-t-xl bg-[#EBE6DC]/50 px-3 py-2.5 dark:bg-[#383633]/30 md:px-4">
+			<div className="rounded-md bg-primary/10 p-1">
+				<span className="text-primary">{icon}</span>
 			</div>
-			<span className="text-sm font-bold text-muted-foreground">
-				{title}
-			</span>
+			<span className="text-sm font-bold">{title}</span>
 		</div>
 	);
 }

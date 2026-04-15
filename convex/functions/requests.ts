@@ -94,6 +94,7 @@ export const create = authMutation({
     orgServiceId: v.id("orgServices"),
     formData: v.optional(v.any()),
     submitNow: v.optional(v.boolean()),
+    childProfileId: v.optional(v.id("childProfiles")),
   },
   handler: async (ctx, args) => {
     const orgService = await ctx.db.get(args.orgServiceId);
@@ -114,25 +115,40 @@ export const create = authMutation({
 
     const status = args.submitNow ? RequestStatus.Submitted : RequestStatus.Draft;
 
-    // Get user's profile for Document Vault auto-attachment
-    const profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
-      .unique();
+    let targetProfileId: Id<"profiles"> | Id<"childProfiles"> | undefined;
+    let documentIds: Id<"documents">[] = [];
+
+    if (args.childProfileId) {
+      // Request is for a child profile
+      const child = await ctx.db.get(args.childProfileId);
+      if (!child || child.authorUserId !== ctx.user._id) {
+        throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
+      }
+      targetProfileId = child._id;
+      const childDocs = child.documents ?? {};
+      documentIds = Object.values(childDocs).filter(
+        (id): id is Id<"documents"> => id !== undefined,
+      );
+    } else {
+      // Request is for the adult profile (existing behavior)
+      const profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+        .unique();
+      targetProfileId = profile?._id;
+      const profileDocs = profile?.documents ?? {};
+      documentIds = Object.values(profileDocs).filter(
+        (id): id is Id<"documents"> => id !== undefined,
+      );
+    }
 
     const now = Date.now();
-
-    // Convert profile's typed documents object to array of document IDs
-    const profileDocs = profile?.documents ?? {};
-    const documentIds = Object.values(profileDocs).filter(
-      (id): id is Id<"documents"> => id !== undefined,
-    );
 
     const reference = args.submitNow ? await generateRequestReference(ctx) : `DRAFT-${now}`;
 
     const requestId = await ctx.db.insert("requests", {
       userId: ctx.user._id,
-      profileId: profile?._id,
+      profileId: targetProfileId,
       orgId: orgService.orgId,
       orgServiceId: args.orgServiceId,
       reference,
@@ -249,6 +265,17 @@ async function loadRequestDetails(
 
   const joinedDocuments = service?.formSchema?.joinedDocuments ?? [];
 
+  // Detect if this request is for a child profile
+  let childProfile = null;
+  let isChildRequest = false;
+  if (request.profileId) {
+    const maybeChild = await ctx.db.get(request.profileId as Id<"childProfiles">);
+    if (maybeChild && "authorUserId" in maybeChild) {
+      childProfile = maybeChild;
+      isChildRequest = true;
+    }
+  }
+
   const base = {
     ...request,
     user: user ?? null,
@@ -260,6 +287,8 @@ async function loadRequestDetails(
     notes,
     statusHistory,
     joinedDocuments,
+    childProfile,
+    isChildRequest,
   };
 
   if (opts?.includeAppointments) {
@@ -407,12 +436,38 @@ export const listMine = authQuery({
       requestDocuments.map((rd) => [rd.requestId, rd.documents]),
     );
 
+    // Resolve child profile names for requests made on behalf of children
+    const childProfileIds = [
+      ...new Set(
+        paginatedResult.page
+          .map((r) => r.profileId)
+          .filter((id): id is NonNullable<typeof id> => !!id),
+      ),
+    ];
+    const childProfiles = await Promise.all(
+      childProfileIds.map(async (id) => {
+        const maybeChild = await ctx.db.get(id as Id<"childProfiles">);
+        if (maybeChild && "authorUserId" in maybeChild) {
+          return { id, child: maybeChild };
+        }
+        return null;
+      }),
+    );
+    const childProfileMap = new Map(
+      childProfiles
+        .filter((c): c is NonNullable<typeof c> => c !== null)
+        .map((c) => [c.id, c.child]),
+    );
+
     return {
       ...paginatedResult,
       page: paginatedResult.page.map((request) => {
         const orgService = orgServiceMap.get(request.orgServiceId);
         const service =
           orgService ? serviceMap.get(orgService.serviceId) : null;
+        const childProfile = request.profileId
+          ? childProfileMap.get(request.profileId)
+          : null;
         return {
           ...request,
           org: orgMap.get(request.orgId),
@@ -420,6 +475,16 @@ export const listMine = authQuery({
           service,
           serviceName: service?.name,
           documents: documentsMap.get(request._id) || [],
+          childProfile: childProfile
+            ? {
+                firstName: childProfile.identity.firstName,
+                lastName: childProfile.identity.lastName,
+              }
+            : null,
+          isChildRequest: !!childProfile,
+          pendingActionsCount: (request.actionsRequired ?? []).filter(
+            (a: { completedAt?: number }) => !a.completedAt,
+          ).length,
         };
       }),
     };
@@ -497,18 +562,54 @@ export const listByOrg = authQuery({
       services.filter(Boolean).map((s) => [s!._id, s!]),
     );
 
+    // Resolve child profiles for requests made on behalf of children
+    const childProfileIds = [
+      ...new Set(
+        paginatedResult.page
+          .map((r) => r.profileId)
+          .filter((id): id is NonNullable<typeof id> => !!id),
+      ),
+    ];
+    const childProfileResults = await Promise.all(
+      childProfileIds.map(async (id) => {
+        const maybeChild = await ctx.db.get(id as Id<"childProfiles">);
+        if (maybeChild && "authorUserId" in maybeChild) {
+          return { id, child: maybeChild };
+        }
+        return null;
+      }),
+    );
+    const childProfileMap = new Map(
+      childProfileResults
+        .filter((c): c is NonNullable<typeof c> => c !== null)
+        .map((c) => [c.id, c.child]),
+    );
+
     return {
       ...paginatedResult,
       page: paginatedResult.page.map((request) => {
         const orgService = orgServiceMap.get(request.orgServiceId);
         const service =
           orgService ? serviceMap.get(orgService.serviceId) : null;
+        const childProfile = request.profileId
+          ? childProfileMap.get(request.profileId)
+          : null;
         return {
           ...request,
           user: userMap.get(request.userId),
           orgService,
           service,
           serviceName: service?.name,
+          childProfile: childProfile
+            ? {
+                firstName: childProfile.identity.firstName,
+                lastName: childProfile.identity.lastName,
+              }
+            : null,
+          isChildRequest: !!childProfile,
+          pendingActionsCount: (request.actionsRequired ?? []).filter(
+            (a: { completedAt?: number }) => !a.completedAt,
+          ).length,
         };
       }),
     };
@@ -673,6 +774,9 @@ export const listByOrgStatuses = authQuery({
           orgService,
           service,
           serviceName: service?.name,
+          pendingActionsCount: (request.actionsRequired ?? []).filter(
+            (a: { completedAt?: number }) => !a.completedAt,
+          ).length,
         };
       }),
     };
@@ -852,21 +956,39 @@ export const submit = authMutation({
     const orgService = await ctx.db.get(request.orgServiceId);
     const service = orgService ? await ctx.db.get(orgService.serviceId) : null;
     if (service?.category === ServiceCategory.Registration) {
-      const profile = await ctx.db
-        .query("profiles")
-        .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
-        .unique();
+      // Detect if this request is for a child profile
+      const childProfile = request.profileId
+        ? await ctx.db.get(request.profileId as Id<"childProfiles">)
+        : null;
+      const isChildRequest = childProfile !== null && "authorUserId" in childProfile;
 
-      if (profile) {
+      if (isChildRequest) {
         await ctx.scheduler.runAfter(
           0,
           internal.functions.consularRegistrations.createFromRequest,
           {
-            profileId: profile._id,
+            childProfileId: request.profileId as Id<"childProfiles">,
             orgId: request.orgId,
             requestId: args.requestId,
           },
         );
+      } else {
+        const profile = await ctx.db
+          .query("profiles")
+          .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+          .unique();
+
+        if (profile) {
+          await ctx.scheduler.runAfter(
+            0,
+            internal.functions.consularRegistrations.createFromRequest,
+            {
+              profileId: profile._id,
+              orgId: request.orgId,
+              requestId: args.requestId,
+            },
+          );
+        }
       }
     }
 
@@ -1686,6 +1808,108 @@ export const getLatestActive = authQuery({
 });
 
 /**
+ * List all active (non-terminal) requests for the current user.
+ * Used by the dashboard "Démarches en cours" widget.
+ */
+export const listMyActive = authQuery({
+  args: {},
+  handler: async (ctx) => {
+    const activeStatuses = [
+      RequestStatus.Draft,
+      RequestStatus.Submitted,
+      RequestStatus.Pending,
+      RequestStatus.UnderReview,
+      RequestStatus.InProduction,
+      RequestStatus.Validated,
+      RequestStatus.AppointmentScheduled,
+      RequestStatus.ReadyForPickup,
+    ];
+
+    // Fetch recent requests (take enough to cover active ones)
+    const requests = await ctx.db
+      .query("requests")
+      .withIndex("by_user_status", (q) => q.eq("userId", ctx.user._id))
+      .order("desc")
+      .take(50);
+
+    const activeRequests = requests.filter((r) =>
+      activeStatuses.includes(r.status),
+    );
+
+    // Batch-fetch related data
+    const orgIds = [...new Set(activeRequests.map((r) => r.orgId))];
+    const orgServiceIds = [...new Set(activeRequests.map((r) => r.orgServiceId))];
+
+    const [orgs, orgServices] = await Promise.all([
+      Promise.all(orgIds.map((id) => ctx.db.get(id))),
+      Promise.all(orgServiceIds.map((id) => ctx.db.get(id))),
+    ]);
+
+    const orgMap = new Map(orgs.filter(Boolean).map((o) => [o!._id, o!]));
+    const orgServiceMap = new Map(
+      orgServices.filter(Boolean).map((os) => [os!._id, os!]),
+    );
+
+    const serviceIds = [
+      ...new Set(orgServices.filter(Boolean).map((os) => os!.serviceId)),
+    ];
+    const services = await Promise.all(serviceIds.map((id) => ctx.db.get(id)));
+    const serviceMap = new Map(
+      services.filter(Boolean).map((s) => [s!._id, s!]),
+    );
+
+    // Resolve child profiles
+    const childProfileIds = [
+      ...new Set(
+        activeRequests
+          .map((r) => r.profileId)
+          .filter((id): id is NonNullable<typeof id> => !!id),
+      ),
+    ];
+    const childProfileResults = await Promise.all(
+      childProfileIds.map(async (id) => {
+        const maybeChild = await ctx.db.get(id as Id<"childProfiles">);
+        if (maybeChild && "authorUserId" in maybeChild) {
+          return { id, child: maybeChild };
+        }
+        return null;
+      }),
+    );
+    const childProfileMap = new Map(
+      childProfileResults
+        .filter((c): c is NonNullable<typeof c> => c !== null)
+        .map((c) => [c.id, c.child]),
+    );
+
+    return activeRequests.map((r) => {
+      const orgService = orgServiceMap.get(r.orgServiceId);
+      const service = orgService ? serviceMap.get(orgService.serviceId) : null;
+      const childProfile = r.profileId
+        ? childProfileMap.get(r.profileId)
+        : null;
+      return {
+        _id: r._id,
+        _creationTime: r._creationTime,
+        status: r.status,
+        reference: r.reference,
+        org: orgMap.get(r.orgId) ?? null,
+        service: service ?? null,
+        childProfile: childProfile
+          ? {
+              firstName: childProfile.identity.firstName,
+              lastName: childProfile.identity.lastName,
+            }
+          : null,
+        isChildRequest: !!childProfile,
+        pendingActionsCount: (r.actionsRequired ?? []).filter(
+          (a: { completedAt?: number }) => !a.completedAt,
+        ).length,
+      };
+    });
+  },
+});
+
+/**
  * Get dashboard stats for current user
  */
 export const getDashboardStats = authQuery({
@@ -1728,6 +1952,7 @@ export const getDashboardStats = authQuery({
 export const getDraftForService = authQuery({
   args: {
     orgServiceId: v.id("orgServices"),
+    childProfileId: v.optional(v.id("childProfiles")),
   },
   handler: async (ctx, args) => {
     const draft = await ctx.db
@@ -1735,7 +1960,14 @@ export const getDraftForService = authQuery({
       .withIndex("by_user_status", (q) =>
         q.eq("userId", ctx.user._id).eq("status", RequestStatus.Draft),
       )
-      .filter((q) => q.eq(q.field("orgServiceId"), args.orgServiceId))
+      .filter((q) => {
+        const serviceMatch = q.eq(q.field("orgServiceId"), args.orgServiceId);
+        if (args.childProfileId) {
+          // Only return drafts for this specific child
+          return q.and(serviceMatch, q.eq(q.field("profileId"), args.childProfileId));
+        }
+        return serviceMatch;
+      })
       .first();
 
     return draft;

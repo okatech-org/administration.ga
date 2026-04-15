@@ -624,7 +624,7 @@ export function FormBuilder({
 									// FIELD EDITOR
 									<div className="space-y-4">
 										<Tabs defaultValue="fr" className="w-full">
-											<TabsList className="grid w-full grid-cols-2 bg-[#F4F3ED] dark:bg-[#171616]">
+											<TabsList className="grid w-full grid-cols-2">
 												<TabsTrigger value="fr">🇫🇷 FR</TabsTrigger>
 												<TabsTrigger value="en">🇬🇧 EN</TabsTrigger>
 											</TabsList>

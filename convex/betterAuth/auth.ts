@@ -79,11 +79,10 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
     baseURL: process.env.CONVEX_SITE_URL,
     secret: validateAuthSecret(),
     session: {
-      // 8-hour sessions — appropriate for a diplomatic portal handling
-      // sensitive data (passports, identities, consular cards).
-      expiresIn: 60 * 60 * 8, // 8 hours in seconds
-      // Refresh at 50% of session lifetime (every 4 hours of active use).
-      updateAge: 60 * 60 * 4, // 4 hours in seconds
+      // 7-day sessions with daily refresh. The 30-min Convex JWT
+      // provides the real authorization boundary and revocation window.
+      expiresIn: 60 * 60 * 24 * 7, // 7 days (604,800s) — Better Auth default
+      updateAge: 60 * 60 * 24, // 1 day (86,400s) — Better Auth default
     },
     trustedOrigins: isDev
       ? (request) => {
@@ -191,7 +190,6 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
           const { subject, html } = otpEmail({ otp, type, platform, lang });
 
           const sender = fromEmail(platform);
-          console.log(`[OTP] Sending ${type} OTP to ${email} from ${sender} (platform: ${platform.platform})`);
 
           try {
             await resend.sendEmail(ctx as any, {
@@ -200,7 +198,6 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
               subject,
               html,
             });
-            console.log(`[OTP] ✅ Email queued successfully for ${email}`);
           } catch (err: any) {
             console.error(`[OTP] ❌ Failed to send OTP email to ${email}:`, err?.message ?? err);
             throw err; // relancer pour que Better Auth retourne une erreur au client
@@ -225,7 +222,6 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
       phoneNumber({
         sendOTP: async ({ phoneNumber: phone, code }) => {
           if (!process.env.BIRD_API_KEY) {
-            console.log("[Auth SMS] BIRD_API_KEY not configured, skipping");
             return;
           }
           try {

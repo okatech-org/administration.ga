@@ -1,4 +1,6 @@
-import { Link } from "@tanstack/react-router";
+"use client";
+
+import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -101,13 +103,13 @@ export function ProfileRequestsCard({
                   return (
                     <tr
                       key={req._id}
-                      className="bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-[#F4F3ED]/60 dark:hover:bg-[#171616]/60 transition-colors"
+                      className="bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-secondary/60 transition-colors"
                     >
                       {/* Reference (lien) */}
                       <td className="px-3 py-2.5 font-mono font-medium">
                         {req.reference ? (
                           <Link
-                            to={`${basePath}/${req.reference}` as any}
+                            href={`${basePath}/${req.reference}`}
                             className="text-primary hover:underline"
                           >
                             {req.reference}
@@ -145,7 +147,7 @@ export function ProfileRequestsCard({
                           {req.reference && (
                             <Button variant="ghost" size="icon" asChild className="h-6 w-6">
                               <Link
-                                to={`${basePath}/${req.reference}` as any}
+                                href={`${basePath}/${req.reference}`}
                                 title="Voir"
                               >
                                 <ExternalLink className="h-3 w-3" />

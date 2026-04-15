@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/my-space/flat-card";
+import { PageHeader } from "@/components/my-space/page-header";
 import {
 	Dialog,
 	DialogContent,
@@ -102,8 +103,8 @@ export default function AssociationsPage() {
 		[AssociationType.Cultural]: t("associations.type.cultural"),
 		[AssociationType.Sports]: t("associations.type.sports"),
 		[AssociationType.Religious]: t("associations.type.religious"),
-		[AssociationType.Professional]: t("associations.type.professional", "Professionnelle"),
-		[AssociationType.Solidarity]: t("associations.type.solidarity", "Solidarite"),
+		[AssociationType.Professional]: t("associations.type.professional"),
+		[AssociationType.Solidarity]: t("associations.type.solidarity"),
 		[AssociationType.Education]: t("associations.type.education"),
 		[AssociationType.Youth]: t("associations.type.youth"),
 		[AssociationType.Women]: t("associations.type.women"),
@@ -121,34 +122,25 @@ export default function AssociationsPage() {
 
 	return (
 		<div className="space-y-6">
-			{/* Header */}
-			<motion.div
-				initial={{ opacity: 0, y: 10 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.2 }}
-				className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
-			>
-				<div>
-					<h1 className="text-2xl font-bold flex items-center gap-2">
-						<Users className="h-6 w-6 text-primary" />
-						{t("associations.title")}
-					</h1>
-					<p className="text-muted-foreground text-sm mt-1">
-						{t("associations.subtitle")}
-					</p>
-				</div>
-				<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-					<DialogTrigger asChild>
-						<Button>
-							<Plus className="h-4 w-4 mr-2" />
-							{t("associations.create.title")}
-						</Button>
-					</DialogTrigger>
-					<CreateAssociationDialog
-						onClose={() => setIsCreateDialogOpen(false)}
-					/>
-				</Dialog>
-			</motion.div>
+			<PageHeader
+				title={t("associations.title")}
+				subtitle={t("associations.subtitle")}
+				icon={<Users className="h-5 w-5 text-primary" />}
+				iconBgClass="bg-primary/10"
+				actions={
+					<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+						<DialogTrigger asChild>
+							<Button>
+								<Plus className="h-4 w-4 mr-2" />
+								{t("associations.create.title")}
+							</Button>
+						</DialogTrigger>
+						<CreateAssociationDialog
+							onClose={() => setIsCreateDialogOpen(false)}
+						/>
+					</Dialog>
+				}
+			/>
 
 			<Tabs defaultValue="discover" className="space-y-4">
 				<TabsList>
@@ -215,7 +207,7 @@ export default function AssociationsPage() {
 							<div className="relative">
 								<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 								<Input
-									placeholder={t("associations.search.placeholder", "Rechercher une association...")}
+									placeholder={t("associations.search.placeholder")}
 									value={searchQuery}
 									onChange={(e) => setSearchQuery(e.target.value)}
 									className="pl-10"
@@ -263,12 +255,12 @@ export default function AssociationsPage() {
 									<h3 className="text-lg font-medium text-muted-foreground">
 										{searchQuery.trim()
 											? t("associations.empty.search")
-											: t("associations.empty.discover.title", "Aucune association disponible")}
+											: t("associations.empty.discover.title")}
 									</h3>
 									<p className="text-sm text-muted-foreground text-center mt-1">
 										{searchQuery.trim()
-											? t("associations.empty.searchHint", "Essayez avec un autre terme de recherche")
-											: t("associations.empty.discover.description", "Soyez le premier a creer une association!")}
+											? t("associations.empty.searchHint")
+											: t("associations.empty.discover.description")}
 									</p>
 								</div>
 							</FlatCard>
@@ -291,8 +283,8 @@ function MyAssociationCard({ association }: { association: Association }) {
 		[AssociationType.Cultural]: t("associations.type.cultural"),
 		[AssociationType.Sports]: t("associations.type.sports"),
 		[AssociationType.Religious]: t("associations.type.religious"),
-		[AssociationType.Professional]: t("associations.type.professional", "Professionnelle"),
-		[AssociationType.Solidarity]: t("associations.type.solidarity", "Solidarite"),
+		[AssociationType.Professional]: t("associations.type.professional"),
+		[AssociationType.Solidarity]: t("associations.type.solidarity"),
 		[AssociationType.Education]: t("associations.type.education"),
 		[AssociationType.Youth]: t("associations.type.youth"),
 		[AssociationType.Women]: t("associations.type.women"),
@@ -302,7 +294,7 @@ function MyAssociationCard({ association }: { association: Association }) {
 
 	const roleLabels: Partial<Record<AssociationRole, string>> = {
 		[AssociationRole.President]: t("associations.role.president"),
-		[AssociationRole.VicePresident]: t("associations.role.vicePresident", "Vice-President"),
+		[AssociationRole.VicePresident]: t("associations.role.vicePresident"),
 		[AssociationRole.Secretary]: t("associations.role.secretary"),
 		[AssociationRole.Treasurer]: t("associations.role.treasurer"),
 		[AssociationRole.Member]: t("associations.role.member"),
@@ -442,8 +434,8 @@ function DiscoverAssociationCard({ association }: { association: Association }) 
 		[AssociationType.Cultural]: t("associations.type.cultural"),
 		[AssociationType.Sports]: t("associations.type.sports"),
 		[AssociationType.Religious]: t("associations.type.religious"),
-		[AssociationType.Professional]: t("associations.type.professional", "Professionnelle"),
-		[AssociationType.Solidarity]: t("associations.type.solidarity", "Solidarite"),
+		[AssociationType.Professional]: t("associations.type.professional"),
+		[AssociationType.Solidarity]: t("associations.type.solidarity"),
 		[AssociationType.Education]: t("associations.type.education"),
 		[AssociationType.Youth]: t("associations.type.youth"),
 		[AssociationType.Women]: t("associations.type.women"),
@@ -512,8 +504,8 @@ function CreateAssociationDialog({ onClose }: { onClose: () => void }) {
 		[AssociationType.Cultural]: t("associations.type.cultural"),
 		[AssociationType.Sports]: t("associations.type.sports"),
 		[AssociationType.Religious]: t("associations.type.religious"),
-		[AssociationType.Professional]: t("associations.type.professional", "Professionnelle"),
-		[AssociationType.Solidarity]: t("associations.type.solidarity", "Solidarite"),
+		[AssociationType.Professional]: t("associations.type.professional"),
+		[AssociationType.Solidarity]: t("associations.type.solidarity"),
 		[AssociationType.Education]: t("associations.type.education"),
 		[AssociationType.Youth]: t("associations.type.youth"),
 		[AssociationType.Women]: t("associations.type.women"),

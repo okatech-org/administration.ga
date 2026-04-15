@@ -5,7 +5,7 @@
  * header compact en haut. Bouton [+] pour passer en plein écran.
  */
 
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 import { Contact, Maximize2, MessageSquare, Minus, Phone, Plus, Settings, ShieldCheck, Video } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
@@ -37,7 +37,7 @@ export function IAstedWindow() {
 	const [open, setOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<TabId>("ichat");
 	const { activeOrg } = useOrg();
-	const navigate = useNavigate();
+	const router = useRouter();
 
 	// Hooks IA existants
 	const chat = useAdminAIChat();
@@ -45,7 +45,7 @@ export function IAstedWindow() {
 
 	const handleExpand = () => {
 		setOpen(false);
-		navigate({ to: "/iasted" });
+		router.push("/iasted");
 	};
 
 	return (
@@ -76,8 +76,8 @@ export function IAstedWindow() {
 									<ShieldCheck className="h-4 w-4 text-white" />
 								</div>
 								<div>
-									<h2 className="text-xs font-semibold leading-tight">iAsted</h2>
-									<p className="text-[9px] text-white/60 leading-tight">
+									<h2 className="text-sm font-semibold leading-tight">iAsted</h2>
+									<p className="text-xs text-white/60 leading-tight">
 										{activeOrg?.name ?? "Agent IA Diplomate"}
 									</p>
 								</div>
@@ -105,7 +105,7 @@ export function IAstedWindow() {
 
 						{/* ── Navigation en bas (style WhatsApp) ── */}
 						<div className="border-t bg-card shrink-0">
-							<div className="flex items-center justify-around py-1.5">
+							<div className="flex items-center justify-around py-2">
 								{TABS.map((tab) => {
 									const Icon = tab.icon;
 									const isActive = activeTab === tab.id;
@@ -115,7 +115,7 @@ export function IAstedWindow() {
 											type="button"
 											onClick={() => setActiveTab(tab.id)}
 											className={cn(
-												"flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[52px]",
+												"flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors min-w-[56px]",
 												isActive
 													? "text-emerald-500"
 													: "text-muted-foreground hover:text-foreground",
@@ -123,7 +123,7 @@ export function IAstedWindow() {
 										>
 											<Icon className={cn("h-5 w-5", isActive && "text-emerald-500")} />
 											<span className={cn(
-												"text-[9px] font-medium leading-none",
+												"text-xs font-medium leading-none",
 												isActive && "text-emerald-500",
 											)}>
 												{tab.label}

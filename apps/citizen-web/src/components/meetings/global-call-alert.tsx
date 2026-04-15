@@ -6,7 +6,7 @@ import {
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 
 import { useQuery } from "convex/react";
-import { Loader2, Phone, PhoneCall } from "lucide-react";
+import { Loader2, Phone, PhoneCall, PhoneOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { useMeeting } from "@/hooks/use-meeting";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRingtone } from "@/hooks/use-ringtone";
 import { useUserData } from "@/hooks/use-user-data";
-import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
+import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { useCallStore } from "@/stores/call-store";
 
 /**
@@ -50,8 +50,8 @@ export function GlobalCallAlert() {
 	const incomingPersonalMeeting = meetings?.find((m) => {
 		if (m.status !== "active") return false;
 		if (user && m.createdBy === user._id) return false;
-		// Ignore stale calls (> 60s old)
-		if (Date.now() - m._creationTime > 60_000) return false;
+		// Ignore stale calls (> 2 min old)
+		if (Date.now() - m._creationTime > 120_000) return false;
 		if (user) {
 			const me = m.participants.find((p) => p.userId === user._id);
 			if (me?.leftAt) return false;
@@ -96,6 +96,20 @@ export function GlobalCallAlert() {
 	const callerName = callerUser
 		? [callerUser.firstName, callerUser.lastName].filter(Boolean).join(" ")
 		: null;
+
+	// Decline mutation
+	const declineCallMutation = useConvexMutationQuery(
+		api.functions.meetings.declineCall,
+	);
+
+	const handleDecline = useCallback(async () => {
+		if (!activeCallToDisplay) return;
+		try {
+			await declineCallMutation.mutateAsync({ meetingId: activeCallToDisplay._id });
+		} catch {
+			// ignore — call may already have ended
+		}
+	}, [activeCallToDisplay, declineCallMutation]);
 
 	const handleJoin = useCallback(async () => {
 		if (!activeCallToDisplay) return;
@@ -159,7 +173,7 @@ export function GlobalCallAlert() {
 							</div>
 							<div>
 								<p className="font-semibold text-sm">
-									{activeCallToDisplay.title || t("meetings.incomingCall", "Appel entrant")}
+									{activeCallToDisplay.title || t("meetings.incomingCall")}
 								</p>
 								<p className="text-xs text-zinc-400">
 									{callerName
@@ -176,13 +190,23 @@ export function GlobalCallAlert() {
 								</p>
 							</div>
 						</div>
-						<Button
-							onClick={handleJoin}
-							className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 shadow-lg shadow-emerald-900/20"
-						>
-							<Phone className="w-4 h-4" />
-							{t("meetings.answer", "Décrocher")}
-						</Button>
+						<div className="flex items-center gap-2">
+							<Button
+								onClick={handleDecline}
+								variant="ghost"
+								size="icon"
+								className="text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-xl"
+							>
+								<PhoneOff className="w-4 h-4" />
+							</Button>
+							<Button
+								onClick={handleJoin}
+								className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 shadow-lg shadow-emerald-900/20"
+							>
+								<Phone className="w-4 h-4" />
+								{t("meetings.answer")}
+							</Button>
+						</div>
 					</div>
 				</div>
 			)}

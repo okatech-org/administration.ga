@@ -18,19 +18,19 @@
   --gabon-blue-hex: #3A75C4;
 
   /* Surface tokens */
-  --citizen-surface-s1: #F4F3ED;
+  --citizen-surface-s1: var(--secondary);
   --citizen-surface-s2: #EBE6DC;
   --citizen-surface-s3: #DCD7C7;
   --citizen-surface-s4: #FDFCFA;
-  --citizen-surface-card: #F4F3ED;
+  --citizen-surface-card: var(--secondary);
 }
 
 .dark {
-  --citizen-surface-s1: #171616;
+  --citizen-surface-s1: var(--secondary);
   --citizen-surface-s2: #383633;
   --citizen-surface-s3: rgba(74, 71, 68, 0.40);
   --citizen-surface-s4: rgba(33, 32, 30, 0.77);
-  --citizen-surface-card: rgba(28, 27, 26, 0.57);
+  --citizen-surface-card: var(--secondary);
 }
 
 /* ─── Flat Card Border ─── */
@@ -51,8 +51,8 @@
 
 /* ─── Design System v3.0 Surface Utilities ─── */
 
-.citizen-s1 { background: #F4F3ED; }
-.dark .citizen-s1 { background: #171616; }
+.citizen-s1 { background: var(--secondary); }
+.dark .citizen-s1 { background: var(--secondary); }
 .citizen-s2 { background: #EBE6DC; }
 .dark .citizen-s2 { background: #383633; }
 .citizen-s3 { background: #DCD7C7; }

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -119,8 +119,7 @@ export const eventsColumns: ColumnDef<CommunityEvent>[] = [
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
             <Link
-              to="/events/$eventId/edit"
-              params={{ eventId: row.original._id }}
+              href={`/events/${row.original._id}/edit`}
             >
               <Pencil className="mr-2 h-4 w-4" />
               Modifier

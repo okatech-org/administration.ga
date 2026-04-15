@@ -29,6 +29,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/my-space/flat-card";
+import { PageHeader } from "@/components/my-space/page-header";
 import {
 	Dialog,
 	DialogContent,
@@ -89,34 +90,26 @@ export default function CompaniesPage() {
 
 	return (
 		<div className="space-y-6">
-			<motion.div
-				initial={{ opacity: 0, y: 10 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.2 }}
-				className="flex items-start justify-between gap-4"
-			>
-				<div>
-					<h1 className="text-2xl font-bold flex items-center gap-2">
-						<Building2 className="h-6 w-6 text-primary" />
-						{t("companies.title")}
-					</h1>
-					<p className="text-muted-foreground text-sm mt-1">
-						{t(
-							"companies.description",
-							"Gerez vos entreprises et decouvrez les societes gabonaises",
-						)}
-					</p>
-				</div>
-				<Dialog open={showCreate} onOpenChange={setShowCreate}>
-					<DialogTrigger asChild>
-						<Button className="gap-2">
-							<Plus className="h-4 w-4" />
-							{t("companies.create.button")}
-						</Button>
-					</DialogTrigger>
-					<CreateCompanyDialog onClose={() => setShowCreate(false)} />
-				</Dialog>
-			</motion.div>
+			<PageHeader
+				title={t("companies.title")}
+				subtitle={t(
+					"companies.description",
+					"Gerez vos entreprises et decouvrez les societes gabonaises",
+				)}
+				icon={<Building2 className="h-5 w-5 text-primary" />}
+				iconBgClass="bg-primary/10"
+				actions={
+					<Dialog open={showCreate} onOpenChange={setShowCreate}>
+						<DialogTrigger asChild>
+							<Button className="gap-2">
+								<Plus className="h-4 w-4" />
+								{t("companies.create.button")}
+							</Button>
+						</DialogTrigger>
+						<CreateCompanyDialog onClose={() => setShowCreate(false)} />
+					</Dialog>
+				}
+			/>
 
 			<Tabs defaultValue="mine" className="space-y-4">
 				<TabsList>
@@ -220,22 +213,22 @@ function MyCompanyCard({ company }: { company: Company }) {
 		[CompanyType.SASU]: "SASU",
 		[CompanyType.EURL]: "EURL",
 		[CompanyType.EI]: t("companies.type.ei"),
-		[CompanyType.AutoEntrepreneur]: t("companies.type.auto", "Auto-Entrepreneur"),
+		[CompanyType.AutoEntrepreneur]: t("companies.type.auto"),
 		[CompanyType.Other]: t("companies.type.other"),
 	};
 
 	const sectorLabels: Record<ActivitySector, string> = {
-		[ActivitySector.Technology]: t("companies.sector.technology", "Technologie"),
+		[ActivitySector.Technology]: t("companies.sector.technology"),
 		[ActivitySector.Commerce]: t("companies.sector.commerce"),
 		[ActivitySector.Services]: t("companies.sector.services"),
 		[ActivitySector.Industry]: t("companies.sector.industry"),
-		[ActivitySector.Agriculture]: t("companies.sector.agriculture", "Agriculture"),
+		[ActivitySector.Agriculture]: t("companies.sector.agriculture"),
 		[ActivitySector.Health]: t("companies.sector.health"),
 		[ActivitySector.Education]: t("companies.sector.education"),
 		[ActivitySector.Culture]: t("companies.sector.culture"),
 		[ActivitySector.Tourism]: t("companies.sector.tourism"),
 		[ActivitySector.Transport]: t("companies.sector.transport"),
-		[ActivitySector.Construction]: t("companies.sector.construction", "Construction"),
+		[ActivitySector.Construction]: t("companies.sector.construction"),
 		[ActivitySector.Other]: t("companies.sector.other"),
 	};
 
@@ -332,17 +325,17 @@ function DiscoverCompanyCard({ company }: { company: Company }) {
 	const { t } = useTranslation();
 
 	const sectorLabels: Record<ActivitySector, string> = {
-		[ActivitySector.Technology]: t("companies.sector.technology", "Technologie"),
+		[ActivitySector.Technology]: t("companies.sector.technology"),
 		[ActivitySector.Commerce]: t("companies.sector.commerce"),
 		[ActivitySector.Services]: t("companies.sector.services"),
 		[ActivitySector.Industry]: t("companies.sector.industry"),
-		[ActivitySector.Agriculture]: t("companies.sector.agriculture", "Agriculture"),
+		[ActivitySector.Agriculture]: t("companies.sector.agriculture"),
 		[ActivitySector.Health]: t("companies.sector.health"),
 		[ActivitySector.Education]: t("companies.sector.education"),
 		[ActivitySector.Culture]: t("companies.sector.culture"),
 		[ActivitySector.Tourism]: t("companies.sector.tourism"),
 		[ActivitySector.Transport]: t("companies.sector.transport"),
-		[ActivitySector.Construction]: t("companies.sector.construction", "Construction"),
+		[ActivitySector.Construction]: t("companies.sector.construction"),
 		[ActivitySector.Other]: t("companies.sector.other"),
 	};
 
@@ -431,22 +424,22 @@ function CreateCompanyDialog({ onClose }: { onClose: () => void }) {
 		[CompanyType.SASU]: "SASU",
 		[CompanyType.EURL]: "EURL",
 		[CompanyType.EI]: t("companies.type.ei"),
-		[CompanyType.AutoEntrepreneur]: t("companies.type.auto", "Auto-Entrepreneur"),
+		[CompanyType.AutoEntrepreneur]: t("companies.type.auto"),
 		[CompanyType.Other]: t("companies.type.other"),
 	};
 
 	const sectorLabels: Record<ActivitySector, string> = {
-		[ActivitySector.Technology]: t("companies.sector.technology", "Technologie"),
+		[ActivitySector.Technology]: t("companies.sector.technology"),
 		[ActivitySector.Commerce]: t("companies.sector.commerce"),
 		[ActivitySector.Services]: t("companies.sector.services"),
 		[ActivitySector.Industry]: t("companies.sector.industry"),
-		[ActivitySector.Agriculture]: t("companies.sector.agriculture", "Agriculture"),
+		[ActivitySector.Agriculture]: t("companies.sector.agriculture"),
 		[ActivitySector.Health]: t("companies.sector.health"),
 		[ActivitySector.Education]: t("companies.sector.education"),
 		[ActivitySector.Culture]: t("companies.sector.culture"),
 		[ActivitySector.Tourism]: t("companies.sector.tourism"),
 		[ActivitySector.Transport]: t("companies.sector.transport"),
-		[ActivitySector.Construction]: t("companies.sector.construction", "Construction"),
+		[ActivitySector.Construction]: t("companies.sector.construction"),
 		[ActivitySector.Other]: t("companies.sector.other"),
 	};
 

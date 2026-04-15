@@ -53,11 +53,11 @@ export default function TicketDetailPage() {
 				content: replyMessage.trim(),
 			});
 			setReplyMessage("");
-			toast.success(t("support.tickets.messageSent", "Message envoye"));
+			toast.success(t("support.tickets.messageSent"));
 		} catch (error) {
 			console.error("Failed to send reply", error);
 			toast.error(
-				t("support.tickets.messageError", "Erreur lors de l'envoi du message"),
+				t("support.tickets.messageError"),
 			);
 		}
 	};
@@ -243,7 +243,7 @@ export default function TicketDetailPage() {
 				<div className="mt-8 p-6 text-center border rounded-lg bg-muted/40">
 					<LifeBuoy className="h-8 w-8 mx-auto text-muted-foreground/50 mb-3" />
 					<h3 className="text-lg font-medium">
-						{t("support.tickets.closedTitle", "Ce ticket est ferme")}
+						{t("support.tickets.closedTitle")}
 					</h3>
 					<p className="text-muted-foreground mt-1">
 						{t(

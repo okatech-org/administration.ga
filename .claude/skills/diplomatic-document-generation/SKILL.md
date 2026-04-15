@@ -20,8 +20,8 @@ Ce skill s'active quand la requete contient :
 ## Reference Principale
 
 Lire IMPERATIVEMENT avant toute action :
-1. `PROMPT_DOSSIERS_OPERATEURS.md` — Phase 4 (Generateurs de documents)
-2. `PROMPT_PLAN_STRATEGIQUE_ET_PROJET.md` — Partie 3 (Generation de documents)
+1. `PROMPT_DOSSIERS_OPERATEURS.md` (dans ce meme dossier) — Phase 4 (Generateurs de documents)
+2. `.claude/skills/diplomatic-pipeline/PROMPT_PLAN_STRATEGIQUE_ET_PROJET.md` — Partie 3 (Generation de documents)
 3. `convex/schemas/diplomaticAffairs.ts` — Tables `diplomaticFoldersTable` et `diplomaticDocumentsTable`
 
 ## Bibliotheques Requises

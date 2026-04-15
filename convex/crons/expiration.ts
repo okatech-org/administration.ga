@@ -18,6 +18,5 @@ export const checkDocuments = internalMutation({
     // In a real app, we would query an index like:
     // .withIndex("by_expiresAt", q => q.gt("expiresAt", now).lt("expiresAt", warningThreshold))
     
-    console.log("Checking for expiring documents...");
   },
 });

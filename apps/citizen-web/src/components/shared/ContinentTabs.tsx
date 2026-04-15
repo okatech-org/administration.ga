@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -31,6 +32,7 @@ export function ContinentTabs<T>({
 	children,
 	className,
 }: ContinentTabsProps<T>) {
+	const { t } = useTranslation();
 	const [activeContinent, setActiveContinent] = useState<Continent | null>(null);
 
 	// Detect active continents and count per continent
@@ -94,7 +96,7 @@ export function ContinentTabs<T>({
 					)}
 				>
 					<span></span>
-					<span>Tous</span>
+					<span>{t("home.continents.all")}</span>
 					<Badge
 						variant="secondary"
 						className={cn(

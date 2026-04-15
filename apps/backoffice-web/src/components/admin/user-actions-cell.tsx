@@ -28,7 +28,7 @@ import { UserModulesDialog } from "./user-modules-dialog"
 import { useConvexMutationQuery, useAuthenticatedConvexQuery } from "@/integrations/convex/hooks"
 import { api } from "@convex/_generated/api"
 import { toast } from "sonner"
-import { useNavigate } from "@tanstack/react-router"
+import { useRouter } from "next/navigation"
 import { useCurrentAdminRole } from "@/hooks/use-current-admin-role"
 
 interface UserActionsCellProps {
@@ -37,7 +37,7 @@ interface UserActionsCellProps {
 
 export function UserActionsCell({ user }: UserActionsCellProps) {
   const { t } = useTranslation()
-  const navigate = useNavigate()
+  const router = useRouter()
   const { canManageUser } = useCurrentAdminRole()
   const [showRoleDialog, setShowRoleDialog] = useState(false)
   const [showModulesDialog, setShowModulesDialog] = useState(false)
@@ -116,7 +116,7 @@ export function UserActionsCell({ user }: UserActionsCellProps) {
   }
 
   const handleView = () => {
-    navigate({ to: `/users/${user._id}` as any })
+    router.push(`/users/${user._id}`)
   }
 
   return (

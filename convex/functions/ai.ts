@@ -4,6 +4,7 @@ import {
   internalMutation,
   internalQuery,
 } from "../_generated/server"
+import type { Id } from "../_generated/dataModel"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { internal } from "../_generated/api"
 
@@ -25,6 +26,7 @@ const getGeminiClient = () => {
  */
 const getAnalysisPrompt = (data: {
   serviceName: string
+  isChildProfile?: boolean
   requiredDocuments: string[]
   providedDocuments: string[]
   providedDocumentsDetails: Array<{
@@ -37,7 +39,16 @@ const getAnalysisPrompt = (data: {
 }) => `Tu es un assistant consulaire expert. Analyse cette demande de service consulaire.
 
 ## Service demandé
-${data.serviceName}
+${data.serviceName}${data.isChildProfile ? `
+
+## IMPORTANT : Demande pour un profil ENFANT mineur
+Cette demande concerne un enfant mineur. Les règles suivantes s'appliquent :
+- Les documents liés au domicile (justificatif de domicile) ne sont PAS obligatoires pour un enfant — ils sont fournis via le dossier du parent/tuteur
+- Les informations professionnelles ne sont pas requises
+- L'acte de naissance est le document d'identité principal
+- Le passeport de l'enfant est requis s'il en possède un
+- La photo d'identité format passeport est requise
+- Ne signale PAS comme manquants les documents qui relèvent du parent/tuteur (justificatif de domicile, attestation d'hébergement, etc.)` : ""}
 
 ## Documents requis par le service
 ${data.requiredDocuments.length > 0 ? data.requiredDocuments.map((d) => `- ${d}`).join("\n") : "Aucun document requis spécifié"}
@@ -201,6 +212,7 @@ export const analyzeRequest = internalAction({
 
       const prompt = getAnalysisPrompt({
         serviceName: request.serviceName,
+        isChildProfile: request.isChildProfile,
         requiredDocuments: request.requiredDocuments,
         providedDocuments: request.providedDocuments,
         providedDocumentsDetails: request.providedDocumentsDetails || [],
@@ -334,10 +346,6 @@ export const analyzeRequest = internalAction({
         }
       }
 
-      console.log(
-        `AI analysis completed for request ${args.requestId}:`,
-        analysis.status
-      )
     } catch (error) {
       console.error(`AI analysis failed for request ${args.requestId}:`, error)
 
@@ -389,8 +397,18 @@ export const getRequestData = internalQuery({
     // Get required documents from formSchema.joinedDocuments
     const joinedDocs = service?.formSchema?.joinedDocuments ?? []
 
+    // Detect if this request is for a child profile
+    let isChildProfile = false
+    if (request.profileId) {
+      const maybeChild = await ctx.db.get(request.profileId as Id<"childProfiles">)
+      if (maybeChild && "authorUserId" in maybeChild) {
+        isChildProfile = true
+      }
+    }
+
     return {
       serviceName: service?.name?.fr || service?.name?.en || "Service inconnu",
+      isChildProfile,
       requiredDocuments: joinedDocs.map(
         (d: { label?: { fr?: string; en?: string }; type: string }) =>
           d.label?.fr || d.type

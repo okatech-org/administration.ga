@@ -171,7 +171,7 @@ export default function SupportPage() {
 				{paginationStatus === "CanLoadMore" && (
 					<div className="flex justify-center mt-6">
 						<Button variant="outline" onClick={() => loadMore(20)}>
-							{t("common.loadMore", "Charger plus")}
+							{t("common.loadMore")}
 						</Button>
 					</div>
 				)}

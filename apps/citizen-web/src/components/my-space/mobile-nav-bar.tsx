@@ -10,7 +10,7 @@ import {
   Contact,
   FileText,
   LogOut,
-  Mail,
+
   Menu,
   MessageSquare,
   Moon,
@@ -54,16 +54,27 @@ export function MobileNavBar() {
   const { theme, setTheme } = useTheme()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [circleMenuOpen, setCircleMenuOpen] = useState(false)
-  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
   const { data: session } = authClient.useSession()
   const { data: childProfiles } = useAuthenticatedConvexQuery(
     api.functions.childProfiles.getMine,
     {}
   )
-  const { data: chatThreads } = useAuthenticatedConvexQuery(api.functions.chats.listMyChats, {})
+  const { data: chatThreads } = useAuthenticatedConvexQuery(
+    api.functions.chats.listMyChats,
+    {}
+  )
 
   const children = childProfiles ?? []
-  const totalUnread = (chatThreads as ChatThread[] | undefined)?.reduce((acc, thread) => acc + (thread.unreadCount ?? 0), 0) ?? 0
+  const totalUnread =
+    (chatThreads as ChatThread[] | undefined)?.reduce(
+      (acc, thread) => acc + (thread.unreadCount ?? 0),
+      0
+    ) ?? 0
   const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en"
   const userName = session?.user?.name ?? ""
   const userEmail = session?.user?.email ?? ""
@@ -71,14 +82,21 @@ export function MobileNavBar() {
 
   const mainItems: NavItem[] = [
     { title: "iProfil", url: "/my-space", icon: User },
-    { title: "iBoite", url: "/my-space/iboite", icon: Mail },
+    { title: "iDocument", url: "/my-space/idocument", icon: FileText },
     { title: "iAgenda", url: "/my-space/iagenda", icon: Calendar },
   ]
 
   const sheetItems: NavItem[] = [
-    { title: "iDocument", url: "/my-space/idocument", icon: FileText },
-    { title: "Mes Démarches", url: "/my-space/services-demarches", icon: Briefcase },
-    { title: t("mySpace.nav.settings"), url: "/my-space/settings", icon: Settings },
+    {
+      title: "Mes Démarches",
+      url: "/my-space/services-demarches",
+      icon: Briefcase,
+    },
+    {
+      title: t("mySpace.nav.settings"),
+      url: "/my-space/settings",
+      icon: Settings,
+    },
   ]
 
   const isActive = (url: string) => {
@@ -101,24 +119,29 @@ export function MobileNavBar() {
 
   return (
     <>
-      <nav
-        className="fixed left-3 right-3 z-40 md:hidden bottom-[calc(0.8rem+env(safe-area-inset-bottom,0px))]"
-      >
-        <div className="bg-[#F4F3ED] dark:bg-[#171616] backdrop-blur-md rounded-2xl">
-          <div className="flex items-center justify-around px-2 h-[60px]">
-            <NavBarItem item={mainItems[0]} active={isActive(mainItems[0].url)} onClick={() => setSheetOpen(false)} />
-            <NavBarItem item={mainItems[1]} active={isActive(mainItems[1].url)} onClick={() => setSheetOpen(false)} />
-
+      <nav className="fixed right-3 bottom-[calc(0.8rem+env(safe-area-inset-bottom,0px))] left-3 z-40 md:hidden">
+        <div className="rounded-2xl bg-secondary backdrop-blur-md">
+          <div className="flex h-[var(--mobile-nav-height)] items-center justify-around px-2">
+            <NavBarItem
+              item={mainItems[0]}
+              active={isActive(mainItems[0].url)}
+              onClick={() => setSheetOpen(false)}
+            />
+            <NavBarItem
+              item={mainItems[1]}
+              active={isActive(mainItems[1].url)}
+              onClick={() => setSheetOpen(false)}
+            />
             <button
               type="button"
               onClick={() => {
                 setSheetOpen(false)
                 setCircleMenuOpen(true)
               }}
-              className="flex flex-col items-center -mt-4 relative"
+              className="relative -mt-4 flex flex-col items-center"
             >
               {totalUnread > 0 && (
-                <span className="absolute -top-1 -right-1 z-10 h-5 min-w-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 z-10 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
                   {totalUnread > 9 ? "9+" : totalUnread}
                 </span>
               )}
@@ -131,7 +154,7 @@ export function MobileNavBar() {
                 transition={{ type: "spring", damping: 20, stiffness: 300 }}
                 suppressHydrationWarning
                 className={cn(
-                  "h-12 w-12 rounded-full flex items-center justify-center active:scale-95",
+                  "flex h-12 w-12 items-center justify-center rounded-full active:scale-95",
                   isIAstedActive
                     ? "bg-emerald-500 ring-2 ring-emerald-500/30"
                     : "bg-emerald-600 hover:bg-emerald-500"
@@ -141,26 +164,42 @@ export function MobileNavBar() {
               </motion.div>
             </button>
 
-            <NavBarItem item={mainItems[2]} active={isActive(mainItems[2].url)} onClick={() => setSheetOpen(false)} />
+            <NavBarItem
+              item={mainItems[2]}
+              active={isActive(mainItems[2].url)}
+              onClick={() => setSheetOpen(false)}
+            />
 
             <button
               type="button"
               onClick={() => setSheetOpen((prev) => !prev)}
-              className="flex flex-col items-center justify-center gap-0.5 py-2 px-1 min-w-[48px]"
+              className="flex min-w-[48px] flex-col items-center justify-center gap-0.5 px-1 py-2"
             >
               <div
                 className={cn(
-                  "h-7 w-7 rounded-lg flex items-center justify-center transition-colors",
+                  "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
                   (sheetOpen || hasSheetActive) && "bg-primary/10"
                 )}
               >
                 {sheetOpen ? (
                   <X className="h-4.5 w-4.5 text-primary" />
                 ) : (
-                  <Menu className={cn("h-4.5 w-4.5", hasSheetActive ? "text-primary" : "text-muted-foreground")} />
+                  <Menu
+                    className={cn(
+                      "h-4.5 w-4.5",
+                      hasSheetActive ? "text-primary" : "text-muted-foreground"
+                    )}
+                  />
                 )}
               </div>
-              <span className={cn("text-[9px] font-medium", (sheetOpen || hasSheetActive) ? "text-primary" : "text-muted-foreground")}>
+              <span
+                className={cn(
+                  "text-[9px] font-medium",
+                  sheetOpen || hasSheetActive
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                )}
+              >
                 Menu
               </span>
             </button>
@@ -169,25 +208,35 @@ export function MobileNavBar() {
       </nav>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="bottom" showCloseButton={false} className="rounded-t-2xl max-h-[75dvh] px-4 bg-[#F4F3ED] dark:bg-[#171616] border-none shadow-2xl flex flex-col">
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          className="flex max-h-[75dvh] flex-col rounded-t-2xl border-none bg-secondary px-4 shadow-2xl"
+        >
           <SheetHeader className="sr-only">
             <SheetTitle>{t("mySpace.nav.navigation")}</SheetTitle>
           </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto disable-scrollbars space-y-4 pb-28 pt-2">
+          <div className="disable-scrollbars flex-1 space-y-4 overflow-y-auto pt-2 pb-20">
             <div className="flex items-center gap-3 py-2">
-              <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center shrink-0">
-                <span className="text-sm font-bold text-white">{userInitial}</span>
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary">
+                <span className="text-sm font-bold text-white">
+                  {userInitial}
+                </span>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">{userName}</p>
-                <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-foreground">
+                  {userName}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {userEmail}
+                </p>
               </div>
               <button
                 type="button"
                 onClick={() => setSheetOpen(false)}
-                className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors shrink-0"
-                title="Fermer"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted"
+                title={t("common.close")}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -202,14 +251,23 @@ export function MobileNavBar() {
                   href={item.url}
                   onClick={() => setSheetOpen(false)}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1.5 p-3 text-center rounded-xl min-h-[68px] transition-colors",
+                    "flex min-h-[68px] flex-col items-center justify-center gap-1.5 rounded-xl p-3 text-center transition-colors",
                     isActive(item.url)
-                      ? "bg-primary/10 text-primary font-semibold"
+                      ? "bg-primary/10 font-semibold text-primary"
                       : "bg-muted text-muted-foreground hover:bg-muted/70"
                   )}
                 >
-                  <item.icon className={cn("size-5", isActive(item.url) ? "text-primary" : "text-muted-foreground")} />
-                  <span className="text-[11px] font-medium leading-tight">{item.title}</span>
+                  <item.icon
+                    className={cn(
+                      "size-5",
+                      isActive(item.url)
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    )}
+                  />
+                  <span className="text-[11px] leading-tight font-medium">
+                    {item.title}
+                  </span>
                 </Link>
               ))}
 
@@ -218,15 +276,24 @@ export function MobileNavBar() {
                   href={`/my-space/children/${children[0]._id}`}
                   onClick={() => setSheetOpen(false)}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1.5 p-3 text-center rounded-xl min-h-[68px] transition-colors relative",
+                    "relative flex min-h-[68px] flex-col items-center justify-center gap-1.5 rounded-xl p-3 text-center transition-colors",
                     pathname.startsWith("/my-space/children")
-                      ? "bg-primary/10 text-primary font-semibold"
+                      ? "bg-primary/10 font-semibold text-primary"
                       : "bg-muted text-muted-foreground hover:bg-muted/70"
                   )}
                 >
-                  <Users className={cn("size-5", pathname.startsWith("/my-space/children") ? "text-primary" : "text-muted-foreground")} />
-                  <span className="text-[11px] font-medium leading-tight">Enfants</span>
-                  <span className="absolute top-1.5 right-1.5 text-[9px] font-bold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full">
+                  <Users
+                    className={cn(
+                      "size-5",
+                      pathname.startsWith("/my-space/children")
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    )}
+                  />
+                  <span className="text-[11px] leading-tight font-medium">
+                    Enfants
+                  </span>
+                  <span className="absolute top-1.5 right-1.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary">
                     {children.length}
                   </span>
                 </Link>
@@ -239,26 +306,42 @@ export function MobileNavBar() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => i18n.changeLanguage(currentLang === "fr" ? "en" : "fr")}
-                  className="h-10 w-10 rounded-full bg-muted text-muted-foreground hover:bg-muted/70 transition-colors flex items-center justify-center shrink-0"
-                  title={currentLang === "fr" ? "Switch to English" : "Passer en Français"}
+                  onClick={() =>
+                    i18n.changeLanguage(currentLang === "fr" ? "en" : "fr")
+                  }
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-muted/70"
+                  title={
+                    currentLang === "fr"
+                      ? "Switch to English"
+                      : "Passer en Français"
+                  }
                 >
-                  <span className="text-xs font-bold uppercase">{currentLang}</span>
+                  <span className="text-xs font-bold uppercase">
+                    {currentLang}
+                  </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="h-10 w-10 rounded-full bg-muted text-muted-foreground hover:bg-muted/70 transition-colors flex items-center justify-center shrink-0"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-muted/70"
                   title={theme === "dark" ? "Mode clair" : "Mode sombre"}
                 >
-                  {mounted ? (theme === "dark" ? <Sun className="h-4.5 w-4.5 text-amber-500" /> : <Moon className="h-4.5 w-4.5" />) : <Moon className="h-4.5 w-4.5" />}
+                  {mounted ? (
+                    theme === "dark" ? (
+                      <Sun className="h-4.5 w-4.5 text-amber-500" />
+                    ) : (
+                      <Moon className="h-4.5 w-4.5" />
+                    )
+                  ) : (
+                    <Moon className="h-4.5 w-4.5" />
+                  )}
                 </button>
               </div>
 
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex items-center gap-2 h-10 px-4 rounded-full bg-rose-500/10 text-rose-500 hover:bg-rose-500/15 transition-colors"
+                className="flex h-10 items-center gap-2 rounded-full bg-rose-500/10 px-4 text-rose-500 transition-colors hover:bg-rose-500/15"
               >
                 <LogOut className="h-4 w-4 shrink-0" />
                 <span className="text-xs font-semibold">Déconnexion</span>
@@ -266,13 +349,16 @@ export function MobileNavBar() {
             </div>
 
             <Button
-              className="w-full h-11 rounded-lg text-sm font-medium bg-primary hover:bg-primary/90 text-white border-0"
+              className="h-11 w-full rounded-lg border-0 bg-primary text-sm font-medium text-white hover:bg-primary/90"
               onClick={() => setSheetOpen(false)}
               asChild
             >
-              <Link href="/services" className="flex items-center gap-1.5 justify-center">
+              <Link
+                href="/my-space/services-demarches"
+                className="flex items-center justify-center gap-1.5"
+              >
                 <Plus className="h-4 w-4 shrink-0" />
-                {t("mySpace.actions.newRequest", "Nouvelle démarche")}
+                {t("mySpace.actions.newRequest")}
               </Link>
             </Button>
           </div>
@@ -287,7 +373,7 @@ export function MobileNavBar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-60 flex items-center justify-center backdrop-blur-xl bg-black/50 md:hidden"
+            className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-xl md:hidden"
             onClick={() => setCircleMenuOpen(false)}
           >
             <motion.div
@@ -315,7 +401,11 @@ export function MobileNavBar() {
                     className: "bg-emerald-600 hover:bg-emerald-500",
                     onClick: () => {
                       setCircleMenuOpen(false)
-                      window.dispatchEvent(new CustomEvent("iasted:open", { detail: { tab: "ichat" } }))
+                      window.dispatchEvent(
+                        new CustomEvent("iasted:open", {
+                          detail: { tab: "ichat" },
+                        })
+                      )
                     },
                   },
                   {
@@ -324,7 +414,11 @@ export function MobileNavBar() {
                     className: "bg-[#0072B9] hover:bg-[#0080D0]",
                     onClick: () => {
                       setCircleMenuOpen(false)
-                      window.dispatchEvent(new CustomEvent("iasted:open", { detail: { tab: "icall" } }))
+                      window.dispatchEvent(
+                        new CustomEvent("iasted:open", {
+                          detail: { tab: "icall" },
+                        })
+                      )
                     },
                   },
                   {
@@ -333,7 +427,11 @@ export function MobileNavBar() {
                     className: "bg-amber-500 hover:bg-amber-400",
                     onClick: () => {
                       setCircleMenuOpen(false)
-                      window.dispatchEvent(new CustomEvent("iasted:open", { detail: { tab: "icontact" } }))
+                      window.dispatchEvent(
+                        new CustomEvent("iasted:open", {
+                          detail: { tab: "icontact" },
+                        })
+                      )
                     },
                   },
                 ]}
@@ -353,17 +451,40 @@ export function MobileNavBar() {
   )
 }
 
-function NavBarItem({ item, active, onClick }: { item: NavItem; active: boolean; onClick: () => void }) {
+function NavBarItem({
+  item,
+  active,
+  onClick,
+}: {
+  item: NavItem
+  active: boolean
+  onClick: () => void
+}) {
   return (
     <Link
       href={item.url}
       onClick={onClick}
-      className="flex flex-col items-center justify-center gap-0.5 py-2 px-1 min-w-[48px]"
+      className="flex min-w-[48px] flex-col items-center justify-center gap-0.5 px-1 py-2"
     >
-      <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center transition-colors", active && "bg-primary/10")}>
-        <item.icon className={cn("h-4.5 w-4.5", active ? "text-primary" : "text-muted-foreground")} />
+      <div
+        className={cn(
+          "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
+          active && "bg-primary/10"
+        )}
+      >
+        <item.icon
+          className={cn(
+            "h-4.5 w-4.5",
+            active ? "text-primary" : "text-muted-foreground"
+          )}
+        />
       </div>
-      <span className={cn("text-[9px] font-medium", active ? "text-primary" : "text-muted-foreground")}>
+      <span
+        className={cn(
+          "text-[9px] font-medium",
+          active ? "text-primary" : "text-muted-foreground"
+        )}
+      >
         {item.title}
       </span>
     </Link>

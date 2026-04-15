@@ -574,7 +574,7 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 								value={viewMode}
 								onValueChange={(v) => setViewMode(v as "grade" | "ministry")}
 							>
-								<TabsList className="bg-[#F4F3ED] dark:bg-[#171616]">
+								<TabsList>
 									<TabsTrigger value="grade">
 										<GraduationCap className="h-3.5 w-3.5" />
 										{t("admin.roles.view.byGrade")}

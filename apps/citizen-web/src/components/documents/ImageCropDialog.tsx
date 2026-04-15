@@ -73,7 +73,7 @@ export function ImageCropDialog({
 			<DialogContent className="sm:max-w-[600px] p-4 gap-3">
 				<DialogHeader className="pb-0">
 					<DialogTitle className="text-base">
-						{t("register.documents.cropPhoto", "Recadrer la photo")}
+						{t("register.documents.cropPhoto")}
 					</DialogTitle>
 				</DialogHeader>
 
@@ -89,9 +89,9 @@ export function ImageCropDialog({
 					/>
 					<ul className="text-[11px] text-muted-foreground space-y-0.5">
 						<li>
-							 {t("register.documents.photoTip1", "Visage centré et dégagé")}
+							 {t("register.documents.photoTip1")}
 						</li>
-						<li> {t("register.documents.photoTip2", "Fond uni et clair")}</li>
+						<li> {t("register.documents.photoTip2")}</li>
 						<li>
 							{" "}
 							{t(
@@ -134,7 +134,7 @@ export function ImageCropDialog({
 					</div>
 					<div className="flex items-center gap-4">
 						<span className="text-sm font-medium w-16 shrink-0">
-							{t("register.documents.rotation", "Rotation")}
+							{t("register.documents.rotation")}
 						</span>
 						<Slider
 							value={[rotation]}
@@ -159,7 +159,7 @@ export function ImageCropDialog({
 						disabled={isProcessing}
 						className="flex-shrink-0"
 					>
-						{t("common.cancel", "Annuler")}
+						{t("common.cancel")}
 					</Button>
 					<Button
 						onClick={processCrop}
@@ -167,7 +167,7 @@ export function ImageCropDialog({
 						className="flex-1"
 					>
 						{isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-						{t("common.confirm", "Confirmer")}
+						{t("common.confirm")}
 					</Button>
 				</div>
 			</DialogContent>

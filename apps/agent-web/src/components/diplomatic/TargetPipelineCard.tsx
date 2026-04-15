@@ -3,7 +3,7 @@
  */
 
 import type { Id } from "@convex/_generated/dataModel";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import {
   Building2,
   Globe2,
@@ -117,8 +117,7 @@ export function TargetPipelineCard({
 
   return (
     <Link
-      to={"/affaires-diplomatiques/$targetId" as string}
-      params={{ targetId: target._id }}
+      href={`/affaires-diplomatiques/${target._id}`}
       className="block"
     >
       <FlatCard className="cursor-pointer group">

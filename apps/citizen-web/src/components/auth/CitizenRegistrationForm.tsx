@@ -1750,7 +1750,7 @@ export function CitizenRegistrationForm({
 												</FieldLabel>
 												<Input
 													id="firstName"
-													placeholder="Jean"
+													placeholder={t("register.placeholders.firstName")}
 													aria-invalid={fieldState.invalid}
 													{...field}
 												/>
@@ -1770,7 +1770,7 @@ export function CitizenRegistrationForm({
 												</FieldLabel>
 												<Input
 													id="lastName"
-													placeholder="Mba"
+													placeholder={t("register.placeholders.lastName")}
 													aria-invalid={fieldState.invalid}
 													{...field}
 												/>
@@ -1813,7 +1813,7 @@ export function CitizenRegistrationForm({
 												</FieldLabel>
 												<Input
 													id="birthPlace"
-													placeholder="Libreville"
+													placeholder={t("register.placeholders.birthPlace")}
 													aria-invalid={fieldState.invalid}
 													{...field}
 												/>
@@ -1882,7 +1882,7 @@ export function CitizenRegistrationForm({
 											<FieldLabel htmlFor="nip">
 												{t("profile.fields.nip")}
 											</FieldLabel>
-											<Input id="nip" placeholder="Optionnel" {...field} />
+											<Input id="nip" placeholder={t("register.placeholders.optional")} {...field} />
 										</Field>
 									)}
 								/>
@@ -1917,7 +1917,7 @@ export function CitizenRegistrationForm({
 								)}
 
 								{/* Passport Info */}
-								<FieldSet className="p-4 bg-muted/30 rounded-lg">
+								<FieldSet className="p-4 bg-muted border border-border rounded-lg">
 									<FieldLegend>{t("profile.passport.title")}</FieldLegend>
 									<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
 										<Controller
@@ -1928,7 +1928,7 @@ export function CitizenRegistrationForm({
 													<FieldLabel>
 														{t("profile.passport.number")}
 													</FieldLabel>
-													<Input placeholder="XX000000" {...field} />
+													<Input placeholder={t("register.placeholders.passportNumber")} {...field} />
 												</Field>
 											)}
 										/>
@@ -1940,7 +1940,7 @@ export function CitizenRegistrationForm({
 													<FieldLabel>
 														{t("profile.passport.issuingAuthority")}
 													</FieldLabel>
-													<Input placeholder="Préfecture de..." {...field} />
+													<Input placeholder={t("register.placeholders.issuingAuthority")} {...field} />
 												</Field>
 											)}
 										/>
@@ -2006,7 +2006,7 @@ export function CitizenRegistrationForm({
 
 								{/* Spouse (conditional on marital status) */}
 								{showPartnerFields && (
-									<FieldSet className="p-4 bg-muted/30 rounded-lg">
+									<FieldSet className="p-4 bg-muted border border-border rounded-lg">
 										<FieldLegend>
 											{t("profile.relationship.spouse")}
 										</FieldLegend>
@@ -2041,7 +2041,7 @@ export function CitizenRegistrationForm({
 									</FieldSet>
 								)}
 
-								<FieldSet className="p-4 bg-muted/30 rounded-lg">
+								<FieldSet className="p-4 bg-muted border border-border rounded-lg">
 									<FieldLegend>{t("profile.family.filiation")}</FieldLegend>
 
 									{/* Father */}
@@ -2173,7 +2173,7 @@ export function CitizenRegistrationForm({
 
 								{/* Homeland Address */}
 								{regConfig.visibleSections.homelandAddress && (
-									<FieldSet className="p-4 bg-muted/30 rounded-lg">
+									<FieldSet className="p-4 bg-muted border border-border rounded-lg">
 										<FieldLegend>{t("profile.addresses.homeland")}</FieldLegend>
 										<div className="space-y-3 mt-2">
 											<Controller
@@ -2197,7 +2197,7 @@ export function CitizenRegistrationForm({
 															<FieldLabel>
 																{t("profile.address.city")}
 															</FieldLabel>
-															<Input placeholder="Libreville" {...field} />
+															<Input placeholder={t("register.placeholders.city")} {...field} />
 														</Field>
 													)}
 												/>
@@ -2307,7 +2307,7 @@ export function CitizenRegistrationForm({
 								{/* Data Summary */}
 								<div className="space-y-3 text-sm">
 									{/* Identity */}
-									<FieldSet className="p-3 bg-muted/30 rounded-lg">
+									<FieldSet className="p-3 bg-muted border border-border rounded-lg">
 										<FieldLegend className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
 											{t("register.review.identity")}
 										</FieldLegend>
@@ -2383,7 +2383,7 @@ export function CitizenRegistrationForm({
 
 									{/* Passport */}
 									{form.watch("basicInfo.passportNumber") && (
-										<FieldSet className="p-3 bg-muted/30 rounded-lg">
+										<FieldSet className="p-3 bg-muted border border-border rounded-lg">
 											<FieldLegend className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
 												{t("profile.passport.title")}
 											</FieldLegend>
@@ -2422,7 +2422,7 @@ export function CitizenRegistrationForm({
 									{/* Contact Info (Email / Phone) */}
 									{(form.watch("contactInfo.email") ||
 										form.watch("contactInfo.phone")) && (
-										<FieldSet className="p-3 bg-muted/30 rounded-lg">
+										<FieldSet className="p-3 bg-muted border border-border rounded-lg">
 											<FieldLegend className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
 												{t("register.review.contact")}
 											</FieldLegend>
@@ -2449,7 +2449,7 @@ export function CitizenRegistrationForm({
 
 									{/* Residence Address */}
 									{showResidenceAddress && (
-										<FieldSet className="p-3 bg-muted/30 rounded-lg">
+										<FieldSet className="p-3 bg-muted border border-border rounded-lg">
 											<FieldLegend className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
 												{t("register.review.address")}
 											</FieldLegend>
@@ -2469,7 +2469,7 @@ export function CitizenRegistrationForm({
 									{/* Homeland Address */}
 									{regConfig.visibleSections.homelandAddress &&
 										form.watch("contactInfo.homelandCity") && (
-											<FieldSet className="p-3 bg-muted/30 rounded-lg">
+											<FieldSet className="p-3 bg-muted border border-border rounded-lg">
 												<FieldLegend className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
 													{t(
 														"profile.sections.addressHome",
@@ -2495,7 +2495,7 @@ export function CitizenRegistrationForm({
 
 									{/* Family */}
 									{hasFamily && (
-										<FieldSet className="p-3 bg-muted/30 rounded-lg">
+										<FieldSet className="p-3 bg-muted border border-border rounded-lg">
 											<FieldLegend className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
 												{t("register.review.family")}
 											</FieldLegend>
@@ -2595,7 +2595,7 @@ export function CitizenRegistrationForm({
 									{/* Profession */}
 									{hasProfession &&
 										form.watch("professionalInfo.workStatus") && (
-											<FieldSet className="p-3 bg-muted/30 rounded-lg">
+											<FieldSet className="p-3 bg-muted border border-border rounded-lg">
 												<FieldLegend className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
 													{t("register.review.profession")}
 												</FieldLegend>

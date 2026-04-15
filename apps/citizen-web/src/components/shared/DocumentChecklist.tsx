@@ -8,13 +8,7 @@ import { useTranslation } from "react-i18next";
 import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
@@ -135,29 +129,29 @@ export function DocumentChecklist({
 	};
 
 	return (
-		<Card className={className}>
-			<CardHeader className="pb-3">
+		<FlatCard className={className}>
+			<div className="p-3 lg:p-4 pb-0">
 				<div className="flex items-center justify-between">
 					<div>
-						<CardTitle className="flex items-center gap-2">
+						<h3 className="text-sm font-bold flex items-center gap-2">
 							<FileText className="h-5 w-5" />
 							{t("documents.checklist.title")}
-						</CardTitle>
-						<CardDescription>
+						</h3>
+						<p className="text-sm text-muted-foreground">
 							{completedRequired}/{totalRequired}{" "}
 							{t("documents.checklist.required")}
 							{pendingDocs > 0 && (
 								<span className="ml-1 text-amber-600">
-									&bull; {pendingDocs} {t("documents.checklist.pending")}
+									• {pendingDocs} {t("documents.checklist.pending")}
 								</span>
 							)}
-						</CardDescription>
+						</p>
 					</div>
 				</div>
 				<Progress value={progress} className="h-2 mt-2" />
-			</CardHeader>
+			</div>
 
-			<CardContent className="space-y-3">
+			<div className="p-3 lg:p-4 space-y-3">
 				{requiredDocuments.map((reqDoc) => {
 					const submitted = docsByType[reqDoc.type] || [];
 					const hasSubmitted = submitted.length > 0;
@@ -204,9 +198,9 @@ export function DocumentChecklist({
 												</p>
 											)}
 
-										{/* View button - ALWAYS visible for agents when document is submitted */}
-										{isAgent && (latestDoc.url || latestDoc.storageId) && (
-											<div className="flex flex-wrap gap-2 mt-2">
+										<div className="flex flex-wrap gap-2 mt-2">
+											{/* View button - visible for everyone */}
+											{(latestDoc.url || latestDoc.storageId) && (
 												<Button
 													size="sm"
 													variant="outline"
@@ -216,41 +210,41 @@ export function DocumentChecklist({
 													<Eye className="h-3 w-3 mr-1" />
 													{t("documents.view")}
 												</Button>
-												{/* Validate/Reject buttons - only for pending documents */}
-												{latestDoc.status === "pending" && (
-													<>
-														<Button
-															size="sm"
-															variant="outline"
-															className="h-7 text-green-600 dark:text-green-400 hover:bg-green-500/10"
-															onClick={() => onValidate?.(latestDoc._id)}
-														>
-															<Check className="h-3 w-3 mr-1" />
-															{t("documents.validate")}
-														</Button>
-														<Button
-															size="sm"
-															variant="outline"
-															className="h-7 text-red-600 dark:text-red-400 hover:bg-red-500/10"
-															onClick={() => {
-																const reason = prompt(
-																	t(
-																		"documents.rejectPrompt",
-																		"Motif du rejet :",
-																	),
-																);
-																if (reason) {
-																	onReject?.(latestDoc._id, reason);
-																}
-															}}
-														>
-															<XCircle className="h-3 w-3 mr-1" />
-															{t("documents.reject")}
-														</Button>
-													</>
-												)}
-											</div>
-										)}
+											)}
+											{/* Validate/Reject buttons - only for agents on pending documents */}
+											{isAgent && latestDoc.status === "pending" && (
+												<>
+													<Button
+														size="sm"
+														variant="outline"
+														className="h-7 text-green-600 dark:text-green-400 hover:bg-green-500/10"
+														onClick={() => onValidate?.(latestDoc._id)}
+													>
+														<Check className="h-3 w-3 mr-1" />
+														{t("documents.validate")}
+													</Button>
+													<Button
+														size="sm"
+														variant="outline"
+														className="h-7 text-red-600 dark:text-red-400 hover:bg-red-500/10"
+														onClick={() => {
+															const reason = prompt(
+																t(
+																	"documents.rejectPrompt",
+																	"Motif du rejet :",
+																),
+															);
+															if (reason) {
+																onReject?.(latestDoc._id, reason);
+															}
+														}}
+													>
+														<XCircle className="h-3 w-3 mr-1" />
+														{t("documents.reject")}
+													</Button>
+												</>
+											)}
+										</div>
 									</div>
 								)}
 							</div>
@@ -268,7 +262,7 @@ export function DocumentChecklist({
 						)}
 					</p>
 				)}
-			</CardContent>
+			</div>
 
 			{/* Document Preview Modal */}
 			{previewDoc?.storageId && (
@@ -280,6 +274,6 @@ export function DocumentChecklist({
 					mimeType={previewDoc.mimeType}
 				/>
 			)}
-		</Card>
+		</FlatCard>
 	);
 }

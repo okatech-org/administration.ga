@@ -1,6 +1,7 @@
 "use client";
 
-import { Link, useLocation } from "@tanstack/react-router";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
 	BarChart3,
 	Calendar,
@@ -87,7 +88,7 @@ function SidebarText({
 
 export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 	const { data: session } = authClient.useSession();
-	const location = useLocation();
+	const pathname = usePathname();
 	const { t, i18n } = useTranslation();
 	const { theme, setTheme } = useTheme();
 	const { activeOrgId } = useOrg();
@@ -152,9 +153,9 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 
 	const isActive = (url: string) => {
 		if (url === "/") {
-			return location.pathname === "/";
+			return pathname === "/";
 		}
-		return location.pathname.startsWith(url);
+		return pathname.startsWith(url);
 	};
 
 	const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en";
@@ -181,7 +182,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 					{isExpanded ? (
 						<OrgSwitcher />
 					) : (
-						<Link to="/" className="flex items-center justify-center">
+						<Link href="/" className="flex items-center justify-center">
 							<div className="size-12 shrink-0 rounded-full bg-[#FDFCFA] dark:bg-[#21201E]/77 flex items-center justify-center overflow-hidden">
 								<img
 									src="/icons/apple-icon.png"
@@ -241,7 +242,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 											readOnly && "opacity-70",
 										)}
 									>
-										<Link to={item.url}>
+										<Link href={item.url}>
 											<item.icon className="size-5 shrink-0" />
 											<SidebarText isExpanded={isExpanded}>
 												{item.title}

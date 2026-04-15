@@ -15,7 +15,7 @@ export function SectionNav({
   return (
     <nav className="hidden lg:block sticky top-24 space-y-1">
       <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-3">
-        {t("common.sections", "Sections")}
+        {t("common.sections")}
       </h3>
       {sections.map((section) => {
         const Icon = section.icon;

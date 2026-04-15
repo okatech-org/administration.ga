@@ -263,7 +263,11 @@ const CircleMenu = ({
 
   return (
     <div
-      style={{ width: CONSTANTS.containerSize, height: CONSTANTS.containerSize }}
+      style={{
+        width: isOpen ? CONSTANTS.containerSize : CONSTANTS.itemSize,
+        height: isOpen ? CONSTANTS.containerSize : CONSTANTS.itemSize,
+        transition: 'width 0.3s ease, height 0.3s ease',
+      }}
       className="relative flex items-center justify-center place-self-center"
     >
       {/* Trigger — always shows openIcon, grows 2x when open */}

@@ -46,8 +46,8 @@
   --primary-foreground: oklch(1 0 0);      /* Blanc */
   --primary-light: oklch(0.92 0 0);        /* Gris cl.2 */
 
-  /* Secondary — Gris cl.3 */
-  --secondary: oklch(0.97 0 0);            /* #F5F5F5 — hover bg */
+  /* Secondary — Beige chaud (cadres dashboard) */
+  --secondary: #F4F3ED;                    /* Warm grey — cadres, FlatCards, tabs */
   --secondary-foreground: oklch(0.40 0 0); /* Gris foncé #5A5A5A */
 
   /* Muted — Gris cl.2 */
@@ -73,9 +73,9 @@
   --destructive-light: oklch(0.55 0.22 15 / 0.10); /* Rose transparent */
 
   /* Borders — Gris cl.2 (achromatic) */
-  --border: oklch(0.94 0 0);              /* #EBEBEB */
-  --border-light: oklch(0.97 0 0);        /* #F5F5F5 */
-  --input: oklch(0.94 0 0);
+  --border: oklch(0.84 0 0);              /* ~#D2D2D2 */
+  --border-light: oklch(0.92 0 0);        /* ~#E8E8E8 */
+  --input: oklch(0.84 0 0);
   --ring: oklch(0.55 0.22 260);           /* Bleu */
 
   /* Chart Colors — limités aux 4 accents */
@@ -139,8 +139,8 @@
   --primary-foreground: oklch(0.99 0 0);
   --primary-light: oklch(0.40 0.15 260);
 
-  /* Secondary */
-  --secondary: oklch(0.15 0 0); /* #222 — hover léger */
+  /* Secondary — Noir-brun chaud (cadres dashboard dark) */
+  --secondary: #171616;
   --secondary-foreground: oklch(0.7 0 0); /* #8B8B8B */
 
   /* Muted */
@@ -166,8 +166,8 @@
   --destructive-light: oklch(0.65 0.2 25 / 0.15);
 
   /* Borders — plus visibles */
-  --border: oklch(1 0 0 / 0.12); /* White 12% */
-  --border-light: oklch(1 0 0 / 0.08); /* White 8% */
+  --border: oklch(1 0 0 / 0.18); /* White 18% */
+  --border-light: oklch(1 0 0 / 0.12); /* White 12% */
   --input: oklch(1 0 0 / 0.1);
   --ring: #0072B9; /* Bleu */
 

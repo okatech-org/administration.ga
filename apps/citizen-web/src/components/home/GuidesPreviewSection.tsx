@@ -74,10 +74,10 @@ export function GuidesPreviewSection() {
 					className="text-center mb-16"
 				>
 					<span className="inline-block mb-4 text-sm font-semibold uppercase tracking-[0.05em] text-[oklch(0.685_0.169_237.323)]">
-						{t("home.guides.badge", "Guides personnalises")}
+						{t("home.guides.badge")}
 					</span>
 					<h2 className="text-4xl md:text-5xl font-bold tracking-[-0.02em] text-white mb-4">
-						{t("home.guides.title", "Guides adaptes a votre situation")}
+						{t("home.guides.title")}
 					</h2>
 					<p className="text-lg text-[oklch(0.7_0_0)] max-w-xl mx-auto">
 						{t(
@@ -125,7 +125,7 @@ export function GuidesPreviewSection() {
 										</CardHeader>
 										<CardContent className="pb-6">
 											<div className="flex items-center text-[oklch(0.685_0.169_237.323)] text-sm font-semibold group-hover:gap-2 transition-all">
-												{t("guides.consult", "Consulter")}
+												{t("guides.consult")}
 												<ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
 											</div>
 										</CardContent>
@@ -145,7 +145,7 @@ export function GuidesPreviewSection() {
 				>
 					<Button asChild variant="ghost" className="gap-2 text-[oklch(0.7_0_0)] hover:text-white hover:bg-white/10 rounded-full px-6">
 						<Link href="/ressources">
-							{t("home.guides.seeAll", "Voir toutes les ressources")}
+							{t("home.guides.seeAll")}
 							<ArrowRight className="h-4 w-4" />
 						</Link>
 					</Button>

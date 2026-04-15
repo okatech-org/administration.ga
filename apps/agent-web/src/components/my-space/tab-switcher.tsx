@@ -28,7 +28,7 @@ export function TabSwitcher({
 	return (
 		<div
 			className={cn(
-				"flex items-center gap-1 bg-[#F4F3ED] dark:bg-[#171616] rounded-xl p-1",
+				"flex items-center gap-1 bg-secondary rounded-xl p-1",
 				className,
 			)}
 		>

@@ -1,7 +1,7 @@
 "use client"
 
 import type { ColumnDef } from "@tanstack/react-table"
-import { Link } from "@tanstack/react-router"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -109,7 +109,7 @@ export const postsColumns: ColumnDef<Post>[] = [
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
-            <Link to="/posts/$postId/edit" params={{ postId: row.original._id }}>
+            <Link href={`/posts/${row.original._id}/edit`}>
               <Pencil className="mr-2 h-4 w-4" />
               Modifier
             </Link>

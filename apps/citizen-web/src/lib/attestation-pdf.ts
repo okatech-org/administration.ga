@@ -95,14 +95,14 @@ export async function generateAttestationPDF(data: AttestationData): Promise<voi
 	// HEADER — République Gabonaise
 	// ═══════════════════════════════════════════════════════════
 	
-	doc.setFont("helvetica", "bold");
+	doc.setFont("helvetica");
 	doc.setFontSize(14);
 	doc.setTextColor(0, 80, 0); // Dark green
 	doc.text("RÉPUBLIQUE GABONAISE", pageWidth / 2, y, { align: "center" });
 	y += 5;
 
 	doc.setFontSize(8);
-	doc.setFont("helvetica", "italic");
+	doc.setFont("helvetica");
 	doc.setTextColor(80, 80, 80);
 	doc.text("Union — Travail — Justice", pageWidth / 2, y, { align: "center" });
 	y += 8;
@@ -120,14 +120,14 @@ export async function generateAttestationPDF(data: AttestationData): Promise<voi
 	y += 8;
 
 	// Ministry / Org header
-	doc.setFont("helvetica", "bold");
+	doc.setFont("helvetica");
 	doc.setFontSize(11);
 	doc.setTextColor(0, 0, 0);
 	doc.text(data.org.name.toUpperCase(), pageWidth / 2, y, { align: "center" });
 	y += 6;
 
 	if (data.org.address) {
-		doc.setFont("helvetica", "normal");
+		doc.setFont("helvetica");
 		doc.setFontSize(9);
 		doc.setTextColor(80, 80, 80);
 		doc.text(
@@ -150,7 +150,7 @@ export async function generateAttestationPDF(data: AttestationData): Promise<voi
 	// TITLE
 	// ═══════════════════════════════════════════════════════════
 
-	doc.setFont("helvetica", "bold");
+	doc.setFont("helvetica");
 	doc.setFontSize(16);
 	doc.setTextColor(0, 80, 0);
 	doc.text("ATTESTATION", pageWidth / 2, y, { align: "center" });
@@ -161,7 +161,7 @@ export async function generateAttestationPDF(data: AttestationData): Promise<voi
 	y += 5;
 
 	// Reference number
-	doc.setFont("helvetica", "normal");
+	doc.setFont("helvetica");
 	doc.setFontSize(9);
 	doc.setTextColor(100, 100, 100);
 	doc.text(`Réf: ${data.attestationNumber}`, pageWidth / 2, y, { align: "center" });
@@ -186,7 +186,7 @@ export async function generateAttestationPDF(data: AttestationData): Promise<voi
 	const headTitle = data.org.headOfMissionTitle || "Le Consul Général";
 	const headName = data.org.headOfMission || "";
 
-	doc.setFont("helvetica", "normal");
+	doc.setFont("helvetica");
 	doc.setFontSize(11);
 	doc.setTextColor(0, 0, 0);
 
@@ -197,12 +197,12 @@ export async function generateAttestationPDF(data: AttestationData): Promise<voi
 	y += introLines.length * 6 + 6;
 
 	// Citizen info block
-	doc.setFont("helvetica", "bold");
+	doc.setFont("helvetica");
 	doc.setFontSize(12);
 	doc.text(`${genderTitle} ${fullName}`, marginLeft + 10, y);
 	y += 7;
 
-	doc.setFont("helvetica", "normal");
+	doc.setFont("helvetica");
 	doc.setFontSize(10);
 
 	const infoLines = [
@@ -227,19 +227,19 @@ export async function generateAttestationPDF(data: AttestationData): Promise<voi
 	y += 6;
 
 	// Card info
-	doc.setFont("helvetica", "normal");
+	doc.setFont("helvetica");
 	doc.setFontSize(11);
 	const cardText = `est bien titulaire d'une carte consulaire portant le numéro :`;
 	doc.text(cardText, marginLeft, y);
 	y += 8;
 
-	doc.setFont("helvetica", "bold");
+	doc.setFont("helvetica");
 	doc.setFontSize(14);
 	doc.setTextColor(0, 80, 0);
 	doc.text(data.cardNumber, pageWidth / 2, y, { align: "center" });
 	y += 8;
 
-	doc.setFont("helvetica", "normal");
+	doc.setFont("helvetica");
 	doc.setFontSize(10);
 	doc.setTextColor(0, 0, 0);
 	doc.text(`Délivrée le : ${fmtDate(data.cardIssuedAt)}`, marginLeft + 10, y);
@@ -260,7 +260,7 @@ export async function generateAttestationPDF(data: AttestationData): Promise<voi
 
 	const signatureX = pageWidth - marginRight - 60;
 
-	doc.setFont("helvetica", "normal");
+	doc.setFont("helvetica");
 	doc.setFontSize(10);
 	doc.text(
 		`Fait à ${data.org.address?.city || "—"}, le ${fmtDate(data.generatedAt)}`,
@@ -268,13 +268,13 @@ export async function generateAttestationPDF(data: AttestationData): Promise<voi
 	);
 	y += 8;
 
-	doc.setFont("helvetica", "bold");
+	doc.setFont("helvetica");
 	doc.setFontSize(10);
 	doc.text(headTitle, signatureX, y);
 	y += 5;
 
 	if (headName) {
-		doc.setFont("helvetica", "italic");
+		doc.setFont("helvetica");
 		doc.setFontSize(10);
 		doc.text(headName, signatureX, y);
 	}
@@ -289,7 +289,7 @@ export async function generateAttestationPDF(data: AttestationData): Promise<voi
 	doc.setLineWidth(0.5);
 	doc.circle(signatureX + 20, y - 5, 15);
 	doc.setFontSize(7);
-	doc.setFont("helvetica", "bold");
+	doc.setFont("helvetica");
 	doc.setTextColor(0, 100, 0);
 	doc.text("CACHET", signatureX + 20, y - 7, { align: "center" });
 	doc.text("OFFICIEL", signatureX + 20, y - 3, { align: "center" });
@@ -303,7 +303,7 @@ export async function generateAttestationPDF(data: AttestationData): Promise<voi
 	doc.setLineWidth(0.2);
 	doc.line(marginLeft, footerY, pageWidth - marginRight, footerY);
 
-	doc.setFont("helvetica", "normal");
+	doc.setFont("helvetica");
 	doc.setFontSize(7);
 	doc.setTextColor(150, 150, 150);
 	doc.text(

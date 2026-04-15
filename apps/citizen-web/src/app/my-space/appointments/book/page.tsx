@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
-	ArrowLeft,
 	Calendar,
 	Check,
 	Clock,
@@ -23,6 +22,7 @@ import {
 } from "@/components/appointments/AppointmentSlotPicker";
 import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/my-space/flat-card";
+import { PageHeader } from "@/components/my-space/page-header";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -105,27 +105,19 @@ function BookAppointmentPageContent() {
 
 	return (
 		<div className="space-y-6 max-w-4xl mx-auto">
-			{/* Header */}
-			<div className="flex items-center gap-4">
-				<Button
-					variant="ghost"
-					size="icon"
-					onClick={() => router.push("/my-space/appointments")}
-				>
-					<ArrowLeft className="h-4 w-4" />
-				</Button>
-				<div className="flex-1">
-					<h1 className="text-2xl font-bold tracking-tight">
-						{t("appointments.book.title")}
-					</h1>
-					{org && (
-						<p className="text-muted-foreground flex items-center gap-1">
+			<PageHeader
+				title={t("appointments.book.title")}
+				subtitle={
+					org ? (
+						<span className="flex items-center gap-1">
 							<MapPin className="h-4 w-4" />
 							{org.name}
-						</p>
-					)}
-				</div>
-			</div>
+						</span>
+					) : undefined
+				}
+				showBackButton
+				onBack={() => router.push("/my-space/appointments")}
+			/>
 
 			{/* Slot picker */}
 			<AppointmentSlotPicker

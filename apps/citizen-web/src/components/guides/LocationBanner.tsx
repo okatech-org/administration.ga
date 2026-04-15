@@ -67,7 +67,7 @@ export function LocationBanner({ compact = false }: LocationBannerProps) {
           <MapPin className="h-4 w-4 text-muted-foreground" />
         </div>
         <p className="text-sm text-muted-foreground">
-          {t("guides.locationUnknown", "Localisation non detectee. Selectionnez votre pays de residence.")}
+          {t("guides.locationUnknown")}
         </p>
         <CountryDropdown
           availableCountries={availableCountries}
@@ -88,16 +88,16 @@ export function LocationBanner({ compact = false }: LocationBannerProps) {
         />
         <div>
           <p className="text-sm font-semibold text-foreground">
-            {t("guides.infoFor", "Informations pour")} {countryName}
+            {t("guides.infoFor")} {countryName}
           </p>
           <p className="text-xs text-muted-foreground">
-            {org?.name ?? t("guides.autoDetected", "Detection automatique")}
+            {org?.name ?? t("guides.autoDetected")}
           </p>
         </div>
         <Badge variant="outline" className="text-xs hidden sm:inline-flex">
           {isManualOverride
-            ? t("guides.manualSelection", "Selection manuelle")
-            : t("guides.autoDetectedBadge", "Auto-detecte")}
+            ? t("guides.manualSelection")
+            : t("guides.autoDetectedBadge")}
         </Badge>
       </div>
 
@@ -111,7 +111,7 @@ export function LocationBanner({ compact = false }: LocationBannerProps) {
             onClick={() => setJurisdiction(null)}
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            {t("guides.reset", "Reinitialiser")}
+            {t("guides.reset")}
           </Button>
         )}
         <CountryDropdown
@@ -121,7 +121,7 @@ export function LocationBanner({ compact = false }: LocationBannerProps) {
         {!compact && orgWebsite && (
           <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" asChild>
             <a href={orgWebsite} target="_blank" rel="noopener noreferrer">
-              {t("guides.dedicatedSite", "Site dedie")}
+              {t("guides.dedicatedSite")}
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
           </Button>
@@ -147,7 +147,7 @@ function CountryDropdown({
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="h-8 text-xs gap-1.5">
           <MapPin className="h-3.5 w-3.5" />
-          {t("guides.changeCountry", "Changer")}
+          {t("guides.changeCountry")}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[180px]">

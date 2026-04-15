@@ -13,6 +13,7 @@ import {
   X as XIcon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { PendingConfirmation } from "./useVoiceChat";
@@ -157,6 +158,7 @@ export function VoiceChatContent({
   onConfirm,
   onReject,
 }: VoiceChatContentProps) {
+  const { t } = useTranslation();
   const getStatusMessage = () => {
     if (pendingConfirmation) return "Confirmation requise";
     switch (state) {
@@ -171,7 +173,7 @@ export function VoiceChatContent({
       case "error":
         return error || "Erreur de connexion";
       default:
-        return "Mode vocal actif";
+        return t("voice.active");
     }
   };
 
@@ -275,13 +277,14 @@ export function VoiceButton({
   onClick,
   className,
 }: VoiceButtonControlledProps) {
+  const { t } = useTranslation();
   return (
     <Button
       type="button"
       variant={isOpen ? "default" : "ghost"}
       size="icon-sm"
       onClick={onClick}
-      title="Mode vocal"
+      title={t("voice.mode")}
       className={cn(
         "relative",
         isOpen && "bg-green-500 hover:bg-green-600 text-white",

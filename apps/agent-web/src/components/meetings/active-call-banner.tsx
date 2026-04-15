@@ -82,7 +82,7 @@ export function ActiveCallBanner({ requestId }: ActiveCallBannerProps) {
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
-					<CustomCallUI onHangUp={handleHangUp} title={meeting?.title} />
+					<CustomCallUI onHangUp={handleHangUp} title={activeMeeting?.title} />
 				</LiveKitRoom>
 			) : (
 				<div className="h-full flex items-center justify-center">

@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * Types & Templates tab — Extracted from representations.tsx
  *
@@ -7,7 +9,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
 	Building2,
@@ -1248,7 +1250,7 @@ export function RepsTypesTemplatesTab({
 					</p>
 				</div>
 				<Button asChild>
-					<Link to="/reps/new">
+					<Link href="/reps/new">
 						<Plus className="mr-1.5 h-4 w-4" />
 						{lang === "fr"
 							? "Nouvelle représentation"

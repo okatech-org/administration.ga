@@ -60,7 +60,7 @@ export default function NewTicketPage() {
 				category: category as any,
 				description: description.trim(),
 			});
-			toast.success(t("support.tickets.created", "Ticket cree avec succes"));
+			toast.success(t("support.tickets.created"));
 			router.push("/my-space/support");
 		} catch (error) {
 			console.error("Failed to create ticket", error);

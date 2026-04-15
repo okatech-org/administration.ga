@@ -80,10 +80,10 @@ export default function RessourcesPage() {
       <section className="py-20 lg:py-40 bg-[oklch(0.145_0_0)] text-center">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <span className="inline-block mb-4 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-white/80">
-            {t("ressources.badge", "Ressources & Informations")}
+            {t("ressources.badge")}
           </span>
           <h1 className="text-5xl md:text-7xl font-bold tracking-[-0.02em] text-white mb-4">
-            {t("ressources.title", "Guides, Infos et Tutoriels")}
+            {t("ressources.title")}
           </h1>
           <p className="text-lg md:text-xl text-[oklch(0.7_0_0)] max-w-2xl mx-auto">
             {t(
@@ -95,7 +95,7 @@ export default function RessourcesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
             <Input
               className="pl-10 rounded-[10px] bg-white/5 border border-white/10 text-white placeholder:text-white/40"
-              placeholder={t("academy.searchPlaceholder", "Rechercher un guide...")}
+              placeholder={t("academy.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -117,7 +117,7 @@ export default function RessourcesPage() {
       <section className="sticky top-0 bg-background/80 backdrop-blur-md z-10 border-b border-t border-border pt-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-foreground mb-4 text-center">
-            {t("academy.guidesTitle", "Nos Guides et Tutoriels")}
+            {t("academy.guidesTitle")}
           </h2>
           <div className="flex gap-2 py-2 overflow-x-auto justify-center">
             {categoryConfig.map((cat) => {
@@ -171,7 +171,7 @@ export default function RessourcesPage() {
             <div className="text-center py-20">
               <GraduationCap className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">
-                {t("academy.empty.title", "Aucun tutoriel")}
+                {t("academy.empty.title")}
               </h3>
               <p className="text-muted-foreground">
                 {t(

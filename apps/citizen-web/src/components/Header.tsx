@@ -42,7 +42,7 @@ export default function Header() {
   const navLinks = [
     { label: t("header.nav.worldNetwork"), href: "/reps", icon: Globe },
     { label: t("header.nav.news"), href: "/news", icon: Newspaper },
-    { label: t("header.nav.resources", "Ressources"), href: "/ressources", icon: BookOpen },
+    { label: t("header.nav.resources"), href: "/ressources", icon: BookOpen },
   ]
 
   const isActive = (href: string) => pathname.startsWith(href)

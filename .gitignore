@@ -16,6 +16,9 @@ coverage
 # Vercel
 .vercel
 
+#Next.js
+.next
+
 # Build Outputs
 dist
 .output

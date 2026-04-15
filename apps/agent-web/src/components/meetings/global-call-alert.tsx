@@ -6,7 +6,7 @@ import {
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 
 import { useQuery } from "convex/react";
-import { Loader2, Phone, PhoneCall } from "lucide-react";
+import { Loader2, Phone, PhoneCall, PhoneOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useMeeting } from "@/hooks/use-meeting";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRingtone } from "@/hooks/use-ringtone";
-import { useUserData } from "@/hooks/use-user-data";
-import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
+import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { useCallStore } from "@/stores/call-store";
 
 /**
@@ -27,7 +26,6 @@ import { useCallStore } from "@/stores/call-store";
 export function GlobalCallAlert() {
 	const { t } = useTranslation();
 	const isMobile = useIsMobile();
-	const { userData: user } = useUserData();
 	const [activeMeetingId, setActiveMeetingId] = useState<Id<"meetings"> | null>(
 		null,
 	);
@@ -46,28 +44,22 @@ export function GlobalCallAlert() {
 		{},
 	);
 
+	// Decline mutation
+	const declineCallMutation = useConvexMutationQuery(
+		api.functions.meetings.declineCall,
+	);
+
 	// Find the first active personal meeting where I haven't joined yet
 	const incomingPersonalMeeting = meetings?.find((m) => {
 		if (m.status !== "active") return false;
-		if (user && m.createdBy === user._id) return false;
-		// Ignore stale calls (> 60s old)
-		if (Date.now() - m._creationTime > 60_000) return false;
-		if (user) {
-			const me = m.participants.find((p) => p.userId === user._id);
-			if (me?.leftAt) return false;
-		}
+		// Skip calls that are already answered or ended via callStatus
+		if (m.callStatus && m.callStatus !== "ringing" && m.callStatus !== "initiating") return false;
+		if (Date.now() - m._creationTime > 120_000) return false;
 		return true;
 	});
 
 	// Prioritize inbound org calls, then personal meetings
-	const incomingOrgCall =
-		inboundOrgCalls?.find((m) => {
-			if (user) {
-				const me = m.participants.find((p) => p.userId === user._id);
-				if (me?.leftAt) return false;
-			}
-			return true;
-		}) ?? null;
+	const incomingOrgCall = inboundOrgCalls?.[0] ?? null;
 
 	const activeCallToDisplay =
 		incomingOrgCall ?? incomingPersonalMeeting ?? null;
@@ -103,6 +95,11 @@ export function GlobalCallAlert() {
 		setGlobalMeetingId(activeCallToDisplay._id);
 		await connect(activeCallToDisplay._id);
 	}, [activeCallToDisplay, connect, setGlobalMeetingId]);
+
+	const handleDecline = useCallback(async () => {
+		if (!activeCallToDisplay) return;
+		await declineCallMutation.mutateAsync({ meetingId: activeCallToDisplay._id });
+	}, [activeCallToDisplay, declineCallMutation]);
 
 	const handleHangUp = useCallback(async () => {
 		if (activeMeetingId) {
@@ -176,14 +173,25 @@ export function GlobalCallAlert() {
 								</p>
 							</div>
 						</div>
-						<Button
-							size="sm"
-							onClick={handleJoin}
-							className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 active:scale-[0.97] transition-transform"
-						>
-							<Phone className="w-4 h-4" />
-							{t("meetings.answer", "Décrocher")}
-						</Button>
+						<div className="flex items-center gap-2">
+							<Button
+								size="sm"
+								variant="ghost"
+								onClick={handleDecline}
+								className="text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl gap-1.5"
+							>
+								<PhoneOff className="w-4 h-4" />
+								{t("meetings.decline", "Refuser")}
+							</Button>
+							<Button
+								size="sm"
+								onClick={handleJoin}
+								className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 active:scale-[0.97] transition-transform"
+							>
+								<Phone className="w-4 h-4" />
+								{t("meetings.answer", "Décrocher")}
+							</Button>
+						</div>
 					</div>
 				</div>
 			)}

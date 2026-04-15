@@ -550,7 +550,6 @@ export const sendAppointmentReminders = internalMutation({
       sentCount++;
     }
 
-    console.log(`Sent ${sentCount} appointment reminders`);
     return { sentCount };
   },
 });

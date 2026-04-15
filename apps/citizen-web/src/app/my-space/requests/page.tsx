@@ -44,7 +44,7 @@ export default function RequestsPage() {
 				icon={<FileText className="h-6 w-6 text-primary" />}
 				actions={
 					<Button asChild>
-						<Link href="/services">
+						<Link href="/my-space/services-demarches">
 							<PlusCircle className="mr-2 h-4 w-4" />
 							{t("requests.new")}
 						</Link>
@@ -72,7 +72,7 @@ export default function RequestsPage() {
 								)}
 							</p>
 							<Button asChild>
-								<Link href="/services">
+								<Link href="/my-space/services-demarches">
 									<PlusCircle className="mr-2 h-4 w-4" />
 									{t("requests.empty.action")}
 								</Link>
@@ -80,7 +80,7 @@ export default function RequestsPage() {
 						</div>
 					</FlatCard>
 				) : (
-					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr content-start">
 						{requests.map((request: any) => (
 							<RequestCard key={request._id} request={request} />
 						))}

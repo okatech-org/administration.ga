@@ -4,7 +4,7 @@
  * Mirrors useVoiceChat.tsx but uses admin tools and admin voice backend.
  */
 
-import { useRouter } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 import { useConvex } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -123,7 +123,7 @@ export function useAdminVoiceChat(): UseAdminVoiceChatReturn {
       if (toolName === "navigateTo") {
         const route = toolArgs.route as string;
         if (route) {
-          router.navigate({ to: route });
+          router.push(route);
           return { success: true, message: `Navigation vers ${route}` };
         }
         return { success: false, message: "Route manquante" };

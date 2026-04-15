@@ -46,6 +46,31 @@ export const meetingsTable = defineTable({
   // Call line routing (optional — if set, only agents on this line see the call)
   callLineId: v.optional(v.id("callLines")),
 
+  // ─── Call state machine (type === "call" only) ───
+  callStatus: v.optional(
+    v.union(
+      v.literal("initiating"), // Call created, citizen connecting to LiveKit
+      v.literal("ringing"),    // Citizen connected, agents notified
+      v.literal("connected"),  // Agent answered, both parties in room
+      v.literal("on_hold"),    // Call temporarily on hold
+      v.literal("ended"),      // Normal termination
+      v.literal("missed"),     // No agent answered within timeout
+      v.literal("declined"),   // All eligible agents explicitly declined
+    ),
+  ),
+  answeredBy: v.optional(v.id("users")),
+  answeredAt: v.optional(v.number()),
+  declinedBy: v.optional(v.array(v.id("users"))),
+  endReason: v.optional(
+    v.union(
+      v.literal("normal"),    // One party hung up
+      v.literal("timeout"),   // No answer within timeout
+      v.literal("declined"),  // All agents declined
+      v.literal("error"),     // Technical error
+      v.literal("cancelled"), // Caller cancelled before answer
+    ),
+  ),
+
   // Context linking (optional)
   requestId: v.optional(v.id("requests")),
   appointmentId: v.optional(v.id("appointments")),
@@ -61,43 +86,10 @@ export const meetingsTable = defineTable({
   scheduledAt: v.optional(v.number()),
   startedAt: v.optional(v.number()),
   endedAt: v.optional(v.number()),
-
-  // ─── PHASE 2 : Traçabilité & qualité ────────────────────────
-  // Raison de fin (normal, missed, timeout, etc.) pour stats + missedCalls
-  endReason: v.optional(
-    v.union(
-      v.literal("normal"),
-      v.literal("missed"), // personne n'a décroché
-      v.literal("rejected"),
-      v.literal("no_agent_available"),
-      v.literal("timeout"),
-      v.literal("error"),
-    ),
-  ),
-
-  // Métriques de qualité réseau/audio (remplies en fin d'appel)
-  qualityMetrics: v.optional(
-    v.object({
-      audioQuality: v.optional(v.number()), // 0-1
-      videoQuality: v.optional(v.number()),
-      packetLossPercent: v.optional(v.number()),
-      averageLatencyMs: v.optional(v.number()),
-    }),
-  ),
-
-  // Enregistrement (si recording activé)
-  recordingUrl: v.optional(v.string()),
-  recordingDurationSeconds: v.optional(v.number()),
-  recordingStorageId: v.optional(v.id("_storage")), // si stocké en Convex Storage
-
-  // Legacy : callStatus utilisé par des documents historiques avant endReason.
-  // Gardé optionnel pour préserver les données existantes (rétrocompatibilité).
-  // À migrer progressivement vers `endReason`.
-  callStatus: v.optional(v.string()),
 })
   .index("by_org", ["orgId"])
   .index("by_roomName", ["roomName"])
   .index("by_createdBy", ["createdBy"])
   .index("by_org_status", ["orgId", "status"])
-  .index("by_org_endReason", ["orgId", "endReason"])
+  .index("by_callStatus_and_org", ["callStatus", "orgId"])
   .index("by_request", ["requestId"]);

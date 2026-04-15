@@ -424,10 +424,6 @@ export const generatePlanDocument = rawInternalAction({
       return;
     }
 
-    console.log(
-      `[generatePlanDocument] Generation documents pour plan ${args.planId}, cible ${target.name}, dossier ${folder._id}`,
-    );
-
     const sanitizedName = sanitizeFilename(plan.title);
     const year = new Date().getFullYear();
     const dateStr = formatDate(Date.now());
@@ -1237,7 +1233,6 @@ export const generatePlanDocument = rawInternalAction({
       const archPdfStorageId = await ctx.storage.store(archPdfBlob);
       await ctx.runMutation(internal.functions.diplomaticFolders.internalAddDocument, { orgId: plan.orgId, folderId: folder._id, targetId: args.targetId, sourceType: "plan", sourceId: args.planId, subfolder: "Plans Stratégiques", filename: `Plan_${plan.category}_${sanitizedName}_${year}.pdf`, format: "pdf", storageId: archPdfStorageId, sizeBytes: archPdfBytes.length });
 
-      console.log(`[generatePlanDocument] PPTX 11 slides + DOCX 8 Parties + PDF generes pour plan ${args.planId}`);
       return;
     }
 
@@ -1421,7 +1416,6 @@ export const generatePlanDocument = rawInternalAction({
       },
     );
 
-    console.log(`[generatePlanDocument] PDF + PPTX basiques generes pour plan ${args.planId} (pas de strategicAnalysis)`);
   },
 });
 
@@ -1870,9 +1864,7 @@ export const generateProjectDocument = rawInternalAction({
 
     // ── PDF uniquement → dossier cible (génération automatique) ──
     try {
-      console.log(`[generateProjectDocument] Debut generation PDF pour ${project.title}...`);
       const pdfBytes = await generateProjectPdf(data);
-      console.log(`[generateProjectDocument] PDF genere, taille: ${pdfBytes.length} bytes`);
       const pdfBlob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
       const pdfStorageId = await ctx.storage.store(pdfBlob);
       await ctx.runMutation(internal.functions.diplomaticFolders.internalAddDocument, {
@@ -1881,7 +1873,6 @@ export const generateProjectDocument = rawInternalAction({
         filename: `Projet_${sanitizedRef}_${sanitizedTitle}.pdf`,
         format: "pdf", storageId: pdfStorageId, sizeBytes: pdfBytes.length,
       });
-      console.log(`[generateProjectDocument] PDF stocke et enregistre pour ${project.title}`);
     } catch (err) {
       console.error("[generateProjectDocument] Erreur PDF:", err instanceof Error ? `${err.message}\n${err.stack}` : err);
     }
@@ -1948,7 +1939,6 @@ export const generateProjectDocxDraft = rawInternalAction({
       isDraft: true,
     });
 
-    console.log(`[generateProjectDocxDraft] DOCX brouillon genere pour ${project.title}`);
   },
 });
 

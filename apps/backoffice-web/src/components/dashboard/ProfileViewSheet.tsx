@@ -1,7 +1,7 @@
 "use client";
 
 import type { Id } from "@convex/_generated/dataModel";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ export function ProfileViewSheet({
 						{t("profile.profileDetails")}
 					</SheetTitle>
 					<Button variant="outline" size="sm" asChild className="mr-6">
-						<Link to={`/admin/profiles/${profileId}` as any}>
+						<Link href={`/admin/profiles/${profileId}`}>
 							Dossier complet
 						</Link>
 					</Button>

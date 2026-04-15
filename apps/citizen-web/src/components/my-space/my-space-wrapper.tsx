@@ -3,7 +3,7 @@
 import { api } from "@convex/_generated/api"
 import Link from "next/link"
 import { Building2, Info, Plane, Plus } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useSyncExternalStore, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown"
 import { useCitizenData } from "@/hooks/use-citizen-data"
@@ -33,63 +33,70 @@ interface MySpaceWrapperProps {
   className?: string
 }
 
+function useIsTablet() {
+  const [isTablet, setIsTablet] = useState(false)
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 768px) and (max-width: 1023px)")
+    const onChange = () => setIsTablet(mql.matches)
+    mql.addEventListener("change", onChange)
+    setIsTablet(mql.matches)
+    return () => mql.removeEventListener("change", onChange)
+  }, [])
+  return isTablet
+}
+
 export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
   const consularThemeValue = useConsularThemeState()
+  const isTablet = useIsTablet()
 
-  const [mounted, setMounted] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(true)
-
-  // Hydratation terminée : on peut lire localStorage et appliquer les classes conditionnelles.
-  // On doit synchroniser depuis localStorage après hydration pour eviter un mismatch SSR/client.
-  useEffect(() => {
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
+  const [userExpanded, setUserExpanded] = useState(() => {
+    if (typeof window === "undefined") return true
     try {
       const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY)
-      if (stored !== null) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setIsExpanded(stored === "true")
-      }
+      return stored !== null ? stored === "true" : true
     } catch {
-      // Ignore localStorage errors
+      return true
     }
-    setMounted(true)
-  }, [])
+  })
+
+  // Force collapsed on tablet (md–lg), respect user preference on desktop (lg+)
+  const isExpanded = isTablet ? false : userExpanded
 
   useEffect(() => {
     if (!mounted) return
     try {
-      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(isExpanded))
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(userExpanded))
     } catch {
       // Ignore localStorage errors
     }
-  }, [isExpanded, mounted])
+  }, [userExpanded, mounted])
 
   return (
     <ConsularThemeContext.Provider value={consularThemeValue}>
       <div
-        suppressHydrationWarning
         className={cn(
           "citizen-layout relative flex",
           "h-dvh flex-col overflow-hidden md:flex-row md:h-screen",
-          mounted && consularThemeValue.consularTheme === "homeomorphism" &&
+          consularThemeValue.consularTheme === "homeomorphism" &&
             "theme-homeomorphism"
         )}
       >
         <div className="" />
 
         <div className="hidden md:block p-4 pr-0">
-          <div className="h-full rounded-2xl bg-[#F4F3ED] dark:bg-[#171616] overflow-hidden">
+          <div className="h-full rounded-2xl bg-secondary overflow-hidden">
             <MySpaceSidebar
               isExpanded={isExpanded}
-              onToggle={() => setIsExpanded((prev) => !prev)}
+              onToggle={() => setUserExpanded((prev) => !prev)}
             />
           </div>
         </div>
 
         <main
-          suppressHydrationWarning
           className={cn(
-            "myspace-main flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar",
-            "px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4",
+            "flex-1 overflow-y-auto citizen-scrollbar",
+            "px-3 min-[400px]:px-4 pt-3 pb-[calc(var(--mobile-nav-height)+12px)] md:px-4 md:pt-4 md:pb-4",
             className
           )}
         >
@@ -148,7 +155,7 @@ export function MySpaceHeader() {
                 onClick={() => setShowRegistrationDialog(true)}
               >
                 <Building2 className="h-3.5 w-3.5" />
-                {t("mySpace.registration.cta", "Faire mon inscription consulaire")}
+                {t("mySpace.registration.cta")}
               </Button>
             )}
           </div>
@@ -184,12 +191,13 @@ export function MySpaceHeader() {
             className="h-9 rounded-lg bg-primary text-white hover:bg-primary/90 font-medium text-xs min-w-0 flex-1 overflow-hidden px-3"
             asChild
           >
-            <Link href="/services" className="flex items-center gap-1.5 justify-center">
+            <Link href="/my-space/services-demarches" className="flex items-center gap-1.5 justify-center">
               <Plus className="h-4 w-4 shrink-0" />
               <span className="hidden min-[460px]:inline truncate">Nouvelle démarche</span>
               <span className="inline min-[460px]:hidden truncate">Démarche</span>
             </Link>
           </Button>
+          <NotificationDropdown className="h-9 w-9 min-w-[36px] bg-card rounded-lg shrink-0" />
         </div>
 
         <div className="hidden md:flex items-center gap-4">
@@ -224,7 +232,7 @@ export function MySpaceHeader() {
             className="h-9 px-4 rounded-lg bg-primary text-white hover:bg-primary/90 font-medium"
             asChild
           >
-            <Link href="/services" className="flex items-center gap-1.5">
+            <Link href="/my-space/services-demarches" className="flex items-center gap-1.5">
               <Plus className="h-4 w-4 shrink-0" />
               Nouvelle démarche
             </Link>

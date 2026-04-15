@@ -207,7 +207,10 @@
 		"backToServices": "Back to services",
 		"descriptionTitle": "Description",
 		"actions": "Actions",
-		"allCategories": "All"
+		"allCategories": "All",
+		"availableOnline": "Available online",
+		"notAvailableOnlineDesc": "This service requires an in-person visit.",
+		"notAvailableOnlineTitle": "Not available online"
 	},
 	"consulates": {
 		"badge": "Our Representations",
@@ -341,7 +344,8 @@
 			"dashboard": "Dashboard",
 			"mySpace": "My Space",
 			"signIn": "Sign In",
-			"signUp": "Sign Up"
+			"signUp": "Sign Up",
+			"resources": "Resources"
 		},
 		"switchSpace": "Switch space",
 		"space": {
@@ -370,7 +374,8 @@
 		"noProfile": {
 			"title": "Profile not found",
 			"message": "You don't have a profile yet. We're redirecting you to the consular registration area to complete your profile and register.",
-			"countdown": "Redirecting in {{seconds}}s..."
+			"countdown": "Redirecting in {{seconds}}s...",
+			"createProfile": "Create my citizen profile"
 		},
 		"screens": {
 			"services": {
@@ -395,7 +400,8 @@
 				"subtitle": "Manage your consular appointments"
 			},
 			"notifications": {
-				"heading": "Notifications"
+				"heading": "Notifications",
+				"subtitle": "Stay informed about your activities"
 			},
 			"requests": {
 				"heading": "Mes Demandes"
@@ -425,7 +431,10 @@
 			"sectionNetwork": "My network",
 			"sectionAssistance": "Assistance",
 			"support": "Support",
-			"more": "More"
+			"more": "More",
+			"sectionRequests": "Requests",
+			"sectionTools": "Tools",
+			"sectionTutor": "Tutor"
 		},
 		"registration": {
 			"cta": "Complete my consular registration",
@@ -482,7 +491,10 @@
 			"renew": "Renew",
 			"pending": "Pending",
 			"notIssued": "Not issued",
-			"request": "Request"
+			"request": "Request",
+			"expiredDesc": "Your consular card has expired",
+			"notEligible": "Reserved for Gabonese nationals",
+			"pendingDesc": "Request being processed"
 		},
 		"header": {
 			"managedBy": "Managed by"
@@ -499,7 +511,21 @@
 		},
 		"popularServices": {
 			"viewAll": "View all"
-		}
+		},
+		"actions": {
+			"newRequest": "New request"
+		},
+		"appointments": {
+			"book": "Book appointment",
+			"empty": "No appointments",
+			"viewAll": "iAgenda"
+		},
+		"requests": {
+			"empty": "No ongoing requests",
+			"newRequest": "New request",
+			"viewAll": "View all"
+		},
+		"myChildren": "My Children"
 	},
 	"errors": {
 		"auth": {
@@ -529,7 +555,8 @@
 				"invalidCode": "Invalid or expired code. Please try again.",
 				"forgotPassword": "Forgot password?",
 				"phoneNotFound": "No account found with this number.",
-				"expired": "The code has expired. Please request a new one."
+				"expired": "The code has expired. Please request a new one.",
+				"verify": "Verify"
 			},
 			"invalidCredentials": "Invalid email or password.",
 			"emailAlreadyExists": "An account already exists with this email.",
@@ -2165,7 +2192,11 @@
 			"photo": "Identity Photo",
 			"passport": "Passport",
 			"birthCertificate": "Birth Certificate",
-			"proofOfAddress": "Proof of Address"
+			"proofOfAddress": "Proof of Address",
+			"cropPhoto": "Crop photo",
+			"photoTip1": "Face centered and clear",
+			"photoTip2": "Plain and light background",
+			"rotation": "Rotation"
 		},
 		"scan": {
 			"title": "Auto-fill from documents",
@@ -2227,6 +2258,15 @@
 			"creatingProfile": "Creating your profile...",
 			"findingOrg": "Finding your affiliated organization...",
 			"submitting": "Submitting your request..."
+		},
+		"placeholders": {
+			"firstName": "John",
+			"lastName": "Smith",
+			"birthPlace": "City",
+			"optional": "Optional",
+			"passportNumber": "XX000000",
+			"issuingAuthority": "Prefecture of...",
+			"city": "City"
 		}
 	},
 	"common": {
@@ -2322,11 +2362,24 @@
 		"redirecting": "Redirecting...",
 		"email": "Email",
 		"password": "Password",
-		"locale": "en-US"
+		"locale": "en-US",
+		"loadMore": "Load more",
+		"sections": "Sections",
+		"clear": "Clear",
+		"all": "All",
+		"reduce": "Minimize",
+		"fullscreen": "Fullscreen",
+		"contact": "Contact",
+		"add": "Add"
 	},
 	"settings": {
 		"tabs": {
-			"dossier": "My File"
+			"dossier": "My File",
+			"appearance": "Appearance",
+			"dangerZone": "Danger zone",
+			"notifications": "Notifications",
+			"profile": "Profile & Identity",
+			"security": "Security"
 		},
 		"dossier": {
 			"title": "My Consular File",
@@ -2464,6 +2517,11 @@
 			"updateSuccess": "Preferences updated",
 			"updateError": "Failed to update preferences",
 			"notMember": "You are not a member of this organization."
+		},
+		"groups": {
+			"account": "Account",
+			"myDossier": "Consular file",
+			"mySpace": "My space"
 		}
 	},
 	"requests": {
@@ -2541,7 +2599,21 @@
 			"payment": "Payment required",
 			"confirm": "Confirmation required"
 		},
-		"actionSent": "Response sent successfully",
+		"actionButton": {
+				"documents": "Attach documents",
+				"info": "Complete information",
+				"appointment": "Book appointment",
+				"payment": "Proceed to payment",
+				"confirm": "Confirm information"
+			},
+			"actionSheet": {
+				"documents": "Documents required",
+				"info": "Missing information",
+				"appointment": "Appointment",
+				"payment": "Payment",
+				"confirm": "Confirmation required"
+			},
+			"actionSent": "Response sent successfully",
 		"actionError": "Error sending response",
 		"required": "Required",
 		"uploaded": "Uploaded",
@@ -2553,6 +2625,11 @@
 		"actionCompleted": "Response sent",
 		"unknownService": "Unknown service",
 		"unknownOrg": "Organization",
+		"forChild": "For {{name}}",
+		"childRequest": "Child request",
+		"pendingActions_one": "{{count}} action required",
+		"pendingActions_other": "{{count}} actions required",
+		"pendingActions": "{{count}} action(s) required",
 		"resumeDraft": "Resume request",
 		"chat": {
 			"title": "Messages",
@@ -2825,7 +2902,9 @@
 			"country": "Country",
 			"city": "City",
 			"street": "Address",
-			"nip": "PIN (Personal Identification Number)"
+			"nip": "PIN (Personal Identification Number)",
+			"notSpecified": "Not specified",
+			"postalCode": "Postal code"
 		},
 		"placeholders": {
 			"selectCountry": "Select a country",
@@ -3265,6 +3344,10 @@
 		"empty": {
 			"title": "No tutorials available",
 			"description": "New guides will be published soon."
+		},
+		"guidesTitle": "Our Guides and Tutorials",
+		"notFound": {
+			"title": "Guide not found"
 		}
 	},
 	"community": {
@@ -3318,7 +3401,8 @@
 			"unstar": "Unstar",
 			"moveTo": "Move to",
 			"back": "Back",
-			"loadMore": "Load more"
+			"loadMore": "Load more",
+			"cancel": "Cancel"
 		},
 		"mail": {
 			"from": "From",
@@ -3329,7 +3413,12 @@
 			"unread": "unread",
 			"noSubject": "(No subject)",
 			"selectToRead": "Select a message to read",
-			"selectToReadDesc": "Click on a message in the list to view its content."
+			"selectToReadDesc": "Click on a message in the list to view its content.",
+			"actionBefore": "Action required before",
+			"actionRequired": "Action required",
+			"inbox": "Mail",
+			"informational": "Information",
+			"letter": "Official mail"
 		},
 		"packages": {
 			"title": "My Packages",
@@ -3367,12 +3456,17 @@
 			"filterDiplomatic": "Diplomatic posts",
 			"noResults": "No results.",
 			"message": "Message",
+<<<<<<< HEAD
 			"badgeStandard": "Standard",
 			"badgeDirect": "Direct",
 			"suggestedContacts": "Suggested contacts",
 			"sectionRepresentations": "Representations",
 			"sectionMembers": "Diplomatic staff",
 			"sectionOther": "Other contacts"
+=======
+			"attachments": "Attachments",
+			"dropFiles": "Drop files or click to browse"
+>>>>>>> origin/main
 		},
 		"empty": {
 			"inbox": "No mail",
@@ -3423,7 +3517,10 @@
 			"participants": "participant(s)",
 			"join": "Join",
 			"scheduledFor": "Scheduled for",
-			"duration": "Duration"
+			"duration": "Duration",
+			"incoming": "Incoming",
+			"missed": "Missed",
+			"outgoing": "Outgoing"
 		},
 		"call": {
 			"newCall": "New call",
@@ -3432,7 +3529,8 @@
 			"emailHelp": "Enter the exact email address of the person you want to call. They will receive a notification to join the call.",
 			"startCall": "Call",
 			"startSuccess": "Call initiated",
-			"error": "Error during the call"
+			"error": "Error during the call",
+			"recall": "Call back"
 		}
 	},
 	"callLines": {
@@ -3535,7 +3633,27 @@
 		"you": "You",
 		"waitingForParticipant": "Waiting for participant…",
 		"waitingForAgent": "Waiting for an agent…",
-		"participantMuted": "{{name}} muted their mic"
+		"participantMuted": "{{name}} muted their mic",
+		"callInProgress": "Call in progress",
+		"callOrg": "Call",
+		"chatWithOrg": "Chat with the representation",
+		"directLine": "Direct line",
+		"hide": "Hide",
+		"incomingCall": "Incoming call",
+		"show": "Show",
+		"waiting": "Waiting…",
+		"yourCorrespondent": "Your correspondent",
+		"title": "Meetings",
+		"subtitle": "Join a meeting via an invitation link",
+		"unableToJoin": "Unable to join",
+		"linkCopied": "Link copied!",
+		"live": "Live",
+		"meeting": "Meeting",
+		"leave": "Leave",
+		"copied": "Copied!",
+		"copyLink": "Copy link",
+		"noActiveMeeting": "No active meeting",
+		"useInvitationLink": "Use an invitation link sent by an agent to join a meeting."
 	},
 	"admin": {
 		"nav": {
@@ -3767,6 +3885,15 @@
 			"title": "News",
 			"subtitle": "Latest news and events",
 			"viewAll": "View all"
+		},
+		"guides": {
+			"badge": "Personalized guides",
+			"seeAll": "View all resources",
+			"title": "Guides tailored to your situation"
+		},
+		"diplomaticNetwork": "Diplomatic Network",
+		"continents": {
+			"all": "All"
 		}
 	},
 	"associations": {
@@ -3796,7 +3923,8 @@
 			"select": "Role...",
 			"president": "President",
 			"secretary": "Secretary",
-			"treasurer": "Treasurer"
+			"treasurer": "Treasurer",
+			"vicePresident": "Vice President"
 		},
 		"memberRemoved": "Member removed",
 		"roleUpdated": "Role updated",
@@ -3849,12 +3977,20 @@
 			"mine": {
 				"title": "No associations"
 			},
-			"search": "No results"
+			"search": "No results",
+			"discover": {
+				"description": "Be the first to create an association!",
+				"title": "No associations available"
+			},
+			"searchHint": "Try a different search term"
 		},
 		"filter": {
 			"all": "All"
 		},
-		"created": "Association created"
+		"created": "Association created",
+		"search": {
+			"placeholder": "Search for an association..."
+		}
 	},
 	"companies": {
 		"notFound": "Company not found",
@@ -3934,7 +4070,8 @@
 		},
 		"type": {
 			"ei": "Sole Proprietorship",
-			"other": "Other"
+			"other": "Other",
+			"auto": "Self-Employed"
 		},
 		"website": "Website",
 		"created": "Company created"
@@ -3943,7 +4080,8 @@
 		"title": "Notifications",
 		"markAllRead": "Mark all as read",
 		"empty": {
-			"title": "No notifications"
+			"title": "No notifications",
+			"description": "Updates about your requests will appear here."
 		},
 		"viewAll": "View all",
 		"new": "New",
@@ -4085,7 +4223,8 @@
 		"title": "My Children",
 		"subtitle": "Manage your children's consular records",
 		"add": {
-			"title": "Add a child"
+			"title": "Add a child",
+			"button": "Add a child"
 		},
 		"empty": {
 			"title": "No children registered"
@@ -4110,6 +4249,63 @@
 			"birthDate": "Date of birth",
 			"gender": "Gender",
 			"birthPlace": "Place of birth"
+		},
+		"detail": {
+			"notFound": "Child profile not found",
+			"subtitle": "Child space",
+			"child": "Child",
+			"yearsOld": "{{count}} years old",
+			"bornIn": "Born in",
+			"residesIn": "Lives in",
+			"consularCard": "Consular Card",
+			"expired": "Expired",
+			"active": "Active",
+			"validUntil": "Valid until",
+			"notRegistered": "Not yet registered",
+			"parents": "Parents / Guardians",
+			"dossier": "Child File",
+			"identity": "Identity",
+			"passport": "Passport",
+			"passportExpired": "Expired",
+			"passportExpiring": "Expiring soon",
+			"noPassport": "No passport information",
+			"consularRegistration": "Consular registration",
+			"notConsularRegistered": "Child not registered in the consular registry",
+			"documents": "Documents",
+			"missing": "Missing",
+			"actions": "Actions",
+			"requestFor": "Request for {{name}}",
+			"bookAppointment": "Book an appointment",
+			"backToMySpace": "Back to my space",
+			"roles": {
+				"father": "Father",
+				"mother": "Mother",
+				"guardian": "Guardian",
+				"other": "Other"
+			},
+			"docTypes": {
+				"passport": "Passport",
+				"birthCertificate": "Birth certificate",
+				"residencePermit": "Residence permit",
+				"addressProof": "Proof of address",
+				"photo": "ID photo"
+			},
+			"labels": {
+				"cardNumber": "Card number",
+				"lastName": "Last name",
+				"firstName": "First name(s)",
+				"birthDate": "Date of birth",
+				"birthPlace": "Place of birth",
+				"birthCountry": "Country of birth",
+				"gender": "Gender",
+				"nationality": "Nationality",
+				"nip": "NIP",
+				"residence": "Residence",
+				"number": "Number",
+				"authority": "Authority",
+				"issuedOn": "Issued on",
+				"expiresOn": "Expires on"
+			}
 		}
 	},
 	"vault": {
@@ -4286,7 +4482,10 @@
 				"createdAt": "Created on",
 				"updatedAt": "Updated on",
 				"adminStatusUpdate": "Update status"
-			}
+			},
+			"closedTitle": "This ticket is closed",
+			"created": "Ticket created successfully",
+			"messageSent": "Message sent"
 		}
 	},
 	"monitoring": {
@@ -4757,5 +4956,236 @@
 			},
 			"reset": "Reset settings"
 		}
+	},
+	"dgdi": {
+		"bookAppointment": "Book DGDI Appointment",
+		"hideDetails": "Hide details",
+		"importantInfo": "Important information",
+		"onlineServices": "Online services",
+		"passportService": "Passport Service",
+		"showDetails": "Show details",
+		"visaService": "Visa Service"
+	},
+	"guides": {
+		"autoDetected": "Auto-detected",
+		"autoDetectedBadge": "Auto-detected",
+		"backToRessources": "Back to resources",
+		"changeCountry": "Change",
+		"commonMistakes": "Common mistakes",
+		"consult": "View",
+		"dedicatedSite": "Dedicated website",
+		"infoFor": "Information for",
+		"locationUnknown": "Location not detected. Select your country of residence.",
+		"manualSelection": "Manual selection",
+		"notAvailable": "Guide not available",
+		"practicalTips": "Practical tips",
+		"reset": "Reset",
+		"savoirVivre": "Etiquette",
+		"seeAllGuides": "View other guides",
+		"seeRessources": "View resources",
+		"usefulLinks": "Useful links",
+		"usefulNumbers": "Useful numbers"
+	},
+	"ressources": {
+		"backToList": "Back to resources",
+		"badge": "Resources & Information",
+		"title": "Guides, Info and Tutorials"
+	},
+	"iAgenda": {
+		"tabs": {
+			"agenda": "Agenda",
+			"appointments": "My Appointments",
+			"bookAppointment": "Book Appointment"
+		},
+		"subtitle": "My Agenda — Citizen Space",
+		"stats": {
+			"upcoming": "Upcoming",
+			"thisMonth": "This month",
+			"total": "Total"
+		},
+		"today": "Today",
+		"noAppointmentToday": "No appointments this day",
+		"legend": "Legend",
+		"status": {
+			"confirmed": "Confirmed",
+			"completed": "Completed",
+			"cancelled": "Cancelled",
+			"absent": "Absent",
+			"confirmedPlural": "Confirmed",
+			"completedPlural": "Completed",
+			"cancelledPlural": "Cancelled"
+		},
+		"myAppointments": "My Appointments",
+		"noAppointments": "No appointments",
+		"changeFilters": "Change your filters",
+		"bookFirst": "Book your first appointment",
+		"selectEligibleRequest": "Select an eligible request.",
+		"noEligibleRequests": "No eligible requests",
+		"myRequests": "My requests",
+		"changeSlot": "Change time slot",
+		"appointmentCancelled": "Appointment cancelled",
+		"cancelError": "Error cancelling appointment",
+		"appointmentBooked": "Appointment booked!",
+		"bookingError": "Booking error"
+	},
+	"idocument": {
+		"status": {
+			"pending": "Pending",
+			"validated": "Validated",
+			"rejected": "Rejected",
+			"expired": "Expired",
+			"expiring": "Expiring soon"
+		},
+		"folders": {
+			"identityCivil": "Identity & Civil Status",
+			"identityCivilDesc": "Passport, birth certificate, nationality, residence, employment",
+			"officialDocs": "Official Documents",
+			"officialDocsDesc": "Certificates, official acts, justice, decisions, forms",
+			"title": "Folders"
+		},
+		"categories": {
+			"identity": "Identity",
+			"civilStatus": "Civil Status",
+			"nationality": "Nationality",
+			"residence": "Residence",
+			"employment": "Employment",
+			"income": "Income",
+			"certificates": "Certificates",
+			"officialCertificates": "Official Acts",
+			"justice": "Justice",
+			"administrativeDecisions": "Administrative Decisions",
+			"housing": "Housing",
+			"vehicle": "Vehicle",
+			"education": "Education",
+			"languageIntegration": "Language & Integration",
+			"health": "Health",
+			"taxation": "Taxation",
+			"other": "Other",
+			"forms": "Forms"
+		},
+		"addDocument": "Add a document",
+		"searchDocuments": "Search your documents...",
+		"selectCategory": "Select a category...",
+		"selectType": "Select a type...",
+		"labelPlaceholder": "E.g.: John's Passport, February 2026 Invoice...",
+		"dropFiles": "Drop files here or click to browse",
+		"selectForPreview": "Select a document for preview",
+		"labels": {
+			"category": "Category",
+			"documentType": "Document type",
+			"label": "Label",
+			"expiryDate": "Expiry date (optional)",
+			"files": "File(s)"
+		},
+		"subtitle": "Digital vault",
+		"systemFolders": {
+			"all": "All documents",
+			"trash": "Trash",
+			"vault": "Vault"
+		},
+		"uncategorized": "Uncategorized",
+		"thisDocument": "This document",
+		"expired": "Expired",
+		"expiresOn": "Expires on",
+		"inDays": "in {{count}} days",
+		"documentDetails": "Document details",
+		"searchResults": "Search results",
+		"documents": "documents",
+		"items": "items",
+		"system": "System",
+		"searchType": "Search a type...",
+		"noCategoryFound": "No category found",
+		"noTypeFound": "No type found",
+		"filesReady": "{{count}} file(s) ready",
+		"info": {
+			"name": "Name",
+			"type": "Type",
+			"expiration": "Expiration",
+			"files": "Files",
+			"timestamps": "Dates",
+			"createdAt": "Created on",
+			"updatedAt": "Updated on"
+		},
+		"table": {
+			"name": "Name",
+			"category": "Category",
+			"modified": "Modified",
+			"status": "Status",
+			"expiration": "Expiration",
+			"files": "Files"
+		},
+		"stats": {
+			"documents": "Documents",
+			"expiringSoon": "Expiring soon",
+			"expired": "Expired"
+		},
+		"empty": {
+			"noResults": "No results",
+			"noResultsDesc": "No documents match your search",
+			"emptyFolder": "Empty folder",
+			"emptyFolderDesc": "This folder contains no documents",
+			"noDocumentFound": "No document found",
+			"noContent": "No content",
+			"noDocument": "No document"
+		},
+		"actions": {
+			"preview": "Preview",
+			"info": "Information",
+			"download": "Download",
+			"delete": "Delete"
+		},
+		"delete": {
+			"confirmTitle": "Delete this document?",
+			"confirmMessage": "This action is irreversible."
+		},
+		"viewMode": {
+			"grid": "Grid",
+			"list": "List",
+			"column": "Columns"
+		},
+		"toasts": {
+			"documentAdded": "Document added successfully",
+			"saveError": "Error saving",
+			"downloadError": "Error downloading",
+			"documentDeleted": "Document deleted",
+			"deleteError": "Error deleting",
+			"uploadError": "Error uploading"
+		}
+	},
+	"demarches": {
+		"title": "My Requests",
+		"subtitle": "Track your administrative procedures",
+		"noResults": "No requests found",
+		"noResultsFilter": "No requests match this filter.",
+		"new": {
+			"title": "New request",
+			"subtitle": "Create a new administrative procedure",
+			"noServices": "No services available at the moment",
+			"additionalInfo": "Add additional information..."
+		}
+	},
+	"servicesDemarches": {
+		"title": "Services & Requests",
+		"subtitle": "View consular services and track your requests",
+		"search": "Search...",
+		"noOngoing": "No ongoing requests",
+		"noResults": "No requests found",
+		"noResultsFilter": "No requests match this filter.",
+		"clearSearch": "Clear search"
+	},
+	"voice": {
+		"active": "Voice mode active",
+		"mode": "Voice mode"
+	},
+	"iasted": {
+		"subtitle": "Consular communication space",
+		"reduce": "Minimize",
+		"discussions": "Discussions",
+		"close": "Close ↑",
+		"open": "View ↓",
+		"searchPlaceholder": "Search for a representation..."
+	},
+	"reps": {
+		"noContactInfo": "No contact information available."
 	}
 }

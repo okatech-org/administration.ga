@@ -1,5 +1,8 @@
+"use client";
+
 import { useConvexAuth } from "convex/react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { ArrowLeft, Loader2, ShieldX } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -14,14 +17,14 @@ export function SuperadminGuard({ children }: SuperadminGuardProps) {
 	const { t } = useTranslation();
 	const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
 	const { userData, isBackOffice, isPending } = useSuperAdminData();
-	const navigate = useNavigate();
+	const router = useRouter();
 
 	// Redirect to sign-in when not authenticated (after auth finishes loading)
 	useEffect(() => {
 		if (!isAuthLoading && !isAuthenticated) {
-			navigate({ to: "/sign-in" });
+			router.push("/sign-in");
 		}
-	}, [isAuthLoading, isAuthenticated, navigate]);
+	}, [isAuthLoading, isAuthenticated, router]);
 
 	// Show loading state while checking auth or permissions
 	if (isAuthLoading || (!isAuthenticated) || isPending) {
@@ -50,7 +53,7 @@ export function SuperadminGuard({ children }: SuperadminGuardProps) {
 						</p>
 					</div>
 					<Button asChild variant="outline">
-						<Link to="/">
+						<Link href="/">
 							<ArrowLeft className="mr-2 h-4 w-4" />
 							{t("common.back")}
 						</Link>

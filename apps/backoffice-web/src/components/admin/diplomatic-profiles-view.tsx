@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * DiplomaticProfilesView — Vue du Corps Diplomatique.
  *
@@ -8,7 +10,7 @@
  */
 
 import { api } from "@convex/_generated/api";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import {
 	Award,
 	Briefcase,
@@ -389,8 +391,7 @@ function DiplomaticMemberCard({ member }: { member: any }) {
 
 	return (
 		<Link
-			to="/users/$userId"
-			params={{ userId: user?._id }}
+			href={`/users/${user?._id}`}
 			className="block"
 		>
 		<FlatCard className="hover:ring-1 hover:ring-primary/20 transition-colors cursor-pointer group">

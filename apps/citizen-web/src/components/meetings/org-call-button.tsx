@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useMeeting } from "@/hooks/use-meeting";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useConvexMutationQuery, useConvexQuery } from "@/integrations/convex/hooks";
+import { useAuthenticatedConvexQuery, useConvexMutationQuery, useConvexQuery } from "@/integrations/convex/hooks";
 
 interface OrgCallButtonProps {
 	orgId: Id<"orgs">;
@@ -27,6 +27,8 @@ interface OrgCallButtonProps {
 	className?: string;
 	variant?: VariantProps<typeof buttonVariants>["variant"];
 	label?: string;
+	/** When provided, uses callRequestAgent to link the call to this request */
+	requestId?: Id<"requests">;
 }
 
 /**
@@ -41,6 +43,7 @@ export function OrgCallButton({
 	className,
 	variant = "default",
 	label,
+	requestId,
 }: OrgCallButtonProps) {
 	const { t } = useTranslation();
 	const isMobile = useIsMobile();
@@ -55,8 +58,21 @@ export function OrgCallButton({
 		{ orgId },
 	);
 
+	// Agent availability
+	const { data: availableCount } = useAuthenticatedConvexQuery(
+		api.functions.agentPresence.countAvailableAgents,
+		{ orgId },
+	);
+	const isOnline = (availableCount ?? 0) > 0;
+
 	const callOrgMutation = useConvexMutationQuery(
 		api.functions.meetings.callOrganization,
+	);
+	const callRequestAgentMutation = useConvexMutationQuery(
+		api.functions.meetings.callRequestAgent,
+	);
+	const setCallRingingMutation = useConvexMutationQuery(
+		api.functions.meetings.setCallRinging,
 	);
 
 	const { token, wsUrl, connect, disconnect } = useMeeting(
@@ -66,16 +82,28 @@ export function OrgCallButton({
 	const initiateCall = useCallback(async (callLineId?: Id<"callLines">) => {
 		try {
 			setShowLineSelector(false);
-			const result = await callOrgMutation.mutateAsync({
-				orgId,
-				callLineId,
-			});
-			setActiveMeetingId(result.meetingId);
-			await connect(result.meetingId);
+			let meetingId: Id<"meetings">;
+
+			if (requestId && !callLineId) {
+				// Use contextual call — links the call to the request
+				const result = await callRequestAgentMutation.mutateAsync({ requestId });
+				meetingId = result.meetingId;
+			} else {
+				const result = await callOrgMutation.mutateAsync({
+					orgId,
+					callLineId,
+				});
+				meetingId = result.meetingId;
+			}
+
+			setActiveMeetingId(meetingId);
+			await connect(meetingId);
+			// Transition call to "ringing" — makes it visible to agents
+			await setCallRingingMutation.mutateAsync({ meetingId });
 		} catch (err) {
 			console.error("Failed to call organization:", err);
 		}
-	}, [orgId, callOrgMutation, connect]);
+	}, [orgId, requestId, callOrgMutation, callRequestAgentMutation, setCallRingingMutation, connect]);
 
 	const handleCall = useCallback(async () => {
 		// If there are multiple active lines, show selector
@@ -118,7 +146,7 @@ export function OrgCallButton({
 				<div className="h-full flex flex-col items-center justify-center gap-4 text-white">
 					<Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
 					<p className="text-sm text-zinc-400">
-						{t("meetings.waitingForAgent", "En attente d'un agent...")}
+						{t("meetings.waitingForAgent")}
 					</p>
 				</div>
 			)}
@@ -127,22 +155,32 @@ export function OrgCallButton({
 
 	return (
 		<>
-			<Button
-				onClick={handleCall}
-				disabled={callOrgMutation.isPending || isInCall}
-				className={className}
-				variant={variant}
-			>
-				{callOrgMutation.isPending ? (
-					<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-				) : (
-					<Phone className="w-4 h-4 mr-2" />
+			<div className="inline-flex flex-col items-start gap-1">
+				<Button
+					onClick={handleCall}
+					disabled={callOrgMutation.isPending || isInCall}
+					className={className}
+					variant={variant}
+				>
+					{callOrgMutation.isPending ? (
+						<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+					) : (
+						<Phone className="w-4 h-4 mr-2" />
+					)}
+					{label || t("meetings.callOrg")}
+					{activeLines.length > 1 && (
+						<ChevronDown className="w-3 h-3 ml-1 opacity-60" />
+					)}
+				</Button>
+				{availableCount !== undefined && (
+					<span className={`text-[10px] font-medium ${isOnline ? "text-emerald-600" : "text-zinc-400"}`}>
+						{isOnline
+							? `${availableCount} agent${availableCount > 1 ? "s" : ""} en ligne`
+							: "Aucun agent en ligne"
+						}
+					</span>
 				)}
-				{label || t("meetings.callOrg", "Appeler")}
-				{activeLines.length > 1 && (
-					<ChevronDown className="w-3 h-3 ml-1 opacity-60" />
-				)}
-			</Button>
+			</div>
 
 			{/* Line Selector Dialog */}
 			<Dialog open={showLineSelector} onOpenChange={setShowLineSelector}>
@@ -189,7 +227,7 @@ export function OrgCallButton({
 										</div>
 										{isPersonal && (
 											<span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-700 shrink-0">
-												{t("meetings.directLine", "Direct")}
+												{t("meetings.directLine")}
 											</span>
 										)}
 									</button>
@@ -201,7 +239,7 @@ export function OrgCallButton({
 						<Button asChild variant="outline" size="sm" className="w-full h-9 text-sm font-medium rounded-xl">
 							<Link href="/my-space/iasted">
 								<MessageCircle className="w-4 h-4 mr-2" />
-								{t("meetings.chatWithOrg", "Discuter avec la représentation")}
+								{t("meetings.chatWithOrg")}
 							</Link>
 						</Button>
 					</div>
@@ -225,7 +263,7 @@ export function OrgCallButton({
 						aria-describedby={undefined}
 						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 					>
-						<DialogTitle className="sr-only">{t("meetings.callInProgress", "Appel en cours")}</DialogTitle>
+						<DialogTitle className="sr-only">{t("meetings.callInProgress")}</DialogTitle>
 						{callContent}
 					</DialogContent>
 				</Dialog>

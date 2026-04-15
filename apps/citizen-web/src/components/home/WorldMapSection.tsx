@@ -316,7 +316,7 @@ export function WorldMapSection() {
 					<div className="lg:col-span-2 relative">
 						<div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted border border-border text-xs font-medium text-muted-foreground mb-6 backdrop-blur-sm">
 							<Globe className="w-3.5 h-3.5 text-primary" />
-							<span>Réseau Diplomatique</span>
+							<span>{t("home.diplomaticNetwork")}</span>
 						</div>
 
 						<h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight text-foreground">

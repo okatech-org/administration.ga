@@ -2,10 +2,12 @@
 
 import { api } from "@convex/_generated/api"
 import type { Id } from "@convex/_generated/dataModel"
-import { Phone, Building2, Landmark, MapPin, X } from "lucide-react"
+import { Phone, Building2, Landmark, MapPin, ArrowLeft, ArrowRight } from "lucide-react"
 import { useCallback, useRef, useState } from "react"
-import { motion, AnimatePresence } from "motion/react"
+import { useTranslation } from "react-i18next"
+import { motion } from "motion/react"
 import { OrgCallButton } from "@/components/meetings/org-call-button"
+import { BottomSheet } from "@/components/ui/bottom-sheet"
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks"
 import { cn } from "@/lib/utils"
 
@@ -15,9 +17,9 @@ const ROLE_CONFIG: Record<string, {
 	color: string;
 	bg: string;
 }> = {
-	demarches: { icon: Building2, color: "text-muted-foreground", bg: "bg-[#EBE6DC] dark:bg-[#383633]" },
-	residence: { icon: Landmark, color: "text-muted-foreground", bg: "bg-[#EBE6DC] dark:bg-[#383633]" },
-	sejour: { icon: MapPin, color: "text-muted-foreground", bg: "bg-[#EBE6DC] dark:bg-[#383633]" },
+	demarches: { icon: Building2, color: "text-muted-foreground", bg: "bg-citizen-s2" },
+	residence: { icon: Landmark, color: "text-muted-foreground", bg: "bg-citizen-s2" },
+	sejour: { icon: MapPin, color: "text-muted-foreground", bg: "bg-citizen-s2" },
 }
 
 function removeAccents(str: string): string {
@@ -32,15 +34,18 @@ function splitRepName(name: string): { type: string; location: string } {
 	return { type: removeAccents(name).toUpperCase(), location: "" }
 }
 
+function formatAddress(address?: { street?: string; city?: string; postalCode?: string; country?: string }): string | null {
+	if (!address) return null
+	const parts = [address.street, [address.postalCode, address.city].filter(Boolean).join(" ")].filter(Boolean)
+	return parts.length > 0 ? parts.join(", ") : null
+}
+
 /**
  * MobileCallFAB — Floating "Appeler" button on the right edge (mobile only).
- * When tapped, opens a bottom sheet displaying all user representations
- * with their call buttons, mirroring the desktop AssistanceContactsWidget.
- *
- * variant="horizontal" (default) — original pill shape on dashboard
- * variant="vertical" — vertical tab shape on Actualités page
+ * When tapped, opens a bottom sheet with one org card at a time + carousel arrows.
  */
 export function MobileCallFAB({ variant = "horizontal" }: { variant?: "horizontal" | "vertical" }) {
+	const { t } = useTranslation()
 	const [isOpen, setIsOpen] = useState(false)
 
 	const { data: representations, isPending } = useAuthenticatedConvexQuery(
@@ -48,29 +53,26 @@ export function MobileCallFAB({ variant = "horizontal" }: { variant?: "horizonta
 		{},
 	)
 
-	// Get the consular org name ("Géré par")
-	const { data: registrations } = useAuthenticatedConvexQuery(
-		api.functions.consularRegistrations.listByProfile,
-		{},
-	)
-	const latestRegistration = registrations?.[0]
-	const { data: registrationRequest } = useAuthenticatedConvexQuery(
-		api.functions.requests.getById,
-		latestRegistration?.requestId
-			? { requestId: latestRegistration.requestId }
-			: "skip",
-	)
-	const orgName = registrationRequest?.org?.name
-
 	const items = representations ?? []
 
-	// Scroll pagination for the cards
+	// Carousel state
 	const [activeIndex, setActiveIndex] = useState(0)
 	const scrollRef = useRef<HTMLDivElement>(null)
+
+	const scrollToIndex = useCallback((idx: number) => {
+		const el = scrollRef.current
+		if (!el) return
+		const child = el.children[idx] as HTMLElement
+		if (child) {
+			el.scrollTo({ left: child.offsetLeft, behavior: "smooth" })
+		}
+	}, [])
+
 	const handleScroll = useCallback(() => {
 		const el = scrollRef.current
-		if (!el || items.length <= 1) return
-		const idx = Math.round(el.scrollLeft / el.clientWidth)
+		if (!el || !el.children.length) return
+		const childWidth = (el.children[0] as HTMLElement).offsetWidth
+		const idx = Math.round(el.scrollLeft / childWidth)
 		setActiveIndex(Math.min(idx, items.length - 1))
 	}, [items.length])
 
@@ -106,124 +108,107 @@ export function MobileCallFAB({ variant = "horizontal" }: { variant?: "horizonta
 				)}
 			</motion.button>
 
-			{/* Bottom sheet overlay */}
-			<AnimatePresence>
-				{isOpen && (
-					<>
-						{/* Backdrop */}
-						<motion.div
-							initial={{ opacity: 0 }}
-							animate={{ opacity: 1 }}
-							exit={{ opacity: 0 }}
-							transition={{ duration: 0.2 }}
-							className="fixed inset-0 z-40 bg-black/40 lg:hidden"
-							onClick={() => setIsOpen(false)}
-						/>
+			{/* Bottom sheet with org cards */}
+			<BottomSheet
+				open={isOpen}
+				onOpenChange={setIsOpen}
+				title={t("common.contact")}
+				icon={
+					<div className="rounded-lg bg-[#0072B9]/10 p-1">
+						<Phone className="h-3.5 w-3.5 text-[#0072B9]" />
+					</div>
+				}
+			>
+				<div className="px-4 py-3 sm:px-5">
+					{/* Carousel — one card at a time */}
+					<div
+						ref={scrollRef}
+						onScroll={handleScroll}
+						className="disable-scrollbars flex snap-x snap-mandatory gap-4 overflow-x-auto"
+					>
+						{items.map((rep) => {
+							const config = ROLE_CONFIG[rep.role] ?? ROLE_CONFIG.residence
+							const Icon = config.icon
+							const { type, location } = splitRepName(rep.name)
+							const address = formatAddress(rep.address)
 
-						{/* Sheet content */}
-						<motion.div
-							initial={{ y: "100%" }}
-							animate={{ y: 0 }}
-							exit={{ y: "100%" }}
-							transition={{ type: "spring", damping: 28, stiffness: 350 }}
-							className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl bg-(--citizen-surface-card) shadow-2xl lg:hidden"
-						>
-							{/* Drag handle */}
-							<div className="flex justify-center pt-3 pb-1">
-								<div className="h-1 w-10 rounded-full bg-muted-foreground/25" />
-							</div>
-
-							{/* Header */}
-							<div className="flex items-center justify-between px-5 pb-3">
-								<div className="flex items-center gap-2">
-									<div className="rounded-lg bg-[#0072B9]/10 p-1.5">
-										<Phone className="h-4 w-4 text-[#0072B9]" />
-									</div>
-									<h3 className="text-base font-bold text-foreground">Contacter</h3>
-								</div>
-								<button
-									type="button"
-									onClick={() => setIsOpen(false)}
-									aria-label="Fermer"
-									className="rounded-lg p-1.5 transition-colors hover:bg-muted-foreground/10"
-								>
-									<X className="h-4.5 w-4.5 text-muted-foreground" />
-								</button>
-							</div>
-
-							{/* Géré par */}
-							{orgName && (
-								<div className="px-5 pb-3">
-									<div className="flex items-center gap-2.5 rounded-lg bg-[#FDFCFA] dark:bg-[#21201E]/77 px-3.5 py-2">
-										<Building2 className="h-3.5 w-3.5 text-[#0072B9] shrink-0" />
-										<span className="text-xs font-semibold text-[#0072B9] truncate">
-											Géré par : {orgName}
-										</span>
-									</div>
-								</div>
-							)}
-
-							{/* Representations list */}
-							<div className="px-5 pb-28 pt-1">
+							return (
 								<div
-									ref={scrollRef}
-									onScroll={handleScroll}
-									className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory disable-scrollbars"
+									key={rep.id}
+									className="w-full shrink-0 snap-start"
 								>
-									{items.map((rep) => {
-										const config = ROLE_CONFIG[rep.role] ?? ROLE_CONFIG.residence
-										const Icon = config.icon
-										const { type, location } = splitRepName(rep.name)
-
-										return (
-											<div
-												key={rep.id}
-												className={cn(
-													"bg-[#FDFCFA] dark:bg-[#21201E]/77 rounded-xl snap-start shrink-0 flex flex-col gap-3 p-4",
-													items.length === 1 ? "w-full" : "min-w-[80%]",
-												)}
-											>
-												{/* Icon + name */}
-												<div className="flex items-start gap-2.5">
-													<div className={`p-1.5 rounded-lg ${config.bg} shrink-0 mt-0.5`}>
-														<Icon className={`h-4.5 w-4.5 ${config.color}`} />
-													</div>
-													<div className="flex flex-col -gap-px min-w-0">
-														<span className="text-xs font-bold uppercase tracking-wide text-foreground leading-tight line-clamp-1">
-															{type}
-														</span>
-														<p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground leading-tight line-clamp-1">
-															{location}
-														</p>
-													</div>
-												</div>
-
-												{/* Call button */}
-												<OrgCallButton
-													orgId={rep.id as Id<"orgs">}
-													orgName={rep.name}
-													orgAddress={rep.address}
-													className="h-10 text-sm font-semibold bg-[#0072B9] hover:bg-[#0072B9]/90 text-white transition-transform active:scale-[0.97] rounded-lg w-full"
-													label="Appeler"
-												/>
+									<div className="flex flex-col gap-4 rounded-xl bg-citizen-s4 p-4">
+										{/* Icon + name */}
+										<div className="flex items-start gap-3">
+											<div className={cn("shrink-0 rounded-lg p-2", config.bg)}>
+												<Icon className={cn("h-5 w-5", config.color)} />
 											</div>
-										)
-									})}
-								</div>
+											<div className="min-w-0 flex-1">
+												<p className="text-sm font-bold uppercase tracking-wide text-foreground leading-tight">
+													{type}
+												</p>
+												{location && (
+													<p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground leading-tight">
+														{location}
+													</p>
+												)}
+											</div>
+										</div>
 
-								{/* Dots pagination */}
-								{items.length > 1 && (
-									<div className="flex justify-center gap-1.5 pt-3">
-										{items.map((_, idx) => (
-											<div key={idx} className={cn("h-1.5 rounded-full transition-all", idx === activeIndex ? "w-4 bg-[#0072B9]" : "w-1.5 bg-muted-foreground/30")} />
-										))}
+										{/* Address */}
+										{address && (
+											<div className="flex items-start gap-2.5 text-sm text-muted-foreground">
+												<MapPin className="h-4 w-4 shrink-0 mt-0.5" />
+												<span className="leading-snug">{address}</span>
+											</div>
+										)}
+
+										{/* Call button */}
+										<OrgCallButton
+											orgId={rep.id as Id<"orgs">}
+											orgName={rep.name}
+											orgAddress={rep.address}
+											className="h-11 text-sm font-semibold bg-[#0072B9] hover:bg-[#0072B9]/90 text-white transition-transform active:scale-[0.97] rounded-xl w-full"
+											label="Appeler"
+										/>
 									</div>
-								)}
+								</div>
+							)
+						})}
+					</div>
+
+					{/* Navigation: dots + arrows */}
+					{items.length > 1 && (
+						<div className="mt-3 flex items-center justify-center gap-3">
+							<button
+								onClick={() => scrollToIndex(Math.max(0, activeIndex - 1))}
+								disabled={activeIndex === 0}
+								className="flex h-7 w-7 items-center justify-center rounded-full bg-citizen-s2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+							>
+								<ArrowLeft className="h-3.5 w-3.5" />
+							</button>
+							<div className="flex items-center gap-1.5">
+								{items.map((_, idx) => (
+									<div
+										key={idx}
+										className={cn(
+											"h-1.5 rounded-full transition-all",
+											idx === activeIndex ? "w-5 bg-[#0072B9]" : "w-1.5 bg-muted-foreground/30",
+										)}
+									/>
+								))}
 							</div>
-						</motion.div>
-					</>
-				)}
-			</AnimatePresence>
+							<button
+								onClick={() => scrollToIndex(Math.min(items.length - 1, activeIndex + 1))}
+								disabled={activeIndex === items.length - 1}
+								className="flex h-7 w-7 items-center justify-center rounded-full bg-citizen-s2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+							>
+								<ArrowRight className="h-3.5 w-3.5" />
+							</button>
+						</div>
+					)}
+				</div>
+			</BottomSheet>
 		</>
 	)
 }
