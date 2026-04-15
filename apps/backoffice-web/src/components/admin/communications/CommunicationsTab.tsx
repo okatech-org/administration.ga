@@ -14,6 +14,7 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Bot, Mail, MessageSquare, Phone } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { CallLinesTab } from "@/components/admin/call-lines-tab";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,20 +28,21 @@ export interface CommunicationsTabProps {
 }
 
 export function CommunicationsTab({ orgId }: CommunicationsTabProps) {
+  const { t } = useTranslation();
   return (
     <Tabs defaultValue="phone">
       <TabsList className="grid grid-cols-3 sm:inline-flex h-auto p-1 bg-[#F4F3ED] dark:bg-[#171616]">
         <TabsTrigger value="phone" className="gap-1.5 text-xs sm:text-sm">
           <Phone className="h-4 w-4" />
-          Téléphonie
+          {t("superadmin.communications.phone", "Téléphonie")}
         </TabsTrigger>
         <TabsTrigger value="iboite" className="gap-1.5 text-xs sm:text-sm">
           <Mail className="h-4 w-4" />
-          iBoîte
+          {t("superadmin.communications.iboite", "iBoîte")}
         </TabsTrigger>
         <TabsTrigger value="iasted" className="gap-1.5 text-xs sm:text-sm">
           <Bot className="h-4 w-4" />
-          iAsted
+          {t("superadmin.communications.iasted", "iAsted")}
         </TabsTrigger>
       </TabsList>
 

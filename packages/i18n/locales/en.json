@@ -774,6 +774,11 @@
 				"description": "The previous \"Members\" and \"Staff positions\" tabs have been merged. Use \"List view\" to manage agents and their roles, \"Org chart\" to configure per-position permissions, or \"Vacant positions\" to quickly assign."
 			}
 		},
+		"communications": {
+			"phone": "Telephony",
+			"iboite": "iBoîte",
+			"iasted": "iAsted"
+		},
 		"nav": {
 			"dashboard": "Dashboard",
 			"organizations": "Representations",

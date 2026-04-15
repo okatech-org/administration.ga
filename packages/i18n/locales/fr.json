@@ -1558,6 +1558,11 @@
 				"description": "les anciens onglets « Membres » et « Postes » ont fusionné. Utilise « Vue liste » pour gérer les agents et leurs rôles, « Organigramme » pour configurer les permissions par poste, ou « Postes vacants » pour affecter rapidement."
 			}
 		},
+		"communications": {
+			"phone": "Téléphonie",
+			"iboite": "iBoîte",
+			"iasted": "iAsted"
+		},
 		"nav": {
 			"dashboard": "Tableau de bord",
 			"users": "Utilisateurs",
