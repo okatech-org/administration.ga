@@ -525,7 +525,8 @@
 			"newRequest": "New request",
 			"viewAll": "View all"
 		},
-		"myChildren": "My Children"
+		"myChildren": "My Children",
+		"toggleChildrenList": "Toggle children list"
 	},
 	"errors": {
 		"auth": {
@@ -4529,6 +4530,8 @@
 	"children": {
 		"title": "My Children",
 		"subtitle": "Manage your children's consular records",
+		"backToList": "My children",
+		"switchTo": "View another child",
 		"add": {
 			"title": "Add a child",
 			"button": "Add a child"

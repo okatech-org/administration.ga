@@ -33,15 +33,47 @@ import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Get my children profiles
+ * Get my children profiles.
+ *
+ * Each child is enriched with a `links` summary so the UI can decide whether
+ * to offer hard delete (no links) or soft deactivate (has linked requests or
+ * a consular registration). Computed here rather than in separate queries to
+ * avoid N+1 round trips.
  */
 export const getMine = authQuery({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db
+    const children = await ctx.db
       .query("childProfiles")
       .withIndex("by_author", (q) => q.eq("authorUserId", ctx.user._id))
       .collect();
+
+    // Fetch the user's requests once. Bounded set per user.
+    const userRequests = await ctx.db
+      .query("requests")
+      .withIndex("by_user_status", (q) => q.eq("userId", ctx.user._id))
+      .collect();
+
+    return Promise.all(
+      children.map(async (child) => {
+        const registration = await ctx.db
+          .query("consularRegistrations")
+          .withIndex("by_childProfile", (q) =>
+            q.eq("childProfileId", child._id),
+          )
+          .first();
+        const linkedRequestsCount = userRequests.filter(
+          (r) => r.profileId === child._id,
+        ).length;
+        return {
+          ...child,
+          links: {
+            hasRegistration: !!registration,
+            linkedRequestsCount,
+          },
+        };
+      }),
+    );
   },
 });
 
@@ -341,11 +373,19 @@ export const submit = authMutation({
 /**
  * Delete child profile (soft delete via status)
  */
+/**
+ * Hard-delete a child profile.
+ *
+ * Allowed only when the profile is not referenced by any request or consular
+ * registration. If it is, we refuse the deletion so the linked records stay
+ * consistent. The caller is expected to handle the VALIDATION_ERROR and prompt
+ * the user accordingly.
+ */
 export const remove = authMutation({
   args: { id: v.id("childProfiles") },
   handler: async (ctx, args) => {
     const child = await ctx.db.get(args.id);
-    
+
     if (!child) {
       throw error(ErrorCode.NOT_FOUND, "Child profile not found");
     }
@@ -354,8 +394,145 @@ export const remove = authMutation({
       throw error(ErrorCode.FORBIDDEN, "Access denied");
     }
 
+    // Block deletion when a consular registration is linked.
+    const linkedRegistration = await ctx.db
+      .query("consularRegistrations")
+      .withIndex("by_childProfile", (q) => q.eq("childProfileId", args.id))
+      .first();
+
+    if (linkedRegistration) {
+      throw error(
+        ErrorCode.VALIDATION_ERROR,
+        "CHILD_HAS_REGISTRATION",
+      );
+    }
+
+    // Block deletion when any request is linked to this child profile.
+    // No index on requests.profileId, so scan the user's requests (bounded set).
+    const userRequests = await ctx.db
+      .query("requests")
+      .withIndex("by_user_status", (q) => q.eq("userId", ctx.user._id))
+      .collect();
+    const linkedRequest = userRequests.find((r) => r.profileId === args.id);
+
+    if (linkedRequest) {
+      throw error(ErrorCode.VALIDATION_ERROR, "CHILD_HAS_REQUEST");
+    }
+
+    // Cascade delete all documents uploaded for this child. Two paths to a
+    // document: owned (`documents.ownerId === child._id`, i.e. via vault) or
+    // referenced in `child.documents.*`. Union both so nothing leaks.
+    const ownedDocs = await ctx.db
+      .query("documents")
+      .withIndex("by_owner", (q) => q.eq("ownerId", args.id))
+      .collect();
+
+    const referencedIds = Object.values(child.documents ?? {}).filter(
+      (id): id is Id<"documents"> => id !== undefined,
+    );
+
+    const seen = new Set<string>();
+    const docsToDelete: typeof ownedDocs = [];
+    for (const d of ownedDocs) {
+      if (seen.has(d._id)) continue;
+      seen.add(d._id);
+      docsToDelete.push(d);
+    }
+    for (const id of referencedIds) {
+      if (seen.has(id)) continue;
+      const d = await ctx.db.get(id);
+      if (d) {
+        seen.add(id);
+        docsToDelete.push(d);
+      }
+    }
+
+    for (const doc of docsToDelete) {
+      for (const file of doc.files) {
+        try {
+          await ctx.storage.delete(file.storageId);
+        } catch {
+          // Storage file may already be gone — continue.
+        }
+      }
+      await ctx.db.delete(doc._id);
+    }
+
+    // Safe to hard-delete the profile itself.
+    await ctx.db.delete(args.id);
+
+    return args.id;
+  },
+});
+
+/**
+ * Soft-delete (archive) a child profile.
+ *
+ * Use when the profile is linked to a request or consular registration and
+ * therefore cannot be hard-deleted. The profile is kept so historical records
+ * stay consistent, but it is hidden from the default list and no longer
+ * eligible for new actions.
+ */
+export const deactivate = authMutation({
+  args: { id: v.id("childProfiles") },
+  handler: async (ctx, args) => {
+    const child = await ctx.db.get(args.id);
+
+    if (!child) {
+      throw error(ErrorCode.NOT_FOUND, "Child profile not found");
+    }
+
+    if (child.authorUserId !== ctx.user._id) {
+      throw error(ErrorCode.FORBIDDEN, "Access denied");
+    }
+
+    if (child.status === ChildProfileStatus.Inactive) {
+      // Idempotent: already archived, nothing to do.
+      return args.id;
+    }
+
     await ctx.db.patch(args.id, {
       status: ChildProfileStatus.Inactive,
+      updatedAt: Date.now(),
+    });
+
+    return args.id;
+  },
+});
+
+/**
+ * Reactivate an archived child profile.
+ *
+ * Restores to Active if there is a linked consular registration, otherwise
+ * back to Draft so the user can resume editing.
+ */
+export const reactivate = authMutation({
+  args: { id: v.id("childProfiles") },
+  handler: async (ctx, args) => {
+    const child = await ctx.db.get(args.id);
+
+    if (!child) {
+      throw error(ErrorCode.NOT_FOUND, "Child profile not found");
+    }
+
+    if (child.authorUserId !== ctx.user._id) {
+      throw error(ErrorCode.FORBIDDEN, "Access denied");
+    }
+
+    if (child.status !== ChildProfileStatus.Inactive) {
+      // Already active in some form — make it a no-op.
+      return args.id;
+    }
+
+    const linkedRegistration = await ctx.db
+      .query("consularRegistrations")
+      .withIndex("by_childProfile", (q) => q.eq("childProfileId", args.id))
+      .first();
+
+    await ctx.db.patch(args.id, {
+      status: linkedRegistration
+        ? ChildProfileStatus.Active
+        : ChildProfileStatus.Draft,
       updatedAt: Date.now(),
     });
 

@@ -273,7 +273,7 @@ export function MobileNavBar() {
 
               {children.length > 0 && (
                 <Link
-                  href={`/my-space/children/${children[0]._id}`}
+                  href="/my-space/children"
                   onClick={() => setSheetOpen(false)}
                   className={cn(
                     "relative flex min-h-[68px] flex-col items-center justify-center gap-1.5 rounded-xl p-3 text-center transition-colors",

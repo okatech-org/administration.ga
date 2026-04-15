@@ -66,38 +66,43 @@ export const meetingsTable = defineTable({
       v.literal("normal"),    // One party hung up
       v.literal("timeout"),   // No answer within timeout
       v.literal("declined"),  // All agents declined
+      v.literal("rejected"),  // Legacy alias for "declined" (pre-unified schema)
       v.literal("error"),     // Technical error
       v.literal("cancelled"), // Caller cancelled before answer
-      v.literal("rejected"),  // Legacy value — kept for backward compat
-      v.literal("voicemail_recorded"), // Sprint 6 — IVR fallback → voicemail
+      v.literal("voicemail_recorded"), // Voicemail captured instead of live answer
     ),
+  ),
+
+  // ─── Fallback / routing extensions ───
+  // True when the call was redirected via a fallback rule (another line / voicemail)
+  fallbackApplied: v.optional(v.boolean()),
+  // When a fallback was applied, which line was originally dialed
+  originalCallLineId: v.optional(v.id("callLines")),
+  // Timestamp when the call entered a "parked" / hold state
+  parkedAt: v.optional(v.number()),
+
+  // Priority tier (used for queue ordering, SLA, monitoring)
+  priority: v.optional(
+    v.union(
+      v.literal("low"),
+      v.literal("normal"),
+      v.literal("high"),
+      v.literal("urgent"),
+    ),
+  ),
+
+  // Consent capture for citizens (recording, transcript)
+  citizenConsent: v.optional(
+    v.object({
+      recording: v.optional(v.boolean()),
+      transcript: v.optional(v.boolean()),
+      grantedAt: v.optional(v.number()),
+    }),
   ),
 
   // Context linking (optional)
   requestId: v.optional(v.id("requests")),
   appointmentId: v.optional(v.id("appointments")),
-
-  // Priority classification (Centre d'Appels multi-lignes).
-  // Initialement dérivée de `callLines.priority` + flags côté appelant,
-  // puis utilisée pour trier la file d'attente des agents.
-  priority: v.optional(
-    v.union(
-      v.literal("urgent"),
-      v.literal("high"),
-      v.literal("normal"),
-    ),
-  ),
-
-  // Timestamp auquel l'appel a été mis en attente (par un agent).
-  // Permet les statistiques SLA de temps d'attente et la détection de slots stagnants.
-  parkedAt: v.optional(v.number()),
-
-  // IVR Fallback — marqué `true` après que le cron a redirigé l'appel vers
-  // la ligne de secours (`callLines.fallbackCallLineId`). Empêche les boucles
-  // infinies et permet de tracer l'historique du routage.
-  fallbackApplied: v.optional(v.boolean()),
-  // Ligne d'origine avant redirection (pour l'audit et les stats)
-  originalCallLineId: v.optional(v.id("callLines")),
 
   // Media type (audio-only or video allowed)
   mediaType: v.optional(v.union(v.literal("audio"), v.literal("video"))),
@@ -105,21 +110,6 @@ export const meetingsTable = defineTable({
   // Config
   maxParticipants: v.optional(v.number()),
   recordingEnabled: v.optional(v.boolean()),
-
-  // Sprint 6 — Consent RGPD du citoyen pour l'enregistrement de l'appel.
-  // Affichage banner obligatoire côté citoyen AVANT déclenchement RoomEgress.
-  citizenConsent: v.optional(
-    v.object({
-      recordingAccepted: v.optional(v.boolean()),
-      recordingAcceptedAt: v.optional(v.number()),
-      recordingDeclinedAt: v.optional(v.number()),
-      // Plan Intelligence iAsted × Sprint 6 — Phase ε.
-      // Timestamp écrit par `meetings.requestRecordingConsent` (agent) ; le
-      // citoyen y réagit en affichant le banner côté iAsted tant que
-      // `recordingAccepted`/`recordingDeclinedAt` ne sont pas encore renseignés.
-      recordingConsentRequestedAt: v.optional(v.number()),
-    }),
-  ),
 
   // Timestamps
   scheduledAt: v.optional(v.number()),

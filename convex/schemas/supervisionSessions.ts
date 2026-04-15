@@ -14,23 +14,24 @@ import { v } from "convex/values";
  * Durée : session fermée = endedAt défini. Un cron peut nettoyer les sessions
  * orphelines (endedAt undefined + startedAt très ancien).
  */
-export const supervisionModeValidator = v.union(
-  v.literal("listen"), // Invisible pour agent + citoyen, mic forcé off
-  v.literal("whisper"), // Mic on, audible uniquement par l'agent
-  v.literal("barge"), // Participant normal, audible par tous
-);
-
 export const supervisionSessionsTable = defineTable({
   meetingId: v.id("meetings"),
-  supervisorId: v.id("users"),
   orgId: v.id("orgs"),
-  mode: supervisionModeValidator,
-  /** Identity LiveKit : "supervisor_${userId}_${mode}" (utilisée pour filtrage). */
+  supervisorId: v.id("users"),
+
+  mode: v.union(
+    v.literal("listen"),
+    v.literal("whisper"),
+    v.literal("barge"),
+  ),
+
+  // LiveKit participant identity used by the supervisor (distinct from user id
+  // because the same supervisor could join several sessions with separate tracks)
   liveKitIdentity: v.string(),
-  startedAt: v.number(),
-  /** Session fermée si défini. */
-  endedAt: v.optional(v.number()),
+
+  startedAt: v.float64(),
+  endedAt: v.optional(v.float64()),
 })
   .index("by_meeting", ["meetingId"])
-  .index("by_supervisor_active", ["supervisorId", "endedAt"])
-  .index("by_org", ["orgId"]);
+  .index("by_org", ["orgId"])
+  .index("by_supervisor_active", ["supervisorId", "endedAt"]);

@@ -5,6 +5,8 @@ import type { ParentalRole } from "@convex/lib/constants";
 import { ChildProfileStatus, Gender } from "@convex/lib/constants";
 import { useRouter } from "next/navigation";
 import {
+	Archive,
+	ArchiveRestore,
 	Baby,
 	Calendar,
 	Eye,
@@ -50,6 +52,7 @@ import { captureEvent } from "@/lib/analytics";
 type ChildProfile = {
 	_id: string;
 	status: ChildProfileStatus;
+	registrationRequestId?: string;
 	identity: {
 		firstName: string;
 		lastName: string;
@@ -62,6 +65,10 @@ type ChildProfile = {
 		firstName: string;
 		lastName: string;
 	}>;
+	links?: {
+		hasRegistration: boolean;
+		linkedRequestsCount: number;
+	};
 };
 
 export default function ChildrenPage() {
@@ -71,13 +78,20 @@ export default function ChildrenPage() {
 		{},
 	);
 	const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+	const [showInactive, setShowInactive] = useState(false);
 
 	if (isPending) {
 		return <CardGridSkeleton cols={3} count={3} />;
 	}
 
-	const activeChildren = (children ?? []).filter(
-		(c) => c.status !== ChildProfileStatus.Inactive,
+	const allChildren = (children ?? []) as ChildProfile[];
+	const inactiveCount = allChildren.filter(
+		(c) => c.status === ChildProfileStatus.Inactive,
+	).length;
+	const visibleChildren = allChildren.filter((c) =>
+		showInactive
+			? c.status === ChildProfileStatus.Inactive
+			: c.status !== ChildProfileStatus.Inactive,
 	);
 
 	return (
@@ -88,29 +102,65 @@ export default function ChildrenPage() {
 				icon={<Users className="h-5 w-5 text-pink-600 dark:text-pink-400" />}
 				iconBgClass="bg-pink-500/10"
 				actions={
-					<Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-						<DialogTrigger asChild>
-							<Button>
-								<Plus className="h-4 w-4 mr-2" />
-								{t("children.add.button")}
+					<div className="flex items-center gap-2">
+						{(inactiveCount > 0 || showInactive) && (
+							<Button
+								variant={showInactive ? "secondary" : "ghost"}
+								size="sm"
+								onClick={() => setShowInactive((v) => !v)}
+							>
+								<Archive className="h-4 w-4 mr-2" />
+								{showInactive
+									? t("children.showActive", "Profils actifs")
+									: t("children.showArchived", "Archivés")}
+								{inactiveCount > 0 && (
+									<span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs">
+										{inactiveCount}
+									</span>
+								)}
 							</Button>
-						</DialogTrigger>
-						<AddChildDialog onClose={() => setIsAddDialogOpen(false)} />
-					</Dialog>
+						)}
+						<Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+							<DialogTrigger asChild>
+								<Button>
+									<Plus className="h-4 w-4 mr-2" />
+									{t("children.add.button")}
+								</Button>
+							</DialogTrigger>
+							<AddChildDialog onClose={() => setIsAddDialogOpen(false)} />
+						</Dialog>
+					</div>
 				}
 			/>
 
 			{/* Children List */}
-			{activeChildren.length === 0 ? (
+			{visibleChildren.length === 0 ? (
 				<FlatCard>
-					<EmptyState
-						icon={<Baby />}
-						title={t("children.empty.title")}
-						description={t(
-							"children.empty.description",
-							"Ajoutez vos enfants mineurs pour gerer leurs demarches consulaires.",
-						)}
-					/>
+					{showInactive ? (
+						<EmptyState
+							icon={<Archive />}
+							title={t("children.empty.archivedTitle", "Aucun profil archivé")}
+							description={t(
+								"children.empty.archivedDescription",
+								"Les profils que vous désactivez apparaîtront ici.",
+							)}
+						/>
+					) : (
+						<EmptyState
+							icon={<Baby />}
+							title={t("children.empty.title")}
+							description={t(
+								"children.empty.description",
+								"Ajoutez vos enfants mineurs pour gerer leurs demarches consulaires.",
+							)}
+							action={
+								<Button onClick={() => setIsAddDialogOpen(true)}>
+									<Plus className="h-4 w-4 mr-2" />
+									{t("children.add.button")}
+								</Button>
+							}
+						/>
+					)}
 				</FlatCard>
 			) : (
 				<motion.div
@@ -119,12 +169,8 @@ export default function ChildrenPage() {
 					transition={{ duration: 0.2, delay: 0.1 }}
 					className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
 				>
-					{activeChildren.map((child, index) => (
-						<ChildCard
-							key={child._id}
-							child={child as ChildProfile}
-							index={index}
-						/>
+					{visibleChildren.map((child, index) => (
+						<ChildCard key={child._id} child={child} index={index} />
 					))}
 				</motion.div>
 			)}
@@ -138,7 +184,21 @@ function ChildCard({ child, index }: { child: ChildProfile; index: number }) {
 	const { mutate: remove, isPending: isRemoving } = useConvexMutationQuery(
 		api.functions.childProfiles.remove,
 	);
+	const { mutate: deactivate, isPending: isDeactivating } =
+		useConvexMutationQuery(api.functions.childProfiles.deactivate);
+	const { mutate: reactivate, isPending: isReactivating } =
+		useConvexMutationQuery(api.functions.childProfiles.reactivate);
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+	const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+
+	const hasLinks =
+		!!child.links?.hasRegistration ||
+		(child.links?.linkedRequestsCount ?? 0) > 0;
+	const isArchived = child.status === ChildProfileStatus.Inactive;
+	// Hard delete is allowed whenever nothing references the profile — whether
+	// it's a live draft or an archived profile whose linked requests were later
+	// removed. Linked profiles can only be archived (soft deleted).
+	const canHardDelete = !hasLinks;
 
 	const statusLabels: Record<ChildProfileStatus, string> = {
 		[ChildProfileStatus.Draft]: t("children.status.draft"),
@@ -173,15 +233,71 @@ function ChildCard({ child, index }: { child: ChildProfile; index: number }) {
 		return t("children.age.years", { count: age, defaultValue: `${age} ans` });
 	};
 
+	const childId =
+		child._id as unknown as import("@convex/_generated/dataModel").Id<"childProfiles">;
+
 	const handleDelete = () => {
 		remove(
-			{
-				id: child._id as unknown as import("@convex/_generated/dataModel").Id<"childProfiles">,
-			},
+			{ id: childId },
 			{
 				onSuccess: () => {
 					toast.success(t("children.deleted"));
 					setShowDeleteConfirm(false);
+				},
+				onError: (err: unknown) => {
+					// Backend refuses deletion when the profile is linked to a
+					// request or a consular registration. Surface a specific
+					// message in those cases.
+					const msg = err instanceof Error ? err.message : String(err);
+					if (msg.includes("CHILD_HAS_REGISTRATION")) {
+						toast.error(
+							t(
+								"children.delete.blockedByRegistration",
+								"Ce profil est lié à une inscription consulaire et ne peut pas être supprimé.",
+							),
+						);
+					} else if (msg.includes("CHILD_HAS_REQUEST")) {
+						toast.error(
+							t(
+								"children.delete.blockedByRequest",
+								"Ce profil est lié à une demande et ne peut pas être supprimé.",
+							),
+						);
+					} else {
+						toast.error(t("common.error"));
+					}
+					setShowDeleteConfirm(false);
+				},
+			},
+		);
+	};
+
+	const handleDeactivate = () => {
+		deactivate(
+			{ id: childId },
+			{
+				onSuccess: () => {
+					toast.success(
+						t("children.deactivated", "Profil archivé"),
+					);
+					setShowDeactivateConfirm(false);
+				},
+				onError: () => {
+					toast.error(t("common.error"));
+					setShowDeactivateConfirm(false);
+				},
+			},
+		);
+	};
+
+	const handleReactivate = () => {
+		reactivate(
+			{ id: childId },
+			{
+				onSuccess: () => {
+					toast.success(
+						t("children.reactivated", "Profil réactivé"),
+					);
 				},
 				onError: () => toast.error(t("common.error")),
 			},
@@ -251,60 +367,166 @@ function ChildCard({ child, index }: { child: ChildProfile; index: number }) {
 						</div>
 					)}
 
+					{/* Linked records notice */}
+					{hasLinks && (
+						<p className="text-xs text-muted-foreground">
+							{child.links?.hasRegistration
+								? t(
+										"children.links.registration",
+										"Inscription consulaire liée — suppression impossible.",
+									)
+								: t(
+										"children.links.requests",
+										"{{count}} demande(s) liée(s) — suppression impossible.",
+										{ count: child.links?.linkedRequestsCount ?? 0 },
+									)}
+						</p>
+					)}
+
 					{/* Actions */}
 					<div className="flex gap-2 pt-2">
-						<Button variant="outline" size="sm" className="flex-1" onClick={() => router.push(`/my-space/children/${child._id}`)}>
+						<Button
+							variant="outline"
+							size="sm"
+							className="flex-1"
+							onClick={() =>
+								router.push(`/my-space/children/${child._id}`)
+							}
+						>
 							<Eye className="h-4 w-4 mr-1" />
 							{t("common.view")}
 						</Button>
-						<Dialog
-							open={showDeleteConfirm}
-							onOpenChange={setShowDeleteConfirm}
-						>
-							<DialogTrigger asChild>
-								<Button
-									variant="ghost"
-									size="icon"
-									className="text-destructive hover:text-destructive hover:bg-destructive/10"
-								>
-									<Trash2 className="h-4 w-4" />
-								</Button>
-							</DialogTrigger>
-							<DialogContent>
-								<DialogHeader>
-									<DialogTitle>{t("children.delete.title")}</DialogTitle>
-								</DialogHeader>
-								<p className="text-muted-foreground">
-									{t(
-										"children.delete.description",
-										"Le profil de {{name}} sera desactive. Cette action est reversible.",
-										{
-											name: `${child.identity.firstName} ${child.identity.lastName}`,
-										},
-									)}
-								</p>
-								<div className="flex justify-end gap-2 mt-4">
+
+						{/* Reactivate (archived only) */}
+						{isArchived && (
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={handleReactivate}
+								disabled={isReactivating}
+								title={t("children.reactivate", "Réactiver")}
+							>
+								{isReactivating ? (
+									<Loader2 className="h-4 w-4 animate-spin" />
+								) : (
+									<ArchiveRestore className="h-4 w-4" />
+								)}
+							</Button>
+						)}
+
+						{/* Archive (active profile with links — cannot be deleted) */}
+						{!isArchived && !canHardDelete && (
+							<Dialog
+								open={showDeactivateConfirm}
+								onOpenChange={setShowDeactivateConfirm}
+							>
+								<DialogTrigger asChild>
 									<Button
-										type="button"
-										variant="outline"
-										onClick={() => setShowDeleteConfirm(false)}
+										variant="ghost"
+										size="icon"
+										title={t("children.deactivate", "Archiver")}
 									>
-										{t("common.cancel")}
+										<Archive className="h-4 w-4" />
 									</Button>
-									<Button
-										type="button"
-										variant="destructive"
-										onClick={handleDelete}
-										disabled={isRemoving}
-									>
-										{isRemoving && (
-											<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+								</DialogTrigger>
+								<DialogContent>
+									<DialogHeader>
+										<DialogTitle>
+											{t(
+												"children.deactivate.title",
+												"Archiver le profil",
+											)}
+										</DialogTitle>
+									</DialogHeader>
+									<p className="text-muted-foreground">
+										{t(
+											"children.deactivate.description",
+											"Le profil de {{name}} sera masqué de la liste. Les demandes et inscriptions liées sont conservées. Vous pourrez le réactiver à tout moment.",
+											{
+												name: `${child.identity.firstName} ${child.identity.lastName}`,
+											},
 										)}
-										{t("common.delete")}
+									</p>
+									<div className="flex justify-end gap-2 mt-4">
+										<Button
+											type="button"
+											variant="outline"
+											onClick={() =>
+												setShowDeactivateConfirm(false)
+											}
+										>
+											{t("common.cancel")}
+										</Button>
+										<Button
+											type="button"
+											onClick={handleDeactivate}
+											disabled={isDeactivating}
+										>
+											{isDeactivating && (
+												<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+											)}
+											{t("children.deactivate", "Archiver")}
+										</Button>
+									</div>
+								</DialogContent>
+							</Dialog>
+						)}
+
+						{/* Hard delete — whenever nothing references the profile,
+						    including archived profiles whose links were cleared. */}
+						{canHardDelete && (
+							<Dialog
+								open={showDeleteConfirm}
+								onOpenChange={setShowDeleteConfirm}
+							>
+								<DialogTrigger asChild>
+									<Button
+										variant="ghost"
+										size="icon"
+										className="text-destructive hover:text-destructive hover:bg-destructive/10"
+										title={t("common.delete")}
+									>
+										<Trash2 className="h-4 w-4" />
 									</Button>
-								</div>
-							</DialogContent>
-						</Dialog>
+								</DialogTrigger>
+								<DialogContent>
+									<DialogHeader>
+										<DialogTitle>
+											{t("children.delete.title")}
+										</DialogTitle>
+									</DialogHeader>
+									<p className="text-muted-foreground">
+										{t(
+											"children.delete.description",
+											"Le profil de {{name}} sera définitivement supprimé. Cette action est irréversible.",
+											{
+												name: `${child.identity.firstName} ${child.identity.lastName}`,
+											},
+										)}
+									</p>
+									<div className="flex justify-end gap-2 mt-4">
+										<Button
+											type="button"
+											variant="outline"
+											onClick={() => setShowDeleteConfirm(false)}
+										>
+											{t("common.cancel")}
+										</Button>
+										<Button
+											type="button"
+											variant="destructive"
+											onClick={handleDelete}
+											disabled={isRemoving}
+										>
+											{isRemoving && (
+												<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+											)}
+											{t("common.delete")}
+										</Button>
+									</div>
+								</DialogContent>
+							</Dialog>
+						)}
 					</div>
 				</div>
 			</FlatCard>
