@@ -33,6 +33,7 @@ import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
+import { SmartSuggestionsRow } from "@workspace/iasted";
 import { cn } from "@/lib/utils";
 
 // Email de Mr Ray pour identifier ses messages
@@ -338,6 +339,18 @@ export function CitizenChatTab() {
 						</div>
 					)}
 				</ScrollArea>
+
+				{/* Phase δ : Smart Suggestions pour citoyens */}
+				{!messageInput.trim() && isStandard && (
+					<SmartSuggestionsRow
+						suggestions={[
+							{ id: "passport", label: "Renouveler passeport", onClick: () => setMessageInput("J'aimerais renouveler mon passeport") },
+							{ id: "rdv", label: "Prendre RDV", onClick: () => setMessageInput("Je souhaite prendre un rendez-vous") },
+							{ id: "docs", label: "Mes documents", onClick: () => setMessageInput("Quels documents dois-je fournir ?") },
+						]}
+						title="Suggestions"
+					/>
+				)}
 
 				{/* Input */}
 				<div className="border-t p-2 flex items-end gap-1.5 shrink-0">

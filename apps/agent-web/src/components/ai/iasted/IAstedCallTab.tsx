@@ -24,7 +24,7 @@ import {
 	Users,
 	Video,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -32,10 +32,12 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { PostCallNoteDrawer } from "@workspace/iasted";
 import { CallCenterShell } from "@/components/call-center/CallCenterShell";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { useOrg } from "@/components/org/org-provider";
 import { useContactSearch, type ContactSource } from "@/hooks/useContactSearch";
+import { useCallCenter } from "@/hooks/use-call-center";
 import { useMeeting } from "@/hooks/use-meeting";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { useCallStore } from "@/stores/call-store";
@@ -68,9 +70,56 @@ const CALL_SOURCE_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; ic
 export function IAstedCallTab() {
 	// Centre d'Appels multi-lignes (feature flag) — remplace intégralement l'UX historique.
 	if (CALL_CENTER_ENABLED) {
-		return <CallCenterShell />;
+		return <CallCenterWithPostCallNote />;
 	}
 	return <LegacyCallTab />;
+}
+
+/**
+ * Wrapper Phase ζ : détecte la fin d'un appel et ouvre le drawer PostCallNote.
+ * NE MODIFIE PAS CallCenterShell (Sprint 6 verrouillé).
+ */
+function CallCenterWithPostCallNote() {
+	const { activeOrgId } = useOrg();
+	const { activeCalls } = useCallCenter();
+	const prevCountRef = useRef<number>(activeCalls?.length ?? 0);
+	const [lastEndedMeetingId, setLastEndedMeetingId] = useState<string | null>(null);
+	const [showPostCallNote, setShowPostCallNote] = useState(false);
+
+	const { mutateAsync: upsertNote } = useConvexMutationQuery(
+		api.functions.callNotes.upsertCallNote,
+	);
+
+	// Détecte une diminution du nombre d'appels actifs (un appel vient de se terminer)
+	useEffect(() => {
+		const currentCount = activeCalls?.length ?? 0;
+		if (prevCountRef.current > 0 && currentCount < prevCountRef.current) {
+			// Un appel a terminé — proposer la note post-call
+			setShowPostCallNote(true);
+		}
+		prevCountRef.current = currentCount;
+	}, [activeCalls?.length]);
+
+	return (
+		<>
+			<CallCenterShell />
+			<PostCallNoteDrawer
+				open={showPostCallNote}
+				onOpenChange={setShowPostCallNote}
+				meetingLabel="Documentez cet appel avant de passer à la suite."
+				onSave={async (payload) => {
+					if (!activeOrgId) return;
+					await upsertNote({
+						meetingId: (lastEndedMeetingId ?? "placeholder") as Id<"meetings">,
+						orgId: activeOrgId,
+						content: payload.content,
+						actionItems: payload.actionItems,
+						sentiment: payload.sentiment,
+					});
+				}}
+			/>
+		</>
+	);
 }
 
 function LegacyCallTab() {

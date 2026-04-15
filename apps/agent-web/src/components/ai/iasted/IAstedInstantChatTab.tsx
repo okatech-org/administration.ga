@@ -36,6 +36,11 @@ import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrati
 import { cn } from "@/lib/utils";
 import { useAdminAIChat } from "../useAdminAIChat";
 import { VoiceChatContent } from "../VoiceButton";
+import {
+	MacrosPanel,
+	SmartSuggestionsRow,
+	type SmartSuggestion,
+} from "@workspace/iasted";
 import { parseIntent, resolveNavigationTarget } from "./IntentProcessor";
 import { getSuggestions } from "./SpatialAwareness";
 
@@ -65,8 +70,27 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 	const router = useRouter();
 	const [selectedContact, setSelectedContact] = useState<any>(null);
 	const [messageInput, setMessageInput] = useState("");
+	const [showMacros, setShowMacros] = useState(false);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const suggestions = getSuggestions(pathname);
+
+	// ── Phase γ : macros query (orgIAstedConfig.listMacros) ──
+	const { data: macrosRaw } = useAuthenticatedConvexQuery(
+		api.functions.orgIAstedConfig.listMacros,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+	const macros = (macrosRaw ?? []) as Array<{
+		id: string;
+		label: string;
+		content: string;
+		category?: string;
+		usageCount?: number;
+	}>;
+
+	// ── Phase γ : mutation increment macro usage ──
+	const { mutateAsync: incrementMacro } = useConvexMutationQuery(
+		api.functions.orgIAstedConfig.incrementMacroUsage,
+	);
 
 	// Recherche intelligente cross-org
 	const {
@@ -412,13 +436,61 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 					</div>
 				)}
 
+				{/* Phase δ : Smart Suggestions — quick-buttons contextuels (SpatialAwareness) */}
+				{suggestions.length > 0 && !messageInput.trim() && (
+					<SmartSuggestionsRow
+						suggestions={suggestions.slice(0, 3).map((s, i) => ({
+							id: `suggestion-${i}`,
+							label: s,
+							onClick: () => setMessageInput(s),
+						}))}
+						title="Suggestions"
+					/>
+				)}
+
+				{/* Phase γ : MacrosPanel — slash-command popover (agent uniquement) */}
+				{showMacros && !selectedContact?.isAI && (
+					<div className="border-t bg-card">
+						<MacrosPanel
+							macros={macros}
+							variables={{}}
+							searchPlaceholder="Rechercher une macro..."
+							onSelect={(content, macro) => {
+								setMessageInput(content);
+								setShowMacros(false);
+								if (activeOrgId) {
+									void incrementMacro({ orgId: activeOrgId, macroId: macro.id });
+								}
+							}}
+							className="max-h-48"
+						/>
+					</div>
+				)}
+
 				{/* Input */}
 				<div className="border-t p-2.5 flex items-end gap-2 shrink-0">
 					<Textarea
 						value={messageInput}
-						onChange={(e) => setMessageInput(e.target.value)}
-						onKeyDown={handleKeyDown}
-						placeholder={selectedContact.isAI ? "Demandez à iAsted..." : "Écrire un message..."}
+						onChange={(e) => {
+							const v = e.target.value;
+							setMessageInput(v);
+							// Phase γ : slash `/` en début → ouvre le MacrosPanel
+							if (v === "/" && !selectedContact?.isAI) {
+								setShowMacros(true);
+							} else if (showMacros && !v.startsWith("/")) {
+								setShowMacros(false);
+							}
+						}}
+						onKeyDown={(e) => {
+							// Ferme macros sur Escape
+							if (e.key === "Escape" && showMacros) {
+								setShowMacros(false);
+								setMessageInput("");
+								return;
+							}
+							handleKeyDown(e);
+						}}
+						placeholder={selectedContact.isAI ? "Demandez à iAsted..." : "/ pour macros · Écrire un message..."}
 						className="min-h-[40px] max-h-[100px] resize-none text-sm"
 						rows={1}
 					/>
