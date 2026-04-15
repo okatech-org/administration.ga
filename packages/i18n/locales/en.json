@@ -3519,17 +3519,14 @@
 			"filterDiplomatic": "Diplomatic posts",
 			"noResults": "No results.",
 			"message": "Message",
-<<<<<<< HEAD
 			"badgeStandard": "Standard",
 			"badgeDirect": "Direct",
 			"suggestedContacts": "Suggested contacts",
 			"sectionRepresentations": "Representations",
 			"sectionMembers": "Diplomatic staff",
-			"sectionOther": "Other contacts"
-=======
+			"sectionOther": "Other contacts",
 			"attachments": "Attachments",
 			"dropFiles": "Drop files or click to browse"
->>>>>>> origin/main
 		},
 		"empty": {
 			"inbox": "No mail",

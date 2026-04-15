@@ -4115,17 +4115,14 @@
 			"filterDiplomatic": "Postes diplomatiques",
 			"noResults": "Aucun résultat.",
 			"message": "Message",
-<<<<<<< HEAD
 			"badgeStandard": "Standard",
 			"badgeDirect": "Direct",
 			"suggestedContacts": "Contacts suggérés",
 			"sectionRepresentations": "Représentations",
 			"sectionMembers": "Personnel diplomatique",
-			"sectionOther": "Autres contacts"
-=======
+			"sectionOther": "Autres contacts",
 			"attachments": "Pièces jointes",
 			"dropFiles": "Glissez vos fichiers ou cliquez"
->>>>>>> origin/main
 		},
 		"empty": {
 			"inbox": "Aucun courrier",
