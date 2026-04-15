@@ -286,7 +286,7 @@ export function MySpaceSidebar({
                             )}
                           >
                             <Baby className="size-[18px] shrink-0" />
-                            <span className="truncate">{child.identity?.firstName ?? "Enfant"}</span>
+                            <span className="truncate">{child.firstName ?? "Enfant"}</span>
                           </Link>
                         )
                       })}
