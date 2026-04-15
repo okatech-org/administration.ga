@@ -37,7 +37,15 @@ import {
   orgServicesByOrg,
   appointmentsByOrg,
 } from "../lib/aggregates";
-import { getOrgSchedule } from "../lib/orgHelpers";
+import {
+  getOrgSchedule,
+  getOrgAddress,
+  getOrgHeadOfMissionName,
+  getOrgLogoUrl,
+  getOrgTimezone,
+  getOrgStatus,
+  isOrgOperational,
+} from "../lib/orgHelpers";
 
 /**
  * List all active organizations
@@ -123,6 +131,53 @@ export const getById = query({
     const org = await ctx.db.get(args.orgId);
     if (org?.deletedAt) return null;
     return org;
+  },
+});
+
+/**
+ * Phase F2.1 — Query unifiée qui retourne l'org avec TOUS les champs dérivés
+ * (adresse, horaires, chef de mission, logo, timezone, status) calculés via
+ * les helpers `orgHelpers.ts`. Centralise les lectures en un seul point.
+ *
+ * À utiliser au lieu de `getById` quand le client a besoin des champs dérivés
+ * pour éviter les lectures directes de champs dépréciés (`openingHours`,
+ * `logoUrl`, `headOfMission`, `address`).
+ *
+ * Usage :
+ *   const { data: org } = useAuthenticatedConvexQuery(
+ *     api.functions.orgs.getDetailedById,
+ *     { orgId }
+ *   );
+ *   const address = org?._derived.address;
+ *   const schedule = org?._derived.schedule;
+ */
+export const getDetailedById = query({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.orgId);
+    if (!org || org.deletedAt) return null;
+
+    const [address, schedule, headOfMissionName, logoUrl, timezone] =
+      await Promise.all([
+        Promise.resolve(getOrgAddress(org)),
+        getOrgSchedule(ctx, org),
+        getOrgHeadOfMissionName(ctx, org),
+        getOrgLogoUrl(ctx, org),
+        getOrgTimezone(ctx, org),
+      ]);
+
+    return {
+      ...org,
+      _derived: {
+        address,
+        schedule,
+        headOfMissionName,
+        logoUrl,
+        timezone,
+        status: getOrgStatus(org),
+        isOperational: isOrgOperational(org),
+      },
+    };
   },
 });
 

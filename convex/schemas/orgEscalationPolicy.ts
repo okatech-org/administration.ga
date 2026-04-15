@@ -77,4 +77,6 @@ export const orgEscalationPolicyTable = defineTable({
   updatedAt: v.number(),
   updatedBy: v.optional(v.id("users")),
 })
-  .index("by_org", ["orgId"]);
+  .index("by_org", ["orgId"])
+  // Phase F2.2 — Index composite pour les requêtes filtrées par date.
+  .index("by_org_updatedAt", ["orgId", "updatedAt"]);

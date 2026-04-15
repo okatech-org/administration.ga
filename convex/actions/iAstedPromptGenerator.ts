@@ -15,11 +15,53 @@ import { api } from "../_generated/api";
  * L'utilisateur peut ensuite éditer ce prompt avant de le sauvegarder.
  */
 
+/**
+ * Phase F2.3 — Guardrails pour valider le prompt généré par Gemini.
+ * Vérifie la taille, détecte les patterns d'injection et les contenus
+ * inappropriés avant de retourner le prompt.
+ */
+const MAX_PROMPT_LENGTH = 2000;
+const INJECTION_PATTERNS = [
+  /ignore (previous|above|all)/i,
+  /disregard (previous|above|the)/i,
+  /forget (previous|above|everything)/i,
+  /system\s*:\s*/i,
+  /<\|im_start\|>/i,
+  /\[INST\]/i,
+  /jailbreak/i,
+  /act as (if you are|an unrestricted|a different)/i,
+  /you are now/i,
+  /new instructions/i,
+];
+
+export interface PromptValidationResult {
+  valid: boolean;
+  issues: string[];
+}
+
+export function validatePromptOutput(prompt: string): PromptValidationResult {
+  const issues: string[] = [];
+
+  if (!prompt || prompt.length === 0) {
+    issues.push("empty_output");
+  }
+  if (prompt.length > MAX_PROMPT_LENGTH) {
+    issues.push(`too_long_${prompt.length}_chars`);
+  }
+  for (const pattern of INJECTION_PATTERNS) {
+    if (pattern.test(prompt)) {
+      issues.push(`injection_pattern_detected:${pattern.source}`);
+    }
+  }
+
+  return { valid: issues.length === 0, issues };
+}
+
 export const generateDefaultPrompt = action({
   args: {
     orgId: v.id("orgs"),
   },
-  handler: async (ctx, args): Promise<{ prompt: string }> => {
+  handler: async (ctx, args): Promise<{ prompt: string; validation: PromptValidationResult }> => {
     // Charger les données contextuelles de l'org
     const org = await ctx.runQuery(api.functions.orgs.getById, {
       orgId: args.orgId,
@@ -89,10 +131,24 @@ GÉNÈRE LE PROMPT SYSTÈME :`;
       contents: [{ role: "user", parts: [{ text: metaPrompt }] }],
     });
 
-    const generated = result.text ?? "";
+    const generated = (result.text ?? "").trim();
+
+    // Phase F2.3 — Valider le prompt généré avec guardrails
+    const validation = validatePromptOutput(generated);
+
+    // Si trop long, tronquer proprement au dernier paragraphe complet
+    let finalPrompt = generated;
+    if (generated.length > MAX_PROMPT_LENGTH) {
+      const truncated = generated.substring(0, MAX_PROMPT_LENGTH);
+      const lastParagraph = truncated.lastIndexOf("\n\n");
+      finalPrompt = lastParagraph > 500
+        ? truncated.substring(0, lastParagraph)
+        : truncated;
+    }
 
     return {
-      prompt: generated.trim(),
+      prompt: finalPrompt,
+      validation,
     };
   },
 });

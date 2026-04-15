@@ -89,4 +89,7 @@ export const orgCalendarTable = defineTable({
   updatedAt: v.number(),
   updatedBy: v.optional(v.id("users")),
 })
-  .index("by_org", ["orgId"]);
+  .index("by_org", ["orgId"])
+  // Phase F2.2 — Index composite pour le cron syncLegacyOrgFields
+  // qui scanne les calendars récemment modifiés.
+  .index("by_org_updatedAt", ["orgId", "updatedAt"]);
