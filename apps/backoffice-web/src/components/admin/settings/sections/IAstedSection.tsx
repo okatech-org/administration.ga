@@ -22,6 +22,8 @@ import { Bot, Clock, Languages, Rocket, Settings2, ShieldAlert, Sparkles, User2,
 import { useEffect, useState } from "react";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { SectionHeader } from "@/components/design-system/section-header";
+import { HelpTooltip } from "@/components/admin/HelpTooltip";
+import { HELP } from "@/lib/help-content";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -476,10 +478,13 @@ export function IAstedSection({ orgId, onStatusChange }: SettingsSectionProps) {
       {/* ─── Persona ────────────────────────────────── */}
       <FlatCard>
         <div className="p-4">
-          <SectionHeader
-            icon={<User2 className="h-4 w-4 text-indigo-600" />}
-            title="Persona"
-          />
+          <div className="flex items-center gap-1.5">
+            <SectionHeader
+              icon={<User2 className="h-4 w-4 text-indigo-600" />}
+              title="Persona"
+            />
+            <HelpTooltip content={HELP.iasted.persona} />
+          </div>
           <p className="text-xs text-muted-foreground mb-3">
             Identité et style de l'assistant vu par les citoyens.
           </p>
@@ -539,10 +544,13 @@ export function IAstedSection({ orgId, onStatusChange }: SettingsSectionProps) {
       {/* ─── Prompt & Instructions ─────────────────── */}
       <FlatCard>
         <div className="p-4">
-          <SectionHeader
-            icon={<Settings2 className="h-4 w-4 text-blue-600" />}
-            title="Instructions contextuelles"
-          />
+          <div className="flex items-center gap-1.5">
+            <SectionHeader
+              icon={<Settings2 className="h-4 w-4 text-blue-600" />}
+              title="Instructions contextuelles"
+            />
+            <HelpTooltip content={HELP.iasted.systemPrompt} />
+          </div>
           <p className="text-xs text-muted-foreground mb-3">
             Instructions Markdown ajoutées au prompt système de Gemini à chaque
             conversation. Permet de contextualiser pour cette représentation.
@@ -580,10 +588,13 @@ export function IAstedSection({ orgId, onStatusChange }: SettingsSectionProps) {
       {/* ─── Tools policy ──────────────────────────── */}
       <FlatCard>
         <div className="p-4">
-          <SectionHeader
-            icon={<Wrench className="h-4 w-4 text-purple-600" />}
-            title="Tools autorisés"
-          />
+          <div className="flex items-center gap-1.5">
+            <SectionHeader
+              icon={<Wrench className="h-4 w-4 text-purple-600" />}
+              title="Tools autorisés"
+            />
+            <HelpTooltip content={HELP.iasted.toolsPolicy} />
+          </div>
           <p className="text-xs text-muted-foreground mb-3">
             Contrôle les fonctionnalités que l'assistant peut utiliser. Le mode
             whitelist active uniquement les tools cochés; le mode blacklist
@@ -771,10 +782,13 @@ export function IAstedSection({ orgId, onStatusChange }: SettingsSectionProps) {
       {/* ─── Escalation ─────────────────────────── */}
       <FlatCard>
         <div className="p-4">
-          <SectionHeader
-            icon={<ShieldAlert className="h-4 w-4 text-rose-600" />}
-            title="Escalation vers un agent humain"
-          />
+          <div className="flex items-center gap-1.5">
+            <SectionHeader
+              icon={<ShieldAlert className="h-4 w-4 text-rose-600" />}
+              title="Escalation vers un agent humain"
+            />
+            <HelpTooltip content={HELP.iasted.escalation} />
+          </div>
           <p className="text-xs text-muted-foreground mb-3">
             Déclenche une proposition de handoff vers un agent selon keywords,
             sentiment ou nombre de tours infructueux.
@@ -969,10 +983,13 @@ export function IAstedSection({ orgId, onStatusChange }: SettingsSectionProps) {
       {/* ─── Quotas ────────────────────────────────── */}
       <FlatCard>
         <div className="p-4">
-          <SectionHeader
-            icon={<Rocket className="h-4 w-4 text-indigo-600" />}
-            title="Quotas & Limites"
-          />
+          <div className="flex items-center gap-1.5">
+            <SectionHeader
+              icon={<Rocket className="h-4 w-4 text-indigo-600" />}
+              title="Quotas & Limites"
+            />
+            <HelpTooltip content={HELP.iasted.quotas} />
+          </div>
           <p className="text-xs text-muted-foreground mb-3">
             Protège contre les abus et contrôle les coûts LLM.
           </p>
