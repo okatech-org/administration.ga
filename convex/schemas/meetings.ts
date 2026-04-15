@@ -66,6 +66,7 @@ export const meetingsTable = defineTable({
       v.literal("normal"),    // One party hung up
       v.literal("timeout"),   // No answer within timeout
       v.literal("declined"),  // All agents declined
+      v.literal("rejected"),  // Legacy alias for "declined" (pre-unified schema)
       v.literal("error"),     // Technical error
       v.literal("cancelled"), // Caller cancelled before answer
       v.literal("voicemail_recorded"), // Voicemail captured instead of live answer
