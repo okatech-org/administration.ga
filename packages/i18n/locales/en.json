@@ -826,24 +826,7 @@
 			},
 			"global": {
 				"complete": "Configuration complete and operational"
-			}
-		},
-		"nav": {
-			"dashboard": "Dashboard",
-			"organizations": "Representations",
-			"users": "Users",
-			"services": "Consular services",
-			"requests": "All requests",
-			"roles": "Roles & permissions",
-			"auditLogs": "Audit logs",
-			"posts": "News (Posts)",
-			"tutorials": "Tutorials",
-			"events": "Events",
-			"associationClaims": "Assoc. claims",
-			"settings": "Global settings",
-			"support": "Support & Tickets"
-		},
-		"dashboard": {
+			},
 			"title": "Dashboard",
 			"welcome": "Welcome to Consulat.ga Administration",
 			"stats": {
@@ -871,6 +854,21 @@
 			"addOrg": "Add Organization",
 			"addService": "Add Service",
 			"viewLogs": "View Logs"
+		},
+		"nav": {
+			"dashboard": "Dashboard",
+			"organizations": "Representations",
+			"users": "Users",
+			"services": "Consular services",
+			"requests": "All requests",
+			"roles": "Roles & permissions",
+			"auditLogs": "Audit logs",
+			"posts": "News (Posts)",
+			"tutorials": "Tutorials",
+			"events": "Events",
+			"associationClaims": "Assoc. claims",
+			"settings": "Global settings",
+			"support": "Support & Tickets"
 		},
 		"users": {
 			"title": "Users",
@@ -2338,6 +2336,7 @@
 		"back": "Back",
 		"edit": "Edit",
 		"delete": "Delete",
+		"remove": "Remove",
 		"confirm": "Confirm",
 		"close": "Close",
 		"loading": "Loading...",
@@ -2927,7 +2926,8 @@
 			"contactNumber": "Emergency contact #{{number}}",
 			"country": "Contact's country",
 			"add": "Add an emergency contact",
-			"remove": "Remove this contact"
+			"remove": "Remove this contact",
+			"none": "No emergency contact added"
 		},
 		"documents": {
 			"empty": "No documents added",
@@ -3591,6 +3591,255 @@
 			"startSuccess": "Call initiated",
 			"error": "Error during the call",
 			"recall": "Call back"
+		}
+	},
+	"callCenter": {
+		"title": "Call Center",
+		"subtitle": "Multi-line call queue",
+		"status": {
+			"online": "Online",
+			"busy": "Busy",
+			"away": "Away",
+			"offline": "Offline"
+		},
+		"queue": {
+			"title": "Incoming calls",
+			"empty": "All quiet",
+			"emptyHint": "No calls waiting right now.",
+			"urgentBanner": "Urgent calls — handle first",
+			"countShort": "{{count}} in queue",
+			"allLines": "All lines"
+		},
+		"line": {
+			"filterTitle": "Lines",
+			"noAssignment": "No line assigned",
+			"noAssignmentHint": "Ask an administrator to assign you to at least one line.",
+			"allAgents": "Shared queue"
+		},
+		"priority": {
+			"urgent": "Urgent",
+			"high": "High",
+			"normal": "Normal"
+		},
+		"card": {
+			"ringingSince": "Ringing for {{seconds}}s",
+			"openDossiers": "{{count}} open case",
+			"openDossiers_plural": "{{count}} open cases",
+			"noDossier": "No open case",
+			"audioOnly": "Audio",
+			"videoCall": "Video",
+			"redirected": "Redirected",
+			"redirectedFrom": "Redirected from: {{line}}"
+		},
+		"action": {
+			"pickup": "Answer",
+			"decline": "Decline",
+			"hold": "Hold",
+			"resume": "Resume",
+			"transfer": "Transfer",
+			"end": "Hang up",
+			"viewContext": "View context"
+		},
+		"activeBar": {
+			"title": "Active calls",
+			"empty": "No active call",
+			"parkedFor": "On hold for {{duration}}"
+		},
+		"drawer": {
+			"selectCall": "Select a call",
+			"selectCallHint": "Click a card to view the citizen's context.",
+			"tabs": {
+				"dossiers": "Cases",
+				"appointments": "Appointments",
+				"correspondance": "Correspondence",
+				"history": "History"
+			},
+			"citizen": {
+				"nip": "NIP",
+				"phone": "Phone",
+				"email": "Email",
+				"nationality": "Nationality",
+				"residence": "Residence",
+				"birthDate": "Date of birth",
+				"noIdentity": "Identity not provided"
+			},
+			"dossiers": {
+				"empty": "No open case",
+				"emptyHint": "This citizen has no ongoing request.",
+				"openCount": "{{count}} open case",
+				"openCount_plural": "{{count}} open cases",
+				"closedCount": "{{count}} closed case",
+				"closedCount_plural": "{{count}} closed cases",
+				"actionsPending": "Pending actions",
+				"noActions": "No action required"
+			},
+			"appointments": {
+				"upcoming": "Upcoming appointments",
+				"recent": "Recent",
+				"empty": "No appointment",
+				"deposit": "Deposit",
+				"pickup": "Pickup"
+			},
+			"history": {
+				"title": "Recent calls",
+				"empty": "No previous call",
+				"missed": "Missed",
+				"declined": "Declined",
+				"answered": "Answered",
+				"ended": "Ended"
+			}
+		},
+		"toasts": {
+			"pickupAlreadyTaken": "Already answered by another agent",
+			"pickupSuccess": "Call connected",
+			"declineSuccess": "Call declined",
+			"hangupSuccess": "Call ended"
+		},
+		"quickActions": {
+			"createRequest": "Create request",
+			"scheduleAppointment": "Schedule appointment",
+			"transfer": "Transfer",
+			"escalate": "Escalate",
+			"escalated": "Call escalated to supervisor",
+			"escalateHint": "Supervision team has been notified",
+			"needActiveCall": "Select an active call to use quick actions"
+		},
+		"transfer": {
+			"description": "Choose an agent or a line to redirect this call.",
+			"toAgent": "To an agent",
+			"toLine": "To a line",
+			"searchAgent": "Search by name or role",
+			"noAgent": "No agent found",
+			"noLine": "No active line",
+			"transferring": "Transferring…"
+		},
+		"missed": {
+			"title": "To call back",
+			"callBack": "Call back",
+			"sinceMinutes": "{{count}} min ago",
+			"assignedToMe": "For you",
+			"noUserId": "Unknown caller — cannot call back",
+			"empty": "No callbacks pending",
+			"status": {
+				"pending": "Pending",
+				"assigned": "Assigned",
+				"in_progress": "In progress",
+				"completed": "Called"
+			},
+			"reason": {
+				"timeout": "No answer",
+				"no_agent": "No agent",
+				"rejected": "Declined",
+				"abandoned": "Hung up"
+			}
+		},
+		"supervision": {
+			"title": "Supervision",
+			"kpi": {
+				"queueDepth": "Queue",
+				"avgWaitSeconds": "Avg. wait",
+				"slaBreachPct": "SLA breach",
+				"agentsOnline": "Agents online",
+				"callsToday": "Calls today",
+				"missedToday": "Missed today"
+			},
+			"perLine": "Per line",
+			"actions": "Supervisor actions",
+			"listenMode": "Listen",
+			"whisperMode": "Whisper",
+			"bargeMode": "Barge in",
+			"listenHint": "Silent monitoring — invisible to agent and caller",
+			"whisperHint": "Talk to the agent only — the caller will not hear",
+			"bargeHint": "Join the call — everyone can hear each other",
+			"joinSession": "Join",
+			"endSession": "Leave supervision",
+			"connecting": "Connecting…",
+			"activeBadge": "Supervision active",
+			"modeBadge": {
+				"listen": "Listen mode",
+				"whisper": "Whisper mode",
+				"barge": "Barge mode"
+			},
+			"noActiveCalls": "No active calls to supervise"
+		},
+		"voicemail": {
+			"title": "Voicemail",
+			"navLabel": "Voicemail",
+			"empty": "No messages",
+			"emptyHint": "Voice messages left by callers will appear here.",
+			"unread": "Unread",
+			"read": "Read",
+			"playing": "Playing…",
+			"markRead": "Mark as read",
+			"markUnread": "Mark as unread",
+			"duration": "Duration",
+			"transcript": "Transcript",
+			"noTranscript": "No transcript available",
+			"recordedAt": "Recorded {{when}}",
+			"unknownCaller": "Unknown caller",
+			"callBack": "Call back",
+			"deleteConfirm": "Delete this voicemail?",
+			"deleteConfirmDescription": "This action is irreversible. The audio recording will be permanently deleted.",
+			"pending": "Processing",
+			"failed": "Recording failed",
+			"unreadCountShort": "{{count}} unread",
+			"unreadCountShort_plural": "{{count}} unread"
+		},
+		"recording": {
+			"title": "Recordings",
+			"empty": "No recordings",
+			"emptyHint": "Call recordings will appear here.",
+			"consentTitle": "Call recording",
+			"consentBanner": "This call may be recorded to improve service quality and ensure traceability.",
+			"consentBullets": {
+				"purpose": "The recording will be kept for {{days}} days, then automatically deleted.",
+				"rights": "You have the right to access, rectify, and delete your data (GDPR).",
+				"optional": "Recording is optional — you may refuse without any impact on your request."
+			},
+			"consentAccept": "I accept the recording",
+			"consentDecline": "I decline",
+			"consentDeclined": "Recording declined by the caller",
+			"start": "Record this call",
+			"stop": "Stop recording",
+			"recording": "Recording in progress",
+			"waiting": "Waiting for consent…",
+			"playback": "Playback",
+			"retentionNotice": "Kept for {{days}} days",
+			"deleteConfirm": "Delete this recording?",
+			"deleteConfirmDescription": "This action is irreversible.",
+			"stopConfirm": "Stop recording?",
+			"status": {
+				"pending": "Processing",
+				"completed": "Available",
+				"failed": "Failed"
+			},
+			"featureDisabled": "Recording feature disabled"
+		},
+		"push": {
+			"sectionTitle": "Push notifications",
+			"sectionDescription": "Receive alerts even when the tab is closed.",
+			"enable": "Enable notifications",
+			"disable": "Disable notifications",
+			"enabled": "Notifications enabled",
+			"denied": "Permission denied — reset it in your browser settings",
+			"unsupported": "Your browser does not support push notifications",
+			"testNotification": "Send a test notification",
+			"testSent": "Notification sent",
+			"subscribeError": "Unable to enable notifications",
+			"triggers": {
+				"slaBreach": "A call has exceeded the SLA",
+				"voicemailLeft": "New voicemail",
+				"missedCall": "Missed call",
+				"supervisorAlert": "Supervisor alert"
+			}
+		},
+		"schedules": {
+			"autoPresence": "Presence synced automatically",
+			"autoPresenceHint": "Your status switches between online and offline based on your weekly schedule.",
+			"nowOnline": "Online per your schedule",
+			"nowOffline": "Outside working hours",
+			"nextChange": "Next change {{when}}",
+			"exceptionActive": "Active exception: {{reason}}"
 		}
 	},
 	"callLines": {

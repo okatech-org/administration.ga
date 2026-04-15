@@ -46,13 +46,13 @@ export default function PrintSettingsPage() {
 
 	// Get all active organizations
 	const { data: orgs } = useAuthenticatedConvexQuery(
-		api.functions.orgs.listAll,
+		api.functions.orgs.list,
 		{},
 	);
 
 	// Mutation to update org settings
 	const { mutateAsync: updateOrgSettings, isPending: isUpdating } = useConvexMutationQuery(
-		api.functions.orgs.updateSettings,
+		api.functions.orgs.update,
 	);
 
 	const handleTogglePrint = async (org: Doc<"orgs">, enabled: boolean) => {

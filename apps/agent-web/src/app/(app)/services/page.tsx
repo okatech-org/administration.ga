@@ -318,7 +318,6 @@ export default function AdminServicesPage() {
         requiresAppointment: activationForm.requiresAppointment,
         requiresAppointmentForPickup:
           activationForm.requiresAppointmentForPickup,
-        instructions: activationForm.instructions || undefined,
       });
       toast.success(t("dashboard.services.activated"));
       setAddDialogOpen(false);
@@ -515,7 +514,7 @@ export default function AdminServicesPage() {
                   service={service}
                   onCardClick={() => handleCardClick(service)}
                   onToggle={() => handleToggle(service)}
-                  t={t}
+                  t={t as (key: string, fallback?: string | Record<string, unknown>) => string}
                   lang={i18n.language}
                 />
               ))}

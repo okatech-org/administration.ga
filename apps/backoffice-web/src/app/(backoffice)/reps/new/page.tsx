@@ -72,6 +72,7 @@ interface TemplateData {
 	label: { fr?: string; en?: string };
 	description: { fr?: string; en?: string };
 	icon: string;
+	modules?: string[];
 	positions: Array<{
 		code: string;
 		title: { fr?: string; en?: string };
@@ -300,7 +301,7 @@ export default function NewOrganizationPage() {
 					website: value.website || undefined,
 					timezone: value.timezone,
 					templateType: selectedTemplate.type,
-					modules: selectedTemplate.modules,
+					modules: selectedTemplate.modules as any,
 					positions: positions.map((p) => ({
 						code: p.code,
 						title: p.title,

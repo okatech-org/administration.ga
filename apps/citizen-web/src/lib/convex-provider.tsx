@@ -4,6 +4,7 @@ import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react"
 import { ConvexQueryClient } from "@convex-dev/react-query"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useConvexAuth, useMutation } from "convex/react"
+import type { FunctionReference } from "convex/server"
 import { useEffect, useMemo, useRef } from "react"
 import { authClient } from "./auth-client"
 
@@ -17,12 +18,17 @@ const convexQueryClient = new ConvexQueryClient(CONVEX_URL)
 
 export { convexQueryClient }
 
+// Référence à la mutation Convex `ensureUser` (mutation publique sans args,
+// retour indifférent). Permet d'accepter `api.functions.users.ensureUser`
+// sans fuiter `any` à travers les props du provider.
+type EnsureUserMutation = FunctionReference<"mutation", "public">
+
 function AuthSync({
   children,
   ensureUserMutation,
 }: {
   children: React.ReactNode
-  ensureUserMutation: any
+  ensureUserMutation: EnsureUserMutation
 }) {
   const { isAuthenticated } = useConvexAuth()
   const ensureUser = useMutation(ensureUserMutation)
@@ -48,8 +54,13 @@ export default function AppConvexProvider({
   ensureUserMutation,
 }: {
   children: React.ReactNode
-  ensureUserMutation: any
+  ensureUserMutation: EnsureUserMutation
 }) {
+  // Garde contre la double connexion (React StrictMode double-invoke ou
+  // renders multiples). Évite d'accéder à une propriété interne non typée
+  // de `ConvexQueryClient` pour détecter un état déjà connecté.
+  const hasConnectedRef = useRef(false)
+
   const queryClient = useMemo(
     () =>
       new QueryClient({
@@ -68,12 +79,12 @@ export default function AppConvexProvider({
 
   useEffect(() => {
     try {
-      convexQueryClient.connect(queryClient)
+      if (!hasConnectedRef.current) {
+        convexQueryClient.connect(queryClient)
+        hasConnectedRef.current = true
+      }
     } catch (e) {
-      console.warn(
-        "Convex query client connection error (likely strict mode double-invoke):",
-        e
-      )
+      console.warn("Convex query client connection error:", e)
     }
   }, [queryClient])
 

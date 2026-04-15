@@ -1,11 +1,32 @@
 import { useEffect, useRef } from "react";
 
 /**
- * useRingtone — plays a looping ringtone while `isRinging` is true.
- * Uses the Web Audio API to generate a pleasant dual-tone ringtone
- * (no external audio file needed).
+ * Profils de sonnerie.
+ * - "standard" : tonalité téléphonique classique 440/480 Hz, cadence 2s
+ * - "urgent"   : tonalité plus aiguë 660/720 Hz, cadence 1.2s pour signaler
+ *                visuellement et auditivement l'urgence d'un appel prioritaire
  */
-export function useRingtone(isRinging: boolean) {
+export type RingtoneVariant = "standard" | "urgent";
+
+const PROFILES: Record<
+	RingtoneVariant,
+	{ freqs: [number, number]; cadenceMs: number; gain: number }
+> = {
+	standard: { freqs: [440, 480], cadenceMs: 2000, gain: 0.15 },
+	urgent: { freqs: [660, 720], cadenceMs: 1200, gain: 0.2 },
+};
+
+/**
+ * useRingtone — plays a looping ringtone while `isRinging` is true.
+ * Uses the Web Audio API to generate a dual-tone ringtone (no asset needed).
+ *
+ * @param isRinging - whether the tone should be playing
+ * @param variant   - "standard" (default) or "urgent" (higher pitch + faster cadence)
+ */
+export function useRingtone(
+	isRinging: boolean,
+	variant: RingtoneVariant = "standard",
+) {
 	const audioContextRef = useRef<AudioContext | null>(null);
 	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -23,6 +44,8 @@ export function useRingtone(isRinging: boolean) {
 			return;
 		}
 
+		const profile = PROFILES[variant];
+
 		// Create audio context
 		const audioContext = new AudioContext();
 		audioContextRef.current = audioContext;
@@ -34,14 +57,11 @@ export function useRingtone(isRinging: boolean) {
 			const gainNode = audioContext.createGain();
 			gainNode.connect(audioContext.destination);
 
-			// Ring pattern: two short beeps
-			const frequencies = [440, 480]; // Standard phone ring frequencies
-
 			for (let beep = 0; beep < 2; beep++) {
 				const startTime = now + beep * 0.25;
 				const endTime = startTime + 0.15;
 
-				for (const freq of frequencies) {
+				for (const freq of profile.freqs) {
 					const osc = audioContext.createOscillator();
 					osc.type = "sine";
 					osc.frequency.setValueAtTime(freq, startTime);
@@ -50,17 +70,19 @@ export function useRingtone(isRinging: boolean) {
 					osc.stop(endTime);
 				}
 
-				// Envelope: fade in/out for each beep
+				// Envelope: fade in/out pour chaque bip
 				gainNode.gain.setValueAtTime(0, startTime);
-				gainNode.gain.linearRampToValueAtTime(0.15, startTime + 0.02);
-				gainNode.gain.setValueAtTime(0.15, endTime - 0.02);
+				gainNode.gain.linearRampToValueAtTime(
+					profile.gain,
+					startTime + 0.02,
+				);
+				gainNode.gain.setValueAtTime(profile.gain, endTime - 0.02);
 				gainNode.gain.linearRampToValueAtTime(0, endTime);
 			}
 		};
 
-		// Play immediately, then repeat every 2 seconds
 		playRingTone();
-		intervalRef.current = setInterval(playRingTone, 2000);
+		intervalRef.current = setInterval(playRingTone, profile.cadenceMs);
 
 		return () => {
 			if (intervalRef.current) {
@@ -75,5 +97,5 @@ export function useRingtone(isRinging: boolean) {
 				audioContextRef.current = null;
 			}
 		};
-	}, [isRinging]);
+	}, [isRinging, variant]);
 }

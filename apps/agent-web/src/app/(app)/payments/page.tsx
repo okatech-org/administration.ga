@@ -300,8 +300,8 @@ export default function PaymentsDashboardPage() {
 									<XAxis dataKey="date" tick={{ fontSize: 12 }} />
 									<YAxis tick={{ fontSize: 12 }} />
 									<Tooltip
-										formatter={(value: number) => [
-											`${value?.toFixed(2) || "0.00"} €`,
+										formatter={(value) => [
+											`${(value as number | undefined)?.toFixed(2) || "0.00"} €`,
 											"Revenus",
 										]}
 									/>

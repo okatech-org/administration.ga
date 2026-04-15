@@ -157,11 +157,7 @@ export const profileFormSchema = z.object({
 			.string()
 			.email({ message: "errors.profile.contacts.email.invalid" })
 			.optional(),
-		emergencyContacts: z
-			.array(emergencyContactSchema)
-			.min(1, {
-				message: "errors.profile.contacts.emergency.atLeastOne",
-			}),
+		emergencyContacts: z.array(emergencyContactSchema),
 	}),
 	family: z
 		.object({

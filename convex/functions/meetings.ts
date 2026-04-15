@@ -1171,3 +1171,98 @@ export const cleanupStaleCalls = internalMutation({
 
   },
 });
+
+// ============================================================================
+// SPRINT 6 — RGPD consent pour l'enregistrement
+// ============================================================================
+
+/**
+ * Accepte l'enregistrement de l'appel (appelée par le citoyen).
+ * Pré-condition : être participant du meeting.
+ */
+export const acceptRecordingConsent = authMutation({
+  args: {
+    meetingId: v.id("meetings"),
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) throw error(ErrorCode.NOT_FOUND, "Meeting introuvable");
+    const isParticipant = meeting.participants.some(
+      (p) => p.userId === ctx.user._id,
+    );
+    if (!isParticipant) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Non-participant");
+    }
+    const now = Date.now();
+    await ctx.db.patch(args.meetingId, {
+      citizenConsent: {
+        ...(meeting.citizenConsent ?? {}),
+        recordingAccepted: true,
+        recordingAcceptedAt: now,
+      },
+    });
+    return { accepted: true };
+  },
+});
+
+/**
+ * Demande au citoyen son consentement pour enregistrer l'appel (appelée par l'agent).
+ *
+ * Plan Intelligence iAsted × Sprint 6 — Phase ε.
+ *
+ * Écrit `citizenConsent.recordingConsentRequestedAt`. Le citizen-web observe
+ * ce champ via subscription et affiche le banner tant qu'aucune décision
+ * (`recordingAccepted`/`recordingDeclinedAt`) n'est enregistrée.
+ */
+export const requestRecordingConsent = authMutation({
+  args: {
+    meetingId: v.id("meetings"),
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) throw error(ErrorCode.NOT_FOUND, "Meeting introuvable");
+    // L'agent doit être participant du meeting (sécurité minimale).
+    const isParticipant = meeting.participants.some(
+      (p) => p.userId === ctx.user._id,
+    );
+    if (!isParticipant) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Non-participant");
+    }
+    const now = Date.now();
+    await ctx.db.patch(args.meetingId, {
+      citizenConsent: {
+        ...(meeting.citizenConsent ?? {}),
+        recordingConsentRequestedAt: now,
+      },
+    });
+    return { requestedAt: now };
+  },
+});
+
+/**
+ * Refuse l'enregistrement de l'appel.
+ */
+export const declineRecordingConsent = authMutation({
+  args: {
+    meetingId: v.id("meetings"),
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) throw error(ErrorCode.NOT_FOUND, "Meeting introuvable");
+    const isParticipant = meeting.participants.some(
+      (p) => p.userId === ctx.user._id,
+    );
+    if (!isParticipant) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Non-participant");
+    }
+    const now = Date.now();
+    await ctx.db.patch(args.meetingId, {
+      citizenConsent: {
+        ...(meeting.citizenConsent ?? {}),
+        recordingAccepted: false,
+        recordingDeclinedAt: now,
+      },
+    });
+    return { declined: true };
+  },
+});

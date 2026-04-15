@@ -48,7 +48,7 @@ export default function AdminNewPostPage() {
 	const { t } = useTranslation();
 
 	// Get list of orgs for selection
-	const { data: orgs } = useAuthenticatedConvexQuery(api.functions.orgs.list);
+	const { data: orgs } = useAuthenticatedConvexQuery(api.functions.orgs.list, {});
 	const { mutateAsync: create } = useConvexMutationQuery(
 		api.functions.posts.create,
 	);

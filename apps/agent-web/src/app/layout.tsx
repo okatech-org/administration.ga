@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next"
+import { Providers } from "@/components/providers"
+import { E2ESignInBridge } from "@/components/auth/E2ESignInBridge"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -29,7 +31,8 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className="font-sans bg-background text-foreground antialiased">
-        {children}
+        <Providers>{children}</Providers>
+        <E2ESignInBridge />
       </body>
     </html>
   )

@@ -39,9 +39,10 @@ import type { ProfileFormValues } from "@/lib/validation/profile";
 interface ContactsStepProps {
 	control: Control<ProfileFormValues>;
 	errors?: FieldErrors<ProfileFormValues>;
+	hideEmergencyContacts?: boolean;
 }
 
-function EmergencyContactEntry({
+export function EmergencyContactEntry({
 	control,
 	index,
 	countryOptions,
@@ -400,7 +401,7 @@ function AddressSection({
 	);
 }
 
-export function ContactsStep({ control }: ContactsStepProps) {
+export function ContactsStep({ control, hideEmergencyContacts = false }: ContactsStepProps) {
 	const { t } = useTranslation();
 	const countryOptions = useMemo(() => {
 		return Object.values(CountryCode).map((code) => ({
@@ -543,55 +544,57 @@ export function ContactsStep({ control }: ContactsStepProps) {
 				</CardContent>
 			</Card>
 
-			<Card>
-				<CardHeader>
-					<CardTitle>{t("profile.sections.emergencyContacts")}</CardTitle>
-					<CardDescription>
-						{t("profile.sections.emergencyContactsDesc")}
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-6">
-					{/* Recommendation message */}
-					<div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
-						<Info className="h-5 w-5 mt-0.5 shrink-0 text-blue-600 dark:text-blue-400" />
-						<p className="text-sm text-blue-800 dark:text-blue-200">
-							{t("profile.emergencyContacts.recommendation")}
-						</p>
-					</div>
+			{!hideEmergencyContacts && (
+				<Card>
+					<CardHeader>
+						<CardTitle>{t("profile.sections.emergencyContacts")}</CardTitle>
+						<CardDescription>
+							{t("profile.sections.emergencyContactsDesc")}
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-6">
+						{/* Recommendation message */}
+						<div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+							<Info className="h-5 w-5 mt-0.5 shrink-0 text-blue-600 dark:text-blue-400" />
+							<p className="text-sm text-blue-800 dark:text-blue-200">
+								{t("profile.emergencyContacts.recommendation")}
+							</p>
+						</div>
 
-					{/* Dynamic emergency contacts list */}
-					{fields.map((field, index) => (
-						<EmergencyContactEntry
-							key={field.id}
-							control={control}
-							index={index}
-							countryOptions={countryOptions}
-							onRemove={() => remove(index)}
-							canRemove={fields.length > 1}
-							t={t}
-						/>
-					))}
+						{/* Dynamic emergency contacts list */}
+						{fields.map((field, index) => (
+							<EmergencyContactEntry
+								key={field.id}
+								control={control}
+								index={index}
+								countryOptions={countryOptions}
+								onRemove={() => remove(index)}
+								canRemove={fields.length > 1}
+								t={t}
+							/>
+						))}
 
-					<Button
-						type="button"
-						variant="outline"
-						className="w-full"
-						onClick={() =>
-							append({
-								firstName: "",
-								lastName: "",
-								phone: "",
-								email: undefined,
-								relationship: undefined as any,
-								country: undefined,
-							})
-						}
-					>
-						<Plus className="h-4 w-4 mr-2" />
-						{t("profile.emergencyContacts.add")}
-					</Button>
-				</CardContent>
-			</Card>
+						<Button
+							type="button"
+							variant="outline"
+							className="w-full"
+							onClick={() =>
+								append({
+									firstName: "",
+									lastName: "",
+									phone: "",
+									email: undefined,
+									relationship: undefined as any,
+									country: undefined,
+								})
+							}
+						>
+							<Plus className="h-4 w-4 mr-2" />
+							{t("profile.emergencyContacts.add")}
+						</Button>
+					</CardContent>
+				</Card>
+			)}
 		</div>
 	);
 }

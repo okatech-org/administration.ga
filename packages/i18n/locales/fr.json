@@ -638,6 +638,7 @@
 		"next": "Suivant",
 		"edit": "Modifier",
 		"delete": "Supprimer",
+		"remove": "Retirer",
 		"confirm": "Confirmer",
 		"close": "Fermer",
 		"loading": "Chargement...",
@@ -1610,6 +1611,41 @@
 			},
 			"global": {
 				"complete": "Configuration complète et opérationnelle"
+			},
+			"title": "Centre de Commandement",
+			"welcome": "Vue stratégique globale",
+			"stats": {
+				"users": "Ressortissants",
+				"totalUsers": "Comptes actifs",
+				"organizations": "Représentations",
+				"consulatesEmbassies": "Consulats et ambassades",
+				"services": "Services",
+				"availableServices": "Services disponibles",
+				"requests": "Demandes",
+				"pendingRequests": "Total des demandes",
+				"registrations": "Inscriptions",
+				"totalRegistrations": "Inscriptions consulaires"
+			},
+			"recentActivity": "Activité récente",
+			"recentActivityDesc": "Dernières actions effectuées sur la plateforme",
+			"requestsByStatus": "Demandes par statut",
+			"requestsByStatusDesc": "Répartition des demandes selon leur statut de traitement",
+			"recentRequests": "Demandes récentes",
+			"recentRequestsDesc": "Les 10 dernières demandes sur la plateforme",
+			"viewAll": "Voir tout",
+			"quickActions": "Actions rapides",
+			"quickActionsDesc": "Raccourcis vers les tâches courantes",
+			"addUser": "Ajouter un utilisateur",
+			"addOrg": "Ajouter une organisation",
+			"addService": "Ajouter un service",
+			"viewLogs": "Voir les journaux",
+			"security": {
+				"title": "Sécurité & Alertes",
+				"description": "Surveillance réseau, cyber-sécurité et intrusions"
+			},
+			"deployment": {
+				"title": "Déploiement des Représentations",
+				"description": "Couverture géographique et progression du réseau diplomatique"
 			}
 		},
 		"nav": {
@@ -1704,43 +1740,6 @@
 				"search": "Rechercher un organisme...",
 				"notFound": "Aucun organisme trouvé.",
 				"prompt": "Sélectionnez un organisme pour gérer ses postes, directions et modules."
-			}
-		},
-		"dashboard": {
-			"title": "Centre de Commandement",
-			"welcome": "Vue stratégique globale",
-			"stats": {
-				"users": "Ressortissants",
-				"totalUsers": "Comptes actifs",
-				"organizations": "Représentations",
-				"consulatesEmbassies": "Consulats et ambassades",
-				"services": "Services",
-				"availableServices": "Services disponibles",
-				"requests": "Demandes",
-				"pendingRequests": "Total des demandes",
-				"registrations": "Inscriptions",
-				"totalRegistrations": "Inscriptions consulaires"
-			},
-			"recentActivity": "Activité récente",
-			"recentActivityDesc": "Dernières actions effectuées sur la plateforme",
-			"requestsByStatus": "Demandes par statut",
-			"requestsByStatusDesc": "Répartition des demandes selon leur statut de traitement",
-			"recentRequests": "Demandes récentes",
-			"recentRequestsDesc": "Les 10 dernières demandes sur la plateforme",
-			"viewAll": "Voir tout",
-			"quickActions": "Actions rapides",
-			"quickActionsDesc": "Raccourcis vers les tâches courantes",
-			"addUser": "Ajouter un utilisateur",
-			"addOrg": "Ajouter une organisation",
-			"addService": "Ajouter un service",
-			"viewLogs": "Voir les journaux",
-			"security": {
-				"title": "Sécurité & Alertes",
-				"description": "Surveillance réseau, cyber-sécurité et intrusions"
-			},
-			"deployment": {
-				"title": "Déploiement des Représentations",
-				"description": "Couverture géographique et progression du réseau diplomatique"
 			}
 		},
 		"users": {
@@ -3197,7 +3196,8 @@
 			"contactNumber": "Contact d'urgence n°{{number}}",
 			"country": "Pays du contact",
 			"add": "Ajouter un contact d'urgence",
-			"remove": "Supprimer ce contact"
+			"remove": "Supprimer ce contact",
+			"none": "Aucun contact d'urgence renseigné"
 		},
 		"documents": {
 			"empty": "Aucun document ajouté",
@@ -4187,6 +4187,255 @@
 			"startSuccess": "Appel lancé",
 			"error": "Erreur lors de l'appel",
 			"recall": "Rappeler"
+		}
+	},
+	"callCenter": {
+		"title": "Centre d'appels",
+		"subtitle": "File d'attente multi-lignes",
+		"status": {
+			"online": "En ligne",
+			"busy": "Occupé",
+			"away": "Absent",
+			"offline": "Hors ligne"
+		},
+		"queue": {
+			"title": "Appels entrants",
+			"empty": "Tout est calme",
+			"emptyHint": "Aucun appel en attente pour le moment.",
+			"urgentBanner": "Appels urgents — à traiter en priorité",
+			"countShort": "{{count}} dans la file",
+			"allLines": "Toutes les lignes"
+		},
+		"line": {
+			"filterTitle": "Lignes",
+			"noAssignment": "Aucune ligne assignée",
+			"noAssignmentHint": "Demandez à un administrateur de vous assigner à au moins une ligne.",
+			"allAgents": "File partagée"
+		},
+		"priority": {
+			"urgent": "Urgent",
+			"high": "Élevée",
+			"normal": "Normale"
+		},
+		"card": {
+			"ringingSince": "Sonne depuis {{seconds}}s",
+			"openDossiers": "{{count}} dossier ouvert",
+			"openDossiers_plural": "{{count}} dossiers ouverts",
+			"noDossier": "Aucun dossier",
+			"audioOnly": "Audio",
+			"videoCall": "Vidéo",
+			"redirected": "Redirigé",
+			"redirectedFrom": "Redirigé depuis : {{line}}"
+		},
+		"action": {
+			"pickup": "Répondre",
+			"decline": "Refuser",
+			"hold": "Mettre en attente",
+			"resume": "Reprendre",
+			"transfer": "Transférer",
+			"end": "Raccrocher",
+			"viewContext": "Voir le contexte"
+		},
+		"activeBar": {
+			"title": "Appels actifs",
+			"empty": "Aucun appel actif",
+			"parkedFor": "En attente depuis {{duration}}"
+		},
+		"drawer": {
+			"selectCall": "Sélectionnez un appel",
+			"selectCallHint": "Cliquez sur une carte pour afficher le contexte du citoyen.",
+			"tabs": {
+				"dossiers": "Dossiers",
+				"appointments": "Rendez-vous",
+				"correspondance": "Correspondance",
+				"history": "Historique"
+			},
+			"citizen": {
+				"nip": "NIP",
+				"phone": "Téléphone",
+				"email": "Email",
+				"nationality": "Nationalité",
+				"residence": "Résidence",
+				"birthDate": "Date de naissance",
+				"noIdentity": "Identité non renseignée"
+			},
+			"dossiers": {
+				"empty": "Aucun dossier ouvert",
+				"emptyHint": "Ce citoyen n'a pas de demande en cours.",
+				"openCount": "{{count}} dossier ouvert",
+				"openCount_plural": "{{count}} dossiers ouverts",
+				"closedCount": "{{count}} dossier clôturé",
+				"closedCount_plural": "{{count}} dossiers clôturés",
+				"actionsPending": "Actions en attente",
+				"noActions": "Aucune action requise"
+			},
+			"appointments": {
+				"upcoming": "Prochains rendez-vous",
+				"recent": "Récents",
+				"empty": "Aucun rendez-vous",
+				"deposit": "Dépôt",
+				"pickup": "Retrait"
+			},
+			"history": {
+				"title": "Appels récents",
+				"empty": "Aucun appel précédent",
+				"missed": "Manqué",
+				"declined": "Refusé",
+				"answered": "Répondu",
+				"ended": "Terminé"
+			}
+		},
+		"toasts": {
+			"pickupAlreadyTaken": "Déjà décroché par un autre agent",
+			"pickupSuccess": "Appel connecté",
+			"declineSuccess": "Appel refusé",
+			"hangupSuccess": "Appel terminé"
+		},
+		"quickActions": {
+			"createRequest": "Créer une demande",
+			"scheduleAppointment": "Prendre un rendez-vous",
+			"transfer": "Transférer",
+			"escalate": "Escalader",
+			"escalated": "Appel escaladé au superviseur",
+			"escalateHint": "L'équipe supervision a été notifiée",
+			"needActiveCall": "Sélectionnez un appel actif pour utiliser les actions"
+		},
+		"transfer": {
+			"description": "Choisir un agent ou une ligne vers laquelle rediriger cet appel.",
+			"toAgent": "Vers un agent",
+			"toLine": "Vers une ligne",
+			"searchAgent": "Rechercher par nom ou poste",
+			"noAgent": "Aucun agent trouvé",
+			"noLine": "Aucune ligne active",
+			"transferring": "Transfert en cours…"
+		},
+		"missed": {
+			"title": "À rappeler",
+			"callBack": "Rappeler",
+			"sinceMinutes": "il y a {{count}} min",
+			"assignedToMe": "Pour vous",
+			"noUserId": "Identité inconnue — rappel impossible",
+			"empty": "Aucun appel à rappeler",
+			"status": {
+				"pending": "En attente",
+				"assigned": "Assigné",
+				"in_progress": "En cours",
+				"completed": "Rappelé"
+			},
+			"reason": {
+				"timeout": "Non répondu",
+				"no_agent": "Aucun agent",
+				"rejected": "Refusé",
+				"abandoned": "Raccroché"
+			}
+		},
+		"supervision": {
+			"title": "Supervision",
+			"kpi": {
+				"queueDepth": "File",
+				"avgWaitSeconds": "Attente moy.",
+				"slaBreachPct": "Hors SLA",
+				"agentsOnline": "Agents en ligne",
+				"callsToday": "Appels aujourd'hui",
+				"missedToday": "Manqués aujourd'hui"
+			},
+			"perLine": "Par ligne",
+			"actions": "Actions superviseur",
+			"listenMode": "Écouter",
+			"whisperMode": "Souffler",
+			"bargeMode": "Intervenir",
+			"listenHint": "Écoute silencieuse — invisible de l'agent et du citoyen",
+			"whisperHint": "Parler uniquement à l'agent — le citoyen n'entendra pas",
+			"bargeHint": "Rejoindre l'appel — tout le monde s'entend",
+			"joinSession": "Rejoindre",
+			"endSession": "Quitter la supervision",
+			"connecting": "Connexion…",
+			"activeBadge": "Supervision active",
+			"modeBadge": {
+				"listen": "Mode écoute",
+				"whisper": "Mode souffleur",
+				"barge": "Mode intervention"
+			},
+			"noActiveCalls": "Aucun appel actif à superviser"
+		},
+		"voicemail": {
+			"title": "Messagerie vocale",
+			"navLabel": "Messagerie",
+			"empty": "Aucun message",
+			"emptyHint": "Les messages vocaux laissés apparaîtront ici.",
+			"unread": "Non lu",
+			"read": "Lu",
+			"playing": "Lecture en cours…",
+			"markRead": "Marquer comme lu",
+			"markUnread": "Marquer comme non lu",
+			"duration": "Durée",
+			"transcript": "Transcription",
+			"noTranscript": "Pas de transcription disponible",
+			"recordedAt": "Enregistré {{when}}",
+			"unknownCaller": "Appelant inconnu",
+			"callBack": "Rappeler",
+			"deleteConfirm": "Supprimer ce message vocal ?",
+			"deleteConfirmDescription": "Cette action est irréversible. L'enregistrement audio sera supprimé définitivement.",
+			"pending": "Traitement en cours",
+			"failed": "Échec de l'enregistrement",
+			"unreadCountShort": "{{count}} non lu",
+			"unreadCountShort_plural": "{{count}} non lus"
+		},
+		"recording": {
+			"title": "Enregistrements",
+			"empty": "Aucun enregistrement",
+			"emptyHint": "Les enregistrements d'appels apparaîtront ici.",
+			"consentTitle": "Enregistrement de l'appel",
+			"consentBanner": "Cet appel peut être enregistré pour améliorer la qualité du service et garantir la traçabilité des échanges.",
+			"consentBullets": {
+				"purpose": "L'enregistrement sera conservé {{days}} jours puis supprimé automatiquement.",
+				"rights": "Vous disposez d'un droit d'accès, de rectification et de suppression (RGPD).",
+				"optional": "L'enregistrement est facultatif — vous pouvez refuser sans impact sur votre demande."
+			},
+			"consentAccept": "J'accepte l'enregistrement",
+			"consentDecline": "Je refuse",
+			"consentDeclined": "Enregistrement refusé par le citoyen",
+			"start": "Enregistrer cet appel",
+			"stop": "Arrêter l'enregistrement",
+			"recording": "Enregistrement en cours",
+			"waiting": "En attente du consentement…",
+			"playback": "Lecture",
+			"retentionNotice": "Conservé {{days}} jours",
+			"deleteConfirm": "Supprimer cet enregistrement ?",
+			"deleteConfirmDescription": "Cette action est irréversible.",
+			"stopConfirm": "Arrêter l'enregistrement ?",
+			"status": {
+				"pending": "En traitement",
+				"completed": "Disponible",
+				"failed": "Échec"
+			},
+			"featureDisabled": "Fonction d'enregistrement désactivée"
+		},
+		"push": {
+			"sectionTitle": "Notifications push",
+			"sectionDescription": "Recevez des alertes même si l'onglet est fermé.",
+			"enable": "Activer les notifications",
+			"disable": "Désactiver les notifications",
+			"enabled": "Notifications activées",
+			"denied": "Permission refusée — réinitialisez-la dans les paramètres du navigateur",
+			"unsupported": "Votre navigateur ne supporte pas les notifications push",
+			"testNotification": "Envoyer une notification test",
+			"testSent": "Notification envoyée",
+			"subscribeError": "Impossible d'activer les notifications",
+			"triggers": {
+				"slaBreach": "Un appel a dépassé le SLA",
+				"voicemailLeft": "Nouveau message vocal",
+				"missedCall": "Appel manqué",
+				"supervisorAlert": "Alerte superviseur"
+			}
+		},
+		"schedules": {
+			"autoPresence": "Présence synchronisée automatiquement",
+			"autoPresenceHint": "Votre statut passe en ligne / hors ligne selon votre planning hebdomadaire.",
+			"nowOnline": "En ligne selon votre planning",
+			"nowOffline": "Hors plage horaire",
+			"nextChange": "Prochain changement {{when}}",
+			"exceptionActive": "Exception en cours : {{reason}}"
 		}
 	},
 	"callLines": {

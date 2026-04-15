@@ -387,7 +387,7 @@ export default function AgentSchedules() {
 														)}
 													/>
 													{isInvalid && (
-														<FieldError errors={field.state.meta.errors} />
+														<FieldError errors={field.state.meta.errors as any} />
 													)}
 												</Field>
 											);

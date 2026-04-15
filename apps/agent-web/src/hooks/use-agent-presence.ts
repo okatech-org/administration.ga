@@ -23,9 +23,14 @@ export function useAgentPresence(
   const setOfflineMutation = useConvexMutationQuery(
     api.functions.agentPresence.setOffline,
   );
-  const { globalActiveMeetingId } = useCallStore();
+  const { slots, activeSlotId, globalActiveMeetingId } = useCallStore();
   const orgIdsRef = useRef(orgIds);
   orgIdsRef.current = orgIds;
+  // Références miroir pour que le setInterval lise toujours l'état récent
+  const slotsRef = useRef(slots);
+  slotsRef.current = slots;
+  const activeSlotIdRef = useRef(activeSlotId);
+  activeSlotIdRef.current = activeSlotId;
 
   useEffect(() => {
     if (!orgIds || orgIds.length === 0) return;
@@ -34,10 +39,19 @@ export function useAgentPresence(
       const currentOrgIds = orgIdsRef.current;
       if (!currentOrgIds) return;
 
+      // Multi-call : tous les slots rejoints (actifs + en attente)
+      const currentSlots = slotsRef.current;
+      const callIds = currentSlots
+        .filter((s) => s.status === "active" || s.status === "held")
+        .map((s) => s.meetingId);
+      const activeId = activeSlotIdRef.current ?? undefined;
+
       for (const orgId of currentOrgIds) {
         heartbeatMutation.mutate({
           orgId,
-          currentCallId: globalActiveMeetingId ?? undefined,
+          currentCallId: activeId ?? globalActiveMeetingId ?? undefined,
+          currentCallIds: callIds.length > 0 ? callIds : undefined,
+          activeCallId: activeId,
           clientType,
         });
       }

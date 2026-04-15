@@ -25,6 +25,7 @@
     "@workspace/api": "workspace:*",
     "@workspace/desktop-shared": "workspace:*",
     "@workspace/i18n": "workspace:*",
+    "@workspace/iasted": "workspace:*",
     "@workspace/shared": "workspace:*",
     "@workspace/ui": "workspace:*",
     "better-auth": "~1.5.6",

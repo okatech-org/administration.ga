@@ -32,7 +32,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { CircleMenu } from "@/components/ui/circle-menu"
+import { CircleMenu } from "@workspace/iasted"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { authClient } from "@/lib/auth-client"
@@ -121,7 +121,7 @@ export function MobileNavBar() {
     <>
       <nav className="fixed right-3 bottom-[calc(0.8rem+env(safe-area-inset-bottom,0px))] left-3 z-40 md:hidden">
         <div className="rounded-2xl bg-secondary backdrop-blur-md">
-          <div className="flex h-[var(--mobile-nav-height)] items-center justify-around px-2">
+          <div className="flex h-(--mobile-nav-height) items-center justify-around px-2">
             <NavBarItem
               item={mainItems[0]}
               active={isActive(mainItems[0].url)}

@@ -220,7 +220,7 @@ export default function RequestDetailPage() {
 
 	const { data: request, isError } = useAuthenticatedConvexQuery(
 		api.functions.requests.getByReferenceId,
-		{ referenceId: reference },
+		{ referenceId: reference as string },
 	);
 	const { data: agentNotes } = useAuthenticatedConvexQuery(
 		api.functions.agentNotes.listByRequest,

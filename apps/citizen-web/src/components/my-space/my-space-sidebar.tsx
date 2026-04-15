@@ -23,7 +23,6 @@ import {
 import { useTheme } from "next-themes"
 import { useSyncExternalStore, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { ChildProfileStatus } from "@convex/lib/constants"
 import { api } from "@convex/_generated/api"
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks"
 import { LogoutButton } from "@/components/sidebars/logout-button"
@@ -97,9 +96,7 @@ export function MySpaceSidebar({
     api.functions.childProfiles.getMine,
     {}
   )
-  const children = (childProfiles ?? []).filter(
-    (c: any) => c.status !== ChildProfileStatus.Inactive
-  ) as Array<{ _id: string; firstName?: string; lastName?: string }>
+  const children = (childProfiles ?? []) as Array<{ _id: string; identity?: { firstName?: string; lastName?: string } }>
   const [childrenOpen, setChildrenOpen] = useState(false)
 
   const navSections: NavSection[] = [
@@ -237,37 +234,23 @@ export function MySpaceSidebar({
 
               {isExpanded ? (
                 <>
-                  <div
+                  <button
+                    type="button"
+                    onClick={() => setChildrenOpen(!childrenOpen)}
                     className={cn(
-                      "w-full flex items-center h-11 transition-all duration-200 text-[15.5px] rounded-lg",
-                      isActive("/my-space/children")
+                      "w-full flex items-center gap-3 px-3 h-11 transition-all duration-200 text-[15.5px] rounded-lg",
+                      childrenOpen
                         ? "active bg-rose-500/10 text-rose-600 font-bold border border-rose-500/10"
                         : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     )}
                   >
-                    <Link
-                      href="/my-space/children"
-                      className="flex-1 flex items-center gap-3 px-3 h-11 rounded-lg"
-                    >
-                      <Users className="size-5 shrink-0" />
-                      <span className="flex-1 text-left truncate">{t("mySpace.myChildren")}</span>
-                      <span className="text-[8px] bg-rose-500/12 text-rose-500 font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                        {children.length}
-                      </span>
-                    </Link>
-                    <button
-                      type="button"
-                      aria-label={t("mySpace.toggleChildrenList", "Voir la liste des enfants")}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        setChildrenOpen(!childrenOpen)
-                      }}
-                      className="shrink-0 h-11 px-2 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-r-lg"
-                    >
-                      <ChevronDown className={cn("size-3 transition-transform duration-200", childrenOpen && "rotate-180")} />
-                    </button>
-                  </div>
+                    <Users className="size-5 shrink-0" />
+                    <span className="flex-1 text-left truncate">{t("mySpace.myChildren")}</span>
+                    <span className="text-[8px] bg-rose-500/12 text-rose-500 font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                      {children.length}
+                    </span>
+                    <ChevronDown className={cn("size-3 transition-transform duration-200", childrenOpen && "rotate-180")} />
+                  </button>
 
                   <div className={cn("overflow-hidden transition-all duration-200 ease-in-out", childrenOpen ? "max-h-60 opacity-100 mt-0.5" : "max-h-0 opacity-0")}>
                     <div className="pl-4 space-y-0.5">
@@ -286,7 +269,7 @@ export function MySpaceSidebar({
                             )}
                           >
                             <Baby className="size-[18px] shrink-0" />
-                            <span className="truncate">{child.firstName ?? "Enfant"}</span>
+                            <span className="truncate">{child.identity?.firstName ?? "Enfant"}</span>
                           </Link>
                         )
                       })}
@@ -296,19 +279,20 @@ export function MySpaceSidebar({
               ) : (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Link
-                      href="/my-space/children"
+                    <button
+                      type="button"
                       title={t("mySpace.myChildren")}
                       aria-label={t("mySpace.myChildren")}
                       className={cn(
                         "flex items-center justify-center w-11 h-11",
-                        isActive("/my-space/children")
+                        children.some((c) => isActive(`/my-space/children/${c._id}`))
                           ? "active text-rose-600"
                           : "text-muted-foreground hover:text-foreground"
                       )}
+                      onClick={() => setChildrenOpen(!childrenOpen)}
                     >
                       <Users className="size-5" />
-                    </Link>
+                    </button>
                   </TooltipTrigger>
                   <TooltipContent side="right" sideOffset={10} className="bg-card border-0">
                     {t("mySpace.myChildren")} ({children.length})

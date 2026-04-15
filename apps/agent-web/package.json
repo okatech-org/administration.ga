@@ -8,7 +8,11 @@
     "build": "next build",
     "start": "next start -p 3003",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:auth": "playwright test --grep @auth"
   },
   "dependencies": {
     "@convex-dev/better-auth": "^0.11.4",
@@ -18,6 +22,7 @@
     "@react-pdf/renderer": "^4.3.2",
     "@tanstack/react-form": "^1.27.7",
     "@tanstack/react-query": "^5.62.0",
+    "@tanstack/react-table": "^8.21.3",
     "@tiptap/extension-image": "^3.17.1",
     "@tiptap/extension-link": "^3.17.1",
     "@tiptap/pm": "^3.17.1",
@@ -25,6 +30,7 @@
     "@tiptap/starter-kit": "^3.17.1",
     "@workspace/api": "workspace:*",
     "@workspace/i18n": "workspace:*",
+    "@workspace/iasted": "workspace:*",
     "@workspace/settings-form": "workspace:*",
     "@workspace/shared": "workspace:*",
     "@workspace/ui": "workspace:*",
@@ -46,6 +52,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-dropzone": "^15.0.0",
+    "react-qr-code": "^2.0.15",
     "react-i18next": "^16.5.0",
     "react-markdown": "^10.1.0",
     "recharts": "^3.8.1",
@@ -53,6 +60,7 @@
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

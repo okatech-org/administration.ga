@@ -458,8 +458,8 @@ export default function StatisticsPage() {
 													/>
 													<Tooltip
 														contentStyle={tooltipStyle}
-														formatter={(value: number) => [
-															value,
+														formatter={(value) => [
+															(value ?? 0) as number,
 															t("admin.charts.requests"),
 														]}
 													/>
@@ -578,9 +578,9 @@ export default function StatisticsPage() {
 												<Tooltip
 													contentStyle={tooltipStyle}
 													formatter={(
-														value: number,
-														_name: any,
-														props: any,
+														value,
+														_name,
+														props,
 													) => [
 														value,
 														props.payload?.fullName ||
@@ -818,14 +818,14 @@ export default function StatisticsPage() {
 													<TableCell>
 														<Badge
 															variant={
-																agent.role === "admin" ? "default" : "secondary"
+																(agent as any).role === "admin" ? "default" : "secondary"
 															}
 															className="text-xs"
 														>
-															{t(
-																`dashboard.team.roles.${agent.role}`,
-																agent.role,
-															)}
+															{String(t(
+																`dashboard.team.roles.${(agent as any).role}`,
+																(agent as any).role,
+															))}
 														</Badge>
 													</TableCell>
 													<TableCell className="text-center font-medium">

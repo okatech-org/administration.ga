@@ -19,13 +19,19 @@ const nextConfig: NextConfig = {
   ],
   turbopack: {
     resolveAlias: {
-      "@tanstack/react-query": "./node_modules/@tanstack/react-query",
-      i18next: "./node_modules/i18next",
-      convex: "./node_modules/convex",
-      "convex/react": "./node_modules/convex/react",
-      "convex/server": "./node_modules/convex/server",
-      "convex/values": "./node_modules/convex/values",
-      "convex/browser": "./node_modules/convex/browser",
+      // IMPORTANT : alias vers le workspace root (../../node_modules/…),
+      // pas vers ./node_modules qui n'existe pas pour cette app sous Bun
+      // (dedupe laisse parfois des symlinks manquants). Sans cet alias
+      // correct, `@tanstack/react-query` peut être résolu vers 2 instances
+      // différentes (ici + packages/api), ce qui casse le context React
+      // → "No QueryClient set" dans SuperadminGuard.
+      "@tanstack/react-query": "../../node_modules/@tanstack/react-query",
+      i18next: "../../node_modules/i18next",
+      convex: "../../node_modules/convex",
+      "convex/react": "../../node_modules/convex/react",
+      "convex/server": "../../node_modules/convex/server",
+      "convex/values": "../../node_modules/convex/values",
+      "convex/browser": "../../node_modules/convex/browser",
     },
   },
   webpack: (config) => {
@@ -33,10 +39,10 @@ const nextConfig: NextConfig = {
       ...config.resolve.alias,
       "@tanstack/react-query": path.resolve(
         __dirname,
-        "node_modules/@tanstack/react-query",
+        "../../node_modules/@tanstack/react-query",
       ),
-      i18next: path.resolve(__dirname, "node_modules/i18next"),
-      convex: path.resolve(__dirname, "node_modules/convex"),
+      i18next: path.resolve(__dirname, "../../node_modules/i18next"),
+      convex: path.resolve(__dirname, "../../node_modules/convex"),
     }
     return config
   },

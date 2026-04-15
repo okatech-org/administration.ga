@@ -2,6 +2,11 @@
 
 /**
  * iAsted Citoyen — Layout WhatsApp Desktop 3 colonnes
+ *
+ * TODO Phase 3.5+ : migrer vers `<FullscreenShell>` de `@workspace/iasted`
+ * pour consolider header + nav sidebar + tab indicator. Le shell existe déjà
+ * (packages/iasted/src/components/page/FullscreenShell.tsx) et attend seulement
+ * que la liste + le contenu soient extraits en slots.
  */
 
 import { api } from "@convex/_generated/api"

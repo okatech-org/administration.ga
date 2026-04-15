@@ -1,5 +1,9 @@
+"use client";
+
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const MotionDiv = motion.div as any;
 import { Lock, Zap, Globe, Smartphone } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -27,7 +31,7 @@ const AdvantageCard = ({
   };
 
   return (
-    <motion.div
+    <MotionDiv
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -47,7 +51,7 @@ const AdvantageCard = ({
           <p className="text-sm text-muted-foreground">{t(descriptionKey)}</p>
         </CardContent>
       </Card>
-    </motion.div>
+    </MotionDiv>
   );
 };
 
@@ -57,7 +61,7 @@ export function WhySection() {
   return (
     <section className="relative z-10 py-16 px-4 lg:px-8 bg-background">
       <div className="max-w-6xl mx-auto">
-        <motion.div
+        <MotionDiv
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -67,7 +71,7 @@ export function WhySection() {
           <p className="text-muted-foreground max-w-xl mx-auto">
             {t("why.subtitle")}
           </p>
-        </motion.div>
+        </MotionDiv>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <AdvantageCard

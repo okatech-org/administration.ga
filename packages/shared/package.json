@@ -9,7 +9,8 @@
     "./schemas/profile": "./src/schemas/profile.ts",
     "./schemas/registration": "./src/schemas/registration.ts",
     "./types": "./src/types/index.ts",
-    "./utils/sanitize": "./src/utils/sanitize.ts"
+    "./utils/sanitize": "./src/utils/sanitize.ts",
+    "./feature-flags": "./src/feature-flags.ts"
   },
   "dependencies": {
     "isomorphic-dompurify": "^3.7.1",

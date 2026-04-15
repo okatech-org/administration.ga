@@ -113,3 +113,7 @@ export { supervisionSessionsTable } from "./supervisionSessions";
 
 // Notifications — Web Push subscriptions
 export { pushSubscriptionsTable } from "./pushSubscriptions";
+
+// Sprint 6 — Notes post-appel + brouillons de messages
+export { callNotesTable } from "./callNotes";
+export { draftMessagesTable } from "./draftMessages";

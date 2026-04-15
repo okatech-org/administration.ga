@@ -22,7 +22,7 @@ import {
 	MapPin,
 	Users,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { PageHeader } from "@/components/design-system/page-header";
@@ -83,10 +83,11 @@ export default function IAgendaPage() {
 	const { activeOrgId, OrgSelector } = useOrgSelector();
 
 	// ── Données Convex (mêmes queries que agent-web) ──
-	const { data: rawCommunityEvents = [], isPending: eventsLoading } = useAuthenticatedConvexQuery(
+	const { data: rawCommunityEventsResult, isPending: eventsLoading } = useAuthenticatedConvexQuery(
 		api.functions.communityEvents.listAll,
-		{},
+		{ paginationOpts: { numItems: 200, cursor: null } },
 	);
+	const rawCommunityEvents = rawCommunityEventsResult?.page ?? [];
 	const { data: rawAppointments = [], isPending: appointmentsLoading } = useAuthenticatedConvexQuery(
 		api.functions.slots.listAppointmentsByOrg,
 		activeOrgId ? { orgId: activeOrgId } : "skip",

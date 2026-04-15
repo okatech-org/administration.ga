@@ -197,9 +197,9 @@ function RequestDetailPage() {
 
 	// Build label lookups from formSchema
 	const { sectionLabels, fieldLabels } = useMemo(() => {
-		const schema = request?.orgService?.formSchema as FormSchema | undefined;
+		const schema = (request?.orgService as any)?.formSchema as FormSchema | undefined;
 		return buildSchemaLookups(schema);
-	}, [request?.orgService?.formSchema]);
+	}, [(request?.orgService as any)?.formSchema]);
 
 	if (request === undefined) {
 		return (
@@ -229,7 +229,7 @@ function RequestDetailPage() {
 	// Get service name from the catalog service (not orgService)
 	const serviceName =
 		getLocalized(request.service?.name, i18n.language) ||
-		getLocalized(request.orgService?.name, i18n.language) ||
+		getLocalized((request.orgService as any)?.name, i18n.language) ||
 		"Service inconnu";
 
 	// Parse formData

@@ -47,7 +47,7 @@ export default function PrintQueuePage() {
 	// Get print queue
 	const { data: printQueue } = useConvexQuery(
 		api.functions.consularRegistrations.getReadyForPrint,
-		activeOrgId ? { orgId: activeOrgId } : "skip",
+		activeOrgId ? { orgId: activeOrgId, paginationOpts: { numItems: 100, cursor: null } } : "skip",
 	);
 
 	// Mutation
@@ -69,7 +69,7 @@ export default function PrintQueuePage() {
 		}
 	};
 
-	const queueCount = printQueue?.length ?? 0;
+	const queueCount = printQueue?.page?.length ?? 0;
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4">
@@ -133,7 +133,7 @@ export default function PrintQueuePage() {
 										</div>
 									</TableCell>
 								</TableRow>
-							) : printQueue.length === 0 ? (
+							) : printQueue.page.length === 0 ? (
 								<TableRow>
 									<TableCell
 										colSpan={5}
@@ -144,7 +144,7 @@ export default function PrintQueuePage() {
 									</TableCell>
 								</TableRow>
 							) : (
-								printQueue.map((card) => (
+								printQueue.page.map((card: any) => (
 									<TableRow key={card._id}>
 										<TableCell>
 											<div className="flex items-center gap-3">

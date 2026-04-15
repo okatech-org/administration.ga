@@ -347,13 +347,13 @@ export default function AgentProfileDetailPage() {
 
 						{/* Tab: Profil complet */}
 						<TabsContent value="profile">
-							<ProfileDetailView profileId={profileId} context="agent" />
+							<ProfileDetailView profileId={profileId as string} context="agent" />
 						</TabsContent>
 
 						{/* Tab: Notes Agent (INTERNE — jamais visible côté citoyen) */}
 						{canDo("requests.process") && (
 							<TabsContent value="notes">
-								<AgentNotesPanel profileId={profileId} />
+								<AgentNotesPanel profileId={profileId as string} />
 							</TabsContent>
 						)}
 					</Tabs>

@@ -128,9 +128,9 @@ export default function LettresPhase() {
   // Pre-remplir depuis les search params (navigation depuis $targetId.tsx ou plans.tsx)
   useEffect(() => {
     if (searchParams.get("targetId") && !showDraftDialog) {
-      setSelectedTargetId(searchParams.get("targetId"));
+      setSelectedTargetId(searchParams.get("targetId") ?? "");
       if (searchParams.get("planId")) {
-        setSelectedPlanId(searchParams.get("planId"));
+        setSelectedPlanId(searchParams.get("planId") ?? "");
       }
       // Ouvrir le dialog automatiquement
       setShowDraftDialog(true);

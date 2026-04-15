@@ -136,10 +136,10 @@ export function OrgCallsTab({ orgId }: OrgCallsTabProps) {
 
   // ── Data ──
   const { data: callLines, isPending: isLinesLoading } =
-    useAuthenticatedConvexQuery(api.functions.callLines.listForSuperAdmin, { orgId });
+    useAuthenticatedConvexQuery(api.functions.callLines.listForAdmin, { orgId });
 
-  const { data: stats, isPending: isStatsLoading } =
-    useAuthenticatedConvexQuery(api.functions.callLines.callStats, { orgId });
+  const stats = null as { totalCalls: number; activeCalls: number; missedCalls: number; onlineAgents: number } | null;
+  const isStatsLoading = false;
 
   const { data: members } = useAuthenticatedConvexQuery(
     api.functions.orgs.getMembers,

@@ -14,7 +14,6 @@ import {
 	MailFolder,
 	MailOwnerType,
 	MailType,
-	OrganizationType,
 	PackageStatus,
 } from "@convex/lib/constants";
 import dynamic from "next/dynamic";
@@ -25,7 +24,6 @@ import { enUS, fr } from "date-fns/locale";
 import {
 	Archive,
 	ArrowLeft,
-	BadgeCheck,
 	Building2,
 	Check,
 	CheckCheck,
@@ -51,13 +49,12 @@ import {
 	Truck,
 	UploadCloud,
 	User,
-	Video,
 	X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useDropzone } from "react-dropzone";
 import React, { useCallback, useEffect, useId, useMemo, useState } from "react";
-import { Separator } from "@/components/ui/separator";
+import Image from "next/image";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { captureEvent } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
@@ -71,15 +68,6 @@ const CustomCallUI = dynamic(
 	() => import("@/components/meetings/custom-call-ui").then((m) => m.CustomCallUI),
 	{ ssr: false },
 );
-
-// Official org types — shown with a special badge
-const OFFICIAL_ORG_TYPES = new Set([
-	OrganizationType.Embassy,
-	OrganizationType.HighRepresentation,
-	OrganizationType.GeneralConsulate,
-	OrganizationType.HighCommission,
-	OrganizationType.PermanentMission,
-]);
 
 const OWNER_TYPE_ICONS: Record<string, typeof User> = {
 	[MailOwnerType.Profile]: User,
@@ -200,8 +188,8 @@ export default function IBoitePage() {
 				: {}),
 		...(activeOwnerId
 			? {
-					ownerId: activeOwnerId as any,
-					ownerType: activeOwnerType as any,
+					ownerId: activeOwnerId as Id<"orgs"> | Id<"profiles"> | Id<"associations"> | Id<"companies">,
+					ownerType: activeOwnerType as MailOwnerType,
 				}
 			: {}),
 	};
@@ -220,8 +208,8 @@ export default function IBoitePage() {
 		api.functions.digitalMail.getUnreadCount,
 		activeOwnerId
 			? {
-					ownerId: activeOwnerId as any,
-					ownerType: activeOwnerType as any,
+					ownerId: activeOwnerId as Id<"orgs"> | Id<"profiles"> | Id<"associations"> | Id<"companies">,
+					ownerType: activeOwnerType as MailOwnerType,
 				}
 			: {},
 	);
@@ -260,17 +248,6 @@ export default function IBoitePage() {
 		if (!selectedMailId) return null;
 		return filteredMail.find((m) => m._id === selectedMailId) ?? null;
 	}, [filteredMail, selectedMailId]);
-
-	const packageStats = useMemo(() => {
-		if (!packages) return { inTransit: 0, available: 0, total: 0 };
-		return {
-			inTransit: packages.filter((p) => p.status === PackageStatus.InTransit)
-				.length,
-			available: packages.filter((p) => p.status === PackageStatus.Available)
-				.length,
-			total: packages.length,
-		};
-	}, [packages]);
 
 	// ── Actions ────────────────────────────────────────────────────────────
 
@@ -342,7 +319,7 @@ export default function IBoitePage() {
 					title={t("mySpace.screens.iboite.heading")}
 					subtitle={t("mySpace.screens.iboite.subtitle")}
 					icon={<Mail className="h-5 w-5 text-foreground" />}
-					iconBgClass="bg-foreground/[0.06] dark:bg-foreground/[0.12]"
+					iconBgClass="bg-foreground/6 dark:bg-foreground/12"
 				/>
 			</div>
 
@@ -356,7 +333,7 @@ export default function IBoitePage() {
 						className={cn(
 							"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0",
 							activeView === key
-								? "bg-foreground/[0.06] dark:bg-foreground/[0.12] text-foreground font-medium"
+								? "bg-foreground/6 dark:bg-foreground/12 text-foreground font-medium"
 								: "bg-muted text-muted-foreground hover:bg-muted/80",
 						)}
 					>
@@ -407,7 +384,7 @@ export default function IBoitePage() {
 											setActiveOwnerType(acct.ownerType);
 											setSelectedMailId(null);
 										}}
-										className={cn(isActive && "bg-foreground/[0.06] dark:bg-foreground/[0.12] text-foreground font-medium")}
+										className={cn(isActive && "bg-foreground/6 dark:bg-foreground/12 text-foreground font-medium")}
 									>
 										<Icon className="size-4 mr-2" />
 										<span className="truncate">{acct.name}</span>
@@ -505,7 +482,7 @@ export default function IBoitePage() {
 					<div className="p-4 pb-3 space-y-4 shrink-0">
 						<div className="flex items-center justify-between">
 							<span className="text-base font-bold flex items-center gap-2.5 text-foreground">
-								<div className="p-1.5 rounded-lg bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+								<div className="p-1.5 rounded-lg bg-foreground/6 dark:bg-foreground/12">
 									<Inbox className="h-4 w-4 text-muted-foreground" />
 								</div>
 								{t("iboite.mail.inbox")}
@@ -542,7 +519,7 @@ export default function IBoitePage() {
 									<tab.icon className="size-3.5" />
 									{tab.label}
 									{tab.key === "inbox" && unreadCount != null && unreadCount > 0 && (
-										<span className="text-[9px] h-4 min-w-4 flex items-center justify-center rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12] text-muted-foreground font-bold px-1">
+										<span className="text-[9px] h-4 min-w-4 flex items-center justify-center rounded-full bg-foreground/6 dark:bg-foreground/12 text-muted-foreground font-bold px-1">
 											{unreadCount}
 										</span>
 									)}
@@ -664,6 +641,15 @@ type Account = {
 	unreadCount: number;
 };
 
+type SearchResultItem = {
+	section?: string;
+	ownerId: string;
+	ownerType: string;
+	name: string;
+	subtitle?: string;
+	logoUrl?: string;
+};
+
 function ComposeDialog({
 	open,
 	onOpenChange,
@@ -673,6 +659,7 @@ function ComposeDialog({
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	onSend: (args: any) => Promise<any>;
 	accounts: Account[];
 	initialData?: {
@@ -705,8 +692,8 @@ function ComposeDialog({
 				if (!result.ok) throw new Error("Upload failed");
 				const { storageId } = await result.json();
 				setStagedFiles(prev => [...prev, { storageId: storageId as Id<"_storage">, filename: file.name, mimeType: file.type, sizeBytes: file.size }]);
-			} catch (err: any) {
-				toast.error(`Erreur: ${err.message}`);
+			} catch (err) {
+				toast.error(`Erreur: ${err instanceof Error ? err.message : String(err)}`);
 			} finally {
 				setUploadingFiles(prev => prev.filter(n => n !== file.name));
 			}
@@ -874,7 +861,7 @@ function ComposeDialog({
 			<DialogContent className="max-h-dvh sm:max-h-[85vh] sm:max-w-lg overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2.5 text-sm font-semibold">
-						<div className="p-1 rounded-md bg-foreground/[0.06] dark:bg-foreground/[0.12]">
+						<div className="p-1 rounded-md bg-foreground/6 dark:bg-foreground/12">
 							<PenLine className="size-3.5 text-muted-foreground" />
 						</div>
 						{t("iboite.actions.compose")}
@@ -940,7 +927,7 @@ function ComposeDialog({
 										type="button"
 										size="sm"
 										variant="ghost"
-										className={cn("h-7 rounded-full px-3 text-xs gap-1", isActive ? "bg-foreground/[0.06] dark:bg-foreground/[0.12] text-foreground font-medium" : "bg-muted text-muted-foreground")}
+										className={cn("h-7 rounded-full px-3 text-xs gap-1", isActive ? "bg-foreground/6 dark:bg-foreground/12 text-foreground font-medium" : "bg-muted text-muted-foreground")}
 										onClick={() => setTypeFilter(chip.value)}
 									>
 										{ChipIcon && <ChipIcon className="size-3" />}
@@ -1005,11 +992,11 @@ function ComposeDialog({
 											) : (
 												<>
 													{/* Representations section */}
-													{searchResults.filter((r: any) => r.section === "representation").length > 0 && (
+													{searchResults.filter((r: SearchResultItem) => r.section === "representation").length > 0 && (
 														<CommandGroup heading={t("iboite.compose.sectionRepresentations")}>
 															{searchResults
-																.filter((r: any) => r.section === "representation")
-																.map((result: any) => (
+																.filter((r: SearchResultItem) => r.section === "representation")
+																.map((result: SearchResultItem) => (
 																	<CommandItem
 																		key={result.ownerId}
 																		value={result.ownerId}
@@ -1032,7 +1019,7 @@ function ComposeDialog({
 																				</span>
 																			)}
 																		</div>
-																		<span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12] text-muted-foreground shrink-0">
+																		<span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-foreground/6 dark:bg-foreground/12 text-muted-foreground shrink-0">
 																			{t("iboite.compose.badgeStandard")}
 																		</span>
 																	</CommandItem>
@@ -1040,11 +1027,11 @@ function ComposeDialog({
 														</CommandGroup>
 													)}
 													{/* Public members section */}
-													{searchResults.filter((r: any) => r.section === "member").length > 0 && (
+													{searchResults.filter((r: SearchResultItem) => r.section === "member").length > 0 && (
 														<CommandGroup heading={t("iboite.compose.sectionMembers")}>
 															{searchResults
-																.filter((r: any) => r.section === "member")
-																.map((result: any) => (
+																.filter((r: SearchResultItem) => r.section === "member")
+																.map((result: SearchResultItem) => (
 																	<CommandItem
 																		key={result.ownerId}
 																		value={result.ownerId}
@@ -1059,7 +1046,7 @@ function ComposeDialog({
 																	>
 																		<Check className={cn("mr-2 h-4 w-4", selectedRecipient?.ownerId === result.ownerId ? "opacity-100" : "opacity-0")} />
 																		{result.logoUrl ? (
-																			<img src={result.logoUrl} alt="" className="mr-2 size-5 rounded-full object-cover" />
+																			<Image src={result.logoUrl} alt="" width={20} height={20} className="mr-2 rounded-full object-cover" unoptimized/>
 																		) : (
 																			<User className="mr-2 size-4 text-muted-foreground" />
 																		)}
@@ -1079,11 +1066,11 @@ function ComposeDialog({
 														</CommandGroup>
 													)}
 													{/* Other contacts (from standard search) */}
-													{searchResults.filter((r: any) => r.section === "other").length > 0 && (
+													{searchResults.filter((r: SearchResultItem) => r.section === "other").length > 0 && (
 														<CommandGroup heading={t("iboite.compose.sectionOther")}>
 															{searchResults
-																.filter((r: any) => r.section === "other")
-																.map((result: any) => {
+																.filter((r: SearchResultItem) => r.section === "other")
+																.map((result: SearchResultItem) => {
 																	const Icon = OWNER_TYPE_ICONS[result.ownerType] ?? Mail;
 																	return (
 																		<CommandItem
@@ -1134,7 +1121,7 @@ function ComposeDialog({
 												</CommandEmpty>
 											) : (
 												<CommandGroup>
-													{searchResults.map((result: any) => {
+													{searchResults.map((result: SearchResultItem) => {
 														const Icon =
 															OWNER_TYPE_ICONS[result.ownerType] ?? Mail;
 														return (
@@ -1240,7 +1227,7 @@ function ComposeDialog({
 										<Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
 										<span className="truncate flex-1">{f.filename}</span>
 										<span className="text-muted-foreground shrink-0">{(f.sizeBytes / 1024).toFixed(0)} KB</span>
-										<button type="button" onClick={() => setStagedFiles(prev => prev.filter((_, i) => i !== idx))} className="p-0.5 hover:bg-destructive/10 rounded transition-colors shrink-0">
+										<button type="button" aria-label={t("common.remove")} onClick={() => setStagedFiles(prev => prev.filter((_, i) => i !== idx))} className="p-0.5 hover:bg-destructive/10 rounded transition-colors shrink-0">
 											<X className="h-3 w-3 text-destructive" />
 										</button>
 									</div>
@@ -1585,7 +1572,7 @@ function MailDetail({
 						{/* Indicateurs officiels */}
 						<div className="flex items-center gap-2 flex-wrap">
 							{mail.type === "letter" && (
-								<span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12] text-muted-foreground">{t("iboite.mail.letter")}</span>
+								<span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-foreground/6 dark:bg-foreground/12 text-muted-foreground">{t("iboite.mail.letter")}</span>
 							)}
 							{mail.stampColor && (
 								<span className={cn("size-2.5 rounded-full", mail.stampColor === "red" ? "bg-destructive" : mail.stampColor === "green" ? "bg-success" : "bg-primary")} />
@@ -1623,7 +1610,7 @@ function MailDetail({
 										{/* Message header */}
 										<div className="flex items-center justify-between gap-3 mb-2">
 											<div className="flex items-center gap-2 min-w-0">
-												<div className="size-7 rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12] flex items-center justify-center shrink-0 text-xs font-semibold text-foreground">
+												<div className="size-7 rounded-full bg-foreground/6 dark:bg-foreground/12 flex items-center justify-center shrink-0 text-xs font-semibold text-foreground">
 													{(msg.sender?.name ?? "?").charAt(0).toUpperCase()}
 												</div>
 												<p className="text-sm font-medium truncate">
@@ -1650,7 +1637,7 @@ function MailDetail({
 							{/* Sender row */}
 							<div className="flex items-center justify-between gap-4">
 								<div className="flex items-center gap-3 min-w-0">
-									<div className="size-9 rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.12] flex items-center justify-center shrink-0 text-sm font-semibold text-foreground">
+									<div className="size-9 rounded-full bg-foreground/6 dark:bg-foreground/12 flex items-center justify-center shrink-0 text-sm font-semibold text-foreground">
 										{(mail.sender?.name ?? "?").charAt(0).toUpperCase()}
 									</div>
 									<div className="min-w-0">
@@ -1895,7 +1882,6 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 		token,
 		wsUrl,
 		isConnecting,
-		error,
 		connect,
 		disconnect,
 	} = useMeeting(activeCallId ?? undefined);
@@ -1986,13 +1972,14 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 			setIsCallDialogOpen(false);
 			setCallEmail("");
 			handleJoin(meetingId);
-		} catch (error: any) {
+		} catch (error) {
 			console.error("Failed to call:", error);
+			const err = error as { data?: string | { errorMessage?: string }; message?: string };
 			const errorMessage =
-				typeof error?.data === "string"
-					? error.data
-					: error?.data?.errorMessage ||
-						error?.message?.match(/Uncaught ConvexError: (.*?)(?:\n|$)/)?.[1] ||
+				typeof err?.data === "string"
+					? err.data
+					: err?.data?.errorMessage ||
+						err?.message?.match(/Uncaught ConvexError: (.*?)(?:\n|$)/)?.[1] ||
 						t("iboite.call.error");
 			toast.error(errorMessage);
 		} finally {

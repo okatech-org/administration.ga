@@ -1,5 +1,11 @@
 "use client";
 
+export interface FieldCondition {
+	fieldPath: string;
+	operator: "equals" | "notEquals" | "contains" | "isEmpty" | "isNotEmpty" | "greaterThan" | "lessThan";
+	value: string;
+}
+
 import { FormFieldType } from "@convex/lib/constants";
 import type {
 	FormDocument,
@@ -7,6 +13,7 @@ import type {
 	FormSchema,
 	FormSection,
 } from "@convex/lib/validators";
+export type { FormSection };
 import {
 	AlignLeft,
 	Calendar,
@@ -243,7 +250,7 @@ export function FormBuilder({
 	// --- Document Actions ---
 	const addDocument = () => {
 		const newDoc: FormDocument = {
-			type: `document_${Date.now()}`,
+			type: `document_${Date.now()}` as any,
 			label: { fr: "Nouveau document" },
 			required: true,
 		};

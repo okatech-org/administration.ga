@@ -91,10 +91,11 @@ export default function IAgendaPage() {
 	const canManage = hasAgendaAccess("editor");
 
 	// ── Données Convex ──
-	const { data: rawCommunityEvents = [], isPending: eventsLoading } = useAuthenticatedConvexQuery(
+	const { data: rawCommunityEventsResult, isPending: eventsLoading } = useAuthenticatedConvexQuery(
 		api.functions.communityEvents.listAll,
-		{},
+		{ paginationOpts: { numItems: 200, cursor: null } },
 	);
+	const rawCommunityEvents = rawCommunityEventsResult?.page ?? [];
 	const { data: rawAppointments = [], isPending: appointmentsLoading } = useAuthenticatedConvexQuery(
 		api.functions.slots.listAppointmentsByOrg,
 		activeOrgId ? { orgId: activeOrgId } : "skip",

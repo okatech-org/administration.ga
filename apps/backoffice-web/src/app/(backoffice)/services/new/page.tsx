@@ -86,28 +86,25 @@ export default function NewServicePage() {
         await createService({
           slug: value.slug,
           code: value.slug.toUpperCase().replace(/-/g, "_"),
-          name: { fr: value.nameFr, en: value.nameEn || undefined },
-          description: {
-            fr: value.descriptionFr,
-            en: value.descriptionEn || undefined,
-          },
+          name: { fr: value.nameFr || "", ...(value.nameEn ? { en: value.nameEn } : {}) } as Record<string, string>,
+          description: { fr: value.descriptionFr || "", ...(value.descriptionEn ? { en: value.descriptionEn } : {}) } as Record<string, string>,
           content:
             contentFr ?
-              { fr: contentFr, en: contentEn || undefined }
+              ({ fr: contentFr, ...(contentEn ? { en: contentEn } : {}) } as Record<string, string>)
             : undefined,
           category: value.category as any,
           icon: value.icon || undefined,
           estimatedDays: parseInt(value.estimatedDays) || 7,
           requiresAppointment,
           requiresPickupAppointment,
-          joinedDocuments: documents,
+          joinedDocuments: documents as any,
         });
         toast.success(t("superadmin.services.form.success"));
         router.push("/services");
       } catch (error: any) {
         const errorKey = error.message || null;
         toast.error(
-          errorKey ? t(errorKey, errorKey) : t("superadmin.common.error"),
+          errorKey ? t(errorKey as string, errorKey as string) : t("superadmin.common.error"),
         );
       }
     },

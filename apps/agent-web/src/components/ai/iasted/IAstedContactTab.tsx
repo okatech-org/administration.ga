@@ -15,6 +15,8 @@ import {
 	Shield,
 	Users,
 } from "lucide-react";
+import { useState } from "react";
+import { CitizenProfileDrawer } from "@workspace/iasted";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -59,6 +61,18 @@ export function IAstedContactTab() {
 		setOrgType,
 		setPositionGrade,
 	} = useContactSearch();
+
+	// Fiche citoyen 360° — ouverte au clic sur un contact de type "citizen".
+	// Les autres contacts (team/network) gardent leur comportement existant.
+	const [selectedCitizen, setSelectedCitizen] = useState<{
+		id: string;
+		name: string;
+		firstName?: string;
+		lastName?: string;
+		avatar?: string;
+		phone?: string;
+		email?: string;
+	} | null>(null);
 
 	return (
 		<div className="flex flex-col flex-1 min-h-0">
@@ -160,7 +174,45 @@ export function IAstedContactTab() {
 								{group.contacts.map((contact: any) => (
 									<div
 										key={contact.id}
-										className="flex items-center gap-3 px-3 py-3 hover:bg-muted/30 transition-colors"
+										role={contact.source === "citizen" ? "button" : undefined}
+										tabIndex={contact.source === "citizen" ? 0 : undefined}
+										onClick={
+											contact.source === "citizen"
+												? () =>
+														setSelectedCitizen({
+															id: contact.id,
+															name: contact.name ?? `${contact.firstName ?? ""} ${contact.lastName ?? ""}`.trim(),
+															firstName: contact.firstName,
+															lastName: contact.lastName,
+															avatar: contact.avatar,
+															phone: contact.phone,
+															email: contact.email,
+														})
+												: undefined
+										}
+										onKeyDown={
+											contact.source === "citizen"
+												? (e) => {
+														if (e.key === "Enter" || e.key === " ") {
+															e.preventDefault();
+															setSelectedCitizen({
+																id: contact.id,
+																name: contact.name ?? `${contact.firstName ?? ""} ${contact.lastName ?? ""}`.trim(),
+																firstName: contact.firstName,
+																lastName: contact.lastName,
+																avatar: contact.avatar,
+																phone: contact.phone,
+																email: contact.email,
+															});
+														}
+												  }
+												: undefined
+										}
+										className={cn(
+											"flex items-center gap-3 px-3 py-3 hover:bg-muted/30 transition-colors",
+											contact.source === "citizen" &&
+												"cursor-pointer active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+										)}
 									>
 										<Avatar className="h-10 w-10 shrink-0">
 											<AvatarImage src={contact.avatar} />
@@ -217,6 +269,21 @@ export function IAstedContactTab() {
 				<span>{total} contact{total > 1 ? "s" : ""}</span>
 				<span>{groups.length} organisation{groups.length > 1 ? "s" : ""}</span>
 			</div>
+
+			{/* Fiche citoyen 360° — ouverte au clic sur un contact citoyen */}
+			{selectedCitizen && (
+				<CitizenProfileDrawer
+					open={!!selectedCitizen}
+					onOpenChange={(v) => {
+						if (!v) setSelectedCitizen(null);
+					}}
+					citizenId={selectedCitizen.id}
+					name={selectedCitizen.name}
+					avatarUrl={selectedCitizen.avatar}
+					phone={selectedCitizen.phone}
+					email={selectedCitizen.email}
+				/>
+			)}
 		</div>
 	);
 }

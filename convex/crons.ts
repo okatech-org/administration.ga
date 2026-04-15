@@ -96,12 +96,62 @@ crons.interval(
   {},
 );
 
+// --- Centre d'Appels (Sprint 2+) ---
+// Auto-termine les appels parqués depuis > 30 min
+// (l'agent a quitté, le citoyen attend dans le vide). Crée une ligne missedCalls
+// pour activer le workflow de callback.
+crons.interval(
+  "cleanup-parked-calls",
+  { minutes: 1 },
+  internal.functions.callCenter.cleanupParkedCalls,
+  {},
+);
+
+// IVR Fallback : bascule les appels stagnants vers la ligne de secours
+// (fallbackCallLineId) ou crée une notification selon callLines.fallbackAction.
+// Intervalle court (15s) pour réagir vite à la saturation d'une ligne.
+crons.interval(
+  "process-call-fallbacks",
+  { seconds: 15 },
+  internal.functions.callCenter.processCallFallbacks,
+  {},
+);
+
+// Recalcul horaire des stats par ligne (totalCalls, missedCalls, avgResponse)
+// Affiché dans la gestion des lignes — pas critique temps réel.
+crons.hourly(
+  "refresh-call-lines-stats",
+  { minuteUTC: 15 },
+  internal.functions.callCenter.refreshCallLinesStats,
+  {},
+);
+
 // --- Agent Presence ---
 // Mark agents with stale heartbeats as offline (every 60s)
 crons.interval(
   "cleanup-stale-presence",
   { seconds: 60 },
   internal.functions.agentPresence.cleanupStalePresence,
+  {},
+);
+
+// --- Sprint 6 : Auto-sync agent presence with weekly schedules ---
+// Toutes les 5 min : pour chaque agentSchedule actif, aligner agentPresence
+// sur la plage horaire courante (timezone de l'org respectée).
+crons.interval(
+  "match-agent-schedules-to-presence",
+  { minutes: 5 },
+  internal.functions.agentSchedules.matchAgentSchedulesToPresence,
+  {},
+);
+
+// --- Sprint 6 : Purge recordings expirés (rétention 90j par défaut) ---
+// Supprime le storage physique pour les callRecordings dont retentionUntil
+// est dépassé. La row reste en base avec deletedAt défini (audit).
+crons.daily(
+  "cleanup-expired-call-recordings",
+  { hourUTC: 3, minuteUTC: 0 },
+  internal.functions.callRecordings.cleanupExpired,
   {},
 );
 

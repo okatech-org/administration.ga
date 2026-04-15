@@ -1,20 +1,31 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
 
+export const supervisionModeValidator = v.union(
+  v.literal("listen"),
+  v.literal("whisper"),
+  v.literal("barge"),
+);
+
 /**
- * Supervision Sessions — Supervisor joining a live call to listen,
- * whisper (audible only to the agent), or barge (audible to everyone).
+ * Supervision sessions — Sprint 6.
+ *
+ * Trace chaque session de supervision active ou passée entre un superviseur
+ * et un appel (meeting) : listen (écoute), whisper (souffler à l'agent),
+ * barge (intervention).
+ *
+ * Un superviseur peut n'avoir qu'UNE session active à la fois (non enforced
+ * par le schema, géré par la mutation).
+ *
+ * Durée : session fermée = endedAt défini. Un cron peut nettoyer les sessions
+ * orphelines (endedAt undefined + startedAt très ancien).
  */
 export const supervisionSessionsTable = defineTable({
   meetingId: v.id("meetings"),
   orgId: v.id("orgs"),
   supervisorId: v.id("users"),
 
-  mode: v.union(
-    v.literal("listen"),
-    v.literal("whisper"),
-    v.literal("barge"),
-  ),
+  mode: supervisionModeValidator,
 
   // LiveKit participant identity used by the supervisor (distinct from user id
   // because the same supervisor could join several sessions with separate tracks)
