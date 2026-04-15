@@ -128,6 +128,10 @@ export const TaskCode = {
     join: "meetings.join",
     manage: "meetings.manage",
     view_history: "meetings.view_history",
+    // Centre d'Appels — gestion multi-lignes (Sprint 2+)
+    hold: "meetings.hold",
+    transfer: "meetings.transfer",
+    supervise: "meetings.supervise",
   },
   // Chat peer-to-peer
   chats: {
@@ -143,6 +147,23 @@ export const TaskCode = {
     transmit: "correspondance.transmit",
     configure: "correspondance.configure",
     admin: "correspondance.admin",
+  },
+  // Voicemails — Sprint 6 (Centre d'Appels)
+  voicemails: {
+    view: "voicemails.view",
+    listen: "voicemails.listen",
+    delete: "voicemails.delete",
+  },
+  // Call recordings — Sprint 6 (Centre d'Appels)
+  callRecordings: {
+    start: "callRecordings.start",
+    stop: "callRecordings.stop",
+    listen: "callRecordings.listen",
+    delete: "callRecordings.delete",
+  },
+  // Push notifications — Sprint 6
+  notifications: {
+    push_subscribe: "notifications.push_subscribe",
   },
 } as const;
 
@@ -277,6 +298,9 @@ export const taskCodeValidator = v.union(
   v.literal(TaskCode.meetings.join),
   v.literal(TaskCode.meetings.manage),
   v.literal(TaskCode.meetings.view_history),
+  v.literal(TaskCode.meetings.hold),
+  v.literal(TaskCode.meetings.transfer),
+  v.literal(TaskCode.meetings.supervise),
   // Correspondance & Dossiers
   v.literal(TaskCode.correspondance.view),
   v.literal(TaskCode.correspondance.create),
@@ -285,6 +309,17 @@ export const taskCodeValidator = v.union(
   v.literal(TaskCode.correspondance.transmit),
   v.literal(TaskCode.correspondance.configure),
   v.literal(TaskCode.correspondance.admin),
+  // Voicemails (Sprint 6)
+  v.literal(TaskCode.voicemails.view),
+  v.literal(TaskCode.voicemails.listen),
+  v.literal(TaskCode.voicemails.delete),
+  // Call recordings (Sprint 6)
+  v.literal(TaskCode.callRecordings.start),
+  v.literal(TaskCode.callRecordings.stop),
+  v.literal(TaskCode.callRecordings.listen),
+  v.literal(TaskCode.callRecordings.delete),
+  // Push notifications (Sprint 6)
+  v.literal(TaskCode.notifications.push_subscribe),
 );
 
 // ═══════════════════════════════════════════════════════════════
@@ -390,6 +425,10 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   [TaskCode.meetings.join]: "low",
   [TaskCode.meetings.manage]: "medium",
   [TaskCode.meetings.view_history]: "low",
+  // Centre d'Appels (Sprint 2+)
+  [TaskCode.meetings.hold]: "low",
+  [TaskCode.meetings.transfer]: "medium",
+  [TaskCode.meetings.supervise]: "high",
   // Correspondance & Dossiers
   [TaskCode.correspondance.view]: "low",
   [TaskCode.correspondance.create]: "low",
@@ -398,4 +437,15 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   [TaskCode.correspondance.transmit]: "medium",
   [TaskCode.correspondance.configure]: "high",
   [TaskCode.correspondance.admin]: "critical",
+  // Voicemails (Sprint 6) — listen/delete = high (GDPR)
+  [TaskCode.voicemails.view]: "low",
+  [TaskCode.voicemails.listen]: "high",
+  [TaskCode.voicemails.delete]: "high",
+  // Call recordings (Sprint 6) — listen/delete = high (GDPR)
+  [TaskCode.callRecordings.start]: "medium",
+  [TaskCode.callRecordings.stop]: "low",
+  [TaskCode.callRecordings.listen]: "high",
+  [TaskCode.callRecordings.delete]: "high",
+  // Push notifications (Sprint 6)
+  [TaskCode.notifications.push_subscribe]: "low",
 };

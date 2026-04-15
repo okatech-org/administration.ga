@@ -761,6 +761,10 @@ export const TASK_CATEGORY_META: Record<TaskCategory, { label: LocalizedString; 
   meetings: { label: { fr: "Réunions & Appels", en: "Meetings & Calls" }, icon: "Video" },
   // Correspondance & Dossiers
   correspondance: { label: { fr: "Correspondance & Dossiers", en: "Correspondence & Procedures" }, icon: "Mail" },
+  // Sprint 6 — Centre d'Appels
+  notifications: { label: { fr: "Notifications", en: "Notifications" }, icon: "Bell" },
+  voicemails: { label: { fr: "Messagerie vocale", en: "Voicemail" }, icon: "Voicemail" },
+  callRecordings: { label: { fr: "Enregistrements d'appels", en: "Call Recordings" }, icon: "Disc" },
 };
 
 // ═══════════════════════════════════════════════════════════════

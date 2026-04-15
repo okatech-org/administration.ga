@@ -32,15 +32,27 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CallCenterShell } from "@/components/call-center/CallCenterShell";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { useOrg } from "@/components/org/org-provider";
 import { useContactSearch, type ContactSource } from "@/hooks/useContactSearch";
 import { useMeeting } from "@/hooks/use-meeting";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { useCallStore } from "@/stores/call-store";
+import { FEATURES } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 
 type SubTab = "audio" | "video";
+
+/**
+ * Feature flag Centre d'Appels multi-lignes.
+ *
+ * Plan Intelligence iAsted × Sprint 6 (Phase α) : `FEATURES.callCenter` est
+ * `true` par défaut (activé sauf si `NEXT_PUBLIC_FEATURE_CALL_CENTER=0`).
+ * Le fallback `<LegacyCallTab />` reste disponible comme disjoncteur
+ * d'urgence mais n'est plus le chemin principal.
+ */
+const CALL_CENTER_ENABLED = FEATURES.callCenter;
 
 const SUB_TABS: Array<{ id: SubTab; label: string; icon: typeof Phone }> = [
 	{ id: "audio", label: "Audio", icon: Phone },
@@ -54,6 +66,14 @@ const CALL_SOURCE_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; ic
 ];
 
 export function IAstedCallTab() {
+	// Centre d'Appels multi-lignes (feature flag) — remplace intégralement l'UX historique.
+	if (CALL_CENTER_ENABLED) {
+		return <CallCenterShell />;
+	}
+	return <LegacyCallTab />;
+}
+
+function LegacyCallTab() {
 	const { activeOrgId } = useOrg();
 	const [subTab, setSubTab] = useState<SubTab>("audio");
 	const [activeMeetingId, setActiveMeetingId] = useState<Id<"meetings"> | null>(null);

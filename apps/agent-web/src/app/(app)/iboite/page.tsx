@@ -93,6 +93,7 @@ import {
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
@@ -2028,6 +2029,10 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 		},
 	}
 
+	const activeCallLabel = activeCallId
+		? getCallDisplayName(calls.find((call) => call._id === activeCallId) ?? calls[0])
+		: null;
+
 	const callContent = (
 		<div className="flex flex-col flex-1 min-h-0 h-full bg-zinc-950 overflow-hidden">
 			{token && wsUrl ? (
@@ -2293,6 +2298,15 @@ function CallsList({ dateFnsLocale }: { dateFnsLocale: Locale }) {
 						onEscapeKeyDown={(e) => e.preventDefault()}
 						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 					>
+						<DialogTitle className="sr-only">
+							{activeCallLabel ?? t("iboite.call.newCallTitle", "Appel en cours")}
+						</DialogTitle>
+						<DialogDescription className="sr-only">
+							{t(
+								"iboite.call.livekitDescription",
+								"Conversation audio en cours. Utilisez les commandes de l'appel pour continuer ou raccrocher.",
+							)}
+						</DialogDescription>
 						{callContent}
 					</DialogContent>
 				</Dialog>

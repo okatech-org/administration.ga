@@ -7,10 +7,16 @@ import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 
 import { useQuery } from "convex/react";
 import { Loader2, Phone, PhoneCall, PhoneOff } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useMeeting } from "@/hooks/use-meeting";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -19,13 +25,35 @@ import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrati
 import { useCallStore } from "@/stores/call-store";
 
 /**
+ * Feature flag Centre d'Appels — aligné avec IAstedCallTab.
+ * Quand activé + route = /iasted, la GlobalCallAlert s'efface pour laisser
+ * la main à CallCenterShell qui gère sa propre UI d'appels.
+ */
+const CALL_CENTER_ENABLED =
+	process.env.NEXT_PUBLIC_FEATURE_CALL_CENTER === "1" ||
+	process.env.NEXT_PUBLIC_FEATURE_CALL_CENTER === "true";
+
+/**
  * GlobalCallAlert - Listens for incoming calls across the entire app.
  * If there is an active call where the user is a participant but hasn't joined,
  * this shows a floating notification and rings.
+ *
+ * Wrapper qui désactive l'alerte dans /iasted quand le Centre d'Appels est actif :
+ * respecte les Règles des Hooks en laissant le composant interne se démonter
+ * proprement plutôt qu'un early-return au milieu d'un arbre de hooks.
  */
 export function GlobalCallAlert() {
+	const pathname = usePathname();
+	const shouldSuppressForCallCenter =
+		CALL_CENTER_ENABLED && pathname?.startsWith("/iasted");
+	if (shouldSuppressForCallCenter) return null;
+	return <GlobalCallAlertInner />;
+}
+
+function GlobalCallAlertInner() {
 	const { t } = useTranslation();
 	const isMobile = useIsMobile();
+
 	const [activeMeetingId, setActiveMeetingId] = useState<Id<"meetings"> | null>(
 		null,
 	);
@@ -222,6 +250,15 @@ export function GlobalCallAlert() {
 						onEscapeKeyDown={(e) => e.preventDefault()}
 						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 					>
+						<DialogTitle className="sr-only">
+							{callerName ?? activeCallToDisplay?.title ?? t("meetings.callInProgress", "Appel en cours")}
+						</DialogTitle>
+						<DialogDescription className="sr-only">
+							{t(
+								"meetings.callDialogDescription",
+								"Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.",
+							)}
+						</DialogDescription>
 						{callContent}
 					</DialogContent>
 				</Dialog>

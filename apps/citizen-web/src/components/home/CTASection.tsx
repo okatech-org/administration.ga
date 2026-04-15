@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import communityHero from "@/assets/community-hero.jpg";

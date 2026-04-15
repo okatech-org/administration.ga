@@ -6,14 +6,18 @@ import {
 	LiveKitRoom,
 } from "@livekit/components-react";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
-import type { VariantProps } from "class-variance-authority";
 import { Loader2, Phone, PhoneOff, ChevronDown } from "lucide-react";
+import type { ComponentProps } from "react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { buttonVariants } from "@/components/ui/button";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useMeeting } from "@/hooks/use-meeting";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -23,7 +27,7 @@ interface OrgCallButtonProps {
 	orgId: Id<"orgs">;
 	orgName: string;
 	className?: string;
-	variant?: VariantProps<typeof buttonVariants>["variant"];
+	variant?: ComponentProps<typeof Button>["variant"];
 	label?: string;
 }
 
@@ -144,17 +148,14 @@ export function OrgCallButton({
 			{/* Line Selector Dialog */}
 			<Dialog open={showLineSelector} onOpenChange={setShowLineSelector}>
 				<DialogContent className="sm:max-w-sm">
+					<DialogTitle className="flex items-center gap-2 text-lg font-semibold">
+						<Phone className="w-5 h-5 text-primary" />
+						{t("meetings.selectLine", "Choisir une ligne")}
+					</DialogTitle>
+					<DialogDescription className="border-b pb-3 text-sm text-muted-foreground">
+						{t("meetings.selectLineDesc", "Sur quelle ligne souhaitez-vous appeler ?")}
+					</DialogDescription>
 					<div className="flex flex-col gap-4">
-						<div className="space-y-1">
-							<h2 className="text-lg font-semibold flex items-center gap-2">
-								<Phone className="w-5 h-5 text-primary" />
-								{t("meetings.selectLine", "Choisir une ligne")}
-							</h2>
-							<p className="text-sm text-muted-foreground border-b pb-3">
-								{t("meetings.selectLineDesc", "Sur quelle ligne souhaitez-vous appeler ?")}
-							</p>
-						</div>
-
 						<div className="space-y-2">
 							{activeLines.map((line) => {
 								const isPersonal = line.type === "personal";
@@ -210,6 +211,15 @@ export function OrgCallButton({
 						autoFocus={false}
 						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 					>
+						<DialogTitle className="sr-only">
+							{orgName || t("meetings.callInProgress", "Appel en cours")}
+						</DialogTitle>
+						<DialogDescription className="sr-only">
+							{t(
+								"meetings.callDialogDescription",
+								"Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.",
+							)}
+						</DialogDescription>
 						{callContent}
 					</DialogContent>
 				</Dialog>

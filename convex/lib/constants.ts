@@ -213,6 +213,11 @@ export enum NotificationType {
   ChatMessage = "chat_message",
   // Archive
   ArchiveExpiration = "archive_expiration",
+  // Sprint 6 — Centre d'Appels
+  CallMissed = "call_missed",
+  VoicemailLeft = "voicemail_left",
+  SlaBreach = "sla_breach",
+  SupervisorAlert = "supervisor_alert",
 }
 
 export enum ProfileCategory {

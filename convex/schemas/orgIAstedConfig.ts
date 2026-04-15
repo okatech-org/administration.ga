@@ -117,6 +117,17 @@ export const iAstedLocalIssueValidator = v.object({
   activeUntil: v.optional(v.number()),
 });
 
+// ─── Macros / réponses rapides (Plan Phase γ — Intelligence iAsted × Sprint 6) ─
+// Les macros sont stockées directement dans l'org config (cardinalité 1:1)
+// pour éviter une table supplémentaire ; suffisant vu le volume (< 100 par org).
+export const iAstedMacroValidator = v.object({
+  id: v.string(), // slug stable (ex: "rdv-confirm", "demande-recue")
+  label: v.string(), // libellé menu (ex: "Confirmation RDV")
+  content: v.string(), // template texte avec placeholders {prenom} {ville} {service}
+  category: v.optional(v.string()),
+  usageCount: v.optional(v.number()), // incrémenté à chaque insertion
+});
+
 export const orgIAstedConfigTable = defineTable({
   orgId: v.id("orgs"),
 
@@ -146,6 +157,9 @@ export const orgIAstedConfigTable = defineTable({
 
   // Quotas
   quotas: v.optional(iAstedQuotasValidator),
+
+  // Macros / réponses rapides (Plan Phase γ) — optionnel, non-breaking.
+  macros: v.optional(v.array(iAstedMacroValidator)),
 
   // Métadonnées
   isActive: v.boolean(),

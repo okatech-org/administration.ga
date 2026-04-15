@@ -3,7 +3,7 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import {
 	Archive, Search, Upload, Shield, Clock, Lock, Landmark, Users2, Scale,
 	Building2, FileText, Folder, FolderOpen, FolderPlus, Hash,

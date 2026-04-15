@@ -73,6 +73,8 @@ import {
   diplomaticDocumentsTable,
   chatsTable,
   chatMessagesTable,
+  draftMessagesTable,
+  callNotesTable,
   ipThreatScoresTable,
   guidesTable,
   archivePoliciesTable,
@@ -82,6 +84,10 @@ import {
   orgIAstedConfigTable,
   orgRoleTemplatesTable,
   orgEscalationPolicyTable,
+  supervisionSessionsTable,
+  callRecordingsTable,
+  voicemailsTable,
+  pushSubscriptionsTable,
 } from "./schemas";
 
 export default defineSchema({
@@ -160,6 +166,10 @@ export default defineSchema({
   // Chat peer-to-peer
   chats: chatsTable,
   chatMessages: chatMessagesTable,
+  // Brouillons de messages (Plan Intelligence iAsted Phase γ)
+  draftMessages: draftMessagesTable,
+  // Notes post-appel (Plan Intelligence iAsted Phase ζ)
+  callNotes: callNotesTable,
   // Defense automatique
   ipThreatScores: ipThreatScoresTable,
   // Guides
@@ -177,4 +187,9 @@ export default defineSchema({
   orgRoleTemplates: orgRoleTemplatesTable,
   // Phase D3 — Politique d'escalation unifiée (chatbot + callcenter)
   orgEscalationPolicy: orgEscalationPolicyTable,
+  // Sprint 6 — Centre d'Appels : voicemail, recording, supervision, push
+  supervisionSessions: supervisionSessionsTable,
+  callRecordings: callRecordingsTable,
+  voicemails: voicemailsTable,
+  pushSubscriptions: pushSubscriptionsTable,
 });

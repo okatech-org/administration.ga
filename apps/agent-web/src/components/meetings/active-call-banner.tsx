@@ -9,7 +9,12 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 import { useMeeting } from "@/hooks/use-meeting";
@@ -146,6 +151,15 @@ export function ActiveCallBanner({ requestId }: ActiveCallBannerProps) {
 						autoFocus={false}
 						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 					>
+						<DialogTitle className="sr-only">
+							{activeMeeting?.title ?? t("meetings.callInProgress", "Appel en cours")}
+						</DialogTitle>
+						<DialogDescription className="sr-only">
+							{t(
+								"meetings.callDialogDescription",
+								"Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.",
+							)}
+						</DialogDescription>
 						{callContent}
 					</DialogContent>
 				</Dialog>

@@ -149,7 +149,7 @@ export function PinCodeSection() {
 				{pinStatus.hasPin && mode === "idle" && (
 					<div className="space-y-2">
 						{daysLeft > 0 && daysLeft <= 15 && (
-							<p className="text-xs text-[color:var(--warning)]">
+							<p className="text-xs text-warning">
 								{t("settings.pin.otpExpiryWarning", { days: daysLeft })}
 							</p>
 						)}

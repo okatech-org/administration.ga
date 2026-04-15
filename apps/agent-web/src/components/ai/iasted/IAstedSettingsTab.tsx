@@ -1,14 +1,27 @@
 /**
  * IAstedSettingsTab — Réglages du panneau iAsted.
+ *
+ * Inclut le sélecteur de statut agent avec Do-Not-Disturb (Phase β du plan
+ * Intelligence iAsted × Sprint 6). La mutation `setDnd` écrit côté Convex,
+ * `callCenter.resolveEligibleMemberships` exclut alors l'agent du routing.
  */
 
-import { Bell, Globe, Moon, Palette, Volume2 } from "lucide-react";
+"use client";
+
+import { api } from "@convex/_generated/api";
+import { Bell, Globe, Moon, Volume2 } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
+import { AgentStatusSelector, useAgentStatus } from "@workspace/iasted";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
+import { useOrg } from "@/components/org/org-provider";
+import {
+	useAuthenticatedConvexQuery,
+	useConvexMutationQuery,
+} from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 
 export function IAstedSettingsTab() {
@@ -16,6 +29,60 @@ export function IAstedSettingsTab() {
 	const { i18n } = useTranslation();
 	const [notifications, setNotifications] = useState(true);
 	const [sounds, setSounds] = useState(true);
+	const { activeOrgId } = useOrg();
+
+	// Presence snapshot côté Convex — mapping vers AgentPresenceSnapshot
+	// attendu par `useAgentStatus` (Plan Phase β).
+	const { data: presenceRow } = useAuthenticatedConvexQuery(
+		api.functions.agentPresence.getMine,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+
+	const { mutateAsync: setDndMutation } = useConvexMutationQuery(
+		api.functions.agentPresence.setDnd,
+	);
+
+	const snapshot =
+		presenceRow && activeOrgId
+			? {
+					userId: String(presenceRow.userId),
+					orgId: String(presenceRow.orgId),
+					status: presenceRow.status,
+					lastHeartbeat: presenceRow.lastHeartbeat,
+					lastActivity: presenceRow.lastActivity,
+					dndUntil: presenceRow.dndUntil,
+					currentCallId: presenceRow.currentCallId
+						? String(presenceRow.currentCallId)
+						: undefined,
+					activeCallId: presenceRow.activeCallId
+						? String(presenceRow.activeCallId)
+						: undefined,
+					currentCallIds: presenceRow.currentCallIds?.map((id) => String(id)),
+					clientType: presenceRow.clientType,
+				}
+			: null;
+
+	const {
+		status: extendedStatus,
+		dndUntil: effectiveDndUntil,
+		setDndUntil,
+		clearDnd,
+	} = useAgentStatus({
+		userId: snapshot?.userId ?? "unknown",
+		presence: snapshot,
+	});
+
+	const handleSetDnd = async (expiresAt: number) => {
+		if (!activeOrgId) return;
+		await setDndMutation({ orgId: activeOrgId, expiresAt });
+		setDndUntil(expiresAt);
+	};
+
+	const handleClearDnd = async () => {
+		if (!activeOrgId) return;
+		await setDndMutation({ orgId: activeOrgId, expiresAt: null });
+		clearDnd();
+	};
 
 	const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
@@ -25,6 +92,24 @@ export function IAstedSettingsTab() {
 				<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
 					Réglages
 				</h3>
+
+				{/* Statut agent — Do-Not-Disturb (Phase β : routing-aware) */}
+				{activeOrgId && (
+					<div className="space-y-2">
+						<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+							Disponibilité
+						</p>
+						<AgentStatusSelector
+							status={extendedStatus}
+							dndUntil={effectiveDndUntil}
+							onSetDnd={handleSetDnd}
+							onClearDnd={handleClearDnd}
+						/>
+						<p className="text-[10px] text-muted-foreground">
+							En mode DND, vous êtes exclu du routing des appels entrants.
+						</p>
+					</div>
+				)}
 
 				{/* Notifications */}
 				<div className="space-y-3">

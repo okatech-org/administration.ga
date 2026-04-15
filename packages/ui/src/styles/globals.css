@@ -10,6 +10,11 @@
 @source "../../../apps/**/*.{ts,tsx}";
 @source "../../../components/**/*.{ts,tsx}";
 @source "../**/*.{ts,tsx}";
+/* Scan all sibling workspace packages (iasted, settings-form, shared, etc.) so
+   that Tailwind JIT generates all arbitrary values used by shared components.
+   Path resolves relative to this CSS file : packages/ui/src/styles/ → ../../../
+   = packages/ → glob all packages' source files. */
+@source "../../../**/*.{ts,tsx}";
 
 :root {
   /* ========================================

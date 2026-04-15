@@ -68,6 +68,8 @@ export const meetingsTable = defineTable({
       v.literal("declined"),  // All agents declined
       v.literal("error"),     // Technical error
       v.literal("cancelled"), // Caller cancelled before answer
+      v.literal("rejected"),  // Legacy value — kept for backward compat
+      v.literal("voicemail_recorded"), // Sprint 6 — IVR fallback → voicemail
     ),
   ),
 
@@ -75,12 +77,49 @@ export const meetingsTable = defineTable({
   requestId: v.optional(v.id("requests")),
   appointmentId: v.optional(v.id("appointments")),
 
+  // Priority classification (Centre d'Appels multi-lignes).
+  // Initialement dérivée de `callLines.priority` + flags côté appelant,
+  // puis utilisée pour trier la file d'attente des agents.
+  priority: v.optional(
+    v.union(
+      v.literal("urgent"),
+      v.literal("high"),
+      v.literal("normal"),
+    ),
+  ),
+
+  // Timestamp auquel l'appel a été mis en attente (par un agent).
+  // Permet les statistiques SLA de temps d'attente et la détection de slots stagnants.
+  parkedAt: v.optional(v.number()),
+
+  // IVR Fallback — marqué `true` après que le cron a redirigé l'appel vers
+  // la ligne de secours (`callLines.fallbackCallLineId`). Empêche les boucles
+  // infinies et permet de tracer l'historique du routage.
+  fallbackApplied: v.optional(v.boolean()),
+  // Ligne d'origine avant redirection (pour l'audit et les stats)
+  originalCallLineId: v.optional(v.id("callLines")),
+
   // Media type (audio-only or video allowed)
   mediaType: v.optional(v.union(v.literal("audio"), v.literal("video"))),
 
   // Config
   maxParticipants: v.optional(v.number()),
   recordingEnabled: v.optional(v.boolean()),
+
+  // Sprint 6 — Consent RGPD du citoyen pour l'enregistrement de l'appel.
+  // Affichage banner obligatoire côté citoyen AVANT déclenchement RoomEgress.
+  citizenConsent: v.optional(
+    v.object({
+      recordingAccepted: v.optional(v.boolean()),
+      recordingAcceptedAt: v.optional(v.number()),
+      recordingDeclinedAt: v.optional(v.number()),
+      // Plan Intelligence iAsted × Sprint 6 — Phase ε.
+      // Timestamp écrit par `meetings.requestRecordingConsent` (agent) ; le
+      // citoyen y réagit en affichant le banner côté iAsted tant que
+      // `recordingAccepted`/`recordingDeclinedAt` ne sont pas encore renseignés.
+      recordingConsentRequestedAt: v.optional(v.number()),
+    }),
+  ),
 
   // Timestamps
   scheduledAt: v.optional(v.number()),

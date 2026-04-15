@@ -47,7 +47,6 @@ export function PageHeader({
     }
   }
 
-<<<<<<< HEAD
 	return (
 		<motion.div
 			initial={{ opacity: 0, y: 10 }}
@@ -85,41 +84,4 @@ export function PageHeader({
 			)}
 		</motion.div>
 	);
-=======
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      className="flex flex-col items-start justify-between gap-4 md:flex-row"
-    >
-      <div className="flex items-start gap-2">
-        {showBackButton && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleBack}
-            className="mt-0.5 -ml-1"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        )}
-        <div>
-          <h1 className="flex items-center gap-2 text-lg font-bold md:text-xl">
-            {icon && (
-              <div className={cn("rounded-lg p-1.5", iconBgClass)}>{icon}</div>
-            )}
-            {title}
-          </h1>
-          {subtitle && (
-            <div className="mt-1 text-sm text-muted-foreground">{subtitle}</div>
-          )}
-        </div>
-      </div>
-      {actions && (
-        <div className="flex flex-wrap items-center gap-2">{actions}</div>
-      )}
-    </motion.div>
-  )
->>>>>>> origin/main
 }

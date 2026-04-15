@@ -1342,6 +1342,11 @@ export const notificationTypeValidator = v.union(
   v.literal(NotificationType.ChatMessage),
   // Archive
   v.literal(NotificationType.ArchiveExpiration),
+  // Sprint 6 — Centre d'Appels
+  v.literal(NotificationType.CallMissed),
+  v.literal(NotificationType.VoicemailLeft),
+  v.literal(NotificationType.SlaBreach),
+  v.literal(NotificationType.SupervisorAlert),
 );
 
 // ============================================================================

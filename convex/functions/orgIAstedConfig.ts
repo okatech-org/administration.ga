@@ -14,6 +14,7 @@ import {
   iAstedMemoryValidator,
   iAstedQuotasValidator,
   iAstedLocalIssueValidator,
+  iAstedMacroValidator,
 } from "../schemas/orgIAstedConfig";
 
 /**
@@ -369,6 +370,83 @@ export const setActive = authMutation({
     });
 
     return config._id;
+  },
+});
+
+// ─── Macros / réponses rapides (Plan Phase γ) ─────────────────────
+
+/**
+ * Liste les macros configurées pour l'org. Lecture — permission view.
+ */
+export const listMacros = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+  },
+  handler: async (ctx, args) => {
+    const config = await ctx.db
+      .query("orgIAstedConfig")
+      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .first();
+    return config?.macros ?? [];
+  },
+});
+
+/**
+ * Remplace la liste complète des macros d'une org.
+ * Permission : settings.manage.
+ */
+export const updateMacros = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    macros: v.array(iAstedMacroValidator),
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.manage");
+
+    const config = await ctx.db
+      .query("orgIAstedConfig")
+      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .first();
+    if (!config) {
+      throw error(
+        ErrorCode.NOT_FOUND,
+        "Configuration iAsted non initialisée. Appelez initializeDefaults d'abord.",
+      );
+    }
+
+    await ctx.db.patch(config._id, {
+      macros: args.macros,
+      updatedAt: Date.now(),
+      updatedBy: ctx.user._id,
+    });
+    return config._id;
+  },
+});
+
+/**
+ * Incrémente le compteur d'usage d'une macro — pour tri adaptatif (top-3).
+ * Appelée côté client après insertion effective d'une macro dans le composer.
+ */
+export const incrementMacroUsage = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    macroId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const config = await ctx.db
+      .query("orgIAstedConfig")
+      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .first();
+    if (!config || !config.macros) return { updated: false };
+
+    const updated = config.macros.map((m) =>
+      m.id === args.macroId
+        ? { ...m, usageCount: (m.usageCount ?? 0) + 1 }
+        : m,
+    );
+    await ctx.db.patch(config._id, { macros: updated });
+    return { updated: true };
   },
 });
 

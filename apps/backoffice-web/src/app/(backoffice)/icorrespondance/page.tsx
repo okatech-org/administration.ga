@@ -9,7 +9,7 @@ import {
   useAuthenticatedConvexQuery,
   useConvexMutationQuery,
 } from "@/integrations/convex/hooks"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence } from "motion/react"
 import {
   Mail,
   Search,

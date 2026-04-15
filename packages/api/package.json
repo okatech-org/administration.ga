@@ -21,10 +21,9 @@
   },
   "devDependencies": {
     "@workspace/tsconfig": "workspace:*",
-    "@tanstack/react-query": "^5.66.5",
     "@types/react": "^19.2.10",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "typescript": "^5.9.3"
   }
 }

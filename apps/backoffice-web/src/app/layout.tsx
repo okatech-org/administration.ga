@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next"
+import { Providers } from "@/components/providers"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -26,10 +27,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // Providers est monté à la racine (pattern identique à citizen-web) pour
+  // garantir que QueryClientProvider + ConvexBetterAuthProvider couvrent
+  // TOUTES les routes (y compris /sign-in, hors du groupe (backoffice)).
+  // Cf. packages/api/src/hooks.ts:94 : useAuthenticatedConvexQuery appelle
+  // useQuery de @tanstack/react-query — sans QueryClient ancestor, tout
+  // composant utilisant cette hook (ex: SuperadminGuard) plante en SSR.
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className="font-sans bg-background text-foreground antialiased">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   )

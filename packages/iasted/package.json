@@ -1,0 +1,43 @@
+{
+  "name": "@workspace/iasted",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Module iAsted partagé : CircleMenu, WindowShell, primitives DS v3, presets citizen/agent/backoffice/agent-desktop",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens/animation": "./src/tokens/animation.ts",
+    "./tokens/sizes": "./src/tokens/sizes.ts",
+    "./types": "./src/types/iasted.ts",
+    "./types/agent-presence": "./src/types/agent-presence.ts",
+    "./hooks/use-reduced-motion": "./src/hooks/use-reduced-motion.ts",
+    "./hooks/use-iasted-context": "./src/hooks/use-iasted-context.tsx",
+    "./components/circle-menu": "./src/components/circle-menu/index.tsx",
+    "./components/window": "./src/components/window/index.ts",
+    "./components/primitives": "./src/components/primitives/index.ts",
+    "./presets": "./src/presets/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint",
+    "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "lucide-react": "^1.7.0",
+    "motion": "^12.12.1"
+  },
+  "peerDependencies": {
+    "@workspace/api": "workspace:*",
+    "@workspace/ui": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.10",
+    "@types/react-dom": "^19.2.3",
+    "@workspace/tsconfig": "workspace:*",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "typescript": "^5.9.3"
+  }
+}

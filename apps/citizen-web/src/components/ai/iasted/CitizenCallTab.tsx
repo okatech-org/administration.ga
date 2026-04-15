@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+import { RecordingConsentBanner } from "@/components/meetings/recording-consent-banner";
 import { useMeeting } from "@/hooks/use-meeting";
 import {
 	useAuthenticatedConvexQuery,
@@ -44,6 +45,21 @@ export function CitizenCallTab() {
 
 	// Hook meeting lifecycle
 	const { token, wsUrl, connect, disconnect } = useMeeting(activeMeetingId ?? undefined);
+
+	// Plan Intelligence iAsted × Sprint 6 — Phase ε : surveille le consent RGPD
+	// du meeting actif. Affiche le banner tant que l'agent a demandé consent
+	// (recordingConsentRequestedAt) mais que le citoyen n'a pas encore décidé.
+	const { data: activeMeeting } = useAuthenticatedConvexQuery(
+		api.functions.meetings.get,
+		activeMeetingId ? { meetingId: activeMeetingId } : "skip",
+	);
+	const consent = activeMeeting?.citizenConsent;
+	const shouldShowConsentBanner = Boolean(
+		activeMeetingId &&
+			consent?.recordingConsentRequestedAt &&
+			consent?.recordingAccepted === undefined &&
+			!consent?.recordingDeclinedAt,
+	);
 
 	// Mutation appel org
 	const { mutateAsync: callOrg, isPending: isCalling } = useConvexMutationQuery(
@@ -242,6 +258,14 @@ export function CitizenCallTab() {
 					)}
 				</DialogContent>
 			</Dialog>
+
+			{/* Plan Intelligence iAsted — Phase ε : banner RGPD consent recording.
+			    S'affiche quand l'agent a demandé consent pour le meeting actif, tant
+			    que le citoyen n'a ni accepté ni refusé. Au-dessus de l'appel LiveKit
+			    (z-50) via son propre overlay fixed. */}
+			{shouldShowConsentBanner && activeMeetingId && (
+				<RecordingConsentBanner meetingId={activeMeetingId} />
+			)}
 		</div>
 	);
 }

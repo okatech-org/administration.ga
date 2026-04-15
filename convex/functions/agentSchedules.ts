@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { internalMutation } from "../_generated/server";
 import { authQuery, authMutation } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
@@ -8,6 +9,7 @@ import {
   scheduleTimeRangeValidator,
   scheduleExceptionValidator,
 } from "../schemas/agentSchedules";
+import { isCurrentTimeInSchedule } from "../lib/scheduleMatching";
 
 // ============================================================================
 // AGENT SCHEDULE QUERIES
@@ -304,5 +306,130 @@ export const listOrgAgents = authQuery({
     );
 
     return agents.filter(Boolean);
+  },
+});
+
+// ============================================================================
+// SPRINT 6 — AUTO-SYNC SCHEDULES → PRESENCE
+// ============================================================================
+
+/**
+ * Cron interval (5 min) : pour chaque agentSchedule actif, aligner la
+ * agentPresence de l'agent sur sa plage horaire courante.
+ *
+ * Règles :
+ *  - In-schedule + presence offline  → patch online.
+ *  - Out-of-schedule + presence online → patch offline.
+ *  - Presence busy (appel en cours)   → JAMAIS écraser.
+ *  - lastActivity < 60s ago           → skip (override manuel récent respecté).
+ *  - Exception "available=false"      → force offline (jour férié, congé).
+ *
+ * Scalable jusqu'à ~5k schedules sans pagination. Au-delà, passer en
+ * pagination par cursor.
+ */
+export const matchAgentSchedulesToPresence = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const MANUAL_OVERRIDE_GRACE_MS = 60_000;
+
+    // Load active schedules (filter sur isActive — indexes disponibles :
+    // by_org_active[orgId, isActive] ne permet pas un eq sur isActive seul).
+    const schedules = await ctx.db
+      .query("agentSchedules")
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .take(5000);
+
+    let transitionsOnline = 0;
+    let transitionsOffline = 0;
+    let skipped = 0;
+
+    for (const schedule of schedules) {
+      // Resolve membership → userId
+      const membership = await ctx.db.get(schedule.agentId);
+      if (!membership || membership.deletedAt) {
+        skipped++;
+        continue;
+      }
+
+      // Resolve org timezone (fallback "Europe/Paris" si absent)
+      const org = await ctx.db.get(schedule.orgId);
+      const timezone = org?.timezone ?? "Europe/Paris";
+
+      // Évalue la plage horaire
+      const match = isCurrentTimeInSchedule(
+        now,
+        timezone,
+        schedule.weeklySchedule,
+        schedule.exceptions,
+      );
+
+      // Fetch presence courante
+      const presence = await ctx.db
+        .query("agentPresence")
+        .withIndex("by_user_and_org", (q) =>
+          q.eq("userId", membership.userId).eq("orgId", schedule.orgId),
+        )
+        .unique();
+
+      // Jamais écraser un agent en appel
+      if (presence?.status === "busy") {
+        skipped++;
+        continue;
+      }
+
+      // Respect override manuel récent (toggle status depuis l'UI)
+      if (
+        presence &&
+        presence.lastActivity > now - MANUAL_OVERRIDE_GRACE_MS
+      ) {
+        skipped++;
+        continue;
+      }
+
+      const shouldBeOnline = match.inSchedule;
+
+      if (shouldBeOnline && (!presence || presence.status === "offline")) {
+        // Transition offline → online
+        if (presence) {
+          await ctx.db.patch(presence._id, {
+            status: "online",
+            lastHeartbeat: now,
+            // Ne touche pas lastActivity pour ne pas déclencher le grace
+          });
+        } else {
+          await ctx.db.insert("agentPresence", {
+            userId: membership.userId,
+            orgId: schedule.orgId,
+            status: "online",
+            lastHeartbeat: now,
+            lastActivity: now - MANUAL_OVERRIDE_GRACE_MS - 1, // Pas un override
+            clientType: "agent-schedule-auto",
+          });
+        }
+        transitionsOnline++;
+      } else if (
+        !shouldBeOnline &&
+        presence &&
+        presence.status !== "offline"
+      ) {
+        await ctx.db.patch(presence._id, {
+          status: "offline",
+          currentCallId: undefined,
+          currentCallIds: [],
+          activeCallId: undefined,
+        });
+        transitionsOffline++;
+      } else {
+        skipped++;
+      }
+    }
+
+    return {
+      schedulesProcessed: schedules.length,
+      transitionsOnline,
+      transitionsOffline,
+      skipped,
+    };
   },
 });

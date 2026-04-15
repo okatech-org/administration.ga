@@ -5,6 +5,12 @@
  *
  * Layout :
  * [Icônes nav] | [Liste conversations/contacts] | [Zone de chat/contenu]
+ *
+ * TODO Phase 3.5+ : migrer vers `<FullscreenShell>` de `@workspace/iasted`
+ * pour consolider header + nav sidebar + tab indicator. Le shell existe déjà
+ * (packages/iasted/src/components/page/FullscreenShell.tsx) et attend seulement
+ * que la liste + le contenu soient extraits en slots.
+ * Les tokens DS v3 (foreground/8, primary) sont déjà alignés avec la fenêtre compacte.
  */
 
 import { api } from "@convex/_generated/api"
@@ -25,6 +31,7 @@ import {
   ShieldCheck,
   User,
   Video,
+  Voicemail as VoicemailIcon,
 } from "lucide-react"
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react"
 import Markdown from "react-markdown"
@@ -48,6 +55,7 @@ import { IAstedContactTab } from "@/components/ai/iasted/IAstedContactTab"
 import { IAstedCallTab } from "@/components/ai/iasted/IAstedCallTab"
 import { IAstedMeetingTab } from "@/components/ai/iasted/IAstedMeetingTab"
 import { IAstedSettingsTab } from "@/components/ai/iasted/IAstedSettingsTab"
+import { VoicemailsList } from "@/components/call-center/VoicemailsList"
 import { cn } from "@/lib/utils"
 
 
@@ -63,6 +71,7 @@ const NAV_ITEMS = [
   { id: "ichat", icon: MessageSquare, label: "iChat" },
   { id: "icontact", icon: Contact, label: "iContact" },
   { id: "icall", icon: Phone, label: "iAppel" },
+  { id: "voicemail", icon: VoicemailIcon, label: "Messagerie" },
   { id: "imeeting", icon: Video, label: "iRéunion" },
   { id: "settings", icon: Settings, label: "Réglages" },
 ] as const
@@ -189,8 +198,8 @@ export default function IAstedFullPage() {
       {/* Header — comme iBoîte */}
       <div className="flex shrink-0 items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-            <ShieldCheck className="h-5 w-5 text-emerald-500" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground/8 dark:bg-foreground/5">
+            <ShieldCheck className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h1 className="text-xl font-bold">iAsted</h1>
@@ -215,8 +224,8 @@ export default function IAstedFullPage() {
         {/* ── Col 1 : Icônes navigation ── */}
         <div className="flex w-14 shrink-0 flex-col items-center gap-1 border-r py-3">
           {/* Logo */}
-          <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/10">
-            <ShieldCheck className="h-4 w-4 text-emerald-500" />
+          <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-full bg-foreground/8 dark:bg-foreground/5">
+            <ShieldCheck className="h-4 w-4 text-primary" />
           </div>
 
           {/* Nav icons */}
@@ -240,7 +249,14 @@ export default function IAstedFullPage() {
               >
                 <Icon className="h-5 w-5" />
                 {showBadge && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                  <span
+                    className={cn(
+                      "absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground",
+                      // Pulse uniquement quand il s'agit d'appels entrants
+                      // (signal plus fort que les messages non lus).
+                      item.id === "icall" && "animate-pulse",
+                    )}
+                  >
                     {badgeCount}
                   </span>
                 )}
@@ -299,17 +315,17 @@ export default function IAstedFullPage() {
                 >
                   <div className="relative">
                     <Avatar className="h-11 w-11">
-                      <AvatarFallback className="bg-emerald-500/15 text-emerald-500">
+                      <AvatarFallback className="bg-emerald-500/15 text-primary">
                         <Bot className="h-5 w-5" />
                       </AvatarFallback>
                     </Avatar>
-                    <Pin className="absolute -top-0.5 -right-0.5 h-3 w-3 rotate-45 text-emerald-500" />
+                    <Pin className="absolute -top-0.5 -right-0.5 h-3 w-3 rotate-45 text-primary" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <p className="text-sm font-semibold">iAsted</p>
-                        <Badge className="h-3.5 border-emerald-500/20 bg-emerald-500/15 px-1 text-[7px] text-emerald-500">
+                        <Badge className="h-3.5 border-emerald-500/20 bg-emerald-500/15 px-1 text-[7px] text-primary">
                           IA
                         </Badge>
                       </div>
@@ -453,7 +469,7 @@ export default function IAstedFullPage() {
                   <div className="flex shrink-0 items-center gap-3 border-b px-4 py-3">
                     <Avatar className="h-9 w-9">
                       {selectedContact.isAI ? (
-                        <AvatarFallback className="bg-emerald-500/15 text-emerald-500">
+                        <AvatarFallback className="bg-emerald-500/15 text-primary">
                           <Bot className="h-4 w-4" />
                         </AvatarFallback>
                       ) : (
@@ -507,8 +523,8 @@ export default function IAstedFullPage() {
                     {selectedContact.isAI ? (
                       chat.messages.length === 0 ? (
                         <div className="flex h-full flex-col items-center justify-center py-12 text-center">
-                          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
-                            <Bot className="h-8 w-8 text-emerald-500" />
+                          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-foreground/8 dark:bg-foreground/5">
+                            <Bot className="h-8 w-8 text-primary" />
                           </div>
                           <h3 className="mb-1 text-base font-semibold">
                             Bonjour, je suis iAsted
@@ -523,7 +539,7 @@ export default function IAstedFullPage() {
                                 key={s}
                                 type="button"
                                 onClick={() => setMessageInput(s)}
-                                className="rounded-full border border-emerald-500/20 px-3 py-1.5 text-xs text-emerald-600 transition-colors hover:bg-emerald-500/10 dark:text-emerald-400"
+                                className="rounded-full border border-emerald-500/20 px-3 py-1.5 text-xs text-emerald-600 transition-colors hover:bg-foreground/8 dark:bg-foreground/5 dark:text-emerald-400"
                               >
                                 {s}
                               </button>
@@ -544,7 +560,7 @@ export default function IAstedFullPage() {
                             >
                               {msg.role === "assistant" && (
                                 <Avatar className="mt-1 h-7 w-7 shrink-0">
-                                  <AvatarFallback className="bg-emerald-500/10 text-[9px] text-emerald-600">
+                                  <AvatarFallback className="bg-foreground/8 dark:bg-foreground/5 text-[9px] text-emerald-600">
                                     <Bot className="h-3.5 w-3.5" />
                                   </AvatarFallback>
                                 </Avatar>
@@ -583,7 +599,7 @@ export default function IAstedFullPage() {
                           {chat.isLoading && (
                             <div className="flex items-center gap-2">
                               <Avatar className="h-7 w-7">
-                                <AvatarFallback className="bg-emerald-500/10 text-[9px] text-emerald-600">
+                                <AvatarFallback className="bg-foreground/8 dark:bg-foreground/5 text-[9px] text-emerald-600">
                                   <Bot className="h-3.5 w-3.5" />
                                 </AvatarFallback>
                               </Avatar>
@@ -676,7 +692,7 @@ export default function IAstedFullPage() {
               ) : (
                 <div className="flex flex-1 items-center justify-center text-center">
                   <div>
-                    <ShieldCheck className="mx-auto mb-4 h-16 w-16 text-emerald-500/20" />
+                    <ShieldCheck className="mx-auto mb-4 h-16 w-16 text-primary/20" />
                     <h2 className="text-lg font-semibold text-muted-foreground">
                       iAsted
                     </h2>
@@ -689,7 +705,7 @@ export default function IAstedFullPage() {
             </div>
           </>
         ) : (
-          /* ── Onglets non-chat (iContact, iAppel, Réglages) ── */
+          /* ── Onglets non-chat (iContact, iAppel, Messagerie, Réglages) ── */
           <div className="flex flex-1 flex-col overflow-hidden">
             <div className="shrink-0 border-b px-4 py-3">
               <h2 className="text-base font-semibold">
@@ -697,14 +713,21 @@ export default function IAstedFullPage() {
                   ? "iContact"
                   : activeTab === "icall"
                     ? "iAppel"
-                    : activeTab === "imeeting"
-                      ? "iRéunion"
-                      : "Réglages"}
+                    : activeTab === "voicemail"
+                      ? "Messagerie vocale"
+                      : activeTab === "imeeting"
+                        ? "iRéunion"
+                        : "Réglages"}
               </h2>
             </div>
             <div className="flex-1 overflow-hidden">
               {activeTab === "icontact" && <IAstedContactTab />}
               {activeTab === "icall" && <IAstedCallTab />}
+              {activeTab === "voicemail" && (
+                <div className="h-full overflow-y-auto p-3 lg:p-4">
+                  <VoicemailsList orgId={activeOrgId} />
+                </div>
+              )}
               {activeTab === "imeeting" && <IAstedMeetingTab />}
               {activeTab === "settings" && <IAstedSettingsTab />}
             </div>

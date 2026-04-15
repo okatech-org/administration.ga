@@ -118,10 +118,12 @@ export function AgentMobileNav() {
 							/>
 						))}
 
-						{/* iAsted FAB centre */}
+						{/* iAsted FAB centre — déclenche l'ouverture de la fenêtre iAsted via event bus */}
 						<button
 							type="button"
-							className="h-12 w-12 rounded-full flex items-center justify-center bg-emerald-600 hover:bg-emerald-500 -mt-4 active:scale-[0.97] transition-transform"
+							onClick={() => window.dispatchEvent(new CustomEvent("iasted:open"))}
+							className="h-12 w-12 rounded-full flex items-center justify-center bg-primary hover:brightness-110 -mt-4 active:scale-[0.97] transition-transform"
+							aria-label="Ouvrir iAsted"
 						>
 							<Bot className="h-6 w-6 text-white" />
 						</button>
