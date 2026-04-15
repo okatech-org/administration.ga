@@ -5,13 +5,16 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useQuery as useConvexQuery, useMutation as useConvexMutation } from "convex/react";
 import { useParams, useRouter } from "next/navigation";
 import {
+	AlertTriangle,
 	ArrowLeft,
+	Baby,
 	Building2,
 	Calendar,
 	Edit,
 	Eye,
 	KeyRound,
 	Layers,
+	Loader2,
 	Lock,
 	Mail,
 	MapPin,
@@ -24,6 +27,16 @@ import {
 	Trash2,
 	RotateCcw,
 } from "lucide-react";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DiplomaticProfileEditDialog } from "@/components/admin/diplomatic-profile-edit-dialog";
@@ -517,6 +530,9 @@ export default function UserDetailPage() {
 				</div>
 			</FlatCard>
 
+			{/* Child Profiles Card */}
+			<ChildProfilesSection userId={userId as Id<"users">} canManage={canManage} />
+
 			{/* Modules Card (Back-office/Agent users only) */}
 			{isBackOfficeOrAgent && moduleData && (
 				<FlatCard>
@@ -724,5 +740,249 @@ function PinStatusRow({ userId }: { userId: Id<"users"> }) {
 				</div>
 			)}
 		</>
+	);
+}
+
+// ─── Child Profiles Section + delete dialog ───────────────
+const CHILD_STATUS_BADGE: Record<string, string> = {
+	draft: "bg-zinc-500/10 text-zinc-700 border-zinc-300 dark:text-zinc-400 dark:border-zinc-500/30",
+	pending: "bg-amber-500/10 text-amber-700 border-amber-300 dark:text-amber-400 dark:border-amber-500/30",
+	active: "bg-emerald-500/10 text-emerald-700 border-emerald-300 dark:text-emerald-400 dark:border-emerald-500/30",
+	inactive: "bg-zinc-500/10 text-zinc-500 border-zinc-300 dark:text-zinc-500 dark:border-zinc-500/30",
+};
+
+const CHILD_STATUS_LABEL: Record<string, string> = {
+	draft: "Brouillon",
+	pending: "En attente",
+	active: "Actif",
+	inactive: "Inactif",
+};
+
+function ChildProfilesSection({
+	userId,
+	canManage,
+}: {
+	userId: Id<"users">;
+	canManage: boolean;
+}) {
+	const { data: children, isPending } = useAuthenticatedConvexQuery(
+		api.functions.admin.listChildProfilesByUser,
+		{ userId },
+	);
+
+	const [toDelete, setToDelete] = useState<{
+		childId: Id<"childProfiles">;
+		name: string;
+	} | null>(null);
+
+	return (
+		<FlatCard>
+			<div className="p-3 lg:p-4">
+				<SectionHeader
+					icon={<Baby className="h-4 w-4" />}
+					title="Profils enfants"
+				/>
+				<p className="text-xs text-muted-foreground mb-3">
+					Enfants rattachés à ce compte parent. La suppression est en cascade
+					(documents, inscriptions consulaires, demandes).
+				</p>
+				{isPending ? (
+					<div className="space-y-2">
+						<Skeleton className="h-12 w-full" />
+						<Skeleton className="h-12 w-full" />
+					</div>
+				) : !children || children.length === 0 ? (
+					<p className="text-muted-foreground text-center py-4 text-sm">
+						Aucun profil enfant.
+					</p>
+				) : (
+					<div className="space-y-2">
+						{children.map((child: any) => {
+							const fullName =
+								`${child.firstName ?? ""} ${child.lastName ?? ""}`.trim() ||
+								"Enfant";
+							const statusStyle =
+								CHILD_STATUS_BADGE[child.status] ?? CHILD_STATUS_BADGE.draft;
+							return (
+								<div
+									key={child._id}
+									className="flex items-center justify-between border rounded-md p-3"
+								>
+									<div className="flex items-center gap-3 min-w-0">
+										<div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+											<Baby className="h-4 w-4 text-muted-foreground" />
+										</div>
+										<div className="min-w-0">
+											<p className="font-medium truncate">{fullName}</p>
+											<div className="flex items-center gap-2 mt-0.5 flex-wrap">
+												<Badge
+													variant="outline"
+													className={cn("text-xs border", statusStyle)}
+												>
+													{CHILD_STATUS_LABEL[child.status] ?? child.status}
+												</Badge>
+												{child.hasRegistrationRequest && (
+													<Badge variant="outline" className="text-xs">
+														Demande consulaire en cours
+													</Badge>
+												)}
+												{child.nipCode && (
+													<span className="text-[10px] text-muted-foreground">
+														NIP: {child.nipCode}
+													</span>
+												)}
+											</div>
+										</div>
+									</div>
+									{canManage && (
+										<Button
+											variant="ghost"
+											size="icon"
+											className="h-8 w-8 text-destructive hover:text-destructive hover:bg-red-50 dark:hover:bg-red-500/10 shrink-0"
+											title="Supprimer ce profil enfant"
+											onClick={() =>
+												setToDelete({
+													childId: child._id as Id<"childProfiles">,
+													name: fullName,
+												})
+											}
+										>
+											<Trash2 className="h-4 w-4" />
+										</Button>
+									)}
+								</div>
+							);
+						})}
+					</div>
+				)}
+			</div>
+			{toDelete && (
+				<ChildProfileDeletionDialog
+					childId={toDelete.childId}
+					name={toDelete.name}
+					open={!!toDelete}
+					onOpenChange={(open) => !open && setToDelete(null)}
+				/>
+			)}
+		</FlatCard>
+	);
+}
+
+const CHILD_DELETION_LABELS: Record<string, string> = {
+	documents: "Documents",
+	consularRegistrations: "Inscriptions consulaires",
+	requests: "Demandes",
+	events: "Événements",
+	agentNotes: "Notes agents",
+	printJobs: "Tâches d'impression",
+};
+
+function ChildProfileDeletionDialog({
+	childId,
+	name,
+	open,
+	onOpenChange,
+}: {
+	childId: Id<"childProfiles">;
+	name: string;
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+}) {
+	const { data: preview } = useAuthenticatedConvexQuery(
+		api.functions.admin.getChildProfileDeletionPreview,
+		open ? { childId } : "skip",
+	);
+
+	const { mutate: deleteChild, isPending } = useConvexMutationQuery(
+		api.functions.admin.permanentlyDeleteChildProfile,
+	);
+
+	const handleConfirm = async () => {
+		try {
+			await deleteChild({ childId });
+			toast.success("Profil enfant supprimé définitivement");
+			onOpenChange(false);
+		} catch {
+			toast.error("Erreur lors de la suppression");
+		}
+	};
+
+	return (
+		<AlertDialog open={open} onOpenChange={onOpenChange}>
+			<AlertDialogContent className="max-w-md">
+				<AlertDialogHeader>
+					<AlertDialogTitle className="flex items-center gap-2">
+						<AlertTriangle className="h-5 w-5 text-destructive" />
+						Suppression du profil enfant
+					</AlertDialogTitle>
+					<AlertDialogDescription asChild>
+						<div className="space-y-3">
+							<p>
+								Cette action est{" "}
+								<strong className="text-foreground">irréversible</strong>. Le
+								profil de{" "}
+								<strong className="text-foreground">{name}</strong> et toutes
+								les données rattachées seront supprimés.
+							</p>
+							{!preview ? (
+								<div className="flex items-center justify-center py-4 gap-2 text-sm text-muted-foreground">
+									<Loader2 className="h-4 w-4 animate-spin" />
+									Analyse des données…
+								</div>
+							) : preview.totalItems === 0 ? (
+								<p className="text-sm text-muted-foreground py-2">
+									Aucune donnée liée — seul le profil sera supprimé.
+								</p>
+							) : (
+								<div className="rounded-md border bg-muted/30 p-3 space-y-1.5">
+									<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+										Données à supprimer ({preview.totalItems} éléments)
+									</p>
+									{Object.entries(preview.counts)
+										.filter(([, count]) => (count as number) > 0)
+										.map(([key, count]) => (
+											<div key={key} className="flex justify-between text-sm">
+												<span className="text-muted-foreground">
+													{CHILD_DELETION_LABELS[key] ?? key}
+												</span>
+												<span className="font-medium tabular-nums">
+													{count as number}
+												</span>
+											</div>
+										))}
+									{preview.storageFileCount > 0 && (
+										<div className="flex justify-between text-sm pt-1 border-t mt-1">
+											<span className="text-muted-foreground">
+												Fichiers (storage)
+											</span>
+											<span className="font-medium tabular-nums">
+												{preview.storageFileCount}
+											</span>
+										</div>
+									)}
+								</div>
+							)}
+						</div>
+					</AlertDialogDescription>
+				</AlertDialogHeader>
+				<AlertDialogFooter>
+					<AlertDialogCancel>Annuler</AlertDialogCancel>
+					<AlertDialogAction
+						onClick={handleConfirm}
+						disabled={isPending || !preview}
+						className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+					>
+						{isPending ? (
+							<>
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								Suppression…
+							</>
+						) : (
+							"Supprimer définitivement"
+						)}
+					</AlertDialogAction>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
 	);
 }

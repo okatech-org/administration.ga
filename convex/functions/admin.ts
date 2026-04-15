@@ -5,6 +5,8 @@ import { error, ErrorCode } from "../lib/errors";
 import { getEffectiveRole } from "../lib/auth";
 import { UserRole } from "../lib/constants";
 import { components } from "../_generated/api";
+import { logCortexAction } from "../lib/neocortex";
+import { SIGNAL_TYPES, CATEGORIES_ACTION, CORTEX } from "../lib/types";
 import {
   globalCounts,
   requestsByOrg,
@@ -938,6 +940,44 @@ async function collectUserEntities(ctx: any, userId: any) {
   const callLines = await collectByUser("callLines", "by_user", "userId");
   const tickets = await collectByUser("tickets", "by_user", "userId");
   const messages = await collectByUser("messages", "by_sender", "senderId");
+  const pushSubscriptions = await collectByUser("pushSubscriptions", "by_user", "userId");
+
+  // 7. Consular registrations — indexed by profileId + childProfileId
+  const consularRegistrations: any[] = [];
+  if (profile) {
+    const regs = await ctx.db
+      .query("consularRegistrations")
+      .withIndex("by_profile", (q: any) => q.eq("profileId", profile._id))
+      .collect();
+    consularRegistrations.push(...regs);
+  }
+  for (const cp of childProfiles) {
+    const regs = await ctx.db
+      .query("consularRegistrations")
+      .withIndex("by_childProfile", (q: any) => q.eq("childProfileId", cp._id))
+      .collect();
+    consularRegistrations.push(...regs);
+  }
+
+  // 8. Consular notifications — indexed by profileId (parent only; schema forbids childProfileId)
+  const consularNotifications: any[] = [];
+  if (profile) {
+    const notifs = await ctx.db
+      .query("consularNotifications")
+      .withIndex("by_profile", (q: any) => q.eq("profileId", profile._id))
+      .collect();
+    consularNotifications.push(...notifs);
+  }
+
+  // 9. Print jobs — no userId/profileId index exists, full scan. Rare purge op.
+  const childProfileIdSet = new Set(childProfiles.map((cp: any) => String(cp._id)));
+  const profileIdStr = profile ? String(profile._id) : null;
+  const allPrintJobs = await ctx.db.query("printJobs").collect();
+  const printJobs = allPrintJobs.filter((job: any) =>
+    job.createdBy === userId ||
+    (profileIdStr && job.profileId && String(job.profileId) === profileIdStr) ||
+    (job.childProfileId && childProfileIdSet.has(String(job.childProfileId))),
+  );
 
   return {
     profile,
@@ -960,6 +1000,10 @@ async function collectUserEntities(ctx: any, userId: any) {
     callLines,
     tickets,
     messages,
+    pushSubscriptions,
+    consularRegistrations,
+    consularNotifications,
+    printJobs,
   };
 }
 
@@ -996,6 +1040,10 @@ export const getUserDeletionPreview = backofficeQuery({
       callLines: entities.callLines.length,
       tickets: entities.tickets.length,
       messages: entities.messages.length,
+      pushSubscriptions: entities.pushSubscriptions.length,
+      consularRegistrations: entities.consularRegistrations.length,
+      consularNotifications: entities.consularNotifications.length,
+      printJobs: entities.printJobs.length,
     };
 
     const totalItems = Object.values(counts).reduce((a, b) => a + b, 0);
@@ -1073,6 +1121,21 @@ export const permanentlyDeleteUser = backofficeMutation({
       await ctx.db.delete(doc._id);
     }
 
+    // 4b. Print jobs — before profiles/child profiles (FK references)
+    for (const job of entities.printJobs) {
+      await ctx.db.delete(job._id);
+    }
+
+    // 4c. Consular registrations — before profile/child profiles (FK references)
+    for (const reg of entities.consularRegistrations) {
+      await ctx.db.delete(reg._id);
+    }
+
+    // 4d. Consular notifications — before profile (FK reference)
+    for (const notif of entities.consularNotifications) {
+      await ctx.db.delete(notif._id);
+    }
+
     // 5. Requests
     for (const req of entities.requests) {
       await ctx.db.delete(req._id);
@@ -1107,6 +1170,7 @@ export const permanentlyDeleteUser = backofficeMutation({
       ...entities.conversations,
       ...entities.callLines,
       ...entities.tickets,
+      ...entities.pushSubscriptions,
     ];
     for (const entity of secondaryEntities) {
       await ctx.db.delete(entity._id);
@@ -1163,6 +1227,235 @@ export const permanentlyDeleteUser = backofficeMutation({
 
     // 11. Hard delete Convex user
     await ctx.db.delete(args.userId);
+
+    // 12. Audit trail — log the destructive action for traceability
+    await logCortexAction(ctx, {
+      action: "user.permanentDelete",
+      categorie: CATEGORIES_ACTION.SECURITE,
+      entiteType: "users",
+      entiteId: args.userId as unknown as string,
+      userId: ctx.user._id as unknown as string,
+      avant: {
+        email: target.email,
+        name: target.name,
+        role: target.role,
+        linkedEntitiesSummary: {
+          profile: entities.profile ? 1 : 0,
+          childProfiles: entities.childProfiles.length,
+          requests: entities.requests.length,
+          documents: entities.documents.length,
+          consularRegistrations: entities.consularRegistrations.length,
+          consularNotifications: entities.consularNotifications.length,
+        },
+      },
+      apres: null,
+      signalType: SIGNAL_TYPES.TYPE_SUPPRIME,
+      destination: CORTEX.HIPPOCAMPE,
+      priorite: "HIGH",
+    });
+  },
+});
+
+// ─── Child profile deletion (cascade) ─────────────────────────
+
+async function collectChildProfileEntities(ctx: any, childId: any) {
+  const child = await ctx.db.get(childId);
+  if (!child) return null;
+
+  // Documents owned by this child profile
+  const documents = await ctx.db
+    .query("documents")
+    .withIndex("by_owner", (q: any) => q.eq("ownerId", childId))
+    .collect();
+
+  // Consular registrations indexed by child profile
+  const consularRegistrations = await ctx.db
+    .query("consularRegistrations")
+    .withIndex("by_childProfile", (q: any) => q.eq("childProfileId", childId))
+    .collect();
+
+  // Requests where profileId points to this child (requests.profileId is a union
+  // of profiles | childProfiles, so we need a filter — no dedicated index).
+  const requests = await ctx.db
+    .query("requests")
+    .filter((q: any) => q.eq(q.field("profileId"), childId))
+    .collect();
+  const requestIds = requests.map((r: any) => r._id);
+
+  // Documents referenced by those requests (may have different ownerId)
+  const existingDocIds = new Set(documents.map((d: any) => d._id));
+  for (const req of requests) {
+    for (const docId of req.documents ?? []) {
+      if (!existingDocIds.has(docId)) {
+        const doc = await ctx.db.get(docId);
+        if (doc) documents.push(doc);
+      }
+    }
+  }
+
+  // Events + agent notes linked to those requests
+  const events: any[] = [];
+  const agentNotes: any[] = [];
+  for (const rid of requestIds) {
+    const evts = await ctx.db
+      .query("events")
+      .withIndex("by_target", (q: any) =>
+        q.eq("targetType", "request").eq("targetId", rid as unknown as string),
+      )
+      .collect();
+    events.push(...evts);
+    const notes = await ctx.db
+      .query("agentNotes")
+      .withIndex("by_request", (q: any) => q.eq("requestId", rid))
+      .collect();
+    agentNotes.push(...notes);
+  }
+
+  // Print jobs referencing this child (no index — full scan, rare op)
+  const allPrintJobs = await ctx.db.query("printJobs").collect();
+  const printJobs = allPrintJobs.filter(
+    (j: any) => j.childProfileId && String(j.childProfileId) === String(childId),
+  );
+
+  return { child, documents, consularRegistrations, requests, events, agentNotes, printJobs };
+}
+
+/**
+ * Preview what will be deleted when permanently deleting a child profile.
+ */
+export const getChildProfileDeletionPreview = backofficeQuery({
+  args: { childId: v.id("childProfiles") },
+  handler: async (ctx, args) => {
+    const entities = await collectChildProfileEntities(ctx, args.childId);
+    if (!entities) throw error(ErrorCode.NOT_FOUND);
+
+    const counts: Record<string, number> = {
+      documents: entities.documents.length,
+      consularRegistrations: entities.consularRegistrations.length,
+      requests: entities.requests.length,
+      events: entities.events.length,
+      agentNotes: entities.agentNotes.length,
+      printJobs: entities.printJobs.length,
+    };
+
+    const totalItems = Object.values(counts).reduce((a, b) => a + b, 0);
+
+    let storageFileCount = 0;
+    for (const doc of entities.documents) {
+      storageFileCount += doc.files?.length ?? 0;
+    }
+
+    const childName =
+      `${entities.child.identity?.firstName ?? ""} ${entities.child.identity?.lastName ?? ""}`.trim() ||
+      "Enfant";
+
+    return { counts, totalItems, storageFileCount, childName };
+  },
+});
+
+/**
+ * Permanently delete a child profile and all its related data.
+ * Back-office users with permission to manage the parent author can do this.
+ * Cascade: documents (+ storage), consularRegistrations, requests, events,
+ * agent notes, print jobs.
+ *
+ * Note: unlike `childProfiles.remove` (citizen-facing), this admin mutation
+ * forces deletion even if consular registrations or a registration request
+ * exist. It is the super-admin recovery tool for stuck/orphaned records.
+ */
+export const permanentlyDeleteChildProfile = backofficeMutation({
+  args: { childId: v.id("childProfiles") },
+  handler: async (ctx, args) => {
+    const entities = await collectChildProfileEntities(ctx, args.childId);
+    if (!entities) throw error(ErrorCode.NOT_FOUND);
+
+    // Outrank check against the parent (author) user
+    const parent = (await ctx.db.get(entities.child.authorUserId)) as any;
+    if (parent) {
+      const callerRank = ROLE_RANK[getEffectiveRole(ctx.user)] ?? 0;
+      const targetRank = ROLE_RANK[getEffectiveRole(parent)] ?? 0;
+      if (targetRank >= callerRank) {
+        throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
+      }
+    }
+
+    // Leaf-to-root deletion order
+    for (const evt of entities.events) {
+      await ctx.db.delete(evt._id);
+    }
+    for (const note of entities.agentNotes) {
+      await ctx.db.delete(note._id);
+    }
+    for (const doc of entities.documents) {
+      if (doc.files) {
+        for (const file of doc.files) {
+          try {
+            await ctx.storage.delete(file.storageId);
+          } catch {
+            // file may already be gone
+          }
+        }
+      }
+      await ctx.db.delete(doc._id);
+    }
+    for (const job of entities.printJobs) {
+      await ctx.db.delete(job._id);
+    }
+    for (const reg of entities.consularRegistrations) {
+      await ctx.db.delete(reg._id);
+    }
+    for (const req of entities.requests) {
+      await ctx.db.delete(req._id);
+    }
+
+    await ctx.db.delete(args.childId);
+
+    // Audit trail
+    await logCortexAction(ctx, {
+      action: "childProfile.permanentDelete",
+      categorie: CATEGORIES_ACTION.SECURITE,
+      entiteType: "childProfiles",
+      entiteId: args.childId as unknown as string,
+      userId: ctx.user._id as unknown as string,
+      avant: {
+        firstName: entities.child.identity?.firstName,
+        lastName: entities.child.identity?.lastName,
+        authorUserId: entities.child.authorUserId,
+        linkedEntitiesSummary: {
+          documents: entities.documents.length,
+          consularRegistrations: entities.consularRegistrations.length,
+          requests: entities.requests.length,
+        },
+      },
+      apres: null,
+      signalType: SIGNAL_TYPES.TYPE_SUPPRIME,
+      destination: CORTEX.HIPPOCAMPE,
+      priorite: "HIGH",
+    });
+  },
+});
+
+/**
+ * List child profiles authored by a given user. Used by the backoffice user
+ * detail page to surface children with inline delete actions.
+ */
+export const listChildProfilesByUser = backofficeQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const children = await ctx.db
+      .query("childProfiles")
+      .withIndex("by_author", (q: any) => q.eq("authorUserId", args.userId))
+      .collect();
+
+    return children.map((c: any) => ({
+      _id: c._id,
+      firstName: c.identity?.firstName ?? "",
+      lastName: c.identity?.lastName ?? "",
+      status: c.status,
+      hasRegistrationRequest: !!c.registrationRequestId,
+      nipCode: c.nipCode,
+      updatedAt: c.updatedAt,
+    }));
   },
 });
 

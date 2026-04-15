@@ -268,6 +268,10 @@ const DELETION_LABELS: Record<string, string> = {
   callLines: "Lignes d'appel",
   tickets: "Tickets support",
   messages: "Messages",
+  pushSubscriptions: "Abonnements push",
+  consularRegistrations: "Inscriptions consulaires",
+  consularNotifications: "Signalements consulaires",
+  printJobs: "Tâches d'impression",
 }
 
 function DeletionPreviewDialog({
