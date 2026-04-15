@@ -2,8 +2,9 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { ChildProfileStatus } from "@convex/lib/constants";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { differenceInYears, format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -21,6 +22,13 @@ import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/my-space/flat-card";
 import { ChildConsularRegistrationDialog } from "@/components/my-space/ChildConsularRegistrationDialog";
 import { PageHeader } from "@/components/my-space/page-header";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { ContentDetailSkeleton } from "@/components/skeletons";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
@@ -43,6 +51,7 @@ export default function ChildDashboardPage() {
 	const params = useParams();
 	const childId = params.childId as string;
 	const convex = useConvex();
+	const router = useRouter();
 	const { t } = useTranslation();
 
 	// Translation-based label helper
@@ -51,6 +60,15 @@ export default function ChildDashboardPage() {
 	const { data: child, isPending } = useAuthenticatedConvexQuery(
 		api.functions.childProfiles.getById,
 		{ id: childId as Id<"childProfiles"> },
+	);
+
+	// Shared cache with sidebar/mobile-nav: no extra request.
+	const { data: siblings } = useAuthenticatedConvexQuery(
+		api.functions.childProfiles.getMine,
+		{},
+	);
+	const activeSiblings = (siblings ?? []).filter(
+		(s: any) => s.status !== ChildProfileStatus.Inactive && s._id !== childId,
 	);
 
 	const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
@@ -62,7 +80,7 @@ export default function ChildDashboardPage() {
 			<div className="flex flex-col items-center justify-center h-full gap-4">
 				<Baby className="h-12 w-12 text-muted-foreground/30" />
 				<p className="text-sm text-muted-foreground">{t("children.detail.notFound")}</p>
-				<Button asChild variant="outline" size="sm"><Link href="/my-space"><ArrowLeft className="mr-1.5 h-3.5 w-3.5" />{t("common.back")}</Link></Button>
+				<Button asChild variant="outline" size="sm"><Link href="/my-space/children"><ArrowLeft className="mr-1.5 h-3.5 w-3.5" />{t("children.backToList", "Mes enfants")}</Link></Button>
 			</div>
 		);
 	}
@@ -114,6 +132,38 @@ export default function ChildDashboardPage() {
 				icon={<Baby className="h-5 w-5 text-pink-500" />}
 				iconBgClass="bg-pink-500/10"
 				showBackButton
+				onBack={() => router.push("/my-space/children")}
+				actions={
+					activeSiblings.length > 0 ? (
+						<Select
+							value={childId}
+							onValueChange={(value) => {
+								if (value && value !== childId) {
+									router.push(`/my-space/children/${value}`);
+								}
+							}}
+						>
+							<SelectTrigger className="h-9 w-[180px]">
+								<SelectValue
+									placeholder={t(
+										"children.switchTo",
+										"Voir un autre enfant",
+									)}
+								/>
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value={childId}>
+									{firstName} {lastName}
+								</SelectItem>
+								{activeSiblings.map((s: any) => (
+									<SelectItem key={s._id} value={s._id}>
+										{s.identity?.firstName} {s.identity?.lastName}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					) : undefined
+				}
 			/>
 
 			<motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}>
