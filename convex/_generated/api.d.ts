@@ -9,6 +9,7 @@
  */
 
 import type * as actions_gcpMonitoring from "../actions/gcpMonitoring.js";
+import type * as actions_iAstedPromptGenerator from "../actions/iAstedPromptGenerator.js";
 import type * as actions_livekit from "../actions/livekit.js";
 import type * as actions_posthog from "../actions/posthog.js";
 import type * as actions_posthogHealthCheck from "../actions/posthogHealthCheck.js";
@@ -82,7 +83,13 @@ import type * as functions_guides from "../functions/guides.js";
 import type * as functions_meetings from "../functions/meetings.js";
 import type * as functions_memberships from "../functions/memberships.js";
 import type * as functions_messages from "../functions/messages.js";
+import type * as functions_migrations from "../functions/migrations.js";
+import type * as functions_missedCalls from "../functions/missedCalls.js";
 import type * as functions_notifications from "../functions/notifications.js";
+import type * as functions_orgCalendar from "../functions/orgCalendar.js";
+import type * as functions_orgEscalationPolicy from "../functions/orgEscalationPolicy.js";
+import type * as functions_orgIAstedConfig from "../functions/orgIAstedConfig.js";
+import type * as functions_orgRoleTemplates from "../functions/orgRoleTemplates.js";
 import type * as functions_orgs from "../functions/orgs.js";
 import type * as functions_payments from "../functions/payments.js";
 import type * as functions_permissions from "../functions/permissions.js";
@@ -101,6 +108,7 @@ import type * as functions_services from "../functions/services.js";
 import type * as functions_slots from "../functions/slots.js";
 import type * as functions_smsNotifications from "../functions/smsNotifications.js";
 import type * as functions_statistics from "../functions/statistics.js";
+import type * as functions_suggestions from "../functions/suggestions.js";
 import type * as functions_tickets from "../functions/tickets.js";
 import type * as functions_tutorials from "../functions/tutorials.js";
 import type * as functions_userPreferences from "../functions/userPreferences.js";
@@ -123,6 +131,7 @@ import type * as lib_httpSecurity from "../lib/httpSecurity.js";
 import type * as lib_legacyProfilesMap from "../lib/legacyProfilesMap.js";
 import type * as lib_moduleCodes from "../lib/moduleCodes.js";
 import type * as lib_neocortex from "../lib/neocortex.js";
+import type * as lib_orgHelpers from "../lib/orgHelpers.js";
 import type * as lib_permissions from "../lib/permissions.js";
 import type * as lib_phone from "../lib/phone.js";
 import type * as lib_platform from "../lib/platform.js";
@@ -197,8 +206,13 @@ import type * as schemas_ipThreatScores from "../schemas/ipThreatScores.js";
 import type * as schemas_meetings from "../schemas/meetings.js";
 import type * as schemas_memberships from "../schemas/memberships.js";
 import type * as schemas_messages from "../schemas/messages.js";
+import type * as schemas_missedCalls from "../schemas/missedCalls.js";
 import type * as schemas_neocortex from "../schemas/neocortex.js";
 import type * as schemas_notifications from "../schemas/notifications.js";
+import type * as schemas_orgCalendar from "../schemas/orgCalendar.js";
+import type * as schemas_orgEscalationPolicy from "../schemas/orgEscalationPolicy.js";
+import type * as schemas_orgIAstedConfig from "../schemas/orgIAstedConfig.js";
+import type * as schemas_orgRoleTemplates from "../schemas/orgRoleTemplates.js";
 import type * as schemas_orgServices from "../schemas/orgServices.js";
 import type * as schemas_orgs from "../schemas/orgs.js";
 import type * as schemas_payments from "../schemas/payments.js";
@@ -240,6 +254,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "actions/gcpMonitoring": typeof actions_gcpMonitoring;
+  "actions/iAstedPromptGenerator": typeof actions_iAstedPromptGenerator;
   "actions/livekit": typeof actions_livekit;
   "actions/posthog": typeof actions_posthog;
   "actions/posthogHealthCheck": typeof actions_posthogHealthCheck;
@@ -313,7 +328,13 @@ declare const fullApi: ApiFromModules<{
   "functions/meetings": typeof functions_meetings;
   "functions/memberships": typeof functions_memberships;
   "functions/messages": typeof functions_messages;
+  "functions/migrations": typeof functions_migrations;
+  "functions/missedCalls": typeof functions_missedCalls;
   "functions/notifications": typeof functions_notifications;
+  "functions/orgCalendar": typeof functions_orgCalendar;
+  "functions/orgEscalationPolicy": typeof functions_orgEscalationPolicy;
+  "functions/orgIAstedConfig": typeof functions_orgIAstedConfig;
+  "functions/orgRoleTemplates": typeof functions_orgRoleTemplates;
   "functions/orgs": typeof functions_orgs;
   "functions/payments": typeof functions_payments;
   "functions/permissions": typeof functions_permissions;
@@ -332,6 +353,7 @@ declare const fullApi: ApiFromModules<{
   "functions/slots": typeof functions_slots;
   "functions/smsNotifications": typeof functions_smsNotifications;
   "functions/statistics": typeof functions_statistics;
+  "functions/suggestions": typeof functions_suggestions;
   "functions/tickets": typeof functions_tickets;
   "functions/tutorials": typeof functions_tutorials;
   "functions/userPreferences": typeof functions_userPreferences;
@@ -354,6 +376,7 @@ declare const fullApi: ApiFromModules<{
   "lib/legacyProfilesMap": typeof lib_legacyProfilesMap;
   "lib/moduleCodes": typeof lib_moduleCodes;
   "lib/neocortex": typeof lib_neocortex;
+  "lib/orgHelpers": typeof lib_orgHelpers;
   "lib/permissions": typeof lib_permissions;
   "lib/phone": typeof lib_phone;
   "lib/platform": typeof lib_platform;
@@ -428,8 +451,13 @@ declare const fullApi: ApiFromModules<{
   "schemas/meetings": typeof schemas_meetings;
   "schemas/memberships": typeof schemas_memberships;
   "schemas/messages": typeof schemas_messages;
+  "schemas/missedCalls": typeof schemas_missedCalls;
   "schemas/neocortex": typeof schemas_neocortex;
   "schemas/notifications": typeof schemas_notifications;
+  "schemas/orgCalendar": typeof schemas_orgCalendar;
+  "schemas/orgEscalationPolicy": typeof schemas_orgEscalationPolicy;
+  "schemas/orgIAstedConfig": typeof schemas_orgIAstedConfig;
+  "schemas/orgRoleTemplates": typeof schemas_orgRoleTemplates;
   "schemas/orgServices": typeof schemas_orgServices;
   "schemas/orgs": typeof schemas_orgs;
   "schemas/payments": typeof schemas_payments;

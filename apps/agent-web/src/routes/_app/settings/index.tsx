@@ -3,6 +3,12 @@ import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery as useConvexQuery, useMutation as useConvexMutation } from "convex/react";
 import {
+	SettingsFormProvider,
+	SettingsUnsavedGuard,
+	useRegisterSection,
+	useSettingsFormOptional,
+} from "@workspace/settings-form";
+import {
 	Bell,
 	Bot,
 	Briefcase,
@@ -27,10 +33,11 @@ import {
 	X,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
+import { CallLinesSettings } from "@/components/settings/call-lines-settings";
 import { useModuleAccess } from "@/components/shared/access-gate";
 import {
 	SettingsDivider,
@@ -89,8 +96,28 @@ import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/settings/")({
-	component: DashboardSettings,
+	component: DashboardSettingsWrapper,
 });
+
+/**
+ * Wrapper externe — fournit le contexte `SettingsFormProvider` et le
+ * `SettingsUnsavedGuard` pour protéger la navigation contre la perte
+ * de modifications en cours d'édition.
+ *
+ * Le contenu réel est dans `DashboardSettings` qui peut utiliser les hooks
+ * du package depuis l'intérieur du provider.
+ */
+function DashboardSettingsWrapper() {
+	return (
+		<SettingsFormProvider>
+			<DashboardSettings />
+			<SettingsUnsavedGuard
+				title="Modifications non enregistrées"
+				description="Vous avez des modifications en cours d'édition. Voulez-vous les sauvegarder avant de quitter ?"
+			/>
+		</SettingsFormProvider>
+	);
+}
 
 const DAYS_OF_WEEK = [
 	"monday",
@@ -198,6 +225,7 @@ function DashboardSettings() {
 	// Granular permission checks
 	const canViewOrgSettings = permissionsReady && canDo("settings.view");
 	const canManageSettings = permissionsReady && canDo("settings.manage");
+	const canManageMeetings = permissionsReady && canDo("meetings.manage");
 
 	const { data: org } = useAuthenticatedConvexQuery(
 		api.functions.orgs.getById,
@@ -258,6 +286,43 @@ function DashboardSettings() {
 			}
 		},
 	});
+
+	// Intégration avec `SettingsFormProvider` du package `@workspace/settings-form` :
+	//   - `flush()` soumet le formulaire si on est en mode édition (bouton virtuel "Enregistrer")
+	//   - `hasPending()` → true si l'utilisateur édite avec des modifs non sauvegardées
+	// Le `SettingsUnsavedGuard` utilisera ces infos pour bloquer la navigation.
+	const ctx = useSettingsFormOptional();
+	const notifyDirty = ctx?.notifySectionDirty;
+	useRegisterSection("agent-profile", {
+		flush: async () => {
+			if (isEditing && form.state.isDirty) {
+				await form.handleSubmit();
+			}
+		},
+		hasPending: () => isEditing && form.state.isDirty,
+		status: "idle",
+	});
+
+	// Notification dirty pour que le contexte maintienne son Set à jour.
+	// On s'abonne au store du form pour réagir aux changements de isDirty.
+	const [formIsDirty, setFormIsDirty] = useState(() => form.state.isDirty);
+	useEffect(() => {
+		// form.store.subscribe retourne un objet Subscription ou une fonction
+		// selon la version — on gère les deux cas pour le cleanup.
+		const sub: unknown = form.store.subscribe(() => {
+			setFormIsDirty(form.state.isDirty);
+		});
+		return () => {
+			if (typeof sub === "function") {
+				(sub as () => void)();
+			} else if (sub && typeof (sub as { unsubscribe?: () => void }).unsubscribe === "function") {
+				(sub as { unsubscribe: () => void }).unsubscribe();
+			}
+		};
+	}, [form]);
+	useEffect(() => {
+		notifyDirty?.("agent-profile", isEditing && formIsDirty);
+	}, [notifyDirty, isEditing, formIsDirty]);
 
 	const handleEdit = () => {
 		if (org) {
@@ -361,6 +426,13 @@ function DashboardSettings() {
 						label: "Paiements",
 						icon: <CreditCard className="size-4" />,
 					},
+					...(canManageMeetings
+						? [{
+							id: "telephonie",
+							label: t("callLines.tabLabel"),
+							icon: <Phone className="size-4" />,
+						}]
+						: []),
 				],
 			}]
 			: []),
@@ -1217,6 +1289,19 @@ function DashboardSettings() {
 								</div>
 							</div>
 						</div>
+					</div>
+				)}
+
+				{/* ─── Téléphonie Tab ─── */}
+				{canManageMeetings && activeOrgId && (
+					<div
+						id="settings-tab-telephonie"
+						className={cn(
+							"animate-in fade-in duration-300",
+							activeTab !== "telephonie" && "hidden",
+						)}
+					>
+						<CallLinesSettings orgId={activeOrgId} />
 					</div>
 				)}
 

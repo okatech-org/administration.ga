@@ -15,6 +15,7 @@ import {
 	FileText,
 	Globe,
 	IdCard,
+	LayoutDashboard,
 	Mail,
 	MapPin,
 	Package,
@@ -24,10 +25,13 @@ import {
 } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
-import { OrgMembersTable } from "@/components/admin/org-members-table";
+import { CommunicationsTab } from "@/components/admin/communications/CommunicationsTab";
+import { RepDashboard } from "@/components/admin/dashboard/RepDashboard";
 import { OrgServicesTable } from "@/components/admin/org-services-table";
+import { RequestsRegistryTab } from "@/components/admin/requests-registry/RequestsRegistryTab";
+import { useCompletionScore } from "@/components/admin/settings/use-completion-score";
+import { TeamTab } from "@/components/admin/team/TeamTab";
 import { OrgModulesTab } from "@/components/dashboard/org-modules-tab";
-import { OrgPositionsTab } from "@/components/dashboard/org-positions-tab";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/design-system/flat-card";
@@ -36,10 +40,7 @@ import { SectionHeader } from "@/components/design-system/section-header";
 import { FlagIcon } from "@/components/ui/flag-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-	useAuthenticatedConvexQuery,
-	useAuthenticatedPaginatedQuery,
-} from "@/integrations/convex/hooks";
+import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/reps/$orgId")({
@@ -102,6 +103,61 @@ function KpiCard({
 	)
 }
 
+// ─── Completion KPI Card ────────────────────────────────────────────────────
+// Affiche un score global de complétion du paramétrage. Couleur dynamique selon
+// la santé : vert ≥ 80%, ambre ≥ 50%, rose < 50%.
+function CompletionKpiCard({ orgId }: { orgId: Id<"orgs"> }) {
+	const completion = useCompletionScore(orgId);
+	const score = completion.global.score;
+	const accent =
+		score >= 80
+			? "#10b981" // emerald
+			: score >= 50
+				? "#f59e0b" // amber
+				: "#f43f5e"; // rose
+
+	return (
+		<FlatCard className="relative overflow-hidden">
+			<div
+				className="absolute left-0 top-0 h-full w-1 rounded-l-xl"
+				style={{ background: accent }}
+			/>
+			<div className="p-4 pl-5">
+				<div className="flex items-center justify-between">
+					<div>
+						<p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+							Configuration
+						</p>
+						{completion.isLoading ? (
+							<Skeleton className="h-8 w-16 mt-1" />
+						) : (
+							<p className="text-2xl font-bold tracking-tight mt-0.5">
+								{score}%
+							</p>
+						)}
+						{completion.global.criticalMissing.length > 0 && (
+							<p
+								className="text-[10px] mt-0.5 font-medium"
+								style={{ color: accent }}
+							>
+								{completion.global.criticalMissing.length} section
+								{completion.global.criticalMissing.length > 1 ? "s" : ""} à
+								compléter
+							</p>
+						)}
+					</div>
+					<div
+						className="flex h-10 w-10 items-center justify-center rounded-xl"
+						style={{ background: `${accent}18` }}
+					>
+						<Settings2 className="h-5 w-5" style={{ color: accent }} />
+					</div>
+				</div>
+			</div>
+		</FlatCard>
+	);
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 function OrgDetailPage() {
@@ -133,14 +189,6 @@ function OrgDetailPage() {
 		api.functions.services.listByOrg,
 		{ orgId: orgId as Id<"orgs"> },
 	)
-
-	// Requests for this org (paginated)
-	const { results: requests, isLoading: isRequestsLoading } =
-		useAuthenticatedPaginatedQuery(
-			api.functions.requests.listByOrg,
-			{ orgId: orgId as Id<"orgs"> },
-			{ initialNumItems: 10 },
-		)
 
 	// Consular registry stats
 	const { data: registryStats } = useAuthenticatedConvexQuery(
@@ -268,7 +316,7 @@ function OrgDetailPage() {
 			/>
 
 			{/* ── KPI Cards ────────────────────────────────────────── */}
-			<div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+			<div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
 				<KpiCard
 					icon={Users}
 					label={t("superadmin.organizations.kpi.agents", "Agents")}
@@ -298,34 +346,51 @@ function OrgDetailPage() {
 					value={registryTotal}
 					accent="#10b981"
 				/>
+				<CompletionKpiCard orgId={orgId as Id<"orgs">} />
 			</div>
 
 			{/* ── Tabs ─────────────────────────────────────────────── */}
-			<Tabs defaultValue="overview" className="space-y-4">
+			<Tabs defaultValue="dashboard" className="space-y-4">
 				<div className="overflow-x-auto overflow-y-hidden scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
 					<TabsList className="h-auto justify-start w-max gap-1 bg-[#F4F3ED] dark:bg-[#171616]">
+							{/* ━━━━━ ZONE OPÉRATIONNELLE ━━━━━ */}
+						<TabsTrigger value="dashboard" className="gap-1.5 text-xs sm:text-sm">
+							<LayoutDashboard className="h-4 w-4" />
+							Dashboard
+						</TabsTrigger>
 						<TabsTrigger value="overview" className="gap-1.5 text-xs sm:text-sm">
 							<Building2 className="h-4 w-4" />
 							{t("superadmin.organizations.tabs.overview")}
 						</TabsTrigger>
-						<TabsTrigger value="agents" className="gap-1.5 text-xs sm:text-sm">
+						<TabsTrigger value="team" className="gap-1.5 text-xs sm:text-sm">
 							<Users className="h-4 w-4" />
-							{t("superadmin.organizations.tabs.members")}
+							Équipe
 							{memberCount > 0 && (
 								<Badge variant="secondary" className="ml-0.5 h-5 min-w-[20px] px-1 text-[10px]">
 									{memberCount}
 								</Badge>
 							)}
-						</TabsTrigger>
-						<TabsTrigger value="positions" className="gap-1.5 text-xs sm:text-sm">
-							<Crown className="h-4 w-4" />
-							{t("superadmin.organizations.tabs.positions", "Postes")}
-							{positionCount > 0 && (
-								<Badge variant="secondary" className="ml-0.5 h-5 min-w-[20px] px-1 text-[10px]">
-									{positionCount}
+							{positionCount - filledPositions > 0 && (
+								<Badge
+									variant="default"
+									className="ml-0.5 h-5 px-1 text-[10px] bg-amber-500/20 text-amber-700"
+									title={`${positionCount - filledPositions} poste(s) vacant(s)`}
+								>
+									{positionCount - filledPositions} vacant
 								</Badge>
 							)}
 						</TabsTrigger>
+						<TabsTrigger value="communications" className="gap-1.5 text-xs sm:text-sm">
+							<Phone className="h-4 w-4" />
+							Communications
+						</TabsTrigger>
+						<TabsTrigger value="requests-registry" className="gap-1.5 text-xs sm:text-sm">
+							<ClipboardList className="h-4 w-4" />
+							Demandes & Registre
+						</TabsTrigger>
+
+							<div className="mx-1 self-stretch w-px bg-border/40" aria-hidden="true" />
+							{/* ━━━━━ ZONE CATALOGUE ━━━━━ */}
 						<TabsTrigger value="services" className="gap-1.5 text-xs sm:text-sm">
 							<FileText className="h-4 w-4" />
 							{t("superadmin.organizations.tabs.services")}
@@ -335,14 +400,9 @@ function OrgDetailPage() {
 								</Badge>
 							)}
 						</TabsTrigger>
-						<TabsTrigger value="requests" className="gap-1.5 text-xs sm:text-sm">
-							<ClipboardList className="h-4 w-4" />
-							{t("superadmin.organizations.tabs.requests", "Demandes")}
-						</TabsTrigger>
-						<TabsTrigger value="registry" className="gap-1.5 text-xs sm:text-sm">
-							<IdCard className="h-4 w-4" />
-							{t("superadmin.organizations.tabs.registry", "Registre")}
-						</TabsTrigger>
+
+							<div className="mx-1 self-stretch w-px bg-border/40" aria-hidden="true" />
+							{/* ━━━━━ ZONE CONFIGURATION ━━━━━ */}
 						<TabsTrigger value="modules" className="gap-1.5 text-xs sm:text-sm">
 							<Package className="h-4 w-4" />
 							{t("superadmin.organizations.tabs.modules", "Modules")}
@@ -355,6 +415,11 @@ function OrgDetailPage() {
 				</div>
 
 				{/* ─── Tab: Overview ──────────────────────────────── */}
+				{/* ─── Tab: Dashboard (Phase B4) ─────────────────── */}
+				<TabsContent value="dashboard" className="space-y-4">
+					<RepDashboard orgId={orgId as Id<"orgs">} />
+				</TabsContent>
+
 				<TabsContent value="overview" className="space-y-4">
 					<div className="grid gap-4 md:grid-cols-2">
 						{/* Address */}
@@ -369,7 +434,7 @@ function OrgDetailPage() {
 									<p>
 										{org.address?.city}
 										{org.address?.postalCode &&
-											", ${org.address.postalCode}"}
+											`, ${org.address.postalCode}`}
 									</p>
 									<p className="font-medium">
 										{org.address?.country &&
@@ -394,7 +459,7 @@ function OrgDetailPage() {
 										<div className="flex items-center gap-2">
 											<Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
 											<a
-												href={"mailto:${org.email}"}
+												href={`mailto:${org.email}`}
 												className="text-primary hover:underline truncate"
 											>
 												{org.email}
@@ -405,7 +470,7 @@ function OrgDetailPage() {
 										<div className="flex items-center gap-2">
 											<Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
 											<a
-												href={"tel:${org.phone}"}
+												href={`tel:${org.phone}`}
 												className="text-primary hover:underline"
 											>
 												{org.phone}
@@ -477,26 +542,7 @@ function OrgDetailPage() {
 										)}
 									</dd>
 								</div>
-								<div>
-									<dt className="text-xs font-medium text-muted-foreground">
-										{t("superadmin.organizations.form.modules", "Modules")}
-									</dt>
-									<dd className="mt-0.5 flex flex-wrap gap-1">
-										{(org.modules as string[] | undefined)?.length ? (
-											(org.modules as string[]).map((mod) => (
-												<Badge
-													key={mod}
-													variant="secondary"
-													className="text-[10px] px-1.5"
-												>
-													{mod}
-												</Badge>
-											))
-										) : (
-											<span className="text-sm text-muted-foreground">—</span>
-										)}
-									</dd>
-								</div>
+								{/* Modules list removed — voir onglet Modules dédié pour la gestion complète. */}
 							</dl>
 						</div>
 					</FlatCard>
@@ -532,14 +578,9 @@ function OrgDetailPage() {
 					) : null}
 				</TabsContent>
 
-				{/* ─── Tab: Agents ────────────────────────────────── */}
-				<TabsContent value="agents">
-					<OrgMembersTable orgId={orgId as Id<"orgs">} />
-				</TabsContent>
-
-				{/* ─── Tab: Positions & Roles ─────────────────────── */}
-				<TabsContent value="positions" className="space-y-4">
-					<OrgPositionsTab orgId={orgId as Id<"orgs">} />
+				{/* ─── Tab: Équipe (fusion Membres + Postes — Phase B1) ─── */}
+				<TabsContent value="team" className="space-y-4">
+					<TeamTab orgId={orgId as Id<"orgs">} />
 				</TabsContent>
 
 				{/* ─── Tab: Services ──────────────────────────────── */}
@@ -548,158 +589,9 @@ function OrgDetailPage() {
 				</TabsContent>
 
 				{/* ─── Tab: Requests ──────────────────────────────── */}
-				<TabsContent value="requests" className="space-y-4">
-					<FlatCard>
-						<div className="p-3 lg:p-4">
-							<SectionHeader
-								icon={<ClipboardList className="h-4 w-4" />}
-								title={t("superadmin.organizations.tabs.requests", "Demandes")}
-							/>
-							<p className="text-xs text-muted-foreground mb-3">
-								{t(
-									"superadmin.organizations.requestsDesc",
-									"Dernières demandes de services pour cet organisme",
-								)}
-							</p>
-							{isRequestsLoading && requests.length === 0 ? (
-								<div className="space-y-2">
-									{[1, 2, 3].map((i) => (
-										<Skeleton key={i} className="h-12 w-full" />
-									))}
-								</div>
-							) : requests.length > 0 ? (
-								<div className="space-y-2">
-									{requests.slice(0, 20).map((req: any) => (
-										<div
-											key={req._id}
-											role="button"
-											tabIndex={0}
-											className="flex items-center justify-between rounded-lg border border-border/50 p-3 hover:bg-muted/30 transition-colors cursor-pointer"
-											onClick={() =>
-												navigate({
-													to: "/requests/$requestId",
-													params: { requestId: req._id },
-												})
-											}
-											onKeyDown={(e) => {
-												if (e.key === "Enter" || e.key === " ") {
-													e.preventDefault()
-													navigate({
-														to: "/requests/$requestId",
-														params: { requestId: req._id },
-													})
-												}
-											}}
-										>
-											<div className="flex items-center gap-3 min-w-0">
-												<div className="rounded-md bg-primary/10 p-1.5 shrink-0">
-													<FileText className="h-3.5 w-3.5 text-primary" />
-												</div>
-												<div className="min-w-0">
-													<p className="text-sm font-medium font-mono truncate">
-														{req.reference || req._id.slice(-8)}
-													</p>
-													<p className="text-xs text-muted-foreground truncate">
-														{req.user
-															? `${req.user.firstName || ""} ${req.user.lastName || ""}`.trim()
-															: "—"}
-													</p>
-												</div>
-											</div>
-											<div className="flex items-center gap-2 shrink-0">
-												<Badge
-													variant="secondary"
-													className="text-[10px] px-1.5"
-												>
-													{String(t(
-														`fields.requestStatus.options.${req.status}`,
-														req.status,
-													))}
-												</Badge>
-												<span className="text-xs text-muted-foreground">
-													{new Date(req._creationTime).toLocaleDateString(
-														lang === "fr" ? "fr-FR" : "en-US",
-														{ day: "numeric", month: "short" },
-													)}
-												</span>
-											</div>
-										</div>
-									))}
-								</div>
-							) : (
-								<div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-									<ClipboardList className="h-10 w-10 mb-3 opacity-30" />
-									<p className="text-sm">
-										{t(
-											"superadmin.organizations.requestsEmpty",
-											"Aucune demande pour cet organisme",
-										)}
-									</p>
-								</div>
-							)}
-						</div>
-					</FlatCard>
-				</TabsContent>
-
-				{/* ─── Tab: Registry ──────────────────────────────── */}
-				<TabsContent value="registry" className="space-y-4">
-					<div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-						<KpiCard
-							icon={Users}
-							label={t("dashboard.consularRegistry.stats.total", "Total")}
-							value={registryStats?.total ?? "—"}
-							accent="#6366f1"
-						/>
-						<KpiCard
-							icon={Calendar}
-							label={t(
-								"dashboard.consularRegistry.stats.requested",
-								"Demandés",
-							)}
-							value={registryStats?.requested ?? "—"}
-							accent="#f59e0b"
-						/>
-						<KpiCard
-							icon={IdCard}
-							label={t(
-								"dashboard.consularRegistry.stats.active",
-								"Actifs",
-							)}
-							value={registryStats?.active ?? "—"}
-							accent="#10b981"
-						/>
-						<KpiCard
-							icon={FileText}
-							label={t(
-								"dashboard.consularRegistry.stats.expired",
-								"Expirés",
-							)}
-							value={registryStats?.expired ?? "—"}
-							accent="#ef4444"
-						/>
-					</div>
-
-					<FlatCard>
-						<div className="flex flex-col items-center justify-center py-8 text-muted-foreground p-3 lg:p-4">
-							<IdCard className="h-10 w-10 mb-3 opacity-30" />
-							<p className="text-sm">
-								{t(
-									"superadmin.organizations.registryInfo",
-									"Vue détaillée du registre consulaire disponible dans la page de gestion de l'organisme.",
-								)}
-							</p>
-							<Button
-								variant="outline"
-								size="sm"
-								className="mt-3"
-								asChild
-							>
-								<Link to="/admin/consular-registry">
-									{t("superadmin.organizations.openRegistry", "Ouvrir le registre")}
-								</Link>
-							</Button>
-						</div>
-					</FlatCard>
+				{/* ─── Tab: Demandes & Registre (Phase B3) ───────── */}
+				<TabsContent value="requests-registry" className="space-y-4">
+					<RequestsRegistryTab orgId={orgId as Id<"orgs">} />
 				</TabsContent>
 
 				{/* ─── Tab: Modules ───────────────────────────────── */}
@@ -710,58 +602,210 @@ function OrgDetailPage() {
 					/>
 				</TabsContent>
 
+				{/* ─── Tab: Communications (Phase B2) ────────────── */}
+				<TabsContent value="communications" className="space-y-4">
+					<CommunicationsTab orgId={orgId as Id<"orgs">} />
+				</TabsContent>
+
 				{/* ─── Tab: Settings ──────────────────────────────── */}
 				<TabsContent value="settings" className="space-y-4">
+					{/* CTA vers la page de paramétrage complet */}
 					<FlatCard>
 						<div className="p-3 lg:p-4">
-							<SectionHeader
-								icon={<Settings2 className="h-4 w-4" />}
-								title={t(
-									"superadmin.organizations.tabs.settings",
-									"Paramètres",
-								)}
-							/>
-							<p className="text-xs text-muted-foreground mb-3">
-								{t(
-									"superadmin.organizations.settingsDesc",
-									"Configuration et paramètres de l'organisme",
-								)}
-							</p>
-							{org.settings ? (
-								<dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-									{Object.entries(
-										org.settings as Record<string, unknown>,
-									).map(([key, value]) => (
-										<div key={key}>
-											<dt className="text-xs font-medium text-muted-foreground">
-												{key}
-											</dt>
-											<dd className="mt-0.5 text-sm">
-												{typeof value === "boolean" ? (
-													<Badge
-														variant={value ? "default" : "secondary"}
-														className="text-[10px]"
-													>
-														{value ? "Activé" : "Désactivé"}
-													</Badge>
-												) : typeof value === "object" ? (
-													<code className="text-xs bg-muted px-1.5 py-0.5 rounded">
-														{JSON.stringify(value, null, 2).slice(0, 100)}
-													</code>
-												) : (
-													String(value)
-												)}
-											</dd>
-										</div>
-									))}
-								</dl>
-							) : (
-								<p className="text-sm text-muted-foreground italic">
-									{t("superadmin.common.noData")}
-								</p>
-							)}
+							<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+								<div>
+									<SectionHeader
+										icon={<Settings2 className="h-4 w-4" />}
+										title={t(
+											"superadmin.organizations.tabs.settings",
+											"Paramètres",
+										)}
+									/>
+									<p className="text-xs text-muted-foreground">
+										{t(
+											"superadmin.organizations.settingsDesc",
+											"Identité, horaires, juridiction, communication, iAsted…",
+										)}
+									</p>
+								</div>
+								<Button size="sm" asChild>
+									<Link
+										to="/reps/$orgId/edit"
+										params={{ orgId }}
+									>
+										<Edit className="mr-1.5 h-3.5 w-3.5" />
+										Configuration complète
+									</Link>
+								</Button>
+							</div>
 						</div>
 					</FlatCard>
+
+					{/* Résumé organisé des paramètres clés */}
+					<div className="grid gap-3 md:grid-cols-2">
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+								<SectionHeader
+									icon={<Settings2 className="h-4 w-4" />}
+									title="Traitement des demandes"
+								/>
+								<dl className="space-y-2 text-sm">
+									<div className="flex justify-between">
+										<dt className="text-xs text-muted-foreground">
+											Assignation des demandes
+										</dt>
+										<dd className="text-xs font-medium">
+											{org.settings?.requestAssignment === "auto"
+												? "Automatique"
+												: "Manuelle"}
+										</dd>
+									</div>
+									<div className="flex justify-between">
+										<dt className="text-xs text-muted-foreground">
+											Délai de traitement par défaut
+										</dt>
+										<dd className="text-xs font-medium">
+											{org.settings?.defaultProcessingDays ?? "—"} j.
+										</dd>
+									</div>
+									<div className="flex justify-between">
+										<dt className="text-xs text-muted-foreground">
+											Limite demandes actives
+										</dt>
+										<dd className="text-xs font-medium">
+											{org.settings?.maxActiveRequests ?? "—"}
+										</dd>
+									</div>
+									<div className="flex justify-between">
+										<dt className="text-xs text-muted-foreground">
+											Analyse IA activée
+										</dt>
+										<dd>
+											<Badge
+												variant={
+													org.settings?.aiAnalysisEnabled
+														? "default"
+														: "secondary"
+												}
+												className="text-[9px]"
+											>
+												{org.settings?.aiAnalysisEnabled ? "Activé" : "Désactivé"}
+											</Badge>
+										</dd>
+									</div>
+								</dl>
+							</div>
+						</FlatCard>
+
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+								<SectionHeader
+									icon={<Calendar className="h-4 w-4" />}
+									title="Rendez-vous & Registre"
+								/>
+								<dl className="space-y-2 text-sm">
+									<div className="flex justify-between">
+										<dt className="text-xs text-muted-foreground">
+											Délai minimum RDV
+										</dt>
+										<dd className="text-xs font-medium">
+											{org.settings?.appointmentBuffer ?? "—"} h
+										</dd>
+									</div>
+									<div className="flex justify-between">
+										<dt className="text-xs text-muted-foreground">
+											Durée validité registre
+										</dt>
+										<dd className="text-xs font-medium">
+											{org.settings?.registrationDurationYears ?? 5} ans
+										</dd>
+									</div>
+								</dl>
+							</div>
+						</FlatCard>
+
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+								<SectionHeader
+									icon={<FileText className="h-4 w-4" />}
+									title="iCorrespondance"
+								/>
+								<dl className="space-y-2 text-sm">
+									<div className="flex justify-between">
+										<dt className="text-xs text-muted-foreground">Activée</dt>
+										<dd>
+											<Badge
+												variant={
+													org.settings?.correspondanceConfig?.isEnabled
+														? "default"
+														: "secondary"
+												}
+												className="text-[9px]"
+											>
+												{org.settings?.correspondanceConfig?.isEnabled
+													? "Activée"
+													: "Désactivée"}
+											</Badge>
+										</dd>
+									</div>
+									<div className="flex justify-between">
+										<dt className="text-xs text-muted-foreground">
+											Pattern référence
+										</dt>
+										<dd className="font-mono text-[10px]">
+											{org.settings?.correspondanceConfig
+												?.defaultReferencePattern ?? "—"}
+										</dd>
+									</div>
+									<div className="flex justify-between">
+										<dt className="text-xs text-muted-foreground">
+											Types actifs
+										</dt>
+										<dd className="text-xs font-medium">
+											{org.settings?.correspondanceConfig?.typesActifs
+												?.length ?? 0}
+										</dd>
+									</div>
+								</dl>
+							</div>
+						</FlatCard>
+
+						<FlatCard>
+							<div className="p-3 lg:p-4">
+								<SectionHeader
+									icon={<IdCard className="h-4 w-4" />}
+									title="Carte consulaire & Impression"
+								/>
+								<dl className="space-y-2 text-sm">
+									<div className="flex justify-between">
+										<dt className="text-xs text-muted-foreground">
+											Impression activée
+										</dt>
+										<dd>
+											<Badge
+												variant={
+													org.settings?.printEnabled ? "default" : "secondary"
+												}
+												className="text-[9px]"
+											>
+												{org.settings?.printEnabled ? "Oui" : "Non"}
+											</Badge>
+										</dd>
+									</div>
+									<div className="flex justify-between">
+										<dt className="text-xs text-muted-foreground">
+											Design de carte par défaut
+										</dt>
+										<dd className="text-xs font-medium">
+											{org.settings?.defaultCardDesignId
+												? "Configuré"
+												: "—"}
+										</dd>
+									</div>
+								</dl>
+							</div>
+						</FlatCard>
+					</div>
 
 					{/* Quick info */}
 					<FlatCard>

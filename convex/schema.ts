@@ -76,6 +76,11 @@ import {
   guidesTable,
   archivePoliciesTable,
   archiveAuditLogTable,
+  orgCalendarTable,
+  missedCallsTable,
+  orgIAstedConfigTable,
+  orgRoleTemplatesTable,
+  orgEscalationPolicyTable,
 } from "./schemas";
 
 export default defineSchema({
@@ -160,4 +165,14 @@ export default defineSchema({
   // iArchive — Politiques et audit d'archivage
   archivePolicies: archivePoliciesTable,
   archiveAuditLog: archiveAuditLogTable,
+  // Phase 1 Fondations — Paramétrage représentation (horaires, jours fériés, fermetures)
+  orgCalendar: orgCalendarTable,
+  // Phase 2 Communication — Extensions iAppel (appels manqués)
+  missedCalls: missedCallsTable,
+  // Phase 3 iAsted — Configuration chatbot par représentation
+  orgIAstedConfig: orgIAstedConfigTable,
+  // Phase C3 — Templates de rôles personnalisables par org
+  orgRoleTemplates: orgRoleTemplatesTable,
+  // Phase D3 — Politique d'escalation unifiée (chatbot + callcenter)
+  orgEscalationPolicy: orgEscalationPolicyTable,
 });

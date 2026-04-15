@@ -604,6 +604,208 @@ export const timeSlotValidator = v.object({
 
 export type TimeSlot = Infer<typeof timeSlotValidator>;
 
+// ============================================================================
+// PHASE 2 — Sous-objets de communication (iAppel, iBoîte, Notifications, Chats)
+// Tous optionnels dans orgSettings pour widen-migrate-narrow
+// ============================================================================
+
+// ─── iAppel : paramètres globaux ───────────────────────────
+export const callsRecordingConfigValidator = v.object({
+  enabled: v.boolean(),
+  autoStart: v.optional(v.boolean()),
+  retentionDays: v.number(),
+  storageProvider: v.optional(
+    v.union(v.literal("livekit"), v.literal("s3")),
+  ),
+  citizenConsentRequired: v.boolean(),
+});
+
+export const callsConfigValidator = v.object({
+  // Paramètres globaux
+  ringTimeoutSeconds: v.optional(v.number()), // défaut 60s
+  maxCallDurationMinutes: v.optional(v.number()),
+  defaultCallMediaType: v.optional(
+    v.union(v.literal("audio"), v.literal("video")),
+  ),
+
+  // Participants
+  maxParticipantsCall: v.optional(v.number()),
+  maxParticipantsMeeting: v.optional(v.number()),
+
+  // Recording
+  recording: v.optional(callsRecordingConfigValidator),
+
+  // Qualité
+  audioCodec: v.optional(v.string()),
+  videoCodec: v.optional(v.string()),
+  adaptiveStreaming: v.optional(v.boolean()),
+
+  // Fenêtres d'acceptation
+  acceptanceWindows: v.optional(
+    v.object({
+      businessHours: v.boolean(),
+      emergencyOverride: v.boolean(),
+    }),
+  ),
+
+  // Fallback global
+  noAgentAvailableAction: v.optional(
+    v.union(
+      v.literal("voicemail"),
+      v.literal("callback_request"),
+      v.literal("disconnect"),
+    ),
+  ),
+  voicemailGreeting: v.optional(v.string()),
+});
+
+export type CallsConfig = Infer<typeof callsConfigValidator>;
+
+// ─── iBoîte : config par org ───────────────────────────────
+export const mailStampValidator = v.object({
+  code: v.string(),
+  label: v.string(),
+  storageId: v.id("_storage"),
+  position: v.union(
+    v.literal("top_right"),
+    v.literal("bottom_center"),
+    v.literal("signature_area"),
+  ),
+  opacity: v.number(),
+  colorVariant: v.optional(
+    v.union(v.literal("red"), v.literal("blue"), v.literal("green")),
+  ),
+});
+
+export const mailReplyTemplateValidator = v.object({
+  code: v.string(),
+  label: v.string(),
+  subject: v.string(),
+  bodyHtml: v.string(),
+  category: v.optional(
+    v.union(
+      v.literal("accueil"),
+      v.literal("refus"),
+      v.literal("information"),
+      v.literal("urgence"),
+    ),
+  ),
+});
+
+export const internalMailConfigValidator = v.object({
+  stamps: v.optional(v.array(mailStampValidator)),
+  defaultSignature: v.optional(
+    v.object({
+      html: v.string(),
+      imageStorageId: v.optional(v.id("_storage")),
+    }),
+  ),
+  replyTemplates: v.optional(v.array(mailReplyTemplateValidator)),
+  autoResponder: v.optional(
+    v.object({
+      enabled: v.boolean(),
+      startAt: v.optional(v.number()),
+      endAt: v.optional(v.number()),
+      message: v.string(),
+      applyToCategories: v.optional(v.array(v.string())),
+    }),
+  ),
+  autoCategorization: v.optional(
+    v.object({
+      enabled: v.boolean(),
+      rules: v.array(
+        v.object({
+          keywords: v.array(v.string()),
+          folder: v.string(),
+          priority: v.number(),
+        }),
+      ),
+    }),
+  ),
+});
+
+export type InternalMailConfig = Infer<typeof internalMailConfigValidator>;
+
+// ─── Notifications par org ─────────────────────────────────
+export const notificationEventValidator = v.object({
+  eventCode: v.string(), // ex: "request.created"
+  enabledChannels: v.array(v.string()), // ["inApp","email","sms","whatsapp","push"]
+  templateOverrides: v.optional(
+    v.object({
+      subjectFr: v.optional(v.string()),
+      subjectEn: v.optional(v.string()),
+      bodyFr: v.optional(v.string()),
+      bodyEn: v.optional(v.string()),
+    }),
+  ),
+  priority: v.optional(
+    v.union(
+      v.literal("low"),
+      v.literal("normal"),
+      v.literal("high"),
+      v.literal("critical"),
+    ),
+  ),
+});
+
+export const notificationsConfigValidator = v.object({
+  channels: v.object({
+    inApp: v.boolean(),
+    email: v.boolean(),
+    sms: v.boolean(),
+    whatsapp: v.optional(v.boolean()),
+    push: v.optional(v.boolean()),
+  }),
+  events: v.optional(v.array(notificationEventValidator)),
+  quietHours: v.optional(
+    v.object({
+      enabled: v.boolean(),
+      startHour: v.number(), // 0-23
+      endHour: v.number(), // 0-23
+      timezone: v.optional(v.string()),
+      channelsAffected: v.array(v.string()),
+    }),
+  ),
+  escalation: v.optional(
+    v.object({
+      enabled: v.boolean(),
+      noResponseAfterHours: v.number(),
+      escalateToMembershipIds: v.array(v.id("memberships")),
+      maxReminders: v.number(),
+    }),
+  ),
+  senderConfig: v.optional(
+    v.object({
+      smsSenderName: v.optional(v.string()), // ex: "GABON-MAD"
+      smsBirdChannelId: v.optional(v.string()),
+      emailFromName: v.optional(v.string()),
+      emailReplyTo: v.optional(v.string()),
+    }),
+  ),
+});
+
+export type NotificationsConfig = Infer<typeof notificationsConfigValidator>;
+
+// ─── Chats P2P : config par org ───────────────────────────
+export const chatsConfigValidator = v.object({
+  allowCitizenInitiated: v.optional(v.boolean()), // défaut false
+  standardRoutingRules: v.optional(
+    v.object({
+      enabledByDefault: v.boolean(),
+      routingMembershipIds: v.array(v.id("memberships")),
+      fairAssignment: v.union(
+        v.literal("round_robin"),
+        v.literal("least_busy"),
+      ),
+    }),
+  ),
+  autoArchiveAfterInactiveDays: v.optional(v.number()),
+  allowFileAttachments: v.optional(v.boolean()),
+  maxAttachmentSizeMb: v.optional(v.number()),
+});
+
+export type ChatsConfig = Infer<typeof chatsConfigValidator>;
+
 // Org settings
 export const orgSettingsValidator = v.object({
   appointmentBuffer: v.number(),
@@ -637,6 +839,19 @@ export const orgSettingsValidator = v.object({
       cachetOrganisme: v.boolean(),
       cachetStorageId: v.optional(v.id("_storage")),
     })),
+    watermarkConfig: v.optional(v.object({
+      enabled: v.boolean(),
+      text: v.string(),
+      opacity: v.number(),
+      rotation: v.optional(v.number()),
+    })),
+    deadlinesByType: v.optional(v.array(v.object({
+      typeCode: v.string(),
+      standardDays: v.number(),
+      urgentDays: v.optional(v.number()),
+      maxDays: v.optional(v.number()),
+      escalationMembershipIds: v.optional(v.array(v.id("memberships"))),
+    }))),
   })),
 
   // ── Carte consulaire & impression ──
@@ -647,6 +862,12 @@ export const orgSettingsValidator = v.object({
     footerText: v.optional(v.string()),
     logoStorageId: v.optional(v.id("_storage")),
   })),
+
+  // ── PHASE 2 : Canaux de communication internes ──
+  calls: v.optional(callsConfigValidator),
+  internalMail: v.optional(internalMailConfigValidator),
+  notifications: v.optional(notificationsConfigValidator),
+  chats: v.optional(chatsConfigValidator),
 });
 
 export type OrgSettings = Infer<typeof orgSettingsValidator>;
@@ -684,6 +905,151 @@ export type Pricing = Infer<typeof pricingValidator>;
 export const localizedStringValidator = v.record(v.string(), v.string());
 
 export type LocalizedString = Infer<typeof localizedStringValidator>;
+
+// ============================================================================
+// ORG EXTENDED VALIDATORS (Phase 1 Fondations)
+// Nouveaux sous-objets optionnels pour le paramétrage complet d'une
+// représentation : identité étendue, protocole, adresses structurées,
+// juridictions enrichies, branding. Tous optionnels → pattern widen-migrate-narrow.
+// ============================================================================
+
+// Grade diplomatique du chef de poste
+export const headOfMissionGradeValidator = v.union(
+  v.literal("ambassadeur"),
+  v.literal("ambassadeur_extraordinaire"),
+  v.literal("ministre_plenipotentiaire"),
+  v.literal("consul_general"),
+  v.literal("consul"),
+  v.literal("charge_affaires"),
+  v.literal("haut_commissaire"),
+  v.literal("representant_permanent"),
+  v.literal("consul_honoraire"),
+);
+
+export type HeadOfMissionGrade = Infer<typeof headOfMissionGradeValidator>;
+
+// Statut cycle de vie de la représentation
+export const orgStatusValidator = v.union(
+  v.literal("active"),
+  v.literal("inactive"),
+  v.literal("draft"), // en projet, pas encore opérationnel
+  v.literal("maintenance"), // mode maintenance
+  v.literal("archived"), // archivé, lecture seule
+  v.literal("suspended"), // suspendu temporairement
+);
+
+export type OrgStatus = Infer<typeof orgStatusValidator>;
+
+// Identité étendue (nom officiel multilingue, accréditation, cycle de vie)
+export const orgIdentityExtendedValidator = v.object({
+  officialName: v.optional(v.string()), // "Ambassade de la République Gabonaise en Espagne"
+  officialNameLocal: v.optional(v.string()), // "Embajada de la República Gabonesa en España"
+  accreditedTo: v.optional(v.array(countryCodeValidator)), // pays d'accréditation
+  status: v.optional(orgStatusValidator),
+  openedAt: v.optional(v.number()), // date d'ouverture
+  closedAt: v.optional(v.number()), // date de fermeture
+});
+
+export type OrgIdentityExtended = Infer<typeof orgIdentityExtendedValidator>;
+
+// Protocole diplomatique (chef de poste, credentials)
+export const orgProtocolValidator = v.object({
+  headOfMissionUserId: v.optional(v.id("users")),
+  headOfMissionMembershipId: v.optional(v.id("memberships")),
+  headOfMissionGrade: v.optional(headOfMissionGradeValidator),
+  headOfMissionTitleFr: v.optional(v.string()), // "Ambassadeur extraordinaire et plénipotentiaire"
+  headOfMissionTitleEn: v.optional(v.string()),
+  credentialsPresentedAt: v.optional(v.number()), // lettres de créance présentées
+  exequaturGrantedAt: v.optional(v.number()), // exequatur accordé (consuls)
+  officialPhotoStorageId: v.optional(v.id("_storage")),
+});
+
+export type OrgProtocol = Infer<typeof orgProtocolValidator>;
+
+// Adresses structurées (physique, postale, correspondance)
+export const orgAddressesValidator = v.object({
+  physical: addressValidator, // adresse bâtiment principal
+  postal: v.optional(addressValidator), // PO Box ou adresse postale distincte
+  correspondence: v.optional(v.string()), // texte libre pour courrier
+});
+
+export type OrgAddresses = Infer<typeof orgAddressesValidator>;
+
+// Sous-juridiction (consulat honoraire rattaché, antenne)
+export const subJurisdictionValidator = v.object({
+  name: v.string(),
+  countryCode: countryCodeValidator,
+  city: v.optional(v.string()),
+  honoraryConsulateOrgId: v.optional(v.id("orgs")),
+  servicesAuthorized: v.optional(v.array(v.string())), // codes de services autorisés
+  contactName: v.optional(v.string()),
+  contactPhone: v.optional(v.string()),
+  contactEmail: v.optional(v.string()),
+});
+
+export type SubJurisdiction = Infer<typeof subJurisdictionValidator>;
+
+// Juridiction enrichie (primaire/secondaire + sous-juridictions)
+export const orgJurisdictionValidator = v.object({
+  primary: v.array(countryCodeValidator), // pays principaux
+  secondary: v.optional(v.array(countryCodeValidator)), // pays en services limités
+  subJurisdictions: v.optional(v.array(subJurisdictionValidator)),
+  notes: v.optional(v.string()),
+});
+
+export type OrgJurisdiction = Infer<typeof orgJurisdictionValidator>;
+
+// Couleurs de marque
+export const brandColorsValidator = v.object({
+  primary: v.string(), // "#0A3172"
+  secondary: v.optional(v.string()),
+  accent: v.optional(v.string()),
+});
+
+export type BrandColors = Infer<typeof brandColorsValidator>;
+
+// Description publique multilingue
+export const publicDescriptionValidator = v.object({
+  fr: v.string(),
+  en: v.optional(v.string()),
+  local: v.optional(v.string()), // langue du pays hôte (ex: es pour Espagne)
+});
+
+export type PublicDescription = Infer<typeof publicDescriptionValidator>;
+
+// Photo de la représentation (galerie)
+export const orgPhotoValidator = v.object({
+  storageId: v.id("_storage"),
+  caption: v.optional(v.string()),
+  order: v.number(),
+});
+
+export type OrgPhoto = Infer<typeof orgPhotoValidator>;
+
+// Liens réseaux sociaux
+export const socialLinksValidator = v.object({
+  facebook: v.optional(v.string()),
+  twitter: v.optional(v.string()),
+  linkedin: v.optional(v.string()),
+  instagram: v.optional(v.string()),
+  youtube: v.optional(v.string()),
+});
+
+export type SocialLinks = Infer<typeof socialLinksValidator>;
+
+// Branding (page publique + identité visuelle)
+export const orgBrandingValidator = v.object({
+  logoStorageId: v.optional(v.id("_storage")), // logo principal (remplace logoUrl plat)
+  logoCompactStorageId: v.optional(v.id("_storage")), // version compacte (sidebar)
+  bannerStorageId: v.optional(v.id("_storage")), // bannière page publique
+  colors: v.optional(brandColorsValidator),
+  publicDescription: v.optional(publicDescriptionValidator),
+  photos: v.optional(v.array(orgPhotoValidator)),
+  socialLinks: v.optional(socialLinksValidator),
+  publishNews: v.optional(v.boolean()), // actualités visibles page publique
+});
+
+export type OrgBranding = Infer<typeof orgBrandingValidator>;
 
 // Required document definition (label is localized)
 export const formDocumentValidator = v.object({

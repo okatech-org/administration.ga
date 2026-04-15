@@ -12,12 +12,17 @@ import {
 } from "@convex/lib/moduleCodes";
 import { ORGANIZATION_TEMPLATES } from "@convex/lib/roles";
 import {
+	AlertTriangle,
 	Check,
 	ChevronDown,
 	ChevronRight,
+	ClipboardList,
+	FileText,
+	Loader2,
 	Lock,
 	Package,
 	RotateCcw,
+	Users,
 	X,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -29,6 +34,14 @@ import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { SectionHeader } from "@/components/design-system/section-header";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import {
 	useAuthenticatedConvexQuery,
@@ -91,6 +104,9 @@ export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {
 	const [isDirty, setIsDirty] = useState(false);
 	const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
 
+	// Validation cascade : module en cours de désactivation
+	const [moduleToDisable, setModuleToDisable] = useState<string | null>(null);
+
 	const coreModuleSet = useMemo(
 		() => new Set(CORE_MODULE_CODES as string[]),
 		[],
@@ -109,7 +125,7 @@ export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {
 
 	// ─── Handlers ─────────────────────────────────────────
 
-	const handleToggleModule = useCallback(
+	const applyToggleModule = useCallback(
 		(moduleCode: string, enabled: boolean) => {
 			if (coreModuleSet.has(moduleCode)) return;
 			setPendingConfig((prev) => {
@@ -129,6 +145,21 @@ export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {
 			setIsDirty(true);
 		},
 		[coreModuleSet],
+	);
+
+	// Intercepte les désactivations pour analyser l'impact via modale
+	const handleToggleModule = useCallback(
+		(moduleCode: string, enabled: boolean) => {
+			if (coreModuleSet.has(moduleCode)) return;
+			// Activation immédiate sans validation
+			if (enabled) {
+				applyToggleModule(moduleCode, true);
+				return;
+			}
+			// Désactivation : passe par la modale d'impact
+			setModuleToDisable(moduleCode);
+		},
+		[coreModuleSet, applyToggleModule],
 	);
 
 	const handleToggleCapability = useCallback(
@@ -265,6 +296,170 @@ export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {
 					onToggleExpand={toggleExpand}
 				/>
 			))}
+
+			{/* Modale d'impact à la désactivation */}
+			<DisableModuleImpactDialog
+				orgId={orgId}
+				moduleCode={moduleToDisable}
+				onConfirm={() => {
+					if (moduleToDisable) applyToggleModule(moduleToDisable, false);
+					setModuleToDisable(null);
+				}}
+				onCancel={() => setModuleToDisable(null)}
+				lang={lang}
+			/>
+		</div>
+	);
+}
+
+// ─── Dialog : analyse d'impact à la désactivation d'un module ───
+function DisableModuleImpactDialog({
+	orgId,
+	moduleCode,
+	onConfirm,
+	onCancel,
+	lang,
+}: {
+	orgId: Id<"orgs">;
+	moduleCode: string | null;
+	onConfirm: () => void;
+	onCancel: () => void;
+	lang: string;
+}) {
+	const isOpen = moduleCode !== null;
+	const { data: impact, isPending } = useAuthenticatedConvexQuery(
+		api.functions.orgs.getModuleImpactAnalysis,
+		isOpen ? { orgId, moduleCode: moduleCode! } : "skip",
+	);
+
+	const moduleDef = moduleCode
+		? MODULE_REGISTRY[moduleCode as ModuleCodeValue]
+		: null;
+	const moduleLabel = moduleDef
+		? moduleDef.label[lang as "fr" | "en"] ?? moduleDef.label.fr
+		: moduleCode;
+
+	return (
+		<Dialog open={isOpen} onOpenChange={(open) => { if (!open) onCancel(); }}>
+			<DialogContent className="max-w-md">
+				<DialogHeader>
+					<div className="flex items-center gap-2">
+						<div className="rounded-full bg-amber-500/10 p-2">
+							<AlertTriangle className="h-4 w-4 text-amber-600" />
+						</div>
+						<DialogTitle>
+							{lang === "fr"
+								? `Désactiver « ${moduleLabel} » ?`
+								: `Disable "${moduleLabel}"?`}
+						</DialogTitle>
+					</div>
+					<DialogDescription>
+						{lang === "fr"
+							? "Voici les éléments qui seront affectés par cette désactivation :"
+							: "Here is what will be affected by this change:"}
+					</DialogDescription>
+				</DialogHeader>
+
+				{isPending ? (
+					<div className="flex items-center justify-center py-6">
+						<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+					</div>
+				) : impact ? (
+					<div className="space-y-3 py-2">
+						<ImpactRow
+							icon={<Users className="h-4 w-4 text-blue-600" />}
+							label={lang === "fr" ? "Postes affectés" : "Positions affected"}
+							count={impact.positionsCount}
+							hint={
+								impact.positionsCount > 0
+									? lang === "fr"
+										? "Ces postes perdront les tâches du module"
+										: "These positions will lose module tasks"
+									: undefined
+							}
+						/>
+						<ImpactRow
+							icon={<FileText className="h-4 w-4 text-emerald-600" />}
+							label={
+								lang === "fr"
+									? "Services actifs liés"
+									: "Active linked services"
+							}
+							count={impact.servicesCount}
+							hint={
+								impact.servicesCount > 0
+									? lang === "fr"
+										? "Ces services resteront mais sans nouveau traitement"
+										: "These services will remain but won't be processable"
+									: undefined
+							}
+						/>
+						<ImpactRow
+							icon={<ClipboardList className="h-4 w-4 text-rose-600" />}
+							label={lang === "fr" ? "Demandes en cours" : "Pending requests"}
+							count={impact.requestsCount}
+							hint={
+								impact.requestsCount > 0
+									? lang === "fr"
+										? "Doivent être clôturées manuellement"
+										: "Must be closed manually"
+									: undefined
+							}
+						/>
+						{!impact.hasImpact && (
+							<p className="text-xs text-muted-foreground italic mt-2">
+								{lang === "fr"
+									? "Aucun impact détecté — désactivation sans risque."
+									: "No impact detected — safe to disable."}
+							</p>
+						)}
+					</div>
+				) : null}
+
+				<DialogFooter>
+					<Button variant="outline" onClick={onCancel}>
+						{lang === "fr" ? "Annuler" : "Cancel"}
+					</Button>
+					<Button
+						variant={impact?.hasImpact ? "destructive" : "default"}
+						onClick={onConfirm}
+					>
+						{lang === "fr" ? "Désactiver" : "Disable"}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
+
+function ImpactRow({
+	icon,
+	label,
+	count,
+	hint,
+}: {
+	icon: React.ReactNode;
+	label: string;
+	count: number;
+	hint?: string;
+}) {
+	return (
+		<div className="flex items-start gap-3 p-2.5 rounded-md bg-muted/30">
+			<div className="shrink-0 mt-0.5">{icon}</div>
+			<div className="flex-1 min-w-0">
+				<div className="flex items-center justify-between gap-2">
+					<span className="text-sm font-medium">{label}</span>
+					<Badge
+						variant={count > 0 ? "default" : "secondary"}
+						className="text-xs"
+					>
+						{count}
+					</Badge>
+				</div>
+				{hint && count > 0 && (
+					<p className="text-[11px] text-muted-foreground mt-0.5">{hint}</p>
+				)}
+			</div>
 		</div>
 	);
 }
@@ -421,7 +616,7 @@ function SidebarGroupCard({
 
 // ─── Org Services Section (affiché dans le module "requests") ──
 
-function OrgServicesSection({ orgId, lang }: { orgId: Id<"orgs">; lang: string }) {
+function OrgServicesSection({ orgId }: { orgId: Id<"orgs">; lang?: string }) {
 	const { data: orgServices = [], isPending } = useAuthenticatedConvexQuery(
 		api.functions.services.listByOrg,
 		{ orgId },

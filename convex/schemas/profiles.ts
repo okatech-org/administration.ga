@@ -111,6 +111,9 @@ export const profilesTable = defineTable({
   // Genere une seule fois a l'inscription consulaire, ne change jamais
   matricule: v.optional(v.string()),
 
+  // Score de complétude du profil (0-100), calculé par calculateCompletionScore()
+  completionScore: v.optional(v.number()),
+
   updatedAt: v.optional(v.number()),
 })
   .index("by_user", ["userId"])

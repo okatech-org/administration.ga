@@ -107,6 +107,7 @@
         "@tiptap/starter-kit": "^3.17.1",
         "@workspace/api": "workspace:*",
         "@workspace/i18n": "workspace:*",
+        "@workspace/settings-form": "workspace:*",
         "@workspace/shared": "workspace:*",
         "@workspace/ui": "workspace:*",
         "better-auth": "~1.5.6",
@@ -164,6 +165,7 @@
         "@tiptap/starter-kit": "^3.17.1",
         "@workspace/api": "workspace:*",
         "@workspace/i18n": "workspace:*",
+        "@workspace/settings-form": "workspace:*",
         "@workspace/shared": "workspace:*",
         "@workspace/ui": "workspace:*",
         "better-auth": "~1.5.6",
@@ -299,6 +301,27 @@
         "@types/react": "^19.2.10",
         "@workspace/tsconfig": "workspace:*",
         "typescript": "^5.9.3",
+      },
+    },
+    "packages/settings-form": {
+      "name": "@workspace/settings-form",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@tanstack/react-router": "^1.132.0",
+        "@types/react": "^19.2.10",
+        "@workspace/tsconfig": "workspace:*",
+        "lucide-react": "^1.7.0",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "sonner": "^2.0.7",
+        "typescript": "^5.9.3",
+      },
+      "peerDependencies": {
+        "@tanstack/react-router": "^1.0.0",
+        "lucide-react": "^1.0.0",
+        "react": "^18.0.0 || ^19.0.0",
+        "react-dom": "^18.0.0 || ^19.0.0",
+        "sonner": "^2.0.0",
       },
     },
     "packages/shared": {
@@ -1438,6 +1461,8 @@
     "@workspace/desktop-shared": ["@workspace/desktop-shared@workspace:packages/desktop-shared"],
 
     "@workspace/i18n": ["@workspace/i18n@workspace:packages/i18n"],
+
+    "@workspace/settings-form": ["@workspace/settings-form@workspace:packages/settings-form"],
 
     "@workspace/shared": ["@workspace/shared@workspace:packages/shared"],
 

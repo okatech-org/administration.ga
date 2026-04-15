@@ -207,3 +207,94 @@ export function resolveServiceAccessLevel(
   return entry?.accessLevel ?? null;
 }
 
+// ============================================
+// Service Access Authorization (Phase E.3)
+// ============================================
+
+/**
+ * Hiérarchie des niveaux d'accès : admin > editor > reader.
+ * Un niveau inclut tous les niveaux inférieurs.
+ */
+const ACCESS_LEVEL_RANK: Record<string, number> = {
+  reader: 1,
+  editor: 2,
+  admin: 3,
+};
+
+/**
+ * Vérifie si un niveau possédé couvre un niveau requis.
+ * Exemple : "admin" inclut "editor" et "reader".
+ */
+export function accessLevelIncludes(
+  owned: string | null | undefined,
+  required: "reader" | "editor" | "admin",
+): boolean {
+  if (!owned) return false;
+  const ownedRank = ACCESS_LEVEL_RANK[owned];
+  const requiredRank = ACCESS_LEVEL_RANK[required];
+  if (!ownedRank || !requiredRank) return false;
+  return ownedRank >= requiredRank;
+}
+
+/**
+ * Vérifie si un membership peut accéder à un service avec le niveau requis.
+ *
+ * Precedence (du plus spécifique au plus général) :
+ *   1. `orgService.serviceAccess[positionId]` — override explicite au niveau service
+ *   2. `position.moduleAccess["requests"]` — niveau d'accès du module
+ *   3. `position.tasks[]` — fallback legacy
+ *
+ * Si l'utilisateur est superadmin → retourne `true`.
+ */
+export async function canAccessService(
+  ctx: AuthContext,
+  user: Doc<"users">,
+  membership: Doc<"memberships"> | null | undefined,
+  orgService: Doc<"orgServices">,
+  requiredLevel: "reader" | "editor" | "admin",
+): Promise<boolean> {
+  if (isSuperAdmin(user)) return true;
+  if (!membership?.positionId) return false;
+
+  const position = await ctx.db.get(membership.positionId);
+  if (!position || !position.isActive) return false;
+
+  // 1. Override explicite au niveau service
+  const explicit = (orgService as { serviceAccess?: Array<{ positionId: string; accessLevel: string }> })
+    .serviceAccess?.find((entry) => entry.positionId === membership.positionId);
+  if (explicit) {
+    return accessLevelIncludes(explicit.accessLevel, requiredLevel);
+  }
+
+  // 2. Fallback sur moduleAccess["requests"] de la position
+  const moduleAccess = (position as { moduleAccess?: Array<{ moduleCode: string; accessLevel: string }> })
+    .moduleAccess?.find((m) => m.moduleCode === "requests");
+  if (moduleAccess) {
+    return accessLevelIncludes(moduleAccess.accessLevel, requiredLevel);
+  }
+
+  // 3. Fallback legacy : position.tasks[]
+  const legacyTasks = (position as { tasks?: string[] }).tasks ?? [];
+  if (requiredLevel === "reader") {
+    return legacyTasks.includes("requests.view");
+  }
+  // editor / admin → nécessite requests.process ou plus
+  return legacyTasks.includes("requests.process");
+}
+
+/**
+ * Throw si le membership ne peut pas accéder au service avec le niveau requis.
+ */
+export async function assertCanAccessService(
+  ctx: AuthContext,
+  user: Doc<"users">,
+  membership: Doc<"memberships"> | null | undefined,
+  orgService: Doc<"orgServices">,
+  requiredLevel: "reader" | "editor" | "admin",
+): Promise<void> {
+  const ok = await canAccessService(ctx, user, membership, orgService, requiredLevel);
+  if (!ok) {
+    throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
+  }
+}
+

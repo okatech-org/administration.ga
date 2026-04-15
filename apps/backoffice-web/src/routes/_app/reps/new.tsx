@@ -24,6 +24,8 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { StepFinalSetup } from "@/components/admin/wizards/StepFinalSetup";
+import { StepModulesServices } from "@/components/admin/wizards/StepModulesServices";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { PageHeader } from "@/components/design-system/page-header";
 import {
@@ -134,6 +136,8 @@ const STEPS = [
 	{ key: "template", label: "Template" },
 	{ key: "positions", label: "Postes" },
 	{ key: "details", label: "Informations" },
+	{ key: "modules-services", label: "Modules & Services" },
+	{ key: "final-setup", label: "Configuration finale" },
 ] as const;
 
 type StepKey = (typeof STEPS)[number]["key"];
@@ -273,54 +277,21 @@ function NewOrganizationPage() {
 			},
 		},
 		onSubmit: async ({ value }) => {
+			// Validations à l'étape "details" — création réelle dans handleFinalCreate (étape 5)
 			if (!selectedTemplate) {
 				toast.error("Veuillez sélectionner un template");
-				return
+				return;
 			}
 			if (!value.name || value.name.length < 3) {
 				toast.error("Le nom doit comporter au moins 3 caractères");
-				return
+				return;
 			}
 			if (!value.slug || value.slug.length < 2) {
 				toast.error("Le slug doit comporter au moins 2 caractères");
-				return
+				return;
 			}
-
-			try {
-				await createOrg({
-					name: value.name,
-					slug: value.slug,
-					type: selectedTemplate.type as OrganizationType,
-					address: {
-						street: value.address.street,
-						city: value.address.city,
-						postalCode: value.address.postalCode,
-						country: value.address.country,
-						coordinates: undefined,
-					},
-					country: value.address.country,
-					email: value.email || undefined,
-					phone: value.phone || undefined,
-					website: value.website || undefined,
-					timezone: value.timezone,
-					templateType: selectedTemplate.type,
-					modules: selectedTemplate.modules,
-					positions: positions.map((p) => ({
-						code: p.code,
-						title: p.title,
-						description: p.description,
-						level: p.level,
-						grade: p.grade,
-						tasks: p.tasks,
-						isRequired: p.isRequired,
-					})),
-				})
-				toast.success("Représentation créée avec succès");
-				navigate({ to: "/reps" });
-			} catch (err: unknown) {
-				const message = err instanceof Error ? err.message : "Erreur inconnue";
-				toast.error(message);
-			}
+			// Passe à l'étape 4 du wizard (modules & services)
+			setStep("modules-services");
 		},
 	})
 
@@ -352,6 +323,8 @@ function NewOrganizationPage() {
 				onBack={() => {
 					if (step === "positions") setStep("template");
 					else if (step === "details") setStep("positions");
+					else if (step === "modules-services") setStep("details");
+					else if (step === "final-setup") setStep("modules-services");
 					else navigate({ to: "/reps" });
 				}}
 			/>
@@ -895,10 +868,70 @@ function NewOrganizationPage() {
 						{isPending ? (
 							<Loader2 className="h-4 w-4 animate-spin mr-2" />
 						) : null}
-						{isPending ? "Création en cours..." : "Créer l'organisation"}
+						{isPending ? "Validation..." : "Continuer"}
 					</Button>
 				</div>
 				</FlatCard>
+			)}
+
+			{/* ─── Step 4: Modules & Services ─────────────────── */}
+			{step === "modules-services" && selectedTemplate && (
+				<StepModulesServices
+					orgType={selectedTemplate.type}
+					onNext={() => setStep("final-setup")}
+					onBack={() => setStep("details")}
+				/>
+			)}
+
+			{/* ─── Step 5: Final Setup + Création réelle ─────── */}
+			{step === "final-setup" && selectedTemplate && (
+				<StepFinalSetup
+					orgName={form.state.values.name}
+					orgType={selectedTemplate.type}
+					isCreating={isPending}
+					onBack={() => setStep("modules-services")}
+					onCreate={async (_options) => {
+						try {
+							const value = form.state.values;
+							await createOrg({
+								name: value.name,
+								slug: value.slug,
+								type: selectedTemplate.type as OrganizationType,
+								address: {
+									street: value.address.street,
+									city: value.address.city,
+									postalCode: value.address.postalCode,
+									country: value.address.country,
+									coordinates: undefined,
+								},
+								country: value.address.country,
+								email: value.email || undefined,
+								phone: value.phone || undefined,
+								website: value.website || undefined,
+								timezone: value.timezone,
+								templateType: selectedTemplate.type,
+								modules: selectedTemplate.modules,
+								positions: positions.map((p) => ({
+									code: p.code,
+									title: p.title,
+									description: p.description,
+									level: p.level,
+									grade: p.grade,
+									tasks: p.tasks,
+									isRequired: p.isRequired,
+								})),
+							});
+							toast.success("Représentation créée avec succès");
+							// Note : l'init iAsted/calendar selon _options sera fait
+							// dans une passe ultérieure (nécessite l'orgId retourné)
+							navigate({ to: "/reps" });
+						} catch (err: unknown) {
+							const message =
+								err instanceof Error ? err.message : "Erreur inconnue";
+							toast.error(message);
+						}
+					}}
+				/>
 			)}
 
 			{/* ─── Add Position Dialog ────────────────────────── */}

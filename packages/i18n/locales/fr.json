@@ -1842,7 +1842,14 @@
 				"registration": "Inscription consulaire",
 				"legalization": "Légalisation",
 				"emergency": "Urgence",
-				"other": "Autre"
+				"other": "Autre",
+				"identity": "Identité",
+				"certification": "Certification",
+				"transcript": "Transcription",
+				"notification": "Notification",
+				"assistance": "Assistance",
+				"travel_document": "Document de voyage",
+				"declaration": "Déclaration"
 			},
 			"status": {
 				"active": "Actif",
@@ -4019,6 +4026,64 @@
 			"startCall": "Appeler",
 			"startSuccess": "Appel lancé",
 			"error": "Erreur lors de l'appel"
+		}
+	},
+	"callLines": {
+		"tabLabel": "Téléphonie",
+		"title": "Lignes d'appel",
+		"description": "Configurez les lignes téléphoniques de cette représentation.",
+		"newLine": "Nouvelle ligne",
+		"orgLines": "Lignes d'organisation",
+		"personalLines": "Lignes personnelles",
+		"createTitle": "Créer une ligne",
+		"editTitle": "Modifier la ligne",
+		"deleteConfirm": "Supprimer cette ligne ?",
+		"deleteDescription": "Cette action est irréversible. Les appels actifs ne seront pas affectés.",
+		"backfill": "Synchroniser les lignes personnelles",
+		"backfillSuccess": "{{count}} ligne(s) personnelle(s) créée(s)",
+		"fields": {
+			"label": "Nom de la ligne",
+			"labelPlaceholder": "Ex : Standard, Urgences, État Civil",
+			"description": "Description",
+			"descriptionPlaceholder": "Ex : Service d'accueil général",
+			"color": "Couleur",
+			"priority": "Priorité",
+			"isDefault": "Ligne par défaut",
+			"isActive": "Active"
+		},
+		"colors": {
+			"gray": "Gris",
+			"blue": "Bleu",
+			"green": "Vert",
+			"amber": "Ambre",
+			"rose": "Rose",
+			"purple": "Violet"
+		},
+		"agents": {
+			"title": "Agents assignés",
+			"manage": "Gérer les agents",
+			"add": "Ajouter un agent",
+			"remove": "Retirer",
+			"noAgents": "Aucun agent assigné",
+			"available": "Agents disponibles",
+			"noAvailable": "Tous les agents sont déjà assignés"
+		},
+		"personal": {
+			"description": "Chaque membre est automatiquement une ligne de communication directe (iAppel, iMessage, iBoîte, iCorrespondance).",
+			"modules": "Modules de communication",
+			"noMembers": "Aucun membre dans cette représentation"
+		},
+		"empty": {
+			"title": "Aucune ligne configurée",
+			"description": "Créez une première ligne pour router les appels entrants vers les bons agents."
+		},
+		"toast": {
+			"created": "Ligne créée",
+			"updated": "Ligne mise à jour",
+			"deleted": "Ligne supprimée",
+			"agentAdded": "Agent ajouté à la ligne",
+			"agentRemoved": "Agent retiré de la ligne",
+			"error": "Une erreur est survenue"
 		}
 	},
 	"meetings": {

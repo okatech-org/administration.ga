@@ -5,6 +5,8 @@ import { getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
 import { TaskCode } from "../lib/taskCodes";
+import { logCortexAction } from "../lib/neocortex";
+import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
 
 // ============================================
 // QUERIES
@@ -252,5 +254,72 @@ export const removeAgent = authMutation({
     await ctx.db.patch(args.callLineId, {
       membershipIds: line.membershipIds.filter((id) => id !== args.membershipId),
     });
+  },
+});
+
+/**
+ * Rétrocompatibilité — crée les lignes personnelles manquantes pour les membres existants.
+ * À appeler une seule fois par org depuis le backoffice admin.
+ */
+export const backfillPersonalLines = authMutation({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, TaskCode.meetings.manage);
+
+    // Récupérer tous les membres actifs
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_org_deletedAt", (q) =>
+        q.eq("orgId", args.orgId).eq("deletedAt", undefined),
+      )
+      .collect();
+
+    let created = 0;
+    const createdIds: string[] = [];
+    for (const m of memberships) {
+      const existing = await ctx.db
+        .query("callLines")
+        .withIndex("by_user", (q) => q.eq("userId", m.userId))
+        .filter((q) => q.eq(q.field("orgId"), args.orgId))
+        .first();
+
+      if (!existing) {
+        const user = await ctx.db.get(m.userId);
+        const label = user
+          ? [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Agent"
+          : "Agent";
+        const newId = await ctx.db.insert("callLines", {
+          type: "personal",
+          orgId: args.orgId,
+          label,
+          priority: 999,
+          isActive: true,
+          membershipIds: [m._id],
+          userId: m.userId,
+        });
+        createdIds.push(newId);
+        created++;
+      }
+    }
+
+    // Audit backfill (Phase D4)
+    if (created > 0) {
+      await logCortexAction(ctx, {
+        action: "BACKFILL_PERSONAL_CALL_LINES",
+        categorie: CATEGORIES_ACTION.METIER,
+        entiteType: "callLines",
+        entiteId: args.orgId,
+        userId: ctx.user._id,
+        apres: {
+          orgId: args.orgId,
+          createdCount: created,
+          createdIds,
+        },
+        signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+      });
+    }
+
+    return { created };
   },
 });

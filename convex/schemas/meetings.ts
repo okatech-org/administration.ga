@@ -61,9 +61,43 @@ export const meetingsTable = defineTable({
   scheduledAt: v.optional(v.number()),
   startedAt: v.optional(v.number()),
   endedAt: v.optional(v.number()),
+
+  // ─── PHASE 2 : Traçabilité & qualité ────────────────────────
+  // Raison de fin (normal, missed, timeout, etc.) pour stats + missedCalls
+  endReason: v.optional(
+    v.union(
+      v.literal("normal"),
+      v.literal("missed"), // personne n'a décroché
+      v.literal("rejected"),
+      v.literal("no_agent_available"),
+      v.literal("timeout"),
+      v.literal("error"),
+    ),
+  ),
+
+  // Métriques de qualité réseau/audio (remplies en fin d'appel)
+  qualityMetrics: v.optional(
+    v.object({
+      audioQuality: v.optional(v.number()), // 0-1
+      videoQuality: v.optional(v.number()),
+      packetLossPercent: v.optional(v.number()),
+      averageLatencyMs: v.optional(v.number()),
+    }),
+  ),
+
+  // Enregistrement (si recording activé)
+  recordingUrl: v.optional(v.string()),
+  recordingDurationSeconds: v.optional(v.number()),
+  recordingStorageId: v.optional(v.id("_storage")), // si stocké en Convex Storage
+
+  // Legacy : callStatus utilisé par des documents historiques avant endReason.
+  // Gardé optionnel pour préserver les données existantes (rétrocompatibilité).
+  // À migrer progressivement vers `endReason`.
+  callStatus: v.optional(v.string()),
 })
   .index("by_org", ["orgId"])
   .index("by_roomName", ["roomName"])
   .index("by_createdBy", ["createdBy"])
   .index("by_org_status", ["orgId", "status"])
+  .index("by_org_endReason", ["orgId", "endReason"])
   .index("by_request", ["requestId"]);

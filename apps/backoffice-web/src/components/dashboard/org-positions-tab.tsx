@@ -90,6 +90,15 @@ interface ModuleAccessEntry {
 	accessLevel: ModuleAccessLevel;
 }
 
+interface OccupantShape {
+	userId: Id<"users">;
+	firstName?: string;
+	lastName?: string;
+	email?: string;
+	avatarUrl?: string;
+	membershipId: Id<"memberships">;
+}
+
 interface Position {
 	_id: Id<"positions">;
 	code: string;
@@ -101,14 +110,11 @@ interface Position {
 	moduleAccess?: ModuleAccessEntry[];
 	isRequired?: boolean;
 	isActive?: boolean;
-	occupant?: {
-		userId: Id<"users">;
-		firstName?: string;
-		lastName?: string;
-		email?: string;
-		avatarUrl?: string;
-		membershipId: Id<"memberships">;
-	} | null;
+	maxSlots?: number;
+	/** @deprecated Use `occupants[]` — conservé pour compat ascendante. */
+	occupant?: OccupantShape | null;
+	/** Liste complète des occupants (source de vérité, peut être vide). */
+	occupants?: OccupantShape[];
 }
 
 interface UnassignedMember {
@@ -203,6 +209,17 @@ const TASK_LABELS: Record<string, { fr: string; en: string }> = {
 	"meetings.join": { fr: "Rejoindre des réunions", en: "Join meetings" },
 	"meetings.manage": { fr: "Gérer les réunions", en: "Manage meetings" },
 	"meetings.view_history": { fr: "Historique des réunions", en: "Meeting history" },
+	// Chats P2P
+	"chats.view": { fr: "Consulter les conversations", en: "View chats" },
+	"chats.send": { fr: "Envoyer des messages", en: "Send chat messages" },
+	// iCorrespondance
+	"correspondance.view": { fr: "Consulter le courrier", en: "View correspondance" },
+	"correspondance.create": { fr: "Rédiger du courrier", en: "Create correspondance" },
+	"correspondance.approve": { fr: "Approuver le courrier", en: "Approve correspondance" },
+	"correspondance.sign": { fr: "Signer le courrier", en: "Sign correspondance" },
+	"correspondance.transmit": { fr: "Transmettre le courrier", en: "Transmit correspondance" },
+	"correspondance.configure": { fr: "Configurer le module courrier", en: "Configure correspondance module" },
+	"correspondance.admin": { fr: "Administrer le module courrier", en: "Administer correspondance module" },
 };
 
 // ─── Module-to-tasks mapping ────────────────────────────────────
@@ -1476,7 +1493,7 @@ export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 												}}
 												className={cn(
 													"rounded-xl border transition-all group flex flex-col cursor-grab active:cursor-grabbing",
-													pos.occupant
+													(pos.occupants?.length ?? 0) > 0
 														? "border-border bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:border-primary/30"
 														: "border-dashed border-muted-foreground/30 bg-muted/30 hover:border-primary/40",
 													draggedPositionId === pos._id && "opacity-50 scale-95",

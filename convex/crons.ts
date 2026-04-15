@@ -95,4 +95,15 @@ crons.daily(
   internal.crons.archiveExpiration.checkArchiveExpiration,
 );
 
+// --- Phase D1 : sync legacy orgs fields (horaire) ---
+// Maintient la synchronisation entre champs plats historiques (address,
+// headOfMission, jurisdictionCountries, openingHours) et nouveaux sous-objets
+// structurés (addresses, protocol, jurisdiction, orgCalendar).
+// Idempotent — peut être exécuté sans risque.
+crons.interval(
+  "sync-legacy-org-fields",
+  { hours: 1 },
+  internal.functions.migrations.syncLegacyOrgFields,
+);
+
 export default crons;

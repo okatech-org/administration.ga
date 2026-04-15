@@ -11,7 +11,7 @@ import { authQuery, authMutation } from "../lib/customFunctions";
 import { getMembership, requireBackOfficeAccess } from "../lib/auth";
 import { logCortexAction } from "../lib/neocortex";
 import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
-import { assertCanDoTask } from "../lib/permissions";
+import { assertCanDoTask, assertCanAccessService } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
 import { generateReferenceNumber } from "../lib/utils";
 import { generateRequestReference } from "../lib/referenceHelpers";
@@ -38,6 +38,14 @@ export const createFromForm = authMutation({
     const orgService = await ctx.db.get(args.orgServiceId);
     if (!orgService) {
       throw error(ErrorCode.SERVICE_NOT_FOUND);
+    }
+
+    // Phase E.3 — Vérification précédente unifiée (serviceAccess > moduleAccess > tasks[]).
+    // Applique le check UNIQUEMENT si l'utilisateur est membre de l'org cible (cas agent backoffice).
+    // Pour les citoyens (pas de membership), on laisse passer — ils créent leur propre demande.
+    const membership = await getMembership(ctx, ctx.user._id, orgService.orgId);
+    if (membership) {
+      await assertCanAccessService(ctx, ctx.user, membership, orgService, "editor");
     }
 
     const now = Date.now();
@@ -94,6 +102,14 @@ export const create = authMutation({
     }
     if (!orgService.isActive) {
       throw error(ErrorCode.SERVICE_NOT_AVAILABLE);
+    }
+
+    // Phase E.3 — Vérification précédente unifiée (serviceAccess > moduleAccess > tasks[]).
+    // Applique le check UNIQUEMENT si l'utilisateur est membre de l'org cible (cas agent backoffice).
+    // Pour les citoyens (pas de membership), on laisse passer — ils créent leur propre demande.
+    const creatorMembership = await getMembership(ctx, ctx.user._id, orgService.orgId);
+    if (creatorMembership) {
+      await assertCanAccessService(ctx, ctx.user, creatorMembership, orgService, "editor");
     }
 
     const status = args.submitNow ? RequestStatus.Submitted : RequestStatus.Draft;
@@ -496,6 +512,88 @@ export const listByOrg = authQuery({
         };
       }),
     };
+  },
+});
+
+/**
+ * Phase C5 — Liste les demandes en retard pour une org
+ *
+ * Retourne les demandes dont (now - _creationTime) > service.estimatedDays.
+ * Utilisé pour les alertes SLA dans le dashboard et la liste des demandes.
+ */
+export const listOverdueByOrg = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "requests.view");
+
+    const limit = args.limit ?? 50;
+
+    // Demandes non terminées
+    const allActive = await ctx.db
+      .query("requests")
+      .withIndex("by_org_status", (q) => q.eq("orgId", args.orgId))
+      .filter((q) =>
+        q.and(
+          q.neq(q.field("status"), RequestStatus.Completed),
+          q.neq(q.field("status"), RequestStatus.Cancelled),
+          q.neq(q.field("status"), RequestStatus.Rejected),
+        ),
+      )
+      .collect();
+
+    const now = Date.now();
+    const overdue = await Promise.all(
+      allActive.map(async (req) => {
+        const orgService = await ctx.db.get(req.orgServiceId);
+        if (!orgService) return null;
+        const service = await ctx.db.get(orgService.serviceId);
+        if (!service) return null;
+
+        const sla =
+          (orgService as { estimatedDays?: number }).estimatedDays ??
+          (service as { estimatedDays?: number }).estimatedDays ??
+          null;
+        if (!sla || sla <= 0) return null;
+
+        const ageDays = (now - req._creationTime) / (24 * 60 * 60 * 1000);
+        const daysRemaining = sla - ageDays;
+
+        if (daysRemaining > 0) return null; // pas encore en retard
+
+        const user = await ctx.db.get(req.userId);
+
+        return {
+          _id: req._id,
+          reference: req.reference,
+          status: req.status,
+          createdAt: req._creationTime,
+          ageDays: Math.floor(ageDays),
+          slaDays: sla,
+          daysOverdue: Math.floor(-daysRemaining),
+          serviceName: (service as { name?: { fr?: string; en?: string } })
+            ?.name,
+          user: user
+            ? {
+                _id: user._id,
+                firstName: (user as { firstName?: string }).firstName,
+                lastName: (user as { lastName?: string }).lastName,
+                email: user.email,
+              }
+            : null,
+        };
+      }),
+    );
+
+    const filtered = overdue
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+      .sort((a, b) => b.daysOverdue - a.daysOverdue)
+      .slice(0, limit);
+
+    return filtered;
   },
 });
 
