@@ -1549,6 +1549,15 @@
 		}
 	},
 	"superadmin": {
+		"team": {
+			"viewList": "Vue liste",
+			"viewOrgChart": "Organigramme",
+			"viewVacant": "Postes vacants",
+			"banner": {
+				"title": "Équipe unifiée :",
+				"description": "les anciens onglets « Membres » et « Postes » ont fusionné. Utilise « Vue liste » pour gérer les agents et leurs rôles, « Organigramme » pour configurer les permissions par poste, ou « Postes vacants » pour affecter rapidement."
+			}
+		},
 		"nav": {
 			"dashboard": "Tableau de bord",
 			"users": "Utilisateurs",
