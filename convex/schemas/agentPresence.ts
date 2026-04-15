@@ -22,6 +22,10 @@ export const agentPresenceTable = defineTable({
   lastHeartbeat: v.number(),
   lastActivity: v.number(),
   currentCallId: v.optional(v.id("meetings")),
+  // Current active call (primary) — parallel to currentCallId, kept for compat
+  activeCallId: v.optional(v.id("meetings")),
+  // All active calls (agent may hold multiple via call parking)
+  currentCallIds: v.optional(v.array(v.id("meetings"))),
   clientType: v.optional(v.string()), // "agent-web" | "agent-desktop"
 })
   .index("by_user_and_org", ["userId", "orgId"])

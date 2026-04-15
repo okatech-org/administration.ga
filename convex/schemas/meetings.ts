@@ -68,7 +68,35 @@ export const meetingsTable = defineTable({
       v.literal("declined"),  // All agents declined
       v.literal("error"),     // Technical error
       v.literal("cancelled"), // Caller cancelled before answer
+      v.literal("voicemail_recorded"), // Voicemail captured instead of live answer
     ),
+  ),
+
+  // ─── Fallback / routing extensions ───
+  // True when the call was redirected via a fallback rule (another line / voicemail)
+  fallbackApplied: v.optional(v.boolean()),
+  // When a fallback was applied, which line was originally dialed
+  originalCallLineId: v.optional(v.id("callLines")),
+  // Timestamp when the call entered a "parked" / hold state
+  parkedAt: v.optional(v.number()),
+
+  // Priority tier (used for queue ordering, SLA, monitoring)
+  priority: v.optional(
+    v.union(
+      v.literal("low"),
+      v.literal("normal"),
+      v.literal("high"),
+      v.literal("urgent"),
+    ),
+  ),
+
+  // Consent capture for citizens (recording, transcript)
+  citizenConsent: v.optional(
+    v.object({
+      recording: v.optional(v.boolean()),
+      transcript: v.optional(v.boolean()),
+      grantedAt: v.optional(v.number()),
+    }),
   ),
 
   // Context linking (optional)

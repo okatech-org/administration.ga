@@ -105,3 +105,11 @@ export { orgRoleTemplatesTable } from "./orgRoleTemplates";
 
 // Phase D3 — Politique d'escalation unifiée (chatbot + callcenter)
 export { orgEscalationPolicyTable } from "./orgEscalationPolicy";
+
+// iAppel — Enregistrements, voicemails, supervision
+export { callRecordingsTable } from "./callRecordings";
+export { voicemailsTable } from "./voicemails";
+export { supervisionSessionsTable } from "./supervisionSessions";
+
+// Notifications — Web Push subscriptions
+export { pushSubscriptionsTable } from "./pushSubscriptions";

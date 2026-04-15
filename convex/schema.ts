@@ -82,6 +82,10 @@ import {
   orgIAstedConfigTable,
   orgRoleTemplatesTable,
   orgEscalationPolicyTable,
+  callRecordingsTable,
+  voicemailsTable,
+  supervisionSessionsTable,
+  pushSubscriptionsTable,
 } from "./schemas";
 
 export default defineSchema({
@@ -177,4 +181,10 @@ export default defineSchema({
   orgRoleTemplates: orgRoleTemplatesTable,
   // Phase D3 — Politique d'escalation unifiée (chatbot + callcenter)
   orgEscalationPolicy: orgEscalationPolicyTable,
+  // iAppel — Enregistrements, voicemails, supervision
+  callRecordings: callRecordingsTable,
+  voicemails: voicemailsTable,
+  supervisionSessions: supervisionSessionsTable,
+  // Notifications — Web Push subscriptions
+  pushSubscriptions: pushSubscriptionsTable,
 });
