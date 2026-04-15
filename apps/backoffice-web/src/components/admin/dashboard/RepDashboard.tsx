@@ -261,10 +261,15 @@ function DashboardKpi({
   subtitle?: string;
 }) {
   return (
-    <FlatCard className="relative overflow-hidden">
+    <FlatCard
+      className="relative overflow-hidden"
+      role="article"
+      aria-label={`${label}: ${value}${subtitle ? ` (${subtitle})` : ""}`}
+    >
       <div
         className="absolute left-0 top-0 h-full w-1 rounded-l-xl"
         style={{ background: accent }}
+        aria-hidden="true"
       />
       <div className="p-3 pl-4">
         <div className="flex items-center justify-between">
@@ -282,6 +287,7 @@ function DashboardKpi({
           <div
             className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0"
             style={{ background: `${accent}18` }}
+            aria-hidden="true"
           >
             <Icon className="h-4 w-4" style={{ color: accent }} />
           </div>

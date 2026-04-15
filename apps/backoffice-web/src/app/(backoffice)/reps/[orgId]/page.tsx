@@ -233,6 +233,26 @@ export default function OrgDetailPage() {
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+			{/* ── Breadcrumbs accessibles (Phase F3.2) ─────────────── */}
+			<nav aria-label="Fil d'Ariane" className="text-xs text-muted-foreground">
+				<ol className="flex items-center gap-1.5">
+					<li>
+						<a
+							href="/reps"
+							className="hover:text-foreground transition-colors"
+						>
+							{t("superadmin.nav.allOrganizations", "Toutes les représentations")}
+						</a>
+					</li>
+					<li aria-hidden="true" className="opacity-50">
+						/
+					</li>
+					<li aria-current="page" className="text-foreground font-medium">
+						{org.name}
+					</li>
+				</ol>
+			</nav>
+
 			{/* ── Header ───────────────────────────────────────────── */}
 			<PageHeader
 				icon={<Building2 className="h-5 w-5" />}
