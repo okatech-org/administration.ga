@@ -27,6 +27,8 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { SectionHeader } from "@/components/design-system/section-header";
+import { HelpTooltip } from "@/components/admin/HelpTooltip";
+import { HELP } from "@/lib/help-content";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -220,10 +222,13 @@ export function CorrespondanceSection({
           {/* ─── Pattern référence ───────────────────── */}
           <FlatCard>
             <div className="p-4">
-              <SectionHeader
-                icon={<Hash className="h-4 w-4 text-blue-600" />}
-                title="Pattern de référence"
-              />
+              <div className="flex items-center gap-1.5">
+                <SectionHeader
+                  icon={<Hash className="h-4 w-4 text-blue-600" />}
+                  title="Pattern de référence"
+                />
+                <HelpTooltip content={HELP.correspondance.referencePattern} />
+              </div>
               <p className="text-xs text-muted-foreground mb-3">
                 Format automatique pour numéroter les correspondances. Tokens
                 disponibles :
@@ -311,10 +316,13 @@ export function CorrespondanceSection({
           {/* ─── Approbation ─────────────────────────── */}
           <FlatCard>
             <div className="p-4">
-              <SectionHeader
-                icon={<ListChecks className="h-4 w-4 text-indigo-600" />}
-                title="Circuit d'approbation"
-              />
+              <div className="flex items-center gap-1.5">
+                <SectionHeader
+                  icon={<ListChecks className="h-4 w-4 text-indigo-600" />}
+                  title="Circuit d'approbation"
+                />
+                <HelpTooltip content={HELP.correspondance.autoRouting} />
+              </div>
               <div className="space-y-3">
                 <label className="flex items-start gap-2.5 text-sm">
                   <Switch
@@ -444,10 +452,13 @@ export function CorrespondanceSection({
           <FlatCard>
             <div className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <SectionHeader
-                  icon={<Fingerprint className="h-4 w-4 text-amber-600" />}
-                  title="Filigrane (watermark)"
-                />
+                <div className="flex items-center gap-1.5">
+                  <SectionHeader
+                    icon={<Fingerprint className="h-4 w-4 text-amber-600" />}
+                    title="Filigrane (watermark)"
+                  />
+                  <HelpTooltip content={HELP.correspondance.watermark} />
+                </div>
                 <Switch
                   checked={watermarkEnabled}
                   onCheckedChange={(v) => {

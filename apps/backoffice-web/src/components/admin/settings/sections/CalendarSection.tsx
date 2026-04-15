@@ -26,6 +26,8 @@ import {
 import { useEffect, useState } from "react";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { SectionHeader } from "@/components/design-system/section-header";
+import { HelpTooltip } from "@/components/admin/HelpTooltip";
+import { HELP } from "@/lib/help-content";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -352,10 +354,13 @@ export function CalendarSection({ orgId, onStatusChange }: SettingsSectionProps)
       {/* ─── Horaires d'ouverture ────────────────── */}
       <FlatCard>
         <div className="p-4">
-          <SectionHeader
-            icon={<Clock className="h-4 w-4 text-blue-600" />}
-            title="Horaires d'ouverture publique"
-          />
+          <div className="flex items-center gap-1.5">
+            <SectionHeader
+              icon={<Clock className="h-4 w-4 text-blue-600" />}
+              title="Horaires d'ouverture publique"
+            />
+            <HelpTooltip content={HELP.calendar.serviceHours} />
+          </div>
           <p className="text-xs text-muted-foreground mb-3">
             Horaires appliqués à tous les services par défaut. Des horaires
             spécifiques par service peuvent être définis dans l'onglet Services.
@@ -418,10 +423,13 @@ export function CalendarSection({ orgId, onStatusChange }: SettingsSectionProps)
       {/* ─── Paramètres RDV ─────────────────────── */}
       <FlatCard>
         <div className="p-4">
-          <SectionHeader
-            icon={<Settings2 className="h-4 w-4 text-indigo-600" />}
-            title="Paramètres de rendez-vous"
-          />
+          <div className="flex items-center gap-1.5">
+            <SectionHeader
+              icon={<Settings2 className="h-4 w-4 text-indigo-600" />}
+              title="Paramètres de rendez-vous"
+            />
+            <HelpTooltip content={HELP.calendar.appointmentLeadTime} />
+          </div>
           <p className="text-xs text-muted-foreground mb-3">
             Délais et contraintes applicables aux prises de rendez-vous par les
             citoyens.
@@ -504,10 +512,13 @@ export function CalendarSection({ orgId, onStatusChange }: SettingsSectionProps)
       {/* ─── Jours fériés ────────────────────────── */}
       <FlatCard>
         <div className="p-4">
-          <SectionHeader
-            icon={<CalendarDays className="h-4 w-4 text-emerald-600" />}
-            title="Jours fériés"
-          />
+          <div className="flex items-center gap-1.5">
+            <SectionHeader
+              icon={<CalendarDays className="h-4 w-4 text-emerald-600" />}
+              title="Jours fériés"
+            />
+            <HelpTooltip content={HELP.calendar.holidays} />
+          </div>
           <p className="text-xs text-muted-foreground mb-3">
             Jours fériés gabonais nationaux, du pays hôte, ou ponctuels.
             Services fermés ces jours-là.
