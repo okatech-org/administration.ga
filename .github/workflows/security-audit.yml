@@ -91,21 +91,28 @@ jobs:
 
       - name: Check CSP headers exist in all apps
         run: |
-          for app in agent-web backoffice-web; do
-            FILE="apps/${app}/server/middleware/security-headers.ts"
+          # Chaque app expose ses headers selon son framework :
+          # - agent-web (Next.js) : headers() async dans next.config.ts
+          # - backoffice-web (Vite + Nitro/h3) : server/middleware/security-headers.ts
+          declare -A APP_FILES=(
+            ["agent-web"]="apps/agent-web/next.config.ts"
+            ["backoffice-web"]="apps/backoffice-web/server/middleware/security-headers.ts"
+          )
+          for app in "${!APP_FILES[@]}"; do
+            FILE="${APP_FILES[$app]}"
             if [ ! -f "$FILE" ]; then
-              echo "::error::Security headers missing for ${app}"
+              echo "::error::Security headers file missing for ${app} (expected at ${FILE})"
               exit 1
             fi
             if ! grep -q "Content-Security-Policy" "$FILE"; then
-              echo "::error::CSP header missing in ${app}"
+              echo "::error::CSP header missing in ${app} (${FILE})"
               exit 1
             fi
             if ! grep -q "Strict-Transport-Security" "$FILE"; then
-              echo "::error::HSTS header missing in ${app}"
+              echo "::error::HSTS header missing in ${app} (${FILE})"
               exit 1
             fi
-            echo "Security headers OK for ${app}"
+            echo "Security headers OK for ${app} (${FILE})"
           done
 
       - name: Check no public queries in NEOCORTEX

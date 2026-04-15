@@ -27,6 +27,18 @@ export default defineConfig({
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "on-first-retry",
+    // ── Locale forcée à fr-FR pour les tests E2E ──
+    // Les assertions cherchent le texte français ("Suivant", "Confirmer",
+    // "Soumettre"…). Sans ce réglage, Chromium démarre en en-US sur les
+    // runners GitHub Actions, i18next-browser-languagedetector détecte
+    // `navigator.language === "en-US"` → l'UI se rend en anglais et aucun
+    // des selectors FR ne matche. `locale` pose navigator.language et
+    // `extraHTTPHeaders` fixe l'en-tête HTTP pour toute détection côté
+    // serveur ultérieure.
+    locale: "fr-FR",
+    extraHTTPHeaders: {
+      "Accept-Language": "fr-FR,fr;q=0.9",
+    },
   },
 
   projects: [

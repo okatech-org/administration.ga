@@ -69,6 +69,12 @@ function DevAccountSwitcherInner() {
 	// ── Expose sign-in function for E2E tests (dev/test only) ──
 	// Must be before the devAccounts early-return so CI (which has no
 	// NEXT_PUBLIC_DEV_ACCOUNTS) can still authenticate via __e2eDevSignIn.
+	//
+	// Two-step flow (identique à handleSignIn) :
+	//   1. POST /api/dev/sign-in → récupère un tempPassword depuis Convex
+	//   2. authClient.signIn.email() avec ce tempPassword → pose le cookie de session
+	// L'étape 2 est indispensable : sans elle, aucun cookie n'est posé et toute
+	// navigation suivante retombe sur la redirection vers /sign-up.
 	if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
 		(window as any).__e2eDevSignIn = async (email: string) => {
 			try {
@@ -77,6 +83,7 @@ function DevAccountSwitcherInner() {
 					await new Promise((r) => setTimeout(r, 300));
 				}
 
+				// Step 1 : récupérer le tempPassword via le proxy Convex
 				const devRes = await fetch("/api/dev/sign-in", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
@@ -87,6 +94,24 @@ function DevAccountSwitcherInner() {
 					const data = await devRes.json().catch(() => ({}));
 					return { ok: false, error: data.error || `Dev sign-in failed (${devRes.status})` };
 				}
+
+				const { tempPassword } = (await devRes.json()) as { tempPassword?: string };
+				if (!tempPassword) {
+					return { ok: false, error: "Dev sign-in response missing tempPassword" };
+				}
+
+				// Step 2 : sign-in Better Auth (→ cookie de session via /api/auth/*)
+				const signInResult = await authClient.signIn.email({
+					email,
+					password: tempPassword,
+				});
+				if (signInResult.error) {
+					return {
+						ok: false,
+						error: signInResult.error.message || "Better Auth sign-in failed",
+					};
+				}
+
 				return { ok: true };
 			} catch (err: any) {
 				return { ok: false, error: err.message || "Unknown error" };
