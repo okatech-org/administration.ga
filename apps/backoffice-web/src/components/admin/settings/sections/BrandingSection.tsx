@@ -26,6 +26,8 @@ import {
 import { useEffect, useState } from "react";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { SectionHeader } from "@/components/design-system/section-header";
+import { HelpTooltip } from "@/components/admin/HelpTooltip";
+import { HELP } from "@/lib/help-content";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -138,10 +140,13 @@ export function BrandingSection({
       {/* ─── Couleurs ──────────────────────────────────── */}
       <FlatCard>
         <div className="p-4">
-          <SectionHeader
-            icon={<Palette className="h-4 w-4 text-purple-600" />}
-            title="Couleurs de marque"
-          />
+          <div className="flex items-center gap-1.5">
+            <SectionHeader
+              icon={<Palette className="h-4 w-4 text-purple-600" />}
+              title="Couleurs de marque"
+            />
+            <HelpTooltip content={HELP.branding.colors} />
+          </div>
           <p className="text-xs text-muted-foreground mb-3">
             Palette de la page publique de la représentation. Les couleurs du
             Gabon (vert / jaune / bleu) sont utilisées par défaut.
@@ -199,10 +204,13 @@ export function BrandingSection({
       {/* ─── Description publique ──────────────────────── */}
       <FlatCard>
         <div className="p-4">
-          <SectionHeader
-            icon={<Globe2 className="h-4 w-4 text-blue-600" />}
-            title="Description publique"
-          />
+          <div className="flex items-center gap-1.5">
+            <SectionHeader
+              icon={<Globe2 className="h-4 w-4 text-blue-600" />}
+              title="Description publique"
+            />
+            <HelpTooltip content={HELP.branding.publicDescription} />
+          </div>
           <p className="text-xs text-muted-foreground mb-3">
             Texte affiché sur la page publique de la représentation. Visible par
             tous les citoyens et partenaires.

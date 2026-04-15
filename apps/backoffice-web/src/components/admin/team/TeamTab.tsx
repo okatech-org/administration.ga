@@ -13,6 +13,7 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { LayoutGrid, List, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OrgPositionsTab } from "@/components/dashboard/org-positions-tab";
@@ -26,6 +27,7 @@ export interface TeamTabProps {
 
 export function TeamTab({ orgId }: TeamTabProps) {
   const [view, setView] = useState<"list" | "chart" | "vacant">("list");
+  const { t } = useTranslation();
 
   const { data: orgChart } = useAuthenticatedConvexQuery(
     api.functions.orgs.getOrgChart,
@@ -43,11 +45,11 @@ export function TeamTab({ orgId }: TeamTabProps) {
         <TabsList className="grid grid-cols-3 sm:inline-flex h-auto p-1 bg-[#F4F3ED] dark:bg-[#171616]">
           <TabsTrigger value="list" className="gap-1.5 text-xs sm:text-sm">
             <List className="h-4 w-4" />
-            Vue liste
+            {t("superadmin.team.viewList", "Vue liste")}
           </TabsTrigger>
           <TabsTrigger value="chart" className="gap-1.5 text-xs sm:text-sm">
             <LayoutGrid className="h-4 w-4" />
-            Organigramme
+            {t("superadmin.team.viewOrgChart", "Organigramme")}
             {totalCount > 0 && (
               <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1">
                 {filledCount}/{totalCount}
@@ -56,7 +58,7 @@ export function TeamTab({ orgId }: TeamTabProps) {
           </TabsTrigger>
           <TabsTrigger value="vacant" className="gap-1.5 text-xs sm:text-sm">
             <UserPlus className="h-4 w-4" />
-            Postes vacants
+            {t("superadmin.team.viewVacant", "Postes vacants")}
             {vacantCount > 0 && (
               <Badge
                 variant="default"
@@ -85,10 +87,11 @@ export function TeamTab({ orgId }: TeamTabProps) {
       <div className="flex items-start gap-2 rounded-md border border-blue-500/20 bg-blue-500/5 p-2.5 text-xs text-blue-700 dark:text-blue-400">
         <Users className="h-3.5 w-3.5 shrink-0 mt-0.5" />
         <p className="leading-relaxed">
-          <strong>Équipe unifiée :</strong> les anciens onglets « Membres » et
-          « Postes » ont fusionné. Utilise « Vue liste » pour gérer les agents
-          et leurs rôles, « Organigramme » pour configurer les permissions par
-          poste, ou « Postes vacants » pour affecter rapidement.
+          <strong>{t("superadmin.team.banner.title", "Équipe unifiée :")}</strong>{" "}
+          {t(
+            "superadmin.team.banner.description",
+            "les anciens onglets « Membres » et « Postes » ont fusionné. Utilise « Vue liste » pour gérer les agents et leurs rôles, « Organigramme » pour configurer les permissions par poste, ou « Postes vacants » pour affecter rapidement.",
+          )}
         </p>
       </div>
     </div>

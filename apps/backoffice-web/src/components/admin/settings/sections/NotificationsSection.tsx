@@ -24,6 +24,8 @@ import {
 import { useEffect, useState } from "react";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { SectionHeader } from "@/components/design-system/section-header";
+import { HelpTooltip } from "@/components/admin/HelpTooltip";
+import { HELP } from "@/lib/help-content";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -354,10 +356,13 @@ export function NotificationsSection({
       <FlatCard>
         <div className="p-4">
           <div className="flex items-center justify-between mb-2">
-            <SectionHeader
-              icon={<Moon className="h-4 w-4 text-slate-600" />}
-              title="Heures silencieuses (quiet hours)"
-            />
+            <div className="flex items-center gap-1.5">
+              <SectionHeader
+                icon={<Moon className="h-4 w-4 text-slate-600" />}
+                title="Heures silencieuses (quiet hours)"
+              />
+              <HelpTooltip content={HELP.notifications.quietHours} />
+            </div>
             <Switch
               checked={quietEnabled}
               onCheckedChange={(v) => {
@@ -432,10 +437,13 @@ export function NotificationsSection({
       <FlatCard>
         <div className="p-4">
           <div className="flex items-center justify-between mb-2">
-            <SectionHeader
-              icon={<Send className="h-4 w-4 text-amber-600" />}
-              title="Escalation & relances"
-            />
+            <div className="flex items-center gap-1.5">
+              <SectionHeader
+                icon={<Send className="h-4 w-4 text-amber-600" />}
+                title="Escalation & relances"
+              />
+              <HelpTooltip content={HELP.notifications.escalation} />
+            </div>
             <Switch
               checked={escalationEnabled}
               onCheckedChange={(v) => {
@@ -493,7 +501,10 @@ export function NotificationsSection({
           </p>
           <div className="grid grid-cols-1 gap-3">
             <Field>
-              <FieldLabel>Nom d'expéditeur SMS (11 car. max)</FieldLabel>
+              <div className="flex items-center gap-1.5">
+                <FieldLabel>Nom d'expéditeur SMS (11 car. max)</FieldLabel>
+                <HelpTooltip content={HELP.notifications.smsSenderName} />
+              </div>
               <Input
                 maxLength={11}
                 value={smsSenderName}

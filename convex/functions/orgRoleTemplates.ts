@@ -168,6 +168,22 @@ export const update = authMutation({
       updatedAt: Date.now(),
     });
 
+    // Phase F1.1 — Audit trail
+    await logCortexAction(ctx, {
+      action: "UPDATE_ORG_ROLE_TEMPLATE",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgRoleTemplates",
+      entiteId: templateId,
+      userId: ctx.user._id,
+      avant: {
+        name: template.name,
+        grade: template.grade,
+        taskPresets: template.taskPresets,
+      },
+      apres: cleanUpdates,
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
     return templateId;
   },
 });
@@ -189,6 +205,21 @@ export const remove = authMutation({
     await assertCanDoTask(ctx, ctx.user, membership, "settings.manage");
 
     await ctx.db.patch(args.templateId, { deletedAt: Date.now() });
+
+    // Phase F1.1 — Audit trail
+    await logCortexAction(ctx, {
+      action: "DELETE_ORG_ROLE_TEMPLATE",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgRoleTemplates",
+      entiteId: args.templateId,
+      userId: ctx.user._id,
+      avant: {
+        orgId: template.orgId,
+        code: template.code,
+        name: template.name,
+      },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
 
     return args.templateId;
   },

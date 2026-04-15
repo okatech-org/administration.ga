@@ -23,6 +23,8 @@ import { Mic, PhoneOff, Timer, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { SectionHeader } from "@/components/design-system/section-header";
+import { HelpTooltip } from "@/components/admin/HelpTooltip";
+import { HELP } from "@/lib/help-content";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -150,7 +152,10 @@ export function CallSettingsSection({
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field>
-              <FieldLabel>Timeout sonnerie par défaut (secondes)</FieldLabel>
+              <div className="flex items-center gap-1.5">
+                <FieldLabel>Timeout sonnerie par défaut (secondes)</FieldLabel>
+                <HelpTooltip content={HELP.calls.ringTimeout} />
+              </div>
               <Input
                 type="number"
                 min={10}
@@ -248,10 +253,13 @@ export function CallSettingsSection({
       <FlatCard>
         <div className="p-4">
           <div className="flex items-center justify-between mb-2">
-            <SectionHeader
-              icon={<Mic className="h-4 w-4 text-rose-600" />}
-              title="Enregistrement des appels"
-            />
+            <div className="flex items-center gap-1.5">
+              <SectionHeader
+                icon={<Mic className="h-4 w-4 text-rose-600" />}
+                title="Enregistrement des appels"
+              />
+              <HelpTooltip content={HELP.calls.recording} />
+            </div>
             <Switch
               checked={recordingEnabled}
               onCheckedChange={(v) => {

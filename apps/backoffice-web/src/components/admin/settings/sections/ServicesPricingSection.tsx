@@ -21,6 +21,8 @@ import { CreditCard, Euro, ExternalLink, FileText, Timer } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { SectionHeader } from "@/components/design-system/section-header";
+import { HelpTooltip } from "@/components/admin/HelpTooltip";
+import { HELP } from "@/lib/help-content";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,10 +50,13 @@ export function ServicesPricingSection({ orgId }: SettingsSectionProps) {
         <div className="p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <SectionHeader
-                icon={<CreditCard className="h-4 w-4 text-blue-600" />}
-                title="Tarification des services"
-              />
+              <div className="flex items-center gap-1.5">
+                <SectionHeader
+                  icon={<CreditCard className="h-4 w-4 text-blue-600" />}
+                  title="Tarification des services"
+                />
+                <HelpTooltip content={HELP.services.pricing} />
+              </div>
               <p className="text-xs text-muted-foreground mb-2">
                 Aperçu des services actifs et leur pricing. Paiement via Stripe
                 (EUR/USD) pour les ressortissants à l'étranger.
