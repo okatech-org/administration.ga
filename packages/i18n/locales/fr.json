@@ -1563,6 +1563,54 @@
 			"iboite": "iBoîte",
 			"iasted": "iAsted"
 		},
+		"dashboard": {
+			"sections": {
+				"identity": "Identité",
+				"protocol": "Protocole",
+				"addresses": "Adresses",
+				"jurisdiction": "Juridiction",
+				"calendar": "Calendrier",
+				"calls": "Téléphonie",
+				"iboite": "iBoîte",
+				"correspondance": "iCorrespondance",
+				"notifications": "Notifications",
+				"chats": "Chats P2P",
+				"contacts": "Contacts",
+				"iasted": "iAsted",
+				"services": "Services",
+				"branding": "Branding"
+			},
+			"alerts": {
+				"title": "Actions recommandées",
+				"sectionLabel": "Section",
+				"sectionMissing": "non configurée — à compléter dans les paramètres",
+				"vacantPositions_one": "{{count}} poste requis vacant — voir l'onglet Équipe",
+				"vacantPositions_other": "{{count}} postes requis vacants — voir l'onglet Équipe"
+			},
+			"cards": {
+				"health": "Santé de la configuration",
+				"healthDescription": "Configuration des 14 sections de paramétrage. Cliquer sur une section dans l'éditeur pour la compléter.",
+				"activity": "Activité récente"
+			},
+			"kpi": {
+				"activeMembers": "Membres actifs",
+				"filledPositions": "Postes occupés",
+				"activeRequests": "Demandes en cours",
+				"slaCompliance": "SLA respecté",
+				"vacantCount_one": "{{count}} vacant",
+				"vacantCount_other": "{{count}} vacants",
+				"allFilled": "Tous occupés",
+				"realtimeComingSoon": "Vue temps réel — Phase C5",
+				"metricsComingSoon": "Métriques — Phase C5"
+			},
+			"activity": {
+				"streamTitle": "Flux d'activité audit en lecture seule",
+				"comingSoon": "Disponible en Phase C avec audit log enrichi"
+			},
+			"global": {
+				"complete": "Configuration complète et opérationnelle"
+			}
+		},
 		"nav": {
 			"dashboard": "Tableau de bord",
 			"users": "Utilisateurs",

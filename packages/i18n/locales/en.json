@@ -779,6 +779,54 @@
 			"iboite": "iBoîte",
 			"iasted": "iAsted"
 		},
+		"dashboard": {
+			"sections": {
+				"identity": "Identity",
+				"protocol": "Protocol",
+				"addresses": "Addresses",
+				"jurisdiction": "Jurisdiction",
+				"calendar": "Calendar",
+				"calls": "Telephony",
+				"iboite": "iBoîte",
+				"correspondance": "iCorrespondance",
+				"notifications": "Notifications",
+				"chats": "P2P Chats",
+				"contacts": "Contacts",
+				"iasted": "iAsted",
+				"services": "Services",
+				"branding": "Branding"
+			},
+			"alerts": {
+				"title": "Recommended actions",
+				"sectionLabel": "Section",
+				"sectionMissing": "not configured — complete it in settings",
+				"vacantPositions_one": "{{count}} required vacant position — see Team tab",
+				"vacantPositions_other": "{{count}} required vacant positions — see Team tab"
+			},
+			"cards": {
+				"health": "Configuration health",
+				"healthDescription": "14 configuration sections. Click a section in the editor to complete it.",
+				"activity": "Recent activity"
+			},
+			"kpi": {
+				"activeMembers": "Active members",
+				"filledPositions": "Filled positions",
+				"activeRequests": "Active requests",
+				"slaCompliance": "SLA compliance",
+				"vacantCount_one": "{{count}} vacant",
+				"vacantCount_other": "{{count}} vacant",
+				"allFilled": "All filled",
+				"realtimeComingSoon": "Real-time view — Phase C5",
+				"metricsComingSoon": "Metrics — Phase C5"
+			},
+			"activity": {
+				"streamTitle": "Read-only audit activity feed",
+				"comingSoon": "Available in Phase C with enriched audit log"
+			},
+			"global": {
+				"complete": "Configuration complete and operational"
+			}
+		},
 		"nav": {
 			"dashboard": "Dashboard",
 			"organizations": "Representations",
