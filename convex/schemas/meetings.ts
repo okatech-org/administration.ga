@@ -91,12 +91,18 @@ export const meetingsTable = defineTable({
     ),
   ),
 
-  // Consent capture for citizens (recording, transcript)
+  // Consent capture for citizens (recording, transcript, RGPD)
   citizenConsent: v.optional(
     v.object({
       recording: v.optional(v.boolean()),
       transcript: v.optional(v.boolean()),
       grantedAt: v.optional(v.number()),
+      // Sprint 6 — champs détaillés d'acceptation/refus d'enregistrement
+      recordingAccepted: v.optional(v.boolean()),
+      recordingAcceptedAt: v.optional(v.number()),
+      recordingDeclinedAt: v.optional(v.number()),
+      // Phase ε — timestamp quand l'agent demande le consentement
+      recordingConsentRequestedAt: v.optional(v.number()),
     }),
   ),
 

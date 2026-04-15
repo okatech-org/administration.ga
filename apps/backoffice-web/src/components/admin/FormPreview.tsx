@@ -57,7 +57,7 @@ export function FormPreview({
 
 	// Filter visible sections based on conditions
 	const visibleSections = sections.filter((section) =>
-		evaluateCondition(section.condition, previewData),
+		evaluateCondition(section.conditions?.[0] as import("@/components/admin/FormBuilder").FieldCondition | undefined, previewData),
 	);
 
 	return (
@@ -66,8 +66,8 @@ export function FormPreview({
 				const isActive = currentSectionId === section.id;
 
 				// Filter visible fields based on conditions
-				const visibleFields = section.fields.filter((field) =>
-					evaluateCondition(field.condition, previewData),
+				const visibleFields = section.fields.filter((field: any) =>
+					evaluateCondition(field.conditions?.[0] as import("@/components/admin/FormBuilder").FieldCondition | undefined, previewData),
 				);
 
 				return (

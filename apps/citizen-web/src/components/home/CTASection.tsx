@@ -21,7 +21,7 @@ export function CTASection() {
 				alt="Communauté"
 				className="absolute inset-0 w-full h-full object-cover"
 			/>
-			<div className="absolute inset-0 bg-gradient-to-r from-green-900/50 via-black/40 to-green-900/50" />
+			<div className="absolute inset-0 bg-linear-to-r from-green-900/50 via-black/40 to-green-900/50" />
 
 			{/* Content */}
 			<motion.div
@@ -39,7 +39,7 @@ export function CTASection() {
 				<Button
 					asChild
 					size="lg"
-					className="h-16 px-10 text-lg bg-[var(--gabon-yellow)] hover:brightness-110 text-black font-bold shadow-xl hover:scale-105 transition-all"
+					className="h-16 px-10 text-lg bg-(--gabon-yellow) hover:brightness-110 text-black font-bold shadow-xl hover:scale-105 transition-all"
 				>
 					<a href="/sign-up">
 						{t("cta.button")}

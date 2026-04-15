@@ -211,7 +211,7 @@ export function DocumentTypePicker({
 														isSelected ? "opacity-100" : "opacity-0",
 													)}
 												/>
-												{t(type.labelKey, type.value)}
+												{String(t(type.labelKey, type.value))}
 											</CommandItem>
 										);
 									})}

@@ -327,7 +327,7 @@ export default function ProjetsPhase() {
   // Pre-remplir depuis search params
   useEffect(() => {
     if (searchParams.get("targetId") && !showProjectDialog) {
-      setSelectedTargetId(searchParams.get("targetId"));
+      setSelectedTargetId(searchParams.get("targetId") ?? "");
       setShowProjectDialog(true);
     }
   }, [searchParams.get("targetId")]); // eslint-disable-line react-hooks/exhaustive-deps

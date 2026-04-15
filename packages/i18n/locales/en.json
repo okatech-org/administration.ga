@@ -2926,7 +2926,8 @@
 			"contactNumber": "Emergency contact #{{number}}",
 			"country": "Contact's country",
 			"add": "Add an emergency contact",
-			"remove": "Remove this contact"
+			"remove": "Remove this contact",
+			"none": "No emergency contact added"
 		},
 		"documents": {
 			"empty": "No documents added",

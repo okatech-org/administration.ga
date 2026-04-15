@@ -557,7 +557,7 @@ function MembersTab({
                         onClick={() =>
                           setEditRole({
                             userId: member.user?._id ?? "",
-                            role: member.role,
+                            role: member.role as AssociationRole,
                           })
                         }
                       >
@@ -570,7 +570,7 @@ function MembersTab({
                           size="sm"
                           variant="destructive"
                           className="h-8 text-xs"
-                          onClick={() => handleRemove(member.user?._id)}
+                          onClick={() => handleRemove(member.user?._id ?? "")}
                           disabled={isRemoving}
                         >
                           {isRemoving ?
@@ -590,7 +590,7 @@ function MembersTab({
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => setConfirmRemove(member.user?._id)}
+                        onClick={() => setConfirmRemove(member.user?._id ?? null)}
                       >
                         <UserMinus className="h-3.5 w-3.5" />
                       </Button>

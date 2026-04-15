@@ -72,6 +72,7 @@ interface TemplateData {
 	label: { fr?: string; en?: string };
 	description: { fr?: string; en?: string };
 	icon: string;
+	modules?: string[];
 	positions: Array<{
 		code: string;
 		title: { fr?: string; en?: string };

@@ -88,6 +88,16 @@ import { DynamicLucideIcon } from "@/lib/lucide-icon";
 // Types
 // ═══════════════════════════════════════════════════════════════
 
+type OrgChartOccupant = {
+	userId: Id<"users">;
+	name: string;
+	firstName?: string;
+	lastName?: string;
+	email: string;
+	avatarUrl?: string;
+	membershipId: Id<"memberships">;
+};
+
 type OrgChartPosition = {
 	_id: Id<"positions">;
 	code: string;
@@ -97,15 +107,8 @@ type OrgChartPosition = {
 	grade?: string;
 	isRequired?: boolean;
 	tasks?: string[];
-	occupant: {
-		userId: Id<"users">;
-		name: string;
-		firstName?: string;
-		lastName?: string;
-		email: string;
-		avatarUrl?: string;
-		membershipId: Id<"memberships">;
-	} | null;
+	occupant: OrgChartOccupant | null;
+	occupants: OrgChartOccupant[];
 };
 
 type UnassignedMember = {
@@ -116,6 +119,7 @@ type UnassignedMember = {
 	email: string;
 	avatarUrl?: string;
 	membershipId: Id<"memberships">;
+	role?: string;
 };
 
 // ═══════════════════════════════════════════════════════════════

@@ -1767,7 +1767,6 @@ function ServicesSettingsPanel() {
 				pricing: { amount: activationForm.fee, currency: activationForm.currency },
 				requiresAppointment: activationForm.requiresAppointment,
 				requiresAppointmentForPickup: activationForm.requiresAppointmentForPickup,
-				instructions: activationForm.instructions || undefined,
 			});
 			toast.success(t("dashboard.services.activated"));
 			setAddDialogOpen(false);

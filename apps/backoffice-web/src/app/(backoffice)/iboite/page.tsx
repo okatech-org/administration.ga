@@ -122,8 +122,11 @@ const useMeeting = (_id?: string) => ({
 	isCamOff: true,
 	token: null as string | null,
 	serverUrl: null as string | null,
-	connect: async () => {},
-	disconnect: async () => {},
+	wsUrl: null as string | null,
+	meeting: null as any,
+	error: null as string | null,
+	connect: async (_meetingId?: any) => {},
+	disconnect: async (_meetingId?: any) => {},
 	toggleMic: () => {},
 	toggleCam: () => {},
 });

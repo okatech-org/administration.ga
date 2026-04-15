@@ -317,7 +317,17 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 
 	// ── Si mode vocal actif ──
 	if (selectedContact?.isAI && voice.isOpen) {
-		return <VoiceChatContent voice={voice} />;
+		return (
+			<VoiceChatContent
+				state={voice.state}
+				error={voice.error}
+				onClose={voice.closeOverlay}
+				pendingConfirmation={voice.pendingConfirmation}
+				isConfirming={voice.isConfirming}
+				onConfirm={voice.confirmPending}
+				onReject={voice.rejectPending}
+			/>
+		);
 	}
 
 	// ════════════════════════════════════════════════════════════
@@ -394,7 +404,7 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 										<div className={cn("max-w-[80%] rounded-xl px-3 py-2 text-sm",
 											msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted")}>
 											{msg.role === "assistant" ? (
-												<Markdown className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">{msg.content}</Markdown>
+												<div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0"><Markdown>{msg.content}</Markdown></div>
 											) : msg.content}
 										</div>
 										{msg.role === "user" && (

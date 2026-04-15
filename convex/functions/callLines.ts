@@ -258,6 +258,34 @@ export const removeAgent = authMutation({
 });
 
 /**
+ * Remplace la liste complète des agents d'une ligne de permanence.
+ * Utilisé par ManageLineAgentsDialog pour mettre à jour les agents en une seule mutation.
+ */
+export const updateAgents = authMutation({
+  args: {
+    callLineId: v.id("callLines"),
+    membershipIds: v.array(v.id("memberships")),
+  },
+  handler: async (ctx, args) => {
+    const line = await ctx.db.get(args.callLineId);
+    if (!line) throw error(ErrorCode.NOT_FOUND, "Ligne non trouvée");
+
+    const membership = await getMembership(ctx, ctx.user._id, line.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, TaskCode.meetings.manage);
+
+    // Valider que tous les memberships appartiennent à la même org
+    for (const membershipId of args.membershipIds) {
+      const m = await ctx.db.get(membershipId);
+      if (!m || m.orgId !== line.orgId || m.deletedAt) {
+        throw error(ErrorCode.INVALID_ARGUMENT, "Membre invalide");
+      }
+    }
+
+    await ctx.db.patch(args.callLineId, { membershipIds: args.membershipIds });
+  },
+});
+
+/**
  * Rétrocompatibilité — crée les lignes personnelles manquantes pour les membres existants.
  * À appeler une seule fois par org depuis le backoffice admin.
  */

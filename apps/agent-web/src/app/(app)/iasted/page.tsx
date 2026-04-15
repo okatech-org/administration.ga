@@ -574,9 +574,7 @@ export default function IAstedFullPage() {
                                 )}
                               >
                                 {msg.role === "assistant" ? (
-                                  <Markdown className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
-                                    {msg.content}
-                                  </Markdown>
+                                  <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0"><Markdown>{msg.content}</Markdown></div>
                                 ) : (
                                   msg.content
                                 )}

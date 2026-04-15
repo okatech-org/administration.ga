@@ -175,7 +175,7 @@ export default function AppointmentDetail() {
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 max-w-6xl">
 				<FlatCard>
 					<div className="p-3 lg:p-4 space-y-2">
-						<SectionHeader icon={Calendar} title={t("dashboard.appointments.detail.dateTime")} />
+						<SectionHeader icon={<Calendar className="h-3.5 w-3.5" />} title={t("dashboard.appointments.detail.dateTime")} />
 						<div className="flex items-center gap-2">
 							<span className="font-medium">
 								{t("dashboard.appointments.detail.date")}:
@@ -193,7 +193,7 @@ export default function AppointmentDetail() {
 
 				<FlatCard>
 					<div className="p-3 lg:p-4 space-y-2">
-						<SectionHeader icon={User} title={t("dashboard.appointments.detail.user")} />
+						<SectionHeader icon={<User className="h-3.5 w-3.5" />} title={t("dashboard.appointments.detail.user")} />
 						{appointment.attendee ? (
 							<>
 								<p className="font-medium">
@@ -213,7 +213,7 @@ export default function AppointmentDetail() {
 				{appointment.service && (
 					<FlatCard>
 						<div className="p-3 lg:p-4 space-y-2">
-							<SectionHeader icon={FileText} title={t("dashboard.appointments.detail.service")} />
+							<SectionHeader icon={<FileText className="h-3.5 w-3.5" />} title={t("dashboard.appointments.detail.service")} />
 							<p className="font-medium">
 								{appointment.service.name?.fr || "-"}
 							</p>
@@ -224,7 +224,7 @@ export default function AppointmentDetail() {
 				{appointment.request && (
 					<FlatCard>
 						<div className="p-3 lg:p-4 space-y-3">
-							<SectionHeader icon={LinkIcon} title={t(
+							<SectionHeader icon={<LinkIcon className="h-3.5 w-3.5" />} title={t(
 								"dashboard.appointments.detail.linkedRequest",
 								"Demande associée",
 							)} />

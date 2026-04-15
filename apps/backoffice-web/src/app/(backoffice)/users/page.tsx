@@ -84,7 +84,7 @@ export default function UsersPage() {
         const all: any[] = [];
 
         while (!isDone && active) {
-          const res = await convex.query(api.functions.admin.listAllUsersChunk, { cursor });
+          const res: { page: any[]; continueCursor: string; isDone: boolean } = await convex.query(api.functions.admin.listAllUsersChunk, { cursor });
           all.push(...res.page);
           cursor = res.continueCursor;
           isDone = res.isDone;
@@ -335,9 +335,9 @@ export default function UsersPage() {
 
   // Tabs pour le switcher de vue principale
   const viewModeTabs = VIEW_MODES.map((mode) => ({
-    key: mode.id,
+    key: mode.id as string,
     label: mode.label,
-    icon: mode.icon,
+    icon: mode.icon as import("lucide-react").LucideIcon,
   }));
 
   // Tabs pour les roles utilisateur (onglet comptes)

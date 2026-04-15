@@ -107,6 +107,13 @@ interface CorrespondenceItem {
   priority: Priority
   folderId: string
   attachments: number
+  // Extended fields from Phase 1-2
+  isCopy?: boolean
+  recipientStatus?: string
+  copyOwnerOrgId?: string
+  documents?: any[]
+  deletedAt?: number
+  _id?: string
 }
 
 interface FolderItem {
@@ -1103,7 +1110,7 @@ function InfoDialog({
   itemType: "folder" | "correspondence"
 }) {
   if (!open) return null
-  const statusLabel = item.status ? STATUS_CFG[item.status]?.label || "—" : "—"
+  const statusLabel = item.status ? STATUS_CFG[item.status as CorrStatus]?.label || "—" : "—"
 
   return (
     <div
@@ -1150,7 +1157,7 @@ function InfoDialog({
                   <span
                     className={cn(
                       "h-1.5 w-1.5 rounded-full",
-                      STATUS_CFG[item.status]?.dot || "bg-muted-foreground"
+                      STATUS_CFG[item.status as CorrStatus]?.dot || "bg-muted-foreground"
                     )}
                   />
                   {statusLabel}
@@ -1175,10 +1182,10 @@ function InfoDialog({
                 <span
                   className={cn(
                     "rounded-md border px-2 py-1 text-[9px] font-medium",
-                    CORRESPONDENCE_TYPE_CONFIG[item.type]?.color
+                    CORRESPONDENCE_TYPE_CONFIG[item.type as CorrespondenceType]?.color
                   )}
                 >
-                  {CORRESPONDENCE_TYPE_CONFIG[item.type]?.label || item.type}
+                  {CORRESPONDENCE_TYPE_CONFIG[item.type as CorrespondenceType]?.label || item.type}
                 </span>
                 {item.priority && item.priority !== "normal" && (
                   <span
@@ -1189,7 +1196,7 @@ function InfoDialog({
                         : "border-amber-500/20 bg-amber-500/15 text-amber-400"
                     )}
                   >
-                    {PRIORITY_CONFIG[item.priority]?.label || item.priority}
+                    {PRIORITY_CONFIG[item.priority as Priority]?.label || item.priority}
                   </span>
                 )}
               </div>
@@ -1803,7 +1810,7 @@ export default function ICorrespondancePage() {
     try {
       const isRealFolder =
         currentFolderId !== null &&
-        !DEFAULT_FOLDERS.find((f) => f.id === currentFolderId)
+        !SYSTEM_FOLDERS.find((f) => f.id === currentFolderId)
       await createFolderMutation.mutateAsync({
         orgId: activeOrgId,
         name: newFolderName.trim(),

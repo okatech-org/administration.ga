@@ -192,7 +192,7 @@ export function useAdminVoiceChat(): UseAdminVoiceChatReturn {
       audioData.length,
       24000, // Gemini output sample rate
     );
-    audioBuffer.copyToChannel(audioData as Float32Array, 0);
+    audioBuffer.copyToChannel(audioData as Float32Array<ArrayBuffer>, 0);
 
     const source = audioContextRef.current.createBufferSource();
     source.buffer = audioBuffer;

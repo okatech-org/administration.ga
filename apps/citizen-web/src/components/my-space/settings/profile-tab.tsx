@@ -8,21 +8,24 @@ import {
   MaritalStatus,
   NationalityAcquisition,
 } from "@convex/lib/constants"
+import type { TFunction } from "i18next"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   Briefcase,
   Edit,
   FileText,
+  Info,
   Loader2,
   MapPin,
   Phone,
+  Plus,
   Save,
   User,
   Users,
   X,
 } from "lucide-react"
-import { useEffect, useState } from "react"
-import { FormProvider, useForm } from "react-hook-form"
+import { useEffect, useMemo, useState } from "react"
+import { type Control, FormProvider, useFieldArray, useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
@@ -31,7 +34,10 @@ import {
 } from "@/components/ai/useFormFillEffect"
 import { DocumentField } from "@/components/documents/DocumentField"
 import { PROFILE_DOCUMENTS, type ProfileDocuments } from "@/components/registration/steps/DocumentsStep"
-import { ContactsStep } from "@/components/registration/steps/ContactsStep"
+import {
+  ContactsStep,
+  EmergencyContactEntry,
+} from "@/components/registration/steps/ContactsStep"
 import { FamilyStep } from "@/components/registration/steps/FamilyStep"
 import { IdentityStep } from "@/components/registration/steps/IdentityStep"
 import { ProfessionalStep } from "@/components/registration/steps/ProfessionalStep"
@@ -51,7 +57,16 @@ import {
   profileFormSchema,
 } from "@/lib/validation/profile"
 
-type SectionId = "identity" | "contacts" | "family" | "profession"
+type SectionId = "identity" | "contacts" | "emergencyContacts" | "family" | "profession"
+
+// Champs à valider par section (validation ciblée, pas de trigger global)
+const SECTION_TRIGGER_FIELDS: Record<SectionId, string[]> = {
+  identity: ["identity", "passportInfo"],
+  contacts: ["countryOfResidence", "contacts.email", "contacts.phone", "addresses.homeland", "addresses.residence"],
+  emergencyContacts: ["contacts.emergencyContacts"],
+  family: ["family"],
+  profession: ["profession"],
+}
 
 export function ProfileTab() {
   const { t, i18n } = useTranslation()
@@ -104,8 +119,8 @@ export function ProfileTab() {
   }
 
   const handleSaveSection = async () => {
-    if (!profile) return
-    const isValid = await form.trigger()
+    if (!profile || !editingSection) return
+    const isValid = await form.trigger(SECTION_TRIGGER_FIELDS[editingSection] as any)
     if (!isValid) {
       toast.error(
         t("settings.dossier.validationError")
@@ -294,6 +309,7 @@ export function ProfileTab() {
                 <ContactsStep
                   control={form.control}
                   errors={form.formState.errors}
+                  hideEmergencyContacts
                 />
               </div>
             ) : (
@@ -330,35 +346,53 @@ export function ProfileTab() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+          </FlatCard>
 
-                {contacts?.emergencyContacts && contacts.emergencyContacts.length > 0 && (
-                  <div>
-                    <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
-                      {t("profile.fields.emergencyContacts")}
-                    </p>
-                    <div className="space-y-1.5">
-                      {contacts.emergencyContacts.map((ec: any, i: number) => (
-                        <div
-                          key={i}
-                          className="rounded-lg bg-[#FDFCFA] p-2.5 dark:bg-[#21201E]/77"
-                        >
-                          <p className="text-sm font-medium">
-                            {ec.firstName} {ec.lastName}
-                          </p>
-                          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
-                            {ec.phone && (
-                              <span className="flex items-center gap-1">
-                                <Phone className="h-3 w-3" /> {ec.phone}
-                              </span>
-                            )}
-                            {ec.relationship && (
-                              <span>{relationLabel(ec.relationship)}</span>
-                            )}
-                          </div>
+          {/* ─── Contacts d'urgence ─── */}
+          <FlatCard>
+            <SectionHeader
+              icon={<Phone className="h-3.5 w-3.5" />}
+              title={t("profile.sections.emergencyContacts")}
+              action={editButton("emergencyContacts")}
+            />
+            {editingSection === "emergencyContacts" ? (
+              <div className="settings-forms settings-compact-form p-4">
+                <EmergencyContactsEditForm
+                  control={form.control}
+                  t={t}
+                />
+              </div>
+            ) : (
+              <div className="p-4">
+                {contacts?.emergencyContacts && contacts.emergencyContacts.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {contacts.emergencyContacts.map((ec: any, i: number) => (
+                      <div
+                        key={i}
+                        className="rounded-lg bg-[#FDFCFA] p-2.5 dark:bg-[#21201E]/77"
+                      >
+                        <p className="text-sm font-medium">
+                          {ec.firstName} {ec.lastName}
+                        </p>
+                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+                          {ec.phone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="h-3 w-3" /> {ec.phone}
+                            </span>
+                          )}
+                          {ec.relationship && (
+                            <span>{relationLabel(ec.relationship)}</span>
+                          )}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {t("profile.emergencyContacts.none")}
+                  </p>
                 )}
               </div>
             )}
@@ -459,6 +493,69 @@ export function ProfileTab() {
         </div>
       </form>
     </FormProvider>
+  )
+}
+
+// ─── Emergency Contacts Edit Form ───────────────────────────
+
+function EmergencyContactsEditForm({
+  control,
+  t,
+}: {
+  control: Control<ProfileFormValues>
+  t: TFunction
+}) {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "contacts.emergencyContacts",
+  })
+  const countryOptions = useMemo(
+    () =>
+      Object.values(CountryCode).map((code) => ({
+        value: code,
+        label: t(`superadmin.countryCodes.${code}`, code),
+      })),
+    [t],
+  )
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+        <Info className="mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" />
+        <p className="text-sm text-blue-800 dark:text-blue-200">
+          {t("profile.emergencyContacts.recommendation")}
+        </p>
+      </div>
+      {fields.map((field, index) => (
+        <EmergencyContactEntry
+          key={field.id}
+          control={control}
+          index={index}
+          countryOptions={countryOptions}
+          onRemove={() => remove(index)}
+          canRemove={fields.length > 1}
+          t={t}
+        />
+      ))}
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={() =>
+          append({
+            firstName: "",
+            lastName: "",
+            phone: "",
+            email: undefined,
+            relationship: undefined as any,
+            country: undefined,
+          })
+        }
+      >
+        <Plus className="mr-2 h-4 w-4" />
+        {t("profile.emergencyContacts.add")}
+      </Button>
+    </div>
   )
 }
 

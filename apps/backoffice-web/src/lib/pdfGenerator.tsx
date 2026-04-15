@@ -241,7 +241,7 @@ export const DocumentPDF = ({
 	data,
 	lang = "fr",
 }: DocumentPDFProps) => {
-	const content = template.content as TemplateContent;
+	const content = template.content as unknown as TemplateContent;
 
 	// Add system data
 	const enrichedData: GenerationData = {

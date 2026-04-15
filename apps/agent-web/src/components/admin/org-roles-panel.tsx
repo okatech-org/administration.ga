@@ -126,6 +126,7 @@ interface PositionDoc {
 	ministryGroupId?: Id<"ministryGroups">;
 	tasks: string[];
 	isRequired: boolean;
+	isUnique?: boolean;
 	isActive: boolean;
 }
 

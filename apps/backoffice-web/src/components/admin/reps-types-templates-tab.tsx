@@ -1613,7 +1613,7 @@ export function RepsTypesTemplatesTab({
 				{/* Carte "Nouvelle Representation" */}
 				<FlatCard className="border-2 border-dashed border-border/50 hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer group">
 					<Link
-						to="/reps/new"
+						href="/reps/new"
 						className="flex flex-col items-center justify-center h-full min-h-[280px] p-6 text-center"
 					>
 						<div className="h-14 w-14 rounded-2xl bg-muted/50 group-hover:bg-primary/10 flex items-center justify-center mb-4 transition-colors">

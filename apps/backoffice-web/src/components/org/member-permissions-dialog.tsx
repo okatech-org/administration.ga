@@ -87,8 +87,8 @@ export function MemberPermissionsDialog({
 				await setPermission({
 					orgId,
 					membershipId,
-					taskCode: permission,
-					effect,
+					taskCode: permission as (typeof ALL_TASK_CODES)[number],
+					effect: effect as import("@convex/lib/constants").PermissionEffect,
 				});
 				toast.success(t("permissions.toast.added"));
 				setNewPermission("");
@@ -103,7 +103,7 @@ export function MemberPermissionsDialog({
 	const handleRemove = useCallback(
 		async (taskCode: string) => {
 			try {
-				await removePermission({ orgId, membershipId, taskCode });
+				await removePermission({ orgId, membershipId, taskCode: taskCode as (typeof ALL_TASK_CODES)[number] });
 				toast.success(t("permissions.toast.removed"));
 			} catch {
 				toast.error(
@@ -126,12 +126,8 @@ export function MemberPermissionsDialog({
 			return;
 		}
 		try {
-			const result = await resetAllPermissions({ orgId, membershipId });
-			toast.success(
-				t("permissions.toast.reset", "{{count}} permission(s) supprimée(s)", {
-					count: result.deleted,
-				}),
-			);
+			await resetAllPermissions({ orgId, membershipId });
+			toast.success(t("permissions.toast.reset", "Permissions réinitialisées"));
 		} catch {
 			toast.error(
 				t("permissions.toast.resetError"),

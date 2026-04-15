@@ -684,6 +684,7 @@ export default function IDocumentPage() {
 			title: doc.label ?? doc.files?.[0]?.filename ?? "Document",
 			excerpt: "",
 			author: "",
+			authorInitials: "",
 			updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString("fr-FR") : "",
 			updatedAtTs: doc.updatedAt ?? doc._creationTime,
 			status: (doc.status === "validated" ? "approved" : doc.status === "pending" ? "draft" : doc.status ?? "draft") as DocStatus,

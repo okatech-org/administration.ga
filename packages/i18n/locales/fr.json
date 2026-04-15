@@ -3196,7 +3196,8 @@
 			"contactNumber": "Contact d'urgence n°{{number}}",
 			"country": "Pays du contact",
 			"add": "Ajouter un contact d'urgence",
-			"remove": "Supprimer ce contact"
+			"remove": "Supprimer ce contact",
+			"none": "Aucun contact d'urgence renseigné"
 		},
 		"documents": {
 			"empty": "Aucun document ajouté",

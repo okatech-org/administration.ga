@@ -384,8 +384,8 @@ export default function AdminDashboard() {
 												borderRadius: "0.5rem",
 												fontSize: "0.75rem",
 											}}
-											formatter={(value: number) => [
-												value,
+											formatter={(value) => [
+												(value ?? 0) as number,
 												t("admin.charts.requests"),
 											]}
 										/>
@@ -517,8 +517,8 @@ export default function AdminDashboard() {
 												borderRadius: "0.5rem",
 												fontSize: "0.75rem",
 											}}
-											formatter={(value: number) => [
-												value,
+											formatter={(value) => [
+												(value ?? 0) as number,
 												t("admin.charts.requests"),
 											]}
 										/>

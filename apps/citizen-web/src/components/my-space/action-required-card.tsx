@@ -175,7 +175,7 @@ export function ActionRequiredCard({
 	>(new Map());
 	const uploadRefs = useRef<Map<string, DocumentUploadZoneRef>>(new Map());
 
-	const config = getActionConfig(actionRequired.type, t);
+	const config = getActionConfig(actionRequired.type, t as (key: string, fallback?: string) => string);
 
 	// Build structured formData with section.field nesting for deep merge
 	const buildStructuredFormData = (): Record<string, unknown> | undefined => {
