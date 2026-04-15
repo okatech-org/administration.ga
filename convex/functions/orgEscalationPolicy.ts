@@ -155,6 +155,17 @@ export const initializeFromExisting = authMutation({
       updatedBy: ctx.user._id,
     });
 
+    // Phase F1.1 — Audit trail
+    await logCortexAction(ctx, {
+      action: "INITIALIZE_ESCALATION_POLICY",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgEscalationPolicy",
+      entiteId: policyId,
+      userId: ctx.user._id,
+      apres: { orgId: args.orgId, initialized: true },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
     return policyId;
   },
 });

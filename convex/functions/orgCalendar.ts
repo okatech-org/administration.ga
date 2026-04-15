@@ -203,6 +203,21 @@ export const addHoliday = authMutation({
       updatedBy: ctx.user._id,
     });
 
+    // Phase F1.1 — Audit trail
+    await logCortexAction(ctx, {
+      action: "ADD_HOLIDAY",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgCalendar",
+      entiteId: calendar._id,
+      userId: ctx.user._id,
+      apres: {
+        orgId: args.orgId,
+        holidayDate: args.holiday.date,
+        holidayLabel: args.holiday.label,
+      },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
     return calendar._id;
   },
 });
@@ -232,6 +247,21 @@ export const removeHoliday = authMutation({
       ),
       updatedAt: Date.now(),
       updatedBy: ctx.user._id,
+    });
+
+    // Phase F1.1 — Audit trail
+    await logCortexAction(ctx, {
+      action: "REMOVE_HOLIDAY",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgCalendar",
+      entiteId: calendar._id,
+      userId: ctx.user._id,
+      apres: {
+        orgId: args.orgId,
+        holidayDate: args.date,
+        holidayLabel: args.label,
+      },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
     });
 
     return calendar._id;
@@ -283,6 +313,22 @@ export const addExceptionalClosure = authMutation({
       updatedBy: ctx.user._id,
     });
 
+    // Phase F1.1 — Audit trail
+    await logCortexAction(ctx, {
+      action: "ADD_EXCEPTIONAL_CLOSURE",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgCalendar",
+      entiteId: calendar._id,
+      userId: ctx.user._id,
+      apres: {
+        orgId: args.orgId,
+        startDate: args.closure.startDate,
+        endDate: args.closure.endDate,
+        reasonFr: args.closure.reasonFr,
+      },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
     return calendar._id;
   },
 });
@@ -314,6 +360,20 @@ export const updateAppointmentConfig = authMutation({
       appointmentConfig: args.appointmentConfig,
       updatedAt: Date.now(),
       updatedBy: ctx.user._id,
+    });
+
+    // Phase F1.1 — Audit trail
+    await logCortexAction(ctx, {
+      action: "UPDATE_APPOINTMENT_CONFIG",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgCalendar",
+      entiteId: calendar._id,
+      userId: ctx.user._id,
+      apres: {
+        orgId: args.orgId,
+        appointmentConfig: args.appointmentConfig,
+      },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
     });
 
     return calendar._id;
@@ -378,6 +438,21 @@ export const updateServiceHours = authMutation({
       serviceHours: newServiceHours,
       updatedAt: Date.now(),
       updatedBy: ctx.user._id,
+    });
+
+    // Phase F1.1 — Audit trail
+    await logCortexAction(ctx, {
+      action: "UPDATE_SERVICE_HOURS",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgCalendar",
+      entiteId: calendar._id,
+      userId: ctx.user._id,
+      apres: {
+        orgId: args.orgId,
+        scopeType: args.scopeType,
+        serviceId: args.serviceId,
+      },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
     });
 
     return calendar._id;
