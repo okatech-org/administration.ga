@@ -227,7 +227,7 @@ function renderFieldInput(
 				/>
 			);
 
-		case "phone":
+		case "tel":
 			return (
 				<Input
 					type="tel"

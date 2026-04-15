@@ -1,6 +1,10 @@
+"use client";
+
 import { api } from "@convex/_generated/api";
 import Link from "next/link";
 import { motion } from "motion/react";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const MotionDiv = motion.div as any;
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import profilePassage from "@/assets/profile-passage-new.png";
@@ -57,7 +61,7 @@ export function ProfilesSection() {
 	return (
 		<section className="relative z-10 py-16 px-4 lg:px-8 bg-muted/30">
 			<div className="max-w-6xl mx-auto">
-				<motion.div
+				<MotionDiv
 					initial={{ opacity: 0, y: 20 }}
 					whileInView={{ opacity: 1, y: 0 }}
 					viewport={{ once: true }}
@@ -67,7 +71,7 @@ export function ProfilesSection() {
 					<p className="text-muted-foreground max-w-xl mx-auto">
 						{t("profiles.subtitle")}
 					</p>
-				</motion.div>
+				</MotionDiv>
 
 				<div className="grid md:grid-cols-3 gap-6">
 					{profiles.map((profile) => (
@@ -117,7 +121,7 @@ function ProfileCard({
 	};
 
 	return (
-		<motion.div
+		<MotionDiv
 			initial={{ opacity: 0, y: 20 }}
 			whileInView={{ opacity: 1, y: 0 }}
 			viewport={{ once: true }}
@@ -128,7 +132,8 @@ function ProfileCard({
 					className="py-0 cursor-pointer border flat-card-border bg-card shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden h-full"
 					style={{ borderTop: `3px solid ${borderTopColors[color]}` }}
 				>
-					<div className="h-48 w-full overflow-hidden">
+					<div className="h-48 w-full overflow-hidden relative">
+						{/* eslint-disable-next-line @next/next/no-img-element */}
 						<img
 							src={image.src}
 							alt={title}
@@ -153,7 +158,7 @@ function ProfileCard({
 					</CardContent>
 				</Card>
 			</Link>
-		</motion.div>
+		</MotionDiv>
 	);
 }
 

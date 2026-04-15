@@ -32,7 +32,11 @@ function derivePriority(
   meeting: Doc<"meetings">,
   line: Doc<"callLines"> | null,
 ): LinePriority {
-  if (meeting.priority) return meeting.priority;
+  if (meeting.priority) {
+    const p = meeting.priority;
+    if (p === "low") return "normal";
+    return p;
+  }
   if (!line) return "normal";
   if (line.priority <= 1) return "urgent";
   if (line.priority === 2) return "high";

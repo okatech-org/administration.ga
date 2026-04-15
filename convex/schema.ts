@@ -86,6 +86,8 @@ import {
   voicemailsTable,
   supervisionSessionsTable,
   pushSubscriptionsTable,
+  callNotesTable,
+  draftMessagesTable,
 } from "./schemas";
 
 export default defineSchema({
@@ -187,4 +189,7 @@ export default defineSchema({
   supervisionSessions: supervisionSessionsTable,
   // Notifications — Web Push subscriptions
   pushSubscriptions: pushSubscriptionsTable,
+  // Sprint 6 — Notes post-appel + brouillons de messages
+  callNotes: callNotesTable,
+  draftMessages: draftMessagesTable,
 });

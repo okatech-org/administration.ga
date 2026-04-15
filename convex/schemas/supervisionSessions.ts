@@ -1,6 +1,12 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
 
+export const supervisionModeValidator = v.union(
+  v.literal("listen"),
+  v.literal("whisper"),
+  v.literal("barge"),
+);
+
 /**
  * Supervision sessions — Sprint 6.
  *
@@ -19,11 +25,7 @@ export const supervisionSessionsTable = defineTable({
   orgId: v.id("orgs"),
   supervisorId: v.id("users"),
 
-  mode: v.union(
-    v.literal("listen"),
-    v.literal("whisper"),
-    v.literal("barge"),
-  ),
+  mode: supervisionModeValidator,
 
   // LiveKit participant identity used by the supervisor (distinct from user id
   // because the same supervisor could join several sessions with separate tracks)

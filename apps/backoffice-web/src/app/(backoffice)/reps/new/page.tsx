@@ -301,7 +301,7 @@ export default function NewOrganizationPage() {
 					website: value.website || undefined,
 					timezone: value.timezone,
 					templateType: selectedTemplate.type,
-					modules: selectedTemplate.modules,
+					modules: selectedTemplate.modules as any,
 					positions: positions.map((p) => ({
 						code: p.code,
 						title: p.title,
