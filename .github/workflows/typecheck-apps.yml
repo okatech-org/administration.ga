@@ -1,0 +1,52 @@
+name: Typecheck Apps
+
+# Phase G.4 — bloque les régressions TypeScript dans apps/* au PR level.
+# Exécute `bun run typecheck` sur chaque app du monorepo.
+
+on:
+  pull_request:
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "convex/**"
+      - "tsconfig*.json"
+      - "package.json"
+      - "bun.lock"
+      - ".github/workflows/typecheck-apps.yml"
+  push:
+    branches:
+      - main
+
+jobs:
+  typecheck:
+    name: Typecheck ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+          - backoffice-web
+          - agent-web
+          - citizen-web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate Convex types
+        run: bunx convex codegen
+        env:
+          CONVEX_DEPLOYMENT: ${{ secrets.CONVEX_DEPLOYMENT || '' }}
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY || '' }}
+
+      - name: Typecheck
+        working-directory: apps/${{ matrix.app }}
+        run: bun run typecheck

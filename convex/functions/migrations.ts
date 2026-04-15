@@ -1,4 +1,6 @@
 import { internalMutation } from "../_generated/server";
+import { logCortexAction } from "../lib/neocortex";
+import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
 
 /**
  * Migrations & synchronisation legacy — Phase D1
@@ -14,14 +16,21 @@ import { internalMutation } from "../_generated/server";
  *   - orgCalendar.serviceHours[default] → orgs.openingHours
  *
  * Exécuté par cron horaire. Idempotent.
+ *
+ * Phase G.2 — Observabilité : try/catch + logCortexAction pour succès/erreur.
  */
 
 export const syncLegacyOrgFields = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const orgs = await ctx.db.query("orgs").collect();
+    const startTime = Date.now();
     let syncedCount = 0;
     let skippedCount = 0;
+    let totalCount = 0;
+
+    try {
+      const orgs = await ctx.db.query("orgs").collect();
+      totalCount = orgs.length;
 
     for (const org of orgs) {
       if (org.deletedAt) {
@@ -128,10 +137,46 @@ export const syncLegacyOrgFields = internalMutation({
       }
     }
 
-    return {
-      total: orgs.length,
-      synced: syncedCount,
-      skipped: skippedCount,
-    };
+      // Phase G.2 — Audit trail succès du cron
+      const duration = Date.now() - startTime;
+      await logCortexAction(ctx, {
+        action: "CRON_SYNC_LEGACY_ORG_FIELDS",
+        categorie: CATEGORIES_ACTION.SYSTEME,
+        entiteType: "migrations",
+        entiteId: "syncLegacyOrgFields",
+        userId: undefined,
+        apres: {
+          total: totalCount,
+          synced: syncedCount,
+          skipped: skippedCount,
+          durationMs: duration,
+        },
+        signalType: SIGNAL_TYPES.SYSTEM_CRON_SUCCESS,
+      });
+
+      return {
+        total: totalCount,
+        synced: syncedCount,
+        skipped: skippedCount,
+      };
+    } catch (err) {
+      // Phase G.2 — Audit trail erreur du cron
+      const duration = Date.now() - startTime;
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      await logCortexAction(ctx, {
+        action: "CRON_SYNC_LEGACY_ORG_FIELDS_ERROR",
+        categorie: CATEGORIES_ACTION.SYSTEME,
+        entiteType: "migrations",
+        entiteId: "syncLegacyOrgFields",
+        userId: undefined,
+        apres: {
+          error: errorMessage,
+          partial: { total: totalCount, synced: syncedCount, skipped: skippedCount },
+          durationMs: duration,
+        },
+        signalType: SIGNAL_TYPES.SYSTEM_CRON_ERROR,
+      });
+      throw err;
+    }
   },
 });
