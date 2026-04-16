@@ -14,6 +14,8 @@
 import { v } from "convex/values";
 import { createElement } from "react";
 import { internal } from "../_generated/api";
+import type { ActionCtx } from "../_generated/server";
+import { internalAction } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import { authAction } from "../lib/customFunctions";
 
@@ -48,67 +50,114 @@ export const generateFromTemplate = authAction({
 		),
 	},
 	handler: async (ctx, args): Promise<{ documentId: Id<"generatedDocuments">; storageId: Id<"_storage">; pdfSha256: string }> => {
-		// 1. Load generation context (template + request + user + profile + org + resolved placeholders).
-		const data: GenerationContext = await ctx.runQuery(
-			internal.functions.generatedDocumentsData.loadGenerationContext,
-			{ templateId: args.templateId, requestId: args.requestId },
-		);
-
-		// 2. Substitute placeholders in the Tiptap AST — dynamic imports.
-		const { substitutePlaceholders, TemplatePdfDocument } = await import(
-			"@workspace/document-rendering"
-		);
-		const resolvedContent = substitutePlaceholders(
-			data.template.content,
-			data.resolvedPlaceholders,
-		);
-
-		// 3. Render the resolved AST to PDF via React-PDF. `TemplatePdfDocument`
-		// returns a `<Document>` so `renderToBuffer` is happy at runtime; the
-		// React-PDF types want the ROOT to be a `<Document>` element, hence the
-		// cast through `unknown`.
-		const { renderToBuffer } = await import("@react-pdf/renderer");
-		const element = createElement(TemplatePdfDocument, {
-			doc: resolvedContent as Parameters<typeof TemplatePdfDocument>[0]["doc"],
-			options: {
-				paperSize: data.template.paperSize ?? "A4",
-				orientation: data.template.orientation ?? "portrait",
-			},
+		return runGeneration(ctx, {
+			requestId: args.requestId,
+			templateId: args.templateId,
+			trigger: args.trigger ?? "manual",
 		});
-		const pdfBuffer = await renderToBuffer(
-			element as unknown as Parameters<typeof renderToBuffer>[0],
-		);
-
-		// 4. SHA-256 hash of the final bytes (audit / integrity).
-		const { createHash } = await import("crypto");
-		const sha256 = createHash("sha256").update(pdfBuffer).digest("hex");
-
-		// 5. Store the PDF blob in Convex storage.
-		const blob = new Blob([new Uint8Array(pdfBuffer)], { type: "application/pdf" });
-		const storageId = await ctx.storage.store(blob);
-
-		// 6. Persist the `generatedDocuments` record.
-		const documentId = await ctx.runMutation(
-			internal.functions.generatedDocumentsData.persistGenerated,
-			{
-				templateId: args.templateId,
-				templateVersion: data.template.version ?? 1,
-				requestId: args.requestId,
-				orgId: data.org._id,
-				ownerProfileId: data.profileId,
-				storageId,
-				pdfSha256: sha256,
-				contentSnapshot: resolvedContent,
-				generatedBy: data.user._id,
-				trigger: args.trigger ?? "manual",
-				documentNumber: generateDocumentNumber(),
-				label: pickLocalized(data.template.name) ?? "Document officiel",
-			},
-		);
-
-		return { documentId, storageId, pdfSha256: sha256 };
 	},
 });
+
+/**
+ * Internal variant used by auto-triggers (scheduler.runAfter). Identical
+ * handler but no auth — the trigger evaluator has already decided the event
+ * is legitimate and carries the context.
+ */
+export const generateFromTemplateInternal = internalAction({
+	args: {
+		requestId: v.id("requests"),
+		templateId: v.id("documentTemplates"),
+		trigger: v.union(
+			v.literal("status_transition"),
+			v.literal("on_submission"),
+			v.literal("bulk"),
+		),
+		autoPublishOverride: v.optional(v.boolean()),
+	},
+	handler: async (ctx, args): Promise<{ documentId: Id<"generatedDocuments">; storageId: Id<"_storage">; pdfSha256: string }> => {
+		return runGeneration(ctx, {
+			requestId: args.requestId,
+			templateId: args.templateId,
+			trigger: args.trigger,
+			autoPublishOverride: args.autoPublishOverride,
+		});
+	},
+});
+
+/**
+ * Shared generation pipeline used by both the public auth action and the
+ * scheduler-driven internal action.
+ */
+async function runGeneration(
+	ctx: ActionCtx,
+	options: {
+		requestId: Id<"requests">;
+		templateId: Id<"documentTemplates">;
+		trigger: "manual" | "status_transition" | "on_submission" | "bulk";
+		autoPublishOverride?: boolean;
+	},
+): Promise<{ documentId: Id<"generatedDocuments">; storageId: Id<"_storage">; pdfSha256: string }> {
+	// 1. Load generation context (template + request + user + profile + org + resolved placeholders).
+	const data: GenerationContext = await ctx.runQuery(
+		internal.functions.generatedDocumentsData.loadGenerationContext,
+		{ templateId: options.templateId, requestId: options.requestId },
+	);
+
+	// 2. Substitute placeholders in the Tiptap AST — dynamic imports.
+	const { substitutePlaceholders, TemplatePdfDocument } = await import(
+		"@workspace/document-rendering"
+	);
+	const resolvedContent = substitutePlaceholders(
+		data.template.content,
+		data.resolvedPlaceholders,
+	);
+
+	// 3. Render the resolved AST to PDF via React-PDF. `TemplatePdfDocument`
+	// returns a `<Document>` so `renderToBuffer` is happy at runtime; the
+	// React-PDF types want the ROOT to be a `<Document>` element, hence the
+	// cast through `unknown`.
+	const { renderToBuffer } = await import("@react-pdf/renderer");
+	const element = createElement(TemplatePdfDocument, {
+		doc: resolvedContent as Parameters<typeof TemplatePdfDocument>[0]["doc"],
+		options: {
+			paperSize: data.template.paperSize ?? "A4",
+			orientation: data.template.orientation ?? "portrait",
+		},
+	});
+	const pdfBuffer = await renderToBuffer(
+		element as unknown as Parameters<typeof renderToBuffer>[0],
+	);
+
+	// 4. SHA-256 hash of the final bytes (audit / integrity).
+	const { createHash } = await import("crypto");
+	const sha256 = createHash("sha256").update(pdfBuffer).digest("hex");
+
+	// 5. Store the PDF blob in Convex storage.
+	const blob = new Blob([new Uint8Array(pdfBuffer)], { type: "application/pdf" });
+	const storageId = await ctx.storage.store(blob);
+
+	// 6. Persist the `generatedDocuments` record.
+	const documentId = await ctx.runMutation(
+		internal.functions.generatedDocumentsData.persistGenerated,
+		{
+			templateId: options.templateId,
+			templateVersion: data.template.version ?? 1,
+			requestId: options.requestId,
+			orgId: data.org._id,
+			ownerProfileId: data.profileId,
+			storageId,
+			pdfSha256: sha256,
+			contentSnapshot: resolvedContent,
+			generatedBy: data.user._id,
+			trigger: options.trigger,
+			documentNumber: generateDocumentNumber(),
+			label: pickLocalized(data.template.name) ?? "Document officiel",
+			autoPublishOverride: options.autoPublishOverride,
+		},
+	);
+
+	return { documentId, storageId, pdfSha256: sha256 };
+}
 
 // ============================================================================
 // Helpers

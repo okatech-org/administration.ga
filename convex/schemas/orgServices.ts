@@ -1,7 +1,33 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
-import { pricingValidator } from "../lib/validators";
+import { pricingValidator, requestStatusValidator } from "../lib/validators";
 import { accessLevelValidator } from "../lib/moduleCodes";
+
+/**
+ * Auto-generation rule: which templates should be produced automatically
+ * when a request reaches a given state (or on first submission) for this
+ * service. Multiple rules may fire together — the scheduler runs them in
+ * parallel via `scheduler.runAfter(0, ...)`.
+ */
+export const autoGenerationRuleValidator = v.object({
+  /** `on_submission` fires when a citizen submits a new request; `on_status_transition`
+   * fires when an agent patches a request from `fromStatus` to `toStatus`. */
+  trigger: v.union(
+    v.literal("on_submission"),
+    v.literal("on_status_transition"),
+  ),
+  /** Source status (`on_status_transition` only — ignored otherwise). Omit to
+   * match any source status. */
+  fromStatus: v.optional(requestStatusValidator),
+  /** Target status (`on_status_transition` only). Required for that trigger. */
+  toStatus: v.optional(requestStatusValidator),
+  /** Template to generate. Must exist and be active. */
+  templateId: v.id("documentTemplates"),
+  /** Attempt to sign automatically (Phase 3 signature flow). */
+  autoSign: v.boolean(),
+  /** Publish to the citizen immediately after generation (or signature). */
+  autoPublish: v.boolean(),
+});
 
 /**
  * OrgServices table - service configuration per org
@@ -44,6 +70,10 @@ export const orgServicesTable = defineTable({
     positionId: v.id("positions"),
     accessLevel: accessLevelValidator, // "reader" | "editor" | "admin"
   }))),
+
+  // Règles de génération automatique de documents officiels — déclenchées
+  // par la soumission citoyen ou une transition de statut agent.
+  autoGenerationRules: v.optional(v.array(autoGenerationRuleValidator)),
 
   updatedAt: v.optional(v.number()),
 })

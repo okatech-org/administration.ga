@@ -15,7 +15,16 @@
 
 import { api } from "@convex/_generated/api";
 import type { Doc, Id } from "@convex/_generated/dataModel";
-import { CheckCircle2, Clock, Download, FileText, Loader2, Sparkles } from "lucide-react";
+import {
+	CheckCircle2,
+	Clock,
+	Download,
+	Eye,
+	EyeOff,
+	FileText,
+	Loader2,
+	Sparkles,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { FlatCard } from "@/components/my-space/flat-card";
@@ -40,6 +49,7 @@ import {
 import {
 	useAuthenticatedConvexQuery,
 	useConvexActionQuery,
+	useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
 
 interface Props {
@@ -107,8 +117,30 @@ function DocumentRow({ doc }: { doc: Doc<"generatedDocuments"> }) {
 		api.functions.generatedDocumentsData.getDownloadUrl,
 		{ documentId: doc._id },
 	);
+	const { mutateAsync: publish, isPending: publishing } = useConvexMutationQuery(
+		api.functions.generatedDocumentsData.publishToCitizen,
+	);
+	const { mutateAsync: unpublish, isPending: unpublishing } = useConvexMutationQuery(
+		api.functions.generatedDocumentsData.unpublish,
+	);
+
 	const label = doc.label ?? "Document";
 	const dateStr = new Date(doc.generatedAt).toLocaleString("fr-FR");
+
+	async function togglePublish() {
+		try {
+			if (doc.publishedToCitizen) {
+				await unpublish({ documentId: doc._id });
+				toast.success("Document retiré de la vue citoyen");
+			} else {
+				await publish({ documentId: doc._id });
+				toast.success("Document publié au citoyen");
+			}
+		} catch (err) {
+			const message = err instanceof Error ? err.message : "Échec de l'opération";
+			toast.error(message);
+		}
+	}
 
 	return (
 		<li className="flex items-start gap-2 rounded-lg bg-muted/40 p-3 text-sm">
@@ -122,17 +154,36 @@ function DocumentRow({ doc }: { doc: Doc<"generatedDocuments"> }) {
 				</div>
 				<div className="mt-1 text-xs text-muted-foreground/80">{dateStr}</div>
 			</div>
-			{url ? (
-				<Button size="icon" variant="ghost" className="h-7 w-7" asChild>
-					<a href={url} target="_blank" rel="noreferrer" aria-label="Télécharger">
-						<Download className="h-3.5 w-3.5" />
-					</a>
+			<div className="flex items-center gap-0.5">
+				<Button
+					size="icon"
+					variant="ghost"
+					className="h-7 w-7"
+					onClick={togglePublish}
+					disabled={publishing || unpublishing}
+					aria-label={doc.publishedToCitizen ? "Retirer du citoyen" : "Publier au citoyen"}
+					title={doc.publishedToCitizen ? "Retirer du citoyen" : "Publier au citoyen"}
+				>
+					{publishing || unpublishing ? (
+						<Loader2 className="h-3.5 w-3.5 animate-spin" />
+					) : doc.publishedToCitizen ? (
+						<EyeOff className="h-3.5 w-3.5" />
+					) : (
+						<Eye className="h-3.5 w-3.5" />
+					)}
 				</Button>
-			) : (
-				<Button size="icon" variant="ghost" className="h-7 w-7" disabled>
-					<Loader2 className="h-3.5 w-3.5 animate-spin" />
-				</Button>
-			)}
+				{url ? (
+					<Button size="icon" variant="ghost" className="h-7 w-7" asChild>
+						<a href={url} target="_blank" rel="noreferrer" aria-label="Télécharger">
+							<Download className="h-3.5 w-3.5" />
+						</a>
+					</Button>
+				) : (
+					<Button size="icon" variant="ghost" className="h-7 w-7" disabled>
+						<Loader2 className="h-3.5 w-3.5 animate-spin" />
+					</Button>
+				)}
+			</div>
 		</li>
 	);
 }

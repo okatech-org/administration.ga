@@ -207,6 +207,7 @@ export enum NotificationType {
   ActionRequired = "action_required",
   DocumentValidated = "document_validated",
   DocumentRejected = "document_rejected",
+  DocumentPublished = "document_published",
   // Meetings & Calls
   MeetingInvitation = "meeting_invitation",
   CallIncoming = "call_incoming",

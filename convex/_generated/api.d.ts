@@ -141,6 +141,7 @@ import type * as lib_documentPermissions from "../lib/documentPermissions.js";
 import type * as lib_emailTemplates from "../lib/emailTemplates.js";
 import type * as lib_encryption from "../lib/encryption.js";
 import type * as lib_errors from "../lib/errors.js";
+import type * as lib_generationTriggers from "../lib/generationTriggers.js";
 import type * as lib_httpSecurity from "../lib/httpSecurity.js";
 import type * as lib_legacyProfilesMap from "../lib/legacyProfilesMap.js";
 import type * as lib_moduleCodes from "../lib/moduleCodes.js";
@@ -413,6 +414,7 @@ declare const fullApi: ApiFromModules<{
   "lib/emailTemplates": typeof lib_emailTemplates;
   "lib/encryption": typeof lib_encryption;
   "lib/errors": typeof lib_errors;
+  "lib/generationTriggers": typeof lib_generationTriggers;
   "lib/httpSecurity": typeof lib_httpSecurity;
   "lib/legacyProfilesMap": typeof lib_legacyProfilesMap;
   "lib/moduleCodes": typeof lib_moduleCodes;

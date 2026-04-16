@@ -35,6 +35,7 @@ import { OrgCallButton } from "@/components/meetings/org-call-button";
 import { ActionRequiredCard } from "@/components/my-space/action-required-card";
 import { PaymentForm } from "@/components/payment/PaymentForm";
 import { DocumentChecklist } from "@/components/shared/DocumentChecklist";
+import { OfficialDocumentsPanel } from "@/components/requests/OfficialDocumentsPanel";
 import { DynamicForm } from "@/components/services/DynamicForm";
 import { RegistrationForm } from "@/components/services/RegistrationForm";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -829,6 +830,9 @@ export default function UserRequestDetail() {
 							</FlatCard>
 						);
 					})()}
+
+					{/* Official documents released by the consulate (delivered PDFs) */}
+					<OfficialDocumentsPanel requestId={request._id} />
 
 					{/* Documents Checklist */}
 					{((request.service?.formSchema?.joinedDocuments?.length ?? 0) > 0 ||

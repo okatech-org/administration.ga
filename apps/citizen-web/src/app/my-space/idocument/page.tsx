@@ -57,6 +57,7 @@ import {
 } from "@convex/lib/constants"
 
 import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal"
+import { ConsulateIssuedDocumentsSection } from "@/components/idocument/ConsulateIssuedDocumentsSection"
 import { DynamicFolderIcon } from "@/components/icons/DynamicFolderIcon"
 import { PageHeader } from "@/components/my-space/page-header"
 import { Button } from "@/components/ui/button"
@@ -1472,6 +1473,9 @@ export default function IDocumentPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* ── Délivrés par le consulat (only shown at the vault root) ── */}
+      {!currentFolderId ? <ConsulateIssuedDocumentsSection /> : null}
 
       {/* ── Breadcrumb ── */}
       <BreadcrumbPath path={breadcrumbPath} onNavigate={handleNavigate} />

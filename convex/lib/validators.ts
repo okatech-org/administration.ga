@@ -1336,6 +1336,7 @@ export const notificationTypeValidator = v.union(
   v.literal(NotificationType.ActionRequired),
   v.literal(NotificationType.DocumentValidated),
   v.literal(NotificationType.DocumentRejected),
+  v.literal(NotificationType.DocumentPublished),
   // Meetings & Calls
   v.literal(NotificationType.MeetingInvitation),
   v.literal(NotificationType.CallIncoming),

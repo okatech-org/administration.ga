@@ -25,6 +25,40 @@ import {
   RegistrationStatus,
 } from "../lib/validators";
 import { requestsByOrg } from "../lib/aggregates";
+import { evaluateAutoTriggers, type AutoTrigger } from "../lib/generationTriggers";
+import type { MutationCtx } from "../_generated/server";
+
+/**
+ * Evaluate and schedule auto-generation of official documents for a request.
+ * Silently ignores failures at evaluation time — document generation must
+ * never block or fail the triggering mutation. Individual render failures
+ * surface through the `generatedDocuments` records and agent UI.
+ */
+async function scheduleAutoGeneration(
+  ctx: MutationCtx,
+  request: Doc<"requests">,
+  trigger: AutoTrigger,
+): Promise<void> {
+  try {
+    const matches = await evaluateAutoTriggers(ctx, request, trigger);
+    for (const rule of matches) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.functions.generatedDocuments.generateFromTemplateInternal,
+        {
+          requestId: request._id,
+          templateId: rule.templateId,
+          trigger: trigger.kind === "submission" ? "on_submission" : "status_transition",
+          autoPublishOverride: rule.autoPublish,
+        },
+      );
+    }
+  } catch (err) {
+    // Defensive — evaluateAutoTriggers is pure-ish but the DB call may fail.
+    // We log but never throw: generation is side-car, not critical path.
+    console.error("[scheduleAutoGeneration] failed", err);
+  }
+}
 
 /**
  * Create a new service request from a dynamic form submission
@@ -81,6 +115,12 @@ export const createFromForm = authMutation({
       apres: { orgServiceId: args.orgServiceId, status: RequestStatus.Submitted },
       signalType: SIGNAL_TYPES.DEMANDE_SOUMISE,
     });
+
+    // Auto-generation: fire any `on_submission` rules configured on the service.
+    const createdRequest = await ctx.db.get(requestId);
+    if (createdRequest) {
+      await scheduleAutoGeneration(ctx, createdRequest, { kind: "submission" });
+    }
 
     return requestId;
   },
@@ -1094,6 +1134,9 @@ export const submit = authMutation({
       signalType: SIGNAL_TYPES.DEMANDE_SOUMISE,
     });
 
+    // Auto-generation: fire any `on_submission` rules configured on the service.
+    await scheduleAutoGeneration(ctx, request, { kind: "submission" });
+
     return args.requestId;
   },
 });
@@ -1161,6 +1204,16 @@ export const updateStatus = authMutation({
       signalType: statusSignal,
       priorite: newStatus === RequestStatus.Rejected ? "HIGH" : "NORMAL",
     });
+
+    // Auto-generation: fire any `on_status_transition` rules matching
+    // old → new status on the service.
+    if (oldStatus !== newStatus) {
+      await scheduleAutoGeneration(ctx, request, {
+        kind: "status_transition",
+        from: oldStatus,
+        to: newStatus,
+      });
+    }
 
     // Sync consularRegistrations if this is a Registration service
     const orgService = await ctx.db.get(request.orgServiceId);
