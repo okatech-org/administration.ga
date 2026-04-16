@@ -27,6 +27,8 @@ export function PlaceholderPicker({
 
 	function insert(p: PlaceholderDescriptor): void {
 		if (!editor) return;
+		// `attrs.label` is intentionally omitted — the chip renders `{{key}}`
+		// directly. Newer templates carry no label at all.
 		editor
 			.chain()
 			.focus()
@@ -35,7 +37,6 @@ export function PlaceholderPicker({
 				attrs: {
 					key: p.key,
 					source: p.source,
-					label: p.label.fr,
 				},
 			})
 			.run();
@@ -70,10 +71,9 @@ export function PlaceholderPicker({
 									<button
 										type="button"
 										onClick={() => insert(p)}
-										className="flex w-full items-center justify-between gap-2 rounded border border-border bg-background px-2 py-1 text-left hover:border-primary/40 hover:bg-primary/5"
+										className="flex w-full items-center gap-2 rounded border border-border bg-background px-2 py-1 text-left hover:border-primary/40 hover:bg-primary/5"
 									>
-										<span className="font-medium">{p.label.fr}</span>
-										<code className="text-xs text-muted-foreground">{`{{${p.key}}}`}</code>
+										<code className="font-mono text-xs text-blue-700">{`{{${p.key}}}`}</code>
 									</button>
 								</li>
 							))}

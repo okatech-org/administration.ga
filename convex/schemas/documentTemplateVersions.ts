@@ -24,7 +24,8 @@ export const documentTemplateVersionsTable = defineTable({
 		v.array(
 			v.object({
 				key: v.string(),
-				label: localizedStringValidator,
+				// Optional — newer templates omit labels (key is self-explanatory).
+				label: v.optional(localizedStringValidator),
 				source: v.union(
 					v.literal("user"),
 					v.literal("profile"),

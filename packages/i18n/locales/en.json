@@ -4299,7 +4299,8 @@
 			},
 			"fields": {
 				"key": "Key",
-				"keyPlaceholder": "firstName",
+				"keyPlaceholder": "applicant_name",
+				"keyHint": "snake_case, no accents — shown as-is in the editor ({{applicant_name}})",
 				"label": "Label",
 				"labelPlaceholder": "First name",
 				"source": "Source"

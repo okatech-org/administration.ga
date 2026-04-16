@@ -4889,7 +4889,8 @@
 			},
 			"fields": {
 				"key": "Clé",
-				"keyPlaceholder": "firstName",
+				"keyPlaceholder": "nom_demandeur",
+				"keyHint": "snake_case sans accents — sera affichée telle quelle dans l'éditeur ({{nom_demandeur}})",
 				"label": "Libellé",
 				"labelPlaceholder": "Prénom",
 				"source": "Source"

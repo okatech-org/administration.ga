@@ -478,8 +478,10 @@ function makeUuid(): string {
 }
 
 /**
- * Popover form to insert an `imagePlaceholder`. Captures key + label +
- * dimensions; the parent toolbar appends the resulting attrs to the editor.
+ * Popover form to insert an `imagePlaceholder`. Captures key + dimensions;
+ * the parent toolbar appends the resulting attrs to the editor. Labels are
+ * intentionally not collected — the snake_case key is the human-readable
+ * identifier shown in the editor and the sidebar.
  */
 function ImagePlaceholderMenu({
 	onInsert,
@@ -488,7 +490,6 @@ function ImagePlaceholderMenu({
 		id: string;
 		key: string;
 		source: "user" | "profile" | "request" | "formData" | "org" | "system";
-		label?: string;
 		width?: number;
 		height?: number;
 		align?: "left" | "center" | "right";
@@ -497,13 +498,11 @@ function ImagePlaceholderMenu({
 	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const [key, setKey] = useState("");
-	const [label, setLabel] = useState("");
 	const [width, setWidth] = useState(60);
 	const [height, setHeight] = useState(40);
 
 	function reset() {
 		setKey("");
-		setLabel("");
 		setWidth(60);
 		setHeight(40);
 	}
@@ -515,7 +514,6 @@ function ImagePlaceholderMenu({
 			id: makeUuid(),
 			key: trimmed,
 			source: "formData",
-			label: label.trim() || undefined,
 			width,
 			height,
 			align: "left",
@@ -552,16 +550,6 @@ function ImagePlaceholderMenu({
 							placeholder="logo_organisme"
 							className="h-7 rounded border border-border bg-background px-2 text-xs"
 							autoFocus
-						/>
-					</label>
-					<label className="flex flex-col gap-1 text-xs">
-						{t("templates.placeholders.fields.label")}
-						<input
-							type="text"
-							value={label}
-							onChange={(e) => setLabel(e.target.value)}
-							placeholder={t("templates.editor.toolbar.optional")}
-							className="h-7 rounded border border-border bg-background px-2 text-xs"
 						/>
 					</label>
 					<div className="grid grid-cols-2 gap-2">

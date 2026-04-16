@@ -404,7 +404,6 @@ function ResultPreview({ result }: { result: TemplateAIResult }): ReactElement {
 								className="rounded border border-border bg-background px-1.5 py-0.5 text-xs"
 							>
 								<code className="font-mono text-[0.85em]">{`{{${p.key}}}`}</code>
-								{p.label.fr ? ` — ${p.label.fr}` : null}
 								<span className="ml-1 text-muted-foreground">[{p.source}]</span>
 							</li>
 						))}

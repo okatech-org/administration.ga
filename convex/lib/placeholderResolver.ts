@@ -51,7 +51,8 @@ export type FieldMapping = Record<string, FieldMappingOverride>;
  */
 export interface PlaceholderResolutionEntry {
 	key: string;
-	label: Record<string, string>;
+	/** Optional — newer templates omit labels entirely (key is self-explanatory). */
+	label?: Record<string, string>;
 	source: PlaceholderDescriptor["source"];
 	path?: string;
 	value: string;

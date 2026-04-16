@@ -110,7 +110,6 @@ export default function EditTemplatePage() {
 	const [allowedOrgTypes, setAllowedOrgTypes] = useState<string[] | undefined | null>(null);
 	const [layout, setLayout] = useState<LayoutDraft | null>(null);
 	const [newKey, setNewKey] = useState("");
-	const [newLabel, setNewLabel] = useState("");
 	const [newSource, setNewSource] = useState<PlaceholderSource>("formData");
 	const [saving, setSaving] = useState(false);
 	const [savingLayout, setSavingLayout] = useState(false);
@@ -216,12 +215,10 @@ export default function EditTemplatePage() {
 			...workingPlaceholders,
 			{
 				key,
-				label: { fr: newLabel.trim() || key },
 				source: newSource,
 			},
 		]);
 		setNewKey("");
-		setNewLabel("");
 	}
 
 	function removePlaceholder(key: string) {
@@ -361,8 +358,6 @@ export default function EditTemplatePage() {
 							onRemove={removePlaceholder}
 							newKey={newKey}
 							onNewKeyChange={setNewKey}
-							newLabel={newLabel}
-							onNewLabelChange={setNewLabel}
 							newSource={newSource}
 							onNewSourceChange={setNewSource}
 							onAdd={addPlaceholder}
@@ -398,8 +393,6 @@ function PlaceholderManager({
 	onRemove,
 	newKey,
 	onNewKeyChange,
-	newLabel,
-	onNewLabelChange,
 	newSource,
 	onNewSourceChange,
 	onAdd,
@@ -408,8 +401,6 @@ function PlaceholderManager({
 	onRemove: (key: string) => void;
 	newKey: string;
 	onNewKeyChange: (value: string) => void;
-	newLabel: string;
-	onNewLabelChange: (value: string) => void;
 	newSource: PlaceholderSource;
 	onNewSourceChange: (value: PlaceholderSource) => void;
 	onAdd: () => void;
@@ -442,14 +433,9 @@ function PlaceholderManager({
 					{placeholders.map((p) => (
 						<li
 							key={p.key}
-							className="flex min-w-0 items-start gap-2 rounded-md border bg-background px-2 py-1.5 text-sm"
+							className="flex min-w-0 items-center gap-2 rounded-md border bg-background px-2 py-1.5 text-sm"
 						>
-							<div className="flex min-w-0 flex-1 flex-col gap-0.5">
-								<code className="break-all font-mono text-xs leading-tight">{`{{${p.key}}}`}</code>
-								<span className="text-xs text-muted-foreground">
-									{p.label.fr ?? p.key}
-								</span>
-							</div>
+							<code className="min-w-0 flex-1 break-all font-mono text-xs leading-tight text-blue-700">{`{{${p.key}}}`}</code>
 							<span className="shrink-0 rounded bg-muted px-1 py-0.5 text-[0.65rem] uppercase tracking-wide">
 								{t(`templates.placeholders.sources.${p.source}`)}
 							</span>
@@ -497,7 +483,7 @@ function PlaceholderManager({
 						{t("templates.placeholders.addSheet.description")}
 					</p>
 
-					<div className="grid gap-4 md:grid-cols-2">
+					<div className="flex flex-col gap-4">
 						<div className="flex flex-col gap-1">
 							<Label htmlFor="ph-key">{t("templates.placeholders.fields.key")}</Label>
 							<Input
@@ -507,17 +493,11 @@ function PlaceholderManager({
 								placeholder={t("templates.placeholders.fields.keyPlaceholder")}
 								autoFocus
 							/>
+							<span className="text-[0.7rem] text-muted-foreground">
+								{t("templates.placeholders.fields.keyHint")}
+							</span>
 						</div>
 						<div className="flex flex-col gap-1">
-							<Label htmlFor="ph-label">{t("templates.placeholders.fields.label")}</Label>
-							<Input
-								id="ph-label"
-								value={newLabel}
-								onChange={(e) => onNewLabelChange(e.target.value)}
-								placeholder={t("templates.placeholders.fields.labelPlaceholder")}
-							/>
-						</div>
-						<div className="flex flex-col gap-1 md:col-span-2">
 							<Label htmlFor="ph-source">{t("templates.placeholders.fields.source")}</Label>
 							<Select
 								value={newSource}

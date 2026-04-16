@@ -128,11 +128,12 @@ export type ResolvedPlaceholders = Record<string, string>;
 export interface PlaceholderDescriptor {
 	key: string;
 	/**
-	 * Localized label. Stored as a `Record<string, string>` at the schema layer
-	 * (Convex `localizedStringValidator`) so any subset of locales is allowed;
-	 * the editor always writes `fr` first.
+	 * Optional localized label. Newer templates omit this entirely — the
+	 * `key` (snake_case) is treated as human-readable on its own. The field
+	 * is retained for back-compat with templates created before the
+	 * label-less simplification.
 	 */
-	label: Record<string, string>;
+	label?: Record<string, string>;
 	source: PlaceholderSource;
 	/** Optional JSONPath (e.g. `formData.identity.firstName`) resolved against the corresponding source bucket. */
 	path?: string;

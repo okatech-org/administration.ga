@@ -54,7 +54,9 @@ export const documentTemplatesTable = defineTable({
 		v.array(
 			v.object({
 				key: v.string(),
-				label: localizedStringValidator,
+				// Label kept optional for back-compat — newer templates rely on
+				// the key alone (snake_case is human-readable enough).
+				label: v.optional(localizedStringValidator),
 				source: v.union(
 					v.literal("user"),
 					v.literal("profile"),

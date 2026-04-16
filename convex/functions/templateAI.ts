@@ -87,7 +87,9 @@ const TiptapDocumentSchema = TiptapNodeSchema.refine(
 
 const PlaceholderDescriptorSchema = z.object({
 	key: z.string().min(1),
-	label: z.record(z.string()).default({ fr: "" }),
+	// Label is intentionally optional and ignored. Older AI prompts still
+	// produce it; we tolerate it but never surface it in the UI.
+	label: z.record(z.string()).optional(),
 	source: PlaceholderSourceSchema,
 	path: z.string().optional(),
 });
@@ -232,10 +234,16 @@ après. Pas de markdown, pas d'explication, pas de \`\`\`json.
 Structure exacte :
 {
   "document": { "type": "doc", "content": [...] },
-  "placeholders": [{ "key": "string", "label": { "fr": "string" }, "source": "user"|"profile"|"request"|"formData"|"org"|"system", "path": "string?" }],
+  "placeholders": [{ "key": "string", "source": "user"|"profile"|"request"|"formData"|"org"|"system", "path": "string?" }],
   "suggestedName": "string optional",
   "suggestedDescription": "string optional"
 }
+
+INTERDICTION : ne mets JAMAIS un champ "label" — ni dans le tableau
+"placeholders", ni dans les attrs des nodes "placeholder", "imagePlaceholder",
+"signaturePlaceholder". La clé snake_case sert d'identifiant lisible
+(ex : "nom_demandeur" est suffisamment compréhensible). Tout champ "label"
+sera ignoré ou rejeté par le validateur.
 
 ═══════════════════════════════════════════════════════════════
 NODE TYPES AUTORISÉS (toute autre valeur invalide le résultat)
@@ -251,12 +259,12 @@ NODE TYPES AUTORISÉS (toute autre valeur invalide le résultat)
   - "image" (avec attrs.src) — seulement si tu connais une URL réelle ;
             sinon utilise "imagePlaceholder"
   - "imagePlaceholder" (block atom — pour les zones d'image dynamiques)
-       attrs : id (UUID), key (snake_case), source, label, width (mm),
+       attrs : id (UUID), key (snake_case), source, width (mm),
                height (mm), align ("left"|"center"|"right")
   - "signaturePlaceholder" (block atom — pour les zones de signature)
        attrs : id (UUID), signerRole (optionnel, ex: "chef_poste")
   - "placeholder" (inline atom — pour les variables texte)
-       attrs : key (snake_case), source, label
+       attrs : key (snake_case), source
   - "text" (avec text: "...") — élément textuel
 
 Marks autorisés sur "text" : "bold", "italic", "underline", "strike",
@@ -271,16 +279,11 @@ RÈGLES POUR LES PLACEHOLDERS
     chaîne dans une langue étrangère, pas d'espace, pas de tiret.
 
   - Tout placeholder utilisé dans "document" DOIT être déclaré dans le
-    tableau "placeholders" en haut, avec son label et son source.
+    tableau "placeholders" en haut, avec sa source.
 
-  - DEUX FORMATS DE LABEL — NE PAS LES CONFONDRE :
-      * Dans le tableau "placeholders" en haut : label est un OBJET LOCALISÉ
-        → \`"label": { "fr": "Nom du demandeur" }\`
-      * Sur les attrs d'un node "placeholder" / "imagePlaceholder" dans
-        "document" : label est une STRING SIMPLE
-        → \`"attrs": { ..., "label": "Nom du demandeur" }\`
-      Confondre les deux casse le rendu. Idem pour signaturePlaceholder
-      → \`signerRole\` est une string simple (ex: "chef_poste"), JAMAIS un objet.
+  - PAS DE LABEL — la clé snake_case suffit comme identifiant lisible.
+    Pour signaturePlaceholder, \`signerRole\` est une string simple (ex:
+    "chef_poste"), JAMAIS un objet localisé.
 
   - Source par défaut : "formData" (ce que le citoyen remplit). Utilise
     "system" pour les dates/références générées (today, documentNumber).
@@ -310,12 +313,10 @@ EXEMPLE MINIMAL DE STRUCTURE ATTENDUE
         "content": [
           { "type": "text", "text": "Madame/Monsieur " },
           { "type": "placeholder", "attrs": { "key": "nom_demandeur",
-                                              "source": "formData",
-                                              "label": "Nom" } },
+                                              "source": "formData" } },
           { "type": "text", "text": ", né(e) le " },
           { "type": "placeholder", "attrs": { "key": "date_naissance",
-                                              "source": "formData",
-                                              "label": "Date de naissance" } },
+                                              "source": "formData" } },
           { "type": "text", "text": ", est inscrit(e) au registre consulaire." }
         ] },
       { "type": "signaturePlaceholder",
@@ -323,10 +324,8 @@ EXEMPLE MINIMAL DE STRUCTURE ATTENDUE
     ]
   },
   "placeholders": [
-    { "key": "nom_demandeur", "source": "formData",
-      "label": { "fr": "Nom du demandeur" } },
-    { "key": "date_naissance", "source": "formData",
-      "label": { "fr": "Date de naissance" } }
+    { "key": "nom_demandeur", "source": "formData" },
+    { "key": "date_naissance", "source": "formData" }
   ]
 }
 

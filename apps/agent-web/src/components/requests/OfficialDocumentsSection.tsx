@@ -373,7 +373,8 @@ function PreviewTable({
 }: {
 	preview: Array<{
 		key: string;
-		label: { fr?: string; en?: string };
+		// Optional — newer placeholders have no label, the key alone identifies them.
+		label?: Record<string, string>;
 		source: string;
 		path?: string;
 		value: string;

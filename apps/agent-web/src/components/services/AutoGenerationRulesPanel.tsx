@@ -532,17 +532,13 @@ function RuleEditor({
 							const mapped = rule.fieldMapping?.[ph.key];
 							const source = mapped?.source ?? ph.source;
 							const path = mapped?.path ?? ph.path ?? "";
-							const label = ph.label?.fr ?? ph.label?.en ?? ph.key;
 							return (
 								<li
 									key={ph.key}
 									className="flex flex-col gap-2 rounded-md border bg-background p-2 md:flex-row md:items-center"
 								>
-									<div className="flex-1 min-w-0">
-										<div className="font-mono text-xs">{`{{${ph.key}}}`}</div>
-										<div className="text-[0.7rem] text-muted-foreground">
-											{label}
-										</div>
+									<div className="min-w-0 flex-1">
+										<code className="break-all font-mono text-xs text-blue-700">{`{{${ph.key}}}`}</code>
 									</div>
 									<div className="flex flex-1 flex-col gap-1 md:flex-row md:items-center">
 										<Select
