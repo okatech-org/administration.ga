@@ -440,6 +440,25 @@ export const updateAutoGenerationRules = authMutation({
         templateId: v.id("documentTemplates"),
         autoSign: v.boolean(),
         autoPublish: v.boolean(),
+        // Per-placeholder mapping override — see fieldMappingValidator in
+        // convex/schemas/orgServices.ts. Optional: when omitted, the
+        // template descriptor's (source, path) is used as before.
+        fieldMapping: v.optional(
+          v.record(
+            v.string(),
+            v.object({
+              source: v.union(
+                v.literal("user"),
+                v.literal("profile"),
+                v.literal("request"),
+                v.literal("formData"),
+                v.literal("org"),
+                v.literal("system"),
+              ),
+              path: v.optional(v.string()),
+            }),
+          ),
+        ),
       }),
     ),
   },

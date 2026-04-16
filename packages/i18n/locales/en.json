@@ -4448,6 +4448,14 @@
 				"missingTemplate": "Rule {{index}}: missing template",
 				"missingToStatus": "Rule {{index}}: missing target status"
 			},
+			"mapping": {
+				"title": "Variable mapping",
+				"description": "Choose for each template variable which source to use at generation.",
+				"autoSuggest": "Suggest from form",
+				"pathPlaceholder": "Source field (e.g. firstName)",
+				"searchField": "Search a field…",
+				"noField": "No field available."
+			},
 			"status": {
 				"draft": "Draft",
 				"submitted": "Submitted",
@@ -4463,6 +4471,17 @@
 			}
 		},
 		"generate": {
+			"preview": {
+				"title": "Resolution preview",
+				"loading": "Computing preview…",
+				"resolved": "resolved",
+				"mapped": "mapped",
+				"empty": "empty",
+				"error": "error",
+				"emptyWarning": "{{count}} variable(s) without value — generation will complete but the PDF will be blank at those spots.",
+				"errorWarning": "A variable failed to resolve — fix the template mapping or auto-gen rule before generating.",
+				"noPlaceholders": "This template has no variables — generation will produce the content as-is."
+			},
 			"section": {
 				"title": "Official documents",
 				"loading": "Loading…",

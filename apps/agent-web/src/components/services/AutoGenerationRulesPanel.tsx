@@ -37,6 +37,19 @@ import {
 
 type Trigger = "on_submission" | "on_status_transition";
 
+type FieldMappingSource =
+	| "user"
+	| "profile"
+	| "request"
+	| "formData"
+	| "org"
+	| "system";
+
+type FieldMapping = Record<
+	string,
+	{ source: FieldMappingSource; path?: string }
+>;
+
 interface RuleDraft {
 	trigger: Trigger;
 	fromStatus?: string;
@@ -44,6 +57,20 @@ interface RuleDraft {
 	templateId: Id<"documentTemplates"> | "";
 	autoSign: boolean;
 	autoPublish: boolean;
+	fieldMapping?: FieldMapping;
+}
+
+interface PlaceholderSummary {
+	key: string;
+	label?: { fr?: string; en?: string };
+	source: FieldMappingSource;
+	path?: string;
+}
+
+interface FormFieldSummary {
+	id: string;
+	sectionId: string;
+	label: string;
 }
 
 // Map of constant value → translation key suffix under templates.autoGen.status.*
@@ -92,6 +119,26 @@ export function AutoGenerationRulesPanel({
 		api.functions.documentTemplates.listOrgTemplates,
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
+
+	// Flatten the service's formSchema into a list of `{id, sectionId, label}`
+	// — the rule editor uses this to suggest mapping paths for placeholders
+	// of source `formData`.
+	const formFields: FormFieldSummary[] = (() => {
+		const schema = (orgService as { formSchema?: unknown } | null)?.formSchema as
+			| { sections?: Array<{ id: string; fields?: Array<{ id: string; label?: { fr?: string; en?: string } }> }> }
+			| undefined;
+		const out: FormFieldSummary[] = [];
+		for (const section of schema?.sections ?? []) {
+			for (const field of section.fields ?? []) {
+				out.push({
+					id: field.id,
+					sectionId: section.id,
+					label: field.label?.fr ?? field.label?.en ?? field.id,
+				});
+			}
+		}
+		return out;
+	})();
 
 	const { mutateAsync: saveRules } = useConvexMutationQuery(
 		api.functions.services.updateAutoGenerationRules,
@@ -169,6 +216,10 @@ export function AutoGenerationRulesPanel({
 					templateId: r.templateId as Id<"documentTemplates">,
 					autoSign: r.autoSign,
 					autoPublish: r.autoPublish,
+					fieldMapping:
+						r.fieldMapping && Object.keys(r.fieldMapping).length > 0
+							? r.fieldMapping
+							: undefined,
 				})),
 			});
 			toast.success(t("templates.autoGen.savedToast"));
@@ -223,9 +274,11 @@ export function AutoGenerationRulesPanel({
 									(templates ?? []) as Array<{
 										_id: Id<"documentTemplates">;
 										name: Record<string, string>;
+										placeholders?: PlaceholderSummary[];
 									}>
 								}
 								templatesLoading={loadingTemplates}
+								formFields={formFields}
 								onChange={(changes) => patch(index, changes)}
 								onRemove={() => removeRule(index)}
 								index={index + 1}
@@ -247,13 +300,19 @@ function RuleEditor({
 	index,
 	templates,
 	templatesLoading,
+	formFields,
 	onChange,
 	onRemove,
 }: {
 	rule: RuleDraft;
 	index: number;
-	templates: Array<{ _id: Id<"documentTemplates">; name: Record<string, string> }>;
+	templates: Array<{
+		_id: Id<"documentTemplates">;
+		name: Record<string, string>;
+		placeholders?: PlaceholderSummary[];
+	}>;
 	templatesLoading: boolean;
+	formFields: FormFieldSummary[];
 	onChange: (changes: Partial<RuleDraft>) => void;
 	onRemove: () => void;
 }) {
@@ -263,9 +322,47 @@ function RuleEditor({
 		label: tpl.name.fr ?? tpl.name.en ?? t("templates.common.untitled"),
 	}));
 
+	const selectedTemplate = templates.find((tpl) => tpl._id === rule.templateId);
+	const placeholders: PlaceholderSummary[] = selectedTemplate?.placeholders ?? [];
+
 	function statusLabel(value: string): string {
 		const key = STATUS_KEY_MAP[value];
 		return key ? t(`templates.autoGen.status.${key}`) : value;
+	}
+
+	function patchMapping(key: string, next: { source: FieldMappingSource; path?: string } | null) {
+		const current = rule.fieldMapping ?? {};
+		const updated: FieldMapping = { ...current };
+		if (next === null) {
+			delete updated[key];
+		} else {
+			updated[key] = next;
+		}
+		onChange({ fieldMapping: updated });
+	}
+
+	function autoSuggestMappings() {
+		const next: FieldMapping = { ...(rule.fieldMapping ?? {}) };
+		for (const ph of placeholders) {
+			if (next[ph.key]) continue;
+			// 1. exact match on fieldId
+			const exact = formFields.find((f) => f.id === ph.key);
+			if (exact) {
+				next[ph.key] = { source: "formData", path: exact.id };
+				continue;
+			}
+			// 2. match on `sectionId.fieldId`
+			const dotted = formFields.find(
+				(f) => `${f.sectionId}.${f.id}` === ph.key,
+			);
+			if (dotted) {
+				next[ph.key] = {
+					source: "formData",
+					path: `${dotted.sectionId}.${dotted.id}`,
+				};
+			}
+		}
+		onChange({ fieldMapping: next });
 	}
 
 	return (
@@ -407,6 +504,124 @@ function RuleEditor({
 					/>
 				</label>
 			</div>
+
+			{/* Mapping des variables — visible quand un template est selectionne et
+			    qu'il declare au moins un placeholder. */}
+			{placeholders.length > 0 ? (
+				<div className="mt-4 flex flex-col gap-2 rounded-md border bg-muted/20 p-3">
+					<div className="flex items-center justify-between gap-2">
+						<div>
+							<div className="text-sm font-medium">
+								{t("templates.autoGen.mapping.title")}
+							</div>
+							<div className="text-xs text-muted-foreground">
+								{t("templates.autoGen.mapping.description")}
+							</div>
+						</div>
+						<Button
+							size="sm"
+							variant="outline"
+							onClick={autoSuggestMappings}
+							disabled={formFields.length === 0}
+						>
+							{t("templates.autoGen.mapping.autoSuggest")}
+						</Button>
+					</div>
+					<ul className="flex flex-col gap-2">
+						{placeholders.map((ph) => {
+							const mapped = rule.fieldMapping?.[ph.key];
+							const source = mapped?.source ?? ph.source;
+							const path = mapped?.path ?? ph.path ?? "";
+							const label = ph.label?.fr ?? ph.label?.en ?? ph.key;
+							return (
+								<li
+									key={ph.key}
+									className="flex flex-col gap-2 rounded-md border bg-background p-2 md:flex-row md:items-center"
+								>
+									<div className="flex-1 min-w-0">
+										<div className="font-mono text-xs">{`{{${ph.key}}}`}</div>
+										<div className="text-[0.7rem] text-muted-foreground">
+											{label}
+										</div>
+									</div>
+									<div className="flex flex-1 flex-col gap-1 md:flex-row md:items-center">
+										<Select
+											value={source}
+											onValueChange={(v) =>
+												patchMapping(ph.key, {
+													source: v as FieldMappingSource,
+													path: path || undefined,
+												})
+											}
+										>
+											<SelectTrigger className="h-8 text-xs">
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="user">
+													{t("templates.placeholders.sources.user")}
+												</SelectItem>
+												<SelectItem value="profile">
+													{t("templates.placeholders.sources.profile")}
+												</SelectItem>
+												<SelectItem value="request">
+													{t("templates.placeholders.sources.request")}
+												</SelectItem>
+												<SelectItem value="formData">
+													{t("templates.placeholders.sources.formData")}
+												</SelectItem>
+												<SelectItem value="org">
+													{t("templates.placeholders.sources.org")}
+												</SelectItem>
+												<SelectItem value="system">
+													{t("templates.placeholders.sources.system")}
+												</SelectItem>
+											</SelectContent>
+										</Select>
+										{source === "formData" && formFields.length > 0 ? (
+											<Combobox
+												options={formFields.map((f) => ({
+													value: f.id,
+													label: `${f.label} (${f.id})`,
+												}))}
+												value={path || null}
+												onValueChange={(v) =>
+													patchMapping(ph.key, {
+														source: "formData",
+														path: v || undefined,
+													})
+												}
+												placeholder={t(
+													"templates.autoGen.mapping.pathPlaceholder",
+												)}
+												searchPlaceholder={t(
+													"templates.autoGen.mapping.searchField",
+												)}
+												emptyText={t("templates.autoGen.mapping.noField")}
+											/>
+										) : (
+											<input
+												type="text"
+												value={path}
+												onChange={(e) =>
+													patchMapping(ph.key, {
+														source,
+														path: e.target.value || undefined,
+													})
+												}
+												placeholder={t(
+													"templates.autoGen.mapping.pathPlaceholder",
+												)}
+												className="h-8 flex-1 rounded-md border border-border bg-background px-2 text-xs"
+											/>
+										)}
+									</div>
+								</li>
+							);
+						})}
+					</ul>
+				</div>
+			) : null}
 		</div>
 	);
 }

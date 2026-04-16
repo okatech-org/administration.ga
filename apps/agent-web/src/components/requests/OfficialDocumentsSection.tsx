@@ -282,6 +282,13 @@ function GenerateDialog({
 		{ orgId },
 	);
 
+	// Preview de la résolution des placeholders pour le template sélectionné.
+	// Read-only — l'agent vérifie visuellement avant de cliquer Generate.
+	const { data: preview, isLoading: previewLoading } = useAuthenticatedConvexQuery(
+		api.functions.generatedDocumentsData.previewResolvedPlaceholders,
+		templateId ? { requestId, templateId } : "skip",
+	);
+
 	const { mutateAsync: generate } = useConvexActionQuery(
 		api.functions.generatedDocuments.generateFromTemplate,
 	);
@@ -351,7 +358,116 @@ function GenerateDialog({
 					searchPlaceholder={t("templates.common.searchTemplate")}
 					emptyText={t("templates.common.noTemplatesAvailableForOrg")}
 				/>
+
+				{templateId ? (
+					<PreviewTable preview={preview ?? null} loading={previewLoading} />
+				) : null}
 			</div>
 		</BottomSheet>
+	);
+}
+
+function PreviewTable({
+	preview,
+	loading,
+}: {
+	preview: Array<{
+		key: string;
+		label: { fr?: string; en?: string };
+		source: string;
+		path?: string;
+		value: string;
+		status: "resolved" | "empty" | "error";
+		error?: string;
+		fromMapping: boolean;
+	}> | null;
+	loading: boolean;
+}) {
+	const { t } = useTranslation();
+	if (loading) {
+		return (
+			<div className="flex items-center gap-2 text-xs text-muted-foreground">
+				<Loader2 className="h-3.5 w-3.5 animate-spin" />
+				{t("templates.generate.preview.loading")}
+			</div>
+		);
+	}
+	if (!preview) return null;
+	if (preview.length === 0) {
+		return (
+			<div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+				{t("templates.generate.preview.noPlaceholders")}
+			</div>
+		);
+	}
+	const emptyCount = preview.filter((p) => p.status === "empty").length;
+	const errorCount = preview.filter((p) => p.status === "error").length;
+	return (
+		<div className="flex flex-col gap-2">
+			<div className="flex items-center justify-between text-xs">
+				<span className="font-medium">{t("templates.generate.preview.title")}</span>
+				<span className="text-muted-foreground">
+					{preview.length - emptyCount - errorCount} / {preview.length}{" "}
+					{t("templates.generate.preview.resolved")}
+				</span>
+			</div>
+			<ul className="flex flex-col gap-1 rounded-md border bg-muted/20 p-2">
+				{preview.map((p) => (
+					<li
+						key={p.key}
+						className="flex items-start gap-2 text-xs"
+						data-status={p.status}
+					>
+						<StatusBadge status={p.status} />
+						<div className="flex-1 min-w-0">
+							<div className="flex items-baseline gap-1.5">
+								<code className="font-mono">{p.key}</code>
+								<span className="text-muted-foreground">
+									[{p.source}
+									{p.path && p.path !== p.key ? `.${p.path}` : ""}]
+								</span>
+								{p.fromMapping ? (
+									<span className="rounded bg-primary/10 px-1 text-[0.65rem] text-primary">
+										{t("templates.generate.preview.mapped")}
+									</span>
+								) : null}
+							</div>
+							<div className="mt-0.5 truncate text-muted-foreground">
+								{p.status === "error"
+									? p.error ?? t("templates.generate.preview.error")
+									: p.value || `(${t("templates.generate.preview.empty")})`}
+							</div>
+						</div>
+					</li>
+				))}
+			</ul>
+			{errorCount > 0 ? (
+				<div className="text-[0.7rem] text-destructive">
+					{t("templates.generate.preview.errorWarning")}
+				</div>
+			) : emptyCount > 0 ? (
+				<div className="text-[0.7rem] text-amber-700">
+					{t("templates.generate.preview.emptyWarning", { count: emptyCount })}
+				</div>
+			) : null}
+		</div>
+	);
+}
+
+function StatusBadge({
+	status,
+}: {
+	status: "resolved" | "empty" | "error";
+}) {
+	if (status === "resolved") {
+		return (
+			<CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+		);
+	}
+	if (status === "empty") {
+		return <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />;
+	}
+	return (
+		<div className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full border-2 border-destructive bg-destructive/10" />
 	);
 }

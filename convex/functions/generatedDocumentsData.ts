@@ -33,6 +33,24 @@ export const loadGenerationContext = internalQuery({
 	args: {
 		templateId: v.id("documentTemplates"),
 		requestId: v.id("requests"),
+		// Per-placeholder mapping override applied during resolution. When a
+		// key matches an entry, (source, path) override the descriptor.
+		fieldMappingOverride: v.optional(
+			v.record(
+				v.string(),
+				v.object({
+					source: v.union(
+						v.literal("user"),
+						v.literal("profile"),
+						v.literal("request"),
+						v.literal("formData"),
+						v.literal("org"),
+						v.literal("system"),
+					),
+					path: v.optional(v.string()),
+				}),
+			),
+		),
 	},
 	handler: async (ctx, args) => {
 		const template = await ctx.db.get(args.templateId);
@@ -76,17 +94,21 @@ export const loadGenerationContext = internalQuery({
 			documentNumber: "", // assigned at persist time
 			orgName: org.name,
 		});
-		const resolved = resolvePlaceholders(placeholders, {
-			user: user as unknown as Record<string, unknown>,
-			profile,
-			request: {
-				...(request as unknown as Record<string, unknown>),
-				serviceName,
+		const resolved = resolvePlaceholders(
+			placeholders,
+			{
+				user: user as unknown as Record<string, unknown>,
+				profile,
+				request: {
+					...(request as unknown as Record<string, unknown>),
+					serviceName,
+				},
+				org: org as unknown as Record<string, unknown>,
+				formData: request.formData as Record<string, unknown> | undefined,
+				system,
 			},
-			org: org as unknown as Record<string, unknown>,
-			formData: request.formData as Record<string, unknown> | undefined,
-			system,
-		});
+			{ mappingOverride: args.fieldMappingOverride },
+		);
 
 		return {
 			template,
@@ -98,6 +120,99 @@ export const loadGenerationContext = internalQuery({
 			resolvedPlaceholders: resolved,
 			serviceName,
 		};
+	},
+});
+
+/**
+ * Read-only preview of placeholder resolution against a request. Returns a
+ * per-key status (`resolved` / `empty` / `error`) so the agent can verify
+ * the values BEFORE clicking Generate. Powers the new "Aperçu" phase in
+ * `OfficialDocumentsSection > GenerateDialog`.
+ *
+ * Never throws on missing values — the worst case is `status: "empty"`.
+ * Permission: `documents.generate` on the request's org (gated like the
+ * generation action itself; super-admin bypasses).
+ */
+export const previewResolvedPlaceholders = authQuery({
+	args: {
+		requestId: v.id("requests"),
+		templateId: v.id("documentTemplates"),
+		fieldMappingOverride: v.optional(
+			v.record(
+				v.string(),
+				v.object({
+					source: v.union(
+						v.literal("user"),
+						v.literal("profile"),
+						v.literal("request"),
+						v.literal("formData"),
+						v.literal("org"),
+						v.literal("system"),
+					),
+					path: v.optional(v.string()),
+				}),
+			),
+		),
+	},
+	handler: async (ctx, args) => {
+		const template = await ctx.db.get(args.templateId);
+		if (!template) throw new Error("Template introuvable");
+		const request = await ctx.db.get(args.requestId);
+		if (!request) throw new Error("Demande introuvable");
+
+		const membership = await ctx.db
+			.query("memberships")
+			.withIndex("by_user_org", (q) =>
+				q.eq("userId", ctx.user._id).eq("orgId", request.orgId),
+			)
+			.first();
+		// Reuse `documents.generate` as the gate — the same permission that
+		// controls running the generation itself.
+		const { canDoTask } = await import("../lib/permissions");
+		const allowed = await canDoTask(ctx, ctx.user, membership, "documents.generate");
+		if (!allowed) {
+			throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
+		}
+
+		const user = await ctx.db.get(request.userId);
+		const org = await ctx.db.get(request.orgId);
+		if (!user || !org) throw new Error("Contexte incomplet");
+
+		let profile: Record<string, unknown> | undefined;
+		if (request.profileId) {
+			const fetched = await ctx.db.get(request.profileId);
+			if (fetched) profile = fetched as unknown as Record<string, unknown>;
+		}
+
+		const orgService = await ctx.db.get(request.orgServiceId);
+		const service = orgService ? await ctx.db.get(orgService.serviceId) : null;
+		const serviceName = service ? pickLocalized(service.name as unknown) : undefined;
+		const system = buildSystemBucket({
+			requestReference: request.reference,
+			documentNumber: "",
+			orgName: org.name,
+		});
+
+		const { describeResolution } = await import("../lib/placeholderResolver");
+		const placeholders = (template.placeholders ?? []) as Parameters<
+			typeof describeResolution
+		>[0];
+
+		return describeResolution(
+			placeholders,
+			{
+				user: user as unknown as Record<string, unknown>,
+				profile,
+				request: {
+					...(request as unknown as Record<string, unknown>),
+					serviceName,
+				},
+				org: org as unknown as Record<string, unknown>,
+				formData: request.formData as Record<string, unknown> | undefined,
+				system,
+			},
+			{ mappingOverride: args.fieldMappingOverride },
+		);
 	},
 });
 

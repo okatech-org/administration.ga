@@ -28,21 +28,60 @@ export interface ResolverContext {
 }
 
 /**
+ * Per-placeholder override of `(source, path)`. When a key matches a
+ * `mappingOverride` entry, the resolver pulls from `(override.source,
+ * override.path ?? key)` instead of the descriptor's defaults.
+ *
+ * Used by:
+ *  - `autoGenerationRule.fieldMapping` (PR4) to wire a template's
+ *     placeholders to the actual fields of a service formSchema.
+ *  - The manual generation flow (`generateFromTemplate`) when an agent
+ *     wants to override the convention for a one-shot generation.
+ */
+export interface FieldMappingOverride {
+	source: PlaceholderDescriptor["source"];
+	path?: string;
+}
+export type FieldMapping = Record<string, FieldMappingOverride>;
+
+/**
+ * Detailed resolution outcome for a single placeholder. Returned by
+ * `previewResolvedPlaceholders` to power the read-only preview table in
+ * the manual generation flow — never throws, always reports the status.
+ */
+export interface PlaceholderResolutionEntry {
+	key: string;
+	label: Record<string, string>;
+	source: PlaceholderDescriptor["source"];
+	path?: string;
+	value: string;
+	status: "resolved" | "empty" | "error";
+	error?: string;
+	fromMapping: boolean;
+}
+
+/**
  * Resolve every placeholder declared on the template against the provided
  * context. Throws `PlaceholderResolutionError` if any declared placeholder
  * cannot be resolved (missing value AND no `allowEmpty` fallback).
+ *
+ * `mappingOverride` lets the caller swap `(source, path)` per-key — the
+ * descriptor's defaults are kept as a fallback when the key is absent
+ * from the override map.
  */
 export function resolvePlaceholders(
 	placeholders: PlaceholderDescriptor[],
 	ctx: ResolverContext,
-	opts: { allowEmpty?: boolean } = {},
+	opts: { allowEmpty?: boolean; mappingOverride?: FieldMapping } = {},
 ): ResolvedPlaceholders {
 	const resolved: ResolvedPlaceholders = {};
 	const missing: string[] = [];
 
 	for (const p of placeholders) {
-		const bucket = pickBucket(p.source, ctx);
-		const path = p.path ?? p.key;
+		const override = opts.mappingOverride?.[p.key];
+		const source = override?.source ?? p.source;
+		const path = override?.path ?? p.path ?? p.key;
+		const bucket = pickBucket(source, ctx);
 		const value = readPath(bucket, path);
 		const str = formatValue(value);
 		if (str !== undefined) {
@@ -60,6 +99,61 @@ export function resolvePlaceholders(
 		throw new PlaceholderResolutionError(missing);
 	}
 	return resolved;
+}
+
+/**
+ * Non-throwing variant returning a per-key status (resolved / empty / error).
+ * Used by the read-only preview UI before generation.
+ */
+export function describeResolution(
+	placeholders: PlaceholderDescriptor[],
+	ctx: ResolverContext,
+	opts: { mappingOverride?: FieldMapping } = {},
+): PlaceholderResolutionEntry[] {
+	const out: PlaceholderResolutionEntry[] = [];
+	for (const p of placeholders) {
+		const override = opts.mappingOverride?.[p.key];
+		const source = override?.source ?? p.source;
+		const path = override?.path ?? p.path ?? p.key;
+		try {
+			const bucket = pickBucket(source, ctx);
+			const value = readPath(bucket, path);
+			const str = formatValue(value);
+			if (str !== undefined) {
+				out.push({
+					key: p.key,
+					label: p.label,
+					source,
+					path,
+					value: str,
+					status: "resolved",
+					fromMapping: Boolean(override),
+				});
+			} else {
+				out.push({
+					key: p.key,
+					label: p.label,
+					source,
+					path,
+					value: "",
+					status: "empty",
+					fromMapping: Boolean(override),
+				});
+			}
+		} catch (err) {
+			out.push({
+				key: p.key,
+				label: p.label,
+				source,
+				path,
+				value: "",
+				status: "error",
+				error: err instanceof Error ? err.message : String(err),
+				fromMapping: Boolean(override),
+			});
+		}
+	}
+	return out;
 }
 
 /** Build the standard `system` bucket with commonly needed values. */

@@ -50,6 +50,10 @@ async function scheduleAutoGeneration(
           templateId: rule.templateId,
           trigger: trigger.kind === "submission" ? "on_submission" : "status_transition",
           autoPublishOverride: rule.autoPublish,
+          // Forward the rule's per-placeholder mapping (if configured) so
+          // the resolver pulls from the configured fields instead of the
+          // template's defaults.
+          fieldMappingOverride: rule.fieldMapping,
         },
       );
     }

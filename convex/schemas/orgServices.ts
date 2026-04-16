@@ -4,6 +4,35 @@ import { pricingValidator, requestStatusValidator } from "../lib/validators";
 import { accessLevelValidator } from "../lib/moduleCodes";
 
 /**
+ * Per-placeholder mapping override applied at generation time. Keyed by the
+ * template's `placeholder.key`. Each entry tells the resolver to pull the
+ * value from `(source, path)` instead of relying on the descriptor's defaults.
+ *
+ * - `source` is one of the standard buckets (`user`, `profile`, `request`,
+ *    `formData`, `org`, `system`).
+ * - `path` is a JSONPath-like dotted access against that bucket. Defaults
+ *    to the placeholder key when omitted.
+ *
+ * When a placeholder key is absent from the mapping, the resolver falls
+ * back to the descriptor's `(source, path)` — back-compat for existing rules.
+ */
+const placeholderSourceValidator = v.union(
+  v.literal("user"),
+  v.literal("profile"),
+  v.literal("request"),
+  v.literal("formData"),
+  v.literal("org"),
+  v.literal("system"),
+);
+export const fieldMappingValidator = v.record(
+  v.string(),
+  v.object({
+    source: placeholderSourceValidator,
+    path: v.optional(v.string()),
+  }),
+);
+
+/**
  * Auto-generation rule: which templates should be produced automatically
  * when a request reaches a given state (or on first submission) for this
  * service. Multiple rules may fire together — the scheduler runs them in
@@ -27,6 +56,8 @@ export const autoGenerationRuleValidator = v.object({
   autoSign: v.boolean(),
   /** Publish to the citizen immediately after generation (or signature). */
   autoPublish: v.boolean(),
+  /** Optional per-placeholder mapping — overrides the descriptor defaults. */
+  fieldMapping: v.optional(fieldMappingValidator),
 });
 
 /**

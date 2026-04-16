@@ -48,12 +48,31 @@ export const generateFromTemplate = authAction({
 				v.literal("bulk"),
 			),
 		),
+		// Per-placeholder mapping override applied during resolution. When a
+		// key is present, (source, path) override the descriptor defaults.
+		fieldMappingOverride: v.optional(
+			v.record(
+				v.string(),
+				v.object({
+					source: v.union(
+						v.literal("user"),
+						v.literal("profile"),
+						v.literal("request"),
+						v.literal("formData"),
+						v.literal("org"),
+						v.literal("system"),
+					),
+					path: v.optional(v.string()),
+				}),
+			),
+		),
 	},
 	handler: async (ctx, args): Promise<{ documentId: Id<"generatedDocuments">; storageId: Id<"_storage">; pdfSha256: string }> => {
 		return runGeneration(ctx, {
 			requestId: args.requestId,
 			templateId: args.templateId,
 			trigger: args.trigger ?? "manual",
+			fieldMappingOverride: args.fieldMappingOverride,
 		});
 	},
 });
@@ -73,6 +92,24 @@ export const generateFromTemplateInternal = internalAction({
 			v.literal("bulk"),
 		),
 		autoPublishOverride: v.optional(v.boolean()),
+		// Per-placeholder mapping override — auto-gen rules forward their
+		// `fieldMapping` here so the resolver picks the right field.
+		fieldMappingOverride: v.optional(
+			v.record(
+				v.string(),
+				v.object({
+					source: v.union(
+						v.literal("user"),
+						v.literal("profile"),
+						v.literal("request"),
+						v.literal("formData"),
+						v.literal("org"),
+						v.literal("system"),
+					),
+					path: v.optional(v.string()),
+				}),
+			),
+		),
 	},
 	handler: async (ctx, args): Promise<{ documentId: Id<"generatedDocuments">; storageId: Id<"_storage">; pdfSha256: string }> => {
 		return runGeneration(ctx, {
@@ -80,6 +117,7 @@ export const generateFromTemplateInternal = internalAction({
 			templateId: args.templateId,
 			trigger: args.trigger,
 			autoPublishOverride: args.autoPublishOverride,
+			fieldMappingOverride: args.fieldMappingOverride,
 		});
 	},
 });
@@ -95,12 +133,23 @@ async function runGeneration(
 		templateId: Id<"documentTemplates">;
 		trigger: "manual" | "status_transition" | "on_submission" | "bulk";
 		autoPublishOverride?: boolean;
+		fieldMappingOverride?: Record<
+			string,
+			{
+				source: "user" | "profile" | "request" | "formData" | "org" | "system";
+				path?: string;
+			}
+		>;
 	},
 ): Promise<{ documentId: Id<"generatedDocuments">; storageId: Id<"_storage">; pdfSha256: string }> {
 	// 1. Load generation context (template + request + user + profile + org + resolved placeholders).
 	const data: GenerationContext = await ctx.runQuery(
 		internal.functions.generatedDocumentsData.loadGenerationContext,
-		{ templateId: options.templateId, requestId: options.requestId },
+		{
+			templateId: options.templateId,
+			requestId: options.requestId,
+			fieldMappingOverride: options.fieldMappingOverride,
+		},
 	);
 
 	// 2. Substitute placeholders in the Tiptap AST — dynamic imports.

@@ -24,6 +24,14 @@ export interface ResolvedAutoTrigger {
 	templateId: Id<"documentTemplates">;
 	autoSign: boolean;
 	autoPublish: boolean;
+	/** Per-placeholder mapping forwarded to the generation action. Optional. */
+	fieldMapping?: Record<
+		string,
+		{
+			source: "user" | "profile" | "request" | "formData" | "org" | "system";
+			path?: string;
+		}
+	>;
 }
 
 /**
@@ -52,6 +60,7 @@ export async function evaluateAutoTriggers(
 			templateId: rule.templateId,
 			autoSign: rule.autoSign,
 			autoPublish: rule.autoPublish,
+			fieldMapping: rule.fieldMapping,
 		});
 	}
 

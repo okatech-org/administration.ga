@@ -5038,6 +5038,14 @@
 				"missingTemplate": "Règle {{index}} : modèle manquant",
 				"missingToStatus": "Règle {{index}} : statut cible manquant"
 			},
+			"mapping": {
+				"title": "Mapping des variables",
+				"description": "Indique pour chaque variable du modèle quelle source utiliser à la génération.",
+				"autoSuggest": "Suggérer depuis le formulaire",
+				"pathPlaceholder": "Champ source (ex : firstName)",
+				"searchField": "Rechercher un champ…",
+				"noField": "Aucun champ disponible."
+			},
 			"status": {
 				"draft": "Brouillon",
 				"submitted": "Soumise",
@@ -5053,6 +5061,17 @@
 			}
 		},
 		"generate": {
+			"preview": {
+				"title": "Aperçu de la résolution",
+				"loading": "Calcul de l'aperçu…",
+				"resolved": "résolus",
+				"mapped": "mapping",
+				"empty": "vide",
+				"error": "erreur",
+				"emptyWarning": "{{count}} variable(s) sans valeur — la génération ira jusqu'au bout mais le PDF affichera un blanc à ces emplacements.",
+				"errorWarning": "Une variable a échoué — corrige le mapping côté template ou règle d'auto-gen avant de générer.",
+				"noPlaceholders": "Ce modèle n'a pas de variables — la génération produira le contenu tel quel."
+			},
 			"section": {
 				"title": "Documents officiels",
 				"loading": "Chargement…",
