@@ -73,6 +73,14 @@ export interface TemplateEditorProps {
 	 * open its `<TemplateAIDrawer />`. Required when `enableAI` is true.
 	 */
 	onAIGenerate?: () => void;
+	/**
+	 * Bumped by the parent whenever it wants to force the editor to re-load
+	 * `initialContent` (typically after an AI Apply). Tiptap only honours
+	 * `content` at mount time — every change of this number triggers an
+	 * `editor.commands.setContent(initialContent)` in a single transaction
+	 * (one undo step), preserving the editor instance and toolbar state.
+	 */
+	contentRevision?: number;
 }
 
 const EMPTY_DOC: TiptapDocument = {
@@ -107,6 +115,7 @@ export function TemplateEditor({
 	onUploadImage,
 	enableAI = false,
 	onAIGenerate,
+	contentRevision,
 }: TemplateEditorProps): ReactElement {
 	const { t } = useTranslation();
 	const editor = useEditor({
@@ -124,6 +133,20 @@ export function TemplateEditor({
 		if (!editor) return;
 		editor.setEditable(editable);
 	}, [editor, editable]);
+
+	// Re-load the canonical content when the parent bumps `contentRevision`
+	// (typically after an AI Apply). Tiptap only honours the `content` option
+	// at mount time, so we drive subsequent updates through `setContent`.
+	// Wrapped in a single chain → single undo step.
+	useEffect(() => {
+		if (!editor || contentRevision === undefined) return;
+		if (!initialContent) return;
+		editor.chain().focus().setContent(initialContent).run();
+		// We deliberately depend on `contentRevision` only — not on
+		// `initialContent` — to avoid re-applying on every keystroke (the
+		// parent's `onChange` flips `content` and would otherwise re-enter).
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [editor, contentRevision]);
 
 	const aspect = PAPER_RATIOS[paperSize][orientation];
 	const padding = {

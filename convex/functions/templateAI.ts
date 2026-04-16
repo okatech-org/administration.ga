@@ -189,15 +189,47 @@ function buildPrompt(args: {
 		? `\n\nInstructions complémentaires de l'utilisateur :\n${args.prompt}`
 		: "";
 
-	return `Tu es un assistant expert en rédaction de documents administratifs et diplomatiques. Tu reçois un document existant (uploadé en PDF ou image) ou une description, et tu dois produire un MODÈLE Tiptap JSON réutilisable, en ${lang}, fidèle à la structure du document source.
+	return `Tu es un assistant expert en rédaction de documents administratifs et diplomatiques. Tu reçois un document existant (PDF, scan, photo) ou une description, et tu dois produire un MODÈLE Tiptap JSON COMPLET et IMMÉDIATEMENT UTILISABLE, en ${lang}, fidèle au document source jusqu'au moindre paragraphe.
 
 ${tplHint} ${sizeHint}${userInstruction}
 
-CONTRAINTES STRICTES :
+═══════════════════════════════════════════════════════════════
+RÈGLE PRIMORDIALE — LE DOCUMENT DOIT ÊTRE COMPLET
+═══════════════════════════════════════════════════════════════
 
-1. Tu retournes UNIQUEMENT un objet JSON valide, sans aucun texte avant ou après. Pas de markdown, pas d'explication.
+Tu dois reproduire l'intégralité du document source dans le champ "document" :
 
-2. La forme exacte attendue :
+  ✅ Tous les titres et sous-titres (avec leur niveau de hiérarchie)
+  ✅ Tous les paragraphes de texte (corps, mentions légales, instructions)
+  ✅ Tous les libellés de champs ("Nom :", "Date de naissance :", etc.)
+  ✅ Toutes les rubriques et sections, dans l'ordre original
+  ✅ Les en-têtes officiels ("RÉPUBLIQUE GABONAISE", devise, etc.)
+  ✅ Les pieds de page (références, mentions de signature, dates)
+  ✅ Les listes, tableaux, séparations visuelles
+  ✅ Les emplacements d'images (logos) et de signatures
+
+Aux endroits où le document source attend une valeur dynamique (un nom à
+remplir, une date, un numéro), tu insères un node "placeholder" À LA PLACE
+de la valeur — mais tu CONSERVES le libellé du champ et toute la structure
+autour. Exemple correct :
+
+  paragraph: [text("Je soussigné(e), "), placeholder(key="nom_demandeur"),
+              text(", né(e) le "), placeholder(key="date_naissance"), text(", ...")]
+
+Exemple INCORRECT (juste une liste de placeholders sans contexte) :
+  ❌ doc: [paragraph(placeholder), paragraph(placeholder), paragraph(placeholder)]
+
+Si tu retournes un document quasi-vide composé seulement de placeholders sans
+prose autour, ton résultat est INUTILISABLE et sera rejeté.
+
+═══════════════════════════════════════════════════════════════
+FORMAT DE RETOUR
+═══════════════════════════════════════════════════════════════
+
+Tu retournes UNIQUEMENT un objet JSON valide, sans aucun texte avant ou
+après. Pas de markdown, pas d'explication, pas de \`\`\`json.
+
+Structure exacte :
 {
   "document": { "type": "doc", "content": [...] },
   "placeholders": [{ "key": "string", "label": { "fr": "string" }, "source": "user"|"profile"|"request"|"formData"|"org"|"system", "path": "string?" }],
@@ -205,29 +237,95 @@ CONTRAINTES STRICTES :
   "suggestedDescription": "string optional"
 }
 
-3. Le champ "document" suit la spec Tiptap. Tu n'utilises QUE ces types de nodes (toute autre valeur invalide tout le résultat) :
-   - "doc" (racine)
-   - "paragraph", "heading" (avec attrs.level: 1, 2 ou 3)
-   - "bulletList", "orderedList", "listItem"
-   - "blockquote", "horizontalRule", "hardBreak"
-   - "table", "tableRow", "tableCell", "tableHeader"
-   - "image" (avec attrs.src) — seulement si tu as une URL image, sinon utilise "imagePlaceholder"
-   - "imagePlaceholder" (avec attrs.id, attrs.key, attrs.source, attrs.label, attrs.width, attrs.height)
-   - "signaturePlaceholder" (avec attrs.id, attrs.signerRole?)
-   - "placeholder" (avec attrs.key, attrs.source, attrs.label) — pour les variables texte (prénom, etc.)
-   - "text" (avec text: "...")
+═══════════════════════════════════════════════════════════════
+NODE TYPES AUTORISÉS (toute autre valeur invalide le résultat)
+═══════════════════════════════════════════════════════════════
 
-4. Les marks autorisés sur les nodes "text" : "bold", "italic", "underline", "strike", "textStyle" (avec attrs.color | attrs.fontSize | attrs.fontFamily).
+  - "doc" (racine — un seul, contient l'array "content")
+  - "paragraph" (avec content[] de nodes inline)
+  - "heading" (avec attrs.level: 1 | 2 | 3)
+  - "bulletList", "orderedList" (contenant listItem[])
+  - "listItem" (contenant paragraph[])
+  - "blockquote", "horizontalRule", "hardBreak"
+  - "table", "tableRow", "tableCell", "tableHeader"
+  - "image" (avec attrs.src) — seulement si tu connais une URL réelle ;
+            sinon utilise "imagePlaceholder"
+  - "imagePlaceholder" (block atom — pour les zones d'image dynamiques)
+       attrs : id (UUID), key (snake_case), source, label, width (mm),
+               height (mm), align ("left"|"center"|"right")
+  - "signaturePlaceholder" (block atom — pour les zones de signature)
+       attrs : id (UUID), signerRole (optionnel, ex: "chef_poste")
+  - "placeholder" (inline atom — pour les variables texte)
+       attrs : key (snake_case), source, label
+  - "text" (avec text: "...") — élément textuel
 
-5. Quand tu détectes une zone variable (nom du citoyen, date, référence, etc.), insère un node "placeholder" avec une "key" en snake_case français descriptif (ex: "nom_demandeur"). Décris-le AUSSI dans le tableau "placeholders" en haut.
+Marks autorisés sur "text" : "bold", "italic", "underline", "strike",
+"textStyle" (avec attrs.color, attrs.fontSize, attrs.fontFamily).
 
-6. Quand tu détectes une zone d'image (logo, photo), utilise "imagePlaceholder" avec un id UUID unique (ex: "img-${"".concat(Math.random().toString(36).slice(2))}").
+═══════════════════════════════════════════════════════════════
+RÈGLES POUR LES PLACEHOLDERS
+═══════════════════════════════════════════════════════════════
 
-7. Quand tu détectes une zone de signature, utilise "signaturePlaceholder" avec un id UUID unique et un signerRole si précisé (ex: "chef_poste").
+  - Toute "key" doit être en snake_case ${lang === "anglais" ? "anglais" : "français"} descriptif
+    (ex: "nom_demandeur", "date_naissance", "numero_dossier") — pas de
+    chaîne dans une langue étrangère, pas d'espace, pas de tiret.
 
-8. Si tu hésites sur un type de node, utilise "paragraph" — JAMAIS un type non listé.
+  - Tout placeholder utilisé dans "document" DOIT être déclaré dans le
+    tableau "placeholders" en haut, avec son label et son source.
 
-9. Le JSON doit être complet et valide à la lettre — pas de trailing commas, pas de commentaires.`;
+  - Source par défaut : "formData" (ce que le citoyen remplit). Utilise
+    "system" pour les dates/références générées (today, documentNumber).
+    "org" pour le nom de l'organisme. "user" pour les infos compte.
+
+  - Une zone image → "imagePlaceholder" avec un id UUID unique aléatoire
+    (ex: "img-9f3a2b1e"). Ne réutilise jamais le même id.
+
+  - Une zone signature → "signaturePlaceholder" avec un id UUID unique.
+    Si le document mentionne plusieurs signataires, crée un node par
+    signataire avec un signerRole différent.
+
+═══════════════════════════════════════════════════════════════
+EXEMPLE MINIMAL DE STRUCTURE ATTENDUE
+═══════════════════════════════════════════════════════════════
+
+{
+  "document": {
+    "type": "doc",
+    "content": [
+      { "type": "heading", "attrs": { "level": 1, "textAlign": "center" },
+        "content": [{ "type": "text", "text": "ATTESTATION DE RÉSIDENCE" }] },
+      { "type": "paragraph",
+        "content": [{ "type": "text",
+                      "text": "Je soussigné(e), Chef de poste consulaire, atteste que :" }] },
+      { "type": "paragraph",
+        "content": [
+          { "type": "text", "text": "Madame/Monsieur " },
+          { "type": "placeholder", "attrs": { "key": "nom_demandeur",
+                                              "source": "formData",
+                                              "label": "Nom" } },
+          { "type": "text", "text": ", né(e) le " },
+          { "type": "placeholder", "attrs": { "key": "date_naissance",
+                                              "source": "formData",
+                                              "label": "Date de naissance" } },
+          { "type": "text", "text": ", est inscrit(e) au registre consulaire." }
+        ] },
+      { "type": "signaturePlaceholder",
+        "attrs": { "id": "sig-7f3a", "signerRole": "chef_poste" } }
+    ]
+  },
+  "placeholders": [
+    { "key": "nom_demandeur", "source": "formData",
+      "label": { "fr": "Nom du demandeur" } },
+    { "key": "date_naissance", "source": "formData",
+      "label": { "fr": "Date de naissance" } }
+  ]
+}
+
+═══════════════════════════════════════════════════════════════
+
+Le JSON doit être complet et valide — pas de trailing commas, pas de
+commentaires. Si tu hésites sur un type de node, utilise "paragraph" —
+JAMAIS un type non listé.`;
 }
 
 // ─── Action ──────────────────────────────────────────────────────────────

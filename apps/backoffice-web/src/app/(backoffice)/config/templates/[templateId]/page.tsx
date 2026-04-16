@@ -114,6 +114,9 @@ export default function EditTemplatePage() {
 	const [newSource, setNewSource] = useState<PlaceholderSource>("formData");
 	const [saving, setSaving] = useState(false);
 	const [savingLayout, setSavingLayout] = useState(false);
+	// Bumped when an AI generation result lands so the editor re-loads its
+	// content (Tiptap doesn't react to initialContent changes after mount).
+	const [contentRevision, setContentRevision] = useState(0);
 
 	// Initialize local state once template arrives. Using useMemo here as a
 	// write-once pattern: `null` means "not yet hydrated", anything else is
@@ -188,6 +191,8 @@ export default function EditTemplatePage() {
 	function onAIApply(result: TemplateAIResult) {
 		setContent(result.document);
 		setPlaceholders(result.placeholders);
+		// Force the editor to re-load the new content (Tiptap is mount-only).
+		setContentRevision((v) => v + 1);
 		toast.success(t("templates.ai.phases.resultTitle"));
 	}
 
@@ -326,6 +331,7 @@ export default function EditTemplatePage() {
 						onUploadImage={onUploadImage}
 						enableAI
 						onAIGenerate={() => setAiDrawerOpen(true)}
+						contentRevision={contentRevision}
 					/>
 				</FlatCard>
 
@@ -432,20 +438,24 @@ function PlaceholderManager({
 			</div>
 
 			{placeholders.length > 0 ? (
-				<ul className="flex flex-wrap gap-2">
+				<ul className="flex flex-col gap-1.5">
 					{placeholders.map((p) => (
 						<li
 							key={p.key}
-							className="flex items-center gap-2 rounded-md border bg-background px-2 py-1 text-sm"
+							className="flex min-w-0 items-start gap-2 rounded-md border bg-background px-2 py-1.5 text-sm"
 						>
-							<code className="font-mono text-xs">{`{{${p.key}}}`}</code>
-							<span className="text-muted-foreground">— {p.label.fr ?? p.key}</span>
-							<span className="rounded bg-muted px-1 text-[0.7rem] uppercase">
+							<div className="flex min-w-0 flex-1 flex-col gap-0.5">
+								<code className="break-all font-mono text-xs leading-tight">{`{{${p.key}}}`}</code>
+								<span className="text-xs text-muted-foreground">
+									{p.label.fr ?? p.key}
+								</span>
+							</div>
+							<span className="shrink-0 rounded bg-muted px-1 py-0.5 text-[0.65rem] uppercase tracking-wide">
 								{t(`templates.placeholders.sources.${p.source}`)}
 							</span>
 							<button
 								type="button"
-								className="text-muted-foreground hover:text-destructive"
+								className="shrink-0 text-muted-foreground hover:text-destructive"
 								onClick={() => onRemove(p.key)}
 								aria-label={t("templates.placeholders.removeAria", { key: p.key })}
 							>
