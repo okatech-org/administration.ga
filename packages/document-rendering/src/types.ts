@@ -24,6 +24,61 @@ export interface PlaceholderAttrs {
 	label?: string;
 }
 
+/**
+ * Attributes on an `imagePlaceholder` node (block atom). Reserves a spot for
+ * a dynamic image (logo, photo, scan) that will be resolved at generation
+ * time based on a mapping rule (PR4). The optional `fallbackStorageId`
+ * points to a Convex storage entry rendered when no mapping is available
+ * — useful for previews and templates that ship with a default logo.
+ */
+export interface ImagePlaceholderAttrs {
+	/** Stable id (UUID) used to correlate the placeholder with overlay logic. */
+	id: string;
+	/** Human-readable key used by the mapping configuration. */
+	key: string;
+	/** Where the image is expected to come from (PR4 will use this). */
+	source: PlaceholderSource;
+	/** Optional caption / display label shown inside the placeholder. */
+	label?: string;
+	/** Width in millimetres. Defaults to 60 mm in the renderer. */
+	width?: number;
+	/** Height in millimetres. Defaults to 40 mm in the renderer. */
+	height?: number;
+	/** Horizontal alignment within the surrounding flow. Defaults to "left". */
+	align?: "left" | "center" | "right";
+	/** Convex storage id of a fallback image rendered if no mapping resolves. */
+	fallbackStorageId?: string;
+	/** Resolved image src injected by the generation pipeline before rendering. */
+	_resolvedSrc?: string;
+}
+
+/**
+ * Attributes on a `signaturePlaceholder` node (block atom). Reserves a spot
+ * for an agent's signature that is overlaid post-generation. Multiple
+ * placeholders are allowed in the same document to support multi-signer
+ * workflows; each carries an optional `signerRole` that gates which agent
+ * may sign it.
+ */
+export interface SignaturePlaceholderAttrs {
+	/** Stable id (UUID) used to correlate signature → placeholder. */
+	id: string;
+	/** Optional role required to fill this slot (e.g. "chef_poste"). */
+	signerRole?: string;
+	/** Width in millimetres. Defaults to 80 mm in the renderer. */
+	width?: number;
+	/** Height in millimetres. Defaults to 30 mm in the renderer. */
+	height?: number;
+	/**
+	 * Resolved signature image src (data URL) injected by signDocument when
+	 * re-rendering the PDF after a signature is recorded.
+	 */
+	_resolvedSrc?: string;
+	/** Display name of the signer, injected after signing. */
+	_resolvedSignerName?: string;
+	/** ISO timestamp of the signature, injected after signing. */
+	_resolvedSignedAt?: string;
+}
+
 /** Generic Tiptap mark. */
 export interface TiptapMark {
 	type: string;

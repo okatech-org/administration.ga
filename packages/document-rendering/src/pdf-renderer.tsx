@@ -137,6 +137,40 @@ const styles = StyleSheet.create({
 		borderColor: "#CFCFCF",
 	},
 	image: { marginVertical: 6 },
+	imagePlaceholderFallback: {
+		marginVertical: 6,
+		borderWidth: 1,
+		borderStyle: "dashed",
+		borderColor: "#7CB7FF",
+		backgroundColor: "#F0F7FF",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	imagePlaceholderLabel: {
+		fontSize: 9,
+		color: "#1D4ED8",
+		fontFamily: "Helvetica",
+	},
+	signaturePlaceholderFallback: {
+		marginVertical: 8,
+		borderWidth: 1,
+		borderStyle: "dashed",
+		borderColor: "#D97706",
+		backgroundColor: "#FEF3C7",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	signaturePlaceholderLabel: {
+		fontSize: 9,
+		color: "#92400E",
+		fontFamily: "Helvetica",
+	},
+	signatureFooter: {
+		marginTop: 4,
+		fontSize: 8,
+		color: "#6B7280",
+		textAlign: "center",
+	},
 });
 
 /** Default 20 mm margins on every side. */
@@ -304,9 +338,113 @@ function renderNode(node: TiptapNode, key: string): ReactNode {
 			return (
 				<Text key={key}>{`{{${String(node.attrs?.key ?? "?")}}}`}</Text>
 			);
+		case "imagePlaceholder":
+			return renderImagePlaceholder(node, key);
+		case "signaturePlaceholder":
+			return renderSignaturePlaceholder(node, key);
 		default:
 			return null;
 	}
+}
+
+/**
+ * Render an `imagePlaceholder` node. When `_resolvedSrc` has been injected by
+ * the generation pipeline, render the actual image; otherwise render a
+ * dashed bordered box (visible debug fallback).
+ */
+function renderImagePlaceholder(node: TiptapNode, key: string): ReactNode {
+	const widthMm = (node.attrs?.width as number | undefined) ?? 60;
+	const heightMm = (node.attrs?.height as number | undefined) ?? 40;
+	const align = (node.attrs?.align as
+		| "left"
+		| "center"
+		| "right"
+		| undefined) ?? "left";
+	const resolvedSrc = node.attrs?._resolvedSrc as string | undefined;
+	const wrapperStyle = StyleSheet.create({
+		_: {
+			marginVertical: 6,
+			alignItems:
+				align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start",
+		},
+	})._;
+	const sized = StyleSheet.create({
+		_: { width: mmToPt(widthMm), height: mmToPt(heightMm) },
+	})._;
+	if (resolvedSrc) {
+		return (
+			<View key={key} style={wrapperStyle}>
+				<PdfImage src={resolvedSrc} style={sized} />
+			</View>
+		);
+	}
+	const placeholderKey = String(node.attrs?.key ?? "");
+	const label = node.attrs?.label as string | undefined;
+	return (
+		<View key={key} style={wrapperStyle}>
+			<View style={mergeStyles(styles.imagePlaceholderFallback, sized)}>
+				<Text style={styles.imagePlaceholderLabel}>
+					{label ? label : `{{${placeholderKey}}}`}
+				</Text>
+			</View>
+		</View>
+	);
+}
+
+/**
+ * Render a `signaturePlaceholder` node. Before signing, renders a dashed
+ * bordered box with the role label. After signing (when `_resolvedSrc` is
+ * injected by `signDocument`), renders the signature image plus a subtle
+ * footer with signer name + timestamp.
+ */
+function renderSignaturePlaceholder(node: TiptapNode, key: string): ReactNode {
+	const widthMm = (node.attrs?.width as number | undefined) ?? 80;
+	const heightMm = (node.attrs?.height as number | undefined) ?? 30;
+	const role = node.attrs?.signerRole as string | undefined;
+	const resolvedSrc = node.attrs?._resolvedSrc as string | undefined;
+	const signerName = node.attrs?._resolvedSignerName as string | undefined;
+	const signedAt = node.attrs?._resolvedSignedAt as string | undefined;
+	const widthPt = mmToPt(widthMm);
+	const heightPt = mmToPt(heightMm);
+	if (resolvedSrc) {
+		return (
+			<View key={key} style={{ marginVertical: 8, alignItems: "flex-start" }}>
+				<PdfImage
+					src={resolvedSrc}
+					style={{ width: widthPt, height: heightPt }}
+				/>
+				{signerName || signedAt ? (
+					<Text style={[styles.signatureFooter, { width: widthPt }]}>
+						{[signerName, formatDate(signedAt)].filter(Boolean).join(" — ")}
+					</Text>
+				) : null}
+			</View>
+		);
+	}
+	return (
+		<View
+			key={key}
+			style={mergeStyles(styles.signaturePlaceholderFallback, {
+				width: widthPt,
+				height: heightPt,
+			} as PdfStyle)}
+		>
+			<Text style={styles.signaturePlaceholderLabel}>
+				{role ? `Signature : ${role}` : "Signature"}
+			</Text>
+		</View>
+	);
+}
+
+function formatDate(iso: string | undefined): string {
+	if (!iso) return "";
+	const d = new Date(iso);
+	if (Number.isNaN(d.getTime())) return "";
+	return d.toLocaleString("fr-FR", {
+		day: "2-digit",
+		month: "long",
+		year: "numeric",
+	});
 }
 
 function renderInlineChildren(nodes: TiptapNode[] | undefined): ReactNode[] {

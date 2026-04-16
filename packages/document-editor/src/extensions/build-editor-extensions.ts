@@ -16,7 +16,9 @@ import { FontFamily } from "@tiptap/extension-font-family";
 import { StarterKit } from "@tiptap/starter-kit";
 import { FontSize, ImageWithAttrs } from "@workspace/document-rendering/extensions";
 
+import { ImagePlaceholderNode } from "./image-placeholder-node";
 import { PlaceholderNode } from "./placeholder-node";
+import { SignaturePlaceholderNode } from "./signature-placeholder-node";
 
 export function buildEditorExtensions() {
 	return [
@@ -31,5 +33,7 @@ export function buildEditorExtensions() {
 			table: { resizable: false },
 		}),
 		PlaceholderNode,
+		ImagePlaceholderNode,
+		SignaturePlaceholderNode,
 	];
 }

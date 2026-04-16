@@ -4939,7 +4939,14 @@
 				"fontHelvetica": "Helvetica",
 				"fontTimes": "Times",
 				"fontCourier": "Courier",
-				"insertImage": "Insérer une image"
+				"insertImage": "Insérer une image",
+				"insertImagePlaceholder": "Insérer un emplacement image",
+				"insertSignaturePlaceholder": "Insérer un emplacement signature",
+				"signerRole": "Rôle du signataire",
+				"signerRoleHint": "Optionnel — code de poste (ex : chef_poste). Vide = n'importe quel agent.",
+				"widthMm": "Largeur (mm)",
+				"heightMm": "Hauteur (mm)",
+				"optional": "Optionnel"
 			}
 		},
 		"layout": {

@@ -38,8 +38,37 @@ export const generatedDocumentsTable = defineTable({
 	signatureStatus: v.union(
 		v.literal("unsigned"),
 		v.literal("pending_signature"),
+		// Multi-signer: at least one slot signed, but not all required slots.
+		v.literal("partially_signed"),
 		v.literal("signed")
 	),
+	/**
+	 * Multi-signer audit log — one entry per signed slot. Each entry binds a
+	 * signer to a specific `signaturePlaceholder` id from the template (see
+	 * `signers[].signaturePlaceholderId`). A document is `signed` when every
+	 * `signaturePlaceholder` in the template has at least one matching entry.
+	 *
+	 * Templates with NO `signaturePlaceholder` fall back to the legacy
+	 * single-signer flow (signedBy/signedAt below) and the bottom-right
+	 * overlay placement.
+	 */
+	signers: v.optional(
+		v.array(
+			v.object({
+				signaturePlaceholderId: v.string(),
+				signerRole: v.optional(v.string()),
+				userId: v.id("users"),
+				signerName: v.optional(v.string()),
+				signedAt: v.number(),
+				signatureImageStorageId: v.id("_storage"),
+				/** SHA-256 of the PDF *before* this signature was applied. */
+				priorPdfSha256: v.optional(v.string()),
+			})
+		)
+	),
+	// Legacy single-signer fields — kept for back-compat and for templates
+	// without any `signaturePlaceholder` node. New documents using the
+	// multi-signer flow rely on `signers[]` instead.
 	signedBy: v.optional(v.id("users")),
 	signedAt: v.optional(v.number()),
 	signatureImageStorageId: v.optional(v.id("_storage")),

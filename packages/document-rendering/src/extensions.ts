@@ -19,7 +19,11 @@ import { TextAlign } from "@tiptap/extension-text-align";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { StarterKit } from "@tiptap/starter-kit";
 
-import type { PlaceholderAttrs } from "./types";
+import type {
+	ImagePlaceholderAttrs,
+	PlaceholderAttrs,
+	SignaturePlaceholderAttrs,
+} from "./types";
 
 /**
  * Inline atom node representing a dynamic placeholder like `{{firstName}}`.
@@ -69,6 +73,162 @@ export const PlaceholderNodeSchema = Node.create({
 				class: "placeholder-chip",
 			},
 			`{{${attrs.key}}}`,
+		];
+	},
+});
+
+/**
+ * Block atom node reserving a spot for a dynamic image (logo, photo, scan)
+ * that will be resolved at generation time based on a mapping rule (PR4).
+ *
+ * Renders as a `<div>` with `data-image-placeholder-*` attributes for the
+ * server HTML renderer; the editor wraps it in a `ReactNodeViewRenderer` for
+ * a friendly visual.
+ */
+export const ImagePlaceholderNodeSchema = Node.create({
+	name: "imagePlaceholder",
+	group: "block",
+	atom: true,
+	selectable: true,
+	draggable: true,
+	defining: true,
+
+	addAttributes() {
+		return {
+			id: { default: "" },
+			key: { default: "" },
+			source: { default: "formData" },
+			label: { default: null },
+			width: { default: null as number | null },
+			height: { default: null as number | null },
+			align: { default: "left" as "left" | "center" | "right" },
+			fallbackStorageId: { default: null as string | null },
+			_resolvedSrc: { default: null as string | null },
+		};
+	},
+
+	parseHTML() {
+		return [
+			{
+				tag: "div[data-image-placeholder-id]",
+				getAttrs: (node) => {
+					if (typeof node === "string") return false;
+					const el = node as HTMLElement;
+					const numAttr = (name: string): number | null => {
+						const raw = el.getAttribute(name);
+						if (!raw) return null;
+						const v = parseFloat(raw);
+						return Number.isFinite(v) ? v : null;
+					};
+					return {
+						id: el.getAttribute("data-image-placeholder-id") ?? "",
+						key: el.getAttribute("data-image-placeholder-key") ?? "",
+						source:
+							el.getAttribute("data-image-placeholder-source") ?? "formData",
+						label: el.getAttribute("data-image-placeholder-label") ?? null,
+						width: numAttr("data-image-placeholder-width"),
+						height: numAttr("data-image-placeholder-height"),
+						align:
+							(el.getAttribute("data-image-placeholder-align") as
+								| "left"
+								| "center"
+								| "right"
+								| null) ?? "left",
+						fallbackStorageId:
+							el.getAttribute("data-image-placeholder-fallback") ?? null,
+						_resolvedSrc: null,
+					};
+				},
+			},
+		];
+	},
+
+	renderHTML({ node }) {
+		const attrs = node.attrs as ImagePlaceholderAttrs;
+		return [
+			"div",
+			{
+				"data-image-placeholder-id": attrs.id,
+				"data-image-placeholder-key": attrs.key,
+				"data-image-placeholder-source": attrs.source,
+				"data-image-placeholder-label": attrs.label ?? "",
+				"data-image-placeholder-width": attrs.width ?? "",
+				"data-image-placeholder-height": attrs.height ?? "",
+				"data-image-placeholder-align": attrs.align ?? "left",
+				"data-image-placeholder-fallback": attrs.fallbackStorageId ?? "",
+				class: "image-placeholder-block",
+			},
+			`{{${attrs.key}}}`,
+		];
+	},
+});
+
+/**
+ * Block atom reserving a spot for an agent signature. Multiple instances are
+ * allowed in the same document to support multi-signer workflows. Each
+ * placeholder carries an optional `signerRole` that gates which agent may
+ * fill the slot when calling `signDocument`.
+ */
+export const SignaturePlaceholderNodeSchema = Node.create({
+	name: "signaturePlaceholder",
+	group: "block",
+	atom: true,
+	selectable: true,
+	draggable: true,
+	defining: true,
+
+	addAttributes() {
+		return {
+			id: { default: "" },
+			signerRole: { default: null as string | null },
+			width: { default: 80 as number | null },
+			height: { default: 30 as number | null },
+			_resolvedSrc: { default: null as string | null },
+			_resolvedSignerName: { default: null as string | null },
+			_resolvedSignedAt: { default: null as string | null },
+		};
+	},
+
+	parseHTML() {
+		return [
+			{
+				tag: "div[data-signature-placeholder-id]",
+				getAttrs: (node) => {
+					if (typeof node === "string") return false;
+					const el = node as HTMLElement;
+					const numAttr = (name: string): number | null => {
+						const raw = el.getAttribute(name);
+						if (!raw) return null;
+						const v = parseFloat(raw);
+						return Number.isFinite(v) ? v : null;
+					};
+					return {
+						id: el.getAttribute("data-signature-placeholder-id") ?? "",
+						signerRole:
+							el.getAttribute("data-signature-placeholder-role") ?? null,
+						width: numAttr("data-signature-placeholder-width") ?? 80,
+						height: numAttr("data-signature-placeholder-height") ?? 30,
+						_resolvedSrc: null,
+						_resolvedSignerName: null,
+						_resolvedSignedAt: null,
+					};
+				},
+			},
+		];
+	},
+
+	renderHTML({ node }) {
+		const attrs = node.attrs as SignaturePlaceholderAttrs;
+		return [
+			"div",
+			{
+				"data-signature-placeholder-id": attrs.id,
+				"data-signature-placeholder-role": attrs.signerRole ?? "",
+				"data-signature-placeholder-width": attrs.width ?? 80,
+				"data-signature-placeholder-height": attrs.height ?? 30,
+				class: "signature-placeholder-block",
+			},
+			`[Signature${attrs.signerRole ? `: ${attrs.signerRole}` : ""}]`,
 		];
 	},
 });
@@ -198,5 +358,7 @@ export function buildCoreExtensions() {
 			table: { resizable: false },
 		}),
 		PlaceholderNodeSchema,
+		ImagePlaceholderNodeSchema,
+		SignaturePlaceholderNodeSchema,
 	];
 }

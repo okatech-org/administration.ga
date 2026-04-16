@@ -186,6 +186,15 @@ export const persistGenerated = internalMutation({
  * Gather everything the signDocument action needs to overlay the signature
  * and gate it by permissions. Runs as a query (no side-effects) — the
  * action carries the returned storageIds across to Node.
+ *
+ * Returns extra context for the multi-signer flow (PR2):
+ *  - `templatePlaceholders` : ids of every `signaturePlaceholder` node in the
+ *     template, with their optional `signerRole`. The caller picks the slot.
+ *  - `existingSigners` : signatures already recorded on this document.
+ *  - `contentSnapshot` + layout options : enough to re-render the PDF with
+ *     the new signature substituted.
+ *  - `signerPositionCode` : the position code of the calling agent (used to
+ *     match `signerRole` to placeholders).
  */
 export const prepareSignature = internalQuery({
 	args: { documentId: v.id("generatedDocuments") },
@@ -226,6 +235,21 @@ export const prepareSignature = internalQuery({
 			);
 		}
 
+		// Walk the template's canonical Tiptap content for signaturePlaceholder
+		// nodes. We keep a flat list { id, signerRole } for the caller to
+		// match against `signerPositionCode`.
+		const templatePlaceholders = collectSignaturePlaceholderSlots(
+			template.content,
+		);
+
+		// Resolve the membership's position code (used by the caller to match
+		// signerRole on a placeholder). May be undefined for legacy memberships.
+		let signerPositionCode: string | undefined;
+		if (membership.positionId) {
+			const pos = await ctx.db.get(membership.positionId);
+			signerPositionCode = pos?.code;
+		}
+
 		return {
 			originalStorageId: doc.storageId,
 			signatureStorageId: sig.imageStorageId,
@@ -236,13 +260,56 @@ export const prepareSignature = internalQuery({
 				([user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
 					user.name),
 			signerId: user._id,
+			signerPositionCode,
+			// Multi-signer context (empty if legacy template).
+			templatePlaceholders,
+			existingSigners: doc.signers ?? [],
+			contentSnapshot: doc.contentSnapshot,
+			templatePaperSize: template.paperSize,
+			templateOrientation: template.orientation,
+			templateMargins: {
+				top: template.marginTop,
+				right: template.marginRight,
+				bottom: template.marginBottom,
+				left: template.marginLeft,
+			},
+			templateAutoPublish: template.autoPublishToCitizen === true,
 		};
 	},
 });
 
+/** Lightweight walker — returns `{id, signerRole}` for every signaturePlaceholder. */
+function collectSignaturePlaceholderSlots(
+	root: unknown,
+): Array<{ id: string; signerRole?: string }> {
+	const out: Array<{ id: string; signerRole?: string }> = [];
+	function visit(n: unknown): void {
+		if (!n || typeof n !== "object") return;
+		const node = n as Record<string, unknown>;
+		if (node.type === "signaturePlaceholder") {
+			const attrs = (node.attrs ?? {}) as Record<string, unknown>;
+			const id = typeof attrs.id === "string" ? attrs.id : undefined;
+			if (id) {
+				out.push({
+					id,
+					signerRole:
+						typeof attrs.signerRole === "string" ? attrs.signerRole : undefined,
+				});
+			}
+		}
+		const content = node.content;
+		if (Array.isArray(content)) {
+			for (const child of content) visit(child);
+		}
+	}
+	visit(root);
+	return out;
+}
+
 /**
- * Persist the result of a successful signing operation. Patches the record
- * with the signed-PDF storageId + hash + audit metadata and enqueues the
+ * Persist the result of a successful (legacy single-signer) signing operation.
+ * Used when the template has NO `signaturePlaceholder` nodes — falls back to
+ * the bottom-right pdf-lib overlay. Patches the record and enqueues the
  * citizen notification if the template auto-publishes on signature.
  */
 export const finalizeSignature = internalMutation({
@@ -274,6 +341,75 @@ export const finalizeSignature = internalMutation({
 						publishedToCitizen: true,
 						publishedAt: now,
 						publishedBy: args.signedBy,
+						unpublishedAt: undefined,
+					}
+				: {}),
+		});
+
+		if (shouldPublish) {
+			await enqueueCitizenPublicationNotice(ctx, args.documentId);
+		}
+		return args.documentId;
+	},
+});
+
+/**
+ * Persist the result of a multi-signer slot fill. Appends a new entry to
+ * `signers[]`, patches the storage with the re-rendered PDF and recomputes
+ * the global `signatureStatus` based on the slot completion ratio.
+ */
+export const finalizeMultiSignature = internalMutation({
+	args: {
+		documentId: v.id("generatedDocuments"),
+		storageId: v.id("_storage"),
+		pdfSha256: v.string(),
+		newSigner: v.object({
+			signaturePlaceholderId: v.string(),
+			signerRole: v.optional(v.string()),
+			userId: v.id("users"),
+			signerName: v.optional(v.string()),
+			signedAt: v.number(),
+			signatureImageStorageId: v.id("_storage"),
+			priorPdfSha256: v.optional(v.string()),
+		}),
+		/** Total number of `signaturePlaceholder` slots in the template. */
+		totalSlots: v.number(),
+	},
+	handler: async (ctx, args) => {
+		const doc = await ctx.db.get(args.documentId);
+		if (!doc) throw new Error("Document introuvable");
+		const template = await ctx.db.get(doc.templateId);
+
+		const existing = doc.signers ?? [];
+		const nextSigners = [...existing, args.newSigner];
+
+		// Filled slots = unique placeholderIds in `signers`.
+		const filledIds = new Set(nextSigners.map((s) => s.signaturePlaceholderId));
+		const fullySigned = filledIds.size >= args.totalSlots;
+
+		const now = Date.now();
+		const shouldPublish =
+			fullySigned &&
+			template?.autoPublishToCitizen === true &&
+			!doc.publishedToCitizen;
+
+		await ctx.db.patch(args.documentId, {
+			storageId: args.storageId,
+			pdfSha256: args.pdfSha256,
+			signers: nextSigners,
+			signatureStatus: fullySigned ? "signed" : "partially_signed",
+			...(fullySigned
+				? {
+						signedBy: args.newSigner.userId,
+						signedAt: args.newSigner.signedAt,
+						signatureImageStorageId: args.newSigner.signatureImageStorageId,
+					}
+				: {}),
+			...(shouldPublish
+				? {
+						publishedToCitizen: true,
+						publishedAt: now,
+						publishedBy: args.newSigner.userId,
 						unpublishedAt: undefined,
 					}
 				: {}),

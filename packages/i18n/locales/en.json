@@ -4349,7 +4349,14 @@
 				"fontHelvetica": "Helvetica",
 				"fontTimes": "Times",
 				"fontCourier": "Courier",
-				"insertImage": "Insert image"
+				"insertImage": "Insert image",
+				"insertImagePlaceholder": "Insert image placeholder",
+				"insertSignaturePlaceholder": "Insert signature placeholder",
+				"signerRole": "Signer role",
+				"signerRoleHint": "Optional — position code (e.g. chef_poste). Empty = any agent.",
+				"widthMm": "Width (mm)",
+				"heightMm": "Height (mm)",
+				"optional": "Optional"
 			}
 		},
 		"layout": {

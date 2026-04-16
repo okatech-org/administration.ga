@@ -22,6 +22,7 @@ import {
 	AlignLeft,
 	AlignRight,
 	Bold,
+	FileImage,
 	Image as ImageIcon,
 	Italic,
 	List,
@@ -29,6 +30,7 @@ import {
 	Loader2,
 	Minus,
 	Palette,
+	PenTool,
 	Quote,
 	Redo,
 	Strikethrough,
@@ -344,6 +346,26 @@ export function EditorToolbar({
 				</div>
 			) : null}
 
+			{/* Image-placeholder + signature-placeholder insertion */}
+			<div className="flex items-center gap-0.5 border-r border-border/60 pr-1">
+				<ImagePlaceholderMenu
+					onInsert={(attrs) => {
+						ed.chain()
+							.focus()
+							.insertContent({ type: "imagePlaceholder", attrs })
+							.run();
+					}}
+				/>
+				<SignaturePlaceholderMenu
+					onInsert={(attrs) => {
+						ed.chain()
+							.focus()
+							.insertContent({ type: "signaturePlaceholder", attrs })
+							.run();
+					}}
+				/>
+			</div>
+
 			{/* History */}
 			<ToolbarGroup actions={historyMarks} last />
 		</div>
@@ -434,6 +456,273 @@ function ColorMenu({
 							}}
 						/>
 					))}
+				</div>
+			) : null}
+		</div>
+	);
+}
+
+/** Cross-runtime UUID v4 generator. Falls back to a Math.random-based id
+ *  when `crypto.randomUUID` is unavailable (Node 18 < 18.17, old browsers). */
+function makeUuid(): string {
+	const c =
+		typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+			? crypto
+			: undefined;
+	if (c) return c.randomUUID();
+	const rand = () =>
+		Math.floor(Math.random() * 0xffffffff)
+			.toString(16)
+			.padStart(8, "0");
+	return `${rand()}-${rand().slice(0, 4)}-${rand().slice(0, 4)}-${rand().slice(0, 4)}-${rand()}${rand().slice(0, 4)}`;
+}
+
+/**
+ * Popover form to insert an `imagePlaceholder`. Captures key + label +
+ * dimensions; the parent toolbar appends the resulting attrs to the editor.
+ */
+function ImagePlaceholderMenu({
+	onInsert,
+}: {
+	onInsert: (attrs: {
+		id: string;
+		key: string;
+		source: "user" | "profile" | "request" | "formData" | "org" | "system";
+		label?: string;
+		width?: number;
+		height?: number;
+		align?: "left" | "center" | "right";
+	}) => void;
+}): ReactElement {
+	const { t } = useTranslation();
+	const [open, setOpen] = useState(false);
+	const [key, setKey] = useState("");
+	const [label, setLabel] = useState("");
+	const [width, setWidth] = useState(60);
+	const [height, setHeight] = useState(40);
+
+	function reset() {
+		setKey("");
+		setLabel("");
+		setWidth(60);
+		setHeight(40);
+	}
+
+	function submit() {
+		const trimmed = key.trim();
+		if (!trimmed) return;
+		onInsert({
+			id: makeUuid(),
+			key: trimmed,
+			source: "formData",
+			label: label.trim() || undefined,
+			width,
+			height,
+			align: "left",
+		});
+		reset();
+		setOpen(false);
+	}
+
+	return (
+		<div className="relative">
+			<button
+				type="button"
+				onClick={() => setOpen((v) => !v)}
+				title={t("templates.editor.toolbar.insertImagePlaceholder")}
+				aria-label={t("templates.editor.toolbar.insertImagePlaceholder")}
+				className="flex h-7 w-7 items-center justify-center rounded hover:bg-muted"
+			>
+				<FileImage size={16} />
+			</button>
+			{open ? (
+				<div
+					role="menu"
+					className="absolute left-0 top-full z-50 mt-1 flex w-72 flex-col gap-2 rounded-md border border-border bg-popover p-3 shadow-lg"
+				>
+					<div className="text-xs font-semibold text-foreground">
+						{t("templates.editor.toolbar.insertImagePlaceholder")}
+					</div>
+					<label className="flex flex-col gap-1 text-xs">
+						{t("templates.placeholders.fields.key")}
+						<input
+							type="text"
+							value={key}
+							onChange={(e) => setKey(e.target.value)}
+							placeholder="logo_organisme"
+							className="h-7 rounded border border-border bg-background px-2 text-xs"
+							autoFocus
+						/>
+					</label>
+					<label className="flex flex-col gap-1 text-xs">
+						{t("templates.placeholders.fields.label")}
+						<input
+							type="text"
+							value={label}
+							onChange={(e) => setLabel(e.target.value)}
+							placeholder={t("templates.editor.toolbar.optional")}
+							className="h-7 rounded border border-border bg-background px-2 text-xs"
+						/>
+					</label>
+					<div className="grid grid-cols-2 gap-2">
+						<label className="flex flex-col gap-1 text-xs">
+							{t("templates.editor.toolbar.widthMm")}
+							<input
+								type="number"
+								min={10}
+								value={width}
+								onChange={(e) => setWidth(Number(e.target.value) || 60)}
+								className="h-7 rounded border border-border bg-background px-2 text-xs"
+							/>
+						</label>
+						<label className="flex flex-col gap-1 text-xs">
+							{t("templates.editor.toolbar.heightMm")}
+							<input
+								type="number"
+								min={10}
+								value={height}
+								onChange={(e) => setHeight(Number(e.target.value) || 40)}
+								className="h-7 rounded border border-border bg-background px-2 text-xs"
+							/>
+						</label>
+					</div>
+					<div className="mt-1 flex items-center justify-end gap-2">
+						<button
+							type="button"
+							onClick={() => {
+								reset();
+								setOpen(false);
+							}}
+							className="rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+						>
+							{t("templates.common.cancel")}
+						</button>
+						<button
+							type="button"
+							onClick={submit}
+							disabled={!key.trim()}
+							className="rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground disabled:opacity-40"
+						>
+							{t("templates.placeholders.addSheet.submit")}
+						</button>
+					</div>
+				</div>
+			) : null}
+		</div>
+	);
+}
+
+/**
+ * Popover form to insert a `signaturePlaceholder`. Captures the optional
+ * signer role + dimensions; the editor appends a stable UUID id.
+ */
+function SignaturePlaceholderMenu({
+	onInsert,
+}: {
+	onInsert: (attrs: {
+		id: string;
+		signerRole?: string;
+		width?: number;
+		height?: number;
+	}) => void;
+}): ReactElement {
+	const { t } = useTranslation();
+	const [open, setOpen] = useState(false);
+	const [role, setRole] = useState("");
+	const [width, setWidth] = useState(80);
+	const [height, setHeight] = useState(30);
+
+	function reset() {
+		setRole("");
+		setWidth(80);
+		setHeight(30);
+	}
+
+	function submit() {
+		onInsert({
+			id: makeUuid(),
+			signerRole: role.trim() || undefined,
+			width,
+			height,
+		});
+		reset();
+		setOpen(false);
+	}
+
+	return (
+		<div className="relative">
+			<button
+				type="button"
+				onClick={() => setOpen((v) => !v)}
+				title={t("templates.editor.toolbar.insertSignaturePlaceholder")}
+				aria-label={t("templates.editor.toolbar.insertSignaturePlaceholder")}
+				className="flex h-7 w-7 items-center justify-center rounded hover:bg-muted"
+			>
+				<PenTool size={16} />
+			</button>
+			{open ? (
+				<div
+					role="menu"
+					className="absolute left-0 top-full z-50 mt-1 flex w-72 flex-col gap-2 rounded-md border border-border bg-popover p-3 shadow-lg"
+				>
+					<div className="text-xs font-semibold text-foreground">
+						{t("templates.editor.toolbar.insertSignaturePlaceholder")}
+					</div>
+					<label className="flex flex-col gap-1 text-xs">
+						{t("templates.editor.toolbar.signerRole")}
+						<input
+							type="text"
+							value={role}
+							onChange={(e) => setRole(e.target.value)}
+							placeholder="chef_poste"
+							className="h-7 rounded border border-border bg-background px-2 text-xs"
+							autoFocus
+						/>
+						<span className="text-[0.65rem] text-muted-foreground">
+							{t("templates.editor.toolbar.signerRoleHint")}
+						</span>
+					</label>
+					<div className="grid grid-cols-2 gap-2">
+						<label className="flex flex-col gap-1 text-xs">
+							{t("templates.editor.toolbar.widthMm")}
+							<input
+								type="number"
+								min={20}
+								value={width}
+								onChange={(e) => setWidth(Number(e.target.value) || 80)}
+								className="h-7 rounded border border-border bg-background px-2 text-xs"
+							/>
+						</label>
+						<label className="flex flex-col gap-1 text-xs">
+							{t("templates.editor.toolbar.heightMm")}
+							<input
+								type="number"
+								min={10}
+								value={height}
+								onChange={(e) => setHeight(Number(e.target.value) || 30)}
+								className="h-7 rounded border border-border bg-background px-2 text-xs"
+							/>
+						</label>
+					</div>
+					<div className="mt-1 flex items-center justify-end gap-2">
+						<button
+							type="button"
+							onClick={() => {
+								reset();
+								setOpen(false);
+							}}
+							className="rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+						>
+							{t("templates.common.cancel")}
+						</button>
+						<button
+							type="button"
+							onClick={submit}
+							className="rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground"
+						>
+							{t("templates.placeholders.addSheet.submit")}
+						</button>
+					</div>
 				</div>
 			) : null}
 		</div>
