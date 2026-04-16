@@ -173,6 +173,8 @@ import type * as lib_utils from "../lib/utils.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as lib_warehouseAuth from "../lib/warehouseAuth.js";
 import type * as limbique from "../limbique.js";
+import type * as migrations_addDocumentsTasksToHighRanks from "../migrations/addDocumentsTasksToHighRanks.js";
+import type * as migrations_auditDocumentsAccessForHighRanks from "../migrations/auditDocumentsAccessForHighRanks.js";
 import type * as migrations_backfillAggregates from "../migrations/backfillAggregates.js";
 import type * as migrations_backfillCopyOwnerOrgId from "../migrations/backfillCopyOwnerOrgId.js";
 import type * as migrations_backfillEmptyFormData from "../migrations/backfillEmptyFormData.js";
@@ -449,6 +451,8 @@ declare const fullApi: ApiFromModules<{
   "lib/validators": typeof lib_validators;
   "lib/warehouseAuth": typeof lib_warehouseAuth;
   limbique: typeof limbique;
+  "migrations/addDocumentsTasksToHighRanks": typeof migrations_addDocumentsTasksToHighRanks;
+  "migrations/auditDocumentsAccessForHighRanks": typeof migrations_auditDocumentsAccessForHighRanks;
   "migrations/backfillAggregates": typeof migrations_backfillAggregates;
   "migrations/backfillCopyOwnerOrgId": typeof migrations_backfillCopyOwnerOrgId;
   "migrations/backfillEmptyFormData": typeof migrations_backfillEmptyFormData;
