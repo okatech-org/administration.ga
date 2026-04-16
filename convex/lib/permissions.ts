@@ -298,3 +298,90 @@ export async function assertCanAccessService(
   }
 }
 
+// ============================================
+// Citizen Contacts Access (Affaires consulaires)
+// ============================================
+
+/**
+ * Modules qui caractérisent une représentation gérant les affaires consulaires.
+ * Présence d'au moins l'un d'entre eux dans `org.modules` → l'org est consulaire
+ * et a un accès "natif" aux contacts citoyens de sa juridiction.
+ */
+const CONSULAR_AFFAIRS_MODULES: ReadonlyArray<ModuleCodeValue> = [
+  "consular_registrations",
+  "consular_cards",
+  "passports",
+  "visas",
+  "civil_status",
+] as ModuleCodeValue[];
+
+/**
+ * Une org « gère les affaires consulaires » si elle a au moins un module
+ * consulaire spécifique activé (passeports, visas, état civil, cartes ou
+ * inscriptions consulaires).
+ *
+ * Exemples :
+ *   - Consulat Général Gabon Paris → ["consular_registrations","consular_cards","passports"] → true
+ *   - Ambassade Gabon France (non consulaire) → [] ou ["communication"] → false
+ */
+export function orgHandlesConsularAffairs(
+  org: Doc<"orgs"> | null | undefined,
+): boolean {
+  const modules = org?.modules;
+  if (!modules || modules.length === 0) return false;
+  return CONSULAR_AFFAIRS_MODULES.some((m) =>
+    (modules as ModuleCodeValue[]).includes(m),
+  );
+}
+
+/**
+ * Vérifie si un membership peut consulter les contacts citoyens rattachés
+ * à son org (sa juridiction).
+ *
+ * Règles métier :
+ *   1. SuperAdmin → toujours autorisé.
+ *   2. Pas de membership → refusé.
+ *   3. L'org doit soit gérer les affaires consulaires (modules consulaires),
+ *      soit avoir activé explicitement le module `citizen_profiles`
+ *      (cas ambassade non consulaire qui veut quand même l'annuaire).
+ *   4. RBAC fin : la position/le membership doit avoir la task
+ *      `citizen_profiles.view` (via moduleAccess, tasks legacy ou
+ *      specialPermissions).
+ *
+ * Note : on n'utilise pas `canDoTask()` ici car ce dernier exigerait que
+ * le module `citizen_profiles` soit activé sur l'org (étape 4 de canDoTask).
+ * Or, dans le cas consulaire, on accorde l'accès même sans ce module — c'est
+ * la présence d'un module consulaire spécifique qui ouvre le droit.
+ */
+export async function canViewCitizenContacts(
+  ctx: AuthContext,
+  user: Doc<"users">,
+  membership: Doc<"memberships"> | null | undefined,
+  org: Doc<"orgs"> | null | undefined,
+): Promise<boolean> {
+  // 1. SuperAdmin bypass
+  if (isSuperAdmin(user)) return true;
+
+  // 2. Membership requis
+  if (!membership) return false;
+
+  // 3. Gate org-level : module consulaire ou opt-in citizen_profiles
+  const handlesConsular = orgHandlesConsularAffairs(org);
+  const hasCitizenProfilesModule =
+    (org?.modules as string[] | undefined)?.includes("citizen_profiles") ??
+    false;
+  if (!handlesConsular && !hasCitizenProfilesModule) return false;
+
+  // 4. RBAC position/membership (sans repasser par canDoTask qui revérifierait
+  // le module citizen_profiles)
+  const overrideEffect = checkSpecialPermission(
+    membership,
+    "citizen_profiles.view",
+  );
+  if (overrideEffect === PermissionEffect.Deny) return false;
+  if (overrideEffect === PermissionEffect.Grant) return true;
+
+  const tasks = await getTasksForMembership(ctx, membership);
+  return tasks.has("citizen_profiles.view");
+}
+
