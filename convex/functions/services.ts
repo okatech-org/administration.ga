@@ -15,6 +15,7 @@ import {
   formSchemaValidator,
   eligibleProfilesValidator,
   CountryCode,
+  requestStatusValidator,
 } from "../lib/validators";
 import { fileObjectValidator } from "../schemas/documents";
 
@@ -415,6 +416,57 @@ export const updateOrgService = authMutation({
     });
 
     return orgServiceId;
+  },
+});
+
+/**
+ * Replace the set of auto-generation rules attached to an OrgService.
+ *
+ * Permission: `documents.manage_templates` on the service's org (falls back
+ * to settings.manage for super admins). The whole rule array is replaced
+ * atomically — clients send the full desired state each time.
+ */
+export const updateAutoGenerationRules = authMutation({
+  args: {
+    orgServiceId: v.id("orgServices"),
+    rules: v.array(
+      v.object({
+        trigger: v.union(
+          v.literal("on_submission"),
+          v.literal("on_status_transition"),
+        ),
+        fromStatus: v.optional(requestStatusValidator),
+        toStatus: v.optional(requestStatusValidator),
+        templateId: v.id("documentTemplates"),
+        autoSign: v.boolean(),
+        autoPublish: v.boolean(),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const orgService = await ctx.db.get(args.orgServiceId);
+    if (!orgService) throw error(ErrorCode.SERVICE_NOT_FOUND);
+
+    const membership = await getMembership(ctx, ctx.user._id, orgService.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "documents.manage_templates");
+
+    // Validate every referenced template exists and belongs to the same org
+    // (or is global). Defensive — catches stale/cross-org IDs at save time.
+    for (const rule of args.rules) {
+      const template = await ctx.db.get(rule.templateId);
+      if (!template || !template.isActive) {
+        throw error(ErrorCode.VALIDATION_ERROR, "Modèle introuvable ou inactif");
+      }
+      if (!template.isGlobal && template.orgId !== orgService.orgId) {
+        throw error(ErrorCode.FORBIDDEN, "Modèle non autorisé pour cette organisation");
+      }
+    }
+
+    await ctx.db.patch(args.orgServiceId, {
+      autoGenerationRules: args.rules,
+      updatedAt: Date.now(),
+    });
+    return args.orgServiceId;
   },
 });
 
