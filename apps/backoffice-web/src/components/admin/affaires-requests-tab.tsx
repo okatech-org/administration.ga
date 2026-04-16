@@ -5,6 +5,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useRouter } from "next/navigation";
 import {
 	Building2,
+	ChevronLeft,
 	ChevronRight,
 	Clock,
 	FileText,
@@ -13,19 +14,11 @@ import {
 	Search,
 	User,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
-import { Input } from "@/components/ui/input";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { FlatCard } from "@/components/design-system/flat-card";
 import {
 	useAuthenticatedConvexQuery,
 	useAuthenticatedPaginatedQuery,
@@ -174,33 +167,17 @@ function getInitials(firstName?: string, lastName?: string): string {
 
 // ─── Main Component ──────────────────────────────────────────────────
 
-export function AffairesRequestsTab() {
+export function AffairesRequestsTab({
+	searchQuery,
+	orgFilter,
+}: {
+	searchQuery: string;
+	orgFilter: string;
+}) {
 	const router = useRouter();
 	const { t } = useTranslation();
 
-	const [statusFilter, setStatusFilter] = useState<string>("all");
-	const [orgFilter, setOrgFilter] = useState<string>("all");
-	const [searchQuery, setSearchQuery] = useState("");
-
-	// Fetch orgs for the combobox filter
-	const { data: orgs } = useAuthenticatedConvexQuery(
-		api.functions.orgs.list,
-		{},
-	);
-
-	const orgOptions: ComboboxOption[] = useMemo(() => {
-		const opts: ComboboxOption[] = [
-			{ value: "all", label: "Tous les organismes" },
-		];
-		if (orgs) {
-			for (const org of orgs) {
-				opts.push({ value: org._id, label: org.name });
-			}
-		}
-		return opts;
-	}, [orgs]);
-
-	const {
+	const [statusFilter, setStatusFilter] = useState<string>("all");	const {
 		results: requests,
 		status: paginationStatus,
 		loadMore,
@@ -242,44 +219,22 @@ export function AffairesRequestsTab() {
 
 	const totalCount = requests?.length ?? 0;
 
-	return (
-		<>
-			{/* ── Filters Container ────────────────────── */}
-			<div className="space-y-4">
-				{/* Search bar + org filter */}
-				<div className="flex flex-col sm:flex-row gap-3">
-					<div className="relative flex-1">
-						<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-						<Input
-							placeholder={t(
-								"superadmin.requests.search",
-								"Rechercher par référence, nom, email ou organisme…",
-							)}
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							className="pl-10 h-11 text-sm bg-card border-border"
-						/>
-					</div>
-					<Combobox
-						options={orgOptions}
-						value={orgFilter}
-						onValueChange={setOrgFilter}
-						placeholder={t(
-							"superadmin.requests.allOrgs",
-							"Tous les organismes",
-						)}
-						searchPlaceholder={t(
-							"superadmin.requests.searchOrg",
-							"Rechercher un organisme…",
-						)}
-						emptyText={t(
-							"superadmin.requests.noOrgFound",
-							"Aucun organisme trouvé",
-						)}
-						className="w-full sm:w-[300px] h-11 bg-card border-border"
-					/>
-				</div>
+	// Pagination state
+	const ITEMS_PER_PAGE = 12; // 3 rows * 4 columns
+	const [currentPage, setCurrentPage] = useState(1);
+	useEffect(() => {
+		setCurrentPage(1);
+	}, [searchQuery, orgFilter, statusFilter]);
 
+	const slicedRequests = filteredRequests?.slice(
+		(currentPage - 1) * ITEMS_PER_PAGE,
+		currentPage * ITEMS_PER_PAGE
+	);
+
+	return (
+		<div className="flex flex-col flex-1 h-full gap-4 w-full">
+			{/* ── Filters Container ────────────────────── */}
+			<div className="shrink-0">
 				{/* Status pill tabs */}
 				<div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
 					{STATUS_TABS.map((tab) => {
@@ -322,157 +277,59 @@ export function AffairesRequestsTab() {
 				</div>
 			</div>
 
-			{/* ── Table ───────────────────────────────── */}
-			<div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm overflow-hidden">
-				<Table>
-					<TableHeader>
-						<TableRow className="bg-muted/30 hover:bg-muted/30">
-							<TableHead className="font-semibold">
-								{t("superadmin.requests.table.reference")}
-							</TableHead>
-							<TableHead className="font-semibold">
-								{t("superadmin.requests.table.org")}
-							</TableHead>
-							<TableHead className="font-semibold">
-								{t("superadmin.requests.table.service")}
-							</TableHead>
-							<TableHead className="font-semibold">
-								{t("superadmin.requests.table.requester")}
-							</TableHead>
-							<TableHead className="font-semibold">
-								{t("superadmin.requests.table.date")}
-							</TableHead>
-							<TableHead className="font-semibold">
-								{t("superadmin.requests.table.status")}
-							</TableHead>
-							<TableHead className="text-right font-semibold">
-								{t("superadmin.requests.table.actions")}
-							</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{isLoading && (filteredRequests?.length ?? 0) === 0 ? (
-							<TableRow>
-								<TableCell colSpan={7} className="h-32 text-center">
-									<div className="flex flex-col items-center gap-2">
-										<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-										<span className="text-sm text-muted-foreground">
-											{t(
-												"superadmin.requests.loading",
-												"Chargement des demandes…",
-											)}
-										</span>
-									</div>
-								</TableCell>
-							</TableRow>
-						) : filteredRequests?.length === 0 ? (
-							<TableRow>
-								<TableCell colSpan={7} className="h-32 text-center">
-									<div className="flex flex-col items-center gap-3 py-8">
-										<div className="rounded-full bg-muted/60 p-3">
-											<Inbox className="h-6 w-6 text-muted-foreground" />
-										</div>
-										<div>
-											<p className="font-medium text-foreground/80">
-												{t(
-													"superadmin.requests.empty",
-													"Aucune demande trouvée",
-												)}
-											</p>
-											<p className="text-xs text-muted-foreground mt-1">
-												{searchQuery ||
-												statusFilter !== "all" ||
-												orgFilter !== "all"
-													? t(
-															"superadmin.requests.emptyFiltered",
-															"Essayez de modifier vos filtres",
-														)
-													: t(
-															"superadmin.requests.emptyAll",
-															"Les nouvelles demandes apparaîtront ici",
-														)}
-											</p>
-										</div>
-									</div>
-								</TableCell>
-							</TableRow>
-						) : (
-							filteredRequests?.map((request: any) => {
-								const statusConf = getStatusConfig(request.status);
-								const userName = request.user
-									? `${request.user.firstName ?? ""} ${request.user.lastName ?? ""}`.trim()
-									: null;
+			{/* ── Grid ───────────────────────────────── */}
+			{isLoading && (filteredRequests?.length ?? 0) === 0 ? (
+				<div className="flex flex-col items-center justify-center p-12 bg-card rounded-xl border border-border/60">
+					<Loader2 className="h-6 w-6 animate-spin text-muted-foreground mb-2" />
+					<span className="text-sm text-muted-foreground">
+						{t("superadmin.requests.loading", "Chargement des demandes…")}
+					</span>
+				</div>
+			) : (filteredRequests?.length ?? 0) === 0 ? (
+				<div className="flex flex-col items-center gap-3 py-16 bg-card rounded-xl border border-border/60">
+					<div className="rounded-full bg-muted/60 p-4">
+						<Inbox className="h-8 w-8 text-muted-foreground" />
+					</div>
+					<div className="text-center">
+						<p className="font-medium text-foreground/80">
+							{t("superadmin.requests.empty", "Aucune demande trouvée")}
+						</p>
+						<p className="text-sm text-muted-foreground mt-1">
+							{searchQuery || statusFilter !== "all" || orgFilter !== "all"
+								? t("superadmin.requests.emptyFiltered", "Essayez de modifier vos filtres")
+								: t("superadmin.requests.emptyAll", "Les nouvelles demandes apparaîtront ici")}
+						</p>
+					</div>
+				</div>
+			) : (
+				<div className="flex flex-col flex-1 min-h-[450px] w-full">
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 flex-1 auto-rows-fr w-full">
+						{slicedRequests?.map((request: any) => {
+							const statusConf = getStatusConfig(request.status);
+							const userName = request.user
+								? `${request.user.firstName ?? ""} ${request.user.lastName ?? ""}`.trim()
+								: null;
 
-								return (
-									<TableRow
-										key={request._id}
-										className="cursor-pointer hover:bg-muted/40 transition-colors group"
-										onClick={() =>
-											router.push(`/requests/${request._id}`)
-										}
-									>
-										{/* Reference */}
-										<TableCell>
-											<div className="flex items-center gap-2">
-												<div className="rounded-md bg-primary/10 p-1.5">
-													<FileText className="h-3.5 w-3.5 text-primary" />
+							return (
+								<FlatCard
+									key={request._id}
+									className="cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden flex flex-col min-h-[155px] h-full"
+									onClick={() => router.push(`/requests/${request._id}`)}
+								>
+									<div className="p-3.5 flex flex-col h-full gap-2.5">
+										{/* Header: Service, Date */}
+										<div className="flex items-start justify-between gap-1">
+											<div className="flex items-center gap-2 min-w-0 pr-1">
+												<div className="rounded-md bg-primary/10 p-1.5 flex items-center justify-center shrink-0">
+													<FileText className="h-4 w-4 text-primary" />
 												</div>
-												<span className="font-mono text-xs font-semibold">
+												<span className="font-semibold text-sm truncate">
 													{request.reference || "—"}
 												</span>
 											</div>
-										</TableCell>
-
-										{/* Organisation */}
-										<TableCell>
-											<div className="flex items-center gap-2">
-												<Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-												<span className="text-sm truncate max-w-[160px]">
-													{request.org?.name ?? "—"}
-												</span>
-											</div>
-										</TableCell>
-
-										{/* Service */}
-										<TableCell>
-											<span className="text-sm">
-												{(request.serviceName as any)?.fr ??
-													(request.service as any)?.name?.fr ??
-													"Service"}
-											</span>
-										</TableCell>
-
-										{/* Requester */}
-										<TableCell>
-											<div className="flex items-center gap-2.5">
-												<div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary text-xs font-bold shrink-0">
-													{userName ? (
-														getInitials(
-															request.user?.firstName,
-															request.user?.lastName,
-														)
-													) : (
-														<User className="h-3.5 w-3.5" />
-													)}
-												</div>
-												<div className="flex flex-col min-w-0">
-													<span className="font-medium text-sm truncate">
-														{userName || "Utilisateur inconnu"}
-													</span>
-													{request.user?.email && (
-														<span className="text-xs text-muted-foreground truncate">
-															{request.user.email}
-														</span>
-													)}
-												</div>
-											</div>
-										</TableCell>
-
-										{/* Date */}
-										<TableCell>
-											<div className="flex items-center gap-1.5 text-muted-foreground">
-												<Clock className="h-3.5 w-3.5 shrink-0" />
-												<span className="text-xs whitespace-nowrap">
+											<div className="flex items-center gap-1.5 shrink-0 pl-2 border-l border-border/50">
+												<Clock className="w-3.5 h-3.5 text-muted-foreground" />
+												<span className="text-[10px] text-muted-foreground font-medium">
 													{request.submittedAt
 														? timeAgo(request.submittedAt)
 														: request._creationTime
@@ -480,58 +337,100 @@ export function AffairesRequestsTab() {
 															: "-"}
 												</span>
 											</div>
-										</TableCell>
+										</div>
 
-										{/* Status */}
-										<TableCell>
-											<span
+										<div className="flex-1 mt-1">
+											{/* Body: Ref, Org */}
+											<h3 className="font-semibold text-xs leading-snug line-clamp-2 text-muted-foreground mb-1.5">
+												{(request.serviceName as any)?.fr ??
+													(request.service as any)?.name?.fr ??
+													"Service"}
+											</h3>
+											<div className="flex items-center gap-1.5 text-muted-foreground">
+												<Building2 className="h-3.5 w-3.5 shrink-0" />
+												<span className="text-xs truncate max-w-[200px]">
+													{request.org?.name ?? "—"}
+												</span>
+											</div>
+										</div>
+
+										{/* Footer: Requester & Status */}
+										<div className="pt-2.5 flex items-center justify-between gap-2 border-t border-border/50 mt-auto">
+											<div className="flex items-center gap-2 min-w-0">
+												<div className="flex h-6 w-6 items-center justify-center rounded-full bg-linear-to-br from-primary/20 to-primary/5 text-primary text-[10px] font-bold shrink-0">
+													{userName ? (
+														getInitials(request.user?.firstName, request.user?.lastName)
+													) : (
+														<User className="h-3 w-3" />
+													)}
+												</div>
+												<span className="font-medium text-xs truncate max-w-[130px]">
+													{userName || "Utilisateur"}
+												</span>
+											</div>
+											<Badge
 												className={cn(
-													"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+													"text-[10px] px-2 py-0.5 h-[22px] border shrink-0 font-medium",
 													statusConf.bgClass,
 													statusConf.textClass,
+													"border-current/20"
 												)}
+												variant="secondary"
 											>
 												{statusConf.label}
-											</span>
-										</TableCell>
-
-										{/* Actions */}
-										<TableCell className="text-right">
-											<Button
-												size="sm"
-												variant="ghost"
-												className="opacity-0 group-hover:opacity-100 transition-opacity"
-											>
-												{t("superadmin.requests.view")}
-												<ChevronRight className="h-4 w-4 ml-1" />
-											</Button>
-										</TableCell>
-									</TableRow>
-								);
-							})
-						)}
-					</TableBody>
-				</Table>
-
-				{/* Load More */}
-				{paginationStatus === "CanLoadMore" && (
-					<div className="flex justify-center py-4 border-t border-border/40">
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => loadMore(25)}
-							className="gap-2"
-						>
-							{t("superadmin.requests.loadMore")}
-						</Button>
+											</Badge>
+										</div>
+									</div>
+								</FlatCard>
+							);
+						})}
 					</div>
-				)}
-				{paginationStatus === "LoadingMore" && (
-					<div className="flex justify-center py-4 border-t border-border/40">
-						<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-					</div>
-				)}
-			</div>
-		</>
+
+					{/* Pagination Handling */}
+					{Math.ceil((filteredRequests?.length ?? 0) / ITEMS_PER_PAGE) > 1 && (
+						<div className="flex items-center justify-center gap-3 pt-4 pb-2">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+								disabled={currentPage === 1}
+							>
+								<ChevronLeft className="h-4 w-4 mr-1" />
+								{t("common.previous", "Précédent")}
+							</Button>
+							
+							<div className="text-xs font-medium text-muted-foreground">
+								Page {currentPage} {paginationStatus !== "CanLoadMore" && `sur ${Math.ceil((filteredRequests?.length ?? 0) / ITEMS_PER_PAGE)}`}
+							</div>
+
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => {
+									if (paginationStatus === "CanLoadMore" && currentPage * ITEMS_PER_PAGE >= (filteredRequests?.length ?? 0)) {
+										loadMore(50);
+									}
+									setCurrentPage((p) => p + 1);
+								}}
+								disabled={
+									(currentPage * ITEMS_PER_PAGE >= (filteredRequests?.length ?? 0)) &&
+									paginationStatus !== "CanLoadMore"
+								}
+							>
+								{t("common.next", "Suivant")}
+								<ChevronRight className="h-4 w-4 ml-1" />
+							</Button>
+						</div>
+					)}
+
+					{/* Load More Fallback Status */}
+					{paginationStatus === "LoadingMore" && (
+						<div className="flex justify-center py-4 shrink-0">
+							<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+						</div>
+					)}
+				</div>
+			)}
+		</div>
 	);
 }
