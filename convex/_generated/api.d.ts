@@ -178,6 +178,7 @@ import type * as migrations_backfillCopyOwnerOrgId from "../migrations/backfillC
 import type * as migrations_backfillEmptyFormData from "../migrations/backfillEmptyFormData.js";
 import type * as migrations_fixIdentityPhotos from "../migrations/fixIdentityPhotos.js";
 import type * as migrations_fixOwnerIds from "../migrations/fixOwnerIds.js";
+import type * as migrations_grantDocumentsAdminToHighRanks from "../migrations/grantDocumentsAdminToHighRanks.js";
 import type * as migrations_initCardCounter from "../migrations/initCardCounter.js";
 import type * as migrations_migrateActionRequiredTypes from "../migrations/migrateActionRequiredTypes.js";
 import type * as migrations_migrateEmergencyContacts from "../migrations/migrateEmergencyContacts.js";
@@ -452,6 +453,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/backfillEmptyFormData": typeof migrations_backfillEmptyFormData;
   "migrations/fixIdentityPhotos": typeof migrations_fixIdentityPhotos;
   "migrations/fixOwnerIds": typeof migrations_fixOwnerIds;
+  "migrations/grantDocumentsAdminToHighRanks": typeof migrations_grantDocumentsAdminToHighRanks;
   "migrations/initCardCounter": typeof migrations_initCardCounter;
   "migrations/migrateActionRequiredTypes": typeof migrations_migrateActionRequiredTypes;
   "migrations/migrateEmergencyContacts": typeof migrations_migrateEmergencyContacts;
