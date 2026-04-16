@@ -11,6 +11,7 @@ import { FilePlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { OrgTypeAccessPicker } from "@/components/config/OrgTypeAccessPicker";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { PageHeader } from "@/components/design-system/page-header";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,9 @@ export default function NewGlobalTemplatePage() {
 	const [orientation, setOrientation] = useState<"portrait" | "landscape">("portrait");
 	const [autoPublishToCitizen, setAutoPublish] = useState(true);
 	const [requireSignature, setRequireSignature] = useState(false);
+	const [allowedOrgTypes, setAllowedOrgTypes] = useState<string[] | undefined>(
+		undefined,
+	);
 	const [isPending, setIsPending] = useState(false);
 
 	const { mutateAsync: createTemplate } = useConvexMutationQuery(
@@ -49,6 +53,12 @@ export default function NewGlobalTemplatePage() {
 		e.preventDefault();
 		if (!nameFr.trim()) {
 			toast.error("Saisis un nom en français");
+			return;
+		}
+		if (allowedOrgTypes && allowedOrgTypes.length === 0) {
+			toast.error(
+				"Coche au moins un type d'organisation autorisé ou désactive la restriction",
+			);
 			return;
 		}
 		setIsPending(true);
@@ -64,6 +74,9 @@ export default function NewGlobalTemplatePage() {
 				},
 				placeholders: [],
 				isGlobal: true,
+				autoPublishToCitizen,
+				requireSignature,
+				allowedOrgTypes: allowedOrgTypes as never,
 				paperSize,
 				orientation,
 			});
@@ -192,6 +205,11 @@ export default function NewGlobalTemplatePage() {
 							<Switch checked={requireSignature} onCheckedChange={setRequireSignature} />
 						</div>
 					</div>
+
+					<OrgTypeAccessPicker
+						value={allowedOrgTypes}
+						onChange={setAllowedOrgTypes}
+					/>
 
 					<div className="flex justify-end gap-2">
 						<Button type="button" variant="ghost" onClick={() => router.back()}>

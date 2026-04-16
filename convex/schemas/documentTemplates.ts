@@ -1,6 +1,10 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
-import { serviceCategoryValidator, localizedStringValidator } from "../lib/validators";
+import {
+	serviceCategoryValidator,
+	localizedStringValidator,
+	orgTypeValidator,
+} from "../lib/validators";
 
 /**
  * Document Templates — templates for generating official PDF documents
@@ -72,6 +76,12 @@ export const documentTemplatesTable = defineTable({
 	// Visibility / lifecycle
 	isGlobal: v.boolean(),
 	isActive: v.boolean(),
+
+	// ─── Accessibility by organization type ──────────────────────────────
+	// GLOBAL templates only — restricts which org types can use (list / clone)
+	// this template. When omitted or empty, every org type has access. Values
+	// are org types from `OrganizationType` (embassy, general_consulate, ...).
+	allowedOrgTypes: v.optional(v.array(orgTypeValidator)),
 
 	// Locked once a document has been generated from this template. Further
 	// edits force a new version rather than mutating the live record.

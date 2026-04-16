@@ -1,7 +1,11 @@
 import { v } from "convex/values";
 import { internalMutation, type MutationCtx } from "../_generated/server";
 import { authMutation, authQuery } from "../lib/customFunctions";
-import { serviceCategoryValidator, localizedStringValidator } from "../lib/validators";
+import {
+	serviceCategoryValidator,
+	localizedStringValidator,
+	orgTypeValidator,
+} from "../lib/validators";
 import { ServiceCategory } from "../lib/constants";
 import {
 	assertCanManageGlobalTemplates,
@@ -16,7 +20,9 @@ import type { Doc, Id } from "../_generated/dataModel";
 // ============================================================================
 
 /**
- * List document templates for an organization
+ * List document templates available to an organization — returns the union
+ * of its own templates plus global templates whose `allowedOrgTypes` matches
+ * the org's type (or is unrestricted).
  */
 export const listByOrg = authQuery({
 	args: {
@@ -33,33 +39,52 @@ export const listByOrg = authQuery({
 		),
 	},
 	handler: async (ctx, args) => {
-		// Get org-specific templates
-		let templates = await ctx.db
+		const org = await ctx.db.get(args.orgId);
+		const orgType = org?.type;
+
+		// Org-specific templates are always fully visible to the org.
+		const orgTemplates = await ctx.db
 			.query("documentTemplates")
 			.withIndex("by_org", (q) => q.eq("orgId", args.orgId).eq("isActive", true))
 			.collect();
 
-		// Also get global templates
+		// Global templates — filter by allowedOrgTypes.
 		const globalTemplates = await ctx.db
 			.query("documentTemplates")
 			.withIndex("by_global", (q) => q.eq("isGlobal", true).eq("isActive", true))
 			.collect();
+		const visibleGlobals = globalTemplates.filter((t) =>
+			orgTypeAllowed(t.allowedOrgTypes, orgType),
+		);
 
-		// Merge and deduplicate
-		const allTemplates = [...templates, ...globalTemplates];
+		// Merge and deduplicate (an org template won't overlap a global by _id).
+		const allTemplates = [...orgTemplates, ...visibleGlobals];
 
-		// Filter by category if provided
 		let filtered = allTemplates;
 		if (args.category) {
 			filtered = filtered.filter((t) => t.category === args.category);
 		}
-
-		// Filter by type if provided
 		if (args.templateType) {
 			filtered = filtered.filter((t) => t.templateType === args.templateType);
 		}
-
 		return filtered;
+	},
+});
+
+/**
+ * List global templates that a given org type can clone or use.
+ * Used by the agent "clone from global" picker.
+ */
+export const listGlobalForOrg = authQuery({
+	args: { orgId: v.id("orgs") },
+	handler: async (ctx, args) => {
+		const org = await ctx.db.get(args.orgId);
+		if (!org) return [];
+		const all = await ctx.db
+			.query("documentTemplates")
+			.withIndex("by_global", (q) => q.eq("isGlobal", true).eq("isActive", true))
+			.collect();
+		return all.filter((t) => orgTypeAllowed(t.allowedOrgTypes, org.type));
 	},
 });
 
@@ -82,32 +107,42 @@ export const listForService = authQuery({
 		orgId: v.optional(v.id("orgs")),
 	},
 	handler: async (ctx, args) => {
-		// Get templates linked to this service
+		const org = args.orgId ? await ctx.db.get(args.orgId) : null;
+		const orgType = org?.type;
+
+		// Templates linked directly to the service.
 		const serviceTemplates = await ctx.db
 			.query("documentTemplates")
 			.withIndex("by_service", (q) => q.eq("serviceId", args.serviceId).eq("isActive", true))
 			.collect();
 
-		// Get global templates
+		// Global templates — filter by org type if we have one.
 		const globalTemplates = await ctx.db
 			.query("documentTemplates")
 			.withIndex("by_global", (q) => q.eq("isGlobal", true).eq("isActive", true))
 			.collect();
+		const visibleGlobals = orgType
+			? globalTemplates.filter((t) => orgTypeAllowed(t.allowedOrgTypes, orgType))
+			: globalTemplates;
 
-		// If orgId provided, also get org templates
-		let orgTemplates: any[] = [];
+		// Org-specific templates.
+		let orgTemplates: Doc<"documentTemplates">[] = [];
 		if (args.orgId) {
 			orgTemplates = await ctx.db
 				.query("documentTemplates")
-				.withIndex("by_org", (q) => q.eq("orgId", args.orgId).eq("isActive", true))
+				.withIndex("by_org", (q) => q.eq("orgId", args.orgId as Id<"orgs">).eq("isActive", true))
 				.collect();
 		}
 
-		// Merge and deduplicate by ID
-		const all = [...serviceTemplates, ...globalTemplates, ...orgTemplates];
-		const unique = Array.from(new Map(all.map((t) => [t._id, t])).values());
+		const all = [...serviceTemplates, ...visibleGlobals, ...orgTemplates];
+		const unique = Array.from(
+			new Map(all.map((t) => [t._id, t])).values(),
+		);
 
-		return unique;
+		// Also make sure service-linked templates respect allowedOrgTypes when they are global.
+		return unique.filter(
+			(t) => !t.isGlobal || orgTypeAllowed(t.allowedOrgTypes, orgType),
+		);
 	},
 });
 
@@ -142,6 +177,7 @@ export const create = authMutation({
 		autoPublishToCitizen: v.optional(v.boolean()),
 		requireSignature: v.optional(v.boolean()),
 		allowedSignerPositions: v.optional(v.array(v.string())),
+		allowedOrgTypes: v.optional(v.array(orgTypeValidator)),
 		paperSize: v.optional(v.union(v.literal("A4"), v.literal("LETTER"))),
 		orientation: v.optional(v.union(v.literal("portrait"), v.literal("landscape"))),
 	},
@@ -206,6 +242,7 @@ export const update = authMutation({
 		autoPublishToCitizen: v.optional(v.boolean()),
 		requireSignature: v.optional(v.boolean()),
 		allowedSignerPositions: v.optional(v.array(v.string())),
+		allowedOrgTypes: v.optional(v.array(orgTypeValidator)),
 		paperSize: v.optional(v.union(v.literal("A4"), v.literal("LETTER"))),
 		orientation: v.optional(v.union(v.literal("portrait"), v.literal("landscape"))),
 		changeNote: v.optional(v.string()),
@@ -263,6 +300,15 @@ export const cloneFromGlobal = authMutation({
 		if (!source) throw new Error("Template source introuvable");
 		if (!source.isGlobal) {
 			throw error(ErrorCode.FORBIDDEN, "Seuls les modèles globaux peuvent être clonés");
+		}
+
+		const org = await ctx.db.get(args.orgId);
+		if (!org) throw new Error("Organisation introuvable");
+		if (!orgTypeAllowed(source.allowedOrgTypes, org.type)) {
+			throw error(
+				ErrorCode.FORBIDDEN,
+				"Ce modèle n'est pas accessible à ce type d'organisation",
+			);
 		}
 
 		const membership = await ctx.db
@@ -455,6 +501,21 @@ export const listGlobal = authQuery({
 // ============================================================================
 // HELPERS
 // ============================================================================
+
+/**
+ * Returns true when a global template is accessible to the given org type.
+ *  - Unrestricted (`allowedOrgTypes` undefined/empty) → always true.
+ *  - Restricted → the org type must be explicitly listed.
+ *  - Missing org type (should not happen in practice) → denied.
+ */
+function orgTypeAllowed(
+	allowed: string[] | undefined,
+	orgType: string | undefined,
+): boolean {
+	if (!allowed || allowed.length === 0) return true;
+	if (!orgType) return false;
+	return allowed.includes(orgType);
+}
 
 /**
  * Archive the current state of a template into `documentTemplateVersions`
