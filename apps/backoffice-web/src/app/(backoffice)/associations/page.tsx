@@ -18,8 +18,10 @@ import {
   Search,
   Users,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -71,66 +73,19 @@ const ASSOCIATION_TYPE_LABELS: Record<string, { label: string; emoji: string }> 
 
 export default function AssociationManagementPage() {
   const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState("associations");
+
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const { data: claims } = useAuthenticatedConvexQuery(
     api.functions.associationClaims.listClaims,
     {},
   );
-
   const pendingClaimsCount = claims?.length ?? 0;
 
-  return (
-    <div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
-      <PageHeader
-        icon={<Building2 className="h-5 w-5" />}
-        title={t("admin.associations.title", "Gestion des Associations")}
-        subtitle={t(
-          "admin.associations.description",
-          "Gérez les associations de la diaspora et examinez les réclamations",
-        )}
-      />
-
-      <Tabs defaultValue="associations">
-        <TabsList>
-          <TabsTrigger value="associations" className="gap-2">
-            <Building2 className="h-4 w-4" />
-            {t("admin.associations.tabAssociations", "Associations")}
-          </TabsTrigger>
-          <TabsTrigger value="claims" className="gap-2">
-            <Crown className="h-4 w-4" />
-            {t("admin.associations.tabClaims", "Réclamations")}
-            {pendingClaimsCount > 0 && (
-              <Badge variant="destructive" className="ml-1 text-[10px] px-1.5 py-0 h-5 min-w-5 flex items-center justify-center">
-                {pendingClaimsCount}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="associations" className="mt-4">
-          <AssociationsTab />
-        </TabsContent>
-
-        <TabsContent value="claims" className="mt-4">
-          <ClaimsTab />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TAB 1 — ASSOCIATIONS LIST
-// ═══════════════════════════════════════════════════════════════
-
-function AssociationsTab() {
-  const { t } = useTranslation();
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [selectedAssociation, setSelectedAssociation] = useState<any | null>(null);
-
-  const { data: associations, isPending } = useAuthenticatedConvexQuery(
+  const { data: associations, isPending: isAssociationsPending } = useAuthenticatedConvexQuery(
     api.functions.associations.listAllAdmin,
     {},
   );
@@ -153,6 +108,116 @@ function AssociationsTab() {
     });
   }, [associations, search, typeFilter, statusFilter]);
 
+  return (
+    <div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+      <PageHeader
+        icon={<Building2 className="h-5 w-5" />}
+        title={t("admin.associations.title", "Gestion des Associations")}
+        subtitle={t(
+          "admin.associations.description",
+          "Gérez les associations de la diaspora et examinez les réclamations",
+        )}
+      />
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-4">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          <TabsList className="w-fit shrink-0">
+            <TabsTrigger value="associations" className="gap-2">
+              <Building2 className="h-4 w-4" />
+              {t("admin.associations.tabAssociations", "Associations")}
+            </TabsTrigger>
+            <TabsTrigger value="claims" className="gap-2">
+              <Crown className="h-4 w-4" />
+              {t("admin.associations.tabClaims", "Réclamations")}
+              {pendingClaimsCount > 0 && (
+                <Badge variant="destructive" className="ml-1 text-[10px] px-1.5 py-0 h-5 min-w-5 flex items-center justify-center">
+                  {pendingClaimsCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          {activeTab === "associations" && (
+            <div className="flex flex-wrap items-center xl:justify-end gap-3 flex-1">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t("admin.associations.searchPlaceholder", "Rechercher une association...")}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9 h-9"
+                />
+              </div>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-[160px] h-9">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("common.all", "Tous les types")}</SelectItem>
+                  {Object.entries(ASSOCIATION_TYPE_LABELS).map(([value, { label, emoji }]) => (
+                    <SelectItem key={value} value={value}>
+                      {emoji} {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[130px] h-9">
+                  <SelectValue placeholder="Statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("common.allStatuses", "Tous")}</SelectItem>
+                  <SelectItem value="active">{t("common.active", "Actif")}</SelectItem>
+                  <SelectItem value="inactive">{t("common.inactive", "Inactif")}</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="text-sm text-muted-foreground whitespace-nowrap">
+                {filtered.length} {t("admin.associations.results", "résultat(s)")}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <TabsContent value="associations" className="mt-0 border-none outline-none">
+          <AssociationsTab 
+            filtered={filtered} 
+            isPending={isAssociationsPending} 
+            searchDeps={`${search}-${typeFilter}-${statusFilter}`} 
+          />
+        </TabsContent>
+
+        <TabsContent value="claims" className="mt-0 border-none outline-none">
+          <ClaimsTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAB 1 — ASSOCIATIONS LIST
+// ═══════════════════════════════════════════════════════════════
+
+function AssociationsTab({ 
+  filtered, 
+  isPending, 
+  searchDeps 
+}: { 
+  filtered: any[]; 
+  isPending: boolean; 
+  searchDeps: string; 
+}) {
+  const { t } = useTranslation();
+  const [selectedAssociation, setSelectedAssociation] = useState<any | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
+
+  // Reset current page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchDeps]);
+
   if (isPending) {
     return (
       <div className="flex items-center justify-center h-32">
@@ -163,46 +228,8 @@ function AssociationsTab() {
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={t("admin.associations.searchPlaceholder", "Rechercher une association...")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("common.all", "Tous les types")}</SelectItem>
-            {Object.entries(ASSOCIATION_TYPE_LABELS).map(([value, { label, emoji }]) => (
-              <SelectItem key={value} value={value}>
-                {emoji} {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Statut" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("common.allStatuses", "Tous")}</SelectItem>
-            <SelectItem value="active">{t("common.active", "Actif")}</SelectItem>
-            <SelectItem value="inactive">{t("common.inactive", "Inactif")}</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="text-sm text-muted-foreground">
-          {filtered.length} {t("admin.associations.results", "résultat(s)")}
-        </div>
-      </div>
 
-      {/* Table */}
+      {/* Grid Component */}
       {filtered.length === 0 ? (
         <FlatCard>
           <div className="p-3 lg:p-4 flex flex-col items-center justify-center py-12">
@@ -213,98 +240,98 @@ function AssociationsTab() {
           </div>
         </FlatCard>
       ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/50 border-b border-border">
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                    {t("admin.associations.colName", "Nom")}
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                    {t("admin.associations.colType", "Type")}
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                    {t("admin.associations.colCountry", "Pays")}
-                  </th>
-                  <th className="text-center px-4 py-3 font-medium text-muted-foreground">
-                    {t("admin.associations.colMembers", "Membres")}
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                    {t("admin.associations.colPresident", "Président")}
-                  </th>
-                  <th className="text-center px-4 py-3 font-medium text-muted-foreground">
-                    {t("admin.associations.colStatus", "Statut")}
-                  </th>
-                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">
-                    {t("admin.associations.colCreated", "Créée le")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((assoc) => {
-                  const typeInfo = ASSOCIATION_TYPE_LABELS[assoc.associationType];
-                  const presidentName =
-                    assoc.president?.firstName && assoc.president?.lastName
-                      ? `${assoc.president.firstName} ${assoc.president.lastName}`
-                      : assoc.president?.name ?? "—";
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {filtered
+              .slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+              .map((assoc) => {
+                const typeInfo = ASSOCIATION_TYPE_LABELS[assoc.associationType];
+                const presidentName =
+                  assoc.president?.firstName && assoc.president?.lastName
+                    ? `${assoc.president.firstName} ${assoc.president.lastName}`
+                    : assoc.president?.name ?? "—";
 
-                  return (
-                    <tr
-                      key={assoc._id}
-                      className="border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors"
-                      onClick={() => setSelectedAssociation(assoc)}
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-sm shrink-0">
-                            {typeInfo?.emoji ?? ""}
-                          </div>
-                          <span className="font-medium truncate max-w-[200px]">
+                return (
+                  <FlatCard
+                    key={assoc._id}
+                    className="cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden flex flex-col h-full"
+                    onClick={() => setSelectedAssociation(assoc)}
+                  >
+                    <div className="p-2.5 flex flex-col h-full gap-2">
+                      {/* Header: Status, Icon, Title */}
+                      <div className="flex items-start gap-2.5">
+                        <div className="h-8 w-8 flex shrink-0 items-center justify-center rounded bg-primary/10 text-base">
+                          {typeInfo?.emoji || "🏢"}
+                        </div>
+                        <div className="flex-1 min-w-0 mt-0.5">
+                          <h3 className="font-medium text-sm line-clamp-2 leading-snug">
                             {assoc.name}
+                          </h3>
+                        </div>
+                        <div className="shrink-0 pt-1">
+                          {assoc.isActive && !assoc.deletedAt ? (
+                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" title={t("common.active", "Actif")} />
+                          ) : (
+                            <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground" title={t("common.inactive", "Inactif")} />
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex-1" />
+
+                      {/* Footer: Details */}
+                      <div className="pt-2 flex items-center justify-between gap-1.5 border-t border-border/50 text-[10px] text-muted-foreground mt-auto">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span title={assoc.country} className="text-sm leading-none shrink-0">
+                            {getCountryFlag(assoc.country)}
+                          </span>
+                          <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 font-normal bg-muted/60 truncate">
+                            {typeInfo?.label ?? assoc.associationType}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3 shrink-0" />
+                            <span>{assoc.memberCount} M.</span>
+                          </div>
+                          <span className="text-[9px]">
+                            {new Date(assoc._creationTime).toLocaleDateString("fr-FR")}
                           </span>
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant="secondary" className="text-xs">
-                          {typeInfo?.label ?? assoc.associationType}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-base">{getCountryFlag(assoc.country)}</span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>{assoc.memberCount}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-sm text-muted-foreground truncate max-w-[140px] block">
-                          {presidentName}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        {assoc.isActive && !assoc.deletedAt ? (
-                          <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs">
-                            {t("common.active", "Actif")}
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-xs text-muted-foreground">
-                            {t("common.inactive", "Inactif")}
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right text-muted-foreground text-xs">
-                        {new Date(assoc._creationTime).toLocaleDateString("fr-FR")}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+                  </FlatCard>
+                );
+              })}
           </div>
-        </div>
+
+          {/* Pagination Controls */}
+          {Math.ceil(filtered.length / ITEMS_PER_PAGE) > 1 && (
+            <div className="flex items-center justify-center gap-3 pt-2 pb-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                {t("common.previous", "Précédent")}
+              </Button>
+              <div className="text-xs font-medium text-muted-foreground">
+                Page {currentPage} sur {Math.ceil(filtered.length / ITEMS_PER_PAGE)}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.min(Math.ceil(filtered.length / ITEMS_PER_PAGE), p + 1))}
+                disabled={currentPage === Math.ceil(filtered.length / ITEMS_PER_PAGE)}
+              >
+                {t("common.next", "Suivant")}
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Detail Dialog */}
