@@ -9,11 +9,13 @@
  * React-PDF does not support arbitrary CSS / HTML, so each Tiptap node type is
  * mapped explicitly. Unknown nodes are skipped with a console warning.
  *
- * Sizes are in PDF points. Paper defaults: A4 portrait (595×842 pt).
+ * Sizes are in PDF points. Paper defaults: A4 portrait (595×842 pt), 20 mm
+ * margins on all sides.
  */
 
 import {
 	Document,
+	Font,
 	Image as PdfImage,
 	Page,
 	StyleSheet,
@@ -31,18 +33,59 @@ import type { ReactElement, ReactNode } from "react";
  */
 type PdfStyle = ReturnType<typeof StyleSheet.create>[string];
 
-import type { PageLayoutOptions, TiptapDocument, TiptapMark, TiptapNode } from "./types";
+import type {
+	PageLayoutOptions,
+	TiptapDocument,
+	TiptapMark,
+	TiptapNode,
+} from "./types";
+
+/** 1 mm in PDF points (PDF unit = 1/72 inch, 1 inch = 25.4 mm). */
+const MM_TO_PT = 2.83465;
+
+/** Convert millimetres to PDF points. */
+function mmToPt(mm: number): number {
+	return mm * MM_TO_PT;
+}
+
+/**
+ * The 14 PDF base fonts cover Helvetica, Times, Courier — no `Font.register()`
+ * needed for those families. We still call `register` once for our handful of
+ * supported families to make the intent explicit and to short-circuit any
+ * mismatched user input. Idempotent.
+ */
+let fontsRegistered = false;
+function registerStandardFonts(): void {
+	if (fontsRegistered) return;
+	// React-PDF auto-recognises these family names — listing them once here
+	// ensures the renderer never silently swallows a wrong family string.
+	Font.registerHyphenationCallback((word) => [word]);
+	fontsRegistered = true;
+}
+
+/** Family names we accept from Tiptap `fontFamily` marks. */
+const SAFE_FONT_FAMILIES = new Set([
+	"Helvetica",
+	"Times-Roman",
+	"Courier",
+]);
+
+/**
+ * Map a free-form fontFamily string (Tiptap stores anything the user types or
+ * the picker supplies) to one of the 14 PDF standard families. Anything we
+ * can't recognise falls back to Helvetica so the document still renders.
+ */
+function normaliseFontFamily(family: string): string | undefined {
+	const trimmed = family.trim();
+	if (!trimmed) return undefined;
+	if (SAFE_FONT_FAMILIES.has(trimmed)) return trimmed;
+	const lower = trimmed.toLowerCase();
+	if (lower.includes("times") || lower.includes("serif")) return "Times-Roman";
+	if (lower.includes("courier") || lower.includes("mono")) return "Courier";
+	return "Helvetica";
+}
 
 const styles = StyleSheet.create({
-	page: {
-		paddingTop: 56,
-		paddingBottom: 56,
-		paddingHorizontal: 56,
-		fontSize: 11,
-		fontFamily: "Helvetica",
-		lineHeight: 1.45,
-		color: "#1F1F1F",
-	},
 	paragraph: {
 		marginBottom: 8,
 	},
@@ -93,8 +136,30 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		borderColor: "#CFCFCF",
 	},
-	image: { marginVertical: 6, maxWidth: "100%" },
+	image: { marginVertical: 6 },
 });
+
+/** Default 20 mm margins on every side. */
+const DEFAULT_MARGIN_MM = 20;
+
+function pageStyle(options: PageLayoutOptions | undefined): PdfStyle {
+	const top = mmToPt(options?.marginTop ?? DEFAULT_MARGIN_MM);
+	const right = mmToPt(options?.marginRight ?? DEFAULT_MARGIN_MM);
+	const bottom = mmToPt(options?.marginBottom ?? DEFAULT_MARGIN_MM);
+	const left = mmToPt(options?.marginLeft ?? DEFAULT_MARGIN_MM);
+	return StyleSheet.create({
+		_: {
+			paddingTop: top,
+			paddingRight: right,
+			paddingBottom: bottom,
+			paddingLeft: left,
+			fontSize: 11,
+			fontFamily: "Helvetica",
+			lineHeight: 1.45,
+			color: "#1F1F1F",
+		},
+	})._;
+}
 
 /** Options that influence page setup (paper / orientation). */
 export interface PdfRenderOptions extends PageLayoutOptions {
@@ -112,11 +177,12 @@ export function TemplatePdfDocument({
 	doc: TiptapDocument;
 	options?: PdfRenderOptions;
 }): ReactElement {
+	registerStandardFonts();
 	const paper = options?.paperSize ?? "A4";
 	const orientation = options?.orientation ?? "portrait";
 	return (
 		<Document {...options?.documentProps}>
-			<Page size={paper} orientation={orientation} style={styles.page}>
+			<Page size={paper} orientation={orientation} style={pageStyle(options)}>
 				{renderNodes(doc.content ?? [])}
 			</Page>
 		</Document>
@@ -183,7 +249,28 @@ function renderNode(node: TiptapNode, key: string): ReactNode {
 		case "image": {
 			const src = node.attrs?.src;
 			if (typeof src !== "string" || !src) return null;
-			return <PdfImage key={key} src={src} style={styles.image} />;
+			const widthAttr = node.attrs?.width;
+			const align = (node.attrs?.align as
+				| "left"
+				| "center"
+				| "right"
+				| undefined) ?? "left";
+			const wrapperStyle: PdfStyle = StyleSheet.create({
+				_: {
+					marginVertical: 6,
+					alignItems:
+						align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start",
+				},
+			})._;
+			const imageStyle =
+				typeof widthAttr === "string" && widthAttr
+					? StyleSheet.create({ _: { width: parseImageWidth(widthAttr) } })._
+					: undefined;
+			return (
+				<View key={key} style={wrapperStyle}>
+					<PdfImage src={src} style={mergeStyles(styles.image, imageStyle)} />
+				</View>
+			);
 		}
 		case "table":
 			return (
@@ -242,25 +329,65 @@ function renderTextNode(node: TiptapNode, key: string): ReactNode {
  * Returns a merged style blob representing the set of inline marks on a text
  * node. React-PDF prefers a single Style object for text elements; stacking
  * arrays triggers SvgStyle duck-typing confusion in the typings.
+ *
+ * Supported marks:
+ *  - `bold`, `italic`, `underline`, `strike` (presence-based)
+ *  - `textStyle` carrying `color`, `fontSize` (number, pt) and `fontFamily`
  */
 function marksToStyle(marks: TiptapMark[]): PdfStyle | undefined {
 	let bold = false;
 	let italic = false;
 	let underline = false;
 	let strike = false;
+	let color: string | undefined;
+	let fontSize: number | undefined;
+	let fontFamily: string | undefined;
+
 	for (const m of marks) {
 		if (m.type === "bold") bold = true;
 		else if (m.type === "italic") italic = true;
 		else if (m.type === "underline") underline = true;
 		else if (m.type === "strike") strike = true;
+		else if (m.type === "textStyle") {
+			const attrs = (m.attrs ?? {}) as Record<string, unknown>;
+			if (typeof attrs.color === "string") color = attrs.color;
+			if (typeof attrs.fontSize === "number") fontSize = attrs.fontSize;
+			if (typeof attrs.fontFamily === "string") {
+				fontFamily = normaliseFontFamily(attrs.fontFamily);
+			}
+		}
 	}
-	if (!bold && !italic && !underline && !strike) return undefined;
+
+	if (
+		!bold &&
+		!italic &&
+		!underline &&
+		!strike &&
+		!color &&
+		fontSize === undefined &&
+		!fontFamily
+	) {
+		return undefined;
+	}
+
 	const merged: Record<string, unknown> = {};
+	// Font-family is set first; bold/italic combos overwrite it with the
+	// matching variant of the same family. This intentionally falls back to
+	// Helvetica for non-base families because React-PDF only ships the 14 base.
+	if (fontFamily) merged.fontFamily = fontFamily;
 	if (bold && italic) Object.assign(merged, styles.boldItalic);
 	else if (bold) Object.assign(merged, styles.bold);
 	else if (italic) Object.assign(merged, styles.italic);
-	if (underline) Object.assign(merged, styles.underline);
-	if (strike) Object.assign(merged, styles.strike);
+	if (underline) merged.textDecoration = "underline";
+	if (strike) {
+		merged.textDecoration =
+			merged.textDecoration === "underline"
+				? "line-through underline"
+				: "line-through";
+	}
+	if (color) merged.color = color;
+	if (fontSize) merged.fontSize = fontSize;
+
 	return merged as PdfStyle;
 }
 
@@ -281,4 +408,21 @@ function mergeStyles(
 ): PdfStyle {
 	if (!extra) return base;
 	return { ...(base as Record<string, unknown>), ...(extra as Record<string, unknown>) } as PdfStyle;
+}
+
+/**
+ * Parse the Tiptap image `width` attribute (a CSS-like string) into a value
+ * React-PDF accepts as `style.width` (number = points, string = percentage).
+ */
+function parseImageWidth(raw: string): number | string | undefined {
+	const trimmed = raw.trim();
+	if (!trimmed) return undefined;
+	if (trimmed.endsWith("%")) return trimmed;
+	const match = trimmed.match(/(\d+(?:\.\d+)?)(pt|px|mm)?/);
+	if (!match || !match[1]) return undefined;
+	const value = parseFloat(match[1]);
+	const unit = match[2];
+	if (unit === "mm") return mmToPt(value);
+	if (unit === "px") return value * 0.75; // CSS px → pt
+	return value; // pt
 }

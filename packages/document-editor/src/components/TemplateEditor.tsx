@@ -7,6 +7,11 @@
  * et prend toute la hauteur disponible, avec la toolbar + le picker de
  * variables regroupés dans une sidebar à droite. Les couleurs s'adaptent au
  * mode sombre via les tokens du design system.
+ *
+ * Image upload : the editor itself never talks to a backend. Parents inject
+ * `onUploadImage` (e.g. the Convex `generateUploadUrl` flow) and the toolbar
+ * wires it to the file input — keeps `@workspace/document-editor` framework-
+ * agnostic.
  */
 
 "use client";
@@ -40,6 +45,19 @@ export interface TemplateEditorProps {
 	paperSize?: "A4" | "LETTER";
 	/** Orientation. Controls the aspect ratio too. */
 	orientation?: "portrait" | "landscape";
+	/** Page margins in millimetres. Defaults to 20 mm on every side. */
+	marginTop?: number;
+	marginRight?: number;
+	marginBottom?: number;
+	marginLeft?: number;
+	/**
+	 * Called when the user picks an image to insert from the toolbar. The parent
+	 * is expected to upload the file (typically to Convex storage) and return a
+	 * `src` URL. The optional `storageId` is persisted alongside `src` on the
+	 * Image node so the PDF renderer can re-resolve a fresh signed URL at
+	 * generation time. When omitted, the image button is hidden in the toolbar.
+	 */
+	onUploadImage?: (file: File) => Promise<{ src: string; storageId?: string }>;
 }
 
 const EMPTY_DOC: TiptapDocument = {
@@ -53,6 +71,11 @@ const PAPER_RATIOS: Record<"A4" | "LETTER", { portrait: string; landscape: strin
 	LETTER: { portrait: "216/279", landscape: "279/216" },
 };
 
+/** 1 mm in CSS pixels (96 DPI). */
+const MM_TO_PX = 3.7795;
+
+const DEFAULT_MARGIN_MM = 20;
+
 export function TemplateEditor({
 	initialContent,
 	placeholders = [],
@@ -62,6 +85,11 @@ export function TemplateEditor({
 	showInlineSidebar = false,
 	paperSize = "A4",
 	orientation = "portrait",
+	marginTop,
+	marginRight,
+	marginBottom,
+	marginLeft,
+	onUploadImage,
 }: TemplateEditorProps): ReactElement {
 	const editor = useEditor({
 		extensions: buildEditorExtensions(),
@@ -80,6 +108,12 @@ export function TemplateEditor({
 	}, [editor, editable]);
 
 	const aspect = PAPER_RATIOS[paperSize][orientation];
+	const padding = {
+		paddingTop: `${(marginTop ?? DEFAULT_MARGIN_MM) * MM_TO_PX}px`,
+		paddingRight: `${(marginRight ?? DEFAULT_MARGIN_MM) * MM_TO_PX}px`,
+		paddingBottom: `${(marginBottom ?? DEFAULT_MARGIN_MM) * MM_TO_PX}px`,
+		paddingLeft: `${(marginLeft ?? DEFAULT_MARGIN_MM) * MM_TO_PX}px`,
+	};
 
 	const canvas = (
 		<div
@@ -89,7 +123,7 @@ export function TemplateEditor({
 			].join(" ")}
 		>
 			{/* Toolbar au-dessus de la page */}
-			<EditorToolbar editor={editor} />
+			<EditorToolbar editor={editor} onUploadImage={onUploadImage} />
 
 			{/* Page au format papier — remplit la hauteur disponible */}
 			<div className="flex min-h-0 flex-1 justify-center overflow-auto rounded-xl bg-muted/40 p-4 md:p-6">
@@ -99,7 +133,8 @@ export function TemplateEditor({
 				>
 					<EditorContent
 						editor={editor}
-						className="prose max-w-none h-full overflow-auto p-12 md:p-14 focus:outline-none [&_.ProseMirror]:h-full [&_.ProseMirror]:min-h-full [&_.ProseMirror]:focus:outline-none [&_.placeholder-chip]:mx-0.5 [&_.placeholder-chip]:inline-flex [&_.placeholder-chip]:items-center [&_.placeholder-chip]:rounded-md [&_.placeholder-chip]:border [&_.placeholder-chip]:border-blue-200 [&_.placeholder-chip]:bg-blue-50 [&_.placeholder-chip]:px-1.5 [&_.placeholder-chip]:py-0.5 [&_.placeholder-chip]:font-mono [&_.placeholder-chip]:text-[0.85em] [&_.placeholder-chip]:text-blue-700"
+						style={padding}
+						className="prose max-w-none h-full overflow-auto focus:outline-none [&_.ProseMirror]:h-full [&_.ProseMirror]:min-h-full [&_.ProseMirror]:focus:outline-none [&_.placeholder-chip]:mx-0.5 [&_.placeholder-chip]:inline-flex [&_.placeholder-chip]:items-center [&_.placeholder-chip]:rounded-md [&_.placeholder-chip]:border [&_.placeholder-chip]:border-blue-200 [&_.placeholder-chip]:bg-blue-50 [&_.placeholder-chip]:px-1.5 [&_.placeholder-chip]:py-0.5 [&_.placeholder-chip]:font-mono [&_.placeholder-chip]:text-[0.85em] [&_.placeholder-chip]:text-blue-700"
 					/>
 				</div>
 			</div>

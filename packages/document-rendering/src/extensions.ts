@@ -10,10 +10,13 @@
  * for the pill UI; the schema definition is identical.
  */
 
-import { Node } from "@tiptap/core";
+import { Extension, Node } from "@tiptap/core";
+import { Color } from "@tiptap/extension-color";
+import { FontFamily } from "@tiptap/extension-font-family";
 import { Image } from "@tiptap/extension-image";
 import { TableKit } from "@tiptap/extension-table";
 import { TextAlign } from "@tiptap/extension-text-align";
+import { TextStyle } from "@tiptap/extension-text-style";
 import { StarterKit } from "@tiptap/starter-kit";
 
 import type { PlaceholderAttrs } from "./types";
@@ -71,16 +74,126 @@ export const PlaceholderNodeSchema = Node.create({
 });
 
 /**
+ * Image node with extra attributes for templating: `width` (CSS length string
+ * like "60%" or "320px"), `align` ("left" | "center" | "right"), and
+ * `storageId` (Convex storage key — used to re-resolve the URL at PDF
+ * generation time when the signed `src` URL has expired).
+ *
+ * Falls back transparently to the standard image schema for legacy nodes.
+ */
+export const ImageWithAttrs = Image.extend({
+	addAttributes() {
+		const parent = this.parent?.() ?? {};
+		return {
+			...parent,
+			width: { default: null as string | null },
+			align: { default: "left" as "left" | "center" | "right" },
+			storageId: { default: null as string | null },
+		};
+	},
+
+	parseHTML() {
+		return [
+			{
+				tag: "img[src]",
+				getAttrs: (node) => {
+					if (typeof node === "string") return false;
+					const el = node as HTMLElement;
+					return {
+						src: el.getAttribute("src"),
+						alt: el.getAttribute("alt"),
+						title: el.getAttribute("title"),
+						width: el.getAttribute("width") ?? el.style.width ?? null,
+						align: (el.getAttribute("data-align") as
+							| "left"
+							| "center"
+							| "right"
+							| null) ?? "left",
+						storageId: el.getAttribute("data-storage-id"),
+					};
+				},
+			},
+		];
+	},
+
+	renderHTML({ HTMLAttributes }) {
+		const { width, align, storageId, ...rest } = HTMLAttributes as Record<
+			string,
+			unknown
+		>;
+		const style = width ? `width: ${width}` : undefined;
+		return [
+			"img",
+			{
+				...rest,
+				style,
+				"data-align": align ?? undefined,
+				"data-storage-id": storageId ?? undefined,
+			},
+		];
+	},
+});
+
+/**
+ * FontSize mark — extends the canonical `textStyle` mark with a `fontSize`
+ * attribute (in pt). The mark is shared between editor and server renderer
+ * so the JSON round-trips cleanly.
+ */
+export const FontSize = Extension.create({
+	name: "fontSize",
+
+	addOptions() {
+		return {
+			types: ["textStyle"] as string[],
+		};
+	},
+
+	addGlobalAttributes() {
+		return [
+			{
+				types: this.options.types,
+				attributes: {
+					fontSize: {
+						default: null as number | null,
+						parseHTML: (element) => {
+							const raw = (element as HTMLElement).style.fontSize;
+							if (!raw) return null;
+							const match = raw.match(/(\d+(?:\.\d+)?)(pt|px)?/);
+							if (!match || !match[1]) return null;
+							const value = parseFloat(match[1]);
+							const unit = match[2];
+							return unit === "px" ? Math.round(value * 0.75) : value;
+						},
+						renderHTML: (attributes) => {
+							const fontSize = attributes.fontSize as number | null;
+							if (!fontSize) return {};
+							return { style: `font-size: ${fontSize}pt` };
+						},
+					},
+				},
+			},
+		];
+	},
+});
+
+/**
  * Build the canonical extension list. StarterKit (v3) bundles bold, italic,
  * underline, strike, heading, blockquote, lists, hardBreak, horizontalRule,
  * code, codeBlock, link and the undoRedo history stack — so we only add the
  * non-bundled extensions on top.
+ *
+ * Color/FontFamily depend on TextStyle (the underlying mark that carries
+ * their attributes); they're loaded together so the schema is consistent.
  */
 export function buildCoreExtensions() {
 	return [
 		StarterKit,
 		TextAlign.configure({ types: ["heading", "paragraph"] }),
-		Image.configure({ allowBase64: false }),
+		TextStyle,
+		Color,
+		FontFamily,
+		FontSize,
+		ImageWithAttrs.configure({ allowBase64: false }),
 		TableKit.configure({
 			table: { resizable: false },
 		}),

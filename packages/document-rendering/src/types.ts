@@ -49,6 +49,11 @@ export interface TiptapDocument extends TiptapNode {
 export interface PageLayoutOptions {
 	paperSize?: "A4" | "LETTER";
 	orientation?: "portrait" | "landscape";
+	/** Page margins in millimetres. Defaults to 20 mm on all sides. */
+	marginTop?: number;
+	marginRight?: number;
+	marginBottom?: number;
+	marginLeft?: number;
 }
 
 /** Context passed to placeholder resolution. */

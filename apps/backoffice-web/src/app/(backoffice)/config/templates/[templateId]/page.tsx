@@ -18,10 +18,20 @@ import type {
 	TiptapDocument,
 } from "@workspace/document-rendering/types";
 import { renderDocumentToHtml } from "@workspace/document-rendering/html";
-import { FileText, History, Lock, Plus, Save, Trash2 } from "lucide-react";
+import { useConvex } from "convex/react";
+import {
+	FileText,
+	History,
+	Loader2,
+	Lock,
+	Plus,
+	Save,
+	Settings2,
+	Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { OrgTypeAccessPicker } from "@/components/config/OrgTypeAccessPicker";
 import { toast } from "sonner";
@@ -39,6 +49,24 @@ import {
 } from "@/components/ui/select";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { useConvexMutationQuery, useConvexQuery } from "@/integrations/convex/hooks";
+
+interface LayoutDraft {
+	paperSize: "A4" | "LETTER";
+	orientation: "portrait" | "landscape";
+	marginTop: number;
+	marginRight: number;
+	marginBottom: number;
+	marginLeft: number;
+}
+
+const DEFAULT_LAYOUT: LayoutDraft = {
+	paperSize: "A4",
+	orientation: "portrait",
+	marginTop: 20,
+	marginRight: 20,
+	marginBottom: 20,
+	marginLeft: 20,
+};
 
 const SOURCES: PlaceholderSource[] = [
 	"user",
@@ -63,14 +91,20 @@ export default function EditTemplatePage() {
 	const { mutateAsync: updateTemplate } = useConvexMutationQuery(
 		api.functions.documentTemplates.update,
 	);
+	const { mutateAsync: generateUploadUrl } = useConvexMutationQuery(
+		api.functions.documents.generateUploadUrl,
+	);
+	const convex = useConvex();
 
 	const [content, setContent] = useState<TiptapDocument | null>(null);
 	const [placeholders, setPlaceholders] = useState<PlaceholderDescriptor[] | null>(null);
 	const [allowedOrgTypes, setAllowedOrgTypes] = useState<string[] | undefined | null>(null);
+	const [layout, setLayout] = useState<LayoutDraft | null>(null);
 	const [newKey, setNewKey] = useState("");
 	const [newLabel, setNewLabel] = useState("");
 	const [newSource, setNewSource] = useState<PlaceholderSource>("formData");
 	const [saving, setSaving] = useState(false);
+	const [savingLayout, setSavingLayout] = useState(false);
 
 	// Initialize local state once template arrives. Using useMemo here as a
 	// write-once pattern: `null` means "not yet hydrated", anything else is
@@ -85,6 +119,37 @@ export default function EditTemplatePage() {
 		}
 	}, [template, content]);
 
+	useEffect(() => {
+		if (template && layout === null) {
+			setLayout({
+				paperSize: template.paperSize ?? DEFAULT_LAYOUT.paperSize,
+				orientation: template.orientation ?? DEFAULT_LAYOUT.orientation,
+				marginTop: template.marginTop ?? DEFAULT_LAYOUT.marginTop,
+				marginRight: template.marginRight ?? DEFAULT_LAYOUT.marginRight,
+				marginBottom: template.marginBottom ?? DEFAULT_LAYOUT.marginBottom,
+				marginLeft: template.marginLeft ?? DEFAULT_LAYOUT.marginLeft,
+			});
+		}
+	}, [template, layout]);
+
+	const onUploadImage = useCallback(
+		async (file: File): Promise<{ src: string; storageId?: string }> => {
+			const postUrl = await generateUploadUrl({});
+			const result = await fetch(postUrl, {
+				method: "POST",
+				headers: { "Content-Type": file.type },
+				body: file,
+			});
+			if (!result.ok) throw new Error("Upload failed");
+			const { storageId } = (await result.json()) as { storageId: string };
+			const url = await convex.query(api.functions.documents.getUrl, {
+				storageId: storageId as unknown as Id<"_storage">,
+			});
+			return { src: url ?? "", storageId };
+		},
+		[convex, generateUploadUrl],
+	);
+
 	if (isLoading || !template) {
 		return <div className="p-6 text-sm text-muted-foreground">{t("templates.common.loading")}</div>;
 	}
@@ -92,6 +157,7 @@ export default function EditTemplatePage() {
 	const workingContent = content ?? (template.content as TiptapDocument);
 	const workingPlaceholders =
 		placeholders ?? ((template.placeholders ?? []) as unknown as PlaceholderDescriptor[]);
+	const workingLayout = layout ?? DEFAULT_LAYOUT;
 
 	function addPlaceholder() {
 		const key = newKey.trim();
@@ -137,6 +203,27 @@ export default function EditTemplatePage() {
 			toast.error(message);
 		} finally {
 			setSaving(false);
+		}
+	}
+
+	async function saveLayout() {
+		if (!layout) return;
+		setSavingLayout(true);
+		try {
+			await updateTemplate({
+				templateId,
+				paperSize: layout.paperSize,
+				orientation: layout.orientation,
+				marginTop: layout.marginTop,
+				marginRight: layout.marginRight,
+				marginBottom: layout.marginBottom,
+				marginLeft: layout.marginLeft,
+			});
+			toast.success(t("templates.layout.saved"));
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : t("templates.layout.saveError"));
+		} finally {
+			setSavingLayout(false);
 		}
 	}
 
@@ -189,13 +276,27 @@ export default function EditTemplatePage() {
 					<TemplateEditor
 						initialContent={workingContent}
 						onChange={(doc) => setContent(doc)}
-						paperSize={template.paperSize ?? "A4"}
-						orientation={template.orientation ?? "portrait"}
+						paperSize={workingLayout.paperSize}
+						orientation={workingLayout.orientation}
+						marginTop={workingLayout.marginTop}
+						marginRight={workingLayout.marginRight}
+						marginBottom={workingLayout.marginBottom}
+						marginLeft={workingLayout.marginLeft}
+						onUploadImage={onUploadImage}
 					/>
 				</FlatCard>
 
 				{/* Sidebar droite — toutes les configurations du modèle */}
 				<aside className="flex w-full shrink-0 flex-col gap-4 lg:w-96 lg:overflow-y-auto">
+					<FlatCard className="p-4">
+						<LayoutSettingsCard
+							layout={workingLayout}
+							saving={savingLayout}
+							onChange={setLayout}
+							onSave={saveLayout}
+						/>
+					</FlatCard>
+
 					{template.isGlobal ? (
 						<FlatCard className="p-4">
 							<OrgTypeAccessPicker
@@ -375,6 +476,151 @@ function PlaceholderManager({
 					</div>
 				</div>
 			</BottomSheet>
+		</div>
+	);
+}
+
+/**
+ * Sidebar card to edit page layout (paper size, orientation, margins) after
+ * the template has been created. Persists via a dedicated `Apply` button so
+ * that local tweaks don't trigger a save on every keystroke.
+ */
+function LayoutSettingsCard({
+	layout,
+	saving,
+	onChange,
+	onSave,
+}: {
+	layout: LayoutDraft;
+	saving: boolean;
+	onChange: (next: LayoutDraft) => void;
+	onSave: () => void;
+}) {
+	const { t } = useTranslation();
+	function patch(partial: Partial<LayoutDraft>) {
+		onChange({ ...layout, ...partial });
+	}
+	return (
+		<div className="flex flex-col gap-4">
+			<div className="flex items-center gap-2">
+				<Settings2 className="h-4 w-4 text-muted-foreground" />
+				<div>
+					<div className="font-medium">{t("templates.layout.sectionTitle")}</div>
+					<div className="text-xs text-muted-foreground">
+						{t("templates.layout.sectionDescription")}
+					</div>
+				</div>
+			</div>
+
+			<div className="grid grid-cols-2 gap-3">
+				<div className="flex flex-col gap-1">
+					<Label htmlFor="layout-paper">{t("templates.layout.paperSize")}</Label>
+					<Select
+						value={layout.paperSize}
+						onValueChange={(v) => patch({ paperSize: v as "A4" | "LETTER" })}
+					>
+						<SelectTrigger id="layout-paper">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="A4">A4</SelectItem>
+							<SelectItem value="LETTER">US Letter</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
+				<div className="flex flex-col gap-1">
+					<Label htmlFor="layout-orientation">
+						{t("templates.layout.orientation")}
+					</Label>
+					<Select
+						value={layout.orientation}
+						onValueChange={(v) =>
+							patch({ orientation: v as "portrait" | "landscape" })
+						}
+					>
+						<SelectTrigger id="layout-orientation">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="portrait">
+								{t("templates.layout.orientationPortrait")}
+							</SelectItem>
+							<SelectItem value="landscape">
+								{t("templates.layout.orientationLandscape")}
+							</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
+			</div>
+
+			<div className="grid grid-cols-2 gap-3">
+				<MarginInput
+					id="layout-margin-top"
+					label={t("templates.layout.marginTop")}
+					value={layout.marginTop}
+					onChange={(v) => patch({ marginTop: v })}
+				/>
+				<MarginInput
+					id="layout-margin-right"
+					label={t("templates.layout.marginRight")}
+					value={layout.marginRight}
+					onChange={(v) => patch({ marginRight: v })}
+				/>
+				<MarginInput
+					id="layout-margin-bottom"
+					label={t("templates.layout.marginBottom")}
+					value={layout.marginBottom}
+					onChange={(v) => patch({ marginBottom: v })}
+				/>
+				<MarginInput
+					id="layout-margin-left"
+					label={t("templates.layout.marginLeft")}
+					value={layout.marginLeft}
+					onChange={(v) => patch({ marginLeft: v })}
+				/>
+			</div>
+
+			<Button onClick={onSave} disabled={saving} variant="outline">
+				{saving ? (
+					<>
+						<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+						{t("templates.layout.saving")}
+					</>
+				) : (
+					t("templates.layout.saveButton")
+				)}
+			</Button>
+		</div>
+	);
+}
+
+function MarginInput({
+	id,
+	label,
+	value,
+	onChange,
+}: {
+	id: string;
+	label: string;
+	value: number;
+	onChange: (value: number) => void;
+}) {
+	return (
+		<div className="flex flex-col gap-1">
+			<Label htmlFor={id} className="text-xs">
+				{label}
+			</Label>
+			<Input
+				id={id}
+				type="number"
+				min={0}
+				step={1}
+				value={value}
+				onChange={(e) => {
+					const next = Number(e.target.value);
+					onChange(Number.isFinite(next) && next >= 0 ? next : 0);
+				}}
+			/>
 		</div>
 	);
 }

@@ -4336,8 +4336,37 @@
 				"quote": "Quote",
 				"horizontalRule": "Horizontal rule",
 				"undo": "Undo",
-				"redo": "Redo"
+				"redo": "Redo",
+				"blockFormat": "Block format",
+				"paragraph": "Paragraph",
+				"heading1": "Heading 1",
+				"heading2": "Heading 2",
+				"heading3": "Heading 3",
+				"textColor": "Text colour",
+				"fontFamily": "Font",
+				"fontSize": "Size",
+				"fontDefault": "Default font",
+				"fontHelvetica": "Helvetica",
+				"fontTimes": "Times",
+				"fontCourier": "Courier",
+				"insertImage": "Insert image"
 			}
+		},
+		"layout": {
+			"sectionTitle": "Page layout",
+			"sectionDescription": "Paper size, orientation and margins for the template.",
+			"paperSize": "Paper size",
+			"orientation": "Orientation",
+			"orientationPortrait": "Portrait",
+			"orientationLandscape": "Landscape",
+			"marginTop": "Top margin (mm)",
+			"marginRight": "Right margin (mm)",
+			"marginBottom": "Bottom margin (mm)",
+			"marginLeft": "Left margin (mm)",
+			"saveButton": "Apply",
+			"saving": "Applying…",
+			"saved": "Layout updated",
+			"saveError": "Layout update failed"
 		},
 		"autoGen": {
 			"tab": "Auto-generation",

@@ -122,6 +122,10 @@ async function runGeneration(
 		options: {
 			paperSize: data.template.paperSize ?? "A4",
 			orientation: data.template.orientation ?? "portrait",
+			marginTop: data.template.marginTop,
+			marginRight: data.template.marginRight,
+			marginBottom: data.template.marginBottom,
+			marginLeft: data.template.marginLeft,
 		},
 	});
 	const pdfBuffer = await renderToBuffer(

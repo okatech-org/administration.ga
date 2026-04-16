@@ -4926,8 +4926,37 @@
 				"quote": "Citation",
 				"horizontalRule": "Trait horizontal",
 				"undo": "Annuler",
-				"redo": "Rétablir"
+				"redo": "Rétablir",
+				"blockFormat": "Format de bloc",
+				"paragraph": "Paragraphe",
+				"heading1": "Titre 1",
+				"heading2": "Titre 2",
+				"heading3": "Titre 3",
+				"textColor": "Couleur du texte",
+				"fontFamily": "Police",
+				"fontSize": "Taille",
+				"fontDefault": "Police par défaut",
+				"fontHelvetica": "Helvetica",
+				"fontTimes": "Times",
+				"fontCourier": "Courier",
+				"insertImage": "Insérer une image"
 			}
+		},
+		"layout": {
+			"sectionTitle": "Mise en page",
+			"sectionDescription": "Format papier, orientation et marges du modèle.",
+			"paperSize": "Format papier",
+			"orientation": "Orientation",
+			"orientationPortrait": "Portrait",
+			"orientationLandscape": "Paysage",
+			"marginTop": "Marge haute (mm)",
+			"marginRight": "Marge droite (mm)",
+			"marginBottom": "Marge basse (mm)",
+			"marginLeft": "Marge gauche (mm)",
+			"saveButton": "Appliquer",
+			"saving": "Application…",
+			"saved": "Mise en page mise à jour",
+			"saveError": "Échec de la mise à jour"
 		},
 		"autoGen": {
 			"tab": "Génération auto",

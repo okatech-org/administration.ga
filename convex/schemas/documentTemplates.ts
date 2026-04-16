@@ -101,6 +101,13 @@ export const documentTemplatesTable = defineTable({
 	paperSize: v.optional(v.union(v.literal("A4"), v.literal("LETTER"))),
 	orientation: v.optional(v.union(v.literal("portrait"), v.literal("landscape"))),
 
+	// Page margins in millimetres. Optional — falls back to 20 mm on all sides
+	// at render time. Stored as numbers (1 mm = 2.83465 pt).
+	marginTop: v.optional(v.number()),
+	marginRight: v.optional(v.number()),
+	marginBottom: v.optional(v.number()),
+	marginLeft: v.optional(v.number()),
+
 	// Versioning metadata (history lives in `documentTemplateVersions`)
 	version: v.optional(v.number()),
 	updatedAt: v.optional(v.number()),
