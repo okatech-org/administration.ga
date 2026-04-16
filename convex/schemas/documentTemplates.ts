@@ -3,91 +3,64 @@ import { v } from "convex/values";
 import { serviceCategoryValidator, localizedStringValidator } from "../lib/validators";
 
 /**
- * Document Templates - PDF templates for generating official documents
- * Templates can be organization-specific or global
+ * Document Templates — templates for generating official PDF documents
+ * (attestations, certificates, receipts, letters...).
+ *
+ * The `content` field is now a Tiptap JSON document (ProseMirror node tree).
+ * Live preview, HTML serialization and PDF generation all walk this same tree
+ * via the shared `@workspace/document-rendering` package.
+ *
+ * Templates are either global (managed by the platform super admin — read-only
+ * for orgs) or org-specific (managed by agents with `documents.templates.manage`).
+ * Every meaningful edit snapshots the current state into
+ * `documentTemplateVersions`, preserving history.
  */
 export const documentTemplatesTable = defineTable({
-	// Basic info
+	// Basic info (localized labels)
 	name: localizedStringValidator,
 	description: v.optional(localizedStringValidator),
 
-	// Category - matches service categories
+	// Category — matches service categories
 	category: v.optional(serviceCategoryValidator),
 
-	// Link to specific service (optional)
+	// Optional link to a specific consular service
 	serviceId: v.optional(v.id("services")),
 
-	// Template type
+	// Template type (certificate / attestation / receipt / letter / custom)
 	templateType: v.union(
-		v.literal("certificate"), // Certificats (vie, nationalité, etc.)
-		v.literal("attestation"), // Attestations
-		v.literal("receipt"), // Reçus/Récépissés
-		v.literal("letter"), // Lettres officielles
-		v.literal("custom") // Personnalisé
+		v.literal("certificate"),
+		v.literal("attestation"),
+		v.literal("receipt"),
+		v.literal("letter"),
+		v.literal("custom")
 	),
 
-	// Template content - structured for @react-pdf/renderer
-	// Contains sections with placeholders like {{firstName}}, {{dateOfBirth}}
-	content: v.object({
-		// Header configuration
-		header: v.optional(
-			v.object({
-				showLogo: v.boolean(),
-				showOrgName: v.boolean(),
-				showOrgAddress: v.boolean(),
-				title: v.optional(localizedStringValidator),
-				subtitle: v.optional(localizedStringValidator),
-			})
-		),
-		// Main body - array of text blocks with placeholders
-		body: v.array(
-			v.object({
-				type: v.union(
-					v.literal("paragraph"),
-					v.literal("heading"),
-					v.literal("list"),
-					v.literal("table"),
-					v.literal("signature")
-				),
-				content: localizedStringValidator, // Text with {{placeholders}}
-				style: v.optional(
-					v.object({
-						fontSize: v.optional(v.number()),
-						fontWeight: v.optional(v.union(v.literal("normal"), v.literal("bold"))),
-						textAlign: v.optional(
-							v.union(v.literal("left"), v.literal("center"), v.literal("right"), v.literal("justify"))
-						),
-						marginTop: v.optional(v.number()),
-						marginBottom: v.optional(v.number()),
-					})
-				),
-			})
-		),
-		// Footer configuration
-		footer: v.optional(
-			v.object({
-				showDate: v.boolean(),
-				showSignature: v.boolean(),
-				signatureTitle: v.optional(localizedStringValidator),
-				additionalText: v.optional(localizedStringValidator),
-			})
-		),
-	}),
+	// Tiptap JSON document. Validated at runtime — schema is too recursive for
+	// `v` validators to express precisely.
+	content: v.any(),
 
-	// Available placeholders - auto-detected from request data
+	// Cached HTML rendering of `content` (regenerated on save). Allows cheap
+	// listing previews without re-running the Tiptap renderer.
+	contentHtml: v.optional(v.string()),
+
+	// Placeholders declared on the template. The picker UI reads this list and
+	// the resolver validates all placeholder keys encountered in `content` are
+	// covered here (fail-fast at generation time).
 	placeholders: v.optional(
 		v.array(
 			v.object({
-				key: v.string(), // e.g., "firstName", "dateOfBirth"
+				key: v.string(),
 				label: localizedStringValidator,
 				source: v.union(
-					v.literal("user"), // From user profile
-					v.literal("request"), // From request data
-					v.literal("formData"), // From dynamic form submission
-					v.literal("org"), // From organization
-					v.literal("system") // Generated (date, reference, etc.)
+					v.literal("user"),
+					v.literal("profile"),
+					v.literal("request"),
+					v.literal("formData"),
+					v.literal("org"),
+					v.literal("system")
 				),
-				path: v.optional(v.string()), // JSONPath to value, e.g., "formData.identity.firstName"
+				// Optional JSONPath against the source bucket (e.g. `identity.firstName`).
+				path: v.optional(v.string()),
 			})
 		)
 	),
@@ -96,15 +69,29 @@ export const documentTemplatesTable = defineTable({
 	orgId: v.optional(v.id("orgs")), // null = global template
 	createdBy: v.optional(v.id("users")),
 
-	// Visibility
-	isGlobal: v.boolean(), // Available to all orgs
+	// Visibility / lifecycle
+	isGlobal: v.boolean(),
 	isActive: v.boolean(),
+
+	// Locked once a document has been generated from this template. Further
+	// edits force a new version rather than mutating the live record.
+	lockedForEditing: v.optional(v.boolean()),
+	/** Flipped on at the first generation; purely informational. */
+	hasGeneratedDocuments: v.optional(v.boolean()),
+
+	// Generation / publication behaviour
+	/** If true, generated documents are automatically visible to the citizen. */
+	autoPublishToCitizen: v.optional(v.boolean()),
+	/** If true, a document cannot be published to a citizen until it is signed. */
+	requireSignature: v.optional(v.boolean()),
+	/** Position codes allowed to sign documents produced from this template. */
+	allowedSignerPositions: v.optional(v.array(v.string())),
 
 	// Paper settings
 	paperSize: v.optional(v.union(v.literal("A4"), v.literal("LETTER"))),
 	orientation: v.optional(v.union(v.literal("portrait"), v.literal("landscape"))),
 
-	// Metadata
+	// Versioning metadata (history lives in `documentTemplateVersions`)
 	version: v.optional(v.number()),
 	updatedAt: v.optional(v.number()),
 })

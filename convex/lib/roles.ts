@@ -47,6 +47,7 @@ export const POSITION_TASK_PRESETS: TaskPresetDefinition[] = [
     tasks: [
       TaskCode.requests.view, TaskCode.requests.validate, TaskCode.requests.assign,
       TaskCode.documents.view, TaskCode.documents.validate, TaskCode.documents.generate,
+      TaskCode.documents.manage_templates, TaskCode.documents.sign, TaskCode.documents.publish,
       TaskCode.appointments.view, TaskCode.profiles.view, TaskCode.profiles.manage,
       TaskCode.finance.view, TaskCode.finance.manage,
       TaskCode.team.view, TaskCode.team.manage, TaskCode.team.assign_roles,
@@ -69,6 +70,7 @@ export const POSITION_TASK_PRESETS: TaskPresetDefinition[] = [
     tasks: [
       TaskCode.requests.view, TaskCode.requests.validate, TaskCode.requests.assign, TaskCode.requests.complete,
       TaskCode.documents.view, TaskCode.documents.validate,
+      TaskCode.documents.manage_templates, TaskCode.documents.publish,
       TaskCode.appointments.view, TaskCode.appointments.manage,
       TaskCode.profiles.view, TaskCode.team.view, TaskCode.team.manage,
       TaskCode.analytics.view, TaskCode.communication.publish,
@@ -104,6 +106,7 @@ export const POSITION_TASK_PRESETS: TaskPresetDefinition[] = [
     tasks: [
       TaskCode.requests.view, TaskCode.requests.validate,
       TaskCode.documents.view, TaskCode.documents.validate, TaskCode.documents.generate,
+      TaskCode.documents.sign, TaskCode.documents.publish,
       TaskCode.profiles.view,
       TaskCode.org.view,
       TaskCode.consular_registrations.view, TaskCode.consular_notifications.view,

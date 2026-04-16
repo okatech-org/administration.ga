@@ -15,6 +15,8 @@ export { appointmentsTable } from "./appointments";
 export { agentSchedulesTable } from "./agentSchedules";
 export { messagesTable } from "./messages";
 export { documentTemplatesTable } from "./documentTemplates";
+export { documentTemplateVersionsTable } from "./documentTemplateVersions";
+export { generatedDocumentsTable } from "./generatedDocuments";
 export { paymentsTable } from "./payments";
 export { documentVerificationsTable } from "./documentVerifications";
 export { agentNotesTable } from "./agentNotes";

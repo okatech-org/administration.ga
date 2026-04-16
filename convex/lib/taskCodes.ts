@@ -36,6 +36,10 @@ export const TaskCode = {
     validate: "documents.validate",
     generate: "documents.generate",
     delete: "documents.delete",
+    // Document template / generation / signature workflow
+    manage_templates: "documents.manage_templates",
+    sign: "documents.sign",
+    publish: "documents.publish",
   },
   appointments: {
     view: "appointments.view",
@@ -229,6 +233,9 @@ export const taskCodeValidator = v.union(
   v.literal(TaskCode.documents.validate),
   v.literal(TaskCode.documents.generate),
   v.literal(TaskCode.documents.delete),
+  v.literal(TaskCode.documents.manage_templates),
+  v.literal(TaskCode.documents.sign),
+  v.literal(TaskCode.documents.publish),
   // Appointments
   v.literal(TaskCode.appointments.view),
   v.literal(TaskCode.appointments.manage),
@@ -356,6 +363,9 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   [TaskCode.documents.validate]: "high",
   [TaskCode.documents.generate]: "high",
   [TaskCode.documents.delete]: "critical",
+  [TaskCode.documents.manage_templates]: "medium",
+  [TaskCode.documents.sign]: "high",
+  [TaskCode.documents.publish]: "medium",
   // Appointments
   [TaskCode.appointments.view]: "low",
   [TaskCode.appointments.manage]: "medium",

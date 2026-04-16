@@ -1,8 +1,15 @@
 import { v } from "convex/values";
-import { query, internalMutation } from "../_generated/server";
+import { internalMutation, type MutationCtx } from "../_generated/server";
 import { authMutation, authQuery } from "../lib/customFunctions";
 import { serviceCategoryValidator, localizedStringValidator } from "../lib/validators";
 import { ServiceCategory } from "../lib/constants";
+import {
+	assertCanManageGlobalTemplates,
+	assertCanManageTemplates,
+	canManageGlobalTemplates,
+} from "../lib/documentPermissions";
+import { error, ErrorCode } from "../lib/errors";
+import type { Doc, Id } from "../_generated/dataModel";
 
 // ============================================================================
 // QUERIES
@@ -109,7 +116,10 @@ export const listForService = authQuery({
 // ============================================================================
 
 /**
- * Create a new document template
+ * Create a new document template (Tiptap JSON content).
+ *
+ * Permission: super admin for global templates; `documents.manage_templates`
+ * for org templates. See `assertTemplatePermissionForCreate`.
  */
 export const create = authMutation({
 	args: {
@@ -124,16 +134,33 @@ export const create = authMutation({
 			v.literal("letter"),
 			v.literal("custom")
 		),
-		content: v.any(), // Complex nested structure validated at runtime
+		content: v.any(), // Tiptap JSON — validated at runtime
+		contentHtml: v.optional(v.string()),
 		placeholders: v.optional(v.array(v.any())),
 		orgId: v.optional(v.id("orgs")),
 		isGlobal: v.boolean(),
+		autoPublishToCitizen: v.optional(v.boolean()),
+		requireSignature: v.optional(v.boolean()),
+		allowedSignerPositions: v.optional(v.array(v.string())),
 		paperSize: v.optional(v.union(v.literal("A4"), v.literal("LETTER"))),
 		orientation: v.optional(v.union(v.literal("portrait"), v.literal("landscape"))),
 	},
 	handler: async (ctx, args) => {
-		const userId = ctx.user._id;
+		if (args.isGlobal) {
+			assertCanManageGlobalTemplates(ctx.user);
+		} else if (args.orgId) {
+			const membership = await ctx.db
+				.query("memberships")
+				.withIndex("by_user_org", (q) =>
+					q.eq("userId", ctx.user._id).eq("orgId", args.orgId as Id<"orgs">),
+				)
+				.first();
+			await assertCanManageTemplates(ctx, ctx.user, membership);
+		} else {
+			throw error(ErrorCode.VALIDATION_ERROR, "orgId requis pour un template non global");
+		}
 
+		const userId = ctx.user._id;
 		return await ctx.db.insert("documentTemplates", {
 			...args,
 			createdBy: userId,
@@ -145,7 +172,15 @@ export const create = authMutation({
 });
 
 /**
- * Update an existing template
+ * Update an existing template.
+ *
+ * If the content changes (or any publication flags), the CURRENT state is
+ * snapshotted into `documentTemplateVersions` before the live record is
+ * patched. This preserves history and ensures previously generated documents
+ * can always be traced back to the exact template version that produced them.
+ *
+ * Permission: super admin for global templates, `documents.manage_templates`
+ * for org templates.
  */
 export const update = authMutation({
 	args: {
@@ -164,26 +199,44 @@ export const update = authMutation({
 			)
 		),
 		content: v.optional(v.any()),
+		contentHtml: v.optional(v.string()),
 		placeholders: v.optional(v.array(v.any())),
 		isGlobal: v.optional(v.boolean()),
 		isActive: v.optional(v.boolean()),
+		autoPublishToCitizen: v.optional(v.boolean()),
+		requireSignature: v.optional(v.boolean()),
+		allowedSignerPositions: v.optional(v.array(v.string())),
 		paperSize: v.optional(v.union(v.literal("A4"), v.literal("LETTER"))),
 		orientation: v.optional(v.union(v.literal("portrait"), v.literal("landscape"))),
+		changeNote: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		const { templateId, ...updates } = args;
+		const { templateId, changeNote, ...updates } = args;
 
 		const template = await ctx.db.get(templateId);
 		if (!template) {
 			throw new Error("Template not found");
 		}
 
+		await assertTemplatePermission(ctx, template);
+
 		const cleanUpdates = Object.fromEntries(
-			Object.entries(updates).filter(([_, v]) => v !== undefined)
+			Object.entries(updates).filter(([_, value]) => value !== undefined),
 		);
 
-		// Increment version if content changed
-		const version = updates.content ? (template.version || 1) + 1 : template.version;
+		// Bump version when the canonical content or publication policy changes.
+		const structuralChange =
+			updates.content !== undefined ||
+			updates.placeholders !== undefined ||
+			updates.autoPublishToCitizen !== undefined ||
+			updates.requireSignature !== undefined ||
+			updates.allowedSignerPositions !== undefined;
+
+		if (structuralChange) {
+			await archiveCurrentTemplateVersion(ctx, template, changeNote);
+		}
+
+		const version = structuralChange ? (template.version || 1) + 1 : template.version;
 
 		await ctx.db.patch(templateId, {
 			...cleanUpdates,
@@ -194,6 +247,196 @@ export const update = authMutation({
 		return templateId;
 	},
 });
+
+/**
+ * Clone a GLOBAL template into an organization. The new copy belongs to the
+ * org and can be edited by agents with `documents.manage_templates`.
+ * The global source is untouched.
+ */
+export const cloneFromGlobal = authMutation({
+	args: {
+		globalTemplateId: v.id("documentTemplates"),
+		orgId: v.id("orgs"),
+	},
+	handler: async (ctx, args) => {
+		const source = await ctx.db.get(args.globalTemplateId);
+		if (!source) throw new Error("Template source introuvable");
+		if (!source.isGlobal) {
+			throw error(ErrorCode.FORBIDDEN, "Seuls les modèles globaux peuvent être clonés");
+		}
+
+		const membership = await ctx.db
+			.query("memberships")
+			.withIndex("by_user_org", (q) =>
+				q.eq("userId", ctx.user._id).eq("orgId", args.orgId),
+			)
+			.first();
+		await assertCanManageTemplates(ctx, ctx.user, membership);
+
+		const now = Date.now();
+		const newId = await ctx.db.insert("documentTemplates", {
+			name: source.name,
+			description: source.description,
+			category: source.category,
+			serviceId: source.serviceId,
+			templateType: source.templateType,
+			content: source.content,
+			contentHtml: source.contentHtml,
+			placeholders: source.placeholders,
+			orgId: args.orgId,
+			createdBy: ctx.user._id,
+			isGlobal: false,
+			isActive: true,
+			autoPublishToCitizen: source.autoPublishToCitizen,
+			requireSignature: source.requireSignature,
+			allowedSignerPositions: source.allowedSignerPositions,
+			paperSize: source.paperSize,
+			orientation: source.orientation,
+			version: 1,
+			updatedAt: now,
+		});
+		return newId;
+	},
+});
+
+/** List past versions for a template (for history view). */
+export const listVersions = authQuery({
+	args: { templateId: v.id("documentTemplates") },
+	handler: async (ctx, args) => {
+		const template = await ctx.db.get(args.templateId);
+		if (!template) return [];
+		// Same permission model as editing — only authorized users see history.
+		if (template.isGlobal) {
+			if (!canManageGlobalTemplates(ctx.user)) return [];
+		} else {
+			const membership = template.orgId
+				? await ctx.db
+						.query("memberships")
+						.withIndex("by_user_org", (q) =>
+							q.eq("userId", ctx.user._id).eq("orgId", template.orgId as Id<"orgs">),
+						)
+						.first()
+				: null;
+			await assertCanManageTemplates(ctx, ctx.user, membership);
+		}
+		return await ctx.db
+			.query("documentTemplateVersions")
+			.withIndex("by_template_createdAt", (q) => q.eq("templateId", args.templateId))
+			.order("desc")
+			.collect();
+	},
+});
+
+/**
+ * Restore a previous version. Archives the current state, then replaces the
+ * live record's content with the snapshot. Version counter increments.
+ */
+export const restoreVersion = authMutation({
+	args: {
+		templateId: v.id("documentTemplates"),
+		version: v.number(),
+	},
+	handler: async (ctx, args) => {
+		const template = await ctx.db.get(args.templateId);
+		if (!template) throw new Error("Template introuvable");
+		await assertTemplatePermission(ctx, template);
+
+		const snapshot = await ctx.db
+			.query("documentTemplateVersions")
+			.withIndex("by_template_version", (q) =>
+				q.eq("templateId", args.templateId).eq("version", args.version),
+			)
+			.first();
+		if (!snapshot) throw new Error(`Version ${args.version} introuvable`);
+
+		await archiveCurrentTemplateVersion(ctx, template, `Restauration version ${args.version}`);
+		const nextVersion = (template.version || 1) + 1;
+		await ctx.db.patch(args.templateId, {
+			content: snapshot.content,
+			contentHtml: snapshot.contentHtml,
+			placeholders: snapshot.placeholders,
+			name: snapshot.name,
+			description: snapshot.description,
+			paperSize: snapshot.paperSize,
+			orientation: snapshot.orientation,
+			autoPublishToCitizen: snapshot.autoPublishToCitizen,
+			requireSignature: snapshot.requireSignature,
+			allowedSignerPositions: snapshot.allowedSignerPositions,
+			version: nextVersion,
+			updatedAt: Date.now(),
+		});
+		return nextVersion;
+	},
+});
+
+/** List global templates (super admin library). */
+export const listGlobal = authQuery({
+	args: {
+		category: v.optional(serviceCategoryValidator),
+	},
+	handler: async (ctx, args) => {
+		if (!canManageGlobalTemplates(ctx.user)) return [];
+		let query = ctx.db
+			.query("documentTemplates")
+			.withIndex("by_global", (q) => q.eq("isGlobal", true).eq("isActive", true));
+		const all = await query.collect();
+		return args.category ? all.filter((t) => t.category === args.category) : all;
+	},
+});
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+/**
+ * Archive the current state of a template into `documentTemplateVersions`
+ * before mutating the live record. Called from update / restore flows.
+ */
+async function archiveCurrentTemplateVersion(
+	ctx: MutationCtx,
+	template: Doc<"documentTemplates">,
+	changeNote?: string,
+): Promise<void> {
+	await ctx.db.insert("documentTemplateVersions", {
+		templateId: template._id,
+		version: template.version ?? 1,
+		content: template.content,
+		contentHtml: template.contentHtml,
+		placeholders: template.placeholders,
+		name: template.name,
+		description: template.description,
+		paperSize: template.paperSize,
+		orientation: template.orientation,
+		autoPublishToCitizen: template.autoPublishToCitizen,
+		requireSignature: template.requireSignature,
+		allowedSignerPositions: template.allowedSignerPositions,
+		createdAt: Date.now(),
+		// `ctx.user` is available because every caller goes through authMutation.
+		createdBy: (ctx as unknown as { user?: Doc<"users"> }).user?._id,
+		changeNote,
+	});
+}
+
+/** Gate edits on a template — super admin for globals, agent permission for org. */
+async function assertTemplatePermission(
+	ctx: MutationCtx & { user: Doc<"users"> },
+	template: Doc<"documentTemplates">,
+): Promise<void> {
+	if (template.isGlobal) {
+		assertCanManageGlobalTemplates(ctx.user);
+		return;
+	}
+	if (!template.orgId) {
+		throw error(ErrorCode.FORBIDDEN, "Template sans organisation");
+	}
+	const membership = await ctx.db
+		.query("memberships")
+		.withIndex("by_user_org", (q) =>
+			q.eq("userId", ctx.user._id).eq("orgId", template.orgId as Id<"orgs">),
+		)
+		.first();
+	await assertCanManageTemplates(ctx, ctx.user, membership);
+}
 
 /**
  * Delete (soft) a template
@@ -210,225 +453,135 @@ export const remove = authMutation({
 });
 
 // ============================================================================
-// SEED - Default templates
+// SEED - Default templates (Tiptap JSON)
 // ============================================================================
 
 /**
- * Seed default document templates
+ * Build a Tiptap paragraph node with mixed text and placeholder atoms.
+ * Helper kept local to the seed — production templates are authored via the UI.
+ */
+function para(
+	parts: Array<
+		| string
+		| {
+				placeholder: string;
+				source: "user" | "profile" | "request" | "formData" | "org" | "system";
+				label?: string;
+		  }
+	>,
+	attrs?: { textAlign?: "left" | "center" | "right" | "justify" },
+) {
+	return {
+		type: "paragraph",
+		attrs: attrs ? { textAlign: attrs.textAlign } : undefined,
+		content: parts.map((p) =>
+			typeof p === "string"
+				? { type: "text", text: p }
+				: {
+						type: "placeholder",
+						attrs: { key: p.placeholder, source: p.source, label: p.label ?? null },
+					},
+		),
+	};
+}
+
+function heading(text: string, level = 1) {
+	return {
+		type: "heading",
+		attrs: { level, textAlign: "center" },
+		content: [{ type: "text", text, marks: [{ type: "bold" }] }],
+	};
+}
+
+/**
+ * Seeds a single French-language "Récépissé de Dépôt" template as a global
+ * template. More templates can be added through the backoffice UI once the
+ * editor ships. This seed is idempotent — safe to re-run.
  */
 export const seedDefaultTemplates = internalMutation({
 	args: {},
 	handler: async (ctx) => {
-		const defaultTemplates = [
-			{
-				name: { fr: "Certificat de Vie", en: "Life Certificate" },
-				description: {
-					fr: "Attestation certifiant que le titulaire est en vie",
-					en: "Certificate attesting that the holder is alive",
-				},
-				category: ServiceCategory.Certification,
-				templateType: "certificate" as const,
-				content: {
-					header: {
-						showLogo: true,
-						showOrgName: true,
-						showOrgAddress: true,
-						title: { fr: "CERTIFICAT DE VIE", en: "LIFE CERTIFICATE" },
-						subtitle: { fr: "République Gabonaise", en: "Gabonese Republic" },
-					},
-					body: [
-						{
-							type: "paragraph" as const,
-							content: {
-								fr: "Je soussigné, Consul Général du Gabon, certifie que :",
-								en: "I, the undersigned, Consul General of Gabon, hereby certify that:",
-							},
-							style: { marginTop: 20, marginBottom: 10 },
-						},
-						{
-							type: "paragraph" as const,
-							content: {
-								fr: "{{civilité}} {{firstName}} {{lastName}}, né(e) le {{dateOfBirth}} à {{placeOfBirth}}, de nationalité gabonaise, demeurant à {{address}}, s'est présenté(e) personnellement au Consulat et a été reconnu(e) comme étant en vie à la date du présent certificat.",
-								en: "{{civility}} {{firstName}} {{lastName}}, born on {{dateOfBirth}} in {{placeOfBirth}}, of Gabonese nationality, residing at {{address}}, has personally appeared at the Consulate and has been recognized as being alive as of the date of this certificate.",
-							},
-							style: { textAlign: "justify" as const, marginTop: 15 },
-						},
-						{
-							type: "paragraph" as const,
-							content: {
-								fr: "En foi de quoi, le présent certificat lui est délivré pour servir et valoir ce que de droit.",
-								en: "In witness whereof, this certificate is issued for whatever legal purpose it may serve.",
-							},
-							style: { marginTop: 20, textAlign: "justify" as const },
-						},
-					],
-					footer: {
-						showDate: true,
-						showSignature: true,
-						signatureTitle: { fr: "Le Consul Général", en: "The Consul General" },
-					},
-				},
-				placeholders: [
-					{ key: "civilité", label: { fr: "Civilité", en: "Title" }, source: "formData" as const },
-					{ key: "firstName", label: { fr: "Prénom", en: "First Name" }, source: "user" as const },
-					{ key: "lastName", label: { fr: "Nom", en: "Last Name" }, source: "user" as const },
-					{ key: "dateOfBirth", label: { fr: "Date de naissance", en: "Date of Birth" }, source: "user" as const },
-					{ key: "placeOfBirth", label: { fr: "Lieu de naissance", en: "Place of Birth" }, source: "user" as const },
-					{ key: "address", label: { fr: "Adresse", en: "Address" }, source: "user" as const },
-				],
-				isGlobal: true,
-				isActive: true,
-				paperSize: "A4" as const,
-				orientation: "portrait" as const,
+		const template = {
+			name: { fr: "Récépissé de Dépôt", en: "Filing Receipt" },
+			description: {
+				fr: "Accusé de réception pour une demande déposée",
+				en: "Receipt for a submitted request",
 			},
-			{
-				name: { fr: "Attestation de Résidence", en: "Residence Certificate" },
-				description: {
-					fr: "Attestation de domicile à l'étranger",
-					en: "Certificate of residence abroad",
-				},
-				category: ServiceCategory.Certification,
-				templateType: "attestation" as const,
-				content: {
-					header: {
-						showLogo: true,
-						showOrgName: true,
-						showOrgAddress: true,
-						title: { fr: "ATTESTATION DE RÉSIDENCE", en: "RESIDENCE CERTIFICATE" },
-					},
-					body: [
-						{
-							type: "paragraph" as const,
-							content: {
-								fr: "Le Consul Général du Gabon atteste que :",
-								en: "The Consul General of Gabon certifies that:",
-							},
-							style: { marginTop: 20 },
-						},
-						{
-							type: "paragraph" as const,
-							content: {
-								fr: "{{civilité}} {{firstName}} {{lastName}}, de nationalité gabonaise, est inscrit(e) au registre des Gabonais établis dans la circonscription consulaire depuis le {{registrationDate}}.",
-								en: "{{civility}} {{firstName}} {{lastName}}, of Gabonese nationality, has been registered in the consular district since {{registrationDate}}.",
-							},
-							style: { marginTop: 15, textAlign: "justify" as const },
-						},
-						{
-							type: "paragraph" as const,
-							content: {
-								fr: "L'intéressé(e) réside à l'adresse suivante : {{address}}, {{city}}, {{country}}.",
-								en: "The above-mentioned person resides at: {{address}}, {{city}}, {{country}}.",
-							},
-							style: { marginTop: 15 },
-						},
-					],
-					footer: {
-						showDate: true,
-						showSignature: true,
-						signatureTitle: { fr: "Le Consul Général", en: "The Consul General" },
-					},
-				},
-				placeholders: [
-					{ key: "civilité", label: { fr: "Civilité", en: "Title" }, source: "formData" as const },
-					{ key: "firstName", label: { fr: "Prénom", en: "First Name" }, source: "user" as const },
-					{ key: "lastName", label: { fr: "Nom", en: "Last Name" }, source: "user" as const },
-					{ key: "registrationDate", label: { fr: "Date d'inscription", en: "Registration Date" }, source: "system" as const },
-					{ key: "address", label: { fr: "Adresse", en: "Address" }, source: "user" as const },
-					{ key: "city", label: { fr: "Ville", en: "City" }, source: "user" as const },
-					{ key: "country", label: { fr: "Pays", en: "Country" }, source: "user" as const },
+			category: ServiceCategory.Certification,
+			templateType: "receipt" as const,
+			content: {
+				type: "doc",
+				content: [
+					heading("RÉCÉPISSÉ DE DÉPÔT", 1),
+					{ type: "paragraph", attrs: { textAlign: "center" }, content: [{ type: "text", text: "République Gabonaise" }] },
+					para([
+						"Le Consulat Général du Gabon accuse réception de la demande suivante :",
+					]),
+					para(
+						[
+							"Référence : ",
+							{ placeholder: "requestReference", source: "request", label: "Référence" },
+						],
+					),
+					para([
+						"Type de demande : ",
+						{ placeholder: "serviceName", source: "request", label: "Service" },
+					]),
+					para([
+						"Déposé par : ",
+						{ placeholder: "firstName", source: "user", label: "Prénom" },
+						" ",
+						{ placeholder: "lastName", source: "user", label: "Nom" },
+					]),
+					para([
+						"Date de dépôt : ",
+						{ placeholder: "submissionDate", source: "system", label: "Date de dépôt" },
+					]),
+					para(
+						[
+							"Ce récépissé ne préjuge en rien de la décision finale qui sera prise sur votre demande. Conservez-le, il vous sera demandé lors du retrait.",
+						],
+						{ textAlign: "justify" },
+					),
+					para([
+						"Fait le ",
+						{ placeholder: "today", source: "system", label: "Date du jour" },
+						".",
+					]),
 				],
-				isGlobal: true,
-				isActive: true,
-				paperSize: "A4" as const,
-				orientation: "portrait" as const,
 			},
-			{
-				name: { fr: "Récépissé de Dépôt", en: "Filing Receipt" },
-				description: {
-					fr: "Accusé de réception pour une demande déposée",
-					en: "Receipt for a submitted request",
-				},
-				category: ServiceCategory.Certification,
-				templateType: "receipt" as const,
-				content: {
-					header: {
-						showLogo: true,
-						showOrgName: true,
-						showOrgAddress: false,
-						title: { fr: "RÉCÉPISSÉ DE DÉPÔT", en: "FILING RECEIPT" },
-					},
-					body: [
-						{
-							type: "paragraph" as const,
-							content: {
-								fr: "Le Consulat Général du Gabon accuse réception de la demande suivante :",
-								en: "The Consulate General of Gabon acknowledges receipt of the following request:",
-							},
-							style: { marginTop: 20 },
-						},
-						{
-							type: "paragraph" as const,
-							content: {
-								fr: "**Référence :** {{requestReference}}\n**Type de demande :** {{requestType}}\n**Déposé par :** {{firstName}} {{lastName}}\n**Date de dépôt :** {{submissionDate}}",
-								en: "**Reference:** {{requestReference}}\n**Request Type:** {{requestType}}\n**Submitted by:** {{firstName}} {{lastName}}\n**Submission Date:** {{submissionDate}}",
-							},
-							style: { marginTop: 15 },
-						},
-						{
-							type: "paragraph" as const,
-							content: {
-								fr: "Ce récépissé ne préjuge en rien de la décision finale qui sera prise sur votre demande. Un traitement dans un délai de {{estimatedDays}} jours ouvrables est prévu, sauf mention contraire.",
-								en: "This receipt does not prejudge the final decision on your request. Processing within {{estimatedDays}} business days is expected, unless otherwise indicated.",
-							},
-							style: { marginTop: 15, textAlign: "justify" as const },
-						},
-					],
-					footer: {
-						showDate: true,
-						showSignature: false,
-						additionalText: {
-							fr: "Conservez ce récépissé, il vous sera demandé lors du retrait.",
-							en: "Keep this receipt, it will be required upon collection.",
-						},
-					},
-				},
-				placeholders: [
-					{ key: "requestReference", label: { fr: "Référence", en: "Reference" }, source: "request" as const },
-					{ key: "requestType", label: { fr: "Type de demande", en: "Request Type" }, source: "request" as const },
-					{ key: "firstName", label: { fr: "Prénom", en: "First Name" }, source: "user" as const },
-					{ key: "lastName", label: { fr: "Nom", en: "Last Name" }, source: "user" as const },
-					{ key: "submissionDate", label: { fr: "Date de dépôt", en: "Submission Date" }, source: "request" as const },
-					{ key: "estimatedDays", label: { fr: "Délai estimé", en: "Estimated Days" }, source: "request" as const },
-				],
-				isGlobal: true,
-				isActive: true,
-				paperSize: "A4" as const,
-				orientation: "portrait" as const,
-			},
-		];
+			placeholders: [
+				{ key: "requestReference", label: { fr: "Référence", en: "Reference" }, source: "request" as const },
+				{ key: "serviceName", label: { fr: "Service", en: "Service" }, source: "request" as const, path: "serviceName" },
+				{ key: "firstName", label: { fr: "Prénom", en: "First Name" }, source: "user" as const, path: "firstName" },
+				{ key: "lastName", label: { fr: "Nom", en: "Last Name" }, source: "user" as const, path: "lastName" },
+				{ key: "submissionDate", label: { fr: "Date de dépôt", en: "Submission Date" }, source: "system" as const },
+				{ key: "today", label: { fr: "Date du jour", en: "Today's date" }, source: "system" as const },
+			],
+			isGlobal: true,
+			isActive: true,
+			autoPublishToCitizen: true,
+			requireSignature: false,
+			paperSize: "A4" as const,
+			orientation: "portrait" as const,
+		};
 
-		// Insert templates
-		for (const template of defaultTemplates) {
-			// Check if already exists
-			const existing = await ctx.db
-				.query("documentTemplates")
-				.filter((q) =>
-					q.and(
-						q.eq(q.field("name"), template.name),
-						q.eq(q.field("isGlobal"), true)
-					)
-				)
-				.first();
+		const existing = await ctx.db
+			.query("documentTemplates")
+			.withIndex("by_global", (q) => q.eq("isGlobal", true).eq("isActive", true))
+			.filter((q) => q.eq(q.field("templateType"), "receipt"))
+			.first();
 
-			if (!existing) {
-				await ctx.db.insert("documentTemplates", {
-					...template,
-					version: 1,
-					updatedAt: Date.now(),
-				});
-			}
+		if (existing) {
+			return { seeded: 0, skipped: 1, templateId: existing._id };
 		}
 
-		return { seeded: defaultTemplates.length };
+		const templateId = await ctx.db.insert("documentTemplates", {
+			...template,
+			version: 1,
+			updatedAt: Date.now(),
+		});
+
+		return { seeded: 1, skipped: 0, templateId };
 	},
 });
