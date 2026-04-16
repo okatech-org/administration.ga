@@ -18,6 +18,7 @@ export {
 	injectSignaturePlaceholderFills,
 	readPath,
 	substitutePlaceholders,
+	toDisplayString,
 } from "./placeholder-utils";
 export { renderDocumentToHtml } from "./html-renderer";
 export { TemplatePdfDocument, type PdfRenderOptions } from "./pdf-renderer";

@@ -273,6 +273,15 @@ RÈGLES POUR LES PLACEHOLDERS
   - Tout placeholder utilisé dans "document" DOIT être déclaré dans le
     tableau "placeholders" en haut, avec son label et son source.
 
+  - DEUX FORMATS DE LABEL — NE PAS LES CONFONDRE :
+      * Dans le tableau "placeholders" en haut : label est un OBJET LOCALISÉ
+        → \`"label": { "fr": "Nom du demandeur" }\`
+      * Sur les attrs d'un node "placeholder" / "imagePlaceholder" dans
+        "document" : label est une STRING SIMPLE
+        → \`"attrs": { ..., "label": "Nom du demandeur" }\`
+      Confondre les deux casse le rendu. Idem pour signaturePlaceholder
+      → \`signerRole\` est une string simple (ex: "chef_poste"), JAMAIS un objet.
+
   - Source par défaut : "formData" (ce que le citoyen remplit). Utilise
     "system" pour les dates/références générées (today, documentNumber).
     "org" pour le nom de l'organisme. "user" pour les infos compte.

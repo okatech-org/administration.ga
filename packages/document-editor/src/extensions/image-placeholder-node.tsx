@@ -7,6 +7,7 @@
  */
 
 import { ImagePlaceholderNodeSchema } from "@workspace/document-rendering/extensions";
+import { toDisplayString } from "@workspace/document-rendering/placeholder-utils";
 import type { ImagePlaceholderAttrs } from "@workspace/document-rendering/types";
 import { NodeViewWrapper, ReactNodeViewRenderer, type ReactNodeViewProps } from "@tiptap/react";
 import { Image as ImageIcon } from "lucide-react";
@@ -27,6 +28,9 @@ function ImagePlaceholderBox({ node }: ReactNodeViewProps): ReactElement {
 	const align = attrs.align ?? "left";
 	const justify =
 		align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start";
+	// `attrs.label` may arrive from the AI as the localized object form;
+	// `toDisplayString` keeps the renderer crash-proof.
+	const labelText = toDisplayString(attrs.label);
 	return (
 		<NodeViewWrapper
 			as="div"
@@ -41,8 +45,8 @@ function ImagePlaceholderBox({ node }: ReactNodeViewProps): ReactElement {
 			>
 				<ImageIcon className="h-5 w-5 opacity-70" />
 				<span className="font-mono text-[0.75em]">{`{{${attrs.key}}}`}</span>
-				{attrs.label ? (
-					<span className="text-[0.7em] text-blue-700/80">{attrs.label}</span>
+				{labelText ? (
+					<span className="text-[0.7em] text-blue-700/80">{labelText}</span>
 				) : null}
 			</div>
 		</NodeViewWrapper>

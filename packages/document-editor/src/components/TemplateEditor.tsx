@@ -137,11 +137,19 @@ export function TemplateEditor({
 	// Re-load the canonical content when the parent bumps `contentRevision`
 	// (typically after an AI Apply). Tiptap only honours the `content` option
 	// at mount time, so we drive subsequent updates through `setContent`.
-	// Wrapped in a single chain → single undo step.
+	//
+	// Deferred to a macrotask via setTimeout(0) — Tiptap's `setContent` calls
+	// `flushSync` internally; running it inside a React effect can collide
+	// with React's render phase (the cascade is setContent → onUpdate →
+	// parent's onChange → setState → re-render → flushSync from inside
+	// rendering). Pushing it to the next macrotask breaks that chain.
 	useEffect(() => {
 		if (!editor || contentRevision === undefined) return;
 		if (!initialContent) return;
-		editor.chain().focus().setContent(initialContent).run();
+		const timer = setTimeout(() => {
+			editor.chain().focus().setContent(initialContent).run();
+		}, 0);
+		return () => clearTimeout(timer);
 		// We deliberately depend on `contentRevision` only — not on
 		// `initialContent` — to avoid re-applying on every keystroke (the
 		// parent's `onChange` flips `content` and would otherwise re-enter).

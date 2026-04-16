@@ -185,6 +185,38 @@ function transform(
 	};
 }
 
+/**
+ * Coerce an `attrs.label` (or any text-like attr) to a safe display string.
+ *
+ * AI-generated content frequently mixes the two label shapes used in our
+ * schema:
+ *  - on the canonical `PlaceholderDescriptor` → `{ fr: "Nom" }` (localized)
+ *  - on inline `placeholder` node attrs → `"Nom"` (plain string)
+ *
+ * Without this helper, an object accidentally placed on a node attr would
+ * crash React with "Objects are not valid as a React child". This function
+ * accepts either shape (or `null` / `undefined`) and always returns a
+ * plain string the renderer can drop into JSX.
+ */
+export function toDisplayString(value: unknown): string {
+	if (value === null || value === undefined) return "";
+	if (typeof value === "string") return value;
+	if (typeof value === "number" || typeof value === "boolean") {
+		return String(value);
+	}
+	if (typeof value === "object") {
+		const obj = value as Record<string, unknown>;
+		if (typeof obj.fr === "string") return obj.fr;
+		if (typeof obj.en === "string") return obj.en;
+		// First non-empty string value, regardless of locale key.
+		for (const v of Object.values(obj)) {
+			if (typeof v === "string" && v.length > 0) return v;
+		}
+		return "";
+	}
+	return "";
+}
+
 /** Return a JSONPath-like dotted access against a bucket, e.g. `identity.firstName`. */
 export function readPath(bucket: Record<string, unknown> | undefined, path: string): unknown {
 	if (!bucket) return undefined;

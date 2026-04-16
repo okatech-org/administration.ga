@@ -7,6 +7,7 @@
  */
 
 import { SignaturePlaceholderNodeSchema } from "@workspace/document-rendering/extensions";
+import { toDisplayString } from "@workspace/document-rendering/placeholder-utils";
 import type { SignaturePlaceholderAttrs } from "@workspace/document-rendering/types";
 import { NodeViewWrapper, ReactNodeViewRenderer, type ReactNodeViewProps } from "@tiptap/react";
 import { PenTool } from "lucide-react";
@@ -24,6 +25,9 @@ function SignaturePlaceholderBox({ node }: ReactNodeViewProps): ReactElement {
 	const attrs = node.attrs as SignaturePlaceholderAttrs;
 	const widthPx = (attrs.width ?? 80) * MM_TO_PX;
 	const heightPx = (attrs.height ?? 30) * MM_TO_PX;
+	// AI sometimes sends `signerRole` as the localized object form. Coerce
+	// to a string so the renderer never crashes on an `{fr: ...}` value.
+	const roleText = toDisplayString(attrs.signerRole);
 	return (
 		<NodeViewWrapper
 			as="div"
@@ -37,9 +41,7 @@ function SignaturePlaceholderBox({ node }: ReactNodeViewProps): ReactElement {
 			>
 				<PenTool className="h-5 w-5 opacity-70" />
 				<span className="text-[0.7em] uppercase tracking-wide">
-					{attrs.signerRole
-						? `Signature: ${attrs.signerRole}`
-						: "Signature"}
+					{roleText ? `Signature: ${roleText}` : "Signature"}
 				</span>
 			</div>
 		</NodeViewWrapper>
