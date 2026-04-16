@@ -284,7 +284,7 @@ export function IAstedMeetingTab() {
 	// ════════════════════════════════════════════════════════════
 	if (view === "create") {
 		return (
-			<div className="flex flex-col flex-1 overflow-hidden">
+			<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 				<div className="px-4 py-3 border-b shrink-0 flex items-center justify-between">
 					<h3 className="text-sm font-semibold">Nouvelle réunion</h3>
 					<Button variant="ghost" size="icon" onClick={() => { resetForm(); setView("list"); }} className="h-7 w-7">
@@ -292,7 +292,7 @@ export function IAstedMeetingTab() {
 					</Button>
 				</div>
 
-				<ScrollArea className="flex-1 px-4 py-3">
+				<ScrollArea className="flex-1 min-h-0 px-4 py-3">
 					<div className="space-y-4">
 						{/* Nom */}
 						<div className="space-y-1.5">
@@ -455,7 +455,7 @@ export function IAstedMeetingTab() {
 	// VUE: LISTE
 	// ════════════════════════════════════════════════════════════
 	return (
-		<div className="flex flex-col flex-1 overflow-hidden">
+		<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 			{/* Bouton créer */}
 			<div className="p-3 border-b shrink-0">
 				<Button onClick={() => setView("create")} className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700">
@@ -464,7 +464,7 @@ export function IAstedMeetingTab() {
 				</Button>
 			</div>
 
-			<ScrollArea className="flex-1">
+			<ScrollArea className="flex-1 min-h-0">
 				{isPending ? (
 					<div className="flex items-center justify-center py-8">
 						<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />

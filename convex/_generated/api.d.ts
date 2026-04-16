@@ -98,6 +98,7 @@ import type * as functions_notifications from "../functions/notifications.js";
 import type * as functions_orgCalendar from "../functions/orgCalendar.js";
 import type * as functions_orgEscalationPolicy from "../functions/orgEscalationPolicy.js";
 import type * as functions_orgIAstedConfig from "../functions/orgIAstedConfig.js";
+import type * as functions_orgOverview from "../functions/orgOverview.js";
 import type * as functions_orgRoleTemplates from "../functions/orgRoleTemplates.js";
 import type * as functions_orgs from "../functions/orgs.js";
 import type * as functions_payments from "../functions/payments.js";
@@ -381,6 +382,7 @@ declare const fullApi: ApiFromModules<{
   "functions/orgCalendar": typeof functions_orgCalendar;
   "functions/orgEscalationPolicy": typeof functions_orgEscalationPolicy;
   "functions/orgIAstedConfig": typeof functions_orgIAstedConfig;
+  "functions/orgOverview": typeof functions_orgOverview;
   "functions/orgRoleTemplates": typeof functions_orgRoleTemplates;
   "functions/orgs": typeof functions_orgs;
   "functions/payments": typeof functions_payments;

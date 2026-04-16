@@ -4249,6 +4249,13 @@
 			"empty": "Aucun appel actif",
 			"parkedFor": "En attente depuis {{duration}}"
 		},
+		"conversation": {
+			"live": "En ligne",
+			"onHold": "En attente",
+			"inCall": "Appel en cours",
+			"parkedFor": "Appel parqué",
+			"dossierHint": "Consultez le dossier du citoyen dans le panneau de droite."
+		},
 		"drawer": {
 			"selectCall": "Sélectionnez un appel",
 			"selectCallHint": "Cliquez sur une carte pour afficher le contexte du citoyen.",

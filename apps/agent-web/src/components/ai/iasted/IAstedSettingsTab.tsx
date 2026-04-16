@@ -87,7 +87,7 @@ export function IAstedSettingsTab() {
 	const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
 	return (
-		<ScrollArea className="flex-1">
+		<ScrollArea className="flex-1 min-h-0">
 			<div className="p-4 space-y-5">
 				<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
 					Réglages

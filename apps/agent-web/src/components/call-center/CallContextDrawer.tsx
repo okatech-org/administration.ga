@@ -52,7 +52,7 @@ export function CallContextDrawer({
 
   if (!meetingId) {
     return (
-      <div className="flex h-full w-[380px] shrink-0 flex-col items-center justify-center border-l p-6 text-center">
+      <div className="flex h-full w-[420px] shrink-0 flex-col items-center justify-center border-l p-6 text-center lg:w-[460px]">
         <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-muted/40">
           <FileText className="h-6 w-6 text-muted-foreground/60" />
         </div>
@@ -68,7 +68,7 @@ export function CallContextDrawer({
 
   if (isPending || !context) {
     return (
-      <div className="flex h-full w-[380px] shrink-0 flex-col items-center justify-center border-l">
+      <div className="flex h-full w-[420px] shrink-0 flex-col items-center justify-center border-l lg:w-[460px]">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
@@ -98,7 +98,7 @@ export function CallContextDrawer({
   ];
 
   return (
-    <aside className="flex h-full w-[380px] shrink-0 flex-col border-l bg-background">
+    <aside className="flex h-full w-[420px] shrink-0 flex-col border-l bg-background lg:w-[460px]">
       <ScrollArea className="flex-1">
         <CitizenContextPanel
           citizen={context.caller}

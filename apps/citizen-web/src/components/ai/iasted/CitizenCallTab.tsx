@@ -24,7 +24,7 @@ import {
 	PhoneMissed,
 	PhoneOff,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,9 @@ import { cn } from "@/lib/utils";
 export function CitizenCallTab() {
 	const [activeMeetingId, setActiveMeetingId] = useState<Id<"meetings"> | null>(null);
 	const [activeCallLabel, setActiveCallLabel] = useState<string | null>(null);
+	// See org-call-button.tsx — guard against StrictMode/transient LiveKit
+	// disconnects ending the server-side call before the agent can pick up.
+	const userHangUpRef = useRef(false);
 
 	// Hook meeting lifecycle
 	const { token, wsUrl, connect, disconnect } = useMeeting(activeMeetingId ?? undefined);
@@ -109,6 +112,7 @@ export function CitizenCallTab() {
 				mediaType: "audio", // Citoyens : audio uniquement
 			});
 			const meetingId = result.meetingId as Id<"meetings">;
+			userHangUpRef.current = false;
 			setActiveMeetingId(meetingId);
 			await connect(meetingId);
 			// Transition to ringing so agents can see the call
@@ -122,6 +126,7 @@ export function CitizenCallTab() {
 	}, [activeMeetingId, callOrg, connect, setCallRingingMutation]);
 
 	const handleHangUp = useCallback(async () => {
+		userHangUpRef.current = true;
 		if (activeMeetingId) {
 			await disconnect(activeMeetingId);
 		}
@@ -129,11 +134,18 @@ export function CitizenCallTab() {
 		setActiveCallLabel(null);
 	}, [activeMeetingId, disconnect]);
 
+	const handleLiveKitDisconnected = useCallback(() => {
+		if (userHangUpRef.current) {
+			setActiveMeetingId(null);
+			setActiveCallLabel(null);
+		}
+	}, []);
+
 	const isInCall = activeMeetingId !== null && token && wsUrl;
 
 	return (
-		<div className="flex flex-col flex-1 overflow-hidden">
-			<ScrollArea className="flex-1">
+		<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+			<ScrollArea className="flex-1 min-h-0">
 				{/* En-tete */}
 				<div className="px-4 pt-4 pb-3">
 					<p className="text-base font-semibold">Appeler une représentation</p>
@@ -244,7 +256,7 @@ export function CitizenCallTab() {
 								connect={true}
 								audio={true}
 								video={false}
-								onDisconnected={handleHangUp}
+								onDisconnected={handleLiveKitDisconnected}
 								className="flex flex-col flex-1"
 							>
 								<CustomCallUI onHangUp={handleHangUp} title={activeCallLabel ?? undefined} />

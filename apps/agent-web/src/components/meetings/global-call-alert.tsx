@@ -8,7 +8,7 @@ import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { useQuery } from "convex/react";
 import { Loader2, Phone, PhoneCall, PhoneOff } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,15 +23,17 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useRingtone } from "@/hooks/use-ringtone";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { useCallStore } from "@/stores/call-store";
+import { FEATURES } from "@/lib/feature-flags";
 
 /**
- * Feature flag Centre d'Appels — aligné avec IAstedCallTab.
- * Quand activé + route = /iasted, la GlobalCallAlert s'efface pour laisser
- * la main à CallCenterShell qui gère sa propre UI d'appels.
+ * Feature flag Centre d'Appels — doit utiliser la même source que IAstedCallTab
+ * (`FEATURES.callCenter`, opt-out via `NEXT_PUBLIC_FEATURE_CALL_CENTER=0`).
+ *
+ * Avant, ce fichier exigeait `=1|true` explicitement : le flag par défaut
+ * basculait IAstedCallTab en mode Centre d'Appels mais LAISSAIT GlobalCallAlert
+ * ouvrir son Dialog CustomCallUI plein écran — double UI superposée.
  */
-const CALL_CENTER_ENABLED =
-	process.env.NEXT_PUBLIC_FEATURE_CALL_CENTER === "1" ||
-	process.env.NEXT_PUBLIC_FEATURE_CALL_CENTER === "true";
+const CALL_CENTER_ENABLED = FEATURES.callCenter;
 
 /**
  * GlobalCallAlert - Listens for incoming calls across the entire app.
@@ -58,6 +60,9 @@ function GlobalCallAlertInner() {
 		null,
 	);
 	const { globalActiveMeetingId, setGlobalMeetingId } = useCallStore();
+	// See citizen-web/org-call-button.tsx — guard transient LiveKit disconnects
+	// (StrictMode, token refresh, network blips) from ending the call.
+	const userHangUpRef = useRef(false);
 
 	// Get my personal meetings
 	const { data: meetingsData } = useAuthenticatedConvexQuery(
@@ -119,6 +124,7 @@ function GlobalCallAlertInner() {
 
 	const handleJoin = useCallback(async () => {
 		if (!activeCallToDisplay) return;
+		userHangUpRef.current = false;
 		setActiveMeetingId(activeCallToDisplay._id);
 		setGlobalMeetingId(activeCallToDisplay._id);
 		await connect(activeCallToDisplay._id);
@@ -130,12 +136,20 @@ function GlobalCallAlertInner() {
 	}, [activeCallToDisplay, declineCallMutation]);
 
 	const handleHangUp = useCallback(async () => {
+		userHangUpRef.current = true;
 		if (activeMeetingId) {
 			await disconnect(activeMeetingId);
 		}
 		setActiveMeetingId(null);
 		setGlobalMeetingId(null);
 	}, [activeMeetingId, disconnect, setGlobalMeetingId]);
+
+	const handleLiveKitDisconnected = useCallback(() => {
+		if (userHangUpRef.current) {
+			setActiveMeetingId(null);
+			setGlobalMeetingId(null);
+		}
+	}, [setGlobalMeetingId]);
 
 	// Auto-close when the other side hangs up
 	useEffect(() => {
@@ -154,7 +168,7 @@ function GlobalCallAlertInner() {
 					connect={true}
 					audio={true}
 					video={false}
-					onDisconnected={handleHangUp}
+					onDisconnected={handleLiveKitDisconnected}
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
@@ -175,18 +189,18 @@ function GlobalCallAlertInner() {
 		<>
 			{/* Floating Banner when a call is coming in but not yet joined globally */}
 			{!isCurrentlyInCall && !isBusyGlobally && activeCallToDisplay && (
-				<div className="fixed top-4 left-1/2 -translate-x-1/2 z-100 w-[90%] max-w-md animate-in slide-in-from-top-4 fade-in">
-					<div className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-emerald-500/40 bg-zinc-950/90 backdrop-blur-xl text-white">
-						<div className="flex items-center gap-3">
-							<div className="relative flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/20">
-								<PhoneCall className="w-5 h-5 text-emerald-400 animate-pulse" />
-								<span className="absolute inset-0 rounded-full border border-emerald-500 animate-ping opacity-75" />
+				<div className="fixed top-4 left-1/2 -translate-x-1/2 z-100 w-[calc(100%-2rem)] max-w-xl animate-in slide-in-from-top-4 fade-in">
+					<div className="flex flex-col gap-3 rounded-2xl border border-emerald-500/40 bg-zinc-950/90 px-4 py-3 text-white backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+						<div className="flex min-w-0 items-center gap-3">
+							<div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/20">
+								<PhoneCall className="h-5 w-5 animate-pulse text-emerald-400" />
+								<span className="absolute inset-0 animate-ping rounded-full border border-emerald-500 opacity-75" />
 							</div>
-							<div>
-								<p className="font-semibold text-sm">
+							<div className="min-w-0 flex-1">
+								<p className="truncate text-sm font-semibold" title={activeCallToDisplay.title ?? undefined}>
 									{activeCallToDisplay.title || t("meetings.incomingCall", "Appel entrant")}
 								</p>
-								<p className="text-xs text-zinc-400">
+								<p className="truncate text-xs text-zinc-400">
 									{callerName
 										? callerName
 										: isOrgCall
@@ -201,23 +215,25 @@ function GlobalCallAlertInner() {
 								</p>
 							</div>
 						</div>
-						<div className="flex items-center gap-2">
+						<div className="flex shrink-0 items-center justify-end gap-2">
 							<Button
 								size="sm"
 								variant="ghost"
 								onClick={handleDecline}
-								className="text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl gap-1.5"
+								aria-label={t("meetings.decline", "Refuser")}
+								className="gap-1.5 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300"
 							>
-								<PhoneOff className="w-4 h-4" />
-								{t("meetings.decline", "Refuser")}
+								<PhoneOff className="h-4 w-4" />
+								<span className="hidden sm:inline">{t("meetings.decline", "Refuser")}</span>
 							</Button>
 							<Button
 								size="sm"
 								onClick={handleJoin}
-								className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 active:scale-[0.97] transition-transform"
+								aria-label={t("meetings.answer", "Décrocher")}
+								className="gap-2 rounded-xl bg-emerald-600 text-white transition-transform hover:bg-emerald-700 active:scale-[0.97]"
 							>
-								<Phone className="w-4 h-4" />
-								{t("meetings.answer", "Décrocher")}
+								<Phone className="h-4 w-4" />
+								<span className="hidden sm:inline">{t("meetings.answer", "Décrocher")}</span>
 							</Button>
 						</div>
 					</div>

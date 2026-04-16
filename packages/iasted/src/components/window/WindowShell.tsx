@@ -192,7 +192,7 @@ export function WindowShell({
 						<div className="shrink-0 border-b border-border/50">{callQueueSlot}</div>
 					)}
 
-					<div className="flex flex-1 flex-col overflow-hidden">
+					<div className="flex flex-1 flex-col min-h-0 overflow-hidden">
 						{tabContent[currentTab] ?? <DefaultEmptyContent tabId={currentTab} />}
 					</div>
 

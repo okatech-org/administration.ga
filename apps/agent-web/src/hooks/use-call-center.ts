@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
@@ -62,6 +62,13 @@ export function useCallCenter() {
   );
   const missedCalls = missedRaw ?? [];
 
+  // Derniers appels terminés (answered, abandoned, missed) — vue historique
+  const { data: recentRaw } = useAuthenticatedConvexQuery(
+    api.functions.callCenter.listRecentCallsForAgent,
+    {},
+  );
+  const recentCalls = recentRaw ?? [];
+
   // Mutations
   const { mutateAsync: pickupMutation } = useConvexMutationQuery(
     api.functions.callCenter.pickupCall,
@@ -80,6 +87,9 @@ export function useCallCenter() {
   );
   const { mutateAsync: callBackMissedMutation } = useConvexMutationQuery(
     api.functions.callCenter.callBackMissedCall,
+  );
+  const { mutateAsync: callUserMutation } = useConvexMutationQuery(
+    api.functions.meetings.callUser,
   );
   const { mutateAsync: declineMutation } = useConvexMutationQuery(
     api.functions.meetings.declineCall,
@@ -239,6 +249,33 @@ export function useCallCenter() {
     [callBackMissedMutation, requestTokenAction, upsertSlot],
   );
 
+  /**
+   * Rappelle directement un citoyen par son userId et l'org d'origine.
+   * Utilisé par la section "Récents" qui n'a pas de row missedCalls.
+   */
+  const callBackRecent = useCallback(
+    async (targetUserId: Id<"users">, orgId: Id<"orgs">) => {
+      try {
+        const { meetingId } = await callUserMutation({ orgId, targetUserId });
+        const tokenResult = await requestTokenAction({ meetingId });
+        upsertSlot({
+          meetingId,
+          status: "active",
+          token: tokenResult.token,
+          wsUrl: tokenResult.wsUrl,
+          roomName: tokenResult.roomName,
+          joinedAt: Date.now(),
+        });
+        toast.success("Rappel en cours…");
+        return { meetingId };
+      } catch (err: any) {
+        toast.error(err?.message ?? "Impossible de rappeler");
+        throw err;
+      }
+    },
+    [callUserMutation, requestTokenAction, upsertSlot],
+  );
+
   /** Transfère l'appel à un agent ou une ligne. */
   const transfer = useCallback(
     async (
@@ -285,6 +322,43 @@ export function useCallCenter() {
     [endMutation, removeSlot],
   );
 
+  /**
+   * Réconciliation serveur → client.
+   *
+   * Le serveur est la source de vérité pour "quels slots existent dans quel état".
+   * Le store local ne sert qu'à porter les tokens LiveKit + l'intent "slot actif".
+   *
+   * Sans ce hook, quand un appel termine côté serveur (LiveKit disconnect,
+   * citoyen qui raccroche, erreur réseau sur la mutation hangup, tab fermé
+   * puis rouvert…), le store gardait un `activeSlotId` fantôme et le floating
+   * Raccrocher restait visible alors que `listActiveCallsForUser` renvoyait [].
+   *
+   * On laisse toujours vivre les slots en `connecting` : ils sont dans une
+   * fenêtre de course légitime avant que la query ne les voie.
+   */
+  useEffect(() => {
+    const serverIds = new Set(activeCalls.map((c: any) => c._id as string));
+    for (const slot of slots) {
+      if (slot.status === "connecting") continue;
+      if (!serverIds.has(slot.meetingId as string)) {
+        trace("reconcile:removeStaleSlot", slot.meetingId);
+        callStore.removeSlot(slot.meetingId);
+      }
+    }
+    if (activeSlotId && !serverIds.has(activeSlotId as string)) {
+      const firstConnected = activeCalls.find(
+        (c: any) => c.callStatus === "connected",
+      );
+      trace("reconcile:realignActive", {
+        stale: activeSlotId,
+        next: firstConnected?._id ?? null,
+      });
+      callStore.setActiveSlot(
+        (firstConnected?._id as Id<"meetings"> | undefined) ?? null,
+      );
+    }
+  }, [activeCalls, slots, activeSlotId]);
+
   // Nombre d'appels urgents dans la file — utile pour badge ping dans la sidebar
   const urgentCount = queue.filter((q: any) => q.priority === "urgent").length;
 
@@ -297,6 +371,7 @@ export function useCallCenter() {
     slots,
     urgentCount,
     missedCalls,
+    recentCalls,
 
     // Actions
     pickup,
@@ -307,6 +382,7 @@ export function useCallCenter() {
     resume,
     transfer,
     callBackMissed,
+    callBackRecent,
 
     // Expose aussi le store directement pour les cas avancés
     setActiveSlot: callStore.setActiveSlot,

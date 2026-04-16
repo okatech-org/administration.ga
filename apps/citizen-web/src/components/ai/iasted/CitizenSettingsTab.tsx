@@ -17,7 +17,7 @@ export function CitizenSettingsTab() {
 	const isEnglish = i18n.language === "en";
 
 	return (
-		<ScrollArea className="flex-1">
+		<ScrollArea className="flex-1 min-h-0">
 			<div className="p-4 space-y-5">
 				{/* Langue */}
 				<div className="space-y-2">

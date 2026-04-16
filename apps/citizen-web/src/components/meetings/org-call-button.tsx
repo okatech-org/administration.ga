@@ -9,7 +9,7 @@ import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import type { VariantProps } from "class-variance-authority";
 import { Loader2, Phone, PhoneOff, ChevronDown, MapPin, MessageCircle } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { buttonVariants } from "@/components/ui/button";
@@ -51,6 +51,11 @@ export function OrgCallButton({
 		null,
 	);
 	const [showLineSelector, setShowLineSelector] = useState(false);
+	// Guards against transient LiveKit disconnects (e.g. React StrictMode
+	// double-mount, token refresh) ending the server-side call prematurely.
+	// The server `leave` mutation terminates any 1-on-1 call when a participant
+	// leaves, so we only want to call it on an explicit user hang-up.
+	const userHangUpRef = useRef(false);
 
 	// Fetch call lines for this org
 	const { data: callLines } = useConvexQuery(
@@ -96,6 +101,7 @@ export function OrgCallButton({
 				meetingId = result.meetingId;
 			}
 
+			userHangUpRef.current = false;
 			setActiveMeetingId(meetingId);
 			await connect(meetingId);
 			// Transition call to "ringing" — makes it visible to agents
@@ -117,12 +123,24 @@ export function OrgCallButton({
 		await initiateCall(singleLine?._id);
 	}, [callLines, initiateCall]);
 
+	// Explicit user-initiated hang-up (button click, dialog close).
+	// Calls the server `leave` mutation which ends the call for everyone.
 	const handleHangUp = useCallback(async () => {
+		userHangUpRef.current = true;
 		if (activeMeetingId) {
 			await disconnect(activeMeetingId);
 		}
 		setActiveMeetingId(null);
 	}, [activeMeetingId, disconnect]);
+
+	// LiveKit disconnect event — fires on StrictMode unmount, token refresh,
+	// network blips, etc. Only treat as a real hang-up if the user clicked the
+	// hang-up button; otherwise ignore to avoid ending the call server-side.
+	const handleLiveKitDisconnected = useCallback(() => {
+		if (userHangUpRef.current) {
+			setActiveMeetingId(null);
+		}
+	}, []);
 
 	const isInCall = activeMeetingId !== null;
 	const activeLines = callLines?.filter((l) => l.isActive) ?? [];
@@ -136,7 +154,7 @@ export function OrgCallButton({
 					connect={true}
 					audio={true}
 					video={false}
-					onDisconnected={handleHangUp}
+					onDisconnected={handleLiveKitDisconnected}
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>

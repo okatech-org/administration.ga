@@ -90,25 +90,32 @@ export function PostCallNoteDrawer({
 			<SheetContent
 				side="bottom"
 				className={cn(
-					"flex max-h-[80dvh] flex-col gap-0 bg-card p-0",
+					"mx-auto flex h-auto max-h-[90dvh] w-full max-w-2xl flex-col gap-0 rounded-t-2xl bg-card p-0 shadow-2xl",
 					className,
 				)}
 			>
-				<SheetHeader className="shrink-0 border-b border-border/50 px-4 py-3">
-					<div className="flex items-center gap-2">
-						<Sparkles className="h-4 w-4 text-primary" />
-						<SheetTitle className="text-sm font-bold">Notes post-appel</SheetTitle>
+				<SheetHeader className="shrink-0 border-b border-border/50 px-6 pb-4 pt-5">
+					<div className="flex items-center gap-2.5">
+						<div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+							<Sparkles className="h-4 w-4 text-primary" />
+						</div>
+						<div className="flex min-w-0 flex-col">
+							<SheetTitle className="text-base font-bold">
+								Notes post-appel
+							</SheetTitle>
+							<SheetDescription className="text-xs text-muted-foreground">
+								{meetingLabel ??
+									"Documentez cette conversation avant de passer à la suivante."}
+							</SheetDescription>
+						</div>
 					</div>
-					<SheetDescription className="text-[10px] text-muted-foreground">
-						{meetingLabel ?? "Documentez cette conversation avant de passer à la suivante."}
-					</SheetDescription>
 				</SheetHeader>
 
-				<div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+				<div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
 					{autoDraftSlot && <div>{autoDraftSlot}</div>}
 
-					<div className="space-y-1.5">
-						<label className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/70">
+					<div className="space-y-2">
+						<label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
 							Résumé
 						</label>
 						<textarea
@@ -116,28 +123,31 @@ export function PostCallNoteDrawer({
 							onChange={(e) => setContent(e.target.value)}
 							placeholder="Résumé de la conversation (3–4 lignes)"
 							rows={4}
-							className="w-full resize-none rounded-lg border border-border/50 bg-background px-3 py-2 text-xs font-medium text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+							className="w-full resize-none rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus-visible:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
 						/>
 					</div>
 
-					<div className="space-y-1.5">
-						<label className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/70">
-							Actions à suivre (une par ligne)
+					<div className="space-y-2">
+						<label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+							Actions à suivre
+							<span className="ml-1.5 font-normal normal-case tracking-normal text-muted-foreground/60">
+								(une par ligne)
+							</span>
 						</label>
 						<textarea
 							value={actionItemsInput}
 							onChange={(e) => setActionItemsInput(e.target.value)}
-							placeholder="Renvoyer le formulaire…\nProgrammer un RDV le lundi…"
+							placeholder={"Renvoyer le formulaire…\nProgrammer un RDV le lundi…"}
 							rows={3}
-							className="w-full resize-none rounded-lg border border-border/50 bg-background px-3 py-2 text-xs font-medium text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+							className="w-full resize-none rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus-visible:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
 						/>
 					</div>
 
-					<div className="space-y-1.5">
-						<label className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/70">
+					<div className="space-y-2">
+						<label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
 							Ressenti citoyen
 						</label>
-						<div className="flex flex-wrap gap-1.5">
+						<div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
 							{SENTIMENT_OPTIONS.map((opt) => {
 								const active = sentiment === opt.value;
 								return (
@@ -146,10 +156,10 @@ export function PostCallNoteDrawer({
 										type="button"
 										onClick={() => setSentiment(opt.value)}
 										className={cn(
-											"flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors active:scale-[0.97]",
+											"flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-medium transition-all active:scale-[0.97]",
 											active
-												? opt.colorClass
-												: "bg-muted/30 text-muted-foreground hover:bg-muted/60",
+												? cn("border-transparent", opt.colorClass)
+												: "border-border bg-background text-muted-foreground hover:bg-muted/40 hover:text-foreground",
 										)}
 									>
 										{opt.icon}
@@ -161,11 +171,11 @@ export function PostCallNoteDrawer({
 					</div>
 				</div>
 
-				<div className="shrink-0 border-t border-border/50 p-3 flex items-center justify-end gap-2">
+				<div className="flex shrink-0 items-center justify-end gap-2 border-t border-border/50 px-6 py-4">
 					<Button
 						variant="ghost"
 						onClick={() => onOpenChange(false)}
-						className="h-9 text-xs"
+						className="h-10 px-4 text-sm"
 					>
 						Plus tard
 					</Button>
@@ -173,9 +183,9 @@ export function PostCallNoteDrawer({
 						type="button"
 						onClick={handleSave}
 						disabled={saving || content.trim().length === 0}
-						className="h-9 rounded-lg bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 active:scale-[0.97]"
+						className="h-10 gap-1.5 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 active:scale-[0.98]"
 					>
-						<CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+						<CheckCircle2 className="h-4 w-4" />
 						{saving ? "Enregistrement…" : "Enregistrer"}
 					</Button>
 				</div>

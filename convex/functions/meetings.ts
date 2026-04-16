@@ -426,6 +426,7 @@ export const leave = authMutation({
     const isCall = meeting.type === "call";
     const isEmpty = stillActive.length === 0;
 
+    let createMissedAbandoned = false;
     if ((isEmpty || isCall) && meeting.status === "active") {
       patch.status = "ended";
       patch.endedAt = Date.now();
@@ -438,11 +439,49 @@ export const leave = authMutation({
           // Caller hung up before any agent answered
           patch.callStatus = "ended";
           patch.endReason = "cancelled";
+          createMissedAbandoned = meeting.isOrgInbound === true && !!meeting.orgId;
         }
       }
     }
 
     await ctx.db.patch(args.meetingId, patch);
+
+    // Log abandoned inbound org calls into missedCalls so agents can see them
+    // and call back. Without this, cancelled-before-pickup calls are invisible.
+    if (createMissedAbandoned && meeting.orgId) {
+      const existing = await ctx.db
+        .query("missedCalls")
+        .withIndex("by_meeting", (q) => q.eq("meetingId", meeting._id))
+        .first();
+      if (!existing) {
+        const callerUser = await ctx.db.get(meeting.createdBy);
+        const displayName = callerUser
+          ? [callerUser.firstName, callerUser.lastName]
+              .filter(Boolean)
+              .join(" ")
+              .trim() ||
+            callerUser.email ||
+            "Usager"
+          : "Usager";
+        const startedAt = meeting.startedAt ?? meeting._creationTime;
+        const endedAt = patch.endedAt as number;
+        await ctx.db.insert("missedCalls", {
+          orgId: meeting.orgId,
+          callLineId: meeting.callLineId,
+          meetingId: meeting._id,
+          caller: {
+            userId: meeting.createdBy,
+            displayName,
+            email: callerUser?.email,
+          },
+          startedAt,
+          endedAt,
+          durationSeconds: Math.floor((endedAt - startedAt) / 1000),
+          reason: "abandoned",
+          callbackStatus: "pending",
+        });
+      }
+    }
   },
 });
 

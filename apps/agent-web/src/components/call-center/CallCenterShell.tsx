@@ -12,14 +12,20 @@ import { useOrg } from "@/components/org/org-provider";
 import { useCallCenter } from "@/hooks/use-call-center";
 import { useRingtone } from "@/hooks/use-ringtone";
 import { ActiveCallsBar, type ActiveCallSlot } from "./ActiveCallsBar";
+import { ActiveConversationView } from "./ActiveConversationView";
 import { CallContextDrawer } from "./CallContextDrawer";
 import { CallRoomPool } from "./CallRoomMount";
+import { CollapsibleQueueBar } from "./CollapsibleQueueBar";
 import { IncomingCallQueue } from "./IncomingCallQueue";
 import { LineFilterRail } from "./LineFilterRail";
 import {
   MissedCallsSection,
   type MissedCallRow,
 } from "./MissedCallsSection";
+import {
+  RecentCallsSection,
+  type RecentCallRow,
+} from "./RecentCallsSection";
 import { SupervisionPanel } from "./SupervisionPanel";
 
 /**
@@ -44,6 +50,8 @@ export function CallCenterShell() {
     transfer,
     missedCalls,
     callBackMissed,
+    recentCalls,
+    callBackRecent,
   } = useCallCenter();
 
   const [selectedLineId, setSelectedLineId] = useState<string | "all">("all");
@@ -104,6 +112,26 @@ export function CallCenterShell() {
     }
   };
 
+  const handleCallBackRecent = async (
+    targetUserId: Id<"users">,
+    orgId: Id<"orgs">,
+  ) => {
+    const key = `${targetUserId}:${orgId}`;
+    setCallingBackIds((prev) => new Set(prev).add(key));
+    try {
+      const { meetingId } = await callBackRecent(targetUserId, orgId);
+      setFocusedMeetingId(meetingId);
+    } catch {
+      // toast déjà émis par use-call-center
+    } finally {
+      setCallingBackIds((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  };
+
   // Détection : le citoyen a raccroché alors que son slot était parqué.
   // On nettoie le slot côté client (le backend a déjà terminé le meeting).
   const handleSlotDisconnected = (meetingId: Id<"meetings">) => {
@@ -124,6 +152,67 @@ export function CallCenterShell() {
   // Drawer : on privilégie le slot actif, sinon la carte focalisée
   const drawerMeetingId =
     activeSlotId ?? focusedMeetingId ?? (queue[0]?._id as Id<"meetings"> | undefined) ?? null;
+
+  // Appel actif à projeter dans la vue de conversation centrale.
+  // Priorité : le slot que l'agent a focalisé (activeSlotId) > le premier connected > le premier actif.
+  const conversationCall = useMemo(() => {
+    if (activeCalls.length === 0) return null;
+    const pinned = activeCalls.find((c: any) => c._id === activeSlotId);
+    if (pinned) return pinned as ActiveCallSlot & { _id: string };
+    const connected = activeCalls.find(
+      (c: any) => c.callStatus === "connected",
+    );
+    return (connected ?? activeCalls[0]) as ActiveCallSlot & { _id: string };
+  }, [activeCalls, activeSlotId]);
+
+  // Rendu mutualisé de la colonne centrale — même code en mobile et desktop.
+  const centerColumn = (
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {conversationCall ? (
+        <>
+          {filteredQueue.length > 0 && (
+            <CollapsibleQueueBar
+              calls={filteredQueue as any}
+              focusedMeetingId={focusedMeetingId}
+              pickingUpId={pickingUpId}
+              onPickup={handlePickup}
+              onDecline={handleDecline}
+              onFocus={handleFocus}
+            />
+          )}
+          <ActiveConversationView
+            call={conversationCall}
+            onHold={(id) => hold(id)}
+            onResume={(id) => resume(id)}
+            onEnd={handleEndActive}
+          />
+        </>
+      ) : (
+        <IncomingCallQueue
+          calls={filteredQueue as any}
+          focusedMeetingId={focusedMeetingId}
+          pickingUpId={pickingUpId}
+          onPickup={handlePickup}
+          onDecline={handleDecline}
+          onFocus={handleFocus}
+        />
+      )}
+      {(missedCalls.length > 0 || recentCalls.length > 0) && (
+        <div className="shrink-0 max-h-[50%] overflow-y-auto border-t bg-muted/10 px-3 pb-3">
+          <MissedCallsSection
+            rows={missedCalls as MissedCallRow[]}
+            pendingIds={callingBackIds}
+            onCallBack={handleCallBackMissed}
+          />
+          <RecentCallsSection
+            rows={recentCalls as RecentCallRow[]}
+            pendingIds={callingBackIds}
+            onCallBack={handleCallBackRecent}
+          />
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -193,25 +282,7 @@ export function CallCenterShell() {
             </Sheet>
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <IncomingCallQueue
-              calls={filteredQueue as any}
-              focusedMeetingId={focusedMeetingId}
-              pickingUpId={pickingUpId}
-              onPickup={handlePickup}
-              onDecline={handleDecline}
-              onFocus={handleFocus}
-            />
-            {missedCalls.length > 0 && (
-              <div className="shrink-0 max-h-[40%] overflow-y-auto border-t bg-muted/10 px-3 pb-3">
-                <MissedCallsSection
-                  rows={missedCalls as MissedCallRow[]}
-                  pendingIds={callingBackIds}
-                  onCallBack={handleCallBackMissed}
-                />
-              </div>
-            )}
-          </div>
+          {centerColumn}
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -223,25 +294,7 @@ export function CallCenterShell() {
             urgentCount={urgentCount}
           />
 
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <IncomingCallQueue
-              calls={filteredQueue as any}
-              focusedMeetingId={focusedMeetingId}
-              pickingUpId={pickingUpId}
-              onPickup={handlePickup}
-              onDecline={handleDecline}
-              onFocus={handleFocus}
-            />
-            {missedCalls.length > 0 && (
-              <div className="shrink-0 max-h-[40%] overflow-y-auto border-t bg-muted/10 px-3 pb-3">
-                <MissedCallsSection
-                  rows={missedCalls as MissedCallRow[]}
-                  pendingIds={callingBackIds}
-                  onCallBack={handleCallBackMissed}
-                />
-              </div>
-            )}
-          </div>
+          {centerColumn}
 
           <CallContextDrawer
             meetingId={drawerMeetingId}
@@ -268,8 +321,10 @@ export function CallCenterShell() {
         onDisconnected={handleSlotDisconnected}
       />
 
-      {/* Raccroche flottant quand un appel est actif (dupliqué pour ergonomie) */}
-      {activeSlotId && (
+      {/* Raccroche flottant quand un appel est actif (dupliqué pour ergonomie).
+          Double garde : slot actif côté client ET appel encore connu du serveur.
+          Protège d'un store zombie si la réconciliation n'a pas encore eu lieu. */}
+      {activeSlotId && activeCalls.length > 0 && (
         <div className="pointer-events-auto fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full border bg-card px-3 py-2 shadow-lg">
           <span className="text-[11px] font-semibold text-muted-foreground">
             {t("callCenter.activeBar.title")}

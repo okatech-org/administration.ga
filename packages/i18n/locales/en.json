@@ -3658,6 +3658,13 @@
 			"empty": "No active call",
 			"parkedFor": "On hold for {{duration}}"
 		},
+		"conversation": {
+			"live": "Live",
+			"onHold": "On hold",
+			"inCall": "In call",
+			"parkedFor": "Call parked",
+			"dossierHint": "See the citizen's dossier in the right panel."
+		},
 		"drawer": {
 			"selectCall": "Select a call",
 			"selectCallHint": "Click a card to view the citizen's context.",

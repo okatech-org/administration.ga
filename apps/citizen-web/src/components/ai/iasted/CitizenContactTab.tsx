@@ -55,7 +55,7 @@ export function CitizenContactTab() {
 	}, [allOrgs, search]);
 
 	return (
-		<div className="flex-1 flex flex-col overflow-hidden">
+		<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 			{/* Recherche */}
 			<div className="px-3 pt-3 pb-1.5 shrink-0">
 				<div className="relative">
@@ -80,7 +80,7 @@ export function CitizenContactTab() {
 			</div>
 
 			{/* Liste */}
-			<ScrollArea className="flex-1 px-3 pb-2">
+			<ScrollArea className="flex-1 min-h-0 px-3 pb-2">
 				{isPending ? (
 					<div className="flex items-center justify-center py-8">
 						<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />

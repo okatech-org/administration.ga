@@ -221,7 +221,7 @@ export function CitizenChatTab() {
 		const isActuallyLoading = messagesLoading && !!selectedChatId;
 
 		return (
-			<div className="flex flex-col flex-1 overflow-hidden">
+			<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 				{/* Header */}
 				<div className="border-b px-3 py-2 flex items-center gap-2 shrink-0">
 					<button type="button" onClick={() => setSelectedThread(null)} className="text-xs text-muted-foreground hover:text-foreground">
@@ -255,7 +255,7 @@ export function CitizenChatTab() {
 				</div>
 
 				{/* Messages */}
-				<ScrollArea className="flex-1 px-3 py-3">
+				<ScrollArea className="flex-1 min-h-0 px-3 py-3">
 					{isActuallyLoading && !hasMessages ? (
 						<div className="flex items-center justify-center py-8">
 							<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -380,8 +380,8 @@ export function CitizenChatTab() {
 	// ════════════════════════════════════════════════════════
 
 	return (
-		<div className="flex flex-col flex-1 overflow-hidden">
-			<ScrollArea className="flex-1">
+		<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+			<ScrollArea className="flex-1 min-h-0">
 				{/* Mr Ray — Contact Standard epingle */}
 				<button
 					type="button"

@@ -21,6 +21,8 @@ coverage
 
 #claude 
 .claude
+.claude/
+.claude/launch.json
 
 # Build Outputs
 dist

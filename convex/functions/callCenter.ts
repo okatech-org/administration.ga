@@ -1223,6 +1223,111 @@ export const listMissedCallsForAgent = authQuery({
 });
 
 /**
+ * Liste les appels récents (terminés) sur toutes les orgs où l'agent peut décrocher.
+ *
+ * Sert à la section "Récents" de l'iAppel — vue rapide des appels traités + abandonnés
+ * + manqués pour que l'agent ait un retour immédiat sur son activité.
+ */
+export const listRecentCallsForAgent = authQuery({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userMemberships = (await ctx.db
+      .query("memberships")
+      .collect())
+      .filter((m) => m.userId === ctx.user._id && !m.deletedAt);
+
+    if (userMemberships.length === 0) return [];
+
+    const orgIdsWithPermission = new Set<string>();
+    for (const membership of userMemberships) {
+      const canJoin = await canDoTask(
+        ctx,
+        ctx.user,
+        membership,
+        TaskCode.meetings.join,
+      );
+      if (canJoin) orgIdsWithPermission.add(membership.orgId);
+    }
+    if (orgIdsWithPermission.size === 0) return [];
+
+    const limit = args.limit ?? 15;
+
+    const collected: Doc<"meetings">[] = [];
+    for (const orgId of orgIdsWithPermission) {
+      const rows = await ctx.db
+        .query("meetings")
+        .withIndex("by_org_status", (q) =>
+          q.eq("orgId", orgId as Id<"orgs">).eq("status", "ended"),
+        )
+        .order("desc")
+        .take(limit);
+      for (const row of rows) {
+        if (row.type !== "call") continue;
+        collected.push(row);
+      }
+    }
+
+    const sorted = collected
+      .sort((a, b) => (b.endedAt ?? 0) - (a.endedAt ?? 0))
+      .slice(0, limit);
+
+    // Enrichissement : ligne + appelant
+    const lineIds = new Set<string>(
+      sorted.map((m) => m.callLineId as string | undefined).filter(Boolean) as string[],
+    );
+    const lines = new Map<string, Doc<"callLines">>();
+    for (const lid of lineIds) {
+      const l = await ctx.db.get(lid as Id<"callLines">);
+      if (l) lines.set(lid, l);
+    }
+
+    const callerIds = new Set<string>(sorted.map((m) => m.createdBy as string));
+    const callers = new Map<string, Doc<"users">>();
+    for (const uid of callerIds) {
+      const u = await ctx.db.get(uid as Id<"users">);
+      if (u) callers.set(uid, u);
+    }
+
+    return sorted.map((m) => {
+      const line = m.callLineId ? lines.get(m.callLineId as string) : null;
+      const caller = callers.get(m.createdBy as string);
+      const displayName = caller
+        ? [caller.firstName, caller.lastName].filter(Boolean).join(" ").trim() ||
+          caller.email ||
+          "Usager"
+        : "Usager";
+      const startedAt = m.startedAt ?? m._creationTime;
+      const endedAt = m.endedAt ?? startedAt;
+      const wasAnswered = !!m.answeredAt;
+      return {
+        _id: m._id,
+        orgId: m.orgId,
+        callLineId: m.callLineId ?? null,
+        lineLabel: line?.label ?? null,
+        lineColor: line?.color ?? null,
+        title: m.title,
+        isInbound: m.isOrgInbound === true,
+        callStatus: m.callStatus ?? null,
+        endReason: m.endReason ?? null,
+        wasAnswered,
+        startedAt,
+        endedAt,
+        durationSeconds: wasAnswered
+          ? Math.floor((endedAt - (m.answeredAt ?? startedAt)) / 1000)
+          : 0,
+        caller: {
+          userId: m.createdBy,
+          displayName,
+          email: caller?.email ?? null,
+        },
+      };
+    });
+  },
+});
+
+/**
  * Mutation callBackMissedCall — l'agent rappelle un citoyen qui a manqué son appel.
  *
  * - Charge le missedCall, vérifie la permission `meetings.create` sur l'org

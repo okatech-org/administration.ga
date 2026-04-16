@@ -138,12 +138,16 @@ function InfoRow({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-2">
-      {icon && <span className="text-muted-foreground">{icon}</span>}
-      <dt className="shrink-0 text-muted-foreground/70 text-[10px] uppercase tracking-wider">
+    <div className="flex items-start gap-2">
+      {icon && (
+        <span className="mt-0.5 shrink-0 text-muted-foreground">{icon}</span>
+      )}
+      <dt className="mt-0.5 shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground/70">
         {label}
       </dt>
-      <dd className="ml-auto truncate font-medium">{value}</dd>
+      <dd className="ml-auto min-w-0 break-all text-right font-medium">
+        {value}
+      </dd>
     </div>
   );
 }
