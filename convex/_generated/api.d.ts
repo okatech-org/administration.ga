@@ -184,6 +184,7 @@ import type * as migrations_migrateActionRequiredTypes from "../migrations/migra
 import type * as migrations_migrateEmergencyContacts from "../migrations/migrateEmergencyContacts.js";
 import type * as migrations_normalizePhones from "../migrations/normalizePhones.js";
 import type * as migrations_renameDocumentFiles from "../migrations/renameDocumentFiles.js";
+import type * as migrations_rollbackDocumentsAdminForHighRanks from "../migrations/rollbackDocumentsAdminForHighRanks.js";
 import type * as monitoring from "../monitoring.js";
 import type * as moteur from "../moteur.js";
 import type * as plasticite from "../plasticite.js";
@@ -459,6 +460,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/migrateEmergencyContacts": typeof migrations_migrateEmergencyContacts;
   "migrations/normalizePhones": typeof migrations_normalizePhones;
   "migrations/renameDocumentFiles": typeof migrations_renameDocumentFiles;
+  "migrations/rollbackDocumentsAdminForHighRanks": typeof migrations_rollbackDocumentsAdminForHighRanks;
   monitoring: typeof monitoring;
   moteur: typeof moteur;
   plasticite: typeof plasticite;
