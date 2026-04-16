@@ -28,6 +28,7 @@ import { ServiceCategory } from "../lib/constants";
 import { countryCodeValidator } from "../lib/countryCodeValidator";
 import { logCortexAction } from "../lib/neocortex";
 import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
+import { resolveProfileAttachment } from "../lib/territoriality";
 
 // ============================================================================
 // HELPERS
@@ -818,9 +819,39 @@ export const upsert = authMutation({
       updatedAt: Date.now(),
     };
 
+    // Rattachement auto : résoudre managedByOrgId / signaledToOrgId à partir
+    // du pays de résidence si celui-ci a changé ou n'était pas renseigné.
+    const residenceCountry =
+      args.countryOfResidence ??
+      args.addresses?.residence?.country ??
+      existing?.countryOfResidence ??
+      existing?.addresses?.residence?.country;
+    const currentLocation = existing?.currentLocation ?? residenceCountry;
+
+    const residenceChanged =
+      residenceCountry && residenceCountry !== existing?.countryOfResidence;
+    const shouldRecomputeAttachment =
+      !!residenceCountry && (!existing?.managedByOrgId || residenceChanged);
+
+    const attachmentPatch = shouldRecomputeAttachment
+      ? await resolveProfileAttachment(ctx, {
+          residenceCountry,
+          currentLocation,
+          stayDuration: 0,
+        })
+      : { managedByOrgId: undefined, signaledToOrgId: undefined };
+
     if (existing) {
       // Update
-      await ctx.db.patch(existing._id, { ...updates });
+      await ctx.db.patch(existing._id, {
+        ...updates,
+        ...(shouldRecomputeAttachment
+          ? {
+              managedByOrgId: attachmentPatch.managedByOrgId,
+              signaledToOrgId: attachmentPatch.signaledToOrgId,
+            }
+          : {}),
+      });
 
       // NEOCORTEX: Signal profil modifié
       await logCortexAction(ctx, {
@@ -842,6 +873,12 @@ export const upsert = authMutation({
         contacts: {},
         family: {},
         ...updates,
+        ...(shouldRecomputeAttachment
+          ? {
+              managedByOrgId: attachmentPatch.managedByOrgId,
+              signaledToOrgId: attachmentPatch.signaledToOrgId,
+            }
+          : {}),
       };
       const completionScore = calculateCompletionScore(newProfile as any);
 
@@ -1115,9 +1152,40 @@ export const createFromRegistration = authMutation({
       updatedAt: now,
     };
 
+    // Rattachement auto : résoudre managedByOrgId à partir du pays de résidence.
+    const residenceCountry = args.addresses?.residence?.country;
+    const attachmentPatch = residenceCountry
+      ? await resolveProfileAttachment(ctx, {
+          residenceCountry,
+          currentLocation: residenceCountry,
+          stayDuration: 0,
+        })
+      : { managedByOrgId: undefined, signaledToOrgId: undefined };
+
+    const profileDataWithAttachment = {
+      ...profileData,
+      ...(residenceCountry
+        ? {
+            managedByOrgId: attachmentPatch.managedByOrgId,
+            signaledToOrgId: attachmentPatch.signaledToOrgId,
+          }
+        : {}),
+    };
+
     if (existing) {
-      // Update existing profile
-      await ctx.db.patch(existing._id, profileData as any);
+      // Update existing profile — ne réécrire le rattachement que si pas encore fixé
+      // ou si le pays de résidence a changé
+      const residenceChanged =
+        residenceCountry && residenceCountry !== existing.countryOfResidence;
+      const shouldUpdateAttachment =
+        residenceCountry && (!existing.managedByOrgId || residenceChanged);
+
+      await ctx.db.patch(
+        existing._id,
+        (shouldUpdateAttachment
+          ? profileDataWithAttachment
+          : profileData) as any,
+      );
 
       await ctx.db.insert("events", {
         targetType: "profile",
@@ -1131,7 +1199,7 @@ export const createFromRegistration = authMutation({
     } else {
       const id = await ctx.db.insert("profiles", {
         userId: ctx.user._id,
-        ...profileData,
+        ...profileDataWithAttachment,
       } as any);
 
       await ctx.db.insert("events", {
