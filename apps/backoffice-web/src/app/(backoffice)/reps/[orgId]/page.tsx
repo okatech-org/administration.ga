@@ -3,7 +3,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import type { CountryCode } from "@convex/lib/constants";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -15,10 +14,7 @@ import {
 	Edit,
 	ExternalLink,
 	FileText,
-	Globe,
 	IdCard,
-	Mail,
-	MapPin,
 	Package,
 	Phone,
 	Settings2,
@@ -29,6 +25,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { OrgMembersTable } from "@/components/admin/org-members-table";
 import { OrgServicesTable } from "@/components/admin/org-services-table";
+import { RepOverviewPanel } from "@/components/admin/rep-overview";
 import { OrgCallsTab } from "@/components/dashboard/org-calls-tab";
 import { OrgModulesTab } from "@/components/dashboard/org-modules-tab";
 import { OrgPositionsTab } from "@/components/dashboard/org-positions-tab";
@@ -37,7 +34,6 @@ import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { PageHeader } from "@/components/design-system/page-header";
 import { SectionHeader } from "@/components/design-system/section-header";
-import { FlagIcon } from "@/components/ui/flag-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -153,36 +149,30 @@ export default function OrgDetailPage() {
 		orgId: orgId as Id<"orgs">,
 	})
 
-	const { data: members, isPending: isMembersLoading } =
-		useAuthenticatedConvexQuery(api.functions.orgs.getMembers, {
-			orgId: orgId as Id<"orgs">,
-		})
-
-	const { data: orgChart, isPending: isOrgChartLoading } =
-		useAuthenticatedConvexQuery(api.functions.orgs.getOrgChart, {
-			orgId: orgId as Id<"orgs">,
-		})
-
+	// Counts pour les badges des onglets (RepOverviewPanel gère ses propres queries).
+	const { data: members } = useAuthenticatedConvexQuery(
+		api.functions.orgs.getMembers,
+		{ orgId: orgId as Id<"orgs"> },
+	)
+	const { data: orgChart } = useAuthenticatedConvexQuery(
+		api.functions.orgs.getOrgChart,
+		{ orgId: orgId as Id<"orgs"> },
+	)
 	const { data: orgServices } = useAuthenticatedConvexQuery(
 		api.functions.services.listByOrg,
 		{ orgId: orgId as Id<"orgs"> },
 	)
 
-	// Consular registry stats
+	// Consular registry stats (utilisées dans l'onglet Registre).
 	const { data: registryStats } = useAuthenticatedConvexQuery(
 		api.functions.consularRegistrations.getStatsByOrg,
 		{ orgId: orgId as Id<"orgs"> },
 	)
 
-	// ── Derived counts ──────────────────────────────────────────
+	// ── Derived counts pour les badges d'onglets ────────────────
 	const memberCount = members?.length ?? 0;
 	const positionCount = orgChart?.totalPositions ?? 0;
-	const filledPositions = orgChart?.filledPositions ?? 0;
 	const serviceCount = orgServices?.length ?? 0;
-	const activeServiceCount =
-		orgServices?.filter((s: any) => s.isActive).length ?? 0;
-
-	const registryTotal = registryStats?.total ?? 0;
 
 	// ── Loading ─────────────────────────────────────────────────
 	if (isOrgLoading) {
@@ -310,40 +300,10 @@ export default function OrgDetailPage() {
 				}
 			/>
 
-			{/* ── KPI Cards ────────────────────────────────────────── */}
-			<div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-				<KpiCard
-					icon={Users}
-					label={t("superadmin.organizations.kpi.agents", "Agents")}
-					value={memberCount}
-					accent="#6366f1"
-					loading={isMembersLoading}
-				/>
-				<KpiCard
-					icon={Crown}
-					label={t("superadmin.organizations.kpi.positions", "Postes")}
-					value={`${filledPositions}/${positionCount}`}
-					accent="#f59e0b"
-					loading={isOrgChartLoading}
-				/>
-				<KpiCard
-					icon={FileText}
-					label={t("superadmin.organizations.kpi.services", "Services")}
-					value={`${activeServiceCount}/${serviceCount}`}
-					accent="#3b82f6"
-				/>
-				<KpiCard
-					icon={IdCard}
-					label={t(
-						"superadmin.organizations.kpi.registry",
-						"Inscrits",
-					)}
-					value={registryTotal}
-					accent="#10b981"
-				/>
-			</div>
-
 			{/* ── Tabs ─────────────────────────────────────────────── */}
+			{/* Les anciens KPI globaux (Agents/Postes/Services/Inscrits) ont été
+			    remplacés par le Hero KPI du RepOverviewPanel (onglet Vue d'ensemble).
+			    Les stats au format KpiCard sont conservées dans l'onglet Registre. */}
 			<Tabs defaultValue="overview" className="space-y-4">
 				<div className="overflow-x-auto overflow-y-hidden scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
 					<TabsList className="h-auto justify-start w-max gap-1">
@@ -403,180 +363,9 @@ export default function OrgDetailPage() {
 
 				{/* ─── Tab: Overview ──────────────────────────────── */}
 				<TabsContent value="overview" className="space-y-4">
-					<div className="grid gap-4 md:grid-cols-2">
-						{/* Address */}
-						<FlatCard>
-							<div className="p-3 lg:p-4">
-								<SectionHeader
-									icon={<MapPin className="h-4 w-4" />}
-									title={t("superadmin.organizations.form.address")}
-								/>
-								<div className="space-y-1 text-sm">
-									<p>{org.address?.street}</p>
-									<p>
-										{org.address?.city}
-										{org.address?.postalCode &&
-											", ${org.address.postalCode}"}
-									</p>
-									<p className="font-medium">
-										{org.address?.country &&
-											t(
-												`superadmin.countryCodes.${org.address.country}`,
-												org.address.country,
-											)}
-									</p>
-								</div>
-							</div>
-						</FlatCard>
-
-						{/* Contact */}
-						<FlatCard>
-							<div className="p-3 lg:p-4">
-								<SectionHeader
-									icon={<Mail className="h-4 w-4" />}
-									title={t("superadmin.organizations.form.contact")}
-								/>
-								<div className="space-y-2.5 text-sm">
-									{org.email && (
-										<div className="flex items-center gap-2">
-											<Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-											<a
-												href={"mailto:${org.email}"}
-												className="text-primary hover:underline truncate"
-											>
-												{org.email}
-											</a>
-										</div>
-									)}
-									{org.phone && (
-										<div className="flex items-center gap-2">
-											<Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-											<a
-												href={"tel:${org.phone}"}
-												className="text-primary hover:underline"
-											>
-												{org.phone}
-											</a>
-										</div>
-									)}
-									{org.website && (
-										<div className="flex items-center gap-2">
-											<Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-											<a
-												href={org.website}
-												target="_blank"
-												rel="noopener noreferrer"
-												className="text-primary hover:underline truncate"
-											>
-												{org.website}
-											</a>
-										</div>
-									)}
-									{!org.email && !org.phone && !org.website && (
-										<p className="text-muted-foreground italic">
-											{t("superadmin.common.noData")}
-										</p>
-									)}
-								</div>
-							</div>
-						</FlatCard>
-					</div>
-
-					{/* Details */}
-					<FlatCard>
-						<div className="p-3 lg:p-4">
-							<SectionHeader
-								icon={<Building2 className="h-4 w-4" />}
-								title={t("superadmin.organizations.details")}
-							/>
-							<p className="text-xs text-muted-foreground mb-3">
-								{t("superadmin.organizations.detailsDesc")}
-							</p>
-							<dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-								<div>
-									<dt className="text-xs font-medium text-muted-foreground">
-										{t("superadmin.organizations.form.timezone")}
-									</dt>
-									<dd className="mt-0.5 text-sm font-medium">
-										{org.timezone || "—"}
-									</dd>
-								</div>
-								<div>
-									<dt className="text-xs font-medium text-muted-foreground">
-										{t("superadmin.organizations.form.country", "Pays")}
-									</dt>
-									<dd className="mt-0.5 text-sm font-medium">
-										{org.country
-											? t(
-													`superadmin.countryCodes.${org.country}`,
-													org.country,
-												)
-											: "—"}
-									</dd>
-								</div>
-								<div>
-									<dt className="text-xs font-medium text-muted-foreground">
-										{t("superadmin.table.createdAt")}
-									</dt>
-									<dd className="mt-0.5 text-sm font-medium">
-										{new Date(org._creationTime).toLocaleDateString(
-											lang === "fr" ? "fr-FR" : "en-US",
-										)}
-									</dd>
-								</div>
-								<div>
-									<dt className="text-xs font-medium text-muted-foreground">
-										{t("superadmin.organizations.form.modules", "Modules")}
-									</dt>
-									<dd className="mt-0.5 flex flex-wrap gap-1">
-										{(org.modules as string[] | undefined)?.length ? (
-											(org.modules as string[]).map((mod) => (
-												<Badge
-													key={mod}
-													variant="secondary"
-													className="text-[10px] px-1.5"
-												>
-													{mod}
-												</Badge>
-											))
-										) : (
-											<span className="text-sm text-muted-foreground">—</span>
-										)}
-									</dd>
-								</div>
-							</dl>
-						</div>
-					</FlatCard>
-
-					{/* Jurisdiction Countries */}
-					{(org.jurisdictionCountries as string[] | undefined)?.length ? (
-						<FlatCard>
-							<div className="p-3 lg:p-4">
-								<SectionHeader
-									icon={<Globe className="h-4 w-4" />}
-									title={t(
-										"superadmin.organizations.form.jurisdictionCountries",
-										"Pays de juridiction",
-									)}
-								/>
-								<div className="flex flex-wrap gap-2">
-									{(org.jurisdictionCountries as string[]).map((code) => (
-										<div
-											key={code}
-											className="flex items-center gap-1.5 rounded-lg border border-border/60 px-2.5 py-1.5 text-sm"
-										>
-											<FlagIcon
-												countryCode={code as CountryCode}
-												size={16}
-												className="w-4 !h-auto rounded-sm"
-											/>
-											{t(`superadmin.countryCodes.${code}`, code)}
-										</div>
-									))}
-								</div>
-							</div>
-						</FlatCard>
-					) : null}
+					<QueryErrorBoundary fallback={<PermissionFallback />}>
+						<RepOverviewPanel orgId={orgId as Id<"orgs">} org={org} />
+					</QueryErrorBoundary>
 				</TabsContent>
 
 				{/* ─── Tab: Agents ────────────────────────────────── */}
