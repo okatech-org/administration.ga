@@ -64,7 +64,9 @@ export function OrgTypeAccessPicker({
 	onChange,
 	label = "Accès par type d'organisation",
 }: OrgTypeAccessPickerProps) {
-	const isRestricted = Array.isArray(value) && value.length > 0;
+	// Un tableau (même vide) signifie « restriction activée » — l'utilisateur
+	// doit cocher au moins un type. `undefined` = aucune restriction.
+	const isRestricted = Array.isArray(value);
 	const selected = new Set(value ?? []);
 
 	function toggleRestriction(restricted: boolean) {

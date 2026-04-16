@@ -268,13 +268,11 @@ function GenerateDialog({
 	const [templateId, setTemplateId] = useState<Id<"documentTemplates"> | "">("");
 	const [isGenerating, setIsGenerating] = useState(false);
 
+	// List templates available to this org (org-scoped + globals filtered by
+	// the org type via the server-side `listByOrg` query).
 	const { data: templates } = useAuthenticatedConvexQuery(
-		api.functions.documentTemplates.listForService,
-		// Passing an impossible serviceId would be cleaner, but `listForService`
-		// also merges global templates — and our agent needs global templates
-		// primarily for MVP. `listByOrg` would be a better fit once org templates
-		// exist; the merged listing is sufficient here.
-		{ serviceId: undefined as unknown as Id<"services">, orgId },
+		api.functions.documentTemplates.listByOrg,
+		{ orgId },
 	);
 
 	const { mutateAsync: generate } = useConvexActionQuery(
