@@ -17,7 +17,11 @@ import {
 import { authMutation, authQuery } from "../lib/customFunctions";
 import { buildSystemBucket, resolvePlaceholders } from "../lib/placeholderResolver";
 import { error, ErrorCode } from "../lib/errors";
-import { assertCanPublishDocuments } from "../lib/documentPermissions";
+import {
+	assertCanPublishDocuments,
+	assertCanSignDocuments,
+	assertPositionAllowedToSign,
+} from "../lib/documentPermissions";
 import { isSuperAdmin } from "../lib/permissions";
 import { NotificationType } from "../lib/constants";
 
@@ -171,6 +175,114 @@ export const persistGenerated = internalMutation({
 		}
 
 		return docId;
+	},
+});
+
+// ============================================================================
+// INTERNAL — Signature helpers (called by `signDocument` action)
+// ============================================================================
+
+/**
+ * Gather everything the signDocument action needs to overlay the signature
+ * and gate it by permissions. Runs as a query (no side-effects) — the
+ * action carries the returned storageIds across to Node.
+ */
+export const prepareSignature = internalQuery({
+	args: { documentId: v.id("generatedDocuments") },
+	handler: async (ctx, args) => {
+		const doc = await ctx.db.get(args.documentId);
+		if (!doc) throw new Error("Document introuvable");
+		if (doc.signatureStatus === "signed") {
+			throw error(ErrorCode.VALIDATION_ERROR, "Document déjà signé");
+		}
+		const template = await ctx.db.get(doc.templateId);
+		if (!template) throw new Error("Template introuvable");
+
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw error(ErrorCode.NOT_AUTHENTICATED, "Authentification requise");
+		const user = await ctx.db
+			.query("users")
+			.withIndex("by_email", (q) => q.eq("email", identity.email ?? ""))
+			.first();
+		if (!user) throw error(ErrorCode.USER_NOT_FOUND, "Utilisateur inconnu");
+
+		const membership = await ctx.db
+			.query("memberships")
+			.withIndex("by_user_org", (q) =>
+				q.eq("userId", user._id).eq("orgId", doc.orgId),
+			)
+			.first();
+		await assertCanSignDocuments(ctx, user, membership);
+		if (!membership) {
+			throw error(ErrorCode.FORBIDDEN, "Adhésion introuvable");
+		}
+		await assertPositionAllowedToSign(ctx, membership, template);
+
+		const sig = membership.diplomaticProfile?.officialSignature;
+		if (!sig?.imageStorageId) {
+			throw error(
+				ErrorCode.VALIDATION_ERROR,
+				"Aucune signature configurée — charge une image PNG avant de signer",
+			);
+		}
+
+		return {
+			originalStorageId: doc.storageId,
+			signatureStorageId: sig.imageStorageId,
+			documentNumber: doc.documentNumber,
+			title: sig.title ?? null,
+			displayName:
+				sig.displayName ??
+				([user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
+					user.name),
+			signerId: user._id,
+		};
+	},
+});
+
+/**
+ * Persist the result of a successful signing operation. Patches the record
+ * with the signed-PDF storageId + hash + audit metadata and enqueues the
+ * citizen notification if the template auto-publishes on signature.
+ */
+export const finalizeSignature = internalMutation({
+	args: {
+		documentId: v.id("generatedDocuments"),
+		storageId: v.id("_storage"),
+		pdfSha256: v.string(),
+		signedBy: v.id("users"),
+		signatureImageStorageId: v.id("_storage"),
+	},
+	handler: async (ctx, args) => {
+		const doc = await ctx.db.get(args.documentId);
+		if (!doc) throw new Error("Document introuvable");
+		const template = await ctx.db.get(doc.templateId);
+
+		const now = Date.now();
+		const shouldPublish =
+			template?.autoPublishToCitizen === true && !doc.publishedToCitizen;
+
+		await ctx.db.patch(args.documentId, {
+			storageId: args.storageId,
+			pdfSha256: args.pdfSha256,
+			signatureStatus: "signed",
+			signedBy: args.signedBy,
+			signedAt: now,
+			signatureImageStorageId: args.signatureImageStorageId,
+			...(shouldPublish
+				? {
+						publishedToCitizen: true,
+						publishedAt: now,
+						publishedBy: args.signedBy,
+						unpublishedAt: undefined,
+					}
+				: {}),
+		});
+
+		if (shouldPublish) {
+			await enqueueCitizenPublicationNotice(ctx, args.documentId);
+		}
+		return args.documentId;
 	},
 });
 

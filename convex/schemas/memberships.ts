@@ -93,10 +93,16 @@ export const membershipsTable = defineTable({
       endDate: v.optional(v.number()),
     }))),
 
-    // Signature officielle (pour iCorrespondance)
+    // Signature officielle (pour iCorrespondance + iDocument).
+    // Les champs additionnels (uploadedAt, positionCodeAtUpload, displayName)
+    // sont utilisés par le workflow de signature des documents officiels pour
+    // tracer l'apposition historique même après mobilité de l'agent.
     officialSignature: v.optional(v.object({
       imageStorageId: v.optional(v.id("_storage")),
       title: v.optional(v.string()),
+      uploadedAt: v.optional(v.number()),
+      positionCodeAtUpload: v.optional(v.string()),
+      displayName: v.optional(v.string()),
     })),
 
     // Photo officielle protocolaire

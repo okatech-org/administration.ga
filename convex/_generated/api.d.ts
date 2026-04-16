@@ -115,6 +115,7 @@ import type * as functions_roleConfig from "../functions/roleConfig.js";
 import type * as functions_security from "../functions/security.js";
 import type * as functions_sendMail from "../functions/sendMail.js";
 import type * as functions_services from "../functions/services.js";
+import type * as functions_signatures from "../functions/signatures.js";
 import type * as functions_slots from "../functions/slots.js";
 import type * as functions_smsNotifications from "../functions/smsNotifications.js";
 import type * as functions_statistics from "../functions/statistics.js";
@@ -388,6 +389,7 @@ declare const fullApi: ApiFromModules<{
   "functions/security": typeof functions_security;
   "functions/sendMail": typeof functions_sendMail;
   "functions/services": typeof functions_services;
+  "functions/signatures": typeof functions_signatures;
   "functions/slots": typeof functions_slots;
   "functions/smsNotifications": typeof functions_smsNotifications;
   "functions/statistics": typeof functions_statistics;

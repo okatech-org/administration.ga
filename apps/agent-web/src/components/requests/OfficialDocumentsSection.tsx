@@ -23,6 +23,7 @@ import {
 	EyeOff,
 	FileText,
 	Loader2,
+	PenTool,
 	Sparkles,
 } from "lucide-react";
 import { useState } from "react";
@@ -123,6 +124,9 @@ function DocumentRow({ doc }: { doc: Doc<"generatedDocuments"> }) {
 	const { mutateAsync: unpublish, isPending: unpublishing } = useConvexMutationQuery(
 		api.functions.generatedDocumentsData.unpublish,
 	);
+	const { mutateAsync: signDocument, isPending: signing } = useConvexActionQuery(
+		api.functions.generatedDocuments.signDocument,
+	);
 
 	const label = doc.label ?? "Document";
 	const dateStr = new Date(doc.generatedAt).toLocaleString("fr-FR");
@@ -142,6 +146,18 @@ function DocumentRow({ doc }: { doc: Doc<"generatedDocuments"> }) {
 		}
 	}
 
+	async function onSign() {
+		try {
+			await signDocument({ documentId: doc._id });
+			toast.success("Document signé");
+		} catch (err) {
+			const message = err instanceof Error ? err.message : "Échec de la signature";
+			toast.error(message);
+		}
+	}
+
+	const canSign = doc.signatureStatus === "unsigned";
+
 	return (
 		<li className="flex items-start gap-2 rounded-lg bg-muted/40 p-3 text-sm">
 			<FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -155,6 +171,23 @@ function DocumentRow({ doc }: { doc: Doc<"generatedDocuments"> }) {
 				<div className="mt-1 text-xs text-muted-foreground/80">{dateStr}</div>
 			</div>
 			<div className="flex items-center gap-0.5">
+				{canSign ? (
+					<Button
+						size="icon"
+						variant="ghost"
+						className="h-7 w-7"
+						onClick={onSign}
+						disabled={signing}
+						aria-label="Signer le document"
+						title="Signer le document"
+					>
+						{signing ? (
+							<Loader2 className="h-3.5 w-3.5 animate-spin" />
+						) : (
+							<PenTool className="h-3.5 w-3.5" />
+						)}
+					</Button>
+				) : null}
 				<Button
 					size="icon"
 					variant="ghost"

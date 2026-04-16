@@ -163,6 +163,155 @@ async function runGeneration(
 // Helpers
 // ============================================================================
 
+// ============================================================================
+// SIGNATURE — Sign an existing generated PDF with the caller's membership signature
+// ============================================================================
+
+/**
+ * Apply the current agent's official signature image to a previously
+ * generated PDF. The pipeline opens the stored PDF via `pdf-lib`, stamps the
+ * signature PNG on the bottom-right of the last page along with the signer
+ * name/title/timestamp, saves the new bytes, recomputes the SHA-256 and
+ * patches the `generatedDocuments` record with the new storageId and
+ * signature metadata. The original (unsigned) file is deleted.
+ *
+ * Auth + gating runs through `prepareSignature` (an internalQuery +
+ * internalMutation pair) — the action itself remains pure Node PDF work.
+ */
+export const signDocument = authAction({
+	args: { documentId: v.id("generatedDocuments") },
+	handler: async (
+		ctx,
+		args,
+	): Promise<{ documentId: Id<"generatedDocuments">; storageId: Id<"_storage">; pdfSha256: string }> => {
+		// 1. Auth + fetch everything we need through an internal query.
+		const prep = await ctx.runQuery(
+			internal.functions.generatedDocumentsData.prepareSignature,
+			{ documentId: args.documentId },
+		);
+
+		// 2. Download the original PDF and the signature PNG from storage.
+		const [pdfBlob, signatureBlob] = await Promise.all([
+			ctx.storage.get(prep.originalStorageId),
+			ctx.storage.get(prep.signatureStorageId),
+		]);
+		if (!pdfBlob) throw new Error("PDF original introuvable en storage");
+		if (!signatureBlob) throw new Error("Image de signature introuvable en storage");
+
+		const pdfBytes = new Uint8Array(await pdfBlob.arrayBuffer());
+		const sigBytes = new Uint8Array(await signatureBlob.arrayBuffer());
+
+		// 3. Overlay signature + text on the last page via pdf-lib.
+		const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
+		const pdfDoc = await PDFDocument.load(pdfBytes);
+		const pages = pdfDoc.getPages();
+		const lastPage = pages[pages.length - 1];
+		if (!lastPage) throw new Error("PDF sans page");
+
+		const sigImage = await pdfDoc.embedPng(sigBytes);
+		const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+		const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+		const { width: pageWidth } = lastPage.getSize();
+		const marginX = 56;
+		const boxWidth = 220;
+		const boxX = pageWidth - marginX - boxWidth;
+		let cursorY = 110;
+
+		const sigMaxWidth = boxWidth;
+		const sigMaxHeight = 50;
+		const scale = Math.min(sigMaxWidth / sigImage.width, sigMaxHeight / sigImage.height);
+		const sigWidth = sigImage.width * scale;
+		const sigHeight = sigImage.height * scale;
+		lastPage.drawImage(sigImage, {
+			x: boxX + (boxWidth - sigWidth) / 2,
+			y: cursorY,
+			width: sigWidth,
+			height: sigHeight,
+		});
+
+		cursorY -= 8;
+		const gray = rgb(0.3, 0.3, 0.3);
+		lastPage.drawLine({
+			start: { x: boxX, y: cursorY },
+			end: { x: boxX + boxWidth, y: cursorY },
+			thickness: 0.5,
+			color: gray,
+		});
+		cursorY -= 14;
+
+		const displayName = prep.displayName;
+		lastPage.drawText(displayName, {
+			x: boxX,
+			y: cursorY,
+			size: 10,
+			font: boldFont,
+			color: rgb(0.1, 0.1, 0.1),
+		});
+		cursorY -= 12;
+
+		if (prep.title) {
+			lastPage.drawText(prep.title, {
+				x: boxX,
+				y: cursorY,
+				size: 9,
+				font,
+				color: gray,
+			});
+			cursorY -= 11;
+		}
+
+		const now = new Date();
+		const timestamp = `Signé le ${now.toLocaleDateString("fr-FR", {
+			day: "2-digit",
+			month: "long",
+			year: "numeric",
+		})} à ${now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`;
+		lastPage.drawText(timestamp, {
+			x: boxX,
+			y: cursorY,
+			size: 8,
+			font,
+			color: gray,
+		});
+		cursorY -= 10;
+		lastPage.drawText(`Réf. ${prep.documentNumber}`, {
+			x: boxX,
+			y: cursorY,
+			size: 8,
+			font,
+			color: gray,
+		});
+
+		// 4. Save → bytes + SHA-256.
+		const signedBytes = await pdfDoc.save();
+		const { createHash } = await import("crypto");
+		const sha256 = createHash("sha256").update(signedBytes).digest("hex");
+
+		// 5. Store new blob, delete old one, patch record.
+		const blob = new Blob([new Uint8Array(signedBytes)], { type: "application/pdf" });
+		const storageId = await ctx.storage.store(blob);
+		try {
+			await ctx.storage.delete(prep.originalStorageId);
+		} catch {
+			// Non-fatal — cleanup failure shouldn't break the sign operation.
+		}
+
+		await ctx.runMutation(
+			internal.functions.generatedDocumentsData.finalizeSignature,
+			{
+				documentId: args.documentId,
+				storageId,
+				pdfSha256: sha256,
+				signedBy: prep.signerId,
+				signatureImageStorageId: prep.signatureStorageId,
+			},
+		);
+
+		return { documentId: args.documentId, storageId, pdfSha256: sha256 };
+	},
+});
+
 /**
  * Short human-readable reference, e.g. `GAB-DOC-2026-A7F2B1`. Randomised rather
  * than sequentially numbered — avoids hot-spot contention on a single counter

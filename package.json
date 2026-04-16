@@ -27,7 +27,7 @@
     "@react-pdf/renderer": "^4.3.0",
     "@tiptap/core": "^3.17.1",
     "@tiptap/html": "^3.17.1",
-    "react": "^19.2.4",
+    "@types/web-push": "^3.6.4",
     "@workspace/document-rendering": "workspace:*",
     "better-auth": "~1.5.6",
     "browser-image-compression": "^2.0.2",
@@ -40,9 +40,11 @@
     "pdf-lib": "^1.17.1",
     "posthog-node": "^5.28.8",
     "pptxgenjs": "^4.0.1",
+    "react": "^19.2.4",
     "remove.bg": "^1.3.0",
     "resend": "^6.9.4",
-    "stripe": "^20.4.1"
+    "stripe": "^20.4.1",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/qrcode": "^1.5.6",
