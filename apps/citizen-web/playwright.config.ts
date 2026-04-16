@@ -1,6 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const BASE_URL = "http://localhost:3000";
+// ── Port aligné avec `package.json` "dev" : `next dev --port 3004` ──
+// Playwright lance `bun run dev` via `webServer.command` et attend une
+// réponse sur cette URL. Si le port ici diverge du port du script dev,
+// Playwright timeout à 120s (cf. CI main, commit b74de41).
+const BASE_URL = "http://localhost:3004";
 
 /**
  * Playwright E2E configuration for citizen-web (Next.js).
@@ -9,7 +13,7 @@ const BASE_URL = "http://localhost:3000";
  * With UI:       bun run test:e2e:ui
  *
  * The webServer block auto-starts `bun run dev` if no server is already
- * running on port 3000 (skipped in CI if you prefer to start it yourself).
+ * running on port 3004 (skipped in CI if you prefer to start it yourself).
  */
 export default defineConfig({
   testDir: "./e2e",
