@@ -36,6 +36,9 @@ export const TaskCode = {
     validate: "documents.validate",
     generate: "documents.generate",
     delete: "documents.delete",
+    manage_templates: "documents.manage_templates",
+    sign: "documents.sign",
+    publish: "documents.publish",
   },
   appointments: {
     view: "appointments.view",
@@ -45,6 +48,13 @@ export const TaskCode = {
   profiles: {
     view: "profiles.view",
     manage: "profiles.manage",
+  },
+  // Profils citoyens (annuaire / contacts citoyens consulaires)
+  // Gate : org doit gérer les affaires consulaires OU avoir le module
+  // citizen_profiles activé explicitement (ex: ambassade non-consulaire).
+  citizen_profiles: {
+    view: "citizen_profiles.view",
+    manage: "citizen_profiles.manage",
   },
   civil_status: {
     transcribe: "civil_status.transcribe",
@@ -229,6 +239,9 @@ export const taskCodeValidator = v.union(
   v.literal(TaskCode.documents.validate),
   v.literal(TaskCode.documents.generate),
   v.literal(TaskCode.documents.delete),
+  v.literal(TaskCode.documents.manage_templates),
+  v.literal(TaskCode.documents.sign),
+  v.literal(TaskCode.documents.publish),
   // Appointments
   v.literal(TaskCode.appointments.view),
   v.literal(TaskCode.appointments.manage),
@@ -236,6 +249,9 @@ export const taskCodeValidator = v.union(
   // Profiles
   v.literal(TaskCode.profiles.view),
   v.literal(TaskCode.profiles.manage),
+  // Citizen Profiles (annuaire / contacts citoyens)
+  v.literal(TaskCode.citizen_profiles.view),
+  v.literal(TaskCode.citizen_profiles.manage),
   // Civil Status
   v.literal(TaskCode.civil_status.transcribe),
   v.literal(TaskCode.civil_status.register),
@@ -356,6 +372,9 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   [TaskCode.documents.validate]: "high",
   [TaskCode.documents.generate]: "high",
   [TaskCode.documents.delete]: "critical",
+  [TaskCode.documents.manage_templates]: "high",
+  [TaskCode.documents.sign]: "critical",
+  [TaskCode.documents.publish]: "high",
   // Appointments
   [TaskCode.appointments.view]: "low",
   [TaskCode.appointments.manage]: "medium",
@@ -363,6 +382,9 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   // Profiles
   [TaskCode.profiles.view]: "low",
   [TaskCode.profiles.manage]: "high",
+  // Citizen Profiles — RGPD : accès aux données personnelles citoyennes
+  [TaskCode.citizen_profiles.view]: "medium",
+  [TaskCode.citizen_profiles.manage]: "high",
   // Civil Status
   [TaskCode.civil_status.transcribe]: "high",
   [TaskCode.civil_status.register]: "high",

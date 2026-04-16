@@ -26,53 +26,11 @@ export const documentTemplatesTable = defineTable({
 		v.literal("custom") // Personnalisé
 	),
 
-	// Template content - structured for @react-pdf/renderer
-	// Contains sections with placeholders like {{firstName}}, {{dateOfBirth}}
-	content: v.object({
-		// Header configuration
-		header: v.optional(
-			v.object({
-				showLogo: v.boolean(),
-				showOrgName: v.boolean(),
-				showOrgAddress: v.boolean(),
-				title: v.optional(localizedStringValidator),
-				subtitle: v.optional(localizedStringValidator),
-			})
-		),
-		// Main body - array of text blocks with placeholders
-		body: v.array(
-			v.object({
-				type: v.union(
-					v.literal("paragraph"),
-					v.literal("heading"),
-					v.literal("list"),
-					v.literal("table"),
-					v.literal("signature")
-				),
-				content: localizedStringValidator, // Text with {{placeholders}}
-				style: v.optional(
-					v.object({
-						fontSize: v.optional(v.number()),
-						fontWeight: v.optional(v.union(v.literal("normal"), v.literal("bold"))),
-						textAlign: v.optional(
-							v.union(v.literal("left"), v.literal("center"), v.literal("right"), v.literal("justify"))
-						),
-						marginTop: v.optional(v.number()),
-						marginBottom: v.optional(v.number()),
-					})
-				),
-			})
-		),
-		// Footer configuration
-		footer: v.optional(
-			v.object({
-				showDate: v.boolean(),
-				showSignature: v.boolean(),
-				signatureTitle: v.optional(localizedStringValidator),
-				additionalText: v.optional(localizedStringValidator),
-			})
-		),
-	}),
+	// Template content - flexible to support both:
+	// 1. Structured PDF templates: { header, body, footer }
+	// 2. Tiptap editor JSON: { type: "doc", content: [...] }
+	// Runtime validation is handled in mutation handlers.
+	content: v.any(),
 
 	// Available placeholders - auto-detected from request data
 	placeholders: v.optional(
@@ -82,6 +40,7 @@ export const documentTemplatesTable = defineTable({
 				label: localizedStringValidator,
 				source: v.union(
 					v.literal("user"), // From user profile
+					v.literal("profile"), // From citizen profile data
 					v.literal("request"), // From request data
 					v.literal("formData"), // From dynamic form submission
 					v.literal("org"), // From organization
@@ -103,6 +62,15 @@ export const documentTemplatesTable = defineTable({
 	// Paper settings
 	paperSize: v.optional(v.union(v.literal("A4"), v.literal("LETTER"))),
 	orientation: v.optional(v.union(v.literal("portrait"), v.literal("landscape"))),
+
+	// Template editor extras
+	contentHtml: v.optional(v.string()), // HTML preview of Tiptap content
+	requireSignature: v.optional(v.boolean()), // Requires official signature
+	autoPublishToCitizen: v.optional(v.boolean()), // Auto-publish generated doc to citizen
+
+	// Cloning lineage
+	clonedFromTemplateId: v.optional(v.id("documentTemplates")),
+	clonedFromVersion: v.optional(v.number()),
 
 	// Metadata
 	version: v.optional(v.number()),
