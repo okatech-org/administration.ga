@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Origin: req.headers.get("origin") || "http://localhost:3001",
+        Origin: req.headers.get("origin") || "http://localhost:3000",
       },
       body,
     })
