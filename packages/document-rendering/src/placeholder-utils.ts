@@ -10,7 +10,7 @@
  * and calls `collectPlaceholderKeys` + `substitutePlaceholders` defined here.
  */
 
-import { PlaceholderResolutionError, type PlaceholderAttrs, type ResolvedPlaceholders, type TiptapNode } from "./types.js";
+import { PlaceholderResolutionError, type PlaceholderAttrs, type ResolvedPlaceholders, type TiptapNode } from "./types";
 
 /** Walk the tree and collect every unique placeholder key referenced. */
 export function collectPlaceholderKeys(node: TiptapNode): Set<string> {

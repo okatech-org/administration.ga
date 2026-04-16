@@ -14,9 +14,9 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import type { PlaceholderDescriptor, TiptapDocument } from "@workspace/document-rendering/types";
 import { useEffect, type ReactElement } from "react";
 
-import { buildEditorExtensions } from "../extensions/build-editor-extensions.js";
-import { EditorToolbar } from "./EditorToolbar.js";
-import { PlaceholderPicker } from "./PlaceholderPicker.js";
+import { buildEditorExtensions } from "../extensions/build-editor-extensions";
+import { EditorToolbar } from "./EditorToolbar";
+import { PlaceholderPicker } from "./PlaceholderPicker";
 
 export interface TemplateEditorProps {
 	/** Initial Tiptap JSON document. If omitted an empty doc is created. */

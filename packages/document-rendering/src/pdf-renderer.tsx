@@ -31,7 +31,7 @@ import type { ReactElement, ReactNode } from "react";
  */
 type PdfStyle = ReturnType<typeof StyleSheet.create>[string];
 
-import type { PageLayoutOptions, TiptapDocument, TiptapMark, TiptapNode } from "./types.js";
+import type { PageLayoutOptions, TiptapDocument, TiptapMark, TiptapNode } from "./types";
 
 const styles = StyleSheet.create({
 	page: {

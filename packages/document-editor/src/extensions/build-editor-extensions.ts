@@ -9,7 +9,7 @@ import { TableKit } from "@tiptap/extension-table";
 import { TextAlign } from "@tiptap/extension-text-align";
 import { StarterKit } from "@tiptap/starter-kit";
 
-import { PlaceholderNode } from "./placeholder-node.js";
+import { PlaceholderNode } from "./placeholder-node";
 
 export function buildEditorExtensions() {
 	return [

@@ -1,12 +1,12 @@
-export * from "./types.js";
+export * from "./types";
 export {
 	buildCoreExtensions,
 	PlaceholderNodeSchema,
-} from "./extensions.js";
+} from "./extensions";
 export {
 	collectPlaceholderKeys,
 	readPath,
 	substitutePlaceholders,
-} from "./placeholder-utils.js";
-export { renderDocumentToHtml } from "./html-renderer.js";
-export { TemplatePdfDocument, type PdfRenderOptions } from "./pdf-renderer.js";
+} from "./placeholder-utils";
+export { renderDocumentToHtml } from "./html-renderer";
+export { TemplatePdfDocument, type PdfRenderOptions } from "./pdf-renderer";

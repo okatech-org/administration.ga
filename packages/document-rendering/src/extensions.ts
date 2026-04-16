@@ -16,7 +16,7 @@ import { TableKit } from "@tiptap/extension-table";
 import { TextAlign } from "@tiptap/extension-text-align";
 import { StarterKit } from "@tiptap/starter-kit";
 
-import type { PlaceholderAttrs } from "./types.js";
+import type { PlaceholderAttrs } from "./types";
 
 /**
  * Inline atom node representing a dynamic placeholder like `{{firstName}}`.

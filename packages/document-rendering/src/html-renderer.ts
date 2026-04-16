@@ -12,8 +12,8 @@
 
 import { generateHTML } from "@tiptap/html";
 
-import { buildCoreExtensions } from "./extensions.js";
-import type { TiptapDocument } from "./types.js";
+import { buildCoreExtensions } from "./extensions";
+import type { TiptapDocument } from "./types";
 
 export function renderDocumentToHtml(doc: TiptapDocument): string {
 	return generateHTML(doc, buildCoreExtensions());
