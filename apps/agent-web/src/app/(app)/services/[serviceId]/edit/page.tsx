@@ -3,13 +3,13 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useForm } from "@tanstack/react-form";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Save, Sparkles } from "lucide-react";
-import { useId } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft, Save, Sparkles } from "lucide-react";
+import { useCallback, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
+import { AutoGenerationRulesPanel } from "@/components/services/AutoGenerationRulesPanel";
 import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/my-space/flat-card";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -30,13 +30,40 @@ import {
 	useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
 
+type TabValue = "general" | "autoGeneration";
+
+function isTabValue(v: string | null): v is TabValue {
+	return v === "general" || v === "autoGeneration";
+}
 
 export default function ServiceEdit() {
 	const formId = useId();
 	const { serviceId } = useParams();
 	const { activeOrgId } = useOrg();
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const { t } = useTranslation();
+
+	// Onglet actif persisté dans l'URL (?tab=general | ?tab=autoGeneration).
+	const rawTab = searchParams.get("tab");
+	const activeTab: TabValue = isTabValue(rawTab) ? rawTab : "general";
+
+	const setActiveTab = useCallback(
+		(next: string) => {
+			const params = new URLSearchParams(searchParams.toString());
+			if (next === "general") {
+				params.delete("tab");
+			} else {
+				params.set("tab", next);
+			}
+			const query = params.toString();
+			router.replace(
+				query ? `/services/${serviceId}/edit?${query}` : `/services/${serviceId}/edit`,
+				{ scroll: false },
+			);
+		},
+		[router, searchParams, serviceId],
+	);
 
 	const { data } = useAuthenticatedConvexQuery(
 		api.functions.services.getOrgServiceById,
@@ -99,24 +126,14 @@ export default function ServiceEdit() {
 	}
 
 	return (
-		<form
-			id={formId}
-			onSubmit={(e) => {
-				e.preventDefault();
-				form.handleSubmit();
-			}}
-			className="flex h-[calc(100vh-4rem)] flex-col gap-4 p-4 md:p-6 overflow-hidden"
-		>
+		<div className="flex h-[calc(100vh-4rem)] flex-col gap-4 p-4 md:p-6 overflow-hidden">
 			<div className="flex items-center justify-between shrink-0">
 				<div className="flex items-center gap-4">
 					<Button
 						variant="ghost"
 						size="icon"
 						className="active:scale-[0.97] transition-transform"
-						onClick={(e) => {
-							e.preventDefault(); // Prevent form submit
-							router.push("/services");
-						}}
+						onClick={() => router.push("/services")}
 						type="button"
 					>
 						<ArrowLeft className="h-4 w-4" />
@@ -127,16 +144,26 @@ export default function ServiceEdit() {
 						</h1>
 					</div>
 				</div>
-				<div className="flex items-center gap-2">
-					<Button type="submit" className="active:scale-[0.97] transition-transform">
-						<Save className="mr-2 h-4 w-4" />
-						{t("dashboard.services.edit.save")}
-					</Button>
-				</div>
+				{activeTab === "general" ? (
+					<div className="flex items-center gap-2">
+						<Button
+							type="submit"
+							form={formId}
+							className="active:scale-[0.97] transition-transform"
+						>
+							<Save className="mr-2 h-4 w-4" />
+							{t("dashboard.services.edit.save")}
+						</Button>
+					</div>
+				) : null}
 			</div>
 
 			<div className="flex-1 overflow-y-auto">
-				<Tabs defaultValue="general" className="w-full">
+				<Tabs
+					value={activeTab}
+					onValueChange={setActiveTab}
+					className="w-full"
+				>
 					<TabsList className="mb-4">
 						<TabsTrigger value="general">
 							{t("dashboard.services.edit.tabs.general")}
@@ -148,42 +175,19 @@ export default function ServiceEdit() {
 					</TabsList>
 
 					<TabsContent value="autoGeneration">
-						<FlatCard className="p-4 lg:p-6">
-							<div className="flex flex-col gap-4">
-								<div className="flex items-center gap-3">
-									<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-										<Sparkles className="h-5 w-5" />
-									</div>
-									<div>
-										<h3 className="text-sm font-bold">
-											Génération automatique de documents
-										</h3>
-										<p className="mt-0.5 text-xs text-muted-foreground">
-											Configure les modèles qui seront produits automatiquement à la
-											soumission d'une demande ou sur transition de statut.
-										</p>
-									</div>
-								</div>
-
-								<ul className="flex flex-col gap-1.5 rounded-lg bg-muted/30 p-3 text-xs text-muted-foreground">
-									<li>• Génération instantanée dès la soumission (ex. récépissé de dépôt)</li>
-									<li>• Génération à la validation (ex. attestation signée par le Consul)</li>
-									<li>• Options de signature et de publication automatiques</li>
-								</ul>
-
-								<div>
-									<Button asChild variant="outline" type="button">
-										<Link href={`/services/${serviceId}/auto-generation`}>
-											Configurer les règles
-											<ArrowRight className="ml-2 h-4 w-4" />
-										</Link>
-									</Button>
-								</div>
-							</div>
-						</FlatCard>
+						<AutoGenerationRulesPanel
+							orgServiceId={serviceId as Id<"orgServices">}
+						/>
 					</TabsContent>
 
 					<TabsContent value="general">
+					<form
+						id={formId}
+						onSubmit={(e) => {
+							e.preventDefault();
+							form.handleSubmit();
+						}}
+					>
 						<div className="grid gap-6">
 							<FlatCard>
 								<div className="p-3 lg:p-4 pb-0">
@@ -386,10 +390,11 @@ export default function ServiceEdit() {
 								</div>
 							</FlatCard>
 						</div>
+					</form>
 					</TabsContent>
 				</Tabs>
 			</div>
-		</form>
+		</div>
 	);
 }
 

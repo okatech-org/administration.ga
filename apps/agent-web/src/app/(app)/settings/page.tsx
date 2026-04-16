@@ -1865,14 +1865,8 @@ function ServicesSettingsPanel() {
 						const isActivated = service.activationState !== "not_activated";
 						const isActive = service.activationState === "active";
 
-						return (
-							<div
-								key={service.catalogId}
-								className={cn(
-									"flex items-center justify-between gap-4 px-4 py-3 rounded-xl border transition-colors",
-									isActivated ? "bg-card" : "bg-muted/30 border-dashed",
-								)}
-							>
+						const innerContent = (
+							<>
 								<div className="flex items-center gap-3 min-w-0">
 									<div className={cn(
 										"size-9 rounded-lg flex items-center justify-center shrink-0",
@@ -1895,7 +1889,10 @@ function ServicesSettingsPanel() {
 									</div>
 								</div>
 
-								<div className="flex items-center gap-2 shrink-0">
+								<div
+									className="flex items-center gap-2 shrink-0"
+									onClick={(e) => e.stopPropagation()}
+								>
 									{isActivated ? (
 										<Switch
 											checked={isActive}
@@ -1913,6 +1910,33 @@ function ServicesSettingsPanel() {
 										</Button>
 									)}
 								</div>
+							</>
+						);
+
+						// Quand le service est activé pour l'org, la ligne entière
+						// ouvre l'éditeur — le Switch/Button reste cliquable via
+						// stopPropagation.
+						if (isActivated && service.orgServiceId) {
+							return (
+								<Link
+									key={service.catalogId}
+									href={`/services/${service.orgServiceId}/edit`}
+									className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl border bg-card transition-colors hover:bg-muted/40"
+								>
+									{innerContent}
+								</Link>
+							);
+						}
+
+						return (
+							<div
+								key={service.catalogId}
+								className={cn(
+									"flex items-center justify-between gap-4 px-4 py-3 rounded-xl border transition-colors",
+									isActivated ? "bg-card" : "bg-muted/30 border-dashed",
+								)}
+							>
+								{innerContent}
 							</div>
 						);
 					})

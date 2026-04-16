@@ -1,33 +1,25 @@
 "use client";
 
 /**
- * Auto-generation rules editor for a given OrgService.
+ * Auto-generation rules editor — embedded directly inside the service edit
+ * page (onglet « Génération auto »). Extracted from the standalone route
+ * /services/[serviceId]/auto-generation so the user doesn't have to
+ * navigate to a separate page to configure the rules.
  *
- * Lets an authorized agent (permission `documents.manage_templates`) declare
- * which templates should be produced automatically when:
- *  - a citizen submits a request for this service (`on_submission`), or
- *  - an agent transitions a request from one status to another
- *    (`on_status_transition`).
- *
- * The whole rule set is edited as an array and saved atomically through
- * `services.updateAutoGenerationRules`.
+ * Loads the orgService + org templates, lets the user add/edit/remove rules,
+ * validates on save and persists via `services.updateAutoGenerationRules`.
  */
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { RequestStatus } from "@convex/lib/constants";
-import {
-	FileText,
-	Plus,
-	Save,
-	Sparkles,
-	Trash2,
-} from "lucide-react";
-import { useParams } from "next/navigation";
+import { FileText, Loader2, Plus, Save, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { FlatCard } from "@/components/my-space/flat-card";
+import { useOrg } from "@/components/org/org-provider";
 import { Button } from "@/components/ui/button";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import { FlatCard } from "@/components/my-space/flat-card";
 import { Label } from "@/components/ui/label";
 import {
 	Select,
@@ -37,7 +29,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { useOrg } from "@/components/org/org-provider";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
@@ -68,18 +59,18 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
 	{ value: RequestStatus.Cancelled, label: "Annulée" },
 ];
 
-export default function AutoGenerationRulesPage() {
-	const params = useParams();
+export function AutoGenerationRulesPanel({
+	orgServiceId,
+}: {
+	orgServiceId: Id<"orgServices">;
+}) {
 	const { activeOrgId } = useOrg();
-	const orgServiceId = params.serviceId as Id<"orgServices">;
 
 	const { data: orgService, isLoading: loadingService } = useAuthenticatedConvexQuery(
 		api.functions.services.getOrgServiceById,
 		{ orgServiceId },
 	);
 
-	// Org-only templates : les règles auto-gen ne référencent que les modèles
-	// de l'organisation, jamais des modèles globaux directement.
 	const { data: templates, isLoading: loadingTemplates } = useAuthenticatedConvexQuery(
 		api.functions.documentTemplates.listOrgTemplates,
 		activeOrgId ? { orgId: activeOrgId } : "skip",
@@ -103,7 +94,12 @@ export default function AutoGenerationRulesPage() {
 	}, [orgService, rules]);
 
 	if (loadingService) {
-		return <div className="p-6 text-sm text-muted-foreground">Chargement du service…</div>;
+		return (
+			<div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
+				<Loader2 className="h-4 w-4 animate-spin" />
+				Chargement…
+			</div>
+		);
 	}
 	if (!orgService) {
 		return <div className="p-6 text-sm text-destructive">Service introuvable.</div>;
@@ -135,7 +131,6 @@ export default function AutoGenerationRulesPage() {
 	}
 
 	async function save() {
-		// Validate before sending.
 		for (const [i, rule] of draft.entries()) {
 			if (!rule.templateId) {
 				toast.error(`Règle ${i + 1} : modèle manquant`);
@@ -169,22 +164,23 @@ export default function AutoGenerationRulesPage() {
 	}
 
 	return (
-		<div className="flex flex-col gap-6 p-4 md:p-6">
-			<header className="flex items-center gap-3">
-				<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+		<div className="flex flex-col gap-4">
+			<div className="flex flex-wrap items-start gap-3">
+				<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
 					<Sparkles className="h-5 w-5" />
 				</div>
-				<div className="flex-1">
-					<h1 className="text-xl font-bold">Génération automatique</h1>
-					<p className="text-sm text-muted-foreground">
-						Configure les modèles à produire automatiquement pour ce service.
+				<div className="min-w-0 flex-1">
+					<h3 className="text-sm font-bold">Génération automatique de documents</h3>
+					<p className="mt-0.5 text-xs text-muted-foreground">
+						Configure les modèles qui seront produits automatiquement à la
+						soumission d'une demande ou sur transition de statut.
 					</p>
 				</div>
-				<Button onClick={save} disabled={saving}>
+				<Button onClick={save} disabled={saving} size="sm">
 					<Save className="mr-2 h-4 w-4" />
 					{saving ? "Enregistrement…" : "Enregistrer"}
 				</Button>
-			</header>
+			</div>
 
 			<FlatCard className="p-4 md:p-6">
 				{draft.length === 0 ? (
@@ -193,8 +189,8 @@ export default function AutoGenerationRulesPage() {
 						<div>
 							<p className="font-medium">Aucune règle configurée</p>
 							<p className="mt-1 text-sm text-muted-foreground">
-								Ajoute une règle pour déclencher une génération à la soumission ou sur
-								transition de statut.
+								Ajoute une règle pour déclencher une génération à la soumission
+								ou sur transition de statut.
 							</p>
 						</div>
 						<Button onClick={addRule}>
@@ -208,7 +204,12 @@ export default function AutoGenerationRulesPage() {
 							<RuleEditor
 								key={index}
 								rule={rule}
-								templates={(templates ?? []) as Array<{ _id: Id<"documentTemplates">; name: Record<string, string> }>}
+								templates={
+									(templates ?? []) as Array<{
+										_id: Id<"documentTemplates">;
+										name: Record<string, string>;
+									}>
+								}
 								templatesLoading={loadingTemplates}
 								onChange={(changes) => patch(index, changes)}
 								onRemove={() => removeRule(index)}
@@ -241,11 +242,21 @@ function RuleEditor({
 	onChange: (changes: Partial<RuleDraft>) => void;
 	onRemove: () => void;
 }) {
+	const templateOptions: ComboboxOption<string>[] = templates.map((t) => ({
+		value: t._id,
+		label: t.name.fr ?? t.name.en ?? "(sans titre)",
+	}));
+
 	return (
 		<div className="rounded-xl border bg-background p-4">
 			<header className="mb-3 flex items-center justify-between gap-2">
 				<span className="text-sm font-semibold">Règle {index}</span>
-				<Button size="icon" variant="ghost" onClick={onRemove} aria-label="Supprimer la règle">
+				<Button
+					size="icon"
+					variant="ghost"
+					onClick={onRemove}
+					aria-label="Supprimer la règle"
+				>
 					<Trash2 className="h-4 w-4 text-muted-foreground" />
 				</Button>
 			</header>
@@ -258,8 +269,9 @@ function RuleEditor({
 						onValueChange={(v) =>
 							onChange({
 								trigger: v as Trigger,
-								// Reset status fields when trigger flips
-								...(v === "on_submission" ? { fromStatus: undefined, toStatus: undefined } : {}),
+								...(v === "on_submission"
+									? { fromStatus: undefined, toStatus: undefined }
+									: {}),
 							})
 						}
 					>
@@ -268,28 +280,25 @@ function RuleEditor({
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="on_submission">À la soumission citoyen</SelectItem>
-							<SelectItem value="on_status_transition">Sur transition de statut</SelectItem>
+							<SelectItem value="on_status_transition">
+								Sur transition de statut
+							</SelectItem>
 						</SelectContent>
 					</Select>
 				</div>
 
 				<div className="flex flex-col gap-1">
 					<Label>Modèle</Label>
-					<Select
-						value={rule.templateId}
-						onValueChange={(v) => onChange({ templateId: v as Id<"documentTemplates"> })}
-					>
-						<SelectTrigger>
-							<SelectValue placeholder={templatesLoading ? "Chargement…" : "Choisir un modèle"} />
-						</SelectTrigger>
-						<SelectContent>
-							{templates.map((t) => (
-								<SelectItem key={t._id} value={t._id}>
-									{t.name.fr ?? t.name.en ?? "(sans titre)"}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
+					<Combobox
+						options={templateOptions}
+						value={rule.templateId || null}
+						onValueChange={(v) =>
+							onChange({ templateId: v as Id<"documentTemplates"> })
+						}
+						placeholder={templatesLoading ? "Chargement…" : "Choisir un modèle"}
+						searchPlaceholder="Rechercher un modèle…"
+						emptyText="Aucun modèle disponible."
+					/>
 				</div>
 
 				{rule.trigger === "on_status_transition" ? (
@@ -297,14 +306,16 @@ function RuleEditor({
 						<div className="flex flex-col gap-1">
 							<Label>Depuis le statut (optionnel)</Label>
 							<Select
-								value={rule.fromStatus ?? ""}
-								onValueChange={(v) => onChange({ fromStatus: v || undefined })}
+								value={rule.fromStatus ?? "__any__"}
+								onValueChange={(v) =>
+									onChange({ fromStatus: v === "__any__" ? undefined : v })
+								}
 							>
 								<SelectTrigger>
 									<SelectValue placeholder="Tout statut" />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="">Tout statut</SelectItem>
+									<SelectItem value="__any__">Tout statut</SelectItem>
 									{STATUS_OPTIONS.map((s) => (
 										<SelectItem key={s.value} value={s.value}>
 											{s.label}
@@ -340,7 +351,7 @@ function RuleEditor({
 					<div>
 						<div className="text-sm font-medium">Signer automatiquement</div>
 						<div className="text-xs text-muted-foreground">
-							Apposer la signature de l'agent à la génération (Phase 3).
+							Apposer la signature de l'agent à la génération.
 						</div>
 					</div>
 					<Switch
