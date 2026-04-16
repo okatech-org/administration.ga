@@ -29,6 +29,8 @@
     "@tiptap/react": "^3.17.1",
     "@tiptap/starter-kit": "^3.17.1",
     "@workspace/api": "workspace:*",
+    "@workspace/document-editor": "workspace:*",
+    "@workspace/document-rendering": "workspace:*",
     "@workspace/i18n": "workspace:*",
     "@workspace/iasted": "workspace:*",
     "@workspace/settings-form": "workspace:*",

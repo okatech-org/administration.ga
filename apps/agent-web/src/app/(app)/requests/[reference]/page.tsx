@@ -26,6 +26,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { RequestActionModal } from "@/components/admin/RequestActionModal";
+import { OfficialDocumentsSection } from "@/components/requests/OfficialDocumentsSection";
 import { UserProfilePreviewCard } from "@/components/dashboard/UserProfilePreviewCard";
 import { CallButton } from "@/components/meetings/call-button";
 import { ChatButton } from "@/components/meetings/chat-button";
@@ -1353,6 +1354,9 @@ export default function RequestDetailPage() {
 							)}
 						</div>
 					</FlatCard>
+
+					{/* Official Documents — generated PDFs (right column, below internal notes) */}
+					<OfficialDocumentsSection requestId={request._id} orgId={request.orgId} />
 				</div>
 			</div>
 		</div>
