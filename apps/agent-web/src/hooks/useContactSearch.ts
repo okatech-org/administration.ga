@@ -20,6 +20,39 @@ export interface ContactFilters {
 	positionGrade: string;
 }
 
+export interface ContactResultItem {
+	id: string;
+	userId: string;
+	lastName: string;
+	firstName: string;
+	name: string;
+	email?: string;
+	phone?: string;
+	avatar?: string;
+	position?: string;
+	positionGrade?: string;
+	orgId: string;
+	orgName: string;
+	orgCountry?: string;
+	orgType?: string;
+	source: "team" | "network" | "citizen" | "administration";
+}
+
+export interface ContactGroup {
+	org: { id: string; name: string; country?: string; type?: string };
+	contacts: ContactResultItem[];
+}
+
+interface SearchContactsResult {
+	total: number;
+	groups: ContactGroup[];
+}
+
+interface CountryCount {
+	code: string;
+	count: number;
+}
+
 const DEFAULT_FILTERS: ContactFilters = {
 	searchTerm: "",
 	source: "all",
@@ -35,9 +68,21 @@ export function useContactSearch(initialSource?: ContactSource | "all") {
 		source: initialSource ?? "all",
 	});
 
-	// Query Convex avec les filtres actifs
+	// Query Convex avec les filtres actifs.
+	//
+	// Mapping source → scope pour agent-web :
+	// - "network"  → "all-diplomatic" (corps diplomatique : tous les agents de toutes
+	//   les représentations diplomatiques, indépendamment des filtres pays/type)
+	// - "citizens" → "jurisdiction"   (ressortissants sous la juridiction de l'org active :
+	//   managedByOrgId === myOrgId OU résidence ∈ org.jurisdictionCountries)
+	// - "team" / "all" / autres consommateurs (iChat, iAppel, iRéunion) → "org" (défaut historique)
 	const queryArgs = useMemo(() => {
 		if (!activeOrgId) return "skip" as const;
+
+		let scope: "org" | "jurisdiction" | "all-diplomatic" = "org";
+		if (filters.source === "network") scope = "all-diplomatic";
+		else if (filters.source === "citizens") scope = "jurisdiction";
+
 		return {
 			myOrgId: activeOrgId,
 			searchTerm: filters.searchTerm || undefined,
@@ -45,6 +90,7 @@ export function useContactSearch(initialSource?: ContactSource | "all") {
 			orgType: filters.orgType || undefined,
 			positionGrade: filters.positionGrade || undefined,
 			source: filters.source !== "all" ? filters.source : undefined,
+			scope,
 			limit: 100,
 		};
 	}, [activeOrgId, filters]);
@@ -68,11 +114,14 @@ export function useContactSearch(initialSource?: ContactSource | "all") {
 	const setPositionGrade = (grade: string) => setFilters((f) => ({ ...f, positionGrade: grade }));
 	const resetFilters = () => setFilters({ ...DEFAULT_FILTERS, source: initialSource ?? "all" });
 
+	const typedData = data as SearchContactsResult | undefined;
+	const typedCountries = availableCountries as CountryCount[] | undefined;
+
 	return {
 		// Données
-		groups: (data as any)?.groups ?? [],
-		total: (data as any)?.total ?? 0,
-		availableCountries: availableCountries ?? [],
+		groups: typedData?.groups ?? [],
+		total: typedData?.total ?? 0,
+		availableCountries: typedCountries ?? [],
 		isPending,
 
 		// Filtres

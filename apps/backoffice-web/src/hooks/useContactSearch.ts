@@ -1,7 +1,11 @@
 /**
  * useContactSearch — Hook de recherche intelligente de contacts pour backoffice.
  *
- * Adapté de agent-web : accepte orgId en paramètre au lieu de useOrg().
+ * Scope "backoffice" : tous les comptes créés sur la plateforme (citoyens,
+ * agents de toutes les orgs, admins plateforme) sont visibles pour un user
+ * back-office (SuperAdmin, AdminSystem, Admin, SousAdmin). L'org active
+ * reste transmise pour que l'admin puisse identifier ses propres collègues
+ * sous la source "team", mais son absence ne bloque plus la recherche.
  */
 
 import { api } from "@convex/_generated/api";
@@ -9,7 +13,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useMemo, useState } from "react";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 
-export type ContactSource = "team" | "network" | "citizens";
+export type ContactSource = "team" | "network" | "citizens" | "administration";
 
 export interface ContactFilters {
 	searchTerm: string;
@@ -17,6 +21,39 @@ export interface ContactFilters {
 	country: string;
 	orgType: string;
 	positionGrade: string;
+}
+
+export interface ContactResultItem {
+	id: string;
+	userId: string;
+	lastName: string;
+	firstName: string;
+	name: string;
+	email?: string;
+	phone?: string;
+	avatar?: string;
+	position?: string;
+	positionGrade?: string;
+	orgId: string;
+	orgName: string;
+	orgCountry?: string;
+	orgType?: string;
+	source: "team" | "network" | "citizen" | "administration";
+}
+
+export interface ContactGroup {
+	org: { id: string; name: string; country?: string; type?: string };
+	contacts: ContactResultItem[];
+}
+
+interface SearchContactsResult {
+	total: number;
+	groups: ContactGroup[];
+}
+
+interface CountryCount {
+	code: string;
+	count: number;
 }
 
 const DEFAULT_FILTERS: ContactFilters = {
@@ -34,14 +71,15 @@ export function useContactSearch(orgId: Id<"orgs"> | null, initialSource?: Conta
 	});
 
 	const queryArgs = useMemo(() => {
-		if (!orgId) return "skip" as const;
+		// En backoffice, l'absence d'org active ne bloque pas la recherche globale.
 		return {
-			myOrgId: orgId,
+			myOrgId: orgId ?? undefined,
 			searchTerm: filters.searchTerm || undefined,
 			country: filters.country || undefined,
 			orgType: filters.orgType || undefined,
 			positionGrade: filters.positionGrade || undefined,
 			source: filters.source !== "all" ? filters.source : undefined,
+			scope: "backoffice" as const,
 			limit: 100,
 		};
 	}, [orgId, filters]);
@@ -63,10 +101,13 @@ export function useContactSearch(orgId: Id<"orgs"> | null, initialSource?: Conta
 	const setPositionGrade = (grade: string) => setFilters((f) => ({ ...f, positionGrade: grade }));
 	const resetFilters = () => setFilters({ ...DEFAULT_FILTERS, source: initialSource ?? "all" });
 
+	const typedData = data as SearchContactsResult | undefined;
+	const typedCountries = availableCountries as CountryCount[] | undefined;
+
 	return {
-		groups: (data as any)?.groups ?? [],
-		total: (data as any)?.total ?? 0,
-		availableCountries: availableCountries ?? [],
+		groups: typedData?.groups ?? [],
+		total: typedData?.total ?? 0,
+		availableCountries: typedCountries ?? [],
 		isPending,
 		filters,
 		setFilters,

@@ -21,14 +21,34 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useContactSearch, type ContactSource } from "@/hooks/useContactSearch";
+import {
+	useContactSearch,
+	type ContactGroup,
+	type ContactResultItem,
+	type ContactSource,
+} from "@/hooks/useContactSearch";
 import { cn } from "@/lib/utils";
 
-const SEGMENTS: Array<{ id: ContactSource | "all"; label: string; icon: typeof Users }> = [
+const SEGMENTS: Array<{
+	id: ContactSource | "all";
+	label: string;
+	icon: typeof Users;
+	hint?: string;
+}> = [
 	{ id: "all", label: "Tous", icon: Users },
-	{ id: "team", label: "Mon équipe", icon: Shield },
-	{ id: "network", label: "Réseau", icon: Globe },
-	{ id: "citizens", label: "Ressortissants", icon: Users },
+	{ id: "team", label: "Mon équipe", icon: Shield, hint: "Collègues de votre représentation" },
+	{
+		id: "network",
+		label: "Corps diplomatique",
+		icon: Globe,
+		hint: "Tous les agents de toutes les représentations diplomatiques",
+	},
+	{
+		id: "citizens",
+		label: "Ressortissants",
+		icon: Users,
+		hint: "Citoyens gérés par votre poste ou résidant dans un pays sous votre juridiction",
+	},
 ];
 
 const ORG_TYPES = [
@@ -92,6 +112,7 @@ export function IAstedContactTab() {
 							key={seg.id}
 							type="button"
 							onClick={() => setSource(seg.id)}
+							title={seg.hint}
 							className={cn(
 								"text-xs px-3 py-1 rounded-md font-medium transition-colors",
 								filters.source === seg.id
@@ -112,7 +133,7 @@ export function IAstedContactTab() {
 						className="text-xs px-2.5 py-1.5 rounded-md border bg-background text-foreground h-8"
 					>
 						<option value="">Tous pays</option>
-						{availableCountries.map((c: any) => (
+						{availableCountries.map((c) => (
 							<option key={c.code} value={c.code}>{c.code} ({c.count})</option>
 						))}
 					</select>
@@ -154,7 +175,7 @@ export function IAstedContactTab() {
 					</div>
 				) : (
 					<div className="divide-y">
-						{groups.map((group: any) => (
+						{groups.map((group: ContactGroup) => (
 							<div key={group.org.id} className="py-1">
 								{/* Header org */}
 								<div className="flex items-center gap-2 px-3 py-1.5">
@@ -171,7 +192,7 @@ export function IAstedContactTab() {
 								</div>
 
 								{/* Contacts */}
-								{group.contacts.map((contact: any) => (
+								{group.contacts.map((contact: ContactResultItem) => (
 									<div
 										key={contact.id}
 										role={contact.source === "citizen" ? "button" : undefined}

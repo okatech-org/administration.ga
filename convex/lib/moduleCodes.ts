@@ -642,6 +642,11 @@ export const MODULE_ACCESS_TASKS: Partial<Record<string, Record<ModuleAccessLeve
     editor: ["profiles.view", "profiles.manage"],
     admin: ["profiles.view", "profiles.manage"],
   },
+  citizen_profiles: {
+    reader: ["citizen_profiles.view"],
+    editor: ["citizen_profiles.view", "citizen_profiles.manage"],
+    admin: ["citizen_profiles.view", "citizen_profiles.manage"],
+  },
   iprofil: {
     reader: ["profiles.view"],
     editor: ["profiles.view", "profiles.manage"],
