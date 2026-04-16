@@ -11,6 +11,7 @@ import {
 	ChevronsRight,
 	Crown,
 	FileText,
+	Files,
 	FolderOpen,
 	Globe,
 	LayoutDashboard,
@@ -177,6 +178,12 @@ export function SuperadminSidebar({
 					title: "iDocument",
 					url: "/idocument",
 					icon: FileText,
+					moduleCode: "documents",
+				},
+				{
+					title: "Modèles de documents",
+					url: "/config/templates",
+					icon: Files,
 					moduleCode: "documents",
 				},
 				{

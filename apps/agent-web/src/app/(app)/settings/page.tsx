@@ -13,6 +13,7 @@ import {
 	Clock,
 	CreditCard,
 	Edit,
+	FileSignature,
 	Globe,
 	KeyRound,
 	Loader2,
@@ -82,6 +83,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { SignatureSettingsCard } from "@/components/settings/SignatureSettingsCard";
 import { useCanDoTask } from "@/hooks/useCanDoTask";
 import { type ConsularTheme, useConsularTheme } from "@/hooks/useConsularTheme";
 import {
@@ -385,6 +387,15 @@ export default function DashboardSettings() {
 					label: "Apparence",
 					icon: <Palette className="size-4" />,
 				},
+				// Onglet signature — seulement pour les agents habilités à signer
+				// des documents officiels (Consul Général, Consul, Vice-Consul…).
+				...(canDo("documents.sign")
+					? [{
+						id: "signature",
+						label: "Signature officielle",
+						icon: <FileSignature className="size-4" />,
+					}]
+					: []),
 			],
 		},
 		// ──  COMPTE (tous) ──
@@ -1250,6 +1261,16 @@ export default function DashboardSettings() {
 					)}
 				>
 					{activeOrgId && <MemberPreferencesCard orgId={activeOrgId} />}
+				</div>
+
+				{/* Onglet Signature officielle (permission documents.sign) */}
+				<div
+					className={cn(
+						"animate-in fade-in duration-300",
+						activeTab !== "signature" && "hidden",
+					)}
+				>
+					<SignatureSettingsCard />
 				</div>
 
 				<div

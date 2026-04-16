@@ -3,8 +3,9 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useForm } from "@tanstack/react-form";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, ArrowRight, Save, Sparkles } from "lucide-react";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -140,7 +141,47 @@ export default function ServiceEdit() {
 						<TabsTrigger value="general">
 							{t("dashboard.services.edit.tabs.general")}
 						</TabsTrigger>
+						<TabsTrigger value="autoGeneration">
+							<Sparkles className="mr-1.5 h-3.5 w-3.5" />
+							Génération auto
+						</TabsTrigger>
 					</TabsList>
+
+					<TabsContent value="autoGeneration">
+						<FlatCard className="p-4 lg:p-6">
+							<div className="flex flex-col gap-4">
+								<div className="flex items-center gap-3">
+									<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+										<Sparkles className="h-5 w-5" />
+									</div>
+									<div>
+										<h3 className="text-sm font-bold">
+											Génération automatique de documents
+										</h3>
+										<p className="mt-0.5 text-xs text-muted-foreground">
+											Configure les modèles qui seront produits automatiquement à la
+											soumission d'une demande ou sur transition de statut.
+										</p>
+									</div>
+								</div>
+
+								<ul className="flex flex-col gap-1.5 rounded-lg bg-muted/30 p-3 text-xs text-muted-foreground">
+									<li>• Génération instantanée dès la soumission (ex. récépissé de dépôt)</li>
+									<li>• Génération à la validation (ex. attestation signée par le Consul)</li>
+									<li>• Options de signature et de publication automatiques</li>
+								</ul>
+
+								<div>
+									<Button asChild variant="outline" type="button">
+										<Link href={`/services/${serviceId}/auto-generation`}>
+											Configurer les règles
+											<ArrowRight className="ml-2 h-4 w-4" />
+										</Link>
+									</Button>
+								</div>
+							</div>
+						</FlatCard>
+					</TabsContent>
 
 					<TabsContent value="general">
 						<div className="grid gap-6">
