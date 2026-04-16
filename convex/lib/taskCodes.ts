@@ -386,7 +386,8 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   // Profiles
   [TaskCode.profiles.view]: "low",
   [TaskCode.profiles.manage]: "high",
-  [TaskCode.citizen_profiles.view]: "low",
+  // Citizen Profiles — RGPD : accès aux données personnelles citoyennes
+  [TaskCode.citizen_profiles.view]: "medium",
   [TaskCode.citizen_profiles.manage]: "high",
   // Civil Status
   [TaskCode.civil_status.transcribe]: "high",
