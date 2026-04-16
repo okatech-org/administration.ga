@@ -18,7 +18,9 @@
 
 import { EditorContent, useEditor } from "@tiptap/react";
 import type { PlaceholderDescriptor, TiptapDocument } from "@workspace/document-rendering/types";
+import { Sparkles } from "lucide-react";
 import { useEffect, type ReactElement } from "react";
+import { useTranslation } from "react-i18next";
 
 import { buildEditorExtensions } from "../extensions/build-editor-extensions";
 import { EditorToolbar } from "./EditorToolbar";
@@ -58,6 +60,19 @@ export interface TemplateEditorProps {
 	 * generation time. When omitted, the image button is hidden in the toolbar.
 	 */
 	onUploadImage?: (file: File) => Promise<{ src: string; storageId?: string }>;
+	/**
+	 * When true, exposes a "Assistant IA" button above the toolbar. The parent
+	 * page is responsible for hosting the `<TemplateAIDrawer />` and applying
+	 * the result via `editor.commands.setContent()`. The button stays hidden
+	 * unless the user has the `documents.ai_generation` capability — gating is
+	 * the parent's responsibility (so the editor stays auth-agnostic).
+	 */
+	enableAI?: boolean;
+	/**
+	 * Called when the user clicks the "Assistant IA" button. The parent should
+	 * open its `<TemplateAIDrawer />`. Required when `enableAI` is true.
+	 */
+	onAIGenerate?: () => void;
 }
 
 const EMPTY_DOC: TiptapDocument = {
@@ -90,7 +105,10 @@ export function TemplateEditor({
 	marginBottom,
 	marginLeft,
 	onUploadImage,
+	enableAI = false,
+	onAIGenerate,
 }: TemplateEditorProps): ReactElement {
+	const { t } = useTranslation();
 	const editor = useEditor({
 		extensions: buildEditorExtensions(),
 		content: initialContent ?? EMPTY_DOC,
@@ -122,6 +140,20 @@ export function TemplateEditor({
 				showInlineSidebar ? "" : className ?? "",
 			].join(" ")}
 		>
+			{/* Assistant IA — visible only when the parent gates `enableAI` true. */}
+			{enableAI && onAIGenerate ? (
+				<div className="flex items-center justify-end">
+					<button
+						type="button"
+						onClick={onAIGenerate}
+						className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20"
+					>
+						<Sparkles className="h-3.5 w-3.5" />
+						{t("templates.ai.button")}
+					</button>
+				</div>
+			) : null}
+
 			{/* Toolbar au-dessus de la page */}
 			<EditorToolbar editor={editor} onUploadImage={onUploadImage} />
 

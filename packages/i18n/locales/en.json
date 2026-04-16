@@ -4359,6 +4359,38 @@
 				"optional": "Optional"
 			}
 		},
+		"ai": {
+			"button": "AI Assistant",
+			"drawer": {
+				"title": "AI Assistant",
+				"subtitle": "Import an existing document or describe what you want — the AI produces a ready-to-use Tiptap template."
+			},
+			"fields": {
+				"templateType": "Template type",
+				"prompt": "Description or instructions",
+				"promptPlaceholder": "Eg: \"Generate a residence certificate with the org logo at the top, a placeholder for the applicant's name, date of birth, address, and a signature of the head of post at the bottom.\"",
+				"sourceDocument": "Source document (PDF or image)",
+				"dropFile": "Click to upload a PDF or an image",
+				"dropFileHint": "Max 10 MB — the AI mimics the layout when generating the template.",
+				"suggestedName": "Suggested name"
+			},
+			"phases": {
+				"loading": "The AI is generating your template…",
+				"loadingHint": "This takes 10-30 seconds depending on the source document size.",
+				"resultTitle": "Template generated successfully",
+				"resultHint": "{{blocks}} blocks and {{placeholders}} variable(s) detected. Review then apply."
+			},
+			"actions": {
+				"generate": "Generate",
+				"apply": "Apply",
+				"regenerate": "Start over",
+				"retry": "Retry"
+			},
+			"errors": {
+				"title": "Generation error",
+				"generic": "An error occurred — try again or refine your description."
+			}
+		},
 		"layout": {
 			"sectionTitle": "Page layout",
 			"sectionDescription": "Paper size, orientation and margins for the template.",

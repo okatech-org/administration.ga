@@ -16,7 +16,12 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { TemplateEditor } from "@workspace/document-editor";
+import {
+	TemplateAIDrawer,
+	TemplateEditor,
+	type TemplateAIInput,
+	type TemplateAIResult,
+} from "@workspace/document-editor";
 import type {
 	PlaceholderDescriptor,
 	PlaceholderSource,
@@ -52,8 +57,11 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { useOrg } from "@/components/org/org-provider";
+import { useCanDoTask } from "@/hooks/useCanDoTask";
 import {
 	useAuthenticatedConvexQuery,
+	useConvexActionQuery,
 	useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
 
@@ -90,6 +98,10 @@ export default function OrgTemplateEditPage() {
 	const router = useRouter();
 	const templateId = params.templateId as Id<"documentTemplates">;
 	const convex = useConvex();
+	const { activeOrgId } = useOrg();
+	const { canDo: canDoTask } = useCanDoTask(activeOrgId ?? undefined);
+	const enableAI = canDoTask("documents.ai_generation");
+	const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
 
 	const { data: template, isLoading } = useAuthenticatedConvexQuery(
 		api.functions.documentTemplates.getById,
@@ -108,6 +120,9 @@ export default function OrgTemplateEditPage() {
 	);
 	const { mutateAsync: generateUploadUrl } = useConvexMutationQuery(
 		api.functions.documents.generateUploadUrl,
+	);
+	const { mutateAsync: aiGenerateFromDocument } = useConvexActionQuery(
+		api.functions.templateAI.generateFromDocument,
 	);
 
 	const [content, setContent] = useState<TiptapDocument | null>(null);
@@ -158,6 +173,41 @@ export default function OrgTemplateEditPage() {
 		},
 		[convex, generateUploadUrl],
 	);
+
+	const onAIUploadFile = useCallback(
+		async (file: File): Promise<{ fileUrl: string; fileMimeType: string }> => {
+			const postUrl = await generateUploadUrl({});
+			const res = await fetch(postUrl, {
+				method: "POST",
+				headers: { "Content-Type": file.type },
+				body: file,
+			});
+			if (!res.ok) throw new Error("Upload failed");
+			const { storageId } = (await res.json()) as { storageId: string };
+			const url = await convex.query(api.functions.documents.getUrl, {
+				storageId: storageId as unknown as Id<"_storage">,
+			});
+			return { fileUrl: url ?? "", fileMimeType: file.type };
+		},
+		[convex, generateUploadUrl],
+	);
+
+	const onAIGenerate = useCallback(
+		async (input: TemplateAIInput): Promise<TemplateAIResult> => {
+			const result = await aiGenerateFromDocument({
+				...input,
+				orgId: activeOrgId ?? undefined,
+			});
+			return result as TemplateAIResult;
+		},
+		[aiGenerateFromDocument, activeOrgId],
+	);
+
+	function onAIApply(result: TemplateAIResult) {
+		setContent(result.document);
+		setPlaceholders(result.placeholders);
+		toast.success(t("templates.ai.phases.resultTitle"));
+	}
 
 	if (isLoading || !template) {
 		return (
@@ -338,6 +388,8 @@ export default function OrgTemplateEditPage() {
 						marginBottom={workingLayout.marginBottom}
 						marginLeft={workingLayout.marginLeft}
 						onUploadImage={onUploadImage}
+						enableAI={enableAI}
+						onAIGenerate={() => setAiDrawerOpen(true)}
 					/>
 				</FlatCard>
 
@@ -376,6 +428,17 @@ export default function OrgTemplateEditPage() {
 					{saving ? t("templates.common.saving") : t("templates.common.save")}
 				</Button>
 			</div>
+
+			{enableAI ? (
+				<TemplateAIDrawer
+					open={aiDrawerOpen}
+					onOpenChange={setAiDrawerOpen}
+					onUploadFile={onAIUploadFile}
+					onGenerate={onAIGenerate}
+					onApply={onAIApply}
+					defaultPaperSize={workingLayout.paperSize}
+				/>
+			) : null}
 		</div>
 	);
 }

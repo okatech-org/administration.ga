@@ -40,6 +40,10 @@ export const TaskCode = {
     manage_templates: "documents.manage_templates",
     sign: "documents.sign",
     publish: "documents.publish",
+    // AI assistant — gates the "generate template from document" feature.
+    // Distributed by default to admin/manager positions; can be revoked
+    // per-org if costs need to be controlled.
+    ai_generation: "documents.ai_generation",
   },
   appointments: {
     view: "appointments.view",
@@ -49,6 +53,10 @@ export const TaskCode = {
   profiles: {
     view: "profiles.view",
     manage: "profiles.manage",
+  },
+  citizen_profiles: {
+    view: "citizen_profiles.view",
+    manage: "citizen_profiles.manage",
   },
   civil_status: {
     transcribe: "civil_status.transcribe",
@@ -236,6 +244,7 @@ export const taskCodeValidator = v.union(
   v.literal(TaskCode.documents.manage_templates),
   v.literal(TaskCode.documents.sign),
   v.literal(TaskCode.documents.publish),
+  v.literal(TaskCode.documents.ai_generation),
   // Appointments
   v.literal(TaskCode.appointments.view),
   v.literal(TaskCode.appointments.manage),
@@ -243,6 +252,9 @@ export const taskCodeValidator = v.union(
   // Profiles
   v.literal(TaskCode.profiles.view),
   v.literal(TaskCode.profiles.manage),
+  // Citizen Profiles
+  v.literal(TaskCode.citizen_profiles.view),
+  v.literal(TaskCode.citizen_profiles.manage),
   // Civil Status
   v.literal(TaskCode.civil_status.transcribe),
   v.literal(TaskCode.civil_status.register),
@@ -366,6 +378,7 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   [TaskCode.documents.manage_templates]: "medium",
   [TaskCode.documents.sign]: "high",
   [TaskCode.documents.publish]: "medium",
+  [TaskCode.documents.ai_generation]: "medium",
   // Appointments
   [TaskCode.appointments.view]: "low",
   [TaskCode.appointments.manage]: "medium",
@@ -373,6 +386,8 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   // Profiles
   [TaskCode.profiles.view]: "low",
   [TaskCode.profiles.manage]: "high",
+  [TaskCode.citizen_profiles.view]: "low",
+  [TaskCode.citizen_profiles.manage]: "high",
   // Civil Status
   [TaskCode.civil_status.transcribe]: "high",
   [TaskCode.civil_status.register]: "high",

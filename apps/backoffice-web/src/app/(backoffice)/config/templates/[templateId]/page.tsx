@@ -11,14 +11,19 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { TemplateEditor } from "@workspace/document-editor";
+import {
+	TemplateAIDrawer,
+	TemplateEditor,
+	type TemplateAIInput,
+	type TemplateAIResult,
+} from "@workspace/document-editor";
 import type {
 	PlaceholderDescriptor,
 	PlaceholderSource,
 	TiptapDocument,
 } from "@workspace/document-rendering/types";
 import { renderDocumentToHtml } from "@workspace/document-rendering/html";
-import { useConvex } from "convex/react";
+import { useAction, useConvex } from "convex/react";
 import {
 	FileText,
 	History,
@@ -95,6 +100,10 @@ export default function EditTemplatePage() {
 		api.functions.documents.generateUploadUrl,
 	);
 	const convex = useConvex();
+	const aiGenerateFromDocument = useAction(
+		api.functions.templateAI.generateFromDocument,
+	);
+	const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
 
 	const [content, setContent] = useState<TiptapDocument | null>(null);
 	const [placeholders, setPlaceholders] = useState<PlaceholderDescriptor[] | null>(null);
@@ -149,6 +158,38 @@ export default function EditTemplatePage() {
 		},
 		[convex, generateUploadUrl],
 	);
+
+	const onAIUploadFile = useCallback(
+		async (file: File): Promise<{ fileUrl: string; fileMimeType: string }> => {
+			const postUrl = await generateUploadUrl({});
+			const res = await fetch(postUrl, {
+				method: "POST",
+				headers: { "Content-Type": file.type },
+				body: file,
+			});
+			if (!res.ok) throw new Error("Upload failed");
+			const { storageId } = (await res.json()) as { storageId: string };
+			const url = await convex.query(api.functions.documents.getUrl, {
+				storageId: storageId as unknown as Id<"_storage">,
+			});
+			return { fileUrl: url ?? "", fileMimeType: file.type };
+		},
+		[convex, generateUploadUrl],
+	);
+
+	const onAIGenerate = useCallback(
+		async (input: TemplateAIInput): Promise<TemplateAIResult> => {
+			const result = await aiGenerateFromDocument(input);
+			return result as TemplateAIResult;
+		},
+		[aiGenerateFromDocument],
+	);
+
+	function onAIApply(result: TemplateAIResult) {
+		setContent(result.document);
+		setPlaceholders(result.placeholders);
+		toast.success(t("templates.ai.phases.resultTitle"));
+	}
 
 	if (isLoading || !template) {
 		return <div className="p-6 text-sm text-muted-foreground">{t("templates.common.loading")}</div>;
@@ -283,6 +324,8 @@ export default function EditTemplatePage() {
 						marginBottom={workingLayout.marginBottom}
 						marginLeft={workingLayout.marginLeft}
 						onUploadImage={onUploadImage}
+						enableAI
+						onAIGenerate={() => setAiDrawerOpen(true)}
 					/>
 				</FlatCard>
 
@@ -331,6 +374,15 @@ export default function EditTemplatePage() {
 					{saving ? t("templates.common.saving") : t("templates.common.save")}
 				</Button>
 			</div>
+
+			<TemplateAIDrawer
+				open={aiDrawerOpen}
+				onOpenChange={setAiDrawerOpen}
+				onUploadFile={onAIUploadFile}
+				onGenerate={onAIGenerate}
+				onApply={onAIApply}
+				defaultPaperSize={workingLayout.paperSize}
+			/>
 		</div>
 	);
 }

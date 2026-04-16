@@ -621,7 +621,7 @@ export const MODULE_ACCESS_TASKS: Partial<Record<string, Record<ModuleAccessLeve
       "documents.generate",
       "documents.publish",
     ],
-    // admin : gouvernance (suppression, signature officielle, gestion des modèles)
+    // admin : gouvernance (suppression, signature officielle, gestion des modèles, IA)
     admin: [
       "documents.view",
       "documents.validate",
@@ -630,6 +630,7 @@ export const MODULE_ACCESS_TASKS: Partial<Record<string, Record<ModuleAccessLeve
       "documents.publish",
       "documents.sign",
       "documents.manage_templates",
+      "documents.ai_generation",
     ],
   },
   appointments: {

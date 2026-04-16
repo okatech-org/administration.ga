@@ -4949,6 +4949,38 @@
 				"optional": "Optionnel"
 			}
 		},
+		"ai": {
+			"button": "Assistant IA",
+			"drawer": {
+				"title": "Assistant IA",
+				"subtitle": "Importe un document existant ou décris ce que tu veux générer — l'IA produit un modèle Tiptap utilisable."
+			},
+			"fields": {
+				"templateType": "Type de modèle",
+				"prompt": "Description ou instructions",
+				"promptPlaceholder": "Ex : « Génère un modèle d'attestation de résidence avec le logo de l'organisme en haut, un placeholder pour le nom du demandeur, sa date de naissance, son adresse, et une signature du chef de poste en bas. »",
+				"sourceDocument": "Document source (PDF ou image)",
+				"dropFile": "Cliquer pour téléverser un PDF ou une image",
+				"dropFileHint": "Max 10 MB — l'IA s'inspire de la mise en page pour générer le modèle.",
+				"suggestedName": "Nom suggéré"
+			},
+			"phases": {
+				"loading": "L'IA génère ton modèle…",
+				"loadingHint": "Cela peut prendre 10 à 30 secondes selon la taille du document source.",
+				"resultTitle": "Modèle généré avec succès",
+				"resultHint": "{{blocks}} blocs et {{placeholders}} variable(s) détectée(s). Vérifie le résultat puis applique."
+			},
+			"actions": {
+				"generate": "Générer",
+				"apply": "Appliquer",
+				"regenerate": "Recommencer",
+				"retry": "Réessayer"
+			},
+			"errors": {
+				"title": "Erreur de génération",
+				"generic": "Une erreur s'est produite — réessaie ou ajuste ta description."
+			}
+		},
 		"layout": {
 			"sectionTitle": "Mise en page",
 			"sectionDescription": "Format papier, orientation et marges du modèle.",
