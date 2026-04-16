@@ -19,6 +19,9 @@ coverage
 #Next.js
 .next
 
+#claude 
+.claude
+
 # Build Outputs
 dist
 .output
