@@ -294,8 +294,76 @@ export const cloneFromGlobal = authMutation({
 			orientation: source.orientation,
 			version: 1,
 			updatedAt: now,
+			clonedFromTemplateId: args.globalTemplateId,
+			clonedFromVersion: source.version ?? 1,
 		});
 		return newId;
+	},
+});
+
+/**
+ * For a cloned org template, check whether its source has been updated since
+ * the clone was made. Returns the current source version or null if the clone
+ * is up-to-date (or not cloned from anything).
+ */
+export const getSourceUpdateStatus = authQuery({
+	args: { templateId: v.id("documentTemplates") },
+	handler: async (ctx, args) => {
+		const template = await ctx.db.get(args.templateId);
+		if (!template?.clonedFromTemplateId) return null;
+		const source = await ctx.db.get(template.clonedFromTemplateId);
+		if (!source || !source.isActive) return null;
+		const sourceVersion = source.version ?? 1;
+		const cloneVersion = template.clonedFromVersion ?? 0;
+		if (sourceVersion <= cloneVersion) return null;
+		return {
+			sourceTemplateId: source._id,
+			sourceVersion,
+			cloneVersion,
+			sourceName: source.name,
+			sourceUpdatedAt: source.updatedAt,
+		};
+	},
+});
+
+/**
+ * Re-synchronise a cloned org template with the latest source content.
+ * Archives the current state before applying the source content + flags,
+ * bumps the version, and marks the new `clonedFromVersion`.
+ */
+export const syncFromSource = authMutation({
+	args: { templateId: v.id("documentTemplates") },
+	handler: async (ctx, args) => {
+		const template = await ctx.db.get(args.templateId);
+		if (!template) throw new Error("Template introuvable");
+		if (!template.clonedFromTemplateId) {
+			throw error(ErrorCode.VALIDATION_ERROR, "Ce modèle n'est pas un clone");
+		}
+		await assertTemplatePermission(ctx, template);
+
+		const source = await ctx.db.get(template.clonedFromTemplateId);
+		if (!source) throw new Error("Modèle source introuvable");
+
+		await archiveCurrentTemplateVersion(
+			ctx,
+			template,
+			`Synchronisation depuis la source (v${template.clonedFromVersion ?? 1} → v${source.version ?? 1})`,
+		);
+
+		await ctx.db.patch(args.templateId, {
+			content: source.content,
+			contentHtml: source.contentHtml,
+			placeholders: source.placeholders,
+			autoPublishToCitizen: source.autoPublishToCitizen,
+			requireSignature: source.requireSignature,
+			allowedSignerPositions: source.allowedSignerPositions,
+			paperSize: source.paperSize,
+			orientation: source.orientation,
+			version: (template.version ?? 1) + 1,
+			clonedFromVersion: source.version ?? 1,
+			updatedAt: Date.now(),
+		});
+		return args.templateId;
 	},
 });
 

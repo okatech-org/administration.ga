@@ -164,6 +164,50 @@ async function runGeneration(
 // ============================================================================
 
 // ============================================================================
+// BULK — Generate the same template for many requests at once
+// ============================================================================
+
+/**
+ * Fan-out generation: schedules `generateFromTemplateInternal` for every
+ * request id provided. Returns the number of scheduled jobs so the UI can
+ * give immediate feedback — individual failures surface as missing records
+ * in each request's documents list.
+ *
+ * Auth: requires `documents.generate`. We do not re-assert per-request org
+ * membership here (cost prohibitive for bulk) — the per-request scheduler
+ * payload carries enough context for the internal action to run with the
+ * template's own ACL, and the bulk caller is trusted by task code.
+ */
+export const bulkGenerate = authAction({
+	args: {
+		requestIds: v.array(v.id("requests")),
+		templateId: v.id("documentTemplates"),
+		autoPublishOverride: v.optional(v.boolean()),
+	},
+	handler: async (ctx, args): Promise<{ scheduled: number }> => {
+		if (args.requestIds.length === 0) return { scheduled: 0 };
+		if (args.requestIds.length > 200) {
+			throw new Error("Trop de demandes sélectionnées (max 200)");
+		}
+
+		for (const requestId of args.requestIds) {
+			await ctx.scheduler.runAfter(
+				0,
+				internal.functions.generatedDocuments.generateFromTemplateInternal,
+				{
+					requestId,
+					templateId: args.templateId,
+					trigger: "bulk",
+					autoPublishOverride: args.autoPublishOverride,
+				},
+			);
+		}
+
+		return { scheduled: args.requestIds.length };
+	},
+});
+
+// ============================================================================
 // SIGNATURE — Sign an existing generated PDF with the caller's membership signature
 // ============================================================================
 

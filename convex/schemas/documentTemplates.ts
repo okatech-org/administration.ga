@@ -94,6 +94,14 @@ export const documentTemplatesTable = defineTable({
 	// Versioning metadata (history lives in `documentTemplateVersions`)
 	version: v.optional(v.number()),
 	updatedAt: v.optional(v.number()),
+
+	// ─── Clone provenance ────────────────────────────────────────────────
+	// Set when this template was created via `cloneFromGlobal`. Used to
+	// surface a "source has a newer version" banner and to offer a one-click
+	// sync through `syncFromSource`.
+	clonedFromTemplateId: v.optional(v.id("documentTemplates")),
+	/** Snapshot of the source template's `version` at clone time. */
+	clonedFromVersion: v.optional(v.number()),
 })
 	.index("by_org", ["orgId", "isActive"])
 	.index("by_category", ["category", "isActive"])

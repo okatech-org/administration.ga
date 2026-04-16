@@ -16,8 +16,12 @@ import {
 	LayoutList,
 	Loader2,
 	Search,
+	Sparkles,
 	User,
+	X as XIcon,
 } from "lucide-react";
+import { Checkbox } from "@workspace/ui/components/checkbox";
+import { BulkGenerateDialog } from "@/components/requests/BulkGenerateDialog";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useOrg } from "@/components/org/org-provider";
@@ -474,6 +478,7 @@ export default function DashboardRequests() {
 					loadMore={loadMore}
 					searchQuery={searchQuery}
 					statusFilter={statusFilter}
+					activeOrgId={activeOrgId ?? undefined}
 					t={t}
 				/>
 			) : (
@@ -499,6 +504,7 @@ function TableView({
 	loadMore,
 	searchQuery,
 	statusFilter,
+	activeOrgId,
 	t,
 }: {
 	requests: any[] | undefined;
@@ -507,38 +513,110 @@ function TableView({
 	loadMore: (n: number) => void;
 	searchQuery: string;
 	statusFilter: string;
+	activeOrgId: Id<"orgs"> | undefined;
 	t: any;
 }) {
 	const router = useRouter();
+	const [selected, setSelected] = useState<Set<string>>(() => new Set());
+	const [bulkOpen, setBulkOpen] = useState(false);
+
+	// Ids visible in the current filtered list — used for select-all.
+	const visibleIds = useMemo(
+		() => (requests ?? []).map((r: any) => r._id as string),
+		[requests],
+	);
+	const allSelected =
+		visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
+	const someSelected =
+		!allSelected && visibleIds.some((id) => selected.has(id));
+
+	function toggleOne(id: string, checked: boolean) {
+		setSelected((current) => {
+			const next = new Set(current);
+			if (checked) next.add(id);
+			else next.delete(id);
+			return next;
+		});
+	}
+
+	function toggleAll(checked: boolean) {
+		setSelected((current) => {
+			const next = new Set(current);
+			for (const id of visibleIds) {
+				if (checked) next.add(id);
+				else next.delete(id);
+			}
+			return next;
+		});
+	}
+
+	function clearSelection() {
+		setSelected(new Set());
+	}
+
+	const selectionCount = selected.size;
+
 	return (
-		<div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm overflow-hidden">
-			<Table>
-				<TableHeader>
-					<TableRow className="bg-muted/30 hover:bg-muted/30">
-						<TableHead className="font-semibold">
-							{t("dashboard.requests.table.reference")}
-						</TableHead>
-						<TableHead className="font-semibold">
-							{t("dashboard.requests.table.service")}
-						</TableHead>
-						<TableHead className="font-semibold">
-							{t("dashboard.requests.table.requester")}
-						</TableHead>
-						<TableHead className="font-semibold">
-							{t("dashboard.requests.table.date")}
-						</TableHead>
-						<TableHead className="font-semibold">
-							{t("dashboard.requests.table.status")}
-						</TableHead>
-						<TableHead className="text-right font-semibold">
-							{t("dashboard.requests.table.actions")}
-						</TableHead>
-					</TableRow>
-				</TableHeader>
+		<div className="flex flex-col gap-2">
+			{/* Bulk action bar — appears only when selection > 0 */}
+			{selectionCount > 0 ? (
+				<div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-2 pl-3">
+					<span className="text-sm font-medium">
+						{selectionCount} demande{selectionCount > 1 ? "s" : ""} sélectionnée
+						{selectionCount > 1 ? "s" : ""}
+					</span>
+					<div className="ml-auto flex items-center gap-2">
+						<Button
+							size="sm"
+							onClick={() => setBulkOpen(true)}
+							disabled={!activeOrgId}
+						>
+							<Sparkles className="mr-2 h-4 w-4" />
+							Générer un document
+						</Button>
+						<Button size="sm" variant="ghost" onClick={clearSelection}>
+							<XIcon className="mr-1.5 h-4 w-4" />
+							Effacer
+						</Button>
+					</div>
+				</div>
+			) : null}
+
+			<div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm overflow-hidden">
+				<Table>
+					<TableHeader>
+						<TableRow className="bg-muted/30 hover:bg-muted/30">
+							<TableHead className="w-10">
+								<Checkbox
+									checked={allSelected ? true : someSelected ? "indeterminate" : false}
+									onCheckedChange={(v) => toggleAll(v === true)}
+									aria-label="Tout sélectionner"
+								/>
+							</TableHead>
+							<TableHead className="font-semibold">
+								{t("dashboard.requests.table.reference")}
+							</TableHead>
+							<TableHead className="font-semibold">
+								{t("dashboard.requests.table.service")}
+							</TableHead>
+							<TableHead className="font-semibold">
+								{t("dashboard.requests.table.requester")}
+							</TableHead>
+							<TableHead className="font-semibold">
+								{t("dashboard.requests.table.date")}
+							</TableHead>
+							<TableHead className="font-semibold">
+								{t("dashboard.requests.table.status")}
+							</TableHead>
+							<TableHead className="text-right font-semibold">
+								{t("dashboard.requests.table.actions")}
+							</TableHead>
+						</TableRow>
+					</TableHeader>
 				<TableBody>
 					{isLoading && (requests?.length ?? 0) === 0 ? (
 						<TableRow>
-							<TableCell colSpan={6} className="h-32 text-center">
+							<TableCell colSpan={7} className="h-32 text-center">
 								<div className="flex flex-col items-center gap-2">
 									<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
 									<span className="text-sm text-muted-foreground">
@@ -552,7 +630,7 @@ function TableView({
 						</TableRow>
 					) : requests?.length === 0 ? (
 						<TableRow>
-							<TableCell colSpan={6} className="h-32 text-center">
+							<TableCell colSpan={7} className="h-32 text-center">
 								<div className="flex flex-col items-center gap-3 py-8">
 									<div className="rounded-full bg-muted/60 p-3">
 										<Inbox className="h-6 w-6 text-muted-foreground" />
@@ -587,10 +665,25 @@ function TableView({
 								<TableRow
 									key={request._id}
 									className="cursor-pointer hover:bg-muted/40 transition-colors group"
+									data-selected={selected.has(request._id as string) ? "true" : undefined}
 									onClick={() =>
 										router.push(`/requests/${request.reference}`)
 									}
 								>
+									{/* Selection checkbox */}
+									<TableCell
+										className="w-10"
+										onClick={(e) => e.stopPropagation()}
+									>
+										<Checkbox
+											checked={selected.has(request._id as string)}
+											onCheckedChange={(v) =>
+												toggleOne(request._id as string, v === true)
+											}
+											aria-label="Sélectionner la demande"
+										/>
+									</TableCell>
+
 									{/* Reference */}
 									<TableCell>
 										<div className="flex items-center gap-2">
@@ -715,6 +808,17 @@ function TableView({
 					<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
 				</div>
 			)}
+			</div>
+
+			{activeOrgId ? (
+				<BulkGenerateDialog
+					open={bulkOpen}
+					onOpenChange={setBulkOpen}
+					orgId={activeOrgId}
+					selectedIds={Array.from(selected) as Id<"requests">[]}
+					onCompleted={clearSelection}
+				/>
+			) : null}
 		</div>
 	);
 }

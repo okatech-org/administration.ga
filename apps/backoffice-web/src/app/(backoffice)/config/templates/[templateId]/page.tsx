@@ -18,7 +18,8 @@ import type {
 	TiptapDocument,
 } from "@workspace/document-rendering/types";
 import { renderDocumentToHtml } from "@workspace/document-rendering/html";
-import { FileText, Plus, Save, Trash2 } from "lucide-react";
+import { FileText, History, Lock, Plus, Save, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -136,12 +137,37 @@ export default function EditTemplatePage() {
 				icon={<FileText />}
 				showBackButton
 				actions={
-					<Button onClick={save} disabled={saving}>
-						<Save className="mr-2 h-4 w-4" />
-						{saving ? "Enregistrement…" : "Enregistrer"}
-					</Button>
+					<div className="flex items-center gap-2">
+						<Button variant="outline" asChild>
+							<Link href={`/config/templates/${templateId}/versions`}>
+								<History className="mr-2 h-4 w-4" />
+								Historique
+							</Link>
+						</Button>
+						<Button onClick={save} disabled={saving}>
+							<Save className="mr-2 h-4 w-4" />
+							{saving ? "Enregistrement…" : "Enregistrer"}
+						</Button>
+					</div>
 				}
 			/>
+
+			{template.lockedForEditing ? (
+				<div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/40 dark:bg-amber-900/20">
+					<Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
+					<div className="text-sm">
+						<p className="font-medium text-amber-900 dark:text-amber-200">
+							Modèle verrouillé en édition
+						</p>
+						<p className="mt-0.5 text-amber-900/80 dark:text-amber-300/80">
+							Des documents ont déjà été générés à partir de ce modèle. Toute
+							modification incrémentera la version et archivera l'état courant
+							dans l'historique. Les documents déjà produits restent liés à leur
+							version d'origine et ne sont pas affectés.
+						</p>
+					</div>
+				</div>
+			) : null}
 
 			<FlatCard className="p-4">
 				<PlaceholderManager
