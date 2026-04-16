@@ -22,16 +22,20 @@ import { PlaceholderPicker } from "./PlaceholderPicker";
 export interface TemplateEditorProps {
 	/** Initial Tiptap JSON document. If omitted an empty doc is created. */
 	initialContent?: TiptapDocument;
-	/** Placeholders available to the picker sidebar. */
-	placeholders: PlaceholderDescriptor[];
+	/** Placeholders available to the picker. Used when `showInlineSidebar` is true. */
+	placeholders?: PlaceholderDescriptor[];
 	/** Called on every doc change with the current JSON. */
 	onChange?: (doc: TiptapDocument) => void;
 	/** Read-only mode (e.g. viewing a published version). */
 	editable?: boolean;
 	/** Optional className forwarded to the root container. */
 	className?: string;
-	/** Hide the sidebar (useful in tight layouts or previews). */
-	hideSidebar?: boolean;
+	/**
+	 * When true, render the PlaceholderPicker as a right-hand sidebar INSIDE
+	 * this component. Default: false — the parent page lays out the sidebar
+	 * itself so it can include additional config blocks alongside the picker.
+	 */
+	showInlineSidebar?: boolean;
 	/** Paper format. Controls the aspect ratio of the canvas page. */
 	paperSize?: "A4" | "LETTER";
 	/** Orientation. Controls the aspect ratio too. */
@@ -51,11 +55,11 @@ const PAPER_RATIOS: Record<"A4" | "LETTER", { portrait: string; landscape: strin
 
 export function TemplateEditor({
 	initialContent,
-	placeholders,
+	placeholders = [],
 	onChange,
 	editable = true,
 	className,
-	hideSidebar = false,
+	showInlineSidebar = false,
 	paperSize = "A4",
 	orientation = "portrait",
 }: TemplateEditorProps): ReactElement {
@@ -77,14 +81,17 @@ export function TemplateEditor({
 
 	const aspect = PAPER_RATIOS[paperSize][orientation];
 
-	return (
+	const canvas = (
 		<div
 			className={[
-				"flex h-full min-h-[calc(100vh-20rem)] flex-col gap-4 lg:flex-row",
-				className ?? "",
+				"flex h-full min-h-[calc(100vh-20rem)] flex-col gap-3",
+				showInlineSidebar ? "" : className ?? "",
 			].join(" ")}
 		>
-			{/* ─── Canvas zone — page au format papier ──────────────────── */}
+			{/* Toolbar au-dessus de la page */}
+			<EditorToolbar editor={editor} />
+
+			{/* Page au format papier — remplit la hauteur disponible */}
 			<div className="flex min-h-0 flex-1 justify-center overflow-auto rounded-xl bg-muted/40 p-4 md:p-6">
 				<div
 					className="w-full max-w-[860px] overflow-hidden rounded-sm bg-white text-slate-900 shadow-xl shadow-black/10"
@@ -96,14 +103,17 @@ export function TemplateEditor({
 					/>
 				</div>
 			</div>
+		</div>
+	);
 
-			{/* ─── Sidebar droite — toolbar + variables dynamiques ───────── */}
-			{!hideSidebar ? (
-				<aside className="flex w-full shrink-0 flex-col gap-3 lg:w-80">
-					<EditorToolbar editor={editor} />
-					<PlaceholderPicker editor={editor} placeholders={placeholders} />
-				</aside>
-			) : null}
+	if (!showInlineSidebar) return canvas;
+
+	return (
+		<div className={["flex flex-col gap-4 lg:flex-row", className ?? ""].join(" ")}>
+			<div className="min-w-0 flex-1">{canvas}</div>
+			<aside className="w-full shrink-0 lg:w-80">
+				<PlaceholderPicker editor={editor} placeholders={placeholders} />
+			</aside>
 		</div>
 	);
 }

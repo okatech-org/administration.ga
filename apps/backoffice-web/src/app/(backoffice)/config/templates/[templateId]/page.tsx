@@ -36,6 +36,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { useConvexMutationQuery, useConvexQuery } from "@/integrations/convex/hooks";
 
 const SOURCES: Array<{ value: PlaceholderSource; label: string }> = [
@@ -181,38 +182,44 @@ export default function EditTemplatePage() {
 				</div>
 			) : null}
 
-			{template.isGlobal ? (
-				<FlatCard className="p-4">
-					<OrgTypeAccessPicker
-						value={allowedOrgTypes === null ? undefined : allowedOrgTypes}
-						onChange={(next) => setAllowedOrgTypes(next)}
+			{/* ─── Layout 2 colonnes : éditeur à gauche, config à droite ─── */}
+			<div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
+				{/* Éditeur — toolbar + page A4 */}
+				<FlatCard className="min-w-0 flex-1 p-4">
+					<TemplateEditor
+						initialContent={workingContent}
+						onChange={(doc) => setContent(doc)}
+						paperSize={template.paperSize ?? "A4"}
+						orientation={template.orientation ?? "portrait"}
 					/>
 				</FlatCard>
-			) : null}
 
-			<FlatCard className="p-4">
-				<PlaceholderManager
-					placeholders={workingPlaceholders}
-					onRemove={removePlaceholder}
-					newKey={newKey}
-					onNewKeyChange={setNewKey}
-					newLabel={newLabel}
-					onNewLabelChange={setNewLabel}
-					newSource={newSource}
-					onNewSourceChange={setNewSource}
-					onAdd={addPlaceholder}
-				/>
-			</FlatCard>
+				{/* Sidebar droite — toutes les configurations du modèle */}
+				<aside className="flex w-full shrink-0 flex-col gap-4 lg:w-96 lg:overflow-y-auto">
+					{template.isGlobal ? (
+						<FlatCard className="p-4">
+							<OrgTypeAccessPicker
+								value={allowedOrgTypes === null ? undefined : allowedOrgTypes}
+								onChange={(next) => setAllowedOrgTypes(next)}
+							/>
+						</FlatCard>
+					) : null}
 
-			<FlatCard className="flex-1 p-4">
-				<TemplateEditor
-					initialContent={workingContent}
-					placeholders={workingPlaceholders}
-					onChange={(doc) => setContent(doc)}
-					paperSize={template.paperSize ?? "A4"}
-					orientation={template.orientation ?? "portrait"}
-				/>
-			</FlatCard>
+					<FlatCard className="p-4">
+						<PlaceholderManager
+							placeholders={workingPlaceholders}
+							onRemove={removePlaceholder}
+							newKey={newKey}
+							onNewKeyChange={setNewKey}
+							newLabel={newLabel}
+							onNewLabelChange={setNewLabel}
+							newSource={newSource}
+							onNewSourceChange={setNewSource}
+							onAdd={addPlaceholder}
+						/>
+					</FlatCard>
+				</aside>
+			</div>
 
 			<div className="flex justify-between">
 				<Button variant="ghost" onClick={() => router.push("/config/templates")}>
@@ -248,6 +255,19 @@ function PlaceholderManager({
 	onNewSourceChange: (value: PlaceholderSource) => void;
 	onAdd: () => void;
 }) {
+	const [sheetOpen, setSheetOpen] = useState(false);
+
+	function handleAdd() {
+		// Parent validates (clé vide silencieuse, duplicata avec toast).
+		// On ne ferme la sheet qu'après un ajout effectif pour laisser le toast
+		// d'erreur visible et permettre la correction sans réouvrir la sheet.
+		const trimmed = newKey.trim();
+		if (!trimmed) return;
+		const isDuplicate = placeholders.some((p) => p.key === trimmed);
+		onAdd();
+		if (!isDuplicate) setSheetOpen(false);
+	}
+
 	return (
 		<div className="flex flex-col gap-4">
 			<div>
@@ -283,51 +303,79 @@ function PlaceholderManager({
 				</ul>
 			) : (
 				<div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-					Aucune variable. Ajoute-en ci-dessous pour les insérer dans le texte.
+					Aucune variable pour l'instant.
 				</div>
 			)}
 
-			<div className="grid gap-2 md:grid-cols-[1fr_1fr_160px_auto]">
-				<div className="flex flex-col gap-1">
-					<Label htmlFor="ph-key">Clé</Label>
-					<Input
-						id="ph-key"
-						value={newKey}
-						onChange={(e) => onNewKeyChange(e.target.value)}
-						placeholder="firstName"
-					/>
+			<Button type="button" onClick={() => setSheetOpen(true)}>
+				<Plus className="mr-1 h-4 w-4" />
+				Ajouter une variable
+			</Button>
+
+			<BottomSheet
+				open={sheetOpen}
+				onOpenChange={setSheetOpen}
+				title="Ajouter une variable dynamique"
+				maxHeight="85vh"
+				footer={
+					<div className="flex items-center justify-end gap-2">
+						<Button variant="ghost" onClick={() => setSheetOpen(false)}>
+							Annuler
+						</Button>
+						<Button onClick={handleAdd}>
+							<Plus className="mr-1 h-4 w-4" />
+							Ajouter
+						</Button>
+					</div>
+				}
+			>
+				<div className="flex flex-col gap-4 px-4 py-4 sm:px-5">
+					<p className="text-sm text-muted-foreground">
+						Les variables sont remplies à la génération avec les données de la
+						demande (utilisateur, profil, formulaire, organisation, système).
+					</p>
+
+					<div className="grid gap-4 md:grid-cols-2">
+						<div className="flex flex-col gap-1">
+							<Label htmlFor="ph-key">Clé</Label>
+							<Input
+								id="ph-key"
+								value={newKey}
+								onChange={(e) => onNewKeyChange(e.target.value)}
+								placeholder="firstName"
+								autoFocus
+							/>
+						</div>
+						<div className="flex flex-col gap-1">
+							<Label htmlFor="ph-label">Libellé</Label>
+							<Input
+								id="ph-label"
+								value={newLabel}
+								onChange={(e) => onNewLabelChange(e.target.value)}
+								placeholder="Prénom"
+							/>
+						</div>
+						<div className="flex flex-col gap-1 md:col-span-2">
+							<Label htmlFor="ph-source">Source</Label>
+							<Select
+								value={newSource}
+								onValueChange={(v) => onNewSourceChange(v as PlaceholderSource)}
+							>
+								<SelectTrigger id="ph-source">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{SOURCES.map((s) => (
+										<SelectItem key={s.value} value={s.value}>
+											{s.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
 				</div>
-				<div className="flex flex-col gap-1">
-					<Label htmlFor="ph-label">Libellé</Label>
-					<Input
-						id="ph-label"
-						value={newLabel}
-						onChange={(e) => onNewLabelChange(e.target.value)}
-						placeholder="Prénom"
-					/>
-				</div>
-				<div className="flex flex-col gap-1">
-					<Label htmlFor="ph-source">Source</Label>
-					<Select value={newSource} onValueChange={(v) => onNewSourceChange(v as PlaceholderSource)}>
-						<SelectTrigger id="ph-source">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{SOURCES.map((s) => (
-								<SelectItem key={s.value} value={s.value}>
-									{s.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-				<div className="flex items-end">
-					<Button type="button" onClick={onAdd}>
-						<Plus className="mr-1 h-4 w-4" />
-						Ajouter
-					</Button>
-				</div>
-			</div>
+			</BottomSheet>
 		</div>
 	);
 }
