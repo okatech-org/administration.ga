@@ -74,12 +74,19 @@ export function CallCard({
   const stripeColor = call.lineColor ?? "transparent";
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onFocus}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onFocus?.();
+        }
+      }}
       className={cn(
-        "group relative flex w-full items-center gap-3 rounded-xl border bg-card px-3 py-3 text-left transition-all",
-        "hover:bg-muted/40 hover:shadow-sm",
+        "group relative flex w-full items-center gap-3 rounded-xl border bg-card px-3 py-3 text-left transition-all cursor-pointer",
+        "hover:bg-muted/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         isFocused && "ring-2 ring-primary/40 bg-muted/30",
         call.priority === "urgent" && "border-destructive/50",
       )}
@@ -192,6 +199,6 @@ export function CallCard({
           )}
         </Button>
       </div>
-    </button>
+    </div>
   );
 }

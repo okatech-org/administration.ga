@@ -7,7 +7,8 @@ import {
   useRoomContext,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 import type { Id } from "@convex/_generated/dataModel";
 import type { CallSlot } from "@/stores/call-store";
 
@@ -30,6 +31,12 @@ export function CallRoomMount({
   isActive: boolean;
   onDisconnected: (meetingId: Id<"meetings">) => void;
 }) {
+  // On ne propage `onDisconnected` (qui termine l'appel côté serveur) QUE si
+  // la session LiveKit s'est d'abord réellement établie. Sans ce garde-fou,
+  // une erreur de handshake WebSocket (CSP, réseau, token expiré) terminait
+  // immédiatement l'appel que l'agent venait juste de décrocher.
+  const hasConnectedRef = useRef(false);
+
   if (!slot.token || !slot.wsUrl) return null;
 
   return (
@@ -39,7 +46,25 @@ export function CallRoomMount({
       connect={true}
       audio={false}
       video={false}
-      onDisconnected={() => onDisconnected(slot.meetingId)}
+      onConnected={() => {
+        hasConnectedRef.current = true;
+      }}
+      onError={(err) => {
+        // eslint-disable-next-line no-console
+        console.error("[CallSlot] LiveKit error", err);
+        if (!hasConnectedRef.current) {
+          toast.error(
+            "Connexion audio impossible — vérifiez votre réseau ou rechargez la page.",
+          );
+        }
+      }}
+      onDisconnected={() => {
+        // Connexion jamais établie → erreur de transport, pas un raccroche.
+        // On laisse le slot vivre côté serveur ; la réconciliation ou un
+        // nouveau décrochage s'en occupera.
+        if (!hasConnectedRef.current) return;
+        onDisconnected(slot.meetingId);
+      }}
       // Ne sert qu'à maintenir la connexion en vie — pas d'UI
       className="sr-only"
     >
