@@ -9,7 +9,7 @@ import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import type { VariantProps } from "class-variance-authority";
 import { Loader2, Phone, PhoneOff, ChevronDown, MapPin, MessageCircle } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { buttonVariants } from "@/components/ui/button";
@@ -80,9 +80,19 @@ export function OrgCallButton({
 		api.functions.meetings.setCallRinging,
 	);
 
-	const { token, wsUrl, connect, disconnect } = useMeeting(
+	const { meeting, token, wsUrl, connect, disconnect } = useMeeting(
 		activeMeetingId ?? undefined,
 	);
+
+	// Auto-close when the agent hangs up. The server patches meeting.status
+	// to "ended" via endCallSlot/leave; the reactive query propagates it here.
+	// Without this, the Dialog stayed open forever on the citizen side.
+	useEffect(() => {
+		if (meeting?.status === "ended" && activeMeetingId) {
+			void disconnect(activeMeetingId);
+			setActiveMeetingId(null);
+		}
+	}, [meeting?.status, activeMeetingId, disconnect]);
 
 	const initiateCall = useCallback(async (callLineId?: Id<"callLines">) => {
 		try {
