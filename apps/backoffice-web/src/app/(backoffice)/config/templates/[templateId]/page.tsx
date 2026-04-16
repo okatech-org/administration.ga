@@ -204,11 +204,13 @@ export default function EditTemplatePage() {
 				/>
 			</FlatCard>
 
-			<FlatCard className="p-4">
+			<FlatCard className="flex-1 p-4">
 				<TemplateEditor
 					initialContent={workingContent}
 					placeholders={workingPlaceholders}
 					onChange={(doc) => setContent(doc)}
+					paperSize={template.paperSize ?? "A4"}
+					orientation={template.orientation ?? "portrait"}
 				/>
 			</FlatCard>
 

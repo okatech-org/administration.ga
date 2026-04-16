@@ -130,9 +130,12 @@ export function EditorToolbar({ editor }: { editor: Editor | null }): ReactEleme
 	];
 
 	return (
-		<div className="flex flex-wrap items-center gap-1 rounded-md border border-gray-200 bg-white p-1">
+		<div className="flex flex-wrap items-center gap-1 rounded-md border border-border bg-card p-1 text-foreground">
 			{actions.map((group, gi) => (
-				<div key={gi} className="flex items-center gap-0.5 border-r border-gray-100 pr-1 last:border-r-0">
+				<div
+					key={gi}
+					className="flex items-center gap-0.5 border-r border-border/60 pr-1 last:border-r-0"
+				>
 					{group.map((a) => (
 						<button
 							key={a.label}
@@ -142,7 +145,7 @@ export function EditorToolbar({ editor }: { editor: Editor | null }): ReactEleme
 							title={a.label}
 							aria-label={a.label}
 							data-active={a.isActive ? "true" : undefined}
-							className="flex h-7 w-7 items-center justify-center rounded hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 data-[active=true]:bg-blue-100 data-[active=true]:text-blue-700"
+							className="flex h-7 w-7 items-center justify-center rounded hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 data-[active=true]:bg-primary/15 data-[active=true]:text-primary"
 						>
 							{a.icon}
 						</button>
