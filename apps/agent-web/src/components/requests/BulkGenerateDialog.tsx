@@ -12,23 +12,10 @@ import type { Id } from "@convex/_generated/dataModel";
 import { Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
 	useAuthenticatedConvexQuery,
@@ -54,7 +41,8 @@ export function BulkGenerateDialog({
 	const [publishImmediately, setPublishImmediately] = useState(false);
 	const [running, setRunning] = useState(false);
 
-	// Org-wide list — merges org + global templates from listByOrg.
+	// Org templates available (org-scoped + globals filtered by org type
+	// via the server-side query).
 	const { data: templates } = useAuthenticatedConvexQuery(
 		api.functions.documentTemplates.listByOrg,
 		{ orgId },
@@ -89,53 +77,21 @@ export function BulkGenerateDialog({
 		}
 	}
 
+	const templateOptions: ComboboxOption<string>[] = (templates ?? []).map(
+		(t) => ({
+			value: t._id,
+			label: t.name.fr ?? t.name.en ?? "(sans titre)",
+		}),
+	);
+
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent>
-				<DialogHeader>
-					<DialogTitle>Générer un document pour plusieurs demandes</DialogTitle>
-					<DialogDescription>
-						Le modèle choisi sera appliqué à {selectedIds.length} demande
-						{selectedIds.length > 1 ? "s" : ""}. Les documents apparaîtront
-						dans quelques instants dans chaque demande.
-					</DialogDescription>
-				</DialogHeader>
-
-				<div className="flex flex-col gap-4 py-2">
-					<div className="flex flex-col gap-2">
-						<Label htmlFor="bulk-template">Modèle</Label>
-						<Select
-							value={templateId}
-							onValueChange={(v) => setTemplateId(v as Id<"documentTemplates">)}
-						>
-							<SelectTrigger id="bulk-template">
-								<SelectValue placeholder={templates ? "Choisir un modèle…" : "Chargement…"} />
-							</SelectTrigger>
-							<SelectContent>
-								{(templates ?? []).map((t) => (
-									<SelectItem key={t._id} value={t._id}>
-										{t.name.fr ?? t.name.en ?? "(sans titre)"}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-
-					<label className="flex items-center justify-between gap-3 rounded-md border p-3">
-						<div>
-							<div className="text-sm font-medium">Publier immédiatement</div>
-							<div className="text-xs text-muted-foreground">
-								Force la visibilité citoyen, quel que soit le paramètre du modèle.
-							</div>
-						</div>
-						<Switch
-							checked={publishImmediately}
-							onCheckedChange={setPublishImmediately}
-						/>
-					</label>
-				</div>
-
-				<DialogFooter>
+		<BottomSheet
+			open={open}
+			onOpenChange={onOpenChange}
+			title="Générer un document pour plusieurs demandes"
+			maxHeight="70vh"
+			footer={
+				<div className="flex items-center justify-end gap-2">
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
 						Annuler
 					</Button>
@@ -156,8 +112,41 @@ export function BulkGenerateDialog({
 							</>
 						)}
 					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+				</div>
+			}
+		>
+			<div className="flex flex-col gap-4 px-4 py-4 sm:px-5">
+				<p className="text-sm text-muted-foreground">
+					Le modèle choisi sera appliqué à {selectedIds.length} demande
+					{selectedIds.length > 1 ? "s" : ""}. Les documents apparaîtront dans
+					quelques instants dans chaque demande.
+				</p>
+
+				<div className="flex flex-col gap-2">
+					<Label htmlFor="bulk-template">Modèle</Label>
+					<Combobox
+						options={templateOptions}
+						value={templateId || null}
+						onValueChange={(v) => setTemplateId(v as Id<"documentTemplates">)}
+						placeholder={templates ? "Choisir un modèle…" : "Chargement…"}
+						searchPlaceholder="Rechercher un modèle…"
+						emptyText="Aucun modèle disponible pour cette organisation."
+					/>
+				</div>
+
+				<label className="flex items-center justify-between gap-3 rounded-md border p-3">
+					<div>
+						<div className="text-sm font-medium">Publier immédiatement</div>
+						<div className="text-xs text-muted-foreground">
+							Force la visibilité citoyen, quel que soit le paramètre du modèle.
+						</div>
+					</div>
+					<Switch
+						checked={publishImmediately}
+						onCheckedChange={setPublishImmediately}
+					/>
+				</label>
+			</div>
+		</BottomSheet>
 	);
 }

@@ -30,23 +30,10 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { FlatCard } from "@/components/my-space/flat-card";
 import { Badge } from "@/components/ui/badge";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexActionQuery,
@@ -295,37 +282,21 @@ function GenerateDialog({
 		}
 	}
 
+	const templateOptions: ComboboxOption<string>[] = (templates ?? []).map(
+		(t) => ({
+			value: t._id,
+			label: t.name.fr ?? t.name.en ?? "(sans titre)",
+		}),
+	);
+
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent>
-				<DialogHeader>
-					<DialogTitle>Générer un document officiel</DialogTitle>
-					<DialogDescription>
-						Sélectionne un modèle — les variables seront remplies automatiquement à partir de
-						la demande.
-					</DialogDescription>
-				</DialogHeader>
-
-				<div className="flex flex-col gap-3 py-2">
-					<Label htmlFor="template-picker">Modèle</Label>
-					<Select
-						value={templateId}
-						onValueChange={(v) => setTemplateId(v as Id<"documentTemplates">)}
-					>
-						<SelectTrigger id="template-picker">
-							<SelectValue placeholder={templates ? "Choisir un modèle…" : "Chargement…"} />
-						</SelectTrigger>
-						<SelectContent>
-							{(templates ?? []).map((t) => (
-								<SelectItem key={t._id} value={t._id}>
-									{t.name.fr ?? t.name.en ?? "(sans titre)"}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-
-				<DialogFooter>
+		<BottomSheet
+			open={open}
+			onOpenChange={onOpenChange}
+			title="Générer un document officiel"
+			maxHeight="70vh"
+			footer={
+				<div className="flex items-center justify-end gap-2">
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
 						Annuler
 					</Button>
@@ -342,8 +313,25 @@ function GenerateDialog({
 							</>
 						)}
 					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+				</div>
+			}
+		>
+			<div className="flex flex-col gap-3 px-4 py-4 sm:px-5">
+				<p className="text-sm text-muted-foreground">
+					Sélectionne un modèle — les variables seront remplies automatiquement
+					à partir de la demande.
+				</p>
+				<Label htmlFor="template-picker">Modèle</Label>
+				<Combobox
+					options={templateOptions}
+					value={templateId || null}
+					onValueChange={(v) => setTemplateId(v as Id<"documentTemplates">)}
+					placeholder={templates ? "Choisir un modèle…" : "Chargement…"}
+					searchPlaceholder="Rechercher un modèle…"
+					emptyText="Aucun modèle disponible pour cette organisation."
+				/>
+			</div>
+		</BottomSheet>
 	);
 }
+
