@@ -131,6 +131,7 @@ import type * as functions_warehouse from "../functions/warehouse.js";
 import type * as hippocampe from "../hippocampe.js";
 import type * as http from "../http.js";
 import type * as lib_aggregates from "../lib/aggregates.js";
+import type * as lib_ai_gemini from "../lib/ai/gemini.js";
 import type * as lib_archiveHelpers from "../lib/archiveHelpers.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_bird from "../lib/bird.js";
@@ -409,6 +410,7 @@ declare const fullApi: ApiFromModules<{
   hippocampe: typeof hippocampe;
   http: typeof http;
   "lib/aggregates": typeof lib_aggregates;
+  "lib/ai/gemini": typeof lib_ai_gemini;
   "lib/archiveHelpers": typeof lib_archiveHelpers;
   "lib/auth": typeof lib_auth;
   "lib/bird": typeof lib_bird;

@@ -8,30 +8,7 @@
 
 import { v } from "convex/values";
 import { action } from "../_generated/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-// ═══════════════════════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
-
-const getGemini = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
-  return new GoogleGenerativeAI(apiKey);
-};
-
-const generate = async (prompt: string): Promise<string> => {
-  const genAI = getGemini();
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-  const result = await model.generateContent(prompt);
-  return result.response.text();
-};
-
-const extractJSON = (text: string): unknown => {
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error("No JSON found in AI response");
-  return JSON.parse(match[0]);
-};
+import { extractJSON, generate, multimodalGenerate } from "../lib/ai/gemini";
 
 // Format CV data as context for prompts
 function formatCVContext(cv: {
@@ -575,41 +552,14 @@ Règles :
 - Classe les expériences de la plus récente à la plus ancienne
 - Retourne UNIQUEMENT le JSON, rien d'autre`;
 
-    const genAI = getGemini();
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-    let responseText: string;
-
-    if (args.fileUrl) {
-      // Fetch the file from storage URL
-      const response = await fetch(args.fileUrl);
-      if (!response.ok)
-        throw new Error(`Failed to fetch file: ${response.statusText}`);
-      const arrayBuffer = await response.arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64Data = btoa(binary);
-      const mimeType = args.fileMimeType || "application/pdf";
-
-      const result = await model.generateContent([
-        prompt,
-        {
-          inlineData: {
-            mimeType,
-            data: base64Data,
-          },
-        },
-      ]);
-      responseText = result.response.text();
-    } else {
-      // Text-based parsing
-      const fullPrompt = `${prompt}\n\nVoici le contenu du CV :\n\n${args.text}`;
-      const result = await model.generateContent(fullPrompt);
-      responseText = result.response.text();
-    }
+    const responseText = await multimodalGenerate({
+      prompt,
+      fileUrl: args.fileUrl,
+      fileMimeType: args.fileMimeType,
+      text: args.fileUrl
+        ? undefined
+        : `Voici le contenu du CV :\n\n${args.text}`,
+    });
 
     const parsed = extractJSON(responseText) as Record<string, unknown>;
 
