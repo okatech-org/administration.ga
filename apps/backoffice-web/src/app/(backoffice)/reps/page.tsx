@@ -8,17 +8,14 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Building2, Globe, Layers, Plus } from "lucide-react";
-import { OrganizationType } from "@convex/lib/constants";
 import { ORGANIZATION_TEMPLATES } from "@convex/lib/roles";
 import { MODULE_REGISTRY } from "@convex/lib/moduleCodes";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/ui/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { PageHeader } from "@/components/design-system/page-header";
-import { columns } from "@/components/admin/orgs-columns";
 import { ContinentTabs } from "@/components/shared/ContinentTabs";
-import { getCountryFlag, getCountryName } from "@/lib/country-utils";
+import { RepsGrid } from "@/components/admin/reps-grid";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
@@ -26,14 +23,6 @@ import {
 import { RepsTypesTemplatesTab } from "@/components/admin/reps-types-templates-tab";
 import { RepsModuleMatrixTab } from "@/components/admin/reps-module-matrix-tab";
 
-const ORG_TYPE_LABELS: Record<string, string> = {
-	[OrganizationType.Embassy]: " Ambassade",
-	[OrganizationType.HighRepresentation]: " Haute Représentation",
-	[OrganizationType.GeneralConsulate]: " Consulat Général",
-	[OrganizationType.PermanentMission]: " Mission Permanente",
-	[OrganizationType.HighCommission]: " Haut-Commissariat",
-	[OrganizationType.ThirdParty]: " Partenaire Tiers",
-};
 
 export default function RepresentationsPage() {
 	const { t, i18n } = useTranslation();
@@ -102,55 +91,8 @@ export default function RepresentationsPage() {
 		}
 	};
 
-	// ── Tab 1 specific data ──
-	const countryOptions = useMemo(() => {
-		if (!orgs) return [];
-		const countries = new Map<string, string>();
-		for (const org of orgs) {
-			if (org.country && !countries.has(org.country)) {
-				countries.set(
-					org.country,
-					`${getCountryFlag(org.country)} ${getCountryName(org.country)}`,
-				);
-			}
-		}
-		return [...countries.entries()]
-			.map(([value, label]) => ({ value, label }))
-			.sort((a, b) => a.label.localeCompare(b.label));
-	}, [orgs]);
 
-	const typeOptions = useMemo(() => {
-		if (!orgs) return [];
-		const types = new Set<string>();
-		for (const org of orgs) {
-			if (org.type) types.add(org.type);
-		}
-		return [...types].map((type) => ({
-			value: type,
-			label: ORG_TYPE_LABELS[type] || type,
-		}));
-	}, [orgs]);
 
-	const filterableColumns = [
-		{
-			id: "type",
-			title: lang === "fr" ? "Tous les types" : "All types",
-			options: typeOptions,
-		},
-		{
-			id: "country",
-			title: lang === "fr" ? "Tous les pays" : "All countries",
-			options: countryOptions,
-		},
-		{
-			id: "isActive",
-			title: t("superadmin.users.filters.allStatus"),
-			options: [
-				{ label: t("superadmin.common.active"), value: "true" },
-				{ label: t("superadmin.common.inactive"), value: "false" },
-			],
-		},
-	];
 
 	if (error) {
 		return (
@@ -227,27 +169,11 @@ export default function RepresentationsPage() {
 						getCountryCode={(org: Doc<"orgs">) => org.country}
 					>
 						{(filteredOrgs) => (
-							<FlatCard>
-								<div className="p-3 lg:p-4">
-									<DataTable
-										columns={columns}
-										data={filteredOrgs}
-										searchKeys={[
-											"name",
-											"slug",
-											"address",
-											"contact",
-										]}
-										searchPlaceholder={
-											lang === "fr"
-												? "Rechercher une représentation..."
-												: "Search representations..."
-										}
-										filterableColumns={filterableColumns}
-										isLoading={isPending}
-									/>
-								</div>
-							</FlatCard>
+							<div className="flex flex-col flex-1 mt-2">
+								<RepsGrid
+									data={filteredOrgs}
+								/>
+							</div>
 						)}
 					</ContinentTabs>
 				</TabsContent>
