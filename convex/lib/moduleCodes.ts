@@ -240,7 +240,10 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   [ModuleCode.documents]: {
     code: ModuleCode.documents,
     label: { fr: "iDocument", en: "iDocument" },
-    description: { fr: "Gestion et vérification des documents", en: "Document management and verification" },
+    description: {
+      fr: "Gestion, génération, signature et vérification des documents officiels",
+      en: "Document management, generation, signing and verification",
+    },
     icon: "FileText",
     color: "text-blue-500",
     category: "core",
@@ -249,6 +252,9 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
       { code: "explorer", label: { fr: "Explorateur", en: "Explorer" } },
       { code: "archive", label: { fr: "Archive", en: "Archive" } },
       { code: "retention", label: { fr: "Rétention", en: "Retention" } },
+      { code: "templates", label: { fr: "Modèles de documents", en: "Document templates" } },
+      { code: "generation", label: { fr: "Génération automatique", en: "Auto-generation" } },
+      { code: "signature", label: { fr: "Signature officielle", en: "Official signature" } },
     ],
   },
   [ModuleCode.appointments]: {
@@ -606,9 +612,25 @@ export const MODULE_ACCESS_TASKS: Partial<Record<string, Record<ModuleAccessLeve
     admin: ["requests.view", "requests.create", "requests.process", "requests.validate", "requests.assign", "requests.delete", "requests.complete"],
   },
   documents: {
+    // reader : consultation seulement
     reader: ["documents.view"],
-    editor: ["documents.view", "documents.validate", "documents.generate"],
-    admin: ["documents.view", "documents.validate", "documents.generate", "documents.delete"],
+    // editor : actions courantes (valider, générer, publier au citoyen)
+    editor: [
+      "documents.view",
+      "documents.validate",
+      "documents.generate",
+      "documents.publish",
+    ],
+    // admin : gouvernance (suppression, signature officielle, gestion des modèles)
+    admin: [
+      "documents.view",
+      "documents.validate",
+      "documents.generate",
+      "documents.delete",
+      "documents.publish",
+      "documents.sign",
+      "documents.manage_templates",
+    ],
   },
   appointments: {
     reader: ["appointments.view"],
