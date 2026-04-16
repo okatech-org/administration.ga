@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { motion } from "motion/react";
@@ -43,15 +44,16 @@ import {
 
 type TemplateType = "certificate" | "attestation" | "receipt" | "letter" | "custom";
 
-const TEMPLATE_TYPES: { value: TemplateType; label: string }[] = [
-	{ value: "certificate", label: "Certificat" },
-	{ value: "attestation", label: "Attestation" },
-	{ value: "receipt", label: "Récépissé" },
-	{ value: "letter", label: "Lettre" },
-	{ value: "custom", label: "Personnalisé" },
+const TEMPLATE_TYPES: TemplateType[] = [
+	"certificate",
+	"attestation",
+	"receipt",
+	"letter",
+	"custom",
 ];
 
 export default function ITemplatesPage() {
+	const { t, i18n } = useTranslation();
 	const router = useRouter();
 	const { activeOrgId } = useOrg();
 	const { hasCapability } = useOrgModules();
@@ -65,7 +67,7 @@ export default function ITemplatesPage() {
 
 	if (!activeOrgId) {
 		return (
-			<div className="p-6 text-sm text-muted-foreground">Aucune organisation active.</div>
+			<div className="p-6 text-sm text-muted-foreground">{t("templates.list.noOrg")}</div>
 		);
 	}
 
@@ -85,14 +87,14 @@ export default function ITemplatesPage() {
 					<Files className="h-5 w-5" />
 				</div>
 				<div className="flex-1">
-					<h1 className="text-xl font-bold">Modèles de documents</h1>
+					<h1 className="text-xl font-bold">{t("templates.list.title")}</h1>
 					<p className="text-sm text-muted-foreground">
-						Les modèles de ton organisation utilisés pour générer les documents officiels.
+						{t("templates.list.subtitle")}
 					</p>
 				</div>
 				<Button onClick={() => setCreateOpen(true)}>
 					<Plus className="mr-2 h-4 w-4" />
-					Créer un modèle
+					{t("templates.list.createButton")}
 				</Button>
 			</div>
 
@@ -117,7 +119,7 @@ export default function ITemplatesPage() {
 					) : null}
 					<span className="-mb-px ml-1 flex cursor-default items-center gap-1.5 border-b-2 border-primary px-4 py-2.5 text-sm font-semibold text-primary">
 						<Files className="h-3.5 w-3.5" />
-						Modèles de documents
+						{t("templates.list.title")}
 					</span>
 				</div>
 				<div className="ml-auto flex items-center gap-1.5 pb-0.5">
@@ -132,29 +134,30 @@ export default function ITemplatesPage() {
 				{isLoading ? (
 					<div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
 						<Loader2 className="h-4 w-4 animate-spin" />
-						Chargement…
+						{t("templates.common.loading")}
 					</div>
 				) : !templates || templates.length === 0 ? (
 					<div className="flex flex-col items-center gap-3 p-10 text-center">
 						<Files className="h-8 w-8 text-muted-foreground" />
 						<div>
-							<p className="font-medium">Aucun modèle pour cette organisation</p>
+							<p className="font-medium">{t("templates.list.empty.title")}</p>
 							<p className="mt-1 text-sm text-muted-foreground">
-								Crée un premier modèle — soit vierge, soit à partir d'un modèle existant.
+								{t("templates.list.empty.description")}
 							</p>
 						</div>
 						<Button onClick={() => setCreateOpen(true)}>
 							<Plus className="mr-2 h-4 w-4" />
-							Créer un modèle
+							{t("templates.list.createButton")}
 						</Button>
 					</div>
 				) : (
 					<ul className="divide-y">
-						{templates.map((t) => (
+						{templates.map((tpl) => (
 							<TemplateRow
-								key={t._id}
-								template={t}
+								key={tpl._id}
+								template={tpl}
 								onOpen={(id) => router.push(`/itemplates/${id}`)}
+								locale={i18n.language}
 							/>
 						))}
 					</ul>
@@ -179,12 +182,16 @@ export default function ITemplatesPage() {
 function TemplateRow({
 	template,
 	onOpen,
+	locale,
 }: {
 	template: Doc<"documentTemplates">;
 	onOpen: (id: Id<"documentTemplates">) => void;
+	locale: string;
 }) {
-	const title = template.name.fr ?? template.name.en ?? "(sans titre)";
+	const { t } = useTranslation();
+	const title = template.name.fr ?? template.name.en ?? t("templates.common.untitled");
 	const description = template.description?.fr ?? template.description?.en;
+	const dateLocale = locale.startsWith("fr") ? "fr-FR" : "en-US";
 	const { data: sourceStatus } = useAuthenticatedConvexQuery(
 		api.functions.documentTemplates.getSourceUpdateStatus,
 		{ templateId: template._id },
@@ -201,7 +208,7 @@ function TemplateRow({
 					{sourceStatus ? (
 						<Badge className="gap-1 bg-amber-100 text-amber-900 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-200">
 							<RefreshCw className="h-3 w-3" />
-							Mise à jour disponible
+							{t("templates.list.row.updateAvailable")}
 						</Badge>
 					) : null}
 				</div>
@@ -210,15 +217,20 @@ function TemplateRow({
 				) : null}
 				<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
 					<span className="rounded bg-muted px-1.5 py-0.5 uppercase tracking-wide">
-						{template.templateType}
+						{t(`templates.type.${template.templateType}`, template.templateType)}
 					</span>
 					<span>v{template.version ?? 1}</span>
 					{template.updatedAt ? (
-						<span>— maj {new Date(template.updatedAt).toLocaleDateString("fr-FR")}</span>
+						<span>
+							—{" "}
+							{t("templates.list.row.updatedOn", {
+								date: new Date(template.updatedAt).toLocaleDateString(dateLocale),
+							})}
+						</span>
 					) : null}
 				</div>
 			</div>
-			<span className="text-sm text-muted-foreground">Ouvrir →</span>
+			<span className="text-sm text-muted-foreground">{t("templates.list.row.open")}</span>
 		</li>
 	);
 }
@@ -236,6 +248,7 @@ function CreateTemplateSheet({
 	orgId: Id<"orgs">;
 	onCreated: (id: Id<"documentTemplates">) => void;
 }) {
+	const { t } = useTranslation();
 	const [mode, setMode] = useState<"blank" | "fromExisting">("blank");
 	const [nameFr, setNameFr] = useState("");
 	const [descFr, setDescFr] = useState("");
@@ -260,7 +273,7 @@ function CreateTemplateSheet({
 		try {
 			if (mode === "blank") {
 				if (!nameFr.trim()) {
-					toast.error("Saisis un nom en français");
+					toast.error(t("templates.create.errors.nameRequired"));
 					return;
 				}
 				const id = await createTemplate({
@@ -272,22 +285,22 @@ function CreateTemplateSheet({
 					orgId,
 					isGlobal: false,
 				});
-				toast.success("Modèle créé");
+				toast.success(t("templates.create.toast.created"));
 				onCreated(id);
 			} else {
 				if (!sourceId) {
-					toast.error("Sélectionne un modèle source");
+					toast.error(t("templates.create.errors.selectSource"));
 					return;
 				}
 				const id = await cloneTemplate({
 					sourceTemplateId: sourceId as Id<"documentTemplates">,
 					orgId,
 				});
-				toast.success("Modèle cloné");
+				toast.success(t("templates.create.toast.cloned"));
 				onCreated(id);
 			}
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Échec de la création");
+			toast.error(err instanceof Error ? err.message : t("templates.create.errors.createFailed"));
 		} finally {
 			setBusy(false);
 		}
@@ -297,23 +310,25 @@ function CreateTemplateSheet({
 		<BottomSheet
 			open={open}
 			onOpenChange={onOpenChange}
-			title="Créer un modèle de document"
+			title={t("templates.create.sheetTitle")}
 			maxHeight="85vh"
 			footer={
 				<div className="flex items-center justify-end gap-2">
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
-						Annuler
+						{t("templates.common.cancel")}
 					</Button>
 					<Button onClick={onSubmit} disabled={busy}>
 						{busy ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								Création…
+								{t("templates.create.creating")}
 							</>
 						) : (
 							<>
 								<Plus className="mr-2 h-4 w-4" />
-								{mode === "blank" ? "Créer et rédiger" : "Cloner et ouvrir"}
+								{mode === "blank"
+									? t("templates.create.submitBlank")
+									: t("templates.create.submitClone")}
 							</>
 						)}
 					</Button>
@@ -325,14 +340,14 @@ function CreateTemplateSheet({
 				<div className="grid gap-2 md:grid-cols-2">
 					<ModeCard
 						active={mode === "blank"}
-						title="Modèle vierge"
-						description="Commencer avec une page blanche."
+						title={t("templates.create.modes.blank.title")}
+						description={t("templates.create.modes.blank.description")}
 						onClick={() => setMode("blank")}
 					/>
 					<ModeCard
 						active={mode === "fromExisting"}
-						title="Depuis un modèle existant"
-						description="Cloner un modèle global ou un autre modèle de l'organisation."
+						title={t("templates.create.modes.fromExisting.title")}
+						description={t("templates.create.modes.fromExisting.description")}
 						onClick={() => setMode("fromExisting")}
 					/>
 				</div>
@@ -341,17 +356,17 @@ function CreateTemplateSheet({
 					<div className="flex flex-col gap-4">
 						<div className="grid gap-4 md:grid-cols-2">
 							<div className="flex flex-col gap-1">
-								<Label htmlFor="new-name">Nom (FR)</Label>
+								<Label htmlFor="new-name">{t("templates.create.fields.nameFr")}</Label>
 								<Input
 									id="new-name"
 									value={nameFr}
 									onChange={(e) => setNameFr(e.target.value)}
-									placeholder="Attestation de résidence"
+									placeholder={t("templates.create.fields.namePlaceholder")}
 									autoFocus
 								/>
 							</div>
 							<div className="flex flex-col gap-1">
-								<Label htmlFor="new-type">Type</Label>
+								<Label htmlFor="new-type">{t("templates.create.fields.type")}</Label>
 								<Select
 									value={templateType}
 									onValueChange={(v) => setTemplateType(v as TemplateType)}
@@ -360,9 +375,9 @@ function CreateTemplateSheet({
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										{TEMPLATE_TYPES.map((t) => (
-											<SelectItem key={t.value} value={t.value}>
-												{t.label}
+										{TEMPLATE_TYPES.map((tp) => (
+											<SelectItem key={tp} value={tp}>
+												{t(`templates.type.${tp}`)}
 											</SelectItem>
 										))}
 									</SelectContent>
@@ -370,27 +385,27 @@ function CreateTemplateSheet({
 							</div>
 						</div>
 						<div className="flex flex-col gap-1">
-							<Label htmlFor="new-desc">Description (FR)</Label>
+							<Label htmlFor="new-desc">{t("templates.create.fields.descriptionFr")}</Label>
 							<Textarea
 								id="new-desc"
 								value={descFr}
 								onChange={(e) => setDescFr(e.target.value)}
 								rows={2}
-								placeholder="Courte description expliquant l'usage"
+								placeholder={t("templates.create.fields.descriptionPlaceholder")}
 							/>
 						</div>
 					</div>
 				) : (
 					<div className="flex flex-col gap-2">
-						<Label>Modèle source</Label>
+						<Label>{t("templates.create.fields.sourceTemplate")}</Label>
 						{!sources ? (
 							<div className="flex items-center gap-2 text-sm text-muted-foreground">
 								<Loader2 className="h-4 w-4 animate-spin" />
-								Chargement…
+								{t("templates.common.loading")}
 							</div>
 						) : sources.length === 0 ? (
 							<div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-								Aucun modèle disponible à cloner pour ce type d'organisation.
+								{t("templates.create.noSourcesForOrgType")}
 							</div>
 						) : (
 							<ul className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto">
@@ -405,15 +420,15 @@ function CreateTemplateSheet({
 											<div className="min-w-0 flex-1">
 												<div className="flex items-center gap-2">
 													<span className="truncate font-medium">
-														{s.name.fr ?? s.name.en ?? "(sans titre)"}
+														{s.name.fr ?? s.name.en ?? t("templates.common.untitled")}
 													</span>
 													{s.isGlobal ? (
 														<Badge variant="outline" className="text-xs">
-															Global
+															{t("templates.create.sourceBadge.global")}
 														</Badge>
 													) : (
 														<Badge variant="secondary" className="text-xs">
-															Org
+															{t("templates.create.sourceBadge.org")}
 														</Badge>
 													)}
 												</div>
@@ -423,7 +438,8 @@ function CreateTemplateSheet({
 													</div>
 												) : null}
 												<div className="mt-1 text-[0.7rem] uppercase tracking-wide text-muted-foreground">
-													{s.templateType} — v{s.version ?? 1}
+													{t(`templates.type.${s.templateType}`, s.templateType)} — v
+													{s.version ?? 1}
 												</div>
 											</div>
 										</button>

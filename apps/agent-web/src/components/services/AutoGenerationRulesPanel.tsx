@@ -15,6 +15,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { RequestStatus } from "@convex/lib/constants";
 import { FileText, Loader2, Plus, Save, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useOrg } from "@/components/org/org-provider";
 import { Button } from "@/components/ui/button";
@@ -45,18 +46,33 @@ interface RuleDraft {
 	autoPublish: boolean;
 }
 
-const STATUS_OPTIONS: { value: string; label: string }[] = [
-	{ value: RequestStatus.Draft, label: "Brouillon" },
-	{ value: RequestStatus.Submitted, label: "Soumise" },
-	{ value: RequestStatus.Pending, label: "En attente" },
-	{ value: RequestStatus.UnderReview, label: "En instruction" },
-	{ value: RequestStatus.InProduction, label: "En production" },
-	{ value: RequestStatus.Validated, label: "Validée" },
-	{ value: RequestStatus.AppointmentScheduled, label: "RDV planifié" },
-	{ value: RequestStatus.ReadyForPickup, label: "Prête au retrait" },
-	{ value: RequestStatus.Completed, label: "Terminée" },
-	{ value: RequestStatus.Rejected, label: "Rejetée" },
-	{ value: RequestStatus.Cancelled, label: "Annulée" },
+// Map of constant value → translation key suffix under templates.autoGen.status.*
+const STATUS_KEY_MAP: Record<string, string> = {
+	[RequestStatus.Draft]: "draft",
+	[RequestStatus.Submitted]: "submitted",
+	[RequestStatus.Pending]: "pending",
+	[RequestStatus.UnderReview]: "underReview",
+	[RequestStatus.InProduction]: "inProduction",
+	[RequestStatus.Validated]: "validated",
+	[RequestStatus.AppointmentScheduled]: "appointmentScheduled",
+	[RequestStatus.ReadyForPickup]: "readyForPickup",
+	[RequestStatus.Completed]: "completed",
+	[RequestStatus.Rejected]: "rejected",
+	[RequestStatus.Cancelled]: "cancelled",
+};
+
+const STATUS_VALUES = [
+	RequestStatus.Draft,
+	RequestStatus.Submitted,
+	RequestStatus.Pending,
+	RequestStatus.UnderReview,
+	RequestStatus.InProduction,
+	RequestStatus.Validated,
+	RequestStatus.AppointmentScheduled,
+	RequestStatus.ReadyForPickup,
+	RequestStatus.Completed,
+	RequestStatus.Rejected,
+	RequestStatus.Cancelled,
 ];
 
 export function AutoGenerationRulesPanel({
@@ -64,6 +80,7 @@ export function AutoGenerationRulesPanel({
 }: {
 	orgServiceId: Id<"orgServices">;
 }) {
+	const { t } = useTranslation();
 	const { activeOrgId } = useOrg();
 
 	const { data: orgService, isLoading: loadingService } = useAuthenticatedConvexQuery(
@@ -97,12 +114,12 @@ export function AutoGenerationRulesPanel({
 		return (
 			<div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
 				<Loader2 className="h-4 w-4 animate-spin" />
-				Chargement…
+				{t("templates.autoGen.loading")}
 			</div>
 		);
 	}
 	if (!orgService) {
-		return <div className="p-6 text-sm text-destructive">Service introuvable.</div>;
+		return <div className="p-6 text-sm text-destructive">{t("templates.autoGen.serviceNotFound")}</div>;
 	}
 
 	const draft = rules ?? [];
@@ -133,11 +150,11 @@ export function AutoGenerationRulesPanel({
 	async function save() {
 		for (const [i, rule] of draft.entries()) {
 			if (!rule.templateId) {
-				toast.error(`Règle ${i + 1} : modèle manquant`);
+				toast.error(t("templates.autoGen.errors.missingTemplate", { index: i + 1 }));
 				return;
 			}
 			if (rule.trigger === "on_status_transition" && !rule.toStatus) {
-				toast.error(`Règle ${i + 1} : statut cible manquant`);
+				toast.error(t("templates.autoGen.errors.missingToStatus", { index: i + 1 }));
 				return;
 			}
 		}
@@ -154,9 +171,9 @@ export function AutoGenerationRulesPanel({
 					autoPublish: r.autoPublish,
 				})),
 			});
-			toast.success("Règles enregistrées");
+			toast.success(t("templates.autoGen.savedToast"));
 		} catch (err) {
-			const message = err instanceof Error ? err.message : "Échec de l'enregistrement";
+			const message = err instanceof Error ? err.message : t("templates.autoGen.saveError");
 			toast.error(message);
 		} finally {
 			setSaving(false);
@@ -170,15 +187,14 @@ export function AutoGenerationRulesPanel({
 					<Sparkles className="h-5 w-5" />
 				</div>
 				<div className="min-w-0 flex-1">
-					<h3 className="text-sm font-bold">Génération automatique de documents</h3>
+					<h3 className="text-sm font-bold">{t("templates.autoGen.title")}</h3>
 					<p className="mt-0.5 text-xs text-muted-foreground">
-						Configure les modèles qui seront produits automatiquement à la
-						soumission d'une demande ou sur transition de statut.
+						{t("templates.autoGen.description")}
 					</p>
 				</div>
 				<Button onClick={save} disabled={saving} size="sm">
 					<Save className="mr-2 h-4 w-4" />
-					{saving ? "Enregistrement…" : "Enregistrer"}
+					{saving ? t("templates.autoGen.saving") : t("templates.autoGen.saveButton")}
 				</Button>
 			</div>
 
@@ -187,15 +203,14 @@ export function AutoGenerationRulesPanel({
 					<div className="flex flex-col items-center gap-3 py-8 text-center">
 						<FileText className="h-8 w-8 text-muted-foreground" />
 						<div>
-							<p className="font-medium">Aucune règle configurée</p>
+							<p className="font-medium">{t("templates.autoGen.empty.title")}</p>
 							<p className="mt-1 text-sm text-muted-foreground">
-								Ajoute une règle pour déclencher une génération à la soumission
-								ou sur transition de statut.
+								{t("templates.autoGen.empty.description")}
 							</p>
 						</div>
 						<Button onClick={addRule}>
 							<Plus className="mr-2 h-4 w-4" />
-							Ajouter une règle
+							{t("templates.autoGen.empty.addButton")}
 						</Button>
 					</div>
 				) : (
@@ -218,7 +233,7 @@ export function AutoGenerationRulesPanel({
 						))}
 						<Button variant="outline" onClick={addRule}>
 							<Plus className="mr-2 h-4 w-4" />
-							Ajouter une règle
+							{t("templates.autoGen.addAnotherButton")}
 						</Button>
 					</div>
 				)}
@@ -242,20 +257,28 @@ function RuleEditor({
 	onChange: (changes: Partial<RuleDraft>) => void;
 	onRemove: () => void;
 }) {
-	const templateOptions: ComboboxOption<string>[] = templates.map((t) => ({
-		value: t._id,
-		label: t.name.fr ?? t.name.en ?? "(sans titre)",
+	const { t } = useTranslation();
+	const templateOptions: ComboboxOption<string>[] = templates.map((tpl) => ({
+		value: tpl._id,
+		label: tpl.name.fr ?? tpl.name.en ?? t("templates.common.untitled"),
 	}));
+
+	function statusLabel(value: string): string {
+		const key = STATUS_KEY_MAP[value];
+		return key ? t(`templates.autoGen.status.${key}`) : value;
+	}
 
 	return (
 		<div className="rounded-xl border bg-background p-4">
 			<header className="mb-3 flex items-center justify-between gap-2">
-				<span className="text-sm font-semibold">Règle {index}</span>
+				<span className="text-sm font-semibold">
+					{t("templates.autoGen.rule.title", { index })}
+				</span>
 				<Button
 					size="icon"
 					variant="ghost"
 					onClick={onRemove}
-					aria-label="Supprimer la règle"
+					aria-label={t("templates.autoGen.rule.removeAria")}
 				>
 					<Trash2 className="h-4 w-4 text-muted-foreground" />
 				</Button>
@@ -263,7 +286,7 @@ function RuleEditor({
 
 			<div className="grid gap-3 md:grid-cols-2">
 				<div className="flex flex-col gap-1">
-					<Label>Déclencheur</Label>
+					<Label>{t("templates.autoGen.rule.trigger")}</Label>
 					<Select
 						value={rule.trigger}
 						onValueChange={(v) =>
@@ -279,32 +302,38 @@ function RuleEditor({
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="on_submission">À la soumission citoyen</SelectItem>
+							<SelectItem value="on_submission">
+								{t("templates.autoGen.rule.triggerOptions.submission")}
+							</SelectItem>
 							<SelectItem value="on_status_transition">
-								Sur transition de statut
+								{t("templates.autoGen.rule.triggerOptions.transition")}
 							</SelectItem>
 						</SelectContent>
 					</Select>
 				</div>
 
 				<div className="flex flex-col gap-1">
-					<Label>Modèle</Label>
+					<Label>{t("templates.common.templateLabel")}</Label>
 					<Combobox
 						options={templateOptions}
 						value={rule.templateId || null}
 						onValueChange={(v) =>
 							onChange({ templateId: v as Id<"documentTemplates"> })
 						}
-						placeholder={templatesLoading ? "Chargement…" : "Choisir un modèle"}
-						searchPlaceholder="Rechercher un modèle…"
-						emptyText="Aucun modèle disponible."
+						placeholder={
+							templatesLoading
+								? t("templates.common.loading")
+								: t("templates.common.chooseTemplate")
+						}
+						searchPlaceholder={t("templates.common.searchTemplate")}
+						emptyText={t("templates.common.noTemplatesAvailable")}
 					/>
 				</div>
 
 				{rule.trigger === "on_status_transition" ? (
 					<>
 						<div className="flex flex-col gap-1">
-							<Label>Depuis le statut (optionnel)</Label>
+							<Label>{t("templates.autoGen.rule.fromStatus")}</Label>
 							<Select
 								value={rule.fromStatus ?? "__any__"}
 								onValueChange={(v) =>
@@ -312,31 +341,33 @@ function RuleEditor({
 								}
 							>
 								<SelectTrigger>
-									<SelectValue placeholder="Tout statut" />
+									<SelectValue placeholder={t("templates.autoGen.rule.anyStatus")} />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="__any__">Tout statut</SelectItem>
-									{STATUS_OPTIONS.map((s) => (
-										<SelectItem key={s.value} value={s.value}>
-											{s.label}
+									<SelectItem value="__any__">
+										{t("templates.autoGen.rule.anyStatus")}
+									</SelectItem>
+									{STATUS_VALUES.map((s) => (
+										<SelectItem key={s} value={s}>
+											{statusLabel(s)}
 										</SelectItem>
 									))}
 								</SelectContent>
 							</Select>
 						</div>
 						<div className="flex flex-col gap-1">
-							<Label>Vers le statut</Label>
+							<Label>{t("templates.autoGen.rule.toStatus")}</Label>
 							<Select
 								value={rule.toStatus ?? ""}
 								onValueChange={(v) => onChange({ toStatus: v || undefined })}
 							>
 								<SelectTrigger>
-									<SelectValue placeholder="Statut cible (requis)" />
+									<SelectValue placeholder={t("templates.autoGen.rule.toStatusPlaceholder")} />
 								</SelectTrigger>
 								<SelectContent>
-									{STATUS_OPTIONS.map((s) => (
-										<SelectItem key={s.value} value={s.value}>
-											{s.label}
+									{STATUS_VALUES.map((s) => (
+										<SelectItem key={s} value={s}>
+											{statusLabel(s)}
 										</SelectItem>
 									))}
 								</SelectContent>
@@ -349,9 +380,11 @@ function RuleEditor({
 			<div className="mt-4 grid gap-3 md:grid-cols-2">
 				<label className="flex items-center justify-between gap-3 rounded-md border p-3">
 					<div>
-						<div className="text-sm font-medium">Signer automatiquement</div>
+						<div className="text-sm font-medium">
+							{t("templates.autoGen.rule.autoSign.title")}
+						</div>
 						<div className="text-xs text-muted-foreground">
-							Apposer la signature de l'agent à la génération.
+							{t("templates.autoGen.rule.autoSign.description")}
 						</div>
 					</div>
 					<Switch
@@ -361,9 +394,11 @@ function RuleEditor({
 				</label>
 				<label className="flex items-center justify-between gap-3 rounded-md border p-3">
 					<div>
-						<div className="text-sm font-medium">Publier au citoyen</div>
+						<div className="text-sm font-medium">
+							{t("templates.autoGen.rule.autoPublish.title")}
+						</div>
 						<div className="text-xs text-muted-foreground">
-							Rendre le document visible immédiatement après génération.
+							{t("templates.autoGen.rule.autoPublish.description")}
 						</div>
 					</div>
 					<Switch

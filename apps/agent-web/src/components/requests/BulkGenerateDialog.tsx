@@ -11,6 +11,7 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ export function BulkGenerateDialog({
 	selectedIds,
 	onCompleted,
 }: Props) {
+	const { t } = useTranslation();
 	const [templateId, setTemplateId] = useState<Id<"documentTemplates"> | "">("");
 	const [publishImmediately, setPublishImmediately] = useState(false);
 	const [running, setRunning] = useState(false);
@@ -61,16 +63,12 @@ export function BulkGenerateDialog({
 				templateId,
 				autoPublishOverride: publishImmediately || undefined,
 			});
-			toast.success(
-				`${res.scheduled} génération${res.scheduled > 1 ? "s" : ""} planifiée${
-					res.scheduled > 1 ? "s" : ""
-				}`,
-			);
+			toast.success(t("templates.bulk.scheduled", { count: res.scheduled }));
 			onOpenChange(false);
 			onCompleted?.();
 			setTemplateId("");
 		} catch (err) {
-			const message = err instanceof Error ? err.message : "Échec de l'opération";
+			const message = err instanceof Error ? err.message : t("templates.bulk.actionFailed");
 			toast.error(message);
 		} finally {
 			setRunning(false);
@@ -78,9 +76,9 @@ export function BulkGenerateDialog({
 	}
 
 	const templateOptions: ComboboxOption<string>[] = (templates ?? []).map(
-		(t) => ({
-			value: t._id,
-			label: t.name.fr ?? t.name.en ?? "(sans titre)",
+		(tpl) => ({
+			value: tpl._id,
+			label: tpl.name.fr ?? tpl.name.en ?? t("templates.common.untitled"),
 		}),
 	);
 
@@ -88,12 +86,12 @@ export function BulkGenerateDialog({
 		<BottomSheet
 			open={open}
 			onOpenChange={onOpenChange}
-			title="Générer un document pour plusieurs demandes"
+			title={t("templates.bulk.title")}
 			maxHeight="70vh"
 			footer={
 				<div className="flex items-center justify-end gap-2">
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
-						Annuler
+						{t("templates.common.cancel")}
 					</Button>
 					<Button
 						onClick={onRun}
@@ -102,13 +100,12 @@ export function BulkGenerateDialog({
 						{running ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								Planification…
+								{t("templates.bulk.submitting")}
 							</>
 						) : (
 							<>
 								<Sparkles className="mr-2 h-4 w-4" />
-								Générer pour {selectedIds.length} demande
-								{selectedIds.length > 1 ? "s" : ""}
+								{t("templates.bulk.submit", { count: selectedIds.length })}
 							</>
 						)}
 					</Button>
@@ -117,28 +114,30 @@ export function BulkGenerateDialog({
 		>
 			<div className="flex flex-col gap-4 px-4 py-4 sm:px-5">
 				<p className="text-sm text-muted-foreground">
-					Le modèle choisi sera appliqué à {selectedIds.length} demande
-					{selectedIds.length > 1 ? "s" : ""}. Les documents apparaîtront dans
-					quelques instants dans chaque demande.
+					{t("templates.bulk.description", { count: selectedIds.length })}
 				</p>
 
 				<div className="flex flex-col gap-2">
-					<Label htmlFor="bulk-template">Modèle</Label>
+					<Label htmlFor="bulk-template">{t("templates.common.templateLabel")}</Label>
 					<Combobox
 						options={templateOptions}
 						value={templateId || null}
 						onValueChange={(v) => setTemplateId(v as Id<"documentTemplates">)}
-						placeholder={templates ? "Choisir un modèle…" : "Chargement…"}
-						searchPlaceholder="Rechercher un modèle…"
-						emptyText="Aucun modèle disponible pour cette organisation."
+						placeholder={
+							templates ? t("templates.common.chooseTemplate") : t("templates.common.loading")
+						}
+						searchPlaceholder={t("templates.common.searchTemplate")}
+						emptyText={t("templates.common.noTemplatesAvailableForOrg")}
 					/>
 				</div>
 
 				<label className="flex items-center justify-between gap-3 rounded-md border p-3">
 					<div>
-						<div className="text-sm font-medium">Publier immédiatement</div>
+						<div className="text-sm font-medium">
+							{t("templates.bulk.publish.title")}
+						</div>
 						<div className="text-xs text-muted-foreground">
-							Force la visibilité citoyen, quel que soit le paramètre du modèle.
+							{t("templates.bulk.publish.description")}
 						</div>
 					</div>
 					<Switch

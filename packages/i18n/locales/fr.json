@@ -2498,10 +2498,17 @@
 			"edit": {
 				"title": "Modifier le service",
 				"serviceInfo": "Informations du service",
+				"serviceInfoDescription": "Configuration générale du service",
 				"activate": "Activer le service",
+				"activateDescription": "Rendre ce service visible pour les usagers",
 				"fee": "Frais de dossier",
 				"estimatedDays": "Délai estimé (jours)",
-				"requiresAppointment": "Nécessite un rendez-vous",
+				"requiresAppointment": "Rendez-vous requis (dépôt)",
+				"requiresAppointmentForPickup": "Rendez-vous requis (retrait)",
+				"depositInstructions": "Instructions de dépôt",
+				"depositInstructionsPlaceholder": "Documents à apporter, présentation physique requise, etc.",
+				"pickupInstructions": "Instructions de retrait",
+				"pickupInstructionsPlaceholder": "Apporter le récépissé, procuration acceptée, etc.",
 				"instructions": "Instructions spécifiques",
 				"instructionsPlaceholder": "Instructions détaillées pour le demandeur...",
 				"save": "Enregistrer les modifications",
@@ -2511,7 +2518,8 @@
 				"back": "Retour",
 				"tabs": {
 					"general": "Général",
-					"form": "Formulaire"
+					"form": "Formulaire",
+					"autoGeneration": "Génération auto"
 				}
 			},
 			"status": {
@@ -4782,6 +4790,322 @@
 			"receipt": "Récépissé",
 			"letter": "Lettre",
 			"custom": "Personnalisé"
+		},
+		"common": {
+			"loading": "Chargement…",
+			"saving": "Enregistrement…",
+			"save": "Enregistrer",
+			"cancel": "Annuler",
+			"create": "Créer",
+			"untitled": "(sans titre)",
+			"untitledTemplate": "Modèle sans titre",
+			"chooseTemplate": "Choisir un modèle",
+			"searchTemplate": "Rechercher un modèle…",
+			"templateLabel": "Modèle",
+			"noTemplatesAvailable": "Aucun modèle disponible.",
+			"noTemplatesAvailableForOrg": "Aucun modèle disponible pour cette organisation."
+		},
+		"list": {
+			"title": "Modèles de documents",
+			"subtitle": "Les modèles de ton organisation utilisés pour générer les documents officiels.",
+			"noOrg": "Aucune organisation active.",
+			"createButton": "Créer un modèle",
+			"empty": {
+				"title": "Aucun modèle pour cette organisation",
+				"description": "Crée un premier modèle — soit vierge, soit à partir d'un modèle existant."
+			},
+			"row": {
+				"open": "Ouvrir →",
+				"updateAvailable": "Mise à jour disponible",
+				"updatedOn": "maj {{date}}"
+			}
+		},
+		"create": {
+			"sheetTitle": "Créer un modèle de document",
+			"submitBlank": "Créer et rédiger",
+			"submitClone": "Cloner et ouvrir",
+			"creating": "Création…",
+			"modes": {
+				"blank": {
+					"title": "Modèle vierge",
+					"description": "Commencer avec une page blanche."
+				},
+				"fromExisting": {
+					"title": "Depuis un modèle existant",
+					"description": "Cloner un modèle global ou un autre modèle de l'organisation."
+				}
+			},
+			"fields": {
+				"nameFr": "Nom (FR)",
+				"namePlaceholder": "Attestation de résidence",
+				"type": "Type",
+				"descriptionFr": "Description (FR)",
+				"descriptionPlaceholder": "Courte description expliquant l'usage",
+				"sourceTemplate": "Modèle source"
+			},
+			"errors": {
+				"nameRequired": "Saisis un nom en français",
+				"selectSource": "Sélectionne un modèle source",
+				"createFailed": "Échec de la création"
+			},
+			"toast": {
+				"created": "Modèle créé",
+				"cloned": "Modèle cloné"
+			},
+			"noSourcesForOrgType": "Aucun modèle disponible à cloner pour ce type d'organisation.",
+			"sourceBadge": {
+				"global": "Global",
+				"org": "Org"
+			}
+		},
+		"edit": {
+			"backToList": "Retour à la liste",
+			"typeLabel": "Type : {{type}}",
+			"saved": "Modèle enregistré",
+			"saveError": "Échec de l'enregistrement",
+			"syncBanner": {
+				"title": "Mise à jour disponible depuis le modèle global",
+				"description": "Le modèle source est en version {{sourceVersion}}, ton clone est basé sur la version {{cloneVersion}}. La synchronisation archive ta version actuelle avant d'appliquer le contenu source — aucune perte.",
+				"button": "Synchroniser",
+				"syncing": "Synchronisation…",
+				"success": "Modèle synchronisé depuis le modèle global",
+				"error": "Échec de la synchronisation"
+			},
+			"lockBanner": {
+				"title": "Modèle verrouillé en édition",
+				"description": "Des documents ont déjà été générés à partir de ce modèle. Toute modification incrémentera la version et archivera l'état courant dans l'historique. Les documents déjà produits restent liés à leur version d'origine.",
+				"descriptionExtended": "Des documents ont déjà été générés à partir de ce modèle. Toute modification incrémentera la version et archivera l'état courant dans l'historique. Les documents déjà produits restent liés à leur version d'origine et ne sont pas affectés."
+			}
+		},
+		"placeholders": {
+			"title": "Variables dynamiques",
+			"description": "Les variables déclarées ici apparaissent dans l'éditeur et sont remplies à la génération avec les données de la demande.",
+			"empty": "Aucune variable pour l'instant.",
+			"addButton": "Ajouter une variable",
+			"addSheet": {
+				"title": "Ajouter une variable dynamique",
+				"description": "Les variables sont remplies à la génération avec les données de la demande (utilisateur, profil, formulaire, organisation, système).",
+				"submit": "Ajouter"
+			},
+			"fields": {
+				"key": "Clé",
+				"keyPlaceholder": "firstName",
+				"label": "Libellé",
+				"labelPlaceholder": "Prénom",
+				"source": "Source"
+			},
+			"removeAria": "Supprimer {{key}}",
+			"duplicateKey": "Clé déjà utilisée",
+			"sources": {
+				"user": "Utilisateur",
+				"profile": "Profil",
+				"request": "Demande",
+				"formData": "Formulaire",
+				"org": "Organisation",
+				"system": "Système"
+			},
+			"picker": {
+				"emptyTitle": "Aucune variable configurée",
+				"emptyHint": "Déclare les variables dynamiques du template dans la configuration pour pouvoir les insérer dans le texte.",
+				"header": "Variables dynamiques",
+				"instructions": "Clique pour insérer au curseur. La valeur sera remplacée à la génération."
+			}
+		},
+		"editor": {
+			"toolbar": {
+				"bold": "Gras",
+				"italic": "Italique",
+				"underline": "Souligné",
+				"strike": "Barré",
+				"alignLeft": "Aligner à gauche",
+				"alignCenter": "Centrer",
+				"alignRight": "Aligner à droite",
+				"alignJustify": "Justifier",
+				"bulletList": "Liste à puces",
+				"orderedList": "Liste numérotée",
+				"quote": "Citation",
+				"horizontalRule": "Trait horizontal",
+				"undo": "Annuler",
+				"redo": "Rétablir"
+			}
+		},
+		"autoGen": {
+			"tab": "Génération auto",
+			"title": "Génération automatique de documents",
+			"description": "Configure les modèles qui seront produits automatiquement à la soumission d'une demande ou sur transition de statut.",
+			"saveButton": "Enregistrer",
+			"saving": "Enregistrement…",
+			"savedToast": "Règles enregistrées",
+			"saveError": "Échec de l'enregistrement",
+			"loading": "Chargement…",
+			"serviceNotFound": "Service introuvable.",
+			"empty": {
+				"title": "Aucune règle configurée",
+				"description": "Ajoute une règle pour déclencher une génération à la soumission ou sur transition de statut.",
+				"addButton": "Ajouter une règle"
+			},
+			"addAnotherButton": "Ajouter une règle",
+			"rule": {
+				"title": "Règle {{index}}",
+				"removeAria": "Supprimer la règle",
+				"trigger": "Déclencheur",
+				"triggerOptions": {
+					"submission": "À la soumission citoyen",
+					"transition": "Sur transition de statut"
+				},
+				"fromStatus": "Depuis le statut (optionnel)",
+				"anyStatus": "Tout statut",
+				"toStatus": "Vers le statut",
+				"toStatusPlaceholder": "Statut cible (requis)",
+				"autoSign": {
+					"title": "Signer automatiquement",
+					"description": "Apposer la signature de l'agent à la génération."
+				},
+				"autoPublish": {
+					"title": "Publier au citoyen",
+					"description": "Rendre le document visible immédiatement après génération."
+				}
+			},
+			"errors": {
+				"missingTemplate": "Règle {{index}} : modèle manquant",
+				"missingToStatus": "Règle {{index}} : statut cible manquant"
+			},
+			"status": {
+				"draft": "Brouillon",
+				"submitted": "Soumise",
+				"pending": "En attente",
+				"underReview": "En instruction",
+				"inProduction": "En production",
+				"validated": "Validée",
+				"appointmentScheduled": "RDV planifié",
+				"readyForPickup": "Prête au retrait",
+				"completed": "Terminée",
+				"rejected": "Rejetée",
+				"cancelled": "Annulée"
+			}
+		},
+		"generate": {
+			"section": {
+				"title": "Documents officiels",
+				"loading": "Chargement…",
+				"empty": "Aucun document généré pour cette demande.",
+				"generateButton": "Générer"
+			},
+			"sheet": {
+				"title": "Générer un document officiel",
+				"description": "Sélectionne un modèle — les variables seront remplies automatiquement à partir de la demande.",
+				"submit": "Générer",
+				"submitting": "Génération…"
+			},
+			"row": {
+				"fallbackLabel": "Document",
+				"signLabel": "Signer le document",
+				"publishLabel": "Publier au citoyen",
+				"unpublishLabel": "Retirer du citoyen",
+				"downloadLabel": "Télécharger"
+			},
+			"chip": {
+				"signed": "Signé",
+				"pendingSignature": "En attente",
+				"unsigned": "Non signé",
+				"published": "Publié"
+			},
+			"toast": {
+				"generated": "Document généré",
+				"generationFailed": "Échec de la génération",
+				"signed": "Document signé",
+				"signFailed": "Échec de la signature",
+				"published": "Document publié au citoyen",
+				"unpublished": "Document retiré de la vue citoyen",
+				"actionFailed": "Échec de l'opération"
+			}
+		},
+		"bulk": {
+			"title": "Générer un document pour plusieurs demandes",
+			"description_one": "Le modèle choisi sera appliqué à {{count}} demande. Les documents apparaîtront dans quelques instants dans chaque demande.",
+			"description_other": "Le modèle choisi sera appliqué à {{count}} demandes. Les documents apparaîtront dans quelques instants dans chaque demande.",
+			"submit_one": "Générer pour {{count}} demande",
+			"submit_other": "Générer pour {{count}} demandes",
+			"submitting": "Planification…",
+			"publish": {
+				"title": "Publier immédiatement",
+				"description": "Force la visibilité citoyen, quel que soit le paramètre du modèle."
+			},
+			"scheduled_one": "{{count}} génération planifiée",
+			"scheduled_other": "{{count}} générations planifiées",
+			"actionFailed": "Échec de l'opération"
+		},
+		"global": {
+			"page": {
+				"title": "Modèles de documents globaux",
+				"subtitle": "Bibliothèque officielle clonable par les organisations",
+				"newTemplate": "Nouveau modèle",
+				"loading": "Chargement…",
+				"empty": {
+					"title": "Aucun modèle global",
+					"description": "Crée un premier modèle pour alimenter la bibliothèque.",
+					"createButton": "Créer un modèle"
+				}
+			},
+			"new": {
+				"title": "Nouveau modèle global",
+				"subtitle": "Configuration initiale — le contenu se rédige à l'étape suivante",
+				"fields": {
+					"nameFr": "Nom (FR)",
+					"namePlaceholder": "Attestation de résidence",
+					"type": "Type",
+					"descriptionFr": "Description (FR)",
+					"descriptionPlaceholder": "Courte description expliquant l'usage",
+					"category": "Catégorie",
+					"paperSize": "Format",
+					"paperSizeA4": "A4",
+					"paperSizeLetter": "US Letter",
+					"orientation": "Orientation",
+					"orientationPortrait": "Portrait",
+					"orientationLandscape": "Paysage"
+				},
+				"autoPublish": {
+					"title": "Publication automatique au citoyen",
+					"description": "Si activé, les documents générés apparaissent immédiatement pour le citoyen."
+				},
+				"requireSignature": {
+					"title": "Signature requise",
+					"description": "Empêche la publication tant que le document n'a pas été signé."
+				},
+				"submit": "Créer et rédiger",
+				"submitting": "Création…",
+				"errors": {
+					"nameRequired": "Saisis un nom en français",
+					"orgTypesRequired": "Coche au moins un type d'organisation autorisé ou désactive la restriction"
+				}
+			},
+			"edit": {
+				"subtitle": "Type: {{type}} — version {{version}}",
+				"untitled": "Modèle sans titre",
+				"history": "Historique"
+			},
+			"versions": {
+				"pageTitle": "Historique — {{title}}",
+				"currentVersion": "Version courante : v{{version}}",
+				"loading": "Chargement…",
+				"empty": {
+					"title": "Aucune version archivée",
+					"description": "Les versions apparaîtront ici dès la première modification du contenu."
+				},
+				"row": {
+					"archivedOn": "Archivé le {{date}}",
+					"restoreButton": "Restaurer"
+				},
+				"restore": {
+					"dialogTitle": "Restaurer la version {{version}} ?",
+					"dialogDescription": "La version actuelle (v{{currentVersion}}) sera archivée avant la restauration — rien n'est perdu. Le modèle actif deviendra la version {{nextVersion}}, identique au contenu de la version {{version}}.",
+					"cancel": "Annuler",
+					"confirm": "Restaurer",
+					"restoring": "Restauration…",
+					"success": "Version {{version}} restaurée (nouvelle version {{nextVersion}})",
+					"error": "Échec de la restauration"
+				}
+			}
 		}
 	},
 	"home": {

@@ -1473,19 +1473,32 @@
 			"edit": {
 				"title": "Service Configuration",
 				"serviceInfo": "Service information",
+				"serviceInfoDescription": "General service configuration",
 				"notFound": "Service not found",
 				"back": "Back to services",
 				"activate": "Activate this service",
+				"activateDescription": "Make this service visible to users",
 				"fee": "Fee",
 				"currency": "Currency",
 				"estimatedDays": "Estimated days",
-				"requiresAppointment": "Requires appointment",
+				"requiresAppointment": "Appointment required (deposit)",
+				"requiresAppointmentForPickup": "Appointment required (pickup)",
+				"depositInstructions": "Deposit instructions",
+				"depositInstructionsPlaceholder": "Documents to bring, in-person presentation required, etc.",
+				"pickupInstructions": "Pickup instructions",
+				"pickupInstructionsPlaceholder": "Bring the receipt, proxy accepted, etc.",
 				"instructions": "Custom instructions",
 				"instructionsPlaceholder": "Instructions for users...",
 				"save": "Save",
 				"saving": "Saving...",
 				"saved": "Configuration saved",
-				"saveError": "Save error"
+				"saveError": "Save error",
+				"noOrgError": "Representation not found",
+				"tabs": {
+					"general": "General",
+					"form": "Form",
+					"autoGeneration": "Auto-generation"
+				}
 			},
 			"activate": "Activate a service",
 			"empty": {
@@ -4187,6 +4200,322 @@
 			"receipt": "Receipt",
 			"letter": "Letter",
 			"custom": "Custom"
+		},
+		"common": {
+			"loading": "Loading…",
+			"saving": "Saving…",
+			"save": "Save",
+			"cancel": "Cancel",
+			"create": "Create",
+			"untitled": "(untitled)",
+			"untitledTemplate": "Untitled template",
+			"chooseTemplate": "Choose a template",
+			"searchTemplate": "Search a template…",
+			"templateLabel": "Template",
+			"noTemplatesAvailable": "No template available.",
+			"noTemplatesAvailableForOrg": "No template available for this organization."
+		},
+		"list": {
+			"title": "Document templates",
+			"subtitle": "Your organization templates used to generate official documents.",
+			"noOrg": "No active organization.",
+			"createButton": "Create a template",
+			"empty": {
+				"title": "No template for this organization",
+				"description": "Create a first template — either blank, or from an existing one."
+			},
+			"row": {
+				"open": "Open →",
+				"updateAvailable": "Update available",
+				"updatedOn": "updated {{date}}"
+			}
+		},
+		"create": {
+			"sheetTitle": "Create a document template",
+			"submitBlank": "Create and edit",
+			"submitClone": "Clone and open",
+			"creating": "Creating…",
+			"modes": {
+				"blank": {
+					"title": "Blank template",
+					"description": "Start from a blank page."
+				},
+				"fromExisting": {
+					"title": "From an existing template",
+					"description": "Clone a global template or another template from the organization."
+				}
+			},
+			"fields": {
+				"nameFr": "Name (FR)",
+				"namePlaceholder": "Residence certificate",
+				"type": "Type",
+				"descriptionFr": "Description (FR)",
+				"descriptionPlaceholder": "Short description explaining the use",
+				"sourceTemplate": "Source template"
+			},
+			"errors": {
+				"nameRequired": "Enter a French name",
+				"selectSource": "Select a source template",
+				"createFailed": "Creation failed"
+			},
+			"toast": {
+				"created": "Template created",
+				"cloned": "Template cloned"
+			},
+			"noSourcesForOrgType": "No template available to clone for this organization type.",
+			"sourceBadge": {
+				"global": "Global",
+				"org": "Org"
+			}
+		},
+		"edit": {
+			"backToList": "Back to list",
+			"typeLabel": "Type: {{type}}",
+			"saved": "Template saved",
+			"saveError": "Save failed",
+			"syncBanner": {
+				"title": "Update available from the global template",
+				"description": "The source template is at version {{sourceVersion}}, your clone is based on version {{cloneVersion}}. Syncing archives your current version before applying the source content — nothing is lost.",
+				"button": "Sync",
+				"syncing": "Syncing…",
+				"success": "Template synced from the global template",
+				"error": "Sync failed"
+			},
+			"lockBanner": {
+				"title": "Template locked for editing",
+				"description": "Documents have already been generated from this template. Any change will increment the version and archive the current state in history. Already-produced documents stay tied to their original version.",
+				"descriptionExtended": "Documents have already been generated from this template. Any change will increment the version and archive the current state in history. Already-produced documents stay tied to their original version and are not affected."
+			}
+		},
+		"placeholders": {
+			"title": "Dynamic variables",
+			"description": "Variables declared here appear in the editor and are filled at generation with the request's data.",
+			"empty": "No variable yet.",
+			"addButton": "Add a variable",
+			"addSheet": {
+				"title": "Add a dynamic variable",
+				"description": "Variables are filled at generation with the request's data (user, profile, form, organization, system).",
+				"submit": "Add"
+			},
+			"fields": {
+				"key": "Key",
+				"keyPlaceholder": "firstName",
+				"label": "Label",
+				"labelPlaceholder": "First name",
+				"source": "Source"
+			},
+			"removeAria": "Remove {{key}}",
+			"duplicateKey": "Key already in use",
+			"sources": {
+				"user": "User",
+				"profile": "Profile",
+				"request": "Request",
+				"formData": "Form",
+				"org": "Organization",
+				"system": "System"
+			},
+			"picker": {
+				"emptyTitle": "No variable configured",
+				"emptyHint": "Declare the template's dynamic variables in the configuration to be able to insert them in the text.",
+				"header": "Dynamic variables",
+				"instructions": "Click to insert at cursor. The value will be replaced at generation."
+			}
+		},
+		"editor": {
+			"toolbar": {
+				"bold": "Bold",
+				"italic": "Italic",
+				"underline": "Underline",
+				"strike": "Strikethrough",
+				"alignLeft": "Align left",
+				"alignCenter": "Center",
+				"alignRight": "Align right",
+				"alignJustify": "Justify",
+				"bulletList": "Bullet list",
+				"orderedList": "Ordered list",
+				"quote": "Quote",
+				"horizontalRule": "Horizontal rule",
+				"undo": "Undo",
+				"redo": "Redo"
+			}
+		},
+		"autoGen": {
+			"tab": "Auto-generation",
+			"title": "Automatic document generation",
+			"description": "Configure the templates that will be produced automatically on request submission or status transition.",
+			"saveButton": "Save",
+			"saving": "Saving…",
+			"savedToast": "Rules saved",
+			"saveError": "Save failed",
+			"loading": "Loading…",
+			"serviceNotFound": "Service not found.",
+			"empty": {
+				"title": "No rule configured",
+				"description": "Add a rule to trigger a generation on submission or status transition.",
+				"addButton": "Add a rule"
+			},
+			"addAnotherButton": "Add a rule",
+			"rule": {
+				"title": "Rule {{index}}",
+				"removeAria": "Remove rule",
+				"trigger": "Trigger",
+				"triggerOptions": {
+					"submission": "On citizen submission",
+					"transition": "On status transition"
+				},
+				"fromStatus": "From status (optional)",
+				"anyStatus": "Any status",
+				"toStatus": "To status",
+				"toStatusPlaceholder": "Target status (required)",
+				"autoSign": {
+					"title": "Sign automatically",
+					"description": "Apply the agent's signature at generation."
+				},
+				"autoPublish": {
+					"title": "Publish to citizen",
+					"description": "Make the document visible immediately after generation."
+				}
+			},
+			"errors": {
+				"missingTemplate": "Rule {{index}}: missing template",
+				"missingToStatus": "Rule {{index}}: missing target status"
+			},
+			"status": {
+				"draft": "Draft",
+				"submitted": "Submitted",
+				"pending": "Pending",
+				"underReview": "Under review",
+				"inProduction": "In production",
+				"validated": "Validated",
+				"appointmentScheduled": "Appointment scheduled",
+				"readyForPickup": "Ready for pickup",
+				"completed": "Completed",
+				"rejected": "Rejected",
+				"cancelled": "Cancelled"
+			}
+		},
+		"generate": {
+			"section": {
+				"title": "Official documents",
+				"loading": "Loading…",
+				"empty": "No document generated for this request.",
+				"generateButton": "Generate"
+			},
+			"sheet": {
+				"title": "Generate an official document",
+				"description": "Pick a template — variables will be filled automatically from the request.",
+				"submit": "Generate",
+				"submitting": "Generating…"
+			},
+			"row": {
+				"fallbackLabel": "Document",
+				"signLabel": "Sign document",
+				"publishLabel": "Publish to citizen",
+				"unpublishLabel": "Unpublish from citizen",
+				"downloadLabel": "Download"
+			},
+			"chip": {
+				"signed": "Signed",
+				"pendingSignature": "Pending",
+				"unsigned": "Unsigned",
+				"published": "Published"
+			},
+			"toast": {
+				"generated": "Document generated",
+				"generationFailed": "Generation failed",
+				"signed": "Document signed",
+				"signFailed": "Signature failed",
+				"published": "Document published to citizen",
+				"unpublished": "Document removed from citizen view",
+				"actionFailed": "Action failed"
+			}
+		},
+		"bulk": {
+			"title": "Generate a document for several requests",
+			"description_one": "The selected template will be applied to {{count}} request. Documents will appear shortly in each request.",
+			"description_other": "The selected template will be applied to {{count}} requests. Documents will appear shortly in each request.",
+			"submit_one": "Generate for {{count}} request",
+			"submit_other": "Generate for {{count}} requests",
+			"submitting": "Scheduling…",
+			"publish": {
+				"title": "Publish immediately",
+				"description": "Force citizen visibility, regardless of the template setting."
+			},
+			"scheduled_one": "{{count}} generation scheduled",
+			"scheduled_other": "{{count}} generations scheduled",
+			"actionFailed": "Action failed"
+		},
+		"global": {
+			"page": {
+				"title": "Global document templates",
+				"subtitle": "Official library cloneable by organizations",
+				"newTemplate": "New template",
+				"loading": "Loading…",
+				"empty": {
+					"title": "No global template",
+					"description": "Create a first template to seed the library.",
+					"createButton": "Create a template"
+				}
+			},
+			"new": {
+				"title": "New global template",
+				"subtitle": "Initial configuration — content is authored in the next step",
+				"fields": {
+					"nameFr": "Name (FR)",
+					"namePlaceholder": "Residence certificate",
+					"type": "Type",
+					"descriptionFr": "Description (FR)",
+					"descriptionPlaceholder": "Short description explaining the use",
+					"category": "Category",
+					"paperSize": "Format",
+					"paperSizeA4": "A4",
+					"paperSizeLetter": "US Letter",
+					"orientation": "Orientation",
+					"orientationPortrait": "Portrait",
+					"orientationLandscape": "Landscape"
+				},
+				"autoPublish": {
+					"title": "Auto-publish to citizen",
+					"description": "If enabled, generated documents appear immediately for the citizen."
+				},
+				"requireSignature": {
+					"title": "Signature required",
+					"description": "Prevents publication until the document has been signed."
+				},
+				"submit": "Create and edit",
+				"submitting": "Creating…",
+				"errors": {
+					"nameRequired": "Enter a French name",
+					"orgTypesRequired": "Tick at least one allowed organization type or disable the restriction"
+				}
+			},
+			"edit": {
+				"subtitle": "Type: {{type}} — version {{version}}",
+				"untitled": "Untitled template",
+				"history": "History"
+			},
+			"versions": {
+				"pageTitle": "History — {{title}}",
+				"currentVersion": "Current version: v{{version}}",
+				"loading": "Loading…",
+				"empty": {
+					"title": "No archived version",
+					"description": "Versions will appear here as soon as the content is first modified."
+				},
+				"row": {
+					"archivedOn": "Archived on {{date}}",
+					"restoreButton": "Restore"
+				},
+				"restore": {
+					"dialogTitle": "Restore version {{version}}?",
+					"dialogDescription": "The current version (v{{currentVersion}}) will be archived before restoring — nothing is lost. The active template will become version {{nextVersion}}, identical to the content of version {{version}}.",
+					"cancel": "Cancel",
+					"confirm": "Restore",
+					"restoring": "Restoring…",
+					"success": "Version {{version}} restored (new version {{nextVersion}})",
+					"error": "Restore failed"
+				}
+			}
 		}
 	},
 	"home": {

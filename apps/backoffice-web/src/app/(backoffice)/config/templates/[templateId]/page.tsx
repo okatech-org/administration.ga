@@ -22,6 +22,7 @@ import { FileText, History, Lock, Plus, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { OrgTypeAccessPicker } from "@/components/config/OrgTypeAccessPicker";
 import { toast } from "sonner";
 import { FlatCard } from "@/components/design-system/flat-card";
@@ -39,16 +40,17 @@ import {
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { useConvexMutationQuery, useConvexQuery } from "@/integrations/convex/hooks";
 
-const SOURCES: Array<{ value: PlaceholderSource; label: string }> = [
-	{ value: "user", label: "Utilisateur" },
-	{ value: "profile", label: "Profil" },
-	{ value: "request", label: "Demande" },
-	{ value: "formData", label: "Formulaire" },
-	{ value: "org", label: "Organisation" },
-	{ value: "system", label: "Système" },
+const SOURCES: PlaceholderSource[] = [
+	"user",
+	"profile",
+	"request",
+	"formData",
+	"org",
+	"system",
 ];
 
 export default function EditTemplatePage() {
+	const { t } = useTranslation();
 	const params = useParams();
 	const router = useRouter();
 	const templateId = params.templateId as Id<"documentTemplates">;
@@ -84,7 +86,7 @@ export default function EditTemplatePage() {
 	}, [template, content]);
 
 	if (isLoading || !template) {
-		return <div className="p-6 text-sm text-muted-foreground">Chargement…</div>;
+		return <div className="p-6 text-sm text-muted-foreground">{t("templates.common.loading")}</div>;
 	}
 
 	const workingContent = content ?? (template.content as TiptapDocument);
@@ -95,7 +97,7 @@ export default function EditTemplatePage() {
 		const key = newKey.trim();
 		if (!key) return;
 		if (workingPlaceholders.some((p) => p.key === key)) {
-			toast.error("Clé déjà utilisée");
+			toast.error(t("templates.placeholders.duplicateKey"));
 			return;
 		}
 		setPlaceholders([
@@ -116,9 +118,7 @@ export default function EditTemplatePage() {
 
 	async function save() {
 		if (allowedOrgTypes && Array.isArray(allowedOrgTypes) && allowedOrgTypes.length === 0) {
-			toast.error(
-				"Coche au moins un type d'organisation autorisé ou désactive la restriction",
-			);
+			toast.error(t("templates.global.new.errors.orgTypesRequired"));
 			return;
 		}
 		setSaving(true);
@@ -131,22 +131,25 @@ export default function EditTemplatePage() {
 				placeholders: workingPlaceholders as unknown as never,
 				allowedOrgTypes: (allowedOrgTypes ?? undefined) as never,
 			});
-			toast.success("Modèle enregistré");
+			toast.success(t("templates.edit.saved"));
 		} catch (err) {
-			const message = err instanceof Error ? err.message : "Échec de l'enregistrement";
+			const message = err instanceof Error ? err.message : t("templates.edit.saveError");
 			toast.error(message);
 		} finally {
 			setSaving(false);
 		}
 	}
 
-	const title = template.name.fr ?? template.name.en ?? "Modèle sans titre";
+	const title = template.name.fr ?? template.name.en ?? t("templates.global.edit.untitled");
 
 	return (
 		<div className="flex flex-col gap-6 p-6">
 			<PageHeader
 				title={title}
-				subtitle={`Type: ${template.templateType} — version ${template.version ?? 1}`}
+				subtitle={t("templates.global.edit.subtitle", {
+					type: t(`templates.type.${template.templateType}`, template.templateType),
+					version: template.version ?? 1,
+				})}
 				icon={<FileText />}
 				showBackButton
 				actions={
@@ -154,12 +157,12 @@ export default function EditTemplatePage() {
 						<Button variant="outline" asChild>
 							<Link href={`/config/templates/${templateId}/versions`}>
 								<History className="mr-2 h-4 w-4" />
-								Historique
+								{t("templates.global.edit.history")}
 							</Link>
 						</Button>
 						<Button onClick={save} disabled={saving}>
 							<Save className="mr-2 h-4 w-4" />
-							{saving ? "Enregistrement…" : "Enregistrer"}
+							{saving ? t("templates.common.saving") : t("templates.common.save")}
 						</Button>
 					</div>
 				}
@@ -170,13 +173,10 @@ export default function EditTemplatePage() {
 					<Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
 					<div className="text-sm">
 						<p className="font-medium text-amber-900 dark:text-amber-200">
-							Modèle verrouillé en édition
+							{t("templates.edit.lockBanner.title")}
 						</p>
 						<p className="mt-0.5 text-amber-900/80 dark:text-amber-300/80">
-							Des documents ont déjà été générés à partir de ce modèle. Toute
-							modification incrémentera la version et archivera l'état courant
-							dans l'historique. Les documents déjà produits restent liés à leur
-							version d'origine et ne sont pas affectés.
+							{t("templates.edit.lockBanner.descriptionExtended")}
 						</p>
 					</div>
 				</div>
@@ -223,11 +223,11 @@ export default function EditTemplatePage() {
 
 			<div className="flex justify-between">
 				<Button variant="ghost" onClick={() => router.push("/config/templates")}>
-					Retour à la liste
+					{t("templates.edit.backToList")}
 				</Button>
 				<Button onClick={save} disabled={saving}>
 					<Save className="mr-2 h-4 w-4" />
-					{saving ? "Enregistrement…" : "Enregistrer"}
+					{saving ? t("templates.common.saving") : t("templates.common.save")}
 				</Button>
 			</div>
 		</div>
@@ -255,6 +255,7 @@ function PlaceholderManager({
 	onNewSourceChange: (value: PlaceholderSource) => void;
 	onAdd: () => void;
 }) {
+	const { t } = useTranslation();
 	const [sheetOpen, setSheetOpen] = useState(false);
 
 	function handleAdd() {
@@ -271,10 +272,9 @@ function PlaceholderManager({
 	return (
 		<div className="flex flex-col gap-4">
 			<div>
-				<div className="font-medium">Variables dynamiques</div>
+				<div className="font-medium">{t("templates.placeholders.title")}</div>
 				<div className="text-sm text-muted-foreground">
-					Les variables déclarées ici apparaissent dans l'éditeur et sont remplies à la
-					génération avec les données de la demande.
+					{t("templates.placeholders.description")}
 				</div>
 			</div>
 
@@ -288,13 +288,13 @@ function PlaceholderManager({
 							<code className="font-mono text-xs">{`{{${p.key}}}`}</code>
 							<span className="text-muted-foreground">— {p.label.fr ?? p.key}</span>
 							<span className="rounded bg-muted px-1 text-[0.7rem] uppercase">
-								{p.source}
+								{t(`templates.placeholders.sources.${p.source}`)}
 							</span>
 							<button
 								type="button"
 								className="text-muted-foreground hover:text-destructive"
 								onClick={() => onRemove(p.key)}
-								aria-label={`Supprimer ${p.key}`}
+								aria-label={t("templates.placeholders.removeAria", { key: p.key })}
 							>
 								<Trash2 className="h-3.5 w-3.5" />
 							</button>
@@ -303,60 +303,59 @@ function PlaceholderManager({
 				</ul>
 			) : (
 				<div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-					Aucune variable pour l'instant.
+					{t("templates.placeholders.empty")}
 				</div>
 			)}
 
 			<Button type="button" onClick={() => setSheetOpen(true)}>
 				<Plus className="mr-1 h-4 w-4" />
-				Ajouter une variable
+				{t("templates.placeholders.addButton")}
 			</Button>
 
 			<BottomSheet
 				open={sheetOpen}
 				onOpenChange={setSheetOpen}
-				title="Ajouter une variable dynamique"
+				title={t("templates.placeholders.addSheet.title")}
 				maxHeight="85vh"
 				footer={
 					<div className="flex items-center justify-end gap-2">
 						<Button variant="ghost" onClick={() => setSheetOpen(false)}>
-							Annuler
+							{t("templates.common.cancel")}
 						</Button>
 						<Button onClick={handleAdd}>
 							<Plus className="mr-1 h-4 w-4" />
-							Ajouter
+							{t("templates.placeholders.addSheet.submit")}
 						</Button>
 					</div>
 				}
 			>
 				<div className="flex flex-col gap-4 px-4 py-4 sm:px-5">
 					<p className="text-sm text-muted-foreground">
-						Les variables sont remplies à la génération avec les données de la
-						demande (utilisateur, profil, formulaire, organisation, système).
+						{t("templates.placeholders.addSheet.description")}
 					</p>
 
 					<div className="grid gap-4 md:grid-cols-2">
 						<div className="flex flex-col gap-1">
-							<Label htmlFor="ph-key">Clé</Label>
+							<Label htmlFor="ph-key">{t("templates.placeholders.fields.key")}</Label>
 							<Input
 								id="ph-key"
 								value={newKey}
 								onChange={(e) => onNewKeyChange(e.target.value)}
-								placeholder="firstName"
+								placeholder={t("templates.placeholders.fields.keyPlaceholder")}
 								autoFocus
 							/>
 						</div>
 						<div className="flex flex-col gap-1">
-							<Label htmlFor="ph-label">Libellé</Label>
+							<Label htmlFor="ph-label">{t("templates.placeholders.fields.label")}</Label>
 							<Input
 								id="ph-label"
 								value={newLabel}
 								onChange={(e) => onNewLabelChange(e.target.value)}
-								placeholder="Prénom"
+								placeholder={t("templates.placeholders.fields.labelPlaceholder")}
 							/>
 						</div>
 						<div className="flex flex-col gap-1 md:col-span-2">
-							<Label htmlFor="ph-source">Source</Label>
+							<Label htmlFor="ph-source">{t("templates.placeholders.fields.source")}</Label>
 							<Select
 								value={newSource}
 								onValueChange={(v) => onNewSourceChange(v as PlaceholderSource)}
@@ -366,8 +365,8 @@ function PlaceholderManager({
 								</SelectTrigger>
 								<SelectContent>
 									{SOURCES.map((s) => (
-										<SelectItem key={s.value} value={s.value}>
-											{s.label}
+										<SelectItem key={s} value={s}>
+											{t(`templates.placeholders.sources.${s}`)}
 										</SelectItem>
 									))}
 								</SelectContent>

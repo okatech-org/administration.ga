@@ -10,6 +10,7 @@ import { ServiceCategory } from "@convex/lib/constants";
 import { FilePlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { OrgTypeAccessPicker } from "@/components/config/OrgTypeAccessPicker";
 import { FlatCard } from "@/components/design-system/flat-card";
@@ -30,7 +31,16 @@ import { useConvexMutationQuery } from "@/integrations/convex/hooks";
 
 type TemplateType = "certificate" | "attestation" | "receipt" | "letter" | "custom";
 
+const TEMPLATE_TYPES: TemplateType[] = [
+	"certificate",
+	"attestation",
+	"receipt",
+	"letter",
+	"custom",
+];
+
 export default function NewGlobalTemplatePage() {
+	const { t } = useTranslation();
 	const router = useRouter();
 	const [nameFr, setNameFr] = useState("");
 	const [descFr, setDescFr] = useState("");
@@ -52,13 +62,11 @@ export default function NewGlobalTemplatePage() {
 	async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
 		if (!nameFr.trim()) {
-			toast.error("Saisis un nom en français");
+			toast.error(t("templates.global.new.errors.nameRequired"));
 			return;
 		}
 		if (allowedOrgTypes && allowedOrgTypes.length === 0) {
-			toast.error(
-				"Coche au moins un type d'organisation autorisé ou désactive la restriction",
-			);
+			toast.error(t("templates.global.new.errors.orgTypesRequired"));
 			return;
 		}
 		setIsPending(true);
@@ -80,10 +88,11 @@ export default function NewGlobalTemplatePage() {
 				paperSize,
 				orientation,
 			});
-			toast.success("Modèle créé");
+			toast.success(t("templates.create.toast.created"));
 			router.push(`/config/templates/${id}`);
 		} catch (err) {
-			const message = err instanceof Error ? err.message : "Échec de la création";
+			const message =
+				err instanceof Error ? err.message : t("templates.create.errors.createFailed");
 			toast.error(message);
 		} finally {
 			setIsPending(false);
@@ -93,8 +102,8 @@ export default function NewGlobalTemplatePage() {
 	return (
 		<div className="flex flex-col gap-6 p-6">
 			<PageHeader
-				title="Nouveau modèle global"
-				subtitle="Configuration initiale — le contenu se rédige à l'étape suivante"
+				title={t("templates.global.new.title")}
+				subtitle={t("templates.global.new.subtitle")}
 				icon={<FilePlus />}
 				showBackButton
 			/>
@@ -103,46 +112,49 @@ export default function NewGlobalTemplatePage() {
 				<form onSubmit={onSubmit} className="flex flex-col gap-5">
 					<div className="grid gap-4 md:grid-cols-2">
 						<div className="flex flex-col gap-1">
-							<Label htmlFor="nameFr">Nom (FR)</Label>
+							<Label htmlFor="nameFr">{t("templates.global.new.fields.nameFr")}</Label>
 							<Input
 								id="nameFr"
 								value={nameFr}
 								onChange={(e) => setNameFr(e.target.value)}
-								placeholder="Attestation de résidence"
+								placeholder={t("templates.global.new.fields.namePlaceholder")}
 								required
 							/>
 						</div>
 						<div className="flex flex-col gap-1">
-							<Label htmlFor="templateType">Type</Label>
-							<Select value={templateType} onValueChange={(v) => setTemplateType(v as TemplateType)}>
+							<Label htmlFor="templateType">{t("templates.global.new.fields.type")}</Label>
+							<Select
+								value={templateType}
+								onValueChange={(v) => setTemplateType(v as TemplateType)}
+							>
 								<SelectTrigger id="templateType">
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="certificate">Certificat</SelectItem>
-									<SelectItem value="attestation">Attestation</SelectItem>
-									<SelectItem value="receipt">Récépissé</SelectItem>
-									<SelectItem value="letter">Lettre</SelectItem>
-									<SelectItem value="custom">Personnalisé</SelectItem>
+									{TEMPLATE_TYPES.map((tp) => (
+										<SelectItem key={tp} value={tp}>
+											{t(`templates.type.${tp}`)}
+										</SelectItem>
+									))}
 								</SelectContent>
 							</Select>
 						</div>
 					</div>
 
 					<div className="flex flex-col gap-1">
-						<Label htmlFor="descFr">Description (FR)</Label>
+						<Label htmlFor="descFr">{t("templates.global.new.fields.descriptionFr")}</Label>
 						<Textarea
 							id="descFr"
 							value={descFr}
 							onChange={(e) => setDescFr(e.target.value)}
-							placeholder="Courte description expliquant l'usage"
+							placeholder={t("templates.global.new.fields.descriptionPlaceholder")}
 							rows={2}
 						/>
 					</div>
 
 					<div className="grid gap-4 md:grid-cols-3">
 						<div className="flex flex-col gap-1">
-							<Label htmlFor="category">Catégorie</Label>
+							<Label htmlFor="category">{t("templates.global.new.fields.category")}</Label>
 							<Select value={category} onValueChange={setCategory}>
 								<SelectTrigger id="category">
 									<SelectValue />
@@ -157,19 +169,23 @@ export default function NewGlobalTemplatePage() {
 							</Select>
 						</div>
 						<div className="flex flex-col gap-1">
-							<Label htmlFor="paperSize">Format</Label>
+							<Label htmlFor="paperSize">{t("templates.global.new.fields.paperSize")}</Label>
 							<Select value={paperSize} onValueChange={(v) => setPaperSize(v as "A4" | "LETTER")}>
 								<SelectTrigger id="paperSize">
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="A4">A4</SelectItem>
-									<SelectItem value="LETTER">US Letter</SelectItem>
+									<SelectItem value="A4">
+										{t("templates.global.new.fields.paperSizeA4")}
+									</SelectItem>
+									<SelectItem value="LETTER">
+										{t("templates.global.new.fields.paperSizeLetter")}
+									</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
 						<div className="flex flex-col gap-1">
-							<Label htmlFor="orientation">Orientation</Label>
+							<Label htmlFor="orientation">{t("templates.global.new.fields.orientation")}</Label>
 							<Select
 								value={orientation}
 								onValueChange={(v) => setOrientation(v as "portrait" | "landscape")}
@@ -178,8 +194,12 @@ export default function NewGlobalTemplatePage() {
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="portrait">Portrait</SelectItem>
-									<SelectItem value="landscape">Paysage</SelectItem>
+									<SelectItem value="portrait">
+										{t("templates.global.new.fields.orientationPortrait")}
+									</SelectItem>
+									<SelectItem value="landscape">
+										{t("templates.global.new.fields.orientationLandscape")}
+									</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
@@ -188,18 +208,22 @@ export default function NewGlobalTemplatePage() {
 					<div className="flex flex-col gap-3 rounded-md border p-4">
 						<div className="flex items-center justify-between gap-4">
 							<div>
-								<div className="font-medium">Publication automatique au citoyen</div>
+								<div className="font-medium">
+									{t("templates.global.new.autoPublish.title")}
+								</div>
 								<div className="text-sm text-muted-foreground">
-									Si activé, les documents générés apparaissent immédiatement pour le citoyen.
+									{t("templates.global.new.autoPublish.description")}
 								</div>
 							</div>
 							<Switch checked={autoPublishToCitizen} onCheckedChange={setAutoPublish} />
 						</div>
 						<div className="flex items-center justify-between gap-4">
 							<div>
-								<div className="font-medium">Signature requise</div>
+								<div className="font-medium">
+									{t("templates.global.new.requireSignature.title")}
+								</div>
 								<div className="text-sm text-muted-foreground">
-									Empêche la publication tant que le document n'a pas été signé.
+									{t("templates.global.new.requireSignature.description")}
 								</div>
 							</div>
 							<Switch checked={requireSignature} onCheckedChange={setRequireSignature} />
@@ -213,10 +237,12 @@ export default function NewGlobalTemplatePage() {
 
 					<div className="flex justify-end gap-2">
 						<Button type="button" variant="ghost" onClick={() => router.back()}>
-							Annuler
+							{t("templates.common.cancel")}
 						</Button>
 						<Button type="submit" disabled={isPending}>
-							{isPending ? "Création…" : "Créer et rédiger"}
+							{isPending
+								? t("templates.global.new.submitting")
+								: t("templates.global.new.submit")}
 						</Button>
 					</div>
 				</form>

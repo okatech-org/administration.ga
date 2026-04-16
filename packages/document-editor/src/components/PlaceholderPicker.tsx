@@ -7,15 +7,7 @@
 import type { Editor } from "@tiptap/react";
 import type { PlaceholderDescriptor, PlaceholderSource } from "@workspace/document-rendering/types";
 import type { ReactElement } from "react";
-
-const SOURCE_LABELS: Record<PlaceholderSource, string> = {
-	user: "Utilisateur",
-	profile: "Profil",
-	request: "Demande",
-	formData: "Formulaire",
-	org: "Organisation",
-	system: "Système",
-};
+import { useTranslation } from "react-i18next";
 
 export function PlaceholderPicker({
 	editor,
@@ -24,6 +16,8 @@ export function PlaceholderPicker({
 	editor: Editor | null;
 	placeholders: PlaceholderDescriptor[];
 }): ReactElement {
+	const { t } = useTranslation();
+
 	const grouped = new Map<PlaceholderSource, PlaceholderDescriptor[]>();
 	for (const p of placeholders) {
 		const list = grouped.get(p.source) ?? [];
@@ -50,11 +44,8 @@ export function PlaceholderPicker({
 	if (placeholders.length === 0) {
 		return (
 			<aside className="flex flex-col gap-2 rounded-md border border-dashed border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-				<strong className="text-foreground">Aucune variable configurée</strong>
-				<p>
-					Déclare les variables dynamiques du template dans la configuration pour
-					pouvoir les insérer dans le texte.
-				</p>
+				<strong className="text-foreground">{t("templates.placeholders.picker.emptyTitle")}</strong>
+				<p>{t("templates.placeholders.picker.emptyHint")}</p>
 			</aside>
 		);
 	}
@@ -62,16 +53,16 @@ export function PlaceholderPicker({
 	return (
 		<aside className="flex flex-col gap-3 rounded-md border border-border bg-card p-3 text-sm text-foreground">
 			<header>
-				<strong>Variables dynamiques</strong>
+				<strong>{t("templates.placeholders.picker.header")}</strong>
 				<p className="mt-0.5 text-xs text-muted-foreground">
-					Clique pour insérer au curseur. La valeur sera remplacée à la génération.
+					{t("templates.placeholders.picker.instructions")}
 				</p>
 			</header>
 			<div className="flex flex-col gap-3">
 				{Array.from(grouped.entries()).map(([source, list]) => (
 					<section key={source} className="flex flex-col gap-1">
 						<h4 className="text-[0.7rem] uppercase tracking-wide text-muted-foreground">
-							{SOURCE_LABELS[source]}
+							{t(`templates.placeholders.sources.${source}`)}
 						</h4>
 						<ul className="flex flex-col gap-1">
 							{list.map((p) => (

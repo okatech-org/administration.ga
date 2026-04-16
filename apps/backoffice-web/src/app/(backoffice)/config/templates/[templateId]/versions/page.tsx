@@ -15,6 +15,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { History, Loader2, RotateCcw } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { PageHeader } from "@/components/design-system/page-header";
@@ -36,6 +37,7 @@ import {
 } from "@/integrations/convex/hooks";
 
 export default function TemplateVersionsPage() {
+	const { t, i18n } = useTranslation();
 	const params = useParams();
 	const router = useRouter();
 	const templateId = params.templateId as Id<"documentTemplates">;
@@ -58,24 +60,33 @@ export default function TemplateVersionsPage() {
 		if (toRestore === null) return;
 		try {
 			const next = await restoreVersion({ templateId, version: toRestore });
-			toast.success(`Version ${toRestore} restaurée (nouvelle version ${next})`);
+			toast.success(
+				t("templates.global.versions.restore.success", {
+					version: toRestore,
+					nextVersion: next,
+				}),
+			);
 			setToRestore(null);
 			router.push(`/config/templates/${templateId}`);
 		} catch (err) {
-			const message = err instanceof Error ? err.message : "Échec de la restauration";
+			const message = err instanceof Error ? err.message : t("templates.global.versions.restore.error");
 			toast.error(message);
 			setToRestore(null);
 		}
 	}
 
-	const title = template?.name.fr ?? template?.name.en ?? "Modèle";
+	const fallbackTitle = t("templates.common.untitled");
+	const title = template?.name.fr ?? template?.name.en ?? fallbackTitle;
 	const currentVersion = template?.version ?? 1;
+	const dateLocale = i18n.language.startsWith("fr") ? "fr-FR" : "en-US";
 
 	return (
 		<div className="flex flex-col gap-6 p-6">
 			<PageHeader
-				title={`Historique — ${title}`}
-				subtitle={`Version courante : v${currentVersion}`}
+				title={t("templates.global.versions.pageTitle", { title })}
+				subtitle={t("templates.global.versions.currentVersion", {
+					version: currentVersion,
+				})}
 				icon={<History />}
 				showBackButton
 			/>
@@ -84,15 +95,15 @@ export default function TemplateVersionsPage() {
 				{isLoading ? (
 					<div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
 						<Loader2 className="h-4 w-4 animate-spin" />
-						Chargement…
+						{t("templates.global.versions.loading")}
 					</div>
 				) : !versions || versions.length === 0 ? (
 					<div className="flex flex-col items-center gap-3 p-10 text-center">
 						<History className="h-8 w-8 text-muted-foreground" />
 						<div>
-							<p className="font-medium">Aucune version archivée</p>
+							<p className="font-medium">{t("templates.global.versions.empty.title")}</p>
 							<p className="mt-1 text-sm text-muted-foreground">
-								Les versions apparaîtront ici dès la première modification du contenu.
+								{t("templates.global.versions.empty.description")}
 							</p>
 						</div>
 					</div>
@@ -108,20 +119,19 @@ export default function TemplateVersionsPage() {
 										v{v.version}
 									</Badge>
 									<span className="font-medium">
-										{v.name.fr ?? v.name.en ?? "(sans titre)"}
+										{v.name.fr ?? v.name.en ?? fallbackTitle}
 									</span>
 								</div>
 								<div className="flex-1 text-xs text-muted-foreground">
-									{v.changeNote ? (
-										<span>{v.changeNote} — </span>
-									) : null}
-									Archivé le{" "}
-									{new Date(v.createdAt).toLocaleString("fr-FR", {
-										day: "2-digit",
-										month: "long",
-										year: "numeric",
-										hour: "2-digit",
-										minute: "2-digit",
+									{v.changeNote ? <span>{v.changeNote} — </span> : null}
+									{t("templates.global.versions.row.archivedOn", {
+										date: new Date(v.createdAt).toLocaleString(dateLocale, {
+											day: "2-digit",
+											month: "long",
+											year: "numeric",
+											hour: "2-digit",
+											minute: "2-digit",
+										}),
 									})}
 								</div>
 								<Button
@@ -131,7 +141,7 @@ export default function TemplateVersionsPage() {
 									disabled={restoring}
 								>
 									<RotateCcw className="mr-2 h-4 w-4" />
-									Restaurer
+									{t("templates.global.versions.row.restoreButton")}
 								</Button>
 							</li>
 						))}
@@ -147,26 +157,33 @@ export default function TemplateVersionsPage() {
 			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Restaurer la version {toRestore} ?</AlertDialogTitle>
+						<AlertDialogTitle>
+							{t("templates.global.versions.restore.dialogTitle", {
+								version: toRestore ?? 0,
+							})}
+						</AlertDialogTitle>
 						<AlertDialogDescription>
-							La version actuelle (v{currentVersion}) sera archivée avant la
-							restauration — rien n'est perdu. Le modèle actif deviendra la
-							version {currentVersion + 1}, identique au contenu de la version{" "}
-							{toRestore}.
+							{t("templates.global.versions.restore.dialogDescription", {
+								currentVersion,
+								nextVersion: currentVersion + 1,
+								version: toRestore ?? 0,
+							})}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel disabled={restoring}>Annuler</AlertDialogCancel>
+						<AlertDialogCancel disabled={restoring}>
+							{t("templates.global.versions.restore.cancel")}
+						</AlertDialogCancel>
 						<AlertDialogAction onClick={confirmRestore} disabled={restoring}>
 							{restoring ? (
 								<>
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									Restauration…
+									{t("templates.global.versions.restore.restoring")}
 								</>
 							) : (
 								<>
 									<RotateCcw className="mr-2 h-4 w-4" />
-									Restaurer
+									{t("templates.global.versions.restore.confirm")}
 								</>
 							)}
 						</AlertDialogAction>

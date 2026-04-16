@@ -23,6 +23,7 @@ import {
 	Undo,
 } from "lucide-react";
 import type { ReactElement } from "react";
+import { useTranslation } from "react-i18next";
 
 type ToolbarAction = {
 	icon: ReactElement;
@@ -33,31 +34,33 @@ type ToolbarAction = {
 };
 
 export function EditorToolbar({ editor }: { editor: Editor | null }): ReactElement | null {
+	const { t } = useTranslation();
+
 	if (!editor) return null;
 
 	const actions: ToolbarAction[][] = [
 		[
 			{
 				icon: <Bold size={16} />,
-				label: "Bold",
+				label: t("templates.editor.toolbar.bold"),
 				isActive: editor.isActive("bold"),
 				onClick: () => editor.chain().focus().toggleBold().run(),
 			},
 			{
 				icon: <Italic size={16} />,
-				label: "Italic",
+				label: t("templates.editor.toolbar.italic"),
 				isActive: editor.isActive("italic"),
 				onClick: () => editor.chain().focus().toggleItalic().run(),
 			},
 			{
 				icon: <UnderlineIcon size={16} />,
-				label: "Underline",
+				label: t("templates.editor.toolbar.underline"),
 				isActive: editor.isActive("underline"),
 				onClick: () => editor.chain().focus().toggleUnderline().run(),
 			},
 			{
 				icon: <Strikethrough size={16} />,
-				label: "Strike",
+				label: t("templates.editor.toolbar.strike"),
 				isActive: editor.isActive("strike"),
 				onClick: () => editor.chain().focus().toggleStrike().run(),
 			},
@@ -65,25 +68,25 @@ export function EditorToolbar({ editor }: { editor: Editor | null }): ReactEleme
 		[
 			{
 				icon: <AlignLeft size={16} />,
-				label: "Left",
+				label: t("templates.editor.toolbar.alignLeft"),
 				isActive: editor.isActive({ textAlign: "left" }),
 				onClick: () => editor.chain().focus().setTextAlign("left").run(),
 			},
 			{
 				icon: <AlignCenter size={16} />,
-				label: "Center",
+				label: t("templates.editor.toolbar.alignCenter"),
 				isActive: editor.isActive({ textAlign: "center" }),
 				onClick: () => editor.chain().focus().setTextAlign("center").run(),
 			},
 			{
 				icon: <AlignRight size={16} />,
-				label: "Right",
+				label: t("templates.editor.toolbar.alignRight"),
 				isActive: editor.isActive({ textAlign: "right" }),
 				onClick: () => editor.chain().focus().setTextAlign("right").run(),
 			},
 			{
 				icon: <AlignJustify size={16} />,
-				label: "Justify",
+				label: t("templates.editor.toolbar.alignJustify"),
 				isActive: editor.isActive({ textAlign: "justify" }),
 				onClick: () => editor.chain().focus().setTextAlign("justify").run(),
 			},
@@ -91,38 +94,38 @@ export function EditorToolbar({ editor }: { editor: Editor | null }): ReactEleme
 		[
 			{
 				icon: <List size={16} />,
-				label: "Bullet list",
+				label: t("templates.editor.toolbar.bulletList"),
 				isActive: editor.isActive("bulletList"),
 				onClick: () => editor.chain().focus().toggleBulletList().run(),
 			},
 			{
 				icon: <ListOrdered size={16} />,
-				label: "Ordered list",
+				label: t("templates.editor.toolbar.orderedList"),
 				isActive: editor.isActive("orderedList"),
 				onClick: () => editor.chain().focus().toggleOrderedList().run(),
 			},
 			{
 				icon: <Quote size={16} />,
-				label: "Quote",
+				label: t("templates.editor.toolbar.quote"),
 				isActive: editor.isActive("blockquote"),
 				onClick: () => editor.chain().focus().toggleBlockquote().run(),
 			},
 			{
 				icon: <Minus size={16} />,
-				label: "Horizontal rule",
+				label: t("templates.editor.toolbar.horizontalRule"),
 				onClick: () => editor.chain().focus().setHorizontalRule().run(),
 			},
 		],
 		[
 			{
 				icon: <Undo size={16} />,
-				label: "Undo",
+				label: t("templates.editor.toolbar.undo"),
 				onClick: () => editor.chain().focus().undo().run(),
 				disabled: !editor.can().undo(),
 			},
 			{
 				icon: <Redo size={16} />,
-				label: "Redo",
+				label: t("templates.editor.toolbar.redo"),
 				onClick: () => editor.chain().focus().redo().run(),
 				disabled: !editor.can().redo(),
 			},

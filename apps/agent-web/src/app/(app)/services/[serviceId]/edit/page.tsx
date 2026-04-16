@@ -169,7 +169,7 @@ export default function ServiceEdit() {
             </TabsTrigger>
             <TabsTrigger value="autoGeneration">
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-              Génération auto
+              {t("dashboard.services.edit.tabs.autoGeneration")}
             </TabsTrigger>
           </TabsList>
 
@@ -194,7 +194,7 @@ export default function ServiceEdit() {
                       {t("dashboard.services.edit.serviceInfo")}
                     </h3>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Configuration generale du service
+                      {t("dashboard.services.edit.serviceInfoDescription")}
                     </p>
                   </div>
                   <div className="space-y-4 p-3 lg:p-4">
@@ -202,7 +202,7 @@ export default function ServiceEdit() {
                       <div className="space-y-0.5">
                         <Label>{t("dashboard.services.edit.activate")}</Label>
                         <p className="text-sm text-muted-foreground">
-                          Rendre ce service visible pour les usagers
+                          {t("dashboard.services.edit.activateDescription")}
                         </p>
                       </div>
                       <form.Field
@@ -313,7 +313,7 @@ export default function ServiceEdit() {
                         )}
                       />
                       <Label htmlFor="requiresAppointmentForPickup">
-                        Rendez-vous requis (retrait)
+                        {t("dashboard.services.edit.requiresAppointmentForPickup")}
                       </Label>
                     </div>
 

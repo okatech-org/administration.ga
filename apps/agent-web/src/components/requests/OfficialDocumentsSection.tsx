@@ -27,6 +27,7 @@ import {
 	Sparkles,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FlatCard } from "@/components/my-space/flat-card";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +47,7 @@ interface Props {
 }
 
 export function OfficialDocumentsSection({ requestId, orgId }: Props) {
+	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 
 	const { data: documents, isLoading } = useAuthenticatedConvexQuery(
@@ -58,7 +60,7 @@ export function OfficialDocumentsSection({ requestId, orgId }: Props) {
 			<div className="mb-3 flex items-center gap-2">
 				<h3 className="flex items-center gap-2 text-sm font-bold">
 					<FileText className="h-4 w-4" />
-					Documents officiels
+					{t("templates.generate.section.title")}
 					<Badge variant="secondary" className="ml-1 text-xs font-normal">
 						{documents?.length ?? 0}
 					</Badge>
@@ -69,18 +71,18 @@ export function OfficialDocumentsSection({ requestId, orgId }: Props) {
 					onClick={() => setOpen(true)}
 				>
 					<Sparkles className="mr-1.5 h-3.5 w-3.5" />
-					Générer
+					{t("templates.generate.section.generateButton")}
 				</Button>
 			</div>
 
 			{isLoading ? (
 				<div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
 					<Loader2 className="h-4 w-4 animate-spin" />
-					Chargement…
+					{t("templates.generate.section.loading")}
 				</div>
 			) : !documents || documents.length === 0 ? (
 				<p className="py-4 text-center text-sm text-muted-foreground">
-					Aucun document généré pour cette demande.
+					{t("templates.generate.section.empty")}
 				</p>
 			) : (
 				<ul className="flex flex-col gap-2">
@@ -101,6 +103,7 @@ export function OfficialDocumentsSection({ requestId, orgId }: Props) {
 }
 
 function DocumentRow({ doc }: { doc: Doc<"generatedDocuments"> }) {
+	const { t, i18n } = useTranslation();
 	const { data: url } = useAuthenticatedConvexQuery(
 		api.functions.generatedDocumentsData.getDownloadUrl,
 		{ documentId: doc._id },
@@ -115,20 +118,21 @@ function DocumentRow({ doc }: { doc: Doc<"generatedDocuments"> }) {
 		api.functions.generatedDocuments.signDocument,
 	);
 
-	const label = doc.label ?? "Document";
-	const dateStr = new Date(doc.generatedAt).toLocaleString("fr-FR");
+	const label = doc.label ?? t("templates.generate.row.fallbackLabel");
+	const dateLocale = i18n.language.startsWith("fr") ? "fr-FR" : "en-US";
+	const dateStr = new Date(doc.generatedAt).toLocaleString(dateLocale);
 
 	async function togglePublish() {
 		try {
 			if (doc.publishedToCitizen) {
 				await unpublish({ documentId: doc._id });
-				toast.success("Document retiré de la vue citoyen");
+				toast.success(t("templates.generate.toast.unpublished"));
 			} else {
 				await publish({ documentId: doc._id });
-				toast.success("Document publié au citoyen");
+				toast.success(t("templates.generate.toast.published"));
 			}
 		} catch (err) {
-			const message = err instanceof Error ? err.message : "Échec de l'opération";
+			const message = err instanceof Error ? err.message : t("templates.generate.toast.actionFailed");
 			toast.error(message);
 		}
 	}
@@ -136,9 +140,9 @@ function DocumentRow({ doc }: { doc: Doc<"generatedDocuments"> }) {
 	async function onSign() {
 		try {
 			await signDocument({ documentId: doc._id });
-			toast.success("Document signé");
+			toast.success(t("templates.generate.toast.signed"));
 		} catch (err) {
-			const message = err instanceof Error ? err.message : "Échec de la signature";
+			const message = err instanceof Error ? err.message : t("templates.generate.toast.signFailed");
 			toast.error(message);
 		}
 	}
@@ -165,8 +169,8 @@ function DocumentRow({ doc }: { doc: Doc<"generatedDocuments"> }) {
 						className="h-7 w-7"
 						onClick={onSign}
 						disabled={signing}
-						aria-label="Signer le document"
-						title="Signer le document"
+						aria-label={t("templates.generate.row.signLabel")}
+						title={t("templates.generate.row.signLabel")}
 					>
 						{signing ? (
 							<Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -181,8 +185,16 @@ function DocumentRow({ doc }: { doc: Doc<"generatedDocuments"> }) {
 					className="h-7 w-7"
 					onClick={togglePublish}
 					disabled={publishing || unpublishing}
-					aria-label={doc.publishedToCitizen ? "Retirer du citoyen" : "Publier au citoyen"}
-					title={doc.publishedToCitizen ? "Retirer du citoyen" : "Publier au citoyen"}
+					aria-label={
+						doc.publishedToCitizen
+							? t("templates.generate.row.unpublishLabel")
+							: t("templates.generate.row.publishLabel")
+					}
+					title={
+						doc.publishedToCitizen
+							? t("templates.generate.row.unpublishLabel")
+							: t("templates.generate.row.publishLabel")
+					}
 				>
 					{publishing || unpublishing ? (
 						<Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -194,7 +206,12 @@ function DocumentRow({ doc }: { doc: Doc<"generatedDocuments"> }) {
 				</Button>
 				{url ? (
 					<Button size="icon" variant="ghost" className="h-7 w-7" asChild>
-						<a href={url} target="_blank" rel="noreferrer" aria-label="Télécharger">
+						<a
+							href={url}
+							target="_blank"
+							rel="noreferrer"
+							aria-label={t("templates.generate.row.downloadLabel")}
+						>
 							<Download className="h-3.5 w-3.5" />
 						</a>
 					</Button>
@@ -209,11 +226,12 @@ function DocumentRow({ doc }: { doc: Doc<"generatedDocuments"> }) {
 }
 
 function SignatureChip({ status }: { status: Doc<"generatedDocuments">["signatureStatus"] }) {
+	const { t } = useTranslation();
 	if (status === "signed") {
 		return (
 			<span className="inline-flex items-center gap-1 rounded bg-green-100 px-1.5 py-0.5 text-[0.7rem] text-green-800">
 				<CheckCircle2 className="h-3 w-3" />
-				Signé
+				{t("templates.generate.chip.signed")}
 			</span>
 		);
 	}
@@ -221,22 +239,23 @@ function SignatureChip({ status }: { status: Doc<"generatedDocuments">["signatur
 		return (
 			<span className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[0.7rem] text-amber-800">
 				<Clock className="h-3 w-3" />
-				En attente
+				{t("templates.generate.chip.pendingSignature")}
 			</span>
 		);
 	}
 	return (
 		<span className="rounded bg-muted px-1.5 py-0.5 text-[0.7rem] text-muted-foreground">
-			Non signé
+			{t("templates.generate.chip.unsigned")}
 		</span>
 	);
 }
 
 function PublishedChip() {
+	const { t } = useTranslation();
 	return (
 		<span className="inline-flex items-center gap-1 rounded bg-blue-100 px-1.5 py-0.5 text-[0.7rem] text-blue-800">
 			<CheckCircle2 className="h-3 w-3" />
-			Publié
+			{t("templates.generate.chip.published")}
 		</span>
 	);
 }
@@ -252,6 +271,7 @@ function GenerateDialog({
 	requestId: Id<"requests">;
 	orgId: Id<"orgs">;
 }) {
+	const { t } = useTranslation();
 	const [templateId, setTemplateId] = useState<Id<"documentTemplates"> | "">("");
 	const [isGenerating, setIsGenerating] = useState(false);
 
@@ -271,11 +291,11 @@ function GenerateDialog({
 		setIsGenerating(true);
 		try {
 			await generate({ requestId, templateId, trigger: "manual" });
-			toast.success("Document généré");
+			toast.success(t("templates.generate.toast.generated"));
 			onOpenChange(false);
 			setTemplateId("");
 		} catch (err) {
-			const message = err instanceof Error ? err.message : "Échec de la génération";
+			const message = err instanceof Error ? err.message : t("templates.generate.toast.generationFailed");
 			toast.error(message);
 		} finally {
 			setIsGenerating(false);
@@ -283,9 +303,9 @@ function GenerateDialog({
 	}
 
 	const templateOptions: ComboboxOption<string>[] = (templates ?? []).map(
-		(t) => ({
-			value: t._id,
-			label: t.name.fr ?? t.name.en ?? "(sans titre)",
+		(tpl) => ({
+			value: tpl._id,
+			label: tpl.name.fr ?? tpl.name.en ?? t("templates.common.untitled"),
 		}),
 	);
 
@@ -293,23 +313,23 @@ function GenerateDialog({
 		<BottomSheet
 			open={open}
 			onOpenChange={onOpenChange}
-			title="Générer un document officiel"
+			title={t("templates.generate.sheet.title")}
 			maxHeight="70vh"
 			footer={
 				<div className="flex items-center justify-end gap-2">
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
-						Annuler
+						{t("templates.common.cancel")}
 					</Button>
 					<Button onClick={onGenerate} disabled={!templateId || isGenerating}>
 						{isGenerating ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								Génération…
+								{t("templates.generate.sheet.submitting")}
 							</>
 						) : (
 							<>
 								<Sparkles className="mr-2 h-4 w-4" />
-								Générer
+								{t("templates.generate.sheet.submit")}
 							</>
 						)}
 					</Button>
@@ -318,20 +338,20 @@ function GenerateDialog({
 		>
 			<div className="flex flex-col gap-3 px-4 py-4 sm:px-5">
 				<p className="text-sm text-muted-foreground">
-					Sélectionne un modèle — les variables seront remplies automatiquement
-					à partir de la demande.
+					{t("templates.generate.sheet.description")}
 				</p>
-				<Label htmlFor="template-picker">Modèle</Label>
+				<Label htmlFor="template-picker">{t("templates.common.templateLabel")}</Label>
 				<Combobox
 					options={templateOptions}
 					value={templateId || null}
 					onValueChange={(v) => setTemplateId(v as Id<"documentTemplates">)}
-					placeholder={templates ? "Choisir un modèle…" : "Chargement…"}
-					searchPlaceholder="Rechercher un modèle…"
-					emptyText="Aucun modèle disponible pour cette organisation."
+					placeholder={
+						templates ? t("templates.common.chooseTemplate") : t("templates.common.loading")
+					}
+					searchPlaceholder={t("templates.common.searchTemplate")}
+					emptyText={t("templates.common.noTemplatesAvailableForOrg")}
 				/>
 			</div>
 		</BottomSheet>
 	);
 }
-
