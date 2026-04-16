@@ -1,0 +1,42 @@
+{
+	"name": "@workspace/document-editor",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"description": "Shared Tiptap rich-text editor with placeholder pills for document templates",
+	"exports": {
+		".": "./src/index.ts",
+		"./components/*": "./src/components/*.tsx",
+		"./extensions/*": "./src/extensions/*.ts"
+	},
+	"dependencies": {
+		"@tiptap/core": "^3.17.1",
+		"@tiptap/extension-image": "^3.17.1",
+		"@tiptap/extension-table": "^3.17.1",
+		"@tiptap/extension-table-cell": "^3.17.1",
+		"@tiptap/extension-table-header": "^3.17.1",
+		"@tiptap/extension-table-row": "^3.17.1",
+		"@tiptap/extension-text-align": "^3.17.1",
+		"@tiptap/extension-underline": "^3.17.1",
+		"@tiptap/pm": "^3.17.1",
+		"@tiptap/react": "^3.17.1",
+		"@tiptap/starter-kit": "^3.17.1",
+		"@workspace/document-rendering": "workspace:*",
+		"@workspace/shared": "workspace:*",
+		"@workspace/ui": "workspace:*",
+		"clsx": "^2.1.1",
+		"lucide-react": "^1.7.0"
+	},
+	"devDependencies": {
+		"@types/react": "^19.2.10",
+		"@types/react-dom": "^19.2.3",
+		"@workspace/tsconfig": "workspace:*",
+		"react": "^19.2.4",
+		"react-dom": "^19.2.4",
+		"typescript": "^5.9.3"
+	},
+	"peerDependencies": {
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0"
+	}
+}
