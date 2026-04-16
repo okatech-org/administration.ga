@@ -18,7 +18,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useContactSearch, type ContactSource } from "@/hooks/useContactSearch";
+import {
+	useContactSearch,
+	type ContactGroup,
+	type ContactResultItem,
+	type ContactSource,
+} from "@/hooks/useContactSearch";
 import { cn } from "@/lib/utils";
 
 const SEGMENTS: Array<{ id: ContactSource | "all"; label: string; icon: typeof Users }> = [
@@ -26,6 +31,7 @@ const SEGMENTS: Array<{ id: ContactSource | "all"; label: string; icon: typeof U
 	{ id: "team", label: "Mon équipe", icon: Shield },
 	{ id: "network", label: "Réseau", icon: Globe },
 	{ id: "citizens", label: "Ressortissants", icon: Users },
+	{ id: "administration", label: "Administration", icon: Shield },
 ];
 
 const ORG_TYPES = [
@@ -63,13 +69,8 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 		setPositionGrade,
 	} = useContactSearch(orgId);
 
-	if (!orgId) {
-		return (
-			<div className="flex-1 flex items-center justify-center p-6 text-center">
-				<p className="text-xs text-muted-foreground">Sélectionnez une organisation pour voir les contacts.</p>
-			</div>
-		);
-	}
+	// En backoffice, l'absence d'org active ne bloque pas : on affiche toujours
+	// la vue globale (tous les comptes créés sur la plateforme).
 
 	return (
 		<div className="flex flex-col flex-1 overflow-hidden">
@@ -105,7 +106,7 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 				<div className="flex items-center gap-1.5 overflow-x-auto">
 					<select value={filters.country} onChange={(e) => setCountry(e.target.value)} className="text-[10px] px-2 py-1 rounded-md border bg-background text-foreground h-6">
 						<option value=""> Tous pays</option>
-						{availableCountries.map((c: any) => (<option key={c.code} value={c.code}>{c.code} ({c.count})</option>))}
+						{availableCountries.map((c) => (<option key={c.code} value={c.code}>{c.code} ({c.count})</option>))}
 					</select>
 					<select value={filters.orgType} onChange={(e) => setOrgType(e.target.value)} className="text-[10px] px-2 py-1 rounded-md border bg-background text-foreground h-6">
 						{ORG_TYPES.map((t) => (<option key={t.value} value={t.value}>{t.label}</option>))}
@@ -126,7 +127,7 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 					</div>
 				) : (
 					<div className="divide-y">
-						{groups.map((group: any) => (
+						{groups.map((group: ContactGroup) => (
 							<div key={group.org.id} className="py-2">
 								<div className="flex items-center gap-2 px-3 py-1.5">
 									<Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
@@ -134,11 +135,20 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 									{group.org.country && <span className="text-[9px] text-muted-foreground/60">{group.org.country}</span>}
 									<Badge variant="outline" className="text-[7px] h-3.5 px-1 ml-auto shrink-0">{group.contacts.length}</Badge>
 								</div>
-								{group.contacts.map((contact: any) => (
+								{group.contacts.map((contact: ContactResultItem) => (
 									<div key={contact.id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/30 transition-colors">
 										<Avatar className="h-8 w-8 shrink-0">
 											<AvatarImage src={contact.avatar} />
-											<AvatarFallback className={cn("text-[10px]", contact.source === "team" ? "bg-primary/10 text-primary" : contact.source === "citizen" ? "bg-amber-500/10 text-amber-600" : "bg-blue-500/10 text-blue-600")}>
+											<AvatarFallback className={cn(
+												"text-[10px]",
+												contact.source === "team"
+													? "bg-primary/10 text-primary"
+													: contact.source === "citizen"
+														? "bg-amber-500/10 text-amber-600"
+														: contact.source === "administration"
+															? "bg-slate-600/10 text-slate-700"
+															: "bg-blue-500/10 text-blue-600",
+											)}>
 												{contact.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
 											</AvatarFallback>
 										</Avatar>
@@ -146,8 +156,23 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 											<div className="flex items-center gap-1.5">
 												<p className="text-xs font-bold truncate">{contact.lastName}</p>
 												<p className="text-xs text-foreground/80 truncate">{contact.firstName}</p>
-												<Badge variant="outline" className={cn("text-[7px] h-3.5 px-1 shrink-0", contact.source === "team" ? "text-primary border-primary/20" : contact.source === "citizen" ? "text-amber-600 border-amber-500/20" : "text-blue-600 border-blue-500/20")}>
-													{contact.source === "team" ? "Équipe" : contact.source === "citizen" ? "Citoyen" : "Réseau"}
+												<Badge variant="outline" className={cn(
+													"text-[7px] h-3.5 px-1 shrink-0",
+													contact.source === "team"
+														? "text-primary border-primary/20"
+														: contact.source === "citizen"
+															? "text-amber-600 border-amber-500/20"
+															: contact.source === "administration"
+																? "text-slate-700 border-slate-500/30"
+																: "text-blue-600 border-blue-500/20",
+												)}>
+													{contact.source === "team"
+														? "Équipe"
+														: contact.source === "citizen"
+															? "Citoyen"
+															: contact.source === "administration"
+																? "Admin"
+																: "Réseau"}
 												</Badge>
 											</div>
 											{contact.position && <p className="text-[10px] text-muted-foreground truncate">{contact.position}</p>}
