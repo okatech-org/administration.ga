@@ -6,7 +6,7 @@
  * Améliorations Phase A5 :
  *   - Filtre par statut (Select)
  *   - Pagination Convex (bouton « Charger plus »)
- *   - Lien « Voir tout » vers /admin/requests?orgId=...
+ *   - Lien « Voir tout » vers /requests?orgId=...
  *   - États empty/loading propres
  */
 
@@ -118,7 +118,7 @@ export function OrgRequestsTab({ orgId }: OrgRequestsTabProps) {
 
             {/* Lien « Voir tout » */}
             <Button variant="outline" size="sm" asChild className="text-xs">
-              <a href={`/admin/requests?orgId=${orgId}`}>
+              <a href={`/requests?orgId=${orgId}`}>
                 <ExternalLink className="h-3 w-3 mr-1" />
                 Voir tout
               </a>

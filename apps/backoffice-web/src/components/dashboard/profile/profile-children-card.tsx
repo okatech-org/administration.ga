@@ -46,7 +46,7 @@ function getAge(birthDate?: string | number | null): number | null {
  */
 export function ProfileChildrenCard({
   children: childProfiles,
-  basePath = "/admin/profiles",
+  basePath = "/profiles",
 }: ProfileChildrenCardProps) {
   return (
     <FlatCard>

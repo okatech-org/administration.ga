@@ -34,7 +34,7 @@ export function ProfileViewSheet({
 						{t("profile.profileDetails")}
 					</SheetTitle>
 					<Button variant="outline" size="sm" asChild className="mr-6">
-						<Link href={`/admin/profiles/${profileId}`}>
+						<Link href={`/profiles/${profileId}`}>
 							Dossier complet
 						</Link>
 					</Button>

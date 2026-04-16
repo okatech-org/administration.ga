@@ -222,9 +222,9 @@ export function ProfileDetailView({
 	const completionScore = (profile as any).completionScore ?? 0;
 
 	// ─── Chemin de base selon le contexte ─────────────────────
-	const basePath = context === "agent" ? "/agent/profiles" : "/admin/profiles";
+	const basePath = context === "agent" ? "/agent/profiles" : "/profiles";
 	const requestsBasePath =
-		context === "agent" ? "/agent/requests" : "/admin/requests";
+		context === "agent" ? "/agent/requests" : "/requests";
 
 	// ─── Rendu principal : grille 3 colonnes ──────────────────
 	return (

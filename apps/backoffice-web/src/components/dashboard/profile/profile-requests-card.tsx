@@ -49,7 +49,7 @@ export interface ProfileRequestsCardProps {
 export function ProfileRequestsCard({
   requests,
   context,
-  basePath = "/admin/requests",
+  basePath = "/requests",
   onAssign,
 }: ProfileRequestsCardProps) {
   // Tri par date decroissante
