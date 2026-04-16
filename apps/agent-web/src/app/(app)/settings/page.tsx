@@ -111,17 +111,6 @@ export default function DashboardSettings() {
 	const { t } = useTranslation();
 	const [isEditing, setIsEditing] = useState(false);
 	const [activeTab, setActiveTab] = useState("profile");
-	const router = useRouter();
-
-	// Quelques onglets ouvrent une vraie route dédiée (modèles de documents).
-	// On intercepte le changement de tab pour déléguer la navigation.
-	const handleTabChange = (tabId: string) => {
-		if (tabId === "templates") {
-			router.push("/settings/templates");
-			return;
-		}
-		setActiveTab(tabId);
-	};
 
 	const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 	const { canDo, isReady: permissionsReady } = useCanDoTask(
@@ -361,13 +350,6 @@ export default function DashboardSettings() {
 						label: "Services",
 						icon: <Briefcase className="size-4" />,
 					},
-					...(canDo("documents.manage_templates")
-						? [{
-							id: "templates",
-							label: "Modèles de documents",
-							icon: <FileText className="size-4" />,
-						}]
-						: []),
 					{
 						id: "requestProcessing",
 						label: "Traitement",
@@ -438,7 +420,7 @@ export default function DashboardSettings() {
 				description={t("dashboard.settings.description")}
 				groups={GROUPS}
 				activeTab={activeTab}
-				onTabChange={handleTabChange}
+				onTabChange={setActiveTab}
 			>
 				<div className="flex justify-end mb-6">
 					{canManageSettings &&

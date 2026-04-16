@@ -89,6 +89,125 @@ export const listGlobalForOrg = authQuery({
 });
 
 /**
+ * List templates belonging ONLY to an organization (no globals).
+ * Used by the agent templates management page where globals should not
+ * clutter the list — they are exposed separately as a source for cloning.
+ */
+export const listOrgTemplates = authQuery({
+	args: { orgId: v.id("orgs") },
+	handler: async (ctx, args) => {
+		return await ctx.db
+			.query("documentTemplates")
+			.withIndex("by_org", (q) => q.eq("orgId", args.orgId).eq("isActive", true))
+			.collect();
+	},
+});
+
+/**
+ * List every template usable as a CLONE SOURCE for an org : its own
+ * templates + every global template accessible to its type. Returned items
+ * carry an `isGlobal` flag so the picker can distinguish them.
+ */
+export const listCloneSources = authQuery({
+	args: { orgId: v.id("orgs") },
+	handler: async (ctx, args) => {
+		const org = await ctx.db.get(args.orgId);
+		if (!org) return [];
+		const orgTemplates = await ctx.db
+			.query("documentTemplates")
+			.withIndex("by_org", (q) => q.eq("orgId", args.orgId).eq("isActive", true))
+			.collect();
+		const globals = await ctx.db
+			.query("documentTemplates")
+			.withIndex("by_global", (q) => q.eq("isGlobal", true).eq("isActive", true))
+			.collect();
+		const accessibleGlobals = globals.filter((t) =>
+			orgTypeAllowed(t.allowedOrgTypes, org.type),
+		);
+		return [...orgTemplates, ...accessibleGlobals];
+	},
+});
+
+/**
+ * Clone ANY template (org or global) into the same organisation.
+ * - A global source → standard clone-from-global (tracks clonedFromTemplateId).
+ * - An org source already owned by this org → duplicate as a fresh org template.
+ *
+ * Superset of `cloneFromGlobal`. The existing `cloneFromGlobal` remains for
+ * backward compatibility but internally delegates here.
+ */
+export const cloneTemplate = authMutation({
+	args: {
+		sourceTemplateId: v.id("documentTemplates"),
+		orgId: v.id("orgs"),
+	},
+	handler: async (ctx, args) => {
+		const source = await ctx.db.get(args.sourceTemplateId);
+		if (!source) throw new Error("Modèle source introuvable");
+		if (!source.isActive) {
+			throw error(ErrorCode.VALIDATION_ERROR, "Modèle source inactif");
+		}
+
+		const org = await ctx.db.get(args.orgId);
+		if (!org) throw new Error("Organisation introuvable");
+
+		// Authorization : source global must be allowed for this org type ;
+		// source org must be the same organisation.
+		if (source.isGlobal) {
+			if (!orgTypeAllowed(source.allowedOrgTypes, org.type)) {
+				throw error(
+					ErrorCode.FORBIDDEN,
+					"Ce modèle n'est pas accessible à ce type d'organisation",
+				);
+			}
+		} else {
+			if (source.orgId !== args.orgId) {
+				throw error(
+					ErrorCode.FORBIDDEN,
+					"Impossible de cloner un modèle d'une autre organisation",
+				);
+			}
+		}
+
+		const membership = await ctx.db
+			.query("memberships")
+			.withIndex("by_user_org", (q) =>
+				q.eq("userId", ctx.user._id).eq("orgId", args.orgId),
+			)
+			.first();
+		await assertCanManageTemplates(ctx, ctx.user, membership);
+
+		const now = Date.now();
+		return await ctx.db.insert("documentTemplates", {
+			name: source.name,
+			description: source.description,
+			category: source.category,
+			serviceId: source.serviceId,
+			templateType: source.templateType,
+			content: source.content,
+			contentHtml: source.contentHtml,
+			placeholders: source.placeholders,
+			orgId: args.orgId,
+			createdBy: ctx.user._id,
+			isGlobal: false,
+			isActive: true,
+			autoPublishToCitizen: source.autoPublishToCitizen,
+			requireSignature: source.requireSignature,
+			allowedSignerPositions: source.allowedSignerPositions,
+			paperSize: source.paperSize,
+			orientation: source.orientation,
+			version: 1,
+			updatedAt: now,
+			// On ne marque clonedFromTemplateId QUE pour un clone depuis un
+			// source global — un clone depuis un autre org template n'a pas
+			// de « mise à jour disponible » à propager.
+			clonedFromTemplateId: source.isGlobal ? args.sourceTemplateId : undefined,
+			clonedFromVersion: source.isGlobal ? source.version ?? 1 : undefined,
+		});
+	},
+});
+
+/**
  * Get a single template by ID
  */
 export const getById = authQuery({

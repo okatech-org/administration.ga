@@ -170,7 +170,7 @@ export default function OrgTemplateEditPage() {
 				<Button
 					variant="ghost"
 					size="icon"
-					onClick={() => router.push("/settings/templates")}
+					onClick={() => router.push("/itemplates")}
 				>
 					<ArrowLeft className="h-4 w-4" />
 				</Button>
@@ -270,7 +270,7 @@ export default function OrgTemplateEditPage() {
 			</div>
 
 			<div className="flex justify-between">
-				<Button variant="ghost" onClick={() => router.push("/settings/templates")}>
+				<Button variant="ghost" onClick={() => router.push("/itemplates")}>
 					Retour à la liste
 				</Button>
 				<Button onClick={save} disabled={saving}>

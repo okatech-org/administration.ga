@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "motion/react"
 import { useOrg } from "@/components/org/org-provider"
 import { useModuleAccess } from "@/components/shared/access-gate"
 import { useOrgModules } from "@/hooks/useOrgModules"
+import { useCanDoTask } from "@/hooks/useCanDoTask"
 import {
   useAuthenticatedConvexQuery,
   useConvexMutationQuery,
@@ -26,6 +27,7 @@ import {
   Scale,
   Building2,
   FileText,
+  Files,
   Folder,
   FolderOpen,
   FolderPlus,
@@ -1893,6 +1895,8 @@ export default function IDocumentPage() {
   const { hasMin: hasDocAccess } = useModuleAccess("documents")
   const canEditDocs = hasDocAccess("editor")
   const canAdminDocs = hasDocAccess("admin")
+  const { canDo } = useCanDoTask(activeOrgId ?? undefined)
+  const canManageTemplates = canDo("documents.manage_templates")
   const { hasCapability } = useOrgModules()
   const showArchive = hasCapability("documents", "archive")
 
@@ -2351,7 +2355,7 @@ export default function IDocumentPage() {
         )}
       </motion.div>
 
-      {/* ── Module Tabs: iDocument | iArchive ── */}
+      {/* ── Module Tabs: iDocument | iArchive | Modèles de documents ── */}
       <motion.div
         variants={fadeUp}
         className="flex items-center border-b border-border/50"
@@ -2373,6 +2377,17 @@ export default function IDocumentPage() {
               iArchive
             </Link>
           )}
+          {/* Modèles de documents — gated documents.manage_templates */}
+          {canManageTemplates ? (
+            <Link
+              href="/itemplates"
+              id="idocument-tab-itemplates"
+              className="-mb-px ml-1 flex items-center gap-1.5 rounded-t-lg border border-border/50 bg-muted/30 px-4 py-2.5 text-sm font-medium text-foreground/70 transition-all hover:border-border hover:bg-muted/60 hover:text-foreground"
+            >
+              <Files className="h-3.5 w-3.5 text-primary" />
+              Modèles de documents
+            </Link>
+          ) : null}
         </div>
         <div className="ml-auto flex items-center gap-1.5 pb-0.5">
           <span className="rounded-full border border-border/20 bg-muted/40 px-2 py-0.5 text-[10px] font-medium tracking-wide text-muted-foreground/40">
