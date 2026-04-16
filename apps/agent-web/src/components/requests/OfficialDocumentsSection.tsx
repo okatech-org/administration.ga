@@ -255,10 +255,10 @@ function GenerateDialog({
 	const [templateId, setTemplateId] = useState<Id<"documentTemplates"> | "">("");
 	const [isGenerating, setIsGenerating] = useState(false);
 
-	// List templates available to this org (org-scoped + globals filtered by
-	// the org type via the server-side `listByOrg` query).
+	// Org-only templates — les modèles globaux ne servent JAMAIS à générer
+	// directement, uniquement comme sources de clonage dans /itemplates.
 	const { data: templates } = useAuthenticatedConvexQuery(
-		api.functions.documentTemplates.listByOrg,
+		api.functions.documentTemplates.listOrgTemplates,
 		{ orgId },
 	);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronsUpDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import * as React from "react";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -73,11 +73,11 @@ export function Combobox<T extends string = string>({
 					) : (
 						<span className="text-muted-foreground">{placeholder}</span>
 					)}
-					<ChevronsUpDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
+					<ChevronDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent
-				className="w-[--radix-popover-trigger-width] p-0"
+				className="w-[--radix-popover-trigger-width] gap-0 border border-border p-0 shadow-lg"
 				align="start"
 			>
 				<Command>
@@ -89,6 +89,7 @@ export function Combobox<T extends string = string>({
 								<CommandItem
 									key={option.value}
 									value={option.label}
+									data-checked={value === option.value ? "true" : undefined}
 									onSelect={() => {
 										if (onValueChange) {
 											onValueChange(option.value);
@@ -96,12 +97,6 @@ export function Combobox<T extends string = string>({
 										setOpen(false);
 									}}
 								>
-									<Check
-										className={cn(
-											"mr-2 h-4 w-4",
-											value === option.value ? "opacity-100" : "opacity-0",
-										)}
-									/>
 									{option.icon && <span className="mr-2">{option.icon}</span>}
 									{option.label}
 								</CommandItem>

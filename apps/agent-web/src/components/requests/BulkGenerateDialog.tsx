@@ -41,10 +41,10 @@ export function BulkGenerateDialog({
 	const [publishImmediately, setPublishImmediately] = useState(false);
 	const [running, setRunning] = useState(false);
 
-	// Org templates available (org-scoped + globals filtered by org type
-	// via the server-side query).
+	// Org-only templates — les modèles globaux ne servent JAMAIS à générer
+	// directement, uniquement comme sources de clonage dans /itemplates.
 	const { data: templates } = useAuthenticatedConvexQuery(
-		api.functions.documentTemplates.listByOrg,
+		api.functions.documentTemplates.listOrgTemplates,
 		{ orgId },
 	);
 

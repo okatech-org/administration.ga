@@ -78,11 +78,11 @@ export default function AutoGenerationRulesPage() {
 		{ orgServiceId },
 	);
 
+	// Org-only templates : les règles auto-gen ne référencent que les modèles
+	// de l'organisation, jamais des modèles globaux directement.
 	const { data: templates, isLoading: loadingTemplates } = useAuthenticatedConvexQuery(
-		api.functions.documentTemplates.listForService,
-		orgService
-			? { serviceId: orgService.serviceId, orgId: activeOrgId ?? undefined }
-			: "skip",
+		api.functions.documentTemplates.listOrgTemplates,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
 
 	const { mutateAsync: saveRules } = useConvexMutationQuery(

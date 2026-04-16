@@ -80,7 +80,7 @@ export function BottomSheet({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 350 }}
-            className="fixed bottom-0 left-0 right-0 z-[91] flex flex-col"
+            className="fixed bottom-0 left-0 right-0 z-[91] flex flex-col pb-0 md:pb-10"
             style={{ maxHeight }}
           >
             <div
