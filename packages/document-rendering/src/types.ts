@@ -111,6 +111,59 @@ export interface PageLayoutOptions {
 	marginLeft?: number;
 }
 
+/**
+ * Version résolue de la brique Entête / Pied de page — contenu Tiptap et
+ * méta rendus prêts à être intégrés au document. Le logo est résolu en
+ * URL `src` par le pipeline de génération avant d'arriver ici.
+ */
+export interface HeaderFooterBlockResolved {
+	header: {
+		logoSrc?: string;
+		logoAlignment: "left" | "center" | "right";
+		/** Hauteur en mm. Fallback : 30 mm. */
+		height?: number;
+		/** Document Tiptap du contenu d'entête. */
+		content: TiptapDocument;
+	};
+	footer: {
+		/** Hauteur en mm. Fallback : 15 mm. */
+		height?: number;
+		content: TiptapDocument;
+		showPageNumbers?: boolean;
+	};
+}
+
+/**
+ * Version résolue de la brique Typographie — appliquée au rendu via CSS
+ * (HTML) ou mapping des styles React-PDF.
+ */
+export interface TypographyBlockResolved {
+	fontFamily: string;
+	fontSizeBase: number; // pt
+	lineHeight: number; // multiplicateur
+	defaultAlignment: "left" | "center" | "right" | "justify";
+	headingStyles: {
+		h1: HeadingStyleResolved;
+		h2: HeadingStyleResolved;
+		h3: HeadingStyleResolved;
+	};
+	paragraphSpacingBefore?: number; // mm
+	paragraphSpacingAfter?: number; // mm
+	paragraphFirstLineIndent?: number; // mm
+	pageBreakBefore?: Array<"h1" | "h2" | "h3">;
+	widowOrphanControl?: boolean;
+	keepHeadingsWithNext?: boolean;
+}
+
+export interface HeadingStyleResolved {
+	fontSize: number;
+	bold: boolean;
+	uppercase: boolean;
+	spacingBefore?: number;
+	spacingAfter?: number;
+	alignment?: "left" | "center" | "right" | "justify";
+}
+
 /** Context passed to placeholder resolution. */
 export interface PlaceholderContext {
 	user?: Record<string, unknown>;

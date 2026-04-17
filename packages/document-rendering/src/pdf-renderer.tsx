@@ -34,10 +34,12 @@ import type { ReactElement, ReactNode } from "react";
 type PdfStyle = ReturnType<typeof StyleSheet.create>[string];
 
 import type {
+	HeaderFooterBlockResolved,
 	PageLayoutOptions,
 	TiptapDocument,
 	TiptapMark,
 	TiptapNode,
+	TypographyBlockResolved,
 } from "./types";
 
 /** 1 mm in PDF points (PDF unit = 1/72 inch, 1 inch = 25.4 mm). */
@@ -176,28 +178,45 @@ const styles = StyleSheet.create({
 /** Default 20 mm margins on every side. */
 const DEFAULT_MARGIN_MM = 20;
 
-function pageStyle(options: PageLayoutOptions | undefined): PdfStyle {
+function pageStyle(
+	options: PageLayoutOptions | undefined,
+	typography?: TypographyBlockResolved,
+): PdfStyle {
 	const top = mmToPt(options?.marginTop ?? DEFAULT_MARGIN_MM);
 	const right = mmToPt(options?.marginRight ?? DEFAULT_MARGIN_MM);
 	const bottom = mmToPt(options?.marginBottom ?? DEFAULT_MARGIN_MM);
 	const left = mmToPt(options?.marginLeft ?? DEFAULT_MARGIN_MM);
+	const fontFamily = typography
+		? (normaliseFontFamily(typography.fontFamily) ?? "Helvetica")
+		: "Helvetica";
+	const fontSize = typography?.fontSizeBase ?? 11;
+	const lineHeight = typography?.lineHeight ?? 1.45;
 	return StyleSheet.create({
 		_: {
 			paddingTop: top,
 			paddingRight: right,
 			paddingBottom: bottom,
 			paddingLeft: left,
-			fontSize: 11,
-			fontFamily: "Helvetica",
-			lineHeight: 1.45,
+			fontSize,
+			fontFamily,
+			lineHeight,
 			color: "#1F1F1F",
 		},
 	})._;
 }
 
+/** Contexte de rendu passé à travers l'arbre (styles de titres, sauts…). */
+interface RenderContext {
+	typography?: TypographyBlockResolved;
+}
+
 /** Options that influence page setup (paper / orientation). */
 export interface PdfRenderOptions extends PageLayoutOptions {
 	documentProps?: Partial<DocumentProps>;
+	/** Brique « Entête/Pied » — rendue dans des bandes fixes de chaque page. */
+	headerFooter?: HeaderFooterBlockResolved;
+	/** Brique « Typographie » — appliquée comme style de base de la page. */
+	typography?: TypographyBlockResolved;
 }
 
 /**
@@ -214,34 +233,135 @@ export function TemplatePdfDocument({
 	registerStandardFonts();
 	const paper = options?.paperSize ?? "A4";
 	const orientation = options?.orientation ?? "portrait";
+	const typography = options?.typography;
+	const headerFooter = options?.headerFooter;
 	return (
 		<Document {...options?.documentProps}>
-			<Page size={paper} orientation={orientation} style={pageStyle(options)}>
-				{renderNodes(doc.content ?? [])}
+			<Page
+				size={paper}
+				orientation={orientation}
+				style={pageStyle(options, typography)}
+			>
+				{headerFooter ? renderHeaderBand(headerFooter, typography) : null}
+				{renderNodes(doc.content ?? [], { typography })}
+				{headerFooter ? renderFooterBand(headerFooter, typography) : null}
 			</Page>
 		</Document>
 	);
 }
 
-function renderNodes(nodes: TiptapNode[]): ReactNode[] {
-	return nodes.map((node, idx) => renderNode(node, String(idx))).filter(Boolean);
+/** Bande d'entête répétée sur chaque page (prop React-PDF `fixed`). */
+function renderHeaderBand(
+	hf: HeaderFooterBlockResolved,
+	typography: TypographyBlockResolved | undefined,
+): ReactElement {
+	const heightPt = mmToPt(hf.header.height ?? 30);
+	const logoSrc = hf.header.logoSrc;
+	const align = hf.header.logoAlignment;
+	const contentNodes = (hf.header.content?.content ?? []) as TiptapNode[];
+	return (
+		<View
+			fixed
+			style={{
+				minHeight: heightPt,
+				marginBottom: mmToPt(4),
+				flexDirection: "row",
+				alignItems: "flex-start",
+				justifyContent: "space-between",
+				gap: 8,
+			}}
+		>
+			{logoSrc && align === "left" ? (
+				<PdfImage src={logoSrc} style={{ maxWidth: 80, maxHeight: heightPt - 4 }} />
+			) : null}
+			<View style={{ flex: 1 }}>{renderNodes(contentNodes, { typography })}</View>
+			{logoSrc && align === "right" ? (
+				<PdfImage src={logoSrc} style={{ maxWidth: 80, maxHeight: heightPt - 4 }} />
+			) : null}
+			{logoSrc && align === "center" ? (
+				<PdfImage src={logoSrc} style={{ maxWidth: 80, maxHeight: heightPt - 4 }} />
+			) : null}
+		</View>
+	);
 }
 
-function renderNode(node: TiptapNode, key: string): ReactNode {
+/** Bande de pied répétée en bas de chaque page. */
+function renderFooterBand(
+	hf: HeaderFooterBlockResolved,
+	typography: TypographyBlockResolved | undefined,
+): ReactElement {
+	const heightPt = mmToPt(hf.footer.height ?? 15);
+	const contentNodes = (hf.footer.content?.content ?? []) as TiptapNode[];
+	return (
+		<View
+			fixed
+			style={{
+				position: "absolute",
+				bottom: mmToPt(5),
+				left: 0,
+				right: 0,
+				minHeight: heightPt,
+				fontSize: 8,
+				color: "#6B7280",
+				textAlign: "center",
+			}}
+		>
+			{renderNodes(contentNodes, { typography })}
+			{hf.footer.showPageNumbers ? (
+				<Text
+					render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
+				/>
+			) : null}
+		</View>
+	);
+}
+
+function renderNodes(nodes: TiptapNode[], ctx: RenderContext = {}): ReactNode[] {
+	return nodes.map((node, idx) => renderNode(node, String(idx), ctx)).filter(Boolean);
+}
+
+function renderNode(node: TiptapNode, key: string, ctx: RenderContext = {}): ReactNode {
 	switch (node.type) {
-		case "paragraph":
+		case "paragraph": {
+			const typoStyle = ctx.typography
+				? paragraphStyleFromTypography(ctx.typography)
+				: undefined;
 			return (
-				<View key={key} style={mergeStyles(styles.paragraph, alignmentStyle(node))}>
-					<Text>{renderInlineChildren(node.content)}</Text>
+				<View
+					key={key}
+					style={mergeStyles(
+						mergeStyles(styles.paragraph, typoStyle),
+						alignmentStyle(node, ctx.typography),
+					)}
+				>
+					<Text>{renderInlineChildren(node.content, ctx)}</Text>
 				</View>
 			);
+		}
 		case "heading": {
 			const level = Number(node.attrs?.level ?? 1);
 			const baseStyle =
 				level === 1 ? styles.heading1 : level === 2 ? styles.heading2 : styles.heading3;
+			const typoStyle = ctx.typography
+				? headingStyleFromTypography(ctx.typography, level)
+				: undefined;
+			const forceBreak = ctx.typography?.pageBreakBefore?.includes(
+				(`h${level}` as "h1" | "h2" | "h3"),
+			);
+			const children = renderInlineChildren(node.content, ctx);
+			const displayed = typoStyle?.uppercase
+				? textToUpper(children)
+				: children;
 			return (
-				<Text key={key} style={mergeStyles(baseStyle, alignmentStyle(node))}>
-					{renderInlineChildren(node.content)}
+				<Text
+					key={key}
+					break={forceBreak}
+					style={mergeStyles(
+						mergeStyles(baseStyle, typoStyle?.style),
+						alignmentStyle(node, ctx.typography),
+					)}
+				>
+					{displayed}
 				</Text>
 			);
 		}
@@ -251,7 +371,7 @@ function renderNode(node: TiptapNode, key: string): ReactNode {
 					{(node.content ?? []).map((li, i) => (
 						<View key={i} style={styles.listItem}>
 							<Text style={styles.listMarker}>•</Text>
-							<View style={{ flex: 1 }}>{renderNodes(li.content ?? [])}</View>
+							<View style={{ flex: 1 }}>{renderNodes(li.content ?? [], ctx)}</View>
 						</View>
 					))}
 				</View>
@@ -262,18 +382,18 @@ function renderNode(node: TiptapNode, key: string): ReactNode {
 					{(node.content ?? []).map((li, i) => (
 						<View key={i} style={styles.listItem}>
 							<Text style={styles.listMarker}>{i + 1}.</Text>
-							<View style={{ flex: 1 }}>{renderNodes(li.content ?? [])}</View>
+							<View style={{ flex: 1 }}>{renderNodes(li.content ?? [], ctx)}</View>
 						</View>
 					))}
 				</View>
 			);
 		case "listItem":
 			// Normally handled by parent list; fall through for safety.
-			return <View key={key}>{renderNodes(node.content ?? [])}</View>;
+			return <View key={key}>{renderNodes(node.content ?? [], ctx)}</View>;
 		case "blockquote":
 			return (
 				<View key={key} style={styles.blockquote}>
-					{renderNodes(node.content ?? [])}
+					{renderNodes(node.content ?? [], ctx)}
 				</View>
 			);
 		case "horizontalRule":
@@ -309,25 +429,25 @@ function renderNode(node: TiptapNode, key: string): ReactNode {
 		case "table":
 			return (
 				<View key={key} style={styles.table}>
-					{renderNodes(node.content ?? [])}
+					{renderNodes(node.content ?? [], ctx)}
 				</View>
 			);
 		case "tableRow":
 			return (
 				<View key={key} style={styles.tableRow}>
-					{renderNodes(node.content ?? [])}
+					{renderNodes(node.content ?? [], ctx)}
 				</View>
 			);
 		case "tableCell":
 			return (
 				<View key={key} style={styles.tableCell}>
-					{renderNodes(node.content ?? [])}
+					{renderNodes(node.content ?? [], ctx)}
 				</View>
 			);
 		case "tableHeader":
 			return (
 				<View key={key} style={styles.tableHeaderCell}>
-					{renderNodes(node.content ?? [])}
+					{renderNodes(node.content ?? [], ctx)}
 				</View>
 			);
 		case "text":
@@ -447,9 +567,68 @@ function formatDate(iso: string | undefined): string {
 	});
 }
 
-function renderInlineChildren(nodes: TiptapNode[] | undefined): ReactNode[] {
+function renderInlineChildren(
+	nodes: TiptapNode[] | undefined,
+	ctx: RenderContext = {},
+): ReactNode[] {
 	if (!nodes) return [];
-	return nodes.map((n, i) => renderNode(n, String(i)));
+	return nodes.map((n, i) => renderNode(n, String(i), ctx));
+}
+
+/** Style paragraphe dérivé de la brique Typographie. */
+function paragraphStyleFromTypography(
+	t: TypographyBlockResolved,
+): PdfStyle | undefined {
+	const out: Record<string, unknown> = {};
+	if (t.paragraphSpacingBefore !== undefined)
+		out.marginTop = mmToPt(t.paragraphSpacingBefore);
+	if (t.paragraphSpacingAfter !== undefined)
+		out.marginBottom = mmToPt(t.paragraphSpacingAfter);
+	if (t.paragraphFirstLineIndent !== undefined && t.paragraphFirstLineIndent > 0)
+		out.textIndent = mmToPt(t.paragraphFirstLineIndent);
+	return Object.keys(out).length > 0 ? (out as PdfStyle) : undefined;
+}
+
+/** Style de titre dérivé de la brique Typographie pour le niveau demandé. */
+function headingStyleFromTypography(
+	t: TypographyBlockResolved,
+	level: number,
+): { style: PdfStyle; uppercase: boolean } | undefined {
+	const map: Record<number, keyof TypographyBlockResolved["headingStyles"]> = {
+		1: "h1",
+		2: "h2",
+		3: "h3",
+	};
+	const key = map[level];
+	if (!key) return undefined;
+	const h = t.headingStyles[key];
+	const out: Record<string, unknown> = {
+		fontSize: h.fontSize,
+	};
+	// React-PDF utilise "fontWeight: 'bold'" ou une variante de famille. On
+	// conserve la famille via `pageStyle` et on privilégie la variante Bold
+	// quand elle existe pour Helvetica/Times.
+	if (h.bold) {
+		const family = normaliseFontFamily(t.fontFamily) ?? "Helvetica";
+		out.fontFamily =
+			family === "Times-Roman"
+				? "Times-Bold"
+				: family === "Courier"
+					? "Courier-Bold"
+					: "Helvetica-Bold";
+	}
+	if (h.alignment) out.textAlign = h.alignment;
+	if (h.spacingBefore !== undefined) out.marginTop = mmToPt(h.spacingBefore);
+	if (h.spacingAfter !== undefined) out.marginBottom = mmToPt(h.spacingAfter);
+	return { style: out as PdfStyle, uppercase: h.uppercase };
+}
+
+/** Transforme tout noeud texte enfant en MAJUSCULES (utilisé pour titres). */
+function textToUpper(children: ReactNode[]): ReactNode[] {
+	return children.map((c) => {
+		if (typeof c === "string") return c.toUpperCase();
+		return c;
+	});
 }
 
 function renderTextNode(node: TiptapNode, key: string): ReactNode {
@@ -529,11 +708,23 @@ function marksToStyle(marks: TiptapMark[]): PdfStyle | undefined {
 	return merged as PdfStyle;
 }
 
-/** Returns an alignment Style matching the Tiptap `textAlign` attribute, if any. */
-function alignmentStyle(node: TiptapNode): PdfStyle | undefined {
+/**
+ * Returns an alignment Style matching the Tiptap `textAlign` attribute. If
+ * the attribute is missing and a typography block is provided, fall back to
+ * its `defaultAlignment`.
+ */
+function alignmentStyle(
+	node: TiptapNode,
+	typography?: TypographyBlockResolved,
+): PdfStyle | undefined {
 	const align = node.attrs?.textAlign;
 	if (align === "center" || align === "right" || align === "justify") {
 		return StyleSheet.create({ _: { textAlign: align } })._;
+	}
+	if (typography?.defaultAlignment && typography.defaultAlignment !== "left") {
+		return StyleSheet.create({
+			_: { textAlign: typography.defaultAlignment },
+		})._;
 	}
 	return undefined;
 }

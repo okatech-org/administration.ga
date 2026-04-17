@@ -38,7 +38,11 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { OrgTypeAccessPicker } from "@/components/config/OrgTypeAccessPicker";
+import {
+	ApplicabilityPicker,
+	type Applicability,
+} from "@/components/config/ApplicabilityPicker";
+import { TemplateBlockPicker } from "@/components/config/TemplateBlockPicker";
 import { toast } from "sonner";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { PageHeader } from "@/components/design-system/page-header";
@@ -107,8 +111,32 @@ export default function EditTemplatePage() {
 
 	const [content, setContent] = useState<TiptapDocument | null>(null);
 	const [placeholders, setPlaceholders] = useState<PlaceholderDescriptor[] | null>(null);
-	const [allowedOrgTypes, setAllowedOrgTypes] = useState<string[] | undefined | null>(null);
+	const [applicability, setApplicability] = useState<Applicability | null>(null);
+	const [applicableOrgTypes, setApplicableOrgTypes] = useState<string[]>([]);
+	const [headerFooterBlockId, setHeaderFooterBlockId] = useState<
+		Id<"templateHeaderFooterBlocks"> | undefined | null
+	>(null);
+	const [typographyBlockId, setTypographyBlockId] = useState<
+		Id<"templateTypographyBlocks"> | undefined | null
+	>(null);
+	const [voiceBlockId, setVoiceBlockId] = useState<
+		Id<"templateVoiceBlocks"> | undefined | null
+	>(null);
 	const [layout, setLayout] = useState<LayoutDraft | null>(null);
+
+	// Listes des briques disponibles pour les pickers
+	const { data: headerFooterBlocks } = useConvexQuery(
+		api.functions.templateHeaderFooterBlocks.listGlobal,
+		{},
+	);
+	const { data: typographyBlocks } = useConvexQuery(
+		api.functions.templateTypographyBlocks.listGlobal,
+		{},
+	);
+	const { data: voiceBlocks } = useConvexQuery(
+		api.functions.templateVoiceBlocks.listGlobal,
+		{},
+	);
 	const [newKey, setNewKey] = useState("");
 	const [newSource, setNewSource] = useState<PlaceholderSource>("formData");
 	const [saving, setSaving] = useState(false);
@@ -126,7 +154,20 @@ export default function EditTemplatePage() {
 			setPlaceholders(
 				(template.placeholders ?? []) as unknown as PlaceholderDescriptor[],
 			);
-			setAllowedOrgTypes(template.allowedOrgTypes ?? undefined);
+			// Nouveau format v1 puis fallback sur l'ancien `allowedOrgTypes`.
+			if (template.applicability) {
+				setApplicability(template.applicability as Applicability);
+				setApplicableOrgTypes(template.applicableOrgTypes ?? []);
+			} else if (template.allowedOrgTypes && template.allowedOrgTypes.length > 0) {
+				setApplicability("specificOrgTypes");
+				setApplicableOrgTypes(template.allowedOrgTypes);
+			} else {
+				setApplicability("all");
+				setApplicableOrgTypes([]);
+			}
+			setHeaderFooterBlockId(template.headerFooterBlockId);
+			setTypographyBlockId(template.typographyBlockId);
+			setVoiceBlockId(template.voiceBlockId);
 		}
 	}, [template, content]);
 
@@ -226,7 +267,10 @@ export default function EditTemplatePage() {
 	}
 
 	async function save() {
-		if (allowedOrgTypes && Array.isArray(allowedOrgTypes) && allowedOrgTypes.length === 0) {
+		if (
+			applicability === "specificOrgTypes" &&
+			applicableOrgTypes.length === 0
+		) {
 			toast.error(t("templates.global.new.errors.orgTypesRequired"));
 			return;
 		}
@@ -238,7 +282,18 @@ export default function EditTemplatePage() {
 				content: workingContent,
 				contentHtml: html,
 				placeholders: workingPlaceholders as unknown as never,
-				allowedOrgTypes: (allowedOrgTypes ?? undefined) as never,
+				applicability: (applicability ?? "all") as never,
+				applicableOrgTypes:
+					applicability === "specificOrgTypes"
+						? (applicableOrgTypes as never)
+						: (undefined as never),
+				allowedOrgTypes:
+					applicability === "specificOrgTypes"
+						? (applicableOrgTypes as never)
+						: (undefined as never),
+				headerFooterBlockId: headerFooterBlockId ?? undefined,
+				typographyBlockId: typographyBlockId ?? undefined,
+				voiceBlockId: voiceBlockId ?? undefined,
 			});
 			toast.success(t("templates.edit.saved"));
 		} catch (err) {
@@ -345,12 +400,57 @@ export default function EditTemplatePage() {
 
 					{template.isGlobal ? (
 						<FlatCard className="p-4">
-							<OrgTypeAccessPicker
-								value={allowedOrgTypes === null ? undefined : allowedOrgTypes}
-								onChange={(next) => setAllowedOrgTypes(next)}
+							<ApplicabilityPicker
+								applicability={applicability ?? "all"}
+								applicableOrgTypes={applicableOrgTypes}
+								onChange={(next) => {
+									setApplicability(next.applicability);
+									setApplicableOrgTypes(next.applicableOrgTypes);
+								}}
 							/>
 						</FlatCard>
 					) : null}
+
+					{/* Briques composées — optionnelles, fallback défaut au rendu. */}
+					<FlatCard className="flex flex-col gap-4 p-4">
+						<div>
+							<div className="font-medium">Composition modulaire</div>
+							<div className="text-xs text-muted-foreground">
+								Briques réutilisables pour l'entête, la typographie et le style
+								rédactionnel.
+							</div>
+						</div>
+						<TemplateBlockPicker
+							label="Entête & pied"
+							helpText="Logo, titre institutionnel, pied de page."
+							blocks={headerFooterBlocks}
+							value={headerFooterBlockId ?? undefined}
+							onChange={(v) =>
+								setHeaderFooterBlockId(v as Id<"templateHeaderFooterBlocks"> | undefined)
+							}
+							createHref="/config/templates/header-footer-blocks/new"
+						/>
+						<TemplateBlockPicker
+							label="Typographie"
+							helpText="Police, tailles, alignement."
+							blocks={typographyBlocks}
+							value={typographyBlockId ?? undefined}
+							onChange={(v) =>
+								setTypographyBlockId(v as Id<"templateTypographyBlocks"> | undefined)
+							}
+							createHref="/config/templates/typography-blocks/new"
+						/>
+						<TemplateBlockPicker
+							label="Style rédactionnel"
+							helpText="Ton, argumentaire (métier IA)."
+							blocks={voiceBlocks}
+							value={voiceBlockId ?? undefined}
+							onChange={(v) =>
+								setVoiceBlockId(v as Id<"templateVoiceBlocks"> | undefined)
+							}
+							createHref="/config/templates/voice-blocks/new"
+						/>
+					</FlatCard>
 
 					<FlatCard className="p-4">
 						<PlaceholderManager

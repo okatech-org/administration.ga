@@ -174,6 +174,17 @@ export const checkAiPermission = internalQuery({
 	},
 });
 
+/**
+ * Charge une brique « Voix / Argumentaire » depuis une `action`. Les actions
+ * n'ayant pas d'accès `ctx.db`, on passe par un `internalQuery` dédié.
+ */
+export const getVoiceBlockInternal = internalQuery({
+	args: { voiceBlockId: v.id("templateVoiceBlocks") },
+	handler: async (ctx, args) => {
+		return await ctx.db.get(args.voiceBlockId);
+	},
+});
+
 // ─── Prompt template ─────────────────────────────────────────────────────
 
 function buildPrompt(args: {
@@ -181,6 +192,8 @@ function buildPrompt(args: {
 	paperSize?: string;
 	language?: string;
 	prompt?: string;
+	/** Contexte stylistique produit depuis la brique « Voix/Argumentaire ». */
+	voiceContext?: string;
 }): string {
 	const lang = args.language === "en" ? "anglais" : "français";
 	const tplHint = args.templateType
@@ -190,8 +203,11 @@ function buildPrompt(args: {
 	const userInstruction = args.prompt
 		? `\n\nInstructions complémentaires de l'utilisateur :\n${args.prompt}`
 		: "";
+	const voiceSection = args.voiceContext
+		? `\n\n═══════════════════════════════════════════════════════════════\nSTYLE RÉDACTIONNEL DE L'INSTITUTION — À RESPECTER STRICTEMENT\n═══════════════════════════════════════════════════════════════\n\n${args.voiceContext}\n`
+		: "";
 
-	return `Tu es un assistant expert en rédaction de documents administratifs et diplomatiques. Tu reçois un document existant (PDF, scan, photo) ou une description, et tu dois produire un MODÈLE Tiptap JSON COMPLET et IMMÉDIATEMENT UTILISABLE, en ${lang}, fidèle au document source jusqu'au moindre paragraphe.
+	return `Tu es un assistant expert en rédaction de documents administratifs et diplomatiques. Tu reçois un document existant (PDF, scan, photo) ou une description, et tu dois produire un MODÈLE Tiptap JSON COMPLET et IMMÉDIATEMENT UTILISABLE, en ${lang}, fidèle au document source jusqu'au moindre paragraphe.${voiceSection}
 
 ${tplHint} ${sizeHint}${userInstruction}
 
@@ -355,6 +371,8 @@ export const generateFromDocument = authAction({
 		paperSize: v.optional(v.union(v.literal("A4"), v.literal("LETTER"))),
 		language: v.optional(v.union(v.literal("fr"), v.literal("en"))),
 		orgId: v.optional(v.id("orgs")),
+		/** Brique « Voix / Argumentaire » optionnelle — injectée au prompt. */
+		voiceBlockId: v.optional(v.id("templateVoiceBlocks")),
 	},
 	handler: async (ctx, args) => {
 		// Permission gate via internal query (authAction has no ctx.db).
@@ -369,11 +387,30 @@ export const generateFromDocument = authAction({
 			);
 		}
 
+		// Si une brique « voix » est référencée, on construit un contexte
+		// stylistique depuis le bloc et on le préfixe au prompt principal.
+		let voiceContext: string | undefined;
+		if (args.voiceBlockId) {
+			const block = await ctx.runQuery(
+				internal.functions.templateAI.getVoiceBlockInternal,
+				{ voiceBlockId: args.voiceBlockId },
+			);
+			if (block) {
+				const { voiceBlockToPromptContext } = await import(
+					"@workspace/document-rendering"
+				);
+				voiceContext = voiceBlockToPromptContext(
+					block as Parameters<typeof voiceBlockToPromptContext>[0],
+				);
+			}
+		}
+
 		const prompt = buildPrompt({
 			templateType: args.templateType,
 			paperSize: args.paperSize,
 			language: args.language,
 			prompt: args.prompt,
+			voiceContext,
 		});
 
 		// Single-shot generation. Gemini occasionally returns prose around the

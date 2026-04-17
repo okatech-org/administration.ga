@@ -20,5 +20,13 @@ export {
 	substitutePlaceholders,
 	toDisplayString,
 } from "./placeholder-utils";
-export { renderDocumentToHtml } from "./html-renderer";
+export { renderDocumentToHtml, type RenderDocumentOptions } from "./html-renderer";
 export { TemplatePdfDocument, type PdfRenderOptions } from "./pdf-renderer";
+export {
+	resolveHeaderFooterBlock,
+	resolveTypographyBlock,
+	voiceBlockToPromptContext,
+	type HeaderFooterBlockDoc,
+	type TypographyBlockDoc,
+	type VoiceBlockDoc,
+} from "./block-resolver";

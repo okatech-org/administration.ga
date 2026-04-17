@@ -34,6 +34,11 @@ interface GenerationContext {
 	profile: Record<string, unknown> | undefined;
 	resolvedPlaceholders: Record<string, string>;
 	serviceName: string | undefined;
+	// Briques composées référencées par le template — null lorsque le
+	// template ne spécifie aucune brique ou quand la brique a été archivée.
+	headerFooterBlock: Doc<"templateHeaderFooterBlocks"> | null;
+	typographyBlock: Doc<"templateTypographyBlocks"> | null;
+	voiceBlock: Doc<"templateVoiceBlocks"> | null;
 }
 
 export const generateFromTemplate = authAction({
@@ -158,6 +163,8 @@ async function runGeneration(
 		injectImagePlaceholderSrcs,
 		substitutePlaceholders,
 		TemplatePdfDocument,
+		resolveHeaderFooterBlock,
+		resolveTypographyBlock,
 	} = await import("@workspace/document-rendering");
 	let resolvedContent = substitutePlaceholders(
 		data.template.content,
@@ -184,6 +191,24 @@ async function runGeneration(
 		}
 	}
 
+	// 2c. Résout les briques composées. L'entête peut embarquer un logo stocké
+	// dans `_storage` — on fournit un `logoResolver` qui encode le blob en
+	// data URL (comme pour les image placeholders ci-dessus).
+	const headerFooterResolved = data.headerFooterBlock
+		? await resolveHeaderFooterBlock(
+				data.headerFooterBlock as Parameters<typeof resolveHeaderFooterBlock>[0],
+				async (storageId) => {
+					const blob = await ctx.storage.get(storageId as Id<"_storage">);
+					if (!blob) return undefined;
+					const bytes = new Uint8Array(await blob.arrayBuffer());
+					return `data:image/png;base64,${arrayBufferToBase64(bytes)}`;
+				},
+			)
+		: undefined;
+	const typographyResolved = data.typographyBlock
+		? resolveTypographyBlock(data.typographyBlock as Parameters<typeof resolveTypographyBlock>[0])
+		: undefined;
+
 	// 3. Render the resolved AST to PDF via React-PDF. `TemplatePdfDocument`
 	// returns a `<Document>` so `renderToBuffer` is happy at runtime; the
 	// React-PDF types want the ROOT to be a `<Document>` element, hence the
@@ -198,6 +223,8 @@ async function runGeneration(
 			marginRight: data.template.marginRight,
 			marginBottom: data.template.marginBottom,
 			marginLeft: data.template.marginLeft,
+			headerFooter: headerFooterResolved,
+			typography: typographyResolved,
 		},
 	});
 	const pdfBuffer = await renderToBuffer(

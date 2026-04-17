@@ -110,6 +110,19 @@ export const loadGenerationContext = internalQuery({
 			{ mappingOverride: args.fieldMappingOverride },
 		);
 
+		// Résout les 3 briques composées (Entête/Pied, Typo, Voix IA). Chaque
+		// brique est optionnelle — quand absente, le renderer applique ses
+		// valeurs par défaut intégrées.
+		const headerFooterBlock = template.headerFooterBlockId
+			? await ctx.db.get(template.headerFooterBlockId)
+			: null;
+		const typographyBlock = template.typographyBlockId
+			? await ctx.db.get(template.typographyBlockId)
+			: null;
+		const voiceBlock = template.voiceBlockId
+			? await ctx.db.get(template.voiceBlockId)
+			: null;
+
 		return {
 			template,
 			request,
@@ -119,6 +132,9 @@ export const loadGenerationContext = internalQuery({
 			profile,
 			resolvedPlaceholders: resolved,
 			serviceName,
+			headerFooterBlock,
+			typographyBlock,
+			voiceBlock,
 		};
 	},
 });

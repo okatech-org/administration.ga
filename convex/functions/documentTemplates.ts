@@ -54,7 +54,7 @@ export const listByOrg = authQuery({
 			.withIndex("by_global", (q) => q.eq("isGlobal", true).eq("isActive", true))
 			.collect();
 		const visibleGlobals = globalTemplates.filter((t) =>
-			orgTypeAllowed(t.allowedOrgTypes, orgType),
+			orgTypeAllowed(t.allowedOrgTypes, orgType, t),
 		);
 
 		// Merge and deduplicate (an org template won't overlap a global by _id).
@@ -84,7 +84,7 @@ export const listGlobalForOrg = authQuery({
 			.query("documentTemplates")
 			.withIndex("by_global", (q) => q.eq("isGlobal", true).eq("isActive", true))
 			.collect();
-		return all.filter((t) => orgTypeAllowed(t.allowedOrgTypes, org.type));
+		return all.filter((t) => orgTypeAllowed(t.allowedOrgTypes, org.type, t));
 	},
 });
 
@@ -122,7 +122,7 @@ export const listCloneSources = authQuery({
 			.withIndex("by_global", (q) => q.eq("isGlobal", true).eq("isActive", true))
 			.collect();
 		const accessibleGlobals = globals.filter((t) =>
-			orgTypeAllowed(t.allowedOrgTypes, org.type),
+			orgTypeAllowed(t.allowedOrgTypes, org.type, t),
 		);
 		return [...orgTemplates, ...accessibleGlobals];
 	},
@@ -154,7 +154,7 @@ export const cloneTemplate = authMutation({
 		// Authorization : source global must be allowed for this org type ;
 		// source org must be the same organisation.
 		if (source.isGlobal) {
-			if (!orgTypeAllowed(source.allowedOrgTypes, org.type)) {
+			if (!orgTypeAllowed(source.allowedOrgTypes, org.type, source)) {
 				throw error(
 					ErrorCode.FORBIDDEN,
 					"Ce modèle n'est pas accessible à ce type d'organisation",
@@ -194,6 +194,11 @@ export const cloneTemplate = authMutation({
 			autoPublishToCitizen: source.autoPublishToCitizen,
 			requireSignature: source.requireSignature,
 			allowedSignerPositions: source.allowedSignerPositions,
+			// Héritage des briques composées — le clone peut les changer
+			// ensuite sans impacter la source.
+			headerFooterBlockId: source.headerFooterBlockId,
+			typographyBlockId: source.typographyBlockId,
+			voiceBlockId: source.voiceBlockId,
 			paperSize: source.paperSize,
 			orientation: source.orientation,
 			marginTop: source.marginTop,
@@ -245,7 +250,7 @@ export const listForService = authQuery({
 			.withIndex("by_global", (q) => q.eq("isGlobal", true).eq("isActive", true))
 			.collect();
 		const visibleGlobals = orgType
-			? globalTemplates.filter((t) => orgTypeAllowed(t.allowedOrgTypes, orgType))
+			? globalTemplates.filter((t) => orgTypeAllowed(t.allowedOrgTypes, orgType, t))
 			: globalTemplates;
 
 		// Org-specific templates.
@@ -264,7 +269,7 @@ export const listForService = authQuery({
 
 		// Also make sure service-linked templates respect allowedOrgTypes when they are global.
 		return unique.filter(
-			(t) => !t.isGlobal || orgTypeAllowed(t.allowedOrgTypes, orgType),
+			(t) => !t.isGlobal || orgTypeAllowed(t.allowedOrgTypes, orgType, t),
 		);
 	},
 });
@@ -301,6 +306,13 @@ export const create = authMutation({
 		requireSignature: v.optional(v.boolean()),
 		allowedSignerPositions: v.optional(v.array(v.string())),
 		allowedOrgTypes: v.optional(v.array(orgTypeValidator)),
+		applicability: v.optional(
+			v.union(v.literal("all"), v.literal("specificOrgTypes")),
+		),
+		applicableOrgTypes: v.optional(v.array(orgTypeValidator)),
+		headerFooterBlockId: v.optional(v.id("templateHeaderFooterBlocks")),
+		typographyBlockId: v.optional(v.id("templateTypographyBlocks")),
+		voiceBlockId: v.optional(v.id("templateVoiceBlocks")),
 		paperSize: v.optional(v.union(v.literal("A4"), v.literal("LETTER"))),
 		orientation: v.optional(v.union(v.literal("portrait"), v.literal("landscape"))),
 		marginTop: v.optional(v.number()),
@@ -370,6 +382,13 @@ export const update = authMutation({
 		requireSignature: v.optional(v.boolean()),
 		allowedSignerPositions: v.optional(v.array(v.string())),
 		allowedOrgTypes: v.optional(v.array(orgTypeValidator)),
+		applicability: v.optional(
+			v.union(v.literal("all"), v.literal("specificOrgTypes")),
+		),
+		applicableOrgTypes: v.optional(v.array(orgTypeValidator)),
+		headerFooterBlockId: v.optional(v.id("templateHeaderFooterBlocks")),
+		typographyBlockId: v.optional(v.id("templateTypographyBlocks")),
+		voiceBlockId: v.optional(v.id("templateVoiceBlocks")),
 		paperSize: v.optional(v.union(v.literal("A4"), v.literal("LETTER"))),
 		orientation: v.optional(v.union(v.literal("portrait"), v.literal("landscape"))),
 		marginTop: v.optional(v.number()),
@@ -435,7 +454,7 @@ export const cloneFromGlobal = authMutation({
 
 		const org = await ctx.db.get(args.orgId);
 		if (!org) throw new Error("Organisation introuvable");
-		if (!orgTypeAllowed(source.allowedOrgTypes, org.type)) {
+		if (!orgTypeAllowed(source.allowedOrgTypes, org.type, source)) {
 			throw error(
 				ErrorCode.FORBIDDEN,
 				"Ce modèle n'est pas accessible à ce type d'organisation",
@@ -467,6 +486,9 @@ export const cloneFromGlobal = authMutation({
 			autoPublishToCitizen: source.autoPublishToCitizen,
 			requireSignature: source.requireSignature,
 			allowedSignerPositions: source.allowedSignerPositions,
+			headerFooterBlockId: source.headerFooterBlockId,
+			typographyBlockId: source.typographyBlockId,
+			voiceBlockId: source.voiceBlockId,
 			paperSize: source.paperSize,
 			orientation: source.orientation,
 			marginTop: source.marginTop,
@@ -538,6 +560,9 @@ export const syncFromSource = authMutation({
 			autoPublishToCitizen: source.autoPublishToCitizen,
 			requireSignature: source.requireSignature,
 			allowedSignerPositions: source.allowedSignerPositions,
+			headerFooterBlockId: source.headerFooterBlockId,
+			typographyBlockId: source.typographyBlockId,
+			voiceBlockId: source.voiceBlockId,
 			paperSize: source.paperSize,
 			orientation: source.orientation,
 			marginTop: source.marginTop,
@@ -643,14 +668,28 @@ export const listGlobal = authQuery({
 
 /**
  * Returns true when a global template is accessible to the given org type.
- *  - Unrestricted (`allowedOrgTypes` undefined/empty) → always true.
- *  - Restricted → the org type must be explicitly listed.
- *  - Missing org type (should not happen in practice) → denied.
+ *
+ * Lit `applicability` + `applicableOrgTypes` en priorité (nouveau format v1),
+ * avec fallback sur `allowedOrgTypes` (legacy) pour les templates qui n'ont
+ * pas encore été migrés. Signature conservée pour ne rien casser côté appelant.
  */
 function orgTypeAllowed(
 	allowed: string[] | undefined,
 	orgType: string | undefined,
+	template?: Doc<"documentTemplates">,
 ): boolean {
+	// Nouveau format (v1)
+	if (template) {
+		const applicability = template.applicability;
+		const applicableOrgTypes = template.applicableOrgTypes;
+		if (applicability === "all") return true;
+		if (applicability === "specificOrgTypes") {
+			if (!applicableOrgTypes || applicableOrgTypes.length === 0) return true;
+			if (!orgType) return false;
+			return (applicableOrgTypes as string[]).includes(orgType);
+		}
+	}
+	// Legacy fallback
 	if (!allowed || allowed.length === 0) return true;
 	if (!orgType) return false;
 	return allowed.includes(orgType);

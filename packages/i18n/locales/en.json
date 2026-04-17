@@ -4552,6 +4552,39 @@
 					"createButton": "Create a template"
 				}
 			},
+			"tabs": {
+				"templates": "Templates",
+				"headerFooter": "Headers & footers",
+				"typography": "Typographies",
+				"voice": "Voice styles"
+			},
+			"blocks": {
+				"defaultBadge": "Default"
+			},
+			"headerFooter": {
+				"subtitle": "Logo, institutional header and footer — reusable across templates.",
+				"new": "New header/footer block",
+				"empty": {
+					"title": "No header/footer block",
+					"description": "Create a block to compose headers and footers for your templates."
+				}
+			},
+			"typography": {
+				"subtitle": "Font, sizes, line-height, page-break rules — applied when rendering.",
+				"new": "New typography block",
+				"empty": {
+					"title": "No typography block",
+					"description": "Create a block to control your templates' formatting."
+				}
+			},
+			"voice": {
+				"subtitle": "Tone, formulas and argumentation — AI-only, not rendered in the PDF.",
+				"new": "New voice block",
+				"empty": {
+					"title": "No voice block",
+					"description": "Create a block to guide AI generation with your institutional style."
+				}
+			},
 			"new": {
 				"title": "New global template",
 				"subtitle": "Initial configuration — content is authored in the next step",

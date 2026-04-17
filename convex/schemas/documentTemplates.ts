@@ -79,11 +79,29 @@ export const documentTemplatesTable = defineTable({
 	isGlobal: v.boolean(),
 	isActive: v.boolean(),
 
-	// ─── Accessibility by organization type ──────────────────────────────
-	// GLOBAL templates only — restricts which org types can use (list / clone)
-	// this template. When omitted or empty, every org type has access. Values
-	// are org types from `OrganizationType` (embassy, general_consulate, ...).
+	// ─── Accessibility by organization type (legacy) ─────────────────────
+	// DEPRECATED — préférer `applicability` + `applicableOrgTypes` ci-dessous.
+	// Conservé pour compatibilité avec les documents existants et lu en
+	// fallback si `applicability` n'est pas encore renseigné.
 	allowedOrgTypes: v.optional(v.array(orgTypeValidator)),
+
+	// ─── Scope de diffusion (v1) ─────────────────────────────────────────
+	// Détermine à quelles représentations ce modèle global s'applique.
+	//   - "all"                ⇒ toutes les représentations
+	//   - "specificOrgTypes"   ⇒ restreint aux types listés dans `applicableOrgTypes`
+	// (v2 : ajouter "specificOrgs" avec `applicableOrgIds` pour cibler des
+	// représentations précises.)
+	applicability: v.optional(
+		v.union(v.literal("all"), v.literal("specificOrgTypes")),
+	),
+	applicableOrgTypes: v.optional(v.array(orgTypeValidator)),
+
+	// ─── Composition modulaire ───────────────────────────────────────────
+	// Briques réutilisables. Toutes optionnelles — le rendu applique un
+	// fallback « défaut » quand une référence est absente ou invalide.
+	headerFooterBlockId: v.optional(v.id("templateHeaderFooterBlocks")),
+	typographyBlockId: v.optional(v.id("templateTypographyBlocks")),
+	voiceBlockId: v.optional(v.id("templateVoiceBlocks")),
 
 	// Locked once a document has been generated from this template. Further
 	// edits force a new version rather than mutating the live record.
