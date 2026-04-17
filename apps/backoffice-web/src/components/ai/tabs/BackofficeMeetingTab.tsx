@@ -101,7 +101,7 @@ export function BackofficeMeetingTab({ orgId }: BackofficeMeetingTabProps) {
 	// ── IN CALL ──
 	if (view === "incall" && token && wsUrl) {
 		return (
-			<div className="flex flex-col flex-1 overflow-hidden bg-zinc-950 rounded-lg">
+			<div className="flex flex-col flex-1 min-h-0 overflow-hidden bg-zinc-950 rounded-lg">
 				<div className="flex items-center justify-between px-3 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0">
 					<div className="flex items-center gap-2">
 						<Badge className="text-[9px] bg-red-500/15 text-red-400">En direct</Badge>
@@ -141,12 +141,12 @@ export function BackofficeMeetingTab({ orgId }: BackofficeMeetingTabProps) {
 	// ── CREATE ──
 	if (view === "create") {
 		return (
-			<div className="flex flex-col flex-1 overflow-hidden">
+			<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 				<div className="px-4 py-3 border-b shrink-0 flex items-center justify-between">
 					<h3 className="text-sm font-semibold">Nouvelle réunion</h3>
 					<Button variant="ghost" size="icon" onClick={() => { resetForm(); setView("list"); }} className="h-7 w-7"><X className="h-4 w-4" /></Button>
 				</div>
-				<ScrollArea className="flex-1 px-4 py-3">
+				<ScrollArea className="flex-1 min-h-0 px-4 py-3">
 					<div className="space-y-4">
 						<div className="space-y-1.5">
 							<Label className="text-xs">Nom de la réunion</Label>
@@ -206,9 +206,9 @@ export function BackofficeMeetingTab({ orgId }: BackofficeMeetingTabProps) {
 
 	// ── LIST ──
 	return (
-		<div className="flex flex-col flex-1 overflow-hidden">
+		<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 			<div className="p-3 border-b shrink-0"><Button onClick={() => setView("create")} className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"><Plus className="h-4 w-4" />Nouvelle réunion</Button></div>
-			<ScrollArea className="flex-1">
+			<ScrollArea className="flex-1 min-h-0">
 				{isPending ? (<div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>) : (
 					<div className="p-3 space-y-4">
 						{activeMeetings.length > 0 && (<div><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-2">En cours</p><div className="space-y-1.5">

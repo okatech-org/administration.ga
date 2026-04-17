@@ -62,8 +62,11 @@ export function IAstedWindow() {
 
 	const handleExpand = useCallback(() => {
 		setOpen(false);
-		router.push("/iasted");
-	}, [router]);
+		// Passe l'onglet courant en query param : sans ça, la page fullscreen
+		// restait figée sur "ichat" (valeur par défaut) même si l'utilisateur
+		// cliquait Agrandir depuis iContact / iAppel / etc.
+		router.push(`/iasted?tab=${activeTab}`);
+	}, [router, activeTab]);
 
 	// Items du CircleMenu construits par le package (DS v3, cohérents avec citizen).
 	const menuItems = buildCircleMenuItems({
@@ -105,7 +108,9 @@ export function IAstedWindow() {
 				tabContent={{
 					ichat: <IAstedInstantChatTab chat={chat} voice={voice} />,
 					icontact: <IAstedContactTab />,
-					icall: <IAstedCallTab />,
+					// `compact` : force LegacyCallTab (le CallCenterShell multi-colonnes
+					// ne tient pas dans 420px ; il reste actif sur la page fullscreen).
+					icall: <IAstedCallTab compact />,
 					imeeting: <IAstedMeetingTab />,
 					isettings: <IAstedSettingsTab />,
 				}}

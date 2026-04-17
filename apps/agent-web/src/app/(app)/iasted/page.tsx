@@ -15,7 +15,7 @@
 
 import { api } from "@convex/_generated/api"
 import type { Id } from "@convex/_generated/dataModel"
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import {
   Bot,
@@ -78,17 +78,41 @@ const NAV_ITEMS = [
 
 type TabId = (typeof NAV_ITEMS)[number]["id"]
 
+const VALID_TAB_IDS: ReadonlySet<string> = new Set(NAV_ITEMS.map((i) => i.id))
+
 export default function IAstedFullPage() {
-  const [activeTab, setActiveTab] = useState<TabId>("ichat")
-  const [selectedContact, setSelectedContact] = useState<any>(IASTED_CONTACT)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  // Tab initial dérivé du query param `?tab=...` (envoyé par le bouton Agrandir
+  // de la fenêtre flottante). Sans ça, la page restait figée sur iChat peu importe
+  // d'où on venait.
+  const initialTab = (() => {
+    const t = searchParams?.get("tab")
+    return t && VALID_TAB_IDS.has(t) ? (t as TabId) : "ichat"
+  })()
+
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab)
+  const [selectedContact, setSelectedContact] = useState<any>(
+    initialTab === "ichat" ? IASTED_CONTACT : null,
+  )
   const [search, setSearch] = useState("")
   const [messageInput, setMessageInput] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { activeOrg, activeOrgId } = useOrg()
-  const router = useRouter()
   const chat = useAdminAIChat()
   const voice = useAdminVoiceChat()
   const suggestions = getSuggestions("/iasted")
+
+  // Synchronise le query param avec l'onglet actif — un refresh garde le tab,
+  // et les boutons navigateur (back/forward) se comportent correctement.
+  useEffect(() => {
+    const current = searchParams?.get("tab")
+    if (current === activeTab) return
+    const params = new URLSearchParams(searchParams?.toString() ?? "")
+    params.set("tab", activeTab)
+    router.replace(`/iasted?${params.toString()}`, { scroll: false })
+  }, [activeTab, router, searchParams])
 
   // Inbound calls count for badge
   const { data: inboundCalls } = useAuthenticatedConvexQuery(
@@ -281,7 +305,7 @@ export default function IAstedFullPage() {
         {activeTab === "ichat" ? (
           <>
             {/* ── Col 2 : Liste conversations (comme WhatsApp) ── */}
-            <div className="flex w-80 shrink-0 flex-col border-r">
+            <div className="flex w-80 min-h-0 shrink-0 flex-col border-r">
               {/* Header */}
               <div className="shrink-0 border-b px-4 py-3">
                 <h2 className="text-base font-semibold">Discussions</h2>
@@ -462,7 +486,7 @@ export default function IAstedFullPage() {
             </div>
 
             {/* ── Col 3 : Zone de chat (comme WhatsApp) ── */}
-            <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
               {selectedContact ? (
                 <>
                   {/* Header contact */}
@@ -704,7 +728,7 @@ export default function IAstedFullPage() {
           </>
         ) : (
           /* ── Onglets non-chat (iContact, iAppel, Messagerie, Réglages) ── */
-          <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
             <div className="shrink-0 border-b px-4 py-3">
               <h2 className="text-base font-semibold">
                 {activeTab === "icontact"
@@ -718,7 +742,7 @@ export default function IAstedFullPage() {
                         : "Réglages"}
               </h2>
             </div>
-            <div className="flex-1 overflow-hidden">
+            <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
               {activeTab === "icontact" && <IAstedContactTab />}
               {activeTab === "icall" && <IAstedCallTab />}
               {activeTab === "voicemail" && (

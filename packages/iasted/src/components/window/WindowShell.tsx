@@ -38,6 +38,11 @@ export interface WindowShellProps {
 	context?: IAstedContextValue;
 	/** Slot injecté (Phase 3 : call-center depuis agent-web). */
 	callQueueSlot?: ReactNode;
+	/**
+	 * Bandeau secondaire rendu sous le header (ex : OrgSelector côté backoffice).
+	 * Libère l'espace du header pour les contrôles Maximize/Réduire.
+	 */
+	subHeaderSlot?: ReactNode;
 	/** Contenu rendu par onglet ; la clé correspond à `IAstedTabId`. */
 	tabContent: Partial<Record<IAstedTabId, ReactNode>>;
 	onClose?: () => void;
@@ -67,6 +72,7 @@ export interface WindowShellProps {
 export function WindowShell({
 	preset,
 	callQueueSlot,
+	subHeaderSlot,
 	tabContent,
 	onClose,
 	onExpand,
@@ -187,6 +193,10 @@ export function WindowShell({
 					aria-label={title}
 				>
 					{headerNode}
+
+					{subHeaderSlot && (
+						<div className="shrink-0 border-b border-border/50">{subHeaderSlot}</div>
+					)}
 
 					{callQueueSlot && (
 						<div className="shrink-0 border-b border-border/50">{callQueueSlot}</div>

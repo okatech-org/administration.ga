@@ -60,8 +60,27 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const suggestions = getSuggestions(pathname);
 
-	const { groups, total, isPending: contactsLoading, filters, setSearch, setSource } = useContactSearch(orgId);
+	const { groups, total, isPending: contactsLoading, hasMore, loadMore, filters, setSearch, setSource } = useContactSearch(orgId);
 	const allContacts = groups.flatMap((g: any) => g.contacts);
+
+	// Sentinelle infinite scroll sur la liste des contacts (vue liste uniquement).
+	// Root = viewport interne de ScrollArea (pas le document) — voir
+	// BackofficeContactTab pour le rationale.
+	const viewportRef = useRef<HTMLDivElement | null>(null);
+	const loadMoreRef = useRef<HTMLDivElement | null>(null);
+	useEffect(() => {
+		const target = loadMoreRef.current;
+		const root = viewportRef.current;
+		if (!target || !root || !hasMore || contactsLoading || selectedContact) return;
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries.some((e) => e.isIntersecting)) loadMore();
+			},
+			{ root, rootMargin: "200px" },
+		);
+		observer.observe(target);
+		return () => observer.disconnect();
+	}, [hasMore, contactsLoading, loadMore, selectedContact]);
 
 	const { mutateAsync: initiateChat } = useConvexMutationQuery(api.functions.chats.initiateChat);
 	const { mutateAsync: sendChatMessage } = useConvexMutationQuery(api.functions.chats.sendMessage);
@@ -142,7 +161,7 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 	// ── Conversation view ──
 	if (selectedContact) {
 		return (
-			<div className="flex flex-col flex-1 overflow-hidden">
+			<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 				<div className="border-b px-3 py-2 flex items-center gap-2 shrink-0">
 					<button type="button" onClick={() => setSelectedContact(null)} className="text-xs text-muted-foreground hover:text-foreground">←</button>
 					<Avatar className="h-7 w-7">
@@ -157,7 +176,7 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 					</div>
 				</div>
 
-				<ScrollArea className="flex-1 px-3 py-3">
+				<ScrollArea className="flex-1 min-h-0 px-3 py-3">
 					{selectedContact.isAI ? (
 						chat.messages.length === 0 ? (
 							<div className="flex flex-col items-center justify-center h-full text-center py-6">
@@ -214,13 +233,13 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 
 	// ── Contact list view ──
 	return (
-		<div className="flex flex-col flex-1 overflow-hidden">
-			<div className="p-2 border-b space-y-1.5">
+		<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+			<div className="p-2 border-b space-y-1.5 shrink-0">
 				<div className="relative"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" /><Input value={filters.searchTerm} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher (nom, email, poste, org)..." className="h-8 pl-8 text-xs" /></div>
 				<div className="flex items-center gap-1">{SOURCE_SEGMENTS.map((seg) => (<button key={seg.id} type="button" onClick={() => setSource(seg.id)} className={cn("text-[10px] px-2 py-0.5 rounded-md font-medium transition-colors", filters.source === seg.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>{seg.label}</button>))}</div>
 			</div>
 
-			<ScrollArea className="flex-1">
+			<ScrollArea viewportRef={viewportRef} className="flex-1 min-h-0">
 				{(!filters.searchTerm || "iasted ia assistant".includes(filters.searchTerm.toLowerCase())) && (
 					<button type="button" onClick={() => setSelectedContact(IASTED_CONTACT)} className="w-full flex items-center gap-3 px-3 py-3 hover:bg-emerald-500/5 transition-colors text-left border-b border-border/30">
 						<div className="relative"><Avatar className="h-10 w-10"><AvatarFallback className="bg-emerald-500/15 text-emerald-500"><Bot className="h-5 w-5" /></AvatarFallback></Avatar><Pin className="absolute -top-0.5 -right-0.5 h-3 w-3 text-emerald-500 rotate-45" /></div>
@@ -243,6 +262,22 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 								))}
 							</div>
 						))}
+					</div>
+				)}
+
+				{/* Sentinelle infinite scroll + bouton fallback "Charger plus" */}
+				{groups.length > 0 && (
+					<div ref={loadMoreRef} className="flex items-center justify-center py-3">
+						{contactsLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+						{hasMore && !contactsLoading && (
+							<button
+								type="button"
+								onClick={loadMore}
+								className="text-[11px] px-3 py-1.5 rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors"
+							>
+								Charger plus
+							</button>
+						)}
 					</div>
 				)}
 			</ScrollArea>

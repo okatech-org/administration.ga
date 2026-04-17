@@ -14,6 +14,7 @@ import {
 	Shield,
 	Users,
 } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -61,6 +62,8 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 		total,
 		availableCountries,
 		isPending,
+		hasMore,
+		loadMore,
 		filters,
 		setSearch,
 		setSource,
@@ -72,8 +75,27 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 	// En backoffice, l'absence d'org active ne bloque pas : on affiche toujours
 	// la vue globale (tous les comptes créés sur la plateforme).
 
+	// Infinite scroll : sentinelle en bas de la liste, observée RELATIVEMENT au
+	// viewport interne de Radix ScrollArea (pas au document viewport — c'est
+	// pour ça que la pagination restait bloquée à la première page).
+	const viewportRef = useRef<HTMLDivElement | null>(null);
+	const loadMoreRef = useRef<HTMLDivElement | null>(null);
+	useEffect(() => {
+		const target = loadMoreRef.current;
+		const root = viewportRef.current;
+		if (!target || !root || !hasMore || isPending) return;
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries.some((e) => e.isIntersecting)) loadMore();
+			},
+			{ root, rootMargin: "200px" },
+		);
+		observer.observe(target);
+		return () => observer.disconnect();
+	}, [hasMore, isPending, loadMore]);
+
 	return (
-		<div className="flex flex-col flex-1 overflow-hidden">
+		<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 			<div className="p-2 border-b space-y-2 shrink-0">
 				<div className="relative">
 					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -117,7 +139,7 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 				</div>
 			</div>
 
-			<ScrollArea className="flex-1">
+			<ScrollArea viewportRef={viewportRef} className="flex-1 min-h-0">
 				{isPending ? (
 					<div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
 				) : groups.length === 0 ? (
@@ -185,6 +207,22 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 								))}
 							</div>
 						))}
+					</div>
+				)}
+
+				{/* Sentinelle infinite scroll + bouton fallback "Charger plus" */}
+				{groups.length > 0 && (
+					<div ref={loadMoreRef} className="flex items-center justify-center py-3">
+						{isPending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+						{hasMore && !isPending && (
+							<button
+								type="button"
+								onClick={loadMore}
+								className="text-[11px] px-3 py-1.5 rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors"
+							>
+								Charger plus
+							</button>
+						)}
 					</div>
 				)}
 			</ScrollArea>

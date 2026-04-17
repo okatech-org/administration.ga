@@ -67,9 +67,20 @@ const CALL_SOURCE_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; ic
 	{ id: "network", label: "Réseau", icon: Globe },
 ];
 
-export function IAstedCallTab() {
-	// Centre d'Appels multi-lignes (feature flag) — remplace intégralement l'UX historique.
-	if (CALL_CENTER_ENABLED) {
+interface IAstedCallTabProps {
+	/**
+	 * Rendu compact pour la fenêtre flottante (420px) : force l'UX historique
+	 * (LegacyCallTab) au lieu du CallCenterShell 3-colonnes qui ne tient pas
+	 * dans une popup étroite. Le Centre d'Appels reste actif sur la page
+	 * fullscreen `/iasted`.
+	 */
+	compact?: boolean;
+}
+
+export function IAstedCallTab({ compact = false }: IAstedCallTabProps = {}) {
+	// Centre d'Appels multi-lignes (feature flag) — monté uniquement en fullscreen.
+	// La popup iAsted (compacte) reste sur LegacyCallTab pour rester lisible.
+	if (CALL_CENTER_ENABLED && !compact) {
 		return <CallCenterWithPostCallNote />;
 	}
 	return <LegacyCallTab />;

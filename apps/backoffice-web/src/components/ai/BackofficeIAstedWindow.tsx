@@ -5,7 +5,8 @@
  *
  * Particularités backoffice :
  * - Pas de `OrgProvider` (remplace par `useOrgSelector()`)
- * - Le header inclut un slot `<OrgSelector />` compact pour basculer entre orgs
+ * - `OrgSelector` rendu en bandeau sous le header (subHeaderSlot) pour laisser
+ *   l'espace aux boutons Maximize/Réduire dans le header principal
  * - Tab "isettings" affiche un panneau de config + versioning + feature flags (stub Phase 4)
  *
  * Hooks préservés (pas touchés) : `useBackofficeAIChat`, `useOrgSelector`, `useSuperAdminData`.
@@ -14,7 +15,8 @@
 "use client";
 
 import { Shield } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
 	CircleMenu,
 	WindowShell,
@@ -35,7 +37,16 @@ import { BackofficeCallTab } from "./tabs/BackofficeCallTab";
 import { BackofficeMeetingTab } from "./tabs/BackofficeMeetingTab";
 import { BackofficeSettingsTab } from "./tabs/BackofficeSettingsTab";
 
+/**
+ * Routes fullscreen par onglet. Si l'onglet actif n'a pas de page dédiée,
+ * le bouton Maximize2 est masqué (`onExpand` reste undefined).
+ */
+const FULLSCREEN_ROUTES: Partial<Record<IAstedTabId, string>> = {
+	icontact: "/ai/contacts",
+};
+
 export function BackofficeIAstedWindow() {
+	const router = useRouter();
 	const [open, setOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<IAstedTabId>("ichat");
 
@@ -70,6 +81,14 @@ export function BackofficeIAstedWindow() {
 		openWithTab,
 	});
 
+	// Handler d'expansion : navigue vers la route fullscreen de l'onglet courant
+	// si une route est définie ; sinon retourne undefined (masque le bouton).
+	const handleExpand = useMemo(() => {
+		const route = FULLSCREEN_ROUTES[activeTab];
+		if (!route) return undefined;
+		return () => router.push(route);
+	}, [activeTab, router]);
+
 	return (
 		<>
 			{/* CircleMenu FAB — desktop only */}
@@ -91,8 +110,8 @@ export function BackofficeIAstedWindow() {
 				title="iAsted"
 				subtitle="Administration"
 				headerIcon={<Shield />}
-				headerRightSlot={
-					<div className="max-w-[140px]">
+				subHeaderSlot={
+					<div className="px-3 py-1.5">
 						<OrgSelector />
 					</div>
 				}
@@ -101,6 +120,7 @@ export function BackofficeIAstedWindow() {
 				activeTab={activeTab}
 				onActiveTabChange={setActiveTab}
 				onClose={() => setOpen(false)}
+				onExpand={handleExpand}
 				tabContent={{
 					ichat: <BackofficeChatTab orgId={activeOrgId} chat={chat} />,
 					icontact: <BackofficeContactTab orgId={activeOrgId} />,
