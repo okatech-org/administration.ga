@@ -6,9 +6,13 @@
  */
 
 import { api } from "@convex/_generated/api";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useOrg } from "@/components/org/org-provider";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
+
+/** Taille de page + plafond pour l'infinite scroll. */
+const PAGE_SIZE = 500;
+const MAX_LIMIT = 10000;
 
 export type ContactSource = "team" | "network" | "citizens";
 
@@ -68,20 +72,29 @@ export function useContactSearch(initialSource?: ContactSource | "all") {
 		source: initialSource ?? "all",
 	});
 
+	// Limit progressive pour infinite scroll (bump de PAGE_SIZE à chaque loadMore).
+	const [limit, setLimit] = useState<number>(PAGE_SIZE);
+	const [previousTotal, setPreviousTotal] = useState<number>(0);
+
+	useEffect(() => {
+		setLimit(PAGE_SIZE);
+		setPreviousTotal(0);
+	}, [filters, activeOrgId]);
+
 	// Query Convex avec les filtres actifs.
 	//
 	// Mapping source → scope pour agent-web :
 	// - "network"  → "all-diplomatic" (corps diplomatique : tous les agents de toutes
 	//   les représentations diplomatiques, indépendamment des filtres pays/type)
-	// - "citizens" → "jurisdiction"   (ressortissants sous la juridiction de l'org active :
-	//   managedByOrgId === myOrgId OU résidence ∈ org.jurisdictionCountries)
-	// - "team" / "all" / autres consommateurs (iChat, iAppel, iRéunion) → "org" (défaut historique)
+	// - "citizens" → "jurisdiction"   (ressortissants sous la juridiction de l'org active)
+	// - "team" / "all" → "jurisdiction" : permet au tab "Tous" d'inclure AUSSI les
+	//   citoyens de la juridiction (et pas seulement ceux explicitement managedBy myOrgId).
+	//   Sans ça, un Consul Général ne voyait pas ses ressortissants dans "Tous".
 	const queryArgs = useMemo(() => {
 		if (!activeOrgId) return "skip" as const;
 
-		let scope: "org" | "jurisdiction" | "all-diplomatic" = "org";
+		let scope: "org" | "jurisdiction" | "all-diplomatic" = "jurisdiction";
 		if (filters.source === "network") scope = "all-diplomatic";
-		else if (filters.source === "citizens") scope = "jurisdiction";
 
 		return {
 			myOrgId: activeOrgId,
@@ -91,9 +104,9 @@ export function useContactSearch(initialSource?: ContactSource | "all") {
 			positionGrade: filters.positionGrade || undefined,
 			source: filters.source !== "all" ? filters.source : undefined,
 			scope,
-			limit: 100,
+			limit,
 		};
-	}, [activeOrgId, filters]);
+	}, [activeOrgId, filters, limit]);
 
 	const { data, isPending } = useAuthenticatedConvexQuery(
 		api.functions.contactSearch.searchContacts,
@@ -106,6 +119,26 @@ export function useContactSearch(initialSource?: ContactSource | "all") {
 		{},
 	);
 
+	const typedData = data as SearchContactsResult | undefined;
+	const typedCountries = availableCountries as CountryCount[] | undefined;
+	const currentTotal = typedData?.total ?? 0;
+
+	const hasMore =
+		!isPending &&
+		limit < MAX_LIMIT &&
+		currentTotal >= limit &&
+		currentTotal > previousTotal;
+
+	useEffect(() => {
+		if (!isPending && currentTotal !== previousTotal) {
+			setPreviousTotal(currentTotal);
+		}
+	}, [isPending, currentTotal, previousTotal]);
+
+	const loadMore = useCallback(() => {
+		setLimit((prev) => Math.min(prev + PAGE_SIZE, MAX_LIMIT));
+	}, []);
+
 	// Helpers
 	const setSearch = (term: string) => setFilters((f) => ({ ...f, searchTerm: term }));
 	const setSource = (source: ContactSource | "all") => setFilters((f) => ({ ...f, source }));
@@ -114,15 +147,14 @@ export function useContactSearch(initialSource?: ContactSource | "all") {
 	const setPositionGrade = (grade: string) => setFilters((f) => ({ ...f, positionGrade: grade }));
 	const resetFilters = () => setFilters({ ...DEFAULT_FILTERS, source: initialSource ?? "all" });
 
-	const typedData = data as SearchContactsResult | undefined;
-	const typedCountries = availableCountries as CountryCount[] | undefined;
-
 	return {
 		// Données
 		groups: typedData?.groups ?? [],
-		total: typedData?.total ?? 0,
+		total: currentTotal,
 		availableCountries: typedCountries ?? [],
 		isPending,
+		hasMore,
+		loadMore,
 
 		// Filtres
 		filters,

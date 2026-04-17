@@ -138,6 +138,10 @@ async function loadOrgMembers(
 
 /**
  * Charge les profils citoyens selon le scope.
+ *
+ * Utilise les indexes dédiés (`by_managed_org`, `by_country_of_residence`)
+ * pour éviter les scans complets de table et remonter tous les ressortissants
+ * d'une juridiction (pas seulement les premiers 500 de l'ordre naturel DB).
  */
 async function loadCitizens(
 	ctx: QueryCtx,
@@ -149,33 +153,70 @@ async function loadCitizens(
 	},
 ): Promise<Doc<"profiles">[]> {
 	if (scope === "backoffice") {
-		// Tous les profils actifs, pas de filtre org
-		return await ctx.db.query("profiles").take(opts.limit);
+		// Tous les profils actifs, pas de filtre org.
+		// Surdimensionne pour que le slice final `limit` puisse remonter la
+		// totalité des citoyens recherchés (ex : tous les 2215 Ressortissants FR).
+		return await ctx.db.query("profiles").take(Math.min(opts.limit * 2, 10000));
 	}
 
 	if (scope === "org") {
-		// Comportement historique : managedByOrgId === myOrgId
+		// Comportement historique : managedByOrgId === myOrgId via index dédié.
 		if (!opts.myOrgId) return [];
 		return await ctx.db
 			.query("profiles")
-			.filter((q: any) => q.eq(q.field("managedByOrgId"), opts.myOrgId))
+			.withIndex("by_managed_org", (q) => q.eq("managedByOrgId", opts.myOrgId))
 			.take(opts.limit);
 	}
 
 	// scope === "jurisdiction" : managedBy OU résidence ∈ jurisdictionCountries
+	// Deux requêtes indexées en parallèle (une par index) puis fusion sans doublon.
 	if (!opts.myOrgId) return [];
-	const juridictions = new Set(opts.jurisdictionCountries ?? []);
-	const overfetchLimit = Math.min(opts.limit * 3, 500);
-	const candidates = await ctx.db.query("profiles").take(overfetchLimit);
+	const jurisdictionCountries = opts.jurisdictionCountries ?? [];
 
-	return candidates
-		.filter((p) => {
-			if (p.managedByOrgId === opts.myOrgId) return true;
-			const residenceCountry =
-				p.countryOfResidence ?? (p.addresses as any)?.residence?.country;
-			return !!residenceCountry && juridictions.has(residenceCountry);
-		})
-		.slice(0, opts.limit);
+	const managedByPromise = ctx.db
+		.query("profiles")
+		.withIndex("by_managed_org", (q) => q.eq("managedByOrgId", opts.myOrgId))
+		.take(opts.limit);
+
+	// Pour chaque pays de juridiction, on charge via l'index country_of_residence.
+	// Le résultat est plafonné (limit / nombre de pays) par défaut pour éviter
+	// de dépasser la capacité de lecture Convex tout en permettant des centaines
+	// de résultats par pays.
+	const perCountryLimit = Math.max(
+		Math.ceil(opts.limit / Math.max(jurisdictionCountries.length, 1)),
+		opts.limit,
+	);
+	const byCountryPromises = jurisdictionCountries.map((country) =>
+		ctx.db
+			.query("profiles")
+			.withIndex("by_country_of_residence", (q) =>
+				q.eq("countryOfResidence", country as any),
+			)
+			.take(perCountryLimit),
+	);
+
+	const [managedBy, ...byCountryResults] = await Promise.all([
+		managedByPromise,
+		...byCountryPromises,
+	]);
+
+	// Fusion sans doublon (priorité aux profils managedBy myOrg)
+	const seen = new Set<string>();
+	const merged: Doc<"profiles">[] = [];
+	for (const p of managedBy) {
+		if (seen.has(p._id as string)) continue;
+		seen.add(p._id as string);
+		merged.push(p);
+	}
+	for (const list of byCountryResults) {
+		for (const p of list) {
+			if (seen.has(p._id as string)) continue;
+			seen.add(p._id as string);
+			merged.push(p);
+		}
+	}
+
+	return merged.slice(0, opts.limit);
 }
 
 /**
@@ -327,7 +368,8 @@ export const searchContacts = authQuery({
 					source: isMyOrg ? "team" : "network",
 				});
 
-				if (results.length >= limit * 2) break; // over-fetch pour le search filter ultérieur
+				// over-fetch pour le search filter ultérieur (hard cap à 4000 pour la perf Convex)
+				if (results.length >= Math.min(limit * 3, 4000)) break;
 			}
 		}
 
@@ -380,7 +422,9 @@ export const searchContacts = authQuery({
 				? await loadCitizens(ctx, citizenScope, {
 						myOrgId: args.myOrgId,
 						jurisdictionCountries,
-						limit: Math.min(limit, 200),
+						// Pour le scope "backoffice" on autorise à remonter jusqu'à `limit`
+						// profils citoyens (le hard cap 4000 est appliqué dans loadCitizens).
+						limit: citizenScope === "backoffice" ? limit : Math.min(limit, 200),
 					})
 				: [];
 
@@ -440,7 +484,7 @@ export const searchContacts = authQuery({
 			!isCitizensOnly;
 
 		if (shouldLoadAdmins) {
-			const admins = await loadPlatformAdmins(ctx, Math.min(limit, 100));
+			const admins = await loadPlatformAdmins(ctx, Math.min(limit, 500));
 			for (const u of admins) {
 				const nameLower = u.name ?? u.email ?? "";
 				const lastName = (
@@ -516,6 +560,12 @@ export const searchContacts = authQuery({
 		const deduplicated = Array.from(byUserId.values()).slice(0, limit);
 
 		// ── 8. Grouper par org pour l'affichage ──
+		// Cas spécial : quand l'utilisateur filtre explicitement sur "citizens",
+		// on regroupe TOUS les ressortissants sous un unique bucket "Ressortissants"
+		// (nom de l'org gestionnaire = redondant, et sépare artificiellement les
+		// citoyens managedBy des citoyens purement en juridiction).
+		const flattenCitizens = isCitizensOnly;
+
 		const grouped: Record<
 			string,
 			{
@@ -531,7 +581,10 @@ export const searchContacts = authQuery({
 
 		for (const contact of deduplicated) {
 			let key: string;
-			if (contact.source === "citizen" && contact.orgId === "__citizens__") {
+			if (flattenCitizens && contact.source === "citizen") {
+				// Tab "Ressortissants" : un seul groupe pour tous les citoyens
+				key = "__citizens__";
+			} else if (contact.source === "citizen" && contact.orgId === "__citizens__") {
 				key = "__citizens__";
 			} else if (contact.source === "administration") {
 				key = "__admins__";

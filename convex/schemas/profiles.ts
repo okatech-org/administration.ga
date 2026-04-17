@@ -119,6 +119,10 @@ export const profilesTable = defineTable({
   .index("by_user", ["userId"])
   .index("by_card_number", ["consularCard.cardNumber"])
   .index("by_matricule", ["matricule"])
+  // Recherche de ressortissants par organisation gestionnaire (iContact, iAsted).
+  .index("by_managed_org", ["managedByOrgId"])
+  // Recherche de ressortissants par pays de résidence (filtre juridiction).
+  .index("by_country_of_residence", ["countryOfResidence"])
   .searchIndex("search_firstName", { searchField: "identity.firstName" })
   .searchIndex("search_lastName", { searchField: "identity.lastName" })
   .searchIndex("search_passportNumber", { searchField: "passportInfo.number" });

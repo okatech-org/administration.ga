@@ -15,7 +15,7 @@ import {
 	Shield,
 	Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CitizenProfileDrawer } from "@workspace/iasted";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -74,6 +74,8 @@ export function IAstedContactTab() {
 		total,
 		availableCountries,
 		isPending,
+		hasMore,
+		loadMore,
 		filters,
 		setSearch,
 		setSource,
@@ -81,6 +83,25 @@ export function IAstedContactTab() {
 		setOrgType,
 		setPositionGrade,
 	} = useContactSearch();
+
+	// Sentinelle infinite scroll en bas de liste.
+	// Root = viewport interne de ScrollArea (Radix utilise son propre scroll),
+	// sans quoi l'observer ne se déclenche jamais pendant le scroll interne.
+	const viewportRef = useRef<HTMLDivElement | null>(null);
+	const loadMoreRef = useRef<HTMLDivElement | null>(null);
+	useEffect(() => {
+		const target = loadMoreRef.current;
+		const root = viewportRef.current;
+		if (!target || !root || !hasMore || isPending) return;
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries.some((e) => e.isIntersecting)) loadMore();
+			},
+			{ root, rootMargin: "200px" },
+		);
+		observer.observe(target);
+		return () => observer.disconnect();
+	}, [hasMore, isPending, loadMore]);
 
 	// Fiche citoyen 360° — ouverte au clic sur un contact de type "citizen".
 	// Les autres contacts (team/network) gardent leur comportement existant.
@@ -161,7 +182,7 @@ export function IAstedContactTab() {
 			</div>
 
 			{/* Résultats groupés */}
-			<ScrollArea className="flex-1 min-h-0">
+			<ScrollArea viewportRef={viewportRef} className="flex-1 min-h-0">
 				{isPending ? (
 					<div className="flex items-center justify-center py-8">
 						<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -281,6 +302,22 @@ export function IAstedContactTab() {
 								))}
 							</div>
 						))}
+					</div>
+				)}
+
+				{/* Sentinelle infinite scroll + bouton fallback "Charger plus" */}
+				{groups.length > 0 && (
+					<div ref={loadMoreRef} className="flex items-center justify-center py-3">
+						{isPending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+						{hasMore && !isPending && (
+							<button
+								type="button"
+								onClick={loadMore}
+								className="text-xs px-3 py-1.5 rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors"
+							>
+								Charger plus
+							</button>
+						)}
 					</div>
 				)}
 			</ScrollArea>

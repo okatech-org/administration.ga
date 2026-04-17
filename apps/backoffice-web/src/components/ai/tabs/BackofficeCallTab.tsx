@@ -105,7 +105,7 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 	}
 
 	return (
-		<div className="flex flex-col flex-1 overflow-hidden">
+		<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 			<div className="px-2 pt-2 pb-1 border-b shrink-0">
 				<div className="flex items-center gap-1 bg-muted/30 rounded-lg p-0.5">
 					{SUB_TABS.map((tab) => {
@@ -134,7 +134,7 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 				</div>
 			</div>
 
-			<ScrollArea className="flex-1">
+			<ScrollArea className="flex-1 min-h-0">
 				{contactsLoading ? (
 					<div className="flex items-center justify-center py-6"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
 				) : groups.length > 0 ? (
