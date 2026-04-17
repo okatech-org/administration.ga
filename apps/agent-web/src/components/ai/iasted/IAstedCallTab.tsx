@@ -391,21 +391,36 @@ function LegacyCallTab() {
 											</div>
 											<p className="text-xs text-muted-foreground truncate">{c.position}</p>
 										</div>
-										<Button
-											size="icon"
-											variant="ghost"
-											className="h-10 w-10 text-emerald-500 hover:bg-emerald-500/10"
-											disabled={isCallingUser || !!globalActiveMeetingId}
-											onClick={() => handleCall(c.userId)}
-										>
-											{isCallingUser ? (
-												<Loader2 className="h-4 w-4 animate-spin" />
-											) : subTab === "audio" ? (
-												<Phone className="h-4 w-4" />
-											) : (
-												<Video className="h-4 w-4" />
-											)}
-										</Button>
+										<div className="flex items-center gap-0.5 shrink-0">
+											<Button
+												size="icon"
+												variant="ghost"
+												className="h-9 w-9 text-emerald-500 hover:bg-emerald-500/10"
+												disabled={isCallingUser || !!globalActiveMeetingId}
+												title="Appel audio"
+												onClick={() => { setSubTab("audio"); handleCall(c.userId); }}
+											>
+												{isCallingUser && subTab === "audio" ? (
+													<Loader2 className="h-4 w-4 animate-spin" />
+												) : (
+													<Phone className="h-4 w-4" />
+												)}
+											</Button>
+											<Button
+												size="icon"
+												variant="ghost"
+												className="h-9 w-9 text-blue-500 hover:bg-blue-500/10"
+												disabled={isCallingUser || !!globalActiveMeetingId}
+												title="Appel vidéo"
+												onClick={() => { setSubTab("video"); handleCall(c.userId); }}
+											>
+												{isCallingUser && subTab === "video" ? (
+													<Loader2 className="h-4 w-4 animate-spin" />
+												) : (
+													<Video className="h-4 w-4" />
+												)}
+											</Button>
+										</div>
 									</div>
 								))}
 							</div>
