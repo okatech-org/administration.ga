@@ -37,11 +37,6 @@ import { cn } from "@/lib/utils";
 
 type SubTab = "audio" | "video";
 
-const SUB_TABS: Array<{ id: SubTab; label: string; icon: typeof Phone }> = [
-	{ id: "audio", label: "Audio", icon: Phone },
-	{ id: "video", label: "Vidéo", icon: Video },
-];
-
 const CALL_SOURCE_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; icon: typeof Users }> = [
 	{ id: "all", label: "Tous", icon: Users },
 	{ id: "team", label: "Équipe", icon: Shield },
@@ -53,13 +48,14 @@ interface BackofficeCallTabProps {
 }
 
 export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
-	const [subTab, setSubTab] = useState<SubTab>("audio");
 	const [activeMeetingId, setActiveMeetingId] = useState<Id<"meetings"> | null>(null);
+	const [activeMediaType, setActiveMediaType] = useState<SubTab>("audio");
+	const [pendingCallUserId, setPendingCallUserId] = useState<string | null>(null);
 	const { globalActiveMeetingId, setGlobalMeetingId } = useCallStore();
 
 	const { groups, isPending: contactsLoading, filters, setSearch, setSource } = useContactSearch(orgId);
 	const { token, wsUrl, connect, disconnect } = useMeeting(activeMeetingId ?? undefined);
-	const { mutateAsync: callUser, isPending: isCallingUser } = useConvexMutationQuery(api.functions.meetings.callUser);
+	const { mutateAsync: callUser } = useConvexMutationQuery(api.functions.meetings.callUser);
 
 	const { data: rawMeetings, isPending } = useAuthenticatedConvexQuery(
 		api.functions.meetings.listByOrg,
@@ -69,22 +65,26 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 	const meetingsArray = Array.isArray(rawMeetings) ? (rawMeetings as any)?.meetings ?? rawMeetings : [];
 	const callHistory = useMemo(() => (meetingsArray as any[]).filter((m: any) => m.type === "call").slice(0, 15), [meetingsArray]);
 
-	const handleCall = async (targetUserId: string) => {
+	const handleCall = async (targetUserId: string, mediaType: SubTab) => {
 		if (!orgId || globalActiveMeetingId) {
 			toast.error("Un appel est déjà en cours");
 			return;
 		}
+		setPendingCallUserId(targetUserId);
 		try {
-			const result = await callUser({ orgId, targetUserId: targetUserId as Id<"users">, mediaType: subTab });
+			const result = await callUser({ orgId, targetUserId: targetUserId as Id<"users">, mediaType });
 			const meetingId = result.meetingId as Id<"meetings">;
 			setActiveMeetingId(meetingId);
+			setActiveMediaType(mediaType);
 			setGlobalMeetingId(meetingId);
 			await connect(meetingId);
-			toast.success(subTab === "audio" ? "Appel audio en cours..." : "Appel vidéo en cours...");
+			toast.success(mediaType === "audio" ? "Appel audio en cours..." : "Appel vidéo en cours...");
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur lors de l'appel");
 			setActiveMeetingId(null);
 			setGlobalMeetingId(null);
+		} finally {
+			setPendingCallUserId(null);
 		}
 	};
 
@@ -106,21 +106,7 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 
 	return (
 		<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-			<div className="px-2 pt-2 pb-1 border-b shrink-0">
-				<div className="flex items-center gap-1 bg-muted/30 rounded-lg p-0.5">
-					{SUB_TABS.map((tab) => {
-						const Icon = tab.icon;
-						const isActive = subTab === tab.id;
-						return (
-							<button key={tab.id} type="button" onClick={() => setSubTab(tab.id)} className={cn("flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-colors", isActive ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground")}>
-								<Icon className="h-3.5 w-3.5" />{tab.label}
-							</button>
-						);
-					})}
-				</div>
-			</div>
-
-			<div className="p-2 border-b space-y-1.5">
+			<div className="p-2 border-b space-y-1.5 shrink-0">
 				<div className="relative">
 					<Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
 					<Input value={filters.searchTerm} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher (nom, poste, org)..." className="h-7 pl-7 text-xs" />
@@ -146,26 +132,49 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 									<span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider truncate">{group.org.name}</span>
 									{group.org.country && <span className="text-[7px] text-muted-foreground/60">{group.org.country}</span>}
 								</div>
-								{group.contacts.map((c: any) => (
-									<div key={c.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted/30">
-										<Avatar className="h-7 w-7">
-											<AvatarImage src={c.avatar} />
-											<AvatarFallback className={cn("text-[8px]", c.source === "team" ? "bg-primary/10 text-primary" : "bg-blue-500/10 text-blue-600")}>
-												{c.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
-											</AvatarFallback>
-										</Avatar>
-										<div className="flex-1 min-w-0">
-											<div className="flex items-center gap-1">
-												<p className="text-[11px] font-bold truncate">{c.lastName}</p>
-												<p className="text-[11px] text-foreground/80 truncate">{c.firstName}</p>
+								{group.contacts.map((c: any) => {
+									const isPendingThis = pendingCallUserId === c.userId;
+									const disabled = !!pendingCallUserId || !!globalActiveMeetingId;
+									return (
+										<div key={c.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted/30">
+											<Avatar className="h-7 w-7">
+												<AvatarImage src={c.avatar} />
+												<AvatarFallback className={cn("text-[8px]", c.source === "team" ? "bg-primary/10 text-primary" : "bg-blue-500/10 text-blue-600")}>
+													{c.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
+												</AvatarFallback>
+											</Avatar>
+											<div className="flex-1 min-w-0">
+												<div className="flex items-center gap-1">
+													<p className="text-[11px] font-bold truncate">{c.lastName}</p>
+													<p className="text-[11px] text-foreground/80 truncate">{c.firstName}</p>
+												</div>
+												<p className="text-[9px] text-muted-foreground truncate">{c.position}</p>
 											</div>
-											<p className="text-[9px] text-muted-foreground truncate">{c.position}</p>
+											<div className="flex items-center gap-0.5 shrink-0">
+												<Button
+													size="icon"
+													variant="ghost"
+													className="h-6 w-6 text-emerald-500 hover:bg-emerald-500/10"
+													disabled={disabled}
+													title="Appel audio"
+													onClick={() => handleCall(c.userId, "audio")}
+												>
+													{isPendingThis ? <Loader2 className="h-3 w-3 animate-spin" /> : <Phone className="h-3 w-3" />}
+												</Button>
+												<Button
+													size="icon"
+													variant="ghost"
+													className="h-6 w-6 text-blue-500 hover:bg-blue-500/10"
+													disabled={disabled}
+													title="Appel vidéo"
+													onClick={() => handleCall(c.userId, "video")}
+												>
+													<Video className="h-3 w-3" />
+												</Button>
+											</div>
 										</div>
-										<Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-500 hover:bg-emerald-500/10" disabled={isCallingUser || !!globalActiveMeetingId} onClick={() => handleCall(c.userId)}>
-											{isCallingUser ? <Loader2 className="h-3 w-3 animate-spin" /> : subTab === "audio" ? <Phone className="h-3 w-3" /> : <Video className="h-3 w-3" />}
-										</Button>
-									</div>
-								))}
+									);
+								})}
 							</div>
 						))}
 					</div>
@@ -215,11 +224,11 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 							<div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0">
 								<div className="flex items-center gap-2">
 									<Badge className="text-[9px] bg-red-500/15 text-red-400">En direct</Badge>
-									<span className="text-xs text-zinc-400">{subTab === "audio" ? "Appel audio" : "Appel vidéo"}</span>
+									<span className="text-xs text-zinc-400">{activeMediaType === "audio" ? "Appel audio" : "Appel vidéo"}</span>
 								</div>
 								<Button variant="destructive" size="sm" onClick={handleHangUp} className="h-7 text-[10px] gap-1"><PhoneOff className="h-3 w-3" />Raccrocher</Button>
 							</div>
-							<LiveKitRoom token={token} serverUrl={wsUrl} connect={true} audio={true} video={subTab === "video"} onDisconnected={handleHangUp} className="flex flex-col flex-1">
+							<LiveKitRoom token={token} serverUrl={wsUrl} connect={true} audio={true} video={activeMediaType === "video"} onDisconnected={handleHangUp} className="flex flex-col flex-1">
 								<CustomCallUI onHangUp={handleHangUp} />
 							</LiveKitRoom>
 						</div>

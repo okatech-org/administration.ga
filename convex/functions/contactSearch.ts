@@ -153,9 +153,19 @@ async function loadCitizens(
 	},
 ): Promise<Doc<"profiles">[]> {
 	if (scope === "backoffice") {
-		// Tous les profils actifs, pas de filtre org.
-		// Surdimensionne pour que le slice final `limit` puisse remonter la
-		// totalité des citoyens recherchés (ex : tous les 2215 Ressortissants FR).
+		// Si l'utilisateur a restreint à une org précise (via OrgSelector),
+		// on remonte UNIQUEMENT les citoyens managés par cette org OU résidant
+		// dans un pays de sa juridiction — comme le fait scope="jurisdiction",
+		// mais sans la garde RBAC supplémentaire (déjà passée plus haut).
+		if (opts.myOrgId) {
+			return await loadCitizensByOrgAndJurisdiction(ctx, {
+				myOrgId: opts.myOrgId,
+				jurisdictionCountries: opts.jurisdictionCountries ?? [],
+				limit: opts.limit,
+			});
+		}
+		// Vue globale backoffice (aucune org sélectionnée) : tous les profils
+		// jusqu'au plafond. Moins efficace mais acceptable sur un écran admin.
 		return await ctx.db.query("profiles").take(Math.min(opts.limit * 2, 10000));
 	}
 
@@ -171,28 +181,41 @@ async function loadCitizens(
 	// scope === "jurisdiction" : managedBy OU résidence ∈ jurisdictionCountries
 	// Deux requêtes indexées en parallèle (une par index) puis fusion sans doublon.
 	if (!opts.myOrgId) return [];
-	const jurisdictionCountries = opts.jurisdictionCountries ?? [];
+	return await loadCitizensByOrgAndJurisdiction(ctx, {
+		myOrgId: opts.myOrgId,
+		jurisdictionCountries: opts.jurisdictionCountries ?? [],
+		limit: opts.limit,
+	});
+}
 
+/**
+ * Requêtes indexées parallèles : ressortissants gérés par `myOrgId` +
+ * ressortissants résidant dans un des pays de juridiction. Fusion sans doublon
+ * (priorité aux profils managedBy).
+ * Utilisé par scope="jurisdiction" ET scope="backoffice" (avec org active).
+ */
+async function loadCitizensByOrgAndJurisdiction(
+	ctx: QueryCtx,
+	opts: {
+		myOrgId: Id<"orgs">;
+		jurisdictionCountries: string[];
+		limit: number;
+	},
+): Promise<Doc<"profiles">[]> {
 	const managedByPromise = ctx.db
 		.query("profiles")
 		.withIndex("by_managed_org", (q) => q.eq("managedByOrgId", opts.myOrgId))
 		.take(opts.limit);
 
 	// Pour chaque pays de juridiction, on charge via l'index country_of_residence.
-	// Le résultat est plafonné (limit / nombre de pays) par défaut pour éviter
-	// de dépasser la capacité de lecture Convex tout en permettant des centaines
-	// de résultats par pays.
-	const perCountryLimit = Math.max(
-		Math.ceil(opts.limit / Math.max(jurisdictionCountries.length, 1)),
-		opts.limit,
-	);
-	const byCountryPromises = jurisdictionCountries.map((country) =>
+	// On prend `opts.limit` par pays pour laisser de la marge à la déduplication.
+	const byCountryPromises = opts.jurisdictionCountries.map((country) =>
 		ctx.db
 			.query("profiles")
 			.withIndex("by_country_of_residence", (q) =>
 				q.eq("countryOfResidence", country as any),
 			)
-			.take(perCountryLimit),
+			.take(opts.limit),
 	);
 
 	const [managedBy, ...byCountryResults] = await Promise.all([
@@ -200,7 +223,6 @@ async function loadCitizens(
 		...byCountryPromises,
 	]);
 
-	// Fusion sans doublon (priorité aux profils managedBy myOrg)
 	const seen = new Set<string>();
 	const merged: Doc<"profiles">[] = [];
 	for (const p of managedBy) {

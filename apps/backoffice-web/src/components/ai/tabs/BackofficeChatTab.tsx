@@ -63,6 +63,18 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 	const { groups, total, isPending: contactsLoading, hasMore, loadMore, filters, setSearch, setSource } = useContactSearch(orgId);
 	const allContacts = groups.flatMap((g: any) => g.contacts);
 
+	// Écoute l'event bus `iasted:select-contact` émis par iContact pour ouvrir
+	// directement la conversation avec un contact.
+	useEffect(() => {
+		const handler = (e: Event) => {
+			const detail = (e as CustomEvent<{ userId?: string; contact?: any }>).detail;
+			if (!detail?.contact) return;
+			setSelectedContact({ ...detail.contact, isAI: false });
+		};
+		window.addEventListener("iasted:select-contact", handler);
+		return () => window.removeEventListener("iasted:select-contact", handler);
+	}, []);
+
 	// Sentinelle infinite scroll sur la liste des contacts (vue liste uniquement).
 	// Root = viewport interne de ScrollArea (pas le document) — voir
 	// BackofficeContactTab pour le rationale.

@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { internalQuery, internalMutation } from "../_generated/server";
 import { authQuery, authMutation } from "../lib/customFunctions";
-import { getMembership } from "../lib/auth";
+import { getMembership, isBackOfficeUser } from "../lib/auth";
 import { error, ErrorCode } from "../lib/errors";
 import { canDoTask } from "../lib/permissions";
 import { TaskCode } from "../lib/taskCodes";
@@ -685,17 +685,22 @@ export const callUser = authMutation({
     mediaType: v.optional(v.union(v.literal("audio"), v.literal("video"))),
   },
   handler: async (ctx, args) => {
-    // Verify agent has meetings.create permission
-    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
-    if (!membership) throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
+    // Les utilisateurs back-office (SuperAdmin, AdminSystem, Admin) peuvent
+    // appeler depuis n'importe quelle org visible — ils n'ont pas besoin
+    // d'une membership dans celle-ci. Pour les agents métier, la membership
+    // + task `meetings.create` reste obligatoire.
+    if (!isBackOfficeUser(ctx.user)) {
+      const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+      if (!membership) throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
 
-    const canCreate = await canDoTask(
-      ctx,
-      ctx.user,
-      membership,
-      TaskCode.meetings.create,
-    );
-    if (!canCreate) throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
+      const canCreate = await canDoTask(
+        ctx,
+        ctx.user,
+        membership,
+        TaskCode.meetings.create,
+      );
+      if (!canCreate) throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
+    }
 
     const org = await ctx.db.get(args.orgId);
     if (!org) throw error(ErrorCode.NOT_FOUND, "Organisation non trouvée");
