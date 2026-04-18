@@ -2,13 +2,25 @@
 
 import type { Id } from "@convex/_generated/dataModel";
 import { LiveKitRoom } from "@livekit/components-react";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
+import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 import { Loader2, Phone } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import { useMeeting } from "@/hooks/use-meeting";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRingtone } from "@/hooks/use-ringtone";
@@ -86,9 +98,26 @@ export function CallButton({
 	// Play ringtone while connecting
 	useRingtone(isConnecting);
 
+	const cleanupCallState = useCallback(() => {
+		setDialogOpen(false);
+		setMeetingId(null);
+		setCallStartTime(null);
+		setGlobalMeetingId(null);
+	}, [setGlobalMeetingId]);
+
+	const {
+		onConnected: onLiveKitConnected,
+		onDisconnected: onLiveKitDisconnected,
+		markUserHangUp,
+		reset: resetDisconnectGuard,
+	} = useLiveKitDisconnectGuard(cleanupCallState);
+
 	const handleCall = useCallback(async () => {
 		try {
-			// Create meeting linked to context
+			resetDisconnectGuard();
+			// Create meeting linked to context.
+			// mediaType "video" autorise audio+vidéo côté token pour permettre
+			// le toggle caméra dans CustomCallUI sans "insufficient permissions".
 			const result = await createMeeting.mutateAsync({
 				title: `Appel ${new Date().toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}`,
 				type: "call",
@@ -96,6 +125,7 @@ export function CallButton({
 				participantIds: [participantUserId],
 				requestId,
 				appointmentId,
+				mediaType: "video",
 			});
 			setMeetingId(result.meetingId);
 			setGlobalMeetingId(result.meetingId);
@@ -115,9 +145,11 @@ export function CallButton({
 		createMeeting,
 		connect,
 		setGlobalMeetingId,
+		resetDisconnectGuard,
 	]);
 
 	const handleHangUp = useCallback(async () => {
+		markUserHangUp();
 		if (meetingId) {
 			await disconnect(meetingId);
 			const duration = callStartTime
@@ -128,11 +160,8 @@ export function CallButton({
 				duration !== undefined ? { duration_seconds: duration } : {},
 			);
 		}
-		setDialogOpen(false);
-		setMeetingId(null);
-		setCallStartTime(null);
-		setGlobalMeetingId(null);
-	}, [meetingId, disconnect, callStartTime, setGlobalMeetingId]);
+		cleanupCallState();
+	}, [meetingId, disconnect, callStartTime, markUserHangUp, cleanupCallState]);
 
 	const callContent = (
 		<div className="flex flex-col flex-1 min-h-0 h-full bg-zinc-950 overflow-hidden">
@@ -142,7 +171,9 @@ export function CallButton({
 					serverUrl={wsUrl}
 					connect={true}
 					audio={true}
-					onDisconnected={handleHangUp}
+					options={LIVEKIT_CALL_ROOM_OPTIONS}
+					onConnected={onLiveKitConnected}
+					onDisconnected={onLiveKitDisconnected}
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
@@ -184,6 +215,15 @@ export function CallButton({
 						side="bottom"
 						className="p-0 h-[100dvh] w-full bg-zinc-950 border-none rounded-none focus:outline-none flex flex-col pt-10"
 					>
+						<SheetTitle className="sr-only">
+							{displayLabel || t("meetings.callInProgress", "Appel en cours")}
+						</SheetTitle>
+						<SheetDescription className="sr-only">
+							{t(
+								"meetings.callDialogDescription",
+								"Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.",
+							)}
+						</SheetDescription>
 						{callContent}
 					</SheetContent>
 				</Sheet>
@@ -196,10 +236,17 @@ export function CallButton({
 				>
 					<DialogContent
 						autoFocus={false}
-						aria-describedby={undefined}
 						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 					>
-						<DialogTitle className="sr-only">Appel en cours</DialogTitle>
+						<DialogTitle className="sr-only">
+							{displayLabel || t("meetings.callInProgress", "Appel en cours")}
+						</DialogTitle>
+						<DialogDescription className="sr-only">
+							{t(
+								"meetings.callDialogDescription",
+								"Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.",
+							)}
+						</DialogDescription>
 						{callContent}
 					</DialogContent>
 				</Dialog>

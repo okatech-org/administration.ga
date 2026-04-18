@@ -23,7 +23,8 @@ import {
 	Users,
 } from "lucide-react";
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
-import Markdown from "react-markdown";
+import { SafeMarkdown as Markdown } from "@workspace/chat/safe-markdown";
+import { useIdempotencyKey } from "@workspace/chat/use-idempotency-key";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -81,6 +82,7 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 
 	const { mutateAsync: initiateChat } = useConvexMutationQuery(api.functions.chats.initiateChat);
 	const { mutateAsync: sendChatMessage } = useConvexMutationQuery(api.functions.chats.sendMessage);
+	const { getKey: getIdempotencyKey, rotate: rotateIdempotencyKey } = useIdempotencyKey();
 
 	const selectedUserId = selectedContact && !selectedContact.isAI ? selectedContact.userId : undefined;
 	const { data: existingChat } = useAuthenticatedConvexQuery(
@@ -93,13 +95,18 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 		if (!trimmed || !selectedContact?.userId) return;
 		try {
 			if (existingChat) {
-				await sendChatMessage({ chatId: existingChat._id, content: trimmed });
+				await sendChatMessage({
+					chatId: existingChat._id,
+					content: trimmed,
+					idempotencyKey: getIdempotencyKey(),
+				});
 			} else {
 				await initiateChat({ targetUserId: selectedContact.userId as Id<"users">, orgId: orgId ?? undefined, initialMessage: trimmed });
 			}
 			setMessageInput("");
+			rotateIdempotencyKey();
 		} catch (e: any) { toast.error(e?.message ?? "Erreur d'envoi"); }
-	}, [selectedContact, existingChat, sendChatMessage, initiateChat, orgId]);
+	}, [selectedContact, existingChat, sendChatMessage, initiateChat, orgId, getIdempotencyKey, rotateIdempotencyKey]);
 
 	useEffect(() => {
 		if (selectedContact?.isAI) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

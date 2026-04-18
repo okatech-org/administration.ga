@@ -12,7 +12,7 @@ import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { LIVEKIT_CALL_ROOM_OPTIONS } from "@/lib/livekit-config";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import {
 	Dialog,
 	DialogContent,

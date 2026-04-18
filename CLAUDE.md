@@ -24,3 +24,43 @@ Ce projet suit la **Charte Graphique Consulat.ga** — un systeme de design neum
 - JAMAIS de gradient colore pour les fonds de section hero
 - Ombres toujours achromatiques
 - Icones : lucide-react exclusivement
+
+## Utilitaires partages — Modules de communication
+
+Deux packages workspace hebergent les utilitaires communs a iAppel, iReunion et iChat pour eviter la duplication entre `agent-web`, `citizen-web` et `backoffice-web` :
+
+### `@workspace/livekit`
+- `room-options` : `LIVEKIT_CALL_ROOM_OPTIONS` — simulcast VP9 (180p/360p/720p), adaptiveStream, dynacast, audio 48 kHz mono avec echoCancellation/noiseSuppression/autoGainControl, reconnectPolicy exponentielle. A passer en prop `options=` de TOUT `<LiveKitRoom>`.
+- `use-livekit-disconnect-guard` : hook qui encapsule le pattern `hasConnectedRef` + `userHangUpRef`. Empeche la fermeture prematuree de l'appel sur un `onDisconnected` emis AVANT le premier `onConnected` (artefacts handshake WebRTC, StrictMode, ICE restart).
+- `use-ringtone` : hook Web Audio qui genere la sonnerie dual-tone sans asset.
+
+Usage type :
+```tsx
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
+import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
+
+const { onConnected, onDisconnected, markUserHangUp } =
+  useLiveKitDisconnectGuard(cleanupCallState);
+
+<LiveKitRoom
+  token={token}
+  serverUrl={wsUrl}
+  options={LIVEKIT_CALL_ROOM_OPTIONS}
+  onConnected={onConnected}
+  onDisconnected={onDisconnected}
+  ...
+/>
+```
+
+### `@workspace/chat`
+- `use-idempotency-key` : genere un `crypto.randomUUID()` stable par intent d'envoi, reset sur success. A passer dans `sendMessage({ ..., idempotencyKey })` pour que le backend deduplique les doubles envois.
+- `use-chat-attachments` : state local + validation client (taille 50 Mo, MIME) pour les fichiers joints d'un composer. Retourne `addFiles/remove/clear/consumeForUpload` — l'upload vers Convex storage est delegue a l'appelant.
+- `safe-markdown` : wrapper `<SafeMarkdown>` avec `rehype-sanitize` strict. A utiliser a la place de `<Markdown>` de `react-markdown` pour tout contenu genere par Mr Ray / iAsted IA / utilisateurs.
+
+### Decisions de non-extraction
+
+Trois items du plan d'audit n'ont PAS ete extraits dans les packages partages. Decisions documentees ici pour eviter qu'un futur contributeur refasse l'analyse :
+
+- **`useMeeting` reste per-app** (3 copies identiques dans `agent-web`, `citizen-web`, `backoffice-web`) : le hook importe `@convex/_generated/api` dont le type depend de la configuration Convex de chaque app. L'extraction necessiterait une injection de l'API en parametre (`useMeeting(api, meetingId)`), ce qui casse la lisibilite. La duplication accepte : 3 fichiers a maintenir ensemble.
+- **`ChatComposer` reste per-app** : les 3 apps (Citizen, Agent, Backoffice) ont des UX tres differentes (suggestions IA cote citoyen, macros cote agent, contextes org cote backoffice). Le composer est trop couple au shell pour etre factorise sans perte d'expressivite.
+- **tsconfig paths non modifies** : le champ `exports` des `package.json` (ex. `"./room-options": "./src/room-options.ts"`) suffit pour la resolution TypeScript+Next.js. Ajouter manuellement `@workspace/livekit/*` et `@workspace/chat/*` dans chaque `tsconfig.json` est redondant et genere des conflits de resolution.

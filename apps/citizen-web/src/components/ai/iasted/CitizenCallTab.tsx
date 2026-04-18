@@ -14,6 +14,8 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { LiveKitRoom } from "@livekit/components-react";
 import "@livekit/components-styles";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
+import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 import {
 	ArrowDownLeft,
 	ArrowUpRight,
@@ -24,11 +26,16 @@ import {
 	PhoneMissed,
 	PhoneOff,
 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { RecordingConsentBanner } from "@/components/meetings/recording-consent-banner";
@@ -42,9 +49,6 @@ import { cn } from "@/lib/utils";
 export function CitizenCallTab() {
 	const [activeMeetingId, setActiveMeetingId] = useState<Id<"meetings"> | null>(null);
 	const [activeCallLabel, setActiveCallLabel] = useState<string | null>(null);
-	// See org-call-button.tsx — guard against StrictMode/transient LiveKit
-	// disconnects ending the server-side call before the agent can pick up.
-	const userHangUpRef = useRef(false);
 
 	// Hook meeting lifecycle
 	const { token, wsUrl, connect, disconnect } = useMeeting(activeMeetingId ?? undefined);
@@ -98,6 +102,18 @@ export function CitizenCallTab() {
 		return Array.from(ids);
 	}, [myRequests]);
 
+	const cleanupCallState = useCallback(() => {
+		setActiveMeetingId(null);
+		setActiveCallLabel(null);
+	}, []);
+
+	const {
+		onConnected: onLiveKitConnected,
+		onDisconnected: onLiveKitDisconnected,
+		markUserHangUp,
+		reset: resetDisconnectGuard,
+	} = useLiveKitDisconnectGuard(cleanupCallState);
+
 	// ── Lancer un appel audio vers une org/ligne ──
 	const handleCallOrg = useCallback(async (orgId: string, callLineId?: string, label?: string) => {
 		if (activeMeetingId) {
@@ -106,13 +122,13 @@ export function CitizenCallTab() {
 		}
 		try {
 			setActiveCallLabel(label ?? null);
+			resetDisconnectGuard();
 			const result = await callOrg({
 				orgId: orgId as Id<"orgs">,
 				callLineId: callLineId ? (callLineId as Id<"callLines">) : undefined,
-				mediaType: "audio", // Citoyens : audio uniquement
+				mediaType: "audio", // Citoyens : audio uniquement (règle métier)
 			});
 			const meetingId = result.meetingId as Id<"meetings">;
-			userHangUpRef.current = false;
 			setActiveMeetingId(meetingId);
 			await connect(meetingId);
 			// Transition to ringing so agents can see the call
@@ -123,23 +139,15 @@ export function CitizenCallTab() {
 			setActiveMeetingId(null);
 			setActiveCallLabel(null);
 		}
-	}, [activeMeetingId, callOrg, connect, setCallRingingMutation]);
+	}, [activeMeetingId, callOrg, connect, setCallRingingMutation, resetDisconnectGuard]);
 
 	const handleHangUp = useCallback(async () => {
-		userHangUpRef.current = true;
+		markUserHangUp();
 		if (activeMeetingId) {
 			await disconnect(activeMeetingId);
 		}
-		setActiveMeetingId(null);
-		setActiveCallLabel(null);
-	}, [activeMeetingId, disconnect]);
-
-	const handleLiveKitDisconnected = useCallback(() => {
-		if (userHangUpRef.current) {
-			setActiveMeetingId(null);
-			setActiveCallLabel(null);
-		}
-	}, []);
+		cleanupCallState();
+	}, [activeMeetingId, disconnect, markUserHangUp, cleanupCallState]);
 
 	const isInCall = activeMeetingId !== null && token && wsUrl;
 
@@ -237,8 +245,11 @@ export function CitizenCallTab() {
 
 			{/* Dialog LiveKit en appel */}
 			<Dialog open={!!isInCall} onOpenChange={(open) => { if (!open) handleHangUp(); }}>
-				<DialogContent className="max-w-lg w-full h-[60vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800" aria-describedby={undefined}>
+				<DialogContent className="max-w-lg w-full h-[60vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800">
 					<DialogTitle className="sr-only">{activeCallLabel ?? "Appel en cours"}</DialogTitle>
+					<DialogDescription className="sr-only">
+						Appel audio avec une représentation. Utilisez le bouton Raccrocher pour mettre fin à la communication.
+					</DialogDescription>
 					{token && wsUrl ? (
 						<div className="flex flex-col flex-1 bg-zinc-950">
 							<div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0">
@@ -256,7 +267,9 @@ export function CitizenCallTab() {
 								connect={true}
 								audio={true}
 								video={false}
-								onDisconnected={handleLiveKitDisconnected}
+								options={LIVEKIT_CALL_ROOM_OPTIONS}
+								onConnected={onLiveKitConnected}
+								onDisconnected={onLiveKitDisconnected}
 								className="flex flex-col flex-1"
 							>
 								<CustomCallUI onHangUp={handleHangUp} title={activeCallLabel ?? undefined} />

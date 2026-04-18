@@ -20,6 +20,7 @@ import {
 } from "@convex/lib/constants";
 import { LiveKitRoom } from "@livekit/components-react";
 import { useMutation } from "convex/react";
+import { useRouter } from "next/navigation";
 import type { Locale } from "date-fns";
 import { format, formatDistanceToNow } from "date-fns";
 import { enUS, fr } from "date-fns/locale";
@@ -148,6 +149,7 @@ const MAIL_FOLDERS: { key: ViewKey; icon: typeof Inbox }[] = [
 
 export default function IBoitePage() {
 	const { t, i18n } = useTranslation();
+	const router = useRouter();
 	const dateFnsLocale = i18n.language === "fr" ? fr : enUS;
 	const { hasMin: hasMailAccess } = useModuleAccess("digital_mail");
 	const canCompose = hasMailAccess("editor");
@@ -272,8 +274,25 @@ export default function IBoitePage() {
 	// ── Actions ────────────────────────────────────────────────────────────
 
 	const handleSelectMail = async (mailId: Id<"digitalMail">) => {
-		setSelectedMailId(mailId);
 		const mail = filteredMail.find((m) => m._id === mailId);
+
+		// Cross-module : si le mail est une notification de correspondance
+		// officielle, on redirige vers /icorrespondance/<itemId> plutôt que
+		// d'ouvrir le viewer mail interne. On marque quand même comme lu pour
+		// que le badge non-lu se mette à jour.
+		if (mail?.linkedCorrespondanceItemId) {
+			if (!mail.isRead) {
+				try {
+					await markReadMutation({ id: mailId });
+				} catch {
+					/* noop */
+				}
+			}
+			router.push(`/icorrespondance/${mail.linkedCorrespondanceItemId}`);
+			return;
+		}
+
+		setSelectedMailId(mailId);
 		if (mail && !mail.isRead) {
 			try {
 				await markReadMutation({ id: mailId });

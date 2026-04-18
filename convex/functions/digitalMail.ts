@@ -160,6 +160,74 @@ export const getUnreadCount = authQuery({
 export const getAccountsWithUnread = authQuery({
   args: {},
   handler: async (ctx) => {
+    // countUnread borne à 50 (suffisant pour afficher "50+" dans un badge).
+    // Avant : .take(200) par account → jusqu'à 4×200 = 800 rows chargées juste
+    // pour afficher un nombre. Maintenant on s'arrête dès 51.
+    const countUnread = async (ownerId: string) => {
+      const unread = await ctx.db
+        .query("digitalMail")
+        .withIndex("by_owner_unread", (q: any) =>
+          q.eq("ownerId", ownerId).eq("isRead", false),
+        )
+        .take(51);
+      return unread.length;
+    };
+
+    // ── Batch 1 : résoudre toutes les sources en parallèle ──
+    const [profile, orgMemberships, assocMemberships, companyMemberships] =
+      await Promise.all([
+        ctx.db
+          .query("profiles")
+          .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+          .first(),
+        ctx.db
+          .query("memberships")
+          .withIndex("by_user_org_deletedAt", (q) =>
+            q.eq("userId", ctx.user._id),
+          )
+          .take(50),
+        ctx.db
+          .query("associationMembers")
+          .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+          .take(50),
+        ctx.db
+          .query("companyMembers")
+          .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+          .take(50),
+      ]);
+
+    // ── Batch 2 : résoudre toutes les entités liées en parallèle ──
+    const activeOrgMships = orgMemberships.filter(
+      (m) => m.deletedAt === undefined,
+    );
+    const activeAssocMships = assocMemberships.filter((m) => !m.deletedAt);
+    const activeCompanyMships = companyMemberships.filter((m) => !m.deletedAt);
+
+    const [orgs, assocs, companies] = await Promise.all([
+      Promise.all(activeOrgMships.map((m) => ctx.db.get(m.orgId))),
+      Promise.all(activeAssocMships.map((m) => ctx.db.get(m.associationId))),
+      Promise.all(activeCompanyMships.map((m) => ctx.db.get(m.companyId))),
+    ]);
+
+    // ── Batch 3 : unread counts en parallèle ──
+    const profileUnread = profile ? countUnread(profile._id) : Promise.resolve(0);
+    const orgsUnread = Promise.all(
+      orgs.map((o) => (o ? countUnread(o._id) : Promise.resolve(0))),
+    );
+    const assocsUnread = Promise.all(
+      assocs.map((a) => (a ? countUnread(a._id) : Promise.resolve(0))),
+    );
+    const companiesUnread = Promise.all(
+      companies.map((c) => (c ? countUnread(c._id) : Promise.resolve(0))),
+    );
+
+    const [
+      profileUnreadCount,
+      orgsUnreadCounts,
+      assocsUnreadCounts,
+      companiesUnreadCounts,
+    ] = await Promise.all([profileUnread, orgsUnread, assocsUnread, companiesUnread]);
+
     const accounts: Array<{
       ownerId: string;
       ownerType: string;
@@ -169,22 +237,6 @@ export const getAccountsWithUnread = authQuery({
       unreadCount: number;
     }> = [];
 
-    // Helper to count unread for a given ownerId
-    const countUnread = async (ownerId: string) => {
-      const unread = await ctx.db
-        .query("digitalMail")
-        .withIndex("by_owner_unread", (q: any) =>
-          q.eq("ownerId", ownerId).eq("isRead", false),
-        )
-        .take(200);
-      return unread.length;
-    };
-
-    // 1. User's profile
-    const profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
-      .first();
     if (profile) {
       accounts.push({
         ownerId: profile._id,
@@ -193,61 +245,43 @@ export const getAccountsWithUnread = authQuery({
           `${profile.identity?.firstName ?? ""} ${profile.identity?.lastName ?? ""}`.trim() ||
           ctx.user.name ||
           "Mon Profil",
-        unreadCount: await countUnread(profile._id),
+        unreadCount: profileUnreadCount,
       });
     }
 
-    // 2. Orgs (consular)
-    const orgMemberships = await ctx.db
-      .query("memberships")
-      .withIndex("by_user_org_deletedAt", (q) => q.eq("userId", ctx.user._id))
-      .take(50);
-    for (const m of orgMemberships.filter((m) => m.deletedAt === undefined)) {
-      const org = await ctx.db.get(m.orgId);
-      if (!org || org.deletedAt) continue;
+    orgs.forEach((org, idx) => {
+      if (!org || org.deletedAt) return;
       accounts.push({
         ownerId: org._id,
         ownerType: MailOwnerType.Organization,
         name: org.name,
         logoUrl: org.logoUrl,
         orgType: org.type,
-        unreadCount: await countUnread(org._id),
+        unreadCount: orgsUnreadCounts[idx] ?? 0,
       });
-    }
+    });
 
-    // 3. Associations
-    const assocMemberships = await ctx.db
-      .query("associationMembers")
-      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
-      .take(50);
-    for (const m of assocMemberships.filter((m) => !m.deletedAt)) {
-      const assoc = await ctx.db.get(m.associationId);
-      if (!assoc || assoc.deletedAt) continue;
+    assocs.forEach((assoc, idx) => {
+      if (!assoc || assoc.deletedAt) return;
       accounts.push({
         ownerId: assoc._id,
         ownerType: MailOwnerType.Association,
         name: assoc.name,
         logoUrl: assoc.logoUrl,
-        unreadCount: await countUnread(assoc._id),
+        unreadCount: assocsUnreadCounts[idx] ?? 0,
       });
-    }
+    });
 
-    // 4. Companies
-    const companyMemberships = await ctx.db
-      .query("companyMembers")
-      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
-      .take(50);
-    for (const m of companyMemberships.filter((m) => !m.deletedAt)) {
-      const company = await ctx.db.get(m.companyId);
-      if (!company || company.deletedAt) continue;
+    companies.forEach((company, idx) => {
+      if (!company || company.deletedAt) return;
       accounts.push({
         ownerId: company._id,
         ownerType: MailOwnerType.Company,
         name: company.name,
         logoUrl: company.logoUrl,
-        unreadCount: await countUnread(company._id),
+        unreadCount: companiesUnreadCounts[idx] ?? 0,
       });
-    }
+    });
 
     return accounts;
   },

@@ -22,7 +22,8 @@ import {
 	User,
 } from "lucide-react";
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
-import Markdown from "react-markdown";
+import { SafeMarkdown as Markdown } from "@workspace/chat/safe-markdown";
+import { useIdempotencyKey } from "@workspace/chat/use-idempotency-key";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +70,10 @@ export function CitizenChatTab() {
 	const { mutateAsync: markRead } = useConvexMutationQuery(
 		api.functions.chats.markRead,
 	);
+	// Clé d'idempotence : évite les doubles insertions côté backend si
+	// l'utilisateur double-clique ou si le retry réseau refait la mutation.
+	const { getKey: getIdempotencyKey, rotate: rotateIdempotencyKey } =
+		useIdempotencyKey();
 
 	// Profil utilisateur pour les suggestions contextuelles
 	const { data: profile } = useAuthenticatedConvexQuery(api.functions.profiles.getMine, {});
@@ -167,7 +172,11 @@ export function CitizenChatTab() {
 		try {
 			if (mrRayThread) {
 				// Thread existant — envoyer dans le thread P2P
-				await sendChatMessage({ chatId: mrRayThread._id as Id<"chats">, content: text });
+				await sendChatMessage({
+					chatId: mrRayThread._id as Id<"chats">,
+					content: text,
+					idempotencyKey: getIdempotencyKey(),
+				});
 			} else if (orgId) {
 				// Pas de thread — en creer un via initiateStandardChat
 				await initiateStandard({ orgId, initialMessage: text });
@@ -176,8 +185,10 @@ export function CitizenChatTab() {
 				return;
 			}
 			setMessageInput("");
+			rotateIdempotencyKey();
 		} catch (e: any) {
 			toast.error(e?.data ?? e?.message ?? "Erreur d'envoi");
+			// On ne rotate PAS la clé → un retry manuel dédupliquera côté serveur.
 		}
 	};
 
@@ -187,8 +198,13 @@ export function CitizenChatTab() {
 		if (!text || !selectedChatId) return;
 
 		try {
-			await sendChatMessage({ chatId: selectedChatId as Id<"chats">, content: text });
+			await sendChatMessage({
+				chatId: selectedChatId as Id<"chats">,
+				content: text,
+				idempotencyKey: getIdempotencyKey(),
+			});
 			setMessageInput("");
+			rotateIdempotencyKey();
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur d'envoi");
 		}

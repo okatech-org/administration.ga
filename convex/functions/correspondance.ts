@@ -412,6 +412,25 @@ export const restoreFromTrash = authMutation({
 // ATTACHMENTS
 // ═════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Limites d'upload — dupliquées côté client (AttachmentUploader.tsx) pour
+ * feedback immédiat et ici pour defense-in-depth. Un client malveillant
+ * qui contourne la validation JS ne peut pas attacher un fichier de 500 Mo
+ * ou un .exe au meeting.
+ */
+const MAX_ATTACHMENT_SIZE_BYTES = 50 * 1024 * 1024; // 50 Mo
+const ALLOWED_ATTACHMENT_MIME_TYPES = new Set<string>([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]);
+
 /** Generate a Convex storage upload URL */
 export const generateUploadUrl = authMutation({
   args: {},
@@ -434,6 +453,33 @@ export const addAttachment = authMutation({
     if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
     const orgId = item.copyOwnerOrgId ?? item.orgId;
     await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
+
+    // Defense-in-depth : re-valider les contraintes d'upload côté serveur.
+    // Le client peut contourner la validation JS, pas celle-ci.
+    if (args.sizeBytes > MAX_ATTACHMENT_SIZE_BYTES) {
+      // On supprime la blob uploadée pour éviter d'accumuler du garbage
+      // dans le storage.
+      try {
+        await ctx.storage.delete(args.storageId);
+      } catch {
+        // ignore, déjà supprimée
+      }
+      throw error(
+        ErrorCode.VALIDATION_ERROR,
+        "Fichier trop volumineux (limite 50 Mo).",
+      );
+    }
+    if (!ALLOWED_ATTACHMENT_MIME_TYPES.has(args.mimeType)) {
+      try {
+        await ctx.storage.delete(args.storageId);
+      } catch {
+        // ignore
+      }
+      throw error(
+        ErrorCode.VALIDATION_ERROR,
+        `Type de fichier non autorisé (${args.mimeType || "inconnu"}).`,
+      );
+    }
 
     const attachment = {
       storageId: args.storageId,

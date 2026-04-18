@@ -3,15 +3,27 @@ import type { Id } from "@convex/_generated/dataModel";
 import {
 	LiveKitRoom,
 } from "@livekit/components-react";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
+import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 
 import { useQuery } from "convex/react";
 import { Loader2, Phone, PhoneCall, PhoneOff } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import { useMeeting } from "@/hooks/use-meeting";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRingtone } from "@/hooks/use-ringtone";
@@ -32,6 +44,10 @@ export function GlobalCallAlert() {
 		null,
 	);
 	const { globalActiveMeetingId, setGlobalMeetingId } = useCallStore();
+	// Mémorise le dernier meetingId traité pour éviter que la sonnerie ne
+	// re-sonne pendant la fenêtre de latence où la query Convex n'a pas encore
+	// propagé le changement de statut post-raccrochage.
+	const dismissedMeetingIdRef = useRef<Id<"meetings"> | null>(null);
 
 	// Get my personal meetings
 	const { data: meetingsData } = useAuthenticatedConvexQuery(
@@ -54,6 +70,8 @@ export function GlobalCallAlert() {
 		if (Date.now() - m._creationTime > 120_000) return false;
 		if (user) {
 			const me = m.participants.find((p) => p.userId === user._id);
+			// Déjà rejoint (en communication) → ce n'est plus un appel entrant.
+			if (me?.joinedAt && !me?.leftAt) return false;
 			if (me?.leftAt) return false;
 		}
 		return true;
@@ -64,13 +82,18 @@ export function GlobalCallAlert() {
 		inboundOrgCalls?.find((m) => {
 			if (user) {
 				const me = m.participants.find((p) => p.userId === user._id);
+				if (me?.joinedAt && !me?.leftAt) return false;
 				if (me?.leftAt) return false;
 			}
 			return true;
 		}) ?? null;
 
+	const candidateCall = incomingOrgCall ?? incomingPersonalMeeting ?? null;
+	// Bloque la ré-émission de sonnerie pendant la latence Convex post-hangup.
 	const activeCallToDisplay =
-		incomingOrgCall ?? incomingPersonalMeeting ?? null;
+		candidateCall && candidateCall._id === dismissedMeetingIdRef.current
+			? null
+			: candidateCall;
 	const isOrgCall =
 		activeCallToDisplay === incomingOrgCall && incomingOrgCall !== null;
 
@@ -104,6 +127,7 @@ export function GlobalCallAlert() {
 
 	const handleDecline = useCallback(async () => {
 		if (!activeCallToDisplay) return;
+		dismissedMeetingIdRef.current = activeCallToDisplay._id;
 		try {
 			await declineCallMutation.mutateAsync({ meetingId: activeCallToDisplay._id });
 		} catch {
@@ -111,28 +135,43 @@ export function GlobalCallAlert() {
 		}
 	}, [activeCallToDisplay, declineCallMutation]);
 
+	const cleanupCallState = useCallback(() => {
+		setActiveMeetingId(null);
+		setGlobalMeetingId(null);
+	}, [setGlobalMeetingId]);
+
+	const {
+		onConnected: onLiveKitConnected,
+		onDisconnected: onLiveKitDisconnected,
+		markUserHangUp,
+		reset: resetDisconnectGuard,
+	} = useLiveKitDisconnectGuard(cleanupCallState);
+
 	const handleJoin = useCallback(async () => {
 		if (!activeCallToDisplay) return;
+		dismissedMeetingIdRef.current = null;
+		resetDisconnectGuard();
 		setActiveMeetingId(activeCallToDisplay._id);
 		setGlobalMeetingId(activeCallToDisplay._id);
 		await connect(activeCallToDisplay._id);
-	}, [activeCallToDisplay, connect, setGlobalMeetingId]);
+	}, [activeCallToDisplay, connect, setGlobalMeetingId, resetDisconnectGuard]);
 
 	const handleHangUp = useCallback(async () => {
+		markUserHangUp();
 		if (activeMeetingId) {
+			dismissedMeetingIdRef.current = activeMeetingId;
 			await disconnect(activeMeetingId);
 		}
-		setActiveMeetingId(null);
-		setGlobalMeetingId(null);
-	}, [activeMeetingId, disconnect, setGlobalMeetingId]);
+		cleanupCallState();
+	}, [activeMeetingId, disconnect, markUserHangUp, cleanupCallState]);
 
-	// Auto-close when the other side hangs up
+	// Auto-close when the other side hangs up (source de vérité : statut serveur)
 	useEffect(() => {
 		if (activeMeetingData?.status === "ended" && activeMeetingId) {
-			setActiveMeetingId(null);
-			setGlobalMeetingId(null);
+			dismissedMeetingIdRef.current = activeMeetingId;
+			cleanupCallState();
 		}
-	}, [activeMeetingData?.status, activeMeetingId, setGlobalMeetingId]);
+	}, [activeMeetingData?.status, activeMeetingId, cleanupCallState]);
 
 	const callContent = (
 		<div className="flex flex-col h-full bg-zinc-950 overflow-hidden">
@@ -143,7 +182,9 @@ export function GlobalCallAlert() {
 					connect={true}
 					audio={true}
 					video={false}
-					onDisconnected={handleHangUp}
+					options={LIVEKIT_CALL_ROOM_OPTIONS}
+					onConnected={onLiveKitConnected}
+					onDisconnected={onLiveKitDisconnected}
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
@@ -223,6 +264,15 @@ export function GlobalCallAlert() {
 						onEscapeKeyDown={(e) => e.preventDefault()}
 						className="p-0 h-dvh w-full bg-zinc-950 border-none rounded-none focus:outline-none flex flex-col pt-10"
 					>
+						<SheetTitle className="sr-only">
+							{callerName ?? activeCallToDisplay?.title ?? t("meetings.callInProgress", "Appel en cours")}
+						</SheetTitle>
+						<SheetDescription className="sr-only">
+							{t(
+								"meetings.callDialogDescription",
+								"Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.",
+							)}
+						</SheetDescription>
 						{callContent}
 					</SheetContent>
 				</Sheet>
@@ -233,12 +283,19 @@ export function GlobalCallAlert() {
 				>
 					<DialogContent
 						autoFocus={false}
-						aria-describedby={undefined}
 						onInteractOutside={(e) => e.preventDefault()}
 						onEscapeKeyDown={(e) => e.preventDefault()}
 						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 					>
-						<DialogTitle className="sr-only">Appel en cours</DialogTitle>
+						<DialogTitle className="sr-only">
+							{callerName ?? activeCallToDisplay?.title ?? t("meetings.callInProgress", "Appel en cours")}
+						</DialogTitle>
+						<DialogDescription className="sr-only">
+							{t(
+								"meetings.callDialogDescription",
+								"Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.",
+							)}
+						</DialogDescription>
 						{callContent}
 					</DialogContent>
 				</Dialog>

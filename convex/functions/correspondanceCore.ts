@@ -24,6 +24,12 @@ import {
   correspondanceDocumentValidator,
 } from "../schemas/correspondance";
 import {
+  MailFolder,
+  MailOwnerType,
+  MailSenderType,
+  MailType,
+} from "../lib/constants";
+import {
   requireCorrespondanceAccess,
   generateSequentialReference,
   generateArrivalReference,
@@ -197,67 +203,66 @@ export const getEspaceCounts = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
     await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
-    // Brouillons (draft + pending, non-copie)
-    const drafts = await ctx.db
-      .query("correspondanceItems")
-      .withIndex("by_owner_org_status", (q) =>
-        q.eq("copyOwnerOrgId", args.orgId).eq("status", "draft"),
-      )
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("isCopy"), true),
-          q.eq(q.field("deletedAt"), undefined),
-        ),
-      )
-      .collect();
-    const pendings = await ctx.db
-      .query("correspondanceItems")
-      .withIndex("by_owner_org_status", (q) =>
-        q.eq("copyOwnerOrgId", args.orgId).eq("status", "pending"),
-      )
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("isCopy"), true),
-          q.eq(q.field("deletedAt"), undefined),
-        ),
-      )
-      .collect();
 
-    // Envoyés (copies)
-    const envoyes = await ctx.db
-      .query("correspondanceItems")
-      .withIndex("by_owner_org_copy", (q) =>
-        q.eq("copyOwnerOrgId", args.orgId).eq("isCopy", true),
-      )
-      .filter((q) => q.eq(q.field("deletedAt"), undefined))
-      .collect();
+    // Cap : 500 par compteur. Au-delà, l'UI affiche "500+". Évite de charger
+    // 10k rows pour calculer un badge. Compromis pragmatique en attendant
+    // un agrégat serveur dédié (via Convex @convex-dev/aggregate).
+    const CAP = 500;
 
-    // Reçus
-    const recus = await ctx.db
-      .query("correspondanceItems")
-      .withIndex("by_owner_org_status", (q) =>
-        q.eq("copyOwnerOrgId", args.orgId).eq("status", "received"),
-      )
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("isCopy"), true),
-          q.eq(q.field("deletedAt"), undefined),
-        ),
-      )
-      .collect();
+    // ── Parallélisation : 5 queries en un round-trip ──
+    const [drafts, pendings, envoyes, recus, corbeille] = await Promise.all([
+      ctx.db
+        .query("correspondanceItems")
+        .withIndex("by_owner_org_status", (q) =>
+          q.eq("copyOwnerOrgId", args.orgId).eq("status", "draft"),
+        )
+        .filter((q) =>
+          q.and(
+            q.neq(q.field("isCopy"), true),
+            q.eq(q.field("deletedAt"), undefined),
+          ),
+        )
+        .take(CAP),
+      ctx.db
+        .query("correspondanceItems")
+        .withIndex("by_owner_org_status", (q) =>
+          q.eq("copyOwnerOrgId", args.orgId).eq("status", "pending"),
+        )
+        .filter((q) =>
+          q.and(
+            q.neq(q.field("isCopy"), true),
+            q.eq(q.field("deletedAt"), undefined),
+          ),
+        )
+        .take(CAP),
+      ctx.db
+        .query("correspondanceItems")
+        .withIndex("by_owner_org_copy", (q) =>
+          q.eq("copyOwnerOrgId", args.orgId).eq("isCopy", true),
+        )
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
+        .take(CAP),
+      ctx.db
+        .query("correspondanceItems")
+        .withIndex("by_owner_org_status", (q) =>
+          q.eq("copyOwnerOrgId", args.orgId).eq("status", "received"),
+        )
+        .filter((q) =>
+          q.and(
+            q.neq(q.field("isCopy"), true),
+            q.eq(q.field("deletedAt"), undefined),
+          ),
+        )
+        .take(CAP),
+      ctx.db
+        .query("correspondanceItems")
+        .withIndex("by_owner_org", (q) => q.eq("copyOwnerOrgId", args.orgId))
+        .filter((q) => q.neq(q.field("deletedAt"), undefined))
+        .take(CAP),
+    ]);
 
-    // Non lus parmi les reçus
     const userId = ctx.user._id as string;
     const nonLus = recus.filter((i) => !(i.readByIds ?? []).includes(userId));
-
-    // Corbeille
-    const corbeille = await ctx.db
-      .query("correspondanceItems")
-      .withIndex("by_owner_org", (q) =>
-        q.eq("copyOwnerOrgId", args.orgId),
-      )
-      .filter((q) => q.neq(q.field("deletedAt"), undefined))
-      .collect();
 
     return {
       brouillons: drafts.length + pendings.length,
@@ -603,6 +608,39 @@ async function _executeEnvoi(
         itemId: originalId,
       },
     );
+  }
+
+  // Cross-module : créer une entrée iBoîte côté destinataire pour unifier le
+  // badge non-lu de l'agent. Le clic sur cette entrée redirigera vers
+  // /icorrespondance/<originalId> (ctx `threadId` porte l'itemId).
+  if (item.primaryRecipientOrgId && item.primaryRecipientOrgId !== item.orgId) {
+    const previewText = item.comment
+      ? item.comment.slice(0, 200)
+      : `Nouvelle correspondance reçue (${item.type})`;
+    await ctx.db.insert("digitalMail", {
+      userId: ctx.user._id,
+      ownerId: item.primaryRecipientOrgId,
+      ownerType: MailOwnerType.Organization,
+      type: MailType.Letter,
+      folder: MailFolder.Inbox,
+      sender: {
+        name: item.senderName,
+        type: MailSenderType.Organization,
+        entityId: item.orgId,
+        entityType: MailOwnerType.Organization,
+      },
+      subject: `[Correspondance] ${item.title}`,
+      preview: previewText,
+      content: item.comment ?? "",
+      isRead: false,
+      isStarred: false,
+      threadId: originalId,
+      // Route-back : le client iBoîte redirige vers /icorrespondance/<itemId>
+      // au clic, plutôt que d'ouvrir le viewer mail classique.
+      linkedCorrespondanceItemId: originalId,
+      createdAt: now,
+      updatedAt: now,
+    });
   }
 
   return { status: "sent", copyId: itemId, originalId };

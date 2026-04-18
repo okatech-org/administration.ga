@@ -149,6 +149,13 @@ export const TaskCode = {
   chats: {
     view: "chats.view",
     send: "chats.send",
+    /**
+     * Permission spéciale pour accéder aux threads "standard" (Mr Ray) de
+     * l'org en tant qu'agent. Par défaut distribuée aux rôles superviseur
+     * et admin uniquement — empêche un agent quelconque de lire les
+     * conversations assistant IA ↔ citoyen de son org.
+     */
+    accessStandardThread: "chats.accessStandardThread",
   },
   // Correspondance & Dossiers de procédure
   correspondance: {
@@ -312,6 +319,7 @@ export const taskCodeValidator = v.union(
   // Chat peer-to-peer
   v.literal(TaskCode.chats.view),
   v.literal(TaskCode.chats.send),
+  v.literal(TaskCode.chats.accessStandardThread),
   // Meetings & Calls
   v.literal(TaskCode.meetings.create),
   v.literal(TaskCode.meetings.join),
@@ -446,6 +454,7 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   // Chat peer-to-peer
   [TaskCode.chats.view]: "low",
   [TaskCode.chats.send]: "low",
+  [TaskCode.chats.accessStandardThread]: "medium",
   // Meetings & Calls
   [TaskCode.meetings.create]: "low",
   [TaskCode.meetings.join]: "low",

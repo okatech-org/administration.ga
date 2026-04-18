@@ -7,6 +7,8 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { LiveKitRoom } from "@livekit/components-react";
 import "@livekit/components-styles";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
+import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 import {
 	Building2,
 	Globe,
@@ -20,12 +22,17 @@ import {
 	Users,
 	Video,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
@@ -65,6 +72,18 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 	const meetingsArray = Array.isArray(rawMeetings) ? (rawMeetings as any)?.meetings ?? rawMeetings : [];
 	const callHistory = useMemo(() => (meetingsArray as any[]).filter((m: any) => m.type === "call").slice(0, 15), [meetingsArray]);
 
+	const cleanupCallState = useCallback(() => {
+		setActiveMeetingId(null);
+		setGlobalMeetingId(null);
+	}, [setGlobalMeetingId]);
+
+	const {
+		onConnected: onLiveKitConnected,
+		onDisconnected: onLiveKitDisconnected,
+		markUserHangUp,
+		reset: resetDisconnectGuard,
+	} = useLiveKitDisconnectGuard(cleanupCallState);
+
 	const handleCall = async (targetUserId: string, mediaType: SubTab) => {
 		if (!orgId || globalActiveMeetingId) {
 			toast.error("Un appel est déjà en cours");
@@ -72,7 +91,14 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 		}
 		setPendingCallUserId(targetUserId);
 		try {
-			const result = await callUser({ orgId, targetUserId: targetUserId as Id<"users">, mediaType });
+			resetDisconnectGuard();
+			// mediaType "video" côté token permet audio+vidéo — le paramètre
+			// `video` de LiveKitRoom contrôle la publication caméra initiale.
+			const result = await callUser({
+				orgId,
+				targetUserId: targetUserId as Id<"users">,
+				mediaType: "video",
+			});
 			const meetingId = result.meetingId as Id<"meetings">;
 			setActiveMeetingId(meetingId);
 			setActiveMediaType(mediaType);
@@ -89,9 +115,9 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 	};
 
 	const handleHangUp = async () => {
+		markUserHangUp();
 		if (activeMeetingId) await disconnect(activeMeetingId);
-		setActiveMeetingId(null);
-		setGlobalMeetingId(null);
+		cleanupCallState();
 	};
 
 	const isInCall = activeMeetingId !== null && token && wsUrl;
@@ -219,6 +245,12 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 
 			<Dialog open={!!isInCall} onOpenChange={(open) => { if (!open) handleHangUp(); }}>
 				<DialogContent className="max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800">
+					<DialogTitle className="sr-only">
+						{activeMediaType === "audio" ? "Appel audio" : "Appel vidéo"}
+					</DialogTitle>
+					<DialogDescription className="sr-only">
+						Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.
+					</DialogDescription>
 					{token && wsUrl ? (
 						<div className="flex flex-col flex-1 bg-zinc-950">
 							<div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0">
@@ -228,7 +260,17 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 								</div>
 								<Button variant="destructive" size="sm" onClick={handleHangUp} className="h-7 text-[10px] gap-1"><PhoneOff className="h-3 w-3" />Raccrocher</Button>
 							</div>
-							<LiveKitRoom token={token} serverUrl={wsUrl} connect={true} audio={true} video={activeMediaType === "video"} onDisconnected={handleHangUp} className="flex flex-col flex-1">
+							<LiveKitRoom
+								token={token}
+								serverUrl={wsUrl}
+								connect={true}
+								audio={true}
+								video={activeMediaType === "video"}
+								options={LIVEKIT_CALL_ROOM_OPTIONS}
+								onConnected={onLiveKitConnected}
+								onDisconnected={onLiveKitDisconnected}
+								className="flex flex-col flex-1"
+							>
 								<CustomCallUI onHangUp={handleHangUp} />
 							</LiveKitRoom>
 						</div>

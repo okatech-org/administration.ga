@@ -1,0 +1,29 @@
+{
+  "name": "@workspace/livekit",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Utilitaires LiveKit partagés entre les apps : options de room haute qualité (simulcast VP9), hook de guard onDisconnected (évite fermeture prématurée), hook de sonnerie générée Web Audio.",
+  "exports": {
+    "./room-options": "./src/room-options.ts",
+    "./use-livekit-disconnect-guard": "./src/use-livekit-disconnect-guard.ts",
+    "./use-ringtone": "./src/use-ringtone.ts"
+  },
+  "scripts": {
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@livekit/components-react": "^2.9.0",
+    "livekit-client": "^2.17.0",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@livekit/components-react": "^2.9.20",
+    "@types/react": "^19.2.10",
+    "@workspace/tsconfig": "workspace:*",
+    "livekit-client": "^2.17.2",
+    "react": "19.2.4",
+    "typescript": "^5.9.3"
+  }
+}

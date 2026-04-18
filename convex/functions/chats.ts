@@ -14,7 +14,13 @@ import { internal } from "../_generated/api";
 import { internalMutation } from "../_generated/server";
 import { authQuery, authMutation } from "../lib/customFunctions";
 import { error, ErrorCode } from "../lib/errors";
+import { canDoTask } from "../lib/permissions";
+import { TaskCode } from "../lib/taskCodes";
 import { isPublicUser } from "../lib/userCategory";
+
+/** Délai au-delà duquel un thread standard revendiqué par un agent humain
+ * est réaffecté à Mr Ray (l'agent n'a pas répondu, le citoyen patiente). */
+const CLAIMED_BY_STALE_THRESHOLD_MS = 48 * 60 * 60 * 1000; // 48h
 
 // ============================================
 // Helpers
@@ -35,11 +41,15 @@ function sortParticipants(
 
 /**
  * Vérifie que l'utilisateur est bien un participant du chat.
- * Pour les threads "standard" (citoyen ↔ Mr Ray), les agents membres
- * de l'org du chat sont aussi autorisés (supervision / prise en charge).
+ *
+ * Pour les threads "standard" (citoyen ↔ Mr Ray) avec un `orgId`, seuls les
+ * agents de l'org qui possèdent la permission explicite
+ * `chats.accessStandardThread` sont autorisés — typiquement les superviseurs
+ * et admins. Sans ce contrôle, TOUT agent membre de l'org pouvait lire les
+ * conversations assistant IA ↔ citoyen (escalation de privilèges HIGH).
  */
 async function validateParticipation(
-  ctx: { db: any },
+  ctx: { db: any; user?: any },
   chatId: Id<"chats">,
   userId: Id<"users">,
 ) {
@@ -48,7 +58,7 @@ async function validateParticipation(
   if (chat.participantA === userId || chat.participantB === userId) {
     return chat;
   }
-  // Pour les threads standard, autoriser les agents de l'org
+  // Threads standard org-scoped : exiger la task `chats.accessStandardThread`.
   if (chat.type === "standard" && chat.orgId) {
     const membership = await ctx.db
       .query("memberships")
@@ -57,7 +67,17 @@ async function validateParticipation(
       )
       .first();
     if (membership && !membership.deletedAt) {
-      return chat;
+      // Résoudre l'utilisateur si non fourni (helper utilisable hors authQuery).
+      const user = ctx.user ?? (await ctx.db.get(userId));
+      if (user) {
+        const canAccess = await canDoTask(
+          ctx as any,
+          user,
+          membership,
+          TaskCode.chats.accessStandardThread,
+        );
+        if (canAccess) return chat;
+      }
     }
   }
   throw error(ErrorCode.INSUFFICIENT_PERMISSIONS, "Vous ne faites pas partie de cette conversation");
@@ -100,28 +120,47 @@ export const listMyChats = authQuery({
     // Trier par dernier message (plus récent en premier)
     allChats.sort((a, b) => (b.lastMessageAt ?? b.createdAt) - (a.lastMessageAt ?? a.createdAt));
 
-    // Enrichir avec les données de l'interlocuteur
+    // ── Batch 1 : résoudre tous les interlocuteurs en un seul round-trip ──
+    // Avant : boucle Promise.all avec db.get() dans chaque itération (N+1).
+    // Après : collecter tous les userIds uniques, un Promise.all unique.
+    const otherUserIds = new Set<string>();
+    const requestIds = new Set<string>();
+    for (const chat of allChats) {
+      const otherId = chat.participantA === userId ? chat.participantB : chat.participantA;
+      otherUserIds.add(otherId as string);
+      if (chat.requestId) requestIds.add(chat.requestId as string);
+    }
+
+    const otherUsersList = await Promise.all(
+      [...otherUserIds].map((id) => ctx.db.get(id as Id<"users">)),
+    );
+    const otherUsersById = new Map<string, any>();
+    for (const u of otherUsersList) {
+      if (u) otherUsersById.set(u._id as string, u);
+    }
+
+    const requestsList = await Promise.all(
+      [...requestIds].map((id) => ctx.db.get(id as Id<"requests">)),
+    );
+    const requestRefsById = new Map<string, string>();
+    for (const r of requestsList as any[]) {
+      if (r?.reference) requestRefsById.set(r._id as string, r.reference);
+    }
+
+    // ── Batch 2 : unread counts en parallèle (1 query par chat mais async) ──
     const enriched = await Promise.all(
       allChats.map(async (chat) => {
         const otherUserId = chat.participantA === userId ? chat.participantB : chat.participantA;
-        const otherUser = await ctx.db.get(otherUserId) as any;
+        const otherUser = otherUsersById.get(otherUserId as string);
 
-        // Compter les messages non lus
         const unreadMessages = await ctx.db
           .query("chatMessages")
           .withIndex("by_chat_created", (q: any) => q.eq("chatId", chat._id))
           .collect();
 
         const unreadCount = unreadMessages.filter(
-          (m: any) => m.senderId !== userId && !m.readAt,
+          (m: any) => m.senderId !== userId && !m.readAt && !m.deletedAt,
         ).length;
-
-        // Enrichir avec la référence de la demande liée
-        let requestRef: string | null = null;
-        if (chat.requestId) {
-          const request = await ctx.db.get(chat.requestId) as any;
-          if (request) requestRef = request.reference ?? null;
-        }
 
         return {
           ...chat,
@@ -136,7 +175,7 @@ export const listMyChats = authQuery({
               }
             : null,
           unreadCount,
-          requestRef,
+          requestRef: chat.requestId ? requestRefsById.get(chat.requestId as string) ?? null : null,
         };
       }),
     );
@@ -174,38 +213,56 @@ export const getChat = authQuery({
 
 /**
  * Liste les messages d'un thread (paginé, plus récent en dernier).
+ * Pagination cursor-based : `before` (timestamp) + `limit` pour remonter
+ * l'historique sans charger 500 messages d'un coup.
  */
 export const listMessages = authQuery({
   args: {
     chatId: v.id("chats"),
     limit: v.optional(v.number()),
+    /** Timestamp exclusif : retourne messages créés AVANT cette valeur. */
+    before: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     await validateParticipation(ctx, args.chatId, ctx.user._id);
 
-    const limit = args.limit ?? 50;
+    const limit = Math.min(args.limit ?? 50, 200);
 
-    const messages = await ctx.db
+    let query = ctx.db
       .query("chatMessages")
-      .withIndex("by_chat_created", (q: any) => q.eq("chatId", args.chatId))
-      .order("desc")
-      .take(limit);
+      .withIndex("by_chat_created", (q: any) => {
+        const base = q.eq("chatId", args.chatId);
+        return args.before ? base.lt("createdAt", args.before) : base;
+      })
+      .order("desc");
 
-    // Enrichir avec les noms des expéditeurs
-    const enriched = await Promise.all(
-      messages.map(async (msg) => {
-        const sender = await ctx.db.get(msg.senderId);
-        return {
-          ...msg,
-          senderName: sender
-            ? [sender.firstName, sender.lastName].filter(Boolean).join(" ") || sender.name || sender.email
-            : "Inconnu",
-          senderAvatar: sender?.avatarUrl,
-        };
-      }),
+    const messages = await query.take(limit);
+
+    // Batch N+1 : collecter tous les senderIds uniques avant un unique Promise.all
+    const senderIds = new Set<string>(messages.map((m: any) => m.senderId as string));
+    const sendersList = await Promise.all(
+      [...senderIds].map((id) => ctx.db.get(id as Id<"users">)),
     );
+    const sendersById = new Map<string, any>();
+    for (const s of sendersList) {
+      if (s) sendersById.set(s._id as string, s);
+    }
 
-    // Retourner dans l'ordre chronologique (plus ancien en premier)
+    const enriched = messages.map((msg: any) => {
+      const sender = sendersById.get(msg.senderId as string);
+      return {
+        ...msg,
+        senderName: sender
+          ? [sender.firstName, sender.lastName].filter(Boolean).join(" ") || sender.name || sender.email
+          : "Inconnu",
+        senderAvatar: sender?.avatarUrl,
+      };
+    });
+
+    // Retourner dans l'ordre chronologique (plus ancien en premier).
+    // Signature array préservée pour compat client ; pagination via l'arg
+    // `before` (le client passe le `createdAt` du plus ancien message déjà
+    // chargé pour obtenir la page suivante).
     return enriched.reverse();
   },
 });
@@ -324,12 +381,30 @@ export const sendMessage = authMutation({
     chatId: v.id("chats"),
     content: v.string(),
     attachments: v.optional(v.array(v.id("documents"))),
+    /** Clé d'idempotence générée client (UUID) — déduplique les doubles envois. */
+    idempotencyKey: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const chat = await validateParticipation(ctx, args.chatId, ctx.user._id);
 
     if (chat.status === "archived") {
       throw error(ErrorCode.INVALID_ARGUMENT, "Cette conversation est archivée");
+    }
+
+    // Anti-double-send : si le client a déjà envoyé un message avec cette clé
+    // (même chatId), on retourne l'existant sans réinsérer. Cas couvert :
+    // double-clic utilisateur, retry réseau après timeout côté client mais
+    // succès DB côté serveur, remount StrictMode en dev.
+    if (args.idempotencyKey) {
+      const existing = await ctx.db
+        .query("chatMessages")
+        .withIndex("by_chat_idempotency", (q: any) =>
+          q.eq("chatId", args.chatId).eq("idempotencyKey", args.idempotencyKey),
+        )
+        .first();
+      if (existing) {
+        return { messageId: existing._id, deduplicated: true };
+      }
     }
 
     const now = Date.now();
@@ -340,6 +415,7 @@ export const sendMessage = authMutation({
       content: args.content,
       attachments: args.attachments,
       type: "text",
+      idempotencyKey: args.idempotencyKey,
       createdAt: now,
     });
 
@@ -355,7 +431,10 @@ export const sendMessage = authMutation({
       const isCitizen = await isPublicUser(ctx, ctx.user._id);
 
       if (!isCitizen && !chat.claimedBy) {
-        // Un agent humain prend le relais → Mr Ray se retire
+        // Un agent humain prend le relais → Mr Ray se retire.
+        // NB : si plusieurs agents envoient simultanément, le dernier patch
+        // gagne — on accepte cette race : peu importe lequel est noté, le
+        // citoyen est pris en charge par un humain.
         await ctx.db.patch(args.chatId, { claimedBy: ctx.user._id });
       } else if (isCitizen && !chat.claimedBy) {
         // Le citoyen envoie et pas d'agent humain → scheduler Mr Ray IA
@@ -366,7 +445,22 @@ export const sendMessage = authMutation({
       }
     }
 
-    return { messageId };
+    // Notification push au destinataire (autre participant du thread P2P).
+    // Stub silencieux si VAPID manquant (cf. actions/push.ts).
+    const otherUserId = chat.participantA === ctx.user._id ? chat.participantB : chat.participantA;
+    if (otherUserId && otherUserId !== ctx.user._id) {
+      await ctx.scheduler.runAfter(0, internal.actions.push.sendPushNotification, {
+        userId: otherUserId as Id<"users">,
+        payload: {
+          title: "Nouveau message",
+          body: args.content.slice(0, 120),
+          url: `/iasted?chat=${args.chatId}`,
+          tag: `chat-${args.chatId}`,
+        },
+      });
+    }
+
+    return { messageId, deduplicated: false };
   },
 });
 
@@ -594,5 +688,275 @@ export const insertMrRayMessage = internalMutation({
       lastMessageAt: now,
       lastMessageBy: mrRay._id,
     });
+  },
+});
+
+
+/**
+ * Cron quotidien : si un thread "standard" est revendiqué (claimedBy) par un
+ * agent humain mais que le dernier message date de plus de 48h, on le libère
+ * pour que Mr Ray reprenne la conversation quand le citoyen écrira à nouveau.
+ * Protège contre les agents en congé qui laissent le citoyen sans réponse.
+ */
+export const resetStaleClaimedThreads = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const cutoff = now - CLAIMED_BY_STALE_THRESHOLD_MS;
+
+    // On scan les chats "standard" claimedBy (pas d'index dédié, on bornera
+    // par take(500) — suffisant pour un consulat : peu de threads simultanés).
+    const claimedThreads = await ctx.db
+      .query("chats")
+      .filter((q: any) =>
+        q.and(
+          q.eq(q.field("type"), "standard"),
+          q.neq(q.field("claimedBy"), undefined),
+        ),
+      )
+      .take(500);
+
+    let reset = 0;
+    for (const chat of claimedThreads) {
+      const lastActivity = (chat as any).lastMessageAt ?? (chat as any).createdAt;
+      if (lastActivity && lastActivity < cutoff) {
+        await ctx.db.patch(chat._id, { claimedBy: undefined });
+        reset++;
+      }
+    }
+
+    return { reset };
+  },
+});
+
+// ============================================
+// SOFT-DELETE & EDIT (fenêtre courte)
+// ============================================
+
+/** Fenêtre d'édition/suppression d'un message par son auteur. */
+const MESSAGE_EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+/**
+ * Supprime (soft-delete) un message que l'utilisateur a lui-même envoyé,
+ * dans les 15 minutes suivant l'envoi. Pas de hard-delete : on conserve
+ * la row avec `deletedAt` renseigné pour l'audit et les exports légaux.
+ */
+export const deleteMessage = authMutation({
+  args: { messageId: v.id("chatMessages") },
+  handler: async (ctx, args) => {
+    const msg = await ctx.db.get(args.messageId);
+    if (!msg) throw error(ErrorCode.NOT_FOUND, "Message introuvable");
+    if (msg.senderId !== ctx.user._id) {
+      throw error(
+        ErrorCode.INSUFFICIENT_PERMISSIONS,
+        "Vous ne pouvez supprimer que vos propres messages.",
+      );
+    }
+    if (msg.deletedAt) {
+      return { alreadyDeleted: true };
+    }
+    const age = Date.now() - msg.createdAt;
+    if (age > MESSAGE_EDIT_WINDOW_MS) {
+      throw error(
+        ErrorCode.INVALID_ARGUMENT,
+        "Fenêtre de suppression expirée (15 min après envoi).",
+      );
+    }
+
+    await ctx.db.patch(args.messageId, {
+      deletedAt: Date.now(),
+      content: "",
+    });
+
+    // Mettre à jour le lastMessageText du chat si le message supprimé était
+    // le dernier affiché : on recalcule en prenant le plus récent non supprimé.
+    const chat = await ctx.db.get(msg.chatId);
+    if (chat && (chat as any).lastMessageAt === msg.createdAt) {
+      const prev = await ctx.db
+        .query("chatMessages")
+        .withIndex("by_chat_created", (q: any) => q.eq("chatId", msg.chatId))
+        .order("desc")
+        .take(5);
+      const lastNonDeleted = prev.find(
+        (m: any) => m._id !== msg._id && !m.deletedAt,
+      );
+      if (lastNonDeleted) {
+        await ctx.db.patch(msg.chatId, {
+          lastMessageText: (lastNonDeleted as any).content.slice(0, 100),
+          lastMessageAt: (lastNonDeleted as any).createdAt,
+          lastMessageBy: (lastNonDeleted as any).senderId,
+        });
+      } else {
+        await ctx.db.patch(msg.chatId, {
+          lastMessageText: "[Message supprimé]",
+        });
+      }
+    }
+
+    return { deletedAt: Date.now() };
+  },
+});
+
+/**
+ * Édite un message que l'utilisateur a envoyé, dans la même fenêtre de
+ * 15 minutes. `editedAt` est mis à jour pour que l'UI affiche le tag
+ * "(modifié)" à côté du timestamp.
+ */
+export const editMessage = authMutation({
+  args: {
+    messageId: v.id("chatMessages"),
+    content: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const msg = await ctx.db.get(args.messageId);
+    if (!msg) throw error(ErrorCode.NOT_FOUND, "Message introuvable");
+    if (msg.senderId !== ctx.user._id) {
+      throw error(
+        ErrorCode.INSUFFICIENT_PERMISSIONS,
+        "Vous ne pouvez modifier que vos propres messages.",
+      );
+    }
+    if (msg.deletedAt) {
+      throw error(ErrorCode.INVALID_ARGUMENT, "Message supprimé.");
+    }
+    const age = Date.now() - msg.createdAt;
+    if (age > MESSAGE_EDIT_WINDOW_MS) {
+      throw error(
+        ErrorCode.INVALID_ARGUMENT,
+        "Fenêtre d'édition expirée (15 min après envoi).",
+      );
+    }
+
+    const trimmed = args.content.trim();
+    if (!trimmed) {
+      throw error(ErrorCode.INVALID_ARGUMENT, "Contenu vide interdit.");
+    }
+
+    await ctx.db.patch(args.messageId, {
+      content: trimmed,
+      editedAt: Date.now(),
+    });
+
+    // Mettre à jour le lastMessageText si c'était le dernier message.
+    const chat = await ctx.db.get(msg.chatId);
+    if (chat && (chat as any).lastMessageAt === msg.createdAt) {
+      await ctx.db.patch(msg.chatId, {
+        lastMessageText: trimmed.slice(0, 100),
+      });
+    }
+
+    return { editedAt: Date.now() };
+  },
+});
+
+// ============================================
+// TYPING INDICATORS
+// ============================================
+
+/** Durée de vie d'un ping typing avant expiration automatique. */
+const TYPING_TTL_MS = 6_000; // 6 secondes
+
+/**
+ * Signal que l'utilisateur est en train d'écrire. Le client appelle cette
+ * mutation à chaque frappe (throttle recommandé côté UI à ~2 s pour éviter
+ * la charge inutile). Le row expire automatiquement 6 s après le dernier ping.
+ *
+ * Idempotent : on upsert un row unique par (chatId, userId).
+ */
+export const setTyping = authMutation({
+  args: { chatId: v.id("chats") },
+  handler: async (ctx, args) => {
+    await validateParticipation(ctx, args.chatId, ctx.user._id);
+
+    const existing = await ctx.db
+      .query("chatTyping")
+      .withIndex("by_chat_user", (q: any) =>
+        q.eq("chatId", args.chatId).eq("userId", ctx.user._id),
+      )
+      .first();
+
+    const expiresAt = Date.now() + TYPING_TTL_MS;
+
+    if (existing) {
+      await ctx.db.patch(existing._id, { expiresAt });
+    } else {
+      await ctx.db.insert("chatTyping", {
+        chatId: args.chatId,
+        userId: ctx.user._id,
+        expiresAt,
+      });
+    }
+  },
+});
+
+/**
+ * Supprime explicitement l'indicateur typing (ex. l'utilisateur a envoyé ou
+ * vidé son input). Optionnel : le TTL s'en charge sinon.
+ */
+export const clearTyping = authMutation({
+  args: { chatId: v.id("chats") },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("chatTyping")
+      .withIndex("by_chat_user", (q: any) =>
+        q.eq("chatId", args.chatId).eq("userId", ctx.user._id),
+      )
+      .first();
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+  },
+});
+
+/**
+ * Liste les utilisateurs en train d'écrire dans ce thread, en EXCLUANT
+ * l'utilisateur connecté (pas de "vous êtes en train d'écrire").
+ * Retourne les `userId` + nom d'affichage minimal.
+ */
+export const listTyping = authQuery({
+  args: { chatId: v.id("chats") },
+  handler: async (ctx, args) => {
+    await validateParticipation(ctx, args.chatId, ctx.user._id);
+
+    const now = Date.now();
+    const rows = await ctx.db
+      .query("chatTyping")
+      .withIndex("by_chat", (q: any) => q.eq("chatId", args.chatId))
+      .collect();
+
+    const fresh = rows.filter(
+      (r) => r.expiresAt > now && r.userId !== ctx.user._id,
+    );
+    if (fresh.length === 0) return [];
+
+    const users = await Promise.all(
+      fresh.map((r) => ctx.db.get(r.userId)),
+    );
+    return users
+      .filter((u): u is NonNullable<typeof u> => u !== null)
+      .map((u) => ({
+        userId: u._id,
+        displayName:
+          [u.firstName, u.lastName].filter(Boolean).join(" ") || u.name || u.email,
+      }));
+  },
+});
+
+/**
+ * Cron : purge les typing indicators expirés pour éviter l'accumulation.
+ * À brancher dans convex/crons.ts (toutes les minutes).
+ */
+export const purgeExpiredTyping = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const expired = await ctx.db
+      .query("chatTyping")
+      .withIndex("by_expires", (q: any) => q.lt("expiresAt", now))
+      .take(500);
+    for (const row of expired) {
+      await ctx.db.delete(row._id);
+    }
+    return { purged: expired.length };
   },
 });

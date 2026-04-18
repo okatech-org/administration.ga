@@ -7,6 +7,8 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { LiveKitRoom } from "@livekit/components-react";
 import "@livekit/components-styles";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
+import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 import {
 	Building2,
 	Calendar,
@@ -23,7 +25,7 @@ import {
 	Video,
 	X,
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -89,7 +91,22 @@ export function BackofficeMeetingTab({ orgId }: BackofficeMeetingTabProps) {
 
 	const handleJoin = (meetingId: Id<"meetings">) => { setActiveMeetingId(meetingId); setView("prejoin"); };
 	const handleConnect = async () => { if (!activeMeetingId) return; await connect(activeMeetingId); setView("incall"); };
-	const handleDisconnect = async () => { if (activeMeetingId) await disconnect(activeMeetingId); setActiveMeetingId(null); setView("list"); };
+	const cleanupMeetingState = useCallback(() => {
+		setActiveMeetingId(null);
+		setView("list");
+	}, []);
+
+	const {
+		onConnected: onLiveKitConnected,
+		onDisconnected: onLiveKitDisconnected,
+		markUserHangUp,
+	} = useLiveKitDisconnectGuard(cleanupMeetingState);
+
+	const handleDisconnect = async () => {
+		markUserHangUp();
+		if (activeMeetingId) await disconnect(activeMeetingId);
+		cleanupMeetingState();
+	};
 	const handleEndForAll = async () => { if (!activeMeetingId) return; try { await endMeeting({ meetingId: activeMeetingId }); toast.success("Réunion terminée pour tous"); } catch {} await handleDisconnect(); };
 	const handleCopyLink = () => { if (!activeMeetingId) return; navigator.clipboard.writeText(`${window.location.origin}/meetings?join=${activeMeetingId}`); setCopiedLink(true); toast.success("Lien copié !"); setTimeout(() => setCopiedLink(false), 2000); };
 	const toggleParticipant = (userId: string) => { setSelectedParticipants((prev) => { const next = new Set(prev); if (next.has(userId)) next.delete(userId); else next.add(userId); return next; }); };
@@ -112,7 +129,15 @@ export function BackofficeMeetingTab({ orgId }: BackofficeMeetingTabProps) {
 						<Button variant="destructive" size="sm" onClick={handleEndForAll} className="h-7 text-[10px] gap-1"><PhoneOff className="h-3 w-3" />Terminer</Button>
 					</div>
 				</div>
-				<LiveKitRoom token={token} serverUrl={wsUrl} connect={true} onDisconnected={handleDisconnect} className="flex flex-col flex-1">
+				<LiveKitRoom
+					token={token}
+					serverUrl={wsUrl}
+					connect={true}
+					options={LIVEKIT_CALL_ROOM_OPTIONS}
+					onConnected={onLiveKitConnected}
+					onDisconnected={onLiveKitDisconnected}
+					className="flex flex-col flex-1"
+				>
 					<CustomCallUI onHangUp={handleDisconnect} />
 				</LiveKitRoom>
 			</div>

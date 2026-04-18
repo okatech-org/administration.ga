@@ -1,0 +1,31 @@
+{
+  "name": "@workspace/chat",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Utilitaires iChat partagés : idempotencyKey anti-double-send, rendu Markdown sanitizé (XSS safe), composants communs.",
+  "exports": {
+    "./use-idempotency-key": "./src/use-idempotency-key.ts",
+    "./use-chat-attachments": "./src/use-chat-attachments.ts",
+    "./safe-markdown": "./src/safe-markdown.tsx"
+  },
+  "scripts": {
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-markdown": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.10",
+    "@workspace/tsconfig": "workspace:*",
+    "react": "19.2.4",
+    "react-markdown": "^10.1.0",
+    "typescript": "^5.9.3"
+  }
+}

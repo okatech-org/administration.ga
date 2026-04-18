@@ -10,6 +10,8 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { LiveKitRoom } from "@livekit/components-react";
 import "@livekit/components-styles";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
+import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 import {
 	Building2,
 	Calendar,
@@ -26,7 +28,7 @@ import {
 	Video,
 	X,
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -159,14 +161,27 @@ export function IAstedMeetingTab() {
 
 	const handleConnect = async () => {
 		if (!activeMeetingId) return;
+		resetDisconnectGuard();
 		await connect(activeMeetingId);
 		setView("incall");
 	};
 
-	const handleDisconnect = async () => {
-		if (activeMeetingId) await disconnect(activeMeetingId);
+	const cleanupMeetingState = useCallback(() => {
 		setActiveMeetingId(null);
 		setView("list");
+	}, []);
+
+	const {
+		onConnected: onLiveKitConnected,
+		onDisconnected: onLiveKitDisconnected,
+		markUserHangUp,
+		reset: resetDisconnectGuard,
+	} = useLiveKitDisconnectGuard(cleanupMeetingState);
+
+	const handleDisconnect = async () => {
+		markUserHangUp();
+		if (activeMeetingId) await disconnect(activeMeetingId);
+		cleanupMeetingState();
 	};
 
 	const handleEndForAll = async () => {
@@ -223,7 +238,9 @@ export function IAstedMeetingTab() {
 					token={token}
 					serverUrl={wsUrl}
 					connect={true}
-					onDisconnected={handleDisconnect}
+					options={LIVEKIT_CALL_ROOM_OPTIONS}
+					onConnected={onLiveKitConnected}
+					onDisconnected={onLiveKitDisconnected}
 					className="flex flex-col flex-1"
 				>
 					<CustomCallUI onHangUp={handleDisconnect} />

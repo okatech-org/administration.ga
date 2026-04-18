@@ -1,6 +1,23 @@
 import { cn } from "@/lib/utils";
 import { FileText, Upload, X, Loader2, AlertTriangle } from "lucide-react";
 import { useState, useCallback, useRef } from "react";
+import { toast } from "sonner";
+
+/** Taille max par fichier. Au-delà, rejet côté client (pas d'upload inutile). */
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 Mo
+
+/** MIME types acceptés. Liste close — on refuse tout autre format. */
+const ALLOWED_MIME_TYPES = new Set<string>([
+	"application/pdf",
+	"image/png",
+	"image/jpeg",
+	"image/jpg",
+	"image/webp",
+	"application/msword",
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+	"application/vnd.ms-excel",
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]);
 
 export interface UploadedAttachment {
 	storageId: string;
@@ -75,16 +92,38 @@ export function AttachmentUploader({
 			const fileArray = Array.from(files);
 			if (fileArray.length === 0) return;
 
+			// ── Validation client : on rejette AVANT l'upload ──
+			// (defense in depth — le backend doit aussi valider).
+			const validFiles: File[] = [];
+			for (const file of fileArray) {
+				if (file.size > MAX_FILE_SIZE_BYTES) {
+					toast.error(
+						`${file.name} dépasse la taille max autorisée (50 Mo).`,
+					);
+					continue;
+				}
+				if (file.type && !ALLOWED_MIME_TYPES.has(file.type)) {
+					toast.error(
+						`${file.name} : type de fichier non autorisé (${file.type || "inconnu"}).`,
+					);
+					continue;
+				}
+				validFiles.push(file);
+			}
+
+			if (validFiles.length === 0) return;
+
 			setIsUploading(true);
 			try {
-				const uploaded: UploadedAttachment[] = [];
-				for (const file of fileArray) {
-					const attachment = await uploadFile(file);
-					uploaded.push(attachment);
-				}
+				// Upload en parallèle pour accélérer les lots (limite naturelle
+				// côté navigateur : 6 connexions simultanées par domaine).
+				const uploaded = await Promise.all(
+					validFiles.map((file) => uploadFile(file)),
+				);
 				onAttachmentsChange([...attachments, ...uploaded]);
 			} catch (error) {
 				console.error("Upload error:", error);
+				toast.error("Erreur pendant le téléversement.");
 			} finally {
 				setIsUploading(false);
 			}

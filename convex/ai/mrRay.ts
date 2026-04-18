@@ -48,6 +48,31 @@ RÈGLES:
 - Tu ne peux PAS effectuer de démarches administratives directement`;
 
 /**
+ * Filtre anti-injection de prompts appliqué à chaque message citoyen avant
+ * concaténation dans l'historique envoyé à Gemini. Supprime les marqueurs
+ * courants utilisés pour "échapper" au system prompt (attaque connue sur
+ * tous les LLMs). On garde l'intention utilisateur lisible — on ne fait
+ * que neutraliser les tokens de contrôle.
+ */
+function sanitizeCitizenMessage(raw: string): string {
+  // Patterns bloqués : casing-insensitive, ponctuation/espaces variables.
+  const patterns: RegExp[] = [
+    /\[\s*(system|override|instructions?|role)\b[^\]]*\]/gi,
+    /<\|[^|>]+\|>/g, // <|im_start|>, <|endoftext|>, etc.
+    /###\s*(system|instruction|override)\b/gi,
+    /\{\{[^}]*system[^}]*\}\}/gi,
+    /you are now\s+(an?\s+)?(admin|root|developer|jailbroken|unrestricted)/gi,
+    /ignore\s+(previous|all|above)\s+instructions?/gi,
+  ];
+  let clean = raw;
+  for (const p of patterns) {
+    clean = clean.replace(p, "[filtré]");
+  }
+  // Cap longueur pour éviter les prompts gigantesques
+  return clean.slice(0, 4000);
+}
+
+/**
  * Génère une réponse IA pour un thread standard et l'insère dans les messages.
  * Appelée via scheduler depuis initiateStandardChat ou sendMessage.
  */
@@ -57,18 +82,26 @@ export const generateReply = internalAction({
     citizenMessage: v.string(),
   },
   handler: async (ctx, args) => {
+    // Pré-traitement anti-injection avant tout usage.
+    const safeCitizenMessage = sanitizeCitizenMessage(args.citizenMessage);
+
     // Récupérer l'historique récent du thread pour le contexte
     const recentMessages = await ctx.runQuery(
       internal.ai.mrRay.getThreadHistory,
       { chatId: args.chatId, limit: 10 },
     );
 
-    // Construire l'historique pour Gemini
+    // Construire l'historique pour Gemini — avec sanitize sur les messages
+    // citoyen pour que les attaques ne "persistent" pas entre tours.
     const history = (recentMessages ?? [])
       .filter((m: any) => m.type === "text")
       .map((m: any) => ({
         role: m.isMrRay ? "model" : "user",
-        parts: [{ text: m.content }],
+        parts: [
+          {
+            text: m.isMrRay ? m.content : sanitizeCitizenMessage(m.content),
+          },
+        ],
       }));
 
     // Initialiser Gemini
@@ -90,7 +123,7 @@ export const generateReply = internalAction({
       ...history,
       // Si le dernier message n'est pas déjà le message citoyen, l'ajouter
       ...(history.length === 0 || history[history.length - 1]?.role !== "user"
-        ? [{ role: "user", parts: [{ text: args.citizenMessage }] }]
+        ? [{ role: "user", parts: [{ text: safeCitizenMessage }] }]
         : []),
     ];
 

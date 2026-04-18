@@ -31,7 +31,17 @@ export const chatMessagesTable = defineTable({
     ),
   ),
 
+  // Clé d'idempotence générée côté client (uuid v4) pour éviter les
+  // insertions dupliquées suite à un double-clic ou un retry réseau.
+  // Scopée sur `chatId` pour garder l'index performant.
+  idempotencyKey: v.optional(v.string()),
+
+  // Soft-delete (suppression par auteur dans une fenêtre courte) et édition.
+  deletedAt: v.optional(v.number()),
+  editedAt: v.optional(v.number()),
+
   // Timestamps
   createdAt: v.number(),
 })
-  .index("by_chat_created", ["chatId", "createdAt"]);
+  .index("by_chat_created", ["chatId", "createdAt"])
+  .index("by_chat_idempotency", ["chatId", "idempotencyKey"]);
