@@ -267,6 +267,7 @@ export function DocumentSheetBody({
 					{emptyLabel}
 				</div>
 			)}
+			{/* @ts-ignore styled-jsx prop missing native types in shared workspace */}
 			<style jsx>{`
 				.doc-sheet-body :global(p) {
 					margin: 0 0 3mm 0;

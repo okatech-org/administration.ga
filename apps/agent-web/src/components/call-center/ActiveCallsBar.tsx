@@ -14,6 +14,8 @@ export interface ActiveCallSlot {
   parkedAt: number | null;
   callerName: string;
   lineLabel: string | null;
+  lineColor?: string | null;
+  agentColor?: string | null;
   priority: "urgent" | "high" | "normal";
   mediaType: "audio" | "video";
 }
