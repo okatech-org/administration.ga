@@ -5,17 +5,29 @@ import type { Id } from "@convex/_generated/dataModel";
 import {
 	LiveKitRoom,
 } from "@livekit/components-react";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
+import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import type { VariantProps } from "class-variance-authority";
 import { Loader2, Phone, PhoneOff, ChevronDown, MapPin, MessageCircle } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { buttonVariants } from "@/components/ui/button";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import { useMeeting } from "@/hooks/use-meeting";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery, useConvexQuery } from "@/integrations/convex/hooks";
@@ -51,11 +63,6 @@ export function OrgCallButton({
 		null,
 	);
 	const [showLineSelector, setShowLineSelector] = useState(false);
-	// Guards against transient LiveKit disconnects (e.g. React StrictMode
-	// double-mount, token refresh) ending the server-side call prematurely.
-	// The server `leave` mutation terminates any 1-on-1 call when a participant
-	// leaves, so we only want to call it on an explicit user hang-up.
-	const userHangUpRef = useRef(false);
 
 	// Fetch call lines for this org
 	const { data: callLines } = useConvexQuery(
@@ -94,9 +101,21 @@ export function OrgCallButton({
 		}
 	}, [meeting?.status, activeMeetingId, disconnect]);
 
+	const cleanupCallState = useCallback(() => {
+		setActiveMeetingId(null);
+	}, []);
+
+	const {
+		onConnected: onLiveKitConnected,
+		onDisconnected: onLiveKitDisconnected,
+		markUserHangUp,
+		reset: resetDisconnectGuard,
+	} = useLiveKitDisconnectGuard(cleanupCallState);
+
 	const initiateCall = useCallback(async (callLineId?: Id<"callLines">) => {
 		try {
 			setShowLineSelector(false);
+			resetDisconnectGuard();
 			let meetingId: Id<"meetings">;
 
 			if (requestId && !callLineId) {
@@ -111,7 +130,6 @@ export function OrgCallButton({
 				meetingId = result.meetingId;
 			}
 
-			userHangUpRef.current = false;
 			setActiveMeetingId(meetingId);
 			await connect(meetingId);
 			// Transition call to "ringing" — makes it visible to agents
@@ -119,7 +137,15 @@ export function OrgCallButton({
 		} catch (err) {
 			console.error("Failed to call organization:", err);
 		}
-	}, [orgId, requestId, callOrgMutation, callRequestAgentMutation, setCallRingingMutation, connect]);
+	}, [
+		orgId,
+		requestId,
+		callOrgMutation,
+		callRequestAgentMutation,
+		setCallRingingMutation,
+		connect,
+		resetDisconnectGuard,
+	]);
 
 	const handleCall = useCallback(async () => {
 		// If there are multiple active lines, show selector
@@ -136,21 +162,12 @@ export function OrgCallButton({
 	// Explicit user-initiated hang-up (button click, dialog close).
 	// Calls the server `leave` mutation which ends the call for everyone.
 	const handleHangUp = useCallback(async () => {
-		userHangUpRef.current = true;
+		markUserHangUp();
 		if (activeMeetingId) {
 			await disconnect(activeMeetingId);
 		}
 		setActiveMeetingId(null);
-	}, [activeMeetingId, disconnect]);
-
-	// LiveKit disconnect event — fires on StrictMode unmount, token refresh,
-	// network blips, etc. Only treat as a real hang-up if the user clicked the
-	// hang-up button; otherwise ignore to avoid ending the call server-side.
-	const handleLiveKitDisconnected = useCallback(() => {
-		if (userHangUpRef.current) {
-			setActiveMeetingId(null);
-		}
-	}, []);
+	}, [activeMeetingId, disconnect, markUserHangUp]);
 
 	const isInCall = activeMeetingId !== null;
 	const activeLines = callLines?.filter((l) => l.isActive) ?? [];
@@ -164,7 +181,9 @@ export function OrgCallButton({
 					connect={true}
 					audio={true}
 					video={false}
-					onDisconnected={handleLiveKitDisconnected}
+					options={LIVEKIT_CALL_ROOM_OPTIONS}
+					onConnected={onLiveKitConnected}
+					onDisconnected={onLiveKitDisconnected}
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
@@ -281,6 +300,15 @@ export function OrgCallButton({
 						side="bottom"
 						className="p-0 h-dvh w-full bg-zinc-950 border-none rounded-none focus:outline-none flex flex-col pt-10"
 					>
+						<SheetTitle className="sr-only">
+							{orgName || t("meetings.callInProgress")}
+						</SheetTitle>
+						<SheetDescription className="sr-only">
+							{t(
+								"meetings.callDialogDescription",
+								"Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.",
+							)}
+						</SheetDescription>
 						{callContent}
 					</SheetContent>
 				</Sheet>
@@ -288,10 +316,17 @@ export function OrgCallButton({
 				<Dialog open={isInCall} onOpenChange={(o) => !o && handleHangUp()}>
 					<DialogContent
 						autoFocus={false}
-						aria-describedby={undefined}
 						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 					>
-						<DialogTitle className="sr-only">{t("meetings.callInProgress")}</DialogTitle>
+						<DialogTitle className="sr-only">
+							{orgName || t("meetings.callInProgress")}
+						</DialogTitle>
+						<DialogDescription className="sr-only">
+							{t(
+								"meetings.callDialogDescription",
+								"Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.",
+							)}
+						</DialogDescription>
 						{callContent}
 					</DialogContent>
 				</Dialog>

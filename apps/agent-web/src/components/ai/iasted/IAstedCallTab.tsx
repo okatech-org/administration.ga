@@ -47,7 +47,7 @@ import { useMeeting } from "@/hooks/use-meeting";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { useCallStore } from "@/stores/call-store";
 import { FEATURES } from "@/lib/feature-flags";
-import { LIVEKIT_CALL_ROOM_OPTIONS } from "@/lib/livekit-config";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import { cn } from "@/lib/utils";
 
 type SubTab = "audio" | "video";

@@ -76,6 +76,7 @@ import {
   diplomaticDocumentsTable,
   chatsTable,
   chatMessagesTable,
+  chatTypingTable,
   ipThreatScoresTable,
   guidesTable,
   archivePoliciesTable,
@@ -172,6 +173,7 @@ export default defineSchema({
   // Chat peer-to-peer
   chats: chatsTable,
   chatMessages: chatMessagesTable,
+  chatTyping: chatTypingTable,
   // Defense automatique
   ipThreatScores: ipThreatScoresTable,
   // Guides

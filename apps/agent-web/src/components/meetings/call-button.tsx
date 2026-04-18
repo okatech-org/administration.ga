@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { Button } from "@/components/ui/button";
-import { LIVEKIT_CALL_ROOM_OPTIONS } from "@/lib/livekit-config";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import {
 	Dialog,
 	DialogContent,

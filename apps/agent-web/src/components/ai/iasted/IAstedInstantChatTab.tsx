@@ -40,7 +40,8 @@ import {
 	useRef,
 	useState,
 } from "react";
-import Markdown from "react-markdown";
+import { SafeMarkdown as Markdown } from "@workspace/chat/safe-markdown";
+import { useIdempotencyKey } from "@workspace/chat/use-idempotency-key";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -180,6 +181,9 @@ export function useIAstedChat({
 	const { mutateAsync: sendChatMessage } = useConvexMutationQuery(
 		api.functions.chats.sendMessage,
 	);
+	// Déduplique les doubles envois côté backend.
+	const { getKey: getIdempotencyKey, rotate: rotateIdempotencyKey } =
+		useIdempotencyKey();
 
 	// ── Chat actif avec contact sélectionné ──
 	const selectedUserId =
@@ -196,7 +200,11 @@ export function useIAstedChat({
 			if (!trimmed || !selectedContact?.userId) return;
 			try {
 				if (existingChat) {
-					await sendChatMessage({ chatId: existingChat._id, content: trimmed });
+					await sendChatMessage({
+						chatId: existingChat._id,
+						content: trimmed,
+						idempotencyKey: getIdempotencyKey(),
+					});
 				} else {
 					await initiateChat({
 						targetUserId: selectedContact.userId as Id<"users">,
@@ -205,11 +213,20 @@ export function useIAstedChat({
 					});
 				}
 				setMessageInput("");
+				rotateIdempotencyKey();
 			} catch (e: any) {
 				toast.error(e?.message ?? "Erreur d'envoi");
 			}
 		},
-		[selectedContact, existingChat, sendChatMessage, initiateChat, activeOrgId],
+		[
+			selectedContact,
+			existingChat,
+			sendChatMessage,
+			initiateChat,
+			activeOrgId,
+			getIdempotencyKey,
+			rotateIdempotencyKey,
+		],
 	);
 
 	// ── Auto-scroll chat IA ──

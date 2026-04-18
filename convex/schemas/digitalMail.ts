@@ -59,6 +59,12 @@ export const digitalMailTable = defineTable({
   threadId: v.optional(v.string()),
   inReplyTo: v.optional(v.id("digitalMail")),
 
+  // Cross-module link : si cette entrée est une notification
+  // d'une correspondance officielle reçue, on stocke l'itemId cible pour
+  // que le clic en iBoîte redirige vers /icorrespondance/<itemId> au lieu
+  // d'ouvrir le viewer mail classique.
+  linkedCorrespondanceItemId: v.optional(v.id("correspondanceItems")),
+
   // Timestamps
   createdAt: v.number(),
   updatedAt: v.number(),

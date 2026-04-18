@@ -214,29 +214,32 @@ export const getUnreadCount = authQuery({
 export const getTotalUnreadCount = authQuery({
   args: {},
   handler: async (ctx) => {
-    // Get user's own requests (using by_user_status index, filter all statuses)
+    // Get user's own requests (using by_user_status index, filter all statuses).
+    // Cap raisonné : un citoyen lambda n'a pas >200 dossiers actifs en parallèle.
     const myRequests = await ctx.db
       .query("requests")
       .withIndex("by_user_status", (q) => q.eq("userId", ctx.user._id))
-      .take(100);
+      .take(200);
 
-    let totalUnread = 0;
+    if (myRequests.length === 0) return 0;
 
-    // Count unread agent messages in user's requests
-    for (const request of myRequests) {
-      const unreadMessages = await ctx.db
-        .query("messages")
-        .withIndex("by_request", (q) => q.eq("requestId", request._id))
-        .filter((q) =>
-          q.and(
-            q.eq(q.field("senderRole"), "agent"),
-            q.eq(q.field("readAt"), undefined)
+    // Batch N+1 → on paralellise les N queries (même coût réseau mais 1 round-trip).
+    // Idéal : un index `by_recipient_unread` dédié, mais hors-scope pour ce sprint.
+    const unreadPerRequest = await Promise.all(
+      myRequests.map((request) =>
+        ctx.db
+          .query("messages")
+          .withIndex("by_request", (q) => q.eq("requestId", request._id))
+          .filter((q) =>
+            q.and(
+              q.eq(q.field("senderRole"), "agent"),
+              q.eq(q.field("readAt"), undefined),
+            ),
           )
-        )
-        .take(50);
-      totalUnread += unreadMessages.length;
-    }
+          .take(50),
+      ),
+    );
 
-    return totalUnread;
+    return unreadPerRequest.reduce((acc, msgs) => acc + msgs.length, 0);
   },
 });

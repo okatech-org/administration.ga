@@ -27,7 +27,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useRingtone } from "@/hooks/use-ringtone";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { useCallStore } from "@/stores/call-store";
-import { LIVEKIT_CALL_ROOM_OPTIONS } from "@/lib/livekit-config";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 
 interface ActiveCallBannerProps {
 	requestId: Id<"requests">;

@@ -155,6 +155,26 @@ crons.daily(
   {},
 );
 
+// --- iChat (Mr Ray) ---
+// Libère les threads standard revendiqués par un agent qui n'a pas répondu
+// depuis >48h : Mr Ray pourra reprendre la main au prochain message citoyen.
+crons.daily(
+  "reset-stale-claimed-chats",
+  { hourUTC: 5, minuteUTC: 0 },
+  internal.functions.chats.resetStaleClaimedThreads,
+  {},
+);
+
+// Purge les indicateurs typing expirés (TTL 6s). Cadence 1 min suffit —
+// les queries filtrent déjà sur expiresAt côté lecture, ce cron évite
+// seulement l'accumulation de rows mortes en base.
+crons.interval(
+  "purge-expired-chat-typing",
+  { minutes: 1 },
+  internal.functions.chats.purgeExpiredTyping,
+  {},
+);
+
 // --- iArchive ---
 // Verification quotidienne des retentions d'archivage (8h30 UTC = 9h30 Paris)
 crons.daily(

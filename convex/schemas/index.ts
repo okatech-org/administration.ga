@@ -42,6 +42,7 @@ export { callLinesTable } from "./callLines";
 export { agentPresenceTable } from "./agentPresence";
 export { chatsTable } from "./chats";
 export { chatMessagesTable } from "./chatMessages";
+export { chatTypingTable } from "./chatTyping";
 
 export {
   positionsTable,

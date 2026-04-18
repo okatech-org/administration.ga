@@ -1,9 +1,12 @@
 import {
 	LiveKitRoom,
 } from "@livekit/components-react";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
+import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { AlertCircle, Loader2, Phone, Users, Video } from "lucide-react";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
@@ -26,6 +29,21 @@ interface MeetingRoomProps {
  * Wraps LiveKit's VideoConference with custom controls and styling.
  */
 export function MeetingRoom({ token, wsUrl, onDisconnect }: MeetingRoomProps) {
+	const handleUserHangUp = useCallback(() => {
+		onDisconnect();
+	}, [onDisconnect]);
+
+	const {
+		onConnected,
+		onDisconnected,
+		markUserHangUp,
+	} = useLiveKitDisconnectGuard(handleUserHangUp);
+
+	const handleHangUpClick = useCallback(() => {
+		markUserHangUp();
+		onDisconnect();
+	}, [markUserHangUp, onDisconnect]);
+
 	return (
 		<div className="flex flex-col h-full w-full bg-zinc-950 rounded-xl overflow-hidden">
 			<LiveKitRoom
@@ -33,11 +51,13 @@ export function MeetingRoom({ token, wsUrl, onDisconnect }: MeetingRoomProps) {
 				serverUrl={wsUrl}
 				connect={true}
 				audio={true}
-				onDisconnected={onDisconnect}
+				options={LIVEKIT_CALL_ROOM_OPTIONS}
+				onConnected={onConnected}
+				onDisconnected={onDisconnected}
 				className="flex flex-col flex-1"
 				style={{ height: "100%" }}
 			>
-				<CustomCallUI onHangUp={onDisconnect} />
+				<CustomCallUI onHangUp={handleHangUpClick} />
 			</LiveKitRoom>
 		</div>
 	);
