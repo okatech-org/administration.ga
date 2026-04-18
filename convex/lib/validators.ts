@@ -1037,7 +1037,7 @@ export const socialLinksValidator = v.object({
 
 export type SocialLinks = Infer<typeof socialLinksValidator>;
 
-// Branding (page publique + identité visuelle)
+// Branding (page publique + identité visuelle + personnalisation documentaire)
 export const orgBrandingValidator = v.object({
   logoStorageId: v.optional(v.id("_storage")), // logo principal (remplace logoUrl plat)
   logoCompactStorageId: v.optional(v.id("_storage")), // version compacte (sidebar)
@@ -1047,6 +1047,17 @@ export const orgBrandingValidator = v.object({
   photos: v.optional(v.array(orgPhotoValidator)),
   socialLinks: v.optional(socialLinksValidator),
   publishNews: v.optional(v.boolean()), // actualités visibles page publique
+  // ─── Personnalisation documentaire ────────────────────────────────
+  // Ces champs surchargent l'entête / pied / signataire / ville des 25
+  // modèles diplomatiques globaux lors du rendu PDF. Le sceau, lui, reste
+  // identique pour toutes les représentations (pinned dans le template).
+  headerLines: v.optional(v.array(v.string())), // ex : ["AMBASSADE DU GABON", "PRÈS LA RÉPUBLIQUE FRANÇAISE"]
+  footerAddress: v.optional(v.string()),
+  footerPhone: v.optional(v.string()),
+  footerEmail: v.optional(v.string()),
+  signerName: v.optional(v.string()), // ex : "Jean-Pierre NZOGHE-NGUEMA"
+  signerTitle: v.optional(v.string()), // ex : "Conseiller chargé des Affaires Consulaires"
+  cityName: v.optional(v.string()), // ex : "Paris" → remplace "Madrid" hérité
 });
 
 export type OrgBranding = Infer<typeof orgBrandingValidator>;

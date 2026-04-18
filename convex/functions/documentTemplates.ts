@@ -1,6 +1,16 @@
 import { v } from "convex/values";
-import { internalMutation, type MutationCtx } from "../_generated/server";
+import {
+	internalAction,
+	internalMutation,
+	internalQuery,
+	type MutationCtx,
+} from "../_generated/server";
+import { internal } from "../_generated/api";
 import { authMutation, authQuery } from "../lib/customFunctions";
+import {
+	SCEAU_GABON_BASE64,
+	SCEAU_GABON_MIME_TYPE,
+} from "../assets/sceauGabonBase64";
 import {
 	serviceCategoryValidator,
 	localizedStringValidator,
@@ -14,6 +24,117 @@ import {
 } from "../lib/documentPermissions";
 import { error, ErrorCode } from "../lib/errors";
 import type { Doc, Id } from "../_generated/dataModel";
+import { DIPLOMATIC_TEMPLATES } from "../migrations/seedDiplomaticTemplatesData";
+
+// ============================================================================
+// VALIDATEURS LOCAUX DES 3 FACETTES INLINE
+// ============================================================================
+//
+// Les 3 facettes (`headerFooter`, `typography`, `voice`) sont des objets
+// inline dans `documentTemplates`. Leurs validateurs sont définis ici pour
+// être réutilisés dans `create` / `update`.
+
+const alignmentValidator = v.union(
+	v.literal("left"),
+	v.literal("center"),
+	v.literal("right"),
+	v.literal("justify"),
+);
+
+const headingStyleValidator = v.object({
+	fontSize: v.number(),
+	bold: v.boolean(),
+	uppercase: v.boolean(),
+	spacingBefore: v.optional(v.number()),
+	spacingAfter: v.optional(v.number()),
+	alignment: v.optional(alignmentValidator),
+});
+
+const headerFooterValidator = v.object({
+	header: v.object({
+		logoStorageId: v.optional(v.id("_storage")),
+		logoAlignment: v.union(
+			v.literal("left"),
+			v.literal("center"),
+			v.literal("right"),
+		),
+		height: v.optional(v.number()),
+		content: v.any(),
+	}),
+	footer: v.object({
+		height: v.optional(v.number()),
+		content: v.any(),
+		showPageNumbers: v.optional(v.boolean()),
+	}),
+});
+
+const typographyValidator = v.object({
+	fontFamily: v.string(),
+	fontSizeBase: v.number(),
+	lineHeight: v.number(),
+	defaultAlignment: alignmentValidator,
+	headingStyles: v.object({
+		h1: headingStyleValidator,
+		h2: headingStyleValidator,
+		h3: headingStyleValidator,
+	}),
+	paragraphSpacingBefore: v.optional(v.number()),
+	paragraphSpacingAfter: v.optional(v.number()),
+	paragraphFirstLineIndent: v.optional(v.number()),
+	pageBreakBefore: v.optional(
+		v.array(v.union(v.literal("h1"), v.literal("h2"), v.literal("h3"))),
+	),
+	widowOrphanControl: v.optional(v.boolean()),
+	keepHeadingsWithNext: v.optional(v.boolean()),
+});
+
+const formulaValidator = v.object({
+	text: v.string(),
+	templateType: v.optional(
+		v.union(
+			v.literal("certificate"),
+			v.literal("attestation"),
+			v.literal("receipt"),
+			v.literal("letter"),
+			v.literal("custom"),
+		),
+	),
+});
+
+const voiceValidator = v.object({
+	tone: v.string(),
+	register: v.union(
+		v.literal("administratif"),
+		v.literal("juridique"),
+		v.literal("commercial"),
+		v.literal("diplomatique"),
+		v.literal("neutre"),
+	),
+	openingFormulas: v.optional(v.array(formulaValidator)),
+	closingFormulas: v.optional(v.array(formulaValidator)),
+	signatureFormulas: v.optional(v.array(v.string())),
+	personPronoun: v.union(
+		v.literal("je"),
+		v.literal("nous"),
+		v.literal("le_consulat"),
+		v.literal("impersonnel"),
+	),
+	useFormalAddress: v.optional(v.boolean()),
+	politenessLevel: v.union(
+		v.literal("neutre"),
+		v.literal("courtois"),
+		v.literal("solennel"),
+	),
+	argumentationGuidelines: v.optional(v.string()),
+	vocabularyPreferences: v.optional(
+		v.array(
+			v.object({
+				prefer: v.string(),
+				avoid: v.optional(v.array(v.string())),
+			}),
+		),
+	),
+});
 
 // ============================================================================
 // QUERIES
@@ -48,7 +169,7 @@ export const listByOrg = authQuery({
 			.withIndex("by_org", (q) => q.eq("orgId", args.orgId).eq("isActive", true))
 			.collect();
 
-		// Global templates — filter by allowedOrgTypes.
+		// Global templates — filter by applicability / allowedOrgTypes.
 		const globalTemplates = await ctx.db
 			.query("documentTemplates")
 			.withIndex("by_global", (q) => q.eq("isGlobal", true).eq("isActive", true))
@@ -57,17 +178,47 @@ export const listByOrg = authQuery({
 			orgTypeAllowed(t.allowedOrgTypes, orgType, t),
 		);
 
-		// Merge and deduplicate (an org template won't overlap a global by _id).
-		const allTemplates = [...orgTemplates, ...visibleGlobals];
+		// Templates explicitement attribués à cette rep (union avec
+		// l'applicabilité globale). Certains peuvent être déjà dans
+		// `visibleGlobals` — on déduplique plus bas.
+		const explicitIds = org?.assignedTemplateIds ?? [];
+		const explicitTemplates = (
+			await Promise.all(explicitIds.map((id) => ctx.db.get(id)))
+		).filter(
+			(t): t is NonNullable<typeof t> => t !== null && t.isActive === true,
+		);
 
-		let filtered = allTemplates;
+		// Union déduplique par `_id`.
+		const byId = new Map<string, (typeof globalTemplates)[number]>();
+		for (const t of [...orgTemplates, ...visibleGlobals, ...explicitTemplates]) {
+			byId.set(t._id as unknown as string, t);
+		}
+		let filtered = Array.from(byId.values());
 		if (args.category) {
 			filtered = filtered.filter((t) => t.category === args.category);
 		}
 		if (args.templateType) {
 			filtered = filtered.filter((t) => t.templateType === args.templateType);
 		}
-		return filtered;
+
+		// Résoudre les logoStorageIds en URLs (dédupliqué pour minimiser les appels storage).
+		const uniqueStorageIds = [
+			...new Set(
+				filtered
+					.map((t) => t.headerFooter?.header?.logoStorageId)
+					.filter((id): id is Id<"_storage"> => Boolean(id)),
+			),
+		];
+		const logoUrlMap = new Map<string, string | null>();
+		for (const sid of uniqueStorageIds) {
+			logoUrlMap.set(sid as string, await ctx.storage.getUrl(sid));
+		}
+		return filtered.map((t) => ({
+			...t,
+			logoUrl: t.headerFooter?.header?.logoStorageId
+				? (logoUrlMap.get(t.headerFooter.header.logoStorageId as string) ?? null)
+				: null,
+		}));
 	},
 });
 
@@ -194,11 +345,11 @@ export const cloneTemplate = authMutation({
 			autoPublishToCitizen: source.autoPublishToCitizen,
 			requireSignature: source.requireSignature,
 			allowedSignerPositions: source.allowedSignerPositions,
-			// Héritage des briques composées — le clone peut les changer
-			// ensuite sans impacter la source.
-			headerFooterBlockId: source.headerFooterBlockId,
-			typographyBlockId: source.typographyBlockId,
-			voiceBlockId: source.voiceBlockId,
+			// Les 3 facettes inline sont copiées telles quelles — un clone
+			// peut les éditer indépendamment sans impacter la source.
+			headerFooter: source.headerFooter,
+			typography: source.typography,
+			voice: source.voice,
 			paperSize: source.paperSize,
 			orientation: source.orientation,
 			marginTop: source.marginTop,
@@ -223,6 +374,24 @@ export const getById = authQuery({
 	args: { templateId: v.id("documentTemplates") },
 	handler: async (ctx, args) => {
 		return await ctx.db.get(args.templateId);
+	},
+});
+
+/**
+ * Résout le logo (sceau) de l'entête d'un modèle en URL signée pour
+ * affichage côté client. Retourne `null` si le modèle n'a pas d'entête
+ * ou pas de logo.
+ *
+ * Utilisé par l'éditeur `/config/templates/[id]` pour afficher un aperçu
+ * non-éditable du sceau au-dessus du canvas Tiptap.
+ */
+export const getTemplateLogoUrl = authQuery({
+	args: { templateId: v.id("documentTemplates") },
+	handler: async (ctx, args): Promise<string | null> => {
+		const template = await ctx.db.get(args.templateId);
+		const storageId = template?.headerFooter?.header?.logoStorageId;
+		if (!storageId) return null;
+		return await ctx.storage.getUrl(storageId);
 	},
 });
 
@@ -310,9 +479,11 @@ export const create = authMutation({
 			v.union(v.literal("all"), v.literal("specificOrgTypes")),
 		),
 		applicableOrgTypes: v.optional(v.array(orgTypeValidator)),
-		headerFooterBlockId: v.optional(v.id("templateHeaderFooterBlocks")),
-		typographyBlockId: v.optional(v.id("templateTypographyBlocks")),
-		voiceBlockId: v.optional(v.id("templateVoiceBlocks")),
+		// 3 facettes inline du modèle. Toutes optionnelles ; valeurs par
+		// défaut appliquées au rendu si absentes.
+		headerFooter: v.optional(headerFooterValidator),
+		typography: v.optional(typographyValidator),
+		voice: v.optional(voiceValidator),
 		paperSize: v.optional(v.union(v.literal("A4"), v.literal("LETTER"))),
 		orientation: v.optional(v.union(v.literal("portrait"), v.literal("landscape"))),
 		marginTop: v.optional(v.number()),
@@ -386,9 +557,11 @@ export const update = authMutation({
 			v.union(v.literal("all"), v.literal("specificOrgTypes")),
 		),
 		applicableOrgTypes: v.optional(v.array(orgTypeValidator)),
-		headerFooterBlockId: v.optional(v.id("templateHeaderFooterBlocks")),
-		typographyBlockId: v.optional(v.id("templateTypographyBlocks")),
-		voiceBlockId: v.optional(v.id("templateVoiceBlocks")),
+		// 3 facettes inline (patch partiel supporté — chaque facette passe
+		// par `v.optional(...)` au niveau supérieur).
+		headerFooter: v.optional(headerFooterValidator),
+		typography: v.optional(typographyValidator),
+		voice: v.optional(voiceValidator),
 		paperSize: v.optional(v.union(v.literal("A4"), v.literal("LETTER"))),
 		orientation: v.optional(v.union(v.literal("portrait"), v.literal("landscape"))),
 		marginTop: v.optional(v.number()),
@@ -486,9 +659,9 @@ export const cloneFromGlobal = authMutation({
 			autoPublishToCitizen: source.autoPublishToCitizen,
 			requireSignature: source.requireSignature,
 			allowedSignerPositions: source.allowedSignerPositions,
-			headerFooterBlockId: source.headerFooterBlockId,
-			typographyBlockId: source.typographyBlockId,
-			voiceBlockId: source.voiceBlockId,
+			headerFooter: source.headerFooter,
+			typography: source.typography,
+			voice: source.voice,
 			paperSize: source.paperSize,
 			orientation: source.orientation,
 			marginTop: source.marginTop,
@@ -560,9 +733,9 @@ export const syncFromSource = authMutation({
 			autoPublishToCitizen: source.autoPublishToCitizen,
 			requireSignature: source.requireSignature,
 			allowedSignerPositions: source.allowedSignerPositions,
-			headerFooterBlockId: source.headerFooterBlockId,
-			typographyBlockId: source.typographyBlockId,
-			voiceBlockId: source.voiceBlockId,
+			headerFooter: source.headerFooter,
+			typography: source.typography,
+			voice: source.voice,
 			paperSize: source.paperSize,
 			orientation: source.orientation,
 			marginTop: source.marginTop,
@@ -654,11 +827,30 @@ export const listGlobal = authQuery({
 	},
 	handler: async (ctx, args) => {
 		if (!canManageGlobalTemplates(ctx.user)) return [];
-		let query = ctx.db
+		const query = ctx.db
 			.query("documentTemplates")
 			.withIndex("by_global", (q) => q.eq("isGlobal", true).eq("isActive", true));
 		const all = await query.collect();
-		return args.category ? all.filter((t) => t.category === args.category) : all;
+		const filtered = args.category ? all.filter((t) => t.category === args.category) : all;
+
+		// Résoudre les logoStorageIds en URLs (dédupliqué — les 25 modèles diplomatiques partagent le même logo).
+		const uniqueStorageIds = [
+			...new Set(
+				filtered
+					.map((t) => t.headerFooter?.header?.logoStorageId)
+					.filter((id): id is Id<"_storage"> => Boolean(id)),
+			),
+		];
+		const logoUrlMap = new Map<string, string | null>();
+		for (const sid of uniqueStorageIds) {
+			logoUrlMap.set(sid as string, await ctx.storage.getUrl(sid));
+		}
+		return filtered.map((t) => ({
+			...t,
+			logoUrl: t.headerFooter?.header?.logoStorageId
+				? (logoUrlMap.get(t.headerFooter.header.logoStorageId as string) ?? null)
+				: null,
+		}));
 	},
 });
 
@@ -800,15 +992,242 @@ function heading(text: string, level = 1) {
 	};
 }
 
+// ─── Charte graphique diplomatique gabonaise ──────────────────────────────
+// Les 25 modèles diplomatiques/consulaires générés depuis les DOCX sources
+// partagent la même identité visuelle : un entête institutionnel, une
+// typographie Times New Roman 11 pt/1.5 et une voix solennelle. Les 3
+// facettes sont donc mutualisées ici et recopiées sur chaque modèle.
+function buildDiplomaticFacettes(
+	logoStorageId: Id<"_storage"> | undefined,
+): {
+	headerFooter: NonNullable<Doc<"documentTemplates">["headerFooter"]>;
+	typography: NonNullable<Doc<"documentTemplates">["typography"]>;
+	voice: NonNullable<Doc<"documentTemplates">["voice"]>;
+} {
+	return {
+		headerFooter: {
+			header: {
+				logoStorageId,
+				logoAlignment: "center",
+				height: 42,
+				content: {
+					type: "doc",
+					content: [
+						{
+							type: "paragraph",
+							attrs: { textAlign: "center" },
+							content: [
+								{
+									type: "text",
+									text: "AMBASSADE DU GABON",
+									marks: [{ type: "bold" }],
+								},
+							],
+						},
+						{
+							type: "paragraph",
+							attrs: { textAlign: "center" },
+							content: [
+								{
+									type: "text",
+									text: "PRÈS LE ROYAUME D’ESPAGNE ET",
+									marks: [{ type: "bold" }],
+								},
+							],
+						},
+						{
+							type: "paragraph",
+							attrs: { textAlign: "center" },
+							content: [
+								{
+									type: "text",
+									text: "REPRÉSENTATION PERMANENTE DU GABON",
+									marks: [{ type: "bold" }],
+								},
+							],
+						},
+						{
+							type: "paragraph",
+							attrs: { textAlign: "center" },
+							content: [
+								{
+									type: "text",
+									text: "AUPRÈS DE L’ORGANISATION",
+									marks: [{ type: "bold" }],
+								},
+							],
+						},
+						{
+							type: "paragraph",
+							attrs: { textAlign: "center" },
+							content: [
+								{
+									type: "text",
+									text: "DES NATIONS UNIES POUR LE TOURISME",
+									marks: [{ type: "bold" }],
+								},
+							],
+						},
+						{
+							type: "paragraph",
+							attrs: { textAlign: "center" },
+							content: [{ type: "text", text: "---------------" }],
+						},
+					],
+				},
+			},
+			footer: {
+				height: 15,
+				showPageNumbers: false,
+				content: {
+					type: "doc",
+					content: [
+						{
+							type: "paragraph",
+							attrs: { textAlign: "center" },
+							content: [
+								{
+									type: "text",
+									text: "CALLE ORENSE - 68 - 2° IZQ. - 28020 - MADRID – ESPAÑA",
+									marks: [{ type: "italic" }],
+								},
+							],
+						},
+						{
+							type: "paragraph",
+							attrs: { textAlign: "center" },
+							content: [
+								{
+									type: "text",
+									text: "TEL : (+34) 914 138 211 | Email : secretariagabon@gmail.com",
+									marks: [{ type: "italic" }],
+								},
+							],
+						},
+					],
+				},
+			},
+		},
+		typography: {
+			fontFamily: "Times New Roman",
+			fontSizeBase: 11,
+			lineHeight: 1.5,
+			defaultAlignment: "justify",
+			headingStyles: {
+				h1: {
+					fontSize: 14,
+					bold: true,
+					uppercase: true,
+					spacingBefore: 8,
+					spacingAfter: 8,
+					alignment: "center",
+				},
+				h2: {
+					fontSize: 12,
+					bold: true,
+					uppercase: false,
+					spacingBefore: 6,
+					spacingAfter: 4,
+					alignment: "left",
+				},
+				h3: {
+					fontSize: 11,
+					bold: true,
+					uppercase: false,
+					spacingBefore: 4,
+					spacingAfter: 2,
+					alignment: "left",
+				},
+			},
+			paragraphSpacingBefore: 0,
+			paragraphSpacingAfter: 4,
+			paragraphFirstLineIndent: 0,
+			widowOrphanControl: true,
+			keepHeadingsWithNext: true,
+		},
+		voice: {
+			tone: "Solennel, formel, respectueux des usages diplomatiques gabonais et des protocoles internationaux",
+			register: "diplomatique",
+			personPronoun: "le_consulat",
+			useFormalAddress: true,
+			politenessLevel: "solennel",
+			openingFormulas: [
+				{
+					text: "L’Ambassade du Gabon près le Royaume d’Espagne présente ses compliments",
+					templateType: "letter",
+				},
+				{ text: "Je soussigné(e),", templateType: "attestation" },
+				{ text: "Il est certifié que", templateType: "certificate" },
+			],
+			closingFormulas: [
+				{
+					text: "L’Ambassade du Gabon près le Royaume d’Espagne saisit cette occasion pour renouveler […] les assurances de sa très haute considération.",
+					templateType: "letter",
+				},
+				{
+					text: "La présente attestation est établie pour servir et valoir ce que de droit.",
+					templateType: "attestation",
+				},
+				{
+					text: "En foi de quoi, le présent certificat est délivré pour servir et valoir ce que de droit.",
+					templateType: "certificate",
+				},
+			],
+			signatureFormulas: [
+				"Le Conseiller chargé des Affaires Consulaires",
+				"L’Ambassadeur Extraordinaire et Plénipotentiaire",
+				"Le Premier Conseiller",
+			],
+			argumentationGuidelines:
+				"Respecter l’étiquette diplomatique. Utiliser systématiquement la forme solennelle. Mentionner l’Ambassade au pluriel majestatif (« L’Ambassade … a l’honneur de »). Ne jamais employer la première personne du singulier dans une note verbale — toujours « L’Ambassade » ou « le Consulat ». Conserver les majuscules protocolaires sur les titres officiels.",
+			vocabularyPreferences: [
+				{ prefer: "présente ses compliments", avoid: ["salue"] },
+				{ prefer: "a l’honneur de", avoid: ["souhaite", "voudrait"] },
+				{ prefer: "daigner", avoid: ["vouloir bien"] },
+				{ prefer: "S. E. M.", avoid: ["Monsieur le Ministre"] },
+			],
+		},
+	};
+}
+
 /**
- * Seeds a single French-language "Récépissé de Dépôt" template as a global
- * template. More templates can be added through the backoffice UI once the
- * editor ships. This seed is idempotent — safe to re-run.
+ * Seeds :
+ *   1. Le « Récépissé de Dépôt » (modèle générique, toutes représentations).
+ *   2. Les 25 modèles diplomatiques/consulaires Gabon-Madrid (intégrés en
+ *      dur — source de vérité : `DIPLOMATIC_TEMPLATES`).
+ *
+ * Les 25 modèles sont `applicability: "all"` → accessibles à TOUTES les
+ * représentations sans attribution explicite. Ils partagent les 3 facettes
+ * institutionnelles (entête Ambassade, typographie Times 11 pt/1.5, voix
+ * solennelle).
+ *
+ * Idempotent :
+ *   - Récépissé : recherche par `templateType === "receipt"`.
+ *   - Modèles diplomatiques : recherche par `name.fr` puis patch si présent,
+ *     insert sinon.
+ *
+ * Relançable autant de fois que nécessaire depuis le dashboard Convex.
+ *
+ * Argument optionnel :
+ *   - `logoStorageId` : sceau gabonais pré-uploadé dans `_storage`. S'il est
+ *     fourni, les 25 modèles sont patchés avec cette référence. Sinon,
+ *     l'entête affiche uniquement le bloc texte institutionnel.
  */
 export const seedDefaultTemplates = internalMutation({
-	args: {},
-	handler: async (ctx) => {
-		const template = {
+	args: {
+		logoStorageId: v.optional(v.id("_storage")),
+		// Dictionnaire optionnel { seedKey -> contentHtml } pré-calculé par
+		// l'action appelante (qui a accès au runtime Node pour `@tiptap/html`).
+		// Si absent, le champ `contentHtml` n'est pas écrit et les vignettes
+		// resteront en fallback "Aperçu vide".
+		contentHtmlBySeedKey: v.optional(v.record(v.string(), v.string())),
+	},
+	handler: async (ctx, args) => {
+		const now = Date.now();
+		const contentHtmlBySeedKey = args.contentHtmlBySeedKey ?? {};
+
+		// ─── 1. Récépissé de Dépôt (modèle générique) ─────────────────────
+		const receiptTemplate = {
 			name: { fr: "Récépissé de Dépôt", en: "Filing Receipt" },
 			description: {
 				fr: "Accusé de réception pour une demande déposée",
@@ -820,16 +1239,22 @@ export const seedDefaultTemplates = internalMutation({
 				type: "doc",
 				content: [
 					heading("RÉCÉPISSÉ DE DÉPÔT", 1),
-					{ type: "paragraph", attrs: { textAlign: "center" }, content: [{ type: "text", text: "République Gabonaise" }] },
+					{
+						type: "paragraph",
+						attrs: { textAlign: "center" },
+						content: [{ type: "text", text: "République Gabonaise" }],
+					},
 					para([
 						"Le Consulat Général du Gabon accuse réception de la demande suivante :",
 					]),
-					para(
-						[
-							"Référence : ",
-							{ placeholder: "requestReference", source: "request", label: "Référence" },
-						],
-					),
+					para([
+						"Référence : ",
+						{
+							placeholder: "requestReference",
+							source: "request",
+							label: "Référence",
+						},
+					]),
 					para([
 						"Type de demande : ",
 						{ placeholder: "serviceName", source: "request", label: "Service" },
@@ -842,7 +1267,11 @@ export const seedDefaultTemplates = internalMutation({
 					]),
 					para([
 						"Date de dépôt : ",
-						{ placeholder: "submissionDate", source: "system", label: "Date de dépôt" },
+						{
+							placeholder: "submissionDate",
+							source: "system",
+							label: "Date de dépôt",
+						},
 					]),
 					para(
 						[
@@ -858,14 +1287,41 @@ export const seedDefaultTemplates = internalMutation({
 				],
 			},
 			placeholders: [
-				{ key: "requestReference", label: { fr: "Référence", en: "Reference" }, source: "request" as const },
-				{ key: "serviceName", label: { fr: "Service", en: "Service" }, source: "request" as const, path: "serviceName" },
-				{ key: "firstName", label: { fr: "Prénom", en: "First Name" }, source: "user" as const, path: "firstName" },
-				{ key: "lastName", label: { fr: "Nom", en: "Last Name" }, source: "user" as const, path: "lastName" },
-				{ key: "submissionDate", label: { fr: "Date de dépôt", en: "Submission Date" }, source: "system" as const },
-				{ key: "today", label: { fr: "Date du jour", en: "Today's date" }, source: "system" as const },
+				{
+					key: "requestReference",
+					label: { fr: "Référence", en: "Reference" },
+					source: "request" as const,
+				},
+				{
+					key: "serviceName",
+					label: { fr: "Service", en: "Service" },
+					source: "request" as const,
+					path: "serviceName",
+				},
+				{
+					key: "firstName",
+					label: { fr: "Prénom", en: "First Name" },
+					source: "user" as const,
+					path: "firstName",
+				},
+				{
+					key: "lastName",
+					label: { fr: "Nom", en: "Last Name" },
+					source: "user" as const,
+					path: "lastName",
+				},
+				{
+					key: "submissionDate",
+					label: { fr: "Date de dépôt", en: "Submission Date" },
+					source: "system" as const,
+				},
+				{
+					key: "today",
+					label: { fr: "Date du jour", en: "Today's date" },
+					source: "system" as const,
+				},
 			],
-			isGlobal: true,
+			isGlobal: true as const,
 			isActive: true,
 			autoPublishToCitizen: true,
 			requireSignature: false,
@@ -873,22 +1329,379 @@ export const seedDefaultTemplates = internalMutation({
 			orientation: "portrait" as const,
 		};
 
-		const existing = await ctx.db
+		const existingReceipt = await ctx.db
 			.query("documentTemplates")
-			.withIndex("by_global", (q) => q.eq("isGlobal", true).eq("isActive", true))
+			.withIndex("by_global", (q) =>
+				q.eq("isGlobal", true).eq("isActive", true),
+			)
 			.filter((q) => q.eq(q.field("templateType"), "receipt"))
 			.first();
 
-		if (existing) {
-			return { seeded: 0, skipped: 1, templateId: existing._id };
+		let receiptTemplateId: Id<"documentTemplates">;
+		let receiptSeeded = 0;
+		let receiptSkipped = 0;
+		if (existingReceipt) {
+			receiptTemplateId = existingReceipt._id;
+			receiptSkipped = 1;
+		} else {
+			receiptTemplateId = await ctx.db.insert("documentTemplates", {
+				...receiptTemplate,
+				version: 1,
+				updatedAt: now,
+			});
+			receiptSeeded = 1;
 		}
 
-		const templateId = await ctx.db.insert("documentTemplates", {
-			...template,
-			version: 1,
-			updatedAt: Date.now(),
-		});
+		// ─── 2. 25 modèles diplomatiques Gabon-Madrid ────────────────────
+		// Facettes partagées. Matching stable par `seedKey` (priorité), avec
+		// fallback par `name.fr` pour migrer les anciens templates seedés
+		// AVANT l'introduction du champ seedKey. `applicability: "all"`
+		// garantit la visibilité sur toutes les représentations.
+		const facettes = buildDiplomaticFacettes(args.logoStorageId);
 
-		return { seeded: 1, skipped: 0, templateId };
+		const globals = await ctx.db
+			.query("documentTemplates")
+			.withIndex("by_global", (q) =>
+				q.eq("isGlobal", true).eq("isActive", true),
+			)
+			.collect();
+		const bySeedKey = new Map<string, Id<"documentTemplates">>();
+		const byNameFr = new Map<string, Id<"documentTemplates">>();
+		for (const g of globals) {
+			if (g.seedKey) bySeedKey.set(g.seedKey, g._id);
+			const fr = (g.name as { fr?: string }).fr;
+			if (fr) byNameFr.set(fr, g._id);
+		}
+
+		// Mapping des anciens noms (sans accents) → seedKey, utilisé pour
+		// retrouver les 25 templates seedés AVANT l'introduction du champ
+		// seedKey. Une fois patchés, le seedKey est persisté et les runs
+		// suivants utilisent le matching par seedKey.
+		const LEGACY_NAME_TO_SEED_KEY: Record<string, string> = {
+			"Attestation d'Hebergement": "diplo_attestation_d_hebergement",
+			"Attestation de Legalisation": "diplo_attestation_de_legalisation",
+			"Attestation de Prise en Charge": "diplo_attestation_de_prise_en_charge",
+			"Certificat de Celibat": "diplo_certificat_de_celibat",
+			"Certificat de Nationalite": "diplo_certificat_de_nationalite",
+			"Certificat de Residence": "diplo_certificat_de_residence",
+			"Certificat de Vie": "diplo_certificat_de_vie",
+			Procuration: "diplo_procuration",
+			"Aide-Memoire": "diplo_aide_memoire",
+			Communique: "diplo_communique",
+			"Demande d'Agrement": "diplo_demande_d_agrement",
+			"Note Verbale (Ministere)": "diplo_note_verbale_ministere",
+			"Note Verbale (Missions Diplomatiques)":
+				"diplo_note_verbale_missions_diplomatiques",
+			"Bordereau d'Envoi": "diplo_bordereau_d_envoi",
+			"Lettre Officielle de l'Ambassadeur":
+				"diplo_lettre_officielle_de_l_ambassadeur",
+			"Lettre de Felicitations": "diplo_lettre_de_felicitations",
+			"Note de Condoleances": "diplo_note_de_condoleances",
+			"Note de Service Interne": "diplo_note_de_service_interne",
+			"Fiche d'Inscription Consulaire": "diplo_fiche_d_inscription_consulaire",
+			"Formulaire de Demande de Visa": "diplo_formulaire_de_demande_de_visa",
+			"Laissez-Passer": "diplo_laissez_passer",
+			"Attestation sur l'Honneur": "diplo_attestation_sur_l_honneur",
+			"Certificat de Capacite Matrimoniale":
+				"diplo_certificat_de_capacite_matrimoniale",
+			"Certificat de Coutume": "diplo_certificat_de_coutume",
+			"Transcription Acte de Naissance":
+				"diplo_transcription_acte_de_naissance",
+		};
+		for (const [legacyName, legacySeedKey] of Object.entries(
+			LEGACY_NAME_TO_SEED_KEY,
+		)) {
+			const existingId = byNameFr.get(legacyName);
+			if (existingId && !bySeedKey.has(legacySeedKey)) {
+				bySeedKey.set(legacySeedKey, existingId);
+			}
+		}
+
+		const diplomaticIds: Id<"documentTemplates">[] = [];
+		let diplomaticCreated = 0;
+		let diplomaticUpdated = 0;
+
+		for (const tpl of DIPLOMATIC_TEMPLATES) {
+			const existingId =
+				bySeedKey.get(tpl.seedKey) ?? byNameFr.get(tpl.name);
+			const contentHtml = contentHtmlBySeedKey[tpl.seedKey];
+			const payload = {
+				seedKey: tpl.seedKey,
+				name: { fr: tpl.name, en: tpl.name },
+				description: {
+					fr: `Modèle officiel — ${tpl.subfolder}`,
+					en: `Official template — ${tpl.subfolder}`,
+				},
+				category: tpl.category as ServiceCategory,
+				templateType: tpl.templateType,
+				content: tpl.content,
+				...(contentHtml ? { contentHtml } : {}),
+				isGlobal: true as const,
+				isActive: true,
+				// Toutes les représentations (ambassade, consulat, mission, etc.)
+				// accèdent aux 25 modèles automatiquement — pas d'attribution
+				// explicite requise.
+				applicability: "all" as const,
+				headerFooter: facettes.headerFooter,
+				typography: facettes.typography,
+				voice: facettes.voice,
+				paperSize: "A4" as const,
+				orientation: "portrait" as const,
+				marginTop: 21,
+				marginRight: 21,
+				marginBottom: 21,
+				marginLeft: 21,
+				updatedAt: now,
+			};
+
+			if (existingId) {
+				await ctx.db.patch(existingId, payload);
+				diplomaticIds.push(existingId);
+				diplomaticUpdated++;
+			} else {
+				const id = await ctx.db.insert("documentTemplates", {
+					...payload,
+					version: 1,
+				});
+				diplomaticIds.push(id);
+				diplomaticCreated++;
+			}
+		}
+
+		return {
+			receipt: {
+				seeded: receiptSeeded,
+				skipped: receiptSkipped,
+				templateId: receiptTemplateId,
+			},
+			diplomatic: {
+				created: diplomaticCreated,
+				updated: diplomaticUpdated,
+				total: diplomaticIds.length,
+				ids: diplomaticIds,
+			},
+		};
+	},
+});
+
+// ============================================================================
+// SEED TOUT-EN-UN : SCEAU + 25 MODÈLES DIPLOMATIQUES
+// ============================================================================
+//
+// `seedDefaultTemplates` est une mutation : elle ne peut ni uploader de
+// fichier ni lire un asset. On l'enveloppe donc dans une action qui :
+//   1. Vérifie si un sceau est déjà présent sur un template (évite les
+//      uploads répétés à chaque relance).
+//   2. Si non, décode `SCEAU_GABON_BASE64` (bundlé avec le code Convex) et
+//      l'upload dans `_storage` via `ctx.storage.store`.
+//   3. Déclenche `seedDefaultTemplates` avec le `logoStorageId` obtenu.
+//
+// Appel depuis le dashboard Convex :
+//     functions/documentTemplates:seedDiplomaticDefaultsWithSceau
+// (sans argument — tout est autoporté).
+
+/**
+ * Récupère le premier `logoStorageId` référencé par les modèles globaux
+ * déjà en base. Sert de court-circuit d'idempotence pour l'action
+ * `seedDiplomaticDefaultsWithSceau` : inutile de ré-uploader le sceau si
+ * un run précédent l'a déjà stocké.
+ */
+export const getExistingDiplomaticLogoStorageId = internalQuery({
+	args: {},
+	handler: async (ctx): Promise<Id<"_storage"> | null> => {
+		const globals = await ctx.db
+			.query("documentTemplates")
+			.withIndex("by_global", (q) =>
+				q.eq("isGlobal", true).eq("isActive", true),
+			)
+			.collect();
+		for (const tpl of globals) {
+			const id = tpl.headerFooter?.header?.logoStorageId;
+			if (id) return id;
+		}
+		return null;
+	},
+});
+
+/**
+ * Décode une chaîne base64 en `Uint8Array` côté Convex action.
+ *
+ * `atob` est disponible dans l'environnement V8 des actions, mais renvoie
+ * une string "binaire" ; on en extrait les octets via `charCodeAt`.
+ */
+/**
+ * Rendu HTML minimaliste d'un document Tiptap JSON — utilisé pour pré-
+ * calculer le `contentHtml` des 25 templates diplomatiques lors du seed,
+ * sans dépendre de `@tiptap/html` qui exige un env browser.
+ *
+ * Supporte uniquement ce dont les 25 templates ont besoin :
+ *   - doc / paragraph / heading / text / hardBreak
+ *   - table / tableRow / tableCell
+ *   - marks : bold / italic / underline / textStyle(fontFamily,fontSize)
+ *
+ * Ignore silencieusement les nodes / marks inconnus.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function renderTiptapToHtml(node: any): string {
+	if (!node || typeof node !== "object") return "";
+	const children = Array.isArray(node.content)
+		? node.content.map(renderTiptapToHtml).join("")
+		: "";
+
+	switch (node.type) {
+		case "doc":
+			return children;
+		case "paragraph": {
+			const align = node.attrs?.textAlign;
+			const style = align ? ` style="text-align:${align}"` : "";
+			return `<p${style}>${children || "&nbsp;"}</p>`;
+		}
+		case "heading": {
+			const level = Math.min(Math.max(node.attrs?.level ?? 1, 1), 6);
+			const align = node.attrs?.textAlign;
+			const style = align ? ` style="text-align:${align}"` : "";
+			return `<h${level}${style}>${children}</h${level}>`;
+		}
+		case "hardBreak":
+			return "<br/>";
+		case "table":
+			return `<table>${children}</table>`;
+		case "tableRow":
+			return `<tr>${children}</tr>`;
+		case "tableCell":
+		case "tableHeader":
+			return `<td>${children}</td>`;
+		case "text": {
+			let html = escapeHtml(String(node.text ?? ""));
+			const marks: Array<{ type: string; attrs?: Record<string, unknown> }> =
+				Array.isArray(node.marks) ? node.marks : [];
+			for (const mark of marks) {
+				switch (mark.type) {
+					case "bold":
+						html = `<strong>${html}</strong>`;
+						break;
+					case "italic":
+						html = `<em>${html}</em>`;
+						break;
+					case "underline":
+						html = `<u>${html}</u>`;
+						break;
+					case "textStyle": {
+						const attrs = (mark.attrs ?? {}) as {
+							fontFamily?: string;
+							fontSize?: number | string;
+							color?: string;
+						};
+						const styles: string[] = [];
+						if (attrs.fontFamily)
+							styles.push(`font-family:'${escapeCss(attrs.fontFamily)}'`);
+						if (attrs.fontSize) styles.push(`font-size:${attrs.fontSize}pt`);
+						if (attrs.color) styles.push(`color:${escapeCss(attrs.color)}`);
+						if (styles.length > 0) {
+							html = `<span style="${styles.join(";")}">${html}</span>`;
+						}
+						break;
+					}
+				}
+			}
+			return html;
+		}
+		default:
+			return children;
+	}
+}
+
+function escapeHtml(s: string): string {
+	return s
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;");
+}
+
+function escapeCss(s: string): string {
+	// Supprime les caractères qui pourraient briser l'attribut style
+	return s.replace(/["'<>;]/g, "");
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+	const bin = atob(b64);
+	const len = bin.length;
+	const bytes = new Uint8Array(len);
+	for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+	return bytes;
+}
+
+/**
+ * Seed complet : sceau + récépissé + 25 modèles diplomatiques.
+ *
+ * Idempotent sur tous les plans :
+ *   - Le sceau est réutilisé s'il existe déjà dans `_storage` (via lookup
+ *     sur les templates).
+ *   - `seedDefaultTemplates` patche les modèles par `name.fr` au lieu de
+ *     dupliquer.
+ *
+ * À appeler une seule fois depuis le dashboard Convex ; peut être rejouée
+ * sans effet de bord.
+ */
+type SeedDiplomaticResult = {
+	logoStorageId: Id<"_storage">;
+	logoUploaded: boolean;
+	receipt: {
+		seeded: number;
+		skipped: number;
+		templateId: Id<"documentTemplates">;
+	};
+	diplomatic: {
+		created: number;
+		updated: number;
+		total: number;
+		ids: Id<"documentTemplates">[];
+	};
+};
+
+export const seedDiplomaticDefaultsWithSceau = internalAction({
+	args: {},
+	handler: async (ctx): Promise<SeedDiplomaticResult> => {
+		// 1. Réutiliser un sceau déjà uploadé si possible
+		const existingLogoStorageId: Id<"_storage"> | null = await ctx.runQuery(
+			internal.functions.documentTemplates.getExistingDiplomaticLogoStorageId,
+			{},
+		);
+		let logoStorageId: Id<"_storage"> | undefined =
+			existingLogoStorageId ?? undefined;
+
+		// 2. Sinon, décoder le base64 bundlé et uploader
+		let logoUploaded = false;
+		if (!logoStorageId) {
+			const bytes = base64ToBytes(SCEAU_GABON_BASE64);
+			const blob = new Blob([bytes.buffer as ArrayBuffer], {
+				type: SCEAU_GABON_MIME_TYPE,
+			});
+			logoStorageId = await ctx.storage.store(blob);
+			logoUploaded = true;
+		}
+
+		// 3. Pré-calcul du `contentHtml` pour chaque modèle diplomatique —
+		//    alimente le cache d'aperçu des vignettes `TemplateThumbnailCard`.
+		//    Rendu minimaliste écrit à la main (pas de dépendance Tiptap
+		//    côté serveur : `@tiptap/html` exige un env browser).
+		const contentHtmlBySeedKey: Record<string, string> = {};
+		for (const tpl of DIPLOMATIC_TEMPLATES) {
+			contentHtmlBySeedKey[tpl.seedKey] = renderTiptapToHtml(tpl.content);
+		}
+
+		// 4. Déléguer à la mutation de seed (récépissé + 25 diplomatiques)
+		const result = await ctx.runMutation(
+			internal.functions.documentTemplates.seedDefaultTemplates,
+			{ logoStorageId, contentHtmlBySeedKey },
+		);
+
+		return {
+			logoStorageId,
+			logoUploaded,
+			receipt: result.receipt,
+			diplomatic: result.diplomatic,
+		};
 	},
 });

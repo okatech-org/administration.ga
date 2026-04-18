@@ -301,7 +301,10 @@ export const searchContacts = authQuery({
 	},
 	handler: async (ctx, args) => {
 		const scope: ContactScope = args.scope ?? "org";
-		const limit = args.limit ?? 100;
+		// Plafond de sécurité Convex (`.collect()` / `.take()` ont un hard-cap
+		// interne proche de 16 384). Par défaut on remonte TOUT le périmètre —
+		// pas de pagination côté client.
+		const limit = args.limit ?? 10000;
 
 		// ── Garde RBAC ──
 		// Seuls les utilisateurs back-office peuvent invoquer le scope "backoffice".
@@ -390,8 +393,8 @@ export const searchContacts = authQuery({
 					source: isMyOrg ? "team" : "network",
 				});
 
-				// over-fetch pour le search filter ultérieur (hard cap à 4000 pour la perf Convex)
-				if (results.length >= Math.min(limit * 3, 4000)) break;
+				// Safety stop si on atteint le plafond de sécurité Convex.
+				if (results.length >= limit) break;
 			}
 		}
 
@@ -444,9 +447,12 @@ export const searchContacts = authQuery({
 				? await loadCitizens(ctx, citizenScope, {
 						myOrgId: args.myOrgId,
 						jurisdictionCountries,
-						// Pour le scope "backoffice" on autorise à remonter jusqu'à `limit`
-						// profils citoyens (le hard cap 4000 est appliqué dans loadCitizens).
-						limit: citizenScope === "backoffice" ? limit : Math.min(limit, 200),
+						// Respecte le `limit` demandé par le client. Le hard cap global
+						// (4000) est appliqué plus bas sur `results` pour éviter les
+						// scans trop gourmands. Historiquement on capait à 200 ici,
+						// ce qui masquait la majorité des ressortissants d'une
+						// juridiction avec 2 000+ profils (ex. Consulat Gabon France).
+						limit,
 					})
 				: [];
 
@@ -644,6 +650,181 @@ export const searchContacts = authQuery({
 			total: deduplicated.length,
 			groups: Object.values(grouped),
 		};
+	},
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// listPriorityContacts — contacts « de travail » calculés à partir des demandes
+// ────────────────────────────────────────────────────────────────────────────
+
+/** Statuts de demande considérés comme « actifs » (non-terminaux). */
+const ACTIVE_REQUEST_STATUSES = new Set<string>([
+	"submitted",
+	"pending",
+	"under_review",
+	"in_production",
+	"validated",
+	"appointment_scheduled",
+	"ready_for_pickup",
+]);
+
+/** Poids numérique par priorité pour le tri. Plus grand = plus prioritaire. */
+const PRIORITY_WEIGHT: Record<string, number> = {
+	critical: 300,
+	urgent: 200,
+	normal: 100,
+};
+
+/** Poids par statut (les demandes en fin de cycle remontent plus haut). */
+const STATUS_WEIGHT: Record<string, number> = {
+	ready_for_pickup: 50,
+	appointment_scheduled: 45,
+	validated: 40,
+	in_production: 35,
+	under_review: 30,
+	pending: 25,
+	submitted: 20,
+};
+
+/**
+ * Retourne les contacts (citoyens) ayant au moins une demande ACTIVE auprès de
+ * `orgId`, triés par priorité puis par récence. C'est la liste "par défaut"
+ * qu'iAsted propose dans iChat : l'agent voit d'abord les personnes qui
+ * requièrent une attention (demande en cours), le reste passe par la recherche.
+ *
+ * Priorité combinée :
+ *   score = PRIORITY_WEIGHT[priority] + STATUS_WEIGHT[status] + recencyBonus
+ *
+ * Les demandes les plus récentes (> urgent/critical) dominent naturellement le
+ * haut de liste.
+ */
+export const listPriorityContacts = authQuery({
+	args: {
+		orgId: v.id("orgs"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const limit = args.limit ?? 50;
+
+		// RBAC léger : n'importe quel membre actif de l'org peut consulter.
+		const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+		if (!membership) return { contacts: [] };
+
+		// On collecte toutes les demandes de l'org, puis on filtre en mémoire sur
+		// les statuts actifs. Convex ne permet pas d'index range sur un Set.
+		const requests = await ctx.db
+			.query("requests")
+			.withIndex("by_org_status", (q) => q.eq("orgId", args.orgId))
+			.collect();
+
+		const now = Date.now();
+		// Map userId → meilleur score + meta à afficher.
+		const bestByUser = new Map<
+			string,
+			{
+				userId: string;
+				score: number;
+				activeCount: number;
+				latestRef?: string;
+				highestPriority?: string;
+				lastActivity: number;
+				latestStatus?: string;
+			}
+		>();
+
+		for (const r of requests) {
+			if (!ACTIVE_REQUEST_STATUSES.has(r.status)) continue;
+
+			const pScore = PRIORITY_WEIGHT[r.priority] ?? 100;
+			const sScore = STATUS_WEIGHT[r.status] ?? 10;
+			const ts = r.updatedAt ?? r.submittedAt ?? r._creationTime ?? 0;
+			// Bonus de récence : -1 point / jour, plafonné à 30 jours (60 pts).
+			const ageDays = Math.max(0, (now - ts) / (1000 * 60 * 60 * 24));
+			const recencyBonus = Math.max(0, 60 - Math.floor(ageDays * 2));
+			const score = pScore + sScore + recencyBonus;
+
+			const userKey = r.userId as string;
+			const existing = bestByUser.get(userKey);
+			if (!existing) {
+				bestByUser.set(userKey, {
+					userId: userKey,
+					score,
+					activeCount: 1,
+					latestRef: r.reference,
+					highestPriority: r.priority,
+					lastActivity: ts,
+					latestStatus: r.status,
+				});
+			} else {
+				existing.activeCount += 1;
+				if (score > existing.score) {
+					existing.score = score;
+					existing.highestPriority = r.priority;
+					existing.latestStatus = r.status;
+				}
+				if (ts > existing.lastActivity) {
+					existing.lastActivity = ts;
+					existing.latestRef = r.reference;
+				}
+			}
+		}
+
+		// Tri décroissant par score, puis par activité la plus récente.
+		const sorted = Array.from(bestByUser.values())
+			.sort((a, b) => {
+				if (b.score !== a.score) return b.score - a.score;
+				return b.lastActivity - a.lastActivity;
+			})
+			.slice(0, limit);
+
+		// Hydratation : users + profiles en parallèle.
+		const users = await Promise.all(
+			sorted.map((s) => ctx.db.get(s.userId as Id<"users">)),
+		);
+
+		const org = await ctx.db.get(args.orgId);
+
+		const contacts = sorted
+			.map((entry, i) => {
+				const user = users[i];
+				if (!user || user.isActive === false || user.deletedAt) return null;
+
+				const nameLower = user.name ?? user.email ?? "";
+				const lastName = (
+					user.lastName ?? nameLower.split(" ").pop() ?? ""
+				).toUpperCase();
+				const firstName =
+					user.firstName ?? nameLower.split(" ").slice(0, -1).join(" ") ?? "";
+
+				return {
+					id: `priority-${user._id}`,
+					userId: user._id as string,
+					lastName,
+					firstName,
+					name: nameLower,
+					email: user.email,
+					phone: user.phone,
+					avatar: user.avatarUrl ?? undefined,
+					orgId: args.orgId as string,
+					orgName: org?.name ?? "",
+					orgCountry: org?.country,
+					orgType: org?.type,
+					source: "citizen" as const,
+
+					// Méta priorité (propres à cet endpoint)
+					activeRequestCount: entry.activeCount,
+					highestPriority: entry.highestPriority,
+					latestRequestRef: entry.latestRef,
+					latestStatus: entry.latestStatus,
+					lastActivity: entry.lastActivity,
+					priorityScore: entry.score,
+				};
+			})
+			.filter(
+				(c): c is NonNullable<typeof c> => c !== null,
+			);
+
+		return { contacts };
 	},
 });
 

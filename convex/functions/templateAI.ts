@@ -175,13 +175,15 @@ export const checkAiPermission = internalQuery({
 });
 
 /**
- * Charge une brique « Voix / Argumentaire » depuis une `action`. Les actions
+ * Lit la facette `voice` d'un template depuis une `action`. Les actions
  * n'ayant pas d'accès `ctx.db`, on passe par un `internalQuery` dédié.
+ * Retourne `null` si le template n'existe pas ou n'a pas de facette voix.
  */
-export const getVoiceBlockInternal = internalQuery({
-	args: { voiceBlockId: v.id("templateVoiceBlocks") },
+export const getTemplateVoiceInternal = internalQuery({
+	args: { templateId: v.id("documentTemplates") },
 	handler: async (ctx, args) => {
-		return await ctx.db.get(args.voiceBlockId);
+		const template = await ctx.db.get(args.templateId);
+		return template?.voice ?? null;
 	},
 });
 
@@ -371,8 +373,12 @@ export const generateFromDocument = authAction({
 		paperSize: v.optional(v.union(v.literal("A4"), v.literal("LETTER"))),
 		language: v.optional(v.union(v.literal("fr"), v.literal("en"))),
 		orgId: v.optional(v.id("orgs")),
-		/** Brique « Voix / Argumentaire » optionnelle — injectée au prompt. */
-		voiceBlockId: v.optional(v.id("templateVoiceBlocks")),
+		/**
+		 * ID d'un template existant dont la facette `voice` doit être
+		 * utilisée pour guider la génération. Optionnel — si absent, l'IA
+		 * génère sans directive stylistique institutionnelle.
+		 */
+		templateId: v.optional(v.id("documentTemplates")),
 	},
 	handler: async (ctx, args) => {
 		// Permission gate via internal query (authAction has no ctx.db).
@@ -387,20 +393,20 @@ export const generateFromDocument = authAction({
 			);
 		}
 
-		// Si une brique « voix » est référencée, on construit un contexte
-		// stylistique depuis le bloc et on le préfixe au prompt principal.
+		// Si un template est fourni, on lit sa facette `voice` (si présente)
+		// et on la traduit en contexte stylistique préfixé au prompt IA.
 		let voiceContext: string | undefined;
-		if (args.voiceBlockId) {
-			const block = await ctx.runQuery(
-				internal.functions.templateAI.getVoiceBlockInternal,
-				{ voiceBlockId: args.voiceBlockId },
+		if (args.templateId) {
+			const voice = await ctx.runQuery(
+				internal.functions.templateAI.getTemplateVoiceInternal,
+				{ templateId: args.templateId },
 			);
-			if (block) {
+			if (voice) {
 				const { voiceBlockToPromptContext } = await import(
 					"@workspace/document-rendering"
 				);
 				voiceContext = voiceBlockToPromptContext(
-					block as Parameters<typeof voiceBlockToPromptContext>[0],
+					voice as Parameters<typeof voiceBlockToPromptContext>[0],
 				);
 			}
 		}

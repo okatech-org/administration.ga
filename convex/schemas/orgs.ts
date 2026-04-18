@@ -89,6 +89,21 @@ export const orgsTable = defineTable({
   // Branding & page publique (logo Storage, couleurs, photos, réseaux sociaux)
   branding: v.optional(orgBrandingValidator),
 
+  // ──────────────────────────────────────────────────────────────
+  // Modèles de documents explicitement attribués à cette représentation
+  // ──────────────────────────────────────────────────────────────
+  //
+  // Complète le mécanisme d'applicabilité porté par `documentTemplates`
+  // (`applicability: "all" | "specificOrgTypes"`). Les IDs listés ici sont
+  // **en plus** de ce que l'applicabilité globale autorise déjà — un super-
+  // admin peut ainsi attribuer un modèle restreint à un type différent
+  // directement à une représentation précise, ou rendre un modèle visible
+  // pour cette rep uniquement.
+  //
+  // La résolution côté `documentTemplates.listByOrg` retourne l'UNION :
+  //   [templates visibles via applicability] ∪ [templates listés ici]
+  assignedTemplateIds: v.optional(v.array(v.id("documentTemplates"))),
+
   // Status
   isActive: v.boolean(),
   updatedAt: v.optional(v.number()),

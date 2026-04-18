@@ -16,14 +16,14 @@
 
 "use client";
 
-import { EditorContent, useEditor } from "@tiptap/react";
+import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import type { PlaceholderDescriptor, TiptapDocument } from "@workspace/document-rendering/types";
 import { Sparkles } from "lucide-react";
 import { useEffect, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 
 import { buildEditorExtensions } from "../extensions/build-editor-extensions";
-import { EditorToolbar } from "./EditorToolbar";
+import { ContextualBubbleMenu } from "./bubble/ContextualBubbleMenu";
 import { PlaceholderPicker } from "./PlaceholderPicker";
 
 export interface TemplateEditorProps {
@@ -61,6 +61,28 @@ export interface TemplateEditorProps {
 	 */
 	onUploadImage?: (file: File) => Promise<{ src: string; storageId?: string }>;
 	/**
+	 * Aperçu non-éditable du sceau + entête affiché en haut de la page blanche
+	 * (au-dessus du canvas Tiptap). Simule le rendu PDF final où le sceau
+	 * apparaît sur chaque page. Le parent fournit :
+	 *   - `logoSrc`    : URL résolue du sceau (null si absent)
+	 *   - `lines`      : lignes d'entête textuelles, centrées gras (ex.
+	 *                    "AMBASSADE DU GABON", "PRÈS LE ROYAUME D'ESPAGNE", …)
+	 *   - `fontFamily` : police des lignes — défaut "Optima"
+	 *   - `logoHeight` : hauteur du sceau en px (défaut 80)
+	 */
+	headerPreview?: {
+		logoSrc: string | null | undefined;
+		lines: string[];
+		fontFamily?: string;
+		logoHeight?: number;
+	};
+	/**
+	 * Aperçu non-éditable du pied de page affiché en bas de la page blanche
+	 * (au-dessous du canvas Tiptap). Lignes centrées italiques — adresse,
+	 * téléphone, email de la représentation.
+	 */
+	footerPreview?: { lines: string[] };
+	/**
 	 * When true, exposes a "Assistant IA" button above the toolbar. The parent
 	 * page is responsible for hosting the `<TemplateAIDrawer />` and applying
 	 * the result via `editor.commands.setContent()`. The button stays hidden
@@ -81,6 +103,12 @@ export interface TemplateEditorProps {
 	 * (one undo step), preserving the editor instance and toolbar state.
 	 */
 	contentRevision?: number;
+	/**
+	 * Appelé dès que l'instance Tiptap est prête, et chaque fois qu'elle
+	 * change. Permet au parent de consommer la même instance — ex :
+	 * alimenter la sidebar contextuelle `<ContextualFormatPanel editor={…}>`.
+	 */
+	onReady?: (editor: Editor | null) => void;
 }
 
 const EMPTY_DOC: TiptapDocument = {
@@ -113,9 +141,12 @@ export function TemplateEditor({
 	marginBottom,
 	marginLeft,
 	onUploadImage,
+	headerPreview,
+	footerPreview,
 	enableAI = false,
 	onAIGenerate,
 	contentRevision,
+	onReady,
 }: TemplateEditorProps): ReactElement {
 	const { t } = useTranslation();
 	const editor = useEditor({
@@ -133,6 +164,15 @@ export function TemplateEditor({
 		if (!editor) return;
 		editor.setEditable(editable);
 	}, [editor, editable]);
+
+	// Notifie le parent dès que l'instance Tiptap est prête. Permet à la
+	// sidebar contextuelle de partager la même instance que le canvas et
+	// la bubble menu — c'est ce qui fait muter le panneau "Format" à
+	// chaque sélection.
+	useEffect(() => {
+		if (!onReady) return;
+		onReady(editor);
+	}, [editor, onReady]);
 
 	// Re-load the canonical content when the parent bumps `contentRevision`
 	// (typically after an AI Apply). Tiptap only honours the `content` option
@@ -185,20 +225,70 @@ export function TemplateEditor({
 				</div>
 			) : null}
 
-			{/* Toolbar au-dessus de la page */}
-			<EditorToolbar editor={editor} onUploadImage={onUploadImage} />
+			{/* Toolbar contextuelle flottante — apparaît au-dessus de la
+			     sélection (style Apple Pages). Remplace la toolbar fixe. */}
+			<ContextualBubbleMenu editor={editor} />
 
 			{/* Page au format papier — remplit la hauteur disponible */}
 			<div className="flex min-h-0 flex-1 justify-center overflow-auto rounded-xl bg-muted/40 p-4 md:p-6">
 				<div
-					className="w-full max-w-[860px] overflow-hidden rounded-sm bg-white text-slate-900 shadow-xl shadow-black/10"
+					className="flex w-full max-w-[860px] flex-col overflow-hidden rounded-sm bg-white text-slate-900 shadow-xl shadow-black/10"
 					style={{ aspectRatio: aspect }}
 				>
+					{/* Aperçu du sceau + entête — non-éditable, toujours en haut. */}
+					{headerPreview ? (
+						<div
+							className="flex shrink-0 flex-col items-center gap-1 border-b border-slate-200 pb-3 pt-4"
+							aria-label="Aperçu de l'entête"
+						>
+							{headerPreview.logoSrc ? (
+								<img
+									src={headerPreview.logoSrc}
+									alt="Sceau de la République Gabonaise"
+									className="w-auto object-contain"
+									style={{
+										height: `${headerPreview.logoHeight ?? 80}px`,
+									}}
+								/>
+							) : null}
+							{headerPreview.lines.length > 0 ? (
+								<div
+									className="flex flex-col items-center gap-0.5 px-6 text-center text-[11px] font-semibold uppercase text-slate-700"
+									style={{
+										fontFamily: headerPreview.fontFamily
+											? `'${headerPreview.fontFamily}', serif`
+											: "'Optima', serif",
+									}}
+								>
+									{headerPreview.lines.map((line, idx) => (
+										<div key={idx}>{line}</div>
+									))}
+								</div>
+							) : null}
+							<div className="mt-1 flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[9px] italic text-slate-500">
+								<span aria-hidden>ℹ</span>
+								Remplacé par le nom de chaque représentation au rendu
+							</div>
+						</div>
+					) : null}
+
 					<EditorContent
 						editor={editor}
 						style={padding}
-						className="prose max-w-none h-full overflow-auto focus:outline-none [&_.ProseMirror]:h-full [&_.ProseMirror]:min-h-full [&_.ProseMirror]:focus:outline-none [&_.placeholder-chip]:mx-0.5 [&_.placeholder-chip]:inline-flex [&_.placeholder-chip]:items-center [&_.placeholder-chip]:rounded-md [&_.placeholder-chip]:border [&_.placeholder-chip]:border-blue-200 [&_.placeholder-chip]:bg-blue-50 [&_.placeholder-chip]:px-1.5 [&_.placeholder-chip]:py-0.5 [&_.placeholder-chip]:font-mono [&_.placeholder-chip]:text-[0.85em] [&_.placeholder-chip]:text-blue-700"
+						className="prose max-w-none flex-1 overflow-auto focus:outline-none [&_.ProseMirror]:h-full [&_.ProseMirror]:min-h-full [&_.ProseMirror]:focus:outline-none [&_.placeholder-chip]:mx-0.5 [&_.placeholder-chip]:inline-flex [&_.placeholder-chip]:items-center [&_.placeholder-chip]:rounded-md [&_.placeholder-chip]:border [&_.placeholder-chip]:border-primary/30 [&_.placeholder-chip]:bg-primary/10 [&_.placeholder-chip]:px-1.5 [&_.placeholder-chip]:py-0.5 [&_.placeholder-chip]:font-mono [&_.placeholder-chip]:text-[0.85em] [&_.placeholder-chip]:text-primary"
 					/>
+
+					{/* Aperçu du pied de page — non-éditable, toujours en bas. */}
+					{footerPreview && footerPreview.lines.length > 0 ? (
+						<div
+							className="flex shrink-0 flex-col items-center gap-0.5 border-t border-slate-200 pb-4 pt-2 text-center text-[10px] italic text-slate-500"
+							aria-label="Aperçu du pied de page"
+						>
+							{footerPreview.lines.map((line, idx) => (
+								<div key={idx}>{line}</div>
+							))}
+						</div>
+					) : null}
 				</div>
 			</div>
 		</div>

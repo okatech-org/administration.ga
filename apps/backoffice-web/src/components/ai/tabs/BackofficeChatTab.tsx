@@ -60,7 +60,7 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const suggestions = getSuggestions(pathname);
 
-	const { groups, total, isPending: contactsLoading, hasMore, loadMore, filters, setSearch, setSource } = useContactSearch(orgId);
+	const { groups, total, isPending: contactsLoading, filters, setSearch, setSource } = useContactSearch(orgId);
 	const allContacts = groups.flatMap((g: any) => g.contacts);
 
 	// Écoute l'event bus `iasted:select-contact` émis par iContact pour ouvrir
@@ -75,24 +75,9 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 		return () => window.removeEventListener("iasted:select-contact", handler);
 	}, []);
 
-	// Sentinelle infinite scroll sur la liste des contacts (vue liste uniquement).
-	// Root = viewport interne de ScrollArea (pas le document) — voir
-	// BackofficeContactTab pour le rationale.
+	// Chargement exhaustif : plus de pagination. Ref conservée sur le viewport
+	// pour d'éventuels auto-scrolls conservés dans ce fichier.
 	const viewportRef = useRef<HTMLDivElement | null>(null);
-	const loadMoreRef = useRef<HTMLDivElement | null>(null);
-	useEffect(() => {
-		const target = loadMoreRef.current;
-		const root = viewportRef.current;
-		if (!target || !root || !hasMore || contactsLoading || selectedContact) return;
-		const observer = new IntersectionObserver(
-			(entries) => {
-				if (entries.some((e) => e.isIntersecting)) loadMore();
-			},
-			{ root, rootMargin: "200px" },
-		);
-		observer.observe(target);
-		return () => observer.disconnect();
-	}, [hasMore, contactsLoading, loadMore, selectedContact]);
 
 	const { mutateAsync: initiateChat } = useConvexMutationQuery(api.functions.chats.initiateChat);
 	const { mutateAsync: sendChatMessage } = useConvexMutationQuery(api.functions.chats.sendMessage);
@@ -277,19 +262,10 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 					</div>
 				)}
 
-				{/* Sentinelle infinite scroll + bouton fallback "Charger plus" */}
-				{groups.length > 0 && (
-					<div ref={loadMoreRef} className="flex items-center justify-center py-3">
-						{contactsLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-						{hasMore && !contactsLoading && (
-							<button
-								type="button"
-								onClick={loadMore}
-								className="text-[11px] px-3 py-1.5 rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors"
-							>
-								Charger plus
-							</button>
-						)}
+				{/* Spinner discret pendant le chargement initial */}
+				{contactsLoading && groups.length === 0 && (
+					<div className="flex items-center justify-center py-6">
+						<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
 					</div>
 				)}
 			</ScrollArea>

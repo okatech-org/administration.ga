@@ -5142,37 +5142,16 @@
 					"createButton": "Créer un modèle"
 				}
 			},
-			"tabs": {
-				"templates": "Modèles",
-				"headerFooter": "Entêtes & pieds",
-				"typography": "Typographies",
-				"voice": "Styles rédactionnels"
-			},
-			"blocks": {
-				"defaultBadge": "Défaut"
-			},
-			"headerFooter": {
-				"subtitle": "Logo, titre institutionnel et pied de page — réutilisables entre modèles.",
-				"new": "Nouvelle brique entête",
-				"empty": {
-					"title": "Aucune brique d'entête",
-					"description": "Crée une brique pour composer l'entête et le pied de tes modèles."
-				}
-			},
-			"typography": {
-				"subtitle": "Police, tailles, interlignage, règles de saut — appliqués au rendu du document.",
-				"new": "Nouvelle brique typographie",
-				"empty": {
-					"title": "Aucune brique de typographie",
-					"description": "Crée une brique pour contrôler la mise en forme de tes modèles."
-				}
-			},
-			"voice": {
-				"subtitle": "Ton, formules et argumentaire — métier IA uniquement (non rendu dans le PDF).",
-				"new": "Nouvelle brique rédactionnelle",
-				"empty": {
-					"title": "Aucune brique rédactionnelle",
-					"description": "Crée une brique pour guider la génération IA selon ton style institutionnel."
+			"sections": {
+				"headerFooter": {
+					"title": "Entête, logo, pied",
+					"contentPlaceholder": "RÉPUBLIQUE GABONAISE\nUnion — Travail — Justice\nMinistère des Affaires Étrangères"
+				},
+				"typography": {
+					"title": "Structure des textes"
+				},
+				"voice": {
+					"title": "Logique argumentaire / style"
 				}
 			},
 			"new": {

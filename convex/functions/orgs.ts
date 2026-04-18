@@ -1363,3 +1363,146 @@ export const createAccount = authMutation({
     return { userId };
   },
 });
+
+// ============================================================================
+// ATTRIBUTION DE MODÈLES DE DOCUMENTS
+// ============================================================================
+//
+// Permet à un super-admin d'attribuer explicitement des `documentTemplates`
+// à une représentation précise — en complément du mécanisme d'applicabilité
+// par type (`applicability` / `applicableOrgTypes`). Le résolveur de
+// `listByOrg` effectue l'union des deux sources.
+
+/**
+ * Remplace intégralement la liste des modèles attribués à une représentation.
+ * Permission : super-admin uniquement (c'est une décision de curation globale).
+ */
+export const assignTemplates = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    templateIds: v.array(v.id("documentTemplates")),
+  },
+  handler: async (ctx, args) => {
+    // Super-admin only (réutilise la gate de gestion des modèles globaux).
+    const { assertCanManageGlobalTemplates } = await import(
+      "../lib/documentPermissions"
+    );
+    assertCanManageGlobalTemplates(ctx.user);
+
+    const org = await ctx.db.get(args.orgId);
+    if (!org) throw error(ErrorCode.NOT_FOUND, "Représentation introuvable");
+
+    // Vérifie que chaque template existe et est actif (évite les IDs orphelins).
+    for (const id of args.templateIds) {
+      const tpl = await ctx.db.get(id);
+      if (!tpl) {
+        throw error(
+          ErrorCode.VALIDATION_ERROR,
+          `Modèle introuvable : ${id}`,
+        );
+      }
+      if (!tpl.isActive) {
+        throw error(
+          ErrorCode.VALIDATION_ERROR,
+          `Modèle archivé — impossible à attribuer : ${id}`,
+        );
+      }
+    }
+
+    // Déduplique avant d'écrire.
+    const deduped = Array.from(new Set(args.templateIds));
+
+    await ctx.db.patch(args.orgId, {
+      assignedTemplateIds: deduped,
+      updatedAt: Date.now(),
+    });
+
+    await logCortexAction(ctx, {
+      action: "ASSIGN_TEMPLATES",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgs",
+      entiteId: args.orgId,
+      userId: ctx.user._id,
+      apres: { assignedTemplateIds: deduped },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    });
+
+    return { orgId: args.orgId, count: deduped.length };
+  },
+});
+
+/**
+ * Retourne les modèles explicitement attribués à une représentation, enrichis
+ * avec leur nom/type pour l'affichage direct. N'inclut PAS les modèles
+ * visibles via l'applicabilité globale (cf. `documentTemplates.listByOrg`).
+ */
+export const listAssignedTemplates = authQuery({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.orgId);
+    if (!org) return [];
+    const ids = org.assignedTemplateIds ?? [];
+    const templates = await Promise.all(ids.map((id) => ctx.db.get(id)));
+    return templates
+      .filter(
+        (t): t is NonNullable<typeof t> => t !== null && t.isActive === true,
+      )
+      .map((t) => ({
+        _id: t._id,
+        name: t.name,
+        description: t.description,
+        templateType: t.templateType,
+        version: t.version,
+        isGlobal: t.isGlobal,
+      }));
+  },
+});
+
+/**
+ * Attribution par lot : attribue un ensemble de modèles à plusieurs
+ * représentations en une seule transaction. Chaque org voit son tableau
+ * `assignedTemplateIds` enrichi (union, pas remplacement) pour éviter
+ * qu'une attribution en lot n'efface des attributions existantes.
+ */
+export const bulkAssignTemplates = authMutation({
+  args: {
+    orgIds: v.array(v.id("orgs")),
+    templateIds: v.array(v.id("documentTemplates")),
+    /** Si true, remplace l'attribution existante au lieu de l'enrichir. */
+    replace: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const { assertCanManageGlobalTemplates } = await import(
+      "../lib/documentPermissions"
+    );
+    assertCanManageGlobalTemplates(ctx.user);
+
+    // Vérifie que chaque template existe et est actif.
+    for (const id of args.templateIds) {
+      const tpl = await ctx.db.get(id);
+      if (!tpl || !tpl.isActive) {
+        throw error(
+          ErrorCode.VALIDATION_ERROR,
+          `Modèle introuvable ou archivé : ${id}`,
+        );
+      }
+    }
+
+    let updated = 0;
+    for (const orgId of args.orgIds) {
+      const org = await ctx.db.get(orgId);
+      if (!org) continue;
+      const existing = org.assignedTemplateIds ?? [];
+      const next = args.replace
+        ? Array.from(new Set(args.templateIds))
+        : Array.from(new Set([...existing, ...args.templateIds]));
+      await ctx.db.patch(orgId, {
+        assignedTemplateIds: next,
+        updatedAt: Date.now(),
+      });
+      updated += 1;
+    }
+
+    return { updated, count: args.templateIds.length };
+  },
+});

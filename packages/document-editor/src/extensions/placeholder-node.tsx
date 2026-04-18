@@ -27,7 +27,7 @@ function PlaceholderChip({ node }: ReactNodeViewProps): ReactElement {
 		<NodeViewWrapper as="span" className="inline-block align-baseline">
 			<span
 				contentEditable={false}
-				className="mx-0.5 inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-1.5 py-0.5 font-mono text-[0.85em] text-blue-700"
+				className="mx-0.5 inline-flex items-center rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 font-mono text-[0.85em] text-primary"
 				data-placeholder-chip={key}
 			>
 				{`{{${key}}}`}

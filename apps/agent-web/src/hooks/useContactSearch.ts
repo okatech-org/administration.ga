@@ -2,17 +2,20 @@
  * useContactSearch — Hook réutilisable de recherche intelligente de contacts.
  *
  * Utilisé par : iContact, iChat, iAppel, iRéunion, iCorrespondance.
- * Encapsule la query Convex + filtres locaux + état.
+ *
+ * ⚠️ Chargement exhaustif : on récupère TOUS les contacts du périmètre (équipe
+ * de l'org + ressortissants de la juridiction + réseau diplomatique selon le
+ * segment). Pas de pagination — l'utilisateur voit l'intégralité de son
+ * répertoire d'un coup, puis filtre via la recherche texte locale.
+ *
+ * Garde-fou Convex : le serveur accepte un `limit` optionnel (défaut 10 000,
+ * ceiling proche du hard-cap `.collect()` Convex).
  */
 
 import { api } from "@convex/_generated/api";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useOrg } from "@/components/org/org-provider";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
-
-/** Taille de page + plafond pour l'infinite scroll. */
-const PAGE_SIZE = 500;
-const MAX_LIMIT = 10000;
 
 export type ContactSource = "team" | "network" | "citizens";
 
@@ -72,16 +75,7 @@ export function useContactSearch(initialSource?: ContactSource | "all") {
 		source: initialSource ?? "all",
 	});
 
-	// Limit progressive pour infinite scroll (bump de PAGE_SIZE à chaque loadMore).
-	const [limit, setLimit] = useState<number>(PAGE_SIZE);
-	const [previousTotal, setPreviousTotal] = useState<number>(0);
-
-	useEffect(() => {
-		setLimit(PAGE_SIZE);
-		setPreviousTotal(0);
-	}, [filters, activeOrgId]);
-
-	// Query Convex avec les filtres actifs.
+	// Query Convex avec les filtres actifs — chargement exhaustif.
 	//
 	// Mapping source → scope pour agent-web :
 	// - "network"  → "all-diplomatic" (corps diplomatique : tous les agents de toutes
@@ -89,7 +83,9 @@ export function useContactSearch(initialSource?: ContactSource | "all") {
 	// - "citizens" → "jurisdiction"   (ressortissants sous la juridiction de l'org active)
 	// - "team" / "all" → "jurisdiction" : permet au tab "Tous" d'inclure AUSSI les
 	//   citoyens de la juridiction (et pas seulement ceux explicitement managedBy myOrgId).
-	//   Sans ça, un Consul Général ne voyait pas ses ressortissants dans "Tous".
+	//
+	// Aucun `limit` transmis : le serveur livre tout le périmètre (plafond dur à
+	// 10 000 côté Convex pour la sécurité runtime).
 	const queryArgs = useMemo(() => {
 		if (!activeOrgId) return "skip" as const;
 
@@ -104,9 +100,8 @@ export function useContactSearch(initialSource?: ContactSource | "all") {
 			positionGrade: filters.positionGrade || undefined,
 			source: filters.source !== "all" ? filters.source : undefined,
 			scope,
-			limit,
 		};
-	}, [activeOrgId, filters, limit]);
+	}, [activeOrgId, filters]);
 
 	const { data, isPending } = useAuthenticatedConvexQuery(
 		api.functions.contactSearch.searchContacts,
@@ -123,22 +118,6 @@ export function useContactSearch(initialSource?: ContactSource | "all") {
 	const typedCountries = availableCountries as CountryCount[] | undefined;
 	const currentTotal = typedData?.total ?? 0;
 
-	const hasMore =
-		!isPending &&
-		limit < MAX_LIMIT &&
-		currentTotal >= limit &&
-		currentTotal > previousTotal;
-
-	useEffect(() => {
-		if (!isPending && currentTotal !== previousTotal) {
-			setPreviousTotal(currentTotal);
-		}
-	}, [isPending, currentTotal, previousTotal]);
-
-	const loadMore = useCallback(() => {
-		setLimit((prev) => Math.min(prev + PAGE_SIZE, MAX_LIMIT));
-	}, []);
-
 	// Helpers
 	const setSearch = (term: string) => setFilters((f) => ({ ...f, searchTerm: term }));
 	const setSource = (source: ContactSource | "all") => setFilters((f) => ({ ...f, source }));
@@ -148,13 +127,11 @@ export function useContactSearch(initialSource?: ContactSource | "all") {
 	const resetFilters = () => setFilters({ ...DEFAULT_FILTERS, source: initialSource ?? "all" });
 
 	return {
-		// Données
+		// Données — liste complète
 		groups: typedData?.groups ?? [],
 		total: currentTotal,
 		availableCountries: typedCountries ?? [],
 		isPending,
-		hasMore,
-		loadMore,
 
 		// Filtres
 		filters,

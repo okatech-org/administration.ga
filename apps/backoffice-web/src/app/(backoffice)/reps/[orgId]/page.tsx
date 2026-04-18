@@ -4,7 +4,7 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
 	ArrowLeft,
 	Building2,
@@ -13,6 +13,7 @@ import {
 	Crown,
 	Edit,
 	ExternalLink,
+	FileStack,
 	FileText,
 	IdCard,
 	Package,
@@ -25,6 +26,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { OrgMembersTable } from "@/components/admin/org-members-table";
 import { OrgServicesTable } from "@/components/admin/org-services-table";
+import { OrgTemplatesTab } from "@/components/admin/OrgTemplatesTab";
 import { RepOverviewPanel } from "@/components/admin/rep-overview";
 import { OrgCallsTab } from "@/components/dashboard/org-calls-tab";
 import { OrgModulesTab } from "@/components/dashboard/org-modules-tab";
@@ -138,7 +140,36 @@ export default function OrgDetailPage() {
 	const { t, i18n } = useTranslation();
 	const router = useRouter();
 	const { orgId } = useParams<{ orgId: string }>();
+	const searchParams = useSearchParams();
 	const lang = i18n.language === "fr" ? "fr" : "en";
+
+	// Synchronisation onglet actif ↔ query string `?tab=…`. Permet aux
+	// dialogs (AssignTemplatesDialog) de rediriger directement vers
+	// l'onglet Modèles après une attribution.
+	const ALLOWED_TABS = [
+		"overview",
+		"agents",
+		"positions",
+		"services",
+		"requests",
+		"registry",
+		"templates",
+		"modules",
+		"calls",
+		"settings",
+	] as const;
+	type RepTab = (typeof ALLOWED_TABS)[number];
+	const urlTab = searchParams.get("tab");
+	const activeTab: RepTab = (ALLOWED_TABS.includes(urlTab as RepTab)
+		? urlTab
+		: "overview") as RepTab;
+	function onTabChange(next: string) {
+		const params = new URLSearchParams(searchParams.toString());
+		if (next === "overview") params.delete("tab");
+		else params.set("tab", next);
+		const qs = params.toString();
+		router.replace(qs ? `?${qs}` : "?", { scroll: false });
+	}
 
 	// ── Data ─────────────────────────────────────────────────────
 	const {
@@ -304,7 +335,7 @@ export default function OrgDetailPage() {
 			{/* Les anciens KPI globaux (Agents/Postes/Services/Inscrits) ont été
 			    remplacés par le Hero KPI du RepOverviewPanel (onglet Vue d'ensemble).
 			    Les stats au format KpiCard sont conservées dans l'onglet Registre. */}
-			<Tabs defaultValue="overview" className="space-y-4">
+			<Tabs value={activeTab} onValueChange={onTabChange} className="space-y-4">
 				<div className="overflow-x-auto overflow-y-hidden scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
 					<TabsList className="h-auto justify-start w-max gap-1">
 						<TabsTrigger value="overview" className="gap-1.5 text-xs sm:text-sm">
@@ -345,6 +376,10 @@ export default function OrgDetailPage() {
 						<TabsTrigger value="registry" className="gap-1.5 text-xs sm:text-sm">
 							<IdCard className="h-4 w-4" />
 							{t("superadmin.organizations.tabs.registry", "Registre")}
+						</TabsTrigger>
+						<TabsTrigger value="templates" className="gap-1.5 text-xs sm:text-sm">
+							<FileStack className="h-4 w-4" />
+							Modèles
 						</TabsTrigger>
 						<TabsTrigger value="modules" className="gap-1.5 text-xs sm:text-sm">
 							<Package className="h-4 w-4" />
@@ -449,6 +484,11 @@ export default function OrgDetailPage() {
 							</Button>
 						</div>
 					</FlatCard>
+				</TabsContent>
+
+				{/* ─── Tab: Modèles de documents (attribution + vignettes A4) ─── */}
+				<TabsContent value="templates" className="space-y-4">
+					<OrgTemplatesTab orgId={orgId as Id<"orgs">} />
 				</TabsContent>
 
 				{/* ─── Tab: Modules ───────────────────────────────── */}

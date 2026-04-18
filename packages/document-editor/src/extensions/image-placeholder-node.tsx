@@ -35,7 +35,7 @@ function ImagePlaceholderBox({ node }: ReactNodeViewProps): ReactElement {
 			contentEditable={false}
 		>
 			<div
-				className="flex flex-col items-center justify-center gap-1 rounded-md border border-dashed border-blue-300 bg-blue-50/60 text-xs text-blue-700"
+				className="flex flex-col items-center justify-center gap-1 rounded-md border border-dashed border-primary/40 bg-primary/5 text-xs text-primary"
 				style={{ width: widthPx, height: heightPx }}
 				data-image-placeholder-id={attrs.id}
 			>

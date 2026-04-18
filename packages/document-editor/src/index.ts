@@ -1,5 +1,18 @@
 export { TemplateEditor, type TemplateEditorProps } from "./components/TemplateEditor";
-export { EditorToolbar } from "./components/EditorToolbar";
+export {
+	EditorToolbar,
+	HEADING_FONTS,
+	BODY_FONTS,
+} from "./components/EditorToolbar";
+export {
+	FONT_SIZES,
+	type FontDefinition,
+} from "./extensions/typography-tokens";
+export {
+	ContextualBubbleMenu,
+	detectContext,
+	type BubbleContext,
+} from "./components/bubble/ContextualBubbleMenu";
 export { PlaceholderPicker } from "./components/PlaceholderPicker";
 export {
 	TemplateAIDrawer,

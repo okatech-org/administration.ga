@@ -34,11 +34,6 @@ interface GenerationContext {
 	profile: Record<string, unknown> | undefined;
 	resolvedPlaceholders: Record<string, string>;
 	serviceName: string | undefined;
-	// Briques composées référencées par le template — null lorsque le
-	// template ne spécifie aucune brique ou quand la brique a été archivée.
-	headerFooterBlock: Doc<"templateHeaderFooterBlocks"> | null;
-	typographyBlock: Doc<"templateTypographyBlocks"> | null;
-	voiceBlock: Doc<"templateVoiceBlocks"> | null;
 }
 
 export const generateFromTemplate = authAction({
@@ -191,12 +186,12 @@ async function runGeneration(
 		}
 	}
 
-	// 2c. Résout les briques composées. L'entête peut embarquer un logo stocké
-	// dans `_storage` — on fournit un `logoResolver` qui encode le blob en
-	// data URL (comme pour les image placeholders ci-dessus).
-	const headerFooterResolved = data.headerFooterBlock
+	// 2c. Résout les 3 facettes inline du template. L'entête peut embarquer
+	// un logo stocké dans `_storage` — on fournit un `logoResolver` qui
+	// encode le blob en data URL.
+	const headerFooterResolvedRaw = data.template.headerFooter
 		? await resolveHeaderFooterBlock(
-				data.headerFooterBlock as Parameters<typeof resolveHeaderFooterBlock>[0],
+				data.template.headerFooter as Parameters<typeof resolveHeaderFooterBlock>[0],
 				async (storageId) => {
 					const blob = await ctx.storage.get(storageId as Id<"_storage">);
 					if (!blob) return undefined;
@@ -205,8 +200,23 @@ async function runGeneration(
 				},
 			)
 		: undefined;
-	const typographyResolved = data.typographyBlock
-		? resolveTypographyBlock(data.typographyBlock as Parameters<typeof resolveTypographyBlock>[0])
+
+	// 2d. Applique les overrides de branding de la représentation —
+	// surcharge l'entête / le pied si la rep a défini `branding.headerLines`
+	// ou `branding.footerAddress/Phone/Email`. Le sceau (logo) reste
+	// toujours celui du modèle global, c'est une constante.
+	const { applyOrgBrandingToHeaderFooter } = await import(
+		"../lib/applyOrgBranding"
+	);
+	const headerFooterResolved = applyOrgBrandingToHeaderFooter(
+		headerFooterResolvedRaw,
+		data.org.branding,
+		data.org.name,
+	);
+	const typographyResolved = data.template.typography
+		? resolveTypographyBlock(
+				data.template.typography as Parameters<typeof resolveTypographyBlock>[0],
+			)
 		: undefined;
 
 	// 3. Render the resolved AST to PDF via React-PDF. `TemplatePdfDocument`
