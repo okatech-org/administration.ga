@@ -22,9 +22,10 @@ export default defineEventHandler((event) => {
     "Content-Security-Policy": [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' https://*.convex.cloud https://*.posthog.com",
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https:",
-      "font-src 'self' data:",
+      "font-src 'self' data: https://fonts.gstatic.com",
       "connect-src 'self' https://*.convex.cloud https://*.convex.site wss://*.convex.cloud https://*.posthog.com https://*.stripe.com https://*.mapbox.com https://api.livekit.cloud wss://*.livekit.cloud",
       "frame-src https://*.stripe.com",
       "media-src 'self' blob:",

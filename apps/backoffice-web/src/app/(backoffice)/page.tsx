@@ -2,7 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import Link from "next/link";
-import { Component, type ErrorInfo, type ReactNode, useEffect, useState } from "react";
+import { Component, type ErrorInfo, type ReactNode, useEffect, useRef, useState } from "react";
 import {
 	Activity,
 	ArrowRight,
@@ -207,17 +207,39 @@ function timeAgo(ts: number): string {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Garde de montage client pour Recharts : attend que le layout soit stable
- * avant de monter `ResponsiveContainer`, évitant le warning `width(-1)` que
- * la lib émet sinon au premier render SSR/hydration.
+ * Garde de montage client pour Recharts : attend que le parent ait des
+ * dimensions mesurables avant de monter `ResponsiveContainer`, évitant le
+ * warning `width(-1)` que la lib émet sinon au premier render.
+ *
+ * Deux étapes :
+ *   1. Attend que `useEffect` ait exécuté (post-hydration).
+ *   2. Mesure le parent via `getBoundingClientRect` — si width > 0, monte le
+ *      chart ; sinon attend le prochain frame via `requestAnimationFrame`.
+ *
+ * Cette double-garde élimine le warning car `ResponsiveContainer` n'est
+ * monté qu'à partir du moment où son parent a une taille non-zéro.
  */
 function ChartMount({ children }: { children: ReactNode }) {
-	const [mounted, setMounted] = useState(false);
+	const [ready, setReady] = useState(false);
+	const wrapperRef = useRef<HTMLDivElement | null>(null);
 	useEffect(() => {
-		setMounted(true);
+		let raf: number;
+		const tick = () => {
+			const el = wrapperRef.current;
+			if (el && el.getBoundingClientRect().width > 0) {
+				setReady(true);
+			} else {
+				raf = requestAnimationFrame(tick);
+			}
+		};
+		raf = requestAnimationFrame(tick);
+		return () => cancelAnimationFrame(raf);
 	}, []);
-	if (!mounted) return null;
-	return <>{children}</>;
+	return (
+		<div ref={wrapperRef} className="h-full w-full">
+			{ready ? children : null}
+		</div>
+	);
 }
 
 /** Donut chart — Request status distribution */
