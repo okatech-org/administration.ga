@@ -2,7 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import Link from "next/link";
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode, useEffect, useState } from "react";
 import {
 	Activity,
 	ArrowRight,
@@ -206,6 +206,20 @@ function timeAgo(ts: number): string {
 // CHART COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════
 
+/**
+ * Garde de montage client pour Recharts : attend que le layout soit stable
+ * avant de monter `ResponsiveContainer`, évitant le warning `width(-1)` que
+ * la lib émet sinon au premier render SSR/hydration.
+ */
+function ChartMount({ children }: { children: ReactNode }) {
+	const [mounted, setMounted] = useState(false);
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+	if (!mounted) return null;
+	return <>{children}</>;
+}
+
 /** Donut chart — Request status distribution */
 function RequestStatusDonut({ breakdown }: { breakdown: Record<string, number> }) {
 	const { i18n } = useTranslation();
@@ -221,14 +235,14 @@ function RequestStatusDonut({ breakdown }: { breakdown: Record<string, number> }
 	return (
 		<div className="flex flex-col gap-4 lg:flex-row lg:items-center">
 			<div className="h-56 flex-1 min-w-0">
-				<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+				<ChartMount><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 					<PieChart>
 						<Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value" strokeWidth={0}>
 							{data.map((e) => <Cell key={e.name} fill={e.fill} />)}
 						</Pie>
 						<Tooltip {...tooltipStyle} />
 					</PieChart>
-				</ResponsiveContainer>
+				</ResponsiveContainer></ChartMount>
 			</div>
 			<div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs lg:grid-cols-1">
 				{data.slice(0, 8).map((item) => (
@@ -263,7 +277,7 @@ function PipelineBarChart({ pipeline, total }: {
 	if (stages.length === 0 || total === 0) return null;
 	return (
 		<div className="h-72">
-			<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+			<ChartMount><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 				<BarChart data={stages} layout="vertical" margin={{ left: 70, right: 20, top: 5, bottom: 5 }}>
 					<CartesianGrid strokeDasharray="3 3" opacity={0.1} horizontal={false} />
 					<XAxis type="number" tick={{ fontSize: 11 }} />
@@ -273,7 +287,7 @@ function PipelineBarChart({ pipeline, total }: {
 						{stages.map((s) => <Cell key={s.key} fill={s.color} />)}
 					</Bar>
 				</BarChart>
-			</ResponsiveContainer>
+			</ResponsiveContainer></ChartMount>
 		</div>
 	);
 }
@@ -291,14 +305,14 @@ function OrgTypeDonut({ byType }: { byType: Record<string, number> }) {
 	return (
 		<div className="flex flex-col items-center gap-4">
 			<div className="h-52 w-full">
-				<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+				<ChartMount><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 					<PieChart>
 						<Pie data={data} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value" strokeWidth={0}>
 							{data.map((e) => <Cell key={e.name} fill={e.fill} />)}
 						</Pie>
 						<Tooltip {...tooltipStyle} />
 					</PieChart>
-				</ResponsiveContainer>
+				</ResponsiveContainer></ChartMount>
 			</div>
 			<div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs">
 				{data.map((item) => (
@@ -327,7 +341,7 @@ function CountryBarChart({ byCountry }: { byCountry: Record<string, { count: num
 	if (data.length === 0) return null;
 	return (
 		<div className="h-64">
-			<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+			<ChartMount><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 				<BarChart data={data} margin={{ left: 5, right: 5, top: 5, bottom: 40 }}>
 					<CartesianGrid strokeDasharray="3 3" opacity={0.1} />
 					<XAxis dataKey="country" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" interval={0} />
@@ -337,7 +351,7 @@ function CountryBarChart({ byCountry }: { byCountry: Record<string, { count: num
 						{data.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
 					</Bar>
 				</BarChart>
-			</ResponsiveContainer>
+			</ResponsiveContainer></ChartMount>
 		</div>
 	);
 }
@@ -350,11 +364,11 @@ function PerformanceGauge({ completionRate, urgentPending }: { completionRate: n
 	return (
 		<div className="flex flex-col items-center gap-2">
 			<div className="h-44 w-44 relative">
-				<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+				<ChartMount><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 					<RadialBarChart cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" data={data} startAngle={180} endAngle={0} barSize={12}>
 						<RadialBar background={{ fill: "hsl(var(--muted))" }} dataKey="value" cornerRadius={6} />
 					</RadialBarChart>
-				</ResponsiveContainer>
+				</ResponsiveContainer></ChartMount>
 				<div className="absolute inset-0 flex flex-col items-center justify-center">
 					<span className="text-3xl font-bold">{completionRate}%</span>
 					<span className="text-xs text-muted-foreground">Résolution</span>
@@ -388,7 +402,7 @@ function RegistrationStatusChart({ byStatus }: { byStatus: Record<string, number
 	if (data.length === 0) return <p className="text-sm text-muted-foreground py-4 text-center">Aucune inscription</p>;
 	return (
 		<div className="h-48">
-			<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+			<ChartMount><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 				<BarChart data={data} margin={{ left: 5, right: 5, top: 5, bottom: 5 }}>
 					<CartesianGrid strokeDasharray="3 3" opacity={0.1} />
 					<XAxis dataKey="name" tick={{ fontSize: 11 }} />
@@ -398,7 +412,7 @@ function RegistrationStatusChart({ byStatus }: { byStatus: Record<string, number
 						{data.map((d) => <Cell key={d.name} fill={d.fill} />)}
 					</Bar>
 				</BarChart>
-			</ResponsiveContainer>
+			</ResponsiveContainer></ChartMount>
 		</div>
 	);
 }
