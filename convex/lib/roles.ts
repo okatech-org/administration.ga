@@ -61,6 +61,7 @@ export const POSITION_TASK_PRESETS: TaskPresetDefinition[] = [
       TaskCode.consular_registrations.view, TaskCode.consular_registrations.manage,
       TaskCode.consular_notifications.view, TaskCode.consular_cards.manage,
       TaskCode.meetings.create, TaskCode.meetings.join, TaskCode.meetings.manage, TaskCode.meetings.view_history,
+      TaskCode.chats.accessStandardThread,
     ],
   },
   {
@@ -83,6 +84,7 @@ export const POSITION_TASK_PRESETS: TaskPresetDefinition[] = [
       TaskCode.consular_registrations.view, TaskCode.consular_registrations.manage,
       TaskCode.consular_notifications.view, TaskCode.consular_cards.manage,
       TaskCode.meetings.create, TaskCode.meetings.join, TaskCode.meetings.manage, TaskCode.meetings.view_history,
+      TaskCode.chats.accessStandardThread,
     ],
   },
   {
