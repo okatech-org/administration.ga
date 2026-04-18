@@ -20,16 +20,34 @@
  *   - `DocumentSheetHtml` : injecte un HTML (contentHtml des modèles/générés)
  *   - `DocumentSheetFile` : aperçu d'un fichier uploadé (PDF embarqué, image,
  *     icône + nom de fichier pour docx/autres)
+ *
+ * NOTE : Les styles dynamiques (dimensions mm, transform scale, polices)
+ * sont appliqués via ref callbacks pour éviter la prop `style=` sur les
+ * éléments natifs, conformément à la règle lint du projet.
  */
 
 import { FileText, FileType, Image as ImageIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "../lib/utils";
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 
 /** Dimensions A4 en px @ 96dpi — base du rendu « naturel » avant scale. */
 export const A4_WIDTH_PX = 794;
 export const A4_HEIGHT_PX = 1123;
+
+/**
+ * Applique un objet CSSProperties sur un élément HTML via sa propriété `.style`.
+ * Utilisé en ref callback pour éviter la prop `style=` dans le JSX.
+ */
+function applyCSS(el: HTMLElement | null, css: CSSProperties) {
+	if (!el) return;
+	for (const [key, value] of Object.entries(css)) {
+		const cssKey = key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
+		if (value != null) {
+			el.style.setProperty(cssKey, String(value));
+		}
+	}
+}
 
 export interface DocumentSheetProps {
 	/** Orientation. Défaut : portrait. */
@@ -62,6 +80,7 @@ export function DocumentSheet({
 	className,
 }: DocumentSheetProps) {
 	const cardRef = useRef<HTMLDivElement>(null);
+	const innerRef = useRef<HTMLDivElement>(null);
 	const [scale, setScale] = useState(0);
 	const isLandscape = orientation === "landscape";
 	const naturalWidth = isLandscape ? A4_HEIGHT_PX : A4_WIDTH_PX;
@@ -78,6 +97,17 @@ export function DocumentSheet({
 		return () => observer.disconnect();
 	}, [naturalWidth]);
 
+	// Apply dynamic transform/dimensions via ref instead of style prop
+	useEffect(() => {
+		applyCSS(innerRef.current, {
+			width: `${naturalWidth}px`,
+			height: `${naturalHeight}px`,
+			transform: `scale(${scale})`,
+			transformOrigin: "top left",
+			boxSizing: "border-box",
+		});
+	}, [naturalWidth, naturalHeight, scale]);
+
 	const clickable = typeof onClick === "function";
 	const interactiveProps = clickable
 		? {
@@ -91,14 +121,6 @@ export function DocumentSheet({
 				},
 			}
 		: {};
-
-	const scaleStyle: React.CSSProperties = {
-		width: `${naturalWidth}px`,
-		height: `${naturalHeight}px`,
-		transform: `scale(${scale})`,
-		transformOrigin: "top left",
-		boxSizing: "border-box",
-	};
 
 	return (
 		<div
@@ -114,8 +136,8 @@ export function DocumentSheet({
 			)}
 		>
 			<div
+				ref={innerRef}
 				className="absolute left-0 top-0 flex flex-col bg-white text-neutral-900"
-				style={scaleStyle}
 			>
 				{children}
 			</div>
@@ -144,16 +166,21 @@ export function DocumentSheetPage({
 	style,
 	children,
 }: DocumentSheetPageProps) {
-	const pageStyle: React.CSSProperties = {
-		padding: `${margin}mm`,
-		fontFamily,
-		fontSize: "11pt",
-		lineHeight: 1.35,
-		...style,
-	};
+	const pageRef = useCallback(
+		(el: HTMLDivElement | null) => {
+			applyCSS(el, {
+				padding: `${margin}mm`,
+				fontFamily,
+				fontSize: "11pt",
+				lineHeight: "1.35",
+				...style,
+			});
+		},
+		[margin, fontFamily, style],
+	);
 
 	return (
-		<div className="flex flex-1 flex-col" style={pageStyle}>
+		<div ref={pageRef} className="flex flex-1 flex-col">
 			{children}
 		</div>
 	);
@@ -176,19 +203,30 @@ export function DocumentSheetHeader({
 	lines = [],
 	marginBottomMm = 4,
 }: DocumentSheetHeaderProps) {
-	const headerStyle: React.CSSProperties = { marginBottom: `${marginBottomMm}mm` };
-	const logoStyle: React.CSSProperties = { height: `${logoHeightMm}mm` };
+	const headerRef = useCallback(
+		(el: HTMLDivElement | null) => {
+			applyCSS(el, { marginBottom: `${marginBottomMm}mm` });
+		},
+		[marginBottomMm],
+	);
+
+	const logoRef = useCallback(
+		(el: HTMLImageElement | null) => {
+			applyCSS(el, { height: `${logoHeightMm}mm` });
+		},
+		[logoHeightMm],
+	);
 
 	if (!logoUrl && lines.length === 0) return null;
 	return (
-		<div className="flex flex-col items-center text-center" style={headerStyle}>
+		<div ref={headerRef} className="flex flex-col items-center text-center">
 			{logoUrl ? (
 				// biome-ignore lint/a11y/useAltText: logo décoratif dans vignette
 				<img
+					ref={logoRef}
 					src={logoUrl}
 					alt=""
 					className="mb-[3mm] w-auto"
-					style={logoStyle}
 				/>
 			) : null}
 			{lines.map((line, idx) => (
@@ -219,12 +257,18 @@ export function DocumentSheetFooter({
 	lines = [],
 	marginTopMm = 4,
 }: DocumentSheetFooterProps) {
-	const footerStyle: React.CSSProperties = { marginTop: `${marginTopMm}mm` };
+	const footerRef = useCallback(
+		(el: HTMLDivElement | null) => {
+			applyCSS(el, { marginTop: `${marginTopMm}mm` });
+		},
+		[marginTopMm],
+	);
+
 	if (lines.length === 0) return null;
 	return (
 		<div
+			ref={footerRef}
 			className="text-center italic text-[#4B5563] text-[9pt] leading-[1.25]"
-			style={footerStyle}
 		>
 			{lines.map((line, idx) => (
 				// biome-ignore lint/suspicious/noArrayIndexKey: lignes stables issues du pied
@@ -335,10 +379,12 @@ export function DocumentSheetFile({
 		mimeType?.startsWith("image/") ||
 		/\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(fileName);
 
-	const iframeStyle: React.CSSProperties = {
-		width: `${A4_WIDTH_PX}px`,
-		height: `${A4_HEIGHT_PX}px`,
-	};
+	const iframeRef = useCallback((el: HTMLIFrameElement | null) => {
+		applyCSS(el, {
+			width: `${A4_WIDTH_PX}px`,
+			height: `${A4_HEIGHT_PX}px`,
+		});
+	}, []);
 
 	return (
 		<DocumentSheet
@@ -349,10 +395,10 @@ export function DocumentSheetFile({
 		>
 			{isPdf && url ? (
 				<iframe
+					ref={iframeRef}
 					src={`${url}#view=FitH&toolbar=0&navpanes=0`}
 					title={fileName}
 					className="pointer-events-none h-full w-full border-0"
-					style={iframeStyle}
 				/>
 			) : isImage && url ? (
 				// biome-ignore lint/a11y/useAltText: alt défini dans props
