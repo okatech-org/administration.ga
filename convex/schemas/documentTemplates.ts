@@ -7,6 +7,44 @@ import {
 } from "../lib/validators";
 
 /**
+ * Style typographique d'un niveau de titre (h1/h2/h3).
+ * Factorisé car le validateur est identique pour les 3 niveaux.
+ */
+function headingStyleValidator() {
+	return v.object({
+		fontSize: v.number(),
+		bold: v.boolean(),
+		uppercase: v.boolean(),
+		spacingBefore: v.optional(v.number()),
+		spacingAfter: v.optional(v.number()),
+		alignment: v.optional(
+			v.union(
+				v.literal("left"),
+				v.literal("center"),
+				v.literal("right"),
+				v.literal("justify"),
+			),
+		),
+	});
+}
+
+/** Formule stylistique (ouverture / clôture) optionnellement spécialisée. */
+function formulaValidator() {
+	return v.object({
+		text: v.string(),
+		templateType: v.optional(
+			v.union(
+				v.literal("certificate"),
+				v.literal("attestation"),
+				v.literal("receipt"),
+				v.literal("letter"),
+				v.literal("custom"),
+			),
+		),
+	});
+}
+
+/**
  * Document Templates — templates for generating official PDF documents
  * (attestations, certificates, receipts, letters...).
  *
@@ -96,12 +134,107 @@ export const documentTemplatesTable = defineTable({
 	),
 	applicableOrgTypes: v.optional(v.array(orgTypeValidator)),
 
-	// ─── Composition modulaire ───────────────────────────────────────────
-	// Briques réutilisables. Toutes optionnelles — le rendu applique un
-	// fallback « défaut » quand une référence est absente ou invalide.
-	headerFooterBlockId: v.optional(v.id("templateHeaderFooterBlocks")),
-	typographyBlockId: v.optional(v.id("templateTypographyBlocks")),
-	voiceBlockId: v.optional(v.id("templateVoiceBlocks")),
+	// ─── Composition modulaire (3 facettes inline) ───────────────────────
+	// Un modèle = 1 contenu Tiptap + 3 facettes qui décrivent sa mise en
+	// forme et son style. Les 3 sont optionnelles ; valeurs par défaut
+	// appliquées au rendu si absentes. Pas de table séparée — la
+	// réutilisation se fait par clonage du modèle entier.
+
+	// Facette 1 : entête (logo + titre institutionnel) + pied de page.
+	headerFooter: v.optional(
+		v.object({
+			header: v.object({
+				logoStorageId: v.optional(v.id("_storage")),
+				logoAlignment: v.union(
+					v.literal("left"),
+					v.literal("center"),
+					v.literal("right"),
+				),
+				// Hauteur de la bande d'entête en mm. Fallback : 30 mm.
+				height: v.optional(v.number()),
+				// Famille de police appliquée au nom de la représentation dans
+				// l'entête. Fallback : "Optima". Liste curatée côté UI :
+				// voir `HEADING_FONTS` dans EditorToolbar.
+				fontFamily: v.optional(v.string()),
+				// Contenu Tiptap — titres, adresse, devise.
+				content: v.any(),
+			}),
+			footer: v.object({
+				// Hauteur en mm. Fallback : 15 mm.
+				height: v.optional(v.number()),
+				content: v.any(),
+				showPageNumbers: v.optional(v.boolean()),
+			}),
+		}),
+	),
+
+	// Facette 2 : typographie / structure des textes. Traduite en CSS
+	// (HTML preview) et en styles React-PDF (export PDF).
+	typography: v.optional(
+		v.object({
+			fontFamily: v.string(),
+			fontSizeBase: v.number(), // pt
+			lineHeight: v.number(), // multiplicateur
+			defaultAlignment: v.union(
+				v.literal("left"),
+				v.literal("center"),
+				v.literal("right"),
+				v.literal("justify"),
+			),
+			headingStyles: v.object({
+				h1: headingStyleValidator(),
+				h2: headingStyleValidator(),
+				h3: headingStyleValidator(),
+			}),
+			paragraphSpacingBefore: v.optional(v.number()), // mm
+			paragraphSpacingAfter: v.optional(v.number()),
+			paragraphFirstLineIndent: v.optional(v.number()),
+			pageBreakBefore: v.optional(
+				v.array(v.union(v.literal("h1"), v.literal("h2"), v.literal("h3"))),
+			),
+			widowOrphanControl: v.optional(v.boolean()),
+			keepHeadingsWithNext: v.optional(v.boolean()),
+		}),
+	),
+
+	// Facette 3 : voix / argumentaire — MÉTIER IA UNIQUEMENT, pas rendu
+	// dans le PDF. Injecté dans le prompt de `templateAI.generateFromDocument`.
+	voice: v.optional(
+		v.object({
+			tone: v.string(),
+			register: v.union(
+				v.literal("administratif"),
+				v.literal("juridique"),
+				v.literal("commercial"),
+				v.literal("diplomatique"),
+				v.literal("neutre"),
+			),
+			openingFormulas: v.optional(v.array(formulaValidator())),
+			closingFormulas: v.optional(v.array(formulaValidator())),
+			signatureFormulas: v.optional(v.array(v.string())),
+			personPronoun: v.union(
+				v.literal("je"),
+				v.literal("nous"),
+				v.literal("le_consulat"),
+				v.literal("impersonnel"),
+			),
+			useFormalAddress: v.optional(v.boolean()),
+			politenessLevel: v.union(
+				v.literal("neutre"),
+				v.literal("courtois"),
+				v.literal("solennel"),
+			),
+			argumentationGuidelines: v.optional(v.string()),
+			vocabularyPreferences: v.optional(
+				v.array(
+					v.object({
+						prefer: v.string(),
+						avoid: v.optional(v.array(v.string())),
+					}),
+				),
+			),
+		}),
+	),
 
 	// Locked once a document has been generated from this template. Further
 	// edits force a new version rather than mutating the live record.
@@ -128,6 +261,13 @@ export const documentTemplatesTable = defineTable({
 	marginBottom: v.optional(v.number()),
 	marginLeft: v.optional(v.number()),
 
+	// Clé stable d'identification pour le seed diplomatique — permet de
+	// renommer un template (ex : ajouter des accents) sans casser
+	// l'idempotence du seed. Présent uniquement sur les 25+1 templates
+	// seedés (`diplo_*`, `receipt_default`) ; absent sur les templates
+	// créés à la main ou clonés.
+	seedKey: v.optional(v.string()),
+
 	// Versioning metadata (history lives in `documentTemplateVersions`)
 	version: v.optional(v.number()),
 	updatedAt: v.optional(v.number()),
@@ -144,4 +284,5 @@ export const documentTemplatesTable = defineTable({
 	.index("by_category", ["category", "isActive"])
 	.index("by_service", ["serviceId", "isActive"])
 	.index("by_global", ["isGlobal", "isActive"])
-	.index("by_type", ["templateType", "isActive"]);
+	.index("by_type", ["templateType", "isActive"])
+	.index("by_seed_key", ["seedKey"]);

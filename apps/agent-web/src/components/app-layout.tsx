@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { usePathname } from "next/navigation"
 import { useConvexAuth } from "convex/react"
 import { Loader2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
@@ -60,6 +61,12 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isLoading, activeOrg, activeOrgId } = useOrg()
   const { t } = useTranslation()
   const { consularTheme } = useConsularTheme()
+  const pathname = usePathname()
+  // La page `/iasted` monte son propre iChat via FullscreenShell ; monter
+  // `IAstedWindow` en parallèle créerait deux instances concurrentes de
+  // `useAdminAIChat` + `useAdminVoiceChat` (conflit de souscriptions Convex
+  // et de session WebRTC). On masque la popup sur cette route.
+  const isIAstedRoute = !!pathname && pathname.startsWith("/iasted")
 
   const presenceOrgIds = useMemo(
     () => (activeOrgId ? [activeOrgId] : undefined),
@@ -123,7 +130,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <AgentMobileNav />
-      <IAstedWindow />
+      {!isIAstedRoute && <IAstedWindow />}
       <GlobalCallAlert />
     </div>
   )

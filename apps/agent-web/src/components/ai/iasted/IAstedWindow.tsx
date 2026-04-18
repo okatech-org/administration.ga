@@ -27,6 +27,7 @@ import {
 import { useOrg } from "@/components/org/org-provider";
 import { useAdminAIChat } from "../useAdminAIChat";
 import { useAdminVoiceChat } from "../useAdminVoiceChat";
+import { VoicemailsList } from "@/components/call-center/VoicemailsList";
 
 import { IAstedInstantChatTab } from "./IAstedInstantChatTab";
 import { IAstedContactTab } from "./IAstedContactTab";
@@ -38,7 +39,7 @@ import { GlobalActiveCallsBar } from "./GlobalActiveCallsBar";
 export function IAstedWindow() {
 	const [open, setOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<IAstedTabId>("ichat");
-	const { activeOrg } = useOrg();
+	const { activeOrg, activeOrgId } = useOrg();
 	const router = useRouter();
 
 	// ⚠️ Hooks LLM F2.3 — inchangés (commit bac7824 stable).
@@ -111,6 +112,11 @@ export function IAstedWindow() {
 					// `compact` : force LegacyCallTab (le CallCenterShell multi-colonnes
 					// ne tient pas dans 420px ; il reste actif sur la page fullscreen).
 					icall: <IAstedCallTab compact />,
+					ivoicemail: (
+						<div className="h-full overflow-y-auto p-3">
+							<VoicemailsList orgId={activeOrgId} />
+						</div>
+					),
 					imeeting: <IAstedMeetingTab />,
 					isettings: <IAstedSettingsTab />,
 				}}

@@ -93,6 +93,12 @@ export const loadGenerationContext = internalQuery({
 			requestReference: request.reference,
 			documentNumber: "", // assigned at persist time
 			orgName: org.name,
+			// Branding de la rep : surcharge la ville, le signataire et son
+			// titre dans les placeholders `system`. Absent ⇒ fallbacks
+			// appliqués par `buildSystemBucket`.
+			cityName: org.branding?.cityName,
+			signerName: org.branding?.signerName,
+			signerTitle: org.branding?.signerTitle,
 		});
 		const resolved = resolvePlaceholders(
 			placeholders,
@@ -110,19 +116,9 @@ export const loadGenerationContext = internalQuery({
 			{ mappingOverride: args.fieldMappingOverride },
 		);
 
-		// Résout les 3 briques composées (Entête/Pied, Typo, Voix IA). Chaque
-		// brique est optionnelle — quand absente, le renderer applique ses
-		// valeurs par défaut intégrées.
-		const headerFooterBlock = template.headerFooterBlockId
-			? await ctx.db.get(template.headerFooterBlockId)
-			: null;
-		const typographyBlock = template.typographyBlockId
-			? await ctx.db.get(template.typographyBlockId)
-			: null;
-		const voiceBlock = template.voiceBlockId
-			? await ctx.db.get(template.voiceBlockId)
-			: null;
-
+		// Les 3 facettes (`headerFooter`, `typography`, `voice`) sont
+		// incluses dans le document `template` lui-même — plus besoin
+		// de charger des tables séparées.
 		return {
 			template,
 			request,
@@ -132,9 +128,6 @@ export const loadGenerationContext = internalQuery({
 			profile,
 			resolvedPlaceholders: resolved,
 			serviceName,
-			headerFooterBlock,
-			typographyBlock,
-			voiceBlock,
 		};
 	},
 });

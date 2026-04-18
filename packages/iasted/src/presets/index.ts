@@ -122,7 +122,7 @@ export const citizenPreset: IAstedPreset = {
 
 export const agentPreset: IAstedPreset = {
 	id: "agent",
-	tabs: ["ichat", "icontact", "icall", "imeeting", "isettings"],
+	tabs: ["ichat", "icontact", "icall", "ivoicemail", "imeeting", "isettings"],
 	flags: {
 		hasCallQueueSlot: true,
 		windowMode: "docked",

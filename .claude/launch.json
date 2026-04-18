@@ -3,21 +3,21 @@
   "configurations": [
     {
       "name": "citizen-web",
-      "runtimeExecutable": "/Users/berny/.bun/bin/bun",
+      "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
       "runtimeArgs": ["run", "dev"],
-      "port": 3004,
+      "port": 3000,
       "cwd": "apps/citizen-web"
     },
     {
       "name": "backoffice-web",
-      "runtimeExecutable": "/Users/berny/.bun/bin/bun",
+      "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
       "runtimeArgs": ["run", "dev"],
       "port": 3002,
       "cwd": "apps/backoffice-web"
     },
     {
       "name": "agent-web",
-      "runtimeExecutable": "/Users/berny/.bun/bin/bun",
+      "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
       "runtimeArgs": ["run", "dev"],
       "port": 3003,
       "autoPort": false,
@@ -25,7 +25,7 @@
     },
     {
       "name": "convex",
-      "runtimeExecutable": "/Users/berny/.bun/bin/bun",
+      "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
       "runtimeArgs": ["run", "dev:convex"],
       "port": 3210,
       "cwd": "."

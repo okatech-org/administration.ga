@@ -1,14 +1,13 @@
 /**
- * Normalise les 3 briques composées (Entête, Typo, Voix) récupérées depuis
- * Convex vers les types `*Resolved` attendus par les renderers HTML / PDF.
+ * Normalise les 3 facettes inline d'un `documentTemplate` (Entête, Typo,
+ * Voix) vers les types `*Resolved` attendus par les renderers HTML / PDF.
  *
- * Ne dépend pas de Convex — chaque champ est typé localement afin que les
- * renderers puissent tourner côté Node (pipeline PDF) comme côté browser
- * (preview live).
+ * Les facettes sont désormais stockées directement dans le document du
+ * template (plus de table séparée). Ces helpers restent utiles pour :
  *
- * La brique « Voix » (`voiceBlock`) N'est PAS rendue ici — elle est consommée
- * par le prompt IA en amont. Fournir un helper pour la transformer en contexte
- * textuel reste utile à `templateAI.generateFromDocument`.
+ *   - injecter le logo (`logoStorageId` → URL) avant rendu
+ *   - convertir la facette « voix » en prompt IA pour `templateAI`
+ *   - offrir des types stables côté pipeline de génération
  */
 
 import type {
@@ -18,10 +17,10 @@ import type {
 } from "./types";
 
 // ============================================================================
-// Types de bloc côté Convex (sous-ensemble nécessaire au rendu)
+// Types des facettes inline (sous-ensemble nécessaire au rendu / à l'IA)
 // ============================================================================
 
-export interface HeaderFooterBlockDoc {
+export interface HeaderFooterSection {
 	header: {
 		logoStorageId?: string;
 		logoAlignment: "left" | "center" | "right";
@@ -35,15 +34,15 @@ export interface HeaderFooterBlockDoc {
 	};
 }
 
-export interface TypographyBlockDoc {
+export interface TypographySection {
 	fontFamily: string;
 	fontSizeBase: number;
 	lineHeight: number;
 	defaultAlignment: "left" | "center" | "right" | "justify";
 	headingStyles: {
-		h1: HeadingDoc;
-		h2: HeadingDoc;
-		h3: HeadingDoc;
+		h1: HeadingSection;
+		h2: HeadingSection;
+		h3: HeadingSection;
 	};
 	paragraphSpacingBefore?: number;
 	paragraphSpacingAfter?: number;
@@ -53,7 +52,7 @@ export interface TypographyBlockDoc {
 	keepHeadingsWithNext?: boolean;
 }
 
-interface HeadingDoc {
+interface HeadingSection {
 	fontSize: number;
 	bold: boolean;
 	uppercase: boolean;
@@ -62,7 +61,7 @@ interface HeadingDoc {
 	alignment?: "left" | "center" | "right" | "justify";
 }
 
-export interface VoiceBlockDoc {
+export interface VoiceSection {
 	tone: string;
 	register: string;
 	openingFormulas?: Array<{ text: string; templateType?: string }>;
@@ -75,101 +74,116 @@ export interface VoiceBlockDoc {
 	vocabularyPreferences?: Array<{ prefer: string; avoid?: string[] }>;
 }
 
+// ─── Aliases legacy (transition) ───────────────────────────────────────
+// Conservés pour ne pas casser les consommateurs externes. À retirer dans
+// un futur refactor.
+/** @deprecated — utiliser `HeaderFooterSection`. */
+export type HeaderFooterBlockDoc = HeaderFooterSection;
+/** @deprecated — utiliser `TypographySection`. */
+export type TypographyBlockDoc = TypographySection;
+/** @deprecated — utiliser `VoiceSection`. */
+export type VoiceBlockDoc = VoiceSection;
+
 // ============================================================================
 // Résolveurs
 // ============================================================================
 
 /**
- * Résout le bloc Entête/Pied en remplaçant la référence de stockage du logo
- * par une URL `src`. Si aucun logo n'est configuré ou si `logoResolver`
- * renvoie `undefined`, la bande reste visuelle sans image.
+ * Résout la facette Entête/Pied en remplaçant la référence de stockage du
+ * logo par une URL `src`. Si aucun logo n'est configuré ou si
+ * `logoResolver` renvoie `undefined`, la bande est rendue sans image.
  */
 export async function resolveHeaderFooterBlock(
-	block: HeaderFooterBlockDoc,
+	section: HeaderFooterSection,
 	logoResolver?: (storageId: string) => Promise<string | undefined>,
 ): Promise<HeaderFooterBlockResolved> {
 	const logoSrc =
-		block.header.logoStorageId && logoResolver
-			? await logoResolver(block.header.logoStorageId)
+		section.header.logoStorageId && logoResolver
+			? await logoResolver(section.header.logoStorageId)
 			: undefined;
 	return {
 		header: {
 			logoSrc,
-			logoAlignment: block.header.logoAlignment,
-			height: block.header.height,
-			content: block.header.content as TiptapDocument,
+			logoAlignment: section.header.logoAlignment,
+			height: section.header.height,
+			content: section.header.content as TiptapDocument,
 		},
 		footer: {
-			height: block.footer.height,
-			showPageNumbers: block.footer.showPageNumbers,
-			content: block.footer.content as TiptapDocument,
+			height: section.footer.height,
+			showPageNumbers: section.footer.showPageNumbers,
+			content: section.footer.content as TiptapDocument,
 		},
-	};
-}
-
-/** La brique Typo mappe 1:1 — fourni pour symétrie et stabilité d'API. */
-export function resolveTypographyBlock(
-	block: TypographyBlockDoc,
-): TypographyBlockResolved {
-	return {
-		fontFamily: block.fontFamily,
-		fontSizeBase: block.fontSizeBase,
-		lineHeight: block.lineHeight,
-		defaultAlignment: block.defaultAlignment,
-		headingStyles: block.headingStyles,
-		paragraphSpacingBefore: block.paragraphSpacingBefore,
-		paragraphSpacingAfter: block.paragraphSpacingAfter,
-		paragraphFirstLineIndent: block.paragraphFirstLineIndent,
-		pageBreakBefore: block.pageBreakBefore,
-		widowOrphanControl: block.widowOrphanControl,
-		keepHeadingsWithNext: block.keepHeadingsWithNext,
 	};
 }
 
 /**
- * Transforme la brique Voix en « prompt système » texte prêt à être injecté
- * devant la consigne utilisateur dans `templateAI.generateFromDocument`.
- * Renvoie une chaîne vide si aucun réglage ne mérite d'être exposé.
+ * La facette Typo mappe 1:1 vers le type Resolved. Exposé comme fonction
+ * pour une symétrie d'API avec `resolveHeaderFooterBlock`.
  */
-export function voiceBlockToPromptContext(block: VoiceBlockDoc): string {
+export function resolveTypographyBlock(
+	section: TypographySection,
+): TypographyBlockResolved {
+	return {
+		fontFamily: section.fontFamily,
+		fontSizeBase: section.fontSizeBase,
+		lineHeight: section.lineHeight,
+		defaultAlignment: section.defaultAlignment,
+		headingStyles: section.headingStyles,
+		paragraphSpacingBefore: section.paragraphSpacingBefore,
+		paragraphSpacingAfter: section.paragraphSpacingAfter,
+		paragraphFirstLineIndent: section.paragraphFirstLineIndent,
+		pageBreakBefore: section.pageBreakBefore,
+		widowOrphanControl: section.widowOrphanControl,
+		keepHeadingsWithNext: section.keepHeadingsWithNext,
+	};
+}
+
+/**
+ * Transforme la facette Voix en « prompt système » texte prêt à être injecté
+ * devant la consigne utilisateur dans `templateAI.generateFromDocument`.
+ */
+export function voiceBlockToPromptContext(section: VoiceSection): string {
 	const lines: string[] = [];
 	lines.push(`# Style rédactionnel`);
-	lines.push(`- Ton : ${block.tone}`);
-	lines.push(`- Registre : ${block.register}`);
-	lines.push(`- Personne grammaticale : ${humanisePronoun(block.personPronoun)}`);
-	lines.push(`- Politesse : ${block.politenessLevel}`);
-	if (block.useFormalAddress) {
+	lines.push(`- Ton : ${section.tone}`);
+	lines.push(`- Registre : ${section.register}`);
+	lines.push(`- Personne grammaticale : ${humanisePronoun(section.personPronoun)}`);
+	lines.push(`- Politesse : ${section.politenessLevel}`);
+	if (section.useFormalAddress) {
 		lines.push(`- Vouvoiement systématique.`);
 	}
-	if (block.openingFormulas && block.openingFormulas.length > 0) {
+	if (section.openingFormulas && section.openingFormulas.length > 0) {
 		lines.push(`\n## Formules d'ouverture suggérées`);
-		for (const f of block.openingFormulas) {
+		for (const f of section.openingFormulas) {
 			lines.push(
 				`- ${f.text}${f.templateType ? ` (pour : ${f.templateType})` : ""}`,
 			);
 		}
 	}
-	if (block.closingFormulas && block.closingFormulas.length > 0) {
+	if (section.closingFormulas && section.closingFormulas.length > 0) {
 		lines.push(`\n## Formules de clôture suggérées`);
-		for (const f of block.closingFormulas) {
+		for (const f of section.closingFormulas) {
 			lines.push(
 				`- ${f.text}${f.templateType ? ` (pour : ${f.templateType})` : ""}`,
 			);
 		}
 	}
-	if (block.signatureFormulas && block.signatureFormulas.length > 0) {
+	if (section.signatureFormulas && section.signatureFormulas.length > 0) {
 		lines.push(`\n## Formules de signature`);
-		for (const s of block.signatureFormulas) {
+		for (const s of section.signatureFormulas) {
 			lines.push(`- ${s}`);
 		}
 	}
-	if (block.argumentationGuidelines && block.argumentationGuidelines.trim()) {
+	if (section.argumentationGuidelines && section.argumentationGuidelines.trim()) {
 		lines.push(`\n## Directives d'argumentaire`);
-		lines.push(block.argumentationGuidelines.trim());
+		lines.push(section.argumentationGuidelines.trim());
 	}
-	if (block.vocabularyPreferences && block.vocabularyPreferences.length > 0) {
+	if (
+		section.vocabularyPreferences &&
+		section.vocabularyPreferences.length > 0
+	) {
 		lines.push(`\n## Préférences lexicales`);
-		for (const v of block.vocabularyPreferences) {
+		for (const v of section.vocabularyPreferences) {
 			const avoids = v.avoid && v.avoid.length > 0
 				? ` (éviter : ${v.avoid.join(", ")})`
 				: "";

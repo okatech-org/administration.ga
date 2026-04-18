@@ -163,6 +163,8 @@ export function buildSystemBucket(options: {
 	documentNumber?: string;
 	orgName?: string;
 	signerName?: string;
+	signerTitle?: string;
+	cityName?: string;
 	now?: Date;
 }): Record<string, unknown> {
 	const now = options.now ?? new Date();
@@ -175,6 +177,11 @@ export function buildSystemBucket(options: {
 		documentNumber: options.documentNumber ?? "",
 		orgName: options.orgName ?? "",
 		signerName: options.signerName ?? "",
+		signerTitle: options.signerTitle ?? "",
+		// Ville de la représentation — utilisée dans les formules
+		// « Fait à {{city}}, le {{today}} ». Fallback sur le nom de l'org
+		// si aucun `branding.cityName` n'est défini.
+		city: options.cityName ?? options.orgName ?? "",
 	};
 }
 

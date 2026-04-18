@@ -74,8 +74,6 @@ export function IAstedContactTab() {
 		total,
 		availableCountries,
 		isPending,
-		hasMore,
-		loadMore,
 		filters,
 		setSearch,
 		setSource,
@@ -84,24 +82,9 @@ export function IAstedContactTab() {
 		setPositionGrade,
 	} = useContactSearch();
 
-	// Sentinelle infinite scroll en bas de liste.
-	// Root = viewport interne de ScrollArea (Radix utilise son propre scroll),
-	// sans quoi l'observer ne se déclenche jamais pendant le scroll interne.
+	// Chargement exhaustif : plus besoin d'IntersectionObserver ni de bouton
+	// « Charger plus ». Ref conservée sur le viewport pour d'éventuels auto-scrolls.
 	const viewportRef = useRef<HTMLDivElement | null>(null);
-	const loadMoreRef = useRef<HTMLDivElement | null>(null);
-	useEffect(() => {
-		const target = loadMoreRef.current;
-		const root = viewportRef.current;
-		if (!target || !root || !hasMore || isPending) return;
-		const observer = new IntersectionObserver(
-			(entries) => {
-				if (entries.some((e) => e.isIntersecting)) loadMore();
-			},
-			{ root, rootMargin: "200px" },
-		);
-		observer.observe(target);
-		return () => observer.disconnect();
-	}, [hasMore, isPending, loadMore]);
 
 	// Fiche citoyen 360° — ouverte au clic sur un contact de type "citizen".
 	// Les autres contacts (team/network) gardent leur comportement existant.
@@ -305,19 +288,10 @@ export function IAstedContactTab() {
 					</div>
 				)}
 
-				{/* Sentinelle infinite scroll + bouton fallback "Charger plus" */}
-				{groups.length > 0 && (
-					<div ref={loadMoreRef} className="flex items-center justify-center py-3">
-						{isPending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-						{hasMore && !isPending && (
-							<button
-								type="button"
-								onClick={loadMore}
-								className="text-xs px-3 py-1.5 rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors"
-							>
-								Charger plus
-							</button>
-						)}
+				{/* Spinner discret pendant le chargement initial */}
+				{isPending && groups.length === 0 && (
+					<div className="flex items-center justify-center py-6">
+						<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
 					</div>
 				)}
 			</ScrollArea>

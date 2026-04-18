@@ -35,7 +35,7 @@ function SignaturePlaceholderBox({ node }: ReactNodeViewProps): ReactElement {
 			contentEditable={false}
 		>
 			<div
-				className="flex flex-col items-center justify-center gap-1 rounded-md border border-dashed border-amber-400 bg-amber-50/60 text-xs text-amber-800"
+				className="flex flex-col items-center justify-center gap-1 rounded-md border border-dashed border-primary/50 bg-primary/5 text-xs text-primary"
 				style={{ width: widthPx, height: heightPx }}
 				data-signature-placeholder-id={attrs.id}
 			>

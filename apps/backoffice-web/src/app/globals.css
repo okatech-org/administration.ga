@@ -5,6 +5,58 @@
 @source "../../../packages/ui/src/**/*.{ts,tsx}";
 
 /* ══════════════════════════════════════════════════════════════
+   ÉDITEUR DE TEMPLATES — Suppression du focus ring natif
+   ══════════════════════════════════════════════════════════════ */
+
+/* Par défaut, les navigateurs (Chrome/Safari) affichent un outline bleu
+   épais autour de tout élément focusable. `.ProseMirror` hérite de ce
+   comportement dès qu'on clique dans le document, produisant un cadre
+   bleu gênant sur toute la zone éditable. `focus:outline-none` de
+   Tailwind n'est pas suffisant (compilé en `2px solid transparent`). On
+   force `outline: 0` pour supprimer entièrement ce cadre — l'indicateur
+   visuel du bloc actif est assuré par la poignée ⋮⋮ et la bubble menu. */
+.ProseMirror,
+.ProseMirror:focus,
+.ProseMirror:focus-visible,
+.ProseMirror-focused {
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Tables diplomatiques : titres dans des tables 1×1 — on les centre par
+   défaut (convention des 25 modèles sources) pour que le titre ne soit
+   pas collé au bord gauche. L'utilisateur peut toujours override en
+   appliquant un alignement spécifique. `!important` nécessaire pour
+   surcharger le style `.prose table` de Tailwind Typography. */
+.ProseMirror table {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+
+/* Poignée de drag — apparaît à gauche de chaque bloc au survol (plugin
+   BlockDragHandle). Style Notion / Pages. */
+.block-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: 0;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  opacity: 0.55;
+  transition: opacity 120ms, background 120ms, color 120ms;
+}
+.block-drag-handle:hover {
+  opacity: 1;
+  background: hsl(var(--foreground) / 0.08);
+  color: hsl(var(--foreground));
+}
+.block-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* ══════════════════════════════════════════════════════════════
    BACKOFFICE-WEB — Citizen Design System v3.0
    "Slate Trust & Authority"
    ══════════════════════════════════════════════════════════════ */

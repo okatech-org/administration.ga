@@ -35,6 +35,23 @@ export default function RootLayout({
   // composant utilisant cette hook (ex: SuperadminGuard) plante en SSR.
   return (
     <html lang="fr" suppressHydrationWarning>
+      <head>
+        {/* Polices diplomatiques — 7 pour titres + 7 pour corps (voir
+            HEADING_FONTS / BODY_FONTS dans @workspace/document-editor). */}
+        <link
+          rel="preconnect"
+          href="https://fonts.googleapis.com"
+        />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel:wght@400;600;700&family=Cardo:ital,wght@0,400;0,700;1,400&family=Spectral+SC:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap"
+        />
+      </head>
       <body className="font-sans bg-background text-foreground antialiased">
         <Providers>{children}</Providers>
       </body>

@@ -4,13 +4,16 @@ import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import type { Doc } from "@convex/_generated/dataModel";
-import { Building2, ChevronLeft, ChevronRight, Inbox, MapPin, Search, Settings, Eye, Edit, Power, FolderOpen } from "lucide-react";
+import { Building2, Check, CheckSquare, ChevronLeft, ChevronRight, FileStack, Inbox, MapPin, Search, Settings, Eye, Edit, Power, FolderOpen, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { Combobox } from "@/components/ui/combobox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AssignTemplatesDialog } from "@/components/admin/AssignTemplatesDialog";
+import { BulkAssignTemplatesDialog } from "@/components/admin/BulkAssignTemplatesDialog";
 import { useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { api } from "@convex/_generated/api";
 import { toast } from "sonner";
@@ -63,6 +66,28 @@ export function RepsGrid({
 	const [countryFilter, setCountryFilter] = useState<string>("all");
 	const [statusFilter, setStatusFilter] = useState<string>("all");
 	const [currentPage, setCurrentPage] = useState(1);
+
+	// Org cible du dialog d'attribution de modèles (mode unitaire). null = dialog fermé.
+	const [templatesOrg, setTemplatesOrg] = useState<Doc<"orgs"> | null>(null);
+
+	// Mode sélection multi-rep pour les actions en lot.
+	const [selectionMode, setSelectionMode] = useState(false);
+	const [selectedOrgIds, setSelectedOrgIds] = useState<Set<string>>(new Set());
+	const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+
+	function toggleOrgSelection(orgId: string) {
+		setSelectedOrgIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(orgId)) next.delete(orgId);
+			else next.add(orgId);
+			return next;
+		});
+	}
+
+	function exitSelectionMode() {
+		setSelectionMode(false);
+		setSelectedOrgIds(new Set());
+	}
 
 	const ITEMS_PER_PAGE = 9; // 3x3 grid
 
@@ -204,6 +229,18 @@ export function RepsGrid({
 						emptyText="Aucun statut trouvé"
 						className="w-[160px] h-10 bg-background"
 					/>
+					<Button
+						variant={selectionMode ? "default" : "outline"}
+						size="sm"
+						className="h-10 gap-1.5"
+						onClick={() => {
+							if (selectionMode) exitSelectionMode();
+							else setSelectionMode(true);
+						}}
+					>
+						<CheckSquare className="h-4 w-4" />
+						{selectionMode ? "Quitter la sélection" : "Sélection multiple"}
+					</Button>
 				</div>
 			</div>
 
@@ -224,14 +261,39 @@ export function RepsGrid({
 				<div className="flex flex-col flex-1 w-full">
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 flex-1 auto-rows-fr w-full">
 						{slicedData.map((org) => {
+							const isSelected = selectedOrgIds.has(org._id);
 							return (
 								<FlatCard
 									key={org._id}
-									className="relative flex flex-row h-full cursor-pointer hover:shadow-md transition-shadow group p-0 overflow-hidden"
-									onClick={() => router.push(`/reps/${org._id}`)}
+									className={cn(
+										"relative flex flex-row h-full cursor-pointer hover:shadow-md transition-shadow group p-0 overflow-hidden",
+										isSelected && "ring-2 ring-primary",
+									)}
+									onClick={() => {
+										if (selectionMode) {
+											toggleOrgSelection(org._id);
+										} else {
+											router.push(`/reps/${org._id}`);
+										}
+									}}
 								>
+									{/* Checkbox (mode sélection uniquement) */}
+									{selectionMode ? (
+										<div
+											className="absolute left-2 top-2 z-10"
+											onClick={(e) => e.stopPropagation()}
+										>
+											<Checkbox
+												checked={isSelected}
+												onCheckedChange={() => toggleOrgSelection(org._id)}
+												aria-label={`Sélectionner ${org.name}`}
+												className="h-5 w-5 bg-background"
+											/>
+										</div>
+									) : null}
+
 									{/* Main Content Area */}
-									<div className="flex-1 p-3 pr-2.5 flex flex-col gap-2">
+									<div className={cn("flex-1 p-3 pr-2.5 flex flex-col gap-2", selectionMode && "pl-9")}>
 										{/* Header: Logo + Name */}
 										<div className="flex items-start gap-2.5">
 											<Avatar className="h-9 w-9 shrink-0 border border-border/50">
@@ -272,18 +334,30 @@ export function RepsGrid({
 									{/* Right Vertical Action Bar */}
 									<div className="w-[46px] shrink-0 border-l border-border/50 bg-muted/20 flex flex-col items-center py-2">
 										<div className="flex flex-col gap-1.5">
-											<Button 
-												variant="ghost" 
-												size="icon" 
+											<Button
+												variant="ghost"
+												size="icon"
 												className="h-7 w-7 text-primary hover:bg-primary/15"
 												onClick={(e) => { e.stopPropagation(); router.push(`/reps/${org._id}`); }}
 												title="Gérer les requêtes"
 											>
 												<FolderOpen className="h-4 w-4" />
 											</Button>
-											<Button 
-												variant="ghost" 
-												size="icon" 
+											<Button
+												variant="ghost"
+												size="icon"
+												className="h-7 w-7 text-muted-foreground hover:text-foreground"
+												onClick={(e) => {
+													e.stopPropagation();
+													setTemplatesOrg(org);
+												}}
+												title="Attribuer des modèles de documents"
+											>
+												<FileStack className="h-3.5 w-3.5" />
+											</Button>
+											<Button
+												variant="ghost"
+												size="icon"
 												className="h-7 w-7 text-muted-foreground hover:text-foreground"
 												onClick={(e) => { e.stopPropagation(); router.push(`/reps/${org._id}/edit`); }}
 												title="Modifier la représentation"
@@ -344,6 +418,65 @@ export function RepsGrid({
 					)}
 				</div>
 			)}
+
+			{templatesOrg ? (
+				<AssignTemplatesDialog
+					open={!!templatesOrg}
+					onOpenChange={(open) => !open && setTemplatesOrg(null)}
+					org={templatesOrg}
+				/>
+			) : null}
+
+			{/* ── Barre d'action flottante (mode sélection) ── */}
+			{selectionMode && selectedOrgIds.size > 0 ? (
+				<div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
+					<div className="flex items-center gap-3 rounded-full border bg-background px-4 py-2 shadow-lg">
+						<span className="text-sm font-medium">
+							{selectedOrgIds.size} représentation{selectedOrgIds.size > 1 ? "s" : ""} sélectionnée{selectedOrgIds.size > 1 ? "s" : ""}
+						</span>
+						<div className="h-5 w-px bg-border" />
+						<Button
+							size="sm"
+							variant="outline"
+							onClick={() => {
+								const allIds = new Set(filteredData.map((o) => o._id));
+								const allSelected = filteredData.every((o) => selectedOrgIds.has(o._id));
+								setSelectedOrgIds(allSelected ? new Set() : allIds);
+							}}
+							className="h-8 gap-1.5"
+						>
+							<Check className="h-3.5 w-3.5" />
+							{filteredData.every((o) => selectedOrgIds.has(o._id)) ? "Désélectionner tout" : "Tout sélectionner"}
+						</Button>
+						<Button
+							size="sm"
+							onClick={() => setBulkDialogOpen(true)}
+							className="h-8 gap-1.5"
+						>
+							<FileStack className="h-3.5 w-3.5" />
+							Attribuer des modèles
+						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							onClick={exitSelectionMode}
+							className="h-8 w-8 p-0"
+							aria-label="Quitter le mode sélection"
+						>
+							<X className="h-4 w-4" />
+						</Button>
+					</div>
+				</div>
+			) : null}
+
+			{bulkDialogOpen ? (
+				<BulkAssignTemplatesDialog
+					open={bulkDialogOpen}
+					onOpenChange={setBulkDialogOpen}
+					orgs={data.filter((o) => selectedOrgIds.has(o._id))}
+					onSuccess={exitSelectionMode}
+				/>
+			) : null}
 		</div>
 	);
 }

@@ -7,10 +7,13 @@
  * access to, across all their requests. Read-only on purpose: those
  * documents are issued by the consulate and cannot be edited or deleted
  * by the citizen.
+ *
+ * Chaque document est affiché en vignette A4 fidèle (`DocumentSheetFile`).
  */
 
 import { api } from "@convex/_generated/api";
 import type { Doc } from "@convex/_generated/dataModel";
+import { DocumentSheetFile } from "@workspace/ui/components/document-sheet";
 import { CheckCircle2, Download, FileCheck2, Loader2 } from "lucide-react";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { Button } from "@/components/ui/button";
@@ -25,7 +28,7 @@ export function ConsulateIssuedDocumentsSection() {
 
 	return (
 		<section className="rounded-2xl bg-secondary p-4 sm:p-6">
-			<header className="mb-3 flex items-center gap-2">
+			<header className="mb-4 flex items-center gap-2">
 				<FileCheck2 className="h-4 w-4 text-primary" />
 				<h3 className="text-sm font-bold">Délivrés par le consulat</h3>
 				<span className="ml-auto rounded-full bg-background px-2 py-0.5 text-[0.7rem] font-medium text-muted-foreground">
@@ -39,17 +42,17 @@ export function ConsulateIssuedDocumentsSection() {
 					Chargement…
 				</div>
 			) : (
-				<ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
 					{(documents ?? []).map((doc) => (
-						<ConsulateDocumentCard key={doc._id} doc={doc} />
+						<ConsulateDocumentThumbnail key={doc._id} doc={doc} />
 					))}
-				</ul>
+				</div>
 			)}
 		</section>
 	);
 }
 
-function ConsulateDocumentCard({ doc }: { doc: Doc<"generatedDocuments"> }) {
+function ConsulateDocumentThumbnail({ doc }: { doc: Doc<"generatedDocuments"> }) {
 	const { data: url } = useAuthenticatedConvexQuery(
 		api.functions.generatedDocumentsData.getDownloadUrl,
 		{ documentId: doc._id },
@@ -60,39 +63,49 @@ function ConsulateDocumentCard({ doc }: { doc: Doc<"generatedDocuments"> }) {
 				day: "2-digit",
 				month: "long",
 				year: "numeric",
-		  })
+			})
 		: new Date(doc.generatedAt).toLocaleDateString("fr-FR");
+
+	const overlays = doc.signatureStatus === "signed" ? (
+		<div className="absolute right-2 top-2">
+			<span className="inline-flex items-center gap-1 rounded bg-emerald-100/95 px-1.5 py-0.5 text-[0.6rem] font-medium uppercase tracking-wide text-emerald-800 shadow-sm">
+				<CheckCircle2 className="h-2.5 w-2.5" />
+				Signé
+			</span>
+		</div>
+	) : null;
+
 	return (
-		<li className="flex flex-col gap-2 rounded-xl bg-background p-3">
-			<div className="flex items-start gap-2">
-				<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-					<FileCheck2 className="h-4 w-4" />
+		<div className="flex flex-col gap-2">
+			<DocumentSheetFile
+				fileName={`${label}.pdf`}
+				mimeType="application/pdf"
+				url={url ?? null}
+				onClick={url ? () => window.open(url, "_blank") : undefined}
+				overlays={overlays}
+				ariaLabel={`Ouvrir ${label}`}
+			/>
+			<div className="flex flex-col gap-0.5 px-1">
+				<div className="truncate font-medium" title={label}>
+					{label}
 				</div>
-				<div className="min-w-0 flex-1">
-					<div className="flex items-center gap-2">
-						<span className="truncate font-medium">{label}</span>
-						{doc.signatureStatus === "signed" ? (
-							<CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-label="Document signé" />
-						) : null}
-					</div>
-					<div className="mt-0.5 text-xs text-muted-foreground">
-						<span className="font-mono">{doc.documentNumber}</span> • {dateStr}
-					</div>
+				<div className="text-xs text-muted-foreground">
+					<span className="font-mono">{doc.documentNumber}</span> • {dateStr}
 				</div>
+				{url ? (
+					<Button size="sm" variant="outline" asChild className="mt-1 h-7 text-xs">
+						<a href={url} target="_blank" rel="noreferrer">
+							<Download className="mr-1 h-3 w-3" />
+							Télécharger
+						</a>
+					</Button>
+				) : (
+					<Button size="sm" variant="outline" className="mt-1 h-7 text-xs" disabled>
+						<Loader2 className="mr-1 h-3 w-3 animate-spin" />
+						Lien…
+					</Button>
+				)}
 			</div>
-			{url ? (
-				<Button size="sm" variant="outline" asChild className="w-full">
-					<a href={url} target="_blank" rel="noreferrer">
-						<Download className="mr-2 h-4 w-4" />
-						Télécharger
-					</a>
-				</Button>
-			) : (
-				<Button size="sm" variant="outline" className="w-full" disabled>
-					<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-					Lien…
-				</Button>
-			)}
-		</li>
+		</div>
 	);
 }

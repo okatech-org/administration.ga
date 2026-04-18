@@ -1,22 +1,26 @@
 "use client";
 
 /**
- * Edit a global template — rich Tiptap editor + placeholder manager.
+ * Édition d'un modèle global — 4 onglets :
  *
- * This page is lazy (client-only) because the Tiptap editor uses browser-only
- * APIs. It loads the current template from Convex, lets the super-admin edit
- * the content and the placeholder list, and persists through
- * `documentTemplates.update` which archives the previous version.
+ *   - Contenu            : l'éditeur Tiptap (corps du document)
+ *   - Entête & pied      : facette `headerFooter`
+ *   - Typographie        : facette `typography`
+ *   - Style rédactionnel : facette `voice` (métier IA uniquement)
+ *
+ * La sidebar droite regroupe les réglages transverses (layout,
+ * placeholders, diffusion). Un unique bouton « Enregistrer » persiste
+ * l'ensemble.
  */
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import {
 	TemplateAIDrawer,
-	TemplateEditor,
 	type TemplateAIInput,
 	type TemplateAIResult,
 } from "@workspace/document-editor";
+import type { Editor } from "@tiptap/react";
 import type {
 	PlaceholderDescriptor,
 	PlaceholderSource,
@@ -29,6 +33,8 @@ import {
 	History,
 	Loader2,
 	Lock,
+	MessageSquareQuote,
+	Palette,
 	Plus,
 	Save,
 	Settings2,
@@ -38,12 +44,38 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
 	ApplicabilityPicker,
 	type Applicability,
 } from "@/components/config/ApplicabilityPicker";
-import { TemplateBlockPicker } from "@/components/config/TemplateBlockPicker";
-import { toast } from "sonner";
+import { TemplateEditorWithRulers } from "@/components/admin/TemplateEditorWithRulers";
+import { ContextualFormatPanel } from "@/components/admin/template-editor/ContextualFormatPanel";
+import {
+	RepresentationHeaderPreview,
+	deriveHeaderLines as derivePreviewHeaderLines,
+	deriveFooterLines as derivePreviewFooterLines,
+} from "@/components/admin/RepresentationHeaderPreview";
+import {
+	HeaderFooterSectionEditor,
+	type HeaderFooterSectionValue,
+	createDefaultHeaderFooterSection,
+	deserializeHeaderFooterSection,
+	serializeHeaderFooterSection,
+} from "@/components/config/HeaderFooterSectionEditor";
+import {
+	type TypographySectionValue,
+	createDefaultTypographySection,
+	deserializeTypographySection,
+	serializeTypographySection,
+} from "@/components/config/TypographySectionEditor";
+import {
+	VoiceSectionEditor,
+	type VoiceSectionValue,
+	createDefaultVoiceSection,
+	deserializeVoiceSection,
+	serializeVoiceSection,
+} from "@/components/config/VoiceSectionEditor";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { PageHeader } from "@/components/design-system/page-header";
 import { Button } from "@/components/ui/button";
@@ -56,6 +88,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { useConvexMutationQuery, useConvexQuery } from "@/integrations/convex/hooks";
 
@@ -97,6 +135,13 @@ export default function EditTemplatePage() {
 		{ templateId },
 	);
 
+	// URL signée du sceau (résout `logoStorageId` via Convex storage).
+	// Null tant que le modèle n'est pas chargé, ou s'il n'a pas de logo.
+	const { data: logoUrl } = useConvexQuery(
+		api.functions.documentTemplates.getTemplateLogoUrl,
+		{ templateId },
+	);
+
 	const { mutateAsync: updateTemplate } = useConvexMutationQuery(
 		api.functions.documentTemplates.update,
 	);
@@ -109,52 +154,47 @@ export default function EditTemplatePage() {
 	);
 	const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
 
+	// ─── États pilotés par le template ──────────────────────────────────
 	const [content, setContent] = useState<TiptapDocument | null>(null);
-	const [placeholders, setPlaceholders] = useState<PlaceholderDescriptor[] | null>(null);
+	const [placeholders, setPlaceholders] = useState<PlaceholderDescriptor[] | null>(
+		null,
+	);
 	const [applicability, setApplicability] = useState<Applicability | null>(null);
 	const [applicableOrgTypes, setApplicableOrgTypes] = useState<string[]>([]);
-	const [headerFooterBlockId, setHeaderFooterBlockId] = useState<
-		Id<"templateHeaderFooterBlocks"> | undefined | null
-	>(null);
-	const [typographyBlockId, setTypographyBlockId] = useState<
-		Id<"templateTypographyBlocks"> | undefined | null
-	>(null);
-	const [voiceBlockId, setVoiceBlockId] = useState<
-		Id<"templateVoiceBlocks"> | undefined | null
-	>(null);
 	const [layout, setLayout] = useState<LayoutDraft | null>(null);
+	const [headerFooter, setHeaderFooter] = useState<HeaderFooterSectionValue | null>(
+		null,
+	);
+	const [typography, setTypography] = useState<TypographySectionValue | null>(
+		null,
+	);
+	const [voice, setVoice] = useState<VoiceSectionValue | null>(null);
 
-	// Listes des briques disponibles pour les pickers
-	const { data: headerFooterBlocks } = useConvexQuery(
-		api.functions.templateHeaderFooterBlocks.listGlobal,
-		{},
-	);
-	const { data: typographyBlocks } = useConvexQuery(
-		api.functions.templateTypographyBlocks.listGlobal,
-		{},
-	);
-	const { data: voiceBlocks } = useConvexQuery(
-		api.functions.templateVoiceBlocks.listGlobal,
-		{},
-	);
 	const [newKey, setNewKey] = useState("");
 	const [newSource, setNewSource] = useState<PlaceholderSource>("formData");
 	const [saving, setSaving] = useState(false);
 	const [savingLayout, setSavingLayout] = useState(false);
-	// Bumped when an AI generation result lands so the editor re-loads its
-	// content (Tiptap doesn't react to initialContent changes after mount).
 	const [contentRevision, setContentRevision] = useState(0);
+	// Rep sélectionnée pour prévisualiser l'entête / pied dans l'éditeur.
+	// Null = aperçu générique (valeurs fallback Madrid du template).
+	const [previewOrgId, setPreviewOrgId] = useState<Id<"orgs"> | null>(null);
+	const { data: previewOrg } = useConvexQuery(
+		api.functions.orgs.getById,
+		previewOrgId ? { orgId: previewOrgId } : "skip",
+	);
+	// Taille d'affichage du sceau dans l'aperçu WYSIWYG (px).
+	const [logoHeightPx, setLogoHeightPx] = useState(80);
+	// Instance Tiptap partagée entre le canvas, la bubble menu et la sidebar
+	// contextuelle. Captée via `onReady` depuis TemplateEditor.
+	const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
 
-	// Initialize local state once template arrives. Using useMemo here as a
-	// write-once pattern: `null` means "not yet hydrated", anything else is
-	// editor state.
+	// Hydratation une seule fois à la réception du template.
 	useMemo(() => {
 		if (template && content === null) {
 			setContent(template.content as TiptapDocument);
 			setPlaceholders(
 				(template.placeholders ?? []) as unknown as PlaceholderDescriptor[],
 			);
-			// Nouveau format v1 puis fallback sur l'ancien `allowedOrgTypes`.
 			if (template.applicability) {
 				setApplicability(template.applicability as Applicability);
 				setApplicableOrgTypes(template.applicableOrgTypes ?? []);
@@ -165,9 +205,23 @@ export default function EditTemplatePage() {
 				setApplicability("all");
 				setApplicableOrgTypes([]);
 			}
-			setHeaderFooterBlockId(template.headerFooterBlockId);
-			setTypographyBlockId(template.typographyBlockId);
-			setVoiceBlockId(template.voiceBlockId);
+			setHeaderFooter(
+				template.headerFooter
+					? deserializeHeaderFooterSection(template.headerFooter)
+					: createDefaultHeaderFooterSection(),
+			);
+			setTypography(
+				template.typography
+					? deserializeTypographySection(
+							template.typography as Partial<TypographySectionValue>,
+						)
+					: createDefaultTypographySection(),
+			);
+			setVoice(
+				template.voice
+					? deserializeVoiceSection(template.voice as Partial<VoiceSectionValue>)
+					: createDefaultVoiceSection(),
+			);
 		}
 	}, [template, content]);
 
@@ -222,28 +276,67 @@ export default function EditTemplatePage() {
 
 	const onAIGenerate = useCallback(
 		async (input: TemplateAIInput): Promise<TemplateAIResult> => {
-			const result = await aiGenerateFromDocument(input);
+			const result = await aiGenerateFromDocument({
+				...input,
+				// Utilise la facette `voice` du template courant pour guider l'IA.
+				templateId,
+			});
 			return result as TemplateAIResult;
 		},
-		[aiGenerateFromDocument],
+		[aiGenerateFromDocument, templateId],
 	);
 
 	function onAIApply(result: TemplateAIResult) {
 		setContent(result.document);
 		setPlaceholders(result.placeholders);
-		// Force the editor to re-load the new content (Tiptap is mount-only).
 		setContentRevision((v) => v + 1);
 		toast.success(t("templates.ai.phases.resultTitle"));
 	}
 
 	if (isLoading || !template) {
-		return <div className="p-6 text-sm text-muted-foreground">{t("templates.common.loading")}</div>;
+		return (
+			<div className="p-6 text-sm text-muted-foreground">
+				{t("templates.common.loading")}
+			</div>
+		);
 	}
 
 	const workingContent = content ?? (template.content as TiptapDocument);
 	const workingPlaceholders =
-		placeholders ?? ((template.placeholders ?? []) as unknown as PlaceholderDescriptor[]);
+		placeholders ??
+		((template.placeholders ?? []) as unknown as PlaceholderDescriptor[]);
 	const workingLayout = layout ?? DEFAULT_LAYOUT;
+	const workingHeaderFooter = headerFooter ?? createDefaultHeaderFooterSection();
+	const workingTypography = typography ?? createDefaultTypographySection();
+	const workingVoice = voice ?? createDefaultVoiceSection();
+
+	// Aperçu du sceau + entête + pied affichés dans l'éditeur. Si une rep
+	// de preview est sélectionnée, on dérive les lignes de SON branding
+	// (headerLines / footerAddress / footerPhone / footerEmail) — c'est ce
+	// que verront les citoyens au rendu PDF. Sinon, fallback sur les lignes
+	// définies dans le template (exemple Madrid).
+	const previewFromOrgHeader = previewOrg
+		? derivePreviewHeaderLines(previewOrg)
+		: [];
+	const previewFromOrgFooter = previewOrg
+		? derivePreviewFooterLines(previewOrg)
+		: [];
+	const templateHeaderLines = workingHeaderFooter.header.textContent
+		.split("\n")
+		.map((l) => l.trim())
+		.filter((l) => l.length > 0);
+	const templateFooterLines = workingHeaderFooter.footer.textContent
+		.split("\n")
+		.map((l) => l.trim())
+		.filter((l) => l.length > 0);
+	const headerPreviewLines =
+		previewFromOrgHeader.length > 0
+			? previewFromOrgHeader
+			: templateHeaderLines;
+	const footerPreviewLines =
+		previewFromOrgFooter.length > 0
+			? previewFromOrgFooter
+			: templateFooterLines;
 
 	function addPlaceholder() {
 		const key = newKey.trim();
@@ -252,13 +345,7 @@ export default function EditTemplatePage() {
 			toast.error(t("templates.placeholders.duplicateKey"));
 			return;
 		}
-		setPlaceholders([
-			...workingPlaceholders,
-			{
-				key,
-				source: newSource,
-			},
-		]);
+		setPlaceholders([...workingPlaceholders, { key, source: newSource }]);
 		setNewKey("");
 	}
 
@@ -267,10 +354,7 @@ export default function EditTemplatePage() {
 	}
 
 	async function save() {
-		if (
-			applicability === "specificOrgTypes" &&
-			applicableOrgTypes.length === 0
-		) {
+		if (applicability === "specificOrgTypes" && applicableOrgTypes.length === 0) {
 			toast.error(t("templates.global.new.errors.orgTypesRequired"));
 			return;
 		}
@@ -291,13 +375,14 @@ export default function EditTemplatePage() {
 					applicability === "specificOrgTypes"
 						? (applicableOrgTypes as never)
 						: (undefined as never),
-				headerFooterBlockId: headerFooterBlockId ?? undefined,
-				typographyBlockId: typographyBlockId ?? undefined,
-				voiceBlockId: voiceBlockId ?? undefined,
+				headerFooter: serializeHeaderFooterSection(workingHeaderFooter) as never,
+				typography: serializeTypographySection(workingTypography) as never,
+				voice: serializeVoiceSection(workingVoice) as never,
 			});
 			toast.success(t("templates.edit.saved"));
 		} catch (err) {
-			const message = err instanceof Error ? err.message : t("templates.edit.saveError");
+			const message =
+				err instanceof Error ? err.message : t("templates.edit.saveError");
 			toast.error(message);
 		} finally {
 			setSaving(false);
@@ -325,7 +410,8 @@ export default function EditTemplatePage() {
 		}
 	}
 
-	const title = template.name.fr ?? template.name.en ?? t("templates.global.edit.untitled");
+	const title =
+		template.name.fr ?? template.name.en ?? t("templates.global.edit.untitled");
 
 	return (
 		<div className="flex flex-col gap-6 p-6">
@@ -367,102 +453,140 @@ export default function EditTemplatePage() {
 				</div>
 			) : null}
 
-			{/* ─── Layout 2 colonnes : éditeur à gauche, config à droite ─── */}
+			{/* Layout 2 colonnes : document WYSIWYG à gauche, panneau de
+			     paramètres à droite (facettes dépliables + mise en page). */}
 			<div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
-				{/* Éditeur — toolbar + page A4 */}
-				<FlatCard className="min-w-0 flex-1 p-4">
-					<TemplateEditor
-						initialContent={workingContent}
-						onChange={(doc) => setContent(doc)}
-						paperSize={workingLayout.paperSize}
-						orientation={workingLayout.orientation}
-						marginTop={workingLayout.marginTop}
-						marginRight={workingLayout.marginRight}
-						marginBottom={workingLayout.marginBottom}
-						marginLeft={workingLayout.marginLeft}
-						onUploadImage={onUploadImage}
-						enableAI
-						onAIGenerate={() => setAiDrawerOpen(true)}
-						contentRevision={contentRevision}
-					/>
-				</FlatCard>
-
-				{/* Sidebar droite — toutes les configurations du modèle */}
-				<aside className="flex w-full shrink-0 flex-col gap-4 lg:w-96 lg:overflow-y-auto">
+				<div className="min-w-0 flex-1">
 					<FlatCard className="p-4">
-						<LayoutSettingsCard
+						<TemplateEditorWithRulers
+							initialContent={workingContent}
+							onChange={(doc) => setContent(doc)}
 							layout={workingLayout}
-							saving={savingLayout}
-							onChange={setLayout}
-							onSave={saveLayout}
+							onLayoutChange={(next) => setLayout(next)}
+							onUploadImage={onUploadImage}
+							headerPreview={{
+								logoSrc: logoUrl,
+								lines: headerPreviewLines,
+								fontFamily: workingHeaderFooter.header.fontFamily ?? "Optima",
+								logoHeight: logoHeightPx,
+							}}
+							footerPreview={{ lines: footerPreviewLines }}
+							onAIGenerate={() => setAiDrawerOpen(true)}
+							onReady={setEditorInstance}
+							contentRevision={contentRevision}
 						/>
 					</FlatCard>
+				</div>
 
-					{template.isGlobal ? (
-						<FlatCard className="p-4">
-							<ApplicabilityPicker
-								applicability={applicability ?? "all"}
-								applicableOrgTypes={applicableOrgTypes}
-								onChange={(next) => {
-									setApplicability(next.applicability);
-									setApplicableOrgTypes(next.applicableOrgTypes);
-								}}
-							/>
-						</FlatCard>
-					) : null}
+				{/* Sidebar droite — paramètres contextuels (style Pages) */}
+				<aside className="flex w-full shrink-0 flex-col gap-4 lg:w-96 lg:overflow-y-auto">
+					<ContextualFormatPanel
+						editor={editorInstance}
+						documentPanel={
+							<>
+								<FlatCard className="p-4">
+									<LayoutSettingsCard
+										layout={workingLayout}
+										saving={savingLayout}
+										onChange={setLayout}
+										onSave={saveLayout}
+									/>
+								</FlatCard>
 
-					{/* Briques composées — optionnelles, fallback défaut au rendu. */}
-					<FlatCard className="flex flex-col gap-4 p-4">
-						<div>
-							<div className="font-medium">Composition modulaire</div>
-							<div className="text-xs text-muted-foreground">
-								Briques réutilisables pour l'entête, la typographie et le style
-								rédactionnel.
-							</div>
-						</div>
-						<TemplateBlockPicker
-							label="Entête & pied"
-							helpText="Logo, titre institutionnel, pied de page."
-							blocks={headerFooterBlocks}
-							value={headerFooterBlockId ?? undefined}
-							onChange={(v) =>
-								setHeaderFooterBlockId(v as Id<"templateHeaderFooterBlocks"> | undefined)
-							}
-							createHref="/config/templates/header-footer-blocks/new"
-						/>
-						<TemplateBlockPicker
-							label="Typographie"
-							helpText="Police, tailles, alignement."
-							blocks={typographyBlocks}
-							value={typographyBlockId ?? undefined}
-							onChange={(v) =>
-								setTypographyBlockId(v as Id<"templateTypographyBlocks"> | undefined)
-							}
-							createHref="/config/templates/typography-blocks/new"
-						/>
-						<TemplateBlockPicker
-							label="Style rédactionnel"
-							helpText="Ton, argumentaire (métier IA)."
-							blocks={voiceBlocks}
-							value={voiceBlockId ?? undefined}
-							onChange={(v) =>
-								setVoiceBlockId(v as Id<"templateVoiceBlocks"> | undefined)
-							}
-							createHref="/config/templates/voice-blocks/new"
-						/>
-					</FlatCard>
+								{/* Facettes dépliables — chacune agit directement sur le document. */}
+								<FlatCard className="px-4 py-2">
+									<Accordion
+										type="multiple"
+										defaultValue={[]}
+										className="w-full"
+									>
+										<AccordionItem
+											value="header-footer"
+											className="border-b-0"
+										>
+											<AccordionTrigger className="py-3 text-sm font-medium hover:no-underline">
+												<span className="flex items-center gap-2">
+													<Palette className="h-4 w-4 text-muted-foreground" />
+													Entête &amp; pied
+												</span>
+											</AccordionTrigger>
+											<AccordionContent className="pb-4">
+												<RepresentationHeaderPreview
+													previewOrgId={previewOrgId}
+													onPreviewOrgIdChange={setPreviewOrgId}
+													headerFontFamily={
+														workingHeaderFooter.header.fontFamily ?? "Optima"
+													}
+													onHeaderFontFamilyChange={(value) =>
+														setHeaderFooter({
+															...workingHeaderFooter,
+															header: {
+																...workingHeaderFooter.header,
+																fontFamily: value,
+															},
+														})
+													}
+													logoHeightPx={logoHeightPx}
+													onLogoHeightPxChange={setLogoHeightPx}
+													templateHeaderText={
+														workingHeaderFooter.header.textContent
+													}
+													onTemplateHeaderTextChange={(text) =>
+														setHeaderFooter({
+															...workingHeaderFooter,
+															header: {
+																...workingHeaderFooter.header,
+																textContent: text,
+															},
+														})
+													}
+												/>
+											</AccordionContent>
+										</AccordionItem>
+										<AccordionItem value="voice" className="border-b-0">
+											<AccordionTrigger className="py-3 text-sm font-medium hover:no-underline">
+												<span className="flex items-center gap-2">
+													<MessageSquareQuote className="h-4 w-4 text-muted-foreground" />
+													Style rédactionnel
+												</span>
+											</AccordionTrigger>
+											<AccordionContent className="pb-4">
+												<VoiceSectionEditor
+													value={workingVoice}
+													onChange={setVoice}
+												/>
+											</AccordionContent>
+										</AccordionItem>
+									</Accordion>
+								</FlatCard>
 
-					<FlatCard className="p-4">
-						<PlaceholderManager
-							placeholders={workingPlaceholders}
-							onRemove={removePlaceholder}
-							newKey={newKey}
-							onNewKeyChange={setNewKey}
-							newSource={newSource}
-							onNewSourceChange={setNewSource}
-							onAdd={addPlaceholder}
-						/>
-					</FlatCard>
+								{template.isGlobal ? (
+									<FlatCard className="p-4">
+										<ApplicabilityPicker
+											applicability={applicability ?? "all"}
+											applicableOrgTypes={applicableOrgTypes}
+											onChange={(next) => {
+												setApplicability(next.applicability);
+												setApplicableOrgTypes(next.applicableOrgTypes);
+											}}
+										/>
+									</FlatCard>
+								) : null}
+
+								<FlatCard className="p-4">
+									<PlaceholderManager
+										placeholders={workingPlaceholders}
+										onRemove={removePlaceholder}
+										newKey={newKey}
+										onNewKeyChange={setNewKey}
+										newSource={newSource}
+										onNewSourceChange={setNewSource}
+										onAdd={addPlaceholder}
+									/>
+								</FlatCard>
+							</>
+						}
+					/>
 				</aside>
 			</div>
 
@@ -509,9 +633,6 @@ function PlaceholderManager({
 	const [sheetOpen, setSheetOpen] = useState(false);
 
 	function handleAdd() {
-		// Parent validates (clé vide silencieuse, duplicata avec toast).
-		// On ne ferme la sheet qu'après un ajout effectif pour laisser le toast
-		// d'erreur visible et permettre la correction sans réouvrir la sheet.
 		const trimmed = newKey.trim();
 		if (!trimmed) return;
 		const isDuplicate = placeholders.some((p) => p.key === trimmed);
@@ -623,9 +744,7 @@ function PlaceholderManager({
 }
 
 /**
- * Sidebar card to edit page layout (paper size, orientation, margins) after
- * the template has been created. Persists via a dedicated `Apply` button so
- * that local tweaks don't trigger a save on every keystroke.
+ * Sidebar card to edit page layout (paper size, orientation, margins).
  */
 function LayoutSettingsCard({
 	layout,

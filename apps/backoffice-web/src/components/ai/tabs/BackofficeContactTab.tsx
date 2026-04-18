@@ -70,8 +70,6 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 		total,
 		availableCountries,
 		isPending,
-		hasMore,
-		loadMore,
 		filters,
 		setSearch,
 		setSource,
@@ -151,25 +149,10 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 
 	// En backoffice, l'absence d'org active ne bloque pas : on affiche toujours
 	// la vue globale (tous les comptes créés sur la plateforme).
-
-	// Infinite scroll : sentinelle en bas de la liste, observée RELATIVEMENT au
-	// viewport interne de Radix ScrollArea (pas au document viewport — c'est
-	// pour ça que la pagination restait bloquée à la première page).
+	//
+	// Chargement exhaustif : plus de pagination — le serveur livre tout le
+	// périmètre d'un coup (plafond de sécurité Convex 10 000).
 	const viewportRef = useRef<HTMLDivElement | null>(null);
-	const loadMoreRef = useRef<HTMLDivElement | null>(null);
-	useEffect(() => {
-		const target = loadMoreRef.current;
-		const root = viewportRef.current;
-		if (!target || !root || !hasMore || isPending) return;
-		const observer = new IntersectionObserver(
-			(entries) => {
-				if (entries.some((e) => e.isIntersecting)) loadMore();
-			},
-			{ root, rootMargin: "200px" },
-		);
-		observer.observe(target);
-		return () => observer.disconnect();
-	}, [hasMore, isPending, loadMore]);
 
 	return (
 		<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -348,19 +331,10 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 					</div>
 				)}
 
-				{/* Sentinelle infinite scroll + bouton fallback "Charger plus" */}
-				{groups.length > 0 && (
-					<div ref={loadMoreRef} className="flex items-center justify-center py-3">
-						{isPending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-						{hasMore && !isPending && (
-							<button
-								type="button"
-								onClick={loadMore}
-								className="text-[11px] px-3 py-1.5 rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors"
-							>
-								Charger plus
-							</button>
-						)}
+				{/* Spinner discret pendant le chargement initial */}
+				{isPending && groups.length === 0 && (
+					<div className="flex items-center justify-center py-6">
+						<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
 					</div>
 				)}
 			</ScrollArea>

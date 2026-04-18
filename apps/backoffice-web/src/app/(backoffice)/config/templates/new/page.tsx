@@ -1,19 +1,20 @@
 "use client";
 
 /**
- * Wizard de création d'un modèle global en 3 étapes.
+ * Wizard de création d'un modèle global en 5 étapes.
  *
  *   1. Identité & diffusion  : nom, type, catégorie, scope (all/orgTypes)
- *   2. Composition            : 3 briques optionnelles (entête, typo, voix IA)
- *   3. Contenu                : bascule vers l'éditeur Tiptap — le template
- *                              est créé avec un document vide, puis redirigé.
+ *   2. Entête, logo, pied    : édition inline de la facette `headerFooter`
+ *   3. Structure des textes  : édition inline de la facette `typography`
+ *   4. Logique argumentaire  : édition inline de la facette `voice`
+ *   5. Récapitulatif         : visualise les choix avant création
  *
- * La logique de persistance est identique à l'ancienne page `/new` — on a
- * juste découpé les champs en 3 étapes pour guider l'utilisateur.
+ * À la soumission, un seul `documentTemplates.create` est émis avec les 3
+ * facettes empaquetées — le contenu Tiptap se rédige ensuite sur la page
+ * d'édition.
  */
 
 import { api } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
 import { ServiceCategory } from "@convex/lib/constants";
 import {
 	ArrowLeft,
@@ -33,7 +34,24 @@ import {
 	ApplicabilityPicker,
 	type Applicability,
 } from "@/components/config/ApplicabilityPicker";
-import { TemplateBlockPicker } from "@/components/config/TemplateBlockPicker";
+import {
+	HeaderFooterSectionEditor,
+	type HeaderFooterSectionValue,
+	createDefaultHeaderFooterSection,
+	serializeHeaderFooterSection,
+} from "@/components/config/HeaderFooterSectionEditor";
+import {
+	TypographySectionEditor,
+	type TypographySectionValue,
+	createDefaultTypographySection,
+	serializeTypographySection,
+} from "@/components/config/TypographySectionEditor";
+import {
+	VoiceSectionEditor,
+	type VoiceSectionValue,
+	createDefaultVoiceSection,
+	serializeVoiceSection,
+} from "@/components/config/VoiceSectionEditor";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { PageHeader } from "@/components/design-system/page-header";
 import { Button } from "@/components/ui/button";
@@ -48,10 +66,10 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { useConvexMutationQuery, useConvexQuery } from "@/integrations/convex/hooks";
+import { useConvexMutationQuery } from "@/integrations/convex/hooks";
 
 type TemplateType = "certificate" | "attestation" | "receipt" | "letter" | "custom";
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4 | 5;
 
 const TEMPLATE_TYPES: TemplateType[] = [
 	"certificate",
@@ -65,6 +83,7 @@ export default function NewGlobalTemplatePage() {
 	const { t } = useTranslation();
 	const router = useRouter();
 	const [step, setStep] = useState<Step>(1);
+	const [isPending, setIsPending] = useState(false);
 
 	// ─── Étape 1 : identité & diffusion ─────────────────────────────────
 	const [nameFr, setNameFr] = useState("");
@@ -80,36 +99,21 @@ export default function NewGlobalTemplatePage() {
 	const [applicability, setApplicability] = useState<Applicability>("all");
 	const [applicableOrgTypes, setApplicableOrgTypes] = useState<string[]>([]);
 
-	// ─── Étape 2 : composition ──────────────────────────────────────────
-	const [headerFooterBlockId, setHeaderFooterBlockId] = useState<
-		Id<"templateHeaderFooterBlocks"> | undefined
-	>(undefined);
-	const [typographyBlockId, setTypographyBlockId] = useState<
-		Id<"templateTypographyBlocks"> | undefined
-	>(undefined);
-	const [voiceBlockId, setVoiceBlockId] = useState<
-		Id<"templateVoiceBlocks"> | undefined
-	>(undefined);
-
-	const { data: headerFooterBlocks } = useConvexQuery(
-		api.functions.templateHeaderFooterBlocks.listGlobal,
-		{},
+	// ─── Étapes 2 / 3 / 4 : facettes inline ─────────────────────────────
+	const [headerFooter, setHeaderFooter] = useState<HeaderFooterSectionValue>(
+		createDefaultHeaderFooterSection(),
 	);
-	const { data: typographyBlocks } = useConvexQuery(
-		api.functions.templateTypographyBlocks.listGlobal,
-		{},
+	const [typography, setTypography] = useState<TypographySectionValue>(
+		createDefaultTypographySection(),
 	);
-	const { data: voiceBlocks } = useConvexQuery(
-		api.functions.templateVoiceBlocks.listGlobal,
-		{},
+	const [voice, setVoice] = useState<VoiceSectionValue>(
+		createDefaultVoiceSection(),
 	);
 
-	const [isPending, setIsPending] = useState(false);
 	const { mutateAsync: createTemplate } = useConvexMutationQuery(
 		api.functions.documentTemplates.create,
 	);
 
-	// ─── Validation par étape ───────────────────────────────────────────
 	function canAdvance(): boolean {
 		if (step === 1) {
 			if (!nameFr.trim()) return false;
@@ -118,27 +122,24 @@ export default function NewGlobalTemplatePage() {
 				applicableOrgTypes.length === 0
 			)
 				return false;
-			return true;
 		}
-		return true; // Étape 2 & 3 : tout optionnel
+		return true;
 	}
 
 	function next() {
 		if (!canAdvance()) {
 			if (step === 1 && !nameFr.trim()) {
 				toast.error(t("templates.global.new.errors.nameRequired"));
-				return;
-			}
-			if (
+			} else if (
 				step === 1 &&
 				applicability === "specificOrgTypes" &&
 				applicableOrgTypes.length === 0
 			) {
 				toast.error(t("templates.global.new.errors.orgTypesRequired"));
-				return;
 			}
+			return;
 		}
-		setStep((s) => (Math.min(s + 1, 3) as Step));
+		setStep((s) => (Math.min(s + 1, 5) as Step));
 	}
 
 	function previous() {
@@ -179,15 +180,15 @@ export default function NewGlobalTemplatePage() {
 					applicability === "specificOrgTypes"
 						? (applicableOrgTypes as never)
 						: undefined,
-				// Legacy — toujours renseigné pour les consommateurs qui n'ont pas
-				// encore migré vers `applicability`.
+				// Legacy — conservé tant que d'anciens clients lisent ce champ.
 				allowedOrgTypes:
 					applicability === "specificOrgTypes"
 						? (applicableOrgTypes as never)
 						: undefined,
-				headerFooterBlockId,
-				typographyBlockId,
-				voiceBlockId,
+				// Les 3 facettes inline — cœur du modèle.
+				headerFooter: serializeHeaderFooterSection(headerFooter) as never,
+				typography: serializeTypographySection(typography) as never,
+				voice: serializeVoiceSection(voice) as never,
 				paperSize,
 				orientation,
 			});
@@ -195,7 +196,9 @@ export default function NewGlobalTemplatePage() {
 			router.push(`/config/templates/${id}`);
 		} catch (err) {
 			const message =
-				err instanceof Error ? err.message : t("templates.create.errors.createFailed");
+				err instanceof Error
+					? err.message
+					: t("templates.create.errors.createFailed");
 			toast.error(message);
 		} finally {
 			setIsPending(false);
@@ -240,29 +243,22 @@ export default function NewGlobalTemplatePage() {
 						}}
 					/>
 				) : step === 2 ? (
-					<Step2Composition
-						headerFooterBlockId={headerFooterBlockId}
-						typographyBlockId={typographyBlockId}
-						voiceBlockId={voiceBlockId}
-						headerFooterBlocks={headerFooterBlocks}
-						typographyBlocks={typographyBlocks}
-						voiceBlocks={voiceBlocks}
-						onHeaderFooterChange={setHeaderFooterBlockId}
-						onTypographyChange={setTypographyBlockId}
-						onVoiceChange={setVoiceBlockId}
+					<HeaderFooterSectionEditor
+						value={headerFooter}
+						onChange={setHeaderFooter}
 					/>
+				) : step === 3 ? (
+					<TypographySectionEditor value={typography} onChange={setTypography} />
+				) : step === 4 ? (
+					<VoiceSectionEditor value={voice} onChange={setVoice} />
 				) : (
-					<Step3Review
+					<Step5Review
 						nameFr={nameFr}
 						templateType={templateType}
 						applicability={applicability}
 						applicableOrgTypes={applicableOrgTypes}
-						headerFooterBlockId={headerFooterBlockId}
-						typographyBlockId={typographyBlockId}
-						voiceBlockId={voiceBlockId}
-						headerFooterBlocks={headerFooterBlocks}
-						typographyBlocks={typographyBlocks}
-						voiceBlocks={voiceBlocks}
+						typography={typography}
+						voice={voice}
 					/>
 				)}
 			</FlatCard>
@@ -271,7 +267,6 @@ export default function NewGlobalTemplatePage() {
 				<Button variant="ghost" onClick={() => router.back()}>
 					{t("templates.common.cancel")}
 				</Button>
-
 				<div className="flex items-center gap-2">
 					{step > 1 ? (
 						<Button variant="outline" onClick={previous}>
@@ -280,7 +275,7 @@ export default function NewGlobalTemplatePage() {
 						</Button>
 					) : null}
 
-					{step < 3 ? (
+					{step < 5 ? (
 						<Button onClick={next} disabled={!canAdvance()}>
 							Suivant
 							<ArrowRight className="ml-2 h-4 w-4" />
@@ -306,11 +301,13 @@ export default function NewGlobalTemplatePage() {
 function StepIndicator({ step }: { step: Step }) {
 	const items = [
 		{ n: 1, label: "Identité & diffusion", icon: <LayoutTemplate className="h-4 w-4" /> },
-		{ n: 2, label: "Composition", icon: <Palette className="h-4 w-4" /> },
-		{ n: 3, label: "Récapitulatif", icon: <Check className="h-4 w-4" /> },
+		{ n: 2, label: "Entête, logo, pied", icon: <Palette className="h-4 w-4" /> },
+		{ n: 3, label: "Structure des textes", icon: <Type className="h-4 w-4" /> },
+		{ n: 4, label: "Logique argumentaire", icon: <MessageSquareQuote className="h-4 w-4" /> },
+		{ n: 5, label: "Récapitulatif", icon: <Check className="h-4 w-4" /> },
 	] as const;
 	return (
-		<ol className="flex items-center gap-2">
+		<ol className="flex flex-wrap items-center gap-2">
 			{items.map((item, idx) => {
 				const active = step === item.n;
 				const done = step > item.n;
@@ -347,7 +344,7 @@ function StepIndicator({ step }: { step: Step }) {
 }
 
 // ============================================================================
-// Étape 1
+// Étape 1 — Identité & diffusion
 // ============================================================================
 
 interface Step1Props {
@@ -520,133 +517,25 @@ function Step1Identity(props: Step1Props) {
 }
 
 // ============================================================================
-// Étape 2
+// Étape 5 — Récapitulatif
 // ============================================================================
 
-interface Step2Props {
-	headerFooterBlockId: Id<"templateHeaderFooterBlocks"> | undefined;
-	typographyBlockId: Id<"templateTypographyBlocks"> | undefined;
-	voiceBlockId: Id<"templateVoiceBlocks"> | undefined;
-	headerFooterBlocks: Array<{
-		_id: Id<"templateHeaderFooterBlocks">;
-		name: Record<string, string>;
-		description?: Record<string, string>;
-		isDefault?: boolean;
-	}> | undefined;
-	typographyBlocks: Array<{
-		_id: Id<"templateTypographyBlocks">;
-		name: Record<string, string>;
-		description?: Record<string, string>;
-		isDefault?: boolean;
-	}> | undefined;
-	voiceBlocks: Array<{
-		_id: Id<"templateVoiceBlocks">;
-		name: Record<string, string>;
-		description?: Record<string, string>;
-		isDefault?: boolean;
-	}> | undefined;
-	onHeaderFooterChange: (v: Id<"templateHeaderFooterBlocks"> | undefined) => void;
-	onTypographyChange: (v: Id<"templateTypographyBlocks"> | undefined) => void;
-	onVoiceChange: (v: Id<"templateVoiceBlocks"> | undefined) => void;
-}
-
-function Step2Composition(props: Step2Props) {
-	return (
-		<div className="flex flex-col gap-6">
-			<div>
-				<div className="flex items-center gap-2">
-					<Palette className="h-5 w-5 text-muted-foreground" />
-					<h3 className="font-medium">Composition du modèle</h3>
-				</div>
-				<p className="mt-1 text-sm text-muted-foreground">
-					Choisis les briques réutilisables qui habilleront ce modèle. Toutes
-					les briques sont optionnelles — si aucune n'est sélectionnée, les
-					réglages par défaut sont appliqués au rendu.
-				</p>
-			</div>
-
-			<div className="grid gap-4 md:grid-cols-3">
-				<div className="flex flex-col gap-3 rounded-md border p-4">
-					<div className="flex items-center gap-2">
-						<Palette className="h-4 w-4 text-muted-foreground" />
-						<h4 className="font-medium">Entête & pied</h4>
-					</div>
-					<TemplateBlockPicker
-						label="Brique sélectionnée"
-						helpText="Logo, titre institutionnel, pied de page."
-						blocks={props.headerFooterBlocks}
-						value={props.headerFooterBlockId}
-						onChange={(v) =>
-							props.onHeaderFooterChange(v as Id<"templateHeaderFooterBlocks">)
-						}
-						createHref="/config/templates/header-footer-blocks/new"
-					/>
-				</div>
-
-				<div className="flex flex-col gap-3 rounded-md border p-4">
-					<div className="flex items-center gap-2">
-						<Type className="h-4 w-4 text-muted-foreground" />
-						<h4 className="font-medium">Typographie</h4>
-					</div>
-					<TemplateBlockPicker
-						label="Brique sélectionnée"
-						helpText="Police, tailles, interlignage, alignement, sauts."
-						blocks={props.typographyBlocks}
-						value={props.typographyBlockId}
-						onChange={(v) =>
-							props.onTypographyChange(v as Id<"templateTypographyBlocks">)
-						}
-						createHref="/config/templates/typography-blocks/new"
-					/>
-				</div>
-
-				<div className="flex flex-col gap-3 rounded-md border p-4">
-					<div className="flex items-center gap-2">
-						<MessageSquareQuote className="h-4 w-4 text-muted-foreground" />
-						<h4 className="font-medium">Style rédactionnel</h4>
-					</div>
-					<TemplateBlockPicker
-						label="Brique sélectionnée"
-						helpText="Ton, formules, argumentaire (métier IA uniquement)."
-						blocks={props.voiceBlocks}
-						value={props.voiceBlockId}
-						onChange={(v) => props.onVoiceChange(v as Id<"templateVoiceBlocks">)}
-						createHref="/config/templates/voice-blocks/new"
-					/>
-				</div>
-			</div>
-		</div>
-	);
-}
-
-// ============================================================================
-// Étape 3 — Récapitulatif
-// ============================================================================
-
-function Step3Review(props: {
+function Step5Review(props: {
 	nameFr: string;
 	templateType: TemplateType;
 	applicability: Applicability;
 	applicableOrgTypes: string[];
-	headerFooterBlockId: Id<"templateHeaderFooterBlocks"> | undefined;
-	typographyBlockId: Id<"templateTypographyBlocks"> | undefined;
-	voiceBlockId: Id<"templateVoiceBlocks"> | undefined;
-	headerFooterBlocks: Step2Props["headerFooterBlocks"];
-	typographyBlocks: Step2Props["typographyBlocks"];
-	voiceBlocks: Step2Props["voiceBlocks"];
+	typography: TypographySectionValue;
+	voice: VoiceSectionValue;
 }) {
 	const { t } = useTranslation();
-	const hf = props.headerFooterBlocks?.find((b) => b._id === props.headerFooterBlockId);
-	const tp = props.typographyBlocks?.find((b) => b._id === props.typographyBlockId);
-	const vb = props.voiceBlocks?.find((b) => b._id === props.voiceBlockId);
-
 	return (
 		<div className="flex flex-col gap-5">
 			<div>
 				<h3 className="font-medium">Récapitulatif</h3>
 				<p className="mt-1 text-sm text-muted-foreground">
-					Vérifie les choix avant de créer le modèle. Le contenu sera édité à
-					l'étape suivante dans l'éditeur Tiptap.
+					Vérifie les choix avant de créer le modèle. Le contenu Tiptap sera
+					rédigé à l'étape suivante.
 				</p>
 			</div>
 
@@ -664,16 +553,12 @@ function Step3Review(props: {
 				}
 			/>
 			<ReviewRow
-				label="Entête & pied"
-				value={hf ? (hf.name.fr ?? hf.name.en ?? "(sans nom)") : "Défaut"}
-			/>
-			<ReviewRow
 				label="Typographie"
-				value={tp ? (tp.name.fr ?? tp.name.en ?? "(sans nom)") : "Défaut"}
+				value={`${props.typography.fontFamily.split(",")[0]} · ${props.typography.fontSizeBase}pt · ${props.typography.defaultAlignment}`}
 			/>
 			<ReviewRow
-				label="Style rédactionnel"
-				value={vb ? (vb.name.fr ?? vb.name.en ?? "(sans nom)") : "Défaut"}
+				label="Ton rédactionnel"
+				value={`${props.voice.tone} (${props.voice.register})`}
 			/>
 		</div>
 	);

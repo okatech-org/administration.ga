@@ -26,6 +26,10 @@ export {
 	resolveHeaderFooterBlock,
 	resolveTypographyBlock,
 	voiceBlockToPromptContext,
+	type HeaderFooterSection,
+	type TypographySection,
+	type VoiceSection,
+	// @deprecated — legacy aliases
 	type HeaderFooterBlockDoc,
 	type TypographyBlockDoc,
 	type VoiceBlockDoc,
