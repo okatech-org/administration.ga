@@ -9,7 +9,8 @@
 
 import { motion, AnimatePresence } from "motion/react"
 import { X } from "lucide-react"
-import { useCallback, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
@@ -49,6 +50,11 @@ export function BottomSheet({
   showHandle = true,
 }: BottomSheetProps) {
   const handleClose = useCallback(() => onOpenChange(false), [onOpenChange])
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Close on Escape key
   useEffect(() => {
@@ -60,7 +66,9 @@ export function BottomSheet({
     return () => document.removeEventListener("keydown", onKeyDown)
   }, [open, handleClose])
 
-  return (
+  if (!mounted) return null
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -143,6 +151,7 @@ export function BottomSheet({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   )
 }
