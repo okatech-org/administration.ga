@@ -80,12 +80,11 @@ export function BottomSheet({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 350 }}
-            className="fixed bottom-0 left-0 right-0 z-[91] flex flex-col pb-0 md:pb-10"
-            style={{ maxHeight }}
+            className="fixed bottom-0 left-0 right-0 z-[91]"
           >
             <div
               className={cn(
-                "mx-auto flex w-full flex-col rounded-t-2xl bg-background/95 backdrop-blur-xl",
+                "mx-auto flex w-full flex-col rounded-t-2xl bg-background/95 backdrop-blur-xl shadow-2xl",
                 maxWidthClass,
                 className
               )}
@@ -130,7 +129,7 @@ export function BottomSheet({
               )}
 
               {/* Content — scrollable */}
-              <div className="citizen-scrollbar flex-1 overflow-y-auto">
+              <div className="citizen-scrollbar min-h-0 overflow-y-auto">
                 {children}
               </div>
 

@@ -12,23 +12,37 @@ import { Badge } from "@/components/ui/badge";
 import { FlatCard } from "@/components/my-space/flat-card";
 import { cn } from "@/lib/utils";
 
-// ─── Labels ───────────────────────────────────────────────────
 const COUNTRY_LABELS: Record<string, string> = {
-  GA: "Gabon", FR: "France", CM: "Cameroun", CG: "Congo",
-  CD: "RD Congo", SN: "Senegal", CI: "Cote d'Ivoire", MA: "Maroc",
-  BE: "Belgique", CH: "Suisse", CA: "Canada", US: "Etats-Unis",
+  GA: "Gabon",
+  FR: "France",
+  CM: "Cameroun",
+  CG: "Congo",
+  CD: "RD Congo",
+  SN: "Senegal",
+  CI: "Cote d'Ivoire",
+  MA: "Maroc",
+  BE: "Belgique",
+  CH: "Suisse",
+  CA: "Canada",
+  US: "Etats-Unis",
 };
 const MARITAL_LABELS: Record<string, string> = {
-  single: "Celibataire", married: "Marie(e)",
-  divorced: "Divorce(e)", widowed: "Veuf/Veuve", pacs: "Pacse(e)",
+  single: "Celibataire",
+  married: "Marie(e)",
+  divorced: "Divorce(e)",
+  widowed: "Veuf/Veuve",
+  pacs: "Pacse(e)",
 };
 const PROFESSION_LABELS: Record<string, string> = {
-  employed: "Salarie(e)", self_employed: "Independant(e)",
-  unemployed: "Sans emploi", student: "Etudiant(e)", retired: "Retraite(e)",
+  employed: "Salarie(e)",
+  self_employed: "Independant(e)",
+  unemployed: "Sans emploi",
+  student: "Etudiant(e)",
+  retired: "Retraite(e)",
 };
 
 function lbl(map: Record<string, string>, code?: string) {
-  return code ? map[code] ?? code : undefined;
+  return code ? (map[code] ?? code) : undefined;
 }
 
 function fmtDate(ts?: number) {
@@ -36,14 +50,10 @@ function fmtDate(ts?: number) {
   return format(new Date(ts), "dd MMM yyyy", { locale: fr });
 }
 
-// ─── Props ────────────────────────────────────────────────────
 export interface ProfileDossierCardProps {
   profile: any;
 }
 
-/**
- * Sous-composant : ligne d'information label / valeur.
- */
 function InfoRow({
   label,
   value,
@@ -55,26 +65,29 @@ function InfoRow({
 }) {
   return (
     <div className={cn("flex flex-col overflow-hidden", className)}>
-      <span className="text-[10px] text-muted-foreground uppercase font-semibold leading-none tracking-wider mb-1">
+      <span className="text-xs text-muted-foreground uppercase font-semibold leading-none tracking-wider mb-1">
         {label}
       </span>
       {typeof value === "string" ? (
-        <span className="text-[13px] font-bold leading-tight truncate text-foreground" title={value || ""}>
+        <span
+          className="text-sm font-semibold leading-tight truncate text-foreground"
+          title={value || ""}
+        >
           {value || "\u2014"}
         </span>
       ) : value ? (
-        <div className="text-[13px] font-bold leading-tight text-foreground">{value}</div>
+        <div className="text-sm font-semibold leading-tight text-foreground">
+          {value}
+        </div>
       ) : (
-        <span className="text-[13px] font-bold leading-tight text-foreground">{"\u2014"}</span>
+        <span className="text-sm font-semibold leading-tight text-foreground">
+          {"\u2014"}
+        </span>
       )}
     </div>
   );
 }
 
-/**
- * Dossier Citoyen en grille 2x2 dense.
- * Replique le layout iProfil citizen-web pour le contexte backoffice.
- */
 export function ProfileDossierCard({ profile }: ProfileDossierCardProps) {
   const identity = profile?.identity;
   const contacts = profile?.contacts;
@@ -83,7 +96,6 @@ export function ProfileDossierCard({ profile }: ProfileDossierCardProps) {
   const family = profile?.family;
   const profession = profile?.profession;
 
-  // Alerte expiration passeport
   const passportExpired = (() => {
     if (!passportInfo?.expiryDate) return false;
     return new Date(passportInfo.expiryDate) < new Date();
@@ -92,46 +104,52 @@ export function ProfileDossierCard({ profile }: ProfileDossierCardProps) {
   const passportWarning = (() => {
     if (!passportInfo?.expiryDate || passportExpired) return false;
     const daysLeft = Math.ceil(
-      (new Date(passportInfo.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+      (new Date(passportInfo.expiryDate).getTime() - Date.now()) /
+        (1000 * 60 * 60 * 24),
     );
     return daysLeft < 90;
   })();
 
-  // Contact d'urgence — priorite au pays de residence
   const emergency = contacts?.emergencyResidence ?? contacts?.emergencyHomeland;
   const emergencyIsInResidence = !!contacts?.emergencyResidence;
 
   return (
     <FlatCard>
       <div className="pb-0 pt-3 px-4">
-        <div className="text-xs font-bold flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-teal-500/10">
-            <FileBadge2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+        <div className="text-sm font-semibold flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-primary/10">
+            <FileBadge2 className="w-3.5 h-3.5 text-primary" />
           </div>
           Dossier Citoyen
         </div>
       </div>
 
       <div className="p-3 pt-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5">
-          {/* BLOC 1 : Identite */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
+          {/* Identite */}
           <div className="space-y-2.5">
-            <p className="text-[9px] font-bold text-muted-foreground uppercase border-b border-foreground/5 pb-1 flex items-center gap-1.5">
-              <FileBadge2 className="w-3 h-3 text-teal-600 dark:text-teal-400" /> Identite
+            <p className="text-xs font-semibold text-muted-foreground uppercase border-b border-border pb-1 flex items-center gap-1.5">
+              <FileBadge2 className="w-3 h-3 text-primary" /> Identite
             </p>
             <div className="grid grid-cols-2 gap-2">
               <InfoRow label="Lieu naiss." value={identity?.birthPlace} />
               <InfoRow label="Date naiss." value={fmtDate(identity?.birthDate)} />
-              <InfoRow label="Pays naiss." value={lbl(COUNTRY_LABELS, identity?.birthCountry)} />
-              <InfoRow label="Nationalite" value={lbl(COUNTRY_LABELS, identity?.nationality)} />
+              <InfoRow
+                label="Pays naiss."
+                value={lbl(COUNTRY_LABELS, identity?.birthCountry)}
+              />
+              <InfoRow
+                label="Nationalite"
+                value={lbl(COUNTRY_LABELS, identity?.nationality)}
+              />
               <InfoRow label="NIP" value={identity?.nip} className="col-span-2" />
             </div>
           </div>
 
-          {/* BLOC 2 : Contact & Adresse */}
+          {/* Contact & Adresse */}
           <div className="space-y-2.5">
-            <p className="text-[9px] font-bold text-muted-foreground uppercase border-b border-foreground/5 pb-1 flex items-center gap-1.5">
-              <MapPin className="w-3 h-3 text-blue-500" /> Contact
+            <p className="text-xs font-semibold text-muted-foreground uppercase border-b border-border pb-1 flex items-center gap-1.5">
+              <MapPin className="w-3 h-3 text-primary" /> Contact
             </p>
             <div className="grid grid-cols-1 gap-2">
               <InfoRow
@@ -140,7 +158,9 @@ export function ProfileDossierCard({ profile }: ProfileDossierCardProps) {
                   addresses?.residence ? (
                     <div className="flex flex-col gap-0.5">
                       {addresses.residence.street && (
-                        <span className="truncate">{addresses.residence.street}</span>
+                        <span className="truncate">
+                          {addresses.residence.street}
+                        </span>
                       )}
                       <span className="truncate">
                         {[addresses.residence.postalCode, addresses.residence.city]
@@ -170,10 +190,10 @@ export function ProfileDossierCard({ profile }: ProfileDossierCardProps) {
             </div>
           </div>
 
-          {/* BLOC 3 : Passeport & Famille */}
+          {/* Passeport & Famille */}
           <div className="space-y-2.5">
-            <p className="text-[9px] font-bold text-muted-foreground uppercase border-b border-foreground/5 pb-1 flex items-center gap-1.5">
-              <FileText className="w-3 h-3 text-amber-500" /> Passeport & Famille
+            <p className="text-xs font-semibold text-muted-foreground uppercase border-b border-border pb-1 flex items-center gap-1.5">
+              <FileText className="w-3 h-3 text-primary" /> Passeport & Famille
             </p>
             <div className="grid grid-cols-2 gap-2">
               <InfoRow label="N. Passeport" value={passportInfo?.number} />
@@ -183,18 +203,24 @@ export function ProfileDossierCard({ profile }: ProfileDossierCardProps) {
                   passportInfo?.expiryDate ? (
                     <span
                       className={cn(
-                        passportExpired && "text-red-500",
-                        passportWarning && "text-amber-600 dark:text-amber-400",
+                        passportExpired && "text-destructive",
+                        passportWarning && "text-warning",
                       )}
                     >
                       {fmtDate(passportInfo.expiryDate)}
                       {passportExpired && (
-                        <Badge variant="destructive" className="ml-1 text-[8px] px-1 py-0">
+                        <Badge
+                          variant="destructive"
+                          className="ml-1 text-xs"
+                        >
                           Expire
                         </Badge>
                       )}
                       {passportWarning && !passportExpired && (
-                        <Badge className="ml-1 text-[8px] px-1 py-0 bg-amber-100 text-amber-700 border-amber-200">
+                        <Badge
+                          variant="outline"
+                          className="ml-1 text-xs bg-warning-light text-warning border-warning/20"
+                        >
                           Bientot
                         </Badge>
                       )}
@@ -202,7 +228,10 @@ export function ProfileDossierCard({ profile }: ProfileDossierCardProps) {
                   ) : undefined
                 }
               />
-              <InfoRow label="Situation" value={lbl(MARITAL_LABELS, family?.maritalStatus)} />
+              <InfoRow
+                label="Situation"
+                value={lbl(MARITAL_LABELS, family?.maritalStatus)}
+              />
               <InfoRow
                 label="Conjoint(e)"
                 value={
@@ -230,33 +259,37 @@ export function ProfileDossierCard({ profile }: ProfileDossierCardProps) {
             </div>
           </div>
 
-          {/* BLOC 4 : Profession & Contact Urgence */}
+          {/* Profession & Contact Urgence */}
           <div className="space-y-2.5">
-            <p className="text-[9px] font-bold text-muted-foreground uppercase border-b border-foreground/5 pb-1 flex items-center gap-1.5">
-              <Briefcase className="w-3 h-3 text-teal-600 dark:text-teal-400" /> Profession
+            <p className="text-xs font-semibold text-muted-foreground uppercase border-b border-border pb-1 flex items-center gap-1.5">
+              <Briefcase className="w-3 h-3 text-primary" /> Profession
             </p>
             <div className="grid grid-cols-2 gap-2">
-              <InfoRow label="Statut Pro." value={lbl(PROFESSION_LABELS, profession?.status)} />
+              <InfoRow
+                label="Statut Pro."
+                value={lbl(PROFESSION_LABELS, profession?.status)}
+              />
               <InfoRow label="Profession" value={profession?.title} />
             </div>
 
-            {/* Contact d'urgence */}
             {emergency && (
-              <div className="mt-2 p-2 rounded-lg bg-rose-500/5 border border-rose-500/10">
-                <p className="text-[8px] font-bold text-rose-600 uppercase mb-1 flex items-center gap-1">
-                  <ShieldAlert className="w-2.5 h-2.5" />
+              <div className="mt-2 p-2 rounded-lg bg-destructive-light border border-destructive/20">
+                <p className="text-xs font-semibold text-destructive uppercase mb-1 flex items-center gap-1">
+                  <ShieldAlert className="w-3 h-3" />
                   Contact Urgence
                   {emergencyIsInResidence && (
-                    <Badge variant="destructive" className="text-[7px] px-1 py-0 ml-1">
+                    <Badge variant="destructive" className="text-xs ml-1">
                       Pays residence
                     </Badge>
                   )}
                 </p>
                 <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-medium truncate">
+                  <span className="text-xs font-medium truncate">
                     {emergency.firstName} {emergency.lastName}
                   </span>
-                  <span className="text-[10px] text-muted-foreground">{emergency.phone}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {emergency.phone}
+                  </span>
                 </div>
               </div>
             )}

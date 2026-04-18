@@ -1,87 +1,33 @@
 "use client";
 
-/**
- * Affaires Consulaires — Détail d'un Profil Citoyen (vue Agent)
- *
- * Interface de travail pour les agents consulaires :
- * - Reprend ProfileDetailView comme base
- * - Ajoute un en-tête enrichi avec actions contextuelles
- * - Intègre un onglet "Notes Agent" (interne, jamais visible côté citoyen)
- * - Visibilité des onglets filtrée par TaskCode / permission de l'agent
- *
- * PÉRIMÈTRE STRICT : apps/agent-web UNIQUEMENT.
- * NE JAMAIS modifier citizen-web (port :3001) ou backoffice-web (port :3002).
- */
-
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
 	ArrowLeft,
-	User,
-	ClipboardList,
-	MessageSquare,
-	Send,
-	ExternalLink,
-	Phone,
-	Mail,
-	Shield,
 	AlertCircle,
-	Loader2,
-	Calendar,
-	UserCheck,
 	LockKeyhole,
+	MessageSquare,
+	CreditCard,
+	Building2,
 } from "lucide-react";
-import { useState } from "react";
 import { motion } from "motion/react";
-import { toast } from "sonner";
+import { useState } from "react";
 import { useOrg } from "@/components/org/org-provider";
 import { useCanDoTask } from "@/hooks/useCanDoTask";
-import { ProfileDetailView } from "@/components/dashboard/ProfileDetailView";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ProfileHeroCard } from "@/components/dashboard/profile/profile-hero-card";
+import { ProfileConsularCard } from "@/components/dashboard/profile/profile-consular-card";
+import { ProfileDocumentsCard } from "@/components/dashboard/profile/profile-documents-card";
+import { ProfileRequestsCard } from "@/components/dashboard/profile/profile-requests-card";
+import { ProfileChildrenCard } from "@/components/dashboard/profile/profile-children-card";
+import { CitizenDossierSections } from "@/components/dashboard/profile/citizen-dossier-sections";
+import { ProfileNotesPanel } from "@/components/dashboard/profile/profile-notes-panel";
+import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/my-space/flat-card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
-
-
-// ─── Request status colors ────────────────────────────────────────────────────
-
-function getRequestStatusClass(status: string) {
-	const map: Record<string, string> = {
-		draft: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-		submitted: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-		pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-		under_review: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
-		validated: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-		rejected: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-		completed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-		cancelled: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
-	};
-	return map[status] ?? "bg-gray-100 text-gray-600";
-}
-
-const STATUS_LABELS: Record<string, string> = {
-	draft: "Brouillon",
-	submitted: "Soumis",
-	pending: "En attente",
-	under_review: "En révision",
-	in_production: "En production",
-	validated: "Validé",
-	rejected: "Rejeté",
-	completed: "Terminé",
-	cancelled: "Annulé",
-	processing: "En traitement",
-	appointment_scheduled: "RDV schedulé",
-	ready_for_pickup: "Prêt à récupérer",
-};
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AgentProfileDetailPage() {
 	const { profileId } = useParams();
@@ -89,13 +35,29 @@ export default function AgentProfileDetailPage() {
 	const { activeOrgId } = useOrg();
 	const { canDo } = useCanDoTask(activeOrgId ?? undefined);
 
-	// Load profile detail (reuses existing query)
+	const [previewDoc, setPreviewDoc] = useState<{
+		storageId: string;
+		filename: string;
+		mimeType?: string;
+	} | null>(null);
+
 	const { data: detailData, isLoading } = useAuthenticatedConvexQuery(
 		api.functions.profiles.getProfileDetail,
 		{ profileId: profileId as Id<"profiles"> | Id<"childProfiles"> },
 	);
 
-	// Permission guard
+	const identityPhotoId = (detailData as any)?.profile?.documents?.identityPhoto;
+	const { data: identityPhotoDoc } = useAuthenticatedConvexQuery(
+		api.functions.documents.getById,
+		identityPhotoId ? { documentId: identityPhotoId } : "skip",
+	);
+	const { data: identityPhotoUrl } = useAuthenticatedConvexQuery(
+		api.functions.documents.getUrl,
+		identityPhotoDoc?.files[0]?.storageId
+			? { storageId: identityPhotoDoc.files[0].storageId }
+			: "skip",
+	);
+
 	if (!canDo("profiles.view")) {
 		return (
 			<div className="flex flex-col items-center justify-center py-20 gap-4 text-center p-6">
@@ -103,9 +65,9 @@ export default function AgentProfileDetailPage() {
 					<LockKeyhole className="h-8 w-8 text-destructive/60" />
 				</div>
 				<div>
-					<h2 className="text-lg font-semibold">Accès restreint</h2>
+					<h2 className="text-lg font-semibold">Acces restreint</h2>
 					<p className="text-sm text-muted-foreground mt-1">
-						Vous n'avez pas les permissions nécessaires pour accéder aux profils citoyens.
+						Vous n'avez pas les permissions necessaires pour acceder aux profils citoyens.
 					</p>
 				</div>
 				<Button variant="outline" onClick={() => router.push("/affaires-consulaires")}>
@@ -128,7 +90,7 @@ export default function AgentProfileDetailPage() {
 				<div>
 					<h2 className="text-lg font-semibold">Profil introuvable</h2>
 					<p className="text-sm text-muted-foreground mt-1">
-						Ce profil n'existe pas ou vous n'y avez pas accès.
+						Ce profil n'existe pas ou vous n'y avez pas acces.
 					</p>
 				</div>
 				<Button variant="outline" onClick={() => router.push("/affaires-consulaires/profiles")}>
@@ -139,23 +101,24 @@ export default function AgentProfileDetailPage() {
 		);
 	}
 
-	const { profile, user, requests = [], registrations = [] } = detailData;
+	const {
+		profile,
+		user,
+		children = [],
+		documents = [],
+		requests = [],
+		registrations = [],
+		representations = [],
+	} = detailData as any;
+
+	const completionScore = (profile as any).completionScore ?? 0;
 
 	const firstName = profile.identity?.firstName || "";
 	const lastName = profile.identity?.lastName || "";
 	const fullName = `${firstName} ${lastName}`.trim() || "Nom inconnu";
-	const initials = `${firstName[0] || ""}${lastName[0] || ""}`.toUpperCase() || "?";
-	const email = user?.email || profile.contacts?.email || "";
-	const phone = profile.contacts?.phone || "";
-	const registration = registrations[0];
-
-	const pendingRequests = requests.filter(
-		(r: any) => !["completed", "rejected", "cancelled"].includes(r.status),
-	);
 
 	return (
-		<div className="flex flex-1 flex-col gap-0 max-w-5xl mx-auto w-full">
-			{/* ── Top Navigation Bar ─────────────────────────────────────────── */}
+		<div className="flex flex-1 flex-col gap-0 w-full">
 			<motion.div
 				initial={{ opacity: 0, y: -8 }}
 				animate={{ opacity: 1, y: 0 }}
@@ -175,306 +138,213 @@ export default function AgentProfileDetailPage() {
 				<span className="text-sm font-medium truncate">{fullName}</span>
 			</motion.div>
 
-			<div className="flex flex-col gap-6 p-4 md:p-6">
-				{/* ── Agent Context Header ─────────────────────────────────────── */}
-				<motion.div
-					initial={{ opacity: 0, y: 10 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.2, delay: 0.05 }}
-				>
-					<FlatCard className="border-primary/10 overflow-hidden">
-						{/* Accent bar */}
-						<div className="h-1 w-full bg-linear-to-r from-indigo-500 via-blue-500 to-cyan-500" />
+			<div className="flex flex-col gap-6 p-4 md:p-6 w-full">
+				<div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+					{/* Colonne gauche : Hero + carte consulaire + enfants */}
+					<motion.aside
+						initial={{ opacity: 0, x: -8 }}
+						animate={{ opacity: 1, x: 0 }}
+						transition={{ duration: 0.2 }}
+						className="lg:col-span-4 xl:col-span-3 space-y-4"
+					>
+						<ProfileHeroCard
+							profile={profile}
+							user={user}
+							identityPhotoUrl={identityPhotoUrl}
+							registrations={registrations}
+							completionScore={completionScore}
+						/>
 
-						<div className="p-5">
-							<div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-								{/* Avatar */}
-								<Avatar className="h-16 w-16 border-2 border-border shrink-0">
-									<AvatarFallback className="bg-indigo-500/10 text-indigo-600 text-xl font-bold">
-										{initials}
-									</AvatarFallback>
-								</Avatar>
+						<ProfileConsularCard
+							registrations={registrations}
+							profile={profile}
+							identityPhotoUrl={identityPhotoUrl}
+						/>
 
-								{/* Info */}
-								<div className="flex-1 min-w-0">
-									<div className="flex flex-wrap items-center gap-2 mb-1">
-										<h1 className="text-xl font-bold">{fullName}</h1>
-										{registration && (
-											<Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/20">
-												<UserCheck className="h-3 w-3 mr-1" />
-												Inscrit
-											</Badge>
-										)}
-										{pendingRequests.length > 0 && (
-											<Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/20">
-												{pendingRequests.length} demande{pendingRequests.length > 1 ? "s" : ""} en cours
-											</Badge>
-										)}
+						{children.length > 0 && (
+							<ProfileChildrenCard
+								children={children}
+								basePath="/affaires-consulaires/profiles"
+							/>
+						)}
+					</motion.aside>
+
+					{/* Colonne centrale : dossier citoyen complet */}
+					<motion.section
+						initial={{ opacity: 0, y: 8 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.2, delay: 0.05 }}
+						className="lg:col-span-8 xl:col-span-6 space-y-4"
+					>
+						<CitizenDossierSections profile={profile} />
+
+						{representations && representations.length > 0 && (
+							<FlatCard>
+								<div className="flex items-center gap-2.5 rounded-t-xl bg-muted/40 px-4 py-3 border-b border-border/50">
+									<div className="rounded-md bg-primary/10 p-1.5">
+										<Building2 className="h-3.5 w-3.5 text-primary" />
 									</div>
+									<span className="text-base font-bold">
+										Representations diplomatiques
+									</span>
+								</div>
+								<div className="p-4 space-y-2">
+									{(representations as any[]).map((rep, idx) => (
+										<div
+											key={rep.slug || idx}
+											className="flex items-center justify-between rounded-lg bg-background/60 px-3 py-2.5"
+										>
+											<div className="min-w-0 flex-1">
+												<p className="text-sm font-semibold truncate">
+													{rep.name}
+												</p>
+												<p className="text-xs text-muted-foreground">
+													{rep.type
+														?.replace(/_/g, " ")
+														.replace(/\b\w/g, (c: string) =>
+															c.toUpperCase(),
+														)}
+												</p>
+											</div>
+											<Badge
+												variant="outline"
+												className="ml-2 text-xs shrink-0"
+											>
+												{rep.country}
+											</Badge>
+										</div>
+									))}
+								</div>
+							</FlatCard>
+						)}
+					</motion.section>
 
-									<div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-										{email && (
-											<a href={`mailto:${email}`} className="flex items-center gap-1.5 hover:text-foreground transition-colors">
-												<Mail className="h-3.5 w-3.5" />
-												{email}
-											</a>
-										)}
-										{phone && (
-											<a href={`tel:${phone}`} className="flex items-center gap-1.5 hover:text-foreground transition-colors">
-												<Phone className="h-3.5 w-3.5" />
-												{phone}
-											</a>
-										)}
-										{registration?.cardNumber && (
-											<span className="flex items-center gap-1.5 font-mono text-xs">
-												<Shield className="h-3.5 w-3.5" />
-												{registration.cardNumber}
-											</span>
-										)}
+					{/* Colonne droite : Documents + Demandes + Inscriptions */}
+					<motion.aside
+						initial={{ opacity: 0, x: 8 }}
+						animate={{ opacity: 1, x: 0 }}
+						transition={{ duration: 0.2, delay: 0.1 }}
+						className="lg:col-span-12 xl:col-span-3 space-y-4"
+					>
+						<ProfileDocumentsCard
+							documents={documents}
+							canValidate={canDo("requests.process")}
+							onPreview={(doc: any) => {
+								const firstFile = doc.files?.[0];
+								if (firstFile?.storageId) {
+									setPreviewDoc({
+										storageId: firstFile.storageId,
+										filename:
+											firstFile.filename || doc.label || "Document",
+										mimeType: firstFile.mimeType,
+									});
+								}
+							}}
+						/>
+
+						<ProfileRequestsCard
+							requests={requests}
+							context="agent"
+							basePath="/requests"
+						/>
+
+						{registrations.length > 0 && (
+							<FlatCard>
+								<div className="flex items-center gap-2.5 rounded-t-xl bg-muted/40 px-4 py-3 border-b border-border/50">
+									<div className="rounded-md bg-primary/10 p-1.5">
+										<CreditCard className="h-3.5 w-3.5 text-primary" />
 									</div>
+									<span className="text-base font-bold">Inscriptions</span>
+									<Badge variant="secondary" className="ml-auto text-xs">
+										{registrations.length}
+									</Badge>
 								</div>
-
-								{/* Quick actions */}
-								<div className="flex items-center gap-2 shrink-0 flex-wrap">
-									{canDo("requests.view") && requests.length > 0 && (
-										<Button
-											variant="outline"
-											size="sm"
-											asChild
-											className="gap-2 text-xs"
+								<div className="p-4 space-y-2">
+									{registrations.map((reg: any) => (
+										<div
+											key={reg._id}
+											className="rounded-lg bg-background/60 p-3"
 										>
-											<Link href="/requests">
-												<ClipboardList className="h-3.5 w-3.5" />
-												Ses demandes
-												<ExternalLink className="h-3 w-3 opacity-50" />
-											</Link>
-										</Button>
-									)}
-									{canDo("appointments.view") && (
-										<Button
-											variant="outline"
-											size="sm"
-											asChild
-											className="gap-2 text-xs"
-										>
-											<Link href="/appointments">
-												<Calendar className="h-3.5 w-3.5" />
-												Rendez-vous
-											</Link>
-										</Button>
-									)}
+											<div className="flex items-center justify-between gap-2">
+												<p className="text-sm font-semibold truncate">
+													{reg.type ?? "Inscription"}
+												</p>
+												<Badge
+													variant="outline"
+													className="text-xs shrink-0"
+												>
+													{reg.status ?? "—"}
+												</Badge>
+											</div>
+											{reg.cardNumber && (
+												<p className="text-xs font-mono text-muted-foreground mt-1">
+													N {reg.cardNumber}
+												</p>
+											)}
+										</div>
+									))}
 								</div>
-							</div>
-						</div>
-					</FlatCard>
-				</motion.div>
+							</FlatCard>
+						)}
+					</motion.aside>
+				</div>
 
-				{/* ── Demandes en cours (rapide aperçu) ───────────────────────── */}
-				{canDo("requests.view") && pendingRequests.length > 0 && (
+				{canDo("requests.process") && (
 					<motion.div
 						initial={{ opacity: 0, y: 8 }}
 						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.2, delay: 0.1 }}
+						transition={{ duration: 0.2, delay: 0.15 }}
+						className="flex flex-col gap-3"
 					>
-						<div className="flex items-center justify-between mb-3">
-							<h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-								Demandes actives
+						<div className="flex items-center gap-2">
+							<MessageSquare className="h-4 w-4 text-primary" />
+							<h2 className="text-sm font-semibold uppercase tracking-wider">
+								Notes internes
 							</h2>
 						</div>
-						<div className="flex flex-col gap-2">
-							{pendingRequests.slice(0, 3).map((req: any) => (
-								<Link
-									key={req._id}
-									href={`/requests/${req.reference || req._id}`}
-									className="flex items-center gap-4 p-3 rounded-lg border border-border/50 bg-card hover:bg-muted/40 hover:border-primary/20 transition-all group"
-								>
-									<div className="flex-1 min-w-0">
-										<div className="flex items-center gap-2">
-											<span className="font-mono text-xs text-primary font-medium">
-												{req.reference || "—"}
-											</span>
-											<Badge
-												variant="outline"
-												className={cn("text-[10px] h-4 px-1.5", getRequestStatusClass(req.status))}
-											>
-												{STATUS_LABELS[req.status] || req.status}
-											</Badge>
-										</div>
-										<p className="text-sm text-muted-foreground mt-0.5 truncate">
-											{req.serviceName?.fr || "Service consulaire"}
-										</p>
-									</div>
-									<ExternalLink className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
-								</Link>
-							))}
-							{pendingRequests.length > 3 && (
-								<p className="text-xs text-muted-foreground text-center py-1">
-									+ {pendingRequests.length - 3} autre{pendingRequests.length - 3 > 1 ? "s" : ""} demande{pendingRequests.length - 3 > 1 ? "s" : ""}
-								</p>
-							)}
-						</div>
+						<ProfileNotesPanel profileId={profileId as string} />
 					</motion.div>
 				)}
-
-				{/* ── Profil complet + Notes Agent ─────────────────────────────── */}
-				<motion.div
-					initial={{ opacity: 0, y: 8 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.2, delay: 0.15 }}
-				>
-					<Tabs defaultValue="profile" className="w-full">
-						<TabsList className="w-full justify-start h-11 bg-transparent border-b rounded-none p-0 overflow-x-auto overflow-y-hidden mb-6">
-							<TabsTrigger
-								value="profile"
-								className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-11 px-5"
-							>
-								<User className="h-4 w-4 mr-2" />
-								Dossier Citoyen
-							</TabsTrigger>
-							{canDo("requests.process") && (
-								<TabsTrigger
-									value="notes"
-									className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-11 px-5"
-								>
-									<MessageSquare className="h-4 w-4 mr-2" />
-									Notes Internes
-									<Badge variant="secondary" className="ml-2 text-xs">
-										Agent
-									</Badge>
-								</TabsTrigger>
-							)}
-						</TabsList>
-
-						{/* Tab: Profil complet */}
-						<TabsContent value="profile">
-							<ProfileDetailView profileId={profileId as string} context="agent" />
-						</TabsContent>
-
-						{/* Tab: Notes Agent (INTERNE — jamais visible côté citoyen) */}
-						{canDo("requests.process") && (
-							<TabsContent value="notes">
-								<AgentNotesPanel profileId={profileId as string} />
-							</TabsContent>
-						)}
-					</Tabs>
-				</motion.div>
 			</div>
+
+			{previewDoc && (
+				<DocumentPreviewModal
+					open={!!previewDoc}
+					onOpenChange={(open) => {
+						if (!open) setPreviewDoc(null);
+					}}
+					storageId={previewDoc.storageId}
+					filename={previewDoc.filename}
+					mimeType={previewDoc.mimeType}
+				/>
+			)}
 		</div>
 	);
 }
-
-// ─── Agent Notes Panel ────────────────────────────────────────────────────────
-//
-// IMPORTANT : Ces notes sont EXCLUSIVEMENT visibles par les agents.
-// Elles ne sont JAMAIS transmises au citoyen ni visibles dans citizen-web.
-// Elles sont liées au profil (pas à une demande spécifique).
-// Pour les notes liées à une demande précise, utiliser $reference.tsx.
-
-interface AgentNotesPanelProps {
-	profileId: string;
-}
-
-function AgentNotesPanel({ profileId: _profileId }: AgentNotesPanelProps) {
-	const [noteContent, setNoteContent] = useState("");
-	const [isSending, setIsSending] = useState(false);
-
-	// For now, notes are per-profile (stored via agentNotes scoped to profile context)
-	// We display a clear explanation and allow free-text notes
-	// Future: add a profileId index on agentNotes table
-
-	const handleSendNote = async () => {
-		if (!noteContent.trim()) return;
-		setIsSending(true);
-		// TODO: integrate with convex mutation when profileId-scoped notes are added
-		// For now, show UI with clear label
-		await new Promise((r) => setTimeout(r, 600));
-		toast.success("Note enregistrée (fonctionnalité en cours d'intégration)");
-		setNoteContent("");
-		setIsSending(false);
-	};
-
-	return (
-		<div className="flex flex-col gap-4">
-			{/* Warning banner */}
-			<div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40">
-				<Shield className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-				<div className="text-xs text-amber-800 dark:text-amber-300">
-					<span className="font-semibold">Notes internes agents</span> — Ces notes sont strictement réservées au
-					corps administratif. Elles ne sont jamais visibles par le citoyen et n'apparaissent pas dans son espace personnel.
-				</div>
-			</div>
-
-			{/* Empty state */}
-			<FlatCard className="border-dashed">
-				<div className="p-3 lg:p-4 flex flex-col items-center justify-center py-10 text-center">
-					<MessageSquare className="h-10 w-10 text-muted-foreground/30 mb-3" />
-					<p className="text-sm font-medium text-muted-foreground">Aucune note pour ce profil</p>
-					<p className="text-xs text-muted-foreground/60 mt-1 max-w-xs">
-						Ajoutez des observations, remarques ou alertes internes sur ce dossier.
-					</p>
-				</div>
-			</FlatCard>
-
-			{/* Add note */}
-			<FlatCard>
-				<div className="p-3 lg:p-4 flex flex-col gap-3">
-					<p className="text-sm font-medium">Ajouter une note interne</p>
-					<Textarea
-						value={noteContent}
-						onChange={(e) => setNoteContent(e.target.value)}
-						placeholder="Documents vérifiés, observations particulières, alertes..."
-						rows={3}
-						className="resize-none text-sm"
-					/>
-					<div className="flex justify-end">
-						<Button
-							size="sm"
-							onClick={handleSendNote}
-							disabled={isSending || !noteContent.trim()}
-							className="gap-2"
-						>
-							{isSending ? (
-								<Loader2 className="h-3.5 w-3.5 animate-spin" />
-							) : (
-								<Send className="h-3.5 w-3.5" />
-							)}
-							Enregistrer la note
-						</Button>
-					</div>
-				</div>
-			</FlatCard>
-		</div>
-	);
-}
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function AgentProfileSkeleton() {
 	return (
-		<div className="flex flex-col gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full">
-			{/* Nav */}
+		<div className="flex flex-col gap-6 p-4 md:p-6 w-full">
 			<div className="flex items-center gap-3 pb-3 border-b border-border/50">
 				<Skeleton className="h-8 w-32" />
 				<Skeleton className="h-4 w-4 rounded-full" />
 				<Skeleton className="h-4 w-48" />
 			</div>
 
-			{/* Header card */}
-			<div className="rounded-xl border border-border bg-card p-5">
-				<div className="flex items-center gap-5">
-					<Skeleton className="h-16 w-16 rounded-full" />
-					<div className="flex-1 space-y-2">
-						<Skeleton className="h-6 w-48" />
-						<Skeleton className="h-4 w-64" />
-					</div>
+			<div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+				<div className="lg:col-span-4 xl:col-span-3 space-y-4">
+					<Skeleton className="h-64 w-full rounded-xl" />
+					<Skeleton className="h-52 w-full rounded-xl" />
 				</div>
-			</div>
-
-			{/* Content */}
-			<div className="space-y-4">
-				{Array.from({ length: 3 }).map((_, i) => (
-					<Skeleton key={i} className="h-16 w-full rounded-lg" />
-				))}
+				<div className="lg:col-span-8 xl:col-span-6 space-y-4">
+					<Skeleton className="h-64 w-full rounded-xl" />
+					<Skeleton className="h-52 w-full rounded-xl" />
+					<Skeleton className="h-40 w-full rounded-xl" />
+				</div>
+				<div className="lg:col-span-12 xl:col-span-3 space-y-4">
+					<Skeleton className="h-64 w-full rounded-xl" />
+					<Skeleton className="h-48 w-full rounded-xl" />
+				</div>
 			</div>
 		</div>
 	);

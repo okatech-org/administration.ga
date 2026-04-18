@@ -8,10 +8,7 @@ import { fr } from "date-fns/locale";
 import {
 	Building2,
 	CreditCard,
-	Loader2,
 	MapPin,
-	Send,
-	StickyNote,
 	User,
 	Wand2,
 } from "lucide-react";
@@ -24,10 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/my-space/flat-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 
-import { ProfileActionsCard } from "./profile/profile-actions-card";
 import { ProfileChildrenCard } from "./profile/profile-children-card";
 import { ProfileConsularCard } from "./profile/profile-consular-card";
 import { ProfileDocumentsCard } from "./profile/profile-documents-card";
@@ -35,7 +30,6 @@ import { ProfileDossierCard } from "./profile/profile-dossier-card";
 import { ProfileHeroCard } from "./profile/profile-hero-card";
 import { ProfileRequestsCard } from "./profile/profile-requests-card";
 
-// ─── Props ───────────────────────────────────────────────────
 interface ProfileDetailViewProps {
 	profileId: string | Id<"profiles"> | Id<"childProfiles">;
 	context?: "admin" | "agent";
@@ -44,56 +38,50 @@ interface ProfileDetailViewProps {
 	canManageUser?: boolean;
 }
 
-// ─── Helpers de formatage ────────────────────────────────────
 function formatDate(timestamp?: number) {
 	if (!timestamp) return "\u2014";
 	return format(new Date(timestamp), "dd MMMM yyyy", { locale: fr });
 }
 
-function getCountryLabel(code?: string, t?: (key: string, fallback?: string) => string) {
+function getCountryLabel(
+	code?: string,
+	t?: (key: string, fallback?: string) => string,
+) {
 	if (!code || !t) return undefined;
 	return t(`countryList.${code}`, code) as string;
 }
 
-// ─── Couleurs de badge statut inscription ────────────────────
-function getRegStatusBadgeColor(status: string) {
+function getRegStatusBadgeClass(status: string) {
 	switch (status) {
 		case "active":
-			return "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300";
+			return "bg-success-light text-success border-success/20";
 		case "expired":
-			return "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400";
+			return "bg-muted text-muted-foreground border-border";
 		default:
-			return "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300";
+			return "bg-warning-light text-warning border-warning/20";
 	}
 }
 
-// ─── Composant principal ─────────────────────────────────────
 export function ProfileDetailView({
 	profileId,
 	context = "agent",
-	canProcess: _canProcess = false,
 	canValidate,
-	canManageUser = false,
 }: ProfileDetailViewProps) {
 	const { t } = useTranslation();
 
-	// Valeur par defaut de canValidate selon le contexte
 	const resolvedCanValidate = canValidate ?? context === "admin";
 
-	// ─── Etat pour la modale de preview document ──────────────
 	const [previewDoc, setPreviewDoc] = useState<{
 		storageId: string;
 		filename: string;
 		mimeType?: string;
 	} | null>(null);
 
-	// ─── Requetes Convex (identiques a l'original agent-web) ──
 	const { data: detailData, isLoading } = useAuthenticatedConvexQuery(
 		api.functions.profiles.getProfileDetail,
 		{ profileId: profileId as Id<"profiles"> | Id<"childProfiles"> },
 	);
 
-	// Resolution de l'URL de la photo d'identite (chaine de requetes)
 	const identityPhotoId = detailData?.profile?.documents?.identityPhoto;
 	const { data: identityPhotoDoc } = useAuthenticatedConvexQuery(
 		api.functions.documents.getById,
@@ -107,7 +95,6 @@ export function ProfileDetailView({
 			: "skip",
 	);
 
-	// ─── Actions pour le detourage photo (agent-specific) ─────
 	const [isRemovingBg, setIsRemovingBg] = useState(false);
 	const removeBackgroundAction = useAction(
 		api.functions.backgroundRemoval.removeBackgroundFromFile,
@@ -192,12 +179,10 @@ export function ProfileDetailView({
 		}
 	};
 
-	// ─── Etat de chargement ───────────────────────────────────
 	if (isLoading) {
 		return <ProfileDashboardSkeleton />;
 	}
 
-	// ─── Profil introuvable ───────────────────────────────────
 	if (!detailData || !detailData.profile) {
 		return (
 			<div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
@@ -210,7 +195,6 @@ export function ProfileDetailView({
 		);
 	}
 
-	// ─── Extraction des donnees ──────────────────────────────
 	const {
 		profile,
 		user,
@@ -223,16 +207,17 @@ export function ProfileDetailView({
 
 	const completionScore = (profile as any).completionScore ?? 0;
 
-	// ─── Chemin de base selon le contexte ─────────────────────
-	const basePath = context === "agent" ? "/affaires-consulaires/profiles" : "/admin/profiles";
+	const basePath =
+		context === "agent"
+			? "/affaires-consulaires/profiles"
+			: "/admin/profiles";
 	const requestsBasePath =
 		context === "agent" ? "/requests" : "/admin/requests";
 
-	// ─── Rendu principal : grille 3 colonnes ──────────────────
 	return (
 		<div className="w-full pb-12">
 			<div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-				{/* ── Colonne 1 : Hero, Detourage, Actions, Enfants ── */}
+				{/* Colonne 1 : Hero, Detourage, Enfants */}
 				<div className="lg:col-span-3 space-y-4">
 					<ProfileHeroCard
 						profile={profile}
@@ -242,7 +227,6 @@ export function ProfileDetailView({
 						completionScore={completionScore}
 					/>
 
-					{/* Bouton detourage photo (agent-specific, si photo disponible) */}
 					{identityPhotoUrl && (
 						<FlatCard>
 							<div className="p-3 lg:p-4">
@@ -254,7 +238,9 @@ export function ProfileDetailView({
 									className="w-full active:scale-[0.97] transition-transform"
 								>
 									{isRemovingBg ? (
-										<span className="animate-pulse">Detourage en cours...</span>
+										<span className="animate-pulse">
+											Detourage en cours...
+										</span>
 									) : (
 										<>
 											<Wand2 className="h-4 w-4 mr-2" />
@@ -266,26 +252,15 @@ export function ProfileDetailView({
 						</FlatCard>
 					)}
 
-					<ProfileActionsCard
-						context={context}
-						user={user}
-						profileId={profileId as string}
-						canManageUser={canManageUser}
-					/>
-
 					{children.length > 0 && (
-						<ProfileChildrenCard
-							children={children}
-							basePath={basePath}
-						/>
+						<ProfileChildrenCard children={children} basePath={basePath} />
 					)}
 				</div>
 
-				{/* ── Colonne 2 : Dossier, Representations, Demandes, Adresses ── */}
+				{/* Colonne 2 : Dossier, Representations, Demandes */}
 				<div className="lg:col-span-5 space-y-4">
 					<ProfileDossierCard profile={profile} />
 
-					{/* Representations diplomatiques */}
 					{representations && representations.length > 0 && (
 						<FlatCard>
 							<div className="pb-2 pt-3 px-4">
@@ -297,7 +272,15 @@ export function ProfileDetailView({
 							<div className="px-4 pb-4 pt-0">
 								<div className="space-y-2">
 									{(representations as any[]).map(
-										(rep: { name: string; type: string; country: string; slug: string }, idx: number) => (
+										(
+											rep: {
+												name: string;
+												type: string;
+												country: string;
+												slug: string;
+											},
+											idx: number,
+										) => (
 											<div
 												key={rep.slug || idx}
 												className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-3 py-2"
@@ -309,10 +292,15 @@ export function ProfileDetailView({
 													<p className="text-xs text-muted-foreground">
 														{rep.type
 															?.replace(/_/g, " ")
-															.replace(/\b\w/g, (c: string) => c.toUpperCase())}
+															.replace(/\b\w/g, (c: string) =>
+																c.toUpperCase(),
+															)}
 													</p>
 												</div>
-												<Badge variant="outline" className="ml-2 text-xs shrink-0">
+												<Badge
+													variant="outline"
+													className="ml-2 text-xs shrink-0"
+												>
 													{rep.country}
 												</Badge>
 											</div>
@@ -328,62 +316,9 @@ export function ProfileDetailView({
 						context={context}
 						basePath={requestsBasePath}
 					/>
-
-					{/* Adresses */}
-					{(profile.addresses?.residence || profile.addresses?.homeland) && (
-						<FlatCard>
-							<div className="pb-2 pt-3 px-4">
-								<div className="text-sm font-semibold flex items-center gap-2">
-									<MapPin className="h-4 w-4 text-primary" />
-									Adresses
-								</div>
-							</div>
-							<div className="px-4 pb-4 pt-0 space-y-3">
-								{profile.addresses?.residence && (
-									<div className="rounded-lg border border-dashed bg-muted/30 p-3">
-										<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-											{t("profile.sections.addressAbroad")}
-										</p>
-										<p className="text-sm">
-											{[
-												profile.addresses.residence.street,
-												profile.addresses.residence.postalCode,
-												profile.addresses.residence.city,
-												getCountryLabel(
-													profile.addresses.residence.country,
-													t as any,
-												),
-											]
-												.filter(Boolean)
-												.join(", ")}
-										</p>
-									</div>
-								)}
-								{profile.addresses?.homeland && (
-									<div className="rounded-lg border border-dashed bg-muted/30 p-3">
-										<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-											{t("profile.sections.addressHome")}
-										</p>
-										<p className="text-sm">
-											{[
-												profile.addresses.homeland.street,
-												profile.addresses.homeland.city,
-												getCountryLabel(
-													profile.addresses.homeland.country,
-													t as any,
-												),
-											]
-												.filter(Boolean)
-												.join(", ")}
-										</p>
-									</div>
-								)}
-							</div>
-						</FlatCard>
-					)}
 				</div>
 
-				{/* ── Colonne 3 : Consulaire, Documents, Inscriptions, Notes Agent ── */}
+				{/* Colonne 3 : Carte Consulaire, Documents, Inscriptions */}
 				<div className="lg:col-span-4 space-y-4">
 					<ProfileConsularCard
 						registrations={registrations}
@@ -407,7 +342,6 @@ export function ProfileDetailView({
 						}}
 					/>
 
-					{/* Inscriptions consulaires */}
 					{registrations.length > 0 && (
 						<FlatCard>
 							<div className="pb-2 pt-3 px-4">
@@ -445,7 +379,7 @@ export function ProfileDetailView({
 										</div>
 										<Badge
 											variant="outline"
-											className={getRegStatusBadgeColor(reg.status)}
+											className={getRegStatusBadgeClass(reg.status)}
 										>
 											{String(
 												t(
@@ -460,14 +394,36 @@ export function ProfileDetailView({
 						</FlatCard>
 					)}
 
-					{/* Notes Agent (agent-specific) */}
-					{context === "agent" && (
-						<AgentNotesCard />
+					{/* Adresses complémentaires (affiche la résidence uniquement si différente de la carte hero, et l'adresse pays d'origine) */}
+					{profile.addresses?.homeland && (
+						<FlatCard>
+							<div className="pb-2 pt-3 px-4">
+								<div className="text-sm font-semibold flex items-center gap-2">
+									<MapPin className="h-4 w-4 text-primary" />
+									Adresse au Gabon
+								</div>
+							</div>
+							<div className="px-4 pb-4 pt-0">
+								<div className="rounded-lg border border-dashed border-border bg-muted/30 p-3">
+									<p className="text-sm">
+										{[
+											profile.addresses.homeland.street,
+											profile.addresses.homeland.city,
+											getCountryLabel(
+												profile.addresses.homeland.country,
+												t as any,
+											),
+										]
+											.filter(Boolean)
+											.join(", ")}
+									</p>
+								</div>
+							</div>
+						</FlatCard>
 					)}
 				</div>
 			</div>
 
-			{/* Modale de preview document */}
 			{previewDoc && (
 				<DocumentPreviewModal
 					open={!!previewDoc}
@@ -483,87 +439,21 @@ export function ProfileDetailView({
 	);
 }
 
-// ─── Notes Agent Card ─────────────────────────────────────────
-function AgentNotesCard() {
-	const [noteContent, setNoteContent] = useState("");
-	const [isSending, setIsSending] = useState(false);
-
-	const handleSendNote = async () => {
-		if (!noteContent.trim()) return;
-		setIsSending(true);
-		// TODO: integrer avec une mutation Convex quand les notes par profil seront ajoutees
-		await new Promise((r) => setTimeout(r, 600));
-		toast.success("Note enregistree (fonctionnalite en cours d'integration)");
-		setNoteContent("");
-		setIsSending(false);
-	};
-
-	return (
-		<FlatCard>
-			<div className="pb-2 pt-3 px-4">
-				<div className="text-sm font-semibold flex items-center gap-2">
-					<StickyNote className="h-4 w-4 text-primary" />
-					Notes Agent
-				</div>
-			</div>
-			<div className="px-4 pb-4 pt-0 space-y-3">
-				{/* Liste des notes existantes (vide pour l'instant) */}
-				<p className="text-sm text-muted-foreground italic">
-					Aucune note pour ce profil.
-				</p>
-
-				{/* Formulaire d'ajout de note */}
-				<div className="space-y-2 pt-2 border-t border-border/50">
-					<Textarea
-						value={noteContent}
-						onChange={(e) => setNoteContent(e.target.value)}
-						placeholder="Ajouter une note interne..."
-						rows={3}
-						className="resize-none text-sm"
-					/>
-					<div className="flex justify-end">
-						<Button
-							size="sm"
-							onClick={handleSendNote}
-							disabled={isSending || !noteContent.trim()}
-							className="gap-2 active:scale-[0.97] transition-transform"
-						>
-							{isSending ? (
-								<Loader2 className="h-3.5 w-3.5 animate-spin" />
-							) : (
-								<Send className="h-3.5 w-3.5" />
-							)}
-							Enregistrer
-						</Button>
-					</div>
-				</div>
-			</div>
-		</FlatCard>
-	);
-}
-
-// ─── Skeleton de chargement : grille 3 colonnes ──────────────
 function ProfileDashboardSkeleton() {
 	return (
 		<div className="w-full">
 			<div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-				{/* Colonne 1 */}
 				<div className="lg:col-span-3 space-y-4">
 					<Skeleton className="h-64 w-full rounded-xl" />
 					<Skeleton className="h-48 w-full rounded-xl" />
-					<Skeleton className="h-32 w-full rounded-xl" />
 				</div>
-				{/* Colonne 2 */}
 				<div className="lg:col-span-5 space-y-4">
 					<Skeleton className="h-80 w-full rounded-xl" />
 					<Skeleton className="h-56 w-full rounded-xl" />
-					<Skeleton className="h-40 w-full rounded-xl" />
 				</div>
-				{/* Colonne 3 */}
 				<div className="lg:col-span-4 space-y-4">
 					<Skeleton className="h-52 w-full rounded-xl" />
 					<Skeleton className="h-64 w-full rounded-xl" />
-					<Skeleton className="h-36 w-full rounded-xl" />
 				</div>
 			</div>
 		</div>

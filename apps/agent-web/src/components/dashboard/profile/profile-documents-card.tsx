@@ -17,65 +17,42 @@ import { FlatCard } from "@/components/my-space/flat-card";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-// ─── Mapping des types de documents consulaires ───────────────
 const DOCUMENT_CONFIGS: Record<
   string,
-  { label: string; icon: React.ElementType; color: string }
+  { label: string; icon: React.ElementType }
 > = {
-  identity_photo: {
-    label: "Photo d'identite",
-    icon: FileImage,
-    color: "text-teal-600 dark:text-teal-400",
-  },
-  passport: {
-    label: "Passeport",
-    icon: ScrollText,
-    color: "text-blue-500",
-  },
-  proof_of_address: {
-    label: "Justificatif domicile",
-    icon: Home,
-    color: "text-amber-500",
-  },
-  birth_certificate: {
-    label: "Acte de naissance",
-    icon: FileText,
-    color: "text-purple-500",
-  },
-  residence_permit: {
-    label: "Titre de sejour",
-    icon: Shield,
-    color: "text-emerald-500",
-  },
+  identity_photo: { label: "Photo d'identite", icon: FileImage },
+  passport: { label: "Passeport", icon: ScrollText },
+  proof_of_address: { label: "Justificatif domicile", icon: Home },
+  birth_certificate: { label: "Acte de naissance", icon: FileText },
+  residence_permit: { label: "Titre de sejour", icon: Shield },
 };
 
-// ─── Status helpers ───────────────────────────────────────────
 function getStatusConfig(status?: string) {
   switch (status) {
     case "validated":
     case "approved":
       return {
         label: "Valide",
-        variant: "default" as const,
-        className: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
+        className: "bg-success-light text-success border-success/20",
+        Icon: CheckCircle,
       };
     case "rejected":
       return {
         label: "Rejete",
-        variant: "destructive" as const,
-        className: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+        className: "bg-destructive-light text-destructive border-destructive/20",
+        Icon: XCircle,
       };
     case "pending":
     default:
       return {
         label: "En attente",
-        variant: "secondary" as const,
-        className: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
+        className: "bg-warning-light text-warning border-warning/20",
+        Icon: Clock,
       };
   }
 }
 
-// ─── Props ────────────────────────────────────────────────────
 export interface ProfileDocumentsCardProps {
   documents: any[];
   canValidate: boolean;
@@ -84,10 +61,6 @@ export interface ProfileDocumentsCardProps {
   onReject?: (documentId: string, reason: string) => void;
 }
 
-/**
- * Grille des 5 documents consulaires avec actions de validation.
- * Barre de progression en haut : X/5 valides.
- */
 export function ProfileDocumentsCard({
   documents,
   canValidate,
@@ -98,7 +71,6 @@ export function ProfileDocumentsCard({
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
-  // Nombre de documents valides
   const validatedCount = documents.filter(
     (d) => d.status === "validated" || d.status === "approved",
   ).length;
@@ -115,27 +87,26 @@ export function ProfileDocumentsCard({
   return (
     <FlatCard>
       <div className="pb-2 pt-3 px-4">
-        <div className="text-xs font-bold flex items-center justify-between">
+        <div className="text-sm font-semibold flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-blue-500/10">
-              <FileText className="w-3.5 h-3.5 text-blue-500" />
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <FileText className="w-3.5 h-3.5 text-primary" />
             </div>
             Documents
           </div>
-          <span className="text-[10px] text-muted-foreground font-medium">
+          <span className="text-xs text-muted-foreground font-medium">
             {validatedCount}/{totalExpected} valides
           </span>
         </div>
-        {/* Barre de progression */}
         <div className="h-1.5 w-full rounded-full overflow-hidden bg-muted mt-1.5">
           <div
             className={cn(
               "h-full rounded-full transition-all duration-500",
               progressPercent === 100
-                ? "bg-green-500"
+                ? "bg-success"
                 : progressPercent >= 60
-                  ? "bg-teal-500"
-                  : "bg-amber-500",
+                  ? "bg-primary"
+                  : "bg-warning",
             )}
             style={{ width: `${progressPercent}%` }}
           />
@@ -146,7 +117,7 @@ export function ProfileDocumentsCard({
         {documents.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
             <FileText className="h-8 w-8 mx-auto mb-2 opacity-20" />
-            <p className="text-[12px]">Aucun document soumis</p>
+            <p className="text-xs">Aucun document soumis</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-2">
@@ -154,10 +125,10 @@ export function ProfileDocumentsCard({
               const config = DOCUMENT_CONFIGS[doc.documentType] ?? {
                 label: doc.label || doc.documentType || "Document",
                 icon: FileText,
-                color: "text-muted-foreground",
               };
               const status = getStatusConfig(doc.status);
               const Icon = config.icon;
+              const StatusIcon = status.Icon;
               const isRejecting = rejectingId === doc._id;
 
               return (
@@ -166,40 +137,40 @@ export function ProfileDocumentsCard({
                   className="flex flex-col gap-1.5 p-2.5 rounded-lg border border-border/50 bg-muted/30 hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-2.5">
-                    {/* Icone du document */}
                     <div className="h-8 w-8 rounded-md bg-card flex items-center justify-center shrink-0 border border-border/50">
-                      <Icon className={cn("h-4 w-4", config.color)} />
+                      <Icon className="h-4 w-4 text-primary" />
                     </div>
 
-                    {/* Nom et statut */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-semibold truncate">{config.label}</p>
+                      <p className="text-sm font-semibold truncate">
+                        {config.label}
+                      </p>
                       {doc.files?.length > 0 && (
-                        <p className="text-[10px] text-muted-foreground">
-                          {doc.files.length} fichier{doc.files.length > 1 ? "s" : ""}
+                        <p className="text-xs text-muted-foreground">
+                          {doc.files.length} fichier
+                          {doc.files.length > 1 ? "s" : ""}
                         </p>
                       )}
                     </div>
 
-                    {/* Badge de statut */}
-                    <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 shrink-0", status.className)}>
-                      {status.label === "Valide" && <CheckCircle className="h-2.5 w-2.5 mr-0.5" />}
-                      {status.label === "Rejete" && <XCircle className="h-2.5 w-2.5 mr-0.5" />}
-                      {status.label === "En attente" && <Clock className="h-2.5 w-2.5 mr-0.5" />}
+                    <Badge
+                      variant="outline"
+                      className={cn("text-xs shrink-0", status.className)}
+                    >
+                      <StatusIcon className="h-3 w-3 mr-1" />
                       {status.label}
                     </Badge>
 
-                    {/* Actions */}
                     <div className="flex items-center gap-1 shrink-0">
                       {onPreview && doc.files?.[0]?.storageId && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6"
+                          className="h-7 w-7"
                           onClick={() => onPreview(doc)}
                           title="Apercu"
                         >
-                          <Eye className="h-3 w-3 text-muted-foreground" />
+                          <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                         </Button>
                       )}
                       {canValidate && doc.status === "pending" && (
@@ -207,40 +178,41 @@ export function ProfileDocumentsCard({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 hover:bg-green-500/10"
+                            className="h-7 w-7 hover:bg-success-light"
                             onClick={() => onValidate?.(doc._id)}
                             title="Valider"
                           >
-                            <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                            <CheckCircle className="h-3.5 w-3.5 text-success" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 hover:bg-red-500/10"
-                            onClick={() => setRejectingId(isRejecting ? null : doc._id)}
+                            className="h-7 w-7 hover:bg-destructive-light"
+                            onClick={() =>
+                              setRejectingId(isRejecting ? null : doc._id)
+                            }
                             title="Rejeter"
                           >
-                            <XCircle className="h-3.5 w-3.5 text-red-500" />
+                            <XCircle className="h-3.5 w-3.5 text-destructive" />
                           </Button>
                         </>
                       )}
                     </div>
                   </div>
 
-                  {/* Zone de saisie motif de rejet */}
                   {isRejecting && (
                     <div className="flex gap-2 mt-1">
                       <Textarea
                         placeholder="Motif du rejet..."
                         value={rejectReason}
                         onChange={(e) => setRejectReason(e.target.value)}
-                        className="text-[11px] min-h-[48px] h-12 resize-none"
+                        className="text-xs min-h-[48px] h-12 resize-none"
                       />
                       <div className="flex flex-col gap-1 shrink-0">
                         <Button
                           size="sm"
                           variant="destructive"
-                          className="h-5 text-[10px] px-2"
+                          className="h-6 text-xs px-2"
                           onClick={() => handleReject(doc._id)}
                           disabled={!rejectReason.trim()}
                         >
@@ -249,8 +221,11 @@ export function ProfileDocumentsCard({
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-5 text-[10px] px-2"
-                          onClick={() => { setRejectingId(null); setRejectReason(""); }}
+                          className="h-6 text-xs px-2"
+                          onClick={() => {
+                            setRejectingId(null);
+                            setRejectReason("");
+                          }}
                         >
                           Annuler
                         </Button>
