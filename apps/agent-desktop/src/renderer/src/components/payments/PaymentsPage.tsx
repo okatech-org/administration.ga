@@ -279,7 +279,7 @@ export function PaymentsPage() {
 					</CardHeader>
 					<CardContent>
 						<div className="h-80">
-							<ResponsiveContainer width="100%" height="100%">
+							<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 								<AreaChart data={chartData}>
 									<CartesianGrid strokeDasharray="3 3" />
 									<XAxis dataKey="date" tick={{ fontSize: 12 }} />
@@ -311,7 +311,7 @@ export function PaymentsPage() {
 					<CardContent>
 						<div className="h-48">
 							{stats && (
-								<ResponsiveContainer width="100%" height="100%">
+								<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 									<PieChart>
 										<Pie
 											data={stats.byStatus.filter((s) => s.value > 0)}

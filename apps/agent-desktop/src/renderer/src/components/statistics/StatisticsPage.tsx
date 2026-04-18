@@ -424,7 +424,7 @@ export function StatisticsPage() {
 								<CardContent>
 									<div className="h-72">
 										{trendData.length > 0 ? (
-											<ResponsiveContainer width="100%" height="100%">
+											<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 												<AreaChart
 													data={trendData}
 													margin={{ top: 8, right: 8, left: -20, bottom: 0 }}
@@ -502,7 +502,7 @@ export function StatisticsPage() {
 								<CardContent>
 									<div className="h-48">
 										{statusChartData.length > 0 ? (
-											<ResponsiveContainer width="100%" height="100%">
+											<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 												<PieChart>
 													<Pie
 														data={statusChartData}
@@ -568,7 +568,7 @@ export function StatisticsPage() {
 							<CardContent>
 								<div className="h-72">
 									{serviceChartData.length > 0 ? (
-										<ResponsiveContainer width="100%" height="100%">
+										<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 											<BarChart
 												data={serviceChartData}
 												layout="vertical"
@@ -641,7 +641,7 @@ export function StatisticsPage() {
 								<CardContent>
 									<div className="h-64">
 										{registrationChartData.length > 0 ? (
-											<ResponsiveContainer width="100%" height="100%">
+											<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
 												<PieChart>
 													<Pie
 														data={registrationChartData}
