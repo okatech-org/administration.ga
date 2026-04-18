@@ -55,6 +55,7 @@ import {
   DOCUMENT_TYPES_BY_CATEGORY,
   DocumentTypeCategory,
 } from "@convex/lib/constants"
+import { DocumentSheet } from "@workspace/ui/components/document-sheet"
 
 import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal"
 import { ConsulateIssuedDocumentsSection } from "@/components/idocument/ConsulateIssuedDocumentsSection"
@@ -487,65 +488,71 @@ function VaultFileCard({
   onClick?: () => void
   isSelected?: boolean
 }) {
+  const overlays = (
+    <>
+      <div className="absolute left-2 top-2 z-10 flex min-w-0 shrink items-center gap-1">
+        {categoryBadge}
+      </div>
+      <div
+        className="pointer-events-auto absolute right-1.5 top-1.5 z-20 opacity-0 transition-opacity group-hover:opacity-100"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {contextMenu}
+      </div>
+    </>
+  )
   return (
     <div
       className={cn(
-        "group flex h-full cursor-pointer flex-col overflow-hidden rounded-xl bg-secondary transition-all transition-transform duration-300 active:scale-[0.97]",
-        isSelected && "bg-violet-500/5 ring-2 ring-violet-500"
+        "group relative flex h-full flex-col transition-transform duration-300 active:scale-[0.97]",
+        isSelected && "ring-2 ring-violet-500 ring-offset-2",
       )}
-      onClick={onClick}
     >
-      <div className="relative flex aspect-[1/1.414] flex-col overflow-hidden bg-white/3">
-        <div className="relative z-10 flex min-h-[20px] items-center px-2.5 pt-2">
-          <div className="flex min-w-0 shrink items-center gap-1">
-            {categoryBadge}
+      <DocumentSheet
+        orientation="portrait"
+        onClick={onClick}
+        ariaLabel={title}
+        overlays={overlays}
+      >
+        <div
+          className="flex h-full w-full flex-col items-center justify-between"
+          style={{ padding: "20mm", fontFamily: "'Times New Roman', serif" }}
+        >
+          <div />
+          <div className="flex flex-col items-center text-center" style={{ gap: "8mm" }}>
+            <FileText className={cn("opacity-60", iconColor)} style={{ width: "40mm", height: "40mm" }} />
+            <div
+              className="font-semibold"
+              style={{ fontSize: "14pt", lineHeight: 1.25, wordBreak: "break-word", maxWidth: "140mm" }}
+              title={title}
+            >
+              {title}
+            </div>
           </div>
-        </div>
-        <div className="flex flex-1 items-center justify-center px-3 py-2">
-          <div className="relative flex h-[72px] w-14 flex-col items-center justify-center rounded-[2px] border border-neutral-200 bg-white">
-            <div className="absolute top-0 left-0 h-4 w-full border-b border-neutral-100 bg-neutral-50" />
-            <FileText className={cn("h-7 w-7 opacity-50", iconColor)} />
-            <div className="absolute right-2 bottom-2 left-2 space-y-0.5">
-              <div className="h-[2px] w-full rounded-full bg-neutral-100" />
-              <div className="h-[2px] w-3/4 rounded-full bg-neutral-100" />
-              <div className="h-[2px] w-5/6 rounded-full bg-neutral-100" />
+          <div className="flex w-full items-end justify-between">
+            <div className="flex items-center gap-1">{statusBadge}</div>
+            <div className="flex items-center gap-2" style={{ fontSize: "9pt", color: "#6B7280" }}>
+              {fileCount !== undefined && fileCount > 1 && (
+                <span className="font-mono">{fileCount}</span>
+              )}
+              {date && (
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <Clock className="h-3 w-3" />
+                  {date}
+                </span>
+              )}
             </div>
           </div>
         </div>
-        <div className="px-2.5 pb-1">
-          <h3
-            className="truncate text-[11px] leading-tight font-semibold text-foreground/90 transition-colors group-hover:text-primary"
-            title={title}
-          >
-            {title}
-          </h3>
-        </div>
-        <div className="mt-auto flex items-center justify-between px-2.5 pb-2">
-          <div className="flex items-center gap-1">{statusBadge}</div>
-          <div className="flex items-center gap-1.5 text-[8px] text-muted-foreground/50">
-            {fileCount !== undefined && fileCount > 1 && (
-              <span className="rounded bg-white/4 px-1 font-mono">
-                {fileCount}
-              </span>
-            )}
-            {date && (
-              <span className="flex items-center gap-0.5 whitespace-nowrap">
-                <Clock className="h-2 w-2" />
-                {date}
-              </span>
-            )}
-          </div>
-        </div>
         {expirationBadge && (
-          <div className="px-2.5 pb-1.5">{expirationBadge}</div>
+          <div
+            className="absolute bottom-0 left-0 right-0 px-3 pb-2"
+            style={{ fontSize: "9pt" }}
+          >
+            {expirationBadge}
+          </div>
         )}
-        <div
-          className="pointer-events-auto absolute top-1.5 right-1.5 z-20 opacity-0 transition-opacity group-hover:opacity-100"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {contextMenu}
-        </div>
-      </div>
+      </DocumentSheet>
     </div>
   )
 }

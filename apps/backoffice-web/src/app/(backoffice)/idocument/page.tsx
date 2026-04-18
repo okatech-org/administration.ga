@@ -2,6 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { DocumentSheet } from "@workspace/ui/components/document-sheet";
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -262,44 +263,41 @@ function VaultFolderCard({ label, count, subfolderCount = 0, onClick, className,
 function VaultFileCard({ title, iconColor = "text-stone-600", author, authorInitials, date, statusBadge, version, contextMenu, badges, tags = [], retentionCategory, retentionColor, onClick, isSelected = false }: {
 	title: string; iconColor?: string; author?: string; authorInitials?: string; date?: string; statusBadge?: React.ReactNode; version?: number | string; contextMenu?: React.ReactNode; badges?: React.ReactNode; tags?: string[]; retentionCategory?: string; retentionColor?: string; onClick?: () => void; isSelected?: boolean;
 }) {
-	return (
-		<div className={cn("group transition-all duration-300 overflow-hidden border border-border/50 cursor-pointer h-full flex flex-col bg-card rounded-xl", isSelected && "ring-2 ring-violet-500 border-violet-500/50 bg-violet-500/5")} onClick={onClick}>
-			<div className="relative aspect-[1/1.414] bg-white/[0.03] flex flex-col overflow-hidden">
-				<div className="relative flex items-center px-2.5 pt-2 z-10 min-h-[20px]">
-					<div className="flex items-center gap-1 shrink min-w-0">{badges}</div>
-					<div className="absolute inset-x-0 flex justify-center pointer-events-none">
-						{retentionCategory ? (
-							<span className={cn("text-[8px] font-medium px-1.5 py-0.5 rounded inline-flex items-center gap-1 leading-tight pointer-events-auto", retentionColor || "bg-cyan-500/10 text-cyan-400")}>{retentionCategory}</span>
-						) : (
-							<span className="text-[8px] text-muted-foreground/30 italic pointer-events-auto">Non classé</span>
-						)}
-					</div>
+	const overlays = (
+		<>
+			<div className="absolute left-2 top-2 z-10 flex min-w-0 shrink items-center gap-1">{badges}</div>
+			{retentionCategory ? (
+				<div className="pointer-events-none absolute inset-x-0 top-2 z-10 flex justify-center">
+					<span className={cn("pointer-events-auto inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] leading-tight font-medium shadow-sm", retentionColor || "bg-cyan-500/10 text-cyan-700")}>
+						{retentionCategory}
+					</span>
 				</div>
-				<div className="flex-1 flex items-center justify-center px-3 py-2">
-					<div className="relative w-14 h-[72px] bg-[#FDFCFA] dark:bg-[#21201E]/77 flex flex-col items-center justify-center rounded-[2px] border border-neutral-200">
-						<div className="absolute top-0 left-0 w-full h-4 bg-neutral-50 border-b border-neutral-100" />
-						<FileText className={cn("h-7 w-7 opacity-50", iconColor)} />
-						<div className="absolute bottom-2 left-2 right-2 space-y-0.5">
-							<div className="h-[2px] bg-neutral-100 rounded-full w-full" />
-							<div className="h-[2px] bg-neutral-100 rounded-full w-3/4" />
-							<div className="h-[2px] bg-neutral-100 rounded-full w-5/6" />
+			) : null}
+			<div className="pointer-events-auto absolute right-1.5 top-1.5 z-20 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+				{contextMenu}
+			</div>
+		</>
+	);
+	return (
+		<div className={cn("group relative flex h-full flex-col transition-transform duration-300", isSelected && "ring-2 ring-violet-500 ring-offset-2")}>
+			<DocumentSheet orientation="portrait" onClick={onClick} ariaLabel={title} overlays={overlays}>
+				<div className="flex h-full w-full flex-col items-center justify-between" style={{ padding: "20mm", fontFamily: "'Times New Roman', serif" }}>
+					<div />
+					<div className="flex flex-col items-center text-center" style={{ gap: "8mm" }}>
+						<FileText className={cn("opacity-60", iconColor)} style={{ width: "40mm", height: "40mm" }} />
+						<div className="font-semibold" style={{ fontSize: "14pt", lineHeight: 1.25, wordBreak: "break-word", maxWidth: "140mm" }} title={title}>
+							{title}
+						</div>
+					</div>
+					<div className="flex w-full items-end justify-between">
+						<div className="flex items-center gap-1">{statusBadge}</div>
+						<div className="flex items-center gap-2" style={{ fontSize: "9pt", color: "#6B7280" }}>
+							{version !== undefined && <span className="font-mono">v{version}</span>}
+							{date && <span className="inline-flex items-center gap-1 whitespace-nowrap"><Clock className="h-3 w-3" />{date}</span>}
 						</div>
 					</div>
 				</div>
-				<div className="px-2.5 pb-1">
-					<h3 className="font-semibold text-[11px] leading-tight truncate text-foreground/90 group-hover:text-primary transition-colors" title={title}>{title}</h3>
-				</div>
-				<div className="flex items-center justify-between px-2.5 pb-2 mt-auto">
-					<div className="flex items-center gap-1">{statusBadge}</div>
-					<div className="flex items-center gap-1.5 text-[8px] text-muted-foreground/50">
-						{version !== undefined && <span className="font-mono bg-white/[0.04] px-1 rounded">v{version}</span>}
-						{date && <span className="flex items-center gap-0.5 whitespace-nowrap"><Clock className="h-2 w-2" />{date}</span>}
-					</div>
-				</div>
-				<div className="absolute top-1.5 right-1.5 z-20 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-					{contextMenu}
-				</div>
-			</div>
+			</DocumentSheet>
 		</div>
 	);
 }

@@ -15,6 +15,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Doc, Id } from "@convex/_generated/dataModel";
+import { DocumentSheetFile } from "@workspace/ui/components/document-sheet";
 import {
 	CheckCircle2,
 	Clock,
@@ -85,11 +86,11 @@ export function OfficialDocumentsSection({ requestId, orgId }: Props) {
 					{t("templates.generate.section.empty")}
 				</p>
 			) : (
-				<ul className="flex flex-col gap-2">
+				<div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
 					{documents.map((doc) => (
-						<DocumentRow key={doc._id} doc={doc} />
+						<DocumentThumbnail key={doc._id} doc={doc} />
 					))}
-				</ul>
+				</div>
 			)}
 
 			<GenerateDialog
@@ -102,7 +103,7 @@ export function OfficialDocumentsSection({ requestId, orgId }: Props) {
 	);
 }
 
-function DocumentRow({ doc }: { doc: Doc<"generatedDocuments"> }) {
+function DocumentThumbnail({ doc }: { doc: Doc<"generatedDocuments"> }) {
 	const { t, i18n } = useTranslation();
 	const { data: url } = useAuthenticatedConvexQuery(
 		api.functions.generatedDocumentsData.getDownloadUrl,
@@ -149,79 +150,103 @@ function DocumentRow({ doc }: { doc: Doc<"generatedDocuments"> }) {
 
 	const canSign = doc.signatureStatus === "unsigned";
 
+	const overlays = (
+		<div className="absolute right-2 top-2 flex items-center gap-1">
+			{doc.signatureStatus === "signed" ? (
+				<span className="inline-flex items-center gap-1 rounded bg-emerald-100/95 px-1.5 py-0.5 text-[0.6rem] font-medium uppercase tracking-wide text-emerald-800 shadow-sm">
+					<CheckCircle2 className="h-2.5 w-2.5" />
+					Signé
+				</span>
+			) : null}
+			{doc.publishedToCitizen ? (
+				<span className="inline-flex items-center gap-1 rounded bg-blue-100/95 px-1.5 py-0.5 text-[0.6rem] font-medium uppercase tracking-wide text-blue-800 shadow-sm">
+					Publié
+				</span>
+			) : null}
+		</div>
+	);
+
 	return (
-		<li className="flex items-start gap-2 rounded-lg bg-muted/40 p-3 text-sm">
-			<FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-			<div className="min-w-0 flex-1">
-				<div className="truncate font-medium">{label}</div>
-				<div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+		<div className="flex flex-col gap-2">
+			<DocumentSheetFile
+				fileName={`${label}.pdf`}
+				mimeType="application/pdf"
+				url={url ?? null}
+				onClick={url ? () => window.open(url, "_blank") : undefined}
+				overlays={overlays}
+				ariaLabel={`Ouvrir ${label}`}
+			/>
+			<div className="flex flex-col gap-0.5 px-1">
+				<div className="truncate font-medium" title={label}>
+					{label}
+				</div>
+				<div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
 					<span className="font-mono">{doc.documentNumber}</span>
 					<SignatureChip status={doc.signatureStatus} />
-					{doc.publishedToCitizen ? <PublishedChip /> : null}
 				</div>
-				<div className="mt-1 text-xs text-muted-foreground/80">{dateStr}</div>
-			</div>
-			<div className="flex items-center gap-0.5">
-				{canSign ? (
+				<div className="text-xs text-muted-foreground/80">{dateStr}</div>
+				<div className="mt-1 flex items-center gap-0.5">
+					{canSign ? (
+						<Button
+							size="icon"
+							variant="ghost"
+							className="h-7 w-7"
+							onClick={onSign}
+							disabled={signing}
+							aria-label={t("templates.generate.row.signLabel")}
+							title={t("templates.generate.row.signLabel")}
+						>
+							{signing ? (
+								<Loader2 className="h-3.5 w-3.5 animate-spin" />
+							) : (
+								<PenTool className="h-3.5 w-3.5" />
+							)}
+						</Button>
+					) : null}
 					<Button
 						size="icon"
 						variant="ghost"
 						className="h-7 w-7"
-						onClick={onSign}
-						disabled={signing}
-						aria-label={t("templates.generate.row.signLabel")}
-						title={t("templates.generate.row.signLabel")}
+						onClick={togglePublish}
+						disabled={publishing || unpublishing}
+						aria-label={
+							doc.publishedToCitizen
+								? t("templates.generate.row.unpublishLabel")
+								: t("templates.generate.row.publishLabel")
+						}
+						title={
+							doc.publishedToCitizen
+								? t("templates.generate.row.unpublishLabel")
+								: t("templates.generate.row.publishLabel")
+						}
 					>
-						{signing ? (
+						{publishing || unpublishing ? (
 							<Loader2 className="h-3.5 w-3.5 animate-spin" />
+						) : doc.publishedToCitizen ? (
+							<EyeOff className="h-3.5 w-3.5" />
 						) : (
-							<PenTool className="h-3.5 w-3.5" />
+							<Eye className="h-3.5 w-3.5" />
 						)}
 					</Button>
-				) : null}
-				<Button
-					size="icon"
-					variant="ghost"
-					className="h-7 w-7"
-					onClick={togglePublish}
-					disabled={publishing || unpublishing}
-					aria-label={
-						doc.publishedToCitizen
-							? t("templates.generate.row.unpublishLabel")
-							: t("templates.generate.row.publishLabel")
-					}
-					title={
-						doc.publishedToCitizen
-							? t("templates.generate.row.unpublishLabel")
-							: t("templates.generate.row.publishLabel")
-					}
-				>
-					{publishing || unpublishing ? (
-						<Loader2 className="h-3.5 w-3.5 animate-spin" />
-					) : doc.publishedToCitizen ? (
-						<EyeOff className="h-3.5 w-3.5" />
+					{url ? (
+						<Button size="icon" variant="ghost" className="h-7 w-7" asChild>
+							<a
+								href={url}
+								target="_blank"
+								rel="noreferrer"
+								aria-label={t("templates.generate.row.downloadLabel")}
+							>
+								<Download className="h-3.5 w-3.5" />
+							</a>
+						</Button>
 					) : (
-						<Eye className="h-3.5 w-3.5" />
+						<Button size="icon" variant="ghost" className="h-7 w-7" disabled>
+							<Loader2 className="h-3.5 w-3.5 animate-spin" />
+						</Button>
 					)}
-				</Button>
-				{url ? (
-					<Button size="icon" variant="ghost" className="h-7 w-7" asChild>
-						<a
-							href={url}
-							target="_blank"
-							rel="noreferrer"
-							aria-label={t("templates.generate.row.downloadLabel")}
-						>
-							<Download className="h-3.5 w-3.5" />
-						</a>
-					</Button>
-				) : (
-					<Button size="icon" variant="ghost" className="h-7 w-7" disabled>
-						<Loader2 className="h-3.5 w-3.5 animate-spin" />
-					</Button>
-				)}
+				</div>
 			</div>
-		</li>
+		</div>
 	);
 }
 
