@@ -23,16 +23,9 @@
  */
 
 import { FileText, FileType, Image as ImageIcon } from "lucide-react";
-import {
-	type CSSProperties,
-	type KeyboardEvent,
-	type MouseEvent,
-	type ReactNode,
-	useEffect,
-	useRef,
-	useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "../lib/utils";
+import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 
 /** Dimensions A4 en px @ 96dpi — base du rendu « naturel » avant scale. */
 export const A4_WIDTH_PX = 794;
@@ -86,20 +79,23 @@ export function DocumentSheet({
 	}, [naturalWidth]);
 
 	const clickable = typeof onClick === "function";
+	const interactiveProps = clickable
+		? {
+				role: "button" as const,
+				tabIndex: 0,
+				onClick: () => {
+					onClick();
+				},
+				onKeyDown: (e: KeyboardEvent) => {
+					if (e.key === "Enter" || e.key === " ") onClick();
+				},
+			}
+		: {};
 
 	return (
 		<div
 			ref={cardRef}
-			role={clickable ? "button" : undefined}
-			tabIndex={clickable ? 0 : undefined}
-			onClick={clickable ? () => onClick?.() : undefined}
-			onKeyDown={
-				clickable
-					? (e: KeyboardEvent) => {
-							if (e.key === "Enter" || e.key === " ") onClick?.();
-						}
-					: undefined
-			}
+			{...interactiveProps}
 			aria-label={ariaLabel}
 			className={cn(
 				"relative w-full overflow-hidden border border-border bg-white shadow-sm transition dark:border-border/60",
@@ -111,7 +107,8 @@ export function DocumentSheet({
 		>
 			<div
 				className="absolute left-0 top-0 flex flex-col bg-white text-neutral-900"
-				style={{
+				// eslint-disable-next-line react/forbid-dom-props
+				style={{ // NOSONAR
 					width: `${naturalWidth}px`,
 					height: `${naturalHeight}px`,
 					transform: `scale(${scale})`,
@@ -149,7 +146,8 @@ export function DocumentSheetPage({
 	return (
 		<div
 			className="flex flex-1 flex-col"
-			style={{
+			// eslint-disable-next-line react/forbid-dom-props
+			style={{ // NOSONAR
 				padding: `${margin}mm`,
 				fontFamily,
 				fontSize: "11pt",
@@ -168,7 +166,7 @@ export interface DocumentSheetHeaderProps {
 	/** Hauteur du logo en mm. Défaut : 22mm. */
 	logoHeightMm?: number;
 	/** Lignes textuelles de l'entête (ordre d'affichage). */
-	lines?: string[];
+	lines?: Array<string>;
 	/** Espacement après l'entête en mm. Défaut : 4mm. */
 	marginBottomMm?: number;
 }
@@ -183,30 +181,29 @@ export function DocumentSheetHeader({
 	return (
 		<div
 			className="flex flex-col items-center text-center"
-			style={{ marginBottom: `${marginBottomMm}mm` }}
+			// eslint-disable-next-line react/forbid-dom-props
+			style={{ marginBottom: `${marginBottomMm}mm` }} // NOSONAR
 		>
 			{logoUrl ? (
 				// biome-ignore lint/a11y/useAltText: logo décoratif dans vignette
 				<img
 					src={logoUrl}
 					alt=""
-					style={{
-						height: `${logoHeightMm}mm`,
-						width: "auto",
-						marginBottom: "3mm",
-					}}
+					className="mb-[3mm] w-auto"
+					// eslint-disable-next-line react/forbid-dom-props
+					style={{ height: `${logoHeightMm}mm` }} // NOSONAR
 				/>
 			) : null}
 			{lines.map((line, idx) => (
 				<div
 					// biome-ignore lint/suspicious/noArrayIndexKey: lignes stables issues de l'entête
 					key={idx}
-					style={{
-						fontSize: idx === 0 ? "11pt" : "10pt",
-						fontWeight: idx === 0 ? 700 : 400,
-						textTransform: idx === 0 ? "uppercase" : "none",
-						lineHeight: 1.2,
-					}}
+					className={cn(
+						"leading-[1.2]",
+						idx === 0
+							? "text-[11pt] font-bold uppercase"
+							: "text-[10pt] font-normal normal-case",
+					)}
 				>
 					{line}
 				</div>
@@ -216,7 +213,7 @@ export function DocumentSheetHeader({
 }
 
 export interface DocumentSheetFooterProps {
-	lines?: string[];
+	lines?: Array<string>;
 	/** Marge supérieure en mm. Défaut : 4mm. */
 	marginTopMm?: number;
 }
@@ -228,13 +225,9 @@ export function DocumentSheetFooter({
 	if (lines.length === 0) return null;
 	return (
 		<div
-			className="text-center italic"
-			style={{
-				marginTop: `${marginTopMm}mm`,
-				color: "#4B5563",
-				fontSize: "9pt",
-				lineHeight: 1.25,
-			}}
+			className="text-center italic text-[#4B5563] text-[9pt] leading-[1.25]"
+			// eslint-disable-next-line react/forbid-dom-props
+			style={{ marginTop: `${marginTopMm}mm` }} // NOSONAR
 		>
 			{lines.map((line, idx) => (
 				// biome-ignore lint/suspicious/noArrayIndexKey: lignes stables issues du pied
@@ -256,14 +249,11 @@ export function DocumentSheetBody({
 	emptyLabel?: string;
 }) {
 	return (
-		<div className="doc-sheet-body" style={{ flex: 1, overflow: "hidden" }}>
+		<div className="flex-1 overflow-hidden doc-sheet-body">
 			{html?.trim() ? (
 				<div dangerouslySetInnerHTML={{ __html: html }} />
 			) : (
-				<div
-					className="flex h-full items-center justify-center text-center italic"
-					style={{ color: "#9CA3AF", fontSize: "12pt" }}
-				>
+				<div className="flex h-full items-center justify-center text-center italic text-[#9CA3AF] text-[12pt]">
 					{emptyLabel}
 				</div>
 			)}
@@ -359,11 +349,11 @@ export function DocumentSheetFile({
 				<iframe
 					src={`${url}#view=FitH&toolbar=0&navpanes=0`}
 					title={fileName}
-					className="h-full w-full border-0"
-					style={{
+					className="pointer-events-none h-full w-full border-0"
+					// eslint-disable-next-line react/forbid-dom-props
+					style={{ // NOSONAR
 						width: `${A4_WIDTH_PX}px`,
 						height: `${A4_HEIGHT_PX}px`,
-						pointerEvents: "none",
 					}}
 				/>
 			) : isImage && url ? (
@@ -372,32 +362,16 @@ export function DocumentSheetFile({
 					src={url}
 					alt={fileName}
 					className="h-full w-full object-cover"
-					style={{ width: "100%", height: "100%" }}
 				/>
 			) : (
 				<DocumentSheetPage>
-					<div
-						className="flex flex-1 flex-col items-center justify-center text-center"
-						style={{ gap: "6mm" }}
-					>
+					<div className="flex flex-1 flex-col items-center justify-center gap-[6mm] text-center">
 						<FileIconForType mimeType={mimeType} fileName={fileName} size={72} />
-						<div
-							style={{
-								fontSize: "14pt",
-								fontWeight: 600,
-								wordBreak: "break-word",
-								maxWidth: "80%",
-							}}
-						>
+						<div className="max-w-[80%] break-words text-[14pt] font-semibold">
 							{fileName}
 						</div>
 						{subtitle ? (
-							<div
-								style={{
-									fontSize: "10pt",
-									color: "#6B7280",
-								}}
-							>
+							<div className="text-[10pt] text-[#6B7280]">
 								{subtitle}
 							</div>
 						) : null}
@@ -420,17 +394,17 @@ function FileIconForType({
 }) {
 	const ext = fileName.split(".").pop()?.toLowerCase();
 	if (mimeType?.startsWith("image/") || /^(png|jpe?g|gif|webp|svg)$/.test(ext ?? "")) {
-		return <ImageIcon size={size} strokeWidth={1.5} style={{ color: "#6B7280" }} />;
+		return <ImageIcon size={size} strokeWidth={1.5} className="text-[#6B7280]" />;
 	}
 	if (
 		mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
 		ext === "docx" ||
 		ext === "doc"
 	) {
-		return <FileType size={size} strokeWidth={1.5} style={{ color: "#2563EB" }} />;
+		return <FileType size={size} strokeWidth={1.5} className="text-[#2563EB]" />;
 	}
 	if (mimeType === "application/pdf" || ext === "pdf") {
-		return <FileText size={size} strokeWidth={1.5} style={{ color: "#DC2626" }} />;
+		return <FileText size={size} strokeWidth={1.5} className="text-[#DC2626]" />;
 	}
-	return <FileText size={size} strokeWidth={1.5} style={{ color: "#6B7280" }} />;
+	return <FileText size={size} strokeWidth={1.5} className="text-[#6B7280]" />;
 }
