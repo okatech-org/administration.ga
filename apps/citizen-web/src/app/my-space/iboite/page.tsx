@@ -10,6 +10,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Doc, Id } from "@convex/_generated/dataModel";
+import { DocumentSheetFile } from "@workspace/ui/components/document-sheet";
 import {
 	MailFolder,
 	MailOwnerType,
@@ -1674,25 +1675,16 @@ function MailDetail({
 
 					{mail.attachments && mail.attachments.length > 0 && (
 						<div className="pt-3 border-t border-foreground/5">
-							<p className="text-sm font-medium mb-2 flex items-center gap-1.5">
+							<p className="text-sm font-medium mb-3 flex items-center gap-1.5">
 								{t("iboite.mail.attachments")}{" "}
 								<span className="text-muted-foreground">
 									({mail.attachments.length})
 								</span>
 							</p>
-							<div className="flex flex-wrap gap-2">
+							<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
 								{mail.attachments.map(
 									(att: { name: string; size: string; storageId?: string }) => (
-										<div
-											key={att.name}
-											className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted border flat-card-border text-sm hover:bg-muted transition-colors"
-										>
-											<Paperclip className="size-3.5 text-muted-foreground shrink-0" />
-											<span className="truncate max-w-[180px]">{att.name}</span>
-											<span className="text-[10px] text-muted-foreground">
-												{att.size}
-											</span>
-										</div>
+										<MailAttachmentThumbnail key={att.name} attachment={att} />
 									),
 								)}
 							</div>
@@ -1701,6 +1693,35 @@ function MailDetail({
 				</div>
 			</ScrollArea>
 		</div>
+	);
+}
+
+// ── MailAttachmentThumbnail ───────────────────────────────────────────────────
+
+/**
+ * Vignette A4 d'une pièce jointe de mail. Résout l'URL de stockage à la volée
+ * pour permettre l'aperçu PDF/image. Les autres formats (docx…) affichent un
+ * placeholder icône + nom.
+ */
+function MailAttachmentThumbnail({
+	attachment,
+}: {
+	attachment: { name: string; size: string; storageId?: string };
+}) {
+	const { data: url } = useAuthenticatedConvexQuery(
+		api.functions.documents.getUrl,
+		attachment.storageId
+			? { storageId: attachment.storageId as Id<"_storage"> }
+			: "skip",
+	);
+	return (
+		<DocumentSheetFile
+			fileName={attachment.name}
+			url={url ?? null}
+			subtitle={attachment.size}
+			onClick={url ? () => window.open(url, "_blank") : undefined}
+			ariaLabel={`Ouvrir ${attachment.name}`}
+		/>
 	);
 }
 

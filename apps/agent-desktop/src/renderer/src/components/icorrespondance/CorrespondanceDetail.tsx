@@ -5,6 +5,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { DocumentSheetFile } from "@workspace/ui/components/document-sheet";
 import {
   ArrowLeft,
   Archive,
@@ -645,32 +646,45 @@ export function CorrespondanceDetail({
 
       {/* Content: Documents + Viewer */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Document list */}
-        <div className="space-y-2">
+        {/* Document list — vignettes A4 fidèles */}
+        <div className="space-y-3">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
             <Paperclip className="h-3 w-3" />Documents ({allDocs.length})
           </h3>
-          {allDocs.map((doc: any, i: number) => (
-            <div
-              key={doc.storageId ?? i}
-              className={cn(
-                "flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-all",
-                selectedDocIndex === i ? "border-primary/30 bg-primary/5" : "border-border/40 hover:bg-muted/30",
-              )}
-              onClick={() => setSelectedDocIndex(i)}
-            >
-              <div className={cn("h-8 w-8 rounded-md flex items-center justify-center shrink-0", doc.isMainDocument ? "bg-primary/10" : "bg-muted")}>
-                <FileText className={cn("h-4 w-4", doc.isMainDocument ? "text-primary" : "text-muted-foreground")} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate">{doc.label ?? doc.filename}</p>
-                <p className="text-[9px] text-muted-foreground">
-                  {doc.isMainDocument ? "Document principal" : "Annexe"}
-                  {doc.copyWatermark && " - COPIE"}
-                </p>
-              </div>
-            </div>
-          ))}
+          <div className="grid grid-cols-1 gap-3">
+            {allDocs.map((doc: any, i: number) => {
+              const label = doc.label ?? doc.filename;
+              const subtitle = `${doc.isMainDocument ? "Document principal" : "Annexe"}${doc.copyWatermark ? " - COPIE" : ""}`;
+              const isSelected = selectedDocIndex === i;
+              return (
+                <div key={doc.storageId ?? i} className="flex flex-col gap-1.5">
+                  <div className={cn("relative", isSelected && "ring-2 ring-primary/60 ring-offset-2")}>
+                    <DocumentSheetFile
+                      fileName={doc.filename ?? label}
+                      mimeType={doc.mimeType}
+                      url={doc.url ?? null}
+                      subtitle={subtitle}
+                      onClick={() => setSelectedDocIndex(i)}
+                      ariaLabel={`Sélectionner ${label}`}
+                      overlays={
+                        doc.isMainDocument ? (
+                          <div className="absolute left-2 top-2">
+                            <span className="inline-flex rounded bg-primary/90 px-1.5 py-0.5 text-[0.6rem] font-medium uppercase text-primary-foreground shadow-sm">
+                              Principal
+                            </span>
+                          </div>
+                        ) : null
+                      }
+                    />
+                  </div>
+                  <div className="px-1">
+                    <p className="text-xs font-medium truncate" title={label}>{label}</p>
+                    <p className="text-[10px] text-muted-foreground">{subtitle}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Viewer / infos */}
