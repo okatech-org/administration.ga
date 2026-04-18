@@ -92,6 +92,14 @@ export function DocumentSheet({
 			}
 		: {};
 
+	const scaleStyle: React.CSSProperties = {
+		width: `${naturalWidth}px`,
+		height: `${naturalHeight}px`,
+		transform: `scale(${scale})`,
+		transformOrigin: "top left",
+		boxSizing: "border-box",
+	};
+
 	return (
 		<div
 			ref={cardRef}
@@ -107,14 +115,7 @@ export function DocumentSheet({
 		>
 			<div
 				className="absolute left-0 top-0 flex flex-col bg-white text-neutral-900"
-				// eslint-disable-next-line react/forbid-dom-props
-				style={{ // NOSONAR
-					width: `${naturalWidth}px`,
-					height: `${naturalHeight}px`,
-					transform: `scale(${scale})`,
-					transformOrigin: "top left",
-					boxSizing: "border-box",
-				}}
+				style={scaleStyle}
 			>
 				{children}
 			</div>
@@ -143,18 +144,16 @@ export function DocumentSheetPage({
 	style,
 	children,
 }: DocumentSheetPageProps) {
+	const pageStyle: React.CSSProperties = {
+		padding: `${margin}mm`,
+		fontFamily,
+		fontSize: "11pt",
+		lineHeight: 1.35,
+		...style,
+	};
+
 	return (
-		<div
-			className="flex flex-1 flex-col"
-			// eslint-disable-next-line react/forbid-dom-props
-			style={{ // NOSONAR
-				padding: `${margin}mm`,
-				fontFamily,
-				fontSize: "11pt",
-				lineHeight: 1.35,
-				...style,
-			}}
-		>
+		<div className="flex flex-1 flex-col" style={pageStyle}>
 			{children}
 		</div>
 	);
@@ -177,21 +176,19 @@ export function DocumentSheetHeader({
 	lines = [],
 	marginBottomMm = 4,
 }: DocumentSheetHeaderProps) {
+	const headerStyle: React.CSSProperties = { marginBottom: `${marginBottomMm}mm` };
+	const logoStyle: React.CSSProperties = { height: `${logoHeightMm}mm` };
+
 	if (!logoUrl && lines.length === 0) return null;
 	return (
-		<div
-			className="flex flex-col items-center text-center"
-			// eslint-disable-next-line react/forbid-dom-props
-			style={{ marginBottom: `${marginBottomMm}mm` }} // NOSONAR
-		>
+		<div className="flex flex-col items-center text-center" style={headerStyle}>
 			{logoUrl ? (
 				// biome-ignore lint/a11y/useAltText: logo décoratif dans vignette
 				<img
 					src={logoUrl}
 					alt=""
 					className="mb-[3mm] w-auto"
-					// eslint-disable-next-line react/forbid-dom-props
-					style={{ height: `${logoHeightMm}mm` }} // NOSONAR
+					style={logoStyle}
 				/>
 			) : null}
 			{lines.map((line, idx) => (
@@ -222,12 +219,12 @@ export function DocumentSheetFooter({
 	lines = [],
 	marginTopMm = 4,
 }: DocumentSheetFooterProps) {
+	const footerStyle: React.CSSProperties = { marginTop: `${marginTopMm}mm` };
 	if (lines.length === 0) return null;
 	return (
 		<div
 			className="text-center italic text-[#4B5563] text-[9pt] leading-[1.25]"
-			// eslint-disable-next-line react/forbid-dom-props
-			style={{ marginTop: `${marginTopMm}mm` }} // NOSONAR
+			style={footerStyle}
 		>
 			{lines.map((line, idx) => (
 				// biome-ignore lint/suspicious/noArrayIndexKey: lignes stables issues du pied
@@ -338,6 +335,11 @@ export function DocumentSheetFile({
 		mimeType?.startsWith("image/") ||
 		/\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(fileName);
 
+	const iframeStyle: React.CSSProperties = {
+		width: `${A4_WIDTH_PX}px`,
+		height: `${A4_HEIGHT_PX}px`,
+	};
+
 	return (
 		<DocumentSheet
 			orientation="portrait"
@@ -350,11 +352,7 @@ export function DocumentSheetFile({
 					src={`${url}#view=FitH&toolbar=0&navpanes=0`}
 					title={fileName}
 					className="pointer-events-none h-full w-full border-0"
-					// eslint-disable-next-line react/forbid-dom-props
-					style={{ // NOSONAR
-						width: `${A4_WIDTH_PX}px`,
-						height: `${A4_HEIGHT_PX}px`,
-					}}
+					style={iframeStyle}
 				/>
 			) : isImage && url ? (
 				// biome-ignore lint/a11y/useAltText: alt défini dans props
