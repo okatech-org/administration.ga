@@ -12,13 +12,16 @@ import { useRouter } from "next/navigation";
 import {
 	Bot,
 	Building2,
+	Edit3,
 	Globe,
 	Loader2,
 	MessageSquare,
+	MoreVertical,
 	Pin,
 	Search,
 	Send,
 	Shield,
+	Trash2,
 	User,
 	Users,
 } from "lucide-react";
@@ -29,6 +32,12 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
@@ -285,17 +294,36 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 	);
 }
 
+const MESSAGE_EDIT_WINDOW_MS = 15 * 60 * 1000;
+
 // ── Chat humain temps réel ──
 function HumanChatView({ contact }: { contact: any }) {
 	const { data: existingChat } = useAuthenticatedConvexQuery(api.functions.chats.findChatWith, contact.userId ? { targetUserId: contact.userId as Id<"users"> } : "skip");
 	const resolvedChatId = contact._chatId ?? existingChat?._id;
 	const { data: messages, isPending: messagesLoading } = useAuthenticatedConvexQuery(api.functions.chats.listMessages, resolvedChatId ? { chatId: resolvedChatId, limit: 50 } : "skip");
 	const { mutateAsync: markRead } = useConvexMutationQuery(api.functions.chats.markRead);
+	const { mutateAsync: deleteMessageMut } = useConvexMutationQuery(api.functions.chats.deleteMessage);
+	const { mutateAsync: editMessageMut } = useConvexMutationQuery(api.functions.chats.editMessage);
 
 	useEffect(() => { if (resolvedChatId) markRead({ chatId: resolvedChatId }).catch(() => {}); }, [resolvedChatId, markRead, messages?.length]);
 
 	const scrollRef = useRef<HTMLDivElement>(null);
 	useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+	const handleDeleteMessage = useCallback(async (messageId: Id<"chatMessages">) => {
+		if (!window.confirm("Supprimer ce message ?")) return;
+		try { await deleteMessageMut({ messageId }); }
+		catch (e: any) { toast.error(e?.data ?? e?.message ?? "Suppression impossible."); }
+	}, [deleteMessageMut]);
+
+	const handleEditMessage = useCallback(async (messageId: Id<"chatMessages">, currentContent: string) => {
+		const next = window.prompt("Modifier le message :", currentContent);
+		if (next === null) return;
+		const trimmed = next.trim();
+		if (!trimmed || trimmed === currentContent) return;
+		try { await editMessageMut({ messageId, content: trimmed }); }
+		catch (e: any) { toast.error(e?.data ?? e?.message ?? "Modification impossible."); }
+	}, [editMessageMut]);
 
 	if (messagesLoading) return <div className="flex items-center justify-center py-8"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>;
 	if (!messages || messages.length === 0) return <div className="flex flex-col items-center justify-center h-full text-center py-6"><MessageSquare className="h-8 w-8 text-muted-foreground/30 mb-2" /><p className="text-xs text-muted-foreground">Envoyez le premier message</p></div>;
@@ -304,10 +332,38 @@ function HumanChatView({ contact }: { contact: any }) {
 		<div className="space-y-2.5">
 			{messages.map((msg: any) => {
 				const isMe = msg.senderId !== contact.userId;
+				const isDeleted = !!msg.deletedAt;
+				const isEdited = !!msg.editedAt && !isDeleted;
+				const canMutate = isMe && !isDeleted && Date.now() - msg.createdAt < MESSAGE_EDIT_WINDOW_MS;
 				return (
-					<div key={msg._id} className={cn("flex gap-2", isMe ? "justify-end" : "justify-start")}>
+					<div key={msg._id} className={cn("flex gap-2 group", isMe ? "justify-end" : "justify-start")}>
 						{!isMe && <Avatar className="h-6 w-6 shrink-0"><AvatarImage src={contact.avatar} /><AvatarFallback className="text-[9px] bg-primary/10 text-primary">{contact.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}</AvatarFallback></Avatar>}
-						<div className={cn("max-w-[80%] rounded-xl px-3 py-1.5 text-xs", isMe ? "bg-primary text-primary-foreground" : "bg-muted")}>{msg.content}</div>
+						{canMutate && (
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<button
+										type="button"
+										aria-label="Actions"
+										className="opacity-0 group-hover:opacity-100 transition-opacity self-center h-6 w-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted"
+									>
+										<MoreVertical className="h-3.5 w-3.5" />
+									</button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="end" className="min-w-[9rem]">
+									<DropdownMenuItem onClick={() => handleEditMessage(msg._id, msg.content)}>
+										<Edit3 className="h-3.5 w-3.5 mr-2" />
+										<span className="text-xs">Modifier</span>
+									</DropdownMenuItem>
+									<DropdownMenuItem onClick={() => handleDeleteMessage(msg._id)} className="text-destructive focus:text-destructive">
+										<Trash2 className="h-3.5 w-3.5 mr-2" />
+										<span className="text-xs">Supprimer</span>
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						)}
+						<div className={cn("max-w-[80%] rounded-xl px-3 py-1.5 text-xs", isMe ? "bg-primary text-primary-foreground" : "bg-muted", isDeleted && "italic opacity-60")}>
+							{isDeleted ? (<span>[Message supprimé]</span>) : (<>{msg.content}{isEdited && <span className="ml-1 opacity-60 text-[9px]">(modifié)</span>}</>)}
+						</div>
 						{isMe && <Avatar className="h-6 w-6 shrink-0"><AvatarFallback className="bg-primary/10 text-primary text-[9px]"><User className="h-3 w-3" /></AvatarFallback></Avatar>}
 					</div>
 				);

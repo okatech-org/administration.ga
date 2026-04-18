@@ -13,21 +13,30 @@ import {
 	Bot,
 	Calendar,
 	CreditCard,
+	Edit3,
 	FileText,
 	Headset,
 	Loader2,
 	MessageSquare,
+	MoreVertical,
 	Pin,
 	Send,
+	Trash2,
 	User,
 } from "lucide-react";
-import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SafeMarkdown as Markdown } from "@workspace/chat/safe-markdown";
 import { useIdempotencyKey } from "@workspace/chat/use-idempotency-key";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -70,10 +79,37 @@ export function CitizenChatTab() {
 	const { mutateAsync: markRead } = useConvexMutationQuery(
 		api.functions.chats.markRead,
 	);
+	const { mutateAsync: deleteMessageMut } = useConvexMutationQuery(
+		api.functions.chats.deleteMessage,
+	);
+	const { mutateAsync: editMessageMut } = useConvexMutationQuery(
+		api.functions.chats.editMessage,
+	);
+	const { mutateAsync: setTypingMut } = useConvexMutationQuery(
+		api.functions.chats.setTyping,
+	);
+	const { mutateAsync: clearTypingMut } = useConvexMutationQuery(
+		api.functions.chats.clearTyping,
+	);
 	// Clé d'idempotence : évite les doubles insertions côté backend si
 	// l'utilisateur double-clique ou si le retry réseau refait la mutation.
 	const { getKey: getIdempotencyKey, rotate: rotateIdempotencyKey } =
 		useIdempotencyKey();
+
+	// ID du thread actif (sélection) — dérivé de selectedThread pour les hooks
+	// de typing indicator + actions message.
+	const selectedChatIdForHooks = (selectedThread?.isStandard
+		? selectedThread?._id
+		: selectedThread?._id) as Id<"chats"> | undefined;
+
+	// Liste des utilisateurs en train d'écrire dans ce thread (hors moi).
+	const { data: typingUsers } = useAuthenticatedConvexQuery(
+		api.functions.chats.listTyping,
+		selectedChatIdForHooks ? { chatId: selectedChatIdForHooks } : "skip",
+	);
+
+	// Fenêtre d'édition autorisée côté client (miroir du backend : 15 min).
+	const MESSAGE_EDIT_WINDOW_MS = 15 * 60 * 1000;
 
 	// Profil utilisateur pour les suggestions contextuelles
 	const { data: profile } = useAuthenticatedConvexQuery(api.functions.profiles.getMine, {});
@@ -186,6 +222,7 @@ export function CitizenChatTab() {
 			}
 			setMessageInput("");
 			rotateIdempotencyKey();
+			stopTyping();
 		} catch (e: any) {
 			toast.error(e?.data ?? e?.message ?? "Erreur d'envoi");
 			// On ne rotate PAS la clé → un retry manuel dédupliquera côté serveur.
@@ -205,6 +242,7 @@ export function CitizenChatTab() {
 			});
 			setMessageInput("");
 			rotateIdempotencyKey();
+			stopTyping();
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur d'envoi");
 		}
@@ -217,6 +255,84 @@ export function CitizenChatTab() {
 			else handleSendHuman();
 		}
 	};
+
+	// ── Typing indicator throttling ──
+	// On ne ping `setTyping` qu'au plus toutes les 2 secondes pendant que
+	// l'utilisateur écrit. Le TTL backend (6s) prend le relais quand il
+	// s'arrête. `clearTyping` est appelé au send et au unmount.
+	const typingThrottleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const pingTyping = useCallback(() => {
+		if (!selectedChatIdForHooks) return;
+		if (typingThrottleRef.current) return; // throttle actif
+		void setTypingMut({ chatId: selectedChatIdForHooks });
+		typingThrottleRef.current = setTimeout(() => {
+			typingThrottleRef.current = null;
+		}, 2_000);
+	}, [selectedChatIdForHooks, setTypingMut]);
+
+	const stopTyping = useCallback(() => {
+		if (typingThrottleRef.current) {
+			clearTimeout(typingThrottleRef.current);
+			typingThrottleRef.current = null;
+		}
+		if (selectedChatIdForHooks) {
+			void clearTypingMut({ chatId: selectedChatIdForHooks });
+		}
+	}, [selectedChatIdForHooks, clearTypingMut]);
+
+	// Cleanup sur unmount ou changement de thread
+	useEffect(() => {
+		return () => {
+			if (typingThrottleRef.current) {
+				clearTimeout(typingThrottleRef.current);
+				typingThrottleRef.current = null;
+			}
+		};
+	}, [selectedChatIdForHooks]);
+
+	const handleInputChange = (value: string) => {
+		setMessageInput(value);
+		if (value.trim()) pingTyping();
+		else if (!value) stopTyping();
+	};
+
+	// ── Actions sur un message envoyé par l'utilisateur ──
+	const handleDeleteMessage = useCallback(
+		async (messageId: Id<"chatMessages">) => {
+			if (!window.confirm("Supprimer ce message ?")) return;
+			try {
+				await deleteMessageMut({ messageId });
+			} catch (e: any) {
+				toast.error(e?.data ?? e?.message ?? "Suppression impossible.");
+			}
+		},
+		[deleteMessageMut],
+	);
+
+	const handleEditMessage = useCallback(
+		async (messageId: Id<"chatMessages">, currentContent: string) => {
+			const next = window.prompt("Modifier le message :", currentContent);
+			if (next === null) return;
+			const trimmed = next.trim();
+			if (!trimmed || trimmed === currentContent) return;
+			try {
+				await editMessageMut({ messageId, content: trimmed });
+			} catch (e: any) {
+				toast.error(e?.data ?? e?.message ?? "Modification impossible.");
+			}
+		},
+		[editMessageMut],
+	);
+
+	// Texte "X est en train d'écrire…" (ou vide)
+	const typingText = useMemo(() => {
+		if (!typingUsers || typingUsers.length === 0) return "";
+		if (typingUsers.length === 1) {
+			return `${typingUsers[0].displayName} est en train d'écrire…`;
+		}
+		return `${typingUsers.length} personnes sont en train d'écrire…`;
+	}, [typingUsers]);
 
 	// Filtrer les threads : separer Mr Ray des threads P2P
 	const p2pThreads = useMemo(() => {
@@ -319,9 +435,16 @@ export function CitizenChatTab() {
 								const isMrRay = msg.senderEmail === MR_RAY_EMAIL || msg.senderName?.includes("Ray");
 								const isMe = !isMrRay && msg.senderId !== selectedThread.otherUser?.id;
 								const isBotMessage = isStandard && isMrRay;
+								const isDeleted = !!msg.deletedAt;
+								const isEdited = !!msg.editedAt && !isDeleted;
+								const canMutate =
+									isMe &&
+									!isDeleted &&
+									!isBotMessage &&
+									Date.now() - msg.createdAt < MESSAGE_EDIT_WINDOW_MS;
 
 								return (
-									<div key={msg._id} className={cn("flex gap-2", isMe ? "justify-end" : "justify-start")}>
+									<div key={msg._id} className={cn("flex gap-2 group", isMe ? "justify-end" : "justify-start")}>
 										{!isMe && (
 											<Avatar className="h-6 w-6 shrink-0">
 												{isBotMessage ? (
@@ -335,11 +458,49 @@ export function CitizenChatTab() {
 												)}
 											</Avatar>
 										)}
+										{/* Menu d'actions (éditer / supprimer) côté auteur uniquement,
+										    fenêtre 15 min, invisible sinon. Apparaît au survol. */}
+										{canMutate && (
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<button
+														type="button"
+														aria-label="Actions"
+														className="opacity-0 group-hover:opacity-100 transition-opacity self-center h-6 w-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted"
+													>
+														<MoreVertical className="h-3.5 w-3.5" />
+													</button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="end" className="min-w-[9rem]">
+													<DropdownMenuItem onClick={() => handleEditMessage(msg._id, msg.content)}>
+														<Edit3 className="h-3.5 w-3.5 mr-2" />
+														<span className="text-xs">Modifier</span>
+													</DropdownMenuItem>
+													<DropdownMenuItem
+														onClick={() => handleDeleteMessage(msg._id)}
+														className="text-destructive focus:text-destructive"
+													>
+														<Trash2 className="h-3.5 w-3.5 mr-2" />
+														<span className="text-xs">Supprimer</span>
+													</DropdownMenuItem>
+												</DropdownMenuContent>
+											</DropdownMenu>
+										)}
 										<div className={cn("max-w-[80%] rounded-xl px-3 py-1.5 text-xs",
-											isMe ? "bg-primary text-primary-foreground" : "bg-muted")}>
-											{isBotMessage ? (
+											isMe ? "bg-primary text-primary-foreground" : "bg-muted",
+											isDeleted && "italic opacity-60")}>
+											{isDeleted ? (
+												<span>[Message supprimé]</span>
+											) : isBotMessage ? (
 												<div className="prose prose-xs dark:prose-invert max-w-none [&>p]:m-0"><Markdown>{msg.content}</Markdown></div>
-											) : msg.content}
+											) : (
+												<>
+													{msg.content}
+													{isEdited && (
+														<span className="ml-1 opacity-60 text-[9px]">(modifié)</span>
+													)}
+												</>
+											)}
 										</div>
 										{isMe && (
 											<Avatar className="h-6 w-6 shrink-0">
@@ -368,11 +529,18 @@ export function CitizenChatTab() {
 					/>
 				)}
 
+				{/* Typing indicator — ligne fine au-dessus du composer */}
+				{typingText && (
+					<div className="px-3 py-1 text-[10px] text-muted-foreground italic shrink-0">
+						{typingText}
+					</div>
+				)}
+
 				{/* Input */}
 				<div className="border-t p-2 flex items-end gap-1.5 shrink-0">
 					<Textarea
 						value={messageInput}
-						onChange={(e) => setMessageInput(e.target.value)}
+						onChange={(e) => handleInputChange(e.target.value)}
 						onKeyDown={handleKeyDown}
 						placeholder={isStandard ? "Ecrivez au Standard..." : "Repondre..."}
 						className="min-h-[32px] max-h-[80px] resize-none text-xs"
