@@ -5,6 +5,7 @@
  * Grid / List / Column views with folder navigation, status filters, and document viewer.
  */
 
+import { DocumentSheet } from "@workspace/ui/components/document-sheet"
 import React, { useState, useMemo } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import {
@@ -516,48 +517,37 @@ function VaultFileCard({
   layoutId?: string
 }) {
   return (
-    <motion.div
-      layoutId={layoutId}
-      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-xl border border-border/50 bg-card transition-all duration-300 hover:shadow-lg"
-      onClick={onClick}
-    >
-      <div className="relative flex aspect-[1/1.414] flex-col overflow-hidden bg-white/[0.03]">
-        <div className="flex flex-1 items-center justify-center px-3 py-2">
-          <div className="relative flex h-[72px] w-14 flex-col items-center justify-center rounded-[2px] border border-neutral-200 bg-white shadow-sm">
-            <div className="absolute top-0 left-0 h-4 w-full border-b border-neutral-100 bg-neutral-50" />
-            <Archive className={cn("h-7 w-7 opacity-50", iconColor)} />
-            <div className="absolute right-2 bottom-2 left-2 space-y-0.5">
-              <div className="h-[2px] w-full rounded-full bg-neutral-100" />
-              <div className="h-[2px] w-3/4 rounded-full bg-neutral-100" />
-              <div className="h-[2px] w-5/6 rounded-full bg-neutral-100" />
+    <motion.div layoutId={layoutId} className="group relative flex h-full flex-col">
+      <DocumentSheet orientation="portrait" onClick={onClick} ariaLabel={title}>
+        <div
+          className="flex h-full w-full flex-col items-center justify-between"
+          style={{ padding: "20mm", fontFamily: "'Times New Roman', serif" }}
+        >
+          <div />
+          <div className="flex flex-col items-center text-center" style={{ gap: "8mm" }}>
+            <Archive className={cn("opacity-60", iconColor)} style={{ width: "40mm", height: "40mm" }} />
+            <div
+              className="font-semibold"
+              style={{ fontSize: "14pt", lineHeight: 1.25, wordBreak: "break-word", maxWidth: "140mm" }}
+              title={title}
+            >
+              {title}
+            </div>
+          </div>
+          <div className="flex w-full items-end justify-between">
+            <div className="flex items-center gap-1">{statusBadge}</div>
+            <div className="flex items-center gap-2" style={{ fontSize: "9pt", color: "#6B7280" }}>
+              {version && <span className="font-mono">{version}</span>}
+              {date && (
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <Clock className="h-3 w-3" />
+                  {date}
+                </span>
+              )}
             </div>
           </div>
         </div>
-        <div className="px-2.5 pb-1">
-          <h3
-            className="truncate text-[11px] leading-tight font-semibold text-foreground/90 transition-colors group-hover:text-primary"
-            title={title}
-          >
-            {title}
-          </h3>
-        </div>
-        <div className="mt-auto flex items-center justify-between px-2.5 pb-2">
-          <div className="flex items-center gap-1">{statusBadge}</div>
-          <div className="flex items-center gap-1.5 text-[8px] text-muted-foreground/50">
-            {version && (
-              <span className="rounded bg-white/[0.04] px-1 font-mono">
-                {version}
-              </span>
-            )}
-            {date && (
-              <span className="flex items-center gap-0.5 whitespace-nowrap">
-                <Clock className="h-2 w-2" />
-                {date}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+      </DocumentSheet>
     </motion.div>
   )
 }
