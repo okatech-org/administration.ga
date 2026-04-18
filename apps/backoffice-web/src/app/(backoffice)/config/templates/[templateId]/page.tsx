@@ -19,8 +19,8 @@ import {
 	TemplateAIDrawer,
 	type TemplateAIInput,
 	type TemplateAIResult,
+	type TemplateEditorReadyContext,
 } from "@workspace/document-editor";
-import type { Editor } from "@tiptap/react";
 import type {
 	PlaceholderDescriptor,
 	PlaceholderSource,
@@ -57,11 +57,11 @@ import {
 	deriveFooterLines as derivePreviewFooterLines,
 } from "@/components/admin/RepresentationHeaderPreview";
 import {
-	HeaderFooterSectionEditor,
 	type HeaderFooterSectionValue,
 	createDefaultHeaderFooterSection,
 	deserializeHeaderFooterSection,
 	serializeHeaderFooterSection,
+	textToTiptap,
 } from "@/components/config/HeaderFooterSectionEditor";
 import {
 	type TypographySectionValue,
@@ -173,6 +173,7 @@ export default function EditTemplatePage() {
 	const [newKey, setNewKey] = useState("");
 	const [newSource, setNewSource] = useState<PlaceholderSource>("formData");
 	const [saving, setSaving] = useState(false);
+	const [gridSize, setGridSize] = useState<number | null>(null);
 	const [savingLayout, setSavingLayout] = useState(false);
 	const [contentRevision, setContentRevision] = useState(0);
 	// Rep sélectionnée pour prévisualiser l'entête / pied dans l'éditeur.
@@ -184,9 +185,15 @@ export default function EditTemplatePage() {
 	);
 	// Taille d'affichage du sceau dans l'aperçu WYSIWYG (px).
 	const [logoHeightPx, setLogoHeightPx] = useState(80);
-	// Instance Tiptap partagée entre le canvas, la bubble menu et la sidebar
-	// contextuelle. Captée via `onReady` depuis TemplateEditor.
-	const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
+	// Contexte Tiptap (header + body + footer + éditeur actif) partagé
+	// entre le canvas, la bubble menu et la sidebar contextuelle. Capté via
+	// `onReady` depuis TemplateEditor.
+	const [editorContext, setEditorContext] = useState<TemplateEditorReadyContext | null>(null);
+	// Bumpé pour forcer l'injection setContent du header/footer quand le
+	// mode "preview rep" bascule. Sans ce compteur, Tiptap ne re-lit pas
+	// `initialHeaderContent` après le mount.
+	const [headerRevision, setHeaderRevision] = useState(0);
+	const [footerRevision, setFooterRevision] = useState(0);
 
 	// Hydratation une seule fois à la réception du template.
 	useMemo(() => {
@@ -224,6 +231,14 @@ export default function EditTemplatePage() {
 			);
 		}
 	}, [template, content]);
+
+	// Dès que le mode preview rep bascule (on / off), on bump la révision
+	// pour forcer Tiptap à re-lire `initialHeaderContent` et à réinjecter
+	// le bon contenu. Sans bump, Tiptap garde son contenu initial du mount.
+	useEffect(() => {
+		setHeaderRevision((r) => r + 1);
+		setFooterRevision((r) => r + 1);
+	}, [previewOrgId]);
 
 	useEffect(() => {
 		if (template && layout === null) {
@@ -310,33 +325,26 @@ export default function EditTemplatePage() {
 	const workingTypography = typography ?? createDefaultTypographySection();
 	const workingVoice = voice ?? createDefaultVoiceSection();
 
-	// Aperçu du sceau + entête + pied affichés dans l'éditeur. Si une rep
-	// de preview est sélectionnée, on dérive les lignes de SON branding
-	// (headerLines / footerAddress / footerPhone / footerEmail) — c'est ce
-	// que verront les citoyens au rendu PDF. Sinon, fallback sur les lignes
-	// définies dans le template (exemple Madrid).
-	const previewFromOrgHeader = previewOrg
-		? derivePreviewHeaderLines(previewOrg)
-		: [];
-	const previewFromOrgFooter = previewOrg
-		? derivePreviewFooterLines(previewOrg)
-		: [];
-	const templateHeaderLines = workingHeaderFooter.header.textContent
-		.split("\n")
-		.map((l) => l.trim())
-		.filter((l) => l.length > 0);
-	const templateFooterLines = workingHeaderFooter.footer.textContent
-		.split("\n")
-		.map((l) => l.trim())
-		.filter((l) => l.length > 0);
-	const headerPreviewLines =
-		previewFromOrgHeader.length > 0
-			? previewFromOrgHeader
-			: templateHeaderLines;
-	const footerPreviewLines =
-		previewFromOrgFooter.length > 0
-			? previewFromOrgFooter
-			: templateFooterLines;
+	// Contenu Tiptap effectif injecté dans les éditeurs header / footer
+	// du canvas. Deux modes :
+	//
+	//   1. Édition du template (previewOrgId === null) : on édite
+	//      directement `workingHeaderFooter.header.content` — les frappes
+	//      clavier sont persistées via `onHeaderChange`.
+	//
+	//   2. Preview représentation (previewOrgId !== null) : on injecte le
+	//      branding de la rep (headerLines / footerAddress / footerPhone /
+	//      footerEmail) dans les éditeurs passés en read-only. Le state
+	//      template n'est jamais écrasé — au retour en "générique" le
+	//      contenu original est restauré automatiquement via la même
+	//      mécanique (setContent déclenché par bump de revision).
+	const isRepPreviewActive = previewOrg != null;
+	const activeHeaderContent = isRepPreviewActive
+		? textToTiptap(derivePreviewHeaderLines(previewOrg).join("\n"))
+		: workingHeaderFooter.header.content;
+	const activeFooterContent = isRepPreviewActive
+		? textToTiptap(derivePreviewFooterLines(previewOrg).join("\n"))
+		: workingHeaderFooter.footer.content;
 
 	function addPlaceholder() {
 		const key = newKey.trim();
@@ -378,6 +386,15 @@ export default function EditTemplatePage() {
 				headerFooter: serializeHeaderFooterSection(workingHeaderFooter) as never,
 				typography: serializeTypographySection(workingTypography) as never,
 				voice: serializeVoiceSection(workingVoice) as never,
+				// Layout — paperSize / orientation / marges — sauvegardé aussi
+				// par le bouton global. Évite à l'utilisateur d'avoir à cliquer
+				// "Appliquer" séparément dans la card Mise en page.
+				paperSize: workingLayout.paperSize as never,
+				orientation: workingLayout.orientation as never,
+				marginTop: workingLayout.marginTop as never,
+				marginRight: workingLayout.marginRight as never,
+				marginBottom: workingLayout.marginBottom as never,
+				marginLeft: workingLayout.marginLeft as never,
 			});
 			toast.success(t("templates.edit.saved"));
 		} catch (err) {
@@ -464,16 +481,31 @@ export default function EditTemplatePage() {
 							layout={workingLayout}
 							onLayoutChange={(next) => setLayout(next)}
 							onUploadImage={onUploadImage}
-							headerPreview={{
-								logoSrc: logoUrl,
-								lines: headerPreviewLines,
-								fontFamily: workingHeaderFooter.header.fontFamily ?? "Optima",
-								logoHeight: logoHeightPx,
-							}}
-							footerPreview={{ lines: footerPreviewLines }}
+							initialHeaderContent={activeHeaderContent}
+							onHeaderChange={(doc) =>
+								setHeaderFooter({
+									...workingHeaderFooter,
+									header: { ...workingHeaderFooter.header, content: doc },
+								})
+							}
+							headerEditable={!isRepPreviewActive}
+							headerLogoSrc={logoUrl}
+							headerLogoHeight={logoHeightPx}
+							headerFontFamily={workingHeaderFooter.header.fontFamily ?? "Optima"}
+							headerRevision={headerRevision}
+							initialFooterContent={activeFooterContent}
+							onFooterChange={(doc) =>
+								setHeaderFooter({
+									...workingHeaderFooter,
+									footer: { ...workingHeaderFooter.footer, content: doc },
+								})
+							}
+							footerEditable={!isRepPreviewActive}
+							footerRevision={footerRevision}
 							onAIGenerate={() => setAiDrawerOpen(true)}
-							onReady={setEditorInstance}
+							onReady={setEditorContext}
 							contentRevision={contentRevision}
+							gridSize={gridSize}
 						/>
 					</FlatCard>
 				</div>
@@ -481,7 +513,8 @@ export default function EditTemplatePage() {
 				{/* Sidebar droite — paramètres contextuels (style Pages) */}
 				<aside className="flex w-full shrink-0 flex-col gap-4 lg:w-96 lg:overflow-y-auto">
 					<ContextualFormatPanel
-						editor={editorInstance}
+						editor={editorContext?.activeEditor ?? null}
+						activeZone={editorContext?.activeZone ?? null}
 						documentPanel={
 							<>
 								<FlatCard className="p-4">
@@ -490,6 +523,8 @@ export default function EditTemplatePage() {
 										saving={savingLayout}
 										onChange={setLayout}
 										onSave={saveLayout}
+										gridSize={gridSize}
+										onGridSizeChange={setGridSize}
 									/>
 								</FlatCard>
 
@@ -528,18 +563,6 @@ export default function EditTemplatePage() {
 													}
 													logoHeightPx={logoHeightPx}
 													onLogoHeightPxChange={setLogoHeightPx}
-													templateHeaderText={
-														workingHeaderFooter.header.textContent
-													}
-													onTemplateHeaderTextChange={(text) =>
-														setHeaderFooter({
-															...workingHeaderFooter,
-															header: {
-																...workingHeaderFooter.header,
-																textContent: text,
-															},
-														})
-													}
 												/>
 											</AccordionContent>
 										</AccordionItem>
@@ -746,16 +769,27 @@ function PlaceholderManager({
 /**
  * Sidebar card to edit page layout (paper size, orientation, margins).
  */
+const GRID_OPTIONS: Array<{ label: string; value: number | null }> = [
+	{ label: "Aucune", value: null },
+	{ label: "5 mm", value: 5 },
+	{ label: "10 mm", value: 10 },
+	{ label: "20 mm", value: 20 },
+];
+
 function LayoutSettingsCard({
 	layout,
 	saving,
 	onChange,
 	onSave,
+	gridSize,
+	onGridSizeChange,
 }: {
 	layout: LayoutDraft;
 	saving: boolean;
 	onChange: (next: LayoutDraft) => void;
 	onSave: () => void;
+	gridSize: number | null;
+	onGridSizeChange: (size: number | null) => void;
 }) {
 	const { t } = useTranslation();
 	function patch(partial: Partial<LayoutDraft>) {
@@ -839,6 +873,31 @@ function LayoutSettingsCard({
 					value={layout.marginLeft}
 					onChange={(v) => patch({ marginLeft: v })}
 				/>
+			</div>
+
+			{/* Grille de repère — purement visuelle, n'apparaît pas dans le PDF */}
+			<div className="flex flex-col gap-1.5">
+				<Label className="text-xs">
+					Grille de repère{" "}
+					<span className="text-muted-foreground">(édition uniquement)</span>
+				</Label>
+				<div className="flex flex-wrap gap-1">
+					{GRID_OPTIONS.map((opt) => (
+						<button
+							key={String(opt.value)}
+							type="button"
+							onClick={() => onGridSizeChange(opt.value)}
+							className={[
+								"rounded px-2.5 py-1 text-xs font-medium border transition-colors",
+								gridSize === opt.value
+									? "border-primary/50 bg-primary/10 text-primary"
+									: "border-border bg-background text-muted-foreground hover:border-foreground/30 hover:text-foreground",
+							].join(" ")}
+						>
+							{opt.label}
+						</button>
+					))}
+				</div>
 			</div>
 
 			<Button onClick={onSave} disabled={saving} variant="outline">

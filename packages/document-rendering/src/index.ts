@@ -2,6 +2,7 @@ export * from "./types";
 export {
 	buildCoreExtensions,
 	FontSize,
+	LineSpacing,
 	ImagePlaceholderNodeSchema,
 	ImageWithAttrs,
 	PlaceholderNodeSchema,

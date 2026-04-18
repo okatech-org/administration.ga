@@ -27,12 +27,35 @@
    défaut (convention des 25 modèles sources) pour que le titre ne soit
    pas collé au bord gauche. L'utilisateur peut toujours override en
    appliquant un alignement spécifique. `!important` nécessaire pour
-   surcharger le style `.prose table` de Tailwind Typography. */
+   surcharger le style `.prose table` de Tailwind Typography.
+   `display: table` est remplacé par un wrapper : on aligne le conteneur
+   parent via `text-align: center` sur le paragraphe précédent — Tiptap
+   positionne chaque table dans son propre block-level element. */
+.ProseMirror > table,
 .ProseMirror table {
   margin-left: auto !important;
   margin-right: auto !important;
+  display: table !important;
+  /* Astuce cross-browser : margin auto sur display:table fonctionne mal
+     sur certains navigateurs. Force la largeur max pour garantir le
+     centrage. */
+  max-width: 100%;
 }
 
+
+/* ── Cadre de sélection de bloc (BlockFocusOutline) ──────────────────────
+   Apparaît quand le curseur est dans un bloc (paragraphe, titre, etc.)
+   sans sélection de texte — contexte "block" dans la sidebar.
+   `outline` (pas `border`) garantit zéro reflow quand la décoration
+   s'applique ou se retire. Seul le cas caret (curseur seul) est stylé ;
+   le cas range (sélection de texte) reste neutre pour ne pas interférer
+   avec la mise en évidence native du navigateur. */
+.ProseMirror [data-block-focus="caret"] {
+  outline: 2px solid hsl(var(--primary) / 0.35);
+  outline-offset: 3px;
+  border-radius: 4px;
+  transition: outline-color 120ms;
+}
 
 /* Poignée de drag — apparaît à gauche de chaque bloc au survol (plugin
    BlockDragHandle). Style Notion / Pages. */

@@ -5,7 +5,7 @@ import {
 } from "@livekit/components-react";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { Loader2, Phone } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -15,13 +15,19 @@ import {
 	DialogDescription,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetTitle,
+} from "@/components/ui/sheet";
 
 import { useMeeting } from "@/hooks/use-meeting";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRingtone } from "@/hooks/use-ringtone";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { useCallStore } from "@/stores/call-store";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@/lib/livekit-config";
 
 interface ActiveCallBannerProps {
 	requestId: Id<"requests">;
@@ -40,6 +46,13 @@ export function ActiveCallBanner({ requestId }: ActiveCallBannerProps) {
 	);
 	const { globalActiveMeetingId, setGlobalMeetingId } = useCallStore();
 	const isBusyGlobally = globalActiveMeetingId !== null;
+	// Empêche la sonnerie de reprendre pendant la fenêtre de latence entre le
+	// raccrochage et le rafraîchissement de la query Convex.
+	const dismissedMeetingIdRef = useRef<Id<"meetings"> | null>(null);
+	// Guard contre les disconnects LiveKit transitoires (StrictMode, ICE,
+	// token refresh) qui fermaient l'appel avant même qu'il ne soit connecté.
+	const hasConnectedRef = useRef(false);
+	const userHangUpRef = useRef(false);
 
 	// Find the first active meeting attached to this request
 	const { data: requestMeetings } = useAuthenticatedConvexQuery(
@@ -47,7 +60,29 @@ export function ActiveCallBanner({ requestId }: ActiveCallBannerProps) {
 		{ requestId },
 	);
 
-	const activeMeeting = requestMeetings?.find((m) => m.status === "active");
+	const { data: me } = useAuthenticatedConvexQuery(
+		api.functions.users.getMe,
+		{},
+	);
+
+	const candidateMeeting = requestMeetings?.find((m) => {
+		if (m.status !== "active") return false;
+		// Exclure les meetings que j'ai déjà rejoints : je suis en communication,
+		// la sonnerie ne doit pas re-sonner.
+		if (
+			me?._id &&
+			m.participants.some(
+				(p) => p.userId === me._id && p.joinedAt && !p.leftAt,
+			)
+		) {
+			return false;
+		}
+		return true;
+	});
+	const activeMeeting =
+		candidateMeeting && candidateMeeting._id === dismissedMeetingIdRef.current
+			? undefined
+			: candidateMeeting;
 
 	const { token, wsUrl, isConnecting, connect, disconnect } = useMeeting(
 		activeMeeting?._id,
@@ -58,6 +93,9 @@ export function ActiveCallBanner({ requestId }: ActiveCallBannerProps) {
 
 	const handleJoin = useCallback(async () => {
 		if (!activeMeeting) return;
+		dismissedMeetingIdRef.current = null;
+		hasConnectedRef.current = false;
+		userHangUpRef.current = false;
 		setActiveMeetingId(activeMeeting._id);
 		setGlobalMeetingId(activeMeeting._id);
 		setDialogOpen(true);
@@ -65,13 +103,21 @@ export function ActiveCallBanner({ requestId }: ActiveCallBannerProps) {
 	}, [activeMeeting, connect, setGlobalMeetingId]);
 
 	const handleHangUp = useCallback(async () => {
+		userHangUpRef.current = true;
 		if (activeMeetingId) {
+			dismissedMeetingIdRef.current = activeMeetingId;
 			await disconnect(activeMeetingId);
 		}
 		setDialogOpen(false);
 		setActiveMeetingId(null);
 		setGlobalMeetingId(null);
+		hasConnectedRef.current = false;
 	}, [activeMeetingId, disconnect, setGlobalMeetingId]);
+
+	const handleLiveKitDisconnected = useCallback(() => {
+		if (!hasConnectedRef.current) return;
+		void handleHangUp();
+	}, [handleHangUp]);
 
 	if (!activeMeeting || (isBusyGlobally && !dialogOpen)) return null;
 
@@ -83,7 +129,11 @@ export function ActiveCallBanner({ requestId }: ActiveCallBannerProps) {
 					serverUrl={wsUrl}
 					connect={true}
 					audio={true}
-					onDisconnected={handleHangUp}
+					options={LIVEKIT_CALL_ROOM_OPTIONS}
+					onConnected={() => {
+						hasConnectedRef.current = true;
+					}}
+					onDisconnected={handleLiveKitDisconnected}
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
@@ -137,6 +187,15 @@ export function ActiveCallBanner({ requestId }: ActiveCallBannerProps) {
 						side="bottom"
 						className="p-0 h-[100dvh] w-full bg-zinc-950 border-none rounded-none focus:outline-none flex flex-col pt-10"
 					>
+						<SheetTitle className="sr-only">
+							{activeMeeting?.title ?? t("meetings.callInProgress", "Appel en cours")}
+						</SheetTitle>
+						<SheetDescription className="sr-only">
+							{t(
+								"meetings.callDialogDescription",
+								"Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.",
+							)}
+						</SheetDescription>
 						{callContent}
 					</SheetContent>
 				</Sheet>

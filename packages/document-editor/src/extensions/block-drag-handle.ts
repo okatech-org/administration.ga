@@ -211,8 +211,19 @@ class DragHandleView {
 		if (e.dataTransfer) {
 			e.dataTransfer.effectAllowed = "move";
 			e.dataTransfer.setData("text/plain", `block:${from}-${to}`);
-			// Image fantôme = la poignée elle-même, simple et léger
-			e.dataTransfer.setDragImage(this.handle, 0, 0);
+			// Dragimage transparente : supprime le ghost natif du navigateur
+			// (peu fluide) et laisse notre ligne de preview gérer le feedback.
+			const ghost = document.createElement("div");
+			ghost.style.position = "fixed";
+			ghost.style.top = "-9999px";
+			ghost.style.left = "-9999px";
+			ghost.style.width = "1px";
+			ghost.style.height = "1px";
+			ghost.style.opacity = "0";
+			document.body.appendChild(ghost);
+			e.dataTransfer.setDragImage(ghost, 0, 0);
+			// Nettoyage du ghost dès le prochain tick
+			setTimeout(() => ghost.remove(), 0);
 		}
 	}
 
@@ -221,6 +232,7 @@ class DragHandleView {
 		e.preventDefault();
 		if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
 
+		this.insertionPointerY = e.clientY;
 		const coords = this.view.posAtCoords({ left: e.clientX, top: e.clientY });
 		if (!coords) return;
 		const insertPos = this.findInsertionPos(coords.pos);
@@ -284,23 +296,24 @@ class DragHandleView {
 
 	private drawInsertLine(pos: number) {
 		const coords = this.view.coordsAtPos(pos);
-		const hostRect = this.host.getBoundingClientRect();
 		if (!this.insertLine) {
 			const line = document.createElement("div");
 			line.className = "block-drag-insertion-line";
-			line.style.position = "absolute";
+			line.style.position = "fixed";
 			line.style.pointerEvents = "none";
 			line.style.height = "2px";
-			line.style.background = "hsl(var(--primary))";
-			line.style.zIndex = "29";
-			this.host.appendChild(line);
+			line.style.background = "rgba(99,102,241,0.8)";
+			line.style.borderRadius = "1px";
+			line.style.zIndex = "9999";
+			line.style.transition = "top 60ms ease-out";
+			document.body.appendChild(line);
 			this.insertLine = line;
 		}
-		const top = coords.top - hostRect.top;
-		const left = coords.left - hostRect.left;
-		this.insertLine.style.top = `${top}px`;
-		this.insertLine.style.left = `${left}px`;
-		this.insertLine.style.width = "500px";
+		// Largeur = largeur du bloc éditeur
+		const pmRect = this.view.dom.getBoundingClientRect();
+		this.insertLine.style.top = `${coords.top}px`;
+		this.insertLine.style.left = `${pmRect.left}px`;
+		this.insertLine.style.width = `${pmRect.width}px`;
 	}
 
 	private clearInsertLine() {
@@ -308,5 +321,6 @@ class DragHandleView {
 			this.insertLine.remove();
 			this.insertLine = null;
 		}
+		this.insertionPointerY = null;
 	}
 }

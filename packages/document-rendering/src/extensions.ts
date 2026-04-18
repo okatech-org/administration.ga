@@ -337,6 +337,66 @@ export const FontSize = Extension.create({
 });
 
 /**
+ * LineSpacing — ajoute trois attributs de mise en page au niveau des blocs
+ * paragraphe et titre : `lineHeight` (CSS unitless), `spaceBefore` (margin-top,
+ * e.g. "12pt"), `spaceAfter` (margin-bottom). Partagé entre éditeur et
+ * rendu serveur pour que le JSON round-tripe proprement.
+ *
+ * Les styles sont fusionnés via `mergeAttributes` de Tiptap qui concatène
+ * les valeurs `style` avec `; `, donc plusieurs attributs peuvent chacun
+ * retourner une propriété CSS distincte sans conflit.
+ */
+export const LineSpacing = Extension.create({
+	name: "lineSpacing",
+
+	addOptions() {
+		return {
+			types: ["paragraph", "heading"] as string[],
+		};
+	},
+
+	addGlobalAttributes() {
+		return [
+			{
+				types: this.options.types,
+				attributes: {
+					lineHeight: {
+						default: null as string | null,
+						parseHTML: (el) => (el as HTMLElement).style.lineHeight || null,
+						renderHTML: (attrs) =>
+							attrs.lineHeight ? { style: `line-height: ${attrs.lineHeight}` } : {},
+					},
+					spaceBefore: {
+						default: null as string | null,
+						parseHTML: (el) => (el as HTMLElement).style.marginTop || null,
+						renderHTML: (attrs) =>
+							attrs.spaceBefore ? { style: `margin-top: ${attrs.spaceBefore}` } : {},
+					},
+					spaceAfter: {
+						default: null as string | null,
+						parseHTML: (el) => (el as HTMLElement).style.marginBottom || null,
+						renderHTML: (attrs) =>
+							attrs.spaceAfter ? { style: `margin-bottom: ${attrs.spaceAfter}` } : {},
+					},
+					blockWidth: {
+						default: null as string | null,
+						parseHTML: (el) => (el as HTMLElement).style.width || null,
+						renderHTML: (attrs) =>
+							attrs.blockWidth ? { style: `width: ${attrs.blockWidth}` } : {},
+					},
+					blockMinHeight: {
+						default: null as string | null,
+						parseHTML: (el) => (el as HTMLElement).style.minHeight || null,
+						renderHTML: (attrs) =>
+							attrs.blockMinHeight ? { style: `min-height: ${attrs.blockMinHeight}` } : {},
+					},
+				},
+			},
+		];
+	},
+});
+
+/**
  * Build the canonical extension list. StarterKit (v3) bundles bold, italic,
  * underline, strike, heading, blockquote, lists, hardBreak, horizontalRule,
  * code, codeBlock, link and the undoRedo history stack — so we only add the
@@ -360,5 +420,6 @@ export function buildCoreExtensions() {
 		PlaceholderNodeSchema,
 		ImagePlaceholderNodeSchema,
 		SignaturePlaceholderNodeSchema,
+		LineSpacing,
 	];
 }

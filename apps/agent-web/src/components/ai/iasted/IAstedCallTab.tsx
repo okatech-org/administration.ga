@@ -29,7 +29,12 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PostCallNoteDrawer } from "@workspace/iasted";
@@ -42,6 +47,7 @@ import { useMeeting } from "@/hooks/use-meeting";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { useCallStore } from "@/stores/call-store";
 import { FEATURES } from "@/lib/feature-flags";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@/lib/livekit-config";
 import { cn } from "@/lib/utils";
 
 type SubTab = "audio" | "video";
@@ -138,6 +144,11 @@ function LegacyCallTab() {
 	const [subTab, setSubTab] = useState<SubTab>("audio");
 	const [activeMeetingId, setActiveMeetingId] = useState<Id<"meetings"> | null>(null);
 	const { globalActiveMeetingId, setGlobalMeetingId } = useCallStore();
+	// Guard : ne propage un raccrochage sur onDisconnected QUE si la room
+	// LiveKit s'est d'abord établie. Protège du double mount StrictMode et
+	// des glitches ICE pendant le handshake WebRTC.
+	const hasConnectedRef = useRef(false);
+	const userHangUpRef = useRef(false);
 
 	// Recherche intelligente cross-org
 	const {
@@ -189,10 +200,15 @@ function LegacyCallTab() {
 		}
 
 		try {
+			hasConnectedRef.current = false;
+			userHangUpRef.current = false;
 			const result = await callUser({
 				orgId: activeOrgId,
 				targetUserId: targetUserId as Id<"users">,
-				mediaType: subTab,
+				// Toujours "video" côté token pour autoriser le toggle caméra
+				// pendant l'appel. Le tab audio/video contrôle uniquement si la
+				// caméra est publiée au démarrage via le prop `video` de LiveKitRoom.
+				mediaType: "video",
 			});
 
 			const meetingId = result.meetingId as Id<"meetings">;
@@ -210,11 +226,18 @@ function LegacyCallTab() {
 
 	// ── Raccrocher ──
 	const handleHangUp = async () => {
+		userHangUpRef.current = true;
 		if (activeMeetingId) {
 			await disconnect(activeMeetingId);
 		}
 		setActiveMeetingId(null);
 		setGlobalMeetingId(null);
+		hasConnectedRef.current = false;
+	};
+
+	const handleLiveKitDisconnected = () => {
+		if (!hasConnectedRef.current) return;
+		void handleHangUp();
 	};
 
 	// ── Répondre à un appel entrant ──
@@ -224,6 +247,8 @@ function LegacyCallTab() {
 			return;
 		}
 		try {
+			hasConnectedRef.current = false;
+			userHangUpRef.current = false;
 			setActiveMeetingId(meetingId);
 			setGlobalMeetingId(meetingId);
 			await connect(meetingId);
@@ -448,6 +473,12 @@ function LegacyCallTab() {
 				<DialogContent
 					className="max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 				>
+					<DialogTitle className="sr-only">
+						{subTab === "audio" ? "Appel audio" : "Appel vidéo"}
+					</DialogTitle>
+					<DialogDescription className="sr-only">
+						Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.
+					</DialogDescription>
 					{token && wsUrl ? (
 						<div className="flex flex-col flex-1 bg-zinc-950">
 							<div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0">
@@ -473,7 +504,11 @@ function LegacyCallTab() {
 								connect={true}
 								audio={true}
 								video={subTab === "video"}
-								onDisconnected={handleHangUp}
+								options={LIVEKIT_CALL_ROOM_OPTIONS}
+								onConnected={() => {
+									hasConnectedRef.current = true;
+								}}
+								onDisconnected={handleLiveKitDisconnected}
 								className="flex flex-col flex-1"
 							>
 								<CustomCallUI onHangUp={handleHangUp} />

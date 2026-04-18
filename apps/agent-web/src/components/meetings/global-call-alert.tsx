@@ -17,13 +17,19 @@ import {
 	DialogDescription,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import { useMeeting } from "@/hooks/use-meeting";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRingtone } from "@/hooks/use-ringtone";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { useCallStore } from "@/stores/call-store";
 import { FEATURES } from "@/lib/feature-flags";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@/lib/livekit-config";
 
 /**
  * Feature flag Centre d'Appels — doit utiliser la même source que IAstedCallTab
@@ -63,6 +69,14 @@ function GlobalCallAlertInner() {
 	// See citizen-web/org-call-button.tsx — guard transient LiveKit disconnects
 	// (StrictMode, token refresh, network blips) from ending the call.
 	const userHangUpRef = useRef(false);
+	// Flag set par `onConnected` de LiveKitRoom. Les events `onDisconnected`
+	// antérieurs au premier `onConnected` sont des artefacts de handshake ou
+	// de double mount StrictMode et NE DOIVENT PAS fermer l'appel.
+	const hasConnectedRef = useRef(false);
+	// Mémorise le dernier meetingId traité (raccroché, décliné, ou terminé par
+	// l'autre) pour éviter que la sonnerie ne re-sonne pendant la fenêtre de
+	// latence où la query Convex n'a pas encore propagé le changement de statut.
+	const dismissedMeetingIdRef = useRef<Id<"meetings"> | null>(null);
 
 	// Get my personal meetings
 	const { data: meetingsData } = useAuthenticatedConvexQuery(
@@ -70,6 +84,13 @@ function GlobalCallAlertInner() {
 		{},
 	);
 	const meetings = meetingsData?.meetings;
+
+	// Current user — nécessaire pour distinguer un appel sortant (que je viens
+	// d'initier) d'un appel entrant auquel je dois répondre.
+	const { data: me } = useAuthenticatedConvexQuery(
+		api.functions.users.getMe,
+		{},
+	);
 
 	// Get inbound org calls (for agents)
 	const { data: inboundOrgCalls } = useAuthenticatedConvexQuery(
@@ -88,14 +109,30 @@ function GlobalCallAlertInner() {
 		// Skip calls that are already answered or ended via callStatus
 		if (m.callStatus && m.callStatus !== "ringing" && m.callStatus !== "initiating") return false;
 		if (Date.now() - m._creationTime > 120_000) return false;
+		// Un appel que je viens d'initier (je suis `createdBy`) ne doit pas déclencher
+		// la sonnerie chez moi — je suis le caller, pas le callee.
+		if (me?._id && m.createdBy === me._id) return false;
+		// Si j'ai déjà rejoint cet appel (joinedAt renseigné), ce n'est plus un
+		// appel entrant : je suis en communication, pas à décrocher.
+		if (
+			me?._id &&
+			m.participants.some((p) => p.userId === me._id && p.joinedAt && !p.leftAt)
+		) {
+			return false;
+		}
 		return true;
 	});
 
 	// Prioritize inbound org calls, then personal meetings
 	const incomingOrgCall = inboundOrgCalls?.[0] ?? null;
 
+	const candidateCall = incomingOrgCall ?? incomingPersonalMeeting ?? null;
+	// Ignorer explicitement un meetingId déjà traité localement (raccroché,
+	// décliné, ou terminé par l'autre) tant que la query Convex n'a pas rafraîchi.
 	const activeCallToDisplay =
-		incomingOrgCall ?? incomingPersonalMeeting ?? null;
+		candidateCall && candidateCall._id === dismissedMeetingIdRef.current
+			? null
+			: candidateCall;
 	const isOrgCall =
 		activeCallToDisplay === incomingOrgCall && incomingOrgCall !== null;
 
@@ -125,6 +162,9 @@ function GlobalCallAlertInner() {
 	const handleJoin = useCallback(async () => {
 		if (!activeCallToDisplay) return;
 		userHangUpRef.current = false;
+		hasConnectedRef.current = false;
+		// Nouvelle intention : on autorise à nouveau la sonnerie pour cet ID.
+		dismissedMeetingIdRef.current = null;
 		setActiveMeetingId(activeCallToDisplay._id);
 		setGlobalMeetingId(activeCallToDisplay._id);
 		await connect(activeCallToDisplay._id);
@@ -132,28 +172,42 @@ function GlobalCallAlertInner() {
 
 	const handleDecline = useCallback(async () => {
 		if (!activeCallToDisplay) return;
+		dismissedMeetingIdRef.current = activeCallToDisplay._id;
 		await declineCallMutation.mutateAsync({ meetingId: activeCallToDisplay._id });
 	}, [activeCallToDisplay, declineCallMutation]);
 
 	const handleHangUp = useCallback(async () => {
 		userHangUpRef.current = true;
 		if (activeMeetingId) {
+			dismissedMeetingIdRef.current = activeMeetingId;
 			await disconnect(activeMeetingId);
 		}
 		setActiveMeetingId(null);
 		setGlobalMeetingId(null);
+		hasConnectedRef.current = false;
 	}, [activeMeetingId, disconnect, setGlobalMeetingId]);
 
 	const handleLiveKitDisconnected = useCallback(() => {
-		if (userHangUpRef.current) {
-			setActiveMeetingId(null);
-			setGlobalMeetingId(null);
+		// Pattern en deux temps :
+		//   1. Disconnect avant tout onConnected → artefact de handshake,
+		//      StrictMode, ICE restart. On ignore ; LiveKit retentera.
+		//   2. Disconnect après une connexion établie → soit user hangup
+		//      (userHangUpRef), soit un raccrochage distant / coupure réseau
+		//      définitive. On ferme l'appel côté client. Le raccrochage distant
+		//      est aussi capté par le useEffect sur meeting.status === "ended".
+		if (!hasConnectedRef.current) return;
+		if (!userHangUpRef.current) return;
+		if (activeMeetingId) {
+			dismissedMeetingIdRef.current = activeMeetingId;
 		}
-	}, [setGlobalMeetingId]);
+		setActiveMeetingId(null);
+		setGlobalMeetingId(null);
+	}, [activeMeetingId, setGlobalMeetingId]);
 
 	// Auto-close when the other side hangs up
 	useEffect(() => {
 		if (activeMeetingData?.status === "ended" && activeMeetingId) {
+			dismissedMeetingIdRef.current = activeMeetingId;
 			setActiveMeetingId(null);
 			setGlobalMeetingId(null);
 		}
@@ -168,6 +222,10 @@ function GlobalCallAlertInner() {
 					connect={true}
 					audio={true}
 					video={false}
+					options={LIVEKIT_CALL_ROOM_OPTIONS}
+					onConnected={() => {
+						hasConnectedRef.current = true;
+					}}
 					onDisconnected={handleLiveKitDisconnected}
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
@@ -252,6 +310,15 @@ function GlobalCallAlertInner() {
 						onEscapeKeyDown={(e) => e.preventDefault()}
 						className="p-0 h-dvh w-full bg-zinc-950 border-none rounded-none focus:outline-none flex flex-col pt-10"
 					>
+						<SheetTitle className="sr-only">
+							{callerName ?? activeCallToDisplay?.title ?? t("meetings.callInProgress", "Appel en cours")}
+						</SheetTitle>
+						<SheetDescription className="sr-only">
+							{t(
+								"meetings.callDialogDescription",
+								"Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.",
+							)}
+						</SheetDescription>
 						{callContent}
 					</SheetContent>
 				</Sheet>

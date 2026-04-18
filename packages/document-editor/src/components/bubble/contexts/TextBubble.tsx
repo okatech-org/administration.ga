@@ -28,6 +28,20 @@ export function TextBubble({ editor }: { editor: Editor }): ReactElement {
 	const currentFontSize = editor.getAttributes("textStyle")?.fontSize as
 		| number
 		| undefined;
+	const nodeAttrs = editor.isActive("heading")
+		? editor.getAttributes("heading")
+		: editor.getAttributes("paragraph");
+	const currentLineHeight = (nodeAttrs?.lineHeight as string | null) ?? "";
+
+	function applyLineHeight(value: string) {
+		const lh = value || null;
+		editor
+			.chain()
+			.focus()
+			.updateAttributes("paragraph", { lineHeight: lh })
+			.updateAttributes("heading", { lineHeight: lh })
+			.run();
+	}
 
 	function setFontFamily(family: string) {
 		if (family) {
@@ -104,6 +118,24 @@ export function TextBubble({ editor }: { editor: Editor }): ReactElement {
 						{s}
 					</option>
 				))}
+			</select>
+
+			<BubbleDivider />
+
+			{/* Interligne rapide */}
+			<select
+				value={currentLineHeight}
+				onMouseDown={(e) => e.stopPropagation()}
+				onChange={(e) => applyLineHeight(e.target.value)}
+				aria-label="Interligne"
+				title="Interligne"
+				className="h-8 w-[4.5rem] rounded bg-transparent px-1 text-xs hover:bg-muted focus:bg-muted focus:outline-none"
+			>
+				<option value="">⇕ —</option>
+				<option value="1">× 1</option>
+				<option value="1.15">× 1.15</option>
+				<option value="1.5">× 1.5</option>
+				<option value="2">× 2</option>
 			</select>
 
 			<BubbleDivider />

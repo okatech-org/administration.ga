@@ -19,6 +19,26 @@ export const getForToken = internalQuery({
   },
 });
 
+/**
+ * Internal query utilisée par l'action `livekit.requestToken` pour appliquer
+ * la restriction de publication à la seule catégorie "citoyen". Les agents,
+ * même s'ils rejoignent un meeting dont `mediaType === "audio"` (par exemple
+ * initié par un citoyen via `callOrganization`), doivent pouvoir activer leur
+ * caméra via le toggle de CustomCallUI.
+ */
+export const isAuthSubjectCitizen = internalQuery({
+  args: { authSubject: v.string() },
+  handler: async (ctx, { authSubject }): Promise<boolean> => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_authId", (q: any) => q.eq("authId", authSubject))
+      .unique();
+    // Utilisateur introuvable → par sécurité, on considère "citoyen" (restreint).
+    if (!user) return true;
+    return await isPublicUser(ctx, user._id);
+  },
+});
+
 // ============================================
 // Helpers
 // ============================================
@@ -258,6 +278,10 @@ export const create = authMutation({
     appointmentId: v.optional(v.id("appointments")),
     scheduledAt: v.optional(v.number()),
     maxParticipants: v.optional(v.number()),
+    // "video" autorise audio+vidéo côté token ; "audio" restreint à MICROPHONE.
+    // Par défaut : "video" pour les appels (toggle caméra dispo dans CustomCallUI),
+    // "audio" pour les meetings planifiés.
+    mediaType: v.optional(v.union(v.literal("audio"), v.literal("video"))),
   },
   handler: async (ctx, args) => {
     // Verify user is a member of the org
@@ -296,6 +320,7 @@ export const create = authMutation({
       maxParticipants: args.maxParticipants ?? (args.type === "call" ? 2 : 20),
       scheduledAt: args.scheduledAt,
       startedAt: args.scheduledAt ? undefined : Date.now(),
+      mediaType: args.mediaType ?? (args.type === "call" ? "video" : "audio"),
     });
 
     // ── Envoyer des notifications d'invitation aux participants ──

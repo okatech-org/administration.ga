@@ -14,18 +14,13 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
 import { FontFamily } from "@tiptap/extension-font-family";
 import { StarterKit } from "@tiptap/starter-kit";
-import { FontSize, ImageWithAttrs } from "@workspace/document-rendering/extensions";
+import { FontSize, ImageWithAttrs, LineSpacing } from "@workspace/document-rendering/extensions";
 
 import { BlockDragHandle } from "./block-drag-handle";
+import { BlockFocusOutline } from "./block-focus-outline";
 import { ImagePlaceholderNode } from "./image-placeholder-node";
 import { PlaceholderNode } from "./placeholder-node";
 import { SignaturePlaceholderNode } from "./signature-placeholder-node";
-
-// `BlockFocusOutline` est retiré volontairement : l'utilisateur préfère
-// s'appuyer uniquement sur la bubble menu flottante et la poignée ⋮⋮
-// (BlockDragHandle) comme indicateurs du bloc actif. Le fichier
-// `block-focus-outline.ts` reste dans le repo pour réintroduction future
-// si besoin.
 
 export function buildEditorExtensions() {
 	return [
@@ -35,6 +30,7 @@ export function buildEditorExtensions() {
 		Color,
 		FontFamily,
 		FontSize,
+		LineSpacing,
 		ImageWithAttrs.configure({ allowBase64: false }),
 		TableKit.configure({
 			table: { resizable: false },
@@ -43,5 +39,6 @@ export function buildEditorExtensions() {
 		ImagePlaceholderNode,
 		SignaturePlaceholderNode,
 		BlockDragHandle,
+		BlockFocusOutline,
 	];
 }

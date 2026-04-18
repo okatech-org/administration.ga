@@ -1387,7 +1387,8 @@ export const callBackMissedCall = authMutation({
       orgId: mc.orgId,
       createdBy: ctx.user._id,
       callLineId: mc.callLineId ?? undefined,
-      mediaType: "audio",
+      // "video" → token non restreint → la caméra peut être togglée côté agent
+      mediaType: "video",
       participants: [
         {
           userId: ctx.user._id,

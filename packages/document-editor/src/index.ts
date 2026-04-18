@@ -1,4 +1,18 @@
-export { TemplateEditor, type TemplateEditorProps } from "./components/TemplateEditor";
+export {
+	TemplateEditor,
+	type TemplateEditorProps,
+	type TemplateEditorReadyContext,
+} from "./components/TemplateEditor";
+export {
+	useActiveEditor,
+	type ActiveZone,
+	type UseActiveEditorArgs,
+	type UseActiveEditorResult,
+} from "./hooks/use-active-editor";
+export {
+	buildHeaderEditorExtensions,
+	buildFooterEditorExtensions,
+} from "./extensions/build-header-footer-extensions";
 export {
 	EditorToolbar,
 	HEADING_FONTS,

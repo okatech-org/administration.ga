@@ -29,7 +29,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { useConvexQuery } from "@/integrations/convex/hooks";
 
 export interface RepresentationHeaderPreviewProps {
@@ -41,13 +40,6 @@ export interface RepresentationHeaderPreviewProps {
 	/** Hauteur du sceau en px (affichage preview). Défaut : 80. */
 	logoHeightPx: number;
 	onLogoHeightPxChange: (value: number) => void;
-	/**
-	 * Lignes d'entête du template (modifiables quand l'aperçu est générique).
-	 * Une ligne par saut de ligne. Ignoré quand une rep est sélectionnée
-	 * (la rep fournit ses propres lignes via son branding).
-	 */
-	templateHeaderText: string;
-	onTemplateHeaderTextChange: (text: string) => void;
 }
 
 export function RepresentationHeaderPreview({
@@ -57,8 +49,6 @@ export function RepresentationHeaderPreview({
 	onHeaderFontFamilyChange,
 	logoHeightPx,
 	onLogoHeightPxChange,
-	templateHeaderText,
-	onTemplateHeaderTextChange,
 }: RepresentationHeaderPreviewProps) {
 	const router = useRouter();
 	const { data: orgs, isLoading } = useConvexQuery(
@@ -171,6 +161,20 @@ export function RepresentationHeaderPreview({
 
 			{selected ? (
 				<>
+					<div className="rounded-md border border-primary/30 bg-primary/5 p-2 text-[11px] text-primary">
+						Mode aperçu — les éditeurs entête / pied sont désactivés dans le
+						canvas. Clique sur « Aperçu générique » pour reprendre l'édition du
+						modèle.
+					</div>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => onPreviewOrgIdChange(null)}
+						className="w-full"
+					>
+						Revenir à l'édition du modèle
+					</Button>
+
 					<div className="flex flex-col gap-1 rounded-md border border-border/60 bg-muted/10 p-3">
 						<div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
 							Entête de la rep
@@ -218,23 +222,11 @@ export function RepresentationHeaderPreview({
 					</Button>
 				</>
 			) : (
-				// Mode aperçu générique : éditer directement les lignes du template.
-				<div className="flex flex-col gap-1.5">
-					<Label htmlFor="tpl-header-lines" className="text-xs font-medium">
-						Lignes d'entête du modèle
-					</Label>
-					<Textarea
-						id="tpl-header-lines"
-						value={templateHeaderText}
-						onChange={(e) => onTemplateHeaderTextChange(e.target.value)}
-						rows={6}
-						placeholder={"AMBASSADE DU GABON\nPRÈS LE ROYAUME D'ESPAGNE\n..."}
-						className="font-mono text-xs"
-					/>
-					<p className="text-xs text-muted-foreground">
-						Une ligne par saut de ligne. Les sauts que tu supprimes
-						concatènent les lignes sur le document.
-					</p>
+				// Mode aperçu générique : l'édition du texte entête / pied se
+				// fait directement dans le canvas (clic dans la zone).
+				<div className="rounded-md border border-dashed border-border/60 bg-muted/10 p-3 text-xs text-muted-foreground">
+					Clique dans la zone d'entête ou de pied du canvas pour éditer leur
+					texte. Les modifications sont appliquées au modèle générique.
 				</div>
 			)}
 		</div>

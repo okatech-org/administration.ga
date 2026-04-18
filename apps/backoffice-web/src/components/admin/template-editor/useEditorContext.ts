@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 
 export type EditorContextKind =
 	| "text"
+	| "block"
 	| "table"
 	| "placeholder"
 	| "document";
@@ -46,6 +47,8 @@ export function useEditorContext(
 			if (editor.isActive("table")) return "table";
 			// Sélection non vide → texte
 			if (!editor.state.selection.empty) return "text";
+			// Curseur dans un bloc éditable (profondeur ≥ 1) → format bloc
+			if (editor.state.selection.$from.depth >= 1) return "block";
 			// Sinon : document (état neutre = paramètres globaux)
 			return "document";
 		}

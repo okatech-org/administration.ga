@@ -3,17 +3,23 @@
 import type { Id } from "@convex/_generated/dataModel";
 import { LiveKitRoom } from "@livekit/components-react";
 import { Loader2, Phone } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { Button } from "@/components/ui/button";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@/lib/livekit-config";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import { useMeeting } from "@/hooks/use-meeting";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRingtone } from "@/hooks/use-ringtone";
@@ -67,6 +73,13 @@ export function CallButton({
 	const [meetingId, setMeetingId] = useState<Id<"meetings"> | null>(null);
 	const [callStartTime, setCallStartTime] = useState<number | null>(null);
 	const { setGlobalMeetingId } = useCallStore();
+	// Ne déclenche handleHangUp sur `onDisconnected` de LiveKit QUE si la room
+	// s'est d'abord établie. Sans ce garde-fou, le double mount StrictMode,
+	// un petit glitch ICE au moment du handshake, ou un token refresh ferment
+	// prématurément l'appel du côté appelant et laissent le récepteur seul
+	// dans la room avec le message "en attente de connexion".
+	const hasConnectedRef = useRef(false);
+	const userHangUpRef = useRef(false);
 
 	const {
 		meeting,
@@ -88,11 +101,15 @@ export function CallButton({
 		}
 	}, [meeting?.status, meetingId, setGlobalMeetingId]);
 
-	// Play ringtone while connecting
-	useRingtone(isConnecting);
+	// Play ringtone while connecting — on coupe dès que la réunion est terminée
+	// (raccrochage distant) pour éviter que la sonnerie ne se prolonge pendant
+	// la fenêtre de transition d'état.
+	useRingtone(isConnecting && meeting?.status !== "ended");
 
 	const handleCall = useCallback(async () => {
 		try {
+			hasConnectedRef.current = false;
+			userHangUpRef.current = false;
 			// Create meeting linked to context
 			const result = await createMeeting.mutateAsync({
 				title: `Appel ${new Date().toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}`,
@@ -101,6 +118,10 @@ export function CallButton({
 				participantIds: [participantUserId],
 				requestId,
 				appointmentId,
+				// Grant audio + video publish permissions. L'agent bascule la caméra
+				// via le bouton de CustomCallUI ; les citoyens restent audio-only via
+				// la mutation callOrganization qui force mediaType="audio".
+				mediaType: "video",
 			});
 			setMeetingId(result.meetingId);
 			setGlobalMeetingId(result.meetingId);
@@ -123,6 +144,7 @@ export function CallButton({
 	]);
 
 	const handleHangUp = useCallback(async () => {
+		userHangUpRef.current = true;
 		if (meetingId) {
 			await disconnect(meetingId);
 			const duration = callStartTime
@@ -137,7 +159,18 @@ export function CallButton({
 		setMeetingId(null);
 		setCallStartTime(null);
 		setGlobalMeetingId(null);
+		hasConnectedRef.current = false;
 	}, [meetingId, disconnect, callStartTime, setGlobalMeetingId]);
+
+	const handleLiveKitDisconnected = useCallback(() => {
+		// Disconnect transitoire (StrictMode, ICE restart, token refresh) avant
+		// tout onConnected → ignorer. Le raccrochage distant est géré par le
+		// useEffect sur meeting?.status === "ended".
+		if (!hasConnectedRef.current) return;
+		// Sinon on assimile à un raccrochage : session avait bien démarré
+		// puis s'est terminée (côté serveur ou réseau permanent).
+		void handleHangUp();
+	}, [handleHangUp]);
 
 	const callContent = (
 		<div className="flex flex-col flex-1 min-h-0 h-full bg-zinc-950 overflow-hidden">
@@ -147,7 +180,11 @@ export function CallButton({
 					serverUrl={wsUrl}
 					connect={true}
 					audio={true}
-					onDisconnected={handleHangUp}
+					options={LIVEKIT_CALL_ROOM_OPTIONS}
+					onConnected={() => {
+						hasConnectedRef.current = true;
+					}}
+					onDisconnected={handleLiveKitDisconnected}
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
@@ -189,6 +226,15 @@ export function CallButton({
 						side="bottom"
 						className="p-0 h-[100dvh] w-full bg-zinc-950 border-none rounded-none focus:outline-none flex flex-col pt-10"
 					>
+						<SheetTitle className="sr-only">
+							{displayLabel || t("meetings.callInProgress", "Appel en cours")}
+						</SheetTitle>
+						<SheetDescription className="sr-only">
+							{t(
+								"meetings.callDialogDescription",
+								"Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.",
+							)}
+						</SheetDescription>
 						{callContent}
 					</SheetContent>
 				</Sheet>

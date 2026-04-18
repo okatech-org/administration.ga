@@ -7,9 +7,17 @@
  * flag par défaut) — la facette appartient à son modèle parent et suit
  * son cycle de vie. Le parent passe `value` et reçoit les mises à jour
  * via `onChange`.
+ *
+ * Ce composant garde une interface simple (textarea) pour le wizard de
+ * création d'un template (`/config/templates/new`). L'édition riche en
+ * WYSIWYG (dans le canvas A4) vit dans la page `/config/templates/[id]`
+ * et manipule directement `value.header.content` / `value.footer.content`.
+ * Les deux chemins partagent la même source de vérité : `content` est
+ * toujours un document Tiptap JSON.
  */
 
 import type { Id } from "@convex/_generated/dataModel";
+import type { TiptapDocument } from "@workspace/document-rendering/types";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -49,12 +57,13 @@ export interface HeaderFooterSectionValue {
 		height: number;
 		/** Police appliquée au nom de la représentation (défaut : Optima). */
 		fontFamily?: string;
-		/** Contenu en texte brut multi-lignes (converti en Tiptap à la sauvegarde). */
-		textContent: string;
+		/** Contenu Tiptap JSON — source de vérité de l'entête. */
+		content: TiptapDocument;
 	};
 	footer: {
 		height: number;
-		textContent: string;
+		/** Contenu Tiptap JSON — source de vérité du pied. */
+		content: TiptapDocument;
 		showPageNumbers: boolean;
 	};
 }
@@ -66,12 +75,15 @@ export function createDefaultHeaderFooterSection(): HeaderFooterSectionValue {
 		header: {
 			logoAlignment: "left",
 			height: 30,
-			textContent:
+			content: textToTiptap(
 				"RÉPUBLIQUE GABONAISE\nUnion — Travail — Justice\nMinistère des Affaires Étrangères",
+			),
 		},
 		footer: {
 			height: 15,
-			textContent: "Document officiel — ne pas reproduire sans autorisation.",
+			content: textToTiptap(
+				"Document officiel — ne pas reproduire sans autorisation.",
+			),
 			showPageNumbers: true,
 		},
 	};
@@ -104,6 +116,13 @@ export function HeaderFooterSectionEditor({
 				next.size === 0 ? undefined : Array.from(next),
 		});
 	}
+
+	// Le wizard montre un textarea — on convertit à la volée depuis/vers
+	// Tiptap. La conversion est lossless pour les cas typiques (une ligne
+	// par paragraphe, pas de marques). Le mode édition riche se fait dans
+	// la page `/[templateId]`, directement sur `value.header.content`.
+	const headerText = tiptapToText(value.header.content);
+	const footerText = tiptapToText(value.footer.content);
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -154,8 +173,10 @@ export function HeaderFooterSectionEditor({
 					<Textarea
 						id="hf-content"
 						rows={4}
-						value={value.header.textContent}
-						onChange={(e) => patchHeader({ textContent: e.target.value })}
+						value={headerText}
+						onChange={(e) =>
+							patchHeader({ content: textToTiptap(e.target.value) })
+						}
 						placeholder={t("templates.sections.headerFooter.contentPlaceholder") ?? ""}
 					/>
 					<p className="text-[0.7rem] text-muted-foreground">
@@ -202,8 +223,10 @@ export function HeaderFooterSectionEditor({
 					<Textarea
 						id="ft-content"
 						rows={3}
-						value={value.footer.textContent}
-						onChange={(e) => patchFooter({ textContent: e.target.value })}
+						value={footerText}
+						onChange={(e) =>
+							patchFooter({ content: textToTiptap(e.target.value) })
+						}
 					/>
 				</div>
 			</section>
@@ -241,17 +264,11 @@ export function HeaderFooterSectionEditor({
 }
 
 // ============================================================================
-// Sérialiseurs — convertissent le texte brut du formulaire en document Tiptap
-// minimal pour persistance dans Convex.
+// Sérialiseurs — convertissent entre texte brut (formulaire wizard) et
+// document Tiptap (source de vérité persistée dans Convex).
 // ============================================================================
 
-export function textToTiptap(text: string): {
-	type: "doc";
-	content: Array<{
-		type: "paragraph";
-		content?: Array<{ type: "text"; text: string }>;
-	}>;
-} {
+export function textToTiptap(text: string): TiptapDocument {
 	const lines = text.split(/\r?\n/);
 	return {
 		type: "doc",
@@ -259,7 +276,7 @@ export function textToTiptap(text: string): {
 			type: "paragraph",
 			content: line ? [{ type: "text", text: line }] : undefined,
 		})),
-	};
+	} as TiptapDocument;
 }
 
 /** Extrait le texte brut d'un document Tiptap (réhydrate le textarea). */
@@ -296,12 +313,12 @@ export function serializeHeaderFooterSection(value: HeaderFooterSectionValue) {
 			logoAlignment: value.header.logoAlignment,
 			height: value.header.height,
 			fontFamily: value.header.fontFamily,
-			content: textToTiptap(value.header.textContent),
+			content: value.header.content,
 		},
 		footer: {
 			height: value.footer.height,
 			showPageNumbers: value.footer.showPageNumbers,
-			content: textToTiptap(value.footer.textContent),
+			content: value.footer.content,
 		},
 	};
 }
@@ -330,6 +347,10 @@ export function deserializeHeaderFooterSection(
 	applicableTemplateTypes?: TemplateTypeLiteral[],
 ): HeaderFooterSectionValue {
 	if (!raw) return createDefaultHeaderFooterSection();
+	const emptyDoc: TiptapDocument = {
+		type: "doc",
+		content: [{ type: "paragraph" }],
+	} as TiptapDocument;
 	return {
 		applicableTemplateTypes,
 		header: {
@@ -337,12 +358,12 @@ export function deserializeHeaderFooterSection(
 			logoAlignment: raw.header.logoAlignment,
 			height: raw.header.height ?? 30,
 			fontFamily: raw.header.fontFamily,
-			textContent: tiptapToText(raw.header.content),
+			content: (raw.header.content as TiptapDocument | undefined) ?? emptyDoc,
 		},
 		footer: {
 			height: raw.footer.height ?? 15,
 			showPageNumbers: raw.footer.showPageNumbers ?? true,
-			textContent: tiptapToText(raw.footer.content),
+			content: (raw.footer.content as TiptapDocument | undefined) ?? emptyDoc,
 		},
 	};
 }

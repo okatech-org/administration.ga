@@ -256,7 +256,13 @@ export function useCallCenter() {
   const callBackRecent = useCallback(
     async (targetUserId: Id<"users">, orgId: Id<"orgs">) => {
       try {
-        const { meetingId } = await callUserMutation({ orgId, targetUserId });
+        // mediaType "video" → token autorise audio+vidéo, caméra toggleable
+        // via le bouton de CustomCallUI sans erreur "insufficient permissions".
+        const { meetingId } = await callUserMutation({
+          orgId,
+          targetUserId,
+          mediaType: "video",
+        });
         const tokenResult = await requestTokenAction({ meetingId });
         upsertSlot({
           meetingId,

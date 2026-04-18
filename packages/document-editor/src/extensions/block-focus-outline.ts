@@ -57,6 +57,8 @@ export const BlockFocusOutline = Extension.create({
 							return DecorationSet.empty;
 						}
 
+						// Le cadre visuel est géré par BlockSelectionFrame (React
+						// portal) — on garde l'attribut data pour useEditorContext.
 						const deco = Decoration.node(blockStart, blockEnd, {
 							class: "has-block-focus",
 							"data-block-focus": empty ? "caret" : "range",

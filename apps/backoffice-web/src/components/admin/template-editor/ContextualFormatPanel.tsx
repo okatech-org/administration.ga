@@ -15,7 +15,8 @@
  */
 
 import type { Editor } from "@tiptap/react";
-import { FileText, Table2, Tag, Type } from "lucide-react";
+import type { ActiveZone } from "@workspace/document-editor";
+import { FileText, Pilcrow, Table2, Tag, Type } from "lucide-react";
 import type { ReactElement, ReactNode } from "react";
 import { FlatCard } from "@/components/design-system/flat-card";
 import {
@@ -23,6 +24,7 @@ import {
 	useEditorContext,
 } from "./useEditorContext";
 import { TextFormatSection } from "./sections/TextFormatSection";
+import { BlockFormatSection } from "./sections/BlockFormatSection";
 import { TableFormatSection } from "./sections/TableFormatSection";
 import { PlaceholderFormatSection } from "./sections/PlaceholderFormatSection";
 
@@ -33,22 +35,44 @@ interface ContextualFormatPanelProps {
 	 * contenu (layout, entête/pied, voice, diffusion, placeholders…).
 	 */
 	documentPanel: ReactNode;
+	/**
+	 * Zone courante de l'éditeur actif (header / body / footer). Utilisée
+	 * pour suffixer les labels (« Format texte · Entête ») afin que
+	 * l'utilisateur sache quelle zone il est en train d'éditer.
+	 */
+	activeZone?: ActiveZone | null;
 }
 
 const LABEL_BY_CONTEXT: Record<EditorContextKind, { label: string; icon: typeof Type }> = {
 	text: { label: "Format Texte", icon: Type },
+	block: { label: "Format Bloc", icon: Pilcrow },
 	table: { label: "Format Tableau", icon: Table2 },
 	placeholder: { label: "Placeholder", icon: Tag },
 	document: { label: "Document", icon: FileText },
 };
 
+const ZONE_SUFFIX: Record<ActiveZone, string> = {
+	header: " · Entête",
+	body: "",
+	footer: " · Pied",
+};
+
 export function ContextualFormatPanel({
 	editor,
 	documentPanel,
+	activeZone,
 }: ContextualFormatPanelProps): ReactElement {
 	const context = useEditorContext(editor);
 	const meta = LABEL_BY_CONTEXT[context];
 	const Icon = meta.icon;
+	// Suffixe la zone seulement sur les contextes liés à la saisie
+	// (texte, bloc). Table/placeholder restent neutres — on ne les rencontre
+	// pas dans les zones header/footer de toute façon.
+	const zoneSuffix =
+		activeZone && (context === "text" || context === "block")
+			? ZONE_SUFFIX[activeZone]
+			: "";
+	const fullLabel = meta.label + zoneSuffix;
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -58,11 +82,13 @@ export function ContextualFormatPanel({
 					<Icon className="h-4 w-4" />
 				</div>
 				<div>
-					<div className="text-sm font-semibold text-foreground">{meta.label}</div>
+					<div className="text-sm font-semibold text-foreground">{fullLabel}</div>
 					<div className="text-xs text-muted-foreground">
 						{context === "document"
 							? "Aucune sélection — paramètres globaux du modèle"
-							: "Applique au bloc actif"}
+							: context === "block"
+								? "Bloc actif — cadre bleu + poignée ⋮⋮ pour déplacer"
+								: "Applique à la sélection en cours"}
 					</div>
 				</div>
 			</div>
@@ -71,6 +97,12 @@ export function ContextualFormatPanel({
 			{context === "text" && editor ? (
 				<FlatCard className="p-4">
 					<TextFormatSection editor={editor} />
+				</FlatCard>
+			) : null}
+
+			{context === "block" && editor ? (
+				<FlatCard className="p-4">
+					<BlockFormatSection editor={editor} />
 				</FlatCard>
 			) : null}
 
@@ -87,6 +119,8 @@ export function ContextualFormatPanel({
 			) : null}
 
 			{context === "document" ? documentPanel : null}
+			{/* En contexte bloc, le documentPanel reste accessible en dessous */}
+			{context === "block" ? documentPanel : null}
 		</div>
 	);
 }

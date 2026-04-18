@@ -8,17 +8,23 @@ import {
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { Loader2, Phone, PhoneOff, ChevronDown } from "lucide-react";
 import type { ComponentProps } from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@/lib/livekit-config";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import { useMeeting } from "@/hooks/use-meeting";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useConvexMutationQuery, useConvexQuery } from "@/integrations/convex/hooks";
@@ -49,6 +55,9 @@ export function OrgCallButton({
 		null,
 	);
 	const [showLineSelector, setShowLineSelector] = useState(false);
+	// Guard contre les disconnects LiveKit transitoires (StrictMode, ICE).
+	const hasConnectedRef = useRef(false);
+	const userHangUpRef = useRef(false);
 
 	// Fetch call lines for this org
 	const { data: callLines } = useConvexQuery(
@@ -67,6 +76,8 @@ export function OrgCallButton({
 	const initiateCall = useCallback(async (callLineId?: Id<"callLines">) => {
 		try {
 			setShowLineSelector(false);
+			hasConnectedRef.current = false;
+			userHangUpRef.current = false;
 			const result = await callOrgMutation.mutateAsync({
 				orgId,
 				callLineId,
@@ -91,11 +102,18 @@ export function OrgCallButton({
 	}, [callLines, initiateCall]);
 
 	const handleHangUp = useCallback(async () => {
+		userHangUpRef.current = true;
 		if (activeMeetingId) {
 			await disconnect(activeMeetingId);
 		}
 		setActiveMeetingId(null);
+		hasConnectedRef.current = false;
 	}, [activeMeetingId, disconnect]);
+
+	const handleLiveKitDisconnected = useCallback(() => {
+		if (!hasConnectedRef.current) return;
+		void handleHangUp();
+	}, [handleHangUp]);
 
 	const isInCall = activeMeetingId !== null;
 	const activeLines = callLines?.filter((l) => l.isActive) ?? [];
@@ -109,7 +127,11 @@ export function OrgCallButton({
 					connect={true}
 					audio={true}
 					video={false}
-					onDisconnected={handleHangUp}
+					options={LIVEKIT_CALL_ROOM_OPTIONS}
+					onConnected={() => {
+						hasConnectedRef.current = true;
+					}}
+					onDisconnected={handleLiveKitDisconnected}
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
@@ -202,6 +224,15 @@ export function OrgCallButton({
 						side="bottom"
 						className="p-0 h-[100dvh] w-full bg-zinc-950 border-none rounded-none focus:outline-none flex flex-col pt-10"
 					>
+						<SheetTitle className="sr-only">
+							{orgName || t("meetings.callInProgress", "Appel en cours")}
+						</SheetTitle>
+						<SheetDescription className="sr-only">
+							{t(
+								"meetings.callDialogDescription",
+								"Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.",
+							)}
+						</SheetDescription>
 						{callContent}
 					</SheetContent>
 				</Sheet>
