@@ -6,9 +6,16 @@ import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-discon
 
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { AlertCircle, Loader2, Phone, Users, Video } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import {
+	useAuthenticatedConvexQuery,
+	useConvexMutationQuery,
+} from "@/integrations/convex/hooks";
 
 // ============================================
 // Types
@@ -18,6 +25,8 @@ interface MeetingRoomProps {
 	token: string;
 	wsUrl: string;
 	onDisconnect: () => void;
+	/** Meeting ID — requis pour activer le bouton d'enregistrement. */
+	meetingId?: Id<"meetings">;
 }
 
 // ============================================
@@ -28,7 +37,12 @@ interface MeetingRoomProps {
  * MeetingRoom — Full-featured audio/video conferencing room.
  * Wraps LiveKit's VideoConference with custom controls and styling.
  */
-export function MeetingRoom({ token, wsUrl, onDisconnect }: MeetingRoomProps) {
+export function MeetingRoom({
+	token,
+	wsUrl,
+	onDisconnect,
+	meetingId,
+}: MeetingRoomProps) {
 	const cleanupOnDisconnect = useCallback(() => {
 		onDisconnect();
 	}, [onDisconnect]);
@@ -44,6 +58,38 @@ export function MeetingRoom({ token, wsUrl, onDisconnect }: MeetingRoomProps) {
 		onDisconnect();
 	}, [markUserHangUp, onDisconnect]);
 
+	// ── Recording state (agent-only — citizens n'ont pas `meetingId` passé)
+	const { data: activeRecording } = useAuthenticatedConvexQuery(
+		api.functions.callRecordings.getActiveForMeeting,
+		meetingId ? { meetingId } : "skip",
+	);
+	const { mutateAsync: startRecordingMut } = useConvexMutationQuery(
+		api.functions.callRecordings.startRecording,
+	);
+	const { mutateAsync: stopRecordingMut } = useConvexMutationQuery(
+		api.functions.callRecordings.stopRecording,
+	);
+	const [recordingPending, setRecordingPending] = useState(false);
+	const isRecording = !!activeRecording;
+
+	const handleToggleRecording = useCallback(async () => {
+		if (!meetingId) return;
+		setRecordingPending(true);
+		try {
+			if (activeRecording) {
+				await stopRecordingMut({ recordingId: activeRecording._id });
+				toast.success("Enregistrement arrêté");
+			} else {
+				await startRecordingMut({ meetingId });
+				toast.success("Enregistrement démarré");
+			}
+		} catch (e: any) {
+			toast.error(e?.data ?? e?.message ?? "Opération impossible");
+		} finally {
+			setRecordingPending(false);
+		}
+	}, [meetingId, activeRecording, startRecordingMut, stopRecordingMut]);
+
 	return (
 		<div className="flex flex-col h-full w-full bg-zinc-950 rounded-xl overflow-hidden">
 			<LiveKitRoom
@@ -57,7 +103,18 @@ export function MeetingRoom({ token, wsUrl, onDisconnect }: MeetingRoomProps) {
 				className="flex flex-col flex-1"
 				style={{ height: "100%" }}
 			>
-				<CustomCallUI onHangUp={handleUserHangUp} />
+				<CustomCallUI
+					onHangUp={handleUserHangUp}
+					recording={
+						meetingId
+							? {
+								isRecording,
+								isPending: recordingPending,
+								onToggle: handleToggleRecording,
+							}
+							: undefined
+					}
+				/>
 			</LiveKitRoom>
 		</div>
 	);

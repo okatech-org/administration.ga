@@ -2,6 +2,7 @@
 
 import {
 	ArrowLeft,
+	CalendarPlus,
 	Clock,
 	Loader2,
 	Phone,
@@ -11,7 +12,9 @@ import {
 	Video,
 } from "lucide-react";
 import { useCallback, useState } from "react";
+import { useConvex } from "convex/react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { MeetingRoom, PreJoinScreen } from "@/components/meetings/meeting-room";
 import { useOrg } from "@/components/org/org-provider";
 import { Button } from "@/components/ui/button";
@@ -68,6 +71,30 @@ export default function MeetingsPage() {
 		setShowPreJoin(true);
 	}, []);
 
+	// Téléchargement iCal : query on-demand + blob download.
+	const convex = useConvex();
+	const handleExportIcs = useCallback(
+		async (meetingId: Id<"meetings">) => {
+			try {
+				const result = await convex.query(api.functions.meetings.exportIcs, {
+					meetingId,
+				});
+				const blob = new Blob([result.ics], { type: "text/calendar;charset=utf-8" });
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				a.href = url;
+				a.download = result.filename;
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				URL.revokeObjectURL(url);
+			} catch (e: any) {
+				toast.error(e?.message ?? "Export impossible");
+			}
+		},
+		[convex],
+	);
+
 	const handleConnect = useCallback(async () => {
 		if (!activeMeetingId) return;
 		await connect(activeMeetingId);
@@ -107,6 +134,7 @@ export default function MeetingsPage() {
 					<MeetingRoom
 						token={token}
 						wsUrl={wsUrl}
+						meetingId={activeMeetingId}
 						onDisconnect={handleDisconnect}
 					/>
 				</div>
@@ -233,17 +261,30 @@ export default function MeetingsPage() {
 								</div>
 							</div>
 
-							{(m.status === "active" || m.status === "scheduled") && (
+							<div className="flex items-center gap-1.5">
+								{/* Export .ics — disponible pour toute réunion (scheduled/active/ended) */}
 								<Button
 									size="sm"
-									variant="outline"
-									onClick={() => handleJoinMeeting(m._id)}
+									variant="ghost"
+									onClick={() => handleExportIcs(m._id)}
+									title={t("meetings.exportIcs", "Exporter au calendrier (.ics)")}
+									aria-label={t("meetings.exportIcs", "Exporter au calendrier (.ics)")}
 									className="gap-1.5"
 								>
-									<Phone className="w-4 h-4" />
-									{t("meetings.join")}
+									<CalendarPlus className="w-4 h-4" />
 								</Button>
-							)}
+								{(m.status === "active" || m.status === "scheduled") && (
+									<Button
+										size="sm"
+										variant="outline"
+										onClick={() => handleJoinMeeting(m._id)}
+										className="gap-1.5"
+									>
+										<Phone className="w-4 h-4" />
+										{t("meetings.join")}
+									</Button>
+								)}
+							</div>
 						</div>
 					))
 				)}

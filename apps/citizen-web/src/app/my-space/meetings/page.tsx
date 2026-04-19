@@ -14,6 +14,7 @@ import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import "@livekit/components-styles";
 import {
+	CalendarPlus,
 	Check,
 	ClipboardCopy,
 	Loader2,
@@ -21,7 +22,8 @@ import {
 	Users,
 	Video,
 } from "lucide-react";
-import { Suspense, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
+import { useConvex } from "convex/react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +93,28 @@ function MeetingsPageContent() {
 		setTimeout(() => setCopiedLink(false), 2000);
 	};
 
+	// Téléchargement iCal : query on-demand + blob download.
+	const convex = useConvex();
+	const handleExportIcs = useCallback(async () => {
+		if (!meetingId) return;
+		try {
+			const result = await convex.query(api.functions.meetings.exportIcs, {
+				meetingId,
+			});
+			const blob = new Blob([result.ics], { type: "text/calendar;charset=utf-8" });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = result.filename;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		} catch (e: any) {
+			toast.error(e?.message ?? "Export impossible");
+		}
+	}, [convex, meetingId]);
+
 	// -- Vue en appel --
 	if (view === "incall" && token && wsUrl) {
 		return (
@@ -136,15 +160,25 @@ function MeetingsPageContent() {
 							{t("meetings.participants", { count: (meeting as any)?.participants?.length ?? 0 })}
 						</p>
 
-						{/* Lien de partage */}
-						<button
-							type="button"
-							onClick={handleCopyLink}
-							className="text-xs text-primary hover:underline flex items-center gap-1 mb-4"
-						>
-							{copiedLink ? <Check className="h-3 w-3" /> : <ClipboardCopy className="h-3 w-3" />}
-							{copiedLink ? t("meetings.copied") : t("meetings.copyLink")}
-						</button>
+						{/* Lien de partage + export .ics */}
+						<div className="flex items-center gap-3 mb-4">
+							<button
+								type="button"
+								onClick={handleCopyLink}
+								className="text-xs text-primary hover:underline flex items-center gap-1"
+							>
+								{copiedLink ? <Check className="h-3 w-3" /> : <ClipboardCopy className="h-3 w-3" />}
+								{copiedLink ? t("meetings.copied") : t("meetings.copyLink")}
+							</button>
+							<button
+								type="button"
+								onClick={handleExportIcs}
+								className="text-xs text-primary hover:underline flex items-center gap-1"
+							>
+								<CalendarPlus className="h-3 w-3" />
+								{t("meetings.exportIcs", "Ajouter au calendrier")}
+							</button>
+						</div>
 
 						{meetingError && (
 							<p className="text-xs text-destructive bg-destructive/10 px-3 py-1.5 rounded-lg mb-3">
