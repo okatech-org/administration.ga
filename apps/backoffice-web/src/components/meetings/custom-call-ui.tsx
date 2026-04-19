@@ -18,6 +18,8 @@ import {
 	Loader2,
 	Mic,
 	MicOff,
+	MonitorUp,
+	MonitorX,
 	PhoneOff,
 	User,
 	Wifi,
@@ -199,10 +201,10 @@ function ControlButton({
 	pending?: boolean;
 }) {
 	const buttonClasses = danger
-		? "w-14 h-14 rounded-full flex items-center justify-center bg-rose-600 hover:bg-rose-700 text-white"
+		? "w-14 h-14 rounded-full flex items-center justify-center bg-rose-600 hover:bg-rose-700 text-white active:scale-[0.97] transition-transform"
 		: active
-			? "w-14 h-14 rounded-full flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 text-white"
-			: "w-14 h-14 rounded-full flex items-center justify-center bg-rose-600/80 hover:bg-rose-700 text-white";
+			? "w-14 h-14 rounded-full flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 text-white active:scale-[0.97] transition-transform"
+			: "w-14 h-14 rounded-full flex items-center justify-center bg-rose-600/80 hover:bg-rose-700 text-white active:scale-[0.97] transition-transform";
 
 	return (
 		<button
@@ -253,6 +255,14 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 		{ onlySubscribed: false },
 	);
 
+	// Get all screen-share tracks (un participant peut partager son écran —
+	// si c'est le cas, on l'affiche en priorité sur la caméra).
+	// `withPlaceholder: false` : on ne veut que les vrais tracks publiés.
+	const screenShareTracks = useTracks(
+		[{ source: Track.Source.ScreenShare, withPlaceholder: false }],
+		{ onlySubscribed: false },
+	);
+
 	// Track toggles
 	const {
 		toggle: toggleMic,
@@ -265,6 +275,12 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 		enabled: cameraEnabled,
 		pending: cameraPending,
 	} = useTrackToggle({ source: Track.Source.Camera });
+
+	const {
+		toggle: toggleScreenShare,
+		enabled: screenShareEnabled,
+		pending: screenSharePending,
+	} = useTrackToggle({ source: Track.Source.ScreenShare });
 
 	// Hang up handler
 	const handleHangUp = useCallback(() => {
@@ -284,6 +300,14 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 		(tr) =>
 			tr.participant.identity !== localParticipant?.identity &&
 			tr.source === Track.Source.Camera,
+	);
+
+	// Remote screen-share (affiché en priorité sur la caméra quand présent).
+	// Narrowing : avec `withPlaceholder: false`, tous les items ont `publication`.
+	const remoteScreenShareTrack = screenShareTracks.find(
+		(tr): tr is typeof tr & { publication: NonNullable<typeof tr.publication> } =>
+			tr.participant.identity !== localParticipant?.identity &&
+			!!tr.publication && !tr.publication.isMuted,
 	);
 
 	const hasRemote = remoteParticipants.length > 0;
@@ -360,9 +384,23 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 					<>
 						{/* REMOTE: fullscreen on mobile, left side on desktop */}
 						<div className="absolute inset-0 md:relative md:h-full md:flex md:gap-2 md:p-3">
-							{/* Remote video (main) */}
+							{/* Remote video (main) — screen share a priorité sur la caméra */}
 							<div className="w-full h-full md:flex-1 rounded-none md:rounded-2xl bg-zinc-900 overflow-hidden relative">
-								{remoteHasVideo ? (
+								{remoteScreenShareTrack ? (
+									<div style={{ position: "absolute", inset: 0 }}>
+										<VideoTrack
+											trackRef={remoteScreenShareTrack}
+											style={{
+												position: "absolute",
+												inset: 0,
+												width: "100%",
+												height: "100%",
+												objectFit: "contain",
+												background: "#000",
+											}}
+										/>
+									</div>
+								) : remoteHasVideo ? (
 									<div style={{ position: "absolute", inset: 0 }}>
 										<VideoTrack
 											trackRef={remoteTrack}
@@ -382,11 +420,17 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 										isLocal={false}
 									/>
 								)}
-								{/* Remote name badge */}
+								{/* Remote name badge + screen share indicator */}
 								<div className="absolute bottom-3 left-3 flex items-center gap-2 z-10">
 									<span className="text-xs bg-zinc-900/80 backdrop-blur-sm text-white px-2 py-1 rounded-lg">
 										{remoteName}
 									</span>
+									{remoteScreenShareTrack && (
+										<span className="text-xs bg-emerald-600/90 text-white px-2 py-1 rounded-lg flex items-center gap-1">
+											<MonitorUp className="w-3 h-3" />
+											{t("meetings.sharingScreen", "Partage son écran")}
+										</span>
+									)}
 									{remoteAudioMuted && (
 										<span className="bg-rose-600/80 p-1 rounded-full">
 											<MicOff className="w-3 h-3 text-white" />
@@ -450,7 +494,7 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 							{/* Pulsing avatar */}
 							<div className="relative flex items-center justify-center">
 								<div className="absolute w-32 h-32 bg-emerald-500/15 rounded-full animate-ping" />
-								<div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-emerald-500/30 flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(16,185,129,0.15)]">
+								<div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-emerald-500/30 flex items-center justify-center relative z-10 ">
 									<User className="w-12 h-12 text-emerald-400/80" />
 								</div>
 							</div>
@@ -496,6 +540,17 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 								: t("meetings.cameraOff", "Caméra off")
 						}
 						pending={cameraPending}
+					/>
+					<ControlButton
+						onClick={() => toggleScreenShare()}
+						active={screenShareEnabled}
+						icon={screenShareEnabled ? MonitorX : MonitorUp}
+						label={
+							screenShareEnabled
+								? t("meetings.stopScreenShare", "Arrêter")
+								: t("meetings.screenShare", "Partager")
+						}
+						pending={screenSharePending}
 					/>
 					<ControlButton
 						onClick={handleHangUp}
