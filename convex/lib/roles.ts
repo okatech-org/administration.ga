@@ -778,6 +778,8 @@ export const TASK_CATEGORY_META: Record<TaskCategory, { label: LocalizedString; 
   notifications: { label: { fr: "Notifications", en: "Notifications" }, icon: "Bell" },
   voicemails: { label: { fr: "Messagerie vocale", en: "Voicemail" }, icon: "Voicemail" },
   callRecordings: { label: { fr: "Enregistrements d'appels", en: "Call Recordings" }, icon: "Disc" },
+  // AI Assistant Proactif
+  ai_assistant: { label: { fr: "Assistant IA", en: "AI Assistant" }, icon: "Sparkles" },
 };
 
 // ═══════════════════════════════════════════════════════════════

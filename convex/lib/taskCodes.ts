@@ -192,6 +192,23 @@ export const TaskCode = {
   notifications: {
     push_subscribe: "notifications.push_subscribe",
   },
+  // AI Assistant Proactif
+  ai_assistant: {
+    /** Voir les suggestions IA pertinentes pour son contexte */
+    view: "ai_assistant.view",
+    /** Rejeter une suggestion IA */
+    dismiss: "ai_assistant.dismiss",
+    /** Appliquer manuellement une action proposee par l'IA */
+    apply: "ai_assistant.apply",
+    /** Configurer ses preferences personnelles (capabilities, sensibilite, canaux) */
+    configure: "ai_assistant.configure",
+    /** Autoriser l'auto-application de certaines actions sans validation */
+    auto_apply: "ai_assistant.auto_apply",
+    /** Gouverner la config IA au niveau org (capabilities autorisees, budgets, modeles) */
+    admin: "ai_assistant.admin",
+    /** Consulter le journal d'activite IA (interventions, couts, performances) */
+    audit: "ai_assistant.audit",
+  },
 } as const;
 
 // ═══════════════════════════════════════════════════════════════
@@ -356,6 +373,14 @@ export const taskCodeValidator = v.union(
   v.literal(TaskCode.callRecordings.delete),
   // Push notifications (Sprint 6)
   v.literal(TaskCode.notifications.push_subscribe),
+  // AI Assistant Proactif
+  v.literal(TaskCode.ai_assistant.view),
+  v.literal(TaskCode.ai_assistant.dismiss),
+  v.literal(TaskCode.ai_assistant.apply),
+  v.literal(TaskCode.ai_assistant.configure),
+  v.literal(TaskCode.ai_assistant.auto_apply),
+  v.literal(TaskCode.ai_assistant.admin),
+  v.literal(TaskCode.ai_assistant.audit),
 );
 
 // ═══════════════════════════════════════════════════════════════
@@ -493,4 +518,12 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   [TaskCode.callRecordings.delete]: "high",
   // Push notifications (Sprint 6)
   [TaskCode.notifications.push_subscribe]: "low",
+  // AI Assistant Proactif — auto_apply et admin sont sensibles (l'IA peut agir sans validation)
+  [TaskCode.ai_assistant.view]: "low",
+  [TaskCode.ai_assistant.dismiss]: "low",
+  [TaskCode.ai_assistant.apply]: "medium",
+  [TaskCode.ai_assistant.configure]: "low",
+  [TaskCode.ai_assistant.auto_apply]: "high",
+  [TaskCode.ai_assistant.admin]: "critical",
+  [TaskCode.ai_assistant.audit]: "low",
 };

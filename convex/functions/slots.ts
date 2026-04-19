@@ -4,7 +4,23 @@ import { getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
 import { getOrgSchedule } from "../lib/orgHelpers";
-import { AppointmentStatus, appointmentStatusValidator } from "../schemas/appointments";
+import {
+  AppointmentStatus,
+  AppointmentMode,
+  appointmentStatusValidator,
+  appointmentModeValidator,
+  appointmentChannelValidator,
+} from "../schemas/appointments";
+import { logCortexAction } from "../lib/neocortex";
+import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
+import { dispatchAppointmentNotification } from "../lib/appointmentNotify";
+import {
+  signAppointmentIcalToken,
+  buildAppointmentIcs,
+  verifyAppointmentIcalToken,
+} from "../lib/ical";
+import { internalQuery } from "../_generated/server";
+import { internal } from "../_generated/api";
 
 /**
  * ============================================================================
@@ -297,6 +313,7 @@ export const bookDynamicAppointment = authMutation({
     appointmentType: v.optional(v.union(v.literal("deposit"), v.literal("pickup"))),
     requestId: v.optional(v.id("requests")),
     notes: v.optional(v.string()),
+    mode: v.optional(appointmentModeValidator),
   },
   handler: async (ctx, args) => {
     const type = args.appointmentType ?? "deposit";
@@ -429,21 +446,56 @@ export const bookDynamicAppointment = authMutation({
       throw error(ErrorCode.APPOINTMENT_ALREADY_EXISTS, "You already have an appointment at this time");
     }
 
-    // 8. Create the appointment
+    // 8. Determine initial status based on service config
+    const requireValidation = orgService.requireAgentValidation ?? false;
+    const initialStatus = requireValidation
+      ? AppointmentStatus.Pending
+      : AppointmentStatus.Confirmed;
+
+    // Resolve appointment mode (defaults to in_person if not specified)
+    const allowedModes = orgService.allowedAppointmentModes ?? ["in_person"];
+    const requestedMode = args.mode ?? AppointmentMode.InPerson;
+    if (!allowedModes.includes(requestedMode)) {
+      throw error(
+        ErrorCode.SLOT_NOT_AVAILABLE,
+        "This appointment mode is not allowed for this service",
+      );
+    }
+
+    // 9. Create the appointment
     const appointmentId = await ctx.db.insert("appointments", {
       attendeeProfileId: profile._id,
       orgId: args.orgId,
       orgServiceId: args.orgServiceId,
       agentId: selectedAgent as any,
       appointmentType: type,
+      mode: requestedMode,
       date: args.date,
       time: args.startTime,
       endTime,
       durationMinutes: duration,
-      status: AppointmentStatus.Confirmed,
-      confirmedAt: now,
+      status: initialStatus,
+      confirmedAt: requireValidation ? undefined : now,
       requestId: args.requestId,
       notes: args.notes,
+      creationChannel: "citizen_web",
+      rescheduleCount: 0,
+    });
+
+    // NEOCORTEX: Signal RDV créé (non bloquant)
+    await logCortexAction(ctx, {
+      action: "BOOK_APPOINTMENT",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "appointments",
+      entiteId: appointmentId,
+      userId: ctx.user._id,
+      apres: { status: initialStatus, date: args.date, time: args.startTime },
+      signalType: SIGNAL_TYPES.RDV_CREE,
+    });
+
+    await dispatchAppointmentNotification(ctx, {
+      appointmentId,
+      event: "created",
     });
 
     return appointmentId;
@@ -455,6 +507,389 @@ export const bookDynamicAppointment = authMutation({
  * APPOINTMENT MANAGEMENT
  * ============================================================================
  */
+
+/**
+ * Confirm an appointment (agent only) — transitions Pending → Confirmed.
+ * Idempotent: already-confirmed appointments are a no-op.
+ */
+export const confirmAppointment = authMutation({
+  args: { appointmentId: v.id("appointments") },
+  handler: async (ctx, args) => {
+    const appointment = await ctx.db.get(args.appointmentId);
+    if (!appointment) throw error(ErrorCode.NOT_FOUND);
+
+    const membership = await getMembership(ctx, ctx.user._id, appointment.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "appointments.manage");
+
+    if (appointment.status === AppointmentStatus.Confirmed) {
+      return args.appointmentId;
+    }
+    if (
+      appointment.status !== AppointmentStatus.Pending &&
+      appointment.status !== AppointmentStatus.Rescheduled
+    ) {
+      throw error(
+        ErrorCode.INVALID_STATE_TRANSITION,
+        `Cannot confirm appointment in status "${appointment.status}"`,
+      );
+    }
+
+    await ctx.db.patch(args.appointmentId, {
+      status: AppointmentStatus.Confirmed,
+      confirmedAt: Date.now(),
+    });
+
+    await logCortexAction(ctx, {
+      action: "CONFIRM_APPOINTMENT",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "appointments",
+      entiteId: args.appointmentId,
+      userId: ctx.user._id,
+      apres: { status: AppointmentStatus.Confirmed },
+      signalType: SIGNAL_TYPES.RDV_CONFIRME,
+    });
+
+    await dispatchAppointmentNotification(ctx, {
+      appointmentId: args.appointmentId,
+      event: "confirmed",
+    });
+
+    return args.appointmentId;
+  },
+});
+
+/**
+ * Internal helper: validate that a given slot is available for booking at the
+ * chosen (date, startTime) for the specified service, and return the selected
+ * agent + derived end time + duration. Shared by bookDynamicAppointment,
+ * bookByAgent and rescheduleAppointment.
+ *
+ * Throws a Convex error if the slot is unavailable.
+ */
+async function resolveSlotForBooking(
+  ctx: any,
+  args: {
+    orgId: any;
+    orgServiceId: any;
+    date: string;
+    startTime: string;
+    appointmentType: "deposit" | "pickup";
+    preferredAgentId?: string;
+    excludeAppointmentId?: any;
+  },
+): Promise<{
+  selectedAgent: string;
+  endTime: string;
+  duration: number;
+  capacity: number;
+  orgService: any;
+}> {
+  const orgService = await ctx.db.get(args.orgServiceId);
+  if (!orgService) throw error(ErrorCode.SERVICE_NOT_FOUND);
+
+  const duration = args.appointmentType === "pickup"
+    ? (orgService.pickupAppointmentDurationMinutes ?? orgService.appointmentDurationMinutes ?? 15)
+    : (orgService.appointmentDurationMinutes ?? 15);
+  const capacity = orgService.appointmentCapacity ?? 1;
+
+  const requestedStart = parseTimeToMinutes(args.startTime);
+  const endTime = minutesToTimeString(requestedStart + duration);
+
+  const org = await ctx.db.get(args.orgId);
+  if (!org) throw error(ErrorCode.NOT_FOUND);
+
+  const dayOfWeek = new Date(args.date + "T00:00:00").getDay();
+  const dayName = DAY_NAMES[dayOfWeek];
+
+  const openingHours = (await getOrgSchedule(ctx, org)) as
+    | Record<string, { open?: string; close?: string; closed?: boolean }>
+    | undefined
+    | null;
+  const dayHours = openingHours?.[dayName];
+  if (!dayHours || dayHours.closed || !dayHours.open || !dayHours.close) {
+    throw error(ErrorCode.SLOT_NOT_AVAILABLE, "Organization is closed on this day");
+  }
+
+  const orgOpenMinutes = parseTimeToMinutes(dayHours.open);
+  const orgCloseMinutes = parseTimeToMinutes(dayHours.close);
+  if (requestedStart < orgOpenMinutes || requestedStart + duration > orgCloseMinutes) {
+    throw error(ErrorCode.SLOT_NOT_AVAILABLE, "Requested time is outside opening hours");
+  }
+
+  const allSchedules = await ctx.db
+    .query("agentSchedules")
+    .withIndex("by_org_active", (q: any) => q.eq("orgId", args.orgId).eq("isActive", true))
+    .take(50);
+  const relevantSchedules = allSchedules.filter(
+    (s: any) => !s.orgServiceId || s.orgServiceId === args.orgServiceId,
+  );
+
+  const availableAgents: string[] = [];
+  for (const schedule of relevantSchedules) {
+    const exception = schedule.exceptions?.find((e: any) => e.date === args.date);
+    if (exception && !exception.available) continue;
+    const dayEntry = exception?.timeRanges
+      ?? schedule.weeklySchedule.find((d: any) => d.day === dayName)?.timeRanges;
+    if (!dayEntry) continue;
+    const covers = dayEntry.some((range: any) => {
+      const rangeStart = Math.max(parseTimeToMinutes(range.start), orgOpenMinutes);
+      const rangeEnd = Math.min(parseTimeToMinutes(range.end), orgCloseMinutes);
+      return rangeStart <= requestedStart && requestedStart + duration <= rangeEnd;
+    });
+    if (covers) availableAgents.push(schedule.agentId);
+  }
+  if (availableAgents.length === 0) {
+    throw error(ErrorCode.SLOT_NOT_AVAILABLE, "No agent available at this time");
+  }
+
+  const existingAppointments = await ctx.db
+    .query("appointments")
+    .withIndex("by_org_date", (q: any) => q.eq("orgId", args.orgId).eq("date", args.date))
+    .filter((q: any) => q.neq(q.field("status"), AppointmentStatus.Cancelled))
+    .take(200);
+
+  // Least-booked agent selection, preferring the requested agent if passed.
+  let selectedAgent: string | null = null;
+  let minBookings = Infinity;
+
+  const candidates = args.preferredAgentId && availableAgents.includes(args.preferredAgentId)
+    ? [args.preferredAgentId, ...availableAgents.filter((a) => a !== args.preferredAgentId)]
+    : availableAgents;
+
+  for (const agentId of candidates) {
+    const agentBookings = existingAppointments.filter(
+      (a: any) =>
+        a.agentId === agentId &&
+        a.time === args.startTime &&
+        a._id !== args.excludeAppointmentId,
+    ).length;
+    if (agentBookings < capacity && agentBookings < minBookings) {
+      minBookings = agentBookings;
+      selectedAgent = agentId;
+      if (args.preferredAgentId === agentId) break;
+    }
+  }
+  if (!selectedAgent) {
+    throw error(ErrorCode.SLOT_FULLY_BOOKED, "All agents are fully booked at this time");
+  }
+
+  return { selectedAgent, endTime, duration, capacity, orgService };
+}
+
+/**
+ * Reschedule an appointment atomically: marks the original as "Rescheduled"
+ * and inserts a new appointment linked via rescheduledFromId.
+ *
+ * Authorization: owner (citizen) or agent with appointments.manage.
+ * Enforces cancellationPolicyHours from org calendar config when the caller is
+ * the citizen owner (agents can override).
+ */
+export const rescheduleAppointment = authMutation({
+  args: {
+    appointmentId: v.id("appointments"),
+    newDate: v.string(),
+    newStartTime: v.string(),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const appointment = await ctx.db.get(args.appointmentId);
+    if (!appointment) throw error(ErrorCode.NOT_FOUND);
+
+    if (
+      appointment.status !== AppointmentStatus.Confirmed &&
+      appointment.status !== AppointmentStatus.Pending
+    ) {
+      throw error(
+        ErrorCode.INVALID_STATE_TRANSITION,
+        `Cannot reschedule appointment in status "${appointment.status}"`,
+      );
+    }
+
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+      .unique();
+    const isOwner = profile && appointment.attendeeProfileId === profile._id;
+
+    let isAgent = false;
+    if (!isOwner) {
+      const membership = await getMembership(ctx, ctx.user._id, appointment.orgId);
+      await assertCanDoTask(ctx, ctx.user, membership, "appointments.manage");
+      isAgent = true;
+    }
+
+    // Enforce cancellation policy for citizen owners
+    if (isOwner && !isAgent) {
+      const orgCalendar = await ctx.db
+        .query("orgCalendar")
+        .withIndex("by_org", (q: any) => q.eq("orgId", appointment.orgId))
+        .unique();
+      const policyHours = orgCalendar?.appointmentConfig?.cancellationPolicyHours ?? 24;
+      const aptTs = new Date(`${appointment.date}T${appointment.time}:00`).getTime();
+      const msUntil = aptTs - Date.now();
+      if (msUntil < policyHours * 3600 * 1000) {
+        throw error(
+          ErrorCode.APPOINTMENT_PAST_CANCELLATION_DEADLINE,
+          `Rescheduling requires at least ${policyHours}h advance notice`,
+        );
+      }
+    }
+
+    // Resolve new slot (throws if unavailable)
+    const { selectedAgent, endTime, duration } = await resolveSlotForBooking(ctx, {
+      orgId: appointment.orgId,
+      orgServiceId: appointment.orgServiceId!,
+      date: args.newDate,
+      startTime: args.newStartTime,
+      appointmentType: appointment.appointmentType ?? "deposit",
+      preferredAgentId: appointment.agentId,
+      excludeAppointmentId: args.appointmentId,
+    });
+
+    const now = Date.now();
+    const previousCount = appointment.rescheduleCount ?? 0;
+
+    // Insert new appointment first so we can link back via rescheduledToId.
+    const newAppointmentId = await ctx.db.insert("appointments", {
+      attendeeProfileId: appointment.attendeeProfileId,
+      orgId: appointment.orgId,
+      orgServiceId: appointment.orgServiceId,
+      agentId: selectedAgent as any,
+      appointmentType: appointment.appointmentType,
+      mode: appointment.mode,
+      livekitRoomName: appointment.livekitRoomName,
+      remoteJoinUrl: appointment.remoteJoinUrl,
+      date: args.newDate,
+      time: args.newStartTime,
+      endTime,
+      durationMinutes: duration,
+      status: appointment.status, // Preserve Pending vs Confirmed
+      confirmedAt: appointment.status === AppointmentStatus.Confirmed ? now : undefined,
+      requestId: appointment.requestId,
+      notes: appointment.notes,
+      rescheduledFromId: args.appointmentId,
+      rescheduleCount: previousCount + 1,
+      rescheduleReason: args.reason,
+      creationChannel: isAgent ? "admin" : "citizen_web",
+      createdByAgentId: isAgent && !isOwner ? undefined : appointment.createdByAgentId,
+    });
+
+    // Link old → new and close it
+    await ctx.db.patch(args.appointmentId, {
+      status: AppointmentStatus.Rescheduled,
+      rescheduledToId: newAppointmentId,
+      rescheduleReason: args.reason ?? appointment.rescheduleReason,
+    });
+
+    await logCortexAction(ctx, {
+      action: "RESCHEDULE_APPOINTMENT",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "appointments",
+      entiteId: newAppointmentId,
+      userId: ctx.user._id,
+      avant: { date: appointment.date, time: appointment.time, status: appointment.status },
+      apres: { date: args.newDate, time: args.newStartTime, rescheduledFromId: args.appointmentId },
+      signalType: SIGNAL_TYPES.RDV_CREE,
+    });
+
+    await dispatchAppointmentNotification(ctx, {
+      appointmentId: newAppointmentId,
+      event: "rescheduled",
+      reason: args.reason,
+    });
+
+    return newAppointmentId;
+  },
+});
+
+/**
+ * Book an appointment manually on behalf of a citizen (walk-in / phone call).
+ * Agent-only. Skips the lead-time validation since the agent is acting in real
+ * time. Always creates a Confirmed appointment.
+ */
+export const bookByAgent = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    orgServiceId: v.id("orgServices"),
+    attendeeProfileId: v.id("profiles"),
+    date: v.string(),
+    startTime: v.string(),
+    appointmentType: v.optional(v.union(v.literal("deposit"), v.literal("pickup"))),
+    mode: v.optional(appointmentModeValidator),
+    channel: v.optional(appointmentChannelValidator),
+    notes: v.optional(v.string()),
+    requestId: v.optional(v.id("requests")),
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "appointments.manage");
+    if (!membership) throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
+
+    const profile = await ctx.db.get(args.attendeeProfileId);
+    if (!profile) throw error(ErrorCode.PROFILE_NOT_FOUND);
+
+    const type = args.appointmentType ?? "deposit";
+    const { selectedAgent, endTime, duration, orgService } = await resolveSlotForBooking(ctx, {
+      orgId: args.orgId,
+      orgServiceId: args.orgServiceId,
+      date: args.date,
+      startTime: args.startTime,
+      appointmentType: type,
+    });
+
+    const allowedModes = orgService.allowedAppointmentModes ?? ["in_person"];
+    const requestedMode = args.mode ?? AppointmentMode.InPerson;
+    if (!allowedModes.includes(requestedMode)) {
+      throw error(
+        ErrorCode.SLOT_NOT_AVAILABLE,
+        "This appointment mode is not allowed for this service",
+      );
+    }
+
+    const now = Date.now();
+    const appointmentId = await ctx.db.insert("appointments", {
+      attendeeProfileId: args.attendeeProfileId,
+      orgId: args.orgId,
+      orgServiceId: args.orgServiceId,
+      agentId: selectedAgent as any,
+      appointmentType: type,
+      mode: requestedMode,
+      date: args.date,
+      time: args.startTime,
+      endTime,
+      durationMinutes: duration,
+      status: AppointmentStatus.Confirmed,
+      confirmedAt: now,
+      requestId: args.requestId,
+      notes: args.notes,
+      createdByAgentId: membership._id,
+      creationChannel: args.channel ?? "walk_in",
+      rescheduleCount: 0,
+    });
+
+    await logCortexAction(ctx, {
+      action: "BOOK_APPOINTMENT_BY_AGENT",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "appointments",
+      entiteId: appointmentId,
+      userId: ctx.user._id,
+      apres: {
+        attendeeProfileId: args.attendeeProfileId,
+        date: args.date,
+        time: args.startTime,
+        channel: args.channel ?? "walk_in",
+      },
+      signalType: SIGNAL_TYPES.RDV_CREE,
+    });
+
+    await dispatchAppointmentNotification(ctx, {
+      appointmentId,
+      event: "confirmed",
+    });
+
+    return appointmentId;
+  },
+});
 
 /**
  * Cancel an appointment (by citizen or agent)
@@ -492,6 +927,36 @@ export const cancelAppointment = authMutation({
       cancellationReason: args.reason,
     });
 
+    await logCortexAction(ctx, {
+      action: "CANCEL_APPOINTMENT",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "appointments",
+      entiteId: args.appointmentId,
+      userId: ctx.user._id,
+      apres: { status: AppointmentStatus.Cancelled },
+      signalType: SIGNAL_TYPES.RDV_ANNULE,
+    });
+
+    await dispatchAppointmentNotification(ctx, {
+      appointmentId: args.appointmentId,
+      event: "cancelled",
+      reason: args.reason,
+    });
+
+    // Offer the freed slot to the waitlist (best-effort, non-blocking).
+    if (appointment.orgServiceId) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.functions.appointmentWaitlist.offerSlotToWaitlist,
+        {
+          orgId: appointment.orgId,
+          orgServiceId: appointment.orgServiceId,
+          date: appointment.date,
+          freedAppointmentId: args.appointmentId,
+        },
+      );
+    }
+
     return args.appointmentId;
   },
 });
@@ -519,6 +984,21 @@ export const completeAppointment = authMutation({
       notes: args.notes ?? appointment.notes,
     });
 
+    await logCortexAction(ctx, {
+      action: "COMPLETE_APPOINTMENT",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "appointments",
+      entiteId: args.appointmentId,
+      userId: ctx.user._id,
+      apres: { status: AppointmentStatus.Completed },
+      signalType: SIGNAL_TYPES.RDV_COMPLETE,
+    });
+
+    await dispatchAppointmentNotification(ctx, {
+      appointmentId: args.appointmentId,
+      event: "completed",
+    });
+
     return args.appointmentId;
   },
 });
@@ -541,6 +1021,22 @@ export const markNoShow = authMutation({
 
     await ctx.db.patch(args.appointmentId, {
       status: AppointmentStatus.NoShow,
+    });
+
+    await logCortexAction(ctx, {
+      action: "MARK_NO_SHOW",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "appointments",
+      entiteId: args.appointmentId,
+      userId: ctx.user._id,
+      apres: { status: AppointmentStatus.NoShow },
+      signalType: SIGNAL_TYPES.RDV_NO_SHOW,
+      priorite: "HIGH",
+    });
+
+    await dispatchAppointmentNotification(ctx, {
+      appointmentId: args.appointmentId,
+      event: "noShow",
     });
 
     return args.appointmentId;
@@ -791,3 +1287,102 @@ export const listAppointmentsByOrg = authQuery({
     });
   },
 });
+
+/**
+ * ============================================================================
+ * iCal EXPORT
+ * ============================================================================
+ *
+ * Generates a short-lived HMAC token so citizens can download an .ics file
+ * for their appointment without exposing their session cookie to calendar
+ * clients (Apple Calendar / Google / Outlook).
+ */
+
+export const createIcalToken = authQuery({
+  args: { appointmentId: v.id("appointments") },
+  handler: async (ctx, args) => {
+    const appointment = await ctx.db.get(args.appointmentId);
+    if (!appointment) throw error(ErrorCode.NOT_FOUND);
+
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+      .unique();
+    const isOwner = profile && appointment.attendeeProfileId === profile._id;
+    if (!isOwner) {
+      const membership = await getMembership(ctx, ctx.user._id, appointment.orgId);
+      await assertCanDoTask(ctx, ctx.user, membership, "appointments.view");
+    }
+
+    // 30-day token — long enough for a user to re-subscribe the .ics periodically.
+    const expiresAt = Date.now() + 30 * 24 * 3600 * 1000;
+    const token = await signAppointmentIcalToken(args.appointmentId, expiresAt);
+    const base = process.env.CONVEX_SITE_URL ?? "";
+    return { token, url: `${base}/ical/appointment/${args.appointmentId}.ics?token=${token}` };
+  },
+});
+
+/**
+ * Internal query used by the HTTP route to load the appointment data after
+ * verifying the token. Does not require an authenticated session.
+ */
+export const getAppointmentForIcal = internalQuery({
+  args: { appointmentId: v.id("appointments") },
+  handler: async (ctx, args) => {
+    const appointment = await ctx.db.get(args.appointmentId);
+    if (!appointment) return null;
+    const org = await ctx.db.get(appointment.orgId);
+    const orgService = appointment.orgServiceId
+      ? await ctx.db.get(appointment.orgServiceId)
+      : null;
+    const service = orgService ? await ctx.db.get(orgService.serviceId) : null;
+
+    return {
+      appointment,
+      org,
+      serviceName:
+        service?.name
+          ? typeof service.name === "object"
+            ? service.name.fr
+            : service.name
+          : null,
+    };
+  },
+});
+
+/**
+ * Internal query: verify the caller is the appointment attendee and return
+ * the info needed to issue a LiveKit join token.
+ */
+export const getAppointmentForJoinToken = internalQuery({
+  args: {
+    appointmentId: v.id("appointments"),
+    authSubject: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_authId", (q: any) => q.eq("authId", args.authSubject))
+      .unique();
+    if (!user) return null;
+
+    const appointment = await ctx.db.get(args.appointmentId);
+    if (!appointment) return null;
+    const profile = await ctx.db.get(appointment.attendeeProfileId);
+    if (!profile) return null;
+    if (String(profile.userId) !== String(user._id)) return null;
+
+    return {
+      appointmentId: appointment._id,
+      attendeeUserId: profile.userId,
+      attendeeName: user.name ?? "Participant",
+      date: appointment.date,
+      time: appointment.time,
+      endTime: appointment.endTime,
+      mode: appointment.mode,
+      status: appointment.status,
+      livekitRoomName: appointment.livekitRoomName,
+    };
+  },
+});
+

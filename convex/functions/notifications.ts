@@ -9,6 +9,8 @@ import { notificationTypeValidator } from "../lib/validators";
 import { getPlatformConfig, fromEmail } from "../lib/platform";
 import type { PlatformConfig } from "../lib/platform";
 import { emailLayout } from "../lib/emailTemplates";
+import { sendSms } from "../lib/bird";
+import { dispatchAppointmentNotification } from "../lib/appointmentNotify";
 
 // Resend — testMode TOUJOURS false dans Convex.
 // Le runtime Convex (V8 isolé) ne garantit PAS process.env.NODE_ENV.
@@ -198,6 +200,48 @@ export const emailTemplates = {
 // ============================================================================
 // SEND EMAIL ACTIONS
 // ============================================================================
+
+/**
+ * Generic sender for appointment multi-channel dispatcher.
+ * Accepts pre-rendered subject + html (locale/platform handled upstream).
+ */
+export const sendAppointmentEmail = internalAction({
+  args: {
+    to: v.string(),
+    from: v.string(),
+    subject: v.string(),
+    html: v.string(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      await resend.sendEmail(ctx, {
+        from: args.from,
+        to: args.to,
+        subject: args.subject,
+        html: args.html,
+      });
+      return { success: true };
+    } catch (error: any) {
+      console.error("[appointments] email send failed:", error);
+      return { success: false, error: error?.message ?? "unknown" };
+    }
+  },
+});
+
+export const sendAppointmentSms = internalAction({
+  args: {
+    phone: v.string(),
+    text: v.string(),
+  },
+  handler: async (_ctx, args) => {
+    if (!args.phone) return { success: false, error: "No phone" };
+    if (!process.env.BIRD_API_KEY) {
+      return { success: false, error: "Bird not configured" };
+    }
+    const result = await sendSms(args.phone, args.text);
+    return result;
+  },
+});
 
 export const sendNotificationEmail = internalAction({
   args: {
@@ -460,9 +504,8 @@ export const sendAppointmentReminders = internalMutation({
     const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split("T")[0]; // YYYY-MM-DD
+    const tomorrowStr = tomorrow.toISOString().split("T")[0];
 
-    // Get all appointments scheduled for tomorrow from the appointments table
     const appointments = await ctx.db
       .query("appointments")
       .filter((q) =>
@@ -471,82 +514,17 @@ export const sendAppointmentReminders = internalMutation({
           q.neq(q.field("status"), "cancelled"),
           q.neq(q.field("status"), "completed"),
           q.neq(q.field("status"), "no_show"),
+          q.neq(q.field("status"), "rescheduled"),
         ),
       )
       .take(500);
 
     let sentCount = 0;
-
     for (const appointment of appointments) {
-      // Get request linked to this appointment (if any)
-      const request = appointment.requestId
-        ? await ctx.db.get(appointment.requestId)
-        : null;
-
-      // Get attendee's user info via their profile
-      const profile = await ctx.db.get(appointment.attendeeProfileId);
-      if (!profile) continue;
-      const user = await ctx.db.get(profile.userId);
-      if (!user?.email) continue;
-
-      const orgService = appointment.orgServiceId
-        ? await ctx.db.get(appointment.orgServiceId)
-        : null;
-      const service =
-        orgService ? await ctx.db.get(orgService.serviceId) : null;
-      const org = await ctx.db.get(appointment.orgId);
-
-      const serviceName =
-        service?.name ?
-          typeof service.name === "object" ?
-            service.name.fr
-          : service.name
-        : "Service";
-
-      const userName = user.name || "Cher(e) usager";
-      const appointmentDate = tomorrow.toLocaleDateString("fr-FR", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
+      await dispatchAppointmentNotification(ctx, {
+        appointmentId: appointment._id,
+        event: "reminder",
       });
-      const address = org?.address || "Consulat Général du Gabon";
-
-      await ctx.scheduler.runAfter(
-        0,
-        internal.functions.notifications.sendNotificationEmail,
-        {
-          to: user.email,
-          template: "appointmentReminder",
-          data: {
-            userName,
-            requestRef: request?.reference || "-",
-            serviceName,
-            appointmentDate,
-            appointmentTime: appointment.time,
-            address,
-          },
-        },
-      );
-
-      // SMS via Bird (rappel RDV = SMS important)
-      if (user.phone && user.preferences?.smsNotifications !== false) {
-        await ctx.scheduler.runAfter(
-          0,
-          internal.functions.smsNotifications.sendSmsNotification,
-          {
-            phone: user.phone,
-            template: "appointment_reminder" as const,
-            data: {
-              userName,
-              appointmentDate,
-              appointmentTime: appointment.time,
-              address,
-            },
-          },
-        );
-      }
-
       sentCount++;
     }
 

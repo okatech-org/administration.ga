@@ -14,6 +14,7 @@ import {
   conversationsTable,
   formTemplatesTable,
   appointmentsTable,
+  appointmentWaitlistTable,
   agentSchedulesTable,
   messagesTable,
   documentTemplatesTable,
@@ -92,6 +93,11 @@ import {
   pushSubscriptionsTable,
   callNotesTable,
   draftMessagesTable,
+  aiSuggestionsTable,
+  aiActivityLogTable,
+  userAIPreferencesTable,
+  aiAgentPresenceTable,
+  aiCapabilityConfigTable,
 } from "./schemas";
 
 export default defineSchema({
@@ -109,6 +115,7 @@ export default defineSchema({
   conversations: conversationsTable,
   formTemplates: formTemplatesTable,
   appointments: appointmentsTable,
+  appointmentWaitlist: appointmentWaitlistTable,
   agentSchedules: agentSchedulesTable,
   messages: messagesTable,
   documentTemplates: documentTemplatesTable,
@@ -200,4 +207,10 @@ export default defineSchema({
   // Sprint 6 — Notes post-appel + brouillons de messages
   callNotes: callNotesTable,
   draftMessages: draftMessagesTable,
+  // Agent IA Proactif — Module ai_assistant
+  aiSuggestions: aiSuggestionsTable,
+  aiActivityLog: aiActivityLogTable,
+  userAIPreferences: userAIPreferencesTable,
+  aiAgentPresence: aiAgentPresenceTable,
+  aiCapabilityConfig: aiCapabilityConfigTable,
 });

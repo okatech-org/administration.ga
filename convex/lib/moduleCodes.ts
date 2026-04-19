@@ -70,6 +70,7 @@ export const ModuleCode = {
   // Special
   intelligence: "intelligence",
   cv: "cv",
+  ai_assistant: "ai_assistant",
 } as const;
 
 export type ModuleCodeValue = (typeof ModuleCode)[keyof typeof ModuleCode];
@@ -197,6 +198,7 @@ export const moduleCodeValidator = v.union(
   v.literal(ModuleCode.intelligence),
   v.literal(ModuleCode.cv),
   v.literal(ModuleCode.iprofil),
+  v.literal(ModuleCode.ai_assistant),
 );
 
 // ═══════════════════════════════════════════════════════════════
@@ -566,6 +568,34 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     category: "diplomatic",
     isCore: false,
   },
+
+  // ─── AI Assistant Proactif ────────────────────────────────
+  [ModuleCode.ai_assistant]: {
+    code: ModuleCode.ai_assistant,
+    label: { fr: "Assistant IA Proactif", en: "Proactive AI Assistant" },
+    description: {
+      fr: "Agent IA qui assiste les agents consulaires en temps reel : suggestions, brouillons, detection de risques, analyses",
+      en: "AI agent that assists consular officers in real-time: suggestions, drafts, risk detection, analysis",
+    },
+    icon: "Sparkles",
+    color: "text-fuchsia-500",
+    category: "tools",
+    isCore: false,
+    capabilities: [
+      { code: "request_triage", label: { fr: "Triage des demandes", en: "Request triage" } },
+      { code: "document_analysis", label: { fr: "Analyse de documents", en: "Document analysis" } },
+      { code: "document_drafting", label: { fr: "Redaction assistee", en: "Drafting assistance" } },
+      { code: "auto_summary", label: { fr: "Resumes automatiques", en: "Auto summaries" } },
+      { code: "next_step_suggestion", label: { fr: "Prochaine etape", en: "Next step" } },
+      { code: "risk_detection", label: { fr: "Detection de risques", en: "Risk detection" } },
+      { code: "proactive_notifications", label: { fr: "Notifications proactives", en: "Proactive notifications" } },
+      { code: "voice_assist", label: { fr: "Assistant vocal", en: "Voice assistant" } },
+      { code: "bulk_actions_helper", label: { fr: "Actions groupees IA", en: "Bulk actions helper" } },
+      { code: "correspondance_drafting", label: { fr: "Redaction de courriers", en: "Correspondence drafting" } },
+      { code: "meeting_prep", label: { fr: "Preparation de reunions", en: "Meeting prep" } },
+      { code: "compliance_check", label: { fr: "Verification de conformite", en: "Compliance check" } },
+    ],
+  },
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -738,6 +768,28 @@ export const MODULE_ACCESS_TASKS: Partial<Record<string, Record<ModuleAccessLeve
     editor: ["statistics.view"],
     admin: ["statistics.view"],
   },
+  ai_assistant: {
+    // reader : voir et rejeter des suggestions, configurer ses preferences
+    reader: ["ai_assistant.view", "ai_assistant.dismiss", "ai_assistant.configure"],
+    // editor : appliquer les suggestions + auditer son activite IA
+    editor: [
+      "ai_assistant.view",
+      "ai_assistant.dismiss",
+      "ai_assistant.apply",
+      "ai_assistant.configure",
+      "ai_assistant.audit",
+    ],
+    // admin : autoriser auto-apply + gouverner la config IA pour l'org
+    admin: [
+      "ai_assistant.view",
+      "ai_assistant.dismiss",
+      "ai_assistant.apply",
+      "ai_assistant.configure",
+      "ai_assistant.auto_apply",
+      "ai_assistant.admin",
+      "ai_assistant.audit",
+    ],
+  },
 };
 
 /**
@@ -858,6 +910,14 @@ export const SIDEBAR_MODULE_GROUPS: SidebarModuleGroup[] = [
     icon: "Video",
     modules: [
       ModuleCode.meetings,
+    ],
+  },
+  {
+    key: "outils",
+    label: { fr: "Outils", en: "Tools" },
+    icon: "Sparkles",
+    modules: [
+      ModuleCode.ai_assistant,
     ],
   },
   {

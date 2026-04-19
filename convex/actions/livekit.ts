@@ -122,6 +122,75 @@ export const requestToken = action({
 });
 
 // ============================================================================
+// CITIZEN APPOINTMENT JOIN TOKEN — remote (video) appointments
+// ============================================================================
+
+/**
+ * Public action: the citizen attendee requests a LiveKit token to join
+ * their remote appointment. Permissions:
+ *   - caller must be the appointment's attendee
+ *   - appointment.mode must be "remote"
+ *   - appointment not cancelled/completed
+ *   - time window: 15 min before start → end of appointment
+ */
+export const createCitizenJoinToken = action({
+  args: { appointmentId: v.id("appointments") },
+  handler: async (
+    ctx,
+    { appointmentId },
+  ): Promise<{ token: string; roomName: string; wsUrl: string }> => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("NOT_AUTHENTICATED");
+
+    const info = await ctx.runQuery(
+      internal.functions.slots.getAppointmentForJoinToken,
+      { appointmentId, authSubject: identity.subject },
+    );
+    if (!info) throw new Error("NOT_AUTHORIZED_OR_NOT_FOUND");
+
+    if (info.mode !== "remote") throw new Error("NOT_REMOTE_APPOINTMENT");
+    if (info.status === "cancelled" || info.status === "completed" || info.status === "no_show") {
+      throw new Error("APPOINTMENT_NOT_JOINABLE");
+    }
+
+    // Time window: 15 min before start → end of appointment
+    const start = new Date(`${info.date}T${info.time}:00`).getTime();
+    const end = info.endTime
+      ? new Date(`${info.date}T${info.endTime}:00`).getTime()
+      : start + 60 * 60 * 1000;
+    const now = Date.now();
+    if (now < start - 15 * 60 * 1000 || now > end) {
+      throw new Error("OUTSIDE_JOIN_WINDOW");
+    }
+
+    const apiKey = process.env.LIVEKIT_API_KEY;
+    const apiSecret = process.env.LIVEKIT_API_SECRET;
+    const wsUrl = process.env.LIVEKIT_WS_URL ?? "ws://localhost:7880";
+    if (!apiKey || !apiSecret) {
+      throw new Error("LIVEKIT_NOT_CONFIGURED");
+    }
+
+    const roomName = info.livekitRoomName ?? `appointment-${appointmentId}`;
+
+    const token = new AccessToken(apiKey, apiSecret, {
+      identity: `citizen-${info.attendeeUserId}`,
+      name: info.attendeeName,
+      ttl: "2h",
+    });
+    token.addGrant({
+      roomJoin: true,
+      room: roomName,
+      canPublish: true,
+      canSubscribe: true,
+      canPublishData: true,
+    });
+
+    const jwt = await token.toJwt();
+    return { token: jwt, roomName, wsUrl };
+  },
+});
+
+// ============================================================================
 // SPRINT 6 — SUPERVISION TOKEN (Listen / Whisper / Barge)
 // ============================================================================
 

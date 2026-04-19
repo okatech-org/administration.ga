@@ -125,7 +125,7 @@ export default function NewAppointmentPage() {
 			});
 
 			toast.success(t("appointments.book.success"));
-			router.push("/my-space/appointments");
+			router.push("/my-space/iagenda?tab=mes-rdv");
 		} catch (err: unknown) {
 			toast.error(
 				err instanceof Error ? err.message : t("appointments.book.error"),
@@ -158,7 +158,7 @@ export default function NewAppointmentPage() {
 	const handleBack = () => {
 		if (step === "confirm") setStep("select-slot");
 		else if (step === "select-slot") setStep("select-request");
-		else router.push("/my-space/appointments");
+		else router.push("/my-space/iagenda");
 	};
 
 	if (requestsLoading) {

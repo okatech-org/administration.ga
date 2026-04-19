@@ -20,6 +20,13 @@ crons.daily(
   internal.functions.notifications.sendAppointmentReminders,
 );
 
+// Expire stale waitlist offers (default TTL 30 min) and promote next in FIFO
+crons.interval(
+  "expire-waitlist-offers",
+  { minutes: 5 },
+  internal.functions.appointmentWaitlist.expireOffers,
+);
+
 // --- NEOCORTEX ---
 // Rythme Circadien : Nettoyage quotidien des signaux > TTL
 crons.daily(
@@ -181,6 +188,29 @@ crons.daily(
   "check-archive-expiration",
   { hourUTC: 8, minuteUTC: 30 },
   internal.crons.archiveExpiration.checkArchiveExpiration,
+);
+
+// --- AI Assistant Proactif ---
+// Purge presences IA stale (> 5 min sans heartbeat)
+crons.interval(
+  "ai_assistant_presence_cleanup",
+  { minutes: 5 },
+  internal.ai.contextStore.cleanupStalePresencesInternal,
+);
+
+// Expiration des suggestions IA (au-dela de leur expiresAt)
+crons.hourly(
+  "ai_assistant_suggestions_expire",
+  { minuteUTC: 45 },
+  internal.ai.suggestions.expireSuggestionsInternal,
+);
+
+// Balayage idle workflows : detecte les demandes/dossiers stagnants
+// et pousse des suggestions de triage.
+crons.interval(
+  "ai_assistant_scheduled_sweeper",
+  { minutes: 30 },
+  internal.ai.scheduledSweeper.sweep,
 );
 
 // --- Phase D1 : sync legacy orgs fields (horaire) ---

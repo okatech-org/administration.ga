@@ -585,6 +585,13 @@ export default function DashboardAppointments() {
 				</div>
 				<div className="flex items-center gap-3">
 					<Button
+						size="sm"
+						onClick={() => router.push("/appointments/new")}
+					>
+						<Calendar className="mr-2 h-4 w-4" />
+						{t("appointments.manualBooking.cta")}
+					</Button>
+					<Button
 						variant="outline"
 						size="sm"
 						onClick={() =>
@@ -593,6 +600,14 @@ export default function DashboardAppointments() {
 					>
 						<User className="mr-2 h-4 w-4" />
 						{t("dashboard.appointments.agentSchedules")}
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => router.push("/appointments/waitlist")}
+					>
+						<Clock className="mr-2 h-4 w-4" />
+						{t("appointments.waitlist.cta", "Liste d'attente")}
 					</Button>
 					<Tabs
 						value={viewMode}

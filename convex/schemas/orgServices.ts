@@ -94,6 +94,17 @@ export const orgServicesTable = defineTable({
   pickupAppointmentDurationMinutes: v.optional(v.number()), // Pickup slot duration
   pickupAppointmentBreakMinutes: v.optional(v.number()),    // Break between pickup slots
 
+  // When true, citizen bookings land as "pending" and must be confirmed by an agent
+  // before the appointment is considered active. Default: false (auto-confirmed).
+  requireAgentValidation: v.optional(v.boolean()),
+
+  // Allowed modes for this service (defaults to in-person only)
+  allowedAppointmentModes: v.optional(v.array(v.union(
+    v.literal("in_person"),
+    v.literal("remote"),
+    v.literal("phone"),
+  ))),
+
   // Contrôle d'accès par poste pour ce service (optionnel)
   // Si absent : hérite du niveau d'accès du module "requests" sur le poste
   // Si présent : seuls les postes listés ont accès au niveau spécifié

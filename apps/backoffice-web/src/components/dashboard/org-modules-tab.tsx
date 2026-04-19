@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { SectionHeader } from "@/components/design-system/section-header";
 import { Checkbox } from "@/components/ui/checkbox";
+import { OrgAIAssistantSection } from "@/components/dashboard/org-ai-assistant-section";
 import {
 	Dialog,
 	DialogContent,
@@ -572,36 +573,43 @@ function SidebarGroupCard({
 								{/* Capabilities (sous-modules) */}
 								{hasCaps && isExpanded && isEnabled && (
 									<div className="px-3 pb-2.5 pt-0 border-t border-border/20">
-										<div className="grid gap-1 pt-2">
-											{def.capabilities!.map((cap) => {
-												const isCapActive = activeCaps.includes(cap.code);
-												return (
-													<label
-														key={cap.code}
-														className={cn(
-															"flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-all text-xs",
-															isCapActive ? "bg-primary/5" : "hover:bg-muted/30",
-														)}
-													>
-														<Checkbox
-															checked={isCapActive}
-															onCheckedChange={(checked) =>
-																onToggleCapability(moduleCode, cap.code, !!checked)
-															}
-															disabled={isSaving}
-															className="h-3.5 w-3.5"
-														/>
-														<span className="flex-1 min-w-0">
-															{cap.label[lang as "fr" | "en"]}
-														</span>
-													</label>
-												);
-											})}
-										</div>
+										{/* Le module ai_assistant a sa propre UI riche (toggle + config) — on saute les checkboxes */}
+										{moduleCode !== "ai_assistant" && (
+											<div className="grid gap-1 pt-2">
+												{def.capabilities!.map((cap) => {
+													const isCapActive = activeCaps.includes(cap.code);
+													return (
+														<label
+															key={cap.code}
+															className={cn(
+																"flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-all text-xs",
+																isCapActive ? "bg-primary/5" : "hover:bg-muted/30",
+															)}
+														>
+															<Checkbox
+																checked={isCapActive}
+																onCheckedChange={(checked) =>
+																	onToggleCapability(moduleCode, cap.code, !!checked)
+																}
+																disabled={isSaving}
+																className="h-3.5 w-3.5"
+															/>
+															<span className="flex-1 min-w-0">
+																{cap.label[lang as "fr" | "en"]}
+															</span>
+														</label>
+													);
+												})}
+											</div>
+										)}
 
 										{/* Services activés — affiché uniquement pour le module "requests" */}
 									{moduleCode === "requests" && orgId && (
 										<OrgServicesSection orgId={orgId} lang={lang} />
+									)}
+									{/* Config capacités IA — affiché uniquement pour le module "ai_assistant" */}
+									{moduleCode === "ai_assistant" && orgId && (
+										<OrgAIAssistantSection orgId={orgId} lang={lang} />
 									)}
 									</div>
 								)}

@@ -26,6 +26,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
+import { InlineAISuggestion } from "@/components/ai/proactive/InlineAISuggestion";
 
 // Type local — évite le problème HMR avec l'export ViewerDoc
 interface ViewerDoc {
@@ -194,6 +195,11 @@ export function CorrespondanceDetail({
 				</Button>
 
 				<div className="flex-1" />
+
+				<InlineAISuggestion
+					targetType="correspondanceItem"
+					targetId={itemId}
+				/>
 
 				{/* Actions correspondance selon le contexte */}
 				{item.status === "draft" && !isCopy && (

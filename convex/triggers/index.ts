@@ -22,6 +22,13 @@ import {
   childProfilesGlobal,
 } from "../lib/aggregates";
 import triggers from "../lib/triggerSetup";
+import {
+  onRequestChanged,
+  onDocumentUploaded,
+  onCorrespondanceCreated,
+  onAppointmentScheduled,
+  onContextUpdated,
+} from "../ai/aiTriggers";
 
 // ============================================================================
 // AGGREGATE TRIGGERS — Keep denormalized counts in sync
@@ -499,5 +506,17 @@ triggers.register("memberships", async (ctx, change) => {
     userId: membership.userId,
   });
 });
+
+// ============================================================================
+// AI ASSISTANT PROACTIVE — dispatch events vers proactiveAgent
+// ============================================================================
+// Chaque callback est defensif : verifie que le module ai_assistant est
+// active pour l'org avant de schedule. Aucun appel LLM ici (trigger tx).
+
+triggers.register("requests", onRequestChanged as any);
+triggers.register("documents", onDocumentUploaded as any);
+triggers.register("correspondanceItems", onCorrespondanceCreated as any);
+triggers.register("appointments", onAppointmentScheduled as any);
+triggers.register("aiAgentPresence", onContextUpdated as any);
 
 export default triggers;

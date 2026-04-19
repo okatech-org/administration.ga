@@ -755,22 +755,22 @@ export const executeAction = action({
           const appointmentId = typedArgs.appointmentId as Id<"appointments">;
           switch (typedArgs.action) {
             case "confirm":
-              await ctx.runMutation(api.functions.appointments.confirm, {
+              await ctx.runMutation(api.functions.slots.confirmAppointment, {
                 appointmentId,
               });
               break;
             case "cancel":
-              await ctx.runMutation(api.functions.appointments.cancel, {
+              await ctx.runMutation(api.functions.slots.cancelAppointment, {
                 appointmentId,
               });
               break;
             case "complete":
-              await ctx.runMutation(api.functions.appointments.complete, {
+              await ctx.runMutation(api.functions.slots.completeAppointment, {
                 appointmentId,
               });
               break;
             case "no_show":
-              await ctx.runMutation(api.functions.appointments.markNoShow, {
+              await ctx.runMutation(api.functions.slots.markNoShow, {
                 appointmentId,
               });
               break;

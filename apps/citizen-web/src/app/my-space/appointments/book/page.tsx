@@ -77,7 +77,7 @@ function BookAppointmentPageContent() {
 			});
 
 			toast.success(t("appointments.book.success"));
-			router.push("/my-space/appointments");
+			router.push("/my-space/iagenda?tab=mes-rdv");
 		} catch (err: unknown) {
 			if (err instanceof Error) {
 				toast.error(err.message);
@@ -116,7 +116,7 @@ function BookAppointmentPageContent() {
 					) : undefined
 				}
 				showBackButton
-				onBack={() => router.push("/my-space/appointments")}
+				onBack={() => router.push("/my-space/iagenda")}
 			/>
 
 			{/* Slot picker */}

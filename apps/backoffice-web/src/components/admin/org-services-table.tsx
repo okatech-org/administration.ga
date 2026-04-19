@@ -62,6 +62,7 @@ export function OrgServicesTable({ orgId }: OrgServicesTableProps) {
 		name: string;
 		pricing?: { amount: number; currency: string };
 		estimatedDays?: number;
+		requireAgentValidation?: boolean;
 	} | null>(null);
 
 	const { data: orgServices, isPending: isLoadingOrgServices } =
@@ -196,6 +197,7 @@ export function OrgServicesTable({ orgId }: OrgServicesTableProps) {
 														name: service.service?.name?.fr ?? "Service",
 														pricing: service.pricing,
 														estimatedDays: service.estimatedDays,
+														requireAgentValidation: (service as any).requireAgentValidation,
 													})
 												}
 												title="Cliquer pour modifier"
@@ -237,6 +239,7 @@ export function OrgServicesTable({ orgId }: OrgServicesTableProps) {
 														name: service.service?.name?.fr ?? "Service",
 														pricing: service.pricing,
 														estimatedDays: service.estimatedDays,
+														requireAgentValidation: (service as any).requireAgentValidation,
 													})
 												}
 												className="h-7 px-2 text-xs"
@@ -387,6 +390,7 @@ export function OrgServicesTable({ orgId }: OrgServicesTableProps) {
 				serviceName={serviceToEdit?.name ?? ""}
 				initialPricing={serviceToEdit?.pricing}
 				initialEstimatedDays={serviceToEdit?.estimatedDays}
+				initialRequireAgentValidation={serviceToEdit?.requireAgentValidation}
 				onClose={() => setServiceToEdit(null)}
 			/>
 		</>

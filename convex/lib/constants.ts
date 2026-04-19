@@ -194,6 +194,7 @@ export enum NotificationType {
   AppointmentConfirmation = "appointment_confirmation",
   AppointmentReminder = "appointment_reminder",
   AppointmentCancellation = "appointment_cancellation",
+  AppointmentRescheduled = "appointment_rescheduled",
   ConsularRegistrationSubmitted = "consular_registration_submitted",
   ConsularRegistrationValidated = "consular_registration_validated",
   ConsularRegistrationRejected = "consular_registration_rejected",

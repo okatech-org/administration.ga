@@ -32,6 +32,7 @@ import { CallButton } from "@/components/meetings/call-button";
 import { ChatButton } from "@/components/meetings/chat-button";
 import { PageHeader } from "@/components/my-space/page-header";
 import { useOrg } from "@/components/org/org-provider";
+import { InlineAISuggestion } from "@/components/ai/proactive/InlineAISuggestion";
 import { DocumentChecklist } from "@/components/shared/DocumentChecklist";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -504,6 +505,10 @@ export default function RequestDetailPage() {
 				}
 				actions={
 					<div className="flex items-center gap-3">
+						<InlineAISuggestion
+							targetType="request"
+							targetId={request._id}
+						/>
 						{canDo("requests.process") && (
 							<MultiSelect
 								type="single"

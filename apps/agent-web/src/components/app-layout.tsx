@@ -17,6 +17,7 @@ import {
   useConsularThemeState,
 } from "@/hooks/useConsularTheme"
 import { useAgentPresence } from "@/hooks/use-agent-presence"
+import { AIPresenceProvider } from "@/components/ai/proactive/AIPresenceProvider"
 import { cn } from "@/lib/utils"
 
 const SIDEBAR_STORAGE_KEY = "admin-sidebar-expanded"
@@ -112,26 +113,28 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div
-      className={cn(
-        "citizen-layout relative flex h-dvh flex-col overflow-hidden md:flex-row md:h-screen",
-        consularTheme === "homeomorphism" && "theme-homeomorphism",
-      )}
-    >
-      <div className="hidden md:block p-4 pr-0">
-        <div className="h-full rounded-2xl bg-secondary overflow-hidden">
-          <OrgSidebar
-            isExpanded={isExpanded}
-            onToggle={() => setIsExpanded((prev) => !prev)}
-          />
+    <AIPresenceProvider>
+      <div
+        className={cn(
+          "citizen-layout relative flex h-dvh flex-col overflow-hidden md:flex-row md:h-screen",
+          consularTheme === "homeomorphism" && "theme-homeomorphism",
+        )}
+      >
+        <div className="hidden md:block p-4 pr-0">
+          <div className="h-full rounded-2xl bg-secondary overflow-hidden">
+            <OrgSidebar
+              isExpanded={isExpanded}
+              onToggle={() => setIsExpanded((prev) => !prev)}
+            />
+          </div>
         </div>
+        <main className="flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4">
+          {children}
+        </main>
+        <AgentMobileNav />
+        {!isIAstedRoute && <IAstedWindow />}
+        <GlobalCallAlert />
       </div>
-      <main className="flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4">
-        {children}
-      </main>
-      <AgentMobileNav />
-      {!isIAstedRoute && <IAstedWindow />}
-      <GlobalCallAlert />
-    </div>
+    </AIPresenceProvider>
   )
 }

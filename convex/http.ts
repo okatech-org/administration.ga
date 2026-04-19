@@ -8,6 +8,7 @@ import { validateWarehouseApiKey } from "./lib/warehouseAuth";
 import { getTrustedClientIp } from "./lib/httpSecurity";
 import { validateAllSecrets } from "./lib/startupChecks";
 import { WAREHOUSE_TABLES } from "./functions/warehouse";
+import { verifyAppointmentIcalToken, buildAppointmentIcs } from "./lib/ical";
 
 // ── Verification securite au chargement du module ──
 validateAllSecrets();
@@ -906,6 +907,80 @@ http.route({
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
+// ============================================================================
+// iCal (.ics) export — signed token, no session required
+// URL: /ical/appointment/{appointmentId}.ics?token=...
+// ============================================================================
+
+http.route({
+  pathPrefix: "/ical/appointment/",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const tail = url.pathname.split("/ical/appointment/")[1] ?? "";
+    const appointmentId = tail.replace(/\.ics$/i, "");
+    const token = url.searchParams.get("token") ?? "";
+
+    if (!appointmentId || !token) {
+      return new Response("Missing token", { status: 400 });
+    }
+
+    const verified = await verifyAppointmentIcalToken(token);
+    if (!verified || verified.appointmentId !== appointmentId) {
+      return new Response("Invalid or expired token", { status: 401 });
+    }
+
+    const data = await ctx.runQuery(
+      internal.functions.slots.getAppointmentForIcal,
+      { appointmentId: appointmentId as any },
+    );
+    if (!data || !data.appointment) {
+      return new Response("Not found", { status: 404 });
+    }
+
+    const { appointment, org, serviceName } = data;
+    const appUrl = process.env.APP_URL || "https://consulat.ga";
+    const address = org?.address
+      ? [org.address.street, org.address.city, org.address.country]
+          .filter(Boolean)
+          .join(", ")
+      : "";
+    const summary = `RDV ${serviceName ?? "Consulat"} — ${org?.name ?? "Consulat"}`;
+
+    const startMin = appointment.time.split(":").map(Number);
+    const endDate = new Date(0, 0, 0, startMin[0], startMin[1] + (appointment.durationMinutes ?? 30));
+    const endTime = `${String(endDate.getHours()).padStart(2, "0")}:${String(endDate.getMinutes()).padStart(2, "0")}`;
+
+    const status: "confirmed" | "cancelled" | "tentative" =
+      appointment.status === "cancelled" || appointment.status === "no_show"
+        ? "cancelled"
+        : appointment.status === "pending"
+          ? "tentative"
+          : "confirmed";
+
+    const ics = buildAppointmentIcs({
+      appointmentId,
+      date: appointment.date,
+      startTime: appointment.time,
+      endTime,
+      summary,
+      description: `Rendez-vous ${serviceName ?? ""} à ${org?.name ?? "Consulat"}`,
+      location: address,
+      url: `${appUrl}/my-space/appointments/${appointmentId}`,
+      status,
+    });
+
+    return new Response(ics, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/calendar; charset=utf-8",
+        "Content-Disposition": `attachment; filename="appointment-${appointmentId}.ics"`,
+        "Cache-Control": "no-cache",
+      },
     });
   }),
 });

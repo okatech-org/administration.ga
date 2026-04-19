@@ -5,6 +5,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import {
 	MODULE_REGISTRY,
 	type ModuleCategory,
+	type ModuleCodeValue,
 	type ModuleDefinition,
 } from "@convex/lib/moduleCodes";
 import {
@@ -14,6 +15,11 @@ import {
 	type PositionGrade,
 	type TaskPresetDefinition,
 } from "@convex/lib/roles";
+import {
+	ALL_TASK_CODES,
+	TASK_RISK,
+	type TaskCodeValue,
+} from "@convex/lib/taskCodes";
 import type { LocalizedString } from "@convex/lib/validators";
 import {
 	AlertTriangle,
@@ -32,10 +38,10 @@ import {
 	Power,
 	RotateCcw,
 	Shield,
-	Sparkles,
 	Star,
 	Trash2,
 	UserCog,
+	Wand2,
 } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -84,15 +90,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-	SheetTrigger,
-} from "@/components/ui/sheet";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -102,6 +101,7 @@ import {
 } from "@/integrations/convex/hooks";
 import { getLocalizedValue } from "@/lib/i18n-utils";
 import { DynamicLucideIcon } from "@/lib/lucide-icon";
+import { cn } from "@/lib/utils";
 
 // ─── Helpers ────────────────────────────────────────────
 function toSnakeCase(str: string): string {
@@ -111,6 +111,79 @@ function toSnakeCase(str: string): string {
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, "_")
 		.replace(/^_+|_+$/g, "");
+}
+
+// ─── Shared UI bits ─────────────────────────────────────
+
+function SectionLabel({
+	icon: Icon,
+	label,
+	hint,
+}: {
+	icon: React.ComponentType<{ className?: string }>;
+	label: string;
+	hint?: string;
+}) {
+	return (
+		<div className="flex items-center gap-2">
+			<div className="rounded-md bg-foreground/[0.06] p-1 dark:bg-foreground/[0.12]">
+				<Icon className="h-3.5 w-3.5 text-muted-foreground" />
+			</div>
+			<span className="text-sm font-semibold">{label}</span>
+			{hint && (
+				<span className="text-[10px] font-normal text-muted-foreground">
+					{hint}
+				</span>
+			)}
+		</div>
+	);
+}
+
+function ToggleCard({
+	icon: Icon,
+	iconClassName,
+	title,
+	description,
+	checked,
+	onChange,
+}: {
+	icon: React.ComponentType<{ className?: string }>;
+	iconClassName?: string;
+	title: string;
+	description: string;
+	checked: boolean;
+	onChange: (v: boolean) => void;
+}) {
+	return (
+		<div
+			onClick={() => onChange(!checked)}
+			className={cn(
+				"flex w-full cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition-all",
+				checked
+					? "border-primary/30 bg-primary/5"
+					: "border-border/60 bg-muted/20 hover:bg-muted/40",
+			)}
+		>
+			<div
+				className={cn(
+					"shrink-0 rounded-lg p-1.5",
+					checked ? "bg-primary/10 text-primary" : "bg-muted/50",
+					iconClassName,
+				)}
+			>
+				<Icon className="h-4 w-4" />
+			</div>
+			<div className="min-w-0 flex-1">
+				<p className="text-sm font-medium">{title}</p>
+				<p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+			</div>
+			<Switch
+				checked={checked}
+				onCheckedChange={onChange}
+				onClick={(e) => e.stopPropagation()}
+			/>
+		</div>
+	);
 }
 
 // ─── Types ──────────────────────────────────────────────
@@ -145,6 +218,420 @@ interface MinistryGroupDoc {
 function getErrorMessage(err: unknown, fallback: string): string {
 	if (err instanceof Error) return err.message;
 	return fallback;
+}
+
+// ─── Task labels (FR/EN) ────────────────────────────────────────
+const TASK_LABELS: Record<string, { fr: string; en: string }> = {
+	"requests.view": { fr: "Consulter les demandes", en: "View requests" },
+	"requests.create": { fr: "Créer des demandes", en: "Create requests" },
+	"requests.process": { fr: "Traiter les demandes", en: "Process requests" },
+	"requests.validate": { fr: "Valider les demandes", en: "Validate requests" },
+	"requests.assign": { fr: "Assigner les demandes", en: "Assign requests" },
+	"requests.delete": { fr: "Supprimer les demandes", en: "Delete requests" },
+	"requests.complete": { fr: "Clôturer les demandes", en: "Complete requests" },
+	"documents.view": { fr: "Consulter les documents", en: "View documents" },
+	"documents.validate": { fr: "Valider les documents", en: "Validate documents" },
+	"documents.generate": { fr: "Générer des documents", en: "Generate documents" },
+	"documents.delete": { fr: "Supprimer des documents", en: "Delete documents" },
+	"documents.manage_templates": { fr: "Gérer les modèles", en: "Manage templates" },
+	"documents.sign": { fr: "Signer des documents", en: "Sign documents" },
+	"documents.publish": { fr: "Publier des documents", en: "Publish documents" },
+	"documents.ai_generation": { fr: "Génération IA de modèles", en: "AI template generation" },
+	"appointments.view": { fr: "Consulter les rendez-vous", en: "View appointments" },
+	"appointments.manage": { fr: "Gérer les rendez-vous", en: "Manage appointments" },
+	"appointments.configure": { fr: "Configurer les créneaux", en: "Configure slots" },
+	"profiles.view": { fr: "Consulter les profils", en: "View profiles" },
+	"profiles.manage": { fr: "Gérer les profils", en: "Manage profiles" },
+	"citizen_profiles.view": { fr: "Consulter les profils citoyens", en: "View citizen profiles" },
+	"citizen_profiles.manage": { fr: "Gérer les profils citoyens", en: "Manage citizen profiles" },
+	"civil_status.transcribe": { fr: "Transcrire les actes", en: "Transcribe records" },
+	"civil_status.register": { fr: "Enregistrer les actes", en: "Register records" },
+	"civil_status.certify": { fr: "Certifier les actes", en: "Certify records" },
+	"passports.process": { fr: "Traiter les passeports", en: "Process passports" },
+	"passports.biometric": { fr: "Biométrie passeport", en: "Passport biometrics" },
+	"passports.deliver": { fr: "Délivrer les passeports", en: "Deliver passports" },
+	"visas.process": { fr: "Traiter les visas", en: "Process visas" },
+	"visas.approve": { fr: "Approuver les visas", en: "Approve visas" },
+	"visas.stamp": { fr: "Apposer le visa", en: "Stamp visas" },
+	"finance.view": { fr: "Consulter les finances", en: "View finance" },
+	"finance.collect": { fr: "Encaisser les paiements", en: "Collect payments" },
+	"finance.manage": { fr: "Gérer les finances", en: "Manage finance" },
+	"communication.publish": { fr: "Publier des communications", en: "Publish communications" },
+	"communication.notify": { fr: "Envoyer des notifications", en: "Send notifications" },
+	"team.view": { fr: "Consulter l'équipe", en: "View team" },
+	"team.manage": { fr: "Gérer l'équipe", en: "Manage team" },
+	"team.assign_roles": { fr: "Attribuer les rôles", en: "Assign roles" },
+	"settings.view": { fr: "Consulter les paramètres", en: "View settings" },
+	"settings.manage": { fr: "Modifier les paramètres", en: "Manage settings" },
+	"org.view": { fr: "Consulter l'organisation", en: "View organization" },
+	"schedules.view": { fr: "Consulter les plannings", en: "View schedules" },
+	"schedules.manage": { fr: "Gérer les plannings", en: "Manage schedules" },
+	"analytics.view": { fr: "Consulter les analyses", en: "View analytics" },
+	"analytics.export": { fr: "Exporter les rapports", en: "Export reports" },
+	"statistics.view": { fr: "Consulter les statistiques", en: "View statistics" },
+	"intelligence.view": { fr: "Accéder au renseignement", en: "View intelligence" },
+	"intelligence.manage": { fr: "Gérer le renseignement", en: "Manage intelligence" },
+	"consular_registrations.view": { fr: "Consulter les inscriptions", en: "View registrations" },
+	"consular_registrations.manage": { fr: "Gérer les inscriptions", en: "Manage registrations" },
+	"consular_notifications.view": { fr: "Consulter les notifications", en: "View notifications" },
+	"consular_cards.manage": { fr: "Gérer les cartes consulaires", en: "Manage consular cards" },
+	"community_events.view": { fr: "Consulter les événements", en: "View events" },
+	"community_events.manage": { fr: "Gérer les événements", en: "Manage events" },
+	"payments.view": { fr: "Consulter les paiements", en: "View payments" },
+	"digital_mail.view": { fr: "Consulter le courrier", en: "View mail" },
+	"digital_mail.manage": { fr: "Gérer le courrier", en: "Manage mail" },
+	"meetings.create": { fr: "Créer des réunions", en: "Create meetings" },
+	"meetings.join": { fr: "Rejoindre des réunions", en: "Join meetings" },
+	"meetings.manage": { fr: "Gérer les réunions", en: "Manage meetings" },
+	"meetings.view_history": { fr: "Historique des réunions", en: "Meeting history" },
+	"meetings.hold": { fr: "Mettre en attente", en: "Hold calls" },
+	"meetings.transfer": { fr: "Transférer les appels", en: "Transfer calls" },
+	"meetings.supervise": { fr: "Superviser les appels", en: "Supervise calls" },
+	"chats.view": { fr: "Consulter les conversations", en: "View chats" },
+	"chats.send": { fr: "Envoyer des messages", en: "Send chat messages" },
+	"chats.accessStandardThread": { fr: "Accéder aux threads standards", en: "Access standard threads" },
+	"correspondance.view": { fr: "Consulter le courrier", en: "View correspondance" },
+	"correspondance.create": { fr: "Rédiger du courrier", en: "Create correspondance" },
+	"correspondance.approve": { fr: "Approuver le courrier", en: "Approve correspondance" },
+	"correspondance.sign": { fr: "Signer le courrier", en: "Sign correspondance" },
+	"correspondance.transmit": { fr: "Transmettre le courrier", en: "Transmit correspondance" },
+	"correspondance.supervise": { fr: "Superviser le courrier", en: "Supervise correspondance" },
+	"correspondance.configure": { fr: "Configurer le module courrier", en: "Configure correspondance module" },
+	"correspondance.admin": { fr: "Administrer le module courrier", en: "Administer correspondance module" },
+	"voicemails.view": { fr: "Consulter la messagerie", en: "View voicemails" },
+	"voicemails.listen": { fr: "Écouter les messages vocaux", en: "Listen voicemails" },
+	"voicemails.delete": { fr: "Supprimer des messages vocaux", en: "Delete voicemails" },
+	"callRecordings.start": { fr: "Démarrer un enregistrement", en: "Start recording" },
+	"callRecordings.stop": { fr: "Arrêter un enregistrement", en: "Stop recording" },
+	"callRecordings.listen": { fr: "Écouter les enregistrements", en: "Listen recordings" },
+	"callRecordings.delete": { fr: "Supprimer des enregistrements", en: "Delete recordings" },
+	"notifications.push_subscribe": { fr: "S'abonner aux notifications push", en: "Subscribe push notifications" },
+	"ai_assistant.view": { fr: "Consulter les suggestions IA", en: "View AI suggestions" },
+	"ai_assistant.dismiss": { fr: "Rejeter une suggestion IA", en: "Dismiss AI suggestion" },
+	"ai_assistant.apply": { fr: "Appliquer une suggestion IA", en: "Apply AI suggestion" },
+	"ai_assistant.configure": { fr: "Configurer ses préférences IA", en: "Configure AI preferences" },
+	"ai_assistant.auto_apply": { fr: "Autoriser l'auto-application IA", en: "Allow AI auto-apply" },
+	"ai_assistant.admin": { fr: "Administrer l'IA (org)", en: "Administer AI (org)" },
+	"ai_assistant.audit": { fr: "Auditer l'activité IA", en: "Audit AI activity" },
+};
+
+// ─── Risk style for task badges ─────────────────────────────────
+const RISK_STYLE: Record<string, { color: string; bg: string; label: { fr: string; en: string } }> = {
+	low: { color: "text-emerald-600", bg: "bg-emerald-500/10", label: { fr: "Faible", en: "Low" } },
+	medium: { color: "text-amber-600", bg: "bg-amber-500/10", label: { fr: "Moyen", en: "Medium" } },
+	high: { color: "text-orange-600", bg: "bg-orange-500/10", label: { fr: "Élevé", en: "High" } },
+	critical: { color: "text-red-600", bg: "bg-red-500/10", label: { fr: "Critique", en: "Critical" } },
+};
+
+// ─── Module → tasks mapping (derived) ───────────────────────────
+const MODULE_TASKS: Record<string, string[]> = (() => {
+	const out: Record<string, string[]> = {};
+	for (const code of ALL_TASK_CODES) {
+		const moduleKey = code.split(".")[0];
+		if (!out[moduleKey]) out[moduleKey] = [];
+		out[moduleKey].push(code);
+	}
+	return out;
+})();
+
+// ─── Module category labels & order ─────────────────────────────
+const MODULE_CATEGORY_LABELS: Record<ModuleCategory, { fr: string; en: string }> = {
+	core: { fr: "Modules fondamentaux", en: "Core modules" },
+	consular: { fr: "Modules consulaires", en: "Consular modules" },
+	diplomatic: { fr: "Modules diplomatiques", en: "Diplomatic modules" },
+	tools: { fr: "Communication & Outils", en: "Communication & Tools" },
+	finance: { fr: "Finance", en: "Finance" },
+	admin: { fr: "Administration", en: "Administration" },
+};
+const MODULE_CATEGORY_ORDER: ModuleCategory[] = [
+	"core",
+	"consular",
+	"diplomatic",
+	"tools",
+	"finance",
+	"admin",
+];
+
+// ─── Helpers ────────────────────────────────────────────────────
+function getAssignedModuleDefs(
+	positionTasks: string[] | undefined,
+): ModuleDefinition[] {
+	const taskSet = new Set(positionTasks ?? []);
+	const out: ModuleDefinition[] = [];
+	for (const def of Object.values(MODULE_REGISTRY)) {
+		const moduleTasks = MODULE_TASKS[def.code] ?? [];
+		if (moduleTasks.some((t) => taskSet.has(t))) {
+			out.push(def);
+		}
+	}
+	return out;
+}
+
+// ─── Module Permission Card ─────────────────────────────────────
+function ModulePermissionCard({
+	moduleCode,
+	selected,
+	onChange,
+	lang,
+}: {
+	moduleCode: string;
+	selected: Set<string>;
+	onChange: (tasks: Set<string>) => void;
+	lang: string;
+}) {
+	const moduleDef = MODULE_REGISTRY[moduleCode as ModuleCodeValue];
+	const moduleTasks = MODULE_TASKS[moduleCode] ?? [];
+	const selectedCount = moduleTasks.filter((t) => selected.has(t)).length;
+	const allSelected = moduleTasks.length > 0 && selectedCount === moduleTasks.length;
+	const someSelected = selectedCount > 0 && !allSelected;
+	const [isOpen, setIsOpen] = useState(someSelected || allSelected);
+
+	if (!moduleDef || moduleTasks.length === 0) return null;
+
+	const toggleModule = () => {
+		const next = new Set(selected);
+		if (allSelected) {
+			for (const t of moduleTasks) next.delete(t);
+		} else {
+			for (const t of moduleTasks) next.add(t);
+		}
+		onChange(next);
+	};
+
+	const toggleTask = (code: string) => {
+		const next = new Set(selected);
+		if (next.has(code)) next.delete(code);
+		else next.add(code);
+		onChange(next);
+	};
+
+	return (
+		<div
+			className={cn(
+				"rounded-lg border transition-all",
+				allSelected
+					? "border-primary/40 bg-primary/5"
+					: someSelected
+						? "border-amber-400/40 bg-amber-50/30 dark:bg-amber-900/5"
+						: "border-border/40",
+			)}
+		>
+			<div className="flex items-center gap-2.5 px-3 py-2.5">
+				<button
+					type="button"
+					className="flex items-center gap-2 flex-1 min-w-0 text-left"
+					onClick={() => setIsOpen(!isOpen)}
+				>
+					<ChevronRight
+						className={cn(
+							"h-3.5 w-3.5 text-muted-foreground transition-transform shrink-0",
+							isOpen && "rotate-90",
+						)}
+					/>
+					<DynamicLucideIcon
+						name={moduleDef.icon}
+						className={cn("h-4 w-4 shrink-0", moduleDef.color)}
+					/>
+					<div className="min-w-0 flex-1">
+						<span className="text-sm font-medium block truncate">
+							{getLocalizedValue(moduleDef.label, lang)}
+						</span>
+						<span className="text-[10px] text-muted-foreground truncate block">
+							{getLocalizedValue(moduleDef.description, lang)}
+						</span>
+					</div>
+				</button>
+				<Badge
+					variant={allSelected ? "default" : someSelected ? "secondary" : "outline"}
+					className={cn(
+						"text-[10px] h-5 min-w-[2rem] justify-center shrink-0",
+						allSelected && "bg-emerald-500/90 hover:bg-emerald-500",
+					)}
+				>
+					{selectedCount}/{moduleTasks.length}
+				</Badge>
+				<Switch
+					checked={allSelected}
+					onCheckedChange={toggleModule}
+					className="shrink-0 scale-90"
+				/>
+			</div>
+			{isOpen && (
+				<div className="px-3 pb-2.5 pt-0 border-t border-border/20">
+					<div className="grid gap-0.5 pt-1.5">
+						{moduleTasks.map((code) => {
+							const risk = TASK_RISK[code as TaskCodeValue] ?? "low";
+							const style = RISK_STYLE[risk];
+							const label = TASK_LABELS[code];
+							const isChecked = selected.has(code);
+							return (
+								<label
+									key={code}
+									className={cn(
+										"flex items-center gap-2 rounded-md px-2 py-1 cursor-pointer transition-all text-xs",
+										isChecked ? "bg-primary/5" : "hover:bg-muted/30",
+									)}
+								>
+									<Checkbox
+										checked={isChecked}
+										onCheckedChange={() => toggleTask(code)}
+										className="h-3.5 w-3.5"
+									/>
+									<span className="flex-1 min-w-0 truncate">
+										{label ? getLocalizedValue(label, lang) : code}
+									</span>
+									<Badge
+										className={cn(
+											"text-[9px] px-1 py-0 h-3.5 shrink-0",
+											style.bg,
+											style.color,
+										)}
+									>
+										{getLocalizedValue(style.label, lang)}
+									</Badge>
+								</label>
+							);
+						})}
+					</div>
+				</div>
+			)}
+		</div>
+	);
+}
+
+// ─── Module Task Picker (grouped by category, filtered by org.modules) ───
+function ModuleTaskPicker({
+	orgModules,
+	selected,
+	onChange,
+	lang,
+}: {
+	orgModules: string[];
+	selected: Set<string>;
+	onChange: (tasks: Set<string>) => void;
+	lang: string;
+}) {
+	const { t } = useTranslation();
+	const activeModules = useMemo(() => new Set(orgModules), [orgModules]);
+
+	const modulesByCategory = useMemo(() => {
+		const result: Record<string, string[]> = {};
+		for (const [code, def] of Object.entries(MODULE_REGISTRY)) {
+			const tasks = MODULE_TASKS[code];
+			if (!tasks || tasks.length === 0) continue;
+			// Only include modules activated for this org (always include core modules)
+			if (!def.isCore && !activeModules.has(code)) continue;
+			if (!result[def.category]) result[def.category] = [];
+			result[def.category].push(code);
+		}
+		return result;
+	}, [activeModules]);
+
+	const hasAny = Object.values(modulesByCategory).some((arr) => arr.length > 0);
+
+	if (!hasAny) {
+		return (
+			<div className="rounded-lg border border-dashed px-4 py-6 text-center text-xs text-muted-foreground">
+				{t(
+					"admin.roles.position.noModulesAvailable",
+					"Aucun module n'est activé pour cet organisme. Contactez un administrateur système pour activer des modules.",
+				)}
+			</div>
+		);
+	}
+
+	return (
+		<div className="space-y-4">
+			{MODULE_CATEGORY_ORDER.map((cat) => {
+				const modules = modulesByCategory[cat];
+				if (!modules || modules.length === 0) return null;
+				const catLabel = MODULE_CATEGORY_LABELS[cat];
+				return (
+					<div key={cat} className="space-y-1.5">
+						<h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-1">
+							{getLocalizedValue(catLabel, lang)}
+						</h4>
+						<div className="grid gap-1.5">
+							{modules.map((moduleCode) => (
+								<ModulePermissionCard
+									key={moduleCode}
+									moduleCode={moduleCode}
+									selected={selected}
+									onChange={onChange}
+									lang={lang}
+								/>
+							))}
+						</div>
+					</div>
+				);
+			})}
+		</div>
+	);
+}
+
+// ─── Preset Template Applier (uses POSITION_TASK_PRESETS as templates) ───
+function PresetTemplateApplier({
+	presets,
+	onApply,
+	lang,
+}: {
+	presets: TaskPresetDefinition[];
+	onApply: (tasks: Set<string>) => void;
+	lang: string;
+}) {
+	const { t } = useTranslation();
+	const [value, setValue] = useState<string>("");
+
+	if (presets.length === 0) return null;
+
+	return (
+		<div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+			<div className="flex items-center gap-2">
+				<Wand2 className="h-3.5 w-3.5 text-muted-foreground" />
+				<Label className="text-xs font-medium">
+					{t("admin.roles.position.applyTemplate", "Appliquer un template")}
+				</Label>
+			</div>
+			<p className="text-[10px] text-muted-foreground">
+				{t(
+					"admin.roles.position.applyTemplateHint",
+					"Préremplit les permissions à partir d'un preset. Vous pouvez ensuite affiner individuellement.",
+				)}
+			</p>
+			<div className="flex items-center gap-2">
+				<Select
+					value={value}
+					onValueChange={(code) => {
+						setValue(code);
+						const tasks = getPresetTasks([code]);
+						onApply(new Set(tasks));
+					}}
+				>
+					<SelectTrigger className="h-8 text-xs flex-1">
+						<SelectValue
+							placeholder={t(
+								"admin.roles.position.selectTemplate",
+								"Sélectionner un template…",
+							)}
+						/>
+					</SelectTrigger>
+					<SelectContent>
+						{presets.map((preset) => (
+							<SelectItem key={preset.code} value={preset.code} className="text-xs">
+								<span className="inline-flex items-center gap-2">
+									<DynamicLucideIcon name={preset.icon} className="h-3.5 w-3.5" />
+									{getLocalizedValue(preset.label, lang)}
+									<Badge variant="outline" className="text-[9px] h-4 px-1 ml-1">
+										{preset.tasks.length}
+									</Badge>
+								</span>
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			</div>
+		</div>
+	);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -183,6 +670,12 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 		useAuthenticatedConvexQuery(api.functions.roleConfig.getOrgFullRoleConfig, {
 			orgId,
 		});
+
+	const { data: org } = useAuthenticatedConvexQuery(
+		api.functions.orgs.getById,
+		{ orgId },
+	);
+	const orgModules = ((org?.modules as string[]) ?? []) as string[];
 
 	const { data: templates } = useAuthenticatedConvexQuery(
 		api.functions.roleConfig.getOrgTemplates,
@@ -588,126 +1081,26 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 							</Tabs>
 
 							{/* Add position */}
-							<Sheet open={showAddDialog} onOpenChange={setShowAddDialog}>
-								<SheetTrigger asChild>
-									<Button size="sm" className="gap-1.5">
-										<Plus className="h-3.5 w-3.5" />
-										{t("admin.roles.addPosition")}
-									</Button>
-								</SheetTrigger>
-								<AddPositionSheetContent
-									orgId={orgId}
-									systemModules={systemModules as TaskPresetDefinition[]}
-									lang={lang}
-									onSuccess={() => setShowAddDialog(false)}
-								/>
-							</Sheet>
+							<Button
+								size="sm"
+								className="gap-1.5"
+								onClick={() => setShowAddDialog(true)}
+							>
+								<Plus className="h-3.5 w-3.5" />
+								{t("admin.roles.addPosition")}
+							</Button>
 
 							{/* Add ministry group (only in ministry view) */}
 							{viewMode === "ministry" && (
-								<Sheet
-									open={showAddMinistryDialog}
-									onOpenChange={setShowAddMinistryDialog}
+								<Button
+									size="sm"
+									variant="outline"
+									className="gap-1.5"
+									onClick={() => setShowAddMinistryDialog(true)}
 								>
-									<SheetTrigger asChild>
-										<Button size="sm" variant="outline" className="gap-1.5">
-											<Plus className="h-3.5 w-3.5" />
-											{t("admin.roles.addMinistry")}
-										</Button>
-									</SheetTrigger>
-									<SheetContent
-										side="bottom"
-										className="max-h-[80vh] overflow-y-auto"
-									>
-										<div className="max-w-3xl mx-auto w-full">
-											<SheetHeader>
-												<SheetTitle>
-													{t("admin.roles.ministry.addTitle")}
-												</SheetTitle>
-												<SheetDescription>
-													{t("admin.roles.ministry.addDescription")}
-												</SheetDescription>
-											</SheetHeader>
-											<div className="space-y-3 py-2">
-												<div>
-													<Label>{t("admin.roles.ministry.name")}</Label>
-													<Input
-														value={newMinistry.label}
-														onChange={(e) =>
-															setNewMinistry((p) => ({
-																...p,
-																label: e.target.value,
-																code: toSnakeCase(e.target.value),
-															}))
-														}
-														placeholder={t(
-															"admin.roles.ministry.namePlaceholder",
-														)}
-													/>
-												</div>
-												<div className="grid grid-cols-2 gap-2">
-													<div>
-														<Label>{t("admin.roles.ministry.code")}</Label>
-														<Input
-															value={newMinistry.code}
-															onChange={(e) =>
-																setNewMinistry((p) => ({
-																	...p,
-																	code: e.target.value,
-																}))
-															}
-															placeholder={t(
-																"admin.roles.ministry.codePlaceholder",
-															)}
-														/>
-													</div>
-													<div>
-														<Label>{t("admin.roles.ministry.icon")}</Label>
-														<Input
-															value={newMinistry.icon}
-															onChange={(e) =>
-																setNewMinistry((p) => ({
-																	...p,
-																	icon: e.target.value,
-																}))
-															}
-															placeholder=""
-														/>
-													</div>
-												</div>
-												<div>
-													<Label>{t("admin.roles.ministry.description")}</Label>
-													<Input
-														value={newMinistry.description}
-														onChange={(e) =>
-															setNewMinistry((p) => ({
-																...p,
-																description: e.target.value,
-															}))
-														}
-														placeholder={t(
-															"admin.roles.ministry.descriptionPlaceholder",
-														)}
-													/>
-												</div>
-											</div>
-											<SheetFooter>
-												<Button
-													variant="outline"
-													onClick={() => setShowAddMinistryDialog(false)}
-												>
-													{t("common.cancel")}
-												</Button>
-												<Button
-													onClick={handleCreateMinistryGroup}
-													disabled={!newMinistry.label.trim()}
-												>
-													{t("admin.roles.ministry.create")}
-												</Button>
-											</SheetFooter>
-										</div>
-									</SheetContent>
-								</Sheet>
+									<Plus className="h-3.5 w-3.5" />
+									{t("admin.roles.addMinistry")}
+								</Button>
 							)}
 						</div>
 					</div>
@@ -753,7 +1146,6 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 											<PositionCard
 												key={pos._id}
 												position={pos}
-												systemModules={systemModules}
 												ministryGroups={ministryGroups}
 												lang={lang}
 												onDelete={handleDeletePosition}
@@ -850,7 +1242,6 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 											<PositionCard
 												key={pos._id}
 												position={pos}
-												systemModules={systemModules}
 												ministryGroups={ministryGroups}
 												lang={lang}
 												onDelete={handleDeletePosition}
@@ -884,7 +1275,6 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 									<PositionCard
 										key={pos._id}
 										position={pos}
-										systemModules={systemModules}
 										ministryGroups={ministryGroups}
 										lang={lang}
 										onDelete={handleDeletePosition}
@@ -909,53 +1299,50 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 				</div>
 			</FlatCard>
 
-			{/* ─── Available Role Modules ──────────────────── */}
-			<FlatCard>
-				<div className="p-3 lg:p-4">
-					<h4 className="flex items-center gap-2 text-base">
-						<Sparkles className="h-4 w-4" />
-						{t("admin.roles.systemModules.title")} ({systemModules.length})
-					</h4>
-					<p className="text-sm text-muted-foreground mt-1">
-						{t("admin.roles.systemModules.description")}
-					</p>
-				</div>
-				<div className="p-3 lg:p-4">
-					<div className="grid gap-2 sm:grid-cols-2">
-						{systemModules.map((mod) => (
-							<RoleModuleCard key={mod.code} module={mod} lang={lang} />
-						))}
-					</div>
-				</div>
-			</FlatCard>
+			{/* ─── Add Position Sheet ────────────────────── */}
+			<AddPositionSheet
+				open={showAddDialog}
+				onOpenChange={setShowAddDialog}
+				orgId={orgId}
+				presets={systemModules as TaskPresetDefinition[]}
+				orgModules={orgModules}
+				lang={lang}
+				onSuccess={() => setShowAddDialog(false)}
+			/>
 
 			{/* ─── Edit Position Sheet ───────────────────── */}
-			<Sheet
-				open={!!editingPosition}
-				onOpenChange={(open) => !open && setEditingPosition(null)}
-			>
-				{editingPosition && (
-					<EditPositionSheetContent
-						position={editingPosition}
-						systemModules={systemModules as TaskPresetDefinition[]}
-						lang={lang}
-						onSuccess={() => setEditingPosition(null)}
-					/>
-				)}
-			</Sheet>
+			{editingPosition && (
+				<EditPositionSheet
+					key={editingPosition._id}
+					open={!!editingPosition}
+					onOpenChange={(open) => !open && setEditingPosition(null)}
+					position={editingPosition}
+					presets={systemModules as TaskPresetDefinition[]}
+					orgModules={orgModules}
+					lang={lang}
+					onSuccess={() => setEditingPosition(null)}
+				/>
+			)}
 
-			{/* ─── Edit Ministry Group Sheet ───────── */}
-			<Sheet
-				open={!!editingMinistry}
-				onOpenChange={(open) => !open && setEditingMinistry(null)}
-			>
-				{editingMinistry && (
-					<EditMinistryGroupSheet
-						group={editingMinistry}
-						onSuccess={() => setEditingMinistry(null)}
-					/>
-				)}
-			</Sheet>
+			{/* ─── Add Ministry Group Sheet ──────────────── */}
+			<AddMinistryGroupSheet
+				open={showAddMinistryDialog}
+				onOpenChange={setShowAddMinistryDialog}
+				newMinistry={newMinistry}
+				setNewMinistry={setNewMinistry}
+				onCreate={handleCreateMinistryGroup}
+			/>
+
+			{/* ─── Edit Ministry Group Sheet ─────────────── */}
+			{editingMinistry && (
+				<EditMinistryGroupSheet
+					key={editingMinistry._id}
+					open={!!editingMinistry}
+					onOpenChange={(open) => !open && setEditingMinistry(null)}
+					group={editingMinistry}
+					onSuccess={() => setEditingMinistry(null)}
+				/>
+			)}
 
 			{/* ─── Org Modules Management ─────────────── */}
 			<OrgModulesSection orgId={orgId} lang={lang} />
@@ -969,7 +1356,6 @@ export function OrgRolesPanel({ orgId, orgType }: OrgRolesPanelProps) {
 
 function PositionCard({
 	position,
-	systemModules,
 	ministryGroups,
 	lang,
 	onDelete,
@@ -979,7 +1365,6 @@ function PositionCard({
 	onEdit,
 }: {
 	position: PositionDoc;
-	systemModules: TaskPresetDefinition[];
 	ministryGroups: MinistryGroupDoc[];
 	lang: string;
 	onDelete: (id: Id<"positions">) => void;
@@ -997,12 +1382,19 @@ function PositionCard({
 		position.grade && POSITION_GRADES[position.grade as PositionGrade];
 
 	const assignedModules = useMemo(
-		() =>
-			systemModules.filter((preset) =>
-				preset.tasks.some((task) => (position.tasks ?? []).includes(task)),
-			),
-		[position.tasks, systemModules],
+		() => getAssignedModuleDefs(position.tasks),
+		[position.tasks],
 	);
+
+	const moduleTaskCount = useMemo(() => {
+		const tasks = new Set(position.tasks ?? []);
+		const map: Record<string, number> = {};
+		for (const mod of assignedModules) {
+			const modTasks = MODULE_TASKS[mod.code] ?? [];
+			map[mod.code] = modTasks.filter((t) => tasks.has(t)).length;
+		}
+		return map;
+	}, [assignedModules, position.tasks]);
 
 	return (
 		<Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -1152,22 +1544,29 @@ function PositionCard({
 								{t("admin.roles.assignedModules")}
 							</h4>
 							<div className="flex flex-wrap gap-1.5">
-								{assignedModules.map((mod) => (
-									<div
-										key={mod.code}
-										className="flex items-center gap-1.5 rounded-lg border bg-muted/50 px-2.5 py-1.5"
-									>
-										<DynamicLucideIcon name={mod.icon} className="h-4 w-4" />
-										<div>
-											<div className="text-[10px] font-medium">
-												{getLocalizedValue(mod.label, lang)}
-											</div>
-											<div className="text-[9px] text-muted-foreground">
-												{mod.tasks?.length ?? 0} {t("admin.roles.taskCount")}
+								{assignedModules.map((mod) => {
+									const total = (MODULE_TASKS[mod.code] ?? []).length;
+									const count = moduleTaskCount[mod.code] ?? 0;
+									return (
+										<div
+											key={mod.code}
+											className="flex items-center gap-1.5 rounded-lg border bg-muted/50 px-2.5 py-1.5"
+										>
+											<DynamicLucideIcon
+												name={mod.icon}
+												className={cn("h-4 w-4", mod.color)}
+											/>
+											<div>
+												<div className="text-[10px] font-medium">
+													{getLocalizedValue(mod.label, lang)}
+												</div>
+												<div className="text-[9px] text-muted-foreground">
+													{count}/{total} {t("admin.roles.taskCount")}
+												</div>
 											</div>
 										</div>
-									</div>
-								))}
+									);
+								})}
 								{assignedModules.length === 0 && (
 									<span className="text-xs text-muted-foreground">
 										{t("admin.roles.noModulesAssigned")}
@@ -1186,14 +1585,20 @@ function PositionCard({
 // Add Position Dialog Content
 // ═══════════════════════════════════════════════════════════════
 
-function AddPositionSheetContent({
+function AddPositionSheet({
+	open,
+	onOpenChange,
 	orgId,
-	systemModules,
+	presets,
+	orgModules,
 	lang,
 	onSuccess,
 }: {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
 	orgId: Id<"orgs">;
-	systemModules: TaskPresetDefinition[];
+	presets: TaskPresetDefinition[];
+	orgModules: string[];
 	lang: string;
 	onSuccess: () => void;
 }) {
@@ -1204,7 +1609,7 @@ function AddPositionSheetContent({
 	const [code, setCode] = useState("");
 	const [description, setDescription] = useState("");
 	const [level, setLevel] = useState("3");
-	const [selectedModules, setSelectedModules] = useState<string[]>([]);
+	const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
 	const [isRequired, setIsRequired] = useState(false);
 	const [isUnique, setIsUnique] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1221,12 +1626,15 @@ function AddPositionSheetContent({
 		}
 	}
 
-	function toggleModule(moduleCode: string) {
-		setSelectedModules((prev) =>
-			prev.includes(moduleCode)
-				? prev.filter((c) => c !== moduleCode)
-				: [...prev, moduleCode],
-		);
+	function resetForm() {
+		setTitle("");
+		setCode("");
+		setDescription("");
+		setLevel("3");
+		setSelectedTasks(new Set());
+		setIsRequired(false);
+		setIsUnique(false);
+		setCodeManuallyEdited(false);
 	}
 
 	async function handleSubmit() {
@@ -1244,20 +1652,13 @@ function AddPositionSheetContent({
 					? { fr: description.trim(), en: description.trim() }
 					: undefined,
 				level: parseInt(level, 10),
-				tasks: getPresetTasks(selectedModules),
+				tasks: Array.from(selectedTasks) as TaskCodeValue[],
 				isRequired,
 				isUnique,
 			});
 			toast.success(t("admin.roles.positionCreated"));
 			onSuccess();
-			setTitle("");
-			setCode("");
-			setDescription("");
-			setLevel("3");
-			setSelectedModules([]);
-			setIsRequired(false);
-			setIsUnique(false);
-			setCodeManuallyEdited(false);
+			resetForm();
 		} catch (err: unknown) {
 			toast.error(getErrorMessage(err, t("admin.roles.positionCreateError")));
 		} finally {
@@ -1265,69 +1666,112 @@ function AddPositionSheetContent({
 		}
 	}
 
+	const footer = (
+		<div className="flex items-center justify-between gap-3">
+			<div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+				<Shield className="h-3.5 w-3.5 shrink-0" />
+				<span className="truncate">
+					<span className="font-medium text-foreground">{selectedTasks.size}</span>
+					{" "}
+					{t("admin.roles.position.tasksSelected", "tâche(s)")}
+				</span>
+			</div>
+			<Button
+				onClick={handleSubmit}
+				disabled={isSubmitting || !title.trim() || !code.trim()}
+				className="gap-1.5"
+				size="sm"
+			>
+				{isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+				{t("admin.roles.position.create")}
+			</Button>
+		</div>
+	);
+
 	return (
-		<SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
-			<div className="max-w-3xl mx-auto w-full">
-				<SheetHeader>
-					<SheetTitle className="flex items-center gap-2">
-						<Plus className="h-4 w-4" />
-						{t("admin.roles.position.addTitle")}
-					</SheetTitle>
-					<SheetDescription>
-						{t("admin.roles.position.addDescription")}
-					</SheetDescription>
-				</SheetHeader>
+		<BottomSheet
+			open={open}
+			onOpenChange={onOpenChange}
+			title={t("admin.roles.position.addTitle")}
+			icon={
+				<div className="rounded-lg bg-primary/10 p-1.5 text-primary">
+					<Plus className="h-4 w-4" />
+				</div>
+			}
+			footer={footer}
+			maxWidthClass="max-w-3xl"
+			maxHeight="90vh"
+		>
+			<div className="space-y-5 p-4 sm:p-5">
+				<p className="text-sm leading-relaxed text-muted-foreground">
+					{t("admin.roles.position.addDescription")}
+				</p>
 
-				<div className="space-y-4 py-2">
-					{/* Title */}
-					<div className="space-y-1.5">
-						<Label htmlFor={`${formId}-title`}>
-							{t("admin.roles.position.titleLabel")} *
-						</Label>
-						<Input
-							id={`${formId}-title`}
-							placeholder={t("admin.roles.position.titlePlaceholder")}
-							value={title}
-							onChange={(e) => handleTitleChange(e.target.value)}
-						/>
+				{/* ── Section: Identité ───────────────────────── */}
+				<section className="space-y-3">
+					<SectionLabel
+						icon={UserCog}
+						label={t("admin.roles.position.section.identity", "Identité du poste")}
+					/>
+					<div className="space-y-3 rounded-xl border border-border/50 bg-muted/10 p-3">
+						<div className="space-y-1.5">
+							<Label htmlFor={`${formId}-title`} className="text-xs">
+								{t("admin.roles.position.titleLabel")} *
+							</Label>
+							<Input
+								id={`${formId}-title`}
+								placeholder={t("admin.roles.position.titlePlaceholder")}
+								value={title}
+								onChange={(e) => handleTitleChange(e.target.value)}
+							/>
+						</div>
+
+						<div className="space-y-1.5">
+							<Label htmlFor={`${formId}-code`} className="text-xs">
+								{t("admin.roles.position.codeLabel")} *
+							</Label>
+							<Input
+								id={`${formId}-code`}
+								placeholder={t("admin.roles.position.codePlaceholder")}
+								value={code}
+								onChange={(e) => {
+									setCode(e.target.value);
+									setCodeManuallyEdited(true);
+								}}
+								className="font-mono text-xs"
+							/>
+							<p className="text-[10px] text-muted-foreground">
+								{t("admin.roles.position.codeHint")}
+							</p>
+						</div>
+
+						<div className="space-y-1.5">
+							<Label htmlFor={`${formId}-desc`} className="text-xs">
+								{t("admin.roles.position.descriptionLabel")}
+							</Label>
+							<Input
+								id={`${formId}-desc`}
+								placeholder={t("admin.roles.position.descriptionPlaceholder")}
+								value={description}
+								onChange={(e) => setDescription(e.target.value)}
+							/>
+						</div>
 					</div>
+				</section>
 
-					{/* Code */}
+				<Separator />
+
+				{/* ── Section: Hiérarchie & contraintes ───────── */}
+				<section className="space-y-3">
+					<SectionLabel
+						icon={Layers}
+						label={t("admin.roles.position.section.hierarchy", "Hiérarchie et contraintes")}
+					/>
+
 					<div className="space-y-1.5">
-						<Label htmlFor={`${formId}-code`}>
-							{t("admin.roles.position.codeLabel")} *
+						<Label className="text-xs">
+							{t("admin.roles.position.levelLabel")}
 						</Label>
-						<Input
-							id={`${formId}-code`}
-							placeholder={t("admin.roles.position.codePlaceholder")}
-							value={code}
-							onChange={(e) => {
-								setCode(e.target.value);
-								setCodeManuallyEdited(true);
-							}}
-							className="font-mono text-xs"
-						/>
-						<p className="text-[10px] text-muted-foreground">
-							{t("admin.roles.position.codeHint")}
-						</p>
-					</div>
-
-					{/* Description */}
-					<div className="space-y-1.5">
-						<Label htmlFor={`${formId}-desc`}>
-							{t("admin.roles.position.descriptionLabel")}
-						</Label>
-						<Input
-							id={`${formId}-desc`}
-							placeholder={t("admin.roles.position.descriptionPlaceholder")}
-							value={description}
-							onChange={(e) => setDescription(e.target.value)}
-						/>
-					</div>
-
-					{/* Level */}
-					<div className="space-y-1.5">
-						<Label>{t("admin.roles.position.levelLabel")}</Label>
 						<Select value={level} onValueChange={setLevel}>
 							<SelectTrigger>
 								<SelectValue />
@@ -1342,72 +1786,76 @@ function AddPositionSheetContent({
 						</Select>
 					</div>
 
-					{/* Required */}
-					<div className="flex items-center gap-2">
-						<Checkbox
-							id={`${formId}-required`}
-							checked={isRequired}
-							onCheckedChange={(v) => setIsRequired(!!v)}
+					<ToggleCard
+						icon={AlertTriangle}
+						iconClassName={
+							isRequired ? "" : "text-amber-600/70 dark:text-amber-400/70"
+						}
+						title={t("admin.roles.position.isRequired", "Poste obligatoire")}
+						description={t(
+							"admin.roles.position.isRequiredDesc",
+							"Ce poste doit exister dans la structure — impossible à supprimer.",
+						)}
+						checked={isRequired}
+						onChange={setIsRequired}
+					/>
+
+					<ToggleCard
+						icon={Star}
+						title={t(
+							"admin.roles.position.isUnique",
+							"Titulaire unique",
+						)}
+						description={t(
+							"admin.roles.position.isUniqueDesc",
+							"Un seul agent peut occuper ce poste simultanément.",
+						)}
+						checked={isUnique}
+						onChange={setIsUnique}
+					/>
+				</section>
+
+				<Separator />
+
+				{/* ── Section: Template (optional) ────────────── */}
+				<section className="space-y-3">
+					<SectionLabel
+						icon={Wand2}
+						label={t("admin.roles.position.section.template", "Partir d'un template")}
+						hint={t("admin.roles.position.section.templateHint", "(optionnel)")}
+					/>
+
+					<PresetTemplateApplier
+						presets={presets}
+						onApply={setSelectedTasks}
+						lang={lang}
+					/>
+				</section>
+
+				<Separator />
+
+				{/* ── Section: Permissions ────────────────────── */}
+				<section className="space-y-3">
+					<div className="flex items-center justify-between gap-3">
+						<SectionLabel
+							icon={Shield}
+							label={t("admin.roles.position.assignModules")}
 						/>
-						<Label htmlFor={`${formId}-required`} className="text-sm">
-							{t("admin.roles.position.isRequired", "Ce poste est obligatoire")}
-						</Label>
+						<Badge variant="outline" className="shrink-0 text-[10px]">
+							{selectedTasks.size}{" "}
+							{t("admin.roles.position.tasksSelected", "tâche(s)")}
+						</Badge>
 					</div>
 
-					{/* Unique */}
-					<div className="flex items-center gap-2">
-						<Checkbox
-							id={`${formId}-unique`}
-							checked={isUnique}
-							onCheckedChange={(v) => setIsUnique(!!v)}
-						/>
-						<Label htmlFor={`${formId}-unique`} className="text-sm">
-							{t("admin.roles.position.isUnique", "Ce poste est à titulaire unique (1 seule personne)")}
-						</Label>
-					</div>
-
-					{/* Module select */}
-					<div className="space-y-2">
-						<Label>{t("admin.roles.position.assignModules")}</Label>
-						<div className="grid gap-1.5 sm:grid-cols-2">
-							{systemModules.map((mod) => (
-								<button
-									type="button"
-									key={mod.code}
-									className="flex items-center gap-2 rounded-lg border p-2 hover:bg-muted/50 cursor-pointer transition-colors text-left"
-									onClick={() => toggleModule(mod.code)}
-								>
-									<Checkbox
-										checked={selectedModules.includes(mod.code)}
-										onCheckedChange={() => toggleModule(mod.code)}
-									/>
-									<DynamicLucideIcon name={mod.icon} className="h-4 w-4" />
-									<div className="flex-1 min-w-0">
-										<div className="text-xs font-medium">
-											{getLocalizedValue(mod.label, lang)}
-										</div>
-										<div className="text-[10px] text-muted-foreground truncate">
-											{getLocalizedValue(mod.description, lang)}
-										</div>
-									</div>
-								</button>
-							))}
-						</div>
-					</div>
-				</div>
-
-				<SheetFooter>
-					<Button
-						onClick={handleSubmit}
-						disabled={isSubmitting || !title.trim() || !code.trim()}
-						className="gap-1"
-					>
-						{isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-						{t("admin.roles.position.create")}
-					</Button>
-				</SheetFooter>
+					<ModuleTaskPicker
+						orgModules={orgModules}
+						selected={selectedTasks}
+						onChange={setSelectedTasks}
+						lang={lang}
+					/>
+				</section>
 			</div>
-		</SheetContent>
+		</BottomSheet>
 	);
 }
 
@@ -1415,14 +1863,20 @@ function AddPositionSheetContent({
 // Edit Position Dialog Content
 // ═══════════════════════════════════════════════════════════════
 
-function EditPositionSheetContent({
+function EditPositionSheet({
+	open,
+	onOpenChange,
 	position,
-	systemModules,
+	presets,
+	orgModules,
 	lang,
 	onSuccess,
 }: {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
 	position: PositionDoc;
-	systemModules: TaskPresetDefinition[];
+	presets: TaskPresetDefinition[];
+	orgModules: string[];
 	lang: string;
 	onSuccess: () => void;
 }) {
@@ -1438,18 +1892,9 @@ function EditPositionSheetContent({
 	const [isUnique, setIsUnique] = useState(position.isUnique ?? false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const currentTasks = (position.tasks ?? []) as string[];
-	const initialModules = systemModules
-		.filter((m) => m.tasks.every((tc) => currentTasks.includes(tc)))
-		.map((m) => m.code);
-	const [selectedModules, setSelectedModules] =
-		useState<string[]>(initialModules);
-
-	function toggleModule(code: string) {
-		setSelectedModules((prev) =>
-			prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
-		);
-	}
+	const [selectedTasks, setSelectedTasks] = useState<Set<string>>(
+		() => new Set((position.tasks ?? []) as string[]),
+	);
 
 	const { mutateAsync: updatePosition } = useConvexMutationQuery(
 		api.functions.roleConfig.updatePosition,
@@ -1470,7 +1915,7 @@ function EditPositionSheetContent({
 						? { fr: descFr.trim(), en: descEn.trim() || descFr.trim() }
 						: undefined,
 				level: parseInt(level, 10),
-				tasks: getPresetTasks(selectedModules),
+				tasks: Array.from(selectedTasks) as TaskCodeValue[],
 				isRequired,
 				isUnique,
 			});
@@ -1483,83 +1928,128 @@ function EditPositionSheetContent({
 		}
 	}
 
+	const footer = (
+		<div className="flex items-center justify-between gap-3">
+			<div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+				<Shield className="h-3.5 w-3.5 shrink-0" />
+				<span className="truncate">
+					<span className="font-medium text-foreground">{selectedTasks.size}</span>
+					{" "}
+					{t("admin.roles.position.tasksSelected", "tâche(s)")}
+				</span>
+			</div>
+			<Button
+				onClick={handleSubmit}
+				disabled={isSubmitting || !titleFr.trim()}
+				className="gap-1.5"
+				size="sm"
+			>
+				{isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+				{t("common.save")}
+			</Button>
+		</div>
+	);
+
 	return (
-		<SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
-			<div className="max-w-3xl mx-auto w-full">
-				<SheetHeader>
-					<SheetTitle className="flex items-center gap-2">
-						<Pencil className="h-4 w-4" />
-						{t("admin.roles.position.editTitle")}
-					</SheetTitle>
-					<SheetDescription>
-						{t("admin.roles.position.editDescription")}
-					</SheetDescription>
-				</SheetHeader>
+		<BottomSheet
+			open={open}
+			onOpenChange={onOpenChange}
+			title={t("admin.roles.position.editTitle")}
+			icon={
+				<div className="rounded-lg bg-primary/10 p-1.5 text-primary">
+					<Pencil className="h-4 w-4" />
+				</div>
+			}
+			footer={footer}
+			maxWidthClass="max-w-3xl"
+			maxHeight="90vh"
+		>
+			<div className="space-y-5 p-4 sm:p-5">
+				<p className="text-sm leading-relaxed text-muted-foreground">
+					{t("admin.roles.position.editDescription")}
+				</p>
 
-				<div className="space-y-4 px-4 py-2">
-					{/* Code (read-only) */}
-					<div className="space-y-1.5">
-						<Label>{t("admin.roles.position.codeLabel")}</Label>
-						<Input
-							value={position.code}
-							disabled
-							className="font-mono text-muted-foreground"
-						/>
+				{/* ── Section: Identité ───────────────────────── */}
+				<section className="space-y-3">
+					<SectionLabel
+						icon={UserCog}
+						label={t("admin.roles.position.section.identity", "Identité du poste")}
+					/>
+					<div className="space-y-3 rounded-xl border border-border/50 bg-muted/10 p-3">
+						<div className="space-y-1.5">
+							<Label className="text-xs">
+								{t("admin.roles.position.codeLabel")}
+							</Label>
+							<Input
+								value={position.code}
+								disabled
+								className="font-mono text-muted-foreground"
+							/>
+						</div>
+
+						<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+							<div className="space-y-1.5">
+								<Label htmlFor={`${formId}-title-fr`} className="text-xs">
+									{t("admin.roles.position.titleLabel")} (FR) *
+								</Label>
+								<Input
+									id={`${formId}-title-fr`}
+									value={titleFr}
+									onChange={(e) => setTitleFr(e.target.value)}
+								/>
+							</div>
+							<div className="space-y-1.5">
+								<Label htmlFor={`${formId}-title-en`} className="text-xs">
+									{t("admin.roles.position.titleLabel")} (EN)
+								</Label>
+								<Input
+									id={`${formId}-title-en`}
+									value={titleEn}
+									onChange={(e) => setTitleEn(e.target.value)}
+									placeholder="English title"
+								/>
+							</div>
+						</div>
+
+						<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+							<div className="space-y-1.5">
+								<Label htmlFor={`${formId}-desc-fr`} className="text-xs">
+									{t("admin.roles.position.descriptionLabel")} (FR)
+								</Label>
+								<Input
+									id={`${formId}-desc-fr`}
+									value={descFr}
+									onChange={(e) => setDescFr(e.target.value)}
+								/>
+							</div>
+							<div className="space-y-1.5">
+								<Label htmlFor={`${formId}-desc-en`} className="text-xs">
+									{t("admin.roles.position.descriptionLabel")} (EN)
+								</Label>
+								<Input
+									id={`${formId}-desc-en`}
+									value={descEn}
+									onChange={(e) => setDescEn(e.target.value)}
+									placeholder="English description"
+								/>
+							</div>
+						</div>
 					</div>
+				</section>
 
-					{/* Title FR */}
+				<Separator />
+
+				{/* ── Section: Hiérarchie & contraintes ───────── */}
+				<section className="space-y-3">
+					<SectionLabel
+						icon={Layers}
+						label={t("admin.roles.position.section.hierarchy", "Hiérarchie et contraintes")}
+					/>
+
 					<div className="space-y-1.5">
-						<Label htmlFor={`${formId}-title-fr`}>
-							{t("admin.roles.position.titleLabel")} (FR) *
+						<Label className="text-xs">
+							{t("admin.roles.position.levelLabel")}
 						</Label>
-						<Input
-							id={`${formId}-title-fr`}
-							value={titleFr}
-							onChange={(e) => setTitleFr(e.target.value)}
-						/>
-					</div>
-
-					{/* Title EN */}
-					<div className="space-y-1.5">
-						<Label htmlFor={`${formId}-title-en`}>
-							{t("admin.roles.position.titleLabel")} (EN)
-						</Label>
-						<Input
-							id={`${formId}-title-en`}
-							value={titleEn}
-							onChange={(e) => setTitleEn(e.target.value)}
-							placeholder="English title"
-						/>
-					</div>
-
-					{/* Description FR */}
-					<div className="space-y-1.5">
-						<Label htmlFor={`${formId}-desc-fr`}>
-							{t("admin.roles.position.descriptionLabel")} (FR)
-						</Label>
-						<Input
-							id={`${formId}-desc-fr`}
-							value={descFr}
-							onChange={(e) => setDescFr(e.target.value)}
-						/>
-					</div>
-
-					{/* Description EN */}
-					<div className="space-y-1.5">
-						<Label htmlFor={`${formId}-desc-en`}>
-							{t("admin.roles.position.descriptionLabel")} (EN)
-						</Label>
-						<Input
-							id={`${formId}-desc-en`}
-							value={descEn}
-							onChange={(e) => setDescEn(e.target.value)}
-							placeholder="English description"
-						/>
-					</div>
-
-					{/* Level */}
-					<div className="space-y-1.5">
-						<Label>{t("admin.roles.position.levelLabel")}</Label>
 						<Select value={level} onValueChange={setLevel}>
 							<SelectTrigger>
 								<SelectValue />
@@ -1574,71 +2064,76 @@ function EditPositionSheetContent({
 						</Select>
 					</div>
 
-					<div className="flex items-center gap-2">
-						<Checkbox
-							id={`${formId}-required`}
-							checked={isRequired}
-							onCheckedChange={(v) => setIsRequired(!!v)}
+					<ToggleCard
+						icon={AlertTriangle}
+						iconClassName={
+							isRequired ? "" : "text-amber-600/70 dark:text-amber-400/70"
+						}
+						title={t("admin.roles.position.isRequired", "Poste obligatoire")}
+						description={t(
+							"admin.roles.position.isRequiredDesc",
+							"Ce poste doit exister dans la structure — impossible à supprimer.",
+						)}
+						checked={isRequired}
+						onChange={setIsRequired}
+					/>
+
+					<ToggleCard
+						icon={Star}
+						title={t(
+							"admin.roles.position.isUnique",
+							"Titulaire unique",
+						)}
+						description={t(
+							"admin.roles.position.isUniqueDesc",
+							"Un seul agent peut occuper ce poste simultanément.",
+						)}
+						checked={isUnique}
+						onChange={setIsUnique}
+					/>
+				</section>
+
+				<Separator />
+
+				{/* ── Section: Template (optional) ────────────── */}
+				<section className="space-y-3">
+					<SectionLabel
+						icon={Wand2}
+						label={t("admin.roles.position.section.template", "Partir d'un template")}
+						hint={t("admin.roles.position.section.templateHint", "(optionnel)")}
+					/>
+
+					<PresetTemplateApplier
+						presets={presets}
+						onApply={setSelectedTasks}
+						lang={lang}
+					/>
+				</section>
+
+				<Separator />
+
+				{/* ── Section: Permissions ────────────────────── */}
+				<section className="space-y-3">
+					<div className="flex items-center justify-between gap-3">
+						<SectionLabel
+							icon={Shield}
+							label={t("admin.roles.position.assignModules")}
 						/>
-						<Label htmlFor={`${formId}-required`} className="text-sm">
-							{t("admin.roles.position.isRequired", "Ce poste est obligatoire")}
-						</Label>
+						<Badge variant="outline" className="shrink-0 text-[10px]">
+							{selectedTasks.size}{" "}
+							{t("admin.roles.position.tasksSelected", "tâche(s)")}
+						</Badge>
 					</div>
 
-					{/* Unique */}
-					<div className="flex items-center gap-2">
-						<Checkbox
-							id={`${formId}-unique`}
-							checked={isUnique}
-							onCheckedChange={(v) => setIsUnique(!!v)}
-						/>
-						<Label htmlFor={`${formId}-unique`} className="text-sm">
-							{t("admin.roles.position.isUnique", "Ce poste est à titulaire unique (1 seule personne)")}
-						</Label>
-					</div>
-
-					{/* Module select */}
-					<div className="space-y-2">
-						<Label>{t("admin.roles.position.assignModules")}</Label>
-						<div className="grid gap-1.5 sm:grid-cols-2">
-							{systemModules.map((mod) => (
-								<button
-									type="button"
-									key={mod.code}
-									className="flex items-center gap-2 rounded-lg border p-2 hover:bg-muted/50 cursor-pointer transition-colors text-left"
-									onClick={() => toggleModule(mod.code)}
-								>
-									<Checkbox
-										checked={selectedModules.includes(mod.code)}
-										onCheckedChange={() => toggleModule(mod.code)}
-									/>
-									<DynamicLucideIcon name={mod.icon} className="h-4 w-4" />
-									<div className="flex-1 min-w-0">
-										<div className="text-xs font-medium">
-											{getLocalizedValue(mod.label, lang)}
-										</div>
-										<div className="text-[10px] text-muted-foreground truncate">
-											{getLocalizedValue(mod.description, lang)}
-										</div>
-									</div>
-								</button>
-							))}
-						</div>
-					</div>
-				</div>
-
-				<SheetFooter>
-					<Button
-						onClick={handleSubmit}
-						disabled={isSubmitting || !titleFr.trim()}
-						className="gap-1"
-					>
-						{isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-						{t("common.save")}
-					</Button>
-				</SheetFooter>
+					<ModuleTaskPicker
+						orgModules={orgModules}
+						selected={selectedTasks}
+						onChange={setSelectedTasks}
+						lang={lang}
+					/>
+				</section>
 			</div>
-		</SheetContent>
+		</BottomSheet>
 	);
 }
 
@@ -1646,10 +2141,154 @@ function EditPositionSheetContent({
 // Edit Ministry Group Sheet
 // ═══════════════════════════════════════════════════════════════
 
+function AddMinistryGroupSheet({
+	open,
+	onOpenChange,
+	newMinistry,
+	setNewMinistry,
+	onCreate,
+}: {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	newMinistry: {
+		label: string;
+		code: string;
+		icon: string;
+		description: string;
+	};
+	setNewMinistry: React.Dispatch<
+		React.SetStateAction<{
+			label: string;
+			code: string;
+			icon: string;
+			description: string;
+		}>
+	>;
+	onCreate: () => void;
+}) {
+	const { t } = useTranslation();
+	const formId = useId();
+
+	const footer = (
+		<div className="flex items-center justify-end gap-2">
+			<Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+				{t("common.cancel")}
+			</Button>
+			<Button
+				size="sm"
+				onClick={onCreate}
+				disabled={!newMinistry.label.trim()}
+				className="gap-1.5"
+			>
+				{t("admin.roles.ministry.create")}
+			</Button>
+		</div>
+	);
+
+	return (
+		<BottomSheet
+			open={open}
+			onOpenChange={onOpenChange}
+			title={t("admin.roles.ministry.addTitle")}
+			icon={
+				<div className="rounded-lg bg-primary/10 p-1.5 text-primary">
+					<Plus className="h-4 w-4" />
+				</div>
+			}
+			footer={footer}
+			maxWidthClass="max-w-2xl"
+			maxHeight="85vh"
+		>
+			<div className="space-y-5 p-4 sm:p-5">
+				<p className="text-sm leading-relaxed text-muted-foreground">
+					{t("admin.roles.ministry.addDescription")}
+				</p>
+
+				<section className="space-y-3">
+					<SectionLabel
+						icon={Building2}
+						label={t("admin.roles.ministry.section.identity", "Identification")}
+					/>
+					<div className="space-y-3 rounded-xl border border-border/50 bg-muted/10 p-3">
+						<div className="space-y-1.5">
+							<Label htmlFor={`${formId}-label`} className="text-xs">
+								{t("admin.roles.ministry.name")} *
+							</Label>
+							<Input
+								id={`${formId}-label`}
+								value={newMinistry.label}
+								onChange={(e) =>
+									setNewMinistry((p) => ({
+										...p,
+										label: e.target.value,
+										code: toSnakeCase(e.target.value),
+									}))
+								}
+								placeholder={t("admin.roles.ministry.namePlaceholder")}
+							/>
+						</div>
+
+						<div className="grid grid-cols-[1fr_120px] gap-3">
+							<div className="space-y-1.5">
+								<Label htmlFor={`${formId}-code`} className="text-xs">
+									{t("admin.roles.ministry.code")}
+								</Label>
+								<Input
+									id={`${formId}-code`}
+									value={newMinistry.code}
+									onChange={(e) =>
+										setNewMinistry((p) => ({ ...p, code: e.target.value }))
+									}
+									placeholder={t("admin.roles.ministry.codePlaceholder")}
+									className="font-mono text-xs"
+								/>
+							</div>
+							<div className="space-y-1.5">
+								<Label htmlFor={`${formId}-icon`} className="text-xs">
+									{t("admin.roles.ministry.icon")}
+								</Label>
+								<Input
+									id={`${formId}-icon`}
+									value={newMinistry.icon}
+									onChange={(e) =>
+										setNewMinistry((p) => ({ ...p, icon: e.target.value }))
+									}
+									placeholder="Building2"
+								/>
+							</div>
+						</div>
+
+						<div className="space-y-1.5">
+							<Label htmlFor={`${formId}-desc`} className="text-xs">
+								{t("admin.roles.ministry.description")}
+							</Label>
+							<Input
+								id={`${formId}-desc`}
+								value={newMinistry.description}
+								onChange={(e) =>
+									setNewMinistry((p) => ({
+										...p,
+										description: e.target.value,
+									}))
+								}
+								placeholder={t("admin.roles.ministry.descriptionPlaceholder")}
+							/>
+						</div>
+					</div>
+				</section>
+			</div>
+		</BottomSheet>
+	);
+}
+
 function EditMinistryGroupSheet({
+	open,
+	onOpenChange,
 	group,
 	onSuccess,
 }: {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
 	group: MinistryGroupDoc;
 	onSuccess: () => void;
 }) {
@@ -1689,92 +2328,108 @@ function EditMinistryGroupSheet({
 		}
 	}
 
+	const footer = (
+		<div className="flex items-center justify-end">
+			<Button
+				onClick={handleSubmit}
+				disabled={isSubmitting || !labelFr.trim()}
+				size="sm"
+				className="gap-1.5"
+			>
+				{isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+				{t("common.save")}
+			</Button>
+		</div>
+	);
+
 	return (
-		<SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
-			<div className="max-w-3xl mx-auto w-full">
-				<SheetHeader>
-					<SheetTitle className="flex items-center gap-2">
-						<Pencil className="h-4 w-4" />
-						{t("admin.roles.ministry.editTitle")}
-					</SheetTitle>
-					<SheetDescription>
-						{t("admin.roles.ministry.editDescription")}
-					</SheetDescription>
-				</SheetHeader>
-
-				<div className="space-y-3 px-4 py-2">
-					<div className="grid grid-cols-[1fr_80px] gap-2">
-						<div className="space-y-1.5">
-							<Label htmlFor={`${formId}-label-fr`}>
-								{t("admin.roles.ministry.name")} (FR) *
-							</Label>
-							<Input
-								id={`${formId}-label-fr`}
-								value={labelFr}
-								onChange={(e) => setLabelFr(e.target.value)}
-							/>
-						</div>
-						<div className="space-y-1.5">
-							<Label htmlFor={`${formId}-icon`}>
-								{t("admin.roles.ministry.icon")}
-							</Label>
-							<Input
-								id={`${formId}-icon`}
-								value={icon}
-								onChange={(e) => setIcon(e.target.value)}
-								placeholder=""
-							/>
-						</div>
-					</div>
-
-					<div className="space-y-1.5">
-						<Label htmlFor={`${formId}-label-en`}>
-							{t("admin.roles.ministry.name")} (EN)
-						</Label>
-						<Input
-							id={`${formId}-label-en`}
-							value={labelEn}
-							onChange={(e) => setLabelEn(e.target.value)}
-							placeholder="English name"
-						/>
-					</div>
-
-					<div className="space-y-1.5">
-						<Label htmlFor={`${formId}-desc-fr`}>
-							{t("admin.roles.ministry.description")} (FR)
-						</Label>
-						<Input
-							id={`${formId}-desc-fr`}
-							value={descFr}
-							onChange={(e) => setDescFr(e.target.value)}
-						/>
-					</div>
-
-					<div className="space-y-1.5">
-						<Label htmlFor={`${formId}-desc-en`}>
-							{t("admin.roles.ministry.description")} (EN)
-						</Label>
-						<Input
-							id={`${formId}-desc-en`}
-							value={descEn}
-							onChange={(e) => setDescEn(e.target.value)}
-							placeholder="English description"
-						/>
-					</div>
+		<BottomSheet
+			open={open}
+			onOpenChange={onOpenChange}
+			title={t("admin.roles.ministry.editTitle")}
+			icon={
+				<div className="rounded-lg bg-primary/10 p-1.5 text-primary">
+					<Pencil className="h-4 w-4" />
 				</div>
+			}
+			footer={footer}
+			maxWidthClass="max-w-2xl"
+			maxHeight="85vh"
+		>
+			<div className="space-y-5 p-4 sm:p-5">
+				<p className="text-sm leading-relaxed text-muted-foreground">
+					{t("admin.roles.ministry.editDescription")}
+				</p>
 
-				<SheetFooter>
-					<Button
-						onClick={handleSubmit}
-						disabled={isSubmitting || !labelFr.trim()}
-						className="gap-1"
-					>
-						{isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-						{t("common.save")}
-					</Button>
-				</SheetFooter>
+				<section className="space-y-3">
+					<SectionLabel
+						icon={Building2}
+						label={t("admin.roles.ministry.section.identity", "Identification")}
+					/>
+					<div className="space-y-3 rounded-xl border border-border/50 bg-muted/10 p-3">
+						<div className="grid grid-cols-[1fr_120px] gap-3">
+							<div className="space-y-1.5">
+								<Label htmlFor={`${formId}-label-fr`} className="text-xs">
+									{t("admin.roles.ministry.name")} (FR) *
+								</Label>
+								<Input
+									id={`${formId}-label-fr`}
+									value={labelFr}
+									onChange={(e) => setLabelFr(e.target.value)}
+								/>
+							</div>
+							<div className="space-y-1.5">
+								<Label htmlFor={`${formId}-icon`} className="text-xs">
+									{t("admin.roles.ministry.icon")}
+								</Label>
+								<Input
+									id={`${formId}-icon`}
+									value={icon}
+									onChange={(e) => setIcon(e.target.value)}
+									placeholder="Building2"
+								/>
+							</div>
+						</div>
+
+						<div className="space-y-1.5">
+							<Label htmlFor={`${formId}-label-en`} className="text-xs">
+								{t("admin.roles.ministry.name")} (EN)
+							</Label>
+							<Input
+								id={`${formId}-label-en`}
+								value={labelEn}
+								onChange={(e) => setLabelEn(e.target.value)}
+								placeholder="English name"
+							/>
+						</div>
+
+						<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+							<div className="space-y-1.5">
+								<Label htmlFor={`${formId}-desc-fr`} className="text-xs">
+									{t("admin.roles.ministry.description")} (FR)
+								</Label>
+								<Input
+									id={`${formId}-desc-fr`}
+									value={descFr}
+									onChange={(e) => setDescFr(e.target.value)}
+								/>
+							</div>
+							<div className="space-y-1.5">
+								<Label htmlFor={`${formId}-desc-en`} className="text-xs">
+									{t("admin.roles.ministry.description")} (EN)
+								</Label>
+								<Input
+									id={`${formId}-desc-en`}
+									value={descEn}
+									onChange={(e) => setDescEn(e.target.value)}
+									placeholder="English description"
+								/>
+							</div>
+						</div>
+					</div>
+				</section>
 			</div>
-		</SheetContent>
+		</BottomSheet>
 	);
 }
 
@@ -1802,6 +2457,7 @@ function OrgModulesSection({
 	lang: string;
 }) {
 	const { t } = useTranslation();
+	const [isOpen, setIsOpen] = useState(false);
 	const { data: org } = useAuthenticatedConvexQuery(
 		api.functions.orgs.getById,
 		{
@@ -1817,6 +2473,10 @@ function OrgModulesSection({
 
 	const activeModules = new Set<string>((org?.modules as string[]) ?? []);
 	const allModules = Object.values(MODULE_REGISTRY);
+	const toggleableModules = allModules.filter((m) => !m.isCore);
+	const activeCount = toggleableModules.filter((m) =>
+		activeModules.has(m.code),
+	).length;
 
 	async function handleToggle(code: string, enabled: boolean) {
 		const current = Array.from(activeModules);
@@ -1838,133 +2498,102 @@ function OrgModulesSection({
 
 	return (
 		<FlatCard>
-			<div className="p-3 lg:p-4">
-				<h4 className="flex items-center gap-2 text-base">
-					<Power className="h-4 w-4" />
-					{t("admin.roles.modules.title")}
-				</h4>
-				<p className="text-sm text-muted-foreground mt-1">
-					{t("admin.roles.modules.description")}
-				</p>
-			</div>
-			<div className="space-y-4">
-				{!isSuperAdmin && (
-					<div className="bg-muted px-4 py-3 flex gap-3 rounded-lg text-sm text-muted-foreground items-start border">
-						<AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-						<p>
-							{t("admin.roles.modules.readonlyAlert", "Ces modules sont gérés par l'administrateur système. Veuillez contacter le support pour activer ou désactiver des fonctionnalités pour cet organisme.")}
-						</p>
-					</div>
-				)}
-
-				{MODULE_CATEGORIES.map((cat) => {
-					const modules = allModules.filter((m) => m.category === cat.key);
-					if (modules.length === 0) return null;
-
-					return (
-						<div key={cat.key} className="space-y-1.5">
-							<h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-								{getLocalizedValue(cat.label, lang)}
-							</h4>
-							<div className="grid sm:grid-cols-2 gap-2">
-								{modules.map((mod) => {
-									const isActive = activeModules.has(mod.code);
-									return (
-										<div
-											key={mod.code}
-											className="flex items-center gap-3 rounded-lg border px-3 py-2"
-										>
-											<DynamicLucideIcon
-												name={mod.icon}
-												className={`h-4 w-4 ${mod.color}`}
-											/>
-											<div className="flex-1 min-w-0">
-												<div className="text-xs font-medium">
-													{getLocalizedValue(mod.label, lang)}
-												</div>
-												<div className="text-[10px] text-muted-foreground truncate">
-													{getLocalizedValue(mod.description, lang)}
-												</div>
-											</div>
-											{mod.isCore ? (
-												<Badge
-													variant="secondary"
-													className="text-[9px] shrink-0"
-												>
-													{t("admin.roles.modules.core")}
-												</Badge>
-											) : (
-												<Switch
-													checked={isActive}
-													disabled={!isSuperAdmin}
-													onCheckedChange={(v) => handleToggle(mod.code, v)}
-												/>
-											)}
-										</div>
-									);
-								})}
-							</div>
+			<Collapsible open={isOpen} onOpenChange={setIsOpen}>
+				<CollapsibleTrigger className="w-full text-left px-3 lg:px-4 py-3 flex items-center gap-3 hover:bg-muted/30 rounded-t-lg transition-colors">
+					<Power className="h-4 w-4 shrink-0" />
+					<div className="flex-1 min-w-0">
+						<div className="flex items-center gap-2 flex-wrap">
+							<span className="font-medium text-sm">
+								{t("admin.roles.modules.title")}
+							</span>
+							<Badge variant="secondary" className="text-[10px] h-5">
+								{activeCount}/{toggleableModules.length}
+							</Badge>
+							{!isSuperAdmin && (
+								<Badge variant="outline" className="text-[10px] h-5 gap-1">
+									<AlertTriangle className="h-3 w-3" />
+									{t("admin.roles.modules.readonly", "Lecture seule")}
+								</Badge>
+							)}
 						</div>
-					);
-				})}
-			</div>
+					</div>
+					{isOpen ? (
+						<ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+					) : (
+						<ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+					)}
+				</CollapsibleTrigger>
+				<CollapsibleContent>
+					<div className="px-3 lg:px-4 pb-3 lg:pb-4 space-y-4 border-t">
+						<p className="text-xs text-muted-foreground mt-3">
+							{t("admin.roles.modules.description")}
+						</p>
+						{!isSuperAdmin && (
+							<div className="bg-muted px-3 py-2 flex gap-2 rounded-lg text-xs text-muted-foreground items-start border">
+								<AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+								<p>
+									{t(
+										"admin.roles.modules.readonlyAlert",
+										"Ces modules sont gérés par l'administrateur système. Veuillez contacter le support pour activer ou désactiver des fonctionnalités pour cet organisme.",
+									)}
+								</p>
+							</div>
+						)}
+
+						{MODULE_CATEGORIES.map((cat) => {
+							const modules = allModules.filter((m) => m.category === cat.key);
+							if (modules.length === 0) return null;
+
+							return (
+								<div key={cat.key} className="space-y-1.5">
+									<h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+										{getLocalizedValue(cat.label, lang)}
+									</h4>
+									<div className="grid sm:grid-cols-2 gap-2">
+										{modules.map((mod) => {
+											const isActive = activeModules.has(mod.code);
+											return (
+												<div
+													key={mod.code}
+													className="flex items-center gap-3 rounded-lg border px-3 py-2"
+												>
+													<DynamicLucideIcon
+														name={mod.icon}
+														className={`h-4 w-4 ${mod.color}`}
+													/>
+													<div className="flex-1 min-w-0">
+														<div className="text-xs font-medium">
+															{getLocalizedValue(mod.label, lang)}
+														</div>
+														<div className="text-[10px] text-muted-foreground truncate">
+															{getLocalizedValue(mod.description, lang)}
+														</div>
+													</div>
+													{mod.isCore ? (
+														<Badge
+															variant="secondary"
+															className="text-[9px] shrink-0"
+														>
+															{t("admin.roles.modules.core")}
+														</Badge>
+													) : (
+														<Switch
+															checked={isActive}
+															disabled={!isSuperAdmin}
+															onCheckedChange={(v) => handleToggle(mod.code, v)}
+														/>
+													)}
+												</div>
+											);
+										})}
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				</CollapsibleContent>
+			</Collapsible>
 		</FlatCard>
 	);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// Role Module Card (compact)
-// ═══════════════════════════════════════════════════════════════
-
-function RoleModuleCard({
-	module: mod,
-	lang,
-}: {
-	module: TaskPresetDefinition;
-	lang: string;
-}) {
-	const { t } = useTranslation();
-	const [isOpen, setIsOpen] = useState(false);
-
-	return (
-		<Collapsible open={isOpen} onOpenChange={setIsOpen}>
-			<div className="rounded-lg border hover:border-primary/20 transition-all">
-				<CollapsibleTrigger className="w-full text-left px-3 py-2 flex items-center gap-2">
-					<DynamicLucideIcon name={mod.icon} className="h-5 w-5" />
-					<div className="flex-1 min-w-0">
-						<div className="text-xs font-medium">
-							{getLocalizedValue(mod.label, lang)}
-						</div>
-						<div className="text-[10px] text-muted-foreground truncate">
-							{mod.tasks?.length ?? 0} {t("admin.roles.taskCount")}
-						</div>
-					</div>
-					{isOpen ? (
-						<ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-					) : (
-						<ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-					)}
-				</CollapsibleTrigger>
-
-				<CollapsibleContent>
-					<div className="border-t px-3 py-2 space-y-1">
-						<p className="text-[10px] text-muted-foreground">
-							{getLocalizedValue(mod.description, lang)}
-						</p>
-						<div className="flex flex-wrap gap-1 mt-1">
-							{(mod.tasks ?? []).map((taskCode: string) => (
-								<Badge
-									key={taskCode}
-									variant="outline"
-									className="text-[9px] px-1.5 py-0 font-mono"
-								>
-									{taskCode}
-								</Badge>
-							))}
-						</div>
-					</div>
-				</CollapsibleContent>
-			</div>
-		</Collapsible>
-	);
-}

@@ -192,6 +192,12 @@ export function SuperadminSidebar({
 					icon: Calendar,
 					moduleCode: "appointments",
 				},
+				{
+					title: t("superadmin.nav.appointments", "Rendez-vous"),
+					url: "/appointments",
+					icon: Calendar,
+					moduleCode: "appointments",
+				},
 			],
 		},
 

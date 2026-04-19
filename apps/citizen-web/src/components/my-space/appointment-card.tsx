@@ -228,9 +228,9 @@ export function AppointmentCard({
 							asChild
 							onClick={(e: React.MouseEvent) => e.stopPropagation()}
 						>
-							<Link href="/my-space/appointments/new">
+							<Link href={`/my-space/appointments/${apt._id}/reschedule`}>
 								<Calendar className="w-3.5 h-3.5" />
-								Reprogrammer
+								{t("appointments.reschedule.cta", "Reprogrammer")}
 							</Link>
 						</Button>
 

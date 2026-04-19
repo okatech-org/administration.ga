@@ -218,34 +218,82 @@ export function AppointmentSlotPicker({
 					<>
 						{/* Calendar Navigation */}
 						<div className="flex items-center justify-between">
-							<Button variant="outline" size="sm" onClick={handlePrevMonth}>
-								←
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={handlePrevMonth}
+								aria-label={t("appointments.prevMonth", "Mois précédent")}
+							>
+								<span aria-hidden="true">←</span>
 							</Button>
-							<span className="font-medium capitalize">
+							<span className="font-medium capitalize" aria-live="polite">
 								{formatMonthYear()}
 							</span>
-							<Button variant="outline" size="sm" onClick={handleNextMonth}>
-								→
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={handleNextMonth}
+								aria-label={t("appointments.nextMonth", "Mois suivant")}
+							>
+								<span aria-hidden="true">→</span>
 							</Button>
 						</div>
 
 						{/* Calendar Grid */}
-						<div className="grid grid-cols-7 gap-1 text-center text-sm">
+						<div
+							role="grid"
+							aria-label={t("appointments.calendarLabel", "Calendrier des créneaux disponibles")}
+							className="grid grid-cols-7 gap-1 text-center text-sm"
+							onKeyDown={(e) => {
+								if (!selectedDate) return;
+								const idx = calendarDays.findIndex((d) => d.date === selectedDate);
+								if (idx < 0) return;
+								let next = idx;
+								if (e.key === "ArrowRight") next = idx + 1;
+								else if (e.key === "ArrowLeft") next = idx - 1;
+								else if (e.key === "ArrowDown") next = idx + 7;
+								else if (e.key === "ArrowUp") next = idx - 7;
+								else return;
+								e.preventDefault();
+								const target = calendarDays[next];
+								if (target?.hasSlots && !target.isPast && target.isCurrentMonth) {
+									handleSelectDate(target.date);
+								}
+							}}
+						>
 							{["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"].map((day) => (
 								<div
 									key={day}
+									role="columnheader"
 									className="py-2 font-medium text-muted-foreground text-xs"
 								>
 									{day}
 								</div>
 							))}
-							{calendarDays.map((day) => (
-								<button
-									key={day.date}
-									type="button"
-									disabled={!day.isCurrentMonth || day.isPast || !day.hasSlots}
-									onClick={() => day.hasSlots && handleSelectDate(day.date)}
-									className={`
+							{calendarDays.map((day) => {
+								const isDisabled =
+									!day.isCurrentMonth || day.isPast || !day.hasSlots;
+								const isSelected = selectedDate === day.date;
+								const ariaLabel = day.isCurrentMonth
+									? format(new Date(day.date), "EEEE d MMMM yyyy", {
+											locale: fr,
+										}) +
+										(day.hasSlots && !day.isPast
+											? ` — ${t("appointments.available", "Disponible")}`
+											: ` — ${t("appointments.unavailable", "Indisponible")}`)
+									: undefined;
+								return (
+									<button
+										key={day.date}
+										type="button"
+										role="gridcell"
+										disabled={isDisabled}
+										aria-label={ariaLabel}
+										aria-pressed={isSelected}
+										aria-disabled={isDisabled}
+										tabIndex={isSelected ? 0 : -1}
+										onClick={() => day.hasSlots && handleSelectDate(day.date)}
+										className={`
                     p-2 rounded-md text-sm transition-colors
                     ${!day.isCurrentMonth ? "text-transparent" : ""}
                     ${day.isPast ? "text-muted-foreground/30" : ""}
@@ -254,27 +302,28 @@ export function AppointmentSlotPicker({
 												? "bg-primary/10 text-primary hover:bg-primary/20 font-medium cursor-pointer"
 												: "cursor-default"
 										}
-                    ${selectedDate === day.date ? "ring-2 ring-primary" : ""}
+                    ${isSelected ? "ring-2 ring-primary" : ""}
                   `}
-								>
-									{day.day || ""}
-								</button>
-							))}
+									>
+										{day.day || ""}
+									</button>
+								);
+							})}
 						</div>
 
 						{/* Time Slots for selected date */}
 						{selectedDate && (
-							<div className="pt-4 border-t">
+							<div className="pt-4 border-t" aria-live="polite">
 								<p className="text-sm font-medium mb-3">
 									{t("appointments.availableSlots")}{" "}
 									{format(new Date(selectedDate), "d MMMM", { locale: fr })}
 								</p>
 								{isLoadingSlots ? (
-									<div className="flex justify-center py-4">
+									<div className="flex justify-center py-4" role="status" aria-label={t("common.loading", "Chargement")}>
 										<Loader2 className="h-5 w-5 animate-spin text-amber-600" />
 									</div>
 								) : slots.length > 0 ? (
-									<div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+									<div className="grid grid-cols-2 sm:grid-cols-3 gap-2" role="list">
 										{slots.map((slot) => {
 											const isSelected =
 												(selectedSlot as DynamicSlotSelection | null)
@@ -285,6 +334,9 @@ export function AppointmentSlotPicker({
 												<button
 													key={slot.startTime}
 													type="button"
+													role="listitem"
+													aria-label={`${t("appointments.slotAt", "Créneau à")} ${slot.startTime}, ${slot.availableCount} ${t("appointments.placesAvailable", "places disponibles")}`}
+													aria-pressed={isSelected}
 													onClick={() => handleSelectSlot(slot)}
 													className={`
                             p-3 rounded-lg border text-center transition-all

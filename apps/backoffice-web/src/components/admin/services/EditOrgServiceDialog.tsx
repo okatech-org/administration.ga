@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useConvexMutationQuery } from "@/integrations/convex/hooks";
 
 export interface EditOrgServiceDialogProps {
@@ -37,6 +38,7 @@ export interface EditOrgServiceDialogProps {
   serviceName: string;
   initialPricing?: { amount: number; currency: string };
   initialEstimatedDays?: number;
+  initialRequireAgentValidation?: boolean;
   onClose: () => void;
 }
 
@@ -45,12 +47,14 @@ export function EditOrgServiceDialog({
   serviceName,
   initialPricing,
   initialEstimatedDays,
+  initialRequireAgentValidation,
   onClose,
 }: EditOrgServiceDialogProps) {
   const isOpen = orgServiceId !== null;
   const [amount, setAmount] = useState(0);
   const [currency, setCurrency] = useState<"EUR" | "USD" | "XAF">("EUR");
   const [estimatedDays, setEstimatedDays] = useState<number | "">("");
+  const [requireAgentValidation, setRequireAgentValidation] = useState(false);
 
   const { mutateAsync: updateOrgService, isPending } = useConvexMutationQuery(
     api.functions.services.updateOrgService,
@@ -63,8 +67,9 @@ export function EditOrgServiceDialog({
         ((initialPricing?.currency?.toUpperCase() ?? "EUR") as "EUR" | "USD" | "XAF"),
       );
       setEstimatedDays(initialEstimatedDays ?? "");
+      setRequireAgentValidation(initialRequireAgentValidation ?? false);
     }
-  }, [isOpen, initialPricing, initialEstimatedDays]);
+  }, [isOpen, initialPricing, initialEstimatedDays, initialRequireAgentValidation]);
 
   const handleSubmit = async () => {
     if (!orgServiceId) return;
@@ -74,6 +79,7 @@ export function EditOrgServiceDialog({
         pricing: { amount, currency: currency.toLowerCase() },
         estimatedDays:
           typeof estimatedDays === "number" ? estimatedDays : undefined,
+        requireAgentValidation,
       });
       toast.success("Service mis à jour");
       onClose();
@@ -141,6 +147,24 @@ export function EditOrgServiceDialog({
               demande. Utilisé pour les alertes SLA.
             </p>
           </Field>
+
+          <div className="flex items-start gap-3 rounded-md border border-border/50 p-3">
+            <Switch
+              checked={requireAgentValidation}
+              onCheckedChange={setRequireAgentValidation}
+              aria-label="Validation agent requise"
+            />
+            <div className="space-y-0.5">
+              <div className="text-sm font-medium">
+                Validation par un agent avant confirmation
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Les réservations citoyens créent un RDV en statut «&nbsp;En
+                attente&nbsp;»&nbsp;; un agent doit le confirmer avant qu'il ne
+                soit actif. Par défaut&nbsp;: auto-confirmé.
+              </p>
+            </div>
+          </div>
         </div>
 
         <DialogFooter>

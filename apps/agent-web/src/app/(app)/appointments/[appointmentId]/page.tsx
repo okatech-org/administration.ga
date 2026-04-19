@@ -9,12 +9,15 @@ import {
 	AlertCircle,
 	ArrowLeft,
 	Calendar,
+	CalendarPlus,
 	Clock,
 	FileText,
 	Link as LinkIcon,
+	RotateCcw,
 	User,
 	X,
 } from "lucide-react";
+import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { CallButton } from "@/components/meetings/call-button";
@@ -51,6 +54,13 @@ export default function AppointmentDetail() {
 	);
 	const { mutateAsync: noShowMutation } = useConvexMutationQuery(
 		api.functions.slots.markNoShow,
+	);
+
+	const { data: icalData } = useAuthenticatedConvexQuery(
+		api.functions.slots.createIcalToken,
+		appointment && appointment.status !== "cancelled"
+			? { appointmentId: appointmentId as Id<"appointments"> }
+			: "skip",
 	);
 
 	const handleCancel = async () => {
@@ -263,6 +273,41 @@ export default function AppointmentDetail() {
 					</FlatCard>
 				)}
 			</div>
+
+			{(() => {
+				const today = new Date().toISOString().split("T")[0];
+				const isFuture = appointment.date >= today;
+				const isActive =
+					appointment.status === "confirmed" || appointment.status === "pending";
+				if (!isFuture || !isActive) return null;
+				return (
+					<FlatCard>
+						<div className="p-3 lg:p-4 space-y-3">
+							<p className="text-sm font-medium">
+								{t("common.actions", "Actions")}
+							</p>
+							<div className="flex flex-wrap gap-2">
+								<Button variant="outline" asChild>
+									<Link
+										href={`/appointments/${appointment._id}/reschedule`}
+									>
+										<RotateCcw className="mr-2 h-4 w-4" />
+										{t("appointments.actions.reschedule")}
+									</Link>
+								</Button>
+								{icalData?.url && (
+									<Button variant="outline" asChild>
+										<a href={icalData.url} download>
+											<CalendarPlus className="mr-2 h-4 w-4" />
+											{t("appointments.actions.addToCalendar")}
+										</a>
+									</Button>
+								)}
+							</div>
+						</div>
+					</FlatCard>
+				);
+			})()}
 
 			{appointment.status === RequestStatus.Completed && (
 				<FlatCard>

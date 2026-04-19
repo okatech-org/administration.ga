@@ -4915,11 +4915,72 @@
 		"cancelled": "Appointment cancelled",
 		"cancelError": "Error cancelling appointment",
 		"status": {
+			"pending": "Awaiting confirmation",
 			"confirmed": "Confirmed",
 			"completed": "Completed",
 			"cancelled": "Cancelled",
 			"noShow": "No-show",
 			"rescheduled": "Rescheduled"
+		},
+		"mode": {
+			"inPerson": "In person",
+			"remote": "Video call",
+			"phone": "Phone"
+		},
+		"actions": {
+			"reschedule": "Reschedule",
+			"cancel": "Cancel",
+			"addToCalendar": "Add to calendar",
+			"joinVideo": "Join video call"
+		},
+		"reschedule": {
+			"title": "Reschedule appointment",
+			"cta": "Reschedule",
+			"currentSlot": "Current slot",
+			"newSlot": "New slot",
+			"confirm": "Confirm reschedule",
+			"confirmDesc": "Review the details before confirming your new appointment.",
+			"confirmButton": "Confirm",
+			"reason": "Reason (optional)",
+			"reasonPlaceholder": "Briefly explain why you are rescheduling...",
+			"success": "Appointment rescheduled successfully!",
+			"error": "Error while rescheduling.",
+			"notFound": "Appointment not found or not reschedulable."
+		},
+		"join": {
+			"connected": "Connecting to the video call…",
+			"errors": {
+				"NOT_AUTHENTICATED": "You need to sign in.",
+				"NOT_AUTHORIZED_OR_NOT_FOUND": "Appointment not found or access denied.",
+				"NOT_REMOTE_APPOINTMENT": "This appointment is not a video call.",
+				"APPOINTMENT_NOT_JOINABLE": "This appointment is no longer active.",
+				"OUTSIDE_JOIN_WINDOW": "The video call is available 15 minutes before the appointment time.",
+				"LIVEKIT_NOT_CONFIGURED": "Video service unavailable."
+			}
+		},
+		"manualBooking": {
+			"cta": "New appointment",
+			"title": "Create appointment",
+			"subtitle": "Schedule an appointment for a user (walk-in or phone).",
+			"citizen": "User",
+			"searchPlaceholder": "Search by name, email or passport…",
+			"noProfiles": "No profile found.",
+			"selected": "Selected",
+			"service": "Service",
+			"selectService": "Select a service",
+			"type": "Type",
+			"typeDeposit": "Deposit",
+			"typePickup": "Pickup",
+			"channel": "Channel",
+			"channelWalkIn": "Walk-in",
+			"channelPhone": "Phone",
+			"channelAdmin": "Admin",
+			"mode": "Mode",
+			"notes": "Internal notes",
+			"notesPlaceholder": "Useful info for this appointment…",
+			"submit": "Create appointment",
+			"success": "Appointment created successfully.",
+			"error": "Failed to create appointment."
 		},
 		"appointmentLabel_scheduled": "Upcoming",
 		"appointmentLabel_past": "Past",

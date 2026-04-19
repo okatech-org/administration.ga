@@ -8,19 +8,39 @@ import {
 	AlertCircle,
 	ArrowLeft,
 	Calendar,
+	CalendarPlus,
 	Clock,
 	FileText,
 	Info,
 	Link as LinkIcon,
 	MapPin,
+	RotateCcw,
 	User,
+	Video,
+	X,
 } from "lucide-react";
+import Link from "next/link";
+import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/my-space/flat-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
+import {
+	useAuthenticatedConvexQuery,
+	useConvexMutationQuery,
+} from "@/integrations/convex/hooks";
 
 export default function AppointmentDetail() {
 	const { appointmentId } = useParams<{ appointmentId: string }>();
@@ -33,6 +53,30 @@ export default function AppointmentDetail() {
 			appointmentId: appointmentId as Id<"appointments">,
 		},
 	);
+
+	const { mutateAsync: cancelAppointment, isPending: isCancelling } =
+		useConvexMutationQuery(api.functions.slots.cancelAppointment);
+
+	const { data: icalData } = useAuthenticatedConvexQuery(
+		api.functions.slots.createIcalToken,
+		appointment && appointment.status !== "cancelled"
+			? { appointmentId: appointmentId as Id<"appointments"> }
+			: "skip",
+	);
+
+	const handleCancel = async () => {
+		try {
+			await cancelAppointment({
+				appointmentId: appointmentId as Id<"appointments">,
+			});
+			toast.success(t("appointments.cancelled"));
+			router.push("/my-space/iagenda?tab=mes-rdv");
+		} catch (err: unknown) {
+			toast.error(
+				err instanceof Error ? err.message : t("appointments.cancelError"),
+			);
+		}
+	};
 
 	const getStatusBadgeVariant = (status: string) => {
 		switch (status) {
@@ -311,6 +355,86 @@ export default function AppointmentDetail() {
 							</div>
 						</FlatCard>
 					)}
+
+					{(() => {
+						const today = new Date().toISOString().split("T")[0];
+						const isFuture = appointment.date >= today;
+						const isActive =
+							appointment.status === "confirmed" ||
+							appointment.status === "pending";
+						if (!isFuture || !isActive) return null;
+						const isRemote = appointment.mode === "remote";
+						return (
+							<FlatCard>
+								<div className="p-3 lg:p-4 pb-0">
+									<h3 className="font-semibold leading-none tracking-tight">
+										{t("common.actions", "Actions")}
+									</h3>
+								</div>
+								<div className="p-3 lg:p-4 flex flex-col gap-2">
+									{isRemote && (
+										<Button asChild className="w-full">
+											<Link
+												href={`/my-space/appointments/${appointment._id}/join`}
+											>
+												<Video className="mr-2 h-4 w-4" />
+												{t("appointments.actions.joinVideo")}
+											</Link>
+										</Button>
+									)}
+									<Button variant="outline" className="w-full" asChild>
+										<Link
+											href={`/my-space/appointments/${appointment._id}/reschedule`}
+										>
+											<RotateCcw className="mr-2 h-4 w-4" />
+											{t("appointments.actions.reschedule")}
+										</Link>
+									</Button>
+									{icalData?.url && (
+										<Button variant="outline" className="w-full" asChild>
+											<a href={icalData.url} download>
+												<CalendarPlus className="mr-2 h-4 w-4" />
+												{t("appointments.actions.addToCalendar")}
+											</a>
+										</Button>
+									)}
+									<AlertDialog>
+										<AlertDialogTrigger asChild>
+											<Button
+												variant="outline"
+												className="w-full text-destructive hover:text-destructive"
+											>
+												<X className="mr-2 h-4 w-4" />
+												{t("appointments.actions.cancel")}
+											</Button>
+										</AlertDialogTrigger>
+										<AlertDialogContent>
+											<AlertDialogHeader>
+												<AlertDialogTitle>
+													{t("appointments.cancelConfirmTitle")}
+												</AlertDialogTitle>
+												<AlertDialogDescription>
+													{t("appointments.cancelConfirmDesc")}
+												</AlertDialogDescription>
+											</AlertDialogHeader>
+											<AlertDialogFooter>
+												<AlertDialogCancel>
+													{t("common.cancel")}
+												</AlertDialogCancel>
+												<AlertDialogAction
+													onClick={handleCancel}
+													disabled={isCancelling}
+													className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+												>
+													{t("appointments.confirmCancel")}
+												</AlertDialogAction>
+											</AlertDialogFooter>
+										</AlertDialogContent>
+									</AlertDialog>
+								</div>
+							</FlatCard>
+						);
+					})()}
 				</div>
 			</div>
 		</div>

@@ -22,6 +22,7 @@ import {
 	ClipboardList,
 	Clock,
 	FileText,
+	Hourglass,
 	Loader2,
 } from "lucide-react";
 import { motion } from "motion/react";
@@ -32,6 +33,7 @@ import {
 	AppointmentSlotPicker,
 	type DynamicSlotSelection,
 } from "@/components/appointments/AppointmentSlotPicker";
+import { WaitlistPanel } from "@/components/appointments/WaitlistPanel";
 import { AgendaCalendar, type CalendarDayInfo } from "@/components/my-space/agenda-calendar";
 import { AppointmentCard, type AppointmentData } from "@/components/my-space/appointment-card";
 import { EmptyState } from "@/components/my-space/empty-state";
@@ -48,7 +50,7 @@ import { cn } from "@/lib/utils";
 
 type StatusFilter = "all" | "confirmed" | "completed" | "cancelled";
 
-const TAB_SLUGS = ["agenda", "mes-rdv", "prendre-rdv"] as const;
+const TAB_SLUGS = ["agenda", "mes-rdv", "prendre-rdv", "liste-attente"] as const;
 type TabSlug = (typeof TAB_SLUGS)[number];
 // ═══════════════════════════════════════════════════════════════
 
@@ -61,6 +63,7 @@ export default function IAgendaPage() {
 		agenda: t("iAgenda.tabs.agenda"),
 		"mes-rdv": t("iAgenda.tabs.appointments"),
 		"prendre-rdv": t("iAgenda.tabs.bookAppointment"),
+		"liste-attente": t("iAgenda.tabs.waitlist", "Liste d'attente"),
 	};
 
 	const activeTab = useMemo(() => {
@@ -341,53 +344,67 @@ export default function IAgendaPage() {
 					</FlatCard>
 				</div>
 
-				{/* ─── COL 2 : Mes Rendez-vous (5/12) ─── */}
+				{/* ─── COL 2 : Mes Rendez-vous OU Liste d'attente (5/12) ─── */}
 				<div className="lg:col-span-5 flex flex-col min-h-0 overflow-hidden">
 					<FlatCard className="flex-1 flex flex-col overflow-hidden">
 						<div className="p-4 flex flex-col flex-1 min-h-0">
-							<SectionHead
-								icon={ClipboardList}
-								title={t("iAgenda.myAppointments")}
-								actions={
-									<span className="text-[10px] bg-foreground/[0.06] dark:bg-foreground/[0.12] text-muted-foreground font-bold px-2 py-0.5 rounded-full">
-										{allAppointments.length}
-									</span>
-								}
-							/>
-
-							{/* Filtres */}
-							<div className="flex flex-wrap items-center gap-1.5 mb-3 shrink-0">
-								{(["all", "confirmed", "completed", "cancelled"] as StatusFilter[]).map((s) => (
-									<button key={s} type="button" onClick={() => setStatusFilter(s)}
-										className={cn("h-7 px-3 rounded-full text-[11px] font-medium transition-all active:scale-[0.97]",
-											statusFilter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70")}>
-										{{ all: t("common.all"), confirmed: t("iAgenda.status.confirmedPlural"), completed: t("iAgenda.status.completedPlural"), cancelled: t("iAgenda.status.cancelledPlural") }[s]}
-									</button>
-								))}
-							</div>
-
-							{/* Liste scrollable */}
-							<div className="flex-1 overflow-y-auto citizen-scrollbar space-y-2">
-								{isPending ? (
-									<div className="flex justify-center py-8"><Loader2 className="animate-spin h-6 w-6 text-primary" /></div>
-								) : filteredAppointments.length === 0 ? (
-									<EmptyState
-										icon={<Calendar />}
-										title={t("iAgenda.noAppointments")}
-										description={statusFilter !== "all" ? t("iAgenda.changeFilters") : t("iAgenda.bookFirst")}
+							{activeTab === "liste-attente" ? (
+								<>
+									<SectionHead
+										icon={Hourglass}
+										title={t("iAgenda.tabs.waitlist", "Liste d'attente")}
 									/>
-								) : (
-									filteredAppointments.map((apt) => (
-										<AppointmentCard
-											key={apt._id}
-											appointment={apt}
-											onCancel={handleCancel}
-											showActions={apt.date >= today}
-											compact
-										/>
-									))
-								)}
-							</div>
+									<div className="flex-1 overflow-y-auto citizen-scrollbar">
+										<WaitlistPanel />
+									</div>
+								</>
+							) : (
+								<>
+									<SectionHead
+										icon={ClipboardList}
+										title={t("iAgenda.myAppointments")}
+										actions={
+											<span className="text-[10px] bg-foreground/[0.06] dark:bg-foreground/[0.12] text-muted-foreground font-bold px-2 py-0.5 rounded-full">
+												{allAppointments.length}
+											</span>
+										}
+									/>
+
+									{/* Filtres */}
+									<div className="flex flex-wrap items-center gap-1.5 mb-3 shrink-0">
+										{(["all", "confirmed", "completed", "cancelled"] as StatusFilter[]).map((s) => (
+											<button key={s} type="button" onClick={() => setStatusFilter(s)}
+												className={cn("h-7 px-3 rounded-full text-[11px] font-medium transition-all active:scale-[0.97]",
+													statusFilter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70")}>
+												{{ all: t("common.all"), confirmed: t("iAgenda.status.confirmedPlural"), completed: t("iAgenda.status.completedPlural"), cancelled: t("iAgenda.status.cancelledPlural") }[s]}
+											</button>
+										))}
+									</div>
+
+									{/* Liste scrollable */}
+									<div className="flex-1 overflow-y-auto citizen-scrollbar space-y-2">
+										{isPending ? (
+											<div className="flex justify-center py-8"><Loader2 className="animate-spin h-6 w-6 text-primary" /></div>
+										) : filteredAppointments.length === 0 ? (
+											<EmptyState
+												icon={<Calendar />}
+												title={t("iAgenda.noAppointments")}
+												description={statusFilter !== "all" ? t("iAgenda.changeFilters") : t("iAgenda.bookFirst")}
+											/>
+										) : (
+											filteredAppointments.map((apt) => (
+												<AppointmentCard
+													key={apt._id}
+													appointment={apt}
+													onCancel={handleCancel}
+													showActions={apt.date >= today}
+													compact
+												/>
+											))
+										)}
+									</div>
+								</>
+							)}
 						</div>
 					</FlatCard>
 				</div>
@@ -651,6 +668,21 @@ export default function IAgendaPage() {
 									<Button variant="ghost" className="w-full h-8 text-xs bg-muted rounded-full" onClick={() => setBookStep("select-slot")}>← {t("iAgenda.changeSlot")}</Button>
 								</div>
 							)}
+						</div>
+					</FlatCard>
+				</div>
+
+				{/* Page 4 : Liste d'attente */}
+				<div className="w-full shrink-0 snap-start h-full overflow-y-auto citizen-scrollbar p-0.5">
+					<FlatCard className="min-h-full flex flex-col">
+						<div className="p-3 flex flex-col flex-1">
+							<SectionHead
+								icon={Hourglass}
+								title={t("iAgenda.tabs.waitlist", "Liste d'attente")}
+							/>
+							<div className="flex-1">
+								<WaitlistPanel />
+							</div>
 						</div>
 					</FlatCard>
 				</div>

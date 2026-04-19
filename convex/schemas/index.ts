@@ -12,6 +12,7 @@ export { postsTable } from "./posts";
 export { conversationsTable } from "./conversations";
 export { formTemplatesTable } from "./formTemplates";
 export { appointmentsTable } from "./appointments";
+export { appointmentWaitlistTable } from "./appointmentWaitlist";
 export { agentSchedulesTable } from "./agentSchedules";
 export { messagesTable } from "./messages";
 export { documentTemplatesTable } from "./documentTemplates";
@@ -121,3 +122,10 @@ export { pushSubscriptionsTable } from "./pushSubscriptions";
 // Sprint 6 — Notes post-appel + brouillons de messages
 export { callNotesTable } from "./callNotes";
 export { draftMessagesTable } from "./draftMessages";
+
+// Agent IA Proactif — Module ai_assistant
+export { aiSuggestionsTable } from "./aiSuggestions";
+export { aiActivityLogTable } from "./aiActivityLog";
+export { userAIPreferencesTable } from "./userAIPreferences";
+export { aiAgentPresenceTable } from "./aiAgentPresence";
+export { aiCapabilityConfigTable } from "./aiCapabilityConfig";

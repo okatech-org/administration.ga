@@ -22,6 +22,11 @@ import {
   type SettingsTabGroup,
 } from "@/components/shared/settings-layout"
 import { captureEvent } from "@/lib/analytics"
+import {
+  disablePushSubscription,
+  enablePushSubscription,
+} from "@/lib/push-subscription"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 const TAB_IDS = [
@@ -56,12 +61,14 @@ function SettingsPageContent() {
   const updatePreferences = useMutation(
     api.functions.userPreferences.updateMyPreferences
   )
+  const subscribePush = useMutation(api.functions.pushSubscriptions.subscribe)
+  const unsubscribePush = useMutation(api.functions.pushSubscriptions.unsubscribe)
 
   const handleTabChange = (tabId: string) => {
     router.replace(`/my-space/settings?tab=${tabId}`)
   }
 
-  const handlePrefToggle = (
+  const handlePrefToggle = async (
     key:
       | "emailNotifications"
       | "pushNotifications"
@@ -70,6 +77,25 @@ function SettingsPageContent() {
       | "shareAnalytics",
     value: boolean
   ) => {
+    if (key === "pushNotifications") {
+      if (value) {
+        const result = await enablePushSubscription((args) => subscribePush(args))
+        if (!result.ok) {
+          const msg =
+            result.reason === "denied"
+              ? t("settings.notifications.pushDenied", "Autorisation refusée par le navigateur.")
+              : result.reason === "unsupported"
+                ? t("settings.notifications.pushUnsupported", "Push non supporté sur ce navigateur.")
+                : result.reason === "no_vapid"
+                  ? t("settings.notifications.pushNotConfigured", "Push non configuré (VAPID manquant).")
+                  : t("settings.notifications.pushError", "Impossible d'activer les notifications push.")
+          toast.error(msg)
+          return
+        }
+      } else {
+        await disablePushSubscription((args) => unsubscribePush(args))
+      }
+    }
     updatePreferences({ [key]: value })
     captureEvent("myspace_preferences_updated")
   }

@@ -5499,11 +5499,72 @@
 		"cancelled": "Rendez-vous annulé",
 		"cancelError": "Erreur lors de l'annulation",
 		"status": {
+			"pending": "En attente de confirmation",
 			"confirmed": "Confirmé",
 			"completed": "Terminé",
 			"cancelled": "Annulé",
 			"noShow": "Absent",
 			"rescheduled": "Reporté"
+		},
+		"mode": {
+			"inPerson": "Sur place",
+			"remote": "Visioconférence",
+			"phone": "Téléphone"
+		},
+		"actions": {
+			"reschedule": "Reprogrammer",
+			"cancel": "Annuler",
+			"addToCalendar": "Ajouter au calendrier",
+			"joinVideo": "Rejoindre la visio"
+		},
+		"reschedule": {
+			"title": "Reprogrammer le rendez-vous",
+			"cta": "Reprogrammer",
+			"currentSlot": "Créneau actuel",
+			"newSlot": "Nouveau créneau",
+			"confirm": "Confirmer la reprogrammation",
+			"confirmDesc": "Vérifiez les détails avant de confirmer votre nouveau rendez-vous.",
+			"confirmButton": "Confirmer",
+			"reason": "Motif (optionnel)",
+			"reasonPlaceholder": "Expliquez brièvement pourquoi vous reprogrammez...",
+			"success": "Rendez-vous reprogrammé avec succès !",
+			"error": "Erreur lors de la reprogrammation.",
+			"notFound": "Rendez-vous introuvable ou non modifiable."
+		},
+		"join": {
+			"connected": "Connexion à la visioconférence…",
+			"errors": {
+				"NOT_AUTHENTICATED": "Vous devez être connecté.",
+				"NOT_AUTHORIZED_OR_NOT_FOUND": "Rendez-vous introuvable ou accès refusé.",
+				"NOT_REMOTE_APPOINTMENT": "Ce rendez-vous n'est pas en visioconférence.",
+				"APPOINTMENT_NOT_JOINABLE": "Ce rendez-vous n'est plus actif.",
+				"OUTSIDE_JOIN_WINDOW": "La visioconférence est disponible 15 minutes avant l'heure du rendez-vous.",
+				"LIVEKIT_NOT_CONFIGURED": "Service de visioconférence indisponible."
+			}
+		},
+		"manualBooking": {
+			"cta": "Nouveau RDV",
+			"title": "Créer un rendez-vous",
+			"subtitle": "Planifiez un rendez-vous pour un usager (sur place ou par téléphone).",
+			"citizen": "Usager",
+			"searchPlaceholder": "Rechercher par nom, e-mail ou passeport…",
+			"noProfiles": "Aucun profil trouvé.",
+			"selected": "Sélectionné",
+			"service": "Service",
+			"selectService": "Choisir un service",
+			"type": "Type",
+			"typeDeposit": "Dépôt",
+			"typePickup": "Retrait",
+			"channel": "Canal",
+			"channelWalkIn": "Sur place",
+			"channelPhone": "Téléphone",
+			"channelAdmin": "Administratif",
+			"mode": "Mode",
+			"notes": "Notes internes",
+			"notesPlaceholder": "Informations utiles pour le rendez-vous…",
+			"submit": "Créer le rendez-vous",
+			"success": "Rendez-vous créé avec succès.",
+			"error": "Impossible de créer le rendez-vous."
 		},
 		"newButton": "Prendre rendez-vous",
 		"upcoming": "Rendez-vous à venir",

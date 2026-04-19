@@ -15,22 +15,27 @@ import {
 	Crown,
 	Edit,
 	Eye,
+	Layers,
 	Loader2,
+	Lock,
+	MoreHorizontal,
 	PenLine,
 	Plus,
 	Shield,
 	ShieldCheck,
 	Trash2,
-	Users,
-	MoreHorizontal,
-	UserPlus,
+	UserCog,
 	UserMinus,
+	UserPlus,
+	Users,
+	Wand2,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { SectionHeader } from "@/components/design-system/section-header";
@@ -253,6 +258,78 @@ const GRADE_ICONS: Record<string, string> = {
 };
 
 // ─── Module Permission Card ────────────────────────────────────
+// ─── Reusable UI helpers ────────────────────────────────────────
+function SectionLabel({
+	icon: Icon,
+	label,
+	hint,
+}: {
+	icon: React.ComponentType<{ className?: string }>;
+	label: string;
+	hint?: string;
+}) {
+	return (
+		<div className="flex items-center gap-2">
+			<div className="rounded-md bg-foreground/[0.06] p-1 dark:bg-foreground/[0.12]">
+				<Icon className="h-3.5 w-3.5 text-muted-foreground" />
+			</div>
+			<span className="text-sm font-semibold">{label}</span>
+			{hint && (
+				<span className="text-[10px] font-normal text-muted-foreground">
+					{hint}
+				</span>
+			)}
+		</div>
+	);
+}
+
+function ToggleCard({
+	icon: Icon,
+	iconClassName,
+	title,
+	description,
+	checked,
+	onChange,
+}: {
+	icon: React.ComponentType<{ className?: string }>;
+	iconClassName?: string;
+	title: string;
+	description: string;
+	checked: boolean;
+	onChange: (v: boolean) => void;
+}) {
+	return (
+		<div
+			onClick={() => onChange(!checked)}
+			className={cn(
+				"flex w-full cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition-all",
+				checked
+					? "border-primary/30 bg-primary/5"
+					: "border-border/60 bg-muted/20 hover:bg-muted/40",
+			)}
+		>
+			<div
+				className={cn(
+					"shrink-0 rounded-lg p-1.5",
+					checked ? "bg-primary/10 text-primary" : "bg-muted/50",
+					iconClassName,
+				)}
+			>
+				<Icon className="h-4 w-4" />
+			</div>
+			<div className="min-w-0 flex-1">
+				<p className="text-sm font-medium">{title}</p>
+				<p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+			</div>
+			<Switch
+				checked={checked}
+				onCheckedChange={onChange}
+				onClick={(e) => e.stopPropagation()}
+			/>
+		</div>
+	);
+}
+
 function ModulePermissionCard({
 	moduleCode,
 	selected,
@@ -825,405 +902,424 @@ function PositionFormSheet({
 	// For create mode, show template selector first
 	const showTemplateSelector = !isEdit && selectedTemplateCode === null;
 
+	const headerTitle = isEdit
+		? lang === "fr" ? "Modifier le poste" : "Edit position"
+		: showTemplateSelector
+			? lang === "fr" ? "Choisir un poste" : "Choose a position"
+			: lang === "fr" ? "Configurer le poste" : "Configure position";
+
+	const footer = !showTemplateSelector ? (
+		<div className="flex items-center justify-between gap-2">
+			<div className="text-xs text-muted-foreground flex items-center gap-1.5 min-w-0">
+				{effectiveTaskCount > 0 ? (
+					<>
+						<Shield className="h-3 w-3 text-primary shrink-0" />
+						<span className="font-medium text-foreground">{effectiveTaskCount}</span>
+						<span className="truncate">{lang === "fr" ? "permissions" : "permissions"}</span>
+						{permMode === "module" && moduleAccessConfig.length > 0 && (
+							<Badge variant="outline" className="text-[9px] px-1 h-4 ml-0.5 shrink-0">
+								{moduleAccessConfig.length} {lang === "fr" ? "mod." : "mod."}
+							</Badge>
+						)}
+					</>
+				) : (
+					<span className="truncate">{lang === "fr" ? "Aucune permission" : "No permissions"}</span>
+				)}
+			</div>
+			<div className="flex items-center gap-2 shrink-0">
+				<Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={isSaving}>
+					{lang === "fr" ? "Annuler" : "Cancel"}
+				</Button>
+				<Button size="sm" onClick={handleSubmit} disabled={!isFormValid || isSaving} className="gap-1.5">
+					{isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+					{isEdit
+						? lang === "fr" ? "Enregistrer" : "Save"
+						: lang === "fr" ? "Créer le poste" : "Create position"}
+				</Button>
+			</div>
+		</div>
+	) : undefined;
+
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-[95vw] w-[1200px] max-h-[92vh] overflow-hidden p-0 gap-0">
-				{/* Header */}
-				<div className="border-b px-6 py-4 shrink-0">
-					<DialogHeader>
-						<DialogTitle className="flex items-center gap-2.5 text-lg">
-							<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-								<Shield className="h-5 w-5 text-primary" />
-							</div>
-							{isEdit
-								? lang === "fr" ? "Modifier le poste" : "Edit position"
-								: showTemplateSelector
-									? lang === "fr" ? "Choisir un poste" : "Choose a position"
-									: lang === "fr" ? "Configurer le poste" : "Configure position"}
-						</DialogTitle>
-						<DialogDescription>
-							{isEdit
-								? lang === "fr" ? "Modifiez les détails et les permissions" : "Edit details and permissions"
-								: showTemplateSelector
-									? lang === "fr"
-										? "Sélectionnez un poste prédéfini ou créez un poste personnalisé"
-										: "Select a predefined position or create a custom one"
-									: lang === "fr"
-										? "Personnalisez les détails et les permissions du poste"
-										: "Customize position details and permissions"}
-						</DialogDescription>
-					</DialogHeader>
-				</div>
-
-				{showTemplateSelector ? (
-					/* ─── Template Selector Screen ─── */
-					<div className="overflow-y-auto p-5 flex-1 min-h-0">
-						{/* Org type tabs — horizontal scroll */}
-						<div className="flex items-center gap-1.5 mb-4 overflow-x-auto pb-2 -mx-1 px-1">
-							{orgTypesWithPositions.map((tpl) => {
-								const isActive = selectedOrgType === tpl.type;
-								const isCurrentOrg = orgType === tpl.type;
-								return (
-									<button
-										key={tpl.type}
-										type="button"
-										className={cn(
-											"flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap shrink-0 border",
-											isActive
-												? "bg-primary text-primary-foreground border-primary"
-												: "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground border-transparent",
-										)}
-										onClick={() => setSelectedOrgType(tpl.type)}
-									>
-										<DynamicLucideIcon name={tpl.icon} className="h-3.5 w-3.5" />
-										{tpl.label[lang as "fr" | "en"]}
-										{isCurrentOrg && (
-											<span className={cn(
-												"text-[8px] px-1 py-0 rounded-full",
-												isActive ? "bg-primary-foreground/20" : "bg-primary/10 text-primary",
-											)}>
-												{lang === "fr" ? "actuel" : "current"}
-											</span>
-										)}
-									</button>
-								);
-							})}
-						</div>
-
-						{/* Selected org type header */}
-						<div className="flex items-center justify-between mb-3">
-							<div className="flex items-center gap-2">
-								<DynamicLucideIcon
-									name={ORGANIZATION_TEMPLATES.find((t) => t.type === selectedOrgType)?.icon ?? "Building"}
-									className="h-4 w-4 text-primary"
-								/>
-								<span className="text-sm font-medium">
-									{ORGANIZATION_TEMPLATES.find((t) => t.type === selectedOrgType)?.label[lang as "fr" | "en"] ??
-										(lang === "fr" ? "Représentation" : "Representation")}
-								</span>
-								<span className="text-xs text-muted-foreground">— {positionTemplates.length} postes</span>
-							</div>
-						</div>
-
-						{/* Compact position template grid — 4 columns */}
-						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 mb-3">
-							{positionTemplates.map((tpl) => {
-								const gradeInfo = tpl.grade ? POSITION_GRADES[tpl.grade] : null;
-								const taskCount = getPresetTasks(tpl.taskPresets).length;
-								return (
-									<button
-										key={tpl.code}
-										type="button"
-										className={cn(
-											"group flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all",
-											"hover:border-primary/50 hover:bg-primary/5",
-											"focus:outline-none focus:ring-2 focus:ring-primary/30",
-										)}
-										onClick={() => selectTemplate(tpl)}
-									>
-										{/* Icon */}
-										<div className={cn(
-											"flex h-8 w-8 items-center justify-center rounded-md shrink-0",
-											gradeInfo ? gradeInfo.bgColor : "bg-muted",
+		<BottomSheet
+			open={open}
+			onOpenChange={onOpenChange}
+			title={headerTitle}
+			icon={<Shield className="h-4 w-4 text-primary" />}
+			maxWidthClass="max-w-4xl"
+			maxHeight="92vh"
+			footer={footer}
+		>
+			{showTemplateSelector ? (
+				/* ─── Template Selector Screen ─── */
+				<div className="p-4 md:p-5 space-y-3">
+					{/* Org type tabs — horizontal scroll */}
+					<div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+						{orgTypesWithPositions.map((tpl) => {
+							const isActive = selectedOrgType === tpl.type;
+							const isCurrentOrg = orgType === tpl.type;
+							return (
+								<button
+									key={tpl.type}
+									type="button"
+									className={cn(
+										"flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap shrink-0 border",
+										isActive
+											? "bg-primary text-primary-foreground border-primary"
+											: "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground border-transparent",
+									)}
+									onClick={() => setSelectedOrgType(tpl.type)}
+								>
+									<DynamicLucideIcon name={tpl.icon} className="h-3.5 w-3.5" />
+									{tpl.label[lang as "fr" | "en"]}
+									{isCurrentOrg && (
+										<span className={cn(
+											"text-[8px] px-1 py-0 rounded-full",
+											isActive ? "bg-primary-foreground/20" : "bg-primary/10 text-primary",
 										)}>
-											<DynamicLucideIcon
-												name={gradeInfo ? (GRADE_ICONS[tpl.grade ?? "agent"] ?? "User") : "User"}
-												className={cn("h-3.5 w-3.5", gradeInfo?.color ?? "text-muted-foreground")}
-											/>
-										</div>
-										{/* Content */}
-										<div className="min-w-0 flex-1">
-											<div className="flex items-center gap-1.5">
-												<span className="text-xs font-semibold truncate">
-													{tpl.title[lang as "fr" | "en"] || tpl.title.fr}
-												</span>
-												{tpl.isRequired && (
-													<Badge variant="outline" className="text-[8px] h-3.5 px-1 text-amber-600 border-amber-300 shrink-0">
-														{lang === "fr" ? "Requis" : "Req."}
-													</Badge>
-												)}
-											</div>
-											<div className="flex items-center gap-1.5 mt-0.5">
-												{gradeInfo && (
-													<span className={cn("text-[9px] font-medium", gradeInfo.color)}>
-														{gradeInfo.label[lang as "fr" | "en"]}
-													</span>
-												)}
-												<span className="text-[9px] text-muted-foreground">
-													{taskCount} perm.
-												</span>
-											</div>
-										</div>
-									</button>
-								);
-							})}
-							{/* Custom position — inline in grid */}
-							<button
-								type="button"
-								className={cn(
-									"group flex items-center gap-2.5 rounded-lg border-2 border-dashed px-3 py-2.5 text-left transition-all",
-									"hover:border-primary/50 hover:bg-primary/5",
-									"focus:outline-none focus:ring-2 focus:ring-primary/30",
-								)}
-								onClick={() => selectTemplate(null)}
-							>
-								<div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted shrink-0">
-									<Plus className="h-3.5 w-3.5 text-muted-foreground" />
-								</div>
-								<div className="min-w-0 flex-1">
-									<span className="text-xs font-semibold">
-										{lang === "fr" ? "Personnalisé" : "Custom"}
-									</span>
-									<span className="text-[9px] text-muted-foreground block">
-										{lang === "fr" ? "Créer un poste" : "Create position"}
-									</span>
-								</div>
-							</button>
+											{lang === "fr" ? "actuel" : "current"}
+										</span>
+									)}
+								</button>
+							);
+						})}
+					</div>
+
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-2">
+							<DynamicLucideIcon
+								name={ORGANIZATION_TEMPLATES.find((t) => t.type === selectedOrgType)?.icon ?? "Building"}
+								className="h-4 w-4 text-primary"
+							/>
+							<span className="text-sm font-medium">
+								{ORGANIZATION_TEMPLATES.find((t) => t.type === selectedOrgType)?.label[lang as "fr" | "en"] ??
+									(lang === "fr" ? "Représentation" : "Representation")}
+							</span>
+							<span className="text-xs text-muted-foreground">
+								— {positionTemplates.length} {lang === "fr" ? "postes" : "positions"}
+							</span>
 						</div>
 					</div>
-				) : (
-					/* ─── Configuration Screen (two columns) ─── */
-					<>
-						<div className="flex flex-col lg:flex-row overflow-hidden flex-1 min-h-0">
-							{/* Left column — Position details */}
-							<div className="lg:w-[440px] lg:border-r overflow-y-auto p-5 space-y-5 shrink-0">
-								{/* Back button (create mode only) */}
-								{!isEdit && (
-									<button
-										type="button"
-										className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1"
-										onClick={() => {
-											setSelectedTemplateCode(null);
-										}}
-									>
-										<ChevronRight className="h-3 w-3 rotate-180" />
-										{lang === "fr" ? "Changer de poste" : "Change position"}
-									</button>
-								)}
 
-								{/* Selected template indicator */}
-								{!isEdit && selectedTemplateCode && selectedTemplateCode !== "__custom__" && (
-									<div className="rounded-lg border border-primary/30 bg-primary/5 p-3 mb-2">
-										<div className="flex items-center gap-2">
-											<Check className="h-4 w-4 text-primary shrink-0" />
-											<div className="min-w-0 flex-1">
-												<span className="text-xs font-medium text-primary block">
-													{lang === "fr" ? "Poste prédéfini sélectionné" : "Predefined position selected"}
-												</span>
-												<span className="text-[10px] text-muted-foreground">
-													{lang === "fr"
-														? "Modifiez les champs ci-dessous si nécessaire"
-														: "Modify the fields below if needed"}
-												</span>
-											</div>
-										</div>
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+						{positionTemplates.map((tpl) => {
+							const gradeInfo = tpl.grade ? POSITION_GRADES[tpl.grade] : null;
+							const taskCount = getPresetTasks(tpl.taskPresets).length;
+							return (
+								<button
+									key={tpl.code}
+									type="button"
+									className={cn(
+										"group flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all",
+										"hover:border-primary/50 hover:bg-primary/5",
+										"focus:outline-none focus:ring-2 focus:ring-primary/30",
+									)}
+									onClick={() => selectTemplate(tpl)}
+								>
+									<div className={cn(
+										"flex h-8 w-8 items-center justify-center rounded-md shrink-0",
+										gradeInfo ? gradeInfo.bgColor : "bg-muted",
+									)}>
+										<DynamicLucideIcon
+											name={gradeInfo ? (GRADE_ICONS[tpl.grade ?? "agent"] ?? "User") : "User"}
+											className={cn("h-3.5 w-3.5", gradeInfo?.color ?? "text-muted-foreground")}
+										/>
 									</div>
-								)}
-
-								{/* General info */}
-								<div className="space-y-3">
-									<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-										<Edit className="h-3 w-3" />
-										{lang === "fr" ? "Informations" : "Information"}
-									</h3>
-									<div className="space-y-3">
-										{/* Titre — select with all org-type positions + custom input */}
-										<div className="space-y-1">
-											<Label htmlFor="pos-title" className="text-xs">
-												{lang === "fr" ? "Titre" : "Title"} <span className="text-destructive">*</span>
-											</Label>
-											{selectedTemplateCode === "__custom__" ? (
-												<Input
-													id="pos-title"
-													value={titleFr}
-													onChange={(e) => {
-														setTitleFr(e.target.value);
-														setTitleEn(e.target.value);
-														setCode(e.target.value.trim().toLowerCase().replace(/[\s']+/g, "_").replace(/[^a-z0-9_]/g, ""));
-													}}
-													placeholder={lang === "fr" ? "Titre du poste personnalisé" : "Custom position title"}
-													className="h-9"
-												/>
-											) : (
-												<Select
-													value={selectedTemplateCode ?? ""}
-													onValueChange={(val) => {
-														if (val === "__custom__") {
-															selectTemplate(null);
-														} else {
-															const tpl = positionTemplates.find((p) => p.code === val);
-															if (tpl) selectTemplate(tpl);
-														}
-													}}
-												>
-													<SelectTrigger id="pos-title" className="h-9">
-														<SelectValue placeholder={lang === "fr" ? "Choisir un poste" : "Select a position"} />
-													</SelectTrigger>
-													<SelectContent>
-														{positionTemplates.map((tpl) => (
-															<SelectItem key={tpl.code} value={tpl.code}>
-																{tpl.title.fr}
-															</SelectItem>
-														))}
-														<SelectItem value="__custom__">
-															{lang === "fr" ? "+ Poste personnalisé" : "+ Custom position"}
-														</SelectItem>
-													</SelectContent>
-												</Select>
+									<div className="min-w-0 flex-1">
+										<div className="flex items-center gap-1.5">
+											<span className="text-xs font-semibold truncate">
+												{tpl.title[lang as "fr" | "en"] || tpl.title.fr}
+											</span>
+											{tpl.isRequired && (
+												<Badge variant="outline" className="text-[8px] h-3.5 px-1 text-amber-600 border-amber-300 shrink-0">
+													{lang === "fr" ? "Requis" : "Req."}
+												</Badge>
 											)}
 										</div>
-										{/* Code — auto-filled, shown read-only */}
-										{!isEdit && (
-											<div className="space-y-1">
-												<Label htmlFor="pos-code" className="text-xs">
-													Code
-												</Label>
-												<Input
-													id="pos-code"
-													value={code}
-													onChange={(e) => setCode(e.target.value)}
-													placeholder="auto"
-													className="font-mono text-xs h-8 bg-muted/30"
-													readOnly={!!selectedTemplateCode && selectedTemplateCode !== "__custom__"}
-												/>
-											</div>
-										)}
-										<div className="space-y-1">
-											<Label htmlFor="pos-desc" className="text-xs">{lang === "fr" ? "Description" : "Description"}</Label>
-											<Input id="pos-desc" value={descFr} onChange={(e) => setDescFr(e.target.value)} placeholder={lang === "fr" ? "Description du rôle" : "Role description"} className="h-9" />
-										</div>
-										<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-											<div className="space-y-1.5">
-												<Label htmlFor="pos-level" className="text-xs">{lang === "fr" ? "Niveau" : "Level"}</Label>
-												<Input id="pos-level" type="number" min={1} max={10} value={level} onChange={(e) => setLevel(Number(e.target.value))} className="h-9" />
-											</div>
-											<div className="space-y-1.5">
-												<Label htmlFor="pos-grade" className="text-xs">{lang === "fr" ? "Grade" : "Grade"}</Label>
-												<Select value={grade} onValueChange={setGrade}>
-													<SelectTrigger id="pos-grade" className="h-9">
-														<SelectValue placeholder={lang === "fr" ? "Sélectionner" : "Select"} />
-													</SelectTrigger>
-													<SelectContent>
-														{GRADE_OPTIONS.map((g) => (
-															<SelectItem key={g.value} value={g.value}>
-																{g.label[lang as "fr" | "en"] || g.label.fr}
-															</SelectItem>
-														))}
-													</SelectContent>
-												</Select>
-											</div>
-										</div>
-										{!isEdit && (
-											<label className="flex items-center gap-2 cursor-pointer">
-												<Checkbox checked={isRequired} onCheckedChange={(v: boolean) => setIsRequired(v)} className="h-3.5 w-3.5" />
-												<span className="text-xs">{lang === "fr" ? "Poste requis (non supprimable)" : "Required (non-deletable)"}</span>
-											</label>
-										)}
-									</div>
-								</div>
-
-								{/* Summary of permissions — sticky en bas */}
-								<div className="sticky bottom-0 rounded-lg border border-border/40 bg-card/95 backdrop-blur-sm p-3 space-y-2">
-									<h4 className="text-xs font-medium flex items-center gap-1.5">
-										<Shield className="h-3 w-3 text-primary" />
-										{lang === "fr" ? "Résumé des permissions" : "Permission summary"}
-									</h4>
-									<div className="flex items-center gap-3">
-										<div className="text-2xl font-bold text-primary">{effectiveTaskCount}</div>
-										<div className="text-[10px] text-muted-foreground leading-tight whitespace-pre-line">
-											{lang === "fr" ? "permissions\nactivées" : "permissions\nenabled"}
+										<div className="flex items-center gap-1.5 mt-0.5">
+											{gradeInfo && (
+												<span className={cn("text-[9px] font-medium", gradeInfo.color)}>
+													{gradeInfo.label[lang as "fr" | "en"]}
+												</span>
+											)}
+											<span className="text-[9px] text-muted-foreground">
+												{taskCount} perm.
+											</span>
 										</div>
 									</div>
-									{permMode === "module" && moduleAccessConfig.length > 0 && (
-										<div className="flex flex-wrap gap-1 pt-1">
-											{moduleAccessConfig.map((e) => {
-												const meta = ACCESS_LEVEL_META[e.accessLevel];
-												const mod = MODULE_REGISTRY[e.moduleCode as ModuleCodeValue];
-												return (
-													<Badge key={e.moduleCode} variant="outline" className={cn("text-[9px] px-1.5 py-0 h-4", meta.color)}>
-														{mod?.label.fr ?? e.moduleCode}
-													</Badge>
-												);
-											})}
-										</div>
-									)}
-									{permMode === "tasks" && selectedTasks.size > 0 && (
-										<button
-											type="button"
-											className="text-[10px] text-destructive/70 hover:text-destructive transition-colors"
-											onClick={() => setSelectedTasks(new Set())}
-										>
-											{lang === "fr" ? "× Tout désélectionner" : "× Clear all"}
-										</button>
-									)}
-								</div>
+								</button>
+							);
+						})}
+						<button
+							type="button"
+							className={cn(
+								"group flex items-center gap-2.5 rounded-lg border-2 border-dashed px-3 py-2.5 text-left transition-all",
+								"hover:border-primary/50 hover:bg-primary/5",
+								"focus:outline-none focus:ring-2 focus:ring-primary/30",
+							)}
+							onClick={() => selectTemplate(null)}
+						>
+							<div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted shrink-0">
+								<Plus className="h-3.5 w-3.5 text-muted-foreground" />
 							</div>
+							<div className="min-w-0 flex-1">
+								<span className="text-xs font-semibold">
+									{lang === "fr" ? "Personnalisé" : "Custom"}
+								</span>
+								<span className="text-[9px] text-muted-foreground block">
+									{lang === "fr" ? "Créer un poste" : "Create position"}
+								</span>
+							</div>
+						</button>
+					</div>
+				</div>
+			) : (
+				/* ─── Configuration Screen (vertical sections) ─── */
+				<div className="p-4 md:p-5 space-y-5">
+					{/* Back button (create mode only) */}
+					{!isEdit && (
+						<button
+							type="button"
+							className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+							onClick={() => setSelectedTemplateCode(null)}
+						>
+							<ChevronRight className="h-3 w-3 rotate-180" />
+							{lang === "fr" ? "Changer de poste" : "Change position"}
+						</button>
+					)}
 
-							{/* Right column — Module permissions */}
-							<div className="flex-1 overflow-y-auto p-5 min-w-0">
-								<Tabs value={permMode} onValueChange={(v) => setPermMode(v as "module" | "tasks")}>
-									<div className="flex items-center justify-between mb-3">
-										<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-											<Shield className="h-3 w-3" />
-											{lang === "fr" ? "Permissions" : "Permissions"}
-										</h3>
-										<TabsList className="h-7">
-											<TabsTrigger value="module" className="text-[10px] px-2 h-5 gap-1">
-												<ShieldCheck className="h-3 w-3" />
-												{lang === "fr" ? "Modules" : "Modules"}
-											</TabsTrigger>
-											<TabsTrigger value="tasks" className="text-[10px] px-2 h-5 gap-1">
-												<Shield className="h-3 w-3" />
-												{lang === "fr" ? "Tâches" : "Tasks"}
-											</TabsTrigger>
-										</TabsList>
-									</div>
-									<TabsContent value="module" className="mt-0">
-										<ModuleAccessSelector
-											moduleAccess={moduleAccessConfig}
-											onChange={setModuleAccessConfig}
-											lang={lang}
-											orgEnabledModules={orgEnabledModules}
-										/>
-									</TabsContent>
-									<TabsContent value="tasks" className="mt-0">
-										<ModulePermissionSelector selected={selectedTasks} onChange={setSelectedTasks} lang={lang} />
-									</TabsContent>
-								</Tabs>
+					{/* Selected template indicator */}
+					{!isEdit && selectedTemplateCode && selectedTemplateCode !== "__custom__" && (
+						<div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+							<div className="flex items-center gap-2">
+								<Check className="h-4 w-4 text-primary shrink-0" />
+								<div className="min-w-0 flex-1">
+									<span className="text-xs font-medium text-primary block">
+										{lang === "fr" ? "Poste prédéfini sélectionné" : "Predefined position selected"}
+									</span>
+									<span className="text-[10px] text-muted-foreground">
+										{lang === "fr"
+											? "Modifiez les champs ci-dessous si nécessaire"
+											: "Modify the fields below if needed"}
+									</span>
+								</div>
 							</div>
 						</div>
+					)}
 
-						{/* Footer */}
-						<div className="shrink-0 border-t px-6 py-3 flex items-center justify-between">
-							<div className="text-xs text-muted-foreground flex items-center gap-1.5">
-								{effectiveTaskCount > 0 && (
-									<>
-										<Shield className="h-3 w-3" />
-										{effectiveTaskCount} {lang === "fr" ? "permissions actives" : "active permissions"}
-										{permMode === "module" && (
-											<Badge variant="outline" className="text-[9px] px-1 h-4 ml-1">
-												{moduleAccessConfig.length} {lang === "fr" ? "modules" : "modules"}
-											</Badge>
-										)}
-									</>
+					{/* Informations section */}
+					<section className="space-y-3">
+						<SectionLabel
+							icon={UserCog}
+							label={lang === "fr" ? "Informations" : "Information"}
+						/>
+						<div className="rounded-xl border border-border/60 p-3 md:p-4 space-y-3">
+							<div className="space-y-1">
+								<Label htmlFor="pos-title" className="text-xs">
+									{lang === "fr" ? "Titre" : "Title"} <span className="text-destructive">*</span>
+								</Label>
+								{isEdit || selectedTemplateCode === "__custom__" ? (
+									<Input
+										id="pos-title"
+										value={titleFr}
+										onChange={(e) => {
+											setTitleFr(e.target.value);
+											if (!isEdit) {
+												setTitleEn(e.target.value);
+												setCode(e.target.value.trim().toLowerCase().replace(/[\s']+/g, "_").replace(/[^a-z0-9_]/g, ""));
+											}
+										}}
+										placeholder={lang === "fr" ? "Titre du poste" : "Position title"}
+										className="h-9"
+									/>
+								) : (
+									<Select
+										value={selectedTemplateCode ?? ""}
+										onValueChange={(val) => {
+											if (val === "__custom__") {
+												selectTemplate(null);
+											} else {
+												const tpl = positionTemplates.find((p) => p.code === val);
+												if (tpl) selectTemplate(tpl);
+											}
+										}}
+									>
+										<SelectTrigger id="pos-title" className="h-9">
+											<SelectValue placeholder={lang === "fr" ? "Choisir un poste" : "Select a position"} />
+										</SelectTrigger>
+										<SelectContent>
+											{positionTemplates.map((tpl) => (
+												<SelectItem key={tpl.code} value={tpl.code}>
+													{tpl.title.fr}
+												</SelectItem>
+											))}
+											<SelectItem value="__custom__">
+												{lang === "fr" ? "+ Poste personnalisé" : "+ Custom position"}
+											</SelectItem>
+										</SelectContent>
+									</Select>
 								)}
 							</div>
-							<div className="flex items-center gap-2">
-								<Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={isSaving}>
-									{lang === "fr" ? "Annuler" : "Cancel"}
-								</Button>
-								<Button size="sm" onClick={handleSubmit} disabled={!isFormValid || isSaving} className="gap-1.5">
-									{isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-									{isEdit
-										? lang === "fr" ? "Enregistrer" : "Save"
-										: lang === "fr" ? "Créer le poste" : "Create position"}
-								</Button>
+
+							{isEdit && (
+								<div className="space-y-1">
+									<Label htmlFor="pos-title-en" className="text-xs">
+										{lang === "fr" ? "Titre (anglais)" : "Title (English)"}
+									</Label>
+									<Input
+										id="pos-title-en"
+										value={titleEn}
+										onChange={(e) => setTitleEn(e.target.value)}
+										placeholder={titleFr}
+										className="h-9"
+									/>
+								</div>
+							)}
+
+							{!isEdit && (
+								<div className="space-y-1">
+									<Label htmlFor="pos-code" className="text-xs">Code</Label>
+									<Input
+										id="pos-code"
+										value={code}
+										onChange={(e) => setCode(e.target.value)}
+										placeholder="auto"
+										className="font-mono text-xs h-8 bg-muted/30"
+										readOnly={!!selectedTemplateCode && selectedTemplateCode !== "__custom__"}
+									/>
+								</div>
+							)}
+
+							<div className="space-y-1">
+								<Label htmlFor="pos-desc" className="text-xs">
+									{lang === "fr" ? "Description" : "Description"}
+								</Label>
+								<Input
+									id="pos-desc"
+									value={descFr}
+									onChange={(e) => setDescFr(e.target.value)}
+									placeholder={lang === "fr" ? "Description du rôle" : "Role description"}
+									className="h-9"
+								/>
+							</div>
+
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+								<div className="space-y-1.5">
+									<Label htmlFor="pos-level" className="text-xs">
+										{lang === "fr" ? "Niveau" : "Level"}
+									</Label>
+									<Input
+										id="pos-level"
+										type="number"
+										min={1}
+										max={10}
+										value={level}
+										onChange={(e) => setLevel(Number(e.target.value))}
+										className="h-9"
+									/>
+								</div>
+								<div className="space-y-1.5">
+									<Label htmlFor="pos-grade" className="text-xs">
+										{lang === "fr" ? "Grade" : "Grade"}
+									</Label>
+									<Select value={grade} onValueChange={setGrade}>
+										<SelectTrigger id="pos-grade" className="h-9">
+											<SelectValue placeholder={lang === "fr" ? "Sélectionner" : "Select"} />
+										</SelectTrigger>
+										<SelectContent>
+											{GRADE_OPTIONS.map((g) => (
+												<SelectItem key={g.value} value={g.value}>
+													{g.label[lang as "fr" | "en"] || g.label.fr}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
 							</div>
 						</div>
-					</>
-				)}
-			</DialogContent>
-		</Dialog>
+					</section>
+
+					{/* Options section (create mode only) */}
+					{!isEdit && (
+						<section className="space-y-3">
+							<SectionLabel
+								icon={Layers}
+								label={lang === "fr" ? "Options" : "Options"}
+							/>
+							<ToggleCard
+								icon={Lock}
+								title={lang === "fr" ? "Poste requis" : "Required position"}
+								description={
+									lang === "fr"
+										? "Non supprimable une fois créé — garantit la présence d'un rôle structurel"
+										: "Cannot be deleted once created — guarantees a structural role is present"
+								}
+								checked={isRequired}
+								onChange={setIsRequired}
+							/>
+						</section>
+					)}
+
+					{/* Permissions section */}
+					<section className="space-y-3">
+						<SectionLabel
+							icon={Shield}
+							label={lang === "fr" ? "Permissions" : "Permissions"}
+							hint={
+								effectiveTaskCount > 0
+									? `${effectiveTaskCount} ${lang === "fr" ? "tâches" : "tasks"}`
+									: lang === "fr" ? "aucune" : "none"
+							}
+						/>
+						<Tabs value={permMode} onValueChange={(v) => setPermMode(v as "module" | "tasks")}>
+							<TabsList className="h-8 grid grid-cols-2 mb-3 w-full sm:w-auto sm:inline-grid">
+								<TabsTrigger value="module" className="text-xs h-7 gap-1.5 px-3">
+									<ShieldCheck className="h-3.5 w-3.5" />
+									{lang === "fr" ? "Modules" : "Modules"}
+								</TabsTrigger>
+								<TabsTrigger value="tasks" className="text-xs h-7 gap-1.5 px-3">
+									<Shield className="h-3.5 w-3.5" />
+									{lang === "fr" ? "Tâches" : "Tasks"}
+								</TabsTrigger>
+							</TabsList>
+							<TabsContent value="module" className="mt-0">
+								<ModuleAccessSelector
+									moduleAccess={moduleAccessConfig}
+									onChange={setModuleAccessConfig}
+									lang={lang}
+									orgEnabledModules={orgEnabledModules}
+								/>
+							</TabsContent>
+							<TabsContent value="tasks" className="mt-0">
+								<ModulePermissionSelector
+									selected={selectedTasks}
+									onChange={setSelectedTasks}
+									lang={lang}
+								/>
+							</TabsContent>
+						</Tabs>
+
+						{permMode === "module" && moduleAccessConfig.length > 0 && (
+							<div className="flex flex-wrap gap-1 pt-1">
+								{moduleAccessConfig.map((e) => {
+									const meta = ACCESS_LEVEL_META[e.accessLevel];
+									const mod = MODULE_REGISTRY[e.moduleCode as ModuleCodeValue];
+									return (
+										<Badge
+											key={e.moduleCode}
+											variant="outline"
+											className={cn("text-[9px] px-1.5 py-0 h-4", meta.color)}
+										>
+											{mod?.label[lang as "fr" | "en"] ?? e.moduleCode}
+										</Badge>
+									);
+								})}
+							</div>
+						)}
+					</section>
+				</div>
+			)}
+		</BottomSheet>
 	);
 }
 // ─── Main Component ─────────────────────────────────────────────
@@ -1674,10 +1770,14 @@ export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 				</FlatCard>
 			)}
 
-			{/* Create/Edit Sheet */}
+			{/* Create/Edit Sheet — keyed on editingPosition so state resets cleanly between edits */}
 			<PositionFormSheet
+				key={editingPosition?._id ?? "new"}
 				open={sheetOpen}
-				onOpenChange={setSheetOpen}
+				onOpenChange={(open) => {
+					setSheetOpen(open);
+					if (!open) setEditingPosition(null);
+				}}
 				orgId={orgId}
 				editPosition={editingPosition}
 				lang={lang}

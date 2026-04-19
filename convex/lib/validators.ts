@@ -1334,6 +1334,7 @@ export const notificationTypeValidator = v.union(
   v.literal(NotificationType.AppointmentConfirmation),
   v.literal(NotificationType.AppointmentReminder),
   v.literal(NotificationType.AppointmentCancellation),
+  v.literal(NotificationType.AppointmentRescheduled),
   v.literal(NotificationType.ConsularRegistrationSubmitted),
   v.literal(NotificationType.ConsularRegistrationValidated),
   v.literal(NotificationType.ConsularRegistrationRejected),

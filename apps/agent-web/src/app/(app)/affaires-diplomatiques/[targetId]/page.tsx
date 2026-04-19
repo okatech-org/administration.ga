@@ -36,6 +36,7 @@ import { FlatCard } from "@/components/my-space/flat-card";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 import { FolderExplorer } from "@/components/diplomatic/FolderExplorer";
+import { InlineAISuggestion } from "@/components/ai/proactive/InlineAISuggestion";
 
 
 // Couleurs mappees vers les tokens du design system (voir DESIGN_CHARTER.md)
@@ -208,6 +209,11 @@ export default function TargetPipelineDetail() {
               </Badge>
             )}
           </div>
+          <InlineAISuggestion
+            targetType="diplomaticTarget"
+            targetId={target._id}
+            className="shrink-0"
+          />
         </div>
       </motion.div>
 

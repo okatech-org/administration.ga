@@ -393,6 +393,7 @@ export const updateOrgService = authMutation({
     pickupInstructions: v.optional(v.string()),
     requiresAppointment: v.optional(v.boolean()),
     requiresAppointmentForPickup: v.optional(v.boolean()),
+    requireAgentValidation: v.optional(v.boolean()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
