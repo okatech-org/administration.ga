@@ -825,6 +825,13 @@ export const listAvailableRecipients = authQuery({
 export const getItemRecipients = authQuery({
   args: { itemId: v.id("correspondanceItems") },
   handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item) return [];
+    const orgId =
+      (item as any).copyOwnerOrgId ?? (item as any).orgId;
+    if (orgId) {
+      await requireCorrespondanceAccess(ctx, ctx.user, orgId, "view");
+    }
     return await ctx.db
       .query("correspondanceRecipients")
       .withIndex("by_item", (q: any) => q.eq("itemId", args.itemId))
@@ -883,6 +890,13 @@ export const getOverdueItems = authQuery({
 export const getThreadReplies = authQuery({
   args: { parentItemId: v.id("correspondanceItems") },
   handler: async (ctx, args) => {
+    const parent = await ctx.db.get(args.parentItemId);
+    if (!parent) return [];
+    const orgId =
+      (parent as any).copyOwnerOrgId ?? (parent as any).orgId;
+    if (orgId) {
+      await requireCorrespondanceAccess(ctx, ctx.user, orgId, "view");
+    }
     return await ctx.db
       .query("correspondanceItems")
       .withIndex("by_parent", (q) => q.eq("parentItemId", args.parentItemId))
@@ -898,6 +912,14 @@ export const markAsRead = authMutation({
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.itemId);
     if (!item) return;
+
+    // Vérifier l'accès avant de marquer lu (sinon un user externe pourrait
+    // marquer comme lu un courrier qui ne le concerne pas).
+    const orgId =
+      (item as any).copyOwnerOrgId ?? (item as any).orgId;
+    if (orgId) {
+      await requireCorrespondanceAccess(ctx, ctx.user, orgId, "view");
+    }
 
     const userId = ctx.user._id as string;
     const readByIds = item.readByIds ?? [];
@@ -1095,6 +1117,16 @@ export const syncRecipientStatus = authMutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+
+    // Accès : l'appelant doit être membre de l'org qui détient l'original
+    // (celle qui a reçu la correspondance) avec au moins `view`.
+    const original = await ctx.db.get(args.originalItemId);
+    if (!original) throw error(ErrorCode.NOT_FOUND, "Original introuvable");
+    const orgId =
+      (original as any).copyOwnerOrgId ?? (original as any).orgId;
+    if (orgId) {
+      await requireCorrespondanceAccess(ctx, ctx.user, orgId, "view");
+    }
 
     // Trouver la copie de l'expéditeur via l'index by_original
     const copies = await ctx.db
@@ -1325,6 +1357,9 @@ export const resolveApprovalChain = authQuery({
     typeCode: v.string(),
   },
   handler: async (ctx, args) => {
+    // Accès : vue correspondance requise sur l'org cible.
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
+
     // Chercher le typeConfig pour cette org
     const typeConfig = await ctx.db
       .query("correspondanceTypeConfigs")
