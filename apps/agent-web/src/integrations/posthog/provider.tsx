@@ -2,6 +2,8 @@
 
 import posthog from "posthog-js"
 import { PostHogProvider as Provider } from "posthog-js/react"
+import { PostHogIdentifier } from "./identifier"
+import { PostHogPageviewTracker } from "./pageview-tracker"
 
 if (
   typeof window !== "undefined" &&
@@ -21,5 +23,11 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     return <>{children}</>
   }
 
-  return <Provider client={posthog}>{children}</Provider>
+  return (
+    <Provider client={posthog}>
+      <PostHogIdentifier />
+      <PostHogPageviewTracker />
+      {children}
+    </Provider>
+  )
 }
