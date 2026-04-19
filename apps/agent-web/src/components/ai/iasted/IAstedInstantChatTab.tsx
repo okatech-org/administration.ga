@@ -43,6 +43,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { InlineMessageEditor } from "@workspace/chat/inline-message-editor";
 import { SafeMarkdown as Markdown } from "@workspace/chat/safe-markdown";
 import { useIdempotencyKey } from "@workspace/chat/use-idempotency-key";
 import { toast } from "sonner";
@@ -1409,6 +1410,10 @@ function HumanChatView({ contact }: { contact: any }) {
 		api.functions.chats.editMessage,
 	);
 
+	// ID du message en cours d'édition (null = aucun).
+	const [editingMessageId, setEditingMessageId] =
+		useState<Id<"chatMessages"> | null>(null);
+
 	useEffect(() => {
 		if (resolvedChatId) {
 			markRead({ chatId: resolvedChatId }).catch((e) => {
@@ -1437,16 +1442,22 @@ function HumanChatView({ contact }: { contact: any }) {
 		[deleteMessageMut],
 	);
 
-	const handleEditMessage = useCallback(
-		async (messageId: Id<"chatMessages">, currentContent: string) => {
-			const next = window.prompt("Modifier le message :", currentContent);
-			if (next === null) return;
-			const trimmed = next.trim();
-			if (!trimmed || trimmed === currentContent) return;
+	const handleStartEdit = useCallback((messageId: Id<"chatMessages">) => {
+		setEditingMessageId(messageId);
+	}, []);
+
+	const handleCancelEdit = useCallback(() => {
+		setEditingMessageId(null);
+	}, []);
+
+	const handleSaveEdit = useCallback(
+		async (messageId: Id<"chatMessages">, nextContent: string) => {
 			try {
-				await editMessageMut({ messageId, content: trimmed });
+				await editMessageMut({ messageId, content: nextContent });
+				setEditingMessageId(null);
 			} catch (e: any) {
 				toast.error(e?.data ?? e?.message ?? "Modification impossible.");
+				// L'éditeur reste ouvert pour laisser corriger.
 			}
 		},
 		[editMessageMut],
@@ -1510,7 +1521,7 @@ function HumanChatView({ contact }: { contact: any }) {
 									</button>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align="end" className="min-w-[9rem]">
-									<DropdownMenuItem onClick={() => handleEditMessage(msg._id, msg.content)}>
+									<DropdownMenuItem onClick={() => handleStartEdit(msg._id)}>
 										<Edit3 className="h-3.5 w-3.5 mr-2" />
 										<span className="text-xs">Modifier</span>
 									</DropdownMenuItem>
@@ -1535,6 +1546,17 @@ function HumanChatView({ contact }: { contact: any }) {
 						>
 							{isDeleted ? (
 								<span>[Message supprimé]</span>
+							) : msg._id === editingMessageId ? (
+								<InlineMessageEditor
+									initialValue={msg.content}
+									onSave={(next) => handleSaveEdit(msg._id, next)}
+									onCancel={handleCancelEdit}
+									textareaClassName="w-full bg-transparent outline-none resize-none text-sm text-inherit placeholder:opacity-50"
+									buttonClassName="px-2 py-0.5 text-xs rounded"
+									saveButtonClassName="bg-background/20 hover:bg-background/30 font-medium"
+									cancelButtonClassName="opacity-70 hover:opacity-100"
+									rows={2}
+								/>
 							) : (
 								<>
 									{msg.content}

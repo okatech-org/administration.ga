@@ -26,6 +26,7 @@ import {
 	Users,
 } from "lucide-react";
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { InlineMessageEditor } from "@workspace/chat/inline-message-editor";
 import { SafeMarkdown as Markdown } from "@workspace/chat/safe-markdown";
 import { useIdempotencyKey } from "@workspace/chat/use-idempotency-key";
 import { toast } from "sonner";
@@ -386,6 +387,9 @@ function HumanChatView({ contact }: { contact: any }) {
 	const { mutateAsync: deleteMessageMut } = useConvexMutationQuery(api.functions.chats.deleteMessage);
 	const { mutateAsync: editMessageMut } = useConvexMutationQuery(api.functions.chats.editMessage);
 
+	// ID du message en cours d'édition (null = aucun).
+	const [editingMessageId, setEditingMessageId] = useState<Id<"chatMessages"> | null>(null);
+
 	useEffect(() => { if (resolvedChatId) markRead({ chatId: resolvedChatId }).catch(() => {}); }, [resolvedChatId, markRead, messages?.length]);
 
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -397,14 +401,26 @@ function HumanChatView({ contact }: { contact: any }) {
 		catch (e: any) { toast.error(e?.data ?? e?.message ?? "Suppression impossible."); }
 	}, [deleteMessageMut]);
 
-	const handleEditMessage = useCallback(async (messageId: Id<"chatMessages">, currentContent: string) => {
-		const next = window.prompt("Modifier le message :", currentContent);
-		if (next === null) return;
-		const trimmed = next.trim();
-		if (!trimmed || trimmed === currentContent) return;
-		try { await editMessageMut({ messageId, content: trimmed }); }
-		catch (e: any) { toast.error(e?.data ?? e?.message ?? "Modification impossible."); }
-	}, [editMessageMut]);
+	const handleStartEdit = useCallback((messageId: Id<"chatMessages">) => {
+		setEditingMessageId(messageId);
+	}, []);
+
+	const handleCancelEdit = useCallback(() => {
+		setEditingMessageId(null);
+	}, []);
+
+	const handleSaveEdit = useCallback(
+		async (messageId: Id<"chatMessages">, nextContent: string) => {
+			try {
+				await editMessageMut({ messageId, content: nextContent });
+				setEditingMessageId(null);
+			} catch (e: any) {
+				toast.error(e?.data ?? e?.message ?? "Modification impossible.");
+				// L'éditeur reste ouvert pour laisser corriger.
+			}
+		},
+		[editMessageMut],
+	);
 
 	if (messagesLoading) return <div className="flex items-center justify-center py-8"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>;
 	if (!messages || messages.length === 0) return <div className="flex flex-col items-center justify-center h-full text-center py-6"><MessageSquare className="h-8 w-8 text-muted-foreground/30 mb-2" /><p className="text-xs text-muted-foreground">Envoyez le premier message</p></div>;
@@ -431,7 +447,7 @@ function HumanChatView({ contact }: { contact: any }) {
 									</button>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align="end" className="min-w-[9rem]">
-									<DropdownMenuItem onClick={() => handleEditMessage(msg._id, msg.content)}>
+									<DropdownMenuItem onClick={() => handleStartEdit(msg._id)}>
 										<Edit3 className="h-3.5 w-3.5 mr-2" />
 										<span className="text-xs">Modifier</span>
 									</DropdownMenuItem>
@@ -443,7 +459,22 @@ function HumanChatView({ contact }: { contact: any }) {
 							</DropdownMenu>
 						)}
 						<div className={cn("max-w-[80%] rounded-xl px-3 py-1.5 text-xs", isMe ? "bg-primary text-primary-foreground" : "bg-muted", isDeleted && "italic opacity-60")}>
-							{isDeleted ? (<span>[Message supprimé]</span>) : (<>{msg.content}{isEdited && <span className="ml-1 opacity-60 text-[9px]">(modifié)</span>}</>)}
+							{isDeleted ? (
+								<span>[Message supprimé]</span>
+							) : msg._id === editingMessageId ? (
+								<InlineMessageEditor
+									initialValue={msg.content}
+									onSave={(next) => handleSaveEdit(msg._id, next)}
+									onCancel={handleCancelEdit}
+									textareaClassName="w-full bg-transparent outline-none resize-none text-xs text-inherit placeholder:opacity-50"
+									buttonClassName="px-2 py-0.5 text-[10px] rounded"
+									saveButtonClassName="bg-background/20 hover:bg-background/30 font-medium"
+									cancelButtonClassName="opacity-70 hover:opacity-100"
+									rows={2}
+								/>
+							) : (
+								<>{msg.content}{isEdited && <span className="ml-1 opacity-60 text-[9px]">(modifié)</span>}</>
+							)}
 						</div>
 						{isMe && <Avatar className="h-6 w-6 shrink-0"><AvatarFallback className="bg-primary/10 text-primary text-[9px]"><User className="h-3 w-3" /></AvatarFallback></Avatar>}
 					</div>
