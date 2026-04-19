@@ -248,22 +248,66 @@ export const listMessages = authQuery({
       if (s) sendersById.set(s._id as string, s);
     }
 
-    const enriched = messages.map((msg: any) => {
-      const sender = sendersById.get(msg.senderId as string);
-      return {
-        ...msg,
-        senderName: sender
-          ? [sender.firstName, sender.lastName].filter(Boolean).join(" ") || sender.name || sender.email
-          : "Inconnu",
-        senderAvatar: sender?.avatarUrl,
-      };
-    });
+    // Résolution des URLs de pièces jointes. On fait un unique batch de
+    // `ctx.storage.getUrl` par message, mais on ne résout que les messages
+    // qui en ont — la majorité n'en a pas.
+    const enriched = await Promise.all(
+      messages.map(async (msg: any) => {
+        const sender = sendersById.get(msg.senderId as string);
+        let attachmentFilesWithUrl:
+          | Array<{
+              storageId: string;
+              filename: string;
+              mimeType: string;
+              sizeBytes: number;
+              url: string | null;
+            }>
+          | undefined;
+
+        if (msg.attachmentFiles && msg.attachmentFiles.length > 0) {
+          attachmentFilesWithUrl = await Promise.all(
+            msg.attachmentFiles.map(async (f: any) => ({
+              storageId: f.storageId,
+              filename: f.filename,
+              mimeType: f.mimeType,
+              sizeBytes: f.sizeBytes,
+              url: await ctx.storage.getUrl(f.storageId),
+            })),
+          );
+        }
+
+        return {
+          ...msg,
+          senderName: sender
+            ? [sender.firstName, sender.lastName].filter(Boolean).join(" ") || sender.name || sender.email
+            : "Inconnu",
+          senderAvatar: sender?.avatarUrl,
+          attachmentFiles: attachmentFilesWithUrl,
+        };
+      }),
+    );
 
     // Retourner dans l'ordre chronologique (plus ancien en premier).
     // Signature array préservée pour compat client ; pagination via l'arg
     // `before` (le client passe le `createdAt` du plus ancien message déjà
     // chargé pour obtenir la page suivante).
     return enriched.reverse();
+  },
+});
+
+/**
+ * Génère une URL d'upload Convex Storage pour une pièce jointe de chat.
+ * Le client POST son fichier sur cette URL, récupère le `storageId` dans la
+ * réponse, puis l'envoie via `sendMessage({ attachmentFiles: [...] })`.
+ *
+ * Pas de restriction par thread : tout utilisateur authentifié peut générer
+ * une URL. Le lien est éphémère et la validation de permission (participation
+ * au chat) s'applique au moment de l'appel à `sendMessage`.
+ */
+export const generateAttachmentUploadUrl = authMutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
   },
 });
 
@@ -301,6 +345,16 @@ export const initiateChat = authMutation({
     orgId: v.optional(v.id("orgs")),
     requestId: v.optional(v.id("requests")),
     initialMessage: v.string(),
+    initialAttachmentFiles: v.optional(
+      v.array(
+        v.object({
+          storageId: v.id("_storage"),
+          filename: v.string(),
+          mimeType: v.string(),
+          sizeBytes: v.number(),
+        }),
+      ),
+    ),
   },
   handler: async (ctx, args) => {
     // Restriction citoyen
@@ -332,6 +386,23 @@ export const initiateChat = authMutation({
 
     const now = Date.now();
 
+    const hasInitialAttachments = !!(
+      args.initialAttachmentFiles && args.initialAttachmentFiles.length > 0
+    );
+    if (!args.initialMessage.trim() && !hasInitialAttachments) {
+      throw error(ErrorCode.INVALID_ARGUMENT, "Message initial vide");
+    }
+
+    const previewText = args.initialMessage.trim()
+      ? args.initialMessage.slice(0, 100)
+      : hasInitialAttachments
+      ? `📎 ${args.initialAttachmentFiles![0].filename}${
+          args.initialAttachmentFiles!.length > 1
+            ? ` (+${args.initialAttachmentFiles!.length - 1})`
+            : ""
+        }`
+      : "";
+
     if (!chat) {
       // Créer le thread
       const chatId = await ctx.db.insert("chats", {
@@ -340,7 +411,7 @@ export const initiateChat = authMutation({
         initiatedBy: ctx.user._id,
         orgId: args.orgId,
         requestId: args.requestId,
-        lastMessageText: args.initialMessage.slice(0, 100),
+        lastMessageText: previewText,
         lastMessageAt: now,
         lastMessageBy: ctx.user._id,
         status: "active",
@@ -354,13 +425,14 @@ export const initiateChat = authMutation({
       chatId: chat!._id,
       senderId: ctx.user._id,
       content: args.initialMessage,
+      attachmentFiles: args.initialAttachmentFiles,
       type: "text",
       createdAt: now,
     });
 
     // Mettre à jour le dernier message
     await ctx.db.patch(chat!._id, {
-      lastMessageText: args.initialMessage.slice(0, 100),
+      lastMessageText: previewText,
       lastMessageAt: now,
       lastMessageBy: ctx.user._id,
     });
@@ -381,6 +453,17 @@ export const sendMessage = authMutation({
     chatId: v.id("chats"),
     content: v.string(),
     attachments: v.optional(v.array(v.id("documents"))),
+    /** Fichiers joints inline (storage refs). Préféré à `attachments`. */
+    attachmentFiles: v.optional(
+      v.array(
+        v.object({
+          storageId: v.id("_storage"),
+          filename: v.string(),
+          mimeType: v.string(),
+          sizeBytes: v.number(),
+        }),
+      ),
+    ),
     /** Clé d'idempotence générée client (UUID) — déduplique les doubles envois. */
     idempotencyKey: v.optional(v.string()),
   },
@@ -389,6 +472,12 @@ export const sendMessage = authMutation({
 
     if (chat.status === "archived") {
       throw error(ErrorCode.INVALID_ARGUMENT, "Cette conversation est archivée");
+    }
+
+    // Contenu vide autorisé uniquement si au moins un fichier est joint.
+    const hasAttachments = !!(args.attachmentFiles && args.attachmentFiles.length > 0);
+    if (!args.content.trim() && !hasAttachments) {
+      throw error(ErrorCode.INVALID_ARGUMENT, "Message vide");
     }
 
     // Anti-double-send : si le client a déjà envoyé un message avec cette clé
@@ -414,14 +503,26 @@ export const sendMessage = authMutation({
       senderId: ctx.user._id,
       content: args.content,
       attachments: args.attachments,
+      attachmentFiles: args.attachmentFiles,
       type: "text",
       idempotencyKey: args.idempotencyKey,
       createdAt: now,
     });
 
-    // Mettre à jour le dernier message du thread
+    // Mettre à jour le dernier message du thread. Pour un message sans texte
+    // mais avec pièces jointes, on affiche un label "📎 <filename>" pour que
+    // la liste des threads montre quelque chose de signifiant.
+    const previewText = args.content.trim()
+      ? args.content.slice(0, 100)
+      : hasAttachments
+      ? `📎 ${args.attachmentFiles![0].filename}${
+          args.attachmentFiles!.length > 1
+            ? ` (+${args.attachmentFiles!.length - 1})`
+            : ""
+        }`
+      : "";
     await ctx.db.patch(args.chatId, {
-      lastMessageText: args.content.slice(0, 100),
+      lastMessageText: previewText,
       lastMessageAt: now,
       lastMessageBy: ctx.user._id,
     });
@@ -508,6 +609,16 @@ export const initiateStandardChat = authMutation({
   args: {
     orgId: v.id("orgs"),
     initialMessage: v.string(),
+    initialAttachmentFiles: v.optional(
+      v.array(
+        v.object({
+          storageId: v.id("_storage"),
+          filename: v.string(),
+          mimeType: v.string(),
+          sizeBytes: v.number(),
+        }),
+      ),
+    ),
   },
   handler: async (ctx, args) => {
     // Trouver le user Mr Ray par email
@@ -532,6 +643,23 @@ export const initiateStandardChat = authMutation({
 
     const now = Date.now();
 
+    const hasInitialAttachments = !!(
+      args.initialAttachmentFiles && args.initialAttachmentFiles.length > 0
+    );
+    if (!args.initialMessage.trim() && !hasInitialAttachments) {
+      throw error(ErrorCode.INVALID_ARGUMENT, "Message initial vide");
+    }
+
+    const previewText = args.initialMessage.trim()
+      ? args.initialMessage.slice(0, 100)
+      : hasInitialAttachments
+      ? `📎 ${args.initialAttachmentFiles![0].filename}${
+          args.initialAttachmentFiles!.length > 1
+            ? ` (+${args.initialAttachmentFiles!.length - 1})`
+            : ""
+        }`
+      : "";
+
     if (!chat) {
       // Créer le thread standard
       const chatId = await ctx.db.insert("chats", {
@@ -540,7 +668,7 @@ export const initiateStandardChat = authMutation({
         initiatedBy: ctx.user._id,
         orgId: args.orgId,
         type: "standard",
-        lastMessageText: args.initialMessage.slice(0, 100),
+        lastMessageText: previewText,
         lastMessageAt: now,
         lastMessageBy: ctx.user._id,
         status: "active",
@@ -554,13 +682,14 @@ export const initiateStandardChat = authMutation({
       chatId: chat!._id,
       senderId: ctx.user._id,
       content: args.initialMessage,
+      attachmentFiles: args.initialAttachmentFiles,
       type: "text",
       createdAt: now,
     });
 
     // Mettre à jour le dernier message
     await ctx.db.patch(chat!._id, {
-      lastMessageText: args.initialMessage.slice(0, 100),
+      lastMessageText: previewText,
       lastMessageAt: now,
       lastMessageBy: ctx.user._id,
     });
