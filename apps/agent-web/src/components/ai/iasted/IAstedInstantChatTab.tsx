@@ -21,12 +21,16 @@ import {
 	AlertCircle,
 	Bot,
 	Building2,
+	Download,
 	Edit3,
+	FileText,
 	Globe,
 	Headset,
+	ImageIcon,
 	Loader2,
 	MessageSquare,
 	MoreVertical,
+	Paperclip,
 	Pin,
 	Send,
 	Shield,
@@ -34,6 +38,7 @@ import {
 	Trash2,
 	User,
 	Users,
+	X,
 } from "lucide-react";
 import {
 	type KeyboardEvent,
@@ -45,6 +50,10 @@ import {
 } from "react";
 import { InlineMessageEditor } from "@workspace/chat/inline-message-editor";
 import { SafeMarkdown as Markdown } from "@workspace/chat/safe-markdown";
+import {
+	formatFileSize,
+	useChatAttachments,
+} from "@workspace/chat/use-chat-attachments";
 import { useIdempotencyKey } from "@workspace/chat/use-idempotency-key";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -197,9 +206,44 @@ export function useIAstedChat({
 	const { mutateAsync: clearTypingMut } = useConvexMutationQuery(
 		api.functions.chats.clearTyping,
 	);
+	const { mutateAsync: generateAttachmentUploadUrl } = useConvexMutationQuery(
+		api.functions.chats.generateAttachmentUploadUrl,
+	);
 	// Déduplique les doubles envois côté backend.
 	const { getKey: getIdempotencyKey, rotate: rotateIdempotencyKey } =
 		useIdempotencyKey();
+
+	// ── Attachments (chat humain uniquement) ──
+	const {
+		attachments: pendingAttachments,
+		addFiles,
+		remove: removeAttachment,
+		consumeForUpload,
+	} = useChatAttachments({ onValidationError: (m) => toast.error(m) });
+	const [isUploading, setIsUploading] = useState(false);
+
+	const uploadPendingAttachments = useCallback(async () => {
+		const files = consumeForUpload();
+		if (files.length === 0) return undefined;
+		return await Promise.all(
+			files.map(async (file) => {
+				const uploadUrl = await generateAttachmentUploadUrl({});
+				const res = await fetch(uploadUrl as string, {
+					method: "POST",
+					headers: { "Content-Type": file.type },
+					body: file,
+				});
+				if (!res.ok) throw new Error(`Upload échoué pour ${file.name}`);
+				const { storageId } = (await res.json()) as { storageId: string };
+				return {
+					storageId: storageId as Id<"_storage">,
+					filename: file.name,
+					mimeType: file.type || "application/octet-stream",
+					sizeBytes: file.size,
+				};
+			}),
+		);
+	}, [consumeForUpload, generateAttachmentUploadUrl]);
 
 	// ── Chat actif avec contact sélectionné ──
 	const selectedUserId =
@@ -271,12 +315,19 @@ export function useIAstedChat({
 	const handleSendHuman = useCallback(
 		async (text: string) => {
 			const trimmed = text.trim();
-			if (!trimmed || !selectedContact?.userId) return;
+			const hasAttachments = pendingAttachments.length > 0;
+			if ((!trimmed && !hasAttachments) || !selectedContact?.userId) return;
+			if (isUploading) return;
+			setIsUploading(true);
 			try {
+				const attachmentFiles = hasAttachments
+					? await uploadPendingAttachments()
+					: undefined;
 				if (existingChat) {
 					await sendChatMessage({
 						chatId: existingChat._id,
 						content: trimmed,
+						attachmentFiles,
 						idempotencyKey: getIdempotencyKey(),
 					});
 				} else {
@@ -284,6 +335,7 @@ export function useIAstedChat({
 						targetUserId: selectedContact.userId as Id<"users">,
 						orgId: activeOrgId ?? undefined,
 						initialMessage: trimmed,
+						initialAttachmentFiles: attachmentFiles,
 					});
 				}
 				setMessageInput("");
@@ -291,6 +343,8 @@ export function useIAstedChat({
 				stopTyping();
 			} catch (e: any) {
 				toast.error(e?.message ?? "Erreur d'envoi");
+			} finally {
+				setIsUploading(false);
 			}
 		},
 		[
@@ -302,6 +356,9 @@ export function useIAstedChat({
 			getIdempotencyKey,
 			rotateIdempotencyKey,
 			stopTyping,
+			pendingAttachments.length,
+			isUploading,
+			uploadPendingAttachments,
 		],
 	);
 
@@ -542,6 +599,12 @@ export function useIAstedChat({
 		stopTyping,
 		typingText,
 
+		// Attachments (chat humain uniquement).
+		pendingAttachments,
+		addFiles,
+		removeAttachment,
+		isUploading,
+
 		// Misc
 		suggestions,
 		messagesEndRef,
@@ -606,7 +669,12 @@ export function IAstedChatConversation({
 		pingTyping,
 		stopTyping,
 		typingText,
+		pendingAttachments,
+		addFiles,
+		removeAttachment,
+		isUploading,
 	} = state;
+	const fileInputRef = useRef<HTMLInputElement | null>(null);
 
 	// État vide — fullscreen sans sélection.
 	if (!selectedContact) {
@@ -842,8 +910,60 @@ export function IAstedChatConversation({
 				</div>
 			)}
 
+			{/* Pending attachments — chips au-dessus du composer (chat humain). */}
+			{!selectedContact.isAI && pendingAttachments.length > 0 && (
+				<div className="border-t px-2.5 py-2 flex flex-wrap gap-1.5 shrink-0">
+					{pendingAttachments.map((att) => (
+						<div
+							key={att.localId}
+							className="flex items-center gap-1.5 bg-muted rounded-md px-2 py-1 text-xs max-w-[240px]"
+						>
+							{att.file.type.startsWith("image/") ? (
+								<ImageIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+							) : (
+								<FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+							)}
+							<span className="truncate">{att.file.name}</span>
+							<span className="text-muted-foreground/60 shrink-0 text-[10px]">
+								{formatFileSize(att.file.size)}
+							</span>
+							<button
+								type="button"
+								onClick={() => removeAttachment(att.localId)}
+								className="ml-0.5 hover:text-destructive shrink-0"
+								aria-label="Retirer"
+							>
+								<X className="h-3.5 w-3.5" />
+							</button>
+						</div>
+					))}
+				</div>
+			)}
+
 			{/* Input */}
 			<div className="border-t p-2.5 flex items-end gap-2 shrink-0">
+				<input
+					ref={fileInputRef}
+					type="file"
+					multiple
+					className="hidden"
+					onChange={(e) => {
+						if (e.target.files) addFiles(e.target.files);
+						e.target.value = "";
+					}}
+				/>
+				{!selectedContact.isAI && (
+					<Button
+						size="icon"
+						variant="ghost"
+						className="h-10 w-10 shrink-0"
+						onClick={() => fileInputRef.current?.click()}
+						disabled={isUploading}
+						aria-label="Joindre un fichier"
+					>
+						<Paperclip className="h-4 w-4" />
+					</Button>
+				)}
 				<Textarea
 					value={messageInput}
 					onChange={(e) => {
@@ -885,13 +1005,17 @@ export function IAstedChatConversation({
 						selectedContact.isAI && "bg-emerald-600 hover:bg-emerald-700",
 					)}
 					disabled={
-						!messageInput.trim() || (selectedContact.isAI && chat.isLoading)
+						(!messageInput.trim() &&
+							(selectedContact.isAI || pendingAttachments.length === 0)) ||
+						(selectedContact.isAI && chat.isLoading) ||
+						(!selectedContact.isAI && isUploading)
 					}
 					onClick={
 						selectedContact.isAI ? handleSendAI : () => handleSendHuman(messageInput)
 					}
 				>
-					{selectedContact.isAI && chat.isLoading ? (
+					{(selectedContact.isAI && chat.isLoading) ||
+					(!selectedContact.isAI && isUploading) ? (
 						<Loader2 className="h-4 w-4 animate-spin" />
 					) : (
 						<Send className="h-4 w-4" />
@@ -1559,7 +1683,35 @@ function HumanChatView({ contact }: { contact: any }) {
 								/>
 							) : (
 								<>
-									{msg.content}
+									{msg.content && <div>{msg.content}</div>}
+									{msg.attachmentFiles && msg.attachmentFiles.length > 0 && (
+										<div className={cn("space-y-1", msg.content ? "mt-2" : "")}>
+											{msg.attachmentFiles.map((f: any) => (
+												<a
+													key={f.storageId}
+													href={f.url ?? "#"}
+													target="_blank"
+													rel="noopener noreferrer"
+													download={f.filename}
+													className={cn(
+														"flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-black/10 dark:bg-white/10 hover:bg-black/15 dark:hover:bg-white/15 transition-colors",
+														!f.url && "pointer-events-none opacity-50",
+													)}
+												>
+													{f.mimeType?.startsWith("image/") ? (
+														<ImageIcon className="h-4 w-4 shrink-0 opacity-80" />
+													) : (
+														<FileText className="h-4 w-4 shrink-0 opacity-80" />
+													)}
+													<span className="truncate flex-1 min-w-0">{f.filename}</span>
+													<span className="opacity-60 shrink-0 text-[10px]">
+														{formatFileSize(f.sizeBytes)}
+													</span>
+													<Download className="h-3.5 w-3.5 shrink-0 opacity-60" />
+												</a>
+											))}
+										</div>
+									)}
 									{isEdited && (
 										<span className="ml-1 opacity-60 text-[10px]">(modifié)</span>
 									)}
