@@ -11,6 +11,12 @@
 
 import { v } from "convex/values";
 import { authMutation, authQuery } from "../lib/customFunctions";
+import { getMembership } from "../lib/auth";
+import { error, ErrorCode } from "../lib/errors";
+import { assertCanDoTask, canDoTask } from "../lib/permissions";
+import { TaskCode, type TaskCodeValue } from "../lib/taskCodes";
+import { isPublicUser } from "../lib/userCategory";
+import type { Id } from "../_generated/dataModel";
 import {
   demarcheCategoryValidator,
   dossierStatusValidator,
@@ -84,6 +90,69 @@ async function logJournal(
     detail,
     createdAt: Date.now(),
   });
+}
+
+/**
+ * Vérifie qu'un citoyen est le propriétaire (demandeur) du dossier.
+ * Utilisé pour bypass du check TaskCode sur les mutations de constitution
+ * (createDossier, submitDossier, uploadPiece) — le citoyen n'a pas de
+ * membership dans une org consulaire, il construit son propre dossier.
+ */
+async function isDossierOwner(
+  ctx: any,
+  dossier: any,
+): Promise<boolean> {
+  if (dossier.demandeurId !== ctx.user._id) return false;
+  // Un agent peut aussi être demandeur d'un dossier : on ne considère "owner"
+  // (bypass RBAC) que si l'utilisateur est une catégorie B (citoyen, sans
+  // membership dans aucune org consulaire).
+  return await isPublicUser(ctx, ctx.user._id);
+}
+
+/**
+ * Vérifie que l'utilisateur courant a bien le TaskCode requis dans l'org
+ * porteuse du dossier. Bypass pour citoyen-propriétaire (voir isDossierOwner).
+ *
+ * Usage type :
+ *   await assertDossierTask(ctx, dossier, TaskCode.correspondance.transmit);
+ */
+async function assertDossierTask(
+  ctx: any,
+  dossier: any,
+  taskCode: TaskCodeValue,
+  { allowOwner = false }: { allowOwner?: boolean } = {},
+): Promise<void> {
+  if (allowOwner && (await isDossierOwner(ctx, dossier))) return;
+
+  const orgId = dossier.organismeActuelId ?? dossier.organismePorteurId;
+  if (!orgId) {
+    throw error(
+      ErrorCode.INVALID_ARGUMENT,
+      "Dossier sans organisme porteur — action impossible",
+    );
+  }
+  const membership = await getMembership(ctx, ctx.user._id, orgId as Id<"orgs">);
+  await assertCanDoTask(ctx, ctx.user, membership, taskCode);
+}
+
+/**
+ * Version lecture : accepte soit la propriété citoyen, soit une membership
+ * dans l'org avec `correspondance.view`. Utilisée dans les queries.
+ */
+async function canReadDossier(
+  ctx: any,
+  dossier: any,
+): Promise<boolean> {
+  if (await isDossierOwner(ctx, dossier)) return true;
+  const orgId = dossier.organismeActuelId ?? dossier.organismePorteurId;
+  if (!orgId) return false;
+  const membership = await getMembership(ctx, ctx.user._id, orgId as Id<"orgs">);
+  return await canDoTask(
+    ctx,
+    ctx.user,
+    membership,
+    TaskCode.correspondance.view,
+  );
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -167,6 +236,15 @@ export const createTypeDemarche = authMutation({
     delaiGlobalJours: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Configuration des types = admin procédure.
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(
+      ctx,
+      ctx.user,
+      membership,
+      TaskCode.correspondance.configure,
+    );
+
     const now = Date.now();
 
     // Check unique code within org
@@ -235,6 +313,16 @@ export const updateTypeDemarche = authMutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    const existing = (await ctx.db.get(args.id)) as any;
+    if (!existing) throw error(ErrorCode.NOT_FOUND, "TypeDemarche non trouvé");
+    const membership = await getMembership(ctx, ctx.user._id, existing.orgId);
+    await assertCanDoTask(
+      ctx,
+      ctx.user,
+      membership,
+      TaskCode.correspondance.configure,
+    );
+
     const { id, ...fields } = args;
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     for (const [key, val] of Object.entries(fields)) {
@@ -248,6 +336,16 @@ export const updateTypeDemarche = authMutation({
 export const deactivateTypeDemarche = authMutation({
   args: { id: v.id("typeDemarches") },
   handler: async (ctx, args) => {
+    const existing = (await ctx.db.get(args.id)) as any;
+    if (!existing) throw error(ErrorCode.NOT_FOUND, "TypeDemarche non trouvé");
+    const membership = await getMembership(ctx, ctx.user._id, existing.orgId);
+    await assertCanDoTask(
+      ctx,
+      ctx.user,
+      membership,
+      TaskCode.correspondance.configure,
+    );
+
     await ctx.db.patch(args.id, {
       isActive: false,
       updatedAt: Date.now(),
@@ -274,6 +372,23 @@ export const createDossier = authMutation({
     )),
   },
   handler: async (ctx, args) => {
+    const effectiveDemandeurId = args.demandeurId ?? ctx.user._id;
+
+    // RBAC : bypass pour un citoyen qui crée son propre dossier ; sinon
+    // exiger TaskCode.correspondance.create sur l'org porteuse.
+    const isSelfCitizen =
+      effectiveDemandeurId === ctx.user._id &&
+      (await isPublicUser(ctx, ctx.user._id));
+    if (!isSelfCitizen) {
+      const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+      await assertCanDoTask(
+        ctx,
+        ctx.user,
+        membership,
+        TaskCode.correspondance.create,
+      );
+    }
+
     const now = Date.now();
 
     // Load TypeDemarche config
@@ -376,6 +491,16 @@ export const getDossier = authQuery({
     const dossier = await ctx.db.get(args.dossierId) as any;
     if (!dossier || dossier.deletedAt) return null;
 
+    // Vérifier l'accès : owner (citoyen) ou membership dans l'org porteuse.
+    // Un membre de l'org avec correspondance.view peut consulter ; un
+    // citoyen ne peut lire que son propre dossier.
+    if (!(await canReadDossier(ctx, dossier))) {
+      throw error(
+        ErrorCode.INSUFFICIENT_PERMISSIONS,
+        "Vous n'avez pas accès à ce dossier",
+      );
+    }
+
     // Get pieces with storage URLs
     const pieces = await ctx.db
       .query("dossierPieces")
@@ -431,6 +556,15 @@ export const listDossiers = authQuery({
     agentTraitantId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
+    // RBAC : exige `correspondance.view` dans l'org cible.
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(
+      ctx,
+      ctx.user,
+      membership,
+      TaskCode.correspondance.view,
+    );
+
     let items;
 
     if (args.status) {
@@ -514,6 +648,13 @@ export const deleteDossier = authMutation({
     if (dossier.status !== "brouillon") {
       throw new Error("Can only delete dossiers in brouillon status");
     }
+    // Un citoyen peut supprimer son propre brouillon ; un agent nécessite admin.
+    await assertDossierTask(
+      ctx,
+      dossier,
+      TaskCode.correspondance.admin,
+      { allowOwner: true },
+    );
     await ctx.db.patch(args.dossierId, { deletedAt: Date.now() });
     await logJournal(ctx, args.dossierId, "DOSSIER_DELETED");
   },
@@ -534,6 +675,16 @@ export const uploadPiece = authMutation({
     sizeBytes: v.number(),
   },
   handler: async (ctx, args) => {
+    const dossier = (await ctx.db.get(args.dossierId)) as any;
+    if (!dossier) throw error(ErrorCode.NOT_FOUND, "Dossier non trouvé");
+    // Citoyen propriétaire OU agent avec correspondance.create.
+    await assertDossierTask(
+      ctx,
+      dossier,
+      TaskCode.correspondance.create,
+      { allowOwner: true },
+    );
+
     const now = Date.now();
 
     const piece = await ctx.db
@@ -569,6 +720,11 @@ export const validatePiece = authMutation({
     commentaire: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const dossier = (await ctx.db.get(args.dossierId)) as any;
+    if (!dossier) throw error(ErrorCode.NOT_FOUND, "Dossier non trouvé");
+    // Validation = agent validateur uniquement (correspondance.approve).
+    await assertDossierTask(ctx, dossier, TaskCode.correspondance.approve);
+
     const now = Date.now();
 
     const piece = await ctx.db
@@ -604,6 +760,10 @@ export const rejectPiece = authMutation({
     reason: v.string(),
   },
   handler: async (ctx, args) => {
+    const dossier = (await ctx.db.get(args.dossierId)) as any;
+    if (!dossier) throw error(ErrorCode.NOT_FOUND, "Dossier non trouvé");
+    await assertDossierTask(ctx, dossier, TaskCode.correspondance.approve);
+
     const now = Date.now();
 
     const piece = await ctx.db
@@ -633,6 +793,15 @@ export const rejectPiece = authMutation({
 export const listPieces = authQuery({
   args: { dossierId: v.id("dossierProcedures") },
   handler: async (ctx, args) => {
+    const dossier = (await ctx.db.get(args.dossierId)) as any;
+    if (!dossier) return [];
+    if (!(await canReadDossier(ctx, dossier))) {
+      throw error(
+        ErrorCode.INSUFFICIENT_PERMISSIONS,
+        "Vous n'avez pas accès à ce dossier",
+      );
+    }
+
     const pieces = await ctx.db
       .query("dossierPieces")
       .withIndex("by_dossier", (q: any) => q.eq("dossierId", args.dossierId))
@@ -672,6 +841,15 @@ export const submitDossier = authMutation({
     if (dossier.status !== "brouillon") {
       throw new Error("Can only submit a dossier in brouillon status");
     }
+
+    // Le demandeur citoyen peut soumettre son propre dossier ;
+    // un agent nécessite correspondance.create.
+    await assertDossierTask(
+      ctx,
+      dossier,
+      TaskCode.correspondance.create,
+      { allowOwner: true },
+    );
 
     await ctx.db.patch(args.dossierId, {
       status: "en_cours",
@@ -715,6 +893,29 @@ export const advanceStep = authMutation({
     if (!["en_cours", "en_attente"].includes(dossier.status)) {
       throw new Error(`Cannot advance dossier in status "${dossier.status}"`);
     }
+
+    // RBAC : chaque type d'action exige un TaskCode spécifique (spec §3.2).
+    // Les actions de transition sont **toujours** réservées aux agents — un
+    // citoyen ne peut pas `valider`, `transmettre`, etc.
+    const taskForAction: Record<string, TaskCodeValue> = {
+      transmettre: TaskCode.correspondance.transmit,
+      valider: TaskCode.correspondance.approve,
+      signer: TaskCode.correspondance.sign,
+      rejeter: TaskCode.correspondance.approve,
+      retourner: TaskCode.correspondance.approve,
+      suspendre: TaskCode.correspondance.supervise,
+      reprendre: TaskCode.correspondance.supervise,
+      clore: TaskCode.correspondance.admin,
+      archiver: TaskCode.correspondance.admin,
+      commenter: TaskCode.correspondance.view,
+      // creer/soumettre ne devraient pas passer par advanceStep mais par
+      // createDossier/submitDossier — on les mappe sur create par sécurité.
+      creer: TaskCode.correspondance.create,
+      soumettre: TaskCode.correspondance.create,
+    };
+    const requiredTask =
+      taskForAction[args.action] ?? TaskCode.correspondance.transmit;
+    await assertDossierTask(ctx, dossier, requiredTask);
 
     // Load TypeDemarche to get workflow config
     const typeDemarche = await ctx.db.get(dossier.typeDemarcheId) as any;
@@ -918,6 +1119,10 @@ export const closeDossier = authMutation({
     const dossier = await ctx.db.get(args.dossierId) as any;
     if (!dossier) throw new Error("Dossier not found");
 
+    // Clôture = admin procédure uniquement (règle spec §3.2 « Arrêter le
+    // processus = administrateur de procédure uniquement »).
+    await assertDossierTask(ctx, dossier, TaskCode.correspondance.admin);
+
     await ctx.db.patch(args.dossierId, {
       status: "clos",
       dateCloture: now,
@@ -948,6 +1153,8 @@ export const archiveDossier = authMutation({
     const dossier = await ctx.db.get(args.dossierId) as any;
     if (!dossier) throw new Error("Dossier not found");
 
+    await assertDossierTask(ctx, dossier, TaskCode.correspondance.admin);
+
     if (!["valide", "clos", "rejete"].includes(dossier.status)) {
       throw new Error("Can only archive validated, closed, or rejected dossiers");
     }
@@ -968,6 +1175,11 @@ export const assignAgent = authMutation({
     agentId: v.id("users"),
   },
   handler: async (ctx, args) => {
+    const dossier = (await ctx.db.get(args.dossierId)) as any;
+    if (!dossier) throw error(ErrorCode.NOT_FOUND, "Dossier non trouvé");
+    // Assigner un agent = rôle superviseur (règle spec §3.2).
+    await assertDossierTask(ctx, dossier, TaskCode.correspondance.supervise);
+
     const agent = await ctx.db.get(args.agentId) as any;
 
     await ctx.db.patch(args.dossierId, {
@@ -990,6 +1202,14 @@ export const assignAgent = authMutation({
 export const getJournal = authQuery({
   args: { dossierId: v.id("dossierProcedures") },
   handler: async (ctx, args) => {
+    const dossier = (await ctx.db.get(args.dossierId)) as any;
+    if (!dossier) return [];
+    if (!(await canReadDossier(ctx, dossier))) {
+      throw error(
+        ErrorCode.INSUFFICIENT_PERMISSIONS,
+        "Vous n'avez pas accès au journal de ce dossier",
+      );
+    }
     return await ctx.db
       .query("journalActions")
       .withIndex("by_dossier_created", (q: any) =>
@@ -1004,6 +1224,14 @@ export const getJournal = authQuery({
 export const getTransitions = authQuery({
   args: { dossierId: v.id("dossierProcedures") },
   handler: async (ctx, args) => {
+    const dossier = (await ctx.db.get(args.dossierId)) as any;
+    if (!dossier) return [];
+    if (!(await canReadDossier(ctx, dossier))) {
+      throw error(
+        ErrorCode.INSUFFICIENT_PERMISSIONS,
+        "Vous n'avez pas accès à l'historique de ce dossier",
+      );
+    }
     return await ctx.db
       .query("dossierTransitions")
       .withIndex("by_dossier_created", (q: any) =>
