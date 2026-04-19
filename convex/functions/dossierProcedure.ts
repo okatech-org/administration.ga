@@ -877,6 +877,10 @@ export const submitDossier = authMutation({
 /**
  * Advance the dossier to the next step.
  * Core workflow engine: validates action, creates transit copy, moves to next step.
+ *
+ * **Règle métier 2** (spec §9) : Transmission bloquée si pièces obligatoires
+ * manquantes, sauf dérogation d'un administrateur via `forceIncomplete: true`
+ * (qui exige `TaskCode.correspondance.admin`).
  */
 export const advanceStep = authMutation({
   args: {
@@ -884,6 +888,8 @@ export const advanceStep = authMutation({
     action: transitionActionValidator,
     commentaire: v.optional(v.string()),
     targetOrganismeId: v.optional(v.id("orgs")),
+    /** Si true, bypass la check de pièces obligatoires. Réservé admin. */
+    forceIncomplete: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -936,6 +942,49 @@ export const advanceStep = authMutation({
       throw new Error(
         `Action "${args.action}" is not allowed at step "${currentStep.code}". Allowed: ${currentStep.actionsAutorisees.join(", ")}`,
       );
+    }
+
+    // **Règle métier 2** : pour `transmettre` ou `valider`, vérifier que
+    // toutes les pièces obligatoires sont présentes (status "fourni" ou
+    // "valide"). Un admin peut déroger via `forceIncomplete: true`.
+    if (args.action === "transmettre" || args.action === "valider") {
+      const requiredPieces = typeDemarche.piecesRequises.filter(
+        (p: any) => p.required,
+      );
+      if (requiredPieces.length > 0) {
+        if (args.forceIncomplete) {
+          // Dérogation admin — exiger correspondance.admin.
+          await assertDossierTask(
+            ctx,
+            dossier,
+            TaskCode.correspondance.admin,
+          );
+        } else {
+          const pieces = await ctx.db
+            .query("dossierPieces")
+            .withIndex("by_dossier", (q: any) =>
+              q.eq("dossierId", args.dossierId),
+            )
+            .collect();
+          const missing: string[] = [];
+          for (const required of requiredPieces) {
+            const found = pieces.find(
+              (p: any) =>
+                p.pieceCode === required.code &&
+                (p.status === "fourni" || p.status === "valide"),
+            );
+            if (!found) {
+              missing.push(required.label?.fr ?? required.code);
+            }
+          }
+          if (missing.length > 0) {
+            throw error(
+              ErrorCode.INVALID_ARGUMENT,
+              `Pièce${missing.length > 1 ? "s" : ""} obligatoire${missing.length > 1 ? "s" : ""} manquante${missing.length > 1 ? "s" : ""} : ${missing.join(", ")}. Complétez le dossier avant transmission.`,
+            );
+          }
+        }
+      }
     }
 
     // Handle different actions
@@ -1123,6 +1172,15 @@ export const closeDossier = authMutation({
     // processus = administrateur de procédure uniquement »).
     await assertDossierTask(ctx, dossier, TaskCode.correspondance.admin);
 
+    // **Règle métier 7** : la clôture est irréversible. Bloquer toute
+    // tentative de re-clôture ou de re-patch d'un dossier déjà clos/archivé.
+    if (["clos", "archive"].includes(dossier.status)) {
+      throw error(
+        ErrorCode.INVALID_ARGUMENT,
+        "Dossier déjà clôturé — la clôture est irréversible",
+      );
+    }
+
     await ctx.db.patch(args.dossierId, {
       status: "clos",
       dateCloture: now,
@@ -1155,6 +1213,13 @@ export const archiveDossier = authMutation({
 
     await assertDossierTask(ctx, dossier, TaskCode.correspondance.admin);
 
+    // Guard anti-double-archivage : la transition est irréversible.
+    if (dossier.status === "archive") {
+      throw error(
+        ErrorCode.INVALID_ARGUMENT,
+        "Dossier déjà archivé",
+      );
+    }
     if (!["valide", "clos", "rejete"].includes(dossier.status)) {
       throw new Error("Can only archive validated, closed, or rejected dossiers");
     }
