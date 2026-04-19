@@ -158,12 +158,20 @@ export const TaskCode = {
     accessStandardThread: "chats.accessStandardThread",
   },
   // Correspondance & Dossiers de procédure
+  // Mapping des 7 rôles spec iCorrespondance §3.1 :
+  //   Lecteur → view, Contributeur → create, Validateur → approve,
+  //   Signataire → sign, Transmetteur → transmit, Superviseur → supervise,
+  //   Admin procédure → admin.
   correspondance: {
     view: "correspondance.view",
     create: "correspondance.create",
     approve: "correspondance.approve",
     sign: "correspondance.sign",
     transmit: "correspondance.transmit",
+    /** Superviseur : consulter tout dossier de son périmètre, commenter,
+     * assigner un agent à une étape. Distinct de `admin` qui gère la config
+     * des types de démarche et l'arrêt de processus. */
+    supervise: "correspondance.supervise",
     configure: "correspondance.configure",
     admin: "correspondance.admin",
   },
@@ -334,6 +342,7 @@ export const taskCodeValidator = v.union(
   v.literal(TaskCode.correspondance.approve),
   v.literal(TaskCode.correspondance.sign),
   v.literal(TaskCode.correspondance.transmit),
+  v.literal(TaskCode.correspondance.supervise),
   v.literal(TaskCode.correspondance.configure),
   v.literal(TaskCode.correspondance.admin),
   // Voicemails (Sprint 6)
@@ -470,6 +479,7 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   [TaskCode.correspondance.approve]: "high",
   [TaskCode.correspondance.sign]: "high",
   [TaskCode.correspondance.transmit]: "medium",
+  [TaskCode.correspondance.supervise]: "high",
   [TaskCode.correspondance.configure]: "high",
   [TaskCode.correspondance.admin]: "critical",
   // Voicemails (Sprint 6) — listen/delete = high (GDPR)

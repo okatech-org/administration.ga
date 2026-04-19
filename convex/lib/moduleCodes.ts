@@ -715,8 +715,8 @@ export const MODULE_ACCESS_TASKS: Partial<Record<string, Record<ModuleAccessLeve
   },
   correspondance: {
     reader: ["correspondance.view"],
-    editor: ["correspondance.view", "correspondance.create", "correspondance.approve", "correspondance.sign", "correspondance.transmit"],
-    admin: ["correspondance.view", "correspondance.create", "correspondance.approve", "correspondance.sign", "correspondance.transmit", "correspondance.configure", "correspondance.admin"],
+    editor: ["correspondance.view", "correspondance.create", "correspondance.approve", "correspondance.sign", "correspondance.transmit", "correspondance.supervise"],
+    admin: ["correspondance.view", "correspondance.create", "correspondance.approve", "correspondance.sign", "correspondance.transmit", "correspondance.supervise", "correspondance.configure", "correspondance.admin"],
   },
   community_events: {
     reader: ["community_events.view"],
