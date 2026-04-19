@@ -134,6 +134,7 @@ export default function MeetingsPage() {
 					<MeetingRoom
 						token={token}
 						wsUrl={wsUrl}
+						meetingId={activeMeetingId}
 						onDisconnect={handleDisconnect}
 					/>
 				</div>

@@ -172,6 +172,44 @@ export const completeEgress = internalMutation({
 });
 
 /**
+ * Récupère l'enregistrement actif (status=pending) d'une réunion.
+ * Utilisé par l'UI custom-call-ui pour afficher l'état du bouton REC.
+ * Retourne null s'il n'y en a pas. Participants du meeting autorisés.
+ */
+export const getActiveForMeeting = authQuery({
+  args: {
+    meetingId: v.id("meetings"),
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return null;
+
+    // Permission : créateur, participant, ou membre de l'org hôte.
+    const isCreator = meeting.createdBy === ctx.user._id;
+    const isParticipant = meeting.participants.some(
+      (p: any) => p.userId === ctx.user._id,
+    );
+    const membership = meeting.orgId
+      ? await ctx.db
+          .query("memberships")
+          .withIndex("by_user_org", (q: any) =>
+            q.eq("userId", ctx.user._id).eq("orgId", meeting.orgId),
+          )
+          .first()
+      : null;
+    if (!isCreator && !isParticipant && !membership) return null;
+
+    const active = await ctx.db
+      .query("callRecordings")
+      .withIndex("by_meeting", (q: any) => q.eq("meetingId", args.meetingId))
+      .filter((q: any) => q.eq(q.field("status"), "pending"))
+      .first();
+
+    return active;
+  },
+});
+
+/**
  * Liste les enregistrements d'une org (récents d'abord).
  * Requiert `callRecordings.listen`.
  */

@@ -15,12 +15,14 @@ import {
 	CameraOff,
 	ChevronDown,
 	ChevronUp,
+	Circle,
 	Loader2,
 	Mic,
 	MicOff,
 	MonitorUp,
 	MonitorX,
 	PhoneOff,
+	Square,
 	User,
 	Wifi,
 	WifiOff,
@@ -37,6 +39,16 @@ interface CustomCallUIProps {
 	onHangUp?: () => void;
 	/** Optional title to display in the header */
 	title?: string;
+	/**
+	 * Recording controls. If undefined, the recording button is hidden —
+	 * utilisé pour n'exposer le bouton qu'aux agents (le parent wire la
+	 * mutation Convex `callRecordings.startRecording`/`stopRecording`).
+	 */
+	recording?: {
+		isRecording: boolean;
+		isPending?: boolean;
+		onToggle: () => void;
+	};
 }
 
 // ============================================
@@ -237,7 +249,7 @@ function ControlButton({
  * - Mobile: remote video fullscreen + local PiP (bottom-right corner)
  * - Desktop: side-by-side 2-column grid
  */
-export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
+export function CustomCallUI({ onHangUp, title, recording }: CustomCallUIProps) {
 	const { t } = useTranslation();
 	const connectionState = useConnectionState();
 	const isConnected = connectionState === ConnectionState.Connected;
@@ -372,6 +384,12 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 					{isConnected && (
 						<span className="text-xs text-zinc-400 tabular-nums font-mono shrink-0">
 							{timer}
+						</span>
+					)}
+					{recording?.isRecording && (
+						<span className="text-xs bg-red-600/90 text-white px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
+							<span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+							{t("meetings.recording", "REC")}
 						</span>
 					)}
 				</div>
@@ -552,6 +570,20 @@ export function CustomCallUI({ onHangUp, title }: CustomCallUIProps) {
 						}
 						pending={screenSharePending}
 					/>
+					{recording && (
+						<ControlButton
+							onClick={recording.onToggle}
+							active={recording.isRecording}
+							danger={recording.isRecording}
+							icon={recording.isRecording ? Square : Circle}
+							label={
+								recording.isRecording
+									? t("meetings.stopRecording", "Arrêter")
+									: t("meetings.startRecording", "Enregistrer")
+							}
+							pending={!!recording.isPending}
+						/>
+					)}
 					<ControlButton
 						onClick={handleHangUp}
 						active={false}
