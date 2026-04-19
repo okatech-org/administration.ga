@@ -7,7 +7,8 @@
   "exports": {
     "./use-idempotency-key": "./src/use-idempotency-key.ts",
     "./use-chat-attachments": "./src/use-chat-attachments.ts",
-    "./safe-markdown": "./src/safe-markdown.tsx"
+    "./safe-markdown": "./src/safe-markdown.tsx",
+    "./inline-message-editor": "./src/inline-message-editor.tsx"
   },
   "scripts": {
     "lint": "eslint",

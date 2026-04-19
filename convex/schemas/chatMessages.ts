@@ -16,7 +16,22 @@ export const chatMessagesTable = defineTable({
 
   // Contenu
   content: v.string(),
+  // Attachments legacy : références à la table `documents` (non utilisé côté
+  // chat actuellement — conservé pour compat future avec iDocument).
   attachments: v.optional(v.array(v.id("documents"))),
+  // Fichiers joints inline au message — self-contained (pas de dépendance à
+  // la table `documents`). Ils héritent des permissions du thread : tout
+  // participant peut lire. Utilisé par iChat pour les pièces jointes directes.
+  attachmentFiles: v.optional(
+    v.array(
+      v.object({
+        storageId: v.id("_storage"),
+        filename: v.string(),
+        mimeType: v.string(),
+        sizeBytes: v.number(),
+      }),
+    ),
+  ),
 
   // Statut de lecture
   readAt: v.optional(v.number()),
