@@ -1322,6 +1322,19 @@ export const getCopiesPassage = authQuery({
 export const getCopiesForOrg = authQuery({
   args: { organismeId: v.id("orgs") },
   handler: async (ctx, args) => {
+    // Exige un membership dans l'org avec correspondance.view.
+    const membership = await getMembership(
+      ctx,
+      ctx.user._id,
+      args.organismeId,
+    );
+    await assertCanDoTask(
+      ctx,
+      ctx.user,
+      membership,
+      TaskCode.correspondance.view,
+    );
+
     const copies = await ctx.db
       .query("copiesPassage")
       .withIndex("by_organisme", (q: any) =>
@@ -1340,5 +1353,49 @@ export const getCopiesForOrg = authQuery({
         };
       }),
     );
+  },
+});
+
+/**
+ * **Règle métier 9** (spec §9) : toute consultation d'un dossier
+ * confidentiel ou secret doit être tracée dans le journal d'audit.
+ *
+ * Les queries Convex sont réactives et pures (pas de side-effects). Le
+ * frontend appelle donc cette mutation explicitement lors du mount d'une
+ * page détail quand `dossier.confidentialite` est "confidentiel" ou
+ * "secret". Pour un dossier standard, rien n'est loggé (no-op silencieux).
+ *
+ * Pattern côté client :
+ * ```ts
+ * useEffect(() => {
+ *   if (dossier && ["confidentiel", "secret"].includes(dossier.confidentialite)) {
+ *     logDossierView({ dossierId: dossier._id }).catch(() => {});
+ *   }
+ * }, [dossier?._id, dossier?.confidentialite]);
+ * ```
+ */
+export const logDossierView = authMutation({
+  args: { dossierId: v.id("dossierProcedures") },
+  handler: async (ctx, args) => {
+    const dossier = (await ctx.db.get(args.dossierId)) as any;
+    if (!dossier) return;
+
+    // Pas de log pour les dossiers standards — seule la consultation des
+    // dossiers sensibles est auditée (règle 9).
+    if (!["confidentiel", "secret"].includes(dossier.confidentialite)) return;
+
+    // Vérifier d'abord que l'utilisateur a bien accès — on ne logge pas
+    // un accès illégitime, on le rejette.
+    if (!(await canReadDossier(ctx, dossier))) {
+      throw error(
+        ErrorCode.INSUFFICIENT_PERMISSIONS,
+        "Vous n'avez pas accès à ce dossier",
+      );
+    }
+
+    await logJournal(ctx, args.dossierId, "DOSSIER_VIEWED", {
+      confidentialite: dossier.confidentialite,
+      reference: dossier.reference,
+    });
   },
 });
