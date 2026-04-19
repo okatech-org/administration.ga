@@ -4,6 +4,17 @@ import { useCallback, useRef, useState } from "react";
 export const MAX_ATTACHMENT_SIZE_BYTES = 50 * 1024 * 1024; // 50 Mo
 
 /**
+ * Formate une taille en bytes en string lisible (`3,2 Mo`, `12 ko`, `789 o`).
+ */
+export function formatFileSize(bytes: number): string {
+	if (bytes < 1024) return `${bytes} o`;
+	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} ko`;
+	if (bytes < 1024 * 1024 * 1024)
+		return `${(bytes / (1024 * 1024)).toFixed(1).replace(".0", "")} Mo`;
+	return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} Go`;
+}
+
+/**
  * MIME types autorisés. Synchronisé avec `convex/functions/correspondance.ts
  * ALLOWED_ATTACHMENT_MIME_TYPES`. Si vous étendez la liste, pensez à mettre à
  * jour les deux.

@@ -13,19 +13,28 @@ import {
 	Bot,
 	Calendar,
 	CreditCard,
+	Download,
 	Edit3,
 	FileText,
 	Headset,
+	ImageIcon,
 	Loader2,
 	MessageSquare,
 	MoreVertical,
+	Paperclip,
 	Pin,
 	Send,
 	Trash2,
 	User,
+	X,
 } from "lucide-react";
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { InlineMessageEditor } from "@workspace/chat/inline-message-editor";
 import { SafeMarkdown as Markdown } from "@workspace/chat/safe-markdown";
+import {
+	formatFileSize,
+	useChatAttachments,
+} from "@workspace/chat/use-chat-attachments";
 import { useIdempotencyKey } from "@workspace/chat/use-idempotency-key";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -61,6 +70,10 @@ const MR_RAY_CONTACT = {
 export function CitizenChatTab() {
 	const [selectedThread, setSelectedThread] = useState<any>(null);
 	const [messageInput, setMessageInput] = useState("");
+	// ID du message en cours d'édition (null = aucun). L'éditeur inline prend
+	// la place du contenu de la bulle concernée.
+	const [editingMessageId, setEditingMessageId] =
+		useState<Id<"chatMessages"> | null>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
 	// Threads avec agents (temps reel)
@@ -91,6 +104,43 @@ export function CitizenChatTab() {
 	const { mutateAsync: clearTypingMut } = useConvexMutationQuery(
 		api.functions.chats.clearTyping,
 	);
+	const { mutateAsync: generateAttachmentUploadUrl } = useConvexMutationQuery(
+		api.functions.chats.generateAttachmentUploadUrl,
+	);
+
+	// ── Attachments ──
+	const {
+		attachments: pendingAttachments,
+		addFiles,
+		remove: removeAttachment,
+		consumeForUpload,
+	} = useChatAttachments({ onValidationError: (m) => toast.error(m) });
+	const [isUploading, setIsUploading] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+	const uploadPendingAttachments = useCallback(async () => {
+		const files = consumeForUpload();
+		if (files.length === 0) return undefined;
+		const uploaded = await Promise.all(
+			files.map(async (file) => {
+				const uploadUrl = await generateAttachmentUploadUrl({});
+				const res = await fetch(uploadUrl as string, {
+					method: "POST",
+					headers: { "Content-Type": file.type },
+					body: file,
+				});
+				if (!res.ok) throw new Error(`Upload échoué pour ${file.name}`);
+				const { storageId } = (await res.json()) as { storageId: string };
+				return {
+					storageId: storageId as Id<"_storage">,
+					filename: file.name,
+					mimeType: file.type || "application/octet-stream",
+					sizeBytes: file.size,
+				};
+			}),
+		);
+		return uploaded;
+	}, [consumeForUpload, generateAttachmentUploadUrl]);
 	// Clé d'idempotence : évite les doubles insertions côté backend si
 	// l'utilisateur double-clique ou si le retry réseau refait la mutation.
 	const { getKey: getIdempotencyKey, rotate: rotateIdempotencyKey } =
@@ -203,19 +253,31 @@ export function CitizenChatTab() {
 	// ── Envoi message Mr Ray (Standard) ──
 	const handleSendStandard = async () => {
 		const text = messageInput.trim();
-		if (!text) return;
+		const hasAttachments = pendingAttachments.length > 0;
+		if (!text && !hasAttachments) return;
+		if (isUploading) return;
 
+		setIsUploading(true);
 		try {
+			const attachmentFiles = hasAttachments
+				? await uploadPendingAttachments()
+				: undefined;
+
 			if (mrRayThread) {
 				// Thread existant — envoyer dans le thread P2P
 				await sendChatMessage({
 					chatId: mrRayThread._id as Id<"chats">,
 					content: text,
+					attachmentFiles,
 					idempotencyKey: getIdempotencyKey(),
 				});
 			} else if (orgId) {
 				// Pas de thread — en creer un via initiateStandardChat
-				await initiateStandard({ orgId, initialMessage: text });
+				await initiateStandard({
+					orgId,
+					initialMessage: text,
+					initialAttachmentFiles: attachmentFiles,
+				});
 			} else {
 				toast.error("Vous devez etre inscrit a une representation consulaire pour utiliser le Standard.");
 				return;
@@ -226,18 +288,28 @@ export function CitizenChatTab() {
 		} catch (e: any) {
 			toast.error(e?.data ?? e?.message ?? "Erreur d'envoi");
 			// On ne rotate PAS la clé → un retry manuel dédupliquera côté serveur.
+		} finally {
+			setIsUploading(false);
 		}
 	};
 
 	// ── Envoi message humain ──
 	const handleSendHuman = async () => {
 		const text = messageInput.trim();
-		if (!text || !selectedChatId) return;
+		const hasAttachments = pendingAttachments.length > 0;
+		if ((!text && !hasAttachments) || !selectedChatId) return;
+		if (isUploading) return;
 
+		setIsUploading(true);
 		try {
+			const attachmentFiles = hasAttachments
+				? await uploadPendingAttachments()
+				: undefined;
+
 			await sendChatMessage({
 				chatId: selectedChatId as Id<"chats">,
 				content: text,
+				attachmentFiles,
 				idempotencyKey: getIdempotencyKey(),
 			});
 			setMessageInput("");
@@ -245,6 +317,8 @@ export function CitizenChatTab() {
 			stopTyping();
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur d'envoi");
+		} finally {
+			setIsUploading(false);
 		}
 	};
 
@@ -310,16 +384,25 @@ export function CitizenChatTab() {
 		[deleteMessageMut],
 	);
 
-	const handleEditMessage = useCallback(
-		async (messageId: Id<"chatMessages">, currentContent: string) => {
-			const next = window.prompt("Modifier le message :", currentContent);
-			if (next === null) return;
-			const trimmed = next.trim();
-			if (!trimmed || trimmed === currentContent) return;
+	// Bascule la bulle du message ciblé en mode édition inline. Le rendu de
+	// la conversation détecte `editingMessageId === msg._id` et remplace le
+	// contenu par <InlineMessageEditor>.
+	const handleStartEdit = useCallback((messageId: Id<"chatMessages">) => {
+		setEditingMessageId(messageId);
+	}, []);
+
+	const handleCancelEdit = useCallback(() => {
+		setEditingMessageId(null);
+	}, []);
+
+	const handleSaveEdit = useCallback(
+		async (messageId: Id<"chatMessages">, nextContent: string) => {
 			try {
-				await editMessageMut({ messageId, content: trimmed });
+				await editMessageMut({ messageId, content: nextContent });
+				setEditingMessageId(null);
 			} catch (e: any) {
 				toast.error(e?.data ?? e?.message ?? "Modification impossible.");
+				// On conserve l'éditeur ouvert pour laisser l'utilisateur corriger.
 			}
 		},
 		[editMessageMut],
@@ -472,7 +555,7 @@ export function CitizenChatTab() {
 													</button>
 												</DropdownMenuTrigger>
 												<DropdownMenuContent align="end" className="min-w-[9rem]">
-													<DropdownMenuItem onClick={() => handleEditMessage(msg._id, msg.content)}>
+													<DropdownMenuItem onClick={() => handleStartEdit(msg._id)}>
 														<Edit3 className="h-3.5 w-3.5 mr-2" />
 														<span className="text-xs">Modifier</span>
 													</DropdownMenuItem>
@@ -491,11 +574,50 @@ export function CitizenChatTab() {
 											isDeleted && "italic opacity-60")}>
 											{isDeleted ? (
 												<span>[Message supprimé]</span>
+											) : msg._id === editingMessageId ? (
+												<InlineMessageEditor
+													initialValue={msg.content}
+													onSave={(next) => handleSaveEdit(msg._id, next)}
+													onCancel={handleCancelEdit}
+													textareaClassName="w-full bg-transparent outline-none resize-none text-xs text-inherit placeholder:opacity-50"
+													buttonClassName="px-2 py-0.5 text-[10px] rounded"
+													saveButtonClassName="bg-background/20 hover:bg-background/30 font-medium"
+													cancelButtonClassName="opacity-70 hover:opacity-100"
+													rows={2}
+												/>
 											) : isBotMessage ? (
 												<div className="prose prose-xs dark:prose-invert max-w-none [&>p]:m-0"><Markdown>{msg.content}</Markdown></div>
 											) : (
 												<>
-													{msg.content}
+													{msg.content && <div>{msg.content}</div>}
+													{msg.attachmentFiles && msg.attachmentFiles.length > 0 && (
+														<div className={cn("space-y-0.5", msg.content ? "mt-1.5" : "")}>
+															{msg.attachmentFiles.map((f: any) => (
+																<a
+																	key={f.storageId}
+																	href={f.url ?? "#"}
+																	target="_blank"
+																	rel="noopener noreferrer"
+																	download={f.filename}
+																	className={cn(
+																		"flex items-center gap-1.5 px-1.5 py-1 rounded text-[10px] bg-black/10 dark:bg-white/10 hover:bg-black/15 dark:hover:bg-white/15 transition-colors",
+																		!f.url && "pointer-events-none opacity-50",
+																	)}
+																>
+																	{f.mimeType?.startsWith("image/") ? (
+																		<ImageIcon className="h-3 w-3 shrink-0 opacity-80" />
+																	) : (
+																		<FileText className="h-3 w-3 shrink-0 opacity-80" />
+																	)}
+																	<span className="truncate flex-1 min-w-0">{f.filename}</span>
+																	<span className="opacity-60 shrink-0">
+																		{formatFileSize(f.sizeBytes)}
+																	</span>
+																	<Download className="h-3 w-3 shrink-0 opacity-60" />
+																</a>
+															))}
+														</div>
+													)}
 													{isEdited && (
 														<span className="ml-1 opacity-60 text-[9px]">(modifié)</span>
 													)}
@@ -536,8 +658,58 @@ export function CitizenChatTab() {
 					</div>
 				)}
 
+				{/* Pending attachments — chips au-dessus du composer */}
+				{pendingAttachments.length > 0 && (
+					<div className="border-t px-2 py-1.5 flex flex-wrap gap-1 shrink-0">
+						{pendingAttachments.map((att) => (
+							<div
+								key={att.localId}
+								className="flex items-center gap-1 bg-muted rounded-md px-1.5 py-0.5 text-[10px] max-w-[200px]"
+							>
+								{att.file.type.startsWith("image/") ? (
+									<ImageIcon className="h-3 w-3 shrink-0 text-muted-foreground" />
+								) : (
+									<FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
+								)}
+								<span className="truncate">{att.file.name}</span>
+								<span className="text-muted-foreground/60 shrink-0">
+									{formatFileSize(att.file.size)}
+								</span>
+								<button
+									type="button"
+									onClick={() => removeAttachment(att.localId)}
+									className="ml-0.5 hover:text-destructive shrink-0"
+									aria-label="Retirer"
+								>
+									<X className="h-3 w-3" />
+								</button>
+							</div>
+						))}
+					</div>
+				)}
+
 				{/* Input */}
 				<div className="border-t p-2 flex items-end gap-1.5 shrink-0">
+					<input
+						ref={fileInputRef}
+						type="file"
+						multiple
+						className="hidden"
+						onChange={(e) => {
+							if (e.target.files) addFiles(e.target.files);
+							e.target.value = ""; // permet de re-sélectionner le même fichier
+						}}
+					/>
+					<Button
+						size="icon"
+						variant="ghost"
+						className="h-8 w-8 shrink-0"
+						onClick={() => fileInputRef.current?.click()}
+						disabled={isUploading}
+						aria-label="Joindre un fichier"
+					>
+						<Paperclip className="h-3.5 w-3.5" />
+					</Button>
 					<Textarea
 						value={messageInput}
 						onChange={(e) => handleInputChange(e.target.value)}
@@ -549,10 +721,17 @@ export function CitizenChatTab() {
 					<Button
 						size="icon"
 						className={cn("h-8 w-8 shrink-0", isStandard && "bg-teal-600 hover:bg-teal-700")}
-						disabled={!messageInput.trim()}
+						disabled={
+							(!messageInput.trim() && pendingAttachments.length === 0) ||
+							isUploading
+						}
 						onClick={isStandard ? handleSendStandard : handleSendHuman}
 					>
-						<Send className="h-3.5 w-3.5" />
+						{isUploading ? (
+							<Loader2 className="h-3.5 w-3.5 animate-spin" />
+						) : (
+							<Send className="h-3.5 w-3.5" />
+						)}
 					</Button>
 				</div>
 			</div>
