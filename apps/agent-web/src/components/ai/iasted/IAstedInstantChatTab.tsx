@@ -190,6 +190,12 @@ export function useIAstedChat({
 	const { mutateAsync: sendChatMessage } = useConvexMutationQuery(
 		api.functions.chats.sendMessage,
 	);
+	const { mutateAsync: setTypingMut } = useConvexMutationQuery(
+		api.functions.chats.setTyping,
+	);
+	const { mutateAsync: clearTypingMut } = useConvexMutationQuery(
+		api.functions.chats.clearTyping,
+	);
 	// Déduplique les doubles envois côté backend.
 	const { getKey: getIdempotencyKey, rotate: rotateIdempotencyKey } =
 		useIdempotencyKey();
@@ -201,6 +207,64 @@ export function useIAstedChat({
 		api.functions.chats.findChatWith,
 		selectedUserId ? { targetUserId: selectedUserId as Id<"users"> } : "skip",
 	);
+
+	// ── Typing indicator ──
+	// Chat humain uniquement — skip pour iAsted (pas d'interlocuteur humain).
+	const typingChatId = useMemo(
+		() =>
+			selectedContact && !selectedContact.isAI
+				? ((selectedContact._chatId ?? existingChat?._id) as
+						| Id<"chats">
+						| undefined)
+				: undefined,
+		[selectedContact, existingChat],
+	);
+
+	const { data: typingUsers } = useAuthenticatedConvexQuery(
+		api.functions.chats.listTyping,
+		typingChatId ? { chatId: typingChatId } : "skip",
+	);
+
+	// Throttle : on ne ping `setTyping` qu'au plus toutes les 2s. Le TTL backend
+	// (6s) prend le relais quand l'utilisateur s'arrête. `clearTyping` au send
+	// + unmount + changement de thread.
+	const typingThrottleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const pingTyping = useCallback(() => {
+		if (!typingChatId) return;
+		if (typingThrottleRef.current) return;
+		void setTypingMut({ chatId: typingChatId });
+		typingThrottleRef.current = setTimeout(() => {
+			typingThrottleRef.current = null;
+		}, 2_000);
+	}, [typingChatId, setTypingMut]);
+
+	const stopTyping = useCallback(() => {
+		if (typingThrottleRef.current) {
+			clearTimeout(typingThrottleRef.current);
+			typingThrottleRef.current = null;
+		}
+		if (typingChatId) {
+			void clearTypingMut({ chatId: typingChatId });
+		}
+	}, [typingChatId, clearTypingMut]);
+
+	useEffect(() => {
+		return () => {
+			if (typingThrottleRef.current) {
+				clearTimeout(typingThrottleRef.current);
+				typingThrottleRef.current = null;
+			}
+		};
+	}, [typingChatId]);
+
+	const typingText = useMemo(() => {
+		if (!typingUsers || typingUsers.length === 0) return "";
+		if (typingUsers.length === 1) {
+			return `${typingUsers[0].displayName} est en train d'écrire…`;
+		}
+		return `${typingUsers.length} personnes sont en train d'écrire…`;
+	}, [typingUsers]);
 
 	// ── Envoi message humain ──
 	const handleSendHuman = useCallback(
@@ -223,6 +287,7 @@ export function useIAstedChat({
 				}
 				setMessageInput("");
 				rotateIdempotencyKey();
+				stopTyping();
 			} catch (e: any) {
 				toast.error(e?.message ?? "Erreur d'envoi");
 			}
@@ -235,6 +300,7 @@ export function useIAstedChat({
 			activeOrgId,
 			getIdempotencyKey,
 			rotateIdempotencyKey,
+			stopTyping,
 		],
 	);
 
@@ -470,6 +536,11 @@ export function useIAstedChat({
 		handleSendHuman,
 		handleKeyDown,
 
+		// Typing indicator (chat humain uniquement — skip côté iAsted).
+		pingTyping,
+		stopTyping,
+		typingText,
+
 		// Misc
 		suggestions,
 		messagesEndRef,
@@ -531,6 +602,9 @@ export function IAstedChatConversation({
 		handleSendAI,
 		handleSendHuman,
 		handleKeyDown,
+		pingTyping,
+		stopTyping,
+		typingText,
 	} = state;
 
 	// État vide — fullscreen sans sélection.
@@ -760,6 +834,13 @@ export function IAstedChatConversation({
 				</div>
 			)}
 
+			{/* Typing indicator — ligne fine au-dessus du composer (chat humain). */}
+			{!selectedContact.isAI && typingText && (
+				<div className="px-3 py-1 text-[10px] text-muted-foreground italic shrink-0">
+					{typingText}
+				</div>
+			)}
+
 			{/* Input */}
 			<div className="border-t p-2.5 flex items-end gap-2 shrink-0">
 				<Textarea
@@ -772,6 +853,12 @@ export function IAstedChatConversation({
 							setShowMacros(true);
 						} else if (showMacros && !v.startsWith("/")) {
 							setShowMacros(false);
+						}
+						// Typing indicator : ping pendant la frappe, clear si champ vidé.
+						// Skip pour iAsted (pas d'interlocuteur humain).
+						if (!selectedContact?.isAI) {
+							if (v.trim()) pingTyping();
+							else stopTyping();
 						}
 					}}
 					onKeyDown={(e) => {

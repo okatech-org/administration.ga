@@ -25,7 +25,7 @@ import {
 	User,
 	Users,
 } from "lucide-react";
-import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SafeMarkdown as Markdown } from "@workspace/chat/safe-markdown";
 import { useIdempotencyKey } from "@workspace/chat/use-idempotency-key";
 import { toast } from "sonner";
@@ -91,6 +91,8 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 
 	const { mutateAsync: initiateChat } = useConvexMutationQuery(api.functions.chats.initiateChat);
 	const { mutateAsync: sendChatMessage } = useConvexMutationQuery(api.functions.chats.sendMessage);
+	const { mutateAsync: setTypingMut } = useConvexMutationQuery(api.functions.chats.setTyping);
+	const { mutateAsync: clearTypingMut } = useConvexMutationQuery(api.functions.chats.clearTyping);
 	const { getKey: getIdempotencyKey, rotate: rotateIdempotencyKey } = useIdempotencyKey();
 
 	const selectedUserId = selectedContact && !selectedContact.isAI ? selectedContact.userId : undefined;
@@ -98,6 +100,61 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 		api.functions.chats.findChatWith,
 		selectedUserId ? { targetUserId: selectedUserId as Id<"users"> } : "skip",
 	);
+
+	// ── Typing indicator (chat humain uniquement) ──
+	// Skip pour iAsted : pas d'interlocuteur humain de l'autre côté.
+	const typingChatId = useMemo(
+		() =>
+			selectedContact && !selectedContact.isAI
+				? ((selectedContact._chatId ?? existingChat?._id) as Id<"chats"> | undefined)
+				: undefined,
+		[selectedContact, existingChat],
+	);
+
+	const { data: typingUsers } = useAuthenticatedConvexQuery(
+		api.functions.chats.listTyping,
+		typingChatId ? { chatId: typingChatId } : "skip",
+	);
+
+	// Throttle : ping au plus toutes les 2s pendant la frappe. TTL backend (6s)
+	// prend le relais quand l'utilisateur s'arrête.
+	const typingThrottleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const pingTyping = useCallback(() => {
+		if (!typingChatId) return;
+		if (typingThrottleRef.current) return;
+		void setTypingMut({ chatId: typingChatId });
+		typingThrottleRef.current = setTimeout(() => {
+			typingThrottleRef.current = null;
+		}, 2_000);
+	}, [typingChatId, setTypingMut]);
+
+	const stopTyping = useCallback(() => {
+		if (typingThrottleRef.current) {
+			clearTimeout(typingThrottleRef.current);
+			typingThrottleRef.current = null;
+		}
+		if (typingChatId) {
+			void clearTypingMut({ chatId: typingChatId });
+		}
+	}, [typingChatId, clearTypingMut]);
+
+	useEffect(() => {
+		return () => {
+			if (typingThrottleRef.current) {
+				clearTimeout(typingThrottleRef.current);
+				typingThrottleRef.current = null;
+			}
+		};
+	}, [typingChatId]);
+
+	const typingText = useMemo(() => {
+		if (!typingUsers || typingUsers.length === 0) return "";
+		if (typingUsers.length === 1) {
+			return `${typingUsers[0].displayName} est en train d'écrire…`;
+		}
+		return `${typingUsers.length} personnes sont en train d'écrire…`;
+	}, [typingUsers]);
 
 	const handleSendHuman = useCallback(async (text: string) => {
 		const trimmed = text.trim();
@@ -114,8 +171,9 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 			}
 			setMessageInput("");
 			rotateIdempotencyKey();
+			stopTyping();
 		} catch (e: any) { toast.error(e?.message ?? "Erreur d'envoi"); }
-	}, [selectedContact, existingChat, sendChatMessage, initiateChat, orgId, getIdempotencyKey, rotateIdempotencyKey]);
+	}, [selectedContact, existingChat, sendChatMessage, initiateChat, orgId, getIdempotencyKey, rotateIdempotencyKey, stopTyping]);
 
 	useEffect(() => {
 		if (selectedContact?.isAI) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -234,8 +292,31 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 					</div>
 				)}
 
+				{/* Typing indicator — ligne fine au-dessus du composer (chat humain). */}
+				{!selectedContact.isAI && typingText && (
+					<div className="px-3 py-1 text-[10px] text-muted-foreground italic shrink-0">
+						{typingText}
+					</div>
+				)}
+
 				<div className="border-t p-2 flex items-end gap-1.5 shrink-0">
-					<Textarea value={messageInput} onChange={(e) => setMessageInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={selectedContact.isAI ? "Demandez à iAsted..." : "Écrire un message..."} className="min-h-[32px] max-h-[80px] resize-none text-xs" rows={1} />
+					<Textarea
+						value={messageInput}
+						onChange={(e) => {
+							const v = e.target.value;
+							setMessageInput(v);
+							// Typing indicator : ping pendant la frappe, clear si vidé.
+							// Skip pour iAsted (pas d'interlocuteur humain).
+							if (!selectedContact?.isAI) {
+								if (v.trim()) pingTyping();
+								else stopTyping();
+							}
+						}}
+						onKeyDown={handleKeyDown}
+						placeholder={selectedContact.isAI ? "Demandez à iAsted..." : "Écrire un message..."}
+						className="min-h-[32px] max-h-[80px] resize-none text-xs"
+						rows={1}
+					/>
 					<Button size="icon" className={cn("h-8 w-8 shrink-0", selectedContact.isAI && "bg-emerald-600 hover:bg-emerald-700")} disabled={!messageInput.trim() || (selectedContact.isAI && chat.isLoading)} onClick={selectedContact.isAI ? handleSendAI : () => handleSendHuman(messageInput)}>
 						{selectedContact.isAI && chat.isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
 					</Button>
