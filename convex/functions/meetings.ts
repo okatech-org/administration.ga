@@ -261,6 +261,118 @@ export const listByRequest = authQuery({
   },
 });
 
+/**
+ * Génère un fichier iCalendar (.ics) pour une réunion — téléchargeable
+ * par le participant pour l'ajouter dans son calendrier (Outlook, Google
+ * Calendar, Apple Calendar, etc.).
+ *
+ * Le format suit RFC 5545 avec lignes CRLF. La durée par défaut est d'1h si
+ * aucun `endedAt` n'est connu.
+ */
+export const exportIcs = authQuery({
+  args: { meetingId: v.id("meetings") },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) throw error(ErrorCode.NOT_FOUND, "Réunion non trouvée");
+
+    // Permission : créateur OU participant OU membre de l'org hôte.
+    const isCreator = meeting.createdBy === ctx.user._id;
+    const isParticipant = meeting.participants.some(
+      (p: any) => p.userId === ctx.user._id,
+    );
+    const isOrgMember =
+      meeting.orgId != null &&
+      (await ctx.db
+        .query("memberships")
+        .withIndex("by_user_org", (q: any) =>
+          q.eq("userId", ctx.user._id).eq("orgId", meeting.orgId),
+        )
+        .first()) != null;
+
+    if (!isCreator && !isParticipant && !isOrgMember) {
+      throw error(
+        ErrorCode.INSUFFICIENT_PERMISSIONS,
+        "Vous n'avez pas accès à cette réunion",
+      );
+    }
+
+    // Date de début : scheduledAt → startedAt → createdAt.
+    const startMs = meeting.scheduledAt ?? meeting.startedAt ?? meeting._creationTime;
+    // Date de fin : endedAt si connu, sinon start + 1h.
+    const endMs = meeting.endedAt ?? startMs + 60 * 60 * 1000;
+
+    const organizer = await ctx.db.get(meeting.createdBy);
+    const organizerName = organizer
+      ? [organizer.firstName, organizer.lastName]
+          .filter(Boolean)
+          .join(" ") ||
+        organizer.name ||
+        organizer.email ||
+        "Organisateur"
+      : "Organisateur";
+    const organizerEmail = organizer?.email ?? "noreply@consulat.ga";
+
+    const now = new Date();
+    const fmt = (ms: number) => {
+      const d = new Date(ms);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      return (
+        `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}` +
+        `T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`
+      );
+    };
+
+    // Échappement des champs texte pour ICS : \, ; , et newline → \n.
+    const escape = (s: string) =>
+      s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+
+    const title = escape(meeting.title);
+    const description = escape(
+      [
+        `Réunion ${meeting.type === "call" ? "d'appel" : "virtuelle"} organisée via Consulat.ga`,
+        `Room : ${meeting.roomName}`,
+      ].join("\n"),
+    );
+
+    // STATUS ICS : `scheduled` → CONFIRMED, `cancelled` → CANCELLED, autres → CONFIRMED.
+    const icsStatus =
+      meeting.status === "cancelled" ? "CANCELLED" : "CONFIRMED";
+
+    const lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Consulat.ga//iReunion//FR",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "BEGIN:VEVENT",
+      `UID:meeting-${meeting._id}@consulat.ga`,
+      `DTSTAMP:${fmt(now.getTime())}`,
+      `DTSTART:${fmt(startMs)}`,
+      `DTEND:${fmt(endMs)}`,
+      `SUMMARY:${title}`,
+      `DESCRIPTION:${description}`,
+      `ORGANIZER;CN=${escape(organizerName)}:mailto:${organizerEmail}`,
+      `STATUS:${icsStatus}`,
+      "SEQUENCE:0",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ];
+
+    const ics = lines.join("\r\n");
+    // Nom de fichier sûr : slugifier le titre.
+    const slug = meeting.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40) || "reunion";
+
+    return {
+      ics,
+      filename: `${slug}.ics`,
+    };
+  },
+});
+
 // ============================================
 // MUTATIONS
 // ============================================
