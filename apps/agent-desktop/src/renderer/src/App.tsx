@@ -45,7 +45,10 @@ import {
   EditServicePage,
 } from "@workspace/agent-features/features/services"
 import { ProfileDetailPage as ProfileDetailStandalonePage } from "@workspace/agent-features/features/profiles"
-import { RequestDetailPage } from "@workspace/agent-features/features/requests"
+import {
+  RequestsPage,
+  RequestDetailPage,
+} from "@workspace/agent-features/features/requests"
 import {
   AppointmentsPage,
   NewAppointmentPage,
@@ -92,11 +95,29 @@ import PaymentsPage from "@workspace/agent-features/features/payments"
 import TeamPage from "@workspace/agent-features/features/team"
 import SettingsPage from "@workspace/agent-features/features/settings"
 
+// Shared profile/request components (ported from agent-web)
+import {
+  ProfileViewSheet,
+  ProfileDetailView,
+  ProfileHeroCard,
+  ProfileConsularCard,
+  ProfileDocumentsCard,
+  ProfileRequestsCard,
+  ProfileChildrenCard,
+  CitizenDossierSections,
+  ProfileNotesPanel,
+  UserProfilePreviewCard,
+} from "@workspace/agent-features/components/profile"
+import {
+  OfficialDocumentsSection,
+  RequestActionModal,
+} from "@workspace/agent-features/components/requests"
+import { DocumentPreviewModal } from "@workspace/agent-features/components/documents"
+
 // Desktop-only
 import { LoginPage } from "./components/auth/LoginPage"
 import { TitleBar } from "./components/titlebar/TitleBar"
 import { ImpressionPage } from "./components/impression/ImpressionPage"
-import { ProfileDetailView } from "./components/profiles/ProfileDetailView"
 import { DesktopIAstedTab } from "./components/iasted/DesktopIAstedTab"
 import { authClient } from "./lib/auth-client"
 import { useNativeNotifications } from "./hooks/useNativeNotifications"
@@ -104,39 +125,14 @@ import { useTraySync } from "./hooks/useTraySync"
 import { useMenuActions } from "./hooks/useMenuActions"
 
 // ─── DI stubs (v1) ──────────────────────────────────────────────────────────
-// Les pages partagées qui attendent des composants lourds agent-web (cartes
-// profile, modals IA, LiveKit…) reçoivent ici des stubs minimaux. Elles
-// restent navigables mais certaines zones affichent un placeholder jusqu'à
-// l'Étape 6.
+// v1.0.1: profile/request cards et ProfileViewSheet ont été portés dans
+// @workspace/agent-features/components — plus de stubs "en cours d'intégration"
+// pour l'UI profile/request. Seuls restent placeholder : LiveKit (meetings),
+// iAsted chat (InlineAISuggestion — agent-web-only proactive IA).
 
-function StubPanel({ label }: { label: string }) {
-  return (
-    <div className="p-4 text-sm text-muted-foreground">
-      {label} — module desktop en cours d&apos;intégration.
-    </div>
-  )
-}
-
-// TODO(v1.0.1): remplacer par un vrai ProfileViewSheet desktop.
-function StubProfileViewSheet({
-  open,
-  onOpenChange: _onOpenChange,
-}: {
-  profileId: string | unknown
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}) {
-  if (!open) return null
-  return <StubPanel label="Aperçu profil" />
-}
-
-// TODO(v1.0.1): remplacer par les vraies cartes profile desktop.
-const StubCard = () => <StubPanel label="Carte profil" />
-const StubModal = ({ open }: { open: boolean }) =>
-  open ? <StubPanel label="Aperçu document" /> : null
-
-// TODO(v1.0.1): remplacer par les hooks chat desktop (useAdminAIChat …).
-const StubIAstedInline = () => <StubPanel label="iAsted" />
+// iAsted InlineAISuggestion reste agent-web only (hooks useProactiveAI pas
+// portés sur desktop pour v1). Retourne null pour ne rien afficher.
+const NoInlineAISuggestion = () => null
 
 // ─── react-router adapters for Next-style layouts ──────────────────────────
 // Les layouts partagés attendent `children` (signature Next.js) ; on les rend
@@ -250,6 +246,10 @@ export function App() {
       clientType="agent-desktop"
       renderSignedOut={() => <LoginPage />}
       renderIAstedTab={(tab) => <DesktopIAstedTab tab={tab} />}
+      // iAsted floating window is hidden on desktop for v1 — the real LLM/voice
+      // hosts (useAdminAIChat, useAdminVoiceChat, call-center components) aren't
+      // ported yet. Users access iAsted via the fullscreen /iasted route.
+      showIAstedWindow={() => false}
       // AI proactive presence stays agent-web only for v1.
       wrapWithAIPresence={(c) => c}
       beforeChildren={<TitleBar />}
@@ -282,14 +282,15 @@ export function App() {
         />
 
         {/* Requests */}
+        <Route path="/requests" element={<RequestsPage />} />
         <Route
           path="/requests/:reference"
           element={
             <RequestDetailPage
-              InlineAISuggestion={StubIAstedInline}
-              RequestActionModal={StubModal as never}
-              OfficialDocumentsSection={StubCard as never}
-              UserProfilePreviewCard={StubCard as never}
+              InlineAISuggestion={NoInlineAISuggestion}
+              RequestActionModal={RequestActionModal as never}
+              OfficialDocumentsSection={OfficialDocumentsSection as never}
+              UserProfilePreviewCard={UserProfilePreviewCard as never}
             />
           }
         />
@@ -319,7 +320,7 @@ export function App() {
           path="/consular-registry"
           element={
             <ConsularRegistryPage
-              ProfileViewSheet={StubProfileViewSheet as never}
+              ProfileViewSheet={ProfileViewSheet as never}
             />
           }
         />
@@ -342,14 +343,14 @@ export function App() {
             path="profiles/:profileId"
             element={
               <AffairesConsulairesProfileDetailPage
-                ProfileHeroCard={StubCard as never}
-                ProfileConsularCard={StubCard as never}
-                ProfileDocumentsCard={StubCard as never}
-                ProfileRequestsCard={StubCard as never}
-                ProfileChildrenCard={StubCard as never}
-                CitizenDossierSections={StubCard as never}
-                ProfileNotesPanel={StubCard as never}
-                DocumentPreviewModal={StubModal as never}
+                ProfileHeroCard={ProfileHeroCard as never}
+                ProfileConsularCard={ProfileConsularCard as never}
+                ProfileDocumentsCard={ProfileDocumentsCard as never}
+                ProfileRequestsCard={ProfileRequestsCard as never}
+                ProfileChildrenCard={ProfileChildrenCard as never}
+                CitizenDossierSections={CitizenDossierSections as never}
+                ProfileNotesPanel={ProfileNotesPanel as never}
+                DocumentPreviewModal={DocumentPreviewModal as never}
               />
             }
           />
@@ -369,7 +370,7 @@ export function App() {
           <Route
             path=":targetId"
             element={
-              <TargetDetailPage InlineAISuggestion={StubIAstedInline as never} />
+              <TargetDetailPage InlineAISuggestion={NoInlineAISuggestion as never} />
             }
           />
         </Route>
@@ -392,12 +393,14 @@ export function App() {
           path="/iasted"
           element={
             <IAstedPage
-              IAstedChatColumns={StubIAstedInline as never}
-              IAstedContactTab={StubIAstedInline}
-              IAstedCallTab={StubIAstedInline}
-              IAstedMeetingTab={StubIAstedInline}
-              IAstedSettingsTab={StubIAstedInline}
-              VoicemailsList={StubIAstedInline as never}
+              IAstedChatColumns={((props: { tab: unknown }) => (
+                <DesktopIAstedTab tab={props.tab as never} />
+              )) as never}
+              IAstedContactTab={() => <DesktopIAstedTab tab={"icontact" as never} />}
+              IAstedCallTab={() => <DesktopIAstedTab tab={"icall" as never} />}
+              IAstedMeetingTab={() => <DesktopIAstedTab tab={"imeeting" as never} />}
+              IAstedSettingsTab={() => <DesktopIAstedTab tab={"isettings" as never} />}
+              VoicemailsList={(() => <DesktopIAstedTab tab={"ivoicemail" as never} />) as never}
             />
           }
         />

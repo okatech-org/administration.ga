@@ -29,6 +29,9 @@ export default defineConfig({
   },
   renderer: {
     root: resolve(__dirname, "src/renderer"),
+    // Electron prod charge le renderer via file:// → base relative sinon les
+    // assets (fonts, icônes, images Vite) renvoient des 404.
+    base: "./",
     server: {
       // Prevent full-page reload when the Electron window loses/regains focus
       hmr: { overlay: false },
