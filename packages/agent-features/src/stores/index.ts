@@ -1,3 +1,6 @@
-// Stores Zustand partagés (call-store, etc.).
-// À migrer depuis apps/agent-web/src/stores/ lors de l'étape 3 du plan.
-export {}
+// Stores Zustand / custom partagés entre agent-web et agent-desktop.
+export {
+  callStore,
+  useCallStore,
+} from "./call-store"
+export type { CallSlot, CallSlotStatus } from "./call-store"

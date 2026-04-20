@@ -28,6 +28,7 @@
     "@workspace/document-editor": "workspace:*",
     "@workspace/document-rendering": "workspace:*",
     "@workspace/i18n": "workspace:*",
+    "@workspace/iasted": "workspace:*",
     "@workspace/livekit": "workspace:*",
     "@workspace/routing": "workspace:*",
     "@workspace/shared": "workspace:*",
