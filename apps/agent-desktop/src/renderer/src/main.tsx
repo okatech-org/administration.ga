@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client"
 import { HashRouter } from "react-router-dom"
 import { I18nProvider } from "@workspace/i18n/provider"
 import { ReactRouterAdapter } from "@workspace/routing/adapters/react-router"
-import { OrgProvider } from "@workspace/agent-features/shell"
 import { ThemeProvider } from "./components/theme-provider"
 import { DesktopConvexProvider } from "./lib/convex-provider"
 import { App } from "./App"
@@ -16,9 +15,7 @@ createRoot(document.getElementById("root")!).render(
         <DesktopConvexProvider>
           <HashRouter>
             <ReactRouterAdapter>
-              <OrgProvider>
-                <App />
-              </OrgProvider>
+              <App />
             </ReactRouterAdapter>
           </HashRouter>
         </DesktopConvexProvider>

@@ -1,13 +1,16 @@
 import { useEffect, useRef, useCallback } from "react"
 import type { NativeNotification, NotificationCategory } from "@workspace/desktop-shared/notification-types"
-import type { Route } from "../components/sidebar/AppSidebar"
 
 /**
  * Hook that bridges Convex real-time notifications with native OS notifications.
  * Mount once inside the authenticated app boundary.
+ *
+ * `onNavigate` receives a react-router pathname (e.g. `/iboite`). It is invoked
+ * when the user clicks an OS notification or when a notification carries a link
+ * the app should resolve to an internal route.
  */
 export function useNativeNotifications(
-  onNavigate: (route: Route) => void
+  onNavigate: (path: string) => void
 ) {
   const prevCountRef = useRef<number | null>(null)
 
@@ -18,9 +21,8 @@ export function useNativeNotifications(
     const unsubscribe = window.desktopApi.notifications.onNotificationClick((data) => {
       if (!data.link) return
 
-      // Map link/category to internal route
-      const route = resolveRoute(data.link, data.category)
-      if (route) onNavigate(route)
+      const path = resolvePath(data.link, data.category)
+      if (path) onNavigate(path)
     })
 
     return unsubscribe
@@ -47,46 +49,44 @@ export function useNativeNotifications(
   return { showNotification, setBadgeCount }
 }
 
-/** Map a link path or category to an internal Route */
-function resolveRoute(
+/** Map a link path or category to an internal react-router pathname. */
+function resolvePath(
   link: string,
   category?: NotificationCategory
-): Route | null {
-  // Direct page mappings from link paths
-  const pageMap: Record<string, Route> = {
-    "/iboite": { page: "iboite" },
-    "/icorrespondance": { page: "icorrespondance" },
-    "/idocument": { page: "idocument" },
-    "/iagenda": { page: "iagenda" },
-    "/iarchive": { page: "iarchive" },
-    "/requests": { page: "requests" },
-    "/appointments": { page: "appointments" },
-    "/payments": { page: "payments" },
-    "/meetings": { page: "meetings" },
-    "/impression": { page: "impression" },
-    "/settings": { page: "settings" },
-  }
+): string | null {
+  const knownPrefixes = [
+    "/iboite",
+    "/icorrespondance",
+    "/idocument",
+    "/iagenda",
+    "/iarchive",
+    "/requests",
+    "/appointments",
+    "/payments",
+    "/meetings",
+    "/impression",
+    "/settings",
+  ]
 
-  // Try exact match first
-  if (pageMap[link]) return pageMap[link]
-
-  // Try prefix match (e.g. "/requests/abc123" → requests page)
-  for (const [prefix, route] of Object.entries(pageMap)) {
-    if (link.startsWith(prefix)) return route
+  // Exact match
+  if (knownPrefixes.includes(link)) return link
+  // Prefix match (keep deep link intact — react-router handles the sub-route)
+  for (const prefix of knownPrefixes) {
+    if (link.startsWith(prefix + "/") || link.startsWith(prefix + "?")) return link
   }
 
   // Fallback by category
   if (category) {
-    const categoryRoutes: Partial<Record<NotificationCategory, Route>> = {
-      mail: { page: "iboite" },
-      approval: { page: "icorrespondance" },
-      appointment: { page: "appointments" },
-      payment: { page: "payments" },
-      print: { page: "impression" },
-      meeting: { page: "meetings" },
-      document: { page: "idocument" },
+    const categoryPaths: Partial<Record<NotificationCategory, string>> = {
+      mail: "/iboite",
+      approval: "/icorrespondance",
+      appointment: "/appointments",
+      payment: "/payments",
+      print: "/impression",
+      meeting: "/meetings",
+      document: "/idocument",
     }
-    return categoryRoutes[category] ?? null
+    return categoryPaths[category] ?? null
   }
 
   return null

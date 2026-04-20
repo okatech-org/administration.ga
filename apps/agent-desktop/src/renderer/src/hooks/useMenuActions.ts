@@ -1,26 +1,26 @@
 import { useEffect } from "react"
-import type { Route } from "../components/sidebar/AppSidebar"
 
 /**
- * Listens for native menu bar actions and dispatches navigation.
+ * Listens for native menu bar actions and dispatches navigation to the given
+ * react-router pathname handler.
  */
-export function useMenuActions(onNavigate: (route: Route) => void) {
+export function useMenuActions(onNavigate: (path: string) => void) {
   useEffect(() => {
     if (!window.desktopApi?.menu) return
 
     const unsubscribe = window.desktopApi.menu.onAction((action) => {
-      const routeMap: Record<string, Route> = {
-        "navigate:dashboard": { page: "dashboard" },
-        "navigate:iboite": { page: "iboite" },
-        "navigate:icorrespondance": { page: "icorrespondance" },
-        "navigate:idocument": { page: "idocument" },
-        "navigate:iagenda": { page: "iagenda" },
-        "navigate:impression": { page: "impression" },
-        "navigate:settings": { page: "settings" },
+      const pathMap: Record<string, string> = {
+        "navigate:dashboard": "/",
+        "navigate:iboite": "/iboite",
+        "navigate:icorrespondance": "/icorrespondance",
+        "navigate:idocument": "/idocument",
+        "navigate:iagenda": "/iagenda",
+        "navigate:impression": "/impression",
+        "navigate:settings": "/settings",
       }
 
-      const route = routeMap[action]
-      if (route) onNavigate(route)
+      const path = pathMap[action]
+      if (path) onNavigate(path)
     })
 
     return unsubscribe

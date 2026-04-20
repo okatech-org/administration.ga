@@ -1,64 +1,228 @@
-import { useCallback, useMemo } from "react"
-import { useTranslation } from "react-i18next"
-import { useConvexAuth } from "convex/react"
-import { useLocation, useNavigate } from "react-router-dom"
-import { AppSidebar, type Route } from "./components/sidebar/AppSidebar"
-import { LoginPage } from "./components/auth/LoginPage"
+/**
+ * App — Electron renderer root.
+ *
+ * Étape 4 : remplace l'ancien switch `activeRoute.page === "X" && <XPage />`
+ * par le shell partagé `<AppShell>` (`@workspace/agent-features/shell`) et une
+ * arborescence react-router complète calquée sur l'arborescence `(app)/` de
+ * `agent-web`.
+ *
+ * Responsabilités locales (desktop-only) :
+ *  - `<TitleBar />` rendu via le slot `beforeChildren` de l'AppShell.
+ *  - Hooks natifs : `useNativeNotifications`, `useTraySync`, `useMenuActions`
+ *    — pilotent `navigate(pathname)` au clic sur notification OS / tray / menu.
+ *  - Page `/impression` (spécifique à l'atelier d'impression desktop).
+ *  - Page `/iasted` : branchement de tabs placeholder via `DesktopIAstedTab`
+ *    (le vrai host LLM + voice reste à porter — Étape 6).
+ */
+
+import { useCallback } from "react"
 import {
-  ConsularThemeContext,
-  useConsularThemeState,
-} from "@workspace/agent-features/hooks"
-import { AuthClientProvider, type SharedAuthClient } from "@workspace/agent-features/shell"
-import { authClient } from "./lib/auth-client"
-import { cn } from "./lib/utils"
-import { pathToRoute, routeToPath } from "./router"
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useNavigate,
+} from "react-router-dom"
 
-// Desktop-only
-import { ImpressionPage } from "./components/impression/ImpressionPage"
-import { TitleBar } from "./components/titlebar/TitleBar"
-import { useNativeNotifications } from "./hooks/useNativeNotifications"
-import { useTraySync } from "./hooks/useTraySync"
-import { useMenuActions } from "./hooks/useMenuActions"
+// Shell partagé
+import {
+  AppShell,
+  type SharedAuthClient,
+} from "@workspace/agent-features/shell"
 
-// Shared pages (migration en cours — voir plan Étape 3)
+// Pages partagées (agent-features)
 import DashboardPage from "@workspace/agent-features/features/dashboard"
-
-// Web-mirrored pages (desktop-local, à migrer vers @workspace/agent-features)
-import { AffairesDiplomatiquesPage } from "./components/affaires-diplomatiques/AffairesDiplomatiquesPage"
-import { AffairesConsulairesPage } from "./components/affaires-consulaires/AffairesConsulairesPage"
-import PostsPage from "@workspace/agent-features/features/posts"
-import { IBoitePage } from "./components/iboite/IBoitePage"
-import { ICorrespondancePage } from "./components/icorrespondance/ICorrespondancePage"
-import { IDocumentPage } from "./components/idocument/IDocumentPage"
-import { IAgendaPage } from "./components/iagenda/IAgendaPage"
+import {
+  PostsPage,
+  NewPostPage,
+  EditPostPage,
+} from "@workspace/agent-features/features/posts"
+import {
+  ServicesPage,
+  EditServicePage,
+} from "@workspace/agent-features/features/services"
+import { ProfileDetailPage as ProfileDetailStandalonePage } from "@workspace/agent-features/features/profiles"
+import { RequestDetailPage } from "@workspace/agent-features/features/requests"
+import {
+  AppointmentsPage,
+  NewAppointmentPage,
+  AppointmentDetailPage,
+  RescheduleAppointmentPage,
+  WaitlistPage as AppointmentsWaitlistPage,
+  AgentSchedulesPage,
+} from "@workspace/agent-features/features/appointments"
+import {
+  ConsularRegistryPage,
+  PrintQueuePage,
+} from "@workspace/agent-features/features/consular-registry"
+import {
+  AffairesConsulairesLayout,
+  AffairesConsulairesPage,
+  ProfilesPage as AffairesConsulairesProfilesPage,
+  ProfileDetailPage as AffairesConsulairesProfileDetailPage,
+} from "@workspace/agent-features/features/affaires-consulaires"
+import {
+  AffairesDiplomatiquesLayout,
+  AffairesDiplomatiquesPage,
+  CiblesPage,
+  PlansPage,
+  LettresPage,
+  RapportsPage,
+  ProjetsPage,
+  TargetDetailPage,
+} from "@workspace/agent-features/features/affaires-diplomatiques"
+import IBoitePage from "@workspace/agent-features/features/iboite"
+import ICorrespondancePage from "@workspace/agent-features/features/icorrespondance"
+import IDocumentPage from "@workspace/agent-features/features/idocument"
+import IAgendaPage from "@workspace/agent-features/features/iagenda"
+import {
+  ITemplatesPage,
+  TemplateEditorPage,
+} from "@workspace/agent-features/features/itemplates"
+import IArchivePage from "@workspace/agent-features/features/iarchive"
+import IProfilPage from "@workspace/agent-features/features/iprofil"
+import IAstedPage from "@workspace/agent-features/features/iasted"
+import CallsPage from "@workspace/agent-features/features/calls"
+import MeetingsPage from "@workspace/agent-features/features/meetings"
 import StatisticsPage from "@workspace/agent-features/features/statistics"
 import PaymentsPage from "@workspace/agent-features/features/payments"
 import TeamPage from "@workspace/agent-features/features/team"
 import SettingsPage from "@workspace/agent-features/features/settings"
-import AppointmentsPage from "@workspace/agent-features/features/appointments"
-import RequestsPage from "@workspace/agent-features/features/requests"
-import ServicesPage from "@workspace/agent-features/features/services"
-import { IArchivePage } from "./components/iarchive/IArchivePage"
-import { IAstedPage } from "./components/iasted/IAstedPage"
-import { CallsPage } from "./components/calls/CallsPage"
-import { MeetingsPage } from "./components/meetings/MeetingsPage"
+
+// Desktop-only
+import { LoginPage } from "./components/auth/LoginPage"
+import { TitleBar } from "./components/titlebar/TitleBar"
+import { ImpressionPage } from "./components/impression/ImpressionPage"
+import { ProfileDetailView } from "./components/profiles/ProfileDetailView"
+import { DesktopIAstedTab } from "./components/iasted/DesktopIAstedTab"
+import { authClient } from "./lib/auth-client"
+import { useNativeNotifications } from "./hooks/useNativeNotifications"
+import { useTraySync } from "./hooks/useTraySync"
+import { useMenuActions } from "./hooks/useMenuActions"
+
+// ─── DI stubs (v1) ──────────────────────────────────────────────────────────
+// Les pages partagées qui attendent des composants lourds agent-web (cartes
+// profile, modals IA, LiveKit…) reçoivent ici des stubs minimaux. Elles
+// restent navigables mais certaines zones affichent un placeholder jusqu'à
+// l'Étape 6.
+
+function StubPanel({ label }: { label: string }) {
+  return (
+    <div className="p-4 text-sm text-muted-foreground">
+      {label} — module desktop en cours d&apos;intégration.
+    </div>
+  )
+}
+
+// TODO(v1.0.1): remplacer par un vrai ProfileViewSheet desktop.
+function StubProfileViewSheet({
+  open,
+  onOpenChange: _onOpenChange,
+}: {
+  profileId: string | unknown
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  if (!open) return null
+  return <StubPanel label="Aperçu profil" />
+}
+
+// TODO(v1.0.1): remplacer par les vraies cartes profile desktop.
+const StubCard = () => <StubPanel label="Carte profil" />
+const StubModal = ({ open }: { open: boolean }) =>
+  open ? <StubPanel label="Aperçu document" /> : null
+
+// TODO(v1.0.1): remplacer par les hooks chat desktop (useAdminAIChat …).
+const StubIAstedInline = () => <StubPanel label="iAsted" />
+
+// ─── react-router adapters for Next-style layouts ──────────────────────────
+// Les layouts partagés attendent `children` (signature Next.js) ; on les rend
+// ici autour d'un <Outlet /> pour qu'ils fonctionnent avec les routes imbriquées
+// de react-router.
+
+function AffairesConsulairesLayoutRoute() {
+  return (
+    <AffairesConsulairesLayout>
+      <Outlet />
+    </AffairesConsulairesLayout>
+  )
+}
+
+function AffairesDiplomatiquesLayoutRoute() {
+  return (
+    <AffairesDiplomatiquesLayout>
+      <Outlet />
+    </AffairesDiplomatiquesLayout>
+  )
+}
+
+// TODO(v1.0.1): injecter les vrais composants LiveKit desktop.
+const StubMeetingRoom = ({
+  onDisconnect,
+}: {
+  token: string
+  wsUrl: string
+  onDisconnect: () => void
+  meetingId?: unknown
+}) => (
+  <div className="p-6 flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+    <p>Salle de réunion — module desktop en cours d&apos;intégration.</p>
+    <button
+      type="button"
+      className="px-3 py-1.5 rounded-md border border-border text-foreground"
+      onClick={onDisconnect}
+    >
+      Quitter
+    </button>
+  </div>
+)
+
+const StubPreJoinScreen = ({
+  meetingTitle,
+  onJoin,
+  onCancel,
+  isConnecting,
+  error,
+}: {
+  meetingTitle: string
+  participantCount: number
+  isConnecting: boolean
+  error: string | null
+  onJoin: () => void
+  onCancel: () => void
+}) => (
+  <div className="p-6 flex flex-col items-center justify-center gap-3 text-sm">
+    <p className="font-semibold">{meetingTitle}</p>
+    <p className="text-muted-foreground text-xs">
+      Écran pré-jointure desktop — placeholder.
+    </p>
+    {error && <p className="text-destructive text-xs">{error}</p>}
+    <div className="flex gap-2">
+      <button
+        type="button"
+        className="px-3 py-1.5 rounded-md border border-border"
+        onClick={onCancel}
+      >
+        Annuler
+      </button>
+      <button
+        type="button"
+        disabled={isConnecting}
+        className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground disabled:opacity-50"
+        onClick={onJoin}
+      >
+        {isConnecting ? "Connexion…" : "Rejoindre"}
+      </button>
+    </div>
+  </div>
+)
+
+// ─── Root ───────────────────────────────────────────────────────────────────
 
 export function App() {
-  const { t } = useTranslation()
-  const { isAuthenticated, isLoading } = useConvexAuth()
-  const location = useLocation()
   const navigate = useNavigate()
-  const consularThemeValue = useConsularThemeState()
-  const { consularTheme } = consularThemeValue
-
-  // activeRoute is derived from the URL (single source of truth).
-  // Both AppSidebar clicks and <Link> clicks in shared pages converge here.
-  const activeRoute = useMemo(() => pathToRoute(location.pathname), [location.pathname])
-
   const handleNavigate = useCallback(
-    (route: Route) => {
-      navigate(routeToPath(route))
-    },
+    (path: string) => navigate(path),
     [navigate],
   )
 
@@ -67,63 +231,187 @@ export function App() {
   useTraySync(handleNavigate)
   useMenuActions(handleNavigate)
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-          <span className="text-sm text-muted-foreground">{t("desktop.common.loading")}</span>
-        </div>
-      </div>
-    )
-  }
-
-  // Login required
-  if (!isAuthenticated) {
-    return <LoginPage />
-  }
-
   return (
-    <AuthClientProvider value={authClient as unknown as SharedAuthClient}>
-    <ConsularThemeContext.Provider value={consularThemeValue}>
-      <div
-        className={cn(
-          "h-screen flex flex-col bg-background overflow-hidden",
-          consularTheme === "homeomorphism" && "theme-homeomorphism",
-        )}
-      >
-        <TitleBar />
-        <div className="flex gap-4 flex-1 min-h-0 px-4 pb-4">
-          <AppSidebar activeRoute={activeRoute} onNavigate={handleNavigate} />
-          <main className="flex-1 min-h-0 bg-card border border-border rounded-2xl overflow-hidden flex flex-col">
-            {activeRoute.page === "dashboard" && <DashboardPage />}
-            {activeRoute.page === "affaires-diplomatiques" && <AffairesDiplomatiquesPage />}
-            {activeRoute.page === "affaires-consulaires" && (
-              <AffairesConsulairesPage route={activeRoute} onNavigate={handleNavigate} />
-            )}
-            {activeRoute.page === "posts" && <PostsPage />}
-            {activeRoute.page === "iboite" && <IBoitePage />}
-            {activeRoute.page === "icorrespondance" && <ICorrespondancePage />}
-            {activeRoute.page === "idocument" && <IDocumentPage />}
-            {activeRoute.page === "iagenda" && <IAgendaPage />}
-            {activeRoute.page === "statistics" && <StatisticsPage />}
-            {activeRoute.page === "payments" && <PaymentsPage />}
-            {activeRoute.page === "team" && <TeamPage />}
-            {activeRoute.page === "settings" && <SettingsPage />}
-            {activeRoute.page === "appointments" && <AppointmentsPage />}
-            {activeRoute.page === "requests" && <RequestsPage />}
-            {activeRoute.page === "services" && <ServicesPage />}
-            {activeRoute.page === "iarchive" && <IArchivePage />}
-            {activeRoute.page === "iasted" && <IAstedPage />}
-            {activeRoute.page === "calls" && <CallsPage />}
-            {activeRoute.page === "meetings" && <MeetingsPage />}
-            {/* Desktop-only */}
-            {activeRoute.page === "impression" && <ImpressionPage />}
-          </main>
-        </div>
-      </div>
-    </ConsularThemeContext.Provider>
-    </AuthClientProvider>
+    <AppShell
+      authClient={authClient as unknown as SharedAuthClient}
+      clientType="agent-desktop"
+      renderSignedOut={() => <LoginPage />}
+      renderIAstedTab={(tab) => <DesktopIAstedTab tab={tab} />}
+      // AI proactive presence stays agent-web only for v1.
+      wrapWithAIPresence={(c) => c}
+      beforeChildren={<TitleBar />}
+    >
+      <Routes>
+        {/* Dashboard */}
+        <Route path="/" element={<DashboardPage />} />
+
+        {/* Posts */}
+        <Route path="/posts" element={<PostsPage />} />
+        <Route path="/posts/new" element={<NewPostPage />} />
+        <Route path="/posts/:postId/edit" element={<EditPostPage />} />
+
+        {/* Services */}
+        <Route path="/services" element={<ServicesPage />} />
+        <Route
+          path="/services/:serviceId/edit"
+          element={<EditServicePage />}
+        />
+
+        {/* Profile (standalone) */}
+        <Route
+          path="/profiles/:profileId"
+          element={
+            <ProfileDetailStandalonePage
+              ProfileDetailView={ProfileDetailView}
+            />
+          }
+        />
+
+        {/* Requests */}
+        <Route
+          path="/requests/:reference"
+          element={
+            <RequestDetailPage
+              InlineAISuggestion={StubIAstedInline}
+              RequestActionModal={StubModal as never}
+              OfficialDocumentsSection={StubCard as never}
+              UserProfilePreviewCard={StubCard as never}
+            />
+          }
+        />
+
+        {/* Appointments */}
+        <Route path="/appointments" element={<AppointmentsPage />} />
+        <Route path="/appointments/new" element={<NewAppointmentPage />} />
+        <Route
+          path="/appointments/waitlist"
+          element={<AppointmentsWaitlistPage />}
+        />
+        <Route
+          path="/appointments/agent-schedules"
+          element={<AgentSchedulesPage />}
+        />
+        <Route
+          path="/appointments/:appointmentId"
+          element={<AppointmentDetailPage />}
+        />
+        <Route
+          path="/appointments/:appointmentId/reschedule"
+          element={<RescheduleAppointmentPage />}
+        />
+
+        {/* Consular registry */}
+        <Route
+          path="/consular-registry"
+          element={
+            <ConsularRegistryPage
+              ProfileViewSheet={StubProfileViewSheet as never}
+            />
+          }
+        />
+        <Route
+          path="/consular-registry/print-queue"
+          element={<PrintQueuePage />}
+        />
+
+        {/* Affaires consulaires */}
+        <Route
+          path="/affaires-consulaires"
+          element={<AffairesConsulairesLayoutRoute />}
+        >
+          <Route index element={<AffairesConsulairesPage />} />
+          <Route
+            path="profiles"
+            element={<AffairesConsulairesProfilesPage />}
+          />
+          <Route
+            path="profiles/:profileId"
+            element={
+              <AffairesConsulairesProfileDetailPage
+                ProfileHeroCard={StubCard as never}
+                ProfileConsularCard={StubCard as never}
+                ProfileDocumentsCard={StubCard as never}
+                ProfileRequestsCard={StubCard as never}
+                ProfileChildrenCard={StubCard as never}
+                CitizenDossierSections={StubCard as never}
+                ProfileNotesPanel={StubCard as never}
+                DocumentPreviewModal={StubModal as never}
+              />
+            }
+          />
+        </Route>
+
+        {/* Affaires diplomatiques */}
+        <Route
+          path="/affaires-diplomatiques"
+          element={<AffairesDiplomatiquesLayoutRoute />}
+        >
+          <Route index element={<AffairesDiplomatiquesPage />} />
+          <Route path="cibles" element={<CiblesPage />} />
+          <Route path="plans" element={<PlansPage />} />
+          <Route path="lettres" element={<LettresPage />} />
+          <Route path="rapports" element={<RapportsPage />} />
+          <Route path="projets" element={<ProjetsPage />} />
+          <Route
+            path=":targetId"
+            element={
+              <TargetDetailPage InlineAISuggestion={StubIAstedInline as never} />
+            }
+          />
+        </Route>
+
+        {/* iSuite */}
+        <Route path="/iboite" element={<IBoitePage />} />
+        <Route path="/icorrespondance" element={<ICorrespondancePage />} />
+        <Route path="/idocument" element={<IDocumentPage />} />
+        <Route path="/iagenda" element={<IAgendaPage />} />
+        <Route path="/itemplates" element={<ITemplatesPage />} />
+        <Route
+          path="/itemplates/:templateId"
+          element={<TemplateEditorPage />}
+        />
+        <Route path="/iarchive" element={<IArchivePage />} />
+        <Route path="/iprofil" element={<IProfilPage />} />
+
+        {/* iAsted fullscreen */}
+        <Route
+          path="/iasted"
+          element={
+            <IAstedPage
+              IAstedChatColumns={StubIAstedInline as never}
+              IAstedContactTab={StubIAstedInline}
+              IAstedCallTab={StubIAstedInline}
+              IAstedMeetingTab={StubIAstedInline}
+              IAstedSettingsTab={StubIAstedInline}
+              VoicemailsList={StubIAstedInline as never}
+            />
+          }
+        />
+
+        {/* Calls + Meetings */}
+        <Route path="/calls" element={<CallsPage />} />
+        <Route
+          path="/meetings"
+          element={
+            <MeetingsPage
+              MeetingRoom={StubMeetingRoom as never}
+              PreJoinScreen={StubPreJoinScreen as never}
+            />
+          }
+        />
+
+        {/* Ops */}
+        <Route path="/statistics" element={<StatisticsPage />} />
+        <Route path="/payments" element={<PaymentsPage />} />
+        <Route path="/team" element={<TeamPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+
+        {/* Desktop-only */}
+        <Route path="/impression" element={<ImpressionPage />} />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AppShell>
   )
 }

@@ -1,5 +1,4 @@
 import { useEffect, useCallback } from "react"
-import type { Route } from "../components/sidebar/AppSidebar"
 
 interface TrayStatus {
   unreadMail?: number
@@ -10,16 +9,17 @@ interface TrayStatus {
 
 /**
  * Syncs app state to the system tray icon.
- * Also handles tray menu action clicks → navigation.
+ * Also handles tray menu action clicks → navigation via the given react-router
+ * pathname handler.
  */
-export function useTraySync(onNavigate: (route: Route) => void) {
+export function useTraySync(onNavigate: (path: string) => void) {
   // Listen for tray action events
   useEffect(() => {
     if (!window.desktopApi?.tray) return
 
     const unsubscribe = window.desktopApi.tray.onAction((action) => {
       if (action === "navigate:iboite") {
-        onNavigate({ page: "iboite" })
+        onNavigate("/iboite")
       }
     })
 
