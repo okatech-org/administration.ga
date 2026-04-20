@@ -1029,42 +1029,49 @@ http.route({
     const token = process.env.GITHUB_TOKEN;
     if (token) upstreamHeaders.Authorization = `Bearer ${token}`;
 
-    const upstream = await fetch(resolved.url, {
-      headers: upstreamHeaders,
-      redirect: "follow",
-    });
+    // Strategy: GitHub returns a 302 → pre-signed S3 URL (valid ~5 min) when you
+    // request an asset with Accept: octet-stream. We capture that Location and
+    // re-emit it as our own 302. The browser/updater downloads directly from S3,
+    // bypassing Convex HTTP action's 20 MiB response cap. The token never leaks
+    // (it's only used for the metadata lookup), and the signed URL works without
+    // auth for the download itself.
+    //
+    // For .yml/.yaml updater metadata (tiny), streaming inline would also be
+    // fine, but a redirect works identically for electron-updater which follows
+    // redirects automatically.
+    let upstream: Response;
+    try {
+      upstream = await fetch(resolved.url, {
+        headers: upstreamHeaders,
+        redirect: "manual",
+      });
+    } catch (err) {
+      console.error("releases proxy: upstream fetch failed", err);
+      return new Response("Failed to contact GitHub", { status: 502 });
+    }
 
-    if (!upstream.ok || !upstream.body) {
+    // GitHub redirects 302 → signed S3 URL. Anything else = error.
+    const signedUrl = upstream.headers.get("location");
+    if (upstream.status < 300 || upstream.status >= 400 || !signedUrl) {
       console.error(
-        "releases proxy: upstream returned",
+        "releases proxy: expected redirect, got",
         upstream.status,
         upstream.statusText,
       );
-      return new Response("Failed to fetch upstream binary", { status: 502 });
+      return new Response("Upstream did not return a download URL", {
+        status: 502,
+      });
     }
 
-    // Stream body back. `yml`/`yaml` asked directly by electron-updater should
-    // NOT have Content-Disposition: attachment (updater expects inline).
-    const isUpdaterMetadata =
-      assetName.endsWith(".yml") || assetName.endsWith(".yaml");
-
-    const responseHeaders = new Headers({
-      "Content-Type": resolved.contentType,
-      "Content-Length": String(resolved.size),
-      "Cache-Control": "public, max-age=300",
-      // Open to all origins — public download endpoint
-      "Access-Control-Allow-Origin": "*",
-    });
-    if (!isUpdaterMetadata) {
-      responseHeaders.set(
-        "Content-Disposition",
-        `attachment; filename="${assetName.replace(/"/g, "")}"`,
-      );
-    }
-
-    return new Response(upstream.body, {
-      status: 200,
-      headers: responseHeaders,
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: signedUrl,
+        // Short cache — signed URL is valid only a few minutes, and we want
+        // clients to hit our endpoint again to get a fresh one.
+        "Cache-Control": "no-store",
+        "Access-Control-Allow-Origin": "*",
+      },
     });
   }),
 });
