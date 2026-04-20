@@ -9,6 +9,7 @@ import { getTrustedClientIp } from "./lib/httpSecurity";
 import { validateAllSecrets } from "./lib/startupChecks";
 import { WAREHOUSE_TABLES } from "./functions/warehouse";
 import { verifyAppointmentIcalToken, buildAppointmentIcs } from "./lib/ical";
+import { resolveAssetForDownload } from "./functions/releases";
 
 // ── Verification securite au chargement du module ──
 validateAllSecrets();
@@ -981,6 +982,89 @@ http.route({
         "Content-Disposition": `attachment; filename="appointment-${appointmentId}.ics"`,
         "Cache-Control": "no-cache",
       },
+    });
+  }),
+});
+
+// ============================================================================
+// Desktop release downloads — proxy vers GitHub Releases
+// ============================================================================
+//
+// GET /releases/download?asset=<filename>
+//   → stream du binaire depuis GitHub (public ou privé via GITHUB_TOKEN env).
+//     URL publique sans auth ni CORS (ouverte aux navigateurs + wget/curl).
+//
+// Voir `convex/functions/releases.ts` pour la metadata action `getLatest`.
+// ============================================================================
+
+http.route({
+  path: "/releases/download",
+  method: "GET",
+  handler: httpAction(async (_ctx, request) => {
+    const url = new URL(request.url);
+    const assetName = url.searchParams.get("asset");
+
+    if (!assetName || assetName.length > 256) {
+      return new Response("Missing or invalid ?asset= parameter", {
+        status: 400,
+      });
+    }
+
+    let resolved: Awaited<ReturnType<typeof resolveAssetForDownload>>;
+    try {
+      resolved = await resolveAssetForDownload(assetName);
+    } catch (err) {
+      console.error("releases proxy: failed to resolve asset", err);
+      return new Response("Upstream registry unavailable", { status: 502 });
+    }
+
+    if (!resolved) {
+      return new Response("Asset not found in latest release", { status: 404 });
+    }
+
+    const upstreamHeaders: Record<string, string> = {
+      Accept: "application/octet-stream",
+      "User-Agent": "consulat-agent-release-proxy",
+    };
+    const token = process.env.GITHUB_TOKEN;
+    if (token) upstreamHeaders.Authorization = `Bearer ${token}`;
+
+    const upstream = await fetch(resolved.url, {
+      headers: upstreamHeaders,
+      redirect: "follow",
+    });
+
+    if (!upstream.ok || !upstream.body) {
+      console.error(
+        "releases proxy: upstream returned",
+        upstream.status,
+        upstream.statusText,
+      );
+      return new Response("Failed to fetch upstream binary", { status: 502 });
+    }
+
+    // Stream body back. `yml`/`yaml` asked directly by electron-updater should
+    // NOT have Content-Disposition: attachment (updater expects inline).
+    const isUpdaterMetadata =
+      assetName.endsWith(".yml") || assetName.endsWith(".yaml");
+
+    const responseHeaders = new Headers({
+      "Content-Type": resolved.contentType,
+      "Content-Length": String(resolved.size),
+      "Cache-Control": "public, max-age=300",
+      // Open to all origins — public download endpoint
+      "Access-Control-Allow-Origin": "*",
+    });
+    if (!isUpdaterMetadata) {
+      responseHeaders.set(
+        "Content-Disposition",
+        `attachment; filename="${assetName.replace(/"/g, "")}"`,
+      );
+    }
+
+    return new Response(upstream.body, {
+      status: 200,
+      headers: responseHeaders,
     });
   }),
 });

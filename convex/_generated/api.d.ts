@@ -140,6 +140,7 @@ import type * as functions_profileNotes from "../functions/profileNotes.js";
 import type * as functions_profiles from "../functions/profiles.js";
 import type * as functions_pushSubscriptions from "../functions/pushSubscriptions.js";
 import type * as functions_quickActions from "../functions/quickActions.js";
+import type * as functions_releases from "../functions/releases.js";
 import type * as functions_representations from "../functions/representations.js";
 import type * as functions_requests from "../functions/requests.js";
 import type * as functions_roleConfig from "../functions/roleConfig.js";
@@ -470,6 +471,7 @@ declare const fullApi: ApiFromModules<{
   "functions/profiles": typeof functions_profiles;
   "functions/pushSubscriptions": typeof functions_pushSubscriptions;
   "functions/quickActions": typeof functions_quickActions;
+  "functions/releases": typeof functions_releases;
   "functions/representations": typeof functions_representations;
   "functions/requests": typeof functions_requests;
   "functions/roleConfig": typeof functions_roleConfig;
