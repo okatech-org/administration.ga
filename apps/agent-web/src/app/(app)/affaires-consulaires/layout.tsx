@@ -1,13 +1,5 @@
-/**
- * Affaires Consulaires — Layout wrapper
- *
- * Pure wrapper that renders child routes. The hub content lives in page.tsx.
- */
+import { AffairesConsulairesLayout } from "@workspace/agent-features/features/affaires-consulaires";
 
-export default function AffairesConsulairesLayout({ children }: { children: React.ReactNode }) {
-	return (
-		<div className="flex flex-col h-full">
-			{children}
-		</div>
-	);
+export default function Layout({ children }: { children: React.ReactNode }) {
+	return <AffairesConsulairesLayout>{children}</AffairesConsulairesLayout>;
 }
