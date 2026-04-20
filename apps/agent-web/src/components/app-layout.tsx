@@ -15,7 +15,9 @@ import {
   ConsularThemeContext,
   useConsularTheme,
   useConsularThemeState,
-} from "@/hooks/useConsularTheme"
+} from "@workspace/agent-features/hooks"
+import { AuthClientProvider, type SharedAuthClient } from "@workspace/agent-features/shell"
+import { authClient } from "@/lib/auth-client"
 import { useAgentPresence } from "@/hooks/use-agent-presence"
 import { AIPresenceProvider } from "@/components/ai/proactive/AIPresenceProvider"
 import { cn } from "@/lib/utils"
@@ -50,11 +52,13 @@ export function AppLayout({
   }
 
   return (
-    <ConsularThemeContext.Provider value={consularThemeValue}>
-      <OrgProvider>
-        <DashboardLayout>{children}</DashboardLayout>
-      </OrgProvider>
-    </ConsularThemeContext.Provider>
+    <AuthClientProvider value={authClient as unknown as SharedAuthClient}>
+      <ConsularThemeContext.Provider value={consularThemeValue}>
+        <OrgProvider>
+          <DashboardLayout>{children}</DashboardLayout>
+        </OrgProvider>
+      </ConsularThemeContext.Provider>
+    </AuthClientProvider>
   )
 }
 

@@ -1,0 +1,7 @@
+export { default } from "./AppointmentsPage"
+export { default as AppointmentsPage } from "./AppointmentsPage"
+export { default as NewAppointmentPage } from "./NewAppointmentPage"
+export { default as AppointmentDetailPage } from "./AppointmentDetailPage"
+export { default as RescheduleAppointmentPage } from "./RescheduleAppointmentPage"
+export { default as WaitlistPage } from "./WaitlistPage"
+export { default as AgentSchedulesPage } from "./AgentSchedulesPage"

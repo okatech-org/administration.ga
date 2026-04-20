@@ -1,0 +1,37 @@
+{
+  "name": "@workspace/routing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Abstraction de routing partagée entre agent-web (Next.js) et agent-desktop (react-router). Expose Link, useRouter, usePathname, useSearchParams, useParams avec deux adapters : Next App Router et react-router-dom v7.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./adapters/next": "./src/adapters/next.tsx",
+    "./adapters/react-router": "./src/adapters/react-router.tsx"
+  },
+  "scripts": {
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "next": "^15.0.0 || ^16.0.0",
+    "react": "^19.0.0",
+    "react-router-dom": "^7.0.0"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    },
+    "react-router-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.10",
+    "@workspace/tsconfig": "workspace:*",
+    "next": "^16.2.3",
+    "react": "19.2.4",
+    "react-router-dom": "^7.0.0",
+    "typescript": "^5.9.3"
+  }
+}

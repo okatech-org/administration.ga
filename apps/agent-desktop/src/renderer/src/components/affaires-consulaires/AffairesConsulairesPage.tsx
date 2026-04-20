@@ -11,7 +11,7 @@ import { ClipboardList, IdCard, Users } from "lucide-react"
 import { motion } from "motion/react"
 import { cn } from "../../lib/utils"
 import type { Route } from "../sidebar/AppSidebar"
-import { RequestsPage } from "../requests/RequestsPage"
+import RequestsPage from "@workspace/agent-features/features/requests"
 import { RegistryPage } from "../registry/RegistryPage"
 
 type SubTab = "demandes" | "registre"

@@ -24,11 +24,11 @@
       "cwd": "apps/agent-web"
     },
     {
-      "name": "convex",
+      "name": "agent-desktop",
       "runtimeExecutable": "/Users/berny/.bun/bin/bun",
-      "runtimeArgs": ["run", "dev:convex"],
-      "port": 3210,
-      "cwd": "."
+      "runtimeArgs": ["run", "dev"],
+      "autoPort": false,
+      "cwd": "apps/agent-desktop"
     }
   ]
 }
