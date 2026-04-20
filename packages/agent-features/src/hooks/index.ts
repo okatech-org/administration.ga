@@ -1,4 +1,5 @@
 export { useCanDoTask } from "./useCanDoTask"
 export { useModuleAccessLevel } from "./useModuleAccessLevel"
+export { useOrgModules } from "./useOrgModules"
 export { useConsularTheme, useConsularThemeState, ConsularThemeContext } from "./useConsularTheme"
 export type { ConsularTheme } from "./useConsularTheme"

@@ -25,6 +25,8 @@
     "@workspace/api": "workspace:*",
     "@workspace/chat": "workspace:*",
     "@workspace/desktop-shared": "workspace:*",
+    "@workspace/document-editor": "workspace:*",
+    "@workspace/document-rendering": "workspace:*",
     "@workspace/i18n": "workspace:*",
     "@workspace/livekit": "workspace:*",
     "@workspace/routing": "workspace:*",
