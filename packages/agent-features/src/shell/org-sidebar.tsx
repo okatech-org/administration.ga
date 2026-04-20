@@ -40,7 +40,7 @@ import { LogoutButton } from "./logout-button";
 import { useOrg } from "./org-provider";
 import { OrgSwitcher } from "./org-switcher";
 
-interface NavItem {
+export interface NavItem {
 	title: string;
 	url: string;
 	icon: React.ElementType;
@@ -48,14 +48,20 @@ interface NavItem {
 	moduleCode?: string; // module code for access level detection
 }
 
-interface NavSection {
+export interface NavSection {
 	label?: string;
 	items: NavItem[];
 }
 
-interface OrgSidebarProps {
+export interface OrgSidebarProps {
 	isExpanded?: boolean;
 	onToggle?: () => void;
+	/**
+	 * Nav sections injected by the host app (e.g. agent-desktop adds
+	 * "Impression" which doesn't exist on web). Appended after the shared
+	 * sections, before "Administration".
+	 */
+	extraSections?: NavSection[];
 }
 
 /**
@@ -85,7 +91,7 @@ function SidebarText({
 	);
 }
 
-export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
+export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgSidebarProps) {
 	const authClient = useAuthClient();
 	const { data: session } = authClient.useSession();
 	const pathname = usePathname();
@@ -129,6 +135,7 @@ export function OrgSidebar({ isExpanded = false, onToggle }: OrgSidebarProps) {
 				{ title: "Statistiques", url: "/statistics", icon: BarChart3, requires: "analytics.view", moduleCode: "analytics" },
 			],
 		},
+		...(extraSections ?? []),
 		{
 			label: "Administration",
 			items: [

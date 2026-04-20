@@ -101,6 +101,7 @@ jobs:
           "
 
       # Package with electron-builder
+      # macOS jobs receive signing + notarization secrets. Windows job runs unsigned.
       - name: Package Electron app
         shell: bash
         run: |
@@ -112,8 +113,15 @@ jobs:
           bunx electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish $PUBLISH_FLAG
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Skip code signing for now (add CSC_LINK + CSC_KEY_PASSWORD secrets for signing)
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          # ── macOS: Developer ID signing + notarization (notarytool) ──────
+          # Empty string on non-mac runners → electron-builder skips signing cleanly.
+          CSC_LINK: ${{ matrix.platform == 'mac' && secrets.MAC_CERT_P12_BASE64 || '' }}
+          CSC_KEY_PASSWORD: ${{ matrix.platform == 'mac' && secrets.MAC_CERT_PASSWORD || '' }}
+          APPLE_ID: ${{ matrix.platform == 'mac' && secrets.APPLE_ID || '' }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ matrix.platform == 'mac' && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ matrix.platform == 'mac' && secrets.APPLE_TEAM_ID || '' }}
+          # ── Windows: skip signing until a cert is available ──────────────
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ matrix.platform == 'win' && 'false' || 'true' }}
 
       # Upload build artifacts (always, even if not publishing to release)
       - name: Upload artifacts

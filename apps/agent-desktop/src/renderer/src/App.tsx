@@ -25,9 +25,12 @@ import {
 } from "react-router-dom"
 
 // Shell partagé
+import { Printer } from "lucide-react"
+
 import {
   AppShell,
   type SharedAuthClient,
+  type NavSection,
 } from "@workspace/agent-features/shell"
 
 // Pages partagées (agent-features)
@@ -219,6 +222,16 @@ const StubPreJoinScreen = ({
 
 // ─── Root ───────────────────────────────────────────────────────────────────
 
+// Desktop-only nav entries injected into the shared sidebar.
+const DESKTOP_NAV_SECTIONS: NavSection[] = [
+  {
+    label: "Poste local",
+    items: [
+      { title: "Impression", url: "/impression", icon: Printer },
+    ],
+  },
+]
+
 export function App() {
   const navigate = useNavigate()
   const handleNavigate = useCallback(
@@ -240,6 +253,7 @@ export function App() {
       // AI proactive presence stays agent-web only for v1.
       wrapWithAIPresence={(c) => c}
       beforeChildren={<TitleBar />}
+      extraNavSections={DESKTOP_NAV_SECTIONS}
     >
       <Routes>
         {/* Dashboard */}

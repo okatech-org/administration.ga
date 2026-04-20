@@ -1,5 +1,6 @@
 {
   "name": "agent-desktop",
+  "productName": "Consulat Agent",
   "version": "1.0.0",
   "description": "Application de bureau pour agents consulaires du Gabon",
   "author": "Okatech <contact@okatech.dev>",

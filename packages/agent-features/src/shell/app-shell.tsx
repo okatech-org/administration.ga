@@ -45,7 +45,7 @@ import { AgentMobileNav } from "./agent-mobile-nav";
 import { GlobalCallAlert } from "./global-call-alert";
 import { IAstedWindow } from "./iasted-window";
 import { OrgProvider, useOrg } from "./org-provider";
-import { OrgSidebar } from "./org-sidebar";
+import { OrgSidebar, type NavSection } from "./org-sidebar";
 
 const SIDEBAR_STORAGE_KEY = "admin-sidebar-expanded";
 
@@ -69,6 +69,12 @@ export interface AppShellProps {
 	beforeChildren?: ReactNode;
 	/** Extra content rendered below (after) children. */
 	afterChildren?: ReactNode;
+	/**
+	 * Nav sections added by the host app to the shared sidebar. Used by
+	 * agent-desktop to inject desktop-only entries (e.g. Impression) without
+	 * polluting the web sidebar.
+	 */
+	extraNavSections?: NavSection[];
 }
 
 export function AppShell(props: AppShellProps) {
@@ -114,6 +120,7 @@ function DashboardLayout({
 	clientType = "agent-web",
 	beforeChildren,
 	afterChildren,
+	extraNavSections,
 }: AppShellProps) {
 	const { isLoading, activeOrg, activeOrgId } = useOrg();
 	const { t } = useTranslation();
@@ -184,6 +191,7 @@ function DashboardLayout({
 					<OrgSidebar
 						isExpanded={isExpanded}
 						onToggle={() => setIsExpanded((prev) => !prev)}
+						extraSections={extraNavSections}
 					/>
 				</div>
 			</div>

@@ -6,6 +6,7 @@ export { AppShell } from "./app-shell"
 export type { AppShellProps } from "./app-shell"
 
 export { OrgSidebar } from "./org-sidebar"
+export type { NavItem, NavSection, OrgSidebarProps } from "./org-sidebar"
 export { OrgSwitcher } from "./org-switcher"
 export { LogoutButton } from "./logout-button"
 export { AgentMobileNav } from "./agent-mobile-nav"

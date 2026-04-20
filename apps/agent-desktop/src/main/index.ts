@@ -12,6 +12,20 @@ import { registerContextMenuIpc } from "./ipc/context-menu.ipc"
 import { DeepLinkService } from "./services/deep-link.service"
 import { WindowStateService } from "./services/window-state.service"
 
+// Override the default "Electron" identity used by the dock / menu bar in dev
+// mode. electron-builder's `productName` only applies to packaged builds, so we
+// also force the name + dock icon here when running via `electron-vite dev`.
+app.setName("Consulat Agent")
+
+if (process.platform === "darwin" && app.dock) {
+  const devDockIcon = path.join(__dirname, "../../resources/icon.png")
+  try {
+    app.dock.setIcon(devDockIcon)
+  } catch {
+    // Icon file may not exist yet — dev fallback is harmless.
+  }
+}
+
 let mainWindow: BrowserWindow | null = null
 
 // Ensure single instance for deep link handling

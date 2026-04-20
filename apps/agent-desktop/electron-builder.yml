@@ -35,6 +35,14 @@ mac:
   gatekeeperAssess: false
   entitlements: resources/entitlements.mac.plist
   entitlementsInherit: resources/entitlements.mac.inherit.plist
+  # ── Signing & Notarization ────────────────────────────
+  # Requires env vars at build time:
+  #   CSC_LINK                   → path or base64 of the .p12 exported from Keychain
+  #   CSC_KEY_PASSWORD           → password of the .p12
+  #   APPLE_ID                   → Apple Developer account email
+  #   APPLE_APP_SPECIFIC_PASSWORD → app-specific password from appleid.apple.com
+  #   APPLE_TEAM_ID              → 10-char team ID from developer.apple.com/membership
+  notarize: true
 
 dmg:
   sign: false
