@@ -4,6 +4,7 @@ import { Moon, Sun, Menu, X, Globe } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { DownloadAppPopover } from "./DownloadAppPopover";
 
 interface NavbarProps {
 	activePanel: number;
@@ -119,6 +120,9 @@ export function Navbar({ activePanel, onNavigate, onScrollToSignIn }: NavbarProp
 							<Globe className="size-3.5" />
 							<span className="uppercase text-xs font-semibold">{currentLang}</span>
 						</button>
+
+						{/* Download desktop app */}
+						<DownloadAppPopover isDark={isDark} />
 
 						{/* Dark/light toggle */}
 						<button
