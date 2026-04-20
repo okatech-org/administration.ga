@@ -1,5 +1,8 @@
 import { betterAuth } from "better-auth/minimal";
 import { emailOTP, genericOAuth, phoneNumber } from "better-auth/plugins";
+import { createAuthMiddleware } from "better-auth/api";
+import { setSessionCookie } from "better-auth/cookies";
+import type { BetterAuthPlugin } from "better-auth";
 import { createClient } from "@convex-dev/better-auth";
 import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
 // TRIGGER REBUILD GLOBAL PATCH ALL
@@ -69,6 +72,89 @@ function validateAuthSecret(): string {
   }
   return secret;
 }
+
+// ============================================================================
+// Client Session Plugin — extends session to 30 days for the Electron desktop app
+// ============================================================================
+//
+// Web clients keep the global 7-day / 1-day defaults. The Electron renderer adds
+// `x-client-type: desktop` on every Better Auth request (see
+// apps/agent-desktop/src/renderer/src/lib/auth-client.ts). On session creation
+// paths and on /get-session refresh, this plugin rewrites `expiresAt` to now+30d
+// and re-sets the session cookie with the corresponding maxAge so the browser
+// cookie matches the server-side row.
+
+const DESKTOP_SESSION_EXPIRES_SECONDS = 60 * 60 * 24 * 30; // 30 days
+// The effective refresh cadence is driven by the global `session.updateAge`
+// (1 day). On every /get-session that crosses the updateAge threshold, Better
+// Auth calls internalAdapter.updateSession; our `after` hook then stamps the
+// desktop 30d window back on top, so the session rolls forward as long as the
+// user stays active — a 7d idle window would elapse well before the 30d cap.
+
+/** Paths that create or refresh a session and therefore need the desktop expiry override. */
+const DESKTOP_SESSION_PATHS = new Set<string>([
+  "/sign-in/email-otp",
+  "/sign-up/email-otp",
+  "/sign-in/email",
+  "/sign-up/email",
+  "/phone-number/verify",
+  "/callback/:id", // OAuth (IDN) callback — Better Auth dispatches this path name
+  "/oauth2/callback/:providerId",
+  "/get-session",
+]);
+
+const clientSessionPlugin = (): BetterAuthPlugin => ({
+  id: "client-session",
+  hooks: {
+    after: [
+      {
+        // Match any path that either creates or refreshes a session. We also
+        // short-circuit on the x-client-type header so non-desktop traffic
+        // never pays for the extra lookup/write.
+        matcher: (ctx) => {
+          const clientType =
+            ctx.request?.headers?.get("x-client-type") ??
+            ctx.headers?.get("x-client-type");
+          if (clientType !== "desktop") return false;
+          const path = ctx.path ?? "";
+          if (DESKTOP_SESSION_PATHS.has(path)) return true;
+          // OAuth callback paths are dynamic (/callback/:id) — match the prefix.
+          return path.startsWith("/callback/") || path.startsWith("/oauth2/callback/");
+        },
+        handler: createAuthMiddleware(async (ctx) => {
+          // `newSession` is populated after session-creating endpoints
+          // (sign-in, sign-up, OAuth callback, phone verify).
+          // On /get-session during a rolling refresh, Better Auth re-runs
+          // updateSession internally and keeps the updated row on
+          // `ctx.context.session`. We prefer newSession, fall back to session.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const target: any = ctx.context.newSession ?? ctx.context.session;
+          const token: string | undefined = target?.session?.token;
+          if (!token) return;
+
+          const newExpiresAt = new Date(
+            Date.now() + DESKTOP_SESSION_EXPIRES_SECONDS * 1000,
+          );
+          const updatedSession = await ctx.context.internalAdapter.updateSession(token, {
+            expiresAt: newExpiresAt,
+            updatedAt: new Date(),
+          });
+          if (!updatedSession) return;
+
+          // Re-issue the cookie with the 30d maxAge so the browser cookie
+          // matches the persisted session row.
+          const maxAge = (updatedSession.expiresAt.valueOf() - Date.now()) / 1000;
+          await setSessionCookie(
+            ctx,
+            { session: updatedSession, user: target?.user },
+            false,
+            { maxAge },
+          );
+        }),
+      },
+    ],
+  },
+});
 
 export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | null) => {
   const isDev = process.env.DEV_SIGNIN_ENABLED === "true";
@@ -178,6 +264,9 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
         // Dynamic per-request: each app gets redirected to its own origin
         siteUrl: resolveSiteUrl(requestOrigin),
       }),
+
+      // ── Client-type session extension (Electron desktop → 30d) ─────
+      clientSessionPlugin(),
 
       // ── Email OTP ──────────────────────────────────────────────────
       emailOTP({

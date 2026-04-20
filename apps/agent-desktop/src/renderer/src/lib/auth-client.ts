@@ -12,6 +12,14 @@ if (!CONVEX_SITE_URL) {
 
 export const authClient = createAuthClient({
   baseURL: CONVEX_SITE_URL ? `${CONVEX_SITE_URL}/api/auth` : undefined,
+  // Static header so the server-side clientSessionPlugin upgrades this client
+  // to a 30-day session (7-day refresh). Web apps omit the header and keep
+  // the global 7d/1d defaults.
+  fetchOptions: {
+    headers: {
+      "x-client-type": "desktop",
+    },
+  },
   plugins: [
     convexClient(),
     crossDomainClient(),
