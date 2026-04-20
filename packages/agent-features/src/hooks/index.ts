@@ -8,3 +8,12 @@ export { useIsMobile } from "./use-mobile"
 export { useMeeting } from "./use-meeting"
 export { useRingtone } from "./use-ringtone"
 export type { RingtoneVariant } from "./use-ringtone"
+export { useContactSearch } from "./useContactSearch"
+export type {
+	ContactSource,
+	ContactFilters,
+	ContactResultItem,
+	ContactGroup,
+} from "./useContactSearch"
+export { useCallCenter } from "./use-call-center"
+export { useCitizenContext } from "./use-citizen-context"

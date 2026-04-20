@@ -113,26 +113,73 @@ import {
   RequestActionModal,
 } from "@workspace/agent-features/components/requests"
 import { DocumentPreviewModal } from "@workspace/agent-features/components/documents"
+import {
+  MeetingRoom,
+  PreJoinScreen,
+} from "@workspace/agent-features/components/meetings-livekit"
+import { InlineAISuggestion } from "@workspace/agent-features/components/proactive-ai"
+import { VoicemailsList } from "@workspace/agent-features/components/call-center"
+import {
+  IAstedChatColumns,
+  IAstedContactTab,
+  IAstedCallTab,
+  IAstedMeetingTab,
+  IAstedSettingsTab,
+  IAstedInstantChatTab,
+  useAdminAIChat,
+  useAdminVoiceChat,
+  GlobalActiveCallsBar,
+} from "@workspace/agent-features/components/iasted-host"
+import { AIPresenceProvider } from "@workspace/agent-features/components/proactive-ai"
+import { useOrg } from "@workspace/agent-features/shell"
+import type { IAstedTabId } from "@workspace/iasted"
 
 // Desktop-only
 import { LoginPage } from "./components/auth/LoginPage"
 import { TitleBar } from "./components/titlebar/TitleBar"
 import { ImpressionPage } from "./components/impression/ImpressionPage"
-import { DesktopIAstedTab } from "./components/iasted/DesktopIAstedTab"
 import { authClient } from "./lib/auth-client"
 import { useNativeNotifications } from "./hooks/useNativeNotifications"
 import { useTraySync } from "./hooks/useTraySync"
 import { useMenuActions } from "./hooks/useMenuActions"
 
-// ─── DI stubs (v1) ──────────────────────────────────────────────────────────
-// v1.0.1: profile/request cards et ProfileViewSheet ont été portés dans
-// @workspace/agent-features/components — plus de stubs "en cours d'intégration"
-// pour l'UI profile/request. Seuls restent placeholder : LiveKit (meetings),
-// iAsted chat (InlineAISuggestion — agent-web-only proactive IA).
+// ─── DI slots ──────────────────────────────────────────────────────────────
+// v1.0.1: tous les composants (profile, requests, meetings LiveKit, proactive
+// AI, iAsted chat/voice/tabs, voicemails) sont désormais portés dans
+// @workspace/agent-features/components et branchés directement ci-dessous.
+// Plus aucun placeholder "en cours d'intégration".
 
-// iAsted InlineAISuggestion reste agent-web only (hooks useProactiveAI pas
-// portés sur desktop pour v1). Retourne null pour ne rien afficher.
-const NoInlineAISuggestion = () => null
+/**
+ * IAstedTabHost — monte les hooks LLM (`useAdminAIChat`, `useAdminVoiceChat`)
+ * et dispatche sur les tabs iAsted portés dans `iasted-host`. Miroir direct
+ * de `apps/agent-web/src/components/app-layout.tsx` pour la fenêtre flottante.
+ */
+function IAstedTabHost({ tab }: { tab: IAstedTabId }) {
+  const { activeOrgId } = useOrg()
+  const chat = useAdminAIChat()
+  const voice = useAdminVoiceChat()
+
+  switch (tab) {
+    case "ichat":
+      return <IAstedInstantChatTab chat={chat} voice={voice} />
+    case "icontact":
+      return <IAstedContactTab />
+    case "icall":
+      return <IAstedCallTab compact />
+    case "ivoicemail":
+      return (
+        <div className="h-full overflow-y-auto p-3">
+          <VoicemailsList orgId={activeOrgId} />
+        </div>
+      )
+    case "imeeting":
+      return <IAstedMeetingTab />
+    case "isettings":
+      return <IAstedSettingsTab />
+    default:
+      return null
+  }
+}
 
 // ─── react-router adapters for Next-style layouts ──────────────────────────
 // Les layouts partagés attendent `children` (signature Next.js) ; on les rend
@@ -154,67 +201,6 @@ function AffairesDiplomatiquesLayoutRoute() {
     </AffairesDiplomatiquesLayout>
   )
 }
-
-// TODO(v1.0.1): injecter les vrais composants LiveKit desktop.
-const StubMeetingRoom = ({
-  onDisconnect,
-}: {
-  token: string
-  wsUrl: string
-  onDisconnect: () => void
-  meetingId?: unknown
-}) => (
-  <div className="p-6 flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
-    <p>Salle de réunion — module desktop en cours d&apos;intégration.</p>
-    <button
-      type="button"
-      className="px-3 py-1.5 rounded-md border border-border text-foreground"
-      onClick={onDisconnect}
-    >
-      Quitter
-    </button>
-  </div>
-)
-
-const StubPreJoinScreen = ({
-  meetingTitle,
-  onJoin,
-  onCancel,
-  isConnecting,
-  error,
-}: {
-  meetingTitle: string
-  participantCount: number
-  isConnecting: boolean
-  error: string | null
-  onJoin: () => void
-  onCancel: () => void
-}) => (
-  <div className="p-6 flex flex-col items-center justify-center gap-3 text-sm">
-    <p className="font-semibold">{meetingTitle}</p>
-    <p className="text-muted-foreground text-xs">
-      Écran pré-jointure desktop — placeholder.
-    </p>
-    {error && <p className="text-destructive text-xs">{error}</p>}
-    <div className="flex gap-2">
-      <button
-        type="button"
-        className="px-3 py-1.5 rounded-md border border-border"
-        onClick={onCancel}
-      >
-        Annuler
-      </button>
-      <button
-        type="button"
-        disabled={isConnecting}
-        className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground disabled:opacity-50"
-        onClick={onJoin}
-      >
-        {isConnecting ? "Connexion…" : "Rejoindre"}
-      </button>
-    </div>
-  </div>
-)
 
 // ─── Root ───────────────────────────────────────────────────────────────────
 
@@ -245,13 +231,13 @@ export function App() {
       authClient={authClient as unknown as SharedAuthClient}
       clientType="agent-desktop"
       renderSignedOut={() => <LoginPage />}
-      renderIAstedTab={(tab) => <DesktopIAstedTab tab={tab} />}
-      // iAsted floating window is hidden on desktop for v1 — the real LLM/voice
-      // hosts (useAdminAIChat, useAdminVoiceChat, call-center components) aren't
-      // ported yet. Users access iAsted via the fullscreen /iasted route.
-      showIAstedWindow={() => false}
-      // AI proactive presence stays agent-web only for v1.
-      wrapWithAIPresence={(c) => c}
+      renderIAstedTab={(tab) => <IAstedTabHost tab={tab} />}
+      renderIAstedCallQueueSlot={(tab) =>
+        tab !== "icall" ? <GlobalActiveCallsBar /> : undefined
+      }
+      wrapWithAIPresence={(body) => (
+        <AIPresenceProvider>{body}</AIPresenceProvider>
+      )}
       beforeChildren={<TitleBar />}
       extraNavSections={DESKTOP_NAV_SECTIONS}
     >
@@ -287,7 +273,7 @@ export function App() {
           path="/requests/:reference"
           element={
             <RequestDetailPage
-              InlineAISuggestion={NoInlineAISuggestion}
+              InlineAISuggestion={InlineAISuggestion as never}
               RequestActionModal={RequestActionModal as never}
               OfficialDocumentsSection={OfficialDocumentsSection as never}
               UserProfilePreviewCard={UserProfilePreviewCard as never}
@@ -370,7 +356,7 @@ export function App() {
           <Route
             path=":targetId"
             element={
-              <TargetDetailPage InlineAISuggestion={NoInlineAISuggestion as never} />
+              <TargetDetailPage InlineAISuggestion={InlineAISuggestion as never} />
             }
           />
         </Route>
@@ -393,14 +379,12 @@ export function App() {
           path="/iasted"
           element={
             <IAstedPage
-              IAstedChatColumns={((props: { tab: unknown }) => (
-                <DesktopIAstedTab tab={props.tab as never} />
-              )) as never}
-              IAstedContactTab={() => <DesktopIAstedTab tab={"icontact" as never} />}
-              IAstedCallTab={() => <DesktopIAstedTab tab={"icall" as never} />}
-              IAstedMeetingTab={() => <DesktopIAstedTab tab={"imeeting" as never} />}
-              IAstedSettingsTab={() => <DesktopIAstedTab tab={"isettings" as never} />}
-              VoicemailsList={(() => <DesktopIAstedTab tab={"ivoicemail" as never} />) as never}
+              IAstedChatColumns={IAstedChatColumns as never}
+              IAstedContactTab={IAstedContactTab as never}
+              IAstedCallTab={IAstedCallTab as never}
+              IAstedMeetingTab={IAstedMeetingTab as never}
+              IAstedSettingsTab={IAstedSettingsTab as never}
+              VoicemailsList={VoicemailsList as never}
             />
           }
         />
@@ -411,8 +395,8 @@ export function App() {
           path="/meetings"
           element={
             <MeetingsPage
-              MeetingRoom={StubMeetingRoom as never}
-              PreJoinScreen={StubPreJoinScreen as never}
+              MeetingRoom={MeetingRoom as never}
+              PreJoinScreen={PreJoinScreen as never}
             />
           }
         />

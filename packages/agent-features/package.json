@@ -22,6 +22,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@livekit/components-styles": "^1.2.0",
     "@workspace/api": "workspace:*",
     "@workspace/chat": "workspace:*",
     "@workspace/desktop-shared": "workspace:*",

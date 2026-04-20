@@ -55,6 +55,7 @@
       "dependencies": {
         "@convex-dev/better-auth": "^0.11.3",
         "@convex-dev/react-query": "^0.1.0",
+        "@livekit/components-styles": "^1.2.0",
         "@tanstack/react-query": "^5.80.7",
         "@types/papaparse": "^5.5.2",
         "@workspace/agent-features": "workspace:*",
@@ -307,6 +308,7 @@
       "name": "@workspace/agent-features",
       "version": "0.0.0",
       "dependencies": {
+        "@livekit/components-styles": "^1.2.0",
         "@workspace/api": "workspace:*",
         "@workspace/chat": "workspace:*",
         "@workspace/desktop-shared": "workspace:*",
