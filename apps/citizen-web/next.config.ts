@@ -33,6 +33,16 @@ const nextConfig: NextConfig = {
     return config
   },
   experimental: {},
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.consulat.ga" }],
+        destination: "https://consulat.ga/:path*",
+        permanent: true,
+      },
+    ]
+  },
 }
 
 export default nextConfig
