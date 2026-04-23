@@ -217,6 +217,7 @@ import type * as migrations_addDocumentsAiGenerationToHighRanks from "../migrati
 import type * as migrations_addDocumentsTasksToHighRanks from "../migrations/addDocumentsTasksToHighRanks.js";
 import type * as migrations_auditDocumentsAccessForHighRanks from "../migrations/auditDocumentsAccessForHighRanks.js";
 import type * as migrations_backfillAggregates from "../migrations/backfillAggregates.js";
+import type * as migrations_backfillRequestResidencePermit from "../migrations/backfillRequestResidencePermit.js";
 import type * as migrations_backfillCopyOwnerOrgId from "../migrations/backfillCopyOwnerOrgId.js";
 import type * as migrations_backfillEmptyFormData from "../migrations/backfillEmptyFormData.js";
 import type * as migrations_backfillProfileAttachment from "../migrations/backfillProfileAttachment.js";
@@ -548,6 +549,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/addDocumentsTasksToHighRanks": typeof migrations_addDocumentsTasksToHighRanks;
   "migrations/auditDocumentsAccessForHighRanks": typeof migrations_auditDocumentsAccessForHighRanks;
   "migrations/backfillAggregates": typeof migrations_backfillAggregates;
+  "migrations/backfillRequestResidencePermit": typeof migrations_backfillRequestResidencePermit;
   "migrations/backfillCopyOwnerOrgId": typeof migrations_backfillCopyOwnerOrgId;
   "migrations/backfillEmptyFormData": typeof migrations_backfillEmptyFormData;
   "migrations/backfillProfileAttachment": typeof migrations_backfillProfileAttachment;

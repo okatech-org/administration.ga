@@ -1,91 +1,95 @@
-import { internalMutation } from "../_generated/server";
+/**
+ * Migration : rattache le titre de séjour depuis le profil sur les requests
+ * qui n'en ont pas dans leurs pièces fournies.
+ *
+ * Règles :
+ *  - Ignore les requests liées à un `childProfiles` (titre de séjour non requis).
+ *  - Skip si `request.documents` contient déjà un doc `documentType === "residence_permit"`.
+ *  - Lit `profile.documents.proofOfResidency` (clé adulte). Si absent, skip.
+ *  - Valide que le doc cible est bien un `residence_permit`, puis l'append à
+ *    `request.documents`.
+ *
+ * Pagination chaînée (auto-scheduled) : lance, ça s'auto-relance jusqu'à la fin.
+ *
+ * Usage :
+ *   npx convex run migrations/backfillRequestResidencePermit:run
+ *   npx convex run migrations/backfillRequestResidencePermit:run '{"dryRun": true}'
+ */
 import { v } from "convex/values";
+import { internalMutation } from "../_generated/server";
+import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { DetailedDocumentType } from "../lib/constants";
 
-/**
- * Backfill: rattache le titre de séjour depuis le profil sur les requests
- * d'inscription consulaire qui n'en ont pas dans leurs pièces fournies.
- *
- * Règles :
- *  - On ne touche que les requests dont le profile lié est un `profiles`
- *    (adulte). Les `childProfiles` sont ignorés : le titre de séjour n'est
- *    pas exigé pour un enfant.
- *  - On ne modifie que les requests dont `request.documents` ne contient
- *    AUCUN document avec `documentType === "residence_permit"`.
- *  - On lit `profile.documents.proofOfResidency` (clé adulte). Si absent,
- *    skip. Si le document référencé n'existe plus ou n'est pas un titre
- *    de séjour, skip.
- *  - On append l'id au tableau `request.documents` (sans doublon).
- *
- * Run: npx convex run migrations/backfillRequestResidencePermit:backfill
- */
-
 const BATCH_SIZE = 100;
 
-export const backfill = internalMutation({
+/** Kickoff — lance la migration, s'auto-relance ensuite. */
+export const run = internalMutation({
+  args: { dryRun: v.optional(v.boolean()) },
+  handler: async (ctx, { dryRun }) => {
+    console.log(
+      `[backfillRequestResidencePermit] start dryRun=${dryRun ?? false}`,
+    );
+    await ctx.scheduler.runAfter(
+      0,
+      internal.migrations.backfillRequestResidencePermit.processBatch,
+      { dryRun: dryRun ?? false, patchedTotal: 0, scannedTotal: 0 },
+    );
+  },
+});
+
+/** @internal — traite une page puis se replanifie. */
+export const processBatch = internalMutation({
   args: {
     cursor: v.optional(v.string()),
-    dryRun: v.optional(v.boolean()),
+    dryRun: v.boolean(),
+    patchedTotal: v.number(),
+    scannedTotal: v.number(),
   },
-  handler: async (ctx, { cursor, dryRun }) => {
+  handler: async (ctx, { cursor, dryRun, patchedTotal, scannedTotal }) => {
     const page = await ctx.db.query("requests").paginate({
       cursor: cursor ?? null,
       numItems: BATCH_SIZE,
     });
 
-    const stats = {
-      scanned: 0,
-      skippedChild: 0,
-      skippedAlreadyHasPermit: 0,
-      skippedNoProfile: 0,
-      skippedNoProfilePermit: 0,
-      skippedInvalidPermitDoc: 0,
-      patched: [] as string[],
-    };
+    let patched = 0;
+    let skippedChild = 0;
+    let skippedHasPermit = 0;
+    let skippedNoProfile = 0;
+    let skippedNoProfilePermit = 0;
+    let skippedInvalidDoc = 0;
 
     for (const request of page.page) {
-      stats.scanned++;
-
       if (!request.profileId) {
-        stats.skippedNoProfile++;
+        skippedNoProfile++;
         continue;
-      }
-
-      // Child profile → résidence pas requis
-      if (request.profileId.toString().startsWith("childProfiles")) {
-        // Heuristique id-prefix insuffisante en Convex : on tente la lecture
-        // typée via db.get et on check la table via _id.
       }
 
       const requestDocIds = request.documents ?? [];
       const requestDocs = await Promise.all(
         requestDocIds.map((id) => ctx.db.get(id)),
       );
-      const alreadyHasPermit = requestDocs.some(
-        (d) => d?.documentType === DetailedDocumentType.ResidencePermit,
-      );
-      if (alreadyHasPermit) {
-        stats.skippedAlreadyHasPermit++;
+      if (
+        requestDocs.some(
+          (d) => d?.documentType === DetailedDocumentType.ResidencePermit,
+        )
+      ) {
+        skippedHasPermit++;
         continue;
       }
 
-      // Lecture du profil lié (peut être profiles OU childProfiles)
-      const linked = await ctx.db.get(request.profileId as any);
+      const linked = await ctx.db.get(request.profileId as Id<"profiles">);
       if (!linked) {
-        stats.skippedNoProfile++;
+        skippedNoProfile++;
         continue;
       }
 
-      // Distinction adulte vs enfant :
-      //   profiles → a un champ userId (identique à request.userId en général)
-      //              et documents.proofOfResidency
-      //   childProfiles → a `parents` + `authorUserId`
+      // childProfiles a les champs `parents` + `authorUserId` ; profiles non.
       const isChild =
         "parents" in (linked as Record<string, unknown>) &&
         "authorUserId" in (linked as Record<string, unknown>);
       if (isChild) {
-        stats.skippedChild++;
+        skippedChild++;
         continue;
       }
 
@@ -94,24 +98,21 @@ export const backfill = internalMutation({
       ).documents;
       const profilePermitId = profileDocs?.proofOfResidency;
       if (!profilePermitId) {
-        stats.skippedNoProfilePermit++;
+        skippedNoProfilePermit++;
         continue;
       }
 
-      // Sanity-check le doc
       const profilePermitDoc = await ctx.db.get(profilePermitId);
       if (
         !profilePermitDoc ||
         profilePermitDoc.documentType !== DetailedDocumentType.ResidencePermit
       ) {
-        stats.skippedInvalidPermitDoc++;
+        skippedInvalidDoc++;
         continue;
       }
 
       if (requestDocIds.includes(profilePermitId)) {
-        // Déjà présent en tant qu'id mais sans documentType correct côté doc
-        // (cas improbable : on compte comme skip)
-        stats.skippedAlreadyHasPermit++;
+        skippedHasPermit++;
         continue;
       }
 
@@ -120,14 +121,34 @@ export const backfill = internalMutation({
           documents: [...requestDocIds, profilePermitId],
         });
       }
-      stats.patched.push(request.reference);
+      patched++;
     }
 
-    return {
-      ...stats,
-      nextCursor: page.isDone ? null : page.continueCursor,
-      isDone: page.isDone,
-      dryRun: dryRun ?? false,
-    };
+    const newScanned = scannedTotal + page.page.length;
+    const newPatched = patchedTotal + patched;
+
+    console.log(
+      `[backfillRequestResidencePermit] batch=${page.page.length} patched=${patched} ` +
+        `skipped{child=${skippedChild}, hasPermit=${skippedHasPermit}, ` +
+        `noProfile=${skippedNoProfile}, noProfilePermit=${skippedNoProfilePermit}, ` +
+        `invalidDoc=${skippedInvalidDoc}} total{scanned=${newScanned}, patched=${newPatched}}`,
+    );
+
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.backfillRequestResidencePermit.processBatch,
+        {
+          cursor: page.continueCursor,
+          dryRun,
+          patchedTotal: newPatched,
+          scannedTotal: newScanned,
+        },
+      );
+    } else {
+      console.log(
+        `[backfillRequestResidencePermit] done dryRun=${dryRun} scanned=${newScanned} patched=${newPatched}`,
+      );
+    }
   },
 });
