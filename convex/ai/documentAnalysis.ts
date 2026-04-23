@@ -36,11 +36,42 @@ RÈGLES:
 - confidence indique la confiance globale (0-100)
 - Les dates DOIVENT être au format YYYY-MM-DD`;
 
+// Prompt for residence permit (titre de séjour) analysis
+const RESIDENCE_PERMIT_ANALYSIS_PROMPT = `Analyse cette image de titre de séjour / carte de résident et extrais les informations suivantes au format JSON strict:
+
+{
+  "documentType": "residence_permit",
+  "isValid": true/false,
+  "confidence": 0-100,
+  "extractedData": {
+    "firstName": "Prénom(s)",
+    "lastName": "Nom de famille",
+    "birthDate": "YYYY-MM-DD",
+    "nationality": "Nationalité (code ISO 2 lettres, ex: GA pour Gabon, FR pour France)",
+    "gender": "M ou F",
+    "permitNumber": "Numéro du titre de séjour",
+    "permitType": "Type (carte de résident, carte de séjour temporaire, visa long séjour, etc.)",
+    "issueDate": "YYYY-MM-DD",
+    "expiryDate": "YYYY-MM-DD",
+    "issuingAuthority": "Autorité émettrice (préfecture, OFII, etc.)",
+    "issuingCountry": "Pays émetteur (code ISO 2 lettres)",
+    "address": "Adresse mentionnée sur le titre"
+  },
+  "warnings": ["Liste des problèmes détectés: document expiré, mauvaise qualité, etc."]
+}
+
+RÈGLES:
+- Renvoie UNIQUEMENT le JSON, sans markdown ni texte supplémentaire
+- Si un champ n'est pas lisible, mets null
+- isValid=false si le document est expiré, illisible ou suspect
+- confidence indique la confiance globale (0-100)
+- Les dates DOIVENT être au format YYYY-MM-DD`;
+
 // Prompt for generic document analysis
 const DOCUMENT_ANALYSIS_PROMPT = `Analyse ce document et identifie son type. Extrais les informations pertinentes au format JSON:
 
 {
-  "documentType": "passport|id_card|birth_certificate|proof_of_address|photo|other",
+  "documentType": "passport|id_card|birth_certificate|proof_of_address|residence_permit|photo|other",
   "isValid": true/false,
   "confidence": 0-100,
   "description": "Description brève du document",
@@ -111,9 +142,12 @@ export const analyzeDocument = action({
       const ai = new GoogleGenAI({ apiKey });
 
       // Choose prompt based on document type
-      const prompt = documentType === "passport" 
-        ? PASSPORT_ANALYSIS_PROMPT 
-        : DOCUMENT_ANALYSIS_PROMPT;
+      const prompt =
+        documentType === "passport"
+          ? PASSPORT_ANALYSIS_PROMPT
+          : documentType === "residence_permit"
+            ? RESIDENCE_PERMIT_ANALYSIS_PROMPT
+            : DOCUMENT_ANALYSIS_PROMPT;
 
       // Build content with image
       const contents = [

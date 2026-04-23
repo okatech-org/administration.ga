@@ -32,6 +32,14 @@ Retourne un JSON avec cette structure EXACTE:
     "expiryDate": "YYYY-MM-DD" ou null,
     "issuingAuthority": "Autorité de délivrance" ou null
   },
+  "residencePermitInfo": {
+    "number": "Numéro du titre de séjour" ou null,
+    "permitType": "Type (carte de résident, carte de séjour temporaire, visa long séjour, etc.)" ou null,
+    "issueDate": "YYYY-MM-DD" ou null,
+    "expiryDate": "YYYY-MM-DD" ou null,
+    "issuingAuthority": "Autorité émettrice (préfecture, OFII, etc.)" ou null,
+    "issuingCountry": "Code ISO 2 lettres du pays émetteur" ou null
+  },
   "familyInfo": {
     "maritalStatus": "Single" | "Married" | "Divorced" | "Widowed" | "CivilUnion" | "Cohabiting" | null,
     "fatherFirstName": "Prénom du père" ou null,
@@ -65,6 +73,8 @@ RÈGLES IMPORTANTES:
 - Pour les pays, utilise les codes ISO 2 lettres (GA=Gabon, FR=France, etc.)
 - Pour gender: "male" ou "female" (pas "M" ou "F")
 - Pour le passeport: extrais le numéro (MRZ ou face), les dates, et l'autorité de délivrance
+- Pour le titre de séjour: extrais le numéro, le type (résident/temporaire/visa long séjour), les dates, l'autorité émettrice (préfecture, OFII…) et le pays émetteur
+- Si un titre de séjour est présent, utilise son adresse pour pré-remplir contactInfo (pays de résidence = issuingCountry du titre)
 - Pour nationalityAcquisition: détermine si la nationalité a été acquise par naissance ("Birth"), mariage ("Marriage"), naturalisation ("Naturalization") ou autre ("Other")
 - Pour le NIP: c'est le Numéro d'Identification Personnel gabonais, souvent sur les documents d'identité
 - Pour le statut matrimonial: extrais depuis l'acte de naissance ou tout document mentionnant la situation familiale
@@ -91,6 +101,14 @@ export type RegistrationExtractionResult = {
       issueDate?: string;
       expiryDate?: string;
       issuingAuthority?: string;
+    };
+    residencePermitInfo: {
+      number?: string;
+      permitType?: string;
+      issueDate?: string;
+      expiryDate?: string;
+      issuingAuthority?: string;
+      issuingCountry?: string;
     };
     familyInfo: {
       maritalStatus?: string;
@@ -137,6 +155,7 @@ export const extractRegistrationData = action({
         data: {
           basicInfo: {},
           passportInfo: {},
+          residencePermitInfo: {},
           familyInfo: {},
           contactInfo: {},
         },
@@ -158,6 +177,7 @@ export const extractRegistrationData = action({
         data: {
           basicInfo: {},
           passportInfo: {},
+          residencePermitInfo: {},
           familyInfo: {},
           contactInfo: {},
         },
@@ -174,6 +194,7 @@ export const extractRegistrationData = action({
         data: {
           basicInfo: {},
           passportInfo: {},
+          residencePermitInfo: {},
           familyInfo: {},
           contactInfo: {},
         },
@@ -243,6 +264,7 @@ export const extractRegistrationData = action({
           data: {
             basicInfo: {},
             passportInfo: {},
+            residencePermitInfo: {},
             familyInfo: {},
             contactInfo: {},
           },
@@ -290,6 +312,7 @@ export const extractRegistrationData = action({
           data: {
             basicInfo: {},
             passportInfo: {},
+            residencePermitInfo: {},
             familyInfo: {},
             contactInfo: {},
           },
@@ -306,6 +329,8 @@ export const extractRegistrationData = action({
       const basicInfo = (parsed.basicInfo as Record<string, unknown>) || {};
       const passportInfoData =
         (parsed.passportInfo as Record<string, unknown>) || {};
+      const residencePermitInfoData =
+        (parsed.residencePermitInfo as Record<string, unknown>) || {};
       const familyInfo = (parsed.familyInfo as Record<string, unknown>) || {};
       const contactInfo = (parsed.contactInfo as Record<string, unknown>) || {};
 
@@ -330,6 +355,22 @@ export const extractRegistrationData = action({
             issueDate: passportInfoData.issueDate as string | undefined,
             expiryDate: passportInfoData.expiryDate as string | undefined,
             issuingAuthority: passportInfoData.issuingAuthority as
+              | string
+              | undefined,
+          },
+          residencePermitInfo: {
+            number: residencePermitInfoData.number as string | undefined,
+            permitType: residencePermitInfoData.permitType as
+              | string
+              | undefined,
+            issueDate: residencePermitInfoData.issueDate as string | undefined,
+            expiryDate: residencePermitInfoData.expiryDate as
+              | string
+              | undefined,
+            issuingAuthority: residencePermitInfoData.issuingAuthority as
+              | string
+              | undefined,
+            issuingCountry: residencePermitInfoData.issuingCountry as
               | string
               | undefined,
           },
@@ -366,6 +407,7 @@ export const extractRegistrationData = action({
         data: {
           basicInfo: {},
           passportInfo: {},
+          residencePermitInfo: {},
           familyInfo: {},
           contactInfo: {},
         },
@@ -401,6 +443,7 @@ export const extractRegistrationDataFromImages = action({
         data: {
           basicInfo: {},
           passportInfo: {},
+          residencePermitInfo: {},
           familyInfo: {},
           contactInfo: {},
         },
@@ -422,6 +465,7 @@ export const extractRegistrationDataFromImages = action({
         data: {
           basicInfo: {},
           passportInfo: {},
+          residencePermitInfo: {},
           familyInfo: {},
           contactInfo: {},
         },
@@ -438,6 +482,7 @@ export const extractRegistrationDataFromImages = action({
         data: {
           basicInfo: {},
           passportInfo: {},
+          residencePermitInfo: {},
           familyInfo: {},
           contactInfo: {},
         },
@@ -465,6 +510,7 @@ export const extractRegistrationDataFromImages = action({
           data: {
             basicInfo: {},
             passportInfo: {},
+            residencePermitInfo: {},
             familyInfo: {},
             contactInfo: {},
           },
@@ -511,6 +557,7 @@ export const extractRegistrationDataFromImages = action({
           data: {
             basicInfo: {},
             passportInfo: {},
+            residencePermitInfo: {},
             familyInfo: {},
             contactInfo: {},
           },
@@ -527,6 +574,8 @@ export const extractRegistrationDataFromImages = action({
       const basicInfo = (parsed.basicInfo as Record<string, unknown>) || {};
       const passportInfoData =
         (parsed.passportInfo as Record<string, unknown>) || {};
+      const residencePermitInfoData =
+        (parsed.residencePermitInfo as Record<string, unknown>) || {};
       const familyInfo = (parsed.familyInfo as Record<string, unknown>) || {};
       const contactInfo = (parsed.contactInfo as Record<string, unknown>) || {};
 
@@ -551,6 +600,22 @@ export const extractRegistrationDataFromImages = action({
             issueDate: passportInfoData.issueDate as string | undefined,
             expiryDate: passportInfoData.expiryDate as string | undefined,
             issuingAuthority: passportInfoData.issuingAuthority as
+              | string
+              | undefined,
+          },
+          residencePermitInfo: {
+            number: residencePermitInfoData.number as string | undefined,
+            permitType: residencePermitInfoData.permitType as
+              | string
+              | undefined,
+            issueDate: residencePermitInfoData.issueDate as string | undefined,
+            expiryDate: residencePermitInfoData.expiryDate as
+              | string
+              | undefined,
+            issuingAuthority: residencePermitInfoData.issuingAuthority as
+              | string
+              | undefined,
+            issuingCountry: residencePermitInfoData.issuingCountry as
               | string
               | undefined,
           },
@@ -587,6 +652,7 @@ export const extractRegistrationDataFromImages = action({
         data: {
           basicInfo: {},
           passportInfo: {},
+          residencePermitInfo: {},
           familyInfo: {},
           contactInfo: {},
         },

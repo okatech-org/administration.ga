@@ -2267,6 +2267,7 @@
 			"passport": "Passport",
 			"birthCertificate": "Birth Certificate",
 			"proofOfAddress": "Proof of Address",
+			"proofOfResidency": "Residence permit",
 			"cropPhoto": "Crop photo",
 			"photoTip1": "Face centered and clear",
 			"photoTip2": "Plain and light background",

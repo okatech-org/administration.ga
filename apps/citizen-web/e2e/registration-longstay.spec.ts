@@ -39,6 +39,7 @@ test.describe("LongStay Registration — Full Flow", () => {
     await uploadDocument(page, "passport", "test-document.pdf");
     await uploadDocument(page, "birthCertificate", "test-document.pdf");
     await uploadDocument(page, "addressProof", "test-document.pdf");
+    await uploadDocument(page, "proofOfResidency", "test-document.pdf");
 
     await clickNext(page);
 

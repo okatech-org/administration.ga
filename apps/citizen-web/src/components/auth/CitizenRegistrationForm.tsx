@@ -929,6 +929,7 @@ export function CitizenRegistrationForm({
 								proofOfAddress: documentIds.addressProof as any,
 								identityPhoto: documentIds.identityPhoto as any,
 								birthCertificate: documentIds.birthCertificate as any,
+								proofOfResidency: documentIds.proofOfResidency as any,
 							}
 						: undefined,
 			});
