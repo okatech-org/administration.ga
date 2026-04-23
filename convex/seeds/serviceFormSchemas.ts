@@ -213,6 +213,47 @@ const FORM_SCHEMAS: Record<
   },
 
   // ═══════════════════════════════════════════════════════════════════
+  // INSCRIPTION CONSULAIRE (registre des Gabonais de l'étranger)
+  // ═══════════════════════════════════════════════════════════════════
+  // Pas de sections dynamiques : le formulaire client est piloté par
+  // RegistrationForm.tsx à partir du profil. Seuls joinedDocuments sont
+  // exploités côté agent pour le checklist de pièces justificatives.
+  "inscription-consulaire": {
+    sections: [],
+    joinedDocuments: [
+      {
+        type: "identity_photo",
+        label: l("Photo d'identité format passeport", "Passport-size identity photo"),
+        required: true,
+      },
+      {
+        type: "passport",
+        label: l("Passeport en cours de validité", "Valid passport"),
+        required: true,
+      },
+      {
+        type: "birth_certificate",
+        label: l("Acte de naissance", "Birth certificate"),
+        required: true,
+      },
+      {
+        type: "proof_of_address",
+        label: l(
+          "Justificatif de domicile (moins de 3 mois)",
+          "Proof of address (less than 3 months old)",
+        ),
+        required: true,
+      },
+      {
+        type: "residence_permit",
+        label: l("Titre de séjour", "Residence permit"),
+        required: false,
+      },
+    ],
+    showRecap: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
   // CARTE CONSULAIRE
   // ═══════════════════════════════════════════════════════════════════
   "consular-card-registration": {
@@ -1479,6 +1520,63 @@ export const seedFormSchemas = mutation({
           `${slug}: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
+    }
+
+    return results;
+  },
+});
+
+/**
+ * Patch joinedDocuments on existing services without touching sections.
+ * Ensures every document type declared in FORM_SCHEMAS[slug].joinedDocuments
+ * is present on the service. Used to ship new required/optional docs
+ * (like titre de séjour) without requiring a full re-seed.
+ *
+ * Run: npx convex run seeds/serviceFormSchemas:syncJoinedDocuments
+ */
+export const syncJoinedDocuments = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const results = {
+      patched: [] as string[],
+      unchanged: [] as string[],
+      notFound: [] as string[],
+    };
+
+    for (const [slug, formSchema] of Object.entries(FORM_SCHEMAS)) {
+      const service = await ctx.db
+        .query("services")
+        .withIndex("by_slug", (q) => q.eq("slug", slug))
+        .first();
+
+      if (!service) {
+        results.notFound.push(slug);
+        continue;
+      }
+
+      const existing = service.formSchema?.joinedDocuments ?? [];
+      const existingKeys = new Set(
+        existing.map((d) => `${d.type}::${d.label?.fr ?? ""}`),
+      );
+      const missing = formSchema.joinedDocuments.filter(
+        (d) => !existingKeys.has(`${d.type}::${d.label.fr}`),
+      );
+
+      if (missing.length === 0) {
+        results.unchanged.push(slug);
+        continue;
+      }
+
+      await ctx.db.patch(service._id, {
+        formSchema: {
+          ...(service.formSchema ?? { sections: [], showRecap: true }),
+          joinedDocuments: [...existing, ...missing],
+        } as any,
+        updatedAt: Date.now(),
+      });
+      results.patched.push(
+        `${slug} (+${missing.map((m) => m.type).join(", ")})`,
+      );
     }
 
     return results;
