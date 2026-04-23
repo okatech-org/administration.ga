@@ -8,6 +8,10 @@
 import { v } from "convex/values";
 import { authQuery } from "../lib/customFunctions";
 import { requireCorrespondanceAccess } from "../lib/correspondanceHelpers";
+import {
+  correspondanceItemsByOrg,
+  dossierProceduresByOrg,
+} from "../lib/aggregates";
 
 // ═════════════════════════════════════════════════════════════════════════════
 // DASHBOARD STATS
@@ -19,66 +23,110 @@ export const getDashboardStats = authQuery({
   handler: async (ctx, args) => {
     await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
     const now = Date.now();
+    const ns = args.orgId;
+    const activePrefix = { prefix: [0] as [number] };
 
-    // Correspondance items stats
-    const corrItems = await ctx.db
-      .query("correspondanceItems")
-      .withIndex("by_org_deleted", (q: any) =>
-        q.eq("orgId", args.orgId).eq("deletedAt", undefined),
-      )
-      .collect();
+    const corrStatuses = [
+      "draft",
+      "pending",
+      "approved",
+      "rejected",
+      "sent",
+      "received",
+      "archived",
+    ] as const;
+    const dossierStatuses = [
+      "brouillon",
+      "en_cours",
+      "en_attente",
+      "suspendu",
+      "valide",
+      "rejete",
+      "clos",
+      "archive",
+    ] as const;
+    const corrOpenStatuses = corrStatuses.filter(
+      (s) => s !== "sent" && s !== "archived",
+    );
+    const dossierOpenStatuses = dossierStatuses.filter(
+      (s) => !["valide", "clos", "archive", "rejete"].includes(s),
+    );
 
-    const corrByStatus: Record<string, number> = {};
+    const [
+      corrTotal,
+      corrByStatusPairs,
+      dossierTotal,
+      dossierByStatusPairs,
+    ] = await Promise.all([
+      correspondanceItemsByOrg.count(ctx, { namespace: ns, bounds: activePrefix }),
+      Promise.all(
+        corrStatuses.map((s) =>
+          correspondanceItemsByOrg
+            .count(ctx, { namespace: ns, bounds: { prefix: [0, s] } })
+            .then((n) => [s, n] as const),
+        ),
+      ),
+      dossierProceduresByOrg.count(ctx, { namespace: ns, bounds: activePrefix }),
+      Promise.all(
+        dossierStatuses.map((s) =>
+          dossierProceduresByOrg
+            .count(ctx, { namespace: ns, bounds: { prefix: [0, s] } })
+            .then((n) => [s, n] as const),
+        ),
+      ),
+    ]);
+
+    // Overdue/user-scoped counts: bounded queries on indexed status slices only.
+    // These are O(open_items) which is inherently bounded by workflow.
     let corrOverdue = 0;
-    for (const item of corrItems) {
-      corrByStatus[item.status] = (corrByStatus[item.status] ?? 0) + 1;
-      if (
-        item.dateReponseAttendue &&
-        item.dateReponseAttendue < now &&
-        !["sent", "archived"].includes(item.status)
-      ) {
-        corrOverdue++;
+    let pendingApprovals = 0;
+    for (const s of corrOpenStatuses) {
+      const items = await ctx.db
+        .query("correspondanceItems")
+        .withIndex("by_org_status", (q: any) =>
+          q.eq("orgId", args.orgId).eq("status", s),
+        )
+        .collect();
+      for (const item of items) {
+        if (item.deletedAt) continue;
+        if (item.dateReponseAttendue && item.dateReponseAttendue < now) {
+          corrOverdue++;
+        }
+        if (s === "pending" && item.currentHolderId === ctx.user._id) {
+          pendingApprovals++;
+        }
       }
     }
 
-    // Pending approvals for current user
-    const pendingApprovals = corrItems.filter(
-      (i: any) =>
-        i.status === "pending" && i.currentHolderId === ctx.user._id,
-    ).length;
-
-    // Dossier stats
-    const dossiers = await ctx.db
-      .query("dossierProcedures")
-      .withIndex("by_org_deleted", (q: any) =>
-        q.eq("orgId", args.orgId).eq("deletedAt", undefined),
-      )
-      .collect();
-
-    const dossierByStatus: Record<string, number> = {};
     let dossierOverdue = 0;
-    for (const d of dossiers) {
-      dossierByStatus[d.status] = (dossierByStatus[d.status] ?? 0) + 1;
-      if (d.dateLimite && d.dateLimite < now && !["valide", "clos", "archive", "rejete"].includes(d.status)) {
-        dossierOverdue++;
+    let myDossiers = 0;
+    for (const s of dossierOpenStatuses) {
+      const items = await ctx.db
+        .query("dossierProcedures")
+        .withIndex("by_org_status", (q: any) =>
+          q.eq("orgId", args.orgId).eq("status", s),
+        )
+        .collect();
+      for (const d of items) {
+        if ((d as any).deletedAt) continue;
+        if (d.dateLimite && d.dateLimite < now) dossierOverdue++;
+        if (d.agentTraitantId === ctx.user._id) myDossiers++;
       }
     }
 
-    // Dossiers assigned to current user
-    const myDossiers = dossiers.filter(
-      (d: any) => d.agentTraitantId === ctx.user._id && !["valide", "clos", "archive"].includes(d.status),
-    ).length;
+    const toRecord = (pairs: ReadonlyArray<readonly [string, number]>) =>
+      Object.fromEntries(pairs.filter(([, n]) => n > 0));
 
     return {
       correspondance: {
-        total: corrItems.length,
-        byStatus: corrByStatus,
+        total: corrTotal,
+        byStatus: toRecord(corrByStatusPairs),
         overdue: corrOverdue,
         pendingApprovals,
       },
       dossiers: {
-        total: dossiers.length,
-        byStatus: dossierByStatus,
+        total: dossierTotal,
+        byStatus: toRecord(dossierByStatusPairs),
         overdue: dossierOverdue,
         myDossiers,
       },

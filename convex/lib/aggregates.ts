@@ -188,3 +188,183 @@ export const childProfilesGlobal = new TableAggregate<{
 }>(components.childProfilesGlobal, {
   sortKey: (doc) => [doc.status, doc._creationTime],
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Phase 2 — Dashboard performance aggregates
+//
+// Convention `isDeleted` : 0 = actif, 1 = soft-deleted.
+// Les queries ajoutent `bounds: { prefix: [0, ...] }` pour ignorer les
+// éléments supprimés, évitant d'avoir à retirer/réinsérer dans l'agrégat.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const isDeletedKey = (doc: { deletedAt?: number }): 0 | 1 =>
+  doc.deletedAt === undefined ? 0 : 1;
+
+// ---------------------------------------------------------------------------
+// 13. Diplomatic Targets by Org — dashboard iAffaires
+// ---------------------------------------------------------------------------
+export const diplomaticTargetsByOrg = new TableAggregate<{
+  Namespace: string;
+  Key: [number, string, number]; // [isDeleted, status, _creationTime]
+  DataModel: DataModel;
+  TableName: "diplomaticTargets";
+}>(components.diplomaticTargetsByOrg, {
+  namespace: (doc) => doc.orgId,
+  sortKey: (doc) => [isDeletedKey(doc), doc.status, doc._creationTime],
+});
+
+// ---------------------------------------------------------------------------
+// 14. Diplomatic Letters by Org
+// ---------------------------------------------------------------------------
+export const diplomaticLettersByOrg = new TableAggregate<{
+  Namespace: string;
+  Key: [number, string, number];
+  DataModel: DataModel;
+  TableName: "diplomaticLetters";
+}>(components.diplomaticLettersByOrg, {
+  namespace: (doc) => doc.orgId,
+  sortKey: (doc) => [isDeletedKey(doc), doc.status, doc._creationTime],
+});
+
+// ---------------------------------------------------------------------------
+// 15. Diplomatic Plans by Org
+// ---------------------------------------------------------------------------
+export const diplomaticPlansByOrg = new TableAggregate<{
+  Namespace: string;
+  Key: [number, string, number];
+  DataModel: DataModel;
+  TableName: "diplomaticPlans";
+}>(components.diplomaticPlansByOrg, {
+  namespace: (doc) => doc.orgId,
+  sortKey: (doc) => [isDeletedKey(doc), doc.status, doc._creationTime],
+});
+
+// ---------------------------------------------------------------------------
+// 16. Diplomatic Reports by Org
+// ---------------------------------------------------------------------------
+export const diplomaticReportsByOrg = new TableAggregate<{
+  Namespace: string;
+  Key: [number, string, number];
+  DataModel: DataModel;
+  TableName: "diplomaticReports";
+}>(components.diplomaticReportsByOrg, {
+  namespace: (doc) => doc.orgId,
+  sortKey: (doc) => [isDeletedKey(doc), doc.status, doc._creationTime],
+});
+
+// ---------------------------------------------------------------------------
+// 17. Diplomatic Projects by Org
+// ---------------------------------------------------------------------------
+export const diplomaticProjectsByOrg = new TableAggregate<{
+  Namespace: string;
+  Key: [number, string, number];
+  DataModel: DataModel;
+  TableName: "diplomaticProjects";
+}>(components.diplomaticProjectsByOrg, {
+  namespace: (doc) => doc.orgId,
+  sortKey: (doc) => [isDeletedKey(doc), doc.status, doc._creationTime],
+});
+
+// ---------------------------------------------------------------------------
+// 18. Correspondance Items by Org — dashboard iCorrespondance
+// ---------------------------------------------------------------------------
+export const correspondanceItemsByOrg = new TableAggregate<{
+  Namespace: string;
+  Key: [number, string, number]; // [isDeleted, status, _creationTime]
+  DataModel: DataModel;
+  TableName: "correspondanceItems";
+}>(components.correspondanceItemsByOrg, {
+  namespace: (doc) => doc.orgId,
+  sortKey: (doc) => [isDeletedKey(doc), doc.status, doc._creationTime],
+});
+
+// ---------------------------------------------------------------------------
+// 19. Dossier Procedures by Org
+// ---------------------------------------------------------------------------
+export const dossierProceduresByOrg = new TableAggregate<{
+  Namespace: string;
+  Key: [number, string, number];
+  DataModel: DataModel;
+  TableName: "dossierProcedures";
+}>(components.dossierProceduresByOrg, {
+  namespace: (doc) => doc.orgId,
+  sortKey: (doc) => [isDeletedKey(doc), doc.status, doc._creationTime],
+});
+
+// ---------------------------------------------------------------------------
+// 20. Documents by Owner — Category
+//     Namespace: ownerId (stringified polymorphic ID)
+//     SortKey: [isDeleted, category]
+// ---------------------------------------------------------------------------
+export const documentsByOwnerCategory = new TableAggregate<{
+  Namespace: string;
+  Key: [number, string]; // [isDeleted, category]
+  DataModel: DataModel;
+  TableName: "documents";
+}>(components.documentsByOwnerCategory, {
+  namespace: (doc) => doc.ownerId as unknown as string,
+  sortKey: (doc) => [isDeletedKey(doc), doc.category ?? "other"],
+});
+
+// ---------------------------------------------------------------------------
+// 21. Documents by Owner — Expiry
+//     Namespace: ownerId
+//     SortKey: [isDeleted, expiresAt ?? MAX_SAFE_INTEGER]
+//     Documents sans expiresAt sont placés à la fin (MAX_SAFE_INTEGER) pour
+//     être exclus par les bornes `upper: { key: [0, threshold] }`.
+// ---------------------------------------------------------------------------
+export const documentsByOwnerExpiry = new TableAggregate<{
+  Namespace: string;
+  Key: [number, number]; // [isDeleted, expiresAt]
+  DataModel: DataModel;
+  TableName: "documents";
+}>(components.documentsByOwnerExpiry, {
+  namespace: (doc) => doc.ownerId as unknown as string,
+  sortKey: (doc) => [
+    isDeletedKey(doc),
+    doc.expiresAt ?? Number.MAX_SAFE_INTEGER,
+  ],
+});
+
+// ---------------------------------------------------------------------------
+// 22. Payments by Org
+//     Namespace: orgId
+//     SortKey: [status, _creationTime]
+//     SumValue: amount (en centimes) → permet .sum() O(log n)
+// ---------------------------------------------------------------------------
+export const paymentsByOrg = new TableAggregate<{
+  Namespace: string;
+  Key: [string, number]; // [status, _creationTime]
+  DataModel: DataModel;
+  TableName: "payments";
+}>(components.paymentsByOrg, {
+  namespace: (doc) => doc.orgId,
+  sortKey: (doc) => [doc.status, doc._creationTime],
+  sumValue: (doc) => doc.amount,
+});
+
+// ---------------------------------------------------------------------------
+// 23. Missed Calls by Org — callbackStatus + time
+// ---------------------------------------------------------------------------
+export const missedCallsByOrgStatus = new TableAggregate<{
+  Namespace: string;
+  Key: [string, number]; // [callbackStatus, startedAt]
+  DataModel: DataModel;
+  TableName: "missedCalls";
+}>(components.missedCallsByOrgStatus, {
+  namespace: (doc) => doc.orgId,
+  sortKey: (doc) => [doc.callbackStatus, doc.startedAt],
+});
+
+// ---------------------------------------------------------------------------
+// 24. Missed Calls by Org — reason + time
+// ---------------------------------------------------------------------------
+export const missedCallsByOrgReason = new TableAggregate<{
+  Namespace: string;
+  Key: [string, number]; // [reason, startedAt]
+  DataModel: DataModel;
+  TableName: "missedCalls";
+}>(components.missedCallsByOrgReason, {
+  namespace: (doc) => doc.orgId,
+  sortKey: (doc) => [doc.reason, doc.startedAt],
+});

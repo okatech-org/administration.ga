@@ -29,6 +29,18 @@ import {
   servicesGlobal,
   appointmentsByOrg,
   childProfilesGlobal,
+  diplomaticTargetsByOrg,
+  diplomaticLettersByOrg,
+  diplomaticPlansByOrg,
+  diplomaticReportsByOrg,
+  diplomaticProjectsByOrg,
+  correspondanceItemsByOrg,
+  dossierProceduresByOrg,
+  documentsByOwnerCategory,
+  documentsByOwnerExpiry,
+  paymentsByOrg,
+  missedCallsByOrgStatus,
+  missedCallsByOrgReason,
 } from "../lib/aggregates";
 
 // Small batch size to stay well under 16MB read limit
@@ -162,6 +174,104 @@ export const backfillChildProfiles = internalMutation({
   },
 });
 
+// ─── Phase 2 — Dashboard performance aggregates ──────────────────────────
+
+export const backfillDiplomaticTargets = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "diplomaticTargets", diplomaticTargetsByOrg,
+      internal.migrations.backfillAggregates.backfillDiplomaticTargets, args.cursor);
+  },
+});
+
+export const backfillDiplomaticLetters = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "diplomaticLetters", diplomaticLettersByOrg,
+      internal.migrations.backfillAggregates.backfillDiplomaticLetters, args.cursor);
+  },
+});
+
+export const backfillDiplomaticPlans = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "diplomaticPlans", diplomaticPlansByOrg,
+      internal.migrations.backfillAggregates.backfillDiplomaticPlans, args.cursor);
+  },
+});
+
+export const backfillDiplomaticReports = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "diplomaticReports", diplomaticReportsByOrg,
+      internal.migrations.backfillAggregates.backfillDiplomaticReports, args.cursor);
+  },
+});
+
+export const backfillDiplomaticProjects = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "diplomaticProjects", diplomaticProjectsByOrg,
+      internal.migrations.backfillAggregates.backfillDiplomaticProjects, args.cursor);
+  },
+});
+
+export const backfillCorrespondanceItems = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "correspondanceItems", correspondanceItemsByOrg,
+      internal.migrations.backfillAggregates.backfillCorrespondanceItems, args.cursor);
+  },
+});
+
+export const backfillDossierProcedures = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "dossierProcedures", dossierProceduresByOrg,
+      internal.migrations.backfillAggregates.backfillDossierProcedures, args.cursor);
+  },
+});
+
+export const backfillDocumentsByCategory = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "documents", documentsByOwnerCategory,
+      internal.migrations.backfillAggregates.backfillDocumentsByCategory, args.cursor);
+  },
+});
+
+export const backfillDocumentsByExpiry = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "documents", documentsByOwnerExpiry,
+      internal.migrations.backfillAggregates.backfillDocumentsByExpiry, args.cursor);
+  },
+});
+
+export const backfillPayments = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "payments", paymentsByOrg,
+      internal.migrations.backfillAggregates.backfillPayments, args.cursor);
+  },
+});
+
+export const backfillMissedCallsStatus = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "missedCalls", missedCallsByOrgStatus,
+      internal.migrations.backfillAggregates.backfillMissedCallsStatus, args.cursor);
+  },
+});
+
+export const backfillMissedCallsReason = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "missedCalls", missedCallsByOrgReason,
+      internal.migrations.backfillAggregates.backfillMissedCallsReason, args.cursor);
+  },
+});
+
 /**
  * Rebuild child profiles aggregate (clear + backfill).
  *   npx convex run migrations/backfillAggregates:rebuildChildProfiles
@@ -209,6 +319,18 @@ export const backfillAll = internalMutation({
       internal.migrations.backfillAggregates.backfillServices,
       internal.migrations.backfillAggregates.backfillAppointments,
       internal.migrations.backfillAggregates.backfillChildProfiles,
+      internal.migrations.backfillAggregates.backfillDiplomaticTargets,
+      internal.migrations.backfillAggregates.backfillDiplomaticLetters,
+      internal.migrations.backfillAggregates.backfillDiplomaticPlans,
+      internal.migrations.backfillAggregates.backfillDiplomaticReports,
+      internal.migrations.backfillAggregates.backfillDiplomaticProjects,
+      internal.migrations.backfillAggregates.backfillCorrespondanceItems,
+      internal.migrations.backfillAggregates.backfillDossierProcedures,
+      internal.migrations.backfillAggregates.backfillDocumentsByCategory,
+      internal.migrations.backfillAggregates.backfillDocumentsByExpiry,
+      internal.migrations.backfillAggregates.backfillPayments,
+      internal.migrations.backfillAggregates.backfillMissedCallsStatus,
+      internal.migrations.backfillAggregates.backfillMissedCallsReason,
     ];
 
     // Stagger starts by 5 seconds each to avoid concurrent batches
@@ -236,6 +358,18 @@ export const clearAll = internalMutation({
     await servicesGlobal.clearAll(ctx);
     await appointmentsByOrg.clearAll(ctx);
     await childProfilesGlobal.clearAll(ctx);
+    await diplomaticTargetsByOrg.clearAll(ctx);
+    await diplomaticLettersByOrg.clearAll(ctx);
+    await diplomaticPlansByOrg.clearAll(ctx);
+    await diplomaticReportsByOrg.clearAll(ctx);
+    await diplomaticProjectsByOrg.clearAll(ctx);
+    await correspondanceItemsByOrg.clearAll(ctx);
+    await dossierProceduresByOrg.clearAll(ctx);
+    await documentsByOwnerCategory.clearAll(ctx);
+    await documentsByOwnerExpiry.clearAll(ctx);
+    await paymentsByOrg.clearAll(ctx);
+    await missedCallsByOrgStatus.clearAll(ctx);
+    await missedCallsByOrgReason.clearAll(ctx);
     console.log(" All aggregates cleared");
   },
 });

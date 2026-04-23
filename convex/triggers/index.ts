@@ -20,6 +20,18 @@ import {
   servicesGlobal,
   appointmentsByOrg,
   childProfilesGlobal,
+  diplomaticTargetsByOrg,
+  diplomaticLettersByOrg,
+  diplomaticPlansByOrg,
+  diplomaticReportsByOrg,
+  diplomaticProjectsByOrg,
+  correspondanceItemsByOrg,
+  dossierProceduresByOrg,
+  documentsByOwnerCategory,
+  documentsByOwnerExpiry,
+  paymentsByOrg,
+  missedCallsByOrgStatus,
+  missedCallsByOrgReason,
 } from "../lib/aggregates";
 import triggers from "../lib/triggerSetup";
 import {
@@ -48,6 +60,20 @@ triggers.register("orgs", orgsGlobal.idempotentTrigger());
 triggers.register("services", servicesGlobal.idempotentTrigger());
 triggers.register("appointments", appointmentsByOrg.idempotentTrigger());
 triggers.register("childProfiles", childProfilesGlobal.idempotentTrigger());
+
+// Phase 2 — Dashboard performance aggregates
+triggers.register("diplomaticTargets", diplomaticTargetsByOrg.idempotentTrigger());
+triggers.register("diplomaticLetters", diplomaticLettersByOrg.idempotentTrigger());
+triggers.register("diplomaticPlans", diplomaticPlansByOrg.idempotentTrigger());
+triggers.register("diplomaticReports", diplomaticReportsByOrg.idempotentTrigger());
+triggers.register("diplomaticProjects", diplomaticProjectsByOrg.idempotentTrigger());
+triggers.register("correspondanceItems", correspondanceItemsByOrg.idempotentTrigger());
+triggers.register("dossierProcedures", dossierProceduresByOrg.idempotentTrigger());
+triggers.register("documents", documentsByOwnerCategory.idempotentTrigger());
+triggers.register("documents", documentsByOwnerExpiry.idempotentTrigger());
+triggers.register("payments", paymentsByOrg.idempotentTrigger());
+triggers.register("missedCalls", missedCallsByOrgStatus.idempotentTrigger());
+triggers.register("missedCalls", missedCallsByOrgReason.idempotentTrigger());
 
 // ============================================================================
 // REQUESTS TRIGGERS

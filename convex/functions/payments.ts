@@ -7,6 +7,7 @@ import { assertCanDoTask } from "../lib/permissions";
 import { TaskCode } from "../lib/taskCodes";
 import { logCortexAction } from "../lib/neocortex";
 import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
+import { paymentsByOrg } from "../lib/aggregates";
 
 // ============================================================================
 // INTERNAL QUERIES
@@ -477,33 +478,43 @@ export const getStats = authQuery({
 			.unique();
 		await assertCanDoTask(ctx, ctx.user, membership, TaskCode.payments.view);
 
-		// Use .take(1000) to bound the query — sufficient for dashboard stats
-		const payments = await ctx.db
-			.query("payments")
-			.withIndex("by_org", (q) => q.eq("orgId", args.orgId))
-			.take(1000);
-
-		const succeeded = payments.filter((p) => p.status === "succeeded");
-		const pending = payments.filter((p) => p.status === "pending" || p.status === "processing");
-		const failed = payments.filter((p) => p.status === "failed");
-
-		const totalRevenue = succeeded.reduce((sum, p) => sum + p.amount, 0);
-		const pendingAmount = pending.reduce((sum, p) => sum + p.amount, 0);
-
-		// This month
+		const ns = args.orgId;
 		const now = new Date();
 		const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-		const thisMonthRevenue = succeeded
-			.filter((p) => p.paidAt && p.paidAt >= startOfMonth)
-			.reduce((sum, p) => sum + p.amount, 0);
+
+		const [
+			totalRevenue,
+			pendingAmountP,
+			pendingAmountProc,
+			thisMonthRevenue,
+			successCount,
+			pendingCountP,
+			pendingCountProc,
+			failedCount,
+		] = await Promise.all([
+			paymentsByOrg.sum(ctx, { namespace: ns, bounds: { prefix: ["succeeded"] } }),
+			paymentsByOrg.sum(ctx, { namespace: ns, bounds: { prefix: ["pending"] } }),
+			paymentsByOrg.sum(ctx, { namespace: ns, bounds: { prefix: ["processing"] } }),
+			paymentsByOrg.sum(ctx, {
+				namespace: ns,
+				bounds: {
+					lower: { key: ["succeeded", startOfMonth], inclusive: true },
+					upper: { key: ["succeeded", Number.MAX_SAFE_INTEGER], inclusive: true },
+				},
+			}),
+			paymentsByOrg.count(ctx, { namespace: ns, bounds: { prefix: ["succeeded"] } }),
+			paymentsByOrg.count(ctx, { namespace: ns, bounds: { prefix: ["pending"] } }),
+			paymentsByOrg.count(ctx, { namespace: ns, bounds: { prefix: ["processing"] } }),
+			paymentsByOrg.count(ctx, { namespace: ns, bounds: { prefix: ["failed"] } }),
+		]);
 
 		return {
 			totalRevenue,
 			thisMonthRevenue,
-			pendingAmount,
-			successCount: succeeded.length,
-			pendingCount: pending.length,
-			failedCount: failed.length,
+			pendingAmount: pendingAmountP + pendingAmountProc,
+			successCount,
+			pendingCount: pendingCountP + pendingCountProc,
+			failedCount,
 		};
 	},
 });

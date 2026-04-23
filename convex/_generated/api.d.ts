@@ -708,4 +708,16 @@ export declare const components: {
   servicesGlobal: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"servicesGlobal">;
   appointmentsByOrg: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"appointmentsByOrg">;
   childProfilesGlobal: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"childProfilesGlobal">;
+  diplomaticTargetsByOrg: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"diplomaticTargetsByOrg">;
+  diplomaticLettersByOrg: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"diplomaticLettersByOrg">;
+  diplomaticPlansByOrg: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"diplomaticPlansByOrg">;
+  diplomaticReportsByOrg: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"diplomaticReportsByOrg">;
+  diplomaticProjectsByOrg: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"diplomaticProjectsByOrg">;
+  correspondanceItemsByOrg: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"correspondanceItemsByOrg">;
+  dossierProceduresByOrg: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"dossierProceduresByOrg">;
+  documentsByOwnerCategory: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"documentsByOwnerCategory">;
+  documentsByOwnerExpiry: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"documentsByOwnerExpiry">;
+  paymentsByOrg: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"paymentsByOrg">;
+  missedCallsByOrgStatus: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"missedCallsByOrgStatus">;
+  missedCallsByOrgReason: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"missedCallsByOrgReason">;
 };

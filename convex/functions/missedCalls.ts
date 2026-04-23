@@ -4,6 +4,10 @@ import { authQuery, authMutation } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
+import {
+  missedCallsByOrgStatus,
+  missedCallsByOrgReason,
+} from "../lib/aggregates";
 
 /**
  * Missed Calls — Gestion des appels manqués et des rappels associés
@@ -102,24 +106,52 @@ export const statsByOrg = authQuery({
     await assertCanDoTask(ctx, ctx.user, membership, "meetings.view_history");
 
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const ns = args.orgId;
+    const MAX_TIME = Number.MAX_SAFE_INTEGER;
 
-    const recent = await ctx.db
-      .query("missedCalls")
-      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
-      .filter((q) => q.gte(q.field("startedAt"), thirtyDaysAgo))
-      .collect();
+    const rangeByStatus = (status: string) => ({
+      namespace: ns,
+      bounds: {
+        lower: { key: [status, thirtyDaysAgo] as [string, number], inclusive: true },
+        upper: { key: [status, MAX_TIME] as [string, number], inclusive: true },
+      },
+    });
+    const rangeByReason = (reason: string) => ({
+      namespace: ns,
+      bounds: {
+        lower: { key: [reason, thirtyDaysAgo] as [string, number], inclusive: true },
+        upper: { key: [reason, MAX_TIME] as [string, number], inclusive: true },
+      },
+    });
+
+    const [
+      pending,
+      assigned,
+      inProgress,
+      completed,
+      ignored,
+      timeout,
+      no_agent,
+      rejected,
+      abandoned,
+    ] = await Promise.all([
+      missedCallsByOrgStatus.count(ctx, rangeByStatus("pending")),
+      missedCallsByOrgStatus.count(ctx, rangeByStatus("assigned")),
+      missedCallsByOrgStatus.count(ctx, rangeByStatus("in_progress")),
+      missedCallsByOrgStatus.count(ctx, rangeByStatus("completed")),
+      missedCallsByOrgStatus.count(ctx, rangeByStatus("ignored")),
+      missedCallsByOrgReason.count(ctx, rangeByReason("timeout")),
+      missedCallsByOrgReason.count(ctx, rangeByReason("no_agent")),
+      missedCallsByOrgReason.count(ctx, rangeByReason("rejected")),
+      missedCallsByOrgReason.count(ctx, rangeByReason("abandoned")),
+    ]);
 
     return {
-      total: recent.length,
-      pending: recent.filter((m) => m.callbackStatus === "pending").length,
-      completed: recent.filter((m) => m.callbackStatus === "completed").length,
-      ignored: recent.filter((m) => m.callbackStatus === "ignored").length,
-      byReason: {
-        timeout: recent.filter((m) => m.reason === "timeout").length,
-        no_agent: recent.filter((m) => m.reason === "no_agent").length,
-        rejected: recent.filter((m) => m.reason === "rejected").length,
-        abandoned: recent.filter((m) => m.reason === "abandoned").length,
-      },
+      total: pending + assigned + inProgress + completed + ignored,
+      pending,
+      completed,
+      ignored,
+      byReason: { timeout, no_agent, rejected, abandoned },
     };
   },
 });

@@ -16,6 +16,11 @@ import {
   documentTypeCategoryValidator,
   detailedDocumentTypeValidator,
 } from "../lib/validators";
+import {
+  documentsByOwnerCategory,
+  documentsByOwnerExpiry,
+} from "../lib/aggregates";
+import { DocumentTypeCategory } from "../lib/constants";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERIES
@@ -103,38 +108,56 @@ export const getStats = authQuery({
       .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
       .unique();
     const ownerId = profile?._id ?? ctx.user._id;
+    const ns = ownerId as unknown as string;
 
-    const documents = await ctx.db
-      .query("documents")
-      .withIndex("by_owner", (q) => q.eq("ownerId", ownerId))
-      .collect();
-
-    const activeDocs = documents;
-
-    // Count by category
-    const byCategory: Record<string, number> = {};
-    for (const doc of activeDocs) {
-      const cat = doc.category ?? "other";
-      byCategory[cat] = (byCategory[cat] ?? 0) + 1;
-    }
-
-    // Count expiring
     const now = Date.now();
     const thirtyDays = now + 30 * 24 * 60 * 60 * 1000;
     const sevenDays = now + 7 * 24 * 60 * 60 * 1000;
 
-    const expiringSoon = activeDocs.filter(
-      (d) => d.expiresAt && d.expiresAt <= thirtyDays,
-    ).length;
-    const expiringUrgent = activeDocs.filter(
-      (d) => d.expiresAt && d.expiresAt <= sevenDays,
-    ).length;
-    const expired = activeDocs.filter(
-      (d) => d.expiresAt && d.expiresAt <= now,
-    ).length;
+    const categories = Object.values(DocumentTypeCategory);
+
+    const [total, byCategoryPairs, expiringSoon, expiringUrgent, expired] =
+      await Promise.all([
+        documentsByOwnerCategory.count(ctx, {
+          namespace: ns,
+          bounds: { prefix: [0] },
+        }),
+        Promise.all(
+          categories.map((cat) =>
+            documentsByOwnerCategory
+              .count(ctx, { namespace: ns, bounds: { prefix: [0, cat] } })
+              .then((n) => [cat, n] as const),
+          ),
+        ),
+        documentsByOwnerExpiry.count(ctx, {
+          namespace: ns,
+          bounds: {
+            lower: { key: [0, 0], inclusive: true },
+            upper: { key: [0, thirtyDays], inclusive: true },
+          },
+        }),
+        documentsByOwnerExpiry.count(ctx, {
+          namespace: ns,
+          bounds: {
+            lower: { key: [0, 0], inclusive: true },
+            upper: { key: [0, sevenDays], inclusive: true },
+          },
+        }),
+        documentsByOwnerExpiry.count(ctx, {
+          namespace: ns,
+          bounds: {
+            lower: { key: [0, 0], inclusive: true },
+            upper: { key: [0, now], inclusive: true },
+          },
+        }),
+      ]);
+
+    const byCategory = Object.fromEntries(
+      byCategoryPairs.filter(([, n]) => n > 0),
+    );
 
     return {
-      total: activeDocs.length,
+      total,
       byCategory,
       expiringSoon,
       expiringUrgent,

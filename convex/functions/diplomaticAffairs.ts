@@ -16,6 +16,13 @@ import {
   strategicAnalysisValidator,
 } from "../schemas/diplomaticAffairs";
 import { internal } from "../_generated/api";
+import {
+  diplomaticTargetsByOrg,
+  diplomaticLettersByOrg,
+  diplomaticPlansByOrg,
+  diplomaticReportsByOrg,
+  diplomaticProjectsByOrg,
+} from "../lib/aggregates";
 
 // ─── Matrice de transitions du pipeline ─────────────────────────────────────
 
@@ -1586,59 +1593,101 @@ export const addLocalSourceDocument = authMutation({
 export const getDashboardStats = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
-    const targets = await ctx.db
-      .query("diplomaticTargets")
-      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
-      .filter((q) => q.eq(q.field("deletedAt"), undefined))
-      .collect();
+    const ns = args.orgId;
+    const activePrefix = { prefix: [0] as [number] };
 
-    const letters = await ctx.db
-      .query("diplomaticLetters")
-      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
-      .filter((q) => q.eq(q.field("deletedAt"), undefined))
-      .collect();
+    const targetStatuses = [
+      "identified",
+      "contacted",
+      "in_discussion",
+      "partnership",
+      "inactive",
+    ] as const;
+    const letterStatuses = [
+      "draft",
+      "pending_approval",
+      "approved",
+      "sent",
+      "responded",
+      "archived",
+    ] as const;
 
-    const plans = await ctx.db
-      .query("diplomaticPlans")
-      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
-      .filter((q) => q.eq(q.field("deletedAt"), undefined))
-      .collect();
+    const [
+      targetsTotal,
+      targetsByStatus,
+      lettersTotal,
+      lettersByStatus,
+      plansTotal,
+      plansActive,
+      reportsTotal,
+      reportsPending,
+      projectsTotal,
+      projectsActive,
+      projectsValidated,
+    ] = await Promise.all([
+      diplomaticTargetsByOrg.count(ctx, { namespace: ns, bounds: activePrefix }),
+      Promise.all(
+        targetStatuses.map((s) =>
+          diplomaticTargetsByOrg
+            .count(ctx, { namespace: ns, bounds: { prefix: [0, s] } })
+            .then((n) => [s, n] as const),
+        ),
+      ),
+      diplomaticLettersByOrg.count(ctx, { namespace: ns, bounds: activePrefix }),
+      Promise.all(
+        letterStatuses.map((s) =>
+          diplomaticLettersByOrg
+            .count(ctx, { namespace: ns, bounds: { prefix: [0, s] } })
+            .then((n) => [s, n] as const),
+        ),
+      ),
+      diplomaticPlansByOrg.count(ctx, { namespace: ns, bounds: activePrefix }),
+      diplomaticPlansByOrg.count(ctx, {
+        namespace: ns,
+        bounds: { prefix: [0, "active"] },
+      }),
+      diplomaticReportsByOrg.count(ctx, { namespace: ns, bounds: activePrefix }),
+      diplomaticReportsByOrg.count(ctx, {
+        namespace: ns,
+        bounds: { prefix: [0, "pending_review"] },
+      }),
+      diplomaticProjectsByOrg.count(ctx, { namespace: ns, bounds: activePrefix }),
+      diplomaticProjectsByOrg.count(ctx, {
+        namespace: ns,
+        bounds: { prefix: [0, "in_progress"] },
+      }),
+      diplomaticProjectsByOrg.count(ctx, {
+        namespace: ns,
+        bounds: { prefix: [0, "validated"] },
+      }),
+    ]);
 
-    const reports = await ctx.db
-      .query("diplomaticReports")
-      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
-      .filter((q) => q.eq(q.field("deletedAt"), undefined))
-      .collect();
-
-    const projects = await ctx.db
-      .query("diplomaticProjects")
-      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
-      .filter((q) => q.eq(q.field("deletedAt"), undefined))
-      .collect();
+    const toRecord = (pairs: ReadonlyArray<readonly [string, number]>) =>
+      Object.fromEntries(pairs.filter(([, n]) => n > 0));
 
     return {
       targets: {
-        total: targets.length,
-        byStatus: groupBy(targets, "status"),
-        byPriority: groupBy(targets, "priority"),
-        byPhase: groupBy(targets, "pipelinePhase"),
+        total: targetsTotal,
+        byStatus: toRecord(targetsByStatus),
+        byPriority: {} as Record<string, number>,
+        byPhase: {} as Record<string, number>,
       },
       letters: {
-        total: letters.length,
-        byStatus: groupBy(letters, "status"),
+        total: lettersTotal,
+        byStatus: toRecord(lettersByStatus),
       },
       plans: {
-        total: plans.length,
-        active: plans.filter((p) => p.status === "active").length,
+        total: plansTotal,
+        active: plansActive,
       },
       reports: {
-        total: reports.length,
-        pending: reports.filter((r) => r.status === "pending_review").length,
+        total: reportsTotal,
+        pending: reportsPending,
       },
       projects: {
-        total: projects.length,
-        active: projects.filter((p) => p.status === "in_progress").length,
-        validated: projects.filter((p) => p.status === "validated").length,
+        total: projectsTotal,
+        active: projectsActive,
+        validated: projectsValidated,
       },
     };
   },

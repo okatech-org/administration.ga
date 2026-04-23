@@ -26,4 +26,18 @@ app.use(aggregate, { name: "servicesGlobal" });
 app.use(aggregate, { name: "appointmentsByOrg" });
 app.use(aggregate, { name: "childProfilesGlobal" });
 
+// Phase 2 — Dashboard performance (O(log n) stats)
+app.use(aggregate, { name: "diplomaticTargetsByOrg" });
+app.use(aggregate, { name: "diplomaticLettersByOrg" });
+app.use(aggregate, { name: "diplomaticPlansByOrg" });
+app.use(aggregate, { name: "diplomaticReportsByOrg" });
+app.use(aggregate, { name: "diplomaticProjectsByOrg" });
+app.use(aggregate, { name: "correspondanceItemsByOrg" });
+app.use(aggregate, { name: "dossierProceduresByOrg" });
+app.use(aggregate, { name: "documentsByOwnerCategory" });
+app.use(aggregate, { name: "documentsByOwnerExpiry" });
+app.use(aggregate, { name: "paymentsByOrg" });
+app.use(aggregate, { name: "missedCallsByOrgStatus" });
+app.use(aggregate, { name: "missedCallsByOrgReason" });
+
 export default app;
