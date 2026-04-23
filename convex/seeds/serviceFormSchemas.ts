@@ -1546,3 +1546,79 @@ export const syncJoinedDocuments = mutation({
     return results;
   },
 });
+
+/**
+ * Dedupe joinedDocuments on every service by `type`, keeping the first
+ * occurrence. Fixes duplicates introduced by earlier sync runs where labels
+ * diverged between FORM_SCHEMAS and DB (e.g. "Acte de naissance" vs
+ * "Acte de naissance gabonais" produced two entries with the same type).
+ *
+ * Preference when duplicates exist:
+ *  - Keep the entry whose label is a localized object with both fr + en
+ *  - Otherwise keep the first occurrence
+ *  - If any duplicate is `required`, the survivor is marked required
+ *
+ * Run: npx convex run seeds/serviceFormSchemas:dedupeJoinedDocuments
+ */
+export const dedupeJoinedDocuments = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const results = {
+      deduped: [] as string[],
+      unchanged: [] as string[],
+    };
+
+    const services = await ctx.db.query("services").collect();
+
+    for (const service of services) {
+      const existing = service.formSchema?.joinedDocuments ?? [];
+      if (existing.length === 0) {
+        results.unchanged.push(service.slug);
+        continue;
+      }
+
+      const hasLocalizedLabel = (d: (typeof existing)[number]) =>
+        typeof d.label === "object" &&
+        d.label !== null &&
+        "fr" in (d.label as object) &&
+        "en" in (d.label as object);
+
+      const byType = new Map<string, (typeof existing)[number]>();
+      for (const doc of existing) {
+        const current = byType.get(doc.type);
+        if (!current) {
+          byType.set(doc.type, doc);
+          continue;
+        }
+        const keepNew =
+          (hasLocalizedLabel(doc) && !hasLocalizedLabel(current)) ||
+          (doc.required && !current.required);
+        const survivor = keepNew ? doc : current;
+        if (doc.required || current.required) {
+          survivor.required = true;
+        }
+        byType.set(doc.type, survivor);
+      }
+
+      const deduped = Array.from(byType.values());
+
+      if (deduped.length === existing.length) {
+        results.unchanged.push(service.slug);
+        continue;
+      }
+
+      await ctx.db.patch(service._id, {
+        formSchema: {
+          ...(service.formSchema ?? { sections: [], showRecap: true }),
+          joinedDocuments: deduped,
+        } as any,
+        updatedAt: Date.now(),
+      });
+      results.deduped.push(
+        `${service.slug} (${existing.length} → ${deduped.length})`,
+      );
+    }
+
+    return results;
+  },
+});
