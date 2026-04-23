@@ -213,47 +213,6 @@ const FORM_SCHEMAS: Record<
   },
 
   // ═══════════════════════════════════════════════════════════════════
-  // INSCRIPTION CONSULAIRE (registre des Gabonais de l'étranger)
-  // ═══════════════════════════════════════════════════════════════════
-  // Pas de sections dynamiques : le formulaire client est piloté par
-  // RegistrationForm.tsx à partir du profil. Seuls joinedDocuments sont
-  // exploités côté agent pour le checklist de pièces justificatives.
-  "inscription-consulaire": {
-    sections: [],
-    joinedDocuments: [
-      {
-        type: "identity_photo",
-        label: l("Photo d'identité format passeport", "Passport-size identity photo"),
-        required: true,
-      },
-      {
-        type: "passport",
-        label: l("Passeport en cours de validité", "Valid passport"),
-        required: true,
-      },
-      {
-        type: "birth_certificate",
-        label: l("Acte de naissance", "Birth certificate"),
-        required: true,
-      },
-      {
-        type: "proof_of_address",
-        label: l(
-          "Justificatif de domicile (moins de 3 mois)",
-          "Proof of address (less than 3 months old)",
-        ),
-        required: true,
-      },
-      {
-        type: "residence_permit",
-        label: l("Titre de séjour", "Residence permit"),
-        required: false,
-      },
-    ],
-    showRecap: true,
-  },
-
-  // ═══════════════════════════════════════════════════════════════════
   // CARTE CONSULAIRE
   // ═══════════════════════════════════════════════════════════════════
   "consular-card-registration": {
@@ -607,6 +566,11 @@ const FORM_SCHEMAS: Record<
         type: "identity_photo",
         label: l("2 photos d'identité récentes", "2 recent passport photos"),
         required: true,
+      },
+      {
+        type: "residence_permit",
+        label: l("Titre de séjour", "Residence permit"),
+        required: false,
       },
     ],
     showRecap: true,
@@ -1555,11 +1519,11 @@ export const syncJoinedDocuments = mutation({
       }
 
       const existing = service.formSchema?.joinedDocuments ?? [];
-      const existingKeys = new Set(
-        existing.map((d) => `${d.type}::${d.label?.fr ?? ""}`),
-      );
+      const existingTypes = new Set<string>(existing.map((d) => d.type));
+      // Match by type only: libellés en DB peuvent diverger de FORM_SCHEMAS
+      // (admin a pu les customiser). On n'ajoute que les types manquants.
       const missing = formSchema.joinedDocuments.filter(
-        (d) => !existingKeys.has(`${d.type}::${d.label.fr}`),
+        (d) => !existingTypes.has(d.type),
       );
 
       if (missing.length === 0) {
