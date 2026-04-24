@@ -65,7 +65,7 @@ export default function PublicLayout({
   }
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col">
+    <div className="fixed inset-0 flex flex-col">
       <Header />
       <main
         id="main-scrollable-area"
