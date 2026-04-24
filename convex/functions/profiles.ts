@@ -6,7 +6,7 @@ import { Id } from "../_generated/dataModel";
 import { authQuery, authMutation } from "../lib/customFunctions";
 import { error, ErrorCode } from "../lib/errors";
 import { calculateCompletionScore } from "../lib/utils";
-import { legacyProfiles } from "../lib/legacyProfilesMap";
+import { legacyProfileToCardNumber } from "../lib/legacyProfileToCardNumber";
 import {
   genderValidator,
   passportInfoValidator,
@@ -1281,27 +1281,14 @@ export const getPublicProfile = query({
 });
 
 /**
- * Resolve legacy profile ID to new profile ID
+ * Resolves a legacy public profile ID (Cuid printed on the QR code of old
+ * consular cards) to the consular card number that should be used in the
+ * /verify-profile/[identifier] URL. Returns null if the legacy ID is unknown.
  */
 export const getProfilIdFromPublicId = query({
   args: { publicId: v.string() },
-  handler: async (ctx, args) => {
-    // 1. Try to see if it's already a valid Convex ID for profiles
-    const normalizedId = ctx.db.normalizeId("profiles", args.publicId);
-    if (normalizedId) {
-      const isProfile = await ctx.db.get(normalizedId);
-      if (isProfile) {
-        return normalizedId;
-      }
-    }
-
-    // 2. Check the legacy mapping
-    const mapped = legacyProfiles[args.publicId];
-    if (mapped) {
-      return mapped;
-    }
-
-    return null;
+  handler: async (_ctx, args) => {
+    return legacyProfileToCardNumber[args.publicId] ?? null;
   },
 });
 
@@ -1310,7 +1297,6 @@ export const getProfilIdFromPublicId = query({
  * Accepts either:
  * - A card number (e.g. "FR25280498-00407") → looks up consularRegistrations
  * - A notification number (e.g. "SIG-FR25-00001") → looks up consularNotifications
- * - A legacy/current profile ID → looks up via legacy map
  *
  * Returns profile summary + consular record info depending on type and auth level.
  */
@@ -1429,31 +1415,6 @@ export const verifyByIdentifier = query({
           contacts: profile.contacts,
         } : {}),
       };
-    }
-
-    // --- Route 3: Legacy profile ID fallback ---
-    const mapped = legacyProfiles[identifier];
-    const profileId = mapped
-      ? ctx.db.normalizeId("profiles", mapped)
-      : ctx.db.normalizeId("profiles", identifier);
-
-    if (profileId) {
-      const profile = await ctx.db.get(profileId);
-      if (profile) {
-        const photoUrl = await getProfilePhoto(profileId);
-        return {
-          found: true,
-          type: "legacy" as const,
-          authorized: isAuthorizedViewer,
-          profileId: profile._id,
-          identity: {
-            firstName: profile.identity?.firstName,
-            lastName: profile.identity?.lastName,
-          },
-          consularCard: profile.consularCard,
-          photoUrl,
-        };
-      }
     }
 
     return { found: false, type: "unknown" as const };

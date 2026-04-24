@@ -75,13 +75,6 @@ export default function VerifyProfilePage() {
 		isExpired = !!record.isExpired;
 		isValid = !isExpired && record.status === "active";
 		displayId = record.identifier as string;
-	} else if (record.type === "legacy") {
-		documentTypeLabel = "Carte Consulaire (Systeme precedent)";
-		isExpired = record.consularCard
-			? record.consularCard.cardExpiresAt < Date.now()
-			: true;
-		isValid = !!record.consularCard && !isExpired;
-		displayId = record.consularCard?.cardNumber || "";
 	} else if (record.type === "notification") {
 		documentTypeLabel = "Signalement Consulaire";
 		const rec = record as any;
@@ -197,33 +190,6 @@ export default function VerifyProfilePage() {
 													"fr-FR",
 												)
 											: "\u2014"}
-									</p>
-								</div>
-							</div>
-						)}
-
-						{record.type === "legacy" && record.consularCard && (
-							<div className="grid grid-cols-2 gap-4 pt-4 border-t">
-								<div>
-									<p className="text-xs text-muted-foreground flex items-center gap-1">
-										<Calendar className="h-3 w-3" /> Delivree le
-									</p>
-									<p className="font-medium mt-1">
-										{new Date(
-											record.consularCard.cardIssuedAt,
-										).toLocaleDateString("fr-FR")}
-									</p>
-								</div>
-								<div className="text-right">
-									<p className="text-xs text-muted-foreground flex items-center justify-end gap-1">
-										<Calendar className="h-3 w-3" /> Expire le
-									</p>
-									<p
-										className={`font-medium mt-1 ${isExpired ? "text-red-600 dark:text-red-400" : ""}`}
-									>
-										{new Date(
-											record.consularCard.cardExpiresAt,
-										).toLocaleDateString("fr-FR")}
 									</p>
 								</div>
 							</div>

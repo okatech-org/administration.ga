@@ -183,7 +183,7 @@ import type * as lib_errors from "../lib/errors.js";
 import type * as lib_generationTriggers from "../lib/generationTriggers.js";
 import type * as lib_httpSecurity from "../lib/httpSecurity.js";
 import type * as lib_ical from "../lib/ical.js";
-import type * as lib_legacyProfilesMap from "../lib/legacyProfilesMap.js";
+import type * as lib_legacyProfileToCardNumber from "../lib/legacyProfileToCardNumber.js";
 import type * as lib_moduleCodes from "../lib/moduleCodes.js";
 import type * as lib_neocortex from "../lib/neocortex.js";
 import type * as lib_orgHelpers from "../lib/orgHelpers.js";
@@ -516,7 +516,7 @@ declare const fullApi: ApiFromModules<{
   "lib/generationTriggers": typeof lib_generationTriggers;
   "lib/httpSecurity": typeof lib_httpSecurity;
   "lib/ical": typeof lib_ical;
-  "lib/legacyProfilesMap": typeof lib_legacyProfilesMap;
+  "lib/legacyProfileToCardNumber": typeof lib_legacyProfileToCardNumber;
   "lib/moduleCodes": typeof lib_moduleCodes;
   "lib/neocortex": typeof lib_neocortex;
   "lib/orgHelpers": typeof lib_orgHelpers;
