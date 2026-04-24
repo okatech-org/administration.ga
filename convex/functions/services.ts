@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query } from "../_generated/server";
+import type { Doc } from "../_generated/dataModel";
 import { authMutation, superadminMutation } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask, resolveServiceAccessLevel, getTasksForMembership } from "../lib/permissions";
@@ -278,13 +279,22 @@ export const getOrgServiceById = query({
 });
 
 /**
- * Get org service by the parent service's slug
- * Used by citizen-facing routes to fetch service by its human-readable slug
+ * Get org service by the parent service's slug.
+ *
+ * - If `orgSlug` is provided: returns the orgService for that specific
+ *   organization, regardless of its `isActive` flag (so the caller can
+ *   render an "unavailable" message when the service was deactivated by
+ *   the consulate).
+ * - If `orgSlug` is absent: falls back to the first active orgService
+ *   for this service (legacy behavior used when the citizen arrives
+ *   without an explicit org context).
  */
 export const getOrgServiceBySlug = query({
-  args: { slug: v.string() },
+  args: {
+    slug: v.string(),
+    orgSlug: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
-    // First, find the service by slug
     const service = await ctx.db
       .query("services")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
@@ -292,13 +302,30 @@ export const getOrgServiceBySlug = query({
 
     if (!service) return null;
 
-    // Find an active orgService for this service
-    const orgService = await ctx.db
-      .query("orgServices")
-      .withIndex("by_service_active", (q) =>
-        q.eq("serviceId", service._id).eq("isActive", true)
-      )
-      .first();
+    let orgService: Doc<"orgServices"> | null;
+
+    if (args.orgSlug) {
+      const org = await ctx.db
+        .query("orgs")
+        .withIndex("by_slug", (q) => q.eq("slug", args.orgSlug!))
+        .unique();
+
+      if (!org) return null;
+
+      orgService = await ctx.db
+        .query("orgServices")
+        .withIndex("by_org_service", (q) =>
+          q.eq("orgId", org._id).eq("serviceId", service._id),
+        )
+        .unique();
+    } else {
+      orgService = await ctx.db
+        .query("orgServices")
+        .withIndex("by_service_active", (q) =>
+          q.eq("serviceId", service._id).eq("isActive", true),
+        )
+        .first();
+    }
 
     if (!orgService) return null;
 
@@ -510,6 +537,40 @@ export const toggleOrgServiceActive = authMutation({
     });
 
     return !orgService.isActive;
+  },
+});
+
+/**
+ * Set org service active status explicitly (idempotent).
+ *
+ * Used by partner admin UIs (e.g. france.consulat.ga) where the caller
+ * knows the target state and expects a no-op when already in that state,
+ * rather than toggling blindly.
+ */
+export const setOrgServiceActive = authMutation({
+  args: {
+    orgServiceId: v.id("orgServices"),
+    isActive: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const orgService = await ctx.db.get(args.orgServiceId);
+    if (!orgService) {
+      throw error(ErrorCode.SERVICE_NOT_FOUND);
+    }
+
+    const membership = await getMembership(ctx, ctx.user._id, orgService.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.manage");
+
+    if (orgService.isActive === args.isActive) {
+      return args.isActive;
+    }
+
+    await ctx.db.patch(args.orgServiceId, {
+      isActive: args.isActive,
+      updatedAt: Date.now(),
+    });
+
+    return args.isActive;
   },
 });
 

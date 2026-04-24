@@ -26,16 +26,20 @@ export default function NewRequestRedirect() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const childId = searchParams.get("childId") || undefined;
+	const orgSlug = searchParams.get("org") || undefined;
 	const { t } = useTranslation();
 
 	const [error, setError] = useState<string | null>(null);
 	const creatingDraft = useRef(false);
 
-	// Fetch service by slug
+	// Fetch service by slug. When the citizen arrives from a partner site
+	// (e.g. france.consulat.ga) the `org` query param pins the request to
+	// the exact consulate the user was looking at.
 	const { data: orgService } = useAuthenticatedConvexQuery(
 		api.functions.services.getOrgServiceBySlug,
 		{
 			slug,
+			orgSlug,
 		},
 	);
 
@@ -60,6 +64,14 @@ export default function NewRequestRedirect() {
 			// Service not found
 			if (orgService === null) {
 				setError(t("services.notFound"));
+				return;
+			}
+
+			// Deep-linked from a partner site but the consulate deactivated
+			// this service: surface that explicitly instead of creating a
+			// draft on an inactive orgService.
+			if (orgSlug && !orgService.isActive) {
+				setError(t("services.notAvailableAtOrg"));
 				return;
 			}
 
@@ -93,7 +105,7 @@ export default function NewRequestRedirect() {
 			}
 		}
 		handleRedirect();
-	}, [orgService, existingDraft, createDraft, router, t]);
+	}, [orgService, existingDraft, createDraft, router, t, orgSlug]);
 
 	// Error state
 	if (error) {

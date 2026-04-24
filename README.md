@@ -238,6 +238,23 @@ CONVEX_DEPLOYMENT=dev:<deployment-name> bunx convex env set TRUSTED_ORIGINS "htt
 CONVEX_DEPLOYMENT=prod:<deployment-name> bunx convex env set TRUSTED_ORIGINS "https://domaine1.com,https://domaine2.com,..."
 ```
 
+### Sites partenaires externes
+
+Le site `france.consulat.ga` consomme le catalogue de services via un
+second `ConvexReactClient` pointé sur ce déploiement. Il faut donc
+inclure ses origines dans `TRUSTED_ORIGINS` :
+
+```
+https://france.consulat.ga,https://staging.france.consulat.ga
+```
+
+Les queries exposées (`convex/functions/publicServices.ts`) sont
+**non authentifiées** et ne renvoient que des données destinées à
+l'affichage public. Les mutations d'administration
+(`setOrgServiceActive`, etc.) restent protégées par Better Auth — l'admin
+doit donc être connecté à diplomate.ga pour piloter l'activation depuis
+l'interface france.consulat.ga.
+
 ## Licence
 
 Propriétaire — OKATech / République Gabonaise

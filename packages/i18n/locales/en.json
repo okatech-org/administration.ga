@@ -154,6 +154,7 @@
 		"availableCount_other": "{{count}} services available",
 		"notFound": "Service not found",
 		"notFoundDesc": "This service does not exist or is not available.",
+		"notAvailableAtOrg": "This service is not currently available at this consulate. Browse the other available services.",
 		"modal": {
 			"eligibleBeneficiaries": "Eligible Beneficiaries",
 			"citizens": "Gabonese Citizens",

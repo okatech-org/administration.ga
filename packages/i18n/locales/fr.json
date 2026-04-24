@@ -158,6 +158,7 @@
 		"availableCount_other": "{{count}} services disponibles",
 		"notFound": "Service introuvable",
 		"notFoundDesc": "Ce service n'existe pas ou n'est pas disponible.",
+		"notAvailableAtOrg": "Ce service n'est pas actuellement disponible dans cette représentation. Consultez les autres services proposés.",
 		"modal": {
 			"eligibleBeneficiaries": "Bénéficiaires éligibles",
 			"citizens": "Citoyens gabonais",
