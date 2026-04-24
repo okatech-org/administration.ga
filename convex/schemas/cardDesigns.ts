@@ -39,6 +39,8 @@ const cardElementValidator = v.object({
 	fieldKey: v.string(),
 	// Image
 	imageData: v.union(v.string(), v.null()),
+	// Image mask — optionnel pour rétro-compat (undefined ≡ "none")
+	mask: v.optional(v.union(v.literal("none"), v.literal("circle"))),
 	// Shape
 	fillColor: v.string(),
 	strokeColor: v.string(),

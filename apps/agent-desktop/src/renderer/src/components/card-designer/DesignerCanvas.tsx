@@ -111,15 +111,32 @@ function CardElementRenderer({
     }
     case "image": {
       if (image) {
-        shape = (
-          <KImage
-            {...commonProps}
-            image={image}
-            width={element.width}
-            height={element.height}
-            cornerRadius={element.cornerRadius}
-          />
-        )
+        const mask = element.mask ?? "none"
+        if (mask === "none") {
+          shape = (
+            <KImage
+              {...commonProps}
+              image={image}
+              width={element.width}
+              height={element.height}
+              cornerRadius={element.cornerRadius}
+            />
+          )
+        } else {
+          // Masque circle live via clipFunc sur un Group — s'applique aussi au rendu d'export
+          const w = element.width
+          const h = element.height
+          const clipFunc = (ctx: Konva.Context) => {
+            ctx.beginPath()
+            ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, Math.PI * 2)
+            ctx.closePath()
+          }
+          shape = (
+            <Group {...commonProps} width={w} height={h} clipFunc={clipFunc}>
+              <KImage image={image} width={w} height={h} />
+            </Group>
+          )
+        }
       } else {
         // Placeholder
         shape = (

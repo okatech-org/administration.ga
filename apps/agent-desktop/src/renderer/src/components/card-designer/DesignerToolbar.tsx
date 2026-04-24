@@ -10,6 +10,7 @@ import {
   Redo2,
   RectangleHorizontal,
   Save,
+  Sparkles,
   Trash2,
   Type,
   Undo2,
@@ -44,6 +45,8 @@ interface DesignerToolbarProps {
   onTogglePreview: () => void
   previewProfile: CitizenProfileData | null
   onSelectPreviewProfile: (profile: CitizenProfileData | null) => void
+  // AI generation
+  onOpenAIGeneration: () => void
   // Connection
   isConnected: boolean
 }
@@ -70,6 +73,7 @@ export function DesignerToolbar({
   onTogglePreview,
   previewProfile,
   onSelectPreviewProfile,
+  onOpenAIGeneration,
   isConnected,
 }: DesignerToolbarProps) {
   const [showFieldMenu, setShowFieldMenu] = useState(false)
@@ -174,6 +178,17 @@ export function DesignerToolbar({
           </>
         )}
       </div>
+
+      {/* AI generation */}
+      <button
+        onClick={onOpenAIGeneration}
+        title="Générer un design avec l'IA"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg
+          bg-primary/10 border border-primary/30 text-primary hover:bg-primary/15 transition-colors"
+      >
+        <Sparkles className="size-3.5" />
+        IA
+      </button>
 
       <div className="flex-1" />
 

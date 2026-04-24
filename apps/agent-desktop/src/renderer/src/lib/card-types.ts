@@ -7,6 +7,8 @@ export const CARD_HEIGHT = 648
 
 export type ElementType = "text" | "image" | "qrCode" | "barcode" | "rectangle" | "circle" | "line"
 export type TextAlignment = "left" | "center" | "right"
+/** Masque de détourage appliqué au rendu d'une image (aperçu ET impression). */
+export type ImageMask = "none" | "circle"
 
 export interface CardElement {
   id: string
@@ -32,6 +34,8 @@ export interface CardElement {
   fieldKey: string
   // Image
   imageData: string | null
+  /** Masque de détourage de l'image. Optionnel — undefined ≡ "none" pour rétro-compat. */
+  mask?: ImageMask
   // Shape
   fillColor: string
   strokeColor: string
@@ -95,6 +99,7 @@ const DEFAULTS: Record<ElementType, Partial<CardElement>> = {
     strokeWidth: 1,
     cornerRadius: 0,
     imageData: null,
+    mask: "none",
     codeContent: "",
     isDynamicField: false,
     fieldKey: "",

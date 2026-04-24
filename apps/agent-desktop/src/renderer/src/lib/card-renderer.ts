@@ -199,14 +199,33 @@ async function renderElement(
       if (imageSrc) {
         try {
           const img = await loadImageFromUrl(imageSrc)
-          layer.add(new Konva.Image({
-            ...commonConfig,
-            image: img,
-            width: el.width,
-            height: el.height,
-            cornerRadius: el.cornerRadius,
-          }))
-          console.log(`[CardRenderer] IMAGE loaded OK: ${img.width}×${img.height}`)
+          const mask = el.mask ?? "none"
+          if (mask === "circle") {
+            // Group avec clipFunc circulaire — le BMP envoyé à Evolis aura l'image clippée
+            const w = el.width
+            const h = el.height
+            const group = new Konva.Group({
+              ...commonConfig,
+              width: w,
+              height: h,
+              clipFunc: (ctx) => {
+                ctx.beginPath()
+                ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, Math.PI * 2)
+                ctx.closePath()
+              },
+            })
+            group.add(new Konva.Image({ image: img, width: w, height: h }))
+            layer.add(group)
+          } else {
+            layer.add(new Konva.Image({
+              ...commonConfig,
+              image: img,
+              width: el.width,
+              height: el.height,
+              cornerRadius: el.cornerRadius,
+            }))
+          }
+          console.log(`[CardRenderer] IMAGE loaded OK: ${img.width}×${img.height} mask=${mask}`)
         } catch (err) {
           console.error(`[CardRenderer] IMAGE FAILED to load:`, err)
           renderPlaceholder(layer, el, commonConfig)

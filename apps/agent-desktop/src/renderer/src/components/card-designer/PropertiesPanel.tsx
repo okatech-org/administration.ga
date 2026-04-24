@@ -339,12 +339,38 @@ export function PropertiesPanel({
               </button>
             </Field>
           )}
-          <NumberField
-            label="Arrondi"
-            value={element.cornerRadius}
-            onChange={(v) => update({ cornerRadius: v })}
-            min={0}
-          />
+          <Field label="Détourage">
+            <div className="flex bg-muted rounded-lg p-0.5">
+              <button
+                onClick={() => update({ mask: "none" })}
+                className={`flex-1 px-2 py-1 text-[11px] font-medium rounded-md transition-colors
+                  ${(element.mask ?? "none") === "none"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                  }`}
+              >
+                Aucun
+              </button>
+              <button
+                onClick={() => update({ mask: "circle" })}
+                className={`flex-1 px-2 py-1 text-[11px] font-medium rounded-md transition-colors
+                  ${element.mask === "circle"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                  }`}
+              >
+                Cercle
+              </button>
+            </div>
+          </Field>
+          {(element.mask ?? "none") === "none" && (
+            <NumberField
+              label="Arrondi"
+              value={element.cornerRadius}
+              onChange={(v) => update({ cornerRadius: v })}
+              min={0}
+            />
+          )}
         </Section>
       )}
 

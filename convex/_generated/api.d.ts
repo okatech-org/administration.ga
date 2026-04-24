@@ -80,6 +80,7 @@ import type * as functions_callLines from "../functions/callLines.js";
 import type * as functions_callNotes from "../functions/callNotes.js";
 import type * as functions_callRecordings from "../functions/callRecordings.js";
 import type * as functions_cardDesigns from "../functions/cardDesigns.js";
+import type * as functions_cardDesignsAI from "../functions/cardDesignsAI.js";
 import type * as functions_chats from "../functions/chats.js";
 import type * as functions_childProfiles from "../functions/childProfiles.js";
 import type * as functions_citizenContacts from "../functions/citizenContacts.js";
@@ -412,6 +413,7 @@ declare const fullApi: ApiFromModules<{
   "functions/callNotes": typeof functions_callNotes;
   "functions/callRecordings": typeof functions_callRecordings;
   "functions/cardDesigns": typeof functions_cardDesigns;
+  "functions/cardDesignsAI": typeof functions_cardDesignsAI;
   "functions/chats": typeof functions_chats;
   "functions/childProfiles": typeof functions_childProfiles;
   "functions/citizenContacts": typeof functions_citizenContacts;

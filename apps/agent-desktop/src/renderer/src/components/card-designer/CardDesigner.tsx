@@ -14,6 +14,7 @@ import { DEFAULT_TEMPLATES } from "../../lib/default-card-templates"
 import { DesignerCanvas } from "./DesignerCanvas"
 import { DesignerToolbar } from "./DesignerToolbar"
 import { PropertiesPanel } from "./PropertiesPanel"
+import { AIGenerationDialog } from "./AIGenerationDialog"
 import { toast } from "../../lib/toast"
 
 export function CardDesigner() {
@@ -26,6 +27,9 @@ export function CardDesigner() {
   const [previewProfile, setPreviewProfile] = useState<CitizenProfileData | null>(
     SAMPLE_PROFILES[0].data,
   )
+
+  // AI generation dialog
+  const [isAIDialogOpen, setIsAIDialogOpen] = useState(false)
 
   // Auth & org
   const { isAuthenticated } = useConvexAuth()
@@ -321,6 +325,7 @@ export function CardDesigner() {
         onTogglePreview={togglePreview}
         previewProfile={previewProfile}
         onSelectPreviewProfile={setPreviewProfile}
+        onOpenAIGeneration={() => setIsAIDialogOpen(true)}
         isConnected={isAuthenticated}
       />
 
@@ -364,6 +369,15 @@ export function CardDesigner() {
           />
         )}
       </div>
+
+      <AIGenerationDialog
+        open={isAIDialogOpen}
+        onClose={() => setIsAIDialogOpen(false)}
+        entityId={state.entityId}
+        currentName={state.name}
+        currentDescription={state.description}
+        onApply={(design) => dispatch({ type: "LOAD_DESIGN", design })}
+      />
 
       {/* Shortcuts help — subtle hint at bottom */}
       <div className="flex items-center justify-center gap-6 px-4 py-1.5 bg-muted/50 border-t border-border text-[10px] text-muted-foreground/60">
