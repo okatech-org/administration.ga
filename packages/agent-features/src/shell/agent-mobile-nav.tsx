@@ -108,7 +108,7 @@ export function AgentMobileNav() {
 	return (
 		<>
 			{/* Fixed bottom nav */}
-			<div className="fixed left-3 right-3 z-40 md:hidden bottom-[calc(0.8rem+env(safe-area-inset-bottom,0px))]">
+			<div className="fixed left-3 right-3 z-40 md:hidden bottom-[calc(0.8rem+env(safe-area-inset-bottom,0px))] print:hidden">
 				<div className="bg-secondary backdrop-blur-md rounded-2xl">
 					<div className="flex items-center justify-around px-2 h-[60px]">
 						{mainItems.map((item) => (

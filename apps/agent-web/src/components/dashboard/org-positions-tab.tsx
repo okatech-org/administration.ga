@@ -175,6 +175,7 @@ const TASK_LABELS: Record<string, { fr: string; en: string }> = {
 	"team.view": { fr: "Consulter l'équipe", en: "View team" },
 	"team.manage": { fr: "Gérer l'équipe", en: "Manage team" },
 	"team.assign_roles": { fr: "Attribuer les rôles", en: "Assign roles" },
+	"team.supervise": { fr: "Superviser les agents", en: "Supervise agents" },
 	"settings.view": { fr: "Consulter les paramètres", en: "View settings" },
 	"settings.manage": { fr: "Modifier les paramètres", en: "Manage settings" },
 	"org.view": { fr: "Consulter l'organisation", en: "View organization" },

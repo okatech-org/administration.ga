@@ -182,11 +182,12 @@ function DashboardLayout({
 		<div
 			className={cn(
 				"citizen-layout relative flex h-dvh flex-col overflow-hidden md:flex-row md:h-screen",
+				"print:block print:h-auto print:overflow-visible",
 				consularTheme === "homeomorphism" && "theme-homeomorphism",
 			)}
 		>
 			{beforeChildren}
-			<div className="hidden md:block p-4 pr-0">
+			<div className="hidden md:block p-4 pr-0 print:hidden">
 				<div className="h-full rounded-2xl bg-secondary overflow-hidden">
 					<OrgSidebar
 						isExpanded={isExpanded}
@@ -195,7 +196,7 @@ function DashboardLayout({
 					/>
 				</div>
 			</div>
-			<main className="flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4">
+			<main className="flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4 print:overflow-visible print:p-0">
 				{children}
 			</main>
 			<AgentMobileNav />

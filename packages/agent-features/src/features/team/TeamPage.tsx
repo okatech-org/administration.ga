@@ -22,8 +22,9 @@ import {
 	Users,
 	XCircle,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useRouter, useSearchParams, usePathname } from "@workspace/routing";
 import { toast } from "sonner";
 import { OrgRolesPanel } from "./components/org-roles-panel";
 import { TeamSupervisionPanel } from "./components/team-supervision-panel";
@@ -131,6 +132,27 @@ export default function DashboardTeam() {
 	const { canDo, isReady } = useCanDoTask(activeOrgId ?? undefined);
 	const showSupervision =
 		hasCapability("team", "supervise") && isReady && canDo("team.supervise");
+
+	// Sync active tab with the URL (?tab=…) so deep-links + back/forward work.
+	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
+	const validTabs = useMemo(() => {
+		const base = ["orgchart", "config", "permissions"];
+		return showSupervision ? [...base, "supervision"] : base;
+	}, [showSupervision]);
+	const urlTab = searchParams?.get("tab") ?? undefined;
+	const activeTab = urlTab && validTabs.includes(urlTab) ? urlTab : "orgchart";
+	const handleTabChange = useCallback(
+		(value: string) => {
+			const next = new URLSearchParams(searchParams?.toString() ?? "");
+			if (value === "orgchart") next.delete("tab");
+			else next.set("tab", value);
+			const qs = next.toString();
+			router.replace(qs ? `${pathname}?${qs}` : pathname);
+		},
+		[router, pathname, searchParams],
+	);
 
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
 	const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
@@ -279,7 +301,7 @@ export default function DashboardTeam() {
 			</div>
 
 			{/* ─── Tabs ──────────────────────────────── */}
-			<Tabs defaultValue="orgchart">
+			<Tabs value={activeTab} onValueChange={handleTabChange}>
 				<TabsList>
 					<TabsTrigger value="orgchart">
 						<Network className="h-4 w-4" />

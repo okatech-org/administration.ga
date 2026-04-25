@@ -182,7 +182,7 @@ export function WindowShell({
 					style={{ zIndex: Z_INDEX.window }}
 					className={cn(
 						// Position — mobile bottom sheet, desktop dock bottom-right
-						"fixed left-0 right-0 bottom-0 flex flex-col overflow-hidden sm:left-auto sm:right-6 sm:bottom-6",
+						"fixed left-0 right-0 bottom-0 flex flex-col overflow-hidden sm:left-auto sm:right-6 sm:bottom-6 print:hidden",
 						// Dimensions — 420×min(640,vh-100) desktop, 85dvh mobile (modèle citizen)
 						"h-[85dvh] sm:w-[420px] sm:h-[min(640px,calc(100vh-100px))]",
 						// Surface + border subtile + rounded

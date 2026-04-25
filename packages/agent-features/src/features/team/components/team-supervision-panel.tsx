@@ -131,7 +131,7 @@ export function TeamSupervisionPanel({ orgId }: Props) {
 				)}
 			</div>
 
-			{/* Liste membres */}
+			{/* Grille de cards */}
 			{filtered.length === 0 ? (
 				<FlatCard>
 					<div className="p-8 text-center text-muted-foreground text-sm">
@@ -142,73 +142,80 @@ export function TeamSupervisionPanel({ orgId }: Props) {
 					</div>
 				</FlatCard>
 			) : (
-				<FlatCard>
-					<ul className="divide-y">
-						{filtered.map((m) => {
-							const initials = m.name
-								.split(" ")
-								.map((s) => s[0])
-								.filter(Boolean)
-								.slice(0, 2)
-								.join("")
-								.toUpperCase();
-							const positionLabel = getLocalizedValue(m.positionTitle, lang);
-							const groupLabel = getLocalizedValue(m.ministryGroupLabel, lang);
+				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+					{filtered.map((m) => {
+						const initials = m.name
+							.split(" ")
+							.map((s) => s[0])
+							.filter(Boolean)
+							.slice(0, 2)
+							.join("")
+							.toUpperCase();
+						const positionLabel = getLocalizedValue(m.positionTitle, lang);
+						const groupLabel = getLocalizedValue(m.ministryGroupLabel, lang);
 
-							return (
-								<li
-									key={m.membershipId}
-									className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 lg:p-4"
-								>
-									<div className="flex items-center gap-3 min-w-0 flex-1">
-										<Avatar className="h-10 w-10 shrink-0">
+						return (
+							<FlatCard key={m.membershipId}>
+								<div className="flex flex-col h-full p-4 gap-4">
+									<div className="flex items-start gap-3">
+										<Avatar className="h-12 w-12 shrink-0">
 											{m.avatarUrl && <AvatarImage src={m.avatarUrl} alt={m.name} />}
 											<AvatarFallback>{initials || "?"}</AvatarFallback>
 										</Avatar>
-										<div className="min-w-0">
-											<p className="font-medium truncate">{m.name}</p>
+										<div className="min-w-0 flex-1">
+											<p className="font-semibold truncate">{m.name}</p>
 											<p className="text-xs text-muted-foreground truncate">
 												{positionLabel ?? "—"}
-												{groupLabel ? ` · ${groupLabel}` : ""}
+											</p>
+											{groupLabel && (
+												<Badge variant="outline" className="mt-1 text-[10px] font-normal">
+													{groupLabel}
+												</Badge>
+											)}
+										</div>
+									</div>
+
+									<div className="grid grid-cols-2 gap-2 text-xs">
+										<div className="rounded-lg bg-muted/40 p-2">
+											<p className="text-base font-bold tabular-nums leading-none">
+												{m.assigned}
+											</p>
+											<p className="text-[10px] uppercase text-muted-foreground mt-1">
+												{t("admin.team.supervision.assigned", "Assignées")}
+											</p>
+										</div>
+										<div className="rounded-lg bg-muted/40 p-2">
+											<p className="text-base font-bold tabular-nums leading-none">
+												{m.completed}
+											</p>
+											<p className="text-[10px] uppercase text-muted-foreground mt-1">
+												{t("admin.team.supervision.completed", "Traitées")}
+											</p>
+										</div>
+										<div className="rounded-lg bg-muted/40 p-2">
+											<p className="text-base font-bold tabular-nums leading-none">
+												{m.completionRate}%
+											</p>
+											<p className="text-[10px] uppercase text-muted-foreground mt-1">
+												{t("admin.team.supervision.rate", "Taux")}
+											</p>
+										</div>
+										<div className="rounded-lg bg-muted/40 p-2">
+											<p className="text-base font-bold tabular-nums leading-none">
+												{m.upcomingAppointmentsCount}
+											</p>
+											<p className="text-[10px] uppercase text-muted-foreground mt-1">
+												{t("admin.team.supervision.rdv", "RDV")}
 											</p>
 										</div>
 									</div>
 
-									<div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs">
-										<div className="flex flex-col items-end">
-											<span className="font-semibold tabular-nums">{m.assigned}</span>
-											<span className="text-[10px] uppercase text-muted-foreground">
-												{t("admin.team.supervision.assigned", "Assignées")}
-											</span>
-										</div>
-										<div className="flex flex-col items-end">
-											<span className="font-semibold tabular-nums">{m.completed}</span>
-											<span className="text-[10px] uppercase text-muted-foreground">
-												{t("admin.team.supervision.completed", "Traitées")}
-											</span>
-										</div>
-										<div className="flex flex-col items-end">
-											<span className="font-semibold tabular-nums">{m.completionRate}%</span>
-											<span className="text-[10px] uppercase text-muted-foreground">
-												{t("admin.team.supervision.rate", "Taux")}
-											</span>
-										</div>
-										<div className="flex flex-col items-end">
-											<span className="font-semibold tabular-nums">
-												{m.upcomingAppointmentsCount}
-											</span>
-											<span className="text-[10px] uppercase text-muted-foreground">
-												{t("admin.team.supervision.rdv", "RDV")}
-											</span>
-										</div>
-									</div>
-
-									<div className="flex items-center gap-2">
+									<div className="mt-auto flex items-center gap-2">
 										<Link
 											href={`/team/agents/${m.membershipId}`}
-											className="inline-flex"
+											className="inline-flex flex-1"
 										>
-											<Button variant="outline" size="sm" className="gap-1">
+											<Button variant="outline" size="sm" className="w-full gap-1">
 												<Eye className="h-3.5 w-3.5" />
 												{t("admin.team.supervision.view", "Voir")}
 											</Button>
@@ -221,15 +228,14 @@ export function TeamSupervisionPanel({ orgId }: Props) {
 										>
 											<Button variant="ghost" size="sm" className="gap-1">
 												<Printer className="h-3.5 w-3.5" />
-												{t("admin.team.supervision.print", "Imprimer")}
 											</Button>
 										</Link>
 									</div>
-								</li>
-							);
-						})}
-					</ul>
-				</FlatCard>
+								</div>
+							</FlatCard>
+						);
+					})}
+				</div>
 			)}
 		</div>
 	);

@@ -97,7 +97,7 @@ export function IAstedWindow({ renderTab, renderCallQueueSlot }: IAstedWindowPro
 			{!open && (
 				<div
 					suppressHydrationWarning
-					className="fixed bottom-[62px] right-[62px] z-40 hidden lg:block"
+					className="fixed bottom-[62px] right-[62px] z-40 hidden lg:block print:hidden"
 				>
 					<CircleMenu
 						items={menuItems}
