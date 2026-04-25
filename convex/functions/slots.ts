@@ -1289,6 +1289,164 @@ export const listAppointmentsByOrg = authQuery({
 });
 
 /**
+ * List appointments in a date range, optimised for the printable schedule view.
+ *
+ * Permission model:
+ *   - Caller must hold `appointments.view` on the org.
+ *   - Without `agentId`, results are scoped to the caller's own membership
+ *     (an agent prints their own schedule).
+ *   - Passing an `agentId` other than the caller's requires `appointments.manage`
+ *     (a manager prints another agent's schedule).
+ *
+ * Returns appointments enriched with attendee (firstName/lastName/email/phone),
+ * service name, related request reference, agent display info, and notes —
+ * everything needed for an agent to walk into the appointment prepared.
+ *
+ * Sorted by date+time ascending (chronological planning order).
+ */
+export const listAppointmentsForPrint = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+    from: v.string(), // YYYY-MM-DD inclusive
+    to: v.string(),   // YYYY-MM-DD inclusive
+    agentId: v.optional(v.id("memberships")),
+    status: v.optional(appointmentStatusValidator),
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "appointments.view");
+
+    // Caller must specify an agent explicitly when they have no membership
+    // in the org (superadmin scenario) — we can't infer "their own" planning.
+    const callerAgentId = membership?._id ?? null;
+    const targetAgentId = args.agentId ?? callerAgentId;
+    if (!targetAgentId) {
+      throw error(ErrorCode.VALIDATION_ERROR);
+    }
+
+    if (targetAgentId !== callerAgentId) {
+      await assertCanDoTask(ctx, ctx.user, membership, "appointments.manage");
+    }
+
+    let appointments = await ctx.db
+      .query("appointments")
+      .withIndex("by_agent_date", (q) =>
+        q
+          .eq("agentId", targetAgentId)
+          .gte("date", args.from)
+          .lte("date", args.to),
+      )
+      .take(500);
+
+    // Defensive: ensure org match (agentId is unique per org but be safe).
+    appointments = appointments.filter((apt) => apt.orgId === args.orgId);
+
+    if (args.status) {
+      appointments = appointments.filter((apt) => apt.status === args.status);
+    }
+
+    // Enrich with attendee, service, request, agent
+    const agentUserCache = new Map<string, { firstName?: string; lastName?: string; email?: string }>();
+    const enriched = await Promise.all(
+      appointments.map(async (apt) => {
+        const [attendeeProfile, request] = await Promise.all([
+          ctx.db.get(apt.attendeeProfileId),
+          apt.requestId ? ctx.db.get(apt.requestId) : null,
+        ]);
+
+        let service = null;
+        if (apt.orgServiceId) {
+          const orgSvc = await ctx.db.get(apt.orgServiceId);
+          if (orgSvc) service = await ctx.db.get(orgSvc.serviceId);
+        }
+
+        let agent: { firstName?: string; lastName?: string; email?: string } | null = null;
+        if (apt.agentId) {
+          const cached = agentUserCache.get(apt.agentId);
+          if (cached) {
+            agent = cached;
+          } else {
+            const ms = await ctx.db.get(apt.agentId);
+            if (ms) {
+              const user = await ctx.db.get(ms.userId);
+              if (user) {
+                agent = {
+                  firstName: user.firstName,
+                  lastName: user.lastName,
+                  email: user.email,
+                };
+                agentUserCache.set(apt.agentId, agent);
+              }
+            }
+          }
+        }
+
+        return {
+          ...apt,
+          attendee: attendeeProfile
+            ? {
+                userId: attendeeProfile.userId,
+                firstName: attendeeProfile.identity?.firstName,
+                lastName: attendeeProfile.identity?.lastName,
+                email: attendeeProfile.contacts?.email,
+                phone: attendeeProfile.contacts?.phone,
+              }
+            : null,
+          service: service ? { name: service.name } : null,
+          request: request
+            ? { _id: request._id, reference: request.reference, status: request.status }
+            : null,
+          agent,
+        };
+      }),
+    );
+
+    // Chronological order: date asc, then time asc.
+    return enriched.sort((a, b) => {
+      const dateCompare = a.date.localeCompare(b.date);
+      if (dateCompare !== 0) return dateCompare;
+      return a.time.localeCompare(b.time);
+    });
+  },
+});
+
+/**
+ * List the org's agents (memberships) for the print-page agent selector.
+ * Gated on `appointments.manage` since only managers need to switch agents.
+ */
+export const listOrgAgentsForAppointments = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "appointments.manage");
+
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .collect();
+
+    const agents = await Promise.all(
+      memberships.map(async (m) => {
+        const user = await ctx.db.get(m.userId);
+        return user
+          ? {
+              _id: m._id, // membership ID = agentId
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email,
+            }
+          : null;
+      }),
+    );
+
+    return agents.filter((a): a is NonNullable<typeof a> => a !== null);
+  },
+});
+
+/**
  * ============================================================================
  * iCal EXPORT
  * ============================================================================

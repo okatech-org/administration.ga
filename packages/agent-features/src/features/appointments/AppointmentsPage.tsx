@@ -17,6 +17,7 @@ import {
 	Eye,
 	FileText,
 	List,
+	Printer,
 	User,
 	UserX,
 	X,
@@ -608,6 +609,28 @@ export default function DashboardAppointments() {
 					>
 						<Clock className="mr-2 h-4 w-4" />
 						{t("appointments.waitlist.cta", "Liste d'attente")}
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => {
+							const params = new URLSearchParams();
+							if (viewMode === "calendar") {
+								params.set("period", "month");
+								params.set("anchor", `${calendarMonth}-01`);
+							} else if (dateFilter) {
+								params.set("period", "day");
+								params.set("anchor", dateFilter);
+							} else {
+								params.set("period", "week");
+							}
+							params.set("autoPrint", "1");
+							const url = `/appointments/print?${params.toString()}`;
+							window.open(url, "_blank", "noopener");
+						}}
+					>
+						<Printer className="mr-2 h-4 w-4" />
+						{t("dashboard.appointments.print", "Imprimer")}
 					</Button>
 					<Tabs
 						value={viewMode}
