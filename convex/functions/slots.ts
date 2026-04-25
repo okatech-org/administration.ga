@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import { authQuery, authMutation } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
-import { assertCanDoTask } from "../lib/permissions";
+import { assertCanDoTask, canDoTask } from "../lib/permissions";
+import { canSuperviseAgent } from "./management";
 import { error, ErrorCode } from "../lib/errors";
 import { getOrgSchedule } from "../lib/orgHelpers";
 import {
@@ -1295,8 +1296,9 @@ export const listAppointmentsByOrg = authQuery({
  *   - Caller must hold `appointments.view` on the org.
  *   - Without `agentId`, results are scoped to the caller's own membership
  *     (an agent prints their own schedule).
- *   - Passing an `agentId` other than the caller's requires `appointments.manage`
- *     (a manager prints another agent's schedule).
+ *   - Passing an `agentId` other than the caller's requires either
+ *     `appointments.manage` (manager) OR `team.supervise` when the target
+ *     agent is in the caller's supervision scope (sub-tree by ministryGroup).
  *
  * Returns appointments enriched with attendee (firstName/lastName/email/phone),
  * service name, related request reference, agent display info, and notes —
@@ -1325,7 +1327,18 @@ export const listAppointmentsForPrint = authQuery({
     }
 
     if (targetAgentId !== callerAgentId) {
-      await assertCanDoTask(ctx, ctx.user, membership, "appointments.manage");
+      // Manager (appointments.manage) OU superviseur (team.supervise) avec
+      // l'agent cible dans son sous-arbre.
+      const canManage = await canDoTask(ctx, ctx.user, membership, "appointments.manage");
+      if (!canManage) {
+        const canSupervise = await canDoTask(ctx, ctx.user, membership, "team.supervise");
+        const target = canSupervise ? await ctx.db.get(targetAgentId) : null;
+        const allowed =
+          canSupervise && target && (await canSuperviseAgent(ctx, membership, target));
+        if (!allowed) {
+          throw error(ErrorCode.FORBIDDEN);
+        }
+      }
     }
 
     let appointments = await ctx.db

@@ -10,6 +10,7 @@ import {
 	ChevronRight,
 	ChevronsUpDown,
 	CircleDot,
+	LineChart,
 	MoreHorizontal,
 	Network,
 	Settings2,
@@ -25,11 +26,14 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { OrgRolesPanel } from "./components/org-roles-panel";
+import { TeamSupervisionPanel } from "./components/team-supervision-panel";
 import { CallButton } from "../../components/meetings/call-button";
 import { AddMemberDialog } from "../../components/org/add-member-dialog";
 import { MemberPermissionsDialog } from "./components/member-permissions-dialog";
 import { useOrg } from "../../shell/org-provider";
 import { useModuleAccess } from "../../components/shared/access-gate";
+import { useOrgModules } from "../../hooks/useOrgModules";
+import { useCanDoTask } from "../../hooks/useCanDoTask";
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
@@ -123,6 +127,10 @@ export default function DashboardTeam() {
 	const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 	const { hasMin: hasTeamAccess } = useModuleAccess("team");
 	const canAdminTeam = hasTeamAccess("admin");
+	const { hasCapability } = useOrgModules();
+	const { canDo, isReady } = useCanDoTask(activeOrgId ?? undefined);
+	const showSupervision =
+		hasCapability("team", "supervise") && isReady && canDo("team.supervise");
 
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
 	const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
@@ -277,6 +285,12 @@ export default function DashboardTeam() {
 						<Network className="h-4 w-4" />
 						{t("admin.team.tabs.orgchart", "Organigramme")}
 					</TabsTrigger>
+					{showSupervision && (
+						<TabsTrigger value="supervision">
+							<LineChart className="h-4 w-4" />
+							{t("admin.team.tabs.supervision", "Supervision")}
+						</TabsTrigger>
+					)}
 					<TabsTrigger value="config">
 						<Settings2 className="h-4 w-4" />
 						{t("admin.team.tabs.config", "Configuration")}
@@ -526,6 +540,13 @@ export default function DashboardTeam() {
 				</FlatCard>
 			)}
 				</TabsContent>
+
+				{/* ═══ Tab Supervision (Management — voir les agents du sous-arbre) ═══ */}
+				{showSupervision && activeOrgId && (
+					<TabsContent value="supervision" className="mt-4">
+						<TeamSupervisionPanel orgId={activeOrgId} />
+					</TabsContent>
+				)}
 
 				{/* ═══ Tab 2: Configuration (postes & rôles) ═══ */}
 				<TabsContent value="config" className="mt-4">

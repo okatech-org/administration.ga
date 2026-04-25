@@ -86,6 +86,9 @@ export const TaskCode = {
     view: "team.view",
     manage: "team.manage",
     assign_roles: "team.assign_roles",
+    /** Supervision opérationnelle : voir les membres de son sous-arbre,
+     * leurs stats, RDV et demandes traitées. Lecture seule. */
+    supervise: "team.supervise",
   },
   settings: {
     view: "settings.view",
@@ -310,6 +313,7 @@ export const taskCodeValidator = v.union(
   v.literal(TaskCode.team.view),
   v.literal(TaskCode.team.manage),
   v.literal(TaskCode.team.assign_roles),
+  v.literal(TaskCode.team.supervise),
   // Settings
   v.literal(TaskCode.settings.view),
   v.literal(TaskCode.settings.manage),
@@ -454,6 +458,7 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   [TaskCode.team.view]: "low",
   [TaskCode.team.manage]: "high",
   [TaskCode.team.assign_roles]: "critical",
+  [TaskCode.team.supervise]: "medium",
   // Settings
   [TaskCode.settings.view]: "low",
   [TaskCode.settings.manage]: "high",

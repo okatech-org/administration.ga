@@ -466,6 +466,12 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     color: "text-blue-500",
     category: "admin",
     isCore: true,
+    capabilities: [
+      {
+        code: "supervise",
+        label: { fr: "Supervision opérationnelle", en: "Operational supervision" },
+      },
+    ],
   },
   [ModuleCode.roles]: {
     code: ModuleCode.roles,
@@ -710,8 +716,8 @@ export const MODULE_ACCESS_TASKS: Partial<Record<string, Record<ModuleAccessLeve
   },
   team: {
     reader: ["team.view"],
-    editor: ["team.view", "team.manage"],
-    admin: ["team.view", "team.manage", "team.assign_roles"],
+    editor: ["team.view", "team.manage", "team.supervise"],
+    admin: ["team.view", "team.manage", "team.supervise", "team.assign_roles"],
   },
   settings: {
     reader: ["settings.view"],
