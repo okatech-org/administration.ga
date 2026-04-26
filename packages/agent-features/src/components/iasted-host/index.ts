@@ -16,6 +16,9 @@ export { IAstedSettingsTab } from "./IAstedSettingsTab";
 // ─── Colonnes iChat (adapter prêt-à-l'emploi) ─────────────────
 export { IAstedChatColumns } from "./IAstedChatColumns";
 
+// ─── Chat IA only (pour le side panel Cmd+K) ──────────────────
+export { IAstedAIChatPanel } from "./IAstedAIChatPanel";
+
 // ─── iChat primitives (si un appelant veut composer différemment) ──
 export {
 	IASTED_CONTACT,

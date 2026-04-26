@@ -44,6 +44,10 @@ import {
 import { AgentMobileNav } from "./agent-mobile-nav";
 import { GlobalCallAlert } from "./global-call-alert";
 import { IAstedWindow } from "./iasted-window";
+import {
+	IAstedSidePanel,
+	useIAstedSidePanel,
+} from "./iasted-side-panel";
 import { OrgProvider, useOrg } from "./org-provider";
 import { OrgSidebar, type NavSection } from "./org-sidebar";
 
@@ -126,6 +130,8 @@ function DashboardLayout({
 	const { t } = useTranslation();
 	const { consularTheme } = useConsularTheme();
 	const pathname = usePathname();
+	const { isOpen: isSidePanelOpen, close: closeSidePanel } =
+		useIAstedSidePanel();
 	// La page `/iasted` monte son propre iChat via FullscreenShell ; monter
 	// `IAstedWindow` en parallèle créerait deux instances concurrentes de
 	// `useAdminAIChat` + `useAdminVoiceChat` (conflit de souscriptions Convex
@@ -196,19 +202,26 @@ function DashboardLayout({
 					/>
 				</div>
 			</div>
-			<main
-				className="flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4 print:overflow-visible print:p-0 transition-[padding-right] duration-200 ease-out"
-				style={{
-					// Desktop only : pousse le contenu quand iAsted est ouvert en
-					// side-panel. Sur mobile (< md), le shell rend un bottom-sheet
-					// et la var est ignorée par le viewport (l'override media query
-					// est géré par la condition de la fenêtre elle-même).
-					paddingRight: "var(--iasted-side-panel-width, 0px)",
-				}}
-			>
+			<main className="flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4 print:overflow-visible print:p-0">
 				{children}
 			</main>
+			{/*
+			 * iAsted side panel — chat IA seul, ouvert via Cmd/Ctrl+K.
+			 * Sibling flex de <main> donc le pousse naturellement (pas une
+			 * modale, intégré comme la sidebar gauche).
+			 */}
+			{showIAsted && (
+				<IAstedSidePanel
+					isOpen={isSidePanelOpen}
+					onClose={closeSidePanel}
+				/>
+			)}
 			<AgentMobileNav />
+			{/*
+			 * iAsted floating window — toutes les fonctionnalités (iChat,
+			 * iContact, iCall, iMeeting…). Ouvert via le CircleMenu FAB ou
+			 * l'event `iasted:open` (mobile nav, etc.).
+			 */}
 			{showIAsted && (
 				<IAstedWindow
 					renderTab={renderIAstedTab}

@@ -39,7 +39,6 @@ import { FlatCard } from "../../components/my-space/flat-card";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { Combobox } from "@workspace/ui/components/combobox";
 import { MultiSelect } from "@workspace/ui/components/multi-select";
-import { Progress } from "@workspace/ui/components/progress";
 import { Table, TableBody, TableCell, TableRow } from "@workspace/ui/components/table";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useCanDoTask } from "../../hooks/useCanDoTask";
@@ -852,7 +851,6 @@ export default function RequestDetailPage({
 									</Badge>
 								)}
 							</div>
-							<Progress value={fieldProgress} className="h-2 mt-3" />
 						</div>
 
 						<div className="p-5">
@@ -876,8 +874,8 @@ export default function RequestDetailPage({
 															className={cn(
 																"flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-xs whitespace-nowrap transition-colors sm:text-sm md:w-full md:whitespace-normal",
 																currentSection === section.id
-																	? "bg-primary font-medium text-primary-foreground"
-																	: "text-muted-foreground hover:bg-muted hover:text-foreground",
+																	? "bg-primary/10 font-medium text-primary border border-primary/20"
+																	: "border border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground",
 															)}
 														>
 															<span className="flex-1 truncate md:truncate-none">{section.title}</span>
@@ -888,7 +886,7 @@ export default function RequestDetailPage({
 																	sectionValidated === sectionTotal
 																		? "bg-green-500/20 text-green-600"
 																		: currentSection === section.id
-																			? "bg-primary-foreground/20 text-primary-foreground"
+																			? "bg-primary/15 text-primary"
 																			: "",
 																)}
 															>
@@ -915,7 +913,7 @@ export default function RequestDetailPage({
 																			onCheckedChange={(checked) => {
 																				toggleFieldValidation({ requestId: request._id, fieldPath, validated: !!checked });
 																			}}
-																			className="shrink-0 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+																			className="shrink-0 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-green-600 dark:data-[state=checked]:border-green-600"
 																		/>
 																		<span className="text-muted-foreground text-sm w-28 shrink-0">{label}</span>
 																		<span className="text-sm truncate">{value}</span>
@@ -1100,7 +1098,7 @@ export default function RequestDetailPage({
 																									validated: !!checked,
 																								});
 																							}}
-																							className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+																							className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-green-600 dark:data-[state=checked]:border-green-600"
 																						/>
 																					</TableCell>
 																					<TableCell className="text-muted-foreground font-medium w-[40%] truncate">

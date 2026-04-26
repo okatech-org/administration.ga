@@ -4,12 +4,16 @@
  * Coquille fine au-dessus de `@workspace/iasted` :
  * - CircleMenu FAB desktop-only (mobile utilise AgentMobileNav → event bus)
  * - Événement `iasted:open` (détail `{ tab }`) pour déclenchement depuis n'importe où
- * - Fenêtre COMPACTE (420×640 desktop, 85dvh mobile)
+ * - Fenêtre COMPACTE flottante (420×640 desktop, 85dvh mobile)
+ * - Toutes les fonctionnalités : iChat, iContact, iCall, iMeeting, iSettings…
  * - Deep-link `/iasted` fullscreen via bouton Maximize (onExpand)
  *
- * Les onglets (iChat, iContact, iCall, iMeeting, iSettings) et la barre
- * d'appels actifs sont INJECTÉS via props pour rester découplés des hooks
- * LLM F2.3 (`useAdminAIChat`, `useAdminVoiceChat`) qui demeurent dans agent-web.
+ * À NE PAS CONFONDRE avec `IAstedSidePanel` (chat IA seul, ouvert via Cmd+K,
+ * intégré comme la sidebar) qui vit dans `iasted-side-panel.tsx`.
+ *
+ * Les onglets et la barre d'appels actifs sont INJECTÉS via props pour rester
+ * découplés des hooks LLM (`useAdminAIChat`, `useAdminVoiceChat`) qui demeurent
+ * dans agent-web.
  */
 
 "use client"
@@ -27,7 +31,6 @@ import {
   type IAstedTabId,
 } from "@workspace/iasted"
 import { useOrg } from "./org-provider"
-import { StreamingExplanationCard } from "../components/iasted-host/StreamingExplanationCard"
 
 export interface IAstedWindowProps {
   /**
@@ -67,50 +70,6 @@ export function IAstedWindow({
     window.addEventListener("iasted:open", handler)
     return () => window.removeEventListener("iasted:open", handler)
   }, [openWithTab])
-
-  // Raccourci global Cmd/Ctrl + K → ouvre/ferme iAsted (cohérent web + desktop)
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault()
-        setOpen((curr) => !curr)
-        if (!open) setActiveTab("ichat")
-      }
-    }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [open])
-
-  // Side panel push : quand iAsted est ouvert ET qu'on est en desktop (sm+),
-  // publie une CSS var `--iasted-side-panel-width` que le shell consomme
-  // pour pousser le main. Sur mobile, le shell garde le bottom-sheet et la
-  // var n'est pas settée (donc le main n'est pas poussé horizontalement).
-  useEffect(() => {
-    const root = document.documentElement
-    const SM_BREAKPOINT = "(min-width: 640px)"
-
-    const apply = () => {
-      const isDesktop =
-        typeof window !== "undefined" &&
-        window.matchMedia(SM_BREAKPOINT).matches
-      if (open && isDesktop) {
-        root.style.setProperty("--iasted-side-panel-width", "420px")
-        root.dataset.iastedSidePanel = "open"
-      } else {
-        root.style.removeProperty("--iasted-side-panel-width")
-        delete root.dataset.iastedSidePanel
-      }
-    }
-
-    apply()
-    const mq = window.matchMedia(SM_BREAKPOINT)
-    mq.addEventListener("change", apply)
-    return () => {
-      mq.removeEventListener("change", apply)
-      root.style.removeProperty("--iasted-side-panel-width")
-      delete root.dataset.iastedSidePanel
-    }
-  }, [open])
 
   const handleExpand = useCallback(() => {
     setOpen(false)
@@ -169,11 +128,7 @@ export function IAstedWindow({
         callQueueSlot={
           renderCallQueueSlot ? renderCallQueueSlot(activeTab) : undefined
         }
-        subHeaderSlot={
-          activeTab === "ichat" ? <StreamingExplanationCard /> : undefined
-        }
         tabContent={tabContent}
-        layout="side-panel"
       />
     </>
   )
