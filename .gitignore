@@ -31,6 +31,9 @@ dist
 .tanstack
 .vinxi
 
+# TypeScript incremental build artefacts
+*.tsbuildinfo
+
 # Debug
 npm-debug.log*
 
