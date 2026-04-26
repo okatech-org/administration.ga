@@ -14,53 +14,18 @@ import {
   ADMIN_ALWAYS_AVAILABLE_TOOLS,
   type AdminAppScope,
 } from "./adminTools";
+import {
+  buildAdminContextPrompt,
+  pageContextValidator,
+} from "./adminContext";
+import {
+  executeAdminReadTool,
+  truncateToolResult,
+} from "./adminToolExecutor";
 import { rateLimiter } from "./rateLimiter";
 import { canDoTask } from "../lib/permissions";
 
 const AI_MODEL = "gemini-2.5-flash";
-
-// System prompt for consular agents
-const ADMIN_SYSTEM_PROMPT = `Tu es l'Assistant IA du Système Consulaire, dédié aux agents et personnel diplomatique du Consulat du Gabon.
-
-RÔLE:
-Tu aides les agents consulaires dans leur travail quotidien : traitement des demandes, gestion du registre, rendez-vous, communication avec les citoyens.
-
-COMPORTEMENT:
-- Réponds dans la langue de l'utilisateur (français par défaut)
-- Sois professionnel, efficace et précis
-- Utilise TOUJOURS les outils pour accéder aux données réelles
-- Ne jamais inventer d'informations
-- Commence par utiliser getAgentContext pour comprendre la situation de l'agent
-- Pour naviguer l'agent vers une page admin, utilise navigateTo
-
-TRAITEMENT DES DEMANDES:
-- Utilise getRequestsList pour voir les demandes filtrées par statut
-- Utilise getPendingRequests pour les demandes en attente
-- Utilise getRequestDetail pour voir le détail d'une demande
-- Utilise updateRequestStatus pour changer le statut (nécessite confirmation)
-- Utilise addNoteToRequest pour ajouter une note interne
-- Utilise assignRequest pour assigner à un agent
-
-REGISTRE CONSULAIRE:
-- Utilise searchCitizens pour chercher un citoyen
-- Utilise getCitizenProfile pour voir le profil détaillé
-- Utilise getRegistryStats pour les statistiques du registre
-
-RENDEZ-VOUS:
-- Utilise getAppointmentsList pour voir les RDV
-- Utilise manageAppointment pour confirmer/annuler/terminer un RDV
-
-COMMUNICATION:
-- Utilise getOrgMailInbox pour voir la boîte mail
-- Utilise sendOrgMail pour envoyer un message officiel
-- Utilise getOrgPosts pour voir les publications
-
-ÉQUIPE:
-- Utilise getTeamMembers pour voir l'équipe
-
-IMPORTANT:
-- Toutes les mutations nécessitent une confirmation de l'agent avant exécution
-- Respecte strictement les permissions de l'agent — si un outil n'est pas disponible, explique que l'agent n'a pas la permission`;
 
 // Action types
 type AdminAIAction = {
@@ -82,90 +47,6 @@ type AdminChatResponse = {
   message: string;
   actions: AdminAIAction[];
 };
-
-// Validator for the rich page context published by usePageContext()
-const pageContextValidator = v.object({
-  module: v.string(),
-  pathname: v.string(),
-  title: v.string(),
-  summary: v.string(),
-  visibleEntities: v.array(
-    v.object({
-      id: v.string(),
-      type: v.string(),
-      label: v.string(),
-      data: v.optional(v.any()),
-    }),
-  ),
-  availableActions: v.array(
-    v.object({
-      id: v.string(),
-      label: v.string(),
-      description: v.string(),
-      requiresConfirmation: v.optional(v.boolean()),
-      permission: v.optional(v.string()),
-      params: v.optional(v.any()),
-    }),
-  ),
-  scopedToolNames: v.array(v.string()),
-  updatedAt: v.number(),
-});
-
-type PageContextArg = {
-  module: string;
-  pathname: string;
-  title: string;
-  summary: string;
-  visibleEntities: Array<{
-    id: string;
-    type: string;
-    label: string;
-    data?: unknown;
-  }>;
-  availableActions: Array<{
-    id: string;
-    label: string;
-    description: string;
-    requiresConfirmation?: boolean;
-    permission?: string;
-    params?: unknown;
-  }>;
-  scopedToolNames: string[];
-  updatedAt: number;
-};
-
-function buildPageContextSection(ctx?: PageContextArg | null): string {
-  if (!ctx) return "";
-  const lines: string[] = [];
-  lines.push("\n\n## Contexte de l'écran actuel");
-  lines.push(`Module: ${ctx.module} (${ctx.pathname})`);
-  lines.push(`Titre: ${ctx.title}`);
-  if (ctx.summary) lines.push(`Résumé: ${ctx.summary}`);
-
-  if (ctx.visibleEntities.length > 0) {
-    lines.push(`\nÉléments visibles (${ctx.visibleEntities.length}):`);
-    for (const e of ctx.visibleEntities) {
-      const dataPreview = e.data ? ` ${JSON.stringify(e.data).slice(0, 200)}` : "";
-      lines.push(`- [${e.type}] ${e.label} (id: ${e.id})${dataPreview}`);
-    }
-  }
-
-  if (ctx.availableActions.length > 0) {
-    lines.push(`\nActions disponibles sur cette page:`);
-    for (const a of ctx.availableActions) {
-      const conf = a.requiresConfirmation ? " (confirmation requise)" : "";
-      lines.push(`- ${a.id}: ${a.label} — ${a.description}${conf}`);
-    }
-    lines.push(
-      `\nUtilise le tool 'executePageAction' avec l'actionId exact pour déclencher une de ces actions.`,
-    );
-  }
-
-  lines.push(
-    `\nQuand l'utilisateur dit "ce dossier", "cet élément", "celui-ci", base-toi sur les éléments visibles ci-dessus.`,
-  );
-  return lines.join("\n");
-}
 
 /**
  * Main admin chat action
@@ -274,21 +155,18 @@ export const chat = action({
           )
         : permissionAllowedTools;
 
-    // Build context-aware system prompt
-    let contextPrompt = ADMIN_SYSTEM_PROMPT;
-
-    contextPrompt += `\n\nAGENT ACTUEL:
-- Nom: ${user.firstName || ""} ${user.lastName || ""}
-- Poste: ${positionName}
-- Organisation: ${org?.name || "Inconnue"}
-- OrgId: ${orgId}`;
-
-    if (currentPage) {
-      contextPrompt += `\n- Page actuelle: ${currentPage}`;
-    }
-
-    // Inject the rich page context (visible entities, available actions, etc.)
-    contextPrompt += buildPageContextSection(pageContext);
+    // Build context-aware system prompt (shared with streaming + voice)
+    const contextPrompt = buildAdminContextPrompt(
+      {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        positionName,
+        orgName: org?.name || "Inconnue",
+        orgId,
+      },
+      currentPage,
+      pageContext,
+    );
 
     // Get conversation history
     let history: Array<{ role: string; parts: Array<{ text: string }> }> = [];
@@ -395,253 +273,21 @@ export const chat = action({
         // Read-only tools → execute immediately
         else {
           try {
-            let toolResult: unknown;
-
-            // Helper to slim down a request object for AI consumption
-            const slimRequest = (r: Record<string, unknown>) => ({
-              _id: r._id,
-              reference: r.reference,
-              status: r.status,
-              priority: r.priority,
-              createdAt: r._creationTime,
-              updatedAt: r.updatedAt,
-              assignedTo: r.assignedTo,
-              userName: r.user && typeof r.user === "object"
-                ? `${(r.user as Record<string, unknown>).firstName || ""} ${(r.user as Record<string, unknown>).lastName || ""}`.trim()
-                : undefined,
-              userEmail: r.user && typeof r.user === "object"
-                ? (r.user as Record<string, unknown>).email
-                : undefined,
-              serviceName: r.serviceName && typeof r.serviceName === "object"
-                ? (r.serviceName as Record<string, string>).fr
-                : r.serviceName,
-            });
-
-            switch (name) {
-              case "getAgentContext": {
-                const [requestStats, registryStats] = await Promise.all([
-                  ctx.runQuery(api.functions.requests.getStatsByOrg, { orgId }),
-                  ctx.runQuery(
-                    api.functions.consularRegistrations.getStatsByOrg,
-                    { orgId },
-                  ),
-                ]);
-                toolResult = {
-                  agent: {
-                    name: `${user.firstName || ""} ${user.lastName || ""}`,
-                    position: positionName,
-                  },
-                  organization: org?.name,
-                  requestStats,
-                  registryStats,
-                };
-                break;
-              }
-
-              case "getOrgDashboardStats": {
-                const [requestStats, registryStats] = await Promise.all([
-                  ctx.runQuery(api.functions.requests.getStatsByOrg, { orgId }),
-                  ctx.runQuery(
-                    api.functions.consularRegistrations.getStatsByOrg,
-                    { orgId },
-                  ),
-                ]);
-                toolResult = { requestStats, registryStats };
-                break;
-              }
-
-              case "getRequestsList": {
-                const typedArgs = args as { status?: string };
-                // Get aggregate stats for total counts
-                const stats = await ctx.runQuery(
-                  api.functions.requests.getStatsByOrg,
-                  { orgId },
-                );
-                // Get paginated list (slim, 10 items)
-                const result = await ctx.runQuery(
-                  api.functions.requests.listByOrg,
-                  {
-                    orgId,
-                    status: typedArgs.status as any,
-                    paginationOpts: { numItems: 10, cursor: null },
-                  },
-                );
-                toolResult = {
-                  stats: typedArgs.status
-                    ? { count: stats.statusCounts[typedArgs.status] ?? 0 }
-                    : stats,
-                  requests: result.page.map((r: Record<string, unknown>) =>
-                    slimRequest(r),
-                  ),
-                  hasMore: result.continueCursor !== null && !result.isDone,
-                };
-                break;
-              }
-
-              case "getRequestDetail": {
-                const typedArgs = args as { requestId: string };
-                let detail: unknown = await ctx.runQuery(
-                  internal.functions.requests.internalGetByReferenceId,
-                  { referenceId: typedArgs.requestId },
-                );
-                // Try by ID if reference didn't work
-                if (!detail) {
-                  try {
-                    detail = await ctx.runQuery(
-                      internal.functions.requests.internalGetById,
-                      { requestId: typedArgs.requestId as Id<"requests"> },
-                    );
-                  } catch {
-                    detail = null;
-                  }
-                }
-                if (!detail) {
-                  toolResult = { error: "Demande introuvable" };
-                } else {
-                  // For detail view, keep formData but strip service definitions
-                  const d = detail as Record<string, unknown>;
-                  toolResult = {
-                    ...slimRequest(d),
-                    formData: d.formData,
-                    documents: Array.isArray(d.documents) ? d.documents.length : 0,
-                    notes: d.notes,
-                  };
-                }
-                break;
-              }
-
-              case "getPendingRequests": {
-                // Use aggregates for counts
-                const stats = await ctx.runQuery(
-                  api.functions.requests.getStatsByOrg,
-                  { orgId },
-                );
-                // Get slim paginated lists (10 items each)
-                const [submittedResult, pendingResult] = await Promise.all([
-                  ctx.runQuery(api.functions.requests.listByOrg, {
-                    orgId,
-                    status: "submitted" as any,
-                    paginationOpts: { numItems: 10, cursor: null },
-                  }),
-                  ctx.runQuery(api.functions.requests.listByOrg, {
-                    orgId,
-                    status: "pending" as any,
-                    paginationOpts: { numItems: 10, cursor: null },
-                  }),
-                ]);
-                toolResult = {
-                  submittedCount: stats.statusCounts.submitted ?? 0,
-                  pendingCount: stats.statusCounts.pending ?? 0,
-                  totalActionRequired:
-                    (stats.statusCounts.submitted ?? 0) +
-                    (stats.statusCounts.pending ?? 0),
-                  submitted: submittedResult.page.map(
-                    (r: Record<string, unknown>) => slimRequest(r),
-                  ),
-                  pending: pendingResult.page.map(
-                    (r: Record<string, unknown>) => slimRequest(r),
-                  ),
-                  hasMoreSubmitted: !submittedResult.isDone,
-                  hasMorePending: !pendingResult.isDone,
-                };
-                break;
-              }
-
-              case "getCitizenProfile": {
-                const typedArgs = args as { profileId: string };
-                toolResult = await ctx.runQuery(
-                  api.functions.profiles.getProfileDetail,
-                  { profileId: typedArgs.profileId as Id<"profiles"> },
-                );
-                break;
-              }
-
-              case "searchCitizens": {
-                const typedArgs = args as { query: string };
-                toolResult = await ctx.runQuery(
-                  api.functions.consularRegistrations.searchRegistrations,
-                  { orgId, searchQuery: typedArgs.query },
-                );
-                break;
-              }
-
-              case "getRegistryStats": {
-                toolResult = await ctx.runQuery(
-                  api.functions.consularRegistrations.getStatsByOrg,
-                  { orgId },
-                );
-                break;
-              }
-
-              case "getAppointmentsList": {
-                toolResult = await ctx.runQuery(
-                  api.functions.appointments.listByOrg,
-                  { orgId },
-                );
-                break;
-              }
-
-              case "getTeamMembers": {
-                toolResult = await ctx.runQuery(
-                  internal.ai.adminChat.getOrgMembers,
-                  { orgId },
-                );
-                break;
-              }
-
-              case "getOrgMailInbox": {
-                const typedArgs = args as { folder?: string };
-                toolResult = (
-                  await ctx.runQuery(api.functions.digitalMail.list, {
-                    ownerId: orgId as any,
-                    ownerType: "organization" as any,
-                    folder: (typedArgs.folder as any) ?? undefined,
-                    paginationOpts: { numItems: 10, cursor: null },
-                  })
-                ).page;
-                break;
-              }
-
-              case "getRecentPayments": {
-                try {
-                  toolResult = await ctx.runQuery(
-                    api.functions.requests.getStatsByOrg,
-                    { orgId },
-                  );
-                } catch {
-                  toolResult = { message: "Module paiements non disponible" };
-                }
-                break;
-              }
-
-              case "getOrgPosts": {
-                const result = await ctx.runQuery(
-                  api.functions.posts.listByOrg,
-                  {
-                    orgId,
-                    paginationOpts: { numItems: 10, cursor: null },
-                  },
-                );
-                // Strip heavy fields from posts
-                toolResult = result.page.map(
-                  (p: Record<string, unknown>) => ({
-                    _id: p._id,
-                    title: p.title,
-                    slug: p.slug,
-                    excerpt: p.excerpt,
-                    category: p.category,
-                    status: p.status,
-                    publishedAt: p.publishedAt,
-                    authorName: p.authorName,
-                  }),
-                );
-                break;
-              }
-
-              default:
-                toolResult = { error: `Unknown tool: ${name}` };
-            }
-
+            const toolResult = await executeAdminReadTool(
+              ctx,
+              name,
+              args,
+              {
+                orgId,
+                user: {
+                  _id: user._id,
+                  firstName: user.firstName,
+                  lastName: user.lastName,
+                },
+                positionName,
+                org,
+              },
+            );
             toolResults.push({ name, result: toolResult });
           } catch (err) {
             toolResults.push({
@@ -709,41 +355,6 @@ export const chat = action({
     }
 
     // Save conversation — truncate tool results to avoid exceeding Convex's 1MB document limit
-    const MAX_RESULT_SIZE = 2000; // chars per tool result
-    const truncateResult = (result: unknown): unknown => {
-      const json = JSON.stringify(result);
-      if (json.length <= MAX_RESULT_SIZE) return result;
-      // For arrays, keep count + first few items summary
-      if (Array.isArray(result)) {
-        return {
-          _truncated: true,
-          count: result.length,
-          summary: result.slice(0, 3).map((item: Record<string, unknown>) => ({
-            _id: item?._id,
-            reference: item?.reference,
-            status: item?.status,
-            userName: item?.user && typeof item.user === "object" 
-              ? `${(item.user as Record<string, unknown>).firstName || ""} ${(item.user as Record<string, unknown>).lastName || ""}` 
-              : undefined,
-            serviceName: item?.serviceName,
-          })),
-        };
-      }
-      // For objects, try to keep essential fields
-      if (typeof result === "object" && result !== null) {
-        const r = result as Record<string, unknown>;
-        if (r.pending || r.submitted) {
-          return {
-            _truncated: true, 
-            pendingCount: Array.isArray(r.pending) ? r.pending.length : 0,
-            submittedCount: Array.isArray(r.submitted) ? r.submitted.length : 0,
-            total: r.total,
-          };
-        }
-      }
-      return { _truncated: true, preview: json.slice(0, MAX_RESULT_SIZE) };
-    };
-
     const newConversationId = await ctx.runMutation(
       internal.ai.chat.saveMessage,
       {
@@ -754,7 +365,7 @@ export const chat = action({
         toolCalls: toolResults.map((tr) => ({
           name: tr.name,
           args: {},
-          result: truncateResult(tr.result),
+          result: truncateToolResult(tr.result),
         })),
       },
     );

@@ -48,6 +48,25 @@ export const appendChunk = internalMutation({
 	},
 });
 
+export const appendToolCall = internalMutation({
+	args: {
+		id: v.id("streamingChats"),
+		name: v.string(),
+		args: v.any(),
+		result: v.optional(v.any()),
+		iteration: v.number(),
+	},
+	handler: async (ctx, { id, name, args, result, iteration }) => {
+		const doc = await ctx.db.get(id);
+		if (!doc) return;
+		const existing = doc.toolCalls ?? [];
+		await ctx.db.patch(id, {
+			toolCalls: [...existing, { name, args, result, iteration }],
+			updatedAt: Date.now(),
+		});
+	},
+});
+
 export const finalize = internalMutation({
 	args: {
 		id: v.id("streamingChats"),

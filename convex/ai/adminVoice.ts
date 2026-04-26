@@ -7,8 +7,13 @@
 import { v } from "convex/values";
 import { action, query } from "../_generated/server";
 import { api, internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
-import { ADMIN_MUTATIVE_TOOLS } from "./adminTools";
+import {
+  ADMIN_MUTATIVE_TOOLS,
+  ADMIN_TOOL_PERMISSIONS,
+  getAdminTools,
+  type AdminAppScope,
+} from "./adminTools";
+import { executeAdminReadTool } from "./adminToolExecutor";
 
 // Voice model for real-time audio
 const VOICE_MODEL = "gemini-2.5-flash-native-audio-preview-12-2025";
@@ -43,17 +48,29 @@ FIN DE CONVERSATION:
 }
 
 /**
- * Get admin voice session configuration
+ * Get admin voice session configuration.
+ *
+ * Retourne aussi les `toolDeclarations` déjà résolues (description scopée par
+ * app pour `navigateTo`) et déjà filtrées par permissions de l'agent — ainsi
+ * le frontend n'a plus à manipuler le template `adminTools` brut.
  */
 export const getAdminVoiceConfig = action({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    orgId: v.optional(v.id("orgs")),
+    app: v.optional(
+      v.union(v.literal("agent"), v.literal("backoffice")),
+    ),
+  },
+  handler: async (ctx, { orgId, app }) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error("NOT_AUTHENTICATED");
     }
 
     const user = await ctx.runQuery(api.functions.users.getMe);
+    if (!user) {
+      throw new Error("USER_NOT_FOUND");
+    }
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -61,9 +78,48 @@ export const getAdminVoiceConfig = action({
     }
 
     let personalizedPrompt = getAdminVoiceSystemPrompt();
-    if (user) {
-      personalizedPrompt += `\n\nAGENT: ${user.firstName || ""} ${user.lastName || ""}`;
+    personalizedPrompt += `\n\nAGENT: ${user.firstName || ""} ${user.lastName || ""}`;
+
+    // Construire les tool declarations scopées + filtrées par permissions.
+    // Si l'appelant ne fournit pas orgId/app (legacy), on retombe sur le
+    // template non-filtré pour préserver la compat.
+    const appScope: AdminAppScope = app ?? "agent";
+    const adminTools = getAdminTools(appScope);
+    let toolDeclarations: Array<{
+      name: string;
+      description: string;
+      parameters: Record<string, unknown>;
+    }> = adminTools.map((t) => ({
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters as Record<string, unknown>,
+    }));
+
+    if (orgId) {
+      const filtered: typeof toolDeclarations = [];
+      for (const decl of toolDeclarations) {
+        const requiredTask = ADMIN_TOOL_PERMISSIONS[decl.name];
+        if (!requiredTask) {
+          filtered.push(decl);
+          continue;
+        }
+        const allowed = await ctx.runQuery(
+          internal.ai.adminChat.checkPermission,
+          { userId: user._id, orgId, taskCode: requiredTask },
+        );
+        if (allowed) filtered.push(decl);
+      }
+      toolDeclarations = filtered;
     }
+
+    // `endVoiceSession` est ajouté ici pour que le frontend n'ait plus à
+    // patcher la liste après-coup (cf. ancien comportement).
+    toolDeclarations.push({
+      name: "endVoiceSession",
+      description:
+        "Termine la session vocale. Appelle cet outil quand l'agent dit au revoir ou veut arrêter.",
+      parameters: { type: "object", properties: {} },
+    });
 
     const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
 
@@ -74,6 +130,7 @@ export const getAdminVoiceConfig = action({
         responseModalities: ["AUDIO"],
         systemInstruction: personalizedPrompt,
       },
+      toolDeclarations,
       audioFormat: {
         input: {
           sampleRate: 16000,
@@ -148,146 +205,46 @@ export const executeAdminVoiceTool = action({
     }
 
     try {
-      // Helper to slim down requests
-      const slimRequest = (r: Record<string, unknown>) => ({
-        _id: r._id,
-        reference: r.reference,
-        status: r.status,
-        userName:
-          r.user && typeof r.user === "object"
-            ? `${(r.user as Record<string, unknown>).firstName || ""} ${(r.user as Record<string, unknown>).lastName || ""}`.trim()
-            : undefined,
-        serviceName: r.serviceName,
-      });
-
-      let result: unknown;
-
-      switch (toolName) {
-        case "getAgentContext": {
-          const user = await ctx.runQuery(api.functions.users.getMe);
-          const [requestStats, registryStats] = await Promise.all([
-            ctx.runQuery(api.functions.requests.getStatsByOrg, { orgId }),
-            ctx.runQuery(
-              api.functions.consularRegistrations.getStatsByOrg,
-              { orgId },
-            ),
-          ]);
-          result = {
-            agent: `${user?.firstName || ""} ${user?.lastName || ""}`,
-            requestStats,
-            registryStats,
-          };
-          break;
-        }
-
-        case "getOrgDashboardStats": {
-          const [requestStats, registryStats] = await Promise.all([
-            ctx.runQuery(api.functions.requests.getStatsByOrg, { orgId }),
-            ctx.runQuery(
-              api.functions.consularRegistrations.getStatsByOrg,
-              { orgId },
-            ),
-          ]);
-          result = { requestStats, registryStats };
-          break;
-        }
-
-        case "getRequestsList": {
-          const args = toolArgs as { status?: string };
-          const stats = await ctx.runQuery(
-            api.functions.requests.getStatsByOrg,
-            { orgId },
-          );
-          const listResult = await ctx.runQuery(
-            api.functions.requests.listByOrg,
-            {
-              orgId,
-              status: args.status as any,
-              paginationOpts: { numItems: 5, cursor: null },
-            },
-          );
-          result = {
-            stats: args.status
-              ? { count: stats.statusCounts[args.status] ?? 0 }
-              : stats,
-            requests: listResult.page.map((r: Record<string, unknown>) =>
-              slimRequest(r),
-            ),
-          };
-          break;
-        }
-
-        case "getPendingRequests": {
-          const stats = await ctx.runQuery(
-            api.functions.requests.getStatsByOrg,
-            { orgId },
-          );
-          result = {
-            submittedCount: stats.statusCounts.submitted ?? 0,
-            pendingCount: stats.statusCounts.pending ?? 0,
-            total:
-              (stats.statusCounts.submitted ?? 0) +
-              (stats.statusCounts.pending ?? 0),
-          };
-          break;
-        }
-
-        case "getRequestDetail": {
-          const args = toolArgs as { requestId: string };
-          let detail: unknown = await ctx.runQuery(
-            internal.functions.requests.internalGetByReferenceId,
-            { referenceId: args.requestId },
-          );
-          if (!detail) {
-            try {
-              detail = await ctx.runQuery(internal.functions.requests.internalGetById, {
-                requestId: args.requestId as Id<"requests">,
-              });
-            } catch {
-              detail = null;
-            }
-          }
-          if (!detail) {
-            result = { error: "Demande introuvable" };
-          } else {
-            result = slimRequest(detail as Record<string, unknown>);
-          }
-          break;
-        }
-
-        case "searchCitizens": {
-          const args = toolArgs as { query: string };
-          result = await ctx.runQuery(
-            api.functions.consularRegistrations.searchRegistrations,
-            { orgId, searchQuery: args.query },
-          );
-          break;
-        }
-
-        case "getRegistryStats":
-          result = await ctx.runQuery(
-            api.functions.consularRegistrations.getStatsByOrg,
-            { orgId },
-          );
-          break;
-
-        case "getAppointmentsList":
-          result = await ctx.runQuery(
-            api.functions.appointments.listByOrg,
-            { orgId },
-          );
-          break;
-
-        case "getTeamMembers":
-          result = await ctx.runQuery(
-            internal.ai.adminChat.getOrgMembers,
-            { orgId },
-          );
-          break;
-
-        default:
-          return { success: false, error: `Unknown tool: ${toolName}` };
+      const user = await ctx.runQuery(api.functions.users.getMe);
+      if (!user) {
+        return { success: false, error: "USER_NOT_FOUND" };
       }
+
+      const membership = await ctx.runQuery(
+        api.functions.memberships.getMyMembership,
+        { orgId },
+      );
+      const org = await ctx.runQuery(api.functions.orgs.getById, { orgId });
+
+      let positionName = "Agent";
+      if (membership?.positionId) {
+        const position = await ctx.runQuery(
+          internal.ai.adminChat.getPosition,
+          { positionId: membership.positionId },
+        );
+        if (position) {
+          positionName =
+            typeof position.title === "object"
+              ? (position.title as Record<string, string>).fr || "Agent"
+              : String(position.title);
+        }
+      }
+
+      const result = await executeAdminReadTool(
+        ctx,
+        toolName,
+        (toolArgs ?? {}) as Record<string, unknown>,
+        {
+          orgId,
+          user: {
+            _id: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+          },
+          positionName,
+          org,
+        },
+      );
 
       return { success: true, data: result };
     } catch (error) {

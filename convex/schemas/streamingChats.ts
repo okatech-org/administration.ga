@@ -27,6 +27,17 @@ export const streamingChatsTable = defineTable({
 	error: v.optional(v.string()),
 	/** Actions IA accumulées (navigateTo, executePageAction, etc.) — set à la fin. */
 	actions: v.optional(v.array(v.any())),
+	/** Transcript des tool calls exécutés pendant le stream (read tools surtout) — set incrémentalement. */
+	toolCalls: v.optional(
+		v.array(
+			v.object({
+				name: v.string(),
+				args: v.any(),
+				result: v.optional(v.any()),
+				iteration: v.number(),
+			}),
+		),
+	),
 	createdAt: v.number(),
 	updatedAt: v.number(),
 })

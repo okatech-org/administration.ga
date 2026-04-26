@@ -1,20 +1,20 @@
 /**
- * useStreamingChat — consomme un stream texte Gemini via Convex.
+ * useStreamingChat — consomme un stream Gemini via Convex avec ou sans tools.
  *
- * Pattern :
- *   1. Appelle `start(prompt)` → backend crée une streamingChats row + lance
- *      Gemini en stream + retourne l'ID
- *   2. Le hook subscribe à la row via useQuery (réactif Convex)
- *   3. Le `text` se met à jour à chaque chunk reçu
- *   4. `isStreaming` passe à false quand `status="done"` ou `"error"`
+ * Deux entry points :
+ *   - `start(prompt, systemPrompt?)` → stream texte pur (api.ai.adminChatStreaming.startTextStream).
+ *     Utilisé par le « Explainer » (StreamingExplanationCard) — pas de tools, pas d'historique.
+ *   - `startChat({ message, ... })` → stream complet avec tool calling
+ *     (api.ai.adminChatStreaming.startChatStream). Le LLM peut appeler les
+ *     read tools (résultats streamés au fur et à mesure dans `toolCalls`),
+ *     les UI tools et les mutative tools sont retournés dans `actions` à la
+ *     fin du stream — la confirmation/exécution est déléguée au composant
+ *     qui consomme le hook (utiliser `api.ai.adminChat.executeAction`).
  *
- * Usage :
- *   const { text, isStreaming, error, start, reset } = useStreamingChat();
- *   await start("Résume cette demande en 3 points");
- *
- * Limitations v1 (cf. adminChatStreaming.ts) :
- *   - Pas de tools — pour les actions, utiliser useAdminAIChat (request/resp)
- *   - Pas d'historique — chaque appel est isolé
+ * Usage tools :
+ *   const { text, toolCalls, actions, isStreaming, startChat } = useStreamingChat();
+ *   await startChat({ message, conversationId, orgId, currentPage, pageContext });
+ *   // À status="done", `actions` contient les UI/mutative actions à dispatcher.
  */
 
 import { useCallback, useState } from "react";
@@ -23,11 +23,27 @@ import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 
-export type StreamingChatState = {
-	text: string;
-	isStreaming: boolean;
-	error: string | null;
-	streamingChatId: Id<"streamingChats"> | null;
+export type StreamingAction = {
+	type: string;
+	args: Record<string, unknown>;
+	requiresConfirmation: boolean;
+	reason?: string;
+};
+
+export type StreamingToolCall = {
+	name: string;
+	args: unknown;
+	result?: unknown;
+	iteration: number;
+};
+
+export type StartChatArgs = {
+	message: string;
+	conversationId?: Id<"conversations">;
+	orgId: Id<"orgs">;
+	currentPage?: string;
+	pageContext?: unknown;
+	app?: "agent" | "backoffice";
 };
 
 export function useStreamingChat() {
@@ -37,6 +53,9 @@ export function useStreamingChat() {
 
 	const { mutateAsync: startTextStream } = useConvexActionQuery(
 		api.ai.adminChatStreaming.startTextStream,
+	);
+	const { mutateAsync: startChatStream } = useConvexActionQuery(
+		api.ai.adminChatStreaming.startChatStream,
 	);
 
 	const stream = useQuery(
@@ -63,6 +82,29 @@ export function useStreamingChat() {
 		[startTextStream],
 	);
 
+	const startChat = useCallback(
+		async (args: StartChatArgs) => {
+			setLocalError(null);
+			setStreamingChatId(null);
+			try {
+				const { streamingChatId: id } = await startChatStream({
+					message: args.message,
+					conversationId: args.conversationId,
+					orgId: args.orgId,
+					currentPage: args.currentPage,
+					pageContext: args.pageContext as never,
+					app: args.app,
+				});
+				setStreamingChatId(id);
+				return id;
+			} catch (e) {
+				setLocalError((e as Error).message);
+				return null;
+			}
+		},
+		[startChatStream],
+	);
+
 	const reset = useCallback(() => {
 		setStreamingChatId(null);
 		setLocalError(null);
@@ -72,12 +114,19 @@ export function useStreamingChat() {
 		streamingChatId !== null &&
 		(stream === undefined || stream?.status === "streaming");
 
+	const actions = (stream?.actions ?? []) as StreamingAction[];
+	const toolCalls = (stream?.toolCalls ?? []) as StreamingToolCall[];
+
 	return {
 		text: stream?.content ?? "",
 		isStreaming,
+		isDone: stream?.status === "done",
 		error: localError ?? stream?.error ?? null,
 		streamingChatId,
+		actions,
+		toolCalls,
 		start,
+		startChat,
 		reset,
 	};
 }

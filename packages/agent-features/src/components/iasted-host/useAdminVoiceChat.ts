@@ -14,10 +14,7 @@ import {
 import { useOrg } from "../../shell/org-provider";
 import { api } from "@convex/_generated/api";
 
-import {
-  adminTools,
-  ADMIN_MUTATIVE_TOOLS,
-} from "@convex/ai/adminTools";
+import { ADMIN_MUTATIVE_TOOLS } from "@convex/ai/adminTools";
 
 export type PendingConfirmation = {
   toolName: string;
@@ -220,7 +217,16 @@ export function useAdminVoiceChat(): UseAdminVoiceChatReturn {
       setState("connecting");
       setError(null);
 
-      const config = await getVoiceConfig({});
+      if (!activeOrgId) {
+        setError("Aucune organisation active");
+        setState("error");
+        return;
+      }
+
+      const config = await getVoiceConfig({
+        orgId: activeOrgId,
+        app: "agent",
+      });
 
       // Request microphone
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -251,16 +257,10 @@ export function useAdminVoiceChat(): UseAdminVoiceChatReturn {
       wsRef.current = ws;
 
       ws.onopen = () => {
-        // Send setup with admin tools + endVoiceSession
-        const voiceToolDecls = [
-          ...adminTools,
-          {
-            name: "endVoiceSession",
-            description:
-              "Termine la session vocale. Appelle cet outil quand l'agent dit au revoir ou veut arrêter.",
-            parameters: { type: "object" as const, properties: {} },
-          },
-        ];
+        // Tool declarations are now resolved + permission-filtered server-side
+        // (cf. api.ai.adminVoice.getAdminVoiceConfig). No more raw `adminTools`
+        // template ref with __NAVIGATE_TO_PLACEHOLDER__.
+        const voiceToolDecls = config.toolDeclarations ?? [];
 
         ws.send(
           JSON.stringify({
@@ -272,7 +272,10 @@ export function useAdminVoiceChat(): UseAdminVoiceChatReturn {
               system_instruction: {
                 parts: [{ text: config.config.systemInstruction }],
               },
-              tools: [{ function_declarations: voiceToolDecls }],
+              tools:
+                voiceToolDecls.length > 0
+                  ? [{ function_declarations: voiceToolDecls }]
+                  : undefined,
             },
           }),
         );
