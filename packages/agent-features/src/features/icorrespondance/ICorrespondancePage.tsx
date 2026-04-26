@@ -12,6 +12,11 @@ import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
 } from "@workspace/api/hooks";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type { PageAction, PageEntity } from "../../stores/page-context-store";
 import { motion, AnimatePresence } from "motion/react";
 import {
 	Mail,
@@ -1220,6 +1225,63 @@ export default function ICorrespondancePage({
 		api.functions.correspondanceDashboard.getRecentActivity,
 		activeOrgId ? { orgId: activeOrgId, limit: 20 } : "skip",
 	);
+
+	// ─── iAsted page context (avant les mutations pour rester groupé en haut) ──
+	const pageEntities = useMemo<PageEntity[]>(() => {
+		if (activeTab === "dossiers" && Array.isArray(dossiers)) {
+			return (dossiers as any[]).slice(0, 30).map((d) => ({
+				id: d._id,
+				type: "dossier",
+				label: d.title ?? d.reference ?? "Dossier",
+				data: { status: d.status, currentStep: d.currentStep },
+			}));
+		}
+		return [];
+	}, [activeTab, dossiers]);
+	const pageActions = useMemo<PageAction[]>(() => {
+		const actions: PageAction[] = [
+			{
+				id: "switch-tab",
+				label: "Changer d'onglet",
+				description:
+					"params.tab ∈ ['correspondance','dossiers','dashboard']",
+			},
+			{
+				id: "open-dossier",
+				label: "Ouvrir un dossier",
+				description: "params.dossierId requis (depuis les entités visibles).",
+			},
+		];
+		if (canCreateCorr) {
+			actions.push({
+				id: "open-dossier-wizard",
+				label: "Créer un nouveau dossier",
+				description: "Ouvre l'assistant de création de dossier.",
+			});
+		}
+		return actions;
+	}, [canCreateCorr]);
+	usePageContext({
+		module: "icorrespondance",
+		title: "iCorrespondance",
+		summary: `Onglet: ${activeTab}. ${(dossiers as any[]).length} dossier(s) disponible(s).${selectedDossierId ? ` Dossier sélectionné.` : ""}`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("switch-tab", async (params) => {
+		const t = params?.tab as ActiveTab | undefined;
+		if (t === "correspondance" || t === "dossiers" || t === "dashboard") {
+			setActiveTab(t);
+		}
+	});
+	useRegisterPageAction("open-dossier", async (params) => {
+		const id = params?.dossierId as string | undefined;
+		if (id) setSelectedDossierId(id);
+	});
+	useRegisterPageAction("open-dossier-wizard", async () => {
+		if (canCreateCorr) setShowDossierWizard(true);
+	});
 
 	// ─── Dossier mutations ──────────────────────────────────
 	const createDossierMutation = useConvexMutationQuery(

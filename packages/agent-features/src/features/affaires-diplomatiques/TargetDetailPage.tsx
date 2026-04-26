@@ -36,6 +36,12 @@ import { FlatCard } from "../../components/my-space/flat-card";
 import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { cn } from "@workspace/ui/lib/utils";
 import { FolderExplorer } from "./_shared/FolderExplorer";
+import { useMemo } from "react";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type { PageAction, PageEntity } from "../../stores/page-context-store";
 
 // Couleurs mappees vers les tokens du design system (voir DESIGN_CHARTER.md)
 // 4 accents autorisees : primary (bleu), success (vert), warning (amber), destructive (rose)
@@ -143,6 +149,83 @@ export default function TargetPipelineDetail({
 		{ targetId: targetId as Id<"diplomaticTargets"> },
 	);
 
+	// ─── iAsted page context (avant les early returns) ─────────────
+	const target = (pipeline as any)?.target;
+	const pageEntities = useMemo<PageEntity[]>(() => {
+		if (!pipeline) return [];
+		const p = pipeline as any;
+		const out: PageEntity[] = [];
+		for (const plan of (p.plans ?? []).slice(0, 10)) {
+			out.push({
+				id: plan._id,
+				type: "diplomatic-plan",
+				label: plan.title ?? "Plan",
+				data: { status: plan.status },
+			});
+		}
+		for (const letter of (p.letters ?? []).slice(0, 10)) {
+			out.push({
+				id: letter._id,
+				type: "diplomatic-letter",
+				label: letter.subject ?? "Lettre",
+				data: { status: letter.status, sentAt: letter.sentAt },
+			});
+		}
+		for (const proj of (p.projects ?? []).slice(0, 10)) {
+			out.push({
+				id: proj._id,
+				type: "diplomatic-project",
+				label: proj.title ?? "Projet",
+				data: { status: proj.status, budget: proj.budget },
+			});
+		}
+		return out;
+	}, [pipeline]);
+
+	const pageActions = useMemo<PageAction[]>(
+		() => [
+			{
+				id: "back-to-targets",
+				label: "Retour aux cibles",
+				description: "Navigue vers /affaires-diplomatiques/cibles.",
+			},
+			{
+				id: "open-phase",
+				label: "Ouvrir une phase pipeline",
+				description:
+					"params.phaseId ∈ ['targeting','strategy','outreach','reporting','project']",
+			},
+		],
+		[],
+	);
+
+	const summary = pipeline
+		? `Cible « ${target?.name ?? target?.organizationName ?? "?"} » · phase ${target?.pipelinePhase ?? "targeting"} · ${(pipeline as any).plans?.length ?? 0} plan(s), ${(pipeline as any).letters?.length ?? 0} lettre(s), ${(pipeline as any).projects?.length ?? 0} projet(s).`
+		: "Chargement de la cible…";
+
+	usePageContext({
+		module: "diplomatic-target-detail",
+		title: `Cible — ${target?.name ?? target?.organizationName ?? "…"}`,
+		summary,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("back-to-targets", async () => {
+		router.push("/affaires-diplomatiques/cibles");
+	});
+	useRegisterPageAction("open-phase", async (params) => {
+		const id = params?.phaseId as string | undefined;
+		const map: Record<string, string> = {
+			targeting: "/affaires-diplomatiques/cibles",
+			strategy: "/affaires-diplomatiques/plans",
+			outreach: "/affaires-diplomatiques/lettres",
+			reporting: "/affaires-diplomatiques/rapports",
+			project: "/affaires-diplomatiques/projets",
+		};
+		if (id && map[id]) router.push(map[id]);
+	});
+
 	if (isPending) {
 		return (
 			<div className="flex items-center justify-center h-64">
@@ -165,8 +248,8 @@ export default function TargetPipelineDetail({
 		);
 	}
 
-	const { target, plans, letters, projects } = pipeline;
-	const phase = target.pipelinePhase
+	const { plans, letters, projects } = pipeline;
+	const phase = target?.pipelinePhase
 		? PHASE_CONFIG[target.pipelinePhase]
 		: PHASE_CONFIG.targeting;
 

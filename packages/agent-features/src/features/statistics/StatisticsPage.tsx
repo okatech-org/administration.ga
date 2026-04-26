@@ -64,6 +64,7 @@ import { useModuleAccess } from "../../components/shared/access-gate";
 import { FlatCard } from "../../components/my-space/flat-card";
 import { SectionHeader } from "../../components/my-space/section-header";
 import { captureEvent } from "../../lib/analytics";
+import { usePageContext } from "../../hooks/use-page-context";
 
 
 // ─── Chart colors ────────────────────────────────────────────────────────────
@@ -135,6 +136,15 @@ export default function StatisticsPage() {
 		api.functions.payments.listByOrg,
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
+
+	usePageContext({
+		module: "statistics",
+		title: "Statistiques",
+		summary: `Statistiques sur la période: ${period}.${stats ? ` ${stats.totalRequests ?? 0} demandes au total.` : ""}`,
+		visibleEntities: [],
+		availableActions: [],
+		scopedToolNames: ["getOrgDashboardStats"],
+	});
 
 	// ─── Derived data ─────────────────────────────────────────────────────
 	const kpiCards = useMemo(() => {

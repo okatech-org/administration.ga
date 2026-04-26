@@ -24,6 +24,13 @@ import { useOrg } from "../../shell/org-provider";
 import { FlatCard } from "../../components/my-space/flat-card";
 import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { cn } from "@workspace/ui/lib/utils";
+import { useRouter } from "@workspace/routing";
+import { useMemo } from "react";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type { PageAction, PageEntity } from "../../stores/page-context-store";
 
 const PHASE_CARDS = [
 	{
@@ -85,11 +92,52 @@ const PHASE_CARDS = [
 
 export default function PipelineDashboard() {
 	const { activeOrgId } = useOrg();
+	const router = useRouter();
 
 	const { data: stats, isPending } = useAuthenticatedConvexQuery(
 		api.functions.diplomaticAffairs.getDashboardStats,
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities = useMemo<PageEntity[]>(
+		() =>
+			PHASE_CARDS.map((p) => ({
+				id: p.id,
+				type: "diplomatic-phase",
+				label: p.label,
+				data: { count: stats?.targets?.byPhase?.[p.id] ?? 0, href: p.href },
+			})),
+		[stats],
+	);
+	const pageActions = useMemo<PageAction[]>(
+		() => [
+			{
+				id: "open-phase",
+				label: "Ouvrir une phase du pipeline",
+				description:
+					"Navigue vers une phase. params.phaseId ∈ ['targeting','strategy','outreach','reporting','project']",
+			},
+		],
+		[],
+	);
+	const summary = stats
+		? `Pipeline diplomatique : ${stats.targets?.total ?? 0} cibles, ${stats.letters?.byStatus?.sent ?? 0} lettres envoyées, ${stats.reports?.total ?? 0} rapports, ${stats.projects?.active ?? 0} projets actifs.`
+		: "Chargement du pipeline diplomatique…";
+
+	usePageContext({
+		module: "affaires-diplomatiques",
+		title: "Affaires Diplomatiques",
+		summary,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("open-phase", async (params) => {
+		const id = params?.phaseId as string | undefined;
+		const card = PHASE_CARDS.find((p) => p.id === id);
+		if (card) router.push(card.href);
+	});
 
 	if (isPending) {
 		return (

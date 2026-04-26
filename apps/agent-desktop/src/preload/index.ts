@@ -134,6 +134,18 @@ const windowApi = {
   isMaximized: () => ipcRenderer.invoke("window:is-maximized") as Promise<boolean>,
   getPlatform: () => ipcRenderer.invoke("window:get-platform") as Promise<string>,
   setProgressBar: (value: number) => ipcRenderer.invoke("system:set-progress", value),
+  // Always-on-top toggle — Phase 4 desktop bonus
+  getAlwaysOnTop: () =>
+    ipcRenderer.invoke("window:get-always-on-top") as Promise<boolean>,
+  setAlwaysOnTop: (value: boolean) =>
+    ipcRenderer.invoke("window:set-always-on-top", value),
+  onAlwaysOnTopChanged: (cb: (value: boolean) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, val: boolean) => cb(val)
+    ipcRenderer.on("window:always-on-top-changed", handler)
+    return () => {
+      ipcRenderer.removeListener("window:always-on-top-changed", handler)
+    }
+  },
   onMaximizedChanged: (cb: (isMaximized: boolean) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, val: boolean) => cb(val)
     ipcRenderer.on("window:maximized-changed", handler)
@@ -172,6 +184,13 @@ contextBridge.exposeInMainWorld("desktopApi", {
   window: windowApi,
   spellCheck: spellCheckApi,
   contextMenu: contextMenuApi,
+})
+
+// Relais IPC → DOM event : le raccourci OS-level (Cmd+Shift+K) déclenche
+// le même `iasted:open` que tout le reste de l'app, donc le handler vit
+// dans le composant IAstedWindow partagé sans connaître Electron.
+ipcRenderer.on("iasted:open-shortcut", () => {
+  window.dispatchEvent(new CustomEvent("iasted:open"))
 })
 
 export type DesktopApi = {

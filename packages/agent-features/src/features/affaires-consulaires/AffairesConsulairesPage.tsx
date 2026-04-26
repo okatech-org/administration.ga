@@ -8,7 +8,12 @@
 
 import React, { useMemo } from "react";
 import { api } from "@convex/_generated/api";
-import { Link } from "@workspace/routing";
+import { Link, useRouter } from "@workspace/routing";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type { PageAction, PageEntity } from "../../stores/page-context-store";
 import {
 	ClipboardList,
 	IdCard,
@@ -69,12 +74,49 @@ const MODULES = [
 
 export default function AffairesConsulairesPage() {
 	const { activeOrgId } = useOrg();
+	const router = useRouter();
 	const { canDo, isReady } = useCanDoTask(activeOrgId ?? undefined);
 
 	const visibleModules = useMemo(() => {
 		if (!isReady) return [];
 		return MODULES.filter((m) => canDo(m.taskCode));
 	}, [isReady, canDo]);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities = useMemo<PageEntity[]>(
+		() =>
+			visibleModules.map((m) => ({
+				id: m.id,
+				type: "consular-module",
+				label: m.label,
+				data: { href: m.href, desc: m.desc },
+			})),
+		[visibleModules],
+	);
+	const pageActions = useMemo<PageAction[]>(
+		() => [
+			{
+				id: "open-module",
+				label: "Ouvrir un module consulaire",
+				description:
+					"Navigue vers un module. params.moduleId ∈ ['demandes','profils','registre']",
+			},
+		],
+		[],
+	);
+	usePageContext({
+		module: "affaires-consulaires",
+		title: "Affaires Consulaires",
+		summary: `Hub consulaire — ${visibleModules.length} module(s) accessible(s) avec vos permissions.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: ["getOrgDashboardStats"],
+	});
+	useRegisterPageAction("open-module", async (params) => {
+		const id = params?.moduleId as string | undefined;
+		const mod = MODULES.find((m) => m.id === id);
+		if (mod) router.push(mod.href);
+	});
 
 	return (
 		<div className="flex flex-col gap-6 p-4 lg:p-6">

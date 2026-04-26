@@ -1,15 +1,47 @@
-import { Minus, Square, X, Copy } from "lucide-react"
+import { Minus, Square, X, Copy, Pin, PinOff } from "lucide-react"
 import { useWindowControls } from "../../hooks/useWindowControls"
 
 /**
  * Custom title bar for frameless Electron window.
  * - macOS: transparent drag region (native traffic lights are inset via trafficLightPosition)
- * - Windows/Linux: custom window controls (minimize, maximize, close)
+ *   + bouton « pin » à droite pour toggle always-on-top.
+ * - Windows/Linux: custom window controls (minimize, maximize, close) + pin.
  */
 export function TitleBar() {
-  const { minimize, maximizeToggle, close, isMaximized, platform } = useWindowControls()
+  const {
+    minimize,
+    maximizeToggle,
+    close,
+    isMaximized,
+    isAlwaysOnTop,
+    toggleAlwaysOnTop,
+    platform,
+  } = useWindowControls()
 
   const isMac = platform === "darwin"
+
+  const PinButton = (
+    <button
+      onClick={toggleAlwaysOnTop}
+      className={
+        "h-full px-3 flex items-center justify-center transition-colors " +
+        (isAlwaysOnTop
+          ? "text-primary hover:bg-primary/10"
+          : "text-muted-foreground hover:bg-muted")
+      }
+      aria-label={
+        isAlwaysOnTop ? "Désactiver toujours visible" : "Toujours visible"
+      }
+      title={
+        isAlwaysOnTop
+          ? "Toujours visible : ON — clic pour désactiver"
+          : "Toujours visible : OFF — clic pour activer"
+      }
+      style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+    >
+      {isAlwaysOnTop ? <Pin className="size-4" /> : <PinOff className="size-4" />}
+    </button>
+  )
 
   return (
     <div
@@ -17,8 +49,11 @@ export function TitleBar() {
       style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
     >
       {isMac ? (
-        // macOS: just a drag region — traffic lights are positioned by Electron
-        <div className="flex-1 h-full" />
+        // macOS: drag region + pin button à droite
+        <>
+          <div className="flex-1 h-full" />
+          {PinButton}
+        </>
       ) : (
         // Windows/Linux: custom controls
         <>
@@ -31,6 +66,7 @@ export function TitleBar() {
             className="flex h-full"
             style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
           >
+            {PinButton}
             <button
               onClick={minimize}
               className="w-12 h-full flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"

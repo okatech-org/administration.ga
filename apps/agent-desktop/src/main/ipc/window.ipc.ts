@@ -50,6 +50,21 @@ export function registerWindowIpc(
     return mainWindow.webContents.session.getSpellCheckerLanguages().length > 0
   })
 
+  // Always-on-top — utile quand iAsted est ouvert en side-panel et qu'on
+  // veut garder la fenêtre Consulat Agent visible par-dessus une autre app
+  // (ex. consulter pendant un appel Zoom, lire un PDF dans un autre soft).
+  ipcMain.handle("window:get-always-on-top", () => {
+    return !mainWindow.isDestroyed() && mainWindow.isAlwaysOnTop()
+  })
+  ipcMain.handle("window:set-always-on-top", (_event, value: boolean) => {
+    if (mainWindow.isDestroyed()) return
+    // 'floating' = au-dessus des fenêtres normales sans s'immiscer dans les
+    // contextes système (Mission Control / Spotlight). C'est le bon niveau
+    // pour un panneau d'assistant qui doit rester visible sans être agressif.
+    mainWindow.setAlwaysOnTop(value, "floating")
+    mainWindow.webContents.send("window:always-on-top-changed", value)
+  })
+
   // Forward maximize state changes to renderer
   mainWindow.on("maximize", () => {
     if (!mainWindow.isDestroyed()) {

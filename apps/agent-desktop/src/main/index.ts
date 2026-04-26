@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, session, nativeTheme } from "electron"
+import { app, BrowserWindow, ipcMain, session, nativeTheme, globalShortcut } from "electron"
 import path from "path"
 import { registerPrinterIpc, initPrinterAutoReconnect } from "./ipc/printer.ipc"
 import { registerNotificationIpc } from "./ipc/notification.ipc"
@@ -177,6 +177,21 @@ app.whenReady().then(() => {
     }
   })
 
+  // Raccourci global OS — Cmd/Ctrl+Shift+K — focus la fenêtre et ouvre iAsted
+  // Note : Cmd+K seul est laissé au renderer (in-app) car de nombreux éditeurs
+  // l'utilisent. Cmd+Shift+K est l'invocation depuis n'importe quelle app.
+  const accelerator = process.platform === "darwin" ? "Command+Shift+K" : "Control+Shift+K"
+  const registered = globalShortcut.register(accelerator, () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return
+    if (!mainWindow.isVisible()) mainWindow.show()
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.focus()
+    mainWindow.webContents.send("iasted:open-shortcut")
+  })
+  if (!registered) {
+    console.warn(`[main] Failed to register global shortcut ${accelerator}`)
+  }
+
   app.on("activate", () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.show()
@@ -185,6 +200,10 @@ app.whenReady().then(() => {
       createWindow()
     }
   })
+})
+
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll()
 })
 
 app.on("window-all-closed", () => {

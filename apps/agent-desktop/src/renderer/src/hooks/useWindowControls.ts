@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from "react"
 
 /**
- * Hook for native window controls (minimize, maximize, close).
- * Used by the custom title bar on Windows/Linux.
+ * Hook for native window controls (minimize, maximize, close, always-on-top).
+ * Used by the custom title bar on Windows/Linux + iAsted side panel toggle.
  */
 export function useWindowControls() {
   const [isMaximized, setIsMaximized] = useState(false)
+  const [isAlwaysOnTop, setIsAlwaysOnTop] = useState(false)
   const [platform, setPlatform] = useState<string>("darwin")
 
   useEffect(() => {
@@ -13,9 +14,16 @@ export function useWindowControls() {
 
     window.desktopApi.window.getPlatform().then(setPlatform)
     window.desktopApi.window.isMaximized().then(setIsMaximized)
+    window.desktopApi.window.getAlwaysOnTop?.().then(setIsAlwaysOnTop)
 
-    const unsubscribe = window.desktopApi.window.onMaximizedChanged(setIsMaximized)
-    return unsubscribe
+    const unsubMax = window.desktopApi.window.onMaximizedChanged(setIsMaximized)
+    const unsubTop =
+      window.desktopApi.window.onAlwaysOnTopChanged?.(setIsAlwaysOnTop) ??
+      (() => {})
+    return () => {
+      unsubMax()
+      unsubTop()
+    }
   }, [])
 
   const minimize = useCallback(() => {
@@ -30,5 +38,21 @@ export function useWindowControls() {
     window.desktopApi?.window?.close()
   }, [])
 
-  return { minimize, maximizeToggle, close, isMaximized, platform }
+  const toggleAlwaysOnTop = useCallback(() => {
+    setIsAlwaysOnTop((curr) => {
+      const next = !curr
+      window.desktopApi?.window?.setAlwaysOnTop?.(next)
+      return next
+    })
+  }, [])
+
+  return {
+    minimize,
+    maximizeToggle,
+    close,
+    isMaximized,
+    isAlwaysOnTop,
+    toggleAlwaysOnTop,
+    platform,
+  }
 }

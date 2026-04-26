@@ -42,6 +42,7 @@ import {
   useAuthenticatedPaginatedQuery,
   useConvexMutationQuery,
 } from "@workspace/api/hooks";
+import { usePageContext } from "../../hooks/use-page-context";
 
 
 const categoryLabels: Record<
@@ -77,6 +78,15 @@ export default function PostsPage() {
   const { mutateAsync: remove } = useConvexMutationQuery(
     api.functions.posts.remove,
   );
+
+  usePageContext({
+    module: "posts",
+    title: "Publications",
+    summary: `${posts?.length ?? 0} publication(s) chargée(s).`,
+    visibleEntities: [],
+    availableActions: [],
+    scopedToolNames: ["getOrgPosts"],
+  });
 
   const handleToggleStatus = async (
     postId: Id<"posts">,

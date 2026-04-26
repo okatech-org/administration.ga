@@ -37,6 +37,9 @@ export { useAdminAIChat } from "./useAdminAIChat";
 export type { Message, AdminAIAction } from "./useAdminAIChat";
 export { useAdminVoiceChat } from "./useAdminVoiceChat";
 export type { PendingConfirmation } from "./useAdminVoiceChat";
+export { useStreamingChat } from "./useStreamingChat";
+export type { StreamingChatState } from "./useStreamingChat";
+export { StreamingExplanationCard } from "./StreamingExplanationCard";
 
 // ─── Voice UI ─────────────────────────────────────────────────
 export { VoiceChatOverlay } from "./VoiceChatOverlay";

@@ -84,6 +84,9 @@ interface DesktopApi {
     isMaximized: () => Promise<boolean>
     getPlatform: () => Promise<string>
     setProgressBar: (value: number) => Promise<void>
+    getAlwaysOnTop: () => Promise<boolean>
+    setAlwaysOnTop: (value: boolean) => Promise<void>
+    onAlwaysOnTopChanged: (cb: (value: boolean) => void) => () => void
     onMaximizedChanged: (cb: (isMaximized: boolean) => void) => () => void
     onThemeChanged: (cb: (data: { shouldUseDarkColors: boolean }) => void) => () => void
   }

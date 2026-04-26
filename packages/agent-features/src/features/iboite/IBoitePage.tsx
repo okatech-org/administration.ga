@@ -123,6 +123,11 @@ import {
 	useAuthenticatedPaginatedQuery,
 	useConvexMutationQuery,
 } from "@workspace/api/hooks";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type { PageAction, PageEntity } from "../../stores/page-context-store";
 
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -348,6 +353,96 @@ export default function IBoitePage() {
 
 	const isMailLoading =
 		isMailView && mailPaginationStatus === "LoadingFirstPage";
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities = useMemo<PageEntity[]>(() => {
+		if (!isMailView || !mailItems) return [];
+		return (mailItems as any[]).slice(0, 30).map((m) => ({
+			id: m._id,
+			type: "mail",
+			label: `${m.subject ?? "(sans objet)"} — ${m.senderName ?? m.senderOwnerType ?? "?"}`,
+			data: {
+				isRead: m.readAt != null,
+				isStarred: !!m.isStarred,
+				folder: m.folder,
+				createdAt: m._creationTime,
+			},
+		}));
+	}, [isMailView, mailItems]);
+
+	const pageActions = useMemo<PageAction[]>(() => {
+		const actions: PageAction[] = [
+			{
+				id: "switch-folder",
+				label: "Changer de dossier",
+				description:
+					"params.folder ∈ ['inbox','starred','sent','archive','trash','packages','calls']",
+			},
+			{
+				id: "open-mail",
+				label: "Ouvrir un message",
+				description: "params.mailId requis (depuis les entités visibles).",
+			},
+		];
+		if (canCompose) {
+			actions.push({
+				id: "compose-mail",
+				label: "Composer un nouveau message",
+				description: "Ouvre le dialogue de composition.",
+			});
+			actions.push({
+				id: "archive-mail",
+				label: "Archiver un message",
+				description: "params.mailId requis.",
+				requiresConfirmation: true,
+			});
+			actions.push({
+				id: "delete-mail",
+				label: "Supprimer un message",
+				description: "params.mailId requis.",
+				requiresConfirmation: true,
+			});
+		}
+		return actions;
+	}, [canCompose]);
+
+	const summary = `Vue: ${activeView}.${unreadCount ? ` ${unreadCount} non-lus dans ce dossier.` : ""} ${(mailItems?.length ?? 0)} messages chargés.${packages?.length ? ` ${packages.length} colis enregistrés.` : ""}`;
+
+	usePageContext({
+		module: "iboite",
+		title: "iBoîte",
+		summary,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: ["getOrgMailInbox"],
+	});
+
+	useRegisterPageAction("switch-folder", async (params) => {
+		const f = params?.folder as ViewKey | undefined;
+		if (
+			f === "inbox" || f === "starred" || f === "sent" ||
+			f === "archive" || f === "trash" || f === "packages" || f === "calls"
+		) {
+			switchView(f);
+		}
+	});
+	useRegisterPageAction("open-mail", async (params) => {
+		const id = params?.mailId as Id<"digitalMail"> | undefined;
+		if (id) setSelectedMailId(id);
+	});
+	useRegisterPageAction("compose-mail", async () => {
+		if (canCompose) setComposeOpen(true);
+	});
+	useRegisterPageAction("archive-mail", async (params) => {
+		if (!canCompose) return;
+		const id = params?.mailId as Id<"digitalMail"> | undefined;
+		if (id) await handleArchive(id);
+	});
+	useRegisterPageAction("delete-mail", async (params) => {
+		if (!canCompose) return;
+		const id = params?.mailId as Id<"digitalMail"> | undefined;
+		if (id) await handleDelete(id);
+	});
 
 	// ── Render ─────────────────────────────────────────────────────────────
 

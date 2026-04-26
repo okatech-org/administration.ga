@@ -12,9 +12,14 @@ import {
 	Building2,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { type ComponentType, useState } from "react";
+import { type ComponentType, useMemo, useState } from "react";
 import { useOrg } from "../../shell/org-provider";
 import { useCanDoTask } from "../../hooks/useCanDoTask";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type { PageAction, PageEntity } from "../../stores/page-context-store";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { FlatCard } from "../../components/my-space/flat-card";
@@ -123,6 +128,87 @@ export default function AgentProfileDetailPage({
 			: "skip",
 	);
 
+	// ─── iAsted page context (avant les early returns) ─────────────
+	const profile = (detailData as any)?.profile;
+	const fullName = profile
+		? `${profile.identity?.firstName ?? ""} ${profile.identity?.lastName ?? ""}`.trim() ||
+			"Nom inconnu"
+		: "";
+	const pageEntities = useMemo<PageEntity[]>(() => {
+		if (!detailData) return [];
+		const d = detailData as any;
+		const entities: PageEntity[] = [];
+		for (const reg of (d.registrations ?? []).slice(0, 5)) {
+			entities.push({
+				id: reg._id,
+				type: "consular-registration",
+				label: `Inscription ${reg.cardNumber ?? "—"}`,
+				data: { status: reg.status, expiresAt: reg.expiresAt },
+			});
+		}
+		for (const c of (d.children ?? []).slice(0, 10)) {
+			entities.push({
+				id: c._id,
+				type: "child",
+				label: `${c.identity?.firstName ?? ""} ${c.identity?.lastName ?? ""}`.trim() || "Enfant",
+				data: { birthDate: c.identity?.birthDate },
+			});
+		}
+		for (const r of (d.requests ?? []).slice(0, 10)) {
+			entities.push({
+				id: r._id,
+				type: "request",
+				label: `Demande ${r.reference ?? "—"}`,
+				data: { status: r.status, serviceName: (r.service as any)?.name?.fr },
+			});
+		}
+		for (const doc of (d.documents ?? []).slice(0, 10)) {
+			entities.push({
+				id: doc._id,
+				type: "document",
+				label: doc.fileName ?? doc.documentTypeId ?? "Document",
+				data: { status: doc.status },
+			});
+		}
+		return entities;
+	}, [detailData]);
+
+	const pageActions = useMemo<PageAction[]>(
+		() => [
+			{
+				id: "back-to-profiles",
+				label: "Retour aux profils",
+				description: "Navigue vers /affaires-consulaires/profiles.",
+			},
+			{
+				id: "open-request",
+				label: "Ouvrir une demande de ce citoyen",
+				description: "params.reference requis (depuis les entités visibles).",
+			},
+		],
+		[],
+	);
+
+	const summary = detailData
+		? `Profil ${fullName} · ${(detailData as any).registrations?.length ?? 0} inscription(s), ${(detailData as any).children?.length ?? 0} enfant(s), ${(detailData as any).requests?.length ?? 0} demande(s), ${(detailData as any).documents?.length ?? 0} document(s). Complétion: ${(detailData as any).profile?.completionScore ?? 0}%.`
+		: "Chargement du profil…";
+
+	usePageContext({
+		module: "profile-detail",
+		title: `Profil — ${fullName || "…"}`,
+		summary,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: ["getCitizenProfile"],
+	});
+	useRegisterPageAction("back-to-profiles", async () => {
+		router.push("/affaires-consulaires/profiles");
+	});
+	useRegisterPageAction("open-request", async (params) => {
+		const ref = params?.reference as string | undefined;
+		if (ref) router.push(`/requests/${ref}`);
+	});
+
 	if (!canDo("profiles.view")) {
 		return (
 			<div className="flex flex-col items-center justify-center py-20 gap-4 text-center p-6">
@@ -167,7 +253,6 @@ export default function AgentProfileDetailPage({
 	}
 
 	const {
-		profile,
 		user,
 		children = [],
 		documents = [],
@@ -177,10 +262,6 @@ export default function AgentProfileDetailPage({
 	} = detailData as any;
 
 	const completionScore = (profile as any).completionScore ?? 0;
-
-	const firstName = profile.identity?.firstName || "";
-	const lastName = profile.identity?.lastName || "";
-	const fullName = `${firstName} ${lastName}`.trim() || "Nom inconnu";
 
 	return (
 		<div className="flex flex-1 flex-col gap-0 w-full">

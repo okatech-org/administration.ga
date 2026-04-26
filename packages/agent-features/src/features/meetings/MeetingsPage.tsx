@@ -21,6 +21,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { useOrg } from "../../shell";
 import { useMeeting } from "../../hooks/use-meeting";
+import { usePageContext } from "../../hooks/use-page-context";
 
 // ─── DI props ────────────────────────────────────────────────────────────────
 
@@ -77,6 +78,15 @@ export default function MeetingsPage({
 			activeOrgId ? { orgId: activeOrgId } : "skip",
 		);
 	const meetings = meetingsData?.meetings;
+
+	usePageContext({
+		module: "meetings",
+		title: "Réunions",
+		summary: `${meetings?.length ?? 0} réunion(s).${activeMeetingId ? " Réunion active." : ""}`,
+		visibleEntities: [],
+		availableActions: [],
+		scopedToolNames: [],
+	});
 
 	const handleCreateMeeting = useCallback(async () => {
 		if (!activeOrgId) return;

@@ -49,6 +49,7 @@ import { useOrg } from "../../shell/org-provider";
 import { useModuleAccess } from "../../components/shared/access-gate";
 import { FlatCard } from "../../components/my-space/flat-card";
 import { captureEvent } from "../../lib/analytics";
+import { usePageContext } from "../../hooks/use-page-context";
 
 export default function PaymentsDashboardPage() {
 	const { t, i18n } = useTranslation();
@@ -70,6 +71,15 @@ export default function PaymentsDashboardPage() {
 		api.functions.payments.listByOrg,
 		activeOrg?._id ? { orgId: activeOrg._id } : "skip",
 	);
+
+	usePageContext({
+		module: "payments",
+		title: "Paiements",
+		summary: `${payments?.length ?? 0} paiement(s) sur ${dateRange} jours.`,
+		visibleEntities: [],
+		availableActions: [],
+		scopedToolNames: ["getRecentPayments"],
+	});
 
 	// Calculate statistics
 	const stats = useMemo(() => {

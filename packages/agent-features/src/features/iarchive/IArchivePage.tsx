@@ -6,6 +6,7 @@ import { Link } from "@workspace/routing";
 import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useOrg } from "../../shell/org-provider";
+import { usePageContext } from "../../hooks/use-page-context";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
@@ -423,6 +424,15 @@ export default function IArchivePage() {
 		api.functions.archive.getArchiveStats,
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
+
+	usePageContext({
+		module: "iarchive",
+		title: "iArchive",
+		summary: `${(archivedDocs as any[]).length} document(s) archivé(s).${selectedCategory ? ` Catégorie: ${selectedCategory}.` : ""}${search ? ` Recherche: "${search}".` : ""}`,
+		visibleEntities: [],
+		availableActions: [],
+		scopedToolNames: [],
+	});
 
 	const { data: auditLog = [] } = useAuthenticatedConvexQuery(
 		api.functions.archive.getArchiveAuditLog,

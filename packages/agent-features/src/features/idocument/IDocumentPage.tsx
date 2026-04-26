@@ -8,6 +8,7 @@ import React, { useState, useMemo, useCallback, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { useOrg } from "../../shell/org-provider"
+import { usePageContext } from "../../hooks/use-page-context"
 import { useModuleAccess } from "../../components/shared/access-gate"
 import { useOrgModules } from "../../hooks/useOrgModules"
 import { useCanDoTask } from "../../hooks/useCanDoTask"
@@ -1881,6 +1882,15 @@ export default function IDocumentPage() {
     api.functions.documentVault.getOrgVault,
     activeOrgId ? { orgId: activeOrgId } : "skip"
   )
+
+  usePageContext({
+    module: "idocument",
+    title: "iDocument",
+    summary: `${(rawDocuments as any[]).length} document(s) dans le coffre.${search ? ` Recherche: "${search}".` : ""}${statusFilter !== "all" ? ` Statut: ${statusFilter}.` : ""}`,
+    visibleEntities: [],
+    availableActions: [],
+    scopedToolNames: [],
+  })
 
   // Upload mutation
   const { mutateAsync: generateUploadUrl } = useConvexMutationQuery(

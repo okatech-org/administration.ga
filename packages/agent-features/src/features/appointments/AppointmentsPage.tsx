@@ -46,6 +46,11 @@ import {
 	useConvexMutationQuery,
 } from "@workspace/api/hooks";
 import { cn } from "@workspace/ui/lib/utils";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type { PageAction, PageEntity } from "../../stores/page-context-store";
 
 // ─── Shared appointment type ─────────────────────────────────────────────────
 
@@ -569,6 +574,172 @@ export default function DashboardAppointments() {
 		],
 		[t, handleComplete, handleCancel, handleNoShow, canManage, router],
 	);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities = useMemo<PageEntity[]>(() => {
+		const list = (appointments ?? []) as AppointmentItem[];
+		return list.slice(0, 30).map((a) => ({
+			id: a._id,
+			type: "appointment",
+			label: `${a.date} ${a.time} · ${a.attendee?.firstName ?? ""} ${a.attendee?.lastName ?? ""}`.trim(),
+			data: {
+				status: a.status,
+				date: a.date,
+				time: a.time,
+				attendeeEmail: a.attendee?.email,
+				serviceName: a.service?.name
+					? getLocalized(a.service.name as LocalizedString)
+					: undefined,
+				requestRef: a.request?.reference,
+			},
+		}));
+	}, [appointments]);
+
+	const pageActions = useMemo<PageAction[]>(() => {
+		const actions: PageAction[] = [
+			{
+				id: "set-status-filter",
+				label: "Filtrer par statut",
+				description:
+					"params.status ∈ ['all','confirmed','completed','cancelled','no_show','rescheduled']",
+			},
+			{
+				id: "set-date-filter",
+				label: "Filtrer par date",
+				description: "params.date au format YYYY-MM-DD (vide pour reset).",
+			},
+			{
+				id: "toggle-view",
+				label: "Basculer vue calendrier/liste",
+				description:
+					"params.mode ∈ ['calendar','list'] (optionnel, sinon toggle).",
+			},
+			{
+				id: "navigate-month",
+				label: "Naviguer dans le mois",
+				description:
+					"params.direction ∈ ['prev','next','today'] OU params.month = 'YYYY-MM'.",
+			},
+			{
+				id: "open-appointment",
+				label: "Ouvrir un RDV",
+				description: "params.appointmentId requis (depuis les entités visibles).",
+			},
+			{
+				id: "open-new-appointment",
+				label: "Nouveau RDV",
+				description: "Navigue vers le formulaire de création.",
+			},
+			{
+				id: "open-print-schedule",
+				label: "Imprimer le planning",
+				description: "Ouvre la vue impression du mois actuel.",
+			},
+		];
+		if (canManage) {
+			actions.push(
+				{
+					id: "complete-appointment",
+					label: "Marquer un RDV terminé",
+					description: "params.appointmentId requis.",
+					requiresConfirmation: true,
+				},
+				{
+					id: "cancel-appointment",
+					label: "Annuler un RDV",
+					description: "params.appointmentId requis.",
+					requiresConfirmation: true,
+				},
+				{
+					id: "no-show-appointment",
+					label: "Marquer absent",
+					description: "params.appointmentId requis.",
+					requiresConfirmation: true,
+				},
+			);
+		}
+		return actions;
+	}, [canManage]);
+
+	const counts = useMemo(() => {
+		const list = (appointments ?? []) as AppointmentItem[];
+		const c: Record<string, number> = {};
+		for (const a of list) c[a.status] = (c[a.status] ?? 0) + 1;
+		return c;
+	}, [appointments]);
+
+	const summary = `${(appointments ?? []).length} RDV affichés (vue ${viewMode}, mois ${calendarMonth}, statut ${statusFilter}${dateFilter ? `, date ${dateFilter}` : ""}). Répartition: ${Object.entries(counts).map(([s, n]) => `${s}=${n}`).join(", ") || "aucun"}.`;
+
+	usePageContext({
+		module: "appointments",
+		title: "Rendez-vous",
+		summary,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: ["getAppointmentsList"],
+	});
+
+	useRegisterPageAction("set-status-filter", async (params) => {
+		const s = params?.status as string | undefined;
+		if (s) setStatusFilter(s);
+	});
+	useRegisterPageAction("set-date-filter", async (params) => {
+		const d = params?.date as string | undefined;
+		setDateFilter(d ?? "");
+	});
+	useRegisterPageAction("toggle-view", async (params) => {
+		const m = params?.mode as "calendar" | "list" | undefined;
+		setViewMode((curr) =>
+			m === "calendar" || m === "list" ? m : curr === "calendar" ? "list" : "calendar",
+		);
+	});
+	useRegisterPageAction("navigate-month", async (params) => {
+		const month = params?.month as string | undefined;
+		const direction = params?.direction as "prev" | "next" | "today" | undefined;
+		if (month && /^\d{4}-\d{2}$/.test(month)) {
+			setCalendarMonth(month);
+			return;
+		}
+		if (direction === "today") {
+			const now = new Date();
+			setCalendarMonth(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+			return;
+		}
+		setCalendarMonth((curr) => {
+			const [y, m] = curr.split("-").map(Number);
+			const delta = direction === "prev" ? -1 : 1;
+			const d = new Date(y, m - 1 + delta, 1);
+			return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+		});
+	});
+	useRegisterPageAction("open-appointment", async (params) => {
+		const id = params?.appointmentId as string | undefined;
+		if (id) router.push(`/appointments/${id}`);
+	});
+	useRegisterPageAction("open-new-appointment", async () => {
+		router.push("/appointments/new");
+	});
+	useRegisterPageAction("open-print-schedule", async () => {
+		const params = new URLSearchParams();
+		params.set("period", "month");
+		params.set("anchor", `${calendarMonth}-01`);
+		router.push(`/appointments/print?${params.toString()}`);
+	});
+	useRegisterPageAction("complete-appointment", async (params) => {
+		if (!canManage) return;
+		const id = params?.appointmentId as string | undefined;
+		if (id) await handleComplete(id);
+	});
+	useRegisterPageAction("cancel-appointment", async (params) => {
+		if (!canManage) return;
+		const id = params?.appointmentId as string | undefined;
+		if (id) await handleCancel(id);
+	});
+	useRegisterPageAction("no-show-appointment", async (params) => {
+		if (!canManage) return;
+		const id = params?.appointmentId as string | undefined;
+		if (id) await handleNoShow(id);
+	});
 
 	// ─── Render ────────────────────────────────────────────────────────────
 

@@ -16,6 +16,7 @@ import type * as actions_posthogHealthCheck from "../actions/posthogHealthCheck.
 import type * as actions_push from "../actions/push.js";
 import type * as ai_activityLog from "../ai/activityLog.js";
 import type * as ai_adminChat from "../ai/adminChat.js";
+import type * as ai_adminChatStreaming from "../ai/adminChatStreaming.js";
 import type * as ai_adminTools from "../ai/adminTools.js";
 import type * as ai_adminVoice from "../ai/adminVoice.js";
 import type * as ai_aiTriggers from "../ai/aiTriggers.js";
@@ -50,6 +51,7 @@ import type * as ai_rateLimiter from "../ai/rateLimiter.js";
 import type * as ai_routes_manifest from "../ai/routes_manifest.js";
 import type * as ai_scheduledSweeper from "../ai/scheduledSweeper.js";
 import type * as ai_securityGuardian from "../ai/securityGuardian.js";
+import type * as ai_streamingChats from "../ai/streamingChats.js";
 import type * as ai_suggestions from "../ai/suggestions.js";
 import type * as ai_tools from "../ai/tools.js";
 import type * as ai_voice from "../ai/voice.js";
@@ -310,6 +312,7 @@ import type * as schemas_requests from "../schemas/requests.js";
 import type * as schemas_roleConfig from "../schemas/roleConfig.js";
 import type * as schemas_security from "../schemas/security.js";
 import type * as schemas_services from "../schemas/services.js";
+import type * as schemas_streamingChats from "../schemas/streamingChats.js";
 import type * as schemas_supervisionSessions from "../schemas/supervisionSessions.js";
 import type * as schemas_tickets from "../schemas/tickets.js";
 import type * as schemas_tutorials from "../schemas/tutorials.js";
@@ -351,6 +354,7 @@ declare const fullApi: ApiFromModules<{
   "actions/push": typeof actions_push;
   "ai/activityLog": typeof ai_activityLog;
   "ai/adminChat": typeof ai_adminChat;
+  "ai/adminChatStreaming": typeof ai_adminChatStreaming;
   "ai/adminTools": typeof ai_adminTools;
   "ai/adminVoice": typeof ai_adminVoice;
   "ai/aiTriggers": typeof ai_aiTriggers;
@@ -385,6 +389,7 @@ declare const fullApi: ApiFromModules<{
   "ai/routes_manifest": typeof ai_routes_manifest;
   "ai/scheduledSweeper": typeof ai_scheduledSweeper;
   "ai/securityGuardian": typeof ai_securityGuardian;
+  "ai/streamingChats": typeof ai_streamingChats;
   "ai/suggestions": typeof ai_suggestions;
   "ai/tools": typeof ai_tools;
   "ai/voice": typeof ai_voice;
@@ -645,6 +650,7 @@ declare const fullApi: ApiFromModules<{
   "schemas/roleConfig": typeof schemas_roleConfig;
   "schemas/security": typeof schemas_security;
   "schemas/services": typeof schemas_services;
+  "schemas/streamingChats": typeof schemas_streamingChats;
   "schemas/supervisionSessions": typeof schemas_supervisionSessions;
   "schemas/tickets": typeof schemas_tickets;
   "schemas/tutorials": typeof schemas_tutorials;

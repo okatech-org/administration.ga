@@ -16,19 +16,19 @@ import type {
 	IAstedChatColumnsProps,
 	VoicemailsListInjectedProps,
 } from "@workspace/agent-features/features/iasted";
-import { useAdminAIChat } from "@workspace/agent-features/components/iasted-host";
-import { useAdminVoiceChat } from "@/components/ai/useAdminVoiceChat";
 import {
+	useAdminAIChat,
+	useAdminVoiceChat,
 	IASTED_CONTACT,
 	IAstedChatConversation,
 	IAstedChatList,
 	IAstedChatVoiceOverlay,
 	useIAstedChat,
-} from "@/components/ai/iasted/IAstedInstantChatTab";
-import { IAstedContactTab } from "@/components/ai/iasted/IAstedContactTab";
-import { IAstedCallTab } from "@/components/ai/iasted/IAstedCallTab";
-import { IAstedMeetingTab } from "@/components/ai/iasted/IAstedMeetingTab";
-import { IAstedSettingsTab } from "@/components/ai/iasted/IAstedSettingsTab";
+	IAstedContactTab,
+	IAstedCallTab,
+	IAstedMeetingTab,
+	IAstedSettingsTab,
+} from "@workspace/agent-features/components/iasted-host";
 import { VoicemailsList as CallCenterVoicemailsList } from "@/components/call-center/VoicemailsList";
 
 // ─── Injected iChat columns (list + conversation + voice overlay) ──────────

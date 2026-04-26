@@ -66,6 +66,16 @@ export interface WindowShellProps {
 	tabDefinitions?: Partial<Record<IAstedTabId, IAstedTabDefinition>>;
 	resolveLabel?: (labelKey: string, fallback: string) => string;
 
+	/**
+	 * Layout du shell.
+	 * - `"floating"` (default) : dock compact bottom-right desktop, bottom-sheet mobile
+	 * - `"side-panel"` : panneau plein hauteur ancré à droite (desktop) qui
+	 *   « pousse » le contenu de la page. Mobile reste bottom-sheet.
+	 *   À combiner avec un padding-right dynamique sur le `<main>` côté hôte
+	 *   (cf. CSS var `--iasted-side-panel-width` settée par IAstedWindow).
+	 */
+	layout?: "floating" | "side-panel";
+
 	className?: string;
 }
 
@@ -89,6 +99,7 @@ export function WindowShell({
 	tabsNav: customTabsNav,
 	tabDefinitions,
 	resolveLabel,
+	layout = "floating",
 	className,
 }: WindowShellProps) {
 	const reduced = useReducedMotion();
@@ -171,22 +182,55 @@ export function WindowShell({
 			/>
 		);
 
+	const isSidePanel = layout === "side-panel";
+
+	// Animation : slide-from-bottom pour floating, slide-from-right pour side-panel
+	const sidePanelMotion = {
+		initial: { x: 480, opacity: 0 },
+		animate: { x: 0, opacity: 1 },
+		exit: { x: 480, opacity: 0 },
+	};
+	const initialMotion = reduced
+		? { opacity: 0 }
+		: isSidePanel
+			? sidePanelMotion.initial
+			: WINDOW_MOTION.initial;
+	const animateMotion = reduced
+		? { opacity: 1 }
+		: isSidePanel
+			? sidePanelMotion.animate
+			: WINDOW_MOTION.animate;
+	const exitMotion = reduced
+		? { opacity: 0 }
+		: isSidePanel
+			? sidePanelMotion.exit
+			: WINDOW_MOTION.exit;
+
 	return (
 		<AnimatePresence>
 			{isOpen && (
 				<motion.aside
-					initial={reduced ? { opacity: 0 } : WINDOW_MOTION.initial}
-					animate={reduced ? { opacity: 1 } : WINDOW_MOTION.animate}
-					exit={reduced ? { opacity: 0 } : WINDOW_MOTION.exit}
+					initial={initialMotion}
+					animate={animateMotion}
+					exit={exitMotion}
 					transition={transition}
 					style={{ zIndex: Z_INDEX.window }}
 					className={cn(
-						// Position — mobile bottom sheet, desktop dock bottom-right
-						"fixed left-0 right-0 bottom-0 flex flex-col overflow-hidden sm:left-auto sm:right-6 sm:bottom-6 print:hidden",
-						// Dimensions — 420×min(640,vh-100) desktop, 85dvh mobile (modèle citizen)
-						"h-[85dvh] sm:w-[420px] sm:h-[min(640px,calc(100vh-100px))]",
-						// Surface + border subtile + rounded
-						"rounded-t-2xl sm:rounded-2xl bg-card border border-[oklch(0_0_0/0.05)] dark:border-[oklch(1_0_0/0.05)]",
+						"fixed flex flex-col overflow-hidden print:hidden",
+						isSidePanel
+							? [
+									// Mobile = bottom-sheet (comportement inchangé)
+									"left-0 right-0 bottom-0 h-[85dvh] rounded-t-2xl",
+									// Desktop = side panel ancré à droite, full height
+									"sm:left-auto sm:top-0 sm:right-0 sm:bottom-0 sm:w-[420px] sm:h-screen sm:rounded-none sm:border-l",
+									"bg-card border border-[oklch(0_0_0/0.05)] dark:border-[oklch(1_0_0/0.05)]",
+								]
+							: [
+									// Floating dock — comportement original (citizen model)
+									"left-0 right-0 bottom-0 sm:left-auto sm:right-6 sm:bottom-6",
+									"h-[85dvh] sm:w-[420px] sm:h-[min(640px,calc(100vh-100px))]",
+									"rounded-t-2xl sm:rounded-2xl bg-card border border-[oklch(0_0_0/0.05)] dark:border-[oklch(1_0_0/0.05)]",
+								],
 						className,
 					)}
 					role="dialog"

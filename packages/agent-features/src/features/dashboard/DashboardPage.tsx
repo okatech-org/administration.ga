@@ -54,6 +54,7 @@ import {
 import { useOrg } from "../../shell/org-provider"
 import { FlatCard } from "../../components/my-space/flat-card"
 import { SectionHeader } from "../../components/my-space/section-header"
+import { usePageContext } from "../../hooks/use-page-context"
 
 // ─── Chart colors ────────────────────────────────────────────────────────────
 const CHART_COLORS = [
@@ -92,6 +93,15 @@ export default function DashboardPage() {
 		api.functions.statistics.getAgentStats,
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	)
+
+	usePageContext({
+		module: "dashboard",
+		title: "Tableau de bord",
+		summary: `Vue d'ensemble — période: ${period}.${stats ? ` ${stats.totalRequests ?? 0} demandes au total.` : ""}`,
+		visibleEntities: [],
+		availableActions: [],
+		scopedToolNames: ["getOrgDashboardStats"],
+	})
 
 	const handleExportJSON = async () => {
 		if (!activeOrgId) return

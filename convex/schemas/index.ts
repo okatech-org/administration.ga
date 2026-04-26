@@ -10,6 +10,7 @@ export { eventsTable } from "./events";
 export { documentsTable, documentFoldersTable } from "./documents";
 export { postsTable } from "./posts";
 export { conversationsTable } from "./conversations";
+export { streamingChatsTable } from "./streamingChats";
 export { formTemplatesTable } from "./formTemplates";
 export { appointmentsTable } from "./appointments";
 export { appointmentWaitlistTable } from "./appointmentWaitlist";

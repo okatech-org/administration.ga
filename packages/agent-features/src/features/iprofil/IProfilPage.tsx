@@ -31,6 +31,7 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useOrg } from "../../shell/org-provider";
+import { usePageContext } from "../../hooks/use-page-context";
 import {
 	Avatar,
 	AvatarFallback,
@@ -123,6 +124,15 @@ export default function IProfilPage() {
 		useConvexMutationQuery(
 			api.functions.diplomaticProfile.updateMyDiplomaticProfile,
 		);
+
+	usePageContext({
+		module: "iprofil",
+		title: "iProfil",
+		summary: `Profil diplomatique de l'agent. Onglet ${activeTab}.${isEditing ? " Mode édition." : ""}`,
+		visibleEntities: [],
+		availableActions: [],
+		scopedToolNames: ["getAgentContext"],
+	});
 
 	// undefined = en cours de chargement, null/objet = chargé
 	if (data === undefined) {

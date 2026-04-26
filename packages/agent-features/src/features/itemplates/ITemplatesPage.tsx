@@ -24,6 +24,7 @@ import { motion } from "motion/react";
 import { FlatCard } from "../../components/my-space/flat-card";
 import { useOrg } from "../../shell/org-provider";
 import { useOrgModules } from "../../hooks/useOrgModules";
+import { usePageContext } from "../../hooks/use-page-context";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -68,6 +69,15 @@ export default function ITemplatesPage() {
 		api.functions.documentTemplates.listOrgTemplates,
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
+
+	usePageContext({
+		module: "itemplates",
+		title: "Modèles de documents",
+		summary: `${templates?.length ?? 0} modèle(s) configuré(s) pour cette organisation.`,
+		visibleEntities: [],
+		availableActions: [],
+		scopedToolNames: [],
+	});
 
 	if (!activeOrgId) {
 		return (

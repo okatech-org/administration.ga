@@ -50,6 +50,11 @@ import {
 import { captureEvent } from "../../lib/analytics";
 import { cn } from "@workspace/ui/lib/utils";
 import { getValidNextStatuses } from "@convex/lib/requestWorkflow";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type { PageAction, PageEntity } from "../../stores/page-context-store";
 
 
 // ─── Host-provided component surfaces ────────────────────────────────
@@ -478,6 +483,123 @@ export default function RequestDetailPage({
 			});
 		}
 	}, [request]);
+
+	// ─── iAsted page context (avant les early returns) ─────────────
+	const validNextStatuses = useMemo(
+		() =>
+			request?.status
+				? getValidNextStatuses(request.status as RequestStatus)
+				: [],
+		[request?.status],
+	);
+	const pageEntities = useMemo<PageEntity[]>(() => {
+		if (!request) return [];
+		const entities: PageEntity[] = [];
+		// Sections du formulaire (contexte structurel)
+		for (const s of sections.slice(0, 20)) {
+			const filledCount = s.fields.filter((f) => !f.isEmpty).length;
+			entities.push({
+				id: `section:${s.id}`,
+				type: "form-section",
+				label: s.title,
+				data: {
+					fieldCount: s.fields.length,
+					filledCount,
+					emptyCount: s.fields.filter((f) => f.isEmpty).length,
+				},
+			});
+		}
+		// Documents joints
+		const docs = (request as any).documents ?? [];
+		for (const d of docs.slice(0, 15)) {
+			entities.push({
+				id: d._id ?? `doc:${d.documentTypeId ?? d.fileName}`,
+				type: "document",
+				label: d.fileName ?? d.documentTypeId ?? "Document",
+				data: {
+					status: d.status,
+					required: !!d.required,
+					sizeBytes: d.size,
+				},
+			});
+		}
+		return entities;
+	}, [request, sections]);
+
+	const pageActions = useMemo<PageAction[]>(() => {
+		const actions: PageAction[] = [
+			{
+				id: "back-to-list",
+				label: "Retour à la liste",
+				description: "Navigue vers /requests.",
+			},
+		];
+		if (canDo("requests.process")) {
+			actions.push({
+				id: "update-status",
+				label: "Changer le statut",
+				description: `Met à jour le statut. params.status ∈ [${validNextStatuses.map((s) => `'${s}'`).join(",")}]`,
+				requiresConfirmation: true,
+			});
+		}
+		if (canDo("requests.view")) {
+			actions.push({
+				id: "add-internal-note",
+				label: "Ajouter une note interne",
+				description: "params.content (string) — la note sera marquée interne.",
+			});
+		}
+		if (canDo("requests.assign")) {
+			actions.push({
+				id: "assign-agent",
+				label: "Assigner à un agent",
+				description: "params.membershipId requis.",
+				requiresConfirmation: true,
+			});
+		}
+		return actions;
+	}, [canDo, validNextStatuses]);
+
+	const summary = request
+		? `Demande ${(request as any).reference ?? ""} · statut ${request.status} · service ${(request as any).service?.name?.fr ?? "?"} · citoyen ${(request as any).user?.firstName ?? ""} ${(request as any).user?.lastName ?? ""}. ${sections.length} sections, ${(request as any).documents?.length ?? 0} documents joints. Statuts suivants possibles: ${validNextStatuses.join(", ") || "(aucun)"}.`
+		: "Chargement de la demande…";
+
+	usePageContext({
+		module: "request-detail",
+		title: `Demande ${(request as any)?.reference ?? ""}`,
+		summary,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: ["getRequestDetail", "getCitizenProfile"],
+	});
+
+	useRegisterPageAction("back-to-list", async () => {
+		router.push("/requests");
+	});
+	useRegisterPageAction("update-status", async (params) => {
+		if (!request || !canDo("requests.process")) return;
+		const status = params?.status as string | undefined;
+		if (!status) return;
+		await updateStatus({ requestId: request._id, status: status as any });
+		toast.success(t("requestDetail.statusUpdated"));
+	});
+	useRegisterPageAction("add-internal-note", async (params) => {
+		if (!request || !canDo("requests.view")) return;
+		const content = params?.content as string | undefined;
+		if (!content?.trim()) return;
+		await createNote({
+			requestId: request._id,
+			content,
+		});
+		toast.success(t("requestDetail.noteAdded"));
+	});
+	useRegisterPageAction("assign-agent", async (params) => {
+		if (!request || !canDo("requests.assign")) return;
+		const membershipId = params?.membershipId as Id<"memberships"> | undefined;
+		if (!membershipId) return;
+		await assignAgent({ requestId: request._id, agentId: membershipId });
+		toast.success(t("requestDetail.assigned"));
+	});
 
 	// ─── Loading / Not found ────────────────────────────────────────
 	if (request === undefined) {

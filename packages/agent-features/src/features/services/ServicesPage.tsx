@@ -26,6 +26,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "motion/react";
 import { useOrg } from "../../shell/org-provider";
+import { usePageContext } from "../../hooks/use-page-context";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
@@ -222,6 +223,15 @@ export default function ServicesPage() {
     api.functions.services.listByOrg,
     activeOrgId ? { orgId: activeOrgId, activeOnly: false } : "skip",
   );
+
+  usePageContext({
+    module: "services",
+    title: "Services",
+    summary: `${orgServices?.length ?? 0} service(s) configuré(s) sur ${catalogServices?.length ?? 0} disponible(s).`,
+    visibleEntities: [],
+    availableActions: [],
+    scopedToolNames: [],
+  });
 
   // ── Mutations ────────────────────────────────────────────────────────────
   const { mutateAsync: toggleActive } = useConvexMutationQuery(

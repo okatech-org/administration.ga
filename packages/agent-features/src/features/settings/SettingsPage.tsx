@@ -85,6 +85,7 @@ import { Textarea } from "@workspace/ui/components/textarea";
 import { SignatureSettingsCard } from "./components/signature-settings-card";
 import { useCanDoTask } from "../../hooks/useCanDoTask";
 import { type ConsularTheme, useConsularTheme } from "../../hooks/useConsularTheme";
+import { usePageContext } from "../../hooks/use-page-context";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
@@ -118,6 +119,15 @@ export default function DashboardSettings() {
 
 	// ── Session data ──
 	const { data: session } = authClient.useSession();
+
+	usePageContext({
+		module: "settings",
+		title: "Paramètres",
+		summary: `Paramètres du compte agent. Onglet ${activeTab}.${isEditing ? " Mode édition." : ""}`,
+		visibleEntities: [],
+		availableActions: [],
+		scopedToolNames: [],
+	});
 
 	// ── OTP reset state ──
 	const [resetStep, setResetStep] = useState<"idle" | "otp_sent" | "done">(

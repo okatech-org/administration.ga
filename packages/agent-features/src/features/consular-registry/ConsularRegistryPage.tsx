@@ -61,6 +61,11 @@ import {
 	usePaginatedConvexQuery,
 } from "@workspace/api/hooks";
 import { cn } from "@workspace/ui/lib/utils";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type { PageAction, PageEntity } from "../../stores/page-context-store";
 
 // ─── Injected-component props ──────────────────────────────────
 export interface ProfileViewSheetProps {
@@ -361,6 +366,93 @@ export default function ConsularRegistryPage({
 
 	const selectedProfileId =
 		selectedRegistration?.profileId ?? selectedNotification?.profileId;
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities = useMemo<PageEntity[]>(() => {
+		return (registrations as RegistrationRow[]).slice(0, 30).map((r) => ({
+			id: r._id,
+			type: "consular-registration",
+			label: `${r.profile?.identity?.firstName ?? ""} ${r.profile?.identity?.lastName ?? ""}`.trim() ||
+				r.cardNumber || "Inscription",
+			data: {
+				cardNumber: r.cardNumber,
+				status: r.status,
+				profileId: r.profileId,
+			},
+		}));
+	}, [registrations]);
+
+	const pageActions = useMemo<PageAction[]>(
+		() => [
+			{
+				id: "set-status-filter",
+				label: "Filtrer par statut",
+				description:
+					"params.status ∈ ['all','requested','active','expired']",
+			},
+			{
+				id: "set-profile-type",
+				label: "Filtrer par type de profil",
+				description:
+					"params.profileType ∈ ['all','adult','child']",
+			},
+			{
+				id: "search-registry",
+				label: "Rechercher dans le registre",
+				description:
+					"params.query — recherche sur nom, prénom ou numéro de carte (min 2 caractères).",
+			},
+			{
+				id: "open-print-queue",
+				label: "Ouvrir la file d'impression",
+				description: "Navigue vers /consular-registry/print-queue.",
+			},
+			{
+				id: "view-registration",
+				label: "Voir le profil d'une inscription",
+				description: "params.registrationId requis (depuis les entités visibles).",
+			},
+		],
+		[],
+	);
+
+	const summary = stats
+		? `${stats.total ?? 0} inscriptions au registre (actives ${stats.active ?? 0}, demandées ${stats.requested ?? 0}, expirées ${stats.expired ?? 0}). Filtre statut: ${statusFilter}, type: ${profileTypeFilter}.${isSearching ? ` Recherche: "${searchInput}".` : ""}`
+		: "Chargement du registre consulaire…";
+
+	usePageContext({
+		module: "consular-registry",
+		title: "Registre Consulaire",
+		summary,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: ["searchCitizens", "getRegistryStats", "getCitizenProfile"],
+	});
+
+	useRegisterPageAction("set-status-filter", async (params) => {
+		const s = params?.status as string | undefined;
+		if (s) handleStatusFilterChange(s);
+	});
+	useRegisterPageAction("set-profile-type", async (params) => {
+		const pt = params?.profileType as "all" | "adult" | "child" | undefined;
+		if (pt === "all" || pt === "adult" || pt === "child")
+			handleProfileTypeFilterChange(pt);
+	});
+	useRegisterPageAction("search-registry", async (params) => {
+		const q = (params?.query as string | undefined) ?? "";
+		setSearchInput(q);
+	});
+	useRegisterPageAction("open-print-queue", async () => {
+		router.push("/consular-registry/print-queue");
+	});
+	useRegisterPageAction("view-registration", async (params) => {
+		const id = params?.registrationId as string | undefined;
+		const reg = (registrations as RegistrationRow[]).find((r) => r._id === id);
+		if (reg) {
+			setSelectedRegistration(reg);
+			setShowProfileDialog(true);
+		}
+	});
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4">

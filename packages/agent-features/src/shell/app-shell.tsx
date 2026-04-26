@@ -196,7 +196,16 @@ function DashboardLayout({
 					/>
 				</div>
 			</div>
-			<main className="flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4 print:overflow-visible print:p-0">
+			<main
+				className="flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4 print:overflow-visible print:p-0 transition-[padding-right] duration-200 ease-out"
+				style={{
+					// Desktop only : pousse le contenu quand iAsted est ouvert en
+					// side-panel. Sur mobile (< md), le shell rend un bottom-sheet
+					// et la var est ignorée par le viewport (l'override media query
+					// est géré par la condition de la fenêtre elle-même).
+					paddingRight: "var(--iasted-side-panel-width, 0px)",
+				}}
+			>
 				{children}
 			</main>
 			<AgentMobileNav />

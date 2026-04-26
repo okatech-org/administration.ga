@@ -29,6 +29,7 @@ import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { useOrg } from "../../shell/org-provider";
 import { useModuleAccess } from "../../components/shared/access-gate";
+import { usePageContext } from "../../hooks/use-page-context";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { FlatCard } from "../../components/my-space/flat-card";
@@ -134,6 +135,15 @@ export default function IAgendaPage() {
 			activeOrgId ? { orgId: activeOrgId } : "skip",
 		);
 	const isPending = eventsLoading || appointmentsLoading;
+
+	usePageContext({
+		module: "iagenda",
+		title: "iAgenda",
+		summary: `Onglet ${activeTab}. ${(rawAppointments as any[]).length} RDV, ${(rawCommunityEvents as any[]).length} événements communautaires.`,
+		visibleEntities: [],
+		availableActions: [],
+		scopedToolNames: [],
+	});
 
 	// ── Fusionner les deux sources en AgendaEvent[] ──
 	const allEvents: AgendaEvent[] = useMemo(() => {

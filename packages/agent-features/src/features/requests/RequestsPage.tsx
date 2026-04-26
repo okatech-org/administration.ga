@@ -44,6 +44,11 @@ import {
 	useAuthenticatedPaginatedQuery,
 } from "@workspace/api/hooks";
 import { cn } from "@workspace/ui/lib/utils";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type { PageAction, PageEntity } from "../../stores/page-context-store";
 
 
 // ─── Status configuration ────────────────────────────────────────────
@@ -312,6 +317,146 @@ export default function RequestsPage() {
 
 	const statusCounts = requestStats?.statusCounts ?? {};
 	const totalCount = requestStats?.total ?? 0;
+
+	// ─── iAsted page context ──────────────────────────────
+	const router = useRouter();
+	const pageEntities = useMemo<PageEntity[]>(() => {
+		// En vue table, on expose les demandes filtrées (cap 30).
+		if (viewMode === "table" && filteredRequests) {
+			return filteredRequests.slice(0, 30).map((r: any) => ({
+				id: r.reference ?? r._id,
+				type: "request",
+				label: `${r.reference ?? "—"} · ${(r.serviceName as any)?.fr ?? "Service"}`,
+				data: {
+					_id: r._id,
+					reference: r.reference,
+					status: r.status,
+					userName: r.user
+						? `${r.user.firstName ?? ""} ${r.user.lastName ?? ""}`.trim()
+						: undefined,
+					userEmail: r.user?.email,
+					assignedTo: r.assignedTo,
+					submittedAt: r.submittedAt,
+					pendingActionsCount: r.pendingActionsCount,
+				},
+			}));
+		}
+		return [];
+	}, [viewMode, filteredRequests]);
+
+	const pageActions = useMemo<PageAction[]>(() => {
+		const statusList = STATUS_TABS.map((t) => t.key).join("','");
+		return [
+			{
+				id: "set-status-filter",
+				label: "Filtrer par statut",
+				description: `Change le filtre de statut. params.status ∈ ['${statusList}']`,
+			},
+			{
+				id: "set-service-filter",
+				label: "Filtrer par service",
+				description:
+					"Change le filtre service. params.serviceId = id du service ou 'all'.",
+			},
+			{
+				id: "set-search",
+				label: "Rechercher",
+				description:
+					"Met à jour la barre de recherche. params.query (string, vide pour reset).",
+			},
+			{
+				id: "toggle-view-mode",
+				label: "Basculer vue",
+				description:
+					"Bascule entre table et kanban. params.mode ∈ ['table','kanban'] (optionnel, sinon toggle).",
+			},
+			{
+				id: "toggle-my-requests",
+				label: "Mes demandes uniquement",
+				description:
+					"Active/désactive le filtre 'mes demandes assignées'. params.value (bool, optionnel).",
+			},
+			{
+				id: "open-request",
+				label: "Ouvrir une demande",
+				description:
+					"Navigue vers la page détail d'une demande. params.reference requis (depuis les entités visibles).",
+			},
+		];
+	}, []);
+
+	const pageSummary = useMemo(() => {
+		const parts: string[] = [];
+		parts.push(`${totalCount} demande${totalCount > 1 ? "s" : ""} au total.`);
+		const topStatuses = Object.entries(statusCounts)
+			.filter(([, c]) => (c as number) > 0)
+			.sort(([, a], [, b]) => (b as number) - (a as number))
+			.slice(0, 4)
+			.map(([s, c]) => `${s}=${c}`)
+			.join(", ");
+		if (topStatuses) parts.push(`Répartition: ${topStatuses}.`);
+		parts.push(`Vue: ${viewMode === "kanban" ? "kanban" : "table"}.`);
+		if (statusFilter !== "all") parts.push(`Filtre statut: ${statusFilter}.`);
+		if (serviceFilter !== "all") parts.push(`Filtre service appliqué.`);
+		if (searchQuery) parts.push(`Recherche: "${searchQuery}".`);
+		if (showMyRequests) parts.push(`Filtre "mes demandes" actif.`);
+		return parts.join(" ");
+	}, [
+		totalCount,
+		statusCounts,
+		viewMode,
+		statusFilter,
+		serviceFilter,
+		searchQuery,
+		showMyRequests,
+	]);
+
+	usePageContext({
+		module: "requests",
+		title: "Demandes",
+		summary: pageSummary,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [
+			"getRequestsList",
+			"getRequestDetail",
+			"getPendingRequests",
+			"getOrgDashboardStats",
+		],
+	});
+
+	useRegisterPageAction("set-status-filter", async (params) => {
+		const status = params?.status as string | undefined;
+		if (!status) return;
+		const valid = STATUS_TABS.some((t) => t.key === status);
+		if (valid) setStatusFilter(status);
+	});
+	useRegisterPageAction("set-service-filter", async (params) => {
+		const serviceId = params?.serviceId as string | undefined;
+		if (serviceId) setServiceFilter(serviceId);
+	});
+	useRegisterPageAction("set-search", async (params) => {
+		const query = (params?.query as string | undefined) ?? "";
+		setSearchQuery(query);
+	});
+	useRegisterPageAction("toggle-view-mode", async (params) => {
+		const mode = params?.mode as "table" | "kanban" | undefined;
+		setViewMode((curr) =>
+			mode === "table" || mode === "kanban"
+				? mode
+				: curr === "table"
+					? "kanban"
+					: "table",
+		);
+	});
+	useRegisterPageAction("toggle-my-requests", async (params) => {
+		const value = params?.value as boolean | undefined;
+		setShowMyRequests((curr) => (typeof value === "boolean" ? value : !curr));
+	});
+	useRegisterPageAction("open-request", async (params) => {
+		const reference = params?.reference as string | undefined;
+		if (reference) router.push(`/requests/${reference}`);
+	});
 
 	return (
 		<div className="flex min-h-full flex-col gap-6 p-4 md:p-6">

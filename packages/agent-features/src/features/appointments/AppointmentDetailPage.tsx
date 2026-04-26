@@ -17,10 +17,16 @@ import {
 	User,
 	X,
 } from "lucide-react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { CallButton } from "../../components/meetings/call-button";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type { PageAction } from "../../stores/page-context-store";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { FlatCard } from "../../components/my-space/flat-card";
@@ -111,6 +117,62 @@ export default function AppointmentDetail() {
 				return "outline";
 		}
 	};
+
+	// ─── iAsted page context (avant les early returns) ─────────────
+	const a = appointment as any;
+	const pageActions = useMemo<PageAction[]>(
+		() => [
+			{
+				id: "back-to-list",
+				label: "Retour aux RDV",
+				description: "Navigue vers /appointments.",
+			},
+			{
+				id: "complete-appointment",
+				label: "Marquer terminé",
+				description: "Marque ce RDV comme terminé.",
+				requiresConfirmation: true,
+			},
+			{
+				id: "cancel-appointment",
+				label: "Annuler le RDV",
+				description: "Annule ce RDV.",
+				requiresConfirmation: true,
+			},
+			{
+				id: "no-show-appointment",
+				label: "Marquer absent",
+				description: "Marque l'attendu comme absent.",
+				requiresConfirmation: true,
+			},
+		],
+		[],
+	);
+
+	const summary = appointment
+		? `RDV ${a.date} ${a.time} · statut ${a.status} · ${a.attendee?.firstName ?? ""} ${a.attendee?.lastName ?? ""}${a.service?.name?.fr ? ` · service ${a.service.name.fr}` : ""}${a.request?.reference ? ` · demande ${a.request.reference}` : ""}.`
+		: "Chargement du rendez-vous…";
+
+	usePageContext({
+		module: "appointment-detail",
+		title: `RDV — ${a?.date ?? ""} ${a?.time ?? ""}`,
+		summary,
+		visibleEntities: [],
+		availableActions: pageActions,
+		scopedToolNames: ["getAppointmentsList"],
+	});
+	useRegisterPageAction("back-to-list", async () => {
+		router.push("/appointments");
+	});
+	useRegisterPageAction("complete-appointment", async () => {
+		await handleComplete();
+	});
+	useRegisterPageAction("cancel-appointment", async () => {
+		await handleCancel();
+	});
+	useRegisterPageAction("no-show-appointment", async () => {
+		await handleNoShow();
+	});
 
 	if (appointment === undefined) {
 		return (

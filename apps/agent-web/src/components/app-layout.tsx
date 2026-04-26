@@ -17,14 +17,16 @@ import { AppShell, type SharedAuthClient } from "@workspace/agent-features/shell
 import { useOrg } from "@workspace/agent-features/shell"
 import { authClient } from "@/lib/auth-client"
 import { AIPresenceProvider } from "@/components/ai/proactive/AIPresenceProvider"
-import { useAdminAIChat } from "@workspace/agent-features/components/iasted-host"
-import { useAdminVoiceChat } from "@/components/ai/useAdminVoiceChat"
-import { IAstedInstantChatTab } from "@/components/ai/iasted/IAstedInstantChatTab"
-import { IAstedContactTab } from "@/components/ai/iasted/IAstedContactTab"
-import { IAstedCallTab } from "@/components/ai/iasted/IAstedCallTab"
-import { IAstedMeetingTab } from "@/components/ai/iasted/IAstedMeetingTab"
-import { IAstedSettingsTab } from "@/components/ai/iasted/IAstedSettingsTab"
-import { GlobalActiveCallsBar } from "@/components/ai/iasted/GlobalActiveCallsBar"
+import {
+  useAdminAIChat,
+  useAdminVoiceChat,
+  IAstedInstantChatTab,
+  IAstedContactTab,
+  IAstedCallTab,
+  IAstedMeetingTab,
+  IAstedSettingsTab,
+  GlobalActiveCallsBar,
+} from "@workspace/agent-features/components/iasted-host"
 import { VoicemailsList } from "@/components/call-center/VoicemailsList"
 import { HomeLandingSignIn } from "@/components/auth/HomeLandingSignIn"
 
