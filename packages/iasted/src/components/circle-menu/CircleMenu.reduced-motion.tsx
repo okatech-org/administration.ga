@@ -20,9 +20,13 @@ import { cn } from "@workspace/ui/lib/utils";
 import { CIRCLE_MENU, REDUCED_MOTION } from "../../tokens/animation";
 import type { CircleMenuItemConfig, CircleMenuProps } from "./types";
 
-const pointOnCircle = (i: number, n: number, r: number, cx = 0, cy = 0) => {
-	const theta = (2 * Math.PI * i) / n - Math.PI / 2;
-	return { x: cx + r * Math.cos(theta), y: cy + r * Math.sin(theta) };
+const pointOnArc = (i: number, n: number, r: number = CIRCLE_MENU.arcRadius) => {
+	const theta =
+		n <= 1
+			? (CIRCLE_MENU.arcStart + CIRCLE_MENU.arcEnd) / 2
+			: CIRCLE_MENU.arcStart +
+				((CIRCLE_MENU.arcEnd - CIRCLE_MENU.arcStart) * i) / (n - 1);
+	return { x: r * Math.cos(theta), y: r * Math.sin(theta) };
 };
 
 const MenuItemStatic = ({
@@ -42,7 +46,7 @@ const MenuItemStatic = ({
 	isOpen: boolean;
 	itemClassName?: string;
 }) => {
-	const { x, y } = pointOnCircle(index, totalItems, CIRCLE_MENU.containerSize / 2);
+	const { x, y } = pointOnArc(index, totalItems);
 
 	const handleClick = (e: React.MouseEvent) => {
 		e.preventDefault();

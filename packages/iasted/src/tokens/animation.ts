@@ -36,6 +36,25 @@ export const CIRCLE_MENU = {
 	orbitDuration: (itemCount: number) => 0.12 * (itemCount + 2),
 	/** Décalage max du trigger (shake). */
 	shakeOffset: 1.5,
+	// ── Refonte 2026-04-26 : arc haut-gauche + gooey blob ──
+	/** Angle de départ de l'arc (rad) — π = ouest. */
+	arcStart: Math.PI,
+	/** Angle de fin de l'arc (rad) — 3π/2 = nord. */
+	arcEnd: (3 * Math.PI) / 2,
+	/** Distance trigger ↔ centre item (px). */
+	arcRadius: 118,
+	/** Stagger réduit pour deploy organique rapide (s). */
+	organicStagger: 0.05,
+	/** Spring d'émergence des items (overshoot léger, ~+100 ms vs version précédente). */
+	springItemsOrganic: { type: "spring", stiffness: 240, damping: 17, mass: 0.7 } as const satisfies Transition,
+	/** Spring du trigger — scale subtil, sans dance. */
+	springTriggerSubtle: { type: "spring", stiffness: 240, damping: 22 } as const satisfies Transition,
+	/** Filtre SVG goo (metaball) — stdDeviation/threshold renforcés pour effet gluant prononcé. */
+	goo: {
+		filterId: "iasted-goo",
+		stdDeviation: 12,
+		colorMatrix: "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -12",
+	},
 } as const;
 
 // ─────────────────────────────────────────────────────────────

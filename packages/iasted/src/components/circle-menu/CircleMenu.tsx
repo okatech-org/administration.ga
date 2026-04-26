@@ -1,71 +1,111 @@
 /**
- * CircleMenu — FAB radial animé.
+ * CircleMenu — FAB iAsted avec deploy gooey en arc haut-gauche.
  *
- * ⚠️ COPIE BIT-EXACT de apps/citizen-web/src/components/ui/circle-menu.tsx.
+ * Refonte 2026-04-26 (validée utilisateur) — abandonne le contrat « bit-exact »
+ * de la version citizen-web originale. Cf. plan dans
+ * `.claude/plans/alors-j-aimerais-retravailler-l-ic-ne-linear-dove.md`.
  *
- * Seules modifications autorisées vs la source :
- * - imports : constantes déplacées vers ../../tokens/animation.
- * - imports : types déplacés vers ./types.
- * - imports : cn importé depuis @workspace/ui/lib/utils.
- *
- * NE PAS REFACTORISER. Toute modif au comportement ou au timing
- * casse le contrat d'animation documenté (README §Contrat d'animation).
- *
- * Séquences :
- * - playOpenAnimation : trigger grow → pause → shake+shrink → pause → orbit → items deploy → trigger 2x.
- * - playCloseAnimation : miroir exact.
+ * Trois principes :
+ * 1. **Trigger immobile** : pas de dance multi-étape, juste un scale subtil.
+ * 2. **Arc haut-gauche** : 3 items déployés en arc de π → 3π/2 (utile pour
+ *    un FAB collé en bas-à-droite ; les items sortent vers la zone libre).
+ * 3. **Effet gooey** : filtre SVG (feGaussianBlur + feColorMatrix) appliqué
+ *    sur la couche des disques colorés ; les icônes sont rendues en
+ *    surimpression pour rester nettes.
  */
 
 "use client";
 
 import { AnimatePresence, motion, useAnimationControls } from "motion/react";
-import { Menu, X } from "lucide-react";
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { Menu } from "lucide-react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
 import { CIRCLE_MENU } from "../../tokens/animation";
 import type { CircleMenuItemConfig, CircleMenuProps } from "./types";
 
-// Alias local pour rester proche de la source (CONSTANTS.itemSize, etc.)
-const CONSTANTS = CIRCLE_MENU;
+const C = CIRCLE_MENU;
 
-const STYLES: Record<string, Record<string, string>> = {
-	trigger: {
-		container:
-			"rounded-full flex items-center justify-center cursor-pointer outline-none ring-0 hover:brightness-125 transition-all duration-100 z-50",
-	},
-	item: {
-		container:
-			"rounded-full flex items-center justify-center absolute cursor-pointer",
-		label:
-			"text-[10px] font-bold text-foreground absolute top-full left-1/2 -translate-x-1/2 mt-1.5 whitespace-nowrap",
-	},
+const pointOnArc = (i: number, n: number, r: number = C.arcRadius) => {
+	const theta =
+		n <= 1
+			? (C.arcStart + C.arcEnd) / 2
+			: C.arcStart + ((C.arcEnd - C.arcStart) * i) / (n - 1);
+	return { x: r * Math.cos(theta), y: r * Math.sin(theta) };
 };
 
-const pointOnCircle = (i: number, n: number, r: number, cx = 0, cy = 0) => {
-	const theta = (2 * Math.PI * i) / n - Math.PI / 2;
-	return { x: cx + r * Math.cos(theta), y: cy + r * Math.sin(theta) };
+// ─── Goo filter (monté une seule fois par instance) ───
+const GooFilter = () => (
+	<svg
+		width="0"
+		height="0"
+		style={{ position: "absolute", pointerEvents: "none" }}
+		aria-hidden
+	>
+		<defs>
+			<filter id={C.goo.filterId}>
+				<feGaussianBlur in="SourceGraphic" stdDeviation={C.goo.stdDeviation} result="blur" />
+				<feColorMatrix in="blur" mode="matrix" values={C.goo.colorMatrix} result="goo" />
+				<feBlend in="SourceGraphic" in2="goo" />
+			</filter>
+		</defs>
+	</svg>
+);
+
+// ─── Disque coloré (couche goo, sans icône) ───
+const ItemBlob = ({
+	index,
+	totalItems,
+	isOpen,
+	bgClassName,
+}: {
+	index: number;
+	totalItems: number;
+	isOpen: boolean;
+	bgClassName: string;
+}) => {
+	const { x, y } = pointOnArc(index, totalItems);
+	return (
+		<motion.div
+			initial={false}
+			suppressHydrationWarning
+			animate={{
+				x: isOpen ? x : 0,
+				y: isOpen ? y : 0,
+				scale: isOpen ? 1 : 0.2,
+				opacity: isOpen ? 1 : 0,
+			}}
+			transition={{
+				delay: isOpen
+					? index * C.organicStagger
+					: (totalItems - 1 - index) * C.organicStagger,
+				...C.springItemsOrganic,
+			}}
+			style={{ height: C.itemSize, width: C.itemSize }}
+			className={cn(
+				"absolute rounded-full pointer-events-none",
+				bgClassName,
+			)}
+		/>
+	);
 };
 
-// ─── Menu Item ────────────────────────────────────────────────
-const MenuItem = ({
+// ─── Couche icône+label (au-dessus du goo, nette) ───
+const ItemOverlay = ({
 	icon,
 	label,
 	onClick,
 	index,
 	totalItems,
 	isOpen,
-	itemClassName,
 }: {
 	icon: ReactNode;
 	label: string;
-	href?: string;
 	onClick?: () => void;
 	index: number;
 	totalItems: number;
 	isOpen: boolean;
-	itemClassName?: string;
 }) => {
-	const { x, y } = pointOnCircle(index, totalItems, CONSTANTS.containerSize / 2);
+	const { x, y } = pointOnArc(index, totalItems);
 
 	const handleClick = (e: React.MouseEvent) => {
 		e.preventDefault();
@@ -74,49 +114,50 @@ const MenuItem = ({
 	};
 
 	return (
-		<div className={STYLES.item!.container} onClick={handleClick}>
-			<motion.button
-				initial={false}
-				suppressHydrationWarning
-				animate={{
-					x: isOpen ? x : 0,
-					y: isOpen ? y : 0,
-					opacity: isOpen ? 1 : 0,
-					scale: isOpen ? 1 : 0.3,
-				}}
-				whileHover={{ scale: 1.15, transition: { duration: 0.1, delay: 0 } }}
-				whileTap={{ scale: 0.9 }}
-				transition={{
-					delay: isOpen
-						? index * CONSTANTS.openStagger
-						: index * CONSTANTS.closeStagger,
-					type: "spring",
-					stiffness: 180,
-					damping: 22,
-				}}
-				style={{ height: CONSTANTS.itemSize - 2, width: CONSTANTS.itemSize - 2 }}
-				className={cn(
-					STYLES.item!.container,
-					itemClassName ?? "bg-muted hover:bg-muted/70",
+		<motion.button
+			type="button"
+			initial={false}
+			suppressHydrationWarning
+			animate={{
+				x: isOpen ? x : 0,
+				y: isOpen ? y : 0,
+				scale: isOpen ? 1 : 0.2,
+				opacity: isOpen ? 1 : 0,
+			}}
+			whileHover={{ scale: 1.12, transition: { duration: 0.12 } }}
+			whileTap={{ scale: 0.92 }}
+			transition={{
+				delay: isOpen
+					? index * C.organicStagger
+					: (totalItems - 1 - index) * C.organicStagger,
+				...C.springItemsOrganic,
+			}}
+			style={{
+				height: C.itemSize,
+				width: C.itemSize,
+				pointerEvents: isOpen ? "auto" : "none",
+			}}
+			className="absolute rounded-full flex items-center justify-center cursor-pointer outline-none ring-0 bg-transparent"
+			onClick={handleClick}
+			aria-label={label}
+			tabIndex={isOpen ? 0 : -1}
+			aria-hidden={!isOpen}
+		>
+			{icon}
+			<AnimatePresence>
+				{isOpen && (
+					<motion.span
+						initial={{ opacity: 0, y: -4 }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0 }}
+						transition={{ delay: 0.18 + index * 0.04 }}
+						className="text-[10px] font-bold text-foreground absolute top-full left-1/2 -translate-x-1/2 mt-1.5 whitespace-nowrap"
+					>
+						{label}
+					</motion.span>
 				)}
-				onClick={handleClick}
-			>
-				{icon}
-				<AnimatePresence>
-					{isOpen && (
-						<motion.p
-							initial={{ opacity: 0, y: -4 }}
-							animate={{ opacity: 1, y: 0 }}
-							exit={{ opacity: 0 }}
-							transition={{ delay: 0.25 + index * 0.05 }}
-							className={STYLES.item!.label}
-						>
-							{label}
-						</motion.p>
-					)}
-				</AnimatePresence>
-			</motion.button>
-		</div>
+			</AnimatePresence>
+		</motion.button>
 	);
 };
 
@@ -128,259 +169,129 @@ export const CircleMenu = ({
 	itemClassName,
 	defaultOpen = false,
 	onCloseComplete,
-	onTriggerClick,
 }: CircleMenuProps) => {
 	const [isOpen, setIsOpen] = useState(false);
 	const triggerAnimate = useAnimationControls();
-	const shakeAnimate = useAnimationControls();
-	const orbitAnimate = useAnimationControls();
+	const containerRef = useRef<HTMLDivElement>(null);
 
-	const maxScale = Math.min(
-		CONSTANTS.itemSize * (1 + (items.length - 2) * 0.15),
-		CONSTANTS.itemSize + CONSTANTS.itemSize / 2,
-	);
-
-	// ── Shake sequence (shared between open & close) ──
-	const shakeSequence = useCallback(
-		async (direction: 1 | -1) => {
-			const d = direction;
-			shakeAnimate.start({
-				translateX: [
-					0,
-					CONSTANTS.shakeOffset * d,
-					-CONSTANTS.shakeOffset * d,
-					0,
-					CONSTANTS.shakeOffset * d,
-					-CONSTANTS.shakeOffset * d,
-					0,
-				],
-				transition: {
-					duration: CONSTANTS.shakeDuration,
-					ease: "linear",
-					repeat: Infinity,
-					repeatType: "loop" as const,
-				},
-			});
-		},
-		[shakeAnimate],
-	);
-
-	const stopShake = useCallback(async () => {
-		shakeAnimate.stop();
-		await shakeAnimate.start({ translateX: 0, transition: { duration: 0 } });
-	}, [shakeAnimate]);
-
-	// ── OPEN animation (exact rewind of close) ──
 	const playOpenAnimation = useCallback(async () => {
-		// Ensure starting state (critical after strict mode remount)
-		triggerAnimate.set({ height: CONSTANTS.itemSize, width: CONSTANTS.itemSize });
-
-		// Reverse of close's settle: grow from normal to maxScale
-		await triggerAnimate.start({
-			height: maxScale,
-			width: maxScale,
-			transition: { duration: 0.25, ease: "backInOut" },
-		});
-
-		// Reverse of close's pause
-		await new Promise((r) => setTimeout(r, 150));
-
-		// Reverse of close's shake+grow: shake while shrinking back
-		await shakeSequence(-1);
-
-		await triggerAnimate.start({
-			height: CONSTANTS.itemSize,
-			width: CONSTANTS.itemSize,
-			transition: { duration: 0.3, ease: "easeIn" },
-		});
-
-		await stopShake();
-
-		// Reverse of close's collapse wait
-		await new Promise((r) => setTimeout(r, 250));
-
-		// Reverse of close's orbit: spin +360° while items deploy outward
-		orbitAnimate
-			.start({
-				rotate: 360,
-				filter: "blur(1px)",
-				transition: {
-					duration: CONSTANTS.closeStagger * (items.length + 2),
-					ease: "linear",
-				},
-			})
-			.then(() => {
-				orbitAnimate.start({
-					rotate: 0,
-					filter: "blur(0px)",
-					transition: { duration: 0 },
-				});
-			});
-
 		setIsOpen(true);
-
-		// Grow trigger to 2x after items deployed
-		await triggerAnimate.start({
-			height: CONSTANTS.itemSize * 2,
-			width: CONSTANTS.itemSize * 2,
-			transition: { type: "spring", stiffness: 200, damping: 18 },
+		triggerAnimate.start({
+			scale: 1.15,
+			transition: C.springTriggerSubtle,
 		});
-	}, [triggerAnimate, shakeSequence, stopShake, maxScale, orbitAnimate, items.length]);
+	}, [triggerAnimate]);
 
-	// ── CLOSE animation (original) ──
 	const playCloseAnimation = useCallback(async () => {
-		// Shrink trigger back to normal first (from 2x)
-		await triggerAnimate.start({
-			height: CONSTANTS.itemSize,
-			width: CONSTANTS.itemSize,
-			transition: { type: "spring", stiffness: 200, damping: 18 },
-		});
-
-		// Collapse items
 		setIsOpen(false);
-
-		// Orbit spin
-		orbitAnimate
-			.start({
-				rotate: -360,
-				filter: "blur(1px)",
-				transition: {
-					duration: CONSTANTS.closeStagger * (items.length + 2),
-					ease: "linear",
-				},
-			})
-			.then(() => {
-				orbitAnimate.start({
-					rotate: 0,
-					filter: "blur(0px)",
-					transition: { duration: 0 },
-				});
-			});
-
-		// Wait for items to collapse
-		await new Promise((r) => setTimeout(r, 250));
-
-		// Shake while growing
-		await shakeSequence(1);
-
-		// Scale up to max
 		await triggerAnimate.start({
-			height: maxScale,
-			width: maxScale,
-			transition: { duration: 0.3, ease: "easeOut" },
+			scale: 1,
+			transition: C.springTriggerSubtle,
 		});
-
-		await new Promise((r) => setTimeout(r, 150));
-
-		// Stop shake, shrink back
-		await stopShake();
-		await triggerAnimate.start({
-			height: CONSTANTS.itemSize,
-			width: CONSTANTS.itemSize,
-			transition: { duration: 0.25, ease: "backInOut" },
-		});
-
 		onCloseComplete?.();
-	}, [
-		triggerAnimate,
-		shakeSequence,
-		stopShake,
-		maxScale,
-		orbitAnimate,
-		items.length,
-		onCloseComplete,
-	]);
+	}, [triggerAnimate, onCloseComplete]);
 
-	// ── Auto-open on mount ──
 	useEffect(() => {
 		if (!defaultOpen) return;
-		// Delay lets animation controls attach after mount
-		const t = setTimeout(() => playOpenAnimation(), 150);
+		const t = setTimeout(() => playOpenAnimation(), 100);
 		return () => clearTimeout(t);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	const handleTriggerClick = () => {
 		if (isOpen) {
-			// Quand ouvert, le trigger sert d'interaction (chat/voix)
-			onTriggerClick?.();
+			playCloseAnimation();
 		} else {
 			playOpenAnimation();
 		}
 	};
 
+	// Click outside ⇒ close
+	useEffect(() => {
+		if (!isOpen) return;
+		const onPointerDown = (e: PointerEvent) => {
+			const node = containerRef.current;
+			if (!node) return;
+			if (e.target instanceof Node && !node.contains(e.target)) {
+				playCloseAnimation();
+			}
+		};
+		// `pointerdown` (capture) — fires before any inner click handler resolves.
+		document.addEventListener("pointerdown", onPointerDown);
+		return () => document.removeEventListener("pointerdown", onPointerDown);
+	}, [isOpen, playCloseAnimation]);
+
 	return (
-		<motion.div
-			initial={false}
-			animate={{
-				width: isOpen ? CONSTANTS.containerSize : CONSTANTS.itemSize,
-				height: isOpen ? CONSTANTS.containerSize : CONSTANTS.itemSize,
-			}}
-			transition={{ duration: 0.3, ease: "easeOut" }}
-			className="relative flex items-center justify-center place-self-center"
+		<div
+			ref={containerRef}
+			style={{ width: C.containerSize, height: C.containerSize }}
+			className="relative flex items-end justify-end place-self-end"
 		>
-			{/* Trigger — always shows openIcon, grows 2x when open */}
-			<motion.div initial={false} animate={shakeAnimate} className="z-50 relative">
-				<motion.button
+			<GooFilter />
+
+			{/* Couche 1 : disques colorés sous le filtre goo (effet metaball).
+			   Trigger ancré en bas-à-droite ; les items déploient vers le haut-gauche. */}
+			<div
+				style={{ filter: `url(#${C.goo.filterId})` }}
+				className="absolute inset-0 flex items-end justify-end"
+			>
+				{/* Trigger blob */}
+				<motion.div
 					animate={triggerAnimate}
 					initial={false}
-					style={{ height: CONSTANTS.itemSize, width: CONSTANTS.itemSize }}
-					className={cn(STYLES.trigger!.container, triggerClassName ?? "bg-foreground")}
+					style={{ height: C.itemSize, width: C.itemSize }}
+					className={cn(
+						"rounded-full",
+						triggerClassName ?? "bg-foreground",
+					)}
+				/>
+				{/* Item blobs (mêmes positions que la couche overlay) */}
+				{items.map((item, index) => (
+					<ItemBlob
+						key={`blob-${index}`}
+						index={index}
+						totalItems={items.length}
+						isOpen={isOpen}
+						bgClassName={item.className ?? itemClassName ?? "bg-muted"}
+					/>
+				))}
+			</div>
+
+			{/* Couche 2 : icônes/labels nets, au-dessus du goo */}
+			<div className="absolute inset-0 flex items-end justify-end z-10">
+				{/* Trigger interactif (icône nette) */}
+				<motion.button
+					type="button"
+					animate={triggerAnimate}
+					initial={false}
+					style={{ height: C.itemSize, width: C.itemSize }}
+					className="relative rounded-full flex items-center justify-center cursor-pointer outline-none ring-0 hover:brightness-125 transition-all duration-100 bg-transparent"
 					onClick={handleTriggerClick}
+					aria-expanded={isOpen}
+					aria-label={isOpen ? "Interagir avec iAsted" : "Ouvrir iAsted"}
 				>
 					<motion.span
 						initial={false}
-						animate={{ scale: isOpen ? 1.3 : 1 }}
-						transition={{ type: "spring", stiffness: 200, damping: 18 }}
+						animate={{ scale: isOpen ? 1.2 : 1 }}
+						transition={C.springTriggerSubtle}
 					>
 						{openIcon}
 					</motion.span>
 				</motion.button>
 
-				{/* Close button — appears next to trigger when open */}
-				<AnimatePresence>
-					{isOpen && (
-						<motion.button
-							initial={{ opacity: 0, scale: 0, x: "-50%" }}
-							animate={{ opacity: 1, scale: 1, x: "-50%" }}
-							exit={{ opacity: 0, scale: 0, x: "-50%" }}
-							transition={{
-								type: "spring",
-								stiffness: 260,
-								damping: 20,
-								delay: 0.15,
-							}}
-							onClick={(e) => {
-								e.stopPropagation();
-								playCloseAnimation();
-							}}
-							className="absolute -bottom-2 left-1/2 h-7 w-7 rounded-full bg-foreground/80 backdrop-blur-sm flex items-center justify-center cursor-pointer hover:bg-foreground transition-colors"
-							style={{ translateY: "100%" }}
-						>
-							<X size={14} className="text-background" />
-						</motion.button>
-					)}
-				</AnimatePresence>
-			</motion.div>
-
-			{/* Orbiting items */}
-			<motion.div
-				animate={orbitAnimate}
-				className="absolute inset-0 z-0 flex items-center justify-center"
-			>
-				{items.map((item: CircleMenuItemConfig, index: number) => (
-					<MenuItem
-						key={`menu-item-${index}`}
+				{/* Items interactifs (icônes nettes) */}
+				{items.map((item, index) => (
+					<ItemOverlay
+						key={`overlay-${index}`}
 						icon={item.icon}
 						label={item.label}
 						onClick={item.onClick}
 						index={index}
 						totalItems={items.length}
 						isOpen={isOpen}
-						itemClassName={item.className ?? itemClassName}
 					/>
 				))}
-			</motion.div>
-		</motion.div>
+			</div>
+		</div>
 	);
 };

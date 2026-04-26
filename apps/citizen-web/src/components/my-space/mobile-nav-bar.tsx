@@ -7,7 +7,6 @@ import {
   Bot,
   Briefcase,
   Calendar,
-  Contact,
   FileText,
   LogOut,
 
@@ -417,19 +416,6 @@ export function MobileNavBar() {
                       window.dispatchEvent(
                         new CustomEvent("iasted:open", {
                           detail: { tab: "icall" },
-                        })
-                      )
-                    },
-                  },
-                  {
-                    label: "iContact",
-                    icon: <Contact size={18} className="text-white" />,
-                    className: "bg-amber-500 hover:bg-amber-400",
-                    onClick: () => {
-                      setCircleMenuOpen(false)
-                      window.dispatchEvent(
-                        new CustomEvent("iasted:open", {
-                          detail: { tab: "icontact" },
                         })
                       )
                     },
