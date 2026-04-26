@@ -183,6 +183,15 @@ export default function DashboardTeam() {
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
 
+	// Supervisables — uniquement quand l'onglet supervision est actif
+	// (utilisé pour enrichir le contexte iAsted avec les KPIs visibles).
+	const { data: supervisables } = useAuthenticatedConvexQuery(
+		api.functions.management.listSupervisableMembers,
+		activeOrgId && activeTab === "supervision" && showSupervision
+			? { orgId: activeOrgId }
+			: "skip",
+	);
+
 	const { mutateAsync: removeMember } = useConvexMutationQuery(
 		api.functions.orgs.removeMember,
 	);
@@ -263,10 +272,33 @@ export default function DashboardTeam() {
 	const pageEntities = useMemo<PageEntity[]>(() => {
 		if (!orgChart) return [];
 		const entities: PageEntity[] = [];
+
+		// Sur l'onglet supervision : exposer prioritairement les supervisés
+		// (avec KPIs : assigned, traités, RDV à venir).
+		if (activeTab === "supervision" && supervisables?.members) {
+			for (const m of supervisables.members.slice(0, 30)) {
+				entities.push({
+					id: m.membershipId,
+					type: "supervised-member",
+					label: m.name,
+					data: {
+						position: getLocalizedValue(m.positionTitle, lang),
+						email: m.email,
+						assigned: m.assigned,
+						completed: m.completed,
+						completionRate: m.completionRate,
+						upcomingAppointments: m.upcomingAppointmentsCount,
+					},
+				});
+			}
+			return entities;
+		}
+
+		// Sinon : positions occupées + membres sans poste (vue orgchart).
 		const occupied = orgChart.positions.filter(
 			(p) => p.occupants && p.occupants.length > 0,
 		);
-		for (const pos of occupied.slice(0, 30)) {
+		for (const pos of occupied.slice(0, 25)) {
 			const occ = pos.occupants?.[0];
 			entities.push({
 				id: pos._id,
@@ -289,7 +321,7 @@ export default function DashboardTeam() {
 			});
 		}
 		return entities;
-	}, [orgChart, lang]);
+	}, [orgChart, supervisables, activeTab, lang]);
 
 	const pageActions = useMemo<PageAction[]>(() => {
 		const actions: PageAction[] = [
@@ -298,6 +330,18 @@ export default function DashboardTeam() {
 				label: "Changer d'onglet",
 				description:
 					"Bascule entre les onglets de l'équipe. params.tab ∈ ['orgchart','supervision','config','permissions']",
+			},
+			{
+				id: "toggle-grade",
+				label: "Plier/déplier un grade",
+				description:
+					"Bascule la visibilité d'un grade dans l'organigramme. params.grade ∈ ['chief','counselor','agent','external']",
+			},
+			{
+				id: "view-member-permissions",
+				label: "Voir les permissions d'un membre",
+				description:
+					"Ouvre la fiche permissions d'un membre. params.membershipId requis (depuis les entités visibles).",
 			},
 		];
 		if (canAdminTeam) {
@@ -312,22 +356,39 @@ export default function DashboardTeam() {
 				description:
 					"Ouvre le dialogue d'assignation. params.positionId requis (parmi les positions visibles)",
 			});
+			actions.push({
+				id: "change-member-position",
+				label: "Changer le poste d'un membre",
+				description:
+					"Ouvre le dialogue de changement de poste. params.membershipId requis.",
+			});
+			actions.push({
+				id: "unassign-member",
+				label: "Désassigner un membre de son poste",
+				description:
+					"Retire un membre de son poste (le rend non-assigné). params.membershipId requis.",
+				requiresConfirmation: true,
+			});
 		}
 		return actions;
 	}, [canAdminTeam]);
 
 	const pageSummary = useMemo(() => {
 		if (!orgChart) return "Chargement de l'organigramme…";
+		const base = `${orgChart.totalPositions} postes (${orgChart.filledPositions} pourvus, ${orgChart.vacantPositions} vacants), ${orgChart.unassignedMembers.length} membres sans poste.`;
+		if (activeTab === "supervision" && supervisables?.members) {
+			const totalAssigned = supervisables.members.reduce((s, m) => s + m.assigned, 0);
+			const totalUpcoming = supervisables.members.reduce((s, m) => s + m.upcomingAppointmentsCount, 0);
+			return `${base} Onglet Supervision : ${supervisables.members.length} agents supervisés, ${totalAssigned} demandes assignées, ${totalUpcoming} RDV à venir.`;
+		}
 		const tabLabel =
-			activeTab === "supervision"
-				? "Supervision"
-				: activeTab === "config"
-					? "Configuration"
-					: activeTab === "permissions"
-						? "Permissions"
-						: "Organigramme";
-		return `${orgChart.totalPositions} postes (${orgChart.filledPositions} pourvus, ${orgChart.vacantPositions} vacants), ${orgChart.unassignedMembers.length} membres sans poste. Onglet actif : ${tabLabel}.`;
-	}, [orgChart, activeTab]);
+			activeTab === "config"
+				? "Configuration"
+				: activeTab === "permissions"
+					? "Permissions"
+					: "Organigramme";
+		return `${base} Onglet actif : ${tabLabel}.`;
+	}, [orgChart, supervisables, activeTab]);
 
 	usePageContext({
 		module: "team",
@@ -355,6 +416,46 @@ export default function DashboardTeam() {
 			positionTitle: getLocalizedValue(pos.title, lang),
 		});
 		setAssignDialogOpen(true);
+	});
+	useRegisterPageAction("toggle-grade", async (params) => {
+		const grade = params?.grade as string | undefined;
+		if (grade) toggleGrade(grade);
+	});
+	useRegisterPageAction("view-member-permissions", async (params) => {
+		const membershipId = params?.membershipId as Id<"memberships"> | undefined;
+		if (!membershipId || !orgChart) return;
+		// Cherche le membre dans positions occupées + non-assignés
+		const occ = orgChart.positions
+			.flatMap((p) => p.occupants ?? [])
+			.find((o) => o.membershipId === membershipId);
+		const unass = orgChart.unassignedMembers.find(
+			(m) => m.membershipId === membershipId,
+		);
+		const member = occ ?? unass;
+		if (!member) return;
+		setSelectedMember(member as UnassignedMember);
+		setPermissionsDialogOpen(true);
+	});
+	useRegisterPageAction("change-member-position", async (params) => {
+		if (!canAdminTeam) return;
+		const membershipId = params?.membershipId as Id<"memberships"> | undefined;
+		if (!membershipId || !orgChart) return;
+		const occ = orgChart.positions
+			.flatMap((p) => p.occupants ?? [])
+			.find((o) => o.membershipId === membershipId);
+		const unass = orgChart.unassignedMembers.find(
+			(m) => m.membershipId === membershipId,
+		);
+		const member = occ ?? unass;
+		if (!member) return;
+		setSelectedMember(member as UnassignedMember);
+		setRoleDialogOpen(true);
+	});
+	useRegisterPageAction("unassign-member", async (params) => {
+		if (!canAdminTeam) return;
+		const membershipId = params?.membershipId as Id<"memberships"> | undefined;
+		if (!membershipId) return;
+		await handleUnassignPosition(membershipId);
 	});
 
 	if (isPending) {
