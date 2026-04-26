@@ -72,7 +72,7 @@ import { useOrg } from "@/components/org/org-provider";
 import { useContactSearch, type ContactSource } from "@/hooks/useContactSearch";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
-import { useAdminAIChat } from "../useAdminAIChat";
+import { useAdminAIChat } from "@workspace/agent-features/components/iasted-host";
 import { VoiceButton, VoiceChatContent } from "../VoiceButton";
 import { MacrosPanel, SmartSuggestionsRow } from "@workspace/iasted";
 import { parseIntent, resolveNavigationTarget } from "./IntentProcessor";

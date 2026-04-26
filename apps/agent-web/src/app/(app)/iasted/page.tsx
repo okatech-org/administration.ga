@@ -16,7 +16,7 @@ import type {
 	IAstedChatColumnsProps,
 	VoicemailsListInjectedProps,
 } from "@workspace/agent-features/features/iasted";
-import { useAdminAIChat } from "@/components/ai/useAdminAIChat";
+import { useAdminAIChat } from "@workspace/agent-features/components/iasted-host";
 import { useAdminVoiceChat } from "@/components/ai/useAdminVoiceChat";
 import {
 	IASTED_CONTACT,

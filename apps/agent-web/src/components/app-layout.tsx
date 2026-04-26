@@ -17,7 +17,7 @@ import { AppShell, type SharedAuthClient } from "@workspace/agent-features/shell
 import { useOrg } from "@workspace/agent-features/shell"
 import { authClient } from "@/lib/auth-client"
 import { AIPresenceProvider } from "@/components/ai/proactive/AIPresenceProvider"
-import { useAdminAIChat } from "@/components/ai/useAdminAIChat"
+import { useAdminAIChat } from "@workspace/agent-features/components/iasted-host"
 import { useAdminVoiceChat } from "@/components/ai/useAdminVoiceChat"
 import { IAstedInstantChatTab } from "@/components/ai/iasted/IAstedInstantChatTab"
 import { IAstedContactTab } from "@/components/ai/iasted/IAstedContactTab"
