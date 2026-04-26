@@ -2,6 +2,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useConvexActionQuery } from "@/integrations/convex/hooks";
 import { useOrg } from "@/components/org/org-provider";
+import { pageContextStore } from "@workspace/agent-features/stores";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 
@@ -103,10 +104,12 @@ export function useAdminAIChat() {
 			setMessages((prev) => [...prev, userMessage]);
 
 			try {
+				const pageContext = pageContextStore.getSnapshot();
 				const response = await chat({
 					conversationId: conversationId ?? undefined,
 					message: content,
 					currentPage: pathname,
+					pageContext: pageContext ?? undefined,
 					orgId: activeOrgId,
 				});
 
@@ -123,24 +126,65 @@ export function useAdminAIChat() {
 
 				// Handle actions
 				if (response.actions && response.actions.length > 0) {
-					const uiActions = response.actions.filter(
-						(a) => a.type === "navigateTo",
-					);
-					const confirmableActions = response.actions.filter(
-						(a) => a.requiresConfirmation,
-					);
+					const confirmableActions: AdminAIAction[] = [];
+					const resultMessages: Message[] = [];
 
-					// Execute UI actions immediately
-					for (const action of uiActions) {
+					for (const action of response.actions) {
+						// Navigation — exécutée immédiatement
 						if (action.type === "navigateTo") {
 							const route = action.args.route as string;
-							if (route) {
-								router.push(route);
+							if (route) router.push(route);
+							continue;
+						}
+
+						// Page action — exécutée via le handler enregistré par la page
+						if (action.type === "executePageAction") {
+							const actionId = action.args.actionId as string;
+							const params = action.args.params as
+								| Record<string, unknown>
+								| undefined;
+							const handler = actionId
+								? pageContextStore.getActionHandler(actionId)
+								: undefined;
+
+							if (!handler) {
+								resultMessages.push({
+									role: "assistant",
+									content: `⚠️ Action « ${actionId} » introuvable sur la page courante.`,
+									timestamp: Date.now(),
+								});
+								continue;
 							}
+
+							const snapshot = pageContextStore.getSnapshot();
+							const declared = snapshot?.availableActions.find(
+								(a) => a.id === actionId,
+							);
+							if (declared?.requiresConfirmation) {
+								confirmableActions.push(action);
+								continue;
+							}
+
+							try {
+								await handler(params);
+							} catch (e) {
+								resultMessages.push({
+									role: "assistant",
+									content: `⚠️ Erreur lors de l'action « ${actionId} » : ${(e as Error).message}`,
+									timestamp: Date.now(),
+								});
+							}
+							continue;
+						}
+
+						if (action.requiresConfirmation) {
+							confirmableActions.push(action);
 						}
 					}
 
-					// Queue confirmable actions
+					if (resultMessages.length > 0) {
+						setMessages((prev) => [...prev, ...resultMessages]);
+					}
 					if (confirmableActions.length > 0) {
 						setPendingActions(confirmableActions);
 					}
@@ -210,6 +254,53 @@ export function useAdminAIChat() {
 					};
 					setMessages((prev) => [...prev, resultMessage]);
 					return { success: true };
+				}
+
+				// Page-scoped action — exécutée via le handler enregistré par la page
+				if (action.type === "executePageAction") {
+					const actionId = action.args.actionId as string;
+					const params = action.args.params as
+						| Record<string, unknown>
+						| undefined;
+					const handler = actionId
+						? pageContextStore.getActionHandler(actionId)
+						: undefined;
+
+					setPendingActions((prev) =>
+						prev.filter((a) => a !== action),
+					);
+
+					if (!handler) {
+						const errMsg: Message = {
+							role: "assistant",
+							content: `⚠️ Action « ${actionId} » introuvable.`,
+							timestamp: Date.now(),
+						};
+						setMessages((prev) => [...prev, errMsg]);
+						return {
+							success: false,
+							error: "Action handler not found",
+						};
+					}
+
+					try {
+						await handler(params);
+						const okMsg: Message = {
+							role: "assistant",
+							content: ` Action « ${actionId} » exécutée.`,
+							timestamp: Date.now(),
+						};
+						setMessages((prev) => [...prev, okMsg]);
+						return { success: true };
+					} catch (e) {
+						const errMsg: Message = {
+							role: "assistant",
+							content: `⚠️ Erreur: ${(e as Error).message}`,
+							timestamp: Date.now(),
+						};
+						setMessages((prev) => [...prev, errMsg]);
+						return { success: false, error: (e as Error).message };
+					}
 				}
 
 				// Mutative actions → backend
