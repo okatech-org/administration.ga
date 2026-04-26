@@ -257,36 +257,12 @@ export default function DashboardTeam() {
 		});
 	};
 
-	if (isPending) {
-		return (
-			<div className="p-6 space-y-6">
-				<Skeleton className="h-10 w-64" />
-				<div className="grid gap-3 sm:grid-cols-3">
-					<Skeleton className="h-24" />
-					<Skeleton className="h-24" />
-					<Skeleton className="h-24" />
-				</div>
-				<Skeleton className="h-[400px]" />
-			</div>
-		);
-	}
-
-	if (error) {
-		return <QueryError error={error} />;
-	}
-
-	const gradeOrder: PositionGrade[] = [
-		"chief",
-		"counselor",
-		"agent",
-		"external",
-	];
-
 	// ─── Page context for the AI assistant (iAsted copilote) ──────
+	// IMPORTANT : ces hooks doivent rester AVANT tout early return,
+	// sinon Rules of Hooks violation entre les rendus pending → loaded.
 	const pageEntities = useMemo<PageEntity[]>(() => {
 		if (!orgChart) return [];
 		const entities: PageEntity[] = [];
-		// Positions occupées (limit 30 — laisse de la place pour les unassigned)
 		const occupied = orgChart.positions.filter(
 			(p) => p.occupants && p.occupants.length > 0,
 		);
@@ -304,7 +280,6 @@ export default function DashboardTeam() {
 				},
 			});
 		}
-		// Membres non-assignés
 		for (const m of orgChart.unassignedMembers.slice(0, 15)) {
 			entities.push({
 				id: m.membershipId,
@@ -382,7 +357,32 @@ export default function DashboardTeam() {
 		setAssignDialogOpen(true);
 	});
 
+	if (isPending) {
+		return (
+			<div className="p-6 space-y-6">
+				<Skeleton className="h-10 w-64" />
+				<div className="grid gap-3 sm:grid-cols-3">
+					<Skeleton className="h-24" />
+					<Skeleton className="h-24" />
+					<Skeleton className="h-24" />
+				</div>
+				<Skeleton className="h-[400px]" />
+			</div>
+		);
+	}
+
+	if (error) {
+		return <QueryError error={error} />;
+	}
+
 	if (!orgChart) return null;
+
+	const gradeOrder: PositionGrade[] = [
+		"chief",
+		"counselor",
+		"agent",
+		"external",
+	];
 
 	return (
 		<div className="flex flex-1 flex-col gap-6 p-6">
