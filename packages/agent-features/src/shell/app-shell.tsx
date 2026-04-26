@@ -226,6 +226,7 @@ function DashboardLayout({
 				<IAstedWindow
 					renderTab={renderIAstedTab}
 					renderCallQueueSlot={renderIAstedCallQueueSlot}
+					sidePanelOpen={isSidePanelOpen}
 				/>
 			)}
 			<GlobalCallAlert />

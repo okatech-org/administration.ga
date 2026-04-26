@@ -30,6 +30,7 @@ import {
   defaultTriggerIcon,
   type IAstedTabId,
 } from "@workspace/iasted"
+import { cn } from "@workspace/ui/lib/utils"
 import { useOrg } from "./org-provider"
 
 export interface IAstedWindowProps {
@@ -45,11 +46,18 @@ export interface IAstedWindowProps {
    * certains onglets (iAppel rend sa propre barre par exemple).
    */
   renderCallQueueSlot?: (tab: IAstedTabId) => ReactNode
+  /**
+   * Quand le side panel iAsted (Cmd+K, 420 px de large) est ouvert, on
+   * décale le bouton flottant CircleMenu vers la gauche pour qu'il reste
+   * dans la zone de contenu de la page au lieu de chevaucher le panneau.
+   */
+  sidePanelOpen?: boolean
 }
 
 export function IAstedWindow({
   renderTab,
   renderCallQueueSlot,
+  sidePanelOpen = false,
 }: IAstedWindowProps) {
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<IAstedTabId>("ichat")
@@ -104,7 +112,10 @@ export function IAstedWindow({
       {!open && (
         <div
           suppressHydrationWarning
-          className="fixed right-[62px] bottom-[62px] z-40 hidden lg:block print:hidden"
+          className={cn(
+            "fixed bottom-[62px] z-40 hidden lg:block print:hidden transition-[right] duration-200 ease-out",
+            sidePanelOpen ? "right-[calc(420px+62px)]" : "right-[62px]"
+          )}
         >
           <CircleMenu
             items={menuItems}

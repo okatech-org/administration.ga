@@ -7,6 +7,18 @@ import {
 import type { Id } from "../_generated/dataModel"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { internal } from "../_generated/api"
+import { ID_PHOTO_GUIDE } from "../ai/assets/idPhotoGuide"
+
+// Maximum total raw size of files we send to Gemini for visual analysis.
+// Gemini accepts ~20 MB inlineData per request; base64 inflates by ~33 %, so
+// we cap at 12 MB raw to stay under the ceiling once encoded.
+const MAX_VISION_PAYLOAD_BYTES = 12 * 1024 * 1024
+
+// MIME types Gemini analyses natively. Other formats fall back to text-only.
+const VISION_SUPPORTED_MIME_REGEX = /^(image\/|application\/pdf$)/
+
+// Identity-photo document slug — must match DetailedDocumentType.IdentityPhoto
+const IDENTITY_PHOTO_TYPE = "identity_photo"
 
 /**
  * AI Service for analyzing requests using Gemini
@@ -36,6 +48,20 @@ const getAnalysisPrompt = (data: {
   }>
   formDataText: string
   formSchemaFieldsText: string
+  // Index map: pour chaque fichier joint au prompt en multimodal, où le retrouver dans la séquence
+  visionAttachments: Array<{
+    index: number // ordre dans la séquence des `parts` multimodaux (1-based, exclut la photo de référence)
+    filename: string
+    documentType: string
+    mimeType: string
+  }>
+  hasIdentityPhoto: boolean
+  excludedFromVision: Array<{
+    filename: string
+    documentType: string
+    mimeType: string
+    reason: string
+  }>
 }) => `Tu es un assistant consulaire expert. Analyse cette demande de service consulaire.
 
 ## Service demandé
@@ -63,6 +89,48 @@ ${
         )
         .join("\n")
     : "Aucun document fourni"
+}${
+  data.visionAttachments.length > 0
+    ? `
+
+## Analyse visuelle des documents
+${data.hasIdentityPhoto ? "La PREMIÈRE pièce jointe à ce message est une **image de référence officielle** pour les photos d'identité (à ne pas confondre avec les documents fournis). Les pièces jointes suivantes sont les fichiers réels du demandeur, dans cet ordre :" : "Les pièces jointes à ce message sont les fichiers réels fournis par le demandeur, dans cet ordre :"}
+${data.visionAttachments
+  .map(
+    (a) =>
+      `${a.index}. Type déclaré: "${a.documentType}" | Fichier: "${a.filename}" | Format: ${a.mimeType}`
+  )
+  .join("\n")}
+
+Pour CHAQUE fichier ci-dessus, vérifie en regardant son contenu :
+- Le contenu correspond-il bien au type déclaré ? (ex. un fichier déclaré "passport" doit montrer une page d'identité de passeport, pas autre chose)
+- Le document est-il lisible (netteté, luminosité, intégralité — pages complètes pour les PDF) ?
+- Si une date d'expiration est lisible, le document n'est-il pas visiblement expiré ?
+- Y a-t-il un contenu suspect (capture partielle, screenshot de mauvaise qualité, document tronqué, photo de personne différente de l'identité déclarée dans le formulaire) ?
+
+Si un fichier ne respecte pas ces critères, ajoute-le à \`documentAnalysis.suspicious\` en citant la raison précise (ex : "passport.pdf : seule la page de garde est visible, page d'identité manquante").${data.hasIdentityPhoto ? `
+
+## Vérification des photos d'identité
+Compare chaque photo déclarée comme "${IDENTITY_PHOTO_TYPE}" à l'image de référence officielle (1ère pièce jointe).
+
+Critères de conformité (TOUS doivent être respectés) :
+- Visage centré et dégagé, occupant ~70-80 % du cadre vertical
+- Fond uni et clair (blanc ou gris très clair)
+- Expression neutre, bouche fermée, regard face caméra
+- Aucun élément occultant le visage : pas de lunettes de soleil, pas de chapeau/casquette, pas de masque
+- Photo nette, bien éclairée, sans ombre marquée ni reflet
+- Format portrait, qualité suffisante (pas de pixellisation visible)
+- Une seule personne sur l'image, visible jusqu'aux épaules
+
+Si une photo identité ne respecte PAS un ou plusieurs critères :
+- Ajoute-la à \`documentAnalysis.suspicious\` en listant précisément les critères manqués
+- Ajoute une \`suggestedActions\` de type "upload_document" ciblant la photo d'identité, avec un message qui explique au citoyen ce qui ne va pas et l'invite à téléverser une nouvelle photo conforme
+- Considère la demande comme \`incomplete\`` : ""}${data.excludedFromVision.length > 0 ? `
+
+### Fichiers non analysés visuellement (format non supporté ou taille excessive)
+Pour ces fichiers, base-toi uniquement sur les métadonnées (filename + type déclaré) :
+${data.excludedFromVision.map((e) => `- "${e.filename}" (${e.documentType}, ${e.mimeType}) — ${e.reason}`).join("\n")}` : ""}`
+    : ""
 }
 
 ## Structure du formulaire (champs disponibles avec leurs identifiants)
@@ -210,6 +278,19 @@ export const analyzeRequest = internalAction({
         model: "gemini-3.1-flash-lite-preview",
       })
 
+      // Load attachments as base64 inlineData parts, prioritising identity
+      // photos and required documents within the size budget.
+      const {
+        inlineParts,
+        visionAttachments,
+        excludedFromVision,
+        hasIdentityPhoto,
+      } = await loadVisionAttachments(
+        ctx,
+        request.attachedFiles || [],
+        new Set(request.requiredDocuments)
+      )
+
       const prompt = getAnalysisPrompt({
         serviceName: request.serviceName,
         isChildProfile: request.isChildProfile,
@@ -220,9 +301,28 @@ export const analyzeRequest = internalAction({
         formSchemaFieldsText: formatFormSchemaForPrompt(
           request.formSchemaSections || []
         ),
+        visionAttachments,
+        hasIdentityPhoto,
+        excludedFromVision,
       })
 
-      const result = await model.generateContent(prompt)
+      const parts: Array<
+        { text: string } | { inlineData: { mimeType: string; data: string } }
+      > = []
+      if (hasIdentityPhoto) {
+        parts.push({
+          inlineData: {
+            mimeType: ID_PHOTO_GUIDE.mimeType,
+            data: ID_PHOTO_GUIDE.base64,
+          },
+        })
+      }
+      parts.push(...inlineParts)
+      parts.push({ text: prompt })
+
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts }],
+      })
       const responseText = result.response.text()
 
       // Parse JSON response
@@ -361,6 +461,139 @@ export const analyzeRequest = internalAction({
 })
 
 /**
+ * Load attached files from Convex storage and convert to Gemini inlineData
+ * parts, respecting MAX_VISION_PAYLOAD_BYTES. Identity photos and files
+ * matching a required-document label are loaded first.
+ */
+async function loadVisionAttachments(
+  ctx: { storage: { get: (id: Id<"_storage">) => Promise<Blob | null> } },
+  files: Array<{
+    storageId: Id<"_storage">
+    filename: string
+    mimeType: string
+    sizeBytes: number
+    documentType: string
+  }>,
+  requiredLabels: Set<string>
+): Promise<{
+  inlineParts: Array<{ inlineData: { mimeType: string; data: string } }>
+  visionAttachments: Array<{
+    index: number
+    filename: string
+    documentType: string
+    mimeType: string
+  }>
+  excludedFromVision: Array<{
+    filename: string
+    documentType: string
+    mimeType: string
+    reason: string
+  }>
+  hasIdentityPhoto: boolean
+}> {
+  const inlineParts: Array<{
+    inlineData: { mimeType: string; data: string }
+  }> = []
+  const visionAttachments: Array<{
+    index: number
+    filename: string
+    documentType: string
+    mimeType: string
+  }> = []
+  const excludedFromVision: Array<{
+    filename: string
+    documentType: string
+    mimeType: string
+    reason: string
+  }> = []
+
+  // Priority: 1) identity photos, 2) required-doc matches, 3) the rest
+  const priority = (f: (typeof files)[number]) => {
+    if (f.documentType === IDENTITY_PHOTO_TYPE) return 0
+    if (requiredLabels.has(f.documentType)) return 1
+    return 2
+  }
+  const ordered = [...files].sort((a, b) => priority(a) - priority(b))
+
+  let usedBytes = 0
+  let hasIdentityPhoto = false
+
+  for (const file of ordered) {
+    if (!VISION_SUPPORTED_MIME_REGEX.test(file.mimeType)) {
+      excludedFromVision.push({
+        filename: file.filename,
+        documentType: file.documentType,
+        mimeType: file.mimeType,
+        reason: "format non supporté pour l'analyse visuelle",
+      })
+      continue
+    }
+    if (usedBytes + file.sizeBytes > MAX_VISION_PAYLOAD_BYTES) {
+      excludedFromVision.push({
+        filename: file.filename,
+        documentType: file.documentType,
+        mimeType: file.mimeType,
+        reason: "taille excédant le budget d'analyse visuelle",
+      })
+      continue
+    }
+    try {
+      const blob = await ctx.storage.get(file.storageId)
+      if (!blob) {
+        excludedFromVision.push({
+          filename: file.filename,
+          documentType: file.documentType,
+          mimeType: file.mimeType,
+          reason: "fichier introuvable dans le stockage",
+        })
+        continue
+      }
+      const arrayBuffer = await blob.arrayBuffer()
+      const bytes = new Uint8Array(arrayBuffer)
+      let binary = ""
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i])
+      }
+      const base64 = btoa(binary)
+
+      inlineParts.push({
+        inlineData: { mimeType: file.mimeType, data: base64 },
+      })
+      // Index is 1-based and reflects the order seen by the AI within
+      // the user's documents (excluding the reference photo).
+      visionAttachments.push({
+        index: visionAttachments.length + 1,
+        filename: file.filename,
+        documentType: file.documentType,
+        mimeType: file.mimeType,
+      })
+      usedBytes += file.sizeBytes
+      if (file.documentType === IDENTITY_PHOTO_TYPE) {
+        hasIdentityPhoto = true
+      }
+    } catch (err) {
+      console.error(
+        `Failed to load attachment ${file.filename} for AI analysis:`,
+        err
+      )
+      excludedFromVision.push({
+        filename: file.filename,
+        documentType: file.documentType,
+        mimeType: file.mimeType,
+        reason: "erreur de chargement",
+      })
+    }
+  }
+
+  return {
+    inlineParts,
+    visionAttachments,
+    excludedFromVision,
+    hasIdentityPhoto,
+  }
+}
+
+/**
  * Internal query to get request data for analysis
  */
 export const getRequestData = internalQuery({
@@ -387,6 +620,31 @@ export const getRequestData = internalQuery({
         }
       })
     )
+
+    // Flatten ALL files across all documents — used by the action to load
+    // blobs and feed them to Gemini for visual analysis.
+    const attachedFiles: Array<{
+      storageId: Id<"_storage">
+      filename: string
+      mimeType: string
+      sizeBytes: number
+      documentType: string
+    }> = []
+    for (const docId of request.documents || []) {
+      const doc = await ctx.db.get(docId)
+      if (!doc?.files) continue
+      const documentType = doc.documentType || "type_inconnu"
+      for (const file of doc.files) {
+        if (!file.storageId) continue
+        attachedFiles.push({
+          storageId: file.storageId as Id<"_storage">,
+          filename: file.filename || "Document sans nom",
+          mimeType: file.mimeType || "",
+          sizeBytes: file.sizeBytes || 0,
+          documentType,
+        })
+      }
+    }
 
     // Transform formData to human-readable text for AI prompt
     const formDataText = formatFormDataForPrompt(
@@ -429,6 +687,7 @@ export const getRequestData = internalQuery({
         (d) => `${d.documentType} (${d.filename})`
       ),
       providedDocumentsDetails: documents,
+      attachedFiles,
       formDataText, // Human-readable text for AI prompt
       rawFormData: request.formData || {},
       // Form schema sections for mapping AI-detected missing fields to structured field data

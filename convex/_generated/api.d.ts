@@ -20,6 +20,7 @@ import type * as ai_adminChatStreaming from "../ai/adminChatStreaming.js";
 import type * as ai_adminTools from "../ai/adminTools.js";
 import type * as ai_adminVoice from "../ai/adminVoice.js";
 import type * as ai_aiTriggers from "../ai/aiTriggers.js";
+import type * as ai_assets_idPhotoGuide from "../ai/assets/idPhotoGuide.js";
 import type * as ai_capabilities__types from "../ai/capabilities/_types.js";
 import type * as ai_capabilities_autoSummary from "../ai/capabilities/autoSummary.js";
 import type * as ai_capabilities_bulkActionsHelper from "../ai/capabilities/bulkActionsHelper.js";
@@ -358,6 +359,7 @@ declare const fullApi: ApiFromModules<{
   "ai/adminTools": typeof ai_adminTools;
   "ai/adminVoice": typeof ai_adminVoice;
   "ai/aiTriggers": typeof ai_aiTriggers;
+  "ai/assets/idPhotoGuide": typeof ai_assets_idPhotoGuide;
   "ai/capabilities/_types": typeof ai_capabilities__types;
   "ai/capabilities/autoSummary": typeof ai_capabilities_autoSummary;
   "ai/capabilities/bulkActionsHelper": typeof ai_capabilities_bulkActionsHelper;

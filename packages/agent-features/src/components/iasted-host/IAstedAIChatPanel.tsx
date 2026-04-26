@@ -11,6 +11,11 @@
  * Utilisé par `IAstedSidePanel` (Cmd+K) pour offrir un mode "raccourci IA"
  * sans les conversations P2P. La fenêtre flottante CircleMenu continue
  * d'utiliser `IAstedChatColumns` (liste + conversation).
+ *
+ * Reçoit `chat` et `voice` en props : ils sont instanciés au niveau du side
+ * panel parent pour qu'on puisse exposer le bouton micro dans son header
+ * sans dupliquer les hooks (qui maintiennent des subscriptions Convex et
+ * une connexion LiveKit).
  */
 
 import {
@@ -19,13 +24,15 @@ import {
 	IAstedChatVoiceOverlay,
 	useIAstedChat,
 } from "./IAstedInstantChatTab";
-import { useAdminAIChat } from "./useAdminAIChat";
-import { useAdminVoiceChat } from "./useAdminVoiceChat";
+import type { useAdminAIChat } from "./useAdminAIChat";
+import type { useAdminVoiceChat } from "./useAdminVoiceChat";
 
-export function IAstedAIChatPanel() {
-	const chat = useAdminAIChat();
-	const voice = useAdminVoiceChat();
+export interface IAstedAIChatPanelProps {
+	chat: ReturnType<typeof useAdminAIChat>;
+	voice: ReturnType<typeof useAdminVoiceChat>;
+}
 
+export function IAstedAIChatPanel({ chat, voice }: IAstedAIChatPanelProps) {
 	const state = useIAstedChat({
 		chat,
 		voice,
@@ -40,7 +47,11 @@ export function IAstedAIChatPanel() {
 			{isVoiceMode ? (
 				<IAstedChatVoiceOverlay voice={voice} />
 			) : (
-				<IAstedChatConversation state={state} showBackButton={false} />
+				<IAstedChatConversation
+					state={state}
+					showBackButton={false}
+					showHeader={false}
+				/>
 			)}
 		</div>
 	);

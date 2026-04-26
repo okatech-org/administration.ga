@@ -643,11 +643,19 @@ export interface IAstedChatConversationProps {
 	 * - `false` en fullscreen (la liste reste visible à côté).
 	 */
 	showBackButton?: boolean;
+	/**
+	 * Afficher le header contact interne (avatar + nom + badge IA + mic).
+	 * - `true` (défaut) : usage dans la fenêtre flottante / fullscreen.
+	 * - `false` : usage embarqué (side panel) où l'enrobage fournit déjà
+	 *   son propre header — évite la duplication.
+	 */
+	showHeader?: boolean;
 }
 
 export function IAstedChatConversation({
 	state,
 	showBackButton = true,
+	showHeader = true,
 }: IAstedChatConversationProps) {
 	const {
 		selectedContact,
@@ -693,62 +701,64 @@ export function IAstedChatConversation({
 	return (
 		<div className="flex flex-col flex-1 min-h-0">
 			{/* Header contact */}
-			<div className="border-b px-3 py-2.5 flex items-center gap-2.5 shrink-0">
-				{showBackButton && (
-					<button
-						type="button"
-						onClick={() => setSelectedContact(null)}
-						className="text-sm text-muted-foreground hover:text-foreground p-1"
-					>
-						←
-					</button>
-				)}
-				<Avatar className="h-9 w-9">
-					{selectedContact.isAI ? (
-						<AvatarFallback className="bg-emerald-500/15 text-emerald-500">
-							<Bot className="h-4 w-4" />
-						</AvatarFallback>
-					) : (
-						<>
-							<AvatarImage src={selectedContact.avatar} />
-							<AvatarFallback className="text-xs bg-primary/10 text-primary">
-								{selectedContact.name
-									?.split(" ")
-									.map((w: string) => w[0])
-									.join("")
-									.toUpperCase()
-									.slice(0, 2)}
-							</AvatarFallback>
-						</>
+			{showHeader && (
+				<div className="border-b px-3 py-2.5 flex items-center gap-2.5 shrink-0">
+					{showBackButton && (
+						<button
+							type="button"
+							onClick={() => setSelectedContact(null)}
+							className="text-sm text-muted-foreground hover:text-foreground p-1"
+						>
+							←
+						</button>
 					)}
-				</Avatar>
-				<div className="flex-1 min-w-0">
-					<div className="flex items-center gap-1.5">
-						<p className="text-sm font-medium truncate">{selectedContact.name}</p>
-						{selectedContact.isAI && (
-							<Badge className="text-[10px] h-4 px-1.5 bg-emerald-500/15 text-emerald-500 border-emerald-500/20">
-								IA
-							</Badge>
+					<Avatar className="h-9 w-9">
+						{selectedContact.isAI ? (
+							<AvatarFallback className="bg-emerald-500/15 text-emerald-500">
+								<Bot className="h-4 w-4" />
+							</AvatarFallback>
+						) : (
+							<>
+								<AvatarImage src={selectedContact.avatar} />
+								<AvatarFallback className="text-xs bg-primary/10 text-primary">
+									{selectedContact.name
+										?.split(" ")
+										.map((w: string) => w[0])
+										.join("")
+										.toUpperCase()
+										.slice(0, 2)}
+								</AvatarFallback>
+							</>
 						)}
+					</Avatar>
+					<div className="flex-1 min-w-0">
+						<div className="flex items-center gap-1.5">
+							<p className="text-sm font-medium truncate">{selectedContact.name}</p>
+							{selectedContact.isAI && (
+								<Badge className="text-[10px] h-4 px-1.5 bg-emerald-500/15 text-emerald-500 border-emerald-500/20">
+									IA
+								</Badge>
+							)}
+						</div>
+						<p className="text-xs text-muted-foreground truncate">
+							{selectedContact.isAI
+								? "Agent IA Diplomate"
+								: selectedContact.requestRef
+									? `Demande ${selectedContact.requestRef}`
+									: (selectedContact.position ?? "Agent consulaire")}
+						</p>
 					</div>
-					<p className="text-xs text-muted-foreground truncate">
-						{selectedContact.isAI
-							? "Agent IA Diplomate"
-							: selectedContact.requestRef
-								? `Demande ${selectedContact.requestRef}`
-								: (selectedContact.position ?? "Agent consulaire")}
-					</p>
+					{/* Voice toggle — actif uniquement pour le chat IA */}
+					{selectedContact.isAI && voice?.isAvailable && (
+						<VoiceButton
+							isOpen={voice.isOpen}
+							onClick={() =>
+								voice.isOpen ? voice.closeOverlay() : voice.openOverlay()
+							}
+						/>
+					)}
 				</div>
-				{/* Voice toggle — actif uniquement pour le chat IA */}
-				{selectedContact.isAI && voice?.isAvailable && (
-					<VoiceButton
-						isOpen={voice.isOpen}
-						onClick={() =>
-							voice.isOpen ? voice.closeOverlay() : voice.openOverlay()
-						}
-					/>
-				)}
-			</div>
+			)}
 
 			{/* Messages */}
 			<ScrollArea className="flex-1 min-h-0 px-3 py-3">
@@ -760,21 +770,9 @@ export function IAstedChatConversation({
 								<Bot className="h-7 w-7 text-emerald-500" />
 							</div>
 							<h3 className="text-sm font-semibold mb-1">Bonjour, je suis iAsted</h3>
-							<p className="text-xs text-muted-foreground max-w-[280px] mb-4">
+							<p className="text-xs text-muted-foreground max-w-[280px]">
 								Posez-moi une question ou choisissez une suggestion.
 							</p>
-							<div className="flex flex-wrap gap-1.5 justify-center">
-								{suggestions.map((s) => (
-									<button
-										key={s}
-										type="button"
-										onClick={() => setMessageInput(s)}
-										className="text-xs px-3 py-1 rounded-full border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
-									>
-										{s}
-									</button>
-								))}
-							</div>
 						</div>
 					) : (
 						<div className="space-y-3">
