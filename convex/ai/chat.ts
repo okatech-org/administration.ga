@@ -132,14 +132,9 @@ export const chat = action({
       contextPrompt += `\n- Page actuelle: ${currentPage}`;
     }
 
-    // Add available routes based on user role
-    const userRole = user.role as
-      | "citizen"
-      | "staff"
-      | "admin"
-      | "super_admin"
-      | undefined;
-    contextPrompt += generateRoutesPromptSection(userRole ?? "citizen");
+    // Add available routes — cette action ne sert que citizen-web,
+    // donc on scope toujours sur l'app "citizen" (PUBLIC + MY_SPACE).
+    contextPrompt += generateRoutesPromptSection("citizen");
 
     // Get conversation history if exists
     let history: Array<{ role: string; parts: Array<{ text: string }> }> = [];

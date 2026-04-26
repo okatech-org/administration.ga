@@ -2,11 +2,12 @@
  * AI Assistant Tool Definitions for Gemini Function Calling
  * Each tool maps to a Convex query/mutation
  */
-import {
-  PUBLIC_ROUTES,
-  MY_SPACE_ROUTES,
-  ADMIN_ROUTES,
-} from "./routes_manifest";
+import { getRoutesForApp } from "./routes_manifest";
+
+// Ces tools sont consommés par citizen-web uniquement — `navigateTo` est donc
+// scopé sur les routes citizen (PUBLIC + MY_SPACE). Les apps staff utilisent
+// `adminTools` (cf. `getAdminTools`).
+const CITIZEN_ROUTES = getRoutesForApp("citizen");
 
 // Tool names that require user confirmation before execution
 export const MUTATIVE_TOOLS = [
@@ -319,17 +320,11 @@ export const tools = [
   {
     name: "navigateTo",
     description:
-      "Navigue l'utilisateur vers une page de l'application. Routes disponibles:\n" +
-      "PUBLIQUES: " +
-      Object.keys(PUBLIC_ROUTES).join(", ") +
-      "\n" +
-      "ESPACE PERSONNEL: " +
-      Object.keys(MY_SPACE_ROUTES).join(", ") +
-      "\n" +
-      "ADMIN: " +
-      Object.keys(ADMIN_ROUTES).join(", ") +
-      "\n" +
-      "Remplace $slug, $requestId, etc. par les vraies valeurs. xId correspond typiqument à l'id de la ressource en base de données, souvent disponible dans les données retournées par les autres outils.",
+      "Navigue l'utilisateur vers une page de l'espace citoyen. Routes disponibles:\n" +
+      Object.entries(CITIZEN_ROUTES)
+        .map(([path, desc]) => `- ${path}: ${desc}`)
+        .join("\n") +
+      "\nRemplace $slug, $reference, $appointmentId, etc. par les vraies valeurs (souvent disponibles dans les données retournées par les autres outils). Toute route hors de cette liste sera ignorée.",
     parameters: {
       type: "object" as const,
       properties: {

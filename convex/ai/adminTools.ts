@@ -2,8 +2,11 @@
  * AI Assistant Tool Definitions for Admin/Consular Agents
  * Each tool maps to a Convex query/mutation available to staff
  */
-import { ADMIN_ROUTES } from "./routes_manifest";
+import { type AppScope, getRoutesForApp } from "./routes_manifest";
 import type { TaskCodeValue } from "../lib/taskCodes";
+
+// Apps qui consomment adminTools (toutes les apps "staff", pas citizen-web).
+export type AdminAppScope = Extract<AppScope, "agent" | "backoffice">;
 
 // ============================================
 // Permission mapping: tool name → required task code
@@ -56,7 +59,12 @@ export const ADMIN_ALWAYS_AVAILABLE_TOOLS = [
 ] as const;
 
 // Gemini FunctionDeclaration format
-export const adminTools = [
+//
+// ⚠️  N'utilise PAS `adminTools` directement — utilise `getAdminTools(app)` qui
+// scope la description du tool `navigateTo` aux routes de l'app appelante.
+// `adminTools` est conservé comme template (la description de `navigateTo` y est
+// volontairement vide et sera remplacée par `getAdminTools`).
+const adminToolsTemplate = [
   // ============ READ TOOLS (no confirmation) ============
   {
     name: "getAgentContext",
@@ -241,12 +249,9 @@ export const adminTools = [
   },
   {
     name: "navigateTo",
-    description:
-      "Navigue l'agent vers une page de l'administration. Routes admin disponibles:\n" +
-      Object.entries(ADMIN_ROUTES)
-        .map(([path, desc]) => `- ${path}: ${desc}`)
-        .join("\n") +
-      "\nRemplace $requestId, $appointmentId etc. par les vraies valeurs.",
+    // La description sera remplacée par `getAdminTools(app)` ci-dessous —
+    // elle dépend de l'app (agent-web vs backoffice-web).
+    description: "__NAVIGATE_TO_PLACEHOLDER__",
     parameters: {
       type: "object" as const,
       properties: {
@@ -373,3 +378,37 @@ export const adminTools = [
     },
   },
 ];
+
+const APP_NAVIGATE_LABEL: Record<AdminAppScope, string> = {
+  agent: "agent consulaire",
+  backoffice: "super-admin / ministère",
+};
+
+/**
+ * Retourne la liste des tools admin avec la description de `navigateTo`
+ * scopée aux routes de l'app appelante (agent-web ou backoffice-web).
+ *
+ * `router.push()` côté client ne traverse pas les apps — exposer les routes
+ * d'une autre app à l'IA ne ferait que générer des navigations cassées.
+ */
+export function getAdminTools(
+  app: AdminAppScope,
+): typeof adminToolsTemplate {
+  const routes = getRoutesForApp(app);
+  const navigateDescription =
+    `Navigue l'utilisateur vers une page de l'application ${APP_NAVIGATE_LABEL[app]}. Routes disponibles:\n` +
+    Object.entries(routes)
+      .map(([path, desc]) => `- ${path}: ${desc}`)
+      .join("\n") +
+    "\nRemplace $requestId, $appointmentId, $reference etc. par les vraies valeurs. Toute route hors de cette liste sera ignorée.";
+
+  return adminToolsTemplate.map((t) =>
+    t.name === "navigateTo" ? { ...t, description: navigateDescription } : t,
+  );
+}
+
+/**
+ * @deprecated Utilise `getAdminTools(app)`. Conservé pour compat le temps de
+ * migrer tous les appelants. Ne contient pas la description scopée de `navigateTo`.
+ */
+export const adminTools = adminToolsTemplate;

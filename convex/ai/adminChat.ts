@@ -7,11 +7,12 @@ import { action, internalQuery } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import {
-  adminTools,
+  getAdminTools,
   ADMIN_MUTATIVE_TOOLS,
   ADMIN_UI_TOOLS,
   ADMIN_TOOL_PERMISSIONS,
   ADMIN_ALWAYS_AVAILABLE_TOOLS,
+  type AdminAppScope,
 } from "./adminTools";
 import { rateLimiter } from "./rateLimiter";
 import { canDoTask } from "../lib/permissions";
@@ -176,11 +177,18 @@ export const chat = action({
     currentPage: v.optional(v.string()),
     pageContext: v.optional(pageContextValidator),
     orgId: v.id("orgs"),
+    // App appelante — détermine le scope des routes exposées à `navigateTo`.
+    // Optionnel pour compat avec les anciens clients ; défaut `"agent"`.
+    app: v.optional(
+      v.union(v.literal("agent"), v.literal("backoffice")),
+    ),
   },
   handler: async (
     ctx,
-    { conversationId, message, currentPage, pageContext, orgId },
+    { conversationId, message, currentPage, pageContext, orgId, app },
   ): Promise<AdminChatResponse> => {
+    const appScope: AdminAppScope = app ?? "agent";
+    const adminTools = getAdminTools(appScope);
     // Verify authentication
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {

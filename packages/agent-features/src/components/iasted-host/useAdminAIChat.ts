@@ -111,6 +111,7 @@ export function useAdminAIChat() {
 					currentPage: pathname,
 					pageContext: pageContext ?? undefined,
 					orgId: activeOrgId,
+					app: "agent",
 				});
 
 				if (response.conversationId) {

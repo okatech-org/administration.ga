@@ -80,6 +80,7 @@ export function useBackofficeAIChat(orgId: Id<"orgs"> | null) {
 					message: content,
 					currentPage: pathname,
 					orgId,
+					app: "backoffice",
 				});
 
 				if (response.conversationId) setConversationId(response.conversationId);
