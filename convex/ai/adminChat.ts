@@ -11,6 +11,7 @@ import {
   ADMIN_MUTATIVE_TOOLS,
   ADMIN_UI_TOOLS,
   ADMIN_TOOL_PERMISSIONS,
+  ADMIN_ALWAYS_AVAILABLE_TOOLS,
 } from "./adminTools";
 import { rateLimiter } from "./rateLimiter";
 import { canDoTask } from "../lib/permissions";
@@ -81,6 +82,90 @@ type AdminChatResponse = {
   actions: AdminAIAction[];
 };
 
+// Validator for the rich page context published by usePageContext()
+const pageContextValidator = v.object({
+  module: v.string(),
+  pathname: v.string(),
+  title: v.string(),
+  summary: v.string(),
+  visibleEntities: v.array(
+    v.object({
+      id: v.string(),
+      type: v.string(),
+      label: v.string(),
+      data: v.optional(v.any()),
+    }),
+  ),
+  availableActions: v.array(
+    v.object({
+      id: v.string(),
+      label: v.string(),
+      description: v.string(),
+      requiresConfirmation: v.optional(v.boolean()),
+      permission: v.optional(v.string()),
+      params: v.optional(v.any()),
+    }),
+  ),
+  scopedToolNames: v.array(v.string()),
+  updatedAt: v.number(),
+});
+
+type PageContextArg = {
+  module: string;
+  pathname: string;
+  title: string;
+  summary: string;
+  visibleEntities: Array<{
+    id: string;
+    type: string;
+    label: string;
+    data?: unknown;
+  }>;
+  availableActions: Array<{
+    id: string;
+    label: string;
+    description: string;
+    requiresConfirmation?: boolean;
+    permission?: string;
+    params?: unknown;
+  }>;
+  scopedToolNames: string[];
+  updatedAt: number;
+};
+
+function buildPageContextSection(ctx?: PageContextArg | null): string {
+  if (!ctx) return "";
+  const lines: string[] = [];
+  lines.push("\n\n## Contexte de l'écran actuel");
+  lines.push(`Module: ${ctx.module} (${ctx.pathname})`);
+  lines.push(`Titre: ${ctx.title}`);
+  if (ctx.summary) lines.push(`Résumé: ${ctx.summary}`);
+
+  if (ctx.visibleEntities.length > 0) {
+    lines.push(`\nÉléments visibles (${ctx.visibleEntities.length}):`);
+    for (const e of ctx.visibleEntities) {
+      const dataPreview = e.data ? ` ${JSON.stringify(e.data).slice(0, 200)}` : "";
+      lines.push(`- [${e.type}] ${e.label} (id: ${e.id})${dataPreview}`);
+    }
+  }
+
+  if (ctx.availableActions.length > 0) {
+    lines.push(`\nActions disponibles sur cette page:`);
+    for (const a of ctx.availableActions) {
+      const conf = a.requiresConfirmation ? " (confirmation requise)" : "";
+      lines.push(`- ${a.id}: ${a.label} — ${a.description}${conf}`);
+    }
+    lines.push(
+      `\nUtilise le tool 'executePageAction' avec l'actionId exact pour déclencher une de ces actions.`,
+    );
+  }
+
+  lines.push(
+    `\nQuand l'utilisateur dit "ce dossier", "cet élément", "celui-ci", base-toi sur les éléments visibles ci-dessus.`,
+  );
+  return lines.join("\n");
+}
+
 /**
  * Main admin chat action
  */
@@ -89,11 +174,12 @@ export const chat = action({
     conversationId: v.optional(v.id("conversations")),
     message: v.string(),
     currentPage: v.optional(v.string()),
+    pageContext: v.optional(pageContextValidator),
     orgId: v.id("orgs"),
   },
   handler: async (
     ctx,
-    { conversationId, message, currentPage, orgId },
+    { conversationId, message, currentPage, pageContext, orgId },
   ): Promise<AdminChatResponse> => {
     // Verify authentication
     const identity = await ctx.auth.getUserIdentity();
@@ -146,12 +232,12 @@ export const chat = action({
     // Filter tools based on agent's permissions
     // NOTE: canDoTask requires ctx.db (query/mutation context), not available in actions.
     // Use checkPermission internal query instead.
-    const allowedTools: typeof adminTools = [];
+    const permissionAllowedTools: typeof adminTools = [];
     for (const tool of adminTools) {
       const requiredTask = ADMIN_TOOL_PERMISSIONS[tool.name];
       if (!requiredTask) {
         // UI tools and tools without permission requirements are always allowed
-        allowedTools.push(tool);
+        permissionAllowedTools.push(tool);
         continue;
       }
       const allowed = await ctx.runQuery(
@@ -163,9 +249,22 @@ export const chat = action({
         },
       );
       if (allowed) {
-        allowedTools.push(tool);
+        permissionAllowedTools.push(tool);
       }
     }
+
+    // Then narrow down by page scope: if a pageContext is provided with
+    // scopedToolNames, only expose ALWAYS_AVAILABLE + those scoped tools.
+    // Otherwise, fall back to all permission-allowed tools.
+    const allowedTools: typeof adminTools =
+      pageContext && pageContext.scopedToolNames.length > 0
+        ? permissionAllowedTools.filter(
+            (t) =>
+              ADMIN_ALWAYS_AVAILABLE_TOOLS.includes(
+                t.name as (typeof ADMIN_ALWAYS_AVAILABLE_TOOLS)[number],
+              ) || pageContext.scopedToolNames.includes(t.name),
+          )
+        : permissionAllowedTools;
 
     // Build context-aware system prompt
     let contextPrompt = ADMIN_SYSTEM_PROMPT;
@@ -179,6 +278,9 @@ export const chat = action({
     if (currentPage) {
       contextPrompt += `\n- Page actuelle: ${currentPage}`;
     }
+
+    // Inject the rich page context (visible entities, available actions, etc.)
+    contextPrompt += buildPageContextSection(pageContext);
 
     // Get conversation history
     let history: Array<{ role: string; parts: Array<{ text: string }> }> = [];

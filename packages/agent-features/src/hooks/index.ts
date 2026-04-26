@@ -17,3 +17,8 @@ export type {
 } from "./useContactSearch"
 export { useCallCenter } from "./use-call-center"
 export { useCitizenContext } from "./use-citizen-context"
+export {
+	usePageContext,
+	useRegisterPageAction,
+} from "./use-page-context"
+export type { UsePageContextInput } from "./use-page-context"

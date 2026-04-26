@@ -42,7 +42,18 @@ export const ADMIN_MUTATIVE_TOOLS = [
 ] as const;
 
 // Tool names that are UI actions (handled by frontend)
-export const ADMIN_UI_TOOLS = ["navigateTo"] as const;
+export const ADMIN_UI_TOOLS = ["navigateTo", "executePageAction"] as const;
+
+/**
+ * Tools "core" toujours disponibles, peu importe la page courante.
+ * Les autres tools sont opt-in via `pageContext.scopedToolNames`.
+ */
+export const ADMIN_ALWAYS_AVAILABLE_TOOLS = [
+  "getAgentContext",
+  "navigateTo",
+  "executePageAction",
+  "getTeamMembers",
+] as const;
 
 // Gemini FunctionDeclaration format
 export const adminTools = [
@@ -200,6 +211,34 @@ export const adminTools = [
   },
 
   // ============ UI TOOLS (handled by frontend) ============
+  {
+    name: "executePageAction",
+    description:
+      "Déclenche une action UI exposée par la page courante. " +
+      "À UTILISER UNIQUEMENT pour les `actionId` listés dans la section " +
+      "« Actions disponibles sur cette page » du contexte. " +
+      "L'utilisateur sera invité à confirmer si l'action le requiert.",
+    parameters: {
+      type: "object" as const,
+      properties: {
+        actionId: {
+          type: "string",
+          description:
+            "ID de l'action déclarée par la page (ex. « switch-tab », « print-view »).",
+        },
+        params: {
+          type: "object",
+          description:
+            "Paramètres optionnels passés au handler (forme libre selon l'action).",
+        },
+        reason: {
+          type: "string",
+          description: "Brève explication de pourquoi déclencher cette action.",
+        },
+      },
+      required: ["actionId"],
+    },
+  },
   {
     name: "navigateTo",
     description:
