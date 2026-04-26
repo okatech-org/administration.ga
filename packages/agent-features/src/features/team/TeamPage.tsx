@@ -35,6 +35,11 @@ import { useOrg } from "../../shell/org-provider";
 import { useModuleAccess } from "../../components/shared/access-gate";
 import { useOrgModules } from "../../hooks/useOrgModules";
 import { useCanDoTask } from "../../hooks/useCanDoTask";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type { PageAction, PageEntity } from "../../stores/page-context-store";
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
@@ -270,14 +275,114 @@ export default function DashboardTeam() {
 		return <QueryError error={error} />;
 	}
 
-	if (!orgChart) return null;
-
 	const gradeOrder: PositionGrade[] = [
 		"chief",
 		"counselor",
 		"agent",
 		"external",
 	];
+
+	// ─── Page context for the AI assistant (iAsted copilote) ──────
+	const pageEntities = useMemo<PageEntity[]>(() => {
+		if (!orgChart) return [];
+		const entities: PageEntity[] = [];
+		// Positions occupées (limit 30 — laisse de la place pour les unassigned)
+		const occupied = orgChart.positions.filter(
+			(p) => p.occupants && p.occupants.length > 0,
+		);
+		for (const pos of occupied.slice(0, 30)) {
+			const occ = pos.occupants?.[0];
+			entities.push({
+				id: pos._id,
+				type: "position",
+				label: `${getLocalizedValue(pos.title, lang)} — ${occ?.firstName ?? ""} ${occ?.lastName ?? ""}`.trim(),
+				data: {
+					grade: pos.grade,
+					occupantsCount: pos.occupants?.length ?? 0,
+					membershipId: occ?.membershipId,
+					email: occ?.email,
+				},
+			});
+		}
+		// Membres non-assignés
+		for (const m of orgChart.unassignedMembers.slice(0, 15)) {
+			entities.push({
+				id: m.membershipId,
+				type: "unassigned-member",
+				label: `${m.firstName ?? ""} ${m.lastName ?? ""}`.trim() || m.email,
+				data: { email: m.email },
+			});
+		}
+		return entities;
+	}, [orgChart, lang]);
+
+	const pageActions = useMemo<PageAction[]>(() => {
+		const actions: PageAction[] = [
+			{
+				id: "switch-tab",
+				label: "Changer d'onglet",
+				description:
+					"Bascule entre les onglets de l'équipe. params.tab ∈ ['orgchart','supervision','config','permissions']",
+			},
+		];
+		if (canAdminTeam) {
+			actions.push({
+				id: "open-add-member",
+				label: "Inviter un membre",
+				description: "Ouvre le dialogue d'invitation d'un nouveau membre",
+			});
+			actions.push({
+				id: "open-assign-position",
+				label: "Assigner un membre à un poste",
+				description:
+					"Ouvre le dialogue d'assignation. params.positionId requis (parmi les positions visibles)",
+			});
+		}
+		return actions;
+	}, [canAdminTeam]);
+
+	const pageSummary = useMemo(() => {
+		if (!orgChart) return "Chargement de l'organigramme…";
+		const tabLabel =
+			activeTab === "supervision"
+				? "Supervision"
+				: activeTab === "config"
+					? "Configuration"
+					: activeTab === "permissions"
+						? "Permissions"
+						: "Organigramme";
+		return `${orgChart.totalPositions} postes (${orgChart.filledPositions} pourvus, ${orgChart.vacantPositions} vacants), ${orgChart.unassignedMembers.length} membres sans poste. Onglet actif : ${tabLabel}.`;
+	}, [orgChart, activeTab]);
+
+	usePageContext({
+		module: "team",
+		title: `Équipe — ${activeOrg?.name ?? "Organisation"}`,
+		summary: pageSummary,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: ["getTeamMembers"],
+	});
+
+	useRegisterPageAction("switch-tab", async (params) => {
+		const tab = (params?.tab as string | undefined) ?? "orgchart";
+		if (validTabs.includes(tab)) handleTabChange(tab);
+	});
+	useRegisterPageAction("open-add-member", async () => {
+		if (canAdminTeam) setAddDialogOpen(true);
+	});
+	useRegisterPageAction("open-assign-position", async (params) => {
+		const positionId = params?.positionId as Id<"positions"> | undefined;
+		if (!positionId || !orgChart) return;
+		const pos = orgChart.positions.find((p) => p._id === positionId);
+		if (!pos) return;
+		setAssignTarget({
+			positionId,
+			positionTitle: getLocalizedValue(pos.title, lang),
+		});
+		setAssignDialogOpen(true);
+	});
+
+	if (!orgChart) return null;
 
 	return (
 		<div className="flex flex-1 flex-col gap-6 p-6">
