@@ -152,6 +152,16 @@ export function getLocalized(
   lang?: string,
 ): string {
   if (!fieldValue) return "";
-  if (!lang) return "";
-  return fieldValue[lang] || "";
+  // Try the requested locale, then its base ("en-US" -> "en"),
+  // then "fr" as the project default, then the first non-empty value.
+  if (lang) {
+    if (fieldValue[lang]) return fieldValue[lang];
+    const base = lang.split("-")[0];
+    if (base !== lang && fieldValue[base]) return fieldValue[base];
+  }
+  if (fieldValue.fr) return fieldValue.fr;
+  for (const v of Object.values(fieldValue)) {
+    if (v) return v;
+  }
+  return "";
 }

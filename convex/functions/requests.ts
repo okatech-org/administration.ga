@@ -1880,6 +1880,85 @@ export const clearActionRequired = authMutation({
 });
 
 /**
+ * Update an existing pending action required (agent only).
+ * Patches message / fields / documentTypes / infoToConfirm / deadline.
+ * Action `type`, `id` and `createdAt` are preserved. Refuses if action is already completed.
+ */
+export const updateActionRequired = authMutation({
+  args: {
+    requestId: v.id("requests"),
+    actionId: v.string(),
+    message: v.optional(v.string()),
+    documentTypes: v.optional(v.array(v.object({
+      type: v.string(),
+      label: v.optional(v.any()),
+      required: v.optional(v.boolean()),
+    }))),
+    fields: v.optional(v.array(v.object({
+      fieldPath: v.string(),
+      label: v.optional(v.any()),
+      type: v.optional(v.string()),
+      options: v.optional(v.any()),
+      currentValue: v.optional(v.any()),
+      sectionTitle: v.optional(v.any()),
+    }))),
+    infoToConfirm: v.optional(v.string()),
+    deadline: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw error(ErrorCode.REQUEST_NOT_FOUND);
+    }
+
+    const membership = await getMembership(ctx, ctx.user._id, request.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "requests.process");
+
+    const actions = request.actionsRequired ?? [];
+    const idx = actions.findIndex((a) => a.id === args.actionId);
+    if (idx === -1) {
+      throw error(ErrorCode.NOT_FOUND);
+    }
+
+    const existing = actions[idx];
+    if (existing.completedAt) {
+      throw error(ErrorCode.INVALID_ARGUMENT);
+    }
+
+    const updated = {
+      ...existing,
+      ...(args.message !== undefined ? { message: args.message } : {}),
+      ...(args.documentTypes !== undefined ? { documentTypes: args.documentTypes } : {}),
+      ...(args.fields !== undefined ? { fields: args.fields } : {}),
+      ...(args.infoToConfirm !== undefined ? { infoToConfirm: args.infoToConfirm } : {}),
+      ...(args.deadline !== undefined ? { deadline: args.deadline } : {}),
+    };
+
+    const next = [...actions];
+    next[idx] = updated;
+
+    await ctx.db.patch(args.requestId, {
+      actionsRequired: next,
+      updatedAt: Date.now(),
+    });
+
+    await ctx.db.insert("events", {
+      targetType: "request",
+      targetId: args.requestId as unknown as string,
+      actorId: ctx.user._id,
+      type: EventType.ActionUpdated,
+      data: {
+        actionId: args.actionId,
+        actionType: existing.type,
+        message: updated.message,
+      },
+    });
+
+    return args.requestId;
+  },
+});
+
+/**
  * Update request priority
  */
 export const updatePriority = authMutation({

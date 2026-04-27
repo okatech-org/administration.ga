@@ -320,6 +320,7 @@ export enum ActivityType {
   ProfileCreated = "profile_created",
   ActionRequired = "action_required",
   ActionCleared = "action_cleared",
+  ActionUpdated = "action_updated",
 }
 
 export enum ValidationStatus {

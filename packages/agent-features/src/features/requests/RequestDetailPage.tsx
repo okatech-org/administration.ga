@@ -20,7 +20,9 @@ import {
 	Eye,
 	FileText,
 	Loader2,
+	Pencil,
 	Send,
+	Trash2,
 	Users,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -32,6 +34,16 @@ import { DocumentChecklist } from "./components/document-checklist";
 import { PageHeader } from "../../components/my-space/page-header";
 import { useOrg } from "../../shell/org-provider";
 import { Alert, AlertDescription, AlertTitle } from "@workspace/ui/components/alert";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@workspace/ui/components/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
@@ -73,6 +85,14 @@ export interface RequestActionModalProps {
 	formSchema?: any;
 	formData?: Record<string, unknown>;
 	onSuccess?: () => void;
+	// Edit mode: when provided, prefill from this action and call updateActionRequired
+	// instead of setActionRequired. The action `type` is not editable.
+	action?: any;
+	// Controlled open state — required for edit mode (no SheetTrigger button shown).
+	// When omitted, the modal manages its own open state and shows the
+	// "Demander une action" trigger button.
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
 }
 
 export interface OfficialDocumentsSectionProps {
@@ -284,6 +304,13 @@ export default function RequestDetailPage({
 	const { mutateAsync: assignAgent } = useConvexMutationQuery(
 		api.functions.requests.assign,
 	);
+	const { mutateAsync: clearActionRequired } = useConvexMutationQuery(
+		api.functions.requests.clearActionRequired,
+	);
+
+	const [editingAction, setEditingAction] = useState<any | null>(null);
+	const [deletingAction, setDeletingAction] = useState<any | null>(null);
+	const [isDeletingAction, setIsDeletingAction] = useState(false);
 
 	const { data: members } = useAuthenticatedConvexQuery(
 		api.functions.orgs.getMembers,
@@ -795,6 +822,32 @@ export default function RequestDetailPage({
 										</div>
 										<p className="text-sm text-muted-foreground mt-1 line-clamp-2">{action.message}</p>
 									</div>
+									{canDo("requests.process") && (
+										<div className="flex items-center gap-1 shrink-0">
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												className="h-8 w-8"
+												onClick={() => setEditingAction(action)}
+												aria-label={t("common.edit", "Modifier") as string}
+												title={t("common.edit", "Modifier") as string}
+											>
+												<Pencil className="h-3.5 w-3.5" />
+											</Button>
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												className="h-8 w-8 text-destructive hover:text-destructive"
+												onClick={() => setDeletingAction(action)}
+												aria-label={t("common.delete", "Supprimer") as string}
+												title={t("common.delete", "Supprimer") as string}
+											>
+												<Trash2 className="h-3.5 w-3.5" />
+											</Button>
+										</div>
+									)}
 								</div>
 							))}
 							{completedActions.map((action: any) => (
@@ -1521,6 +1574,80 @@ export default function RequestDetailPage({
 					<OfficialDocumentsSection requestId={request._id} orgId={request.orgId} />
 				</div>
 			</div>
+
+			{/* Edit action modal — controlled, opens when an action is selected for editing */}
+			{editingAction && (
+				<RequestActionModal
+					requestId={request._id}
+					formSchema={request.service?.formSchema as any}
+					formData={formDataObj}
+					action={editingAction}
+					open={editingAction !== null}
+					onOpenChange={(next) => {
+						if (!next) setEditingAction(null);
+					}}
+				/>
+			)}
+
+			{/* Delete action confirmation */}
+			<AlertDialog
+				open={deletingAction !== null}
+				onOpenChange={(next) => {
+					if (!next && !isDeletingAction) setDeletingAction(null);
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>
+							{t("requestDetail.actionRequired.deleteTitle", "Supprimer cette action ?")}
+						</AlertDialogTitle>
+						<AlertDialogDescription>
+							{t(
+								"requestDetail.actionRequired.deleteDescription",
+								"L'action sera retirée de la demande. Le citoyen ne sera plus invité à la traiter. Cette opération ne peut pas être annulée.",
+							)}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={isDeletingAction}>
+							{t("common.cancel", "Annuler")}
+						</AlertDialogCancel>
+						<AlertDialogAction
+							disabled={isDeletingAction}
+							onClick={async (e) => {
+								e.preventDefault();
+								if (!deletingAction) return;
+								setIsDeletingAction(true);
+								try {
+									await clearActionRequired({
+										requestId: request._id,
+										actionId: deletingAction.id,
+									});
+									toast.success(
+										t("requestDetail.actionRequired.deleted", "Action supprimée"),
+									);
+									setDeletingAction(null);
+								} catch {
+									toast.error(
+										t(
+											"requestDetail.actionRequired.deleteError",
+											"Erreur lors de la suppression",
+										),
+									);
+								} finally {
+									setIsDeletingAction(false);
+								}
+							}}
+						>
+							{isDeletingAction ? (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							) : (
+								t("common.delete", "Supprimer")
+							)}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 }

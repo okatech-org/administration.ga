@@ -11,24 +11,17 @@ import {
 	FileWarning,
 	HelpCircle,
 	Loader2,
+	Save,
 	Send,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-	SheetTrigger,
-} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useConvexMutationQuery } from "@/integrations/convex/hooks";
 
@@ -109,11 +102,36 @@ const FIELD_TYPE_LABELS: Record<string, string> = {
 
 // ─── Props ──────────────────────────────────────────────────────────
 
+interface ExistingAction {
+	id: string;
+	type: string;
+	message: string;
+	documentTypes?: Array<{
+		type: string;
+		label?: LocalizedString;
+		required?: boolean;
+	}>;
+	fields?: Array<{
+		fieldPath: string;
+		label?: LocalizedString;
+		type?: string;
+		options?: unknown;
+		currentValue?: unknown;
+		sectionTitle?: LocalizedString;
+	}>;
+	infoToConfirm?: string;
+	deadline?: number;
+	completedAt?: number;
+}
+
 interface RequestActionModalProps {
 	requestId: Id<"requests">;
 	formSchema?: FormSchema;
 	formData?: Record<string, unknown>;
 	onSuccess?: () => void;
+	action?: ExistingAction;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
 }
 
 // ─── Component ──────────────────────────────────────────────────────
@@ -123,22 +141,56 @@ export function RequestActionModal({
 	formSchema,
 	formData,
 	onSuccess,
+	action,
+	open: controlledOpen,
+	onOpenChange,
 }: RequestActionModalProps) {
 	const { i18n } = useTranslation();
 	const lang = i18n.language;
 
-	const [open, setOpen] = useState(false);
-	const [type, setType] = useState<ActionType>("upload_document");
-	const [message, setMessage] = useState("");
+	const isEditMode = !!action;
+	const isControlled = controlledOpen !== undefined;
+
+	const [internalOpen, setInternalOpen] = useState(false);
+	const open = isControlled ? controlledOpen : internalOpen;
+	const setOpen = (next: boolean) => {
+		if (onOpenChange) onOpenChange(next);
+		if (!isControlled) setInternalOpen(next);
+	};
+
+	const initialType: ActionType = (action?.type as ActionType) ?? "upload_document";
+	const initialMessage = action?.message ?? "";
+	const initialFieldPaths = useMemo(
+		() => new Set((action?.fields ?? []).map((f) => f.fieldPath)),
+		[action],
+	);
+	const initialDocTypes = useMemo(
+		() => new Set((action?.documentTypes ?? []).map((d) => d.type)),
+		[action],
+	);
+
+	const [type, setType] = useState<ActionType>(initialType);
+	const [message, setMessage] = useState(initialMessage);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set());
-	const [selectedDocTypes, setSelectedDocTypes] = useState<Set<string>>(
-		new Set(),
-	);
+	const [selectedFields, setSelectedFields] = useState<Set<string>>(initialFieldPaths);
+	const [selectedDocTypes, setSelectedDocTypes] = useState<Set<string>>(initialDocTypes);
+
+	// Reset state when the modal opens with a (possibly different) action
+	useEffect(() => {
+		if (open) {
+			setType(initialType);
+			setMessage(initialMessage);
+			setSelectedFields(new Set(initialFieldPaths));
+			setSelectedDocTypes(new Set(initialDocTypes));
+		}
+	}, [open, initialType, initialMessage, initialFieldPaths, initialDocTypes]);
 
 	const { mutateAsync: setActionRequired } = useConvexMutationQuery(
 		api.functions.requests.setActionRequired,
+	);
+	const { mutateAsync: updateActionRequired } = useConvexMutationQuery(
+		api.functions.requests.updateActionRequired,
 	);
 
 	// Build flat list of all form fields from schema
@@ -240,56 +292,116 @@ export function RequestActionModal({
 							}))
 					: undefined;
 
-			await setActionRequired({
-				requestId,
-				type,
-				message: message.trim(),
-				fields,
-				documentTypes,
-			});
-			toast.success("Action requise envoyée au citoyen");
+			if (isEditMode && action) {
+				await updateActionRequired({
+					requestId,
+					actionId: action.id,
+					message: message.trim(),
+					fields,
+					documentTypes,
+				});
+				toast.success("Action requise mise à jour");
+			} else {
+				await setActionRequired({
+					requestId,
+					type,
+					message: message.trim(),
+					fields,
+					documentTypes,
+				});
+				toast.success("Action requise envoyée au citoyen");
+			}
 			setOpen(false);
-			setMessage("");
-			setType("upload_document");
-			setSelectedFields(new Set());
-			setSelectedDocTypes(new Set());
+			if (!isEditMode) {
+				setMessage("");
+				setType("upload_document");
+				setSelectedFields(new Set());
+				setSelectedDocTypes(new Set());
+			}
 			onSuccess?.();
 		} catch (error) {
-			console.error("Failed to set action required:", error);
-			toast.error("Erreur lors de l'envoi de la demande");
+			console.error("Failed to save action required:", error);
+			toast.error(
+				isEditMode
+					? "Erreur lors de la mise à jour"
+					: "Erreur lors de l'envoi de la demande",
+			);
 		} finally {
 			setIsSubmitting(false);
 		}
 	};
 
+	const sheetTitle = isEditMode
+		? "Modifier l'action requise"
+		: "Demander une action au citoyen";
+	const sheetDescription = isEditMode
+		? "Le type d'action n'est pas modifiable. Pour le changer, supprimez l'action et créez-en une nouvelle."
+		: "Le citoyen sera notifié et verra l'action à effectuer dans sa demande.";
+
+	const footer = (
+		<div className="flex items-center justify-end gap-2">
+			<Button
+				variant="ghost"
+				onClick={() => setOpen(false)}
+				disabled={isSubmitting}
+			>
+				Annuler
+			</Button>
+			<Button
+				onClick={handleSubmit}
+				disabled={isSubmitting}
+				className="gap-2"
+			>
+				{isSubmitting ? (
+					<>
+						<Loader2 className="h-4 w-4 animate-spin" />
+						{isEditMode ? "Enregistrement..." : "Envoi..."}
+					</>
+				) : isEditMode ? (
+					<>
+						<Save className="h-4 w-4" />
+						Enregistrer
+					</>
+				) : (
+					<>
+						<Send className="h-4 w-4" />
+						Envoyer la demande
+					</>
+				)}
+			</Button>
+		</div>
+	);
+
 	return (
-		<Sheet open={open} onOpenChange={setOpen}>
-			<SheetTrigger asChild>
-				<Button variant="outline" size="sm" className="gap-2">
+		<>
+			{!isControlled && (
+				<Button
+					variant="outline"
+					size="sm"
+					className="gap-2"
+					onClick={() => setOpen(true)}
+				>
 					<AlertTriangle className="h-4 w-4" />
 					Demander une action
 				</Button>
-			</SheetTrigger>
-			<SheetContent
-				side="bottom"
-				className="max-h-[80vh] flex flex-col rounded-t-xl"
+			)}
+			<BottomSheet
+				open={open}
+				onOpenChange={setOpen}
+				title={sheetTitle}
+				icon={
+					<div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40">
+						<AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+					</div>
+				}
+				maxHeight="85vh"
+				maxWidthClass="max-w-2xl"
+				footer={footer}
 			>
-				{/* Constrained inner container */}
-				<div className="mx-auto w-full max-w-2xl flex flex-col flex-1 min-h-0">
-					<SheetHeader className="shrink-0 pb-4 border-b">
-						<SheetTitle className="flex items-center gap-2.5">
-							<div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40">
-								<AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-							</div>
-							Demander une action au citoyen
-						</SheetTitle>
-						<SheetDescription>
-							Le citoyen sera notifié et verra l'action à effectuer
-							dans sa demande.
-						</SheetDescription>
-					</SheetHeader>
-
-					<div className="flex-1 overflow-y-auto space-y-5 py-5">
+				<div className="px-4 sm:px-5 pt-4 pb-2">
+					<p className="text-xs text-muted-foreground">{sheetDescription}</p>
+				</div>
+				<div className="px-4 sm:px-5 pb-5 space-y-5">
 						{/* ─── Action type cards ─── */}
 						<div className="space-y-2.5">
 							<Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -303,7 +415,9 @@ export function RequestActionModal({
 										<button
 											key={actionType.value}
 											type="button"
+											disabled={isEditMode}
 											onClick={() => {
+												if (isEditMode) return;
 												setType(actionType.value as ActionType);
 												setSelectedFields(new Set());
 												setSelectedDocTypes(new Set());
@@ -312,7 +426,7 @@ export function RequestActionModal({
 												isActive
 													? `${actionType.bg} ring-1 ring-current/20`
 													: "border-border hover:bg-muted/50"
-											}`}
+											} ${isEditMode && !isActive ? "opacity-40 cursor-not-allowed" : ""} ${isEditMode ? "cursor-not-allowed" : ""}`}
 										>
 											<div
 												className={`flex h-9 w-9 items-center justify-center rounded-lg ${
@@ -483,36 +597,8 @@ export function RequestActionModal({
 								Soyez précis et expliquez exactement ce qui est attendu.
 							</p>
 						</div>
-					</div>
-
-					<SheetFooter className="shrink-0 pt-4 border-t flex-row justify-end gap-2">
-						<Button
-							variant="ghost"
-							onClick={() => setOpen(false)}
-							disabled={isSubmitting}
-						>
-							Annuler
-						</Button>
-						<Button
-							onClick={handleSubmit}
-							disabled={isSubmitting}
-							className="gap-2"
-						>
-							{isSubmitting ? (
-								<>
-									<Loader2 className="h-4 w-4 animate-spin" />
-									Envoi...
-								</>
-							) : (
-								<>
-									<Send className="h-4 w-4" />
-									Envoyer la demande
-								</>
-							)}
-						</Button>
-					</SheetFooter>
 				</div>
-			</SheetContent>
-		</Sheet>
+			</BottomSheet>
+		</>
 	);
 }

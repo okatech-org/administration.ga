@@ -17,6 +17,8 @@ import type * as actions_push from "../actions/push.js";
 import type * as ai_activityLog from "../ai/activityLog.js";
 import type * as ai_adminChat from "../ai/adminChat.js";
 import type * as ai_adminChatStreaming from "../ai/adminChatStreaming.js";
+import type * as ai_adminContext from "../ai/adminContext.js";
+import type * as ai_adminToolExecutor from "../ai/adminToolExecutor.js";
 import type * as ai_adminTools from "../ai/adminTools.js";
 import type * as ai_adminVoice from "../ai/adminVoice.js";
 import type * as ai_aiTriggers from "../ai/aiTriggers.js";
@@ -356,6 +358,8 @@ declare const fullApi: ApiFromModules<{
   "ai/activityLog": typeof ai_activityLog;
   "ai/adminChat": typeof ai_adminChat;
   "ai/adminChatStreaming": typeof ai_adminChatStreaming;
+  "ai/adminContext": typeof ai_adminContext;
+  "ai/adminToolExecutor": typeof ai_adminToolExecutor;
   "ai/adminTools": typeof ai_adminTools;
   "ai/adminVoice": typeof ai_adminVoice;
   "ai/aiTriggers": typeof ai_aiTriggers;
