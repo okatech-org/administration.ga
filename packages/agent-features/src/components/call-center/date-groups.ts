@@ -55,8 +55,9 @@ export function groupByDate<T>(
 
 /**
  * Translation key for a bucket, to be passed through `t(...)`.
- * Keys live under `callCenter.history.bucket.*`.
+ * Keys live under `callCenter.drawer.history.bucket.*` (where the existing
+ * `callCenter.drawer.history.*` block sits in the i18n bundles).
  */
 export function bucketLabelKey(k: DateBucketKey): string {
-	return `callCenter.history.bucket.${k}`;
+	return `callCenter.drawer.history.bucket.${k}`;
 }
