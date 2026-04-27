@@ -23,10 +23,7 @@ import {
 	Shield,
 	Users,
 	Video,
-	Voicemail as VoicemailIcon,
-	X,
 } from "lucide-react";
-import type { ComponentType } from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
@@ -76,10 +73,6 @@ const CALL_SOURCE_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; ic
 	{ id: "network", label: "Réseau", icon: Globe },
 ];
 
-interface VoicemailsListProps {
-	orgId: Id<"orgs"> | null;
-}
-
 interface IAstedCallTabProps {
 	/**
 	 * Rendu compact pour la fenêtre flottante (420px) : force l'UX historique
@@ -88,84 +81,13 @@ interface IAstedCallTabProps {
 	 * fullscreen `/icom`.
 	 */
 	compact?: boolean;
-	/**
-	 * Composant `VoicemailsList` injecté par l'host — permet d'afficher la
-	 * messagerie vocale en encart depuis l'onglet iAppel (la "Messagerie"
-	 * n'a plus son propre onglet de nav, c'est un sous-cas des appels).
-	 */
-	VoicemailsList?: ComponentType<VoicemailsListProps>;
 }
 
-export function IAstedCallTab({
-	compact = false,
-	VoicemailsList,
-}: IAstedCallTabProps = {}) {
-	const { activeOrgId } = useOrg();
-	const [showVoicemail, setShowVoicemail] = useState(false);
-
-	// Compte non-lus de messagerie pour afficher un badge sur le bouton.
-	const { data: vmList } = useAuthenticatedConvexQuery(
-		api.functions.voicemails.listForOrg,
-		activeOrgId && VoicemailsList ? { orgId: activeOrgId } : "skip",
-	);
-	const unreadVm = ((vmList as any[]) ?? []).filter((v) => !v.isRead).length;
-
-	const voicemailButton = VoicemailsList ? (
-		<Button
-			type="button"
-			variant={showVoicemail ? "default" : "outline"}
-			size="sm"
-			onClick={() => setShowVoicemail((v) => !v)}
-			className="gap-1.5 shrink-0 relative"
-			aria-pressed={showVoicemail}
-		>
-			{showVoicemail ? (
-				<>
-					<X className="h-3.5 w-3.5" />
-					Fermer la messagerie
-				</>
-			) : (
-				<>
-					<VoicemailIcon className="h-3.5 w-3.5" />
-					Messagerie vocale
-					{unreadVm > 0 && (
-						<span className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-							{unreadVm}
-						</span>
-					)}
-				</>
-			)}
-		</Button>
-	) : null;
-
-	const callsContent =
-		CALL_CENTER_ENABLED && !compact ? (
-			<CallCenterWithPostCallNote />
-		) : (
-			<LegacyCallTab />
-		);
-
-	if (!VoicemailsList) {
-		// Cas de la fenêtre flottante / surface qui n'injecte pas la messagerie.
-		return callsContent;
+export function IAstedCallTab({ compact = false }: IAstedCallTabProps = {}) {
+	if (CALL_CENTER_ENABLED && !compact) {
+		return <CallCenterWithPostCallNote />;
 	}
-
-	return (
-		<div className="flex flex-col flex-1 min-h-0">
-			<div className="shrink-0 border-b px-3 py-2 flex items-center justify-end">
-				{voicemailButton}
-			</div>
-			<div className="flex-1 min-h-0 overflow-hidden">
-				{showVoicemail ? (
-					<div className="h-full overflow-y-auto p-3 lg:p-4">
-						<VoicemailsList orgId={activeOrgId ?? null} />
-					</div>
-				) : (
-					callsContent
-				)}
-			</div>
-		</div>
-	);
+	return <LegacyCallTab />;
 }
 
 /**

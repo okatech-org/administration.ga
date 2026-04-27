@@ -24,6 +24,8 @@ import {
 	Settings,
 	ShieldCheck,
 	Video,
+	Voicemail as VoicemailIcon,
+	X,
 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
@@ -58,11 +60,6 @@ export interface VoicemailsListInjectedProps {
 	orgId: Id<"orgs"> | null;
 }
 
-export interface IAstedCallTabProps {
-	/** Liste des messages vocaux — affichée en encart depuis le CallTab. */
-	VoicemailsList: ComponentType<VoicemailsListInjectedProps>;
-}
-
 export interface IAstedPageProps {
 	/**
 	 * Renders the two right-hand columns of the iChat layout:
@@ -74,7 +71,7 @@ export interface IAstedPageProps {
 	 */
 	IAstedChatColumns: ComponentType<IAstedChatColumnsProps>;
 	IAstedContactTab: ComponentType;
-	IAstedCallTab: ComponentType<IAstedCallTabProps>;
+	IAstedCallTab: ComponentType;
 	IAstedMeetingTab: ComponentType;
 	IAstedSettingsTab: ComponentType;
 	VoicemailsList: ComponentType<VoicemailsListInjectedProps>;
@@ -126,6 +123,20 @@ export default function IAstedPage({
 
 	// ── Total unread P2P remonté depuis le sous-composant chat ──
 	const [totalChatUnread, setTotalChatUnread] = useState<number>(0);
+
+	// ── Toggle messagerie vocale (visible uniquement dans iAppel) ──
+	const [showVoicemail, setShowVoicemail] = useState(false);
+	useEffect(() => {
+		// Sortir de la messagerie quand on quitte l'onglet iAppel.
+		if (activeTab !== "icall" && showVoicemail) setShowVoicemail(false);
+	}, [activeTab, showVoicemail]);
+
+	// Compte non-lus de messagerie pour le badge sur le bouton.
+	const { data: vmList } = useAuthenticatedConvexQuery(
+		api.functions.voicemails.listForOrg,
+		activeOrgId && activeTab === "icall" ? { orgId: activeOrgId } : "skip",
+	);
+	const unreadVm = ((vmList as any[]) ?? []).filter((v) => !v.isRead).length;
 
 	// ── Libellé du header de la colonne 3 (hors iChat) ──
 	const tabTitle = (() => {
@@ -232,17 +243,50 @@ export default function IAstedPage({
 				) : (
 					/* ── Onglets non-chat : pleine largeur, même header ── */
 					<div className="flex flex-1 flex-col min-h-0 overflow-hidden">
-						<div className="shrink-0 border-b px-4 py-3">
-							<h2 className="text-base font-semibold">{tabTitle}</h2>
+						<div className="shrink-0 border-b px-4 py-3 flex items-center justify-between gap-2">
+							<h2 className="text-base font-semibold">
+								{activeTab === "icall" && showVoicemail
+									? "Messagerie vocale"
+									: tabTitle}
+							</h2>
+							{activeTab === "icall" && (
+								<Button
+									type="button"
+									variant={showVoicemail ? "default" : "outline"}
+									size="sm"
+									onClick={() => setShowVoicemail((v) => !v)}
+									className="gap-1.5 shrink-0"
+									aria-pressed={showVoicemail}
+								>
+									{showVoicemail ? (
+										<>
+											<X className="h-3.5 w-3.5" />
+											Retour aux appels
+										</>
+									) : (
+										<>
+											<VoicemailIcon className="h-3.5 w-3.5" />
+											Messagerie vocale
+											{unreadVm > 0 && (
+												<span className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+													{unreadVm}
+												</span>
+											)}
+										</>
+									)}
+								</Button>
+							)}
 						</div>
 						<div className="flex flex-1 flex-col min-h-0 overflow-hidden">
 							{activeTab === "icontact" && <IAstedContactTab />}
-							{/* Fullscreen → CallCenterShell complet. La messagerie vocale
-							    est maintenant injectée DANS le CallTab pour être ouverte
-							    via un bouton "Messagerie vocale" depuis cette surface. */}
-							{activeTab === "icall" && (
-								<IAstedCallTab VoicemailsList={VoicemailsList} />
-							)}
+							{activeTab === "icall" &&
+								(showVoicemail ? (
+									<div className="h-full overflow-y-auto p-3 lg:p-4">
+										<VoicemailsList orgId={activeOrgId} />
+									</div>
+								) : (
+									<IAstedCallTab />
+								))}
 							{activeTab === "imeeting" && <IAstedMeetingTab />}
 							{activeTab === "settings" && <IAstedSettingsTab />}
 						</div>
