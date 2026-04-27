@@ -98,7 +98,6 @@ export function IAstedWindow({
     "ichat",
     "icontact",
     "icall",
-    "ivoicemail",
     "imeeting",
     "isettings",
   ]

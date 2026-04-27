@@ -46,16 +46,15 @@ function IAstedTabHost({ tab }: { tab: IAstedTabId }) {
       return <IAstedInstantChatTab chat={chat} voice={voice} />
     case "icontact":
       return <IAstedContactTab />
-    // `compact` : force LegacyCallTab (le CallCenterShell multi-colonnes
-    // ne tient pas dans 420px ; il reste actif sur la page fullscreen).
+    // `compact` : version dense du CallCenterShell (1 colonne, filtre ligne
+    // inline, toggle messagerie en icône). Le legacy n'est plus utilisé.
     case "icall":
-      return <IAstedCallTab compact />
+      return <IAstedCallTab compact VoicemailsList={VoicemailsList} />
     case "ivoicemail":
-      return (
-        <div className="h-full overflow-y-auto p-3">
-          <VoicemailsList orgId={activeOrgId} />
-        </div>
-      )
+      // Cas legacy : on bascule sur iAppel (la messagerie est désormais un
+      // sous-cas des appels, plus un onglet dédié).
+      return <IAstedCallTab compact VoicemailsList={VoicemailsList} />
+
     case "imeeting":
       return <IAstedMeetingTab />
     case "isettings":

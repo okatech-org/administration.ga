@@ -1,10 +1,12 @@
 "use client";
 
-import { PhoneOff, User } from "lucide-react";
+import { PhoneOff, User, Voicemail as VoicemailIcon, X } from "lucide-react";
 import { useRouter } from "@workspace/routing";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { Button } from "@workspace/ui/components/button";
 import { Sheet, SheetContent, SheetTrigger } from "@workspace/ui/components/sheet";
 import { useIsMobile } from "../../hooks/use-mobile";
@@ -42,12 +44,26 @@ interface CallCenterShellProps {
   onSelectLineId?: (id: string | "all") => void;
   /** Sonnerie coupée par l'agent depuis le header iAppel. */
   ringtoneMuted?: boolean;
+  /**
+   * Mode compact pour la fenêtre flottante : header avec filtre de ligne +
+   * bouton messagerie inlined (pas de drawer contexte, pas de KPI), un seul
+   * flux vertical. Réutilise toute la logique du shell pour rester en
+   * parité fonctionnelle stricte avec le fullscreen.
+   */
+  compact?: boolean;
+  /**
+   * En mode compact, le shell rend lui-même le toggle messagerie (icône
+   * + badge). On lui passe le composant VoicemailsList via prop.
+   */
+  VoicemailsList?: React.ComponentType<{ orgId: Id<"orgs"> | null }>;
 }
 
 export function CallCenterShell({
   selectedLineId: externalSelectedLineId,
   onSelectLineId,
   ringtoneMuted,
+  compact = false,
+  VoicemailsList,
 }: CallCenterShellProps = {}) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -234,6 +250,95 @@ export function CallCenterShell({
       )}
     </div>
   );
+
+  // ── Compact mode (popup flottant 420px) ──────────────────────────
+  // Rend une version verticale, dense : header avec filtre lignes + icône
+  // messagerie, puis le centerColumn (file + conversation actives + récents).
+  // Pas de drawer contexte (pas la place), pas de SupervisionPanel.
+  const [compactShowVoicemail, setCompactShowVoicemail] = useState(false);
+  const { data: vmList } = useAuthenticatedConvexQuery(
+    api.functions.voicemails.listForOrg,
+    compact && activeOrgId && VoicemailsList ? { orgId: activeOrgId } : "skip",
+  );
+  const compactUnreadVm = ((vmList as any[]) ?? []).filter((v) => !v.isRead).length;
+
+  if (compact) {
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="shrink-0 flex items-center gap-2 border-b bg-muted/10 px-3 py-2">
+          {compactShowVoicemail ? (
+            <span className="text-xs font-semibold flex-1">
+              {t("callCenter.voicemail.title", "Messagerie vocale")}
+            </span>
+          ) : (
+            <LineFilterDropdown
+              queue={queue as any}
+              selectedLineId={selectedLineId}
+              onSelect={setSelectedLineId}
+              totalCount={totalCount}
+              urgentCount={urgentCount}
+            />
+          )}
+          <div className="flex-1" />
+          {VoicemailsList && (
+            <Button
+              type="button"
+              variant={compactShowVoicemail ? "default" : "ghost"}
+              size="icon"
+              onClick={() => setCompactShowVoicemail((v) => !v)}
+              className="relative h-8 w-8 shrink-0"
+              aria-pressed={compactShowVoicemail}
+              aria-label={
+                compactShowVoicemail ? "Retour aux appels" : "Messagerie vocale"
+              }
+              title={
+                compactShowVoicemail ? "Retour aux appels" : "Messagerie vocale"
+              }
+            >
+              {compactShowVoicemail ? (
+                <X className="h-4 w-4" />
+              ) : (
+                <VoicemailIcon className="h-4 w-4" />
+              )}
+              {!compactShowVoicemail && compactUnreadVm > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+                  {compactUnreadVm}
+                </span>
+              )}
+            </Button>
+          )}
+        </div>
+
+        {/* Barre d'appels actifs (compacte, sticky en haut). */}
+        {activeCalls.length > 0 && !compactShowVoicemail && (
+          <ActiveCallsBar
+            calls={activeCalls as ActiveCallSlot[]}
+            activeSlotId={activeSlotId}
+            onFocus={handleFocus}
+            onEnd={handleEndActive}
+            onHold={(id) => hold(id)}
+            onResume={(id) => resume(id)}
+          />
+        )}
+
+        <div className="flex-1 min-h-0 overflow-hidden">
+          {compactShowVoicemail && VoicemailsList ? (
+            <div className="h-full overflow-y-auto p-3">
+              <VoicemailsList orgId={activeOrgId ?? null} />
+            </div>
+          ) : (
+            centerColumn
+          )}
+        </div>
+
+        <CallRoomPool
+          slots={slots}
+          activeSlotId={activeSlotId}
+          onDisconnected={handleSlotDisconnected}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col">

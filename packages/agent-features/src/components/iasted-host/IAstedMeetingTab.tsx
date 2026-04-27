@@ -595,25 +595,37 @@ export function IAstedMeetingTab() {
 												key={m._id}
 												id={`meeting-card-${m._id}`}
 												className={cn(
-													"flex items-center gap-3 px-3 py-2.5 rounded-xl border border-primary/20 bg-primary/5",
+													"flex items-center gap-3 px-3 py-2.5 rounded-xl border border-primary/20 bg-primary/5 min-w-0 overflow-hidden",
 													isHighlighted && "ring-2 ring-primary/60",
 												)}
 											>
-												<div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-													<Video className="h-5 w-5 text-primary" />
+												<div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+													<Video className="h-4 w-4 text-primary" />
 												</div>
 												<div className="flex-1 min-w-0">
-													<p className="text-sm font-medium truncate">{m.title ?? "Réunion"}</p>
+													<div className="flex items-center gap-1.5 min-w-0">
+														<p className="text-sm font-medium truncate min-w-0 flex-1">
+															{m.title ?? "Réunion"}
+														</p>
+														<Badge className="text-[8px] h-4 px-1.5 bg-primary/15 text-primary shrink-0">
+															En direct
+														</Badge>
+													</div>
 													{m.description && (
-														<p className="text-[11px] text-muted-foreground line-clamp-1">{m.description}</p>
+														<p className="text-[11px] text-muted-foreground line-clamp-1">
+															{m.description}
+														</p>
 													)}
-													<div className="flex items-center gap-2 text-xs text-muted-foreground">
+													<div className="flex items-center gap-1 text-[11px] text-muted-foreground min-w-0">
 														<Users className="h-3 w-3 shrink-0" />
 														<span className="truncate">{partsLabel}</span>
-														<Badge className="text-[8px] h-4 bg-primary/15 text-primary">● En direct</Badge>
 													</div>
 												</div>
-												<Button size="sm" onClick={() => handleJoin(m._id)} className="gap-1 bg-primary hover:bg-primary/90 shrink-0">
+												<Button
+													size="sm"
+													onClick={() => handleJoin(m._id)}
+													className="gap-1 bg-primary hover:bg-primary/90 shrink-0 h-8 text-[11px]"
+												>
 													<Video className="h-3.5 w-3.5" /> Rejoindre
 												</Button>
 											</div>

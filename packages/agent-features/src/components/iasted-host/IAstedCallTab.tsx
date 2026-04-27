@@ -75,9 +75,10 @@ const CALL_SOURCE_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; ic
 
 interface IAstedCallTabProps {
 	/**
-	 * Rendu compact pour la fenêtre flottante (420px) : force l'UX historique
-	 * (LegacyCallTab) au lieu du CallCenterShell qui ne tient pas dans une popup
-	 * étroite. Le Centre d'Appels reste actif sur la page fullscreen `/icom`.
+	 * Rendu compact pour la fenêtre flottante (420px) : on rend une version
+	 * verticale dense du `CallCenterShell` (file + actifs + filtre ligne +
+	 * messagerie) au lieu du layout 2 colonnes du fullscreen. Le LegacyCallTab
+	 * n'est plus utilisé que pour les anciens chemins / feature flag off.
 	 */
 	compact?: boolean;
 	/** Filtre de ligne contrôlé par le parent (header iAppel). */
@@ -85,6 +86,8 @@ interface IAstedCallTabProps {
 	onSelectLineId?: (id: string | "all") => void;
 	/** Sonnerie coupée par l'agent depuis le header iAppel. */
 	ringtoneMuted?: boolean;
+	/** Composant VoicemailsList injecté par l'host (agent-web shim). */
+	VoicemailsList?: React.ComponentType<{ orgId: Id<"orgs"> | null }>;
 }
 
 export function IAstedCallTab({
@@ -92,13 +95,16 @@ export function IAstedCallTab({
 	selectedLineId,
 	onSelectLineId,
 	ringtoneMuted,
+	VoicemailsList,
 }: IAstedCallTabProps = {}) {
-	if (CALL_CENTER_ENABLED && !compact) {
+	if (CALL_CENTER_ENABLED) {
 		return (
 			<CallCenterWithPostCallNote
 				selectedLineId={selectedLineId}
 				onSelectLineId={onSelectLineId}
 				ringtoneMuted={ringtoneMuted}
+				compact={compact}
+				VoicemailsList={VoicemailsList}
 			/>
 		);
 	}
@@ -113,10 +119,14 @@ function CallCenterWithPostCallNote({
 	selectedLineId,
 	onSelectLineId,
 	ringtoneMuted,
+	compact,
+	VoicemailsList,
 }: {
 	selectedLineId?: string | "all";
 	onSelectLineId?: (id: string | "all") => void;
 	ringtoneMuted?: boolean;
+	compact?: boolean;
+	VoicemailsList?: React.ComponentType<{ orgId: Id<"orgs"> | null }>;
 }) {
 	const { activeOrgId } = useOrg();
 	const { activeCalls } = useCallCenter();
@@ -157,6 +167,8 @@ function CallCenterWithPostCallNote({
 				selectedLineId={selectedLineId}
 				onSelectLineId={onSelectLineId}
 				ringtoneMuted={ringtoneMuted}
+				compact={compact}
+				VoicemailsList={VoicemailsList}
 			/>
 			<PostCallNoteDrawer
 				open={showPostCallNote}

@@ -122,7 +122,9 @@ export const citizenPreset: IAstedPreset = {
 
 export const agentPreset: IAstedPreset = {
 	id: "agent",
-	tabs: ["ichat", "icontact", "icall", "ivoicemail", "imeeting", "isettings"],
+	// La messagerie vocale n'est plus un onglet à part entière : elle est
+	// désormais accessible depuis l'onglet iAppel (sous-cas des appels).
+	tabs: ["ichat", "icontact", "icall", "imeeting", "isettings"],
 	flags: {
 		hasCallQueueSlot: true,
 		windowMode: "docked",
