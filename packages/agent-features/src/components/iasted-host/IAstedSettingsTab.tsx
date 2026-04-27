@@ -9,10 +9,8 @@
 "use client";
 
 import { api } from "@convex/_generated/api";
-import { Bell, Globe, Moon, Volume2 } from "lucide-react";
+import { Bell, Volume2 } from "lucide-react";
 import { useState } from "react";
-import { useTheme } from "next-themes";
-import { useTranslation } from "react-i18next";
 import { AgentStatusSelector, useAgentStatus } from "@workspace/iasted";
 import { Label } from "@workspace/ui/components/label";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
@@ -22,11 +20,11 @@ import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
 } from "@workspace/api/hooks";
-import { cn } from "@workspace/ui/lib/utils";
 
 export function IAstedSettingsTab() {
-	const { theme, setTheme } = useTheme();
-	const { i18n } = useTranslation();
+	// Note : la langue et le thème sont des préférences GLOBALES de
+	// l'application, pas spécifiques à iCom. Elles sont pilotées depuis la
+	// sidebar (toggle FR/EN + dark/light) — on ne les dédouble pas ici.
 	const [notifications, setNotifications] = useState(true);
 	const [sounds, setSounds] = useState(true);
 	const { activeOrgId } = useOrg();
@@ -84,8 +82,6 @@ export function IAstedSettingsTab() {
 		clearDnd();
 	};
 
-	const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en";
-
 	return (
 		<ScrollArea className="flex-1 min-h-0">
 			<div className="p-4 space-y-5">
@@ -137,51 +133,6 @@ export function IAstedSettingsTab() {
 							</div>
 						</div>
 						<Switch checked={sounds} onCheckedChange={setSounds} />
-					</div>
-				</div>
-
-				{/* Apparence */}
-				<div className="space-y-3 pt-2 border-t">
-					<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Apparence</p>
-
-					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-2.5">
-							<div className="h-8 w-8 rounded-lg bg-zinc-500/10 flex items-center justify-center">
-								<Moon className="h-4 w-4 text-zinc-500" />
-							</div>
-							<div>
-								<Label className="text-xs font-medium">Mode sombre</Label>
-								<p className="text-[10px] text-muted-foreground">Thème de l'interface</p>
-							</div>
-						</div>
-						<Switch
-							checked={theme === "dark"}
-							onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
-						/>
-					</div>
-				</div>
-
-				{/* Langue */}
-				<div className="space-y-3 pt-2 border-t">
-					<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Langue</p>
-
-					<div className="flex items-center gap-2">
-						{(["fr", "en"] as const).map((lang) => (
-							<button
-								key={lang}
-								type="button"
-								onClick={() => i18n.changeLanguage(lang)}
-								className={cn(
-									"flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors border",
-									currentLang === lang
-										? "bg-primary text-primary-foreground border-primary"
-										: "bg-muted/30 text-muted-foreground border-border hover:bg-muted",
-								)}
-							>
-								<Globe className="h-3.5 w-3.5" />
-								{lang === "fr" ? "Français" : "English"}
-							</button>
-						))}
 					</div>
 				</div>
 
