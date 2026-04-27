@@ -116,6 +116,8 @@ export const meetingsTable = defineTable({
   // Config
   maxParticipants: v.optional(v.number()),
   recordingEnabled: v.optional(v.boolean()),
+  /** Description / ordre du jour libre saisi à la création (~500 chars). */
+  description: v.optional(v.string()),
 
   // Timestamps
   scheduledAt: v.optional(v.number()),

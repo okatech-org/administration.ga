@@ -395,6 +395,7 @@ export const create = authMutation({
     // "audio" pour les meetings planifiés.
     mediaType: v.optional(v.union(v.literal("audio"), v.literal("video"))),
     recordingEnabled: v.optional(v.boolean()),
+    description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Verify user is a member of the org
@@ -435,6 +436,7 @@ export const create = authMutation({
       startedAt: args.scheduledAt ? undefined : Date.now(),
       mediaType: args.mediaType ?? (args.type === "call" ? "video" : "audio"),
       recordingEnabled: args.recordingEnabled,
+      description: args.description?.trim() || undefined,
     });
 
     // ── Envoyer des notifications d'invitation aux participants ──
@@ -647,6 +649,41 @@ export const end = authMutation({
 
     await ctx.db.patch(args.meetingId, {
       status: "ended",
+      endedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Cancel a scheduled meeting before it starts. Different from `end` which is
+ * used to terminate an active meeting. Only the host (or an org admin) can
+ * cancel; the meeting must still be in "scheduled" state.
+ */
+export const cancel = authMutation({
+  args: { meetingId: v.id("meetings") },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) throw error(ErrorCode.NOT_FOUND);
+
+    if (meeting.status !== "scheduled") {
+      throw error(
+        ErrorCode.INVALID_ARGUMENT,
+        "Seules les réunions planifiées peuvent être annulées.",
+      );
+    }
+
+    const isHost = meeting.participants.some(
+      (p) => p.userId === ctx.user._id && p.role === "host",
+    );
+    if (!isHost) {
+      if (!meeting.orgId) {
+        throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
+      }
+      await getMembership(ctx, ctx.user._id, meeting.orgId);
+    }
+
+    await ctx.db.patch(args.meetingId, {
+      status: "cancelled",
       endedAt: Date.now(),
     });
   },

@@ -51,6 +51,18 @@ import { cn } from "@workspace/ui/lib/utils";
 
 type ViewState = "list" | "create" | "prejoin" | "incall";
 
+/** Formate la liste des participants pour l'affichage en card. */
+function formatParticipants(
+	participants: Array<{ userId: string }> | undefined,
+	names: Record<string, string>,
+): string {
+	if (!participants || participants.length === 0) return "Aucun participant";
+	const labels = participants.map((p) => names[p.userId] ?? "—").filter(Boolean);
+	if (labels.length === 0) return `${participants.length} participant${participants.length > 1 ? "s" : ""}`;
+	if (labels.length <= 3) return labels.join(", ");
+	return `${labels.slice(0, 2).join(", ")} +${labels.length - 2}`;
+}
+
 const MEETING_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; icon: typeof Users }> = [
 	{ id: "all", label: "Tous", icon: Users },
 	{ id: "team", label: "Équipe", icon: Shield },
@@ -65,6 +77,7 @@ export function IAstedMeetingTab() {
 
 	// Formulaire de création
 	const [meetingName, setMeetingName] = useState("");
+	const [meetingDescription, setMeetingDescription] = useState("");
 	const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
 
 	// Pré-remplissage via `?invite=<userId>` (depuis iContact "Programmer une réunion").
@@ -81,6 +94,18 @@ export function IAstedMeetingTab() {
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
+
+	// Deep link `?meeting=<id>` (depuis iAgenda "Ouvrir dans iCom →") — la
+	// carte concernée reçoit un anneau primary et est scrollée à l'écran.
+	const highlightedMeetingId = searchParams?.get("meeting") ?? null;
+	useEffect(() => {
+		if (!highlightedMeetingId) return;
+		const id = window.setTimeout(() => {
+			const el = document.getElementById(`meeting-card-${highlightedMeetingId}`);
+			if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+		}, 250);
+		return () => window.clearTimeout(id);
+	}, [highlightedMeetingId]);
 	const [scheduledDate, setScheduledDate] = useState("");
 	const [scheduledTime, setScheduledTime] = useState("");
 	const [recordingEnabled, setRecordingEnabled] = useState(false);
@@ -118,6 +143,9 @@ export function IAstedMeetingTab() {
 	const { mutateAsync: endMeeting } = useConvexMutationQuery(
 		api.functions.meetings.end,
 	);
+	const { mutateAsync: cancelMeeting } = useConvexMutationQuery(
+		api.functions.meetings.cancel,
+	);
 
 	// `listByOrg` retourne `{ meetings: [...], participantNames: {...} }`, pas
 	// un tableau brut. L'ancien `Array.isArray(rawMeetings)` retournait
@@ -145,11 +173,22 @@ export function IAstedMeetingTab() {
 
 	const resetForm = () => {
 		setMeetingName("");
+		setMeetingDescription("");
 		setSelectedParticipants(new Set());
 		setScheduledDate("");
 		setScheduledTime("");
 		setRecordingEnabled(false);
 		setContactSearch("");
+	};
+
+	const handleCancelMeeting = async (meetingId: Id<"meetings">) => {
+		if (!window.confirm("Annuler cette réunion planifiée ? Les invités seront notifiés.")) return;
+		try {
+			await cancelMeeting({ meetingId });
+			toast.success("Réunion annulée");
+		} catch (e: any) {
+			toast.error(e?.message ?? "Annulation impossible");
+		}
 	};
 
 	const handleCreate = async () => {
@@ -167,6 +206,7 @@ export function IAstedMeetingTab() {
 				scheduledAt,
 				maxParticipants: 20,
 				recordingEnabled,
+				description: meetingDescription.trim() || undefined,
 			});
 
 			setActiveMeetingId(result.meetingId as Id<"meetings">);
@@ -246,11 +286,11 @@ export function IAstedMeetingTab() {
 	// ════════════════════════════════════════════════════════════
 	if (view === "incall" && token && wsUrl) {
 		return (
-			<div className="flex flex-col flex-1 overflow-hidden bg-zinc-950 rounded-lg">
+			<div className="flex flex-col flex-1 overflow-hidden bg-secondary rounded-lg">
 				{/* Barre d'actions réunion */}
-				<div className="flex items-center justify-between px-3 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0">
+				<div className="flex items-center justify-between px-3 py-2 bg-card border-b border-border shrink-0">
 					<div className="flex items-center gap-2">
-						<Badge className="text-[9px] bg-red-500/15 text-red-400">● En direct</Badge>
+						<Badge className="text-[9px] bg-destructive/15 text-destructive">● En direct</Badge>
 						<span className="text-xs text-zinc-400">{(activeMeetingData as any)?.title ?? "Réunion"}</span>
 					</div>
 					<div className="flex items-center gap-1.5">
@@ -285,8 +325,8 @@ export function IAstedMeetingTab() {
 	if (view === "prejoin") {
 		return (
 			<div className="flex flex-col items-center justify-center flex-1 p-6 text-center">
-				<div className="h-16 w-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
-					<Video className="h-8 w-8 text-emerald-500" />
+				<div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+					<Video className="h-8 w-8 text-primary" />
 				</div>
 				<h3 className="text-base font-semibold mb-1">
 					{(activeMeetingData as any)?.title ?? "Réunion"}
@@ -314,7 +354,7 @@ export function IAstedMeetingTab() {
 					<Button variant="outline" onClick={() => { setActiveMeetingId(null); setView("list"); }} disabled={isConnecting}>
 						Annuler
 					</Button>
-					<Button onClick={handleConnect} disabled={isConnecting} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+					<Button onClick={handleConnect} disabled={isConnecting} className="gap-2 bg-primary hover:bg-primary/90">
 						{isConnecting ? (
 							<><Loader2 className="h-4 w-4 animate-spin" /> Connexion...</>
 						) : (
@@ -343,12 +383,32 @@ export function IAstedMeetingTab() {
 					<div className="space-y-4">
 						{/* Nom */}
 						<div className="space-y-1.5">
-							<Label className="text-xs">Nom de la réunion</Label>
+							<Label className="text-xs" htmlFor="meeting-name">
+								Nom de la réunion
+							</Label>
 							<Input
+								id="meeting-name"
 								value={meetingName}
 								onChange={(e) => setMeetingName(e.target.value)}
 								placeholder="Ex: Briefing hebdomadaire"
 								className="h-9"
+								aria-label="Nom de la réunion"
+							/>
+						</div>
+
+						{/* Description / ordre du jour */}
+						<div className="space-y-1.5">
+							<Label className="text-xs" htmlFor="meeting-description">
+								Description / ordre du jour (optionnel)
+							</Label>
+							<textarea
+								id="meeting-description"
+								value={meetingDescription}
+								onChange={(e) => setMeetingDescription(e.target.value)}
+								placeholder="Points à traiter, contexte, lien vers un document…"
+								rows={3}
+								className="w-full rounded-md border bg-background px-3 py-2 text-xs resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								aria-label="Description de la réunion"
 							/>
 						</div>
 
@@ -364,12 +424,14 @@ export function IAstedMeetingTab() {
 									value={scheduledDate}
 									onChange={(e) => setScheduledDate(e.target.value)}
 									className="h-9 text-xs"
+									aria-label="Date de la réunion"
 								/>
 								<Input
 									type="time"
 									value={scheduledTime}
 									onChange={(e) => setScheduledTime(e.target.value)}
 									className="h-9 text-xs"
+									aria-label="Heure de la réunion"
 								/>
 							</div>
 							<p className="text-[10px] text-muted-foreground">
@@ -458,7 +520,7 @@ export function IAstedMeetingTab() {
 														<Avatar className="h-7 w-7">
 															<AvatarImage src={c.avatar} />
 															<AvatarFallback className={cn("text-[9px]",
-																c.source === "team" ? "bg-primary/10 text-primary" : "bg-blue-500/10 text-blue-600",
+																c.source === "team" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
 															)}>
 																{c.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
 															</AvatarFallback>
@@ -489,7 +551,7 @@ export function IAstedMeetingTab() {
 						{selectedParticipants.size} invité{selectedParticipants.size > 1 ? "s" : ""}
 						{scheduledDate && ` · Planifiée`}
 					</span>
-					<Button onClick={handleCreate} disabled={isCreating} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+					<Button onClick={handleCreate} disabled={isCreating} className="gap-1.5 bg-primary hover:bg-primary/90">
 						{isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
 						{scheduledDate ? "Planifier" : "Démarrer"}
 					</Button>
@@ -505,7 +567,7 @@ export function IAstedMeetingTab() {
 		<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 			{/* Bouton créer */}
 			<div className="p-3 border-b shrink-0">
-				<Button onClick={() => setView("create")} className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700">
+				<Button onClick={() => setView("create")} className="w-full gap-2 bg-primary hover:bg-primary/90">
 					<Plus className="h-4 w-4" />
 					Nouvelle réunion
 				</Button>
@@ -525,23 +587,38 @@ export function IAstedMeetingTab() {
 									 En cours
 								</p>
 								<div className="space-y-1.5">
-									{activeMeetings.map((m: any) => (
-										<div key={m._id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
-											<div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-												<Video className="h-5 w-5 text-emerald-500" />
-											</div>
-											<div className="flex-1 min-w-0">
-												<p className="text-sm font-medium truncate">{m.title ?? "Réunion"}</p>
-												<div className="flex items-center gap-2 text-xs text-muted-foreground">
-													<Users className="h-3 w-3" />
-													{m.participants?.length ?? 0} · <Badge className="text-[8px] h-4 bg-emerald-500/15 text-emerald-500">● En direct</Badge>
+									{activeMeetings.map((m: any) => {
+										const isHighlighted = m._id === highlightedMeetingId;
+										const partsLabel = formatParticipants(m.participants, participantNames);
+										return (
+											<div
+												key={m._id}
+												id={`meeting-card-${m._id}`}
+												className={cn(
+													"flex items-center gap-3 px-3 py-2.5 rounded-xl border border-primary/20 bg-primary/5",
+													isHighlighted && "ring-2 ring-primary/60",
+												)}
+											>
+												<div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+													<Video className="h-5 w-5 text-primary" />
 												</div>
+												<div className="flex-1 min-w-0">
+													<p className="text-sm font-medium truncate">{m.title ?? "Réunion"}</p>
+													{m.description && (
+														<p className="text-[11px] text-muted-foreground line-clamp-1">{m.description}</p>
+													)}
+													<div className="flex items-center gap-2 text-xs text-muted-foreground">
+														<Users className="h-3 w-3 shrink-0" />
+														<span className="truncate">{partsLabel}</span>
+														<Badge className="text-[8px] h-4 bg-primary/15 text-primary">● En direct</Badge>
+													</div>
+												</div>
+												<Button size="sm" onClick={() => handleJoin(m._id)} className="gap-1 bg-primary hover:bg-primary/90 shrink-0">
+													<Video className="h-3.5 w-3.5" /> Rejoindre
+												</Button>
 											</div>
-											<Button size="sm" onClick={() => handleJoin(m._id)} className="gap-1 bg-emerald-600 hover:bg-emerald-700">
-												<Video className="h-3.5 w-3.5" /> Rejoindre
-											</Button>
-										</div>
-									))}
+										);
+									})}
 								</div>
 							</div>
 						)}
@@ -555,9 +632,18 @@ export function IAstedMeetingTab() {
 								<div className="space-y-1">
 									{scheduledMeetings.map((m: any) => {
 										const date = m.scheduledAt ? new Date(m.scheduledAt) : null;
+										const isHighlighted = m._id === highlightedMeetingId;
+										const partsLabel = formatParticipants(m.participants, participantNames);
 										return (
-											<div key={m._id} className="flex items-center gap-3 px-3 py-2 rounded-lg border border-border/30 hover:bg-muted/30">
-												<Calendar className="h-4 w-4 text-blue-500 shrink-0" />
+											<div
+												key={m._id}
+												id={`meeting-card-${m._id}`}
+												className={cn(
+													"flex items-center gap-3 px-3 py-2 rounded-lg border border-border/30 hover:bg-muted/30",
+													isHighlighted && "ring-2 ring-primary/60 bg-primary/5",
+												)}
+											>
+												<Calendar className="h-4 w-4 text-primary shrink-0" />
 												<div className="flex-1 min-w-0">
 													<p className="text-xs font-medium truncate">{m.title ?? "Réunion"}</p>
 													{date && (
@@ -566,10 +652,31 @@ export function IAstedMeetingTab() {
 															{date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
 														</p>
 													)}
+													{m.description && (
+														<p className="text-[10px] text-muted-foreground/80 line-clamp-1">{m.description}</p>
+													)}
+													{partsLabel && (
+														<p className="text-[10px] text-muted-foreground/70 truncate">
+															<Users className="h-2.5 w-2.5 inline-block mr-0.5" />
+															{partsLabel}
+														</p>
+													)}
 												</div>
-												<Button size="sm" variant="outline" onClick={() => handleJoin(m._id)} className="h-7 text-[10px]">
-													Rejoindre
-												</Button>
+												<div className="flex items-center gap-1 shrink-0">
+													<Button size="sm" variant="outline" onClick={() => handleJoin(m._id)} className="h-7 text-[10px]">
+														Rejoindre
+													</Button>
+													<Button
+														size="icon"
+														variant="ghost"
+														onClick={() => handleCancelMeeting(m._id as Id<"meetings">)}
+														className="h-7 w-7 text-muted-foreground hover:text-destructive"
+														aria-label="Annuler la réunion"
+														title="Annuler la réunion"
+													>
+														<X className="h-3.5 w-3.5" />
+													</Button>
+												</div>
 											</div>
 										);
 									})}
