@@ -50,14 +50,14 @@ const CALL_CENTER_ENABLED = FEATURES.callCenter;
  * If there is an active call where the user is a participant but hasn't joined,
  * this shows a floating notification and rings.
  *
- * Wrapper qui désactive l'alerte dans /iasted quand le Centre d'Appels est actif :
+ * Wrapper qui désactive l'alerte dans /icom quand le Centre d'Appels est actif :
  * respecte les Règles des Hooks en laissant le composant interne se démonter
  * proprement plutôt qu'un early-return au milieu d'un arbre de hooks.
  */
 export function GlobalCallAlert() {
 	const pathname = usePathname();
 	const shouldSuppressForCallCenter =
-		CALL_CENTER_ENABLED && !!pathname && pathname.startsWith("/iasted");
+		CALL_CENTER_ENABLED && !!pathname && pathname.startsWith("/icom");
 	if (shouldSuppressForCallCenter) return null;
 	return <GlobalCallAlertInner />;
 }

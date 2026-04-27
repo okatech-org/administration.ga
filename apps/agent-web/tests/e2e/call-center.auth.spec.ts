@@ -18,13 +18,13 @@ import { expect, test } from "@playwright/test";
 test.describe("@auth Call Center — authenticated flows", () => {
   test.beforeEach(async ({ page }) => {
     // Assure que la session est bien chargée (storageState injecté)
-    await page.goto("/iasted");
+    await page.goto("/icom");
     // Si on est redirigé vers /login, le storageState n'a pas été chargé
     await expect(page).not.toHaveURL(/\/login/);
   });
 
-  test("renders /iasted shell with authenticated user", async ({ page }) => {
-    await page.goto("/iasted");
+  test("renders /icom shell with authenticated user", async ({ page }) => {
+    await page.goto("/icom");
     // Attend le shell principal (présence d'un nav ou titre)
     await expect(page.locator("body")).toBeVisible();
     // Pas d'erreur console bloquante
@@ -35,7 +35,7 @@ test.describe("@auth Call Center — authenticated flows", () => {
   });
 
   test("supervision panel is visible for supervisor role", async ({ page }) => {
-    await page.goto("/iasted");
+    await page.goto("/icom");
     // SupervisionPanel affiche i18n key callCenter.supervision.title
     // Locator tolérant : cherche soit le texte FR soit l'i18n raw
     const supervisionMarker = page.getByText(/supervision/i).first();
@@ -45,10 +45,10 @@ test.describe("@auth Call Center — authenticated flows", () => {
   test("voicemail tab is reachable when feature is mounted", async ({
     page,
   }) => {
-    // Le tab voicemail doit apparaître dans NAV_ITEMS de /iasted quand
+    // Le tab voicemail doit apparaître dans NAV_ITEMS de /icom quand
     // la feature est active (FEATURES.callCenter). On vérifie son existence
-    // ou un fallback vers /iasted sans crash.
-    await page.goto("/iasted?tab=voicemail");
+    // ou un fallback vers /icom sans crash.
+    await page.goto("/icom?tab=voicemail");
     await expect(page.locator("body")).toBeVisible();
     // Tolérant : soit la tab est visible, soit redirection vers icall
     const voicemailText = page

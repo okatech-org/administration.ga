@@ -98,7 +98,7 @@ export default function IAstedPage({
 		if (next === activeTab) return;
 		const params = new URLSearchParams(searchParams?.toString() ?? "");
 		params.set("tab", next);
-		router.replace(`/iasted?${params.toString()}`, { scroll: false });
+		router.replace(`/icom?${params.toString()}`, { scroll: false });
 	};
 
 	// Normalise l'URL au premier mount (si `?tab=` absent/invalide).
@@ -107,7 +107,7 @@ export default function IAstedPage({
 		if (current !== activeTab) {
 			const params = new URLSearchParams(searchParams?.toString() ?? "");
 			params.set("tab", activeTab);
-			router.replace(`/iasted?${params.toString()}`, { scroll: false });
+			router.replace(`/icom?${params.toString()}`, { scroll: false });
 		}
 	}, [activeTab, router, searchParams]);
 
@@ -148,9 +148,9 @@ export default function IAstedPage({
 						<ShieldCheck className="h-5 w-5 text-primary" />
 					</div>
 					<div>
-						<h1 className="text-xl font-bold">iAsted</h1>
+						<h1 className="text-xl font-bold">iCom</h1>
 						<p className="text-sm text-muted-foreground">
-							{activeOrg?.name ?? "Agent IA Diplomate"}
+							Votre hub des communications{activeOrg?.name ? ` — ${activeOrg.name}` : ""}
 						</p>
 					</div>
 				</div>

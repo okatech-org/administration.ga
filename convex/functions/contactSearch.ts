@@ -21,6 +21,7 @@ import { getMembership, isBackOfficeUser } from "../lib/auth";
 import { error, ErrorCode } from "../lib/errors";
 import { UserRole } from "../lib/constants";
 import { canViewCitizenContacts } from "../lib/permissions";
+import { membershipsByOrg } from "../lib/aggregates";
 
 // Types d'organisations considérés comme « diplomatiques » pour le scope all-diplomatic
 const DIPLOMATIC_ORG_TYPES = new Set<string>([
@@ -825,6 +826,179 @@ export const listPriorityContacts = authQuery({
 			);
 
 		return { contacts };
+	},
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// listOrgsForContacts — vue annuaire en lazy-load
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Liste les organisations visibles dans l'annuaire iCom, avec leur nombre de
+ * membres (compté en O(log n) via l'agrégat `membershipsByOrg`).
+ *
+ * Pas de chargement des membres ici : la page iCom affiche les orgs
+ * collapsées par défaut, et `listOrgMembers` est appelée lorsqu'une org est
+ * dépliée. Cela permet de ne pas tirer 2 000+ contacts d'un coup.
+ *
+ * Filtres facultatifs : pays, type d'org, recherche par nom d'org.
+ */
+export const listOrgsForContacts = authQuery({
+	args: {
+		myOrgId: v.optional(v.id("orgs")),
+		country: v.optional(v.string()),
+		orgType: v.optional(v.string()),
+		searchTerm: v.optional(v.string()),
+		scope: v.optional(
+			v.union(
+				v.literal("jurisdiction"),
+				v.literal("all-diplomatic"),
+			),
+		),
+		sort: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
+	},
+	handler: async (ctx, args) => {
+		const scope = args.scope ?? "all-diplomatic";
+		const sort = args.sort ?? "asc";
+
+		const allOrgs = await loadActiveOrgs(ctx);
+
+		let orgs: Doc<"orgs">[] = allOrgs;
+		if (scope === "all-diplomatic") {
+			orgs = orgs.filter((o) => DIPLOMATIC_ORG_TYPES.has(o.type));
+		}
+		if (args.country) orgs = orgs.filter((o) => o.country === args.country);
+		if (args.orgType) orgs = orgs.filter((o) => o.type === args.orgType);
+		if (args.searchTerm) {
+			const q = args.searchTerm.toLowerCase();
+			orgs = orgs.filter((o) => o.name.toLowerCase().includes(q));
+		}
+
+		// Compte de membres en O(log n) par org via l'agrégat.
+		const counts = await Promise.all(
+			orgs.map((o) =>
+				membershipsByOrg.count(ctx, { namespace: o._id as string }),
+			),
+		);
+
+		const items = orgs.map((o, i) => ({
+			id: o._id as string,
+			name: o.name,
+			country: o.country,
+			type: o.type,
+			memberCount: counts[i] ?? 0,
+			isMine: args.myOrgId ? o._id === args.myOrgId : false,
+		}));
+
+		items.sort((a, b) => {
+			// Org de l'agent en premier, puis tri alphabétique
+			if (a.isMine !== b.isMine) return a.isMine ? -1 : 1;
+			const cmp = a.name.localeCompare(b.name, "fr", { sensitivity: "base" });
+			return sort === "asc" ? cmp : -cmp;
+		});
+
+		return { orgs: items };
+	},
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// listOrgMembers — membres d'une org (lazy-load au déploiement)
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Liste les membres actifs d'une org spécifique, triés alphabétiquement.
+ *
+ * Utilisé par le composant `<ContactOrgRow>` quand l'utilisateur déplie une
+ * org. Convex met automatiquement le résultat en cache et le réutilise pour
+ * les ré-ouvertures suivantes (subscription temps réel).
+ *
+ * Pas de pagination cursor pour l'instant : une org diplomatique a typiquement
+ * 5–50 agents, ce qui tient largement dans une seule réponse. On applique un
+ * plafond de sécurité.
+ */
+export const listOrgMembers = authQuery({
+	args: {
+		orgId: v.id("orgs"),
+		searchTerm: v.optional(v.string()),
+		positionGrade: v.optional(v.string()),
+		sort: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const sort = args.sort ?? "asc";
+		const limit = Math.min(args.limit ?? 200, 500);
+
+		const org = await ctx.db.get(args.orgId);
+		if (!org) return { contacts: [], total: 0 };
+
+		const members = await loadOrgMembers(ctx, [args.orgId], {
+			positionGrade: args.positionGrade,
+		});
+
+		const myMembership = await getMembership(
+			ctx,
+			ctx.user._id,
+			args.orgId,
+		).catch(() => null);
+		const isMyOrg = !!myMembership;
+
+		const results: ContactResult[] = [];
+		for (const { membership, position, user } of members) {
+			// Respect de l'opt-out "réseau public" pour les orgs externes.
+			if (!isMyOrg && membership.isPublicContact === false) continue;
+
+			const nameLower = user.name ?? user.email ?? "";
+			const lastName = (
+				user.lastName ?? nameLower.split(" ").pop() ?? ""
+			).toUpperCase();
+			const firstName =
+				user.firstName ?? nameLower.split(" ").slice(0, -1).join(" ") ?? "";
+
+			results.push({
+				id: `${isMyOrg ? "team" : "net"}-${user._id}`,
+				userId: user._id as string,
+				lastName,
+				firstName,
+				name: nameLower,
+				email: user.email,
+				phone: user.phone,
+				avatar: user.avatarUrl ?? undefined,
+				position: (position as any)?.title?.fr ?? (position as any)?.code,
+				positionGrade: (position as any)?.grade,
+				orgId: org._id as string,
+				orgName: org.name,
+				orgCountry: org.country,
+				orgType: org.type,
+				source: isMyOrg ? "team" : "network",
+			});
+		}
+
+		// Filtre texte (post-fetch — typiquement < 100 docs par org)
+		let filtered = results;
+		if (args.searchTerm) {
+			const q = args.searchTerm.toLowerCase();
+			filtered = results.filter(
+				(c) =>
+					c.lastName.toLowerCase().includes(q) ||
+					c.firstName.toLowerCase().includes(q) ||
+					c.email?.toLowerCase().includes(q) ||
+					c.position?.toLowerCase().includes(q),
+			);
+		}
+
+		filtered.sort((a, b) => {
+			const cmp = `${a.lastName} ${a.firstName}`.localeCompare(
+				`${b.lastName} ${b.firstName}`,
+				"fr",
+				{ sensitivity: "base" },
+			);
+			return sort === "asc" ? cmp : -cmp;
+		});
+
+		return {
+			contacts: filtered.slice(0, limit),
+			total: filtered.length,
+		};
 	},
 });
 

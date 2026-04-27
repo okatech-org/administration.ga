@@ -83,6 +83,17 @@ const nextConfig: NextConfig = {
         destination: "https://diplomate.ga/:path*",
         permanent: true,
       },
+      // /iasted -> /icom (route renamed; preserve old bookmarks and query params)
+      {
+        source: "/iasted",
+        destination: "/icom",
+        permanent: true,
+      },
+      {
+        source: "/iasted/:path*",
+        destination: "/icom/:path*",
+        permanent: true,
+      },
     ]
   },
 }

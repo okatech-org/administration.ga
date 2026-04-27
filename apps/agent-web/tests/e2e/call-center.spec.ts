@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
  * Smoke tests — Centre d'Appels (Sprint 5)
  *
  * Vérifient que les routes nouvelles ne crashent pas et que l'onglet iAppel
- * de /iasted bascule sur le shell multi-lignes quand le feature flag est actif.
+ * de /icom bascule sur le shell multi-lignes quand le feature flag est actif.
  *
  * Pas de tests authentifiés ici (réservé à `authenticated.spec.ts` une fois
  * un dev sign-in pattern disponible côté agent-web).
@@ -15,10 +15,10 @@ test.describe("Call Center smoke tests", () => {
     expect(response?.status() ?? 500).toBeLessThan(500);
   });
 
-  test("/iasted route is reachable (redirects if unauthenticated)", async ({
+  test("/icom route is reachable (redirects if unauthenticated)", async ({
     page,
   }) => {
-    const response = await page.goto("/iasted");
+    const response = await page.goto("/icom");
     expect(response?.status() ?? 500).toBeLessThan(500);
   });
 

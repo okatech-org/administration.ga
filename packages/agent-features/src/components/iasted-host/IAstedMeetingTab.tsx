@@ -28,7 +28,8 @@ import {
 	Video,
 	X,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "@workspace/routing";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
 import { Badge } from "@workspace/ui/components/badge";
@@ -58,12 +59,28 @@ const MEETING_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; icon: 
 
 export function IAstedMeetingTab() {
 	const { activeOrgId } = useOrg();
+	const searchParams = useSearchParams();
 	const [view, setView] = useState<ViewState>("list");
 	const [activeMeetingId, setActiveMeetingId] = useState<Id<"meetings"> | null>(null);
 
 	// Formulaire de création
 	const [meetingName, setMeetingName] = useState("");
 	const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
+
+	// Pré-remplissage via `?invite=<userId>` (depuis iContact "Programmer une réunion").
+	// On bascule directement sur l'écran de création avec le contact pré-sélectionné.
+	useEffect(() => {
+		const invite = searchParams?.get("invite");
+		if (invite && view === "list") {
+			setSelectedParticipants((prev) => {
+				const next = new Set(prev);
+				next.add(invite);
+				return next;
+			});
+			setView("create");
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 	const [scheduledDate, setScheduledDate] = useState("");
 	const [scheduledTime, setScheduledTime] = useState("");
 	const [recordingEnabled, setRecordingEnabled] = useState(false);

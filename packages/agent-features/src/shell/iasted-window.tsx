@@ -6,7 +6,7 @@
  * - Événement `iasted:open` (détail `{ tab }`) pour déclenchement depuis n'importe où
  * - Fenêtre COMPACTE flottante (420×640 desktop, 85dvh mobile)
  * - Toutes les fonctionnalités : iChat, iContact, iCall, iMeeting, iSettings…
- * - Deep-link `/iasted` fullscreen via bouton Maximize (onExpand)
+ * - Deep-link `/icom` fullscreen via bouton Maximize (onExpand)
  *
  * À NE PAS CONFONDRE avec `IAstedSidePanel` (chat IA seul, ouvert via Cmd+K,
  * intégré comme la sidebar) qui vit dans `iasted-side-panel.tsx`.
@@ -84,7 +84,7 @@ export function IAstedWindow({
     // Passe l'onglet courant en query param : sans ça, la page fullscreen
     // restait figée sur "ichat" (valeur par défaut) même si l'utilisateur
     // cliquait Agrandir depuis iContact / iAppel / etc.
-    router.push(`/iasted?tab=${activeTab}`)
+    router.push(`/icom?tab=${activeTab}`)
   }, [router, activeTab])
 
   // Items du CircleMenu construits par le package (DS v3, cohérents avec citizen).

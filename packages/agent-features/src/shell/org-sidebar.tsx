@@ -13,6 +13,7 @@ import {
 	Globe2,
 	Home,
 	Mail,
+	MessagesSquare,
 	Moon,
 	Newspaper,
 	Settings2,
@@ -125,6 +126,7 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 				{ title: "iCorrespondance", url: "/icorrespondance", icon: FolderOpen, requires: "correspondance.view", moduleCode: "correspondance" },
 				{ title: "iDocument", url: "/idocument", icon: FileText, requires: "documents.view", moduleCode: "documents" },
 				{ title: "iAgenda", url: "/iagenda", icon: Calendar, requires: "appointments.view", moduleCode: "appointments" },
+				{ title: "iCom", url: "/icom", icon: MessagesSquare },
 			],
 		},
 		{

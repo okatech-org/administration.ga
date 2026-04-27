@@ -18,7 +18,7 @@
  * DI slots optionnels :
  *  - `wrapWithAIPresence(children)` : wrapper pour `<AIPresenceProvider>`
  *    (state graph IA proactive — stays agent-web).
- *  - `showIAstedWindow(pathname)` : true par défaut sauf sur /iasted.
+ *  - `showIAstedWindow(pathname)` : true par défaut sauf sur /icom.
  *  - `beforeChildren` / `afterChildren` : extra overlays (desktop TitleBar…)
  */
 
@@ -65,7 +65,7 @@ export interface AppShellProps {
 	renderIAstedCallQueueSlot?: (tab: IAstedTabId) => ReactNode;
 	/** Wrap `{children}` with extra providers (e.g. AIPresenceProvider). */
 	wrapWithAIPresence?: (children: ReactNode) => ReactNode;
-	/** Determines whether to mount IAstedWindow. Defaults to `pathname !== /iasted`. */
+	/** Determines whether to mount IAstedWindow. Defaults to `pathname !== /icom`. */
 	showIAstedWindow?: (pathname: string | null | undefined) => boolean;
 	/** Client label sent to agent presence heartbeats. */
 	clientType?: "agent-web" | "agent-desktop";
@@ -132,11 +132,11 @@ function DashboardLayout({
 	const pathname = usePathname();
 	const { isOpen: isSidePanelOpen, close: closeSidePanel } =
 		useIAstedSidePanel();
-	// La page `/iasted` monte son propre iChat via FullscreenShell ; monter
+	// La page `/icom` monte son propre iChat via FullscreenShell ; monter
 	// `IAstedWindow` en parallèle créerait deux instances concurrentes de
 	// `useAdminAIChat` + `useAdminVoiceChat` (conflit de souscriptions Convex
 	// et de session WebRTC). On masque la popup sur cette route.
-	const defaultShow = !(!!pathname && pathname.startsWith("/iasted"));
+	const defaultShow = !(!!pathname && pathname.startsWith("/icom"));
 	const showIAsted = showIAstedWindow
 		? showIAstedWindow(pathname)
 		: defaultShow;
