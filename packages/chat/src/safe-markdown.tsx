@@ -1,4 +1,5 @@
 import Markdown from "react-markdown";
+import rehypeHighlight from "rehype-highlight";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 import type { ComponentProps } from "react";
@@ -23,6 +24,17 @@ const strictSchema = {
 			...(defaultSchema.attributes?.a ?? []),
 			["target", "_blank"],
 			["rel", "noopener", "noreferrer"],
+		],
+		// rehype-highlight injecte des <span class="hljs-XXX"> que la sanitization
+		// par défaut strippe — on whitelist explicitement les classes hljs-* sur
+		// les éléments inline.
+		span: [
+			...(defaultSchema.attributes?.span ?? []),
+			["className", /^hljs-/],
+		],
+		code: [
+			...(defaultSchema.attributes?.code ?? []),
+			["className", /^(language-|hljs)/],
 		],
 	},
 	protocols: {
@@ -61,6 +73,10 @@ export function SafeMarkdown({
 			{...rest}
 			remarkPlugins={[remarkGfm, ...(rest.remarkPlugins ?? [])]}
 			rehypePlugins={[
+				// Highlighting AVANT la sanitization : rehype-highlight injecte
+				// des <span class="hljs-…">, puis rehypeSanitize les whitelist via
+				// `strictSchema`. L'ordre inverse stripperait les classes.
+				[rehypeHighlight, { detect: true, ignoreMissing: true }],
 				[rehypeSanitize, strictSchema],
 				...(rest.rehypePlugins ?? []),
 			]}

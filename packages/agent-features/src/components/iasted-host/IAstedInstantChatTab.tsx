@@ -79,6 +79,16 @@ import { getSuggestions } from "./SpatialAwareness";
 // Constants
 // ════════════════════════════════════════════════════════════
 
+/** Message en attente d'envoi (rendu instantanément avant le retour serveur). */
+export interface OptimisticMessage {
+	tempId: string;
+	content: string;
+	createdAt: number;
+	status: "sending" | "failed";
+	error?: string;
+	attachmentLabels?: string[];
+}
+
 /** Contact spécial iAsted — épinglé en haut de la liste iChat. */
 export const IASTED_CONTACT = {
 	id: "__iasted__",
@@ -333,14 +343,73 @@ export function useIAstedChat({
 		return `${typingUsers.length} personnes sont en train d'écrire…`;
 	}, [typingUsers]);
 
-	// ── Envoi message humain ──
+	// ── Optimistic updates P2P ─────────────────────────────────
+	// Map<contactKey, OptimisticMessage[]>. Une entrée est ajoutée dès le clic
+	// "Envoyer" pour un rendu instantané. Elle est retirée une fois la
+	// subscription Convex remontée du message persisté ; en cas d'échec on
+	// la marque "failed" et on offre le retry.
+	const [optimisticByContact, setOptimisticByContact] = useState<
+		Map<string, OptimisticMessage[]>
+	>(() => new Map());
+
+	const removeOptimistic = useCallback(
+		(contactKey: string, tempId: string) => {
+			setOptimisticByContact((prev) => {
+				const next = new Map(prev);
+				const list = next.get(contactKey) ?? [];
+				const filtered = list.filter((m) => m.tempId !== tempId);
+				if (filtered.length === 0) next.delete(contactKey);
+				else next.set(contactKey, filtered);
+				return next;
+			});
+		},
+		[],
+	);
+
+	const markOptimisticFailed = useCallback(
+		(contactKey: string, tempId: string, errorMessage?: string) => {
+			setOptimisticByContact((prev) => {
+				const next = new Map(prev);
+				const list = next.get(contactKey) ?? [];
+				next.set(
+					contactKey,
+					list.map((m) =>
+						m.tempId === tempId
+							? { ...m, status: "failed", error: errorMessage }
+							: m,
+					),
+				);
+				return next;
+			});
+		},
+		[],
+	);
+
+	// ── Envoi message humain (avec optimistic UI) ──────────────
 	const handleSendHuman = useCallback(
 		async (text: string) => {
 			const trimmed = text.trim();
 			const hasAttachments = pendingAttachments.length > 0;
 			if ((!trimmed && !hasAttachments) || !selectedContact?.userId) return;
 			if (isUploading) return;
+			const contactKey = selectedContact.userId as string;
+			const tempId = `optim-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+			const optimistic: OptimisticMessage = {
+				tempId,
+				content: trimmed,
+				createdAt: Date.now(),
+				status: "sending",
+				attachmentLabels: pendingAttachments.map((a) => a.file.name),
+			};
+			setOptimisticByContact((prev) => {
+				const next = new Map(prev);
+				const list = next.get(contactKey) ?? [];
+				next.set(contactKey, [...list, optimistic]);
+				return next;
+			});
 			setIsUploading(true);
+			// On vide l'input tout de suite pour signaler l'envoi.
+			setMessageInput("");
 			try {
 				const attachmentFiles = hasAttachments
 					? await uploadPendingAttachments()
@@ -360,11 +429,21 @@ export function useIAstedChat({
 						initialAttachmentFiles: attachmentFiles,
 					});
 				}
-				setMessageInput("");
 				rotateIdempotencyKey();
 				stopTyping();
+				// Le message persisté arrive via la subscription `listMessages`.
+				// On laisse 200ms pour que le re-render réactif l'inclue, puis on
+				// dégage l'optimistic. Ça évite un flash "double message".
+				setTimeout(() => removeOptimistic(contactKey, tempId), 200);
 			} catch (e: any) {
+				markOptimisticFailed(
+					contactKey,
+					tempId,
+					e?.message ?? "Erreur d'envoi",
+				);
 				toast.error(e?.message ?? "Erreur d'envoi");
+				// Réinjecte le draft pour permettre une correction rapide.
+				setMessageInput(trimmed);
 			} finally {
 				setIsUploading(false);
 			}
@@ -378,10 +457,39 @@ export function useIAstedChat({
 			getIdempotencyKey,
 			rotateIdempotencyKey,
 			stopTyping,
-			pendingAttachments.length,
+			pendingAttachments,
 			isUploading,
 			uploadPendingAttachments,
+			removeOptimistic,
+			markOptimisticFailed,
+			setMessageInput,
 		],
+	);
+
+	const optimisticForActive = useMemo(() => {
+		if (!selectedContact?.userId) return [] as OptimisticMessage[];
+		return optimisticByContact.get(selectedContact.userId as string) ?? [];
+	}, [optimisticByContact, selectedContact?.userId]);
+
+	const retryOptimistic = useCallback(
+		(tempId: string) => {
+			if (!selectedContact?.userId) return;
+			const list =
+				optimisticByContact.get(selectedContact.userId as string) ?? [];
+			const target = list.find((m) => m.tempId === tempId);
+			if (!target) return;
+			removeOptimistic(selectedContact.userId as string, tempId);
+			void handleSendHuman(target.content);
+		},
+		[optimisticByContact, selectedContact?.userId, removeOptimistic, handleSendHuman],
+	);
+
+	const dismissOptimistic = useCallback(
+		(tempId: string) => {
+			if (!selectedContact?.userId) return;
+			removeOptimistic(selectedContact.userId as string, tempId);
+		},
+		[selectedContact?.userId, removeOptimistic],
 	);
 
 	// ── Auto-scroll chat IA ──
@@ -605,6 +713,11 @@ export function useIAstedChat({
 		p2pThreads,
 		totalP2PUnread,
 		existingChat,
+
+		// Optimistic P2P
+		optimisticForActive,
+		retryOptimistic,
+		dismissOptimistic,
 
 		// Handlers
 		handleSendAI,
@@ -861,7 +974,12 @@ export function IAstedChatConversation({
 					)
 				) : (
 					// ── Chat humain temps réel (Convex subscription) ──
-					<HumanChatView contact={selectedContact} />
+					<HumanChatView
+						contact={selectedContact}
+						optimisticMessages={state.optimisticForActive}
+						onRetryOptimistic={state.retryOptimistic}
+						onDismissOptimistic={state.dismissOptimistic}
+					/>
 				)}
 			</ScrollArea>
 
@@ -1453,7 +1571,22 @@ function FloatingVoiceOverlay({ voice }: { voice: any }) {
 
 const MESSAGE_EDIT_WINDOW_MS = 15 * 60 * 1000;
 
-function HumanChatView({ contact }: { contact: any }) {
+interface HumanChatViewProps {
+	contact: any;
+	optimisticMessages?: OptimisticMessage[];
+	onRetryOptimistic?: (tempId: string) => void;
+	onDismissOptimistic?: (tempId: string) => void;
+}
+
+const PAGE_SIZE = 50;
+const MAX_LIMIT = 500; // Plafond de sécurité (au-delà → utiliser un cursor)
+
+function HumanChatView({
+	contact,
+	optimisticMessages = [],
+	onRetryOptimistic,
+	onDismissOptimistic,
+}: HumanChatViewProps) {
 	const chatId = contact._chatId as Id<"chats"> | undefined;
 
 	const { data: existingChat } = useAuthenticatedConvexQuery(
@@ -1463,10 +1596,25 @@ function HumanChatView({ contact }: { contact: any }) {
 
 	const resolvedChatId = chatId ?? existingChat?._id;
 
+	// Pagination réactive : chaque clic "Charger plus" augmente la limite ; la
+	// query se ré-exécute et renvoie les messages plus anciens. Convex gère
+	// la subscription temps réel pour le top de la fenêtre.
+	const [loadedLimit, setLoadedLimit] = useState(PAGE_SIZE);
+	// Reset la pagination quand on change de conversation.
+	useEffect(() => {
+		setLoadedLimit(PAGE_SIZE);
+	}, [resolvedChatId]);
+
 	const { data: messages, isPending: messagesLoading } = useAuthenticatedConvexQuery(
 		api.functions.chats.listMessages,
-		resolvedChatId ? { chatId: resolvedChatId, limit: 50 } : "skip",
+		resolvedChatId ? { chatId: resolvedChatId, limit: loadedLimit } : "skip",
 	);
+	const hasMore =
+		!!messages && (messages as any[]).length === loadedLimit && loadedLimit < MAX_LIMIT;
+	const canLoadMore = hasMore && !messagesLoading;
+	const handleLoadMore = useCallback(() => {
+		setLoadedLimit((prev) => Math.min(prev + PAGE_SIZE, MAX_LIMIT));
+	}, []);
 
 	const { mutateAsync: markRead } = useConvexMutationQuery(
 		api.functions.chats.markRead,
@@ -1531,7 +1679,8 @@ function HumanChatView({ contact }: { contact: any }) {
 		[editMessageMut],
 	);
 
-	if (messagesLoading) {
+	const messageList = (messages ?? []) as any[];
+	if (messagesLoading && messageList.length === 0) {
 		return (
 			<div className="flex items-center justify-center py-8">
 				<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -1539,7 +1688,7 @@ function HumanChatView({ contact }: { contact: any }) {
 		);
 	}
 
-	if (!messages || messages.length === 0) {
+	if (messageList.length === 0 && optimisticMessages.length === 0) {
 		return (
 			<div className="flex flex-col items-center justify-center h-full text-center py-6">
 				<MessageSquare className="h-8 w-8 text-muted-foreground/30 mb-2" />
@@ -1550,7 +1699,22 @@ function HumanChatView({ contact }: { contact: any }) {
 
 	return (
 		<div className="space-y-3">
-			{messages.map((msg: any) => {
+			{/* "Charger les messages précédents" — pagination cursor via limit. */}
+			{canLoadMore && (
+				<div className="flex justify-center pb-1">
+					<button
+						type="button"
+						onClick={handleLoadMore}
+						className="text-xs text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 transition-colors"
+					>
+						{messagesLoading ? (
+							<Loader2 className="h-3 w-3 animate-spin" />
+						) : null}
+						Charger les messages précédents
+					</button>
+				</div>
+			)}
+			{messageList.map((msg: any) => {
 				const isMe = msg.senderId !== contact.userId;
 				const isDeleted = !!msg.deletedAt;
 				const isEdited = !!msg.editedAt && !isDeleted;
@@ -1672,6 +1836,63 @@ function HumanChatView({ contact }: { contact: any }) {
 					</div>
 				);
 			})}
+			{/* Messages optimistes — affichés instantanément, avant retour serveur. */}
+			{optimisticMessages.map((opt) => (
+				<div key={opt.tempId} className="flex gap-2 group justify-end">
+					<div
+						className={cn(
+							"max-w-[80%] rounded-xl px-3 py-2 text-sm",
+							opt.status === "failed"
+								? "bg-destructive/10 text-destructive border border-destructive/30"
+								: "bg-primary/70 text-primary-foreground",
+						)}
+					>
+						<div className="whitespace-pre-wrap">{opt.content}</div>
+						{opt.attachmentLabels && opt.attachmentLabels.length > 0 && (
+							<div className="mt-1 text-[10px] opacity-70">
+								{opt.attachmentLabels.length} pièce
+								{opt.attachmentLabels.length > 1 ? "s" : ""} jointe
+								{opt.attachmentLabels.length > 1 ? "s" : ""}
+							</div>
+						)}
+						<div className="flex items-center gap-2 mt-0.5 text-[10px] opacity-80">
+							{opt.status === "sending" ? (
+								<>
+									<Loader2 className="h-2.5 w-2.5 animate-spin" />
+									<span>Envoi…</span>
+								</>
+							) : (
+								<>
+									<span>Échec d'envoi</span>
+									{onRetryOptimistic && (
+										<button
+											type="button"
+											onClick={() => onRetryOptimistic(opt.tempId)}
+											className="underline hover:opacity-100 opacity-90"
+										>
+											Réessayer
+										</button>
+									)}
+									{onDismissOptimistic && (
+										<button
+											type="button"
+											onClick={() => onDismissOptimistic(opt.tempId)}
+											className="underline hover:opacity-100 opacity-90"
+										>
+											Annuler
+										</button>
+									)}
+								</>
+							)}
+						</div>
+					</div>
+					<Avatar className="h-7 w-7 shrink-0">
+						<AvatarFallback className="bg-primary/10 text-primary">
+							<User className="h-3.5 w-3.5" />
+						</AvatarFallback>
+					</Avatar>
+				</div>
+			))}
 			<div ref={scrollRef} />
 		</div>
 	);
