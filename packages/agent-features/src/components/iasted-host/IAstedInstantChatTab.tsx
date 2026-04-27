@@ -1581,6 +1581,44 @@ interface HumanChatViewProps {
 const PAGE_SIZE = 50;
 const MAX_LIMIT = 500; // Plafond de sécurité (au-delà → utiliser un cursor)
 
+const TIME_FMT = new Intl.DateTimeFormat("fr-FR", {
+	hour: "2-digit",
+	minute: "2-digit",
+});
+const FULL_DATE_FMT = new Intl.DateTimeFormat("fr-FR", {
+	weekday: "long",
+	day: "numeric",
+	month: "long",
+	year: "numeric",
+});
+
+function formatTime(ts: number): string {
+	return TIME_FMT.format(new Date(ts));
+}
+
+function isSameDay(a: number, b: number): boolean {
+	const da = new Date(a);
+	const db = new Date(b);
+	return (
+		da.getFullYear() === db.getFullYear() &&
+		da.getMonth() === db.getMonth() &&
+		da.getDate() === db.getDate()
+	);
+}
+
+function formatDayLabel(ts: number): string {
+	const now = Date.now();
+	const today = new Date(now);
+	const target = new Date(ts);
+	const diffDays = Math.floor(
+		(today.setHours(0, 0, 0, 0) - new Date(target).setHours(0, 0, 0, 0)) /
+			(1000 * 60 * 60 * 24),
+	);
+	if (diffDays === 0) return "Aujourd'hui";
+	if (diffDays === 1) return "Hier";
+	return FULL_DATE_FMT.format(new Date(ts));
+}
+
 function HumanChatView({
 	contact,
 	optimisticMessages = [],
@@ -1714,15 +1752,24 @@ function HumanChatView({
 					</button>
 				</div>
 			)}
-			{messageList.map((msg: any) => {
+			{messageList.map((msg: any, idx: number) => {
 				const isMe = msg.senderId !== contact.userId;
 				const isDeleted = !!msg.deletedAt;
 				const isEdited = !!msg.editedAt && !isDeleted;
 				const canMutate =
 					isMe && !isDeleted && Date.now() - msg.createdAt < MESSAGE_EDIT_WINDOW_MS;
+				const prev = messageList[idx - 1];
+				const showDayLabel = !prev || !isSameDay(prev.createdAt, msg.createdAt);
 				return (
+					<div key={msg._id}>
+						{showDayLabel && (
+							<div className="flex justify-center my-3">
+								<span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground bg-muted/60 px-2.5 py-0.5 rounded-full">
+									{formatDayLabel(msg.createdAt)}
+								</span>
+							</div>
+						)}
 					<div
-						key={msg._id}
 						className={cn(
 							"flex gap-2 group",
 							isMe ? "justify-end" : "justify-start",
@@ -1820,9 +1867,17 @@ function HumanChatView({
 											))}
 										</div>
 									)}
-									{isEdited && (
-										<span className="ml-1 opacity-60 text-[10px]">(modifié)</span>
-									)}
+									<div className="flex items-center gap-1 mt-1 text-[10px] opacity-70">
+										<span>{formatTime(msg.createdAt)}</span>
+										{isEdited && (
+											<>
+												<span aria-hidden="true">·</span>
+												<span title={`Modifié à ${formatTime(msg.editedAt)}`}>
+													modifié
+												</span>
+											</>
+										)}
+									</div>
 								</>
 							)}
 						</div>
@@ -1833,6 +1888,7 @@ function HumanChatView({
 								</AvatarFallback>
 							</Avatar>
 						)}
+					</div>
 					</div>
 				);
 			})}
@@ -1855,7 +1911,9 @@ function HumanChatView({
 								{opt.attachmentLabels.length > 1 ? "s" : ""}
 							</div>
 						)}
-						<div className="flex items-center gap-2 mt-0.5 text-[10px] opacity-80">
+						<div className="flex items-center gap-2 mt-1 text-[10px] opacity-80">
+							<span>{formatTime(opt.createdAt)}</span>
+							<span aria-hidden="true">·</span>
 							{opt.status === "sending" ? (
 								<>
 									<Loader2 className="h-2.5 w-2.5 animate-spin" />
