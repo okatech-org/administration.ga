@@ -24,7 +24,6 @@ import {
 	Settings,
 	ShieldCheck,
 	Video,
-	Voicemail as VoicemailIcon,
 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
@@ -33,11 +32,13 @@ import { useOrg } from "../../shell";
 
 // ─── Onglets ─────────────────────────────────────────────────────────────────
 
+// La messagerie vocale n'est plus un onglet à part — elle est désormais
+// accessible depuis l'onglet iAppel via un bouton "Messagerie vocale" qui
+// ouvre la liste en encart, car la messagerie EST un sous-cas des appels.
 const NAV_ITEMS = [
 	{ id: "ichat", icon: MessageSquare, label: "iChat" },
 	{ id: "icontact", icon: Contact, label: "iContact" },
 	{ id: "icall", icon: Phone, label: "iAppel" },
-	{ id: "voicemail", icon: VoicemailIcon, label: "Messagerie" },
 	{ id: "imeeting", icon: Video, label: "iRéunion" },
 	{ id: "settings", icon: Settings, label: "Réglages" },
 ] as const;
@@ -57,6 +58,11 @@ export interface VoicemailsListInjectedProps {
 	orgId: Id<"orgs"> | null;
 }
 
+export interface IAstedCallTabProps {
+	/** Liste des messages vocaux — affichée en encart depuis le CallTab. */
+	VoicemailsList: ComponentType<VoicemailsListInjectedProps>;
+}
+
 export interface IAstedPageProps {
 	/**
 	 * Renders the two right-hand columns of the iChat layout:
@@ -68,7 +74,7 @@ export interface IAstedPageProps {
 	 */
 	IAstedChatColumns: ComponentType<IAstedChatColumnsProps>;
 	IAstedContactTab: ComponentType;
-	IAstedCallTab: ComponentType;
+	IAstedCallTab: ComponentType<IAstedCallTabProps>;
 	IAstedMeetingTab: ComponentType;
 	IAstedSettingsTab: ComponentType;
 	VoicemailsList: ComponentType<VoicemailsListInjectedProps>;
@@ -128,8 +134,6 @@ export default function IAstedPage({
 				return "iContact";
 			case "icall":
 				return "iAppel";
-			case "voicemail":
-				return "Messagerie vocale";
 			case "imeeting":
 				return "iRéunion";
 			case "settings":
@@ -233,12 +237,11 @@ export default function IAstedPage({
 						</div>
 						<div className="flex flex-1 flex-col min-h-0 overflow-hidden">
 							{activeTab === "icontact" && <IAstedContactTab />}
-							{/* Fullscreen → CallCenterShell complet (PAS de prop `compact`). */}
-							{activeTab === "icall" && <IAstedCallTab />}
-							{activeTab === "voicemail" && (
-								<div className="h-full overflow-y-auto p-3 lg:p-4">
-									<VoicemailsList orgId={activeOrgId} />
-								</div>
+							{/* Fullscreen → CallCenterShell complet. La messagerie vocale
+							    est maintenant injectée DANS le CallTab pour être ouverte
+							    via un bouton "Messagerie vocale" depuis cette surface. */}
+							{activeTab === "icall" && (
+								<IAstedCallTab VoicemailsList={VoicemailsList} />
 							)}
 							{activeTab === "imeeting" && <IAstedMeetingTab />}
 							{activeTab === "settings" && <IAstedSettingsTab />}
