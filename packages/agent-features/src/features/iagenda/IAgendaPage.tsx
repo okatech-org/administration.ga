@@ -54,8 +54,10 @@ interface AgendaEvent {
 	location: string;
 	attendees: string[];
 	description: string;
-	source: "diplomatic" | "appointment";
+	source: "diplomatic" | "appointment" | "meeting";
 	status?: string;
+	/** Meeting-only: deep link to /icom?tab=imeeting&meeting=<id>. */
+	meetingId?: string;
 }
 
 // ─── Status & Type Config ──────────────────────────────────────
@@ -108,6 +110,7 @@ const EVENT_TYPE_STYLE: Record<string, { label: string; dotColor: string }> = {
 	sport: { label: "Sport", dotColor: "bg-cyan-500" },
 	charity: { label: "Solidarité", dotColor: "bg-rose-500" },
 	appointment: { label: "RDV Consulaire", dotColor: "bg-indigo-500" },
+	meeting: { label: "Réunion iCom", dotColor: "bg-primary" },
 };
 
 function getMonday(d: Date) {
@@ -134,7 +137,17 @@ export default function IAgendaPage() {
 			api.functions.slots.listAppointmentsByOrg,
 			activeOrgId ? { orgId: activeOrgId } : "skip",
 		);
-	const isPending = eventsLoading || appointmentsLoading;
+	// Réunions iCom — on remonte les "scheduled" + "active" pour que l'agent
+	// voie ses sessions à venir et celles en cours sur le calendrier.
+	const { data: rawMeetings, isPending: meetingsLoading } =
+		useAuthenticatedConvexQuery(
+			api.functions.meetings.listByOrg,
+			activeOrgId ? { orgId: activeOrgId } : "skip",
+		);
+	const meetingsList: any[] = Array.isArray((rawMeetings as any)?.meetings)
+		? ((rawMeetings as any).meetings as any[])
+		: [];
+	const isPending = eventsLoading || appointmentsLoading || meetingsLoading;
 
 	usePageContext({
 		module: "iagenda",
@@ -181,10 +194,41 @@ export default function IAgendaPage() {
 			status: a.status ?? "confirmed",
 		}));
 
-		return [...diplomatic, ...appointments].sort((a, b) =>
+		// Réunions iCom — uniquement type "meeting" + status programmé/actif.
+		// On expose un meetingId pour permettre un deep-link vers /icom.
+		const meetings: AgendaEvent[] = meetingsList
+			.filter(
+				(m: any) =>
+					m.type === "meeting" &&
+					(m.status === "scheduled" || m.status === "active"),
+			)
+			.map((m: any) => {
+				const ts = m.scheduledAt ?? m.startedAt ?? m._creationTime;
+				const d = new Date(ts);
+				const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+				const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+				const attendees = (m.participants ?? [])
+					.map((p: any) => p.userId as string)
+					.filter(Boolean);
+				return {
+					id: m._id as string,
+					title: m.title ?? "Réunion",
+					type: "meeting",
+					date,
+					time,
+					location: "",
+					attendees,
+					description: "",
+					source: "meeting" as const,
+					status: m.status === "active" ? "in_progress" : "confirmed",
+					meetingId: m._id as string,
+				};
+			});
+
+		return [...diplomatic, ...appointments, ...meetings].sort((a, b) =>
 			`${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`),
 		);
-	}, [rawCommunityEvents, rawAppointments]);
+	}, [rawCommunityEvents, rawAppointments, meetingsList]);
 
 	const today = new Date().toISOString().split("T")[0];
 	const upcomingEvents = allEvents.filter(
@@ -578,6 +622,14 @@ function EventCard({ event }: { event: AgendaEvent }) {
 								>
 									<Globe className="h-2 w-2 mr-0.5" /> Diplomatique
 								</Badge>
+							)}
+							{event.source === "meeting" && event.meetingId && (
+								<a
+									href={`/icom?tab=imeeting&meeting=${event.meetingId}`}
+									className="ml-auto text-[10px] font-medium text-primary hover:underline"
+								>
+									Ouvrir dans iCom →
+								</a>
 							)}
 						</div>
 					</div>

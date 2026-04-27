@@ -119,9 +119,21 @@ export function IAstedMeetingTab() {
 		api.functions.meetings.end,
 	);
 
-	const meetingsArray = Array.isArray(rawMeetings) ? rawMeetings : [];
+	// `listByOrg` retourne `{ meetings: [...], participantNames: {...} }`, pas
+	// un tableau brut. L'ancien `Array.isArray(rawMeetings)` retournait
+	// toujours `false` → toutes les listes étaient vides et les réunions
+	// planifiées ne s'affichaient jamais.
+	const meetingsArray: any[] = Array.isArray((rawMeetings as any)?.meetings)
+		? ((rawMeetings as any).meetings as any[])
+		: Array.isArray(rawMeetings)
+			? (rawMeetings as any[])
+			: [];
+	const participantNames: Record<string, string> =
+		((rawMeetings as any)?.participantNames as Record<string, string>) ?? {};
 	const activeMeetings = meetingsArray.filter((m: any) => m.type === "meeting" && m.status === "active");
-	const scheduledMeetings = meetingsArray.filter((m: any) => m.type === "meeting" && m.status === "scheduled");
+	const scheduledMeetings = meetingsArray
+		.filter((m: any) => m.type === "meeting" && m.status === "scheduled")
+		.sort((a: any, b: any) => (a.scheduledAt ?? 0) - (b.scheduledAt ?? 0));
 	const recentMeetings = meetingsArray.filter((m: any) => m.type === "meeting" && m.status === "ended").slice(0, 10);
 
 	// Données réunion active
@@ -154,6 +166,7 @@ export function IAstedMeetingTab() {
 				participantIds: Array.from(selectedParticipants) as Id<"users">[],
 				scheduledAt,
 				maxParticipants: 20,
+				recordingEnabled,
 			});
 
 			setActiveMeetingId(result.meetingId as Id<"meetings">);

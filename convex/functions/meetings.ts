@@ -394,6 +394,7 @@ export const create = authMutation({
     // Par défaut : "video" pour les appels (toggle caméra dispo dans CustomCallUI),
     // "audio" pour les meetings planifiés.
     mediaType: v.optional(v.union(v.literal("audio"), v.literal("video"))),
+    recordingEnabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     // Verify user is a member of the org
@@ -433,6 +434,7 @@ export const create = authMutation({
       scheduledAt: args.scheduledAt,
       startedAt: args.scheduledAt ? undefined : Date.now(),
       mediaType: args.mediaType ?? (args.type === "call" ? "video" : "audio"),
+      recordingEnabled: args.recordingEnabled,
     });
 
     // ── Envoyer des notifications d'invitation aux participants ──
