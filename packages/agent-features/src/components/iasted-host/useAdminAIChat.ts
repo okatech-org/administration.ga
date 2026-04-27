@@ -41,57 +41,11 @@ export function useAdminAIChat() {
 		async (content: string) => {
 			if (!content.trim() || isLoading || !activeOrgId) return;
 
-			// Check if this is an affirmative response to a pending action
-			const affirmativePatterns =
-				/^(oui|ok|d'accord|d'acc|yes|yep|confirmer|confirme|accepter|accepte|go|parfait|allons-y|vas-y|allez|envoie|fais-le)$/i;
-			if (
-				pendingActions.length > 0 &&
-				affirmativePatterns.test(content.trim())
-			) {
-				const action = pendingActions[0];
-				setIsLoading(true);
-
-				try {
-					if (action.type === "navigateTo") {
-						const route = action.args.route as string;
-						if (route) {
-							router.push(route);
-						}
-						setPendingActions((prev) =>
-							prev.filter((a) => a !== action),
-						);
-						const resultMessage: Message = {
-							role: "assistant",
-							content: " Navigation effectuée.",
-							timestamp: Date.now(),
-						};
-						setMessages((prev) => [...prev, resultMessage]);
-					}
-				} finally {
-					setIsLoading(false);
-				}
-				return;
-			}
-
-			// Check for negative response
-			const negativePatterns =
-				/^(non|no|nope|annuler|annule|stop|arrête|pas maintenant|plus tard|refuse|refuser)$/i;
-			if (
-				pendingActions.length > 0 &&
-				negativePatterns.test(content.trim())
-			) {
-				const action = pendingActions[0];
-				setPendingActions((prev) =>
-					prev.filter((a) => a !== action),
-				);
-				const rejectMessage: Message = {
-					role: "assistant",
-					content: `Action "${action.reason || action.type}" annulée.`,
-					timestamp: Date.now(),
-				};
-				setMessages((prev) => [...prev, rejectMessage]);
-				return;
-			}
+			// Confirmation regex retirée : on ne tente plus de deviner si "oui",
+			// "ok", "non" sont une réponse à une action en attente. L'agent doit
+			// utiliser la carte de confirmation explicite (boutons Confirmer /
+			// Annuler) — voir <PendingActionCard>. Cela évite les faux positifs
+			// dans la conversation naturelle ("oui c'est ça", "ok continue…").
 
 			setIsLoading(true);
 			setError(null);

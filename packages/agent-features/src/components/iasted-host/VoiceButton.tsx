@@ -34,13 +34,13 @@ function VoiceOrb({ state }: { state: string }) {
               initial={{ scale: 1, opacity: 0.3 }}
               animate={{ scale: 1.8, opacity: 0 }}
               transition={{ duration: 1.2, repeat: Infinity }}
-              className="absolute h-24 w-24 rounded-full bg-green-500"
+              className="absolute h-24 w-24 rounded-full bg-primary"
             />
             <motion.div
               initial={{ scale: 1, opacity: 0.2 }}
               animate={{ scale: 2.2, opacity: 0 }}
               transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }}
-              className="absolute h-24 w-24 rounded-full bg-green-500"
+              className="absolute h-24 w-24 rounded-full bg-primary"
             />
           </>
         )}
@@ -50,13 +50,13 @@ function VoiceOrb({ state }: { state: string }) {
               initial={{ scale: 1, opacity: 0.3 }}
               animate={{ scale: 1.6, opacity: 0 }}
               transition={{ duration: 0.8, repeat: Infinity }}
-              className="absolute h-24 w-24 rounded-full bg-purple-500"
+              className="absolute h-24 w-24 rounded-full bg-primary"
             />
             <motion.div
               initial={{ scale: 1, opacity: 0.2 }}
               animate={{ scale: 2, opacity: 0 }}
               transition={{ duration: 0.8, repeat: Infinity, delay: 0.2 }}
-              className="absolute h-24 w-24 rounded-full bg-purple-500"
+              className="absolute h-24 w-24 rounded-full bg-primary"
             />
           </>
         )}
@@ -77,10 +77,10 @@ function VoiceOrb({ state }: { state: string }) {
         }}
         className={cn(
           "relative flex h-24 w-24 items-center justify-center rounded-full",
-          isListening && "bg-green-500/20 ring-4 ring-green-500",
-          isSpeaking && "bg-purple-500/20 ring-4 ring-purple-500",
-          isConnecting && "bg-blue-500/20 ring-4 ring-blue-500",
-          isError && "bg-red-500/20 ring-4 ring-red-500",
+          isListening && "bg-primary/20 ring-4 ring-primary",
+          isSpeaking && "bg-primary/20 ring-4 ring-primary",
+          isConnecting && "bg-primary/20 ring-4 ring-primary",
+          isError && "bg-destructive/20 ring-4 ring-destructive",
           !isListening &&
             !isSpeaking &&
             !isConnecting &&
@@ -91,7 +91,7 @@ function VoiceOrb({ state }: { state: string }) {
         {isSpeaking ?
           <SoundWaves />
         : isError ?
-          <MicOff className="h-10 w-10 text-red-500" />
+          <MicOff className="h-10 w-10 text-destructive" />
         : <motion.div
             animate={isConnecting ? { rotate: 360 } : {}}
             transition={
@@ -103,8 +103,8 @@ function VoiceOrb({ state }: { state: string }) {
             <Mic
               className={cn(
                 "h-10 w-10",
-                isListening && "text-green-500",
-                isConnecting && "text-blue-500",
+                isListening && "text-primary",
+                isConnecting && "text-primary",
                 !isListening && !isConnecting && "text-muted-foreground",
               )}
             />
@@ -129,7 +129,7 @@ function SoundWaves() {
             delay: i * 0.08,
             ease: "easeInOut",
           }}
-          className="h-8 w-1.5 rounded-full bg-purple-500"
+          className="h-8 w-1.5 rounded-full bg-primary"
         />
       ))}
     </div>
@@ -187,11 +187,11 @@ export function VoiceChatContent({
             initial={{ opacity: 0, scale: 0.9, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 10 }}
-            className="w-full max-w-xs rounded-xl border-2 border-amber-500/50 bg-amber-500/5 p-5 shadow-lg"
+            className="w-full max-w-xs rounded-xl border-2 border-border bg-muted/30 p-5 shadow-lg"
           >
             <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
-              <span className="font-semibold text-amber-600 dark:text-amber-400 text-sm">
+              <AlertTriangle className="h-5 w-5 text-foreground shrink-0" />
+              <span className="font-semibold text-foreground text-sm">
                 Confirmation requise
               </span>
             </div>
@@ -234,10 +234,10 @@ export function VoiceChatContent({
         animate={{ opacity: 1, y: 0 }}
         className={cn(
           "mt-6 text-lg font-medium",
-          pendingConfirmation && "text-amber-500",
-          !pendingConfirmation && state === "error" && "text-red-500",
-          !pendingConfirmation && state === "listening" && "text-green-500",
-          !pendingConfirmation && state === "speaking" && "text-purple-500",
+          pendingConfirmation && "text-foreground",
+          !pendingConfirmation && state === "error" && "text-destructive",
+          !pendingConfirmation && state === "listening" && "text-primary",
+          !pendingConfirmation && state === "speaking" && "text-primary",
         )}
       >
         {getStatusMessage()}
@@ -284,7 +284,7 @@ export function VoiceButton({
       title="Mode vocal"
       className={cn(
         "relative",
-        isOpen && "bg-green-500 hover:bg-green-600 text-white",
+        isOpen && "bg-primary hover:bg-primary/90 text-primary-foreground",
         className,
       )}
     >

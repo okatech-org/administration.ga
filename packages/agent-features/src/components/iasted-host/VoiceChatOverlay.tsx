@@ -28,15 +28,15 @@ function VoiceOrb({ state }: { state: VoiceState }) {
 		switch (state) {
 			case "connecting":
 				return {
-					bgClass: "bg-blue-500/20",
-					ringClass: "ring-blue-500",
-					pulseClass: "bg-blue-500",
+					bgClass: "bg-primary/20",
+					ringClass: "ring-primary",
+					pulseClass: "bg-primary",
 				};
 			case "listening":
 				return {
-					bgClass: "bg-green-500/20",
-					ringClass: "ring-green-500",
-					pulseClass: "bg-green-500",
+					bgClass: "bg-primary/20",
+					ringClass: "ring-primary",
+					pulseClass: "bg-primary",
 				};
 			case "processing":
 				return {
@@ -46,15 +46,15 @@ function VoiceOrb({ state }: { state: VoiceState }) {
 				};
 			case "speaking":
 				return {
-					bgClass: "bg-purple-500/20",
-					ringClass: "ring-purple-500",
-					pulseClass: "bg-purple-500",
+					bgClass: "bg-primary/20",
+					ringClass: "ring-primary",
+					pulseClass: "bg-primary",
 				};
 			case "error":
 				return {
-					bgClass: "bg-red-500/20",
-					ringClass: "ring-red-500",
-					pulseClass: "bg-red-500",
+					bgClass: "bg-destructive/20",
+					ringClass: "ring-destructive",
+					pulseClass: "bg-destructive",
 				};
 			default:
 				return {
@@ -130,7 +130,7 @@ function VoiceOrb({ state }: { state: VoiceState }) {
 						<Mic
 							className={cn(
 								"h-12 w-12",
-								state === "error" ? "text-red-500" : "text-foreground",
+								state === "error" ? "text-destructive" : "text-foreground",
 							)}
 						/>
 					)}
@@ -154,7 +154,7 @@ function SoundWaves() {
 						delay: i * 0.1,
 						ease: "easeInOut",
 					}}
-					className="h-10 w-2 rounded-full bg-purple-500"
+					className="h-10 w-2 rounded-full bg-primary"
 				/>
 			))}
 		</div>
@@ -193,7 +193,7 @@ function StatusMessage({
 			animate={{ opacity: 1, y: 0 }}
 			className={cn(
 				"text-xl font-medium",
-				state === "error" ? "text-red-500" : "text-foreground",
+				state === "error" ? "text-destructive" : "text-foreground",
 			)}
 		>
 			{getMessage()}

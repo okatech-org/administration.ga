@@ -18,14 +18,12 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { usePathname, useRouter } from "@workspace/routing";
 import {
-	AlertCircle,
 	Bot,
 	Building2,
 	Download,
 	Edit3,
 	FileText,
 	Globe,
-	Headset,
 	ImageIcon,
 	Loader2,
 	MessageSquare,
@@ -34,7 +32,6 @@ import {
 	Pin,
 	Send,
 	Shield,
-	Sparkles,
 	Trash2,
 	User,
 	Users,
@@ -120,8 +117,53 @@ export function useIAstedChat({
 	const { activeOrgId } = useOrg();
 	const pathname = usePathname();
 	const router = useRouter();
-	const [selectedContact, setSelectedContact] = useState<any>(defaultSelectedContact);
-	const [messageInput, setMessageInput] = useState("");
+	const [selectedContact, setSelectedContactRaw] = useState<any>(defaultSelectedContact);
+	// Drafts per contact — chaque thread garde son brouillon en mémoire pour
+	// que l'agent puisse switcher de conversation sans perdre ce qu'il avait
+	// commencé à écrire. Mr Ray a son propre draft (clé = "ai").
+	const draftsRef = useRef<Map<string, string>>(new Map());
+	const [messageInput, setMessageInputState] = useState("");
+	const draftKey = useCallback(
+		(c: any | null | undefined): string | null => {
+			if (!c) return null;
+			if (c.isAI) return "ai";
+			return c.userId ?? c.id ?? null;
+		},
+		[],
+	);
+	const setSelectedContact = useCallback(
+		(next: any) => {
+			setSelectedContactRaw((prev: any) => {
+				const prevKey = draftKey(prev);
+				const nextKey = draftKey(next);
+				if (prevKey && prevKey !== nextKey) {
+					// Persist the current draft on the leaving contact.
+					setMessageInputState((current) => {
+						draftsRef.current.set(prevKey, current);
+						return current;
+					});
+				}
+				if (nextKey) {
+					setMessageInputState(draftsRef.current.get(nextKey) ?? "");
+				} else {
+					setMessageInputState("");
+				}
+				return next;
+			});
+		},
+		[draftKey],
+	);
+	const setMessageInput = useCallback(
+		(v: string | ((prev: string) => string)) => {
+			setMessageInputState((prev) => {
+				const next = typeof v === "function" ? v(prev) : v;
+				const key = draftKey(selectedContact);
+				if (key) draftsRef.current.set(key, next);
+				return next;
+			});
+		},
+		[selectedContact, draftKey],
+	);
 	const [showMacros, setShowMacros] = useState(false);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const suggestions = getSuggestions(pathname);
@@ -156,28 +198,8 @@ export function useIAstedChat({
 		[groups],
 	);
 
-	// ── Contacts prioritaires (citoyens avec demandes actives) ──
-	// Calculés côté serveur à partir du score PRIORITY + STATUS + recency.
-	// Ce sont les contacts qu'iAsted propose par défaut — le reste se trouve
-	// via la recherche.
-	const { data: priorityResult, isPending: priorityLoading } =
-		useAuthenticatedConvexQuery(
-			api.functions.contactSearch.listPriorityContacts,
-			activeOrgId ? { orgId: activeOrgId, limit: 200 } : "skip",
-		);
-	const priorityContacts = useMemo(
-		() => ((priorityResult as any)?.contacts ?? []) as any[],
-		[priorityResult],
-	);
-
-	// ── Threads Standard (Mr Ray) ──
-	const { data: standardChatsRaw } = useAuthenticatedConvexQuery(
-		api.functions.chats.listStandardChats,
-		activeOrgId ? { orgId: activeOrgId } : "skip",
-	);
-	const standardChats = (standardChatsRaw ?? []) as any[];
-
-	// ── Threads P2P (exclure standard) ──
+	// ── Threads P2P (exclure standard — la liste Standard a été retirée
+	//    pour ne garder que Mr Ray + les conversations P2P réelles) ──
 	const { data: myChats } = useAuthenticatedConvexQuery(
 		api.functions.chats.listMyChats,
 		{},
@@ -580,14 +602,9 @@ export function useIAstedChat({
 		allContacts,
 
 		// Threads
-		standardChats,
 		p2pThreads,
 		totalP2PUnread,
 		existingChat,
-
-		// Priorité IA (demandes actives)
-		priorityContacts,
-		priorityLoading,
 
 		// Handlers
 		handleSendAI,
@@ -714,7 +731,7 @@ export function IAstedChatConversation({
 					)}
 					<Avatar className="h-9 w-9">
 						{selectedContact.isAI ? (
-							<AvatarFallback className="bg-emerald-500/15 text-emerald-500">
+							<AvatarFallback className="bg-primary/15 text-primary">
 								<Bot className="h-4 w-4" />
 							</AvatarFallback>
 						) : (
@@ -735,7 +752,7 @@ export function IAstedChatConversation({
 						<div className="flex items-center gap-1.5">
 							<p className="text-sm font-medium truncate">{selectedContact.name}</p>
 							{selectedContact.isAI && (
-								<Badge className="text-[10px] h-4 px-1.5 bg-emerald-500/15 text-emerald-500 border-emerald-500/20">
+								<Badge className="text-[10px] h-4 px-1.5 bg-primary/15 text-primary border-primary/20">
 									IA
 								</Badge>
 							)}
@@ -765,14 +782,25 @@ export function IAstedChatConversation({
 				{selectedContact.isAI ? (
 					// ── Chat IA ──
 					chat.messages.length === 0 ? (
-						<div className="flex flex-col items-center justify-center h-full text-center py-6">
-							<div className="h-14 w-14 rounded-full bg-emerald-500/10 flex items-center justify-center mb-3">
-								<Bot className="h-7 w-7 text-emerald-500" />
+						<div className="flex flex-col items-center justify-center h-full text-center py-6 px-4">
+							<div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+								<Bot className="h-7 w-7 text-primary" />
 							</div>
 							<h3 className="text-sm font-semibold mb-1">Bonjour, je suis iAsted</h3>
-							<p className="text-xs text-muted-foreground max-w-[280px]">
-								Posez-moi une question ou choisissez une suggestion.
+							<p className="text-xs text-muted-foreground max-w-[300px] mb-3">
+								Posez-moi une question, lancez une commande ou activez la voix pour piloter la plateforme.
 							</p>
+							<div className="flex flex-wrap items-center justify-center gap-1.5 text-[10px] text-muted-foreground/80">
+								<span className="inline-flex items-center gap-1 rounded-full border bg-background/50 px-2 py-0.5">
+									<MessageSquare className="h-2.5 w-2.5" /> Texte
+								</span>
+								<span className="inline-flex items-center gap-1 rounded-full border bg-background/50 px-2 py-0.5">
+									Suggestions
+								</span>
+								<span className="inline-flex items-center gap-1 rounded-full border bg-background/50 px-2 py-0.5">
+									Voix
+								</span>
+							</div>
 						</div>
 					) : (
 						<div className="space-y-3">
@@ -786,7 +814,7 @@ export function IAstedChatConversation({
 								>
 									{msg.role === "assistant" && (
 										<Avatar className="h-7 w-7 shrink-0">
-											<AvatarFallback className="bg-emerald-500/10 text-emerald-600">
+											<AvatarFallback className="bg-primary/10 text-primary">
 												<Bot className="h-3.5 w-3.5" />
 											</AvatarFallback>
 										</Avatar>
@@ -819,7 +847,7 @@ export function IAstedChatConversation({
 							{chat.isLoading && (
 								<div className="flex items-center gap-2">
 									<Avatar className="h-7 w-7">
-										<AvatarFallback className="bg-emerald-500/10 text-emerald-600">
+										<AvatarFallback className="bg-primary/10 text-primary">
 											<Bot className="h-3.5 w-3.5" />
 										</AvatarFallback>
 									</Avatar>
@@ -837,33 +865,45 @@ export function IAstedChatConversation({
 				)}
 			</ScrollArea>
 
-			{/* Actions IA en attente (confirmations) */}
+			{/* Actions IA en attente — confirmation explicite par carte. */}
 			{selectedContact.isAI && chat.pendingActions.length > 0 && (
-				<div className="border-t bg-amber-50 dark:bg-amber-950/20 p-2.5 space-y-1.5">
+				<div className="border-t bg-muted/40 p-2.5 space-y-2">
 					{chat.pendingActions.map((action, i) => (
 						<div
 							key={i}
-							className="flex items-center justify-between bg-background rounded-md p-2 border border-amber-200 text-xs"
+							className="flex items-start gap-2.5 bg-background rounded-md p-3 border shadow-sm"
 						>
-							<span className="font-medium truncate">
-								{action.reason ?? action.type}
-							</span>
-							<div className="flex gap-1.5">
-								<Button
-									size="sm"
-									variant="outline"
-									onClick={() => chat.rejectAction(action)}
-									className="h-7 text-xs px-2.5"
-								>
-									Non
-								</Button>
-								<Button
-									size="sm"
-									onClick={() => chat.confirmAction(action)}
-									className="h-7 text-xs px-2.5"
-								>
-									Oui
-								</Button>
+							<div className="mt-0.5 rounded-full bg-primary/10 p-1.5 shrink-0">
+								<Bot className="h-3.5 w-3.5 text-primary" />
+							</div>
+							<div className="flex-1 min-w-0 space-y-2">
+								<div>
+									<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+										Action requise
+									</p>
+									<p className="text-sm font-medium leading-snug">
+										{action.reason ?? action.type}
+									</p>
+								</div>
+								<div className="flex items-center gap-1.5">
+									<Button
+										size="sm"
+										onClick={() => chat.confirmAction(action)}
+										className="h-7 text-xs px-3"
+										disabled={chat.isLoading}
+									>
+										Confirmer
+									</Button>
+									<Button
+										size="sm"
+										variant="ghost"
+										onClick={() => chat.rejectAction(action)}
+										className="h-7 text-xs px-3"
+										disabled={chat.isLoading}
+									>
+										Annuler
+									</Button>
+								</div>
 							</div>
 						</div>
 					))}
@@ -1000,7 +1040,7 @@ export function IAstedChatConversation({
 					size="icon"
 					className={cn(
 						"h-10 w-10 shrink-0",
-						selectedContact.isAI && "bg-emerald-600 hover:bg-emerald-700",
+						selectedContact.isAI && "bg-primary hover:bg-primary/90",
 					)}
 					disabled={
 						(!messageInput.trim() &&
@@ -1040,14 +1080,11 @@ export function IAstedChatList({ state }: IAstedChatListProps) {
 		filters,
 		setSearch,
 		setSource,
-		standardChats,
 		p2pThreads,
 		totalP2PUnread,
 		groups,
 		total,
 		contactsLoading,
-		priorityContacts,
-		priorityLoading,
 	} = state;
 
 	// Helper pour souligner le contact actif (fullscreen 2 colonnes).
@@ -1101,21 +1138,21 @@ export function IAstedChatList({ state }: IAstedChatListProps) {
 							"w-full flex items-center gap-3 px-3 py-3.5 transition-colors text-left border-b border-border/30",
 							isActive(IASTED_CONTACT.id)
 								? "bg-primary/5"
-								: "hover:bg-emerald-500/5",
+								: "hover:bg-primary/5",
 						)}
 					>
 						<div className="relative">
 							<Avatar className="h-11 w-11">
-								<AvatarFallback className="bg-emerald-500/15 text-emerald-500">
+								<AvatarFallback className="bg-primary/15 text-primary">
 									<Bot className="h-5 w-5" />
 								</AvatarFallback>
 							</Avatar>
-							<Pin className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 text-emerald-500 rotate-45" />
+							<Pin className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 text-primary rotate-45" />
 						</div>
 						<div className="flex-1 min-w-0">
 							<div className="flex items-center gap-1.5">
 								<p className="text-sm font-semibold">iAsted</p>
-								<Badge className="text-[10px] h-4 px-1.5 bg-emerald-500/15 text-emerald-500 border-emerald-500/20">
+								<Badge className="text-[10px] h-4 px-1.5 bg-primary/15 text-primary border-primary/20">
 									IA
 								</Badge>
 							</div>
@@ -1136,74 +1173,6 @@ export function IAstedChatList({ state }: IAstedChatListProps) {
 							</span>
 						)}
 					</button>
-				)}
-
-				{/* Threads Standard (Mr Ray) — visibles uniquement en mode défaut. */}
-				{isDefaultView && standardChats.length > 0 && (
-					<div className="border-b border-border/30">
-						<div className="flex items-center gap-2 px-3 py-2">
-							<Headset className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
-							<span className="text-[11px] font-semibold text-teal-600 dark:text-teal-400 uppercase tracking-wider">
-								Standard
-							</span>
-							<Badge
-								variant="outline"
-								className="text-[10px] h-4 px-1.5 ml-auto border-teal-500/30 text-teal-600 dark:text-teal-400"
-							>
-								{standardChats.length}
-							</Badge>
-						</div>
-						{standardChats.map((thread: any) => (
-							<button
-								key={thread._id}
-								type="button"
-								onClick={() =>
-									setSelectedContact({
-										...thread.otherUser,
-										name: `${thread.otherUser?.firstName ?? ""} ${thread.otherUser?.lastName ?? ""}`.trim(),
-										userId: thread.otherUser?.id,
-										_chatId: thread._id,
-										isAI: false,
-										isStandard: true,
-									})
-								}
-								className={cn(
-									"w-full flex items-center gap-3 px-3 py-3 transition-colors text-left",
-									selectedContact?.userId === thread.otherUser?.id
-										? "bg-primary/5"
-										: "hover:bg-teal-500/5",
-								)}
-							>
-								<Avatar className="h-10 w-10">
-									<AvatarImage src={thread.otherUser?.avatarUrl} />
-									<AvatarFallback className="text-xs bg-teal-500/10 text-teal-600 dark:text-teal-400">
-										{(thread.otherUser?.firstName?.[0] ?? "") +
-											(thread.otherUser?.lastName?.[0] ?? "")}
-									</AvatarFallback>
-								</Avatar>
-								<div className="flex-1 min-w-0">
-									<div className="flex items-center gap-1.5">
-										<p className="text-sm font-medium truncate flex-1 min-w-0">
-											{thread.otherUser?.firstName ?? ""} {thread.otherUser?.lastName ?? ""}
-										</p>
-										{!thread.claimedBy && (
-											<Badge className="text-[10px] h-4 px-1.5 shrink-0 bg-amber-500/15 text-amber-600 border-amber-500/20">
-												En attente
-											</Badge>
-										)}
-									</div>
-									<p className="text-xs text-muted-foreground truncate">
-										{thread.lastMessageText ?? "Conversation Standard"}
-									</p>
-								</div>
-								{thread.unreadCount > 0 && (
-									<Badge className="text-[10px] h-5 min-w-[20px] px-1.5 bg-teal-600 text-white">
-										{thread.unreadCount}
-									</Badge>
-								)}
-							</button>
-						))}
-					</div>
 				)}
 
 				{/* Conversations P2P — visibles uniquement en mode défaut. */}
@@ -1273,93 +1242,15 @@ export function IAstedChatList({ state }: IAstedChatListProps) {
 					</div>
 				)}
 
-				{/* ── Priorité IA — citoyens avec demandes actives (vue par défaut) ── */}
-				{isDefaultView && priorityContacts.length > 0 && (
-					<div className="border-b border-border/30">
-						<div className="flex items-center gap-2 px-3 py-2">
-							<Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-							<span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-								Priorité IA
-							</span>
-							<span className="text-[10px] text-muted-foreground">
-								· Demandes en cours
-							</span>
-							<Badge
-								variant="outline"
-								className="text-[10px] h-4 px-1.5 ml-auto border-amber-500/30 text-amber-600 dark:text-amber-400"
-							>
-								{priorityContacts.length}
-							</Badge>
-						</div>
-						{priorityContacts.map((contact: any) => (
-							<button
-								key={contact.id}
-								type="button"
-								onClick={() => setSelectedContact({ ...contact, isAI: false })}
-								className={cn(
-									"w-full flex items-center gap-3 px-3 py-3 transition-colors text-left",
-									isActive(contact.id)
-										? "bg-primary/5"
-										: "hover:bg-amber-500/5",
-								)}
-							>
-								<div className="relative">
-									<Avatar className="h-10 w-10">
-										<AvatarImage src={contact.avatar} />
-										<AvatarFallback className="text-xs bg-amber-500/10 text-amber-600">
-											{contact.name
-												?.split(" ")
-												.map((w: string) => w[0])
-												.join("")
-												.toUpperCase()
-												.slice(0, 2)}
-										</AvatarFallback>
-									</Avatar>
-									{contact.highestPriority === "critical" && (
-										<AlertCircle className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 text-red-500 bg-background rounded-full" />
-									)}
-									{contact.highestPriority === "urgent" && (
-										<span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-background" />
-									)}
-								</div>
-								<div className="flex-1 min-w-0">
-									<div className="flex items-center gap-1">
-										<p className="text-sm font-bold truncate">{contact.lastName}</p>
-										<p className="text-sm text-foreground/80 truncate">
-											{contact.firstName}
-										</p>
-									</div>
-									<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-										{contact.latestRequestRef && (
-											<span className="font-mono text-[10px] truncate">
-												{contact.latestRequestRef}
-											</span>
-										)}
-										{contact.activeRequestCount > 1 && (
-											<Badge
-												variant="outline"
-												className="text-[9px] h-3.5 px-1 shrink-0"
-											>
-												×{contact.activeRequestCount}
-											</Badge>
-										)}
-									</div>
-								</div>
-								<MessageSquare className="h-4 w-4 text-muted-foreground/30 shrink-0" />
-							</button>
-						))}
-					</div>
-				)}
-
-				{/* État vide du mode par défaut : pas encore de demandes actives. */}
-				{isDefaultView && !priorityLoading && priorityContacts.length === 0 && (
+				{/* État vide du mode par défaut : pas encore de conversations P2P. */}
+				{isDefaultView && p2pThreads.length === 0 && (
 					<div className="flex flex-col items-center justify-center py-8 text-center px-6">
-						<Sparkles className="h-8 w-8 text-amber-500/30 mb-2" />
+						<MessageSquare className="h-8 w-8 text-muted-foreground/30 mb-2" />
 						<p className="text-sm text-muted-foreground">
-							Aucune demande active
+							Aucune conversation
 						</p>
 						<p className="text-xs text-muted-foreground/70 mt-1">
-							Recherchez un contact ou changez de segment pour voir le répertoire.
+							Recherchez un collègue ou un contact pour démarrer une discussion.
 						</p>
 					</div>
 				)}
@@ -1415,8 +1306,8 @@ export function IAstedChatList({ state }: IAstedChatListProps) {
 													contact.source === "team"
 														? "bg-primary/10 text-primary"
 														: contact.source === "citizen"
-															? "bg-amber-500/10 text-amber-600"
-															: "bg-blue-500/10 text-blue-600",
+															? "bg-secondary text-secondary-foreground"
+															: "bg-muted text-muted-foreground",
 												)}
 											>
 												{contact.name
@@ -1454,10 +1345,10 @@ export function IAstedChatList({ state }: IAstedChatListProps) {
 				{isDefaultView ? (
 					<>
 						<span>
-							{priorityContacts.length} priorité{priorityContacts.length > 1 ? "s" : ""}
+							{p2pThreads.length} conversation{p2pThreads.length > 1 ? "s" : ""}
 						</span>
 						<span className="text-muted-foreground/60">
-							Recherchez pour voir le répertoire
+							Recherchez pour démarrer une discussion
 						</span>
 					</>
 				) : (
@@ -1487,18 +1378,73 @@ interface IAstedInstantChatTabProps {
 export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps) {
 	const state = useIAstedChat({ chat, voice });
 
-	// Mode vocal actif → prise complète de l'onglet.
-	if (state.selectedContact?.isAI && voice.isOpen) {
-		return <IAstedChatVoiceOverlay voice={voice} />;
-	}
+	// Vue principale : conversation OU liste. La voix est désormais rendue
+	// au-dessus en mini-overlay flottant pour ne plus bloquer la lecture
+	// des messages pendant un appel vocal Mr Ray.
+	const main = state.selectedContact ? (
+		<IAstedChatConversation state={state} showBackButton />
+	) : (
+		<IAstedChatList state={state} />
+	);
+	return (
+		<div className="relative flex flex-col flex-1 min-h-0">
+			{main}
+			{voice.isOpen && <FloatingVoiceOverlay voice={voice} />}
+		</div>
+	);
+}
 
-	// Un contact sélectionné → vue conversation (la liste n'est plus visible).
-	if (state.selectedContact) {
-		return <IAstedChatConversation state={state} showBackButton />;
-	}
+// ════════════════════════════════════════════════════════════
+// FloatingVoiceOverlay — mini-encart vocal en bas de l'onglet
+// ════════════════════════════════════════════════════════════
 
-	// Sinon → vue liste.
-	return <IAstedChatList state={state} />;
+/**
+ * Affiche un encart compact (statut, niveau audio, raccrocher) qui flotte
+ * au-dessus de la liste/conversation. L'agent garde le contexte écrit
+ * sous les yeux pendant qu'il parle à Mr Ray.
+ */
+function FloatingVoiceOverlay({ voice }: { voice: any }) {
+	const stateLabel = (() => {
+		switch (voice.state) {
+			case "connecting":
+				return "Connexion…";
+			case "listening":
+				return "À l'écoute";
+			case "processing":
+				return "Réflexion…";
+			case "speaking":
+				return "Mr Ray parle";
+			case "error":
+				return "Erreur vocale";
+			default:
+				return "Voix active";
+		}
+	})();
+
+	return (
+		<div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 w-[min(92%,360px)]">
+			<div className="flex items-center gap-3 rounded-full border bg-background/95 backdrop-blur-md shadow-lg px-3 py-2">
+				<div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0">
+					<Bot className="h-4 w-4 text-primary" />
+					{(voice.state === "listening" || voice.state === "speaking") && (
+						<span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary animate-pulse" />
+					)}
+				</div>
+				<div className="flex-1 min-w-0">
+					<p className="text-xs font-semibold leading-tight truncate">Mode vocal</p>
+					<p className="text-[10px] text-muted-foreground truncate">{stateLabel}</p>
+				</div>
+				<button
+					type="button"
+					onClick={() => voice.stopVoice?.()}
+					className="rounded-full bg-destructive/15 hover:bg-destructive/25 text-destructive px-2.5 py-1 text-xs font-medium shrink-0"
+					aria-label="Terminer l'appel vocal"
+				>
+					Raccrocher
+				</button>
+			</div>
+		</div>
+	);
 }
 
 // ════════════════════════════════════════════════════════════
