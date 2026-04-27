@@ -136,7 +136,7 @@ export function CallCard({
           )}
           {call.wasRedirected && (
             <span
-              className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400"
+              className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-muted-foreground"
               title={
                 call.originalLineLabel
                   ? t("callCenter.card.redirectedFrom", {

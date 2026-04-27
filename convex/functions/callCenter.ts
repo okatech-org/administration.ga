@@ -47,7 +47,10 @@ function derivePriority(
 const PRESENCE_FRESHNESS_MS = 90_000;
 
 /**
- * Charge les présences actives de tous les agents d'une ligne (cache par appel).
+ * Charge les présences actives de tous les agents d'une ligne, en parallèle.
+ * Avant : `for (membership of line.membershipIds) { await get; await query; }` → N+1 séquentiel.
+ * Après : un seul `Promise.all` sur les memberships, suivi d'un `Promise.all` sur les presences.
+ * Sur une ligne de 10 agents : 20 round-trips → 2 round-trips concurrents.
  */
 async function loadLinePresences(
   ctx: any,
@@ -55,24 +58,33 @@ async function loadLinePresences(
 ): Promise<Map<string, Doc<"agentPresence"> | null>> {
   const byMembership = new Map<string, Doc<"agentPresence"> | null>();
   const now = Date.now();
-  for (const membershipId of line.membershipIds) {
-    const membership = await ctx.db.get(membershipId);
-    if (!membership) {
-      byMembership.set(membershipId as string, null);
-      continue;
-    }
-    const presence = await ctx.db
-      .query("agentPresence")
-      .withIndex("by_user_and_org", (q: any) =>
-        q.eq("userId", membership.userId).eq("orgId", line.orgId),
-      )
-      .unique();
+
+  const memberships = await Promise.all(
+    line.membershipIds.map((mid) => ctx.db.get(mid)),
+  );
+
+  const presences = await Promise.all(
+    memberships.map((m) =>
+      m
+        ? ctx.db
+            .query("agentPresence")
+            .withIndex("by_user_and_org", (q: any) =>
+              q.eq("userId", m.userId).eq("orgId", line.orgId),
+            )
+            .unique()
+        : Promise.resolve(null),
+    ),
+  );
+
+  line.membershipIds.forEach((mid, idx) => {
+    const presence = presences[idx];
     const fresh =
       presence && now - presence.lastHeartbeat < PRESENCE_FRESHNESS_MS
         ? presence
         : null;
-    byMembership.set(membershipId as string, fresh);
-  }
+    byMembership.set(mid as string, fresh);
+  });
+
   return byMembership;
 }
 
@@ -246,55 +258,63 @@ export const listQueuedCallsForAgent = authQuery({
       }
     }
 
-    // Enrichissement : identité appelant + flag "dossiers ouverts"
-    const callerIds = new Set<string>(
-      queued.map((q) => q.meeting.createdBy as string),
+    // Enrichissement : identité appelant + flag "dossiers ouverts" — tout en
+    // parallèle. Avant on bouclait séquentiellement sur les callerIds (N round-
+    // trips chacun pour user + profile + requests), ce qui devenait coûteux
+    // dès qu'on avait quelques appels en file. Désormais 3 Promise.all groupés.
+    const callerIdList = Array.from(
+      new Set<string>(queued.map((q) => q.meeting.createdBy as string)),
     );
+
+    const [users, profiles, requestsByUser] = await Promise.all([
+      Promise.all(callerIdList.map((uid) => ctx.db.get(uid as Id<"users">))),
+      Promise.all(
+        callerIdList.map((uid) =>
+          ctx.db
+            .query("profiles")
+            .withIndex("by_user", (q) => q.eq("userId", uid as Id<"users">))
+            .first(),
+        ),
+      ),
+      Promise.all(
+        callerIdList.map((uid) =>
+          ctx.db
+            .query("requests")
+            .withIndex("by_user_status", (q) => q.eq("userId", uid as Id<"users">))
+            .collect(),
+        ),
+      ),
+    ]);
+
     const callerInfo = new Map<
       string,
       { name: string; nip: string | null; avatarUrl: string | null }
     >();
+    const openRequestsByUser = new Map<string, number>();
 
-    for (const uid of callerIds) {
-      const user = await ctx.db.get(uid as Id<"users">);
+    callerIdList.forEach((uid, idx) => {
+      const user = users[idx];
+      const profile = profiles[idx];
       if (!user) {
         callerInfo.set(uid, { name: "Usager", nip: null, avatarUrl: null });
-        continue;
+      } else {
+        const name =
+          [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
+          user.email ||
+          "Usager";
+        callerInfo.set(uid, {
+          name,
+          nip: profile?.identity?.nip ?? null,
+          avatarUrl: user.avatarUrl ?? null,
+        });
       }
-      const profile = await ctx.db
-        .query("profiles")
-        .withIndex("by_user", (q) =>
-          q.eq("userId", user._id as Id<"users">),
-        )
-        .first();
-      const name =
-        [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
-        user.email ||
-        "Usager";
-      callerInfo.set(uid, {
-        name,
-        nip: profile?.identity?.nip ?? null,
-        avatarUrl: user.avatarUrl ?? null,
-      });
-    }
-
-    // Flag dossiers ouverts — via index by_userId des requests
-    const openRequestsByUser = new Map<string, number>();
-    for (const uid of callerIds) {
-      // On charge les requests de l'user via le préfixe de l'index (userId seul).
-      const reqs = await ctx.db
-        .query("requests")
-        .withIndex("by_user_status", (q) =>
-          q.eq("userId", uid as Id<"users">),
-        )
-        .collect();
+      const reqs = requestsByUser[idx] ?? [];
       const open = reqs.filter((r: any) => {
         const s = r.status;
-        // Ouvert = tout sauf statuts terminaux (completed, cancelled, rejected).
         return s !== "completed" && s !== "cancelled" && s !== "rejected";
       }).length;
       openRequestsByUser.set(uid, open);
-    }
+    });
 
     // Tri final : priorité visuelle → priorité ligne → ancienneté
     const priorityWeight: Record<LinePriority, number> = {
@@ -311,17 +331,22 @@ export const listQueuedCallsForAgent = authQuery({
       return a.meeting._creationTime - b.meeting._creationTime;
     });
 
-    // Labels des lignes d'origine (pour afficher "Redirigé de ...")
-    const originalLineIds = new Set<string>(
-      queued
-        .map((q) => q.meeting.originalCallLineId as string | undefined)
-        .filter(Boolean) as string[],
+    // Labels des lignes d'origine (pour afficher "Redirigé de ...") — batch.
+    const originalLineIdList = Array.from(
+      new Set<string>(
+        queued
+          .map((q) => q.meeting.originalCallLineId as string | undefined)
+          .filter(Boolean) as string[],
+      ),
     );
     const originalLines = new Map<string, string>();
-    for (const lid of originalLineIds) {
-      const l = await ctx.db.get(lid as Id<"callLines">);
+    const originalLineDocs = await Promise.all(
+      originalLineIdList.map((lid) => ctx.db.get(lid as Id<"callLines">)),
+    );
+    originalLineIdList.forEach((lid, idx) => {
+      const l = originalLineDocs[idx];
       if (l) originalLines.set(lid, l.label);
-    }
+    });
 
     return queued.map(({ meeting, line, priority }) => {
       const info = callerInfo.get(meeting.createdBy as string) ?? {

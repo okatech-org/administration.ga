@@ -80,7 +80,7 @@ export function ActiveConversationView({
         <span
           className={cn(
             "flex h-2 w-2 rounded-full",
-            isHeld ? "bg-amber-500" : "bg-emerald-500 animate-pulse",
+            isHeld ? "bg-muted-foreground" : "bg-primary animate-pulse",
           )}
         />
         <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">

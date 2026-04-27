@@ -6,14 +6,22 @@
  * colonne. On reste sur 2 colonnes (centre + drawer contexte) et on déclenche
  * le filtre depuis un bouton flottant en tête du centre.
  *
+ * Affiche TOUTES les lignes actives configurées dans l'org (via
+ * `api.functions.callLines.listByOrg`), pas juste celles qui ont un appel en
+ * file. L'agent peut filtrer sur une ligne calme — c'est juste qu'il verra
+ * "Tout est calme" comme contenu.
+ *
  * - "Toutes les lignes" en première option (défaut)
- * - Une ligne par bucket avec son code couleur + compteur (urgent + total)
- * - Tri : urgent d'abord, puis volume décroissant
+ * - Une entrée par ligne configurée (code couleur + compteur d'appels en file)
+ * - Tri : urgent d'abord, puis volume, puis priority configurée
  */
 
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { Check, ChevronDown, Circle, Inbox } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { Button } from "@workspace/ui/components/button";
 import {
 	Popover,
@@ -21,6 +29,7 @@ import {
 	PopoverTrigger,
 } from "@workspace/ui/components/popover";
 import { cn } from "@workspace/ui/lib/utils";
+import { useOrg } from "../../shell/org-provider";
 import type { LineBucket } from "./LineFilterRail";
 
 interface LineFilterDropdownProps {
@@ -44,27 +53,70 @@ export function LineFilterDropdown({
 	urgentCount,
 }: LineFilterDropdownProps) {
 	const { t } = useTranslation();
+	const { activeOrgId } = useOrg();
+
+	// Toutes les lignes actives configurées dans l'org (même celles sans appel
+	// en file actuellement). Permet d'appliquer un filtre proactif pour ne voir
+	// que les appels d'une ligne calme dès qu'ils arrivent.
+	const { data: orgLines } = useAuthenticatedConvexQuery(
+		api.functions.callLines.listByOrg,
+		activeOrgId ? { orgId: activeOrgId as Id<"orgs"> } : "skip",
+	);
 
 	const buckets: LineBucket[] = useMemo(() => {
-		const byLine = new Map<string | "__unassigned__", LineBucket>();
+		// Première passe : compter les appels par ligne depuis la file en cours.
+		const counts = new Map<string | "__unassigned__", { count: number; urgentCount: number }>();
 		for (const q of queue) {
 			const key = (q.callLineId as string | null) ?? "__unassigned__";
-			const existing = byLine.get(key) ?? {
-				lineId: q.callLineId,
-				label: q.lineLabel ?? t("callCenter.line.allAgents"),
-				color: q.lineColor,
-				count: 0,
-				urgentCount: 0,
-			};
+			const existing = counts.get(key) ?? { count: 0, urgentCount: 0 };
 			existing.count += 1;
 			if (q.priority === "urgent") existing.urgentCount += 1;
-			byLine.set(key, existing);
+			counts.set(key, existing);
 		}
-		return Array.from(byLine.values()).sort((a, b) => {
+
+		// Deuxième passe : construire la liste à partir de TOUTES les lignes
+		// configurées dans l'org. Une ligne sans appel garde un compteur 0.
+		const result: Array<LineBucket & { priority?: number }> = [];
+		const orgList = (orgLines as Array<{
+			_id: string;
+			label: string;
+			color?: string | null;
+			priority?: number;
+		}> | undefined) ?? [];
+
+		for (const line of orgList) {
+			const stats = counts.get(line._id) ?? { count: 0, urgentCount: 0 };
+			result.push({
+				lineId: line._id,
+				label: line.label,
+				color: line.color ?? null,
+				count: stats.count,
+				urgentCount: stats.urgentCount,
+				priority: line.priority,
+			});
+		}
+
+		// Si la file contient des appels sans ligne assignée, ajouter le bucket "__unassigned__".
+		const unassigned = counts.get("__unassigned__");
+		if (unassigned && unassigned.count > 0) {
+			result.push({
+				lineId: null,
+				label: t("callCenter.line.allAgents"),
+				color: null,
+				count: unassigned.count,
+				urgentCount: unassigned.urgentCount,
+			});
+		}
+
+		// Tri : urgent d'abord, puis volume, puis priorité configurée.
+		result.sort((a, b) => {
 			if (b.urgentCount !== a.urgentCount) return b.urgentCount - a.urgentCount;
-			return b.count - a.count;
+			if (b.count !== a.count) return b.count - a.count;
+			return (a.priority ?? 0) - (b.priority ?? 0);
 		});
-	}, [queue, t]);
+
+		return result;
+	}, [queue, orgLines, t]);
 
 	const selectedBucket =
 		selectedLineId === "all"

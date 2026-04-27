@@ -12,7 +12,7 @@
  *  - Palette achromatique + primary pour rappel CTA
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Loader2,
   Play,
@@ -274,23 +274,70 @@ function VoicemailItem({
             </button>
           </div>
 
-          {/* Audio player natif, mount uniquement quand playing */}
+          {/* Lecteur audio enrichi : scrubbing natif + sélecteur de vitesse. */}
           {playing && playbackUrl && (
-            <audio
-              src={playbackUrl}
-              controls
-              autoPlay
-              className="mt-2 w-full"
-            />
+            <VoicemailAudioPlayer src={playbackUrl} />
           )}
 
           {isPending && (
-            <span className="mt-1 inline-block rounded-md bg-amber-500/15 dark:bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">
+            <span className="mt-1 inline-block rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
               {t("callCenter.voicemail.pending")}
             </span>
           )}
         </div>
       </div>
     </li>
+  );
+}
+
+/**
+ * Lecteur audio pour messagerie vocale.
+ *
+ * Le `<audio controls>` natif fournit déjà le scrubbing (curseur clickable
+ * pour avancer/reculer) et la durée — ergonomie standard, accessible. On
+ * ajoute par-dessus un sélecteur de vitesse de lecture (1× / 1.25× / 1.5×
+ * / 2×) car les agents écoutent souvent plusieurs messages d'affilée.
+ */
+const PLAYBACK_RATES = [1, 1.25, 1.5, 2] as const;
+
+function VoicemailAudioPlayer({ src }: { src: string }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [rate, setRate] = useState<number>(1);
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.playbackRate = rate;
+  }, [rate]);
+
+  return (
+    <div className="mt-2 flex flex-col gap-1.5">
+      <audio
+        ref={audioRef}
+        src={src}
+        controls
+        autoPlay
+        className="w-full"
+      />
+      <div className="flex items-center gap-1">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 mr-1">
+          Vitesse
+        </span>
+        {PLAYBACK_RATES.map((r) => (
+          <button
+            key={r}
+            type="button"
+            onClick={() => setRate(r)}
+            className={cn(
+              "h-6 px-2 rounded-md text-[10px] font-medium transition-colors",
+              rate === r
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/70",
+            )}
+            aria-pressed={rate === r}
+          >
+            {r}×
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

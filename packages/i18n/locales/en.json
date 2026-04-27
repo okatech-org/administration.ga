@@ -3708,7 +3708,13 @@
 				"missed": "Missed",
 				"declined": "Declined",
 				"answered": "Answered",
-				"ended": "Ended"
+				"ended": "Ended",
+				"bucket": {
+					"today": "Today",
+					"yesterday": "Yesterday",
+					"this_week": "This week",
+					"earlier": "Earlier"
+				}
 			}
 		},
 		"toasts": {

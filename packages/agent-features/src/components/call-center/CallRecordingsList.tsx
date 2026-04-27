@@ -237,9 +237,9 @@ function StatusBadge({
   const { t } = useTranslation();
   const cls = {
     completed:
-      "bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400",
+      "bg-primary/15 text-primary",
     pending:
-      "bg-amber-500/35 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400",
+      "bg-warning/15 text-muted-foreground",
     failed: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
   }[status];
   return (

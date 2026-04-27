@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
@@ -86,13 +86,51 @@ export function useCallCenter() {
     api.actions.livekit.requestToken,
   );
 
+  // Cache des tokens LiveKit par meetingId. Évite de redemander un token au
+  // serveur à chaque hold/resume ou à chaque switch d'appel. Les tokens
+  // LiveKit ont typiquement un TTL de 1h ; on garde un buffer de sécurité
+  // (50 min) pour éviter d'utiliser un token expiré.
+  const TOKEN_TTL_MS = 50 * 60 * 1000;
+  const tokenCacheRef = useRef<
+    Map<
+      string,
+      { token: string; wsUrl: string; roomName: string; expiresAt: number }
+    >
+  >(new Map());
+
+  const getOrFetchToken = useCallback(
+    async (meetingId: Id<"meetings">) => {
+      const cached = tokenCacheRef.current.get(meetingId as string);
+      if (cached && cached.expiresAt > Date.now()) {
+        return {
+          token: cached.token,
+          wsUrl: cached.wsUrl,
+          roomName: cached.roomName,
+        };
+      }
+      const fresh = await requestTokenAction({ meetingId });
+      tokenCacheRef.current.set(meetingId as string, {
+        token: fresh.token,
+        wsUrl: fresh.wsUrl,
+        roomName: fresh.roomName,
+        expiresAt: Date.now() + TOKEN_TTL_MS,
+      });
+      return fresh;
+    },
+    [requestTokenAction],
+  );
+
+  const invalidateToken = useCallback((meetingId: Id<"meetings">) => {
+    tokenCacheRef.current.delete(meetingId as string);
+  }, []);
+
   const pickup = useCallback(
     async (meetingId: Id<"meetings">) => {
       trace("pickup:start", meetingId);
       try {
         upsertSlot({ meetingId, status: "connecting" });
         const picked = await pickupMutation({ meetingId });
-        const tokenResult = await requestTokenAction({ meetingId });
+        const tokenResult = await getOrFetchToken(meetingId);
         upsertSlot({
           meetingId,
           status: "active",
@@ -112,7 +150,7 @@ export function useCallCenter() {
         throw err;
       }
     },
-    [pickupMutation, requestTokenAction, upsertSlot, removeSlot],
+    [pickupMutation, getOrFetchToken, upsertSlot, removeSlot],
   );
 
   const hangup = useCallback(
@@ -131,11 +169,13 @@ export function useCallCenter() {
       }
       removeSlot(target);
 
+      // Le slot terminé a été retiré : on invalide aussi sa valeur en cache
+      // pour éviter d'utiliser un token périmé si le même meetingId revient.
+      invalidateToken(target);
+
       if (resumedMeetingId) {
         try {
-          const tokenResult = await requestTokenAction({
-            meetingId: resumedMeetingId,
-          });
+          const tokenResult = await getOrFetchToken(resumedMeetingId);
           upsertSlot({
             meetingId: resumedMeetingId,
             status: "active",
@@ -149,7 +189,14 @@ export function useCallCenter() {
         }
       }
     },
-    [activeSlotId, endCallSlotMutation, removeSlot, requestTokenAction, upsertSlot],
+    [
+      activeSlotId,
+      endCallSlotMutation,
+      removeSlot,
+      getOrFetchToken,
+      invalidateToken,
+      upsertSlot,
+    ],
   );
 
   const hold = useCallback(
@@ -174,7 +221,7 @@ export function useCallCenter() {
       trace("resume", meetingId);
       try {
         await resumeMutation({ meetingId });
-        const tokenResult = await requestTokenAction({ meetingId });
+        const tokenResult = await getOrFetchToken(meetingId);
         upsertSlot({
           meetingId,
           status: "active",
@@ -188,14 +235,14 @@ export function useCallCenter() {
         toast.error(err?.message ?? "Impossible de reprendre l'appel");
       }
     },
-    [resumeMutation, requestTokenAction, upsertSlot],
+    [resumeMutation, getOrFetchToken, upsertSlot],
   );
 
   const callBackMissed = useCallback(
     async (missedCallId: Id<"missedCalls">) => {
       try {
         const { meetingId } = await callBackMissedMutation({ missedCallId });
-        const tokenResult = await requestTokenAction({ meetingId });
+        const tokenResult = await getOrFetchToken(meetingId);
         upsertSlot({
           meetingId,
           status: "active",
@@ -211,7 +258,7 @@ export function useCallCenter() {
         throw err;
       }
     },
-    [callBackMissedMutation, requestTokenAction, upsertSlot],
+    [callBackMissedMutation, getOrFetchToken, upsertSlot],
   );
 
   const callBackRecent = useCallback(
@@ -222,7 +269,7 @@ export function useCallCenter() {
           targetUserId,
           mediaType: "video",
         });
-        const tokenResult = await requestTokenAction({ meetingId });
+        const tokenResult = await getOrFetchToken(meetingId);
         upsertSlot({
           meetingId,
           status: "active",
@@ -238,7 +285,7 @@ export function useCallCenter() {
         throw err;
       }
     },
-    [callUserMutation, requestTokenAction, upsertSlot],
+    [callUserMutation, getOrFetchToken, upsertSlot],
   );
 
   const transfer = useCallback(

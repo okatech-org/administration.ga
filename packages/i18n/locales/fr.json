@@ -4298,7 +4298,13 @@
 				"missed": "Manqué",
 				"declined": "Refusé",
 				"answered": "Répondu",
-				"ended": "Terminé"
+				"ended": "Terminé",
+				"bucket": {
+					"today": "Aujourd'hui",
+					"yesterday": "Hier",
+					"this_week": "Cette semaine",
+					"earlier": "Plus tôt"
+				}
 			}
 		},
 		"toasts": {

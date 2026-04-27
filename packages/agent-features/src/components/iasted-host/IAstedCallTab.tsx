@@ -76,16 +76,31 @@ const CALL_SOURCE_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; ic
 interface IAstedCallTabProps {
 	/**
 	 * Rendu compact pour la fenêtre flottante (420px) : force l'UX historique
-	 * (LegacyCallTab) au lieu du CallCenterShell 3-colonnes qui ne tient pas
-	 * dans une popup étroite. Le Centre d'Appels reste actif sur la page
-	 * fullscreen `/icom`.
+	 * (LegacyCallTab) au lieu du CallCenterShell qui ne tient pas dans une popup
+	 * étroite. Le Centre d'Appels reste actif sur la page fullscreen `/icom`.
 	 */
 	compact?: boolean;
+	/** Filtre de ligne contrôlé par le parent (header iAppel). */
+	selectedLineId?: string | "all";
+	onSelectLineId?: (id: string | "all") => void;
+	/** Sonnerie coupée par l'agent depuis le header iAppel. */
+	ringtoneMuted?: boolean;
 }
 
-export function IAstedCallTab({ compact = false }: IAstedCallTabProps = {}) {
+export function IAstedCallTab({
+	compact = false,
+	selectedLineId,
+	onSelectLineId,
+	ringtoneMuted,
+}: IAstedCallTabProps = {}) {
 	if (CALL_CENTER_ENABLED && !compact) {
-		return <CallCenterWithPostCallNote />;
+		return (
+			<CallCenterWithPostCallNote
+				selectedLineId={selectedLineId}
+				onSelectLineId={onSelectLineId}
+				ringtoneMuted={ringtoneMuted}
+			/>
+		);
 	}
 	return <LegacyCallTab />;
 }
@@ -94,38 +109,66 @@ export function IAstedCallTab({ compact = false }: IAstedCallTabProps = {}) {
  * Wrapper Phase ζ : détecte la fin d'un appel et ouvre le drawer PostCallNote.
  * NE MODIFIE PAS CallCenterShell (Sprint 6 verrouillé).
  */
-function CallCenterWithPostCallNote() {
+function CallCenterWithPostCallNote({
+	selectedLineId,
+	onSelectLineId,
+	ringtoneMuted,
+}: {
+	selectedLineId?: string | "all";
+	onSelectLineId?: (id: string | "all") => void;
+	ringtoneMuted?: boolean;
+}) {
 	const { activeOrgId } = useOrg();
 	const { activeCalls } = useCallCenter();
-	const prevCountRef = useRef<number>(activeCalls?.length ?? 0);
-	const [lastEndedMeetingId, setLastEndedMeetingId] = useState<string | null>(null);
+	// On garde le snapshot complet des appels précédents pour calculer le diff
+	// (l'appel qui vient de disparaître = celui qu'on doit attacher à la note).
+	// L'ancienne implémentation ne stockait qu'un compteur → meetingId perdu et
+	// les notes finissaient sauvées avec l'ID littéral "placeholder".
+	const prevCallsRef = useRef<Array<{ _id: string }>>(
+		(activeCalls as Array<{ _id: string }>) ?? [],
+	);
+	const [lastEndedMeetingId, setLastEndedMeetingId] = useState<Id<"meetings"> | null>(null);
 	const [showPostCallNote, setShowPostCallNote] = useState(false);
 
 	const { mutateAsync: upsertNote } = useConvexMutationQuery(
 		api.functions.callNotes.upsertCallNote,
 	);
 
-	// Détecte une diminution du nombre d'appels actifs (un appel vient de se terminer)
+	// Détecte un appel qui vient de se terminer en comparant les snapshots
+	// successifs de `activeCalls`. On capture l'ID exact pour le passer à la
+	// mutation upsertCallNote — fini le placeholder.
 	useEffect(() => {
-		const currentCount = activeCalls?.length ?? 0;
-		if (prevCountRef.current > 0 && currentCount < prevCountRef.current) {
-			// Un appel a terminé — proposer la note post-call
-			setShowPostCallNote(true);
+		const current = (activeCalls as Array<{ _id: string }>) ?? [];
+		const previous = prevCallsRef.current;
+		if (previous.length > current.length) {
+			const currentIds = new Set(current.map((c) => c._id));
+			const ended = previous.find((c) => !currentIds.has(c._id));
+			if (ended) {
+				setLastEndedMeetingId(ended._id as Id<"meetings">);
+				setShowPostCallNote(true);
+			}
 		}
-		prevCountRef.current = currentCount;
-	}, [activeCalls?.length]);
+		prevCallsRef.current = current;
+	}, [activeCalls]);
 
 	return (
 		<>
-			<CallCenterShell />
+			<CallCenterShell
+				selectedLineId={selectedLineId}
+				onSelectLineId={onSelectLineId}
+				ringtoneMuted={ringtoneMuted}
+			/>
 			<PostCallNoteDrawer
 				open={showPostCallNote}
-				onOpenChange={setShowPostCallNote}
+				onOpenChange={(next) => {
+					setShowPostCallNote(next);
+					if (!next) setLastEndedMeetingId(null);
+				}}
 				meetingLabel="Documentez cet appel avant de passer à la suite."
 				onSave={async (payload) => {
-					if (!activeOrgId) return;
+					if (!activeOrgId || !lastEndedMeetingId) return;
 					await upsertNote({
-						meetingId: (lastEndedMeetingId ?? "placeholder") as Id<"meetings">,
+						meetingId: lastEndedMeetingId,
 						orgId: activeOrgId,
 						content: payload.content,
 						actionItems: payload.actionItems,

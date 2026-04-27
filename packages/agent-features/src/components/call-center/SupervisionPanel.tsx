@@ -40,13 +40,11 @@ export function SupervisionPanel({ orgId }: { orgId: Id<"orgs"> | null }) {
   // Erreur la plus fréquente : pas de permission supervise → silent fallback
   if (error) return null;
 
-  if (isPending || !data) {
-    return (
-      <div className="flex min-h-[120px] items-center justify-center p-4">
-        <span className="text-xs text-muted-foreground">…</span>
-      </div>
-    );
-  }
+  // Pendant le chargement initial, on n'occupe AUCUN espace : ce panneau est
+  // optionnel (la majorité des agents n'ont pas la permission supervise et la
+  // query retournera une erreur silencieuse). Afficher un placeholder de
+  // 120px casse l'interface pendant 200ms à chaque render.
+  if (isPending || !data) return null;
 
   const g = data.global;
   return (
@@ -127,7 +125,7 @@ export function SupervisionPanel({ orgId }: { orgId: Id<"orgs"> | null }) {
                     l.slaBreachPct > 20
                       ? "text-destructive"
                       : l.slaBreachPct > 5
-                        ? "text-amber-600 dark:text-amber-400"
+                        ? "text-muted-foreground"
                         : "text-muted-foreground",
                   )}
                 >
@@ -328,12 +326,12 @@ function KpiCard({
 }) {
   const toneStyles = {
     neutral: "border-border",
-    warn: "border-amber-500/30 bg-amber-500/5",
+    warn: "border-border bg-muted/40",
     danger: "border-destructive/30 bg-destructive/5",
   } as const;
   const valueStyles = {
     neutral: "text-foreground",
-    warn: "text-amber-700 dark:text-amber-400",
+    warn: "text-muted-foreground",
     danger: "text-destructive",
   } as const;
   return (

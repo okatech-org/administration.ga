@@ -25,14 +25,14 @@ export function PriorityBadge({
     urgent:
       "bg-destructive/10 text-destructive ring-1 ring-destructive/40",
     high:
-      "bg-amber-500/10 text-amber-700 dark:text-amber-400 ring-1 ring-amber-500/30",
+      "bg-muted text-muted-foreground ring-1 ring-border",
     normal:
       "bg-muted text-muted-foreground ring-1 ring-foreground/10",
   };
 
   const dotStyles: Record<CallPriority, string> = {
     urgent: "bg-destructive animate-pulse",
-    high: "bg-amber-500",
+    high: "bg-muted-foreground",
     normal: "bg-muted-foreground/40",
   };
 

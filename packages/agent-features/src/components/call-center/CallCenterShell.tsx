@@ -30,13 +30,25 @@ import { SupervisionPanel } from "./SupervisionPanel";
 
 /**
  * Shell du Centre d'Appels — layout 2 colonnes (file/conversation + drawer
- * contexte). Le filtre de lignes est désormais un bouton popover en tête de
- * la colonne file pour libérer l'espace horizontal du contenu central.
+ * contexte). Le filtre de lignes est rendu par le parent (IAstedPage) dans
+ * le header iAppel pour rester compact et lisible. On reçoit donc le filtre
+ * via prop.
  *
  * Monté à l'intérieur de l'onglet iAppel de /icom quand le feature flag est
  * actif.
  */
-export function CallCenterShell() {
+interface CallCenterShellProps {
+  selectedLineId?: string | "all";
+  onSelectLineId?: (id: string | "all") => void;
+  /** Sonnerie coupée par l'agent depuis le header iAppel. */
+  ringtoneMuted?: boolean;
+}
+
+export function CallCenterShell({
+  selectedLineId: externalSelectedLineId,
+  onSelectLineId,
+  ringtoneMuted,
+}: CallCenterShellProps = {}) {
   const { t } = useTranslation();
   const router = useRouter();
   const { activeOrgId } = useOrg();
@@ -58,7 +70,10 @@ export function CallCenterShell() {
     callBackRecent,
   } = useCallCenter();
 
-  const [selectedLineId, setSelectedLineId] = useState<string | "all">("all");
+  const [internalLineId, setInternalLineId] = useState<string | "all">("all");
+  // Mode contrôlé si IAstedPage gère le filtre dans son header.
+  const selectedLineId = externalSelectedLineId ?? internalLineId;
+  const setSelectedLineId = onSelectLineId ?? setInternalLineId;
   const [focusedMeetingId, setFocusedMeetingId] =
     useState<Id<"meetings"> | null>(null);
   const [pickingUpId, setPickingUpId] = useState<Id<"meetings"> | null>(null);
@@ -148,9 +163,9 @@ export function CallCenterShell() {
   const totalCount = queue.length;
   const urgentCount = queue.filter((q: any) => q.priority === "urgent").length;
 
-  // Sonnerie continue tant que la file a du monde ET que l'agent n'a pas
-  // d'appel actif (il est déjà en conversation). Tonalité urgente si ≥1 urgent.
-  const shouldRing = totalCount > 0 && !activeSlotId;
+  // Sonnerie : file > 0 + pas d'appel actif + pas mute. Le mute est piloté
+  // par le parent (header iAppel) qui le persiste en localStorage.
+  const shouldRing = totalCount > 0 && !activeSlotId && !ringtoneMuted;
   useRingtone(shouldRing, urgentCount > 0 ? "urgent" : "standard");
 
   // Drawer : on privilégie le slot actif, sinon la carte focalisée
@@ -170,29 +185,10 @@ export function CallCenterShell() {
   }, [activeCalls, activeSlotId]);
 
   // Rendu mutualisé de la colonne centrale — même code en mobile et desktop.
-  // En tête : le filtre de ligne est un popover compact (plus de rail vertical).
+  // Le filtre de ligne a été remonté dans le header iAppel (IAstedPage), donc
+  // pas de barre dédiée ici — on gagne un row de hauteur supplémentaire.
   const centerColumn = (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 flex items-center gap-2 border-b bg-muted/10 px-3 py-2">
-        <LineFilterDropdown
-          queue={queue as any}
-          selectedLineId={selectedLineId}
-          onSelect={setSelectedLineId}
-          totalCount={totalCount}
-          urgentCount={urgentCount}
-        />
-        {selectedLineId !== "all" && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs"
-            onClick={() => setSelectedLineId("all")}
-          >
-            {t("common.reset", "Réinitialiser")}
-          </Button>
-        )}
-      </div>
       {conversationCall ? (
         <>
           {filteredQueue.length > 0 && (

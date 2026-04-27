@@ -102,7 +102,7 @@ export function OngoingDossierList({
                       {r.status}
                     </Badge>
                     {r.hasActions && (
-                      <Badge className="h-4 border-0 bg-amber-500/15 px-1.5 text-[9px] text-amber-700 dark:text-amber-400">
+                      <Badge className="h-4 border-0 bg-muted px-1.5 text-[9px] text-muted-foreground">
                         {t("callCenter.drawer.dossiers.actionsPending")}
                       </Badge>
                     )}
