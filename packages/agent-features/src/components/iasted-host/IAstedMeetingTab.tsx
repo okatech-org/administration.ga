@@ -595,36 +595,38 @@ export function IAstedMeetingTab() {
 												key={m._id}
 												id={`meeting-card-${m._id}`}
 												className={cn(
-													"flex items-center gap-3 px-3 py-2.5 rounded-xl border border-primary/20 bg-primary/5 min-w-0 overflow-hidden",
+													"px-3 py-2.5 rounded-xl border border-primary/20 bg-primary/5 min-w-0 overflow-hidden space-y-2",
 													isHighlighted && "ring-2 ring-primary/60",
 												)}
 											>
-												<div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-													<Video className="h-4 w-4 text-primary" />
-												</div>
-												<div className="flex-1 min-w-0">
-													<div className="flex items-center gap-1.5 min-w-0">
-														<p className="text-sm font-medium truncate min-w-0 flex-1">
-															{m.title ?? "Réunion"}
-														</p>
-														<Badge className="text-[8px] h-4 px-1.5 bg-primary/15 text-primary shrink-0">
-															En direct
-														</Badge>
+												<div className="flex items-center gap-2.5 min-w-0">
+													<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+														<Video className="h-4 w-4 text-primary" />
 													</div>
-													{m.description && (
-														<p className="text-[11px] text-muted-foreground line-clamp-1">
-															{m.description}
-														</p>
-													)}
-													<div className="flex items-center gap-1 text-[11px] text-muted-foreground min-w-0">
-														<Users className="h-3 w-3 shrink-0" />
-														<span className="truncate">{partsLabel}</span>
+													<div className="flex-1 min-w-0">
+														<div className="flex items-center gap-1.5 min-w-0">
+															<p className="text-sm font-medium truncate min-w-0 flex-1">
+																{m.title ?? "Réunion"}
+															</p>
+															<Badge className="text-[8px] h-4 px-1.5 bg-primary/15 text-primary shrink-0">
+																En direct
+															</Badge>
+														</div>
+														{m.description && (
+															<p className="text-[11px] text-muted-foreground line-clamp-1">
+																{m.description}
+															</p>
+														)}
+														<div className="flex items-center gap-1 text-[11px] text-muted-foreground min-w-0">
+															<Users className="h-3 w-3 shrink-0" />
+															<span className="truncate">{partsLabel}</span>
+														</div>
 													</div>
 												</div>
 												<Button
 													size="sm"
 													onClick={() => handleJoin(m._id)}
-													className="gap-1 bg-primary hover:bg-primary/90 shrink-0 h-8 text-[11px]"
+													className="gap-1 bg-primary hover:bg-primary/90 w-full h-8 text-[11px]"
 												>
 													<Video className="h-3.5 w-3.5" /> Rejoindre
 												</Button>
@@ -651,44 +653,51 @@ export function IAstedMeetingTab() {
 												key={m._id}
 												id={`meeting-card-${m._id}`}
 												className={cn(
-													"flex items-center gap-3 px-3 py-2 rounded-lg border border-border/30 hover:bg-muted/30",
+													"px-3 py-2 rounded-lg border border-border/30 hover:bg-muted/30 min-w-0 overflow-hidden",
 													isHighlighted && "ring-2 ring-primary/60 bg-primary/5",
 												)}
 											>
-												<Calendar className="h-4 w-4 text-primary shrink-0" />
-												<div className="flex-1 min-w-0">
-													<p className="text-xs font-medium truncate">{m.title ?? "Réunion"}</p>
-													{date && (
-														<p className="text-[10px] text-muted-foreground">
-															{date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })} à{" "}
-															{date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-														</p>
-													)}
-													{m.description && (
-														<p className="text-[10px] text-muted-foreground/80 line-clamp-1">{m.description}</p>
-													)}
-													{partsLabel && (
-														<p className="text-[10px] text-muted-foreground/70 truncate">
-															<Users className="h-2.5 w-2.5 inline-block mr-0.5" />
-															{partsLabel}
-														</p>
-													)}
-												</div>
-												<div className="flex items-center gap-1 shrink-0">
-													<Button size="sm" variant="outline" onClick={() => handleJoin(m._id)} className="h-7 text-[10px]">
-														Rejoindre
-													</Button>
+												<div className="flex items-start gap-2.5 min-w-0">
+													<Calendar className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+													<div className="flex-1 min-w-0">
+														<p className="text-xs font-medium truncate">{m.title ?? "Réunion"}</p>
+														{date && (
+															<p className="text-[10px] text-muted-foreground">
+																{date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })} à{" "}
+																{date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+															</p>
+														)}
+														{m.description && (
+															<p className="text-[10px] text-muted-foreground/80 line-clamp-1">
+																{m.description}
+															</p>
+														)}
+														{partsLabel && (
+															<p className="text-[10px] text-muted-foreground/70 truncate">
+																<Users className="h-2.5 w-2.5 inline-block mr-0.5" />
+																{partsLabel}
+															</p>
+														)}
+													</div>
 													<Button
 														size="icon"
 														variant="ghost"
 														onClick={() => handleCancelMeeting(m._id as Id<"meetings">)}
-														className="h-7 w-7 text-muted-foreground hover:text-destructive"
+														className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
 														aria-label="Annuler la réunion"
 														title="Annuler la réunion"
 													>
 														<X className="h-3.5 w-3.5" />
 													</Button>
 												</div>
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={() => handleJoin(m._id)}
+													className="mt-2 w-full h-7 text-[10px]"
+												>
+													Rejoindre
+												</Button>
 											</div>
 										);
 									})}
