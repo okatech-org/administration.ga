@@ -1,6 +1,6 @@
 "use client";
 
-import { ListFilter, PhoneOff, User } from "lucide-react";
+import { PhoneOff, User } from "lucide-react";
 import { useRouter } from "@workspace/routing";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -17,7 +17,7 @@ import { CallContextDrawer } from "./CallContextDrawer";
 import { CallRoomPool } from "./CallRoomMount";
 import { CollapsibleQueueBar } from "./CollapsibleQueueBar";
 import { IncomingCallQueue } from "./IncomingCallQueue";
-import { LineFilterRail } from "./LineFilterRail";
+import { LineFilterDropdown } from "./LineFilterDropdown";
 import {
   MissedCallsSection,
   type MissedCallRow,
@@ -29,8 +29,12 @@ import {
 import { SupervisionPanel } from "./SupervisionPanel";
 
 /**
- * Shell du Centre d'Appels — orchestration complète (3 colonnes + barre d'actifs).
- * Monté à l'intérieur de l'onglet iAppel de /iasted quand le feature flag est actif.
+ * Shell du Centre d'Appels — layout 2 colonnes (file/conversation + drawer
+ * contexte). Le filtre de lignes est désormais un bouton popover en tête de
+ * la colonne file pour libérer l'espace horizontal du contenu central.
+ *
+ * Monté à l'intérieur de l'onglet iAppel de /icom quand le feature flag est
+ * actif.
  */
 export function CallCenterShell() {
   const { t } = useTranslation();
@@ -166,8 +170,29 @@ export function CallCenterShell() {
   }, [activeCalls, activeSlotId]);
 
   // Rendu mutualisé de la colonne centrale — même code en mobile et desktop.
+  // En tête : le filtre de ligne est un popover compact (plus de rail vertical).
   const centerColumn = (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="shrink-0 flex items-center gap-2 border-b bg-muted/10 px-3 py-2">
+        <LineFilterDropdown
+          queue={queue as any}
+          selectedLineId={selectedLineId}
+          onSelect={setSelectedLineId}
+          totalCount={totalCount}
+          urgentCount={urgentCount}
+        />
+        {selectedLineId !== "all" && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs"
+            onClick={() => setSelectedLineId("all")}
+          >
+            {t("common.reset", "Réinitialiser")}
+          </Button>
+        )}
+      </div>
       {conversationCall ? (
         <>
           {filteredQueue.length > 0 && (
@@ -229,33 +254,14 @@ export function CallCenterShell() {
         onResume={(id) => resume(id)}
       />
 
-      {/* Responsive : sous md on affiche uniquement la file + 2 sheets (rail lignes / drawer contexte) */}
+      {/* Layout 2 colonnes desktop, 1 colonne mobile.
+          Le filtre de lignes est intégré au header de centerColumn (popover),
+          donc plus besoin de rail/sheet dédié pour ça. */}
       {isMobile ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          {/* Barre mobile : deux triggers sheet + résumé file */}
-          <div className="flex shrink-0 items-center gap-2 border-b bg-muted/10 px-3 py-2">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button size="sm" variant="outline" className="h-8 gap-1">
-                  <ListFilter className="h-3.5 w-3.5" />
-                  {t("callCenter.line.filterTitle")} ({totalCount})
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-60 p-0">
-                <LineFilterRail
-                  queue={queue as any}
-                  selectedLineId={selectedLineId}
-                  onSelect={setSelectedLineId}
-                  totalCount={totalCount}
-                  urgentCount={urgentCount}
-                />
-              </SheetContent>
-            </Sheet>
-            <span className="flex-1 truncate text-center text-[11px] text-muted-foreground">
-              {selectedLineId === "all"
-                ? t("callCenter.queue.allLines")
-                : selectedLineId}
-            </span>
+          {/* Barre mobile : juste le drawer contexte (le filtre lignes est
+              déjà dans le header de centerColumn ci-dessous) */}
+          <div className="flex shrink-0 items-center justify-end border-b bg-muted/10 px-3 py-2">
             <Sheet>
               <SheetTrigger asChild>
                 <Button
@@ -286,14 +292,6 @@ export function CallCenterShell() {
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          <LineFilterRail
-            queue={queue as any}
-            selectedLineId={selectedLineId}
-            onSelect={setSelectedLineId}
-            totalCount={totalCount}
-            urgentCount={urgentCount}
-          />
-
           {centerColumn}
 
           <CallContextDrawer
