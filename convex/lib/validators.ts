@@ -877,24 +877,35 @@ export type OrgSettings = Infer<typeof orgSettingsValidator>;
 
 
 
-// Weekly schedule for opening hours
-const dayScheduleValidator = v.object({
+// Weekly schedule for opening hours.
+// Chaque jour peut être :
+//   - undefined : non défini
+//   - { closed: true } : fermé toute la journée
+//   - { open, close } : un seul créneau (legacy, accepté en lecture)
+//   - DaySchedule[] : plusieurs créneaux (ex. matin 9h-12h + après-midi 14h-17h)
+export const dayScheduleValidator = v.object({
   open: v.optional(v.string()), // "09:00" - optional when closed
   close: v.optional(v.string()), // "17:00" - optional when closed
   closed: v.optional(v.boolean()),
 });
 
+const daySlotsValidator = v.union(
+  dayScheduleValidator,
+  v.array(dayScheduleValidator),
+);
+
 export const weeklyScheduleValidator = v.object({
-  monday: v.optional(dayScheduleValidator),
-  tuesday: v.optional(dayScheduleValidator),
-  wednesday: v.optional(dayScheduleValidator),
-  thursday: v.optional(dayScheduleValidator),
-  friday: v.optional(dayScheduleValidator),
-  saturday: v.optional(dayScheduleValidator),
-  sunday: v.optional(dayScheduleValidator),
+  monday: v.optional(daySlotsValidator),
+  tuesday: v.optional(daySlotsValidator),
+  wednesday: v.optional(daySlotsValidator),
+  thursday: v.optional(daySlotsValidator),
+  friday: v.optional(daySlotsValidator),
+  saturday: v.optional(daySlotsValidator),
+  sunday: v.optional(daySlotsValidator),
   notes: v.optional(v.string()), // "Closed on public holidays"
 });
 
+export type DaySchedule = Infer<typeof dayScheduleValidator>;
 export type WeeklySchedule = Infer<typeof weeklyScheduleValidator>;
 
 // Pricing

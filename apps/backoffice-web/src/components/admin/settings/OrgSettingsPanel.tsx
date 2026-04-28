@@ -22,7 +22,6 @@ import {
   MessageSquare,
   Phone,
   ScrollText,
-  ShieldCheck,
   Sparkles,
   Tag,
 } from "lucide-react";
@@ -163,23 +162,6 @@ const GROUPS: SettingsTabGroup[] = [
         icon: Sparkles,
         component: IAstedSection,
         completionKey: "iasted",
-      },
-    ],
-  },
-  {
-    title: "Sécurité",
-    tabs: [
-      {
-        key: "security",
-        label: "Lecture seule",
-        icon: ShieldCheck,
-        component: () => (
-          <p className="text-sm text-muted-foreground italic">
-            Les permissions et l'audit sont gérés via les onglets «&nbsp;Postes&nbsp;»
-            et «&nbsp;Membres&nbsp;» de la représentation.
-          </p>
-        ),
-        hidden: true,
       },
     ],
   },

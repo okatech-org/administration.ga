@@ -16,7 +16,7 @@
  */
 
 import { api } from "@convex/_generated/api";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { CreditCard, Euro, ExternalLink, FileText, Timer } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FlatCard } from "@/components/design-system/flat-card";
@@ -71,7 +71,7 @@ export function ServicesPricingSection({ orgId }: SettingsSectionProps) {
               </div>
             </div>
             <Button size="sm" variant="outline" asChild>
-              <Link to="/reps/$orgId" params={{ orgId: orgId as string }}>
+              <Link href={`/reps/${orgId}?tab=services`}>
                 <ExternalLink className="h-3 w-3 mr-1.5" />
                 Éditer les services
               </Link>

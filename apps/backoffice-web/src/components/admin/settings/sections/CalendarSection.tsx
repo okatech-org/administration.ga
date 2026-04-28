@@ -73,12 +73,37 @@ const DAYS: Array<{ key: DayKey; label: string; short: string }> = [
 ];
 
 type DaySchedule = { open?: string; close?: string; closed?: boolean };
-type WeeklySchedule = Partial<Record<DayKey, DaySchedule>> & { notes?: string };
+/**
+ * Schedule jour : un seul créneau (legacy) OU plusieurs créneaux (matin/après-midi).
+ * Backend tolère les deux formats via `daySlotsValidator`.
+ */
+type DayValue = DaySchedule | DaySchedule[] | undefined;
+type WeeklySchedule = Partial<Record<DayKey, DayValue>> & { notes?: string };
 type ServiceHoursEntry = {
   scopeType: "default" | "service";
   schedule: WeeklySchedule;
   notes?: string;
 };
+
+/**
+ * Normalise un DayValue (legacy single ou array) en tableau de créneaux.
+ * Retourne un tableau vide si "closed" ou non défini.
+ */
+function asSlots(day: DayValue): DaySchedule[] {
+  if (!day) return [];
+  if (Array.isArray(day)) {
+    return day.filter((s) => s.closed !== true);
+  }
+  if (day.closed) return [];
+  return [day];
+}
+
+/** Vrai si le jour est explicitement marqué fermé. */
+function isDayClosed(day: DayValue): boolean {
+  if (!day) return false;
+  if (Array.isArray(day)) return day.length === 0 || day.every((s) => s.closed === true);
+  return day.closed === true;
+}
 
 export function CalendarSection({ orgId, onStatusChange }: SettingsSectionProps) {
   const ctx = useSettingsFormOptional();
@@ -219,13 +244,40 @@ export function CalendarSection({ orgId, onStatusChange }: SettingsSectionProps)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [calendar]);
 
-  const updateDay = (day: DayKey, patch: Partial<DaySchedule>) => {
-    const next = {
-      ...schedule,
-      [day]: { ...(schedule[day] ?? {}), ...patch },
-    };
+  const setDay = (day: DayKey, value: DayValue) => {
+    const next = { ...schedule, [day]: value };
     setSchedule(next);
     triggerSchedule(next);
+  };
+
+  const setDayClosed = (day: DayKey, closed: boolean) => {
+    if (closed) {
+      setDay(day, { closed: true });
+    } else {
+      setDay(day, [{ open: "09:00", close: "17:00" }]);
+    }
+  };
+
+  const updateSlot = (day: DayKey, index: number, patch: Partial<DaySchedule>) => {
+    const slots = asSlots(schedule[day]);
+    const updated = [...slots];
+    updated[index] = { ...(updated[index] ?? {}), ...patch };
+    setDay(day, updated);
+  };
+
+  const addSlot = (day: DayKey) => {
+    const slots = asSlots(schedule[day]);
+    const last = slots[slots.length - 1];
+    const newSlot: DaySchedule = last
+      ? { open: last.close ?? "14:00", close: "17:00" }
+      : { open: "09:00", close: "12:00" };
+    setDay(day, [...slots, newSlot]);
+  };
+
+  const removeSlot = (day: DayKey, index: number) => {
+    const slots = asSlots(schedule[day]);
+    const updated = slots.filter((_, i) => i !== index);
+    setDay(day, updated.length > 0 ? updated : { closed: true });
   };
 
   const pushAppointment = () => {
@@ -365,53 +417,88 @@ export function CalendarSection({ orgId, onStatusChange }: SettingsSectionProps)
             Horaires appliqués à tous les services par défaut. Des horaires
             spécifiques par service peuvent être définis dans l'onglet Services.
           </p>
-          <ul className="space-y-1.5">
+          <ul className="space-y-2">
             {DAYS.map((d) => {
-              const s = schedule[d.key] ?? {};
-              const closed = s.closed === true;
+              const day = schedule[d.key];
+              const closed = isDayClosed(day);
+              const slots = asSlots(day);
               return (
                 <li
                   key={d.key}
                   className={cn(
-                    "flex items-center gap-3 py-1.5 px-2 rounded-md",
+                    "rounded-md border border-border/40 bg-muted/10 px-3 py-2",
                     closed && "opacity-60",
                   )}
                 >
-                  <div className="w-20 shrink-0 text-sm font-medium">
-                    {d.label}
+                  <div className="flex items-center gap-3">
+                    <div className="w-20 shrink-0 text-sm font-medium">
+                      {d.label}
+                    </div>
+                    <Switch
+                      checked={!closed}
+                      onCheckedChange={(checked) => setDayClosed(d.key, !checked)}
+                      aria-label={`${d.label} ${closed ? "fermé" : "ouvert"}`}
+                    />
+                    {closed ? (
+                      <Badge variant="secondary" className="text-[10px]">
+                        Fermé
+                      </Badge>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">
+                        {slots.length} créneau{slots.length > 1 ? "x" : ""}
+                      </span>
+                    )}
+                    {!closed && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="ml-auto h-7 gap-1 text-[11px]"
+                        onClick={() => addSlot(d.key)}
+                      >
+                        <Plus className="h-3 w-3" />
+                        Ajouter un créneau
+                      </Button>
+                    )}
                   </div>
-                  <Switch
-                    checked={!closed}
-                    onCheckedChange={(checked) =>
-                      updateDay(d.key, { closed: !checked })
-                    }
-                    aria-label={`${d.label} ${closed ? "fermé" : "ouvert"}`}
-                  />
-                  {!closed && (
-                    <>
-                      <Input
-                        type="time"
-                        value={s.open ?? "09:00"}
-                        onChange={(e) =>
-                          updateDay(d.key, { open: e.target.value })
-                        }
-                        className="w-28"
-                      />
-                      <span className="text-muted-foreground text-sm">—</span>
-                      <Input
-                        type="time"
-                        value={s.close ?? "17:00"}
-                        onChange={(e) =>
-                          updateDay(d.key, { close: e.target.value })
-                        }
-                        className="w-28"
-                      />
-                    </>
-                  )}
-                  {closed && (
-                    <Badge variant="secondary" className="text-[10px]">
-                      Fermé
-                    </Badge>
+
+                  {!closed && slots.length > 0 && (
+                    <div className="mt-2 space-y-1.5 pl-[5.75rem]">
+                      {slots.map((slot, idx) => (
+                        <div
+                          key={`${d.key}-slot-${idx}`}
+                          className="flex items-center gap-2"
+                        >
+                          <Input
+                            type="time"
+                            value={slot.open ?? "09:00"}
+                            onChange={(e) =>
+                              updateSlot(d.key, idx, { open: e.target.value })
+                            }
+                            className="w-28"
+                          />
+                          <span className="text-sm text-muted-foreground">—</span>
+                          <Input
+                            type="time"
+                            value={slot.close ?? "17:00"}
+                            onChange={(e) =>
+                              updateSlot(d.key, idx, { close: e.target.value })
+                            }
+                            className="w-28"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={() => removeSlot(d.key, idx)}
+                            aria-label="Supprimer le créneau"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </li>
               );

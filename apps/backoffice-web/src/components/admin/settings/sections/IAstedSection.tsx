@@ -50,18 +50,6 @@ import {
   useRegisterSection,
   useSettingsFormOptional,
 } from "@workspace/settings-form";
-import {
-  FeatureFlagsPanel,
-  SandboxPreview,
-  VersionHistory,
-  type ConfigVersion,
-  type FeatureFlagEntry,
-} from "@workspace/iasted";
-import {
-  FEATURES,
-  FEATURE_DESCRIPTORS,
-  type FeatureFlag,
-} from "@workspace/shared/feature-flags";
 
 type Tone = "formel" | "professionnel" | "chaleureux" | "concis";
 type AvailabilityMode = "always" | "business_hours" | "custom_schedule" | "disabled";
@@ -456,32 +444,8 @@ export function IAstedSection({ orgId, onStatusChange }: SettingsSectionProps) {
     );
   }
 
-  // Panels partagés Phase η (Plan Intelligence iAsted × Sprint 6).
-  //
-  // - `iastedFlags` lit désormais les VRAIES valeurs env depuis
-  //   `@workspace/shared/feature-flags` — plus de données simulées.
-  // - `iastedVersions` reste vide tant que `auditLog.listByEntity` n'est pas
-  //   câblé (Phase η.2 — extension future, dépend d'un index Convex additionnel).
-  // - `SandboxPreview` demeure désactivé tant que l'action `adminChat.dryRun`
-  //   n'existe pas côté backend (Phase η.2).
-  const iastedVersions: ConfigVersion[] = [];
-  const iastedFlags: FeatureFlagEntry[] = (
-    Object.keys(FEATURE_DESCRIPTORS) as FeatureFlag[]
-  ).map((key) => ({
-    key,
-    label: FEATURE_DESCRIPTORS[key].label,
-    description: FEATURE_DESCRIPTORS[key].description,
-    value: FEATURES[key],
-    source: "env" as const,
-  }));
-
   return (
     <div className="space-y-4">
-      {/* ─── Panneaux partagés Phase 4 (@workspace/iasted) ── */}
-      <SandboxPreview enabled={false} />
-      <VersionHistory versions={iastedVersions} />
-      <FeatureFlagsPanel flags={iastedFlags} allowPreviewToggle />
-
       {/* ─── Activation globale ────────────────────────── */}
       <FlatCard>
         <div className="p-4 flex items-center justify-between">

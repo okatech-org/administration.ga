@@ -459,52 +459,6 @@ export default function OrgDetailPage() {
 				{/* ─── Tab: Settings ──────────────────────────────── */}
 				<TabsContent value="settings" className="space-y-4">
 					<OrgSettingsPanel orgId={orgId as Id<"orgs">} />
-
-					{/* Quick info — métadonnées techniques */}
-					<FlatCard>
-						<div className="p-3 lg:p-4">
-							<dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-								<div>
-									<dt className="text-xs text-muted-foreground">
-										{t("superadmin.table.createdAt")}
-									</dt>
-									<dd className="font-medium">
-										{new Date(org._creationTime).toLocaleDateString(
-											lang === "fr" ? "fr-FR" : "en-US",
-											{ day: "numeric", month: "long", year: "numeric" },
-										)}
-									</dd>
-								</div>
-								<div>
-									<dt className="text-xs text-muted-foreground">
-										{t("superadmin.table.updatedAt")}
-									</dt>
-									<dd className="font-medium">
-										{org.updatedAt
-											? new Date(org.updatedAt).toLocaleDateString(
-													lang === "fr" ? "fr-FR" : "en-US",
-													{
-														day: "numeric",
-														month: "long",
-														year: "numeric",
-													},
-												)
-											: "—"}
-									</dd>
-								</div>
-								<div>
-									<dt className="text-xs text-muted-foreground">ID</dt>
-									<dd className="font-mono text-xs truncate">
-										{org._id}
-									</dd>
-								</div>
-								<div>
-									<dt className="text-xs text-muted-foreground">Slug</dt>
-									<dd className="font-mono text-xs">{org.slug}</dd>
-								</div>
-							</dl>
-						</div>
-					</FlatCard>
 				</TabsContent>
 			</Tabs>
 		</div>
