@@ -106,11 +106,15 @@ interface MigrationStats {
   usersUpdated: number;
   positionsScanned: number;
   positionsUpdated: number;
+  positionTasksPurged: number;
   templatesScanned: number;
   templatesUpdated: number;
   unknownCodes: Record<string, number>;
   droppedRemovedCodes: number;
 }
+
+/** Préfixes de tasks legacy à purger (modules supprimés sans remplaçant). */
+const REMOVED_TASK_PREFIXES = ["digital_mail."];
 
 function normalizeFlatList(
   codes: readonly string[],
@@ -271,6 +275,7 @@ export const run = internalMutation({
       usersUpdated: 0,
       positionsScanned: 0,
       positionsUpdated: 0,
+      positionTasksPurged: 0,
       templatesScanned: 0,
       templatesUpdated: 0,
       unknownCodes: {},
@@ -327,14 +332,37 @@ export const run = internalMutation({
     const positions = await ctx.db.query("positions").collect();
     for (const position of positions) {
       stats.positionsScanned++;
-      if (!position.moduleAccess || position.moduleAccess.length === 0) continue;
-      const result = normalizeModuleAccess(
-        position.moduleAccess as Array<{ moduleCode: string; accessLevel: ModuleAccessLevel }>,
-        stats.unknownCodes,
-      );
-      stats.droppedRemovedCodes += result.dropped;
-      if (result.changed) {
-        await ctx.db.patch(position._id, { moduleAccess: result.next });
+      const patch: { moduleAccess?: typeof position.moduleAccess; tasks?: string[] } = {};
+      let touched = false;
+
+      if (position.moduleAccess && position.moduleAccess.length > 0) {
+        const result = normalizeModuleAccess(
+          position.moduleAccess as Array<{ moduleCode: string; accessLevel: ModuleAccessLevel }>,
+          stats.unknownCodes,
+        );
+        stats.droppedRemovedCodes += result.dropped;
+        if (result.changed) {
+          patch.moduleAccess = result.next;
+          touched = true;
+        }
+      }
+
+      // Purge les tasks legacy associées à des modules supprimés (digital_mail.*)
+      if (position.tasks && position.tasks.length > 0) {
+        const tasks = position.tasks as string[];
+        const filtered = tasks.filter(
+          (t) => !REMOVED_TASK_PREFIXES.some((prefix) => t.startsWith(prefix)),
+        );
+        if (filtered.length !== tasks.length) {
+          patch.tasks = filtered;
+          stats.positionTasksPurged += tasks.length - filtered.length;
+          touched = true;
+        }
+      }
+
+      if (touched) {
+        // biome-ignore lint/suspicious/noExplicitAny: patch type narrowing
+        await ctx.db.patch(position._id, patch as any);
         stats.positionsUpdated++;
       }
     }

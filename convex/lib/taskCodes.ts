@@ -369,6 +369,11 @@ export const taskCodeValidator = v.union(
   v.literal(TaskCode.callRecordings.delete),
   // Push notifications (Sprint 6)
   v.literal(TaskCode.notifications.push_subscribe),
+  // Legacy iBoîte tasks — gardées dans le validator pour permettre la
+  // validation des positions existantes en prod avant que la migration
+  // `normalizeModuleCodes` n'ait purgé ces entrées. À retirer après migration.
+  v.literal("digital_mail.view"),
+  v.literal("digital_mail.manage"),
   // AI Assistant Proactif
   v.literal(TaskCode.ai_assistant.view),
   v.literal(TaskCode.ai_assistant.dismiss),
