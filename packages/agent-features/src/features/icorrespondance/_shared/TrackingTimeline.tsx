@@ -35,9 +35,9 @@ const TRACKING_STEPS = [
 		key: "sent",
 		label: "Envoyé",
 		icon: Send,
-		color: "text-violet-400",
-		bgColor: "bg-violet-500/15",
-		borderColor: "border-violet-500/30",
+		color: "text-primary",
+		bgColor: "bg-primary/15",
+		borderColor: "border-primary/30",
 	},
 	{
 		key: "recu",
@@ -67,9 +67,9 @@ const TRACKING_STEPS = [
 		key: "repondu",
 		label: "Répondu",
 		icon: MessageSquare,
-		color: "text-violet-400",
-		bgColor: "bg-violet-500/15",
-		borderColor: "border-violet-500/30",
+		color: "text-primary",
+		bgColor: "bg-primary/15",
+		borderColor: "border-primary/30",
 	},
 ] as const;
 

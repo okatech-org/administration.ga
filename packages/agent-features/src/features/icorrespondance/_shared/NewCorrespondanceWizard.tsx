@@ -228,7 +228,7 @@ export function NewCorrespondanceWizard({
 				{/* ─── Header ─────────────────────────────────── */}
 				<div className="px-5 pt-5 pb-3 border-b border-border/50 flex items-center justify-between shrink-0">
 					<div className="flex items-center gap-2 text-sm font-semibold">
-						<Mail className="h-5 w-5 text-violet-400" />
+						<Mail className="h-5 w-5 text-primary" />
 						Nouvelle correspondance
 					</div>
 					<button
@@ -258,7 +258,7 @@ export function NewCorrespondanceWizard({
 									className={cn(
 										"h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold border",
 										idx === step
-											? "bg-violet-500/20 border-violet-500 text-violet-400"
+											? "bg-primary/20 border-primary text-primary"
 											: idx < step
 												? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
 												: "bg-muted/50 border-border/50 text-muted-foreground/40",
@@ -287,8 +287,8 @@ export function NewCorrespondanceWizard({
 								<div className="rounded-lg border border-border/50 bg-muted/30 p-3">
 									{senderInfo ? (
 										<div className="flex items-start gap-3">
-											<div className="h-9 w-9 rounded-full bg-violet-500/15 flex items-center justify-center shrink-0">
-												<User className="h-4 w-4 text-violet-400" />
+											<div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+												<User className="h-4 w-4 text-primary" />
 											</div>
 											<div className="min-w-0 space-y-0.5">
 												<p className="text-xs font-bold">{senderInfo.name}</p>
@@ -466,7 +466,7 @@ export function NewCorrespondanceWizard({
 											<p className="text-xs font-medium">
 												{recipients[0].name}
 											</p>
-											<span className="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-400 font-medium">
+											<span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-medium">
 												Titulaire
 											</span>
 										</div>
@@ -545,7 +545,7 @@ export function NewCorrespondanceWizard({
 						<button
 							onClick={handleNextStep}
 							disabled={step === 0 && !canProceedStep0}
-							className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-gradient-to-r from-indigo-600 to-violet-500 text-white disabled:opacity-50 transition-colors"
+							className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
 						>
 							Suivant
 							<ArrowRight className="h-3.5 w-3.5" />
@@ -567,7 +567,7 @@ export function NewCorrespondanceWizard({
 							<button
 								onClick={() => handleSubmit(false)}
 								disabled={isSubmitting}
-								className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-gradient-to-r from-indigo-600 to-violet-500 text-white disabled:opacity-50 transition-colors"
+								className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
 							>
 								{isSubmitting ? (
 									<Loader2 className="h-3.5 w-3.5 animate-spin" />

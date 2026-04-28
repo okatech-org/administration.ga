@@ -246,14 +246,14 @@ function QuickActions({
 			icon: Plus,
 			onClick: onNewCorrespondance,
 			colorClass:
-				"bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20",
+				"bg-primary/10 text-primary hover:bg-primary/20",
 		},
 		{
 			label: "Nouveau dossier de procédure",
 			icon: Folder,
 			onClick: onNewDossier,
 			colorClass:
-				"bg-violet-500/10 text-violet-600 dark:text-violet-400 hover:bg-violet-500/20",
+				"bg-primary/10 text-primary hover:bg-primary/20",
 		},
 		{
 			label: "Voir les courriers reçus",
@@ -320,7 +320,7 @@ export function Dashboard({
 			label: "Total correspondances",
 			value: stats.correspondance.total,
 			icon: Mail,
-			colorClass: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
+			colorClass: "bg-primary/15 text-primary",
 		},
 		{
 			label: "En attente d'approbation",
@@ -332,7 +332,7 @@ export function Dashboard({
 			label: "Dossiers en cours",
 			value: stats.dossiers.myDossiers,
 			icon: Folder,
-			colorClass: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+			colorClass: "bg-primary/15 text-primary",
 		},
 		{
 			label: "En retard",

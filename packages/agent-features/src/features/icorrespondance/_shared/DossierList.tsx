@@ -91,8 +91,8 @@ const STATUS_CFG: Record<DossierStatus, { label: string; class: string; dot: str
 	},
 	archive: {
 		label: "Archivé",
-		class: "bg-violet-500/15 text-violet-400 border-violet-500/20",
-		dot: "bg-violet-400",
+		class: "bg-primary/15 text-primary border-primary/20",
+		dot: "bg-primary",
 	},
 };
 

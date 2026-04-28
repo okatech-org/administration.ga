@@ -65,8 +65,8 @@ const STATUS_CONFIG = {
   signe: {
     label: "Signé",
     icon: Pen,
-    class: "text-indigo-400 bg-indigo-500/15 border-indigo-500/20",
-    dot: "bg-indigo-400",
+    class: "text-primary bg-primary/15 border-primary/20",
+    dot: "bg-primary",
   },
 };
 

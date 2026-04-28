@@ -37,7 +37,7 @@ const STATUS_LABELS: Record<string, { label: string; class: string }> = {
   valide: { label: "Validé", class: "text-emerald-400 bg-emerald-500/15 border-emerald-500/20" },
   rejete: { label: "Rejeté", class: "text-red-400 bg-red-500/15 border-red-500/20" },
   clos: { label: "Clôturé", class: "text-zinc-400 bg-zinc-500/15 border-zinc-500/20" },
-  archive: { label: "Archivé", class: "text-violet-400 bg-violet-500/15 border-violet-500/20" },
+  archive: { label: "Archivé", class: "text-primary bg-primary/15 border-primary/20" },
 };
 
 const CONFIDENTIALITE_LABELS: Record<string, { label: string; class: string }> = {

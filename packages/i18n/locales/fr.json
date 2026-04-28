@@ -6568,5 +6568,85 @@
 	},
 	"reps": {
 		"noContactInfo": "Aucune information de contact disponible."
+	},
+	"icorrespondance": {
+		"title": "iCorrespondance",
+		"subtitleCount": "{{corr}} correspondances · {{dossiers}} dossiers de procédure",
+		"tabs": {
+			"correspondance": "Correspondance",
+			"dossiers": "Dossiers",
+			"dashboard": "Tableau de bord"
+		},
+		"actions": {
+			"newFolder": "Nouveau dossier",
+			"newCorrespondance": "Nouvelle correspondance",
+			"newProcedureDossier": "Nouveau dossier de procédure",
+			"clear": "Effacer",
+			"cancel": "Annuler",
+			"create": "Créer",
+			"rename": "Renommer",
+			"delete": "Supprimer",
+			"info": "Informations",
+			"edit": "Modifier",
+			"send": "Envoyer",
+			"reply": "Répondre",
+			"assign": "Assigner",
+			"reassign": "Réassigner",
+			"restore": "Restaurer",
+			"register": "Enregistrer (n° d'arrivée)",
+			"download": "Télécharger",
+			"sign": "Signer",
+			"generateOfficial": "Générer le document officiel",
+			"close": "Fermer",
+			"back": "Retour",
+			"classify": "Classer dans iDocument"
+		},
+		"folders": {
+			"draft": "Brouillons",
+			"sent": "Envoyés",
+			"received": "Reçus",
+			"trash": "Corbeille",
+			"system": "Système",
+			"empty": "Dossier vide",
+			"emptyDescription": "Ce dossier ne contient aucune correspondance. Créez une nouvelle correspondance ou importez des fichiers.",
+			"items": "Dossiers de correspondance ({{count}})"
+		},
+		"search": {
+			"placeholder": "Rechercher dans les correspondances…"
+		},
+		"status": {
+			"all": "Tous",
+			"draft": "Brouillon",
+			"pending": "En attente",
+			"approved": "Approuvé",
+			"sent": "Envoyé",
+			"received": "Reçu",
+			"archived": "Archivé"
+		},
+		"recipientStatus": {
+			"en_transit": "En transit",
+			"recu": "Reçu",
+			"en_attente": "En attente",
+			"approuve": "Approuvé",
+			"repondu": "Répondu"
+		},
+		"types": {
+			"note_verbale": "Note Verbale",
+			"lettre_officielle": "Lettre Officielle",
+			"circulaire": "Circulaire",
+			"telegramme": "Télégramme",
+			"memorandum": "Mémorandum",
+			"communique": "Communiqué"
+		},
+		"priority": {
+			"normal": "Normale",
+			"urgent": "Urgente",
+			"confidentiel": "Confidentielle"
+		},
+		"views": {
+			"grid": "Grille",
+			"list": "Liste",
+			"column": "Colonnes"
+		}
 	}
 }

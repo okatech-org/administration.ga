@@ -202,7 +202,7 @@ export function RecipientPicker({
 														isSelected ? "opacity-100" : "opacity-0",
 													)}
 												/>
-												<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-[10px] font-bold text-violet-400">
+												<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
 													{getInitials(recipient.name)}
 												</div>
 												<div className="flex min-w-0 flex-col">
@@ -251,7 +251,7 @@ export function RecipientPicker({
 								className={cn(
 									"inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors",
 									isTitulaire
-										? "bg-violet-500/15 text-violet-400 hover:bg-violet-500/25"
+										? "bg-primary/15 text-primary hover:bg-primary/25"
 										: "bg-zinc-500/15 text-zinc-400 hover:bg-zinc-500/25 cursor-pointer",
 								)}
 							>

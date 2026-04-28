@@ -6003,5 +6003,85 @@
 	},
 	"reps": {
 		"noContactInfo": "No contact information available."
+	},
+	"icorrespondance": {
+		"title": "iCorrespondence",
+		"subtitleCount": "{{corr}} correspondences · {{dossiers}} procedure dossiers",
+		"tabs": {
+			"correspondance": "Correspondence",
+			"dossiers": "Dossiers",
+			"dashboard": "Dashboard"
+		},
+		"actions": {
+			"newFolder": "New folder",
+			"newCorrespondance": "New correspondence",
+			"newProcedureDossier": "New procedure dossier",
+			"clear": "Clear",
+			"cancel": "Cancel",
+			"create": "Create",
+			"rename": "Rename",
+			"delete": "Delete",
+			"info": "Information",
+			"edit": "Edit",
+			"send": "Send",
+			"reply": "Reply",
+			"assign": "Assign",
+			"reassign": "Reassign",
+			"restore": "Restore",
+			"register": "Register (arrival ref.)",
+			"download": "Download",
+			"sign": "Sign",
+			"generateOfficial": "Generate official document",
+			"close": "Close",
+			"back": "Back",
+			"classify": "Classify in iDocument"
+		},
+		"folders": {
+			"draft": "Drafts",
+			"sent": "Sent",
+			"received": "Received",
+			"trash": "Trash",
+			"system": "System",
+			"empty": "Empty folder",
+			"emptyDescription": "This folder contains no correspondence. Create a new correspondence or import files.",
+			"items": "Correspondence files ({{count}})"
+		},
+		"search": {
+			"placeholder": "Search correspondence…"
+		},
+		"status": {
+			"all": "All",
+			"draft": "Draft",
+			"pending": "Pending",
+			"approved": "Approved",
+			"sent": "Sent",
+			"received": "Received",
+			"archived": "Archived"
+		},
+		"recipientStatus": {
+			"en_transit": "In transit",
+			"recu": "Received",
+			"en_attente": "Pending",
+			"approuve": "Approved",
+			"repondu": "Replied"
+		},
+		"types": {
+			"note_verbale": "Note Verbale",
+			"lettre_officielle": "Official Letter",
+			"circulaire": "Circular",
+			"telegramme": "Telegram",
+			"memorandum": "Memorandum",
+			"communique": "Communiqué"
+		},
+		"priority": {
+			"normal": "Normal",
+			"urgent": "Urgent",
+			"confidentiel": "Confidential"
+		},
+		"views": {
+			"grid": "Grid",
+			"list": "List",
+			"column": "Columns"
+		}
 	}
 }

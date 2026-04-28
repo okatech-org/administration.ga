@@ -107,8 +107,8 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 	draft: { label: "Brouillon", color: "text-amber-400 bg-amber-500/15" },
 	pending: { label: "En attente", color: "text-blue-400 bg-blue-500/15" },
 	approved: { label: "Approuvé", color: "text-emerald-400 bg-emerald-500/15" },
-	sent: { label: "Envoyé", color: "text-violet-400 bg-violet-500/15" },
-	received: { label: "Reçu", color: "text-indigo-400 bg-indigo-500/15" },
+	sent: { label: "Envoyé", color: "text-primary bg-primary/15" },
+	received: { label: "Reçu", color: "text-primary bg-primary/15" },
 	archived: { label: "Archivé", color: "text-zinc-400 bg-zinc-500/15" },
 };
 

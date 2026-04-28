@@ -23,7 +23,7 @@ const RECIPIENT_STATUS_LABELS: Record<string, { label: string; color: string }> 
 	recu: { label: "Reçu", color: "text-blue-400 bg-blue-500/15" },
 	en_attente: { label: "En attente", color: "text-orange-400 bg-orange-500/15" },
 	approuve: { label: "Approuvé", color: "text-emerald-400 bg-emerald-500/15" },
-	repondu: { label: "Répondu", color: "text-violet-400 bg-violet-500/15" },
+	repondu: { label: "Répondu", color: "text-primary bg-primary/15" },
 };
 
 const TYPE_LABELS: Record<string, string> = {

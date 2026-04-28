@@ -18,6 +18,8 @@ import {
 } from "../../hooks/use-page-context";
 import type { PageAction, PageEntity } from "../../stores/page-context-store";
 import { motion, AnimatePresence } from "motion/react";
+import { useRouter, usePathname, useSearchParams } from "@workspace/routing";
+import { useTranslation } from "react-i18next";
 import {
 	Mail,
 	Search,
@@ -121,44 +123,46 @@ const STATUS_CFG: Record<
 > = {
 	draft: {
 		label: "Brouillon",
-		class: "bg-zinc-500/15 text-zinc-400 border-zinc-500/20",
-		dot: "bg-zinc-400",
+		class: "bg-muted text-muted-foreground border-border",
+		dot: "bg-muted-foreground/60",
 	},
 	pending: {
 		label: "En attente",
-		class: "bg-blue-500/15 text-blue-400 border-blue-500/20",
-		dot: "bg-blue-400",
+		class: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
+		dot: "bg-blue-500",
 	},
 	approved: {
 		label: "Approuvé",
-		class: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
-		dot: "bg-emerald-400",
+		class:
+			"bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+		dot: "bg-emerald-500",
 	},
 	sent: {
 		label: "Envoyé",
-		class: "bg-violet-500/15 text-violet-400 border-violet-500/20",
-		dot: "bg-violet-400",
+		class: "bg-primary/15 text-primary border-primary/20",
+		dot: "bg-primary",
 	},
 	received: {
 		label: "Reçu",
-		class: "bg-indigo-500/15 text-indigo-400 border-indigo-500/20",
-		dot: "bg-indigo-400",
+		class: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
+		dot: "bg-blue-500",
 	},
 	archived: {
 		label: "Archivé",
-		class: "bg-amber-500/15 text-amber-400 border-amber-500/20",
-		dot: "bg-amber-400",
+		class:
+			"bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20",
+		dot: "bg-amber-500",
 	},
 };
 
-const STATUS_FILTERS: { value: CorrStatus | "all"; label: string }[] = [
-	{ value: "all", label: "Tous" },
-	{ value: "draft", label: "Brouillons" },
-	{ value: "pending", label: "En attente" },
-	{ value: "approved", label: "Approuvés" },
-	{ value: "sent", label: "Envoyés" },
-	{ value: "received", label: "Reçus" },
-	{ value: "archived", label: "Archivés" },
+const STATUS_FILTER_VALUES: (CorrStatus | "all")[] = [
+	"all",
+	"draft",
+	"pending",
+	"approved",
+	"sent",
+	"received",
+	"archived",
 ];
 
 const CORRESPONDENCE_TYPE_CONFIG: Record<
@@ -167,32 +171,32 @@ const CORRESPONDENCE_TYPE_CONFIG: Record<
 > = {
 	note_verbale: {
 		label: "Note Verbale",
-		color: "text-cyan-400 bg-cyan-500/15",
+		color: "text-blue-600 dark:text-blue-400 bg-blue-500/10",
 		icon: "Mail",
 	},
 	lettre_officielle: {
 		label: "Lettre Officielle",
-		color: "text-violet-400 bg-violet-500/15",
+		color: "text-primary bg-primary/10",
 		icon: "Mail",
 	},
 	circulaire: {
 		label: "Circulaire",
-		color: "text-amber-400 bg-amber-500/15",
+		color: "text-amber-600 dark:text-amber-400 bg-amber-500/10",
 		icon: "Mail",
 	},
 	telegramme: {
 		label: "Télégramme",
-		color: "text-red-400 bg-red-500/15",
+		color: "text-rose-600 dark:text-rose-400 bg-rose-500/10",
 		icon: "Mail",
 	},
 	memorandum: {
 		label: "Mémorandum",
-		color: "text-emerald-400 bg-emerald-500/15",
+		color: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10",
 		icon: "Mail",
 	},
 	communique: {
 		label: "Communiqué",
-		color: "text-blue-400 bg-blue-500/15",
+		color: "text-muted-foreground bg-muted",
 		icon: "Mail",
 	},
 };
@@ -209,28 +213,30 @@ const RECIPIENT_STATUS_CFG: Record<
 > = {
 	en_transit: {
 		label: "En transit",
-		class: "bg-zinc-500/15 text-zinc-400 border-zinc-500/20",
-		dot: "bg-zinc-400",
+		class: "bg-muted text-muted-foreground border-border",
+		dot: "bg-muted-foreground/60",
 	},
 	recu: {
 		label: "Reçu",
-		class: "bg-blue-500/15 text-blue-400 border-blue-500/20",
-		dot: "bg-blue-400",
+		class: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
+		dot: "bg-blue-500",
 	},
 	en_attente: {
 		label: "En attente",
-		class: "bg-orange-500/15 text-orange-400 border-orange-500/20",
-		dot: "bg-orange-400",
+		class:
+			"bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20",
+		dot: "bg-amber-500",
 	},
 	approuve: {
 		label: "Approuvé",
-		class: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
-		dot: "bg-emerald-400",
+		class:
+			"bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+		dot: "bg-emerald-500",
 	},
 	repondu: {
 		label: "Répondu",
-		class: "bg-violet-500/15 text-violet-400 border-violet-500/20",
-		dot: "bg-violet-400",
+		class: "bg-primary/15 text-primary border-primary/20",
+		dot: "bg-primary",
 	},
 };
 
@@ -238,52 +244,26 @@ const RECIPIENT_STATUS_CFG: Record<
 // MOCK DATA
 // ═══════════════════════════════════════════════════════════════
 
-const SYSTEM_FOLDERS: FolderItem[] = [
-	{
-		id: "__brouillon",
-		name: "Brouillons",
-		parentFolderId: null,
-		tags: [],
-		fileCount: 0,
-		subfolderCount: 0,
-		updatedAt: "",
-		createdBy: "Système",
-		isSystem: true,
-	},
-	{
-		id: "__envoye",
-		name: "Envoyés",
-		parentFolderId: null,
-		tags: [],
-		fileCount: 0,
-		subfolderCount: 0,
-		updatedAt: "",
-		createdBy: "Système",
-		isSystem: true,
-	},
-	{
-		id: "__recu",
-		name: "Reçus",
-		parentFolderId: null,
-		tags: [],
-		fileCount: 0,
-		subfolderCount: 0,
-		updatedAt: "",
-		createdBy: "Système",
-		isSystem: true,
-	},
-	{
-		id: "__corbeille",
-		name: "Corbeille",
-		parentFolderId: null,
-		tags: [],
-		fileCount: 0,
-		subfolderCount: 0,
-		updatedAt: "",
-		createdBy: "Système",
-		isSystem: true,
-	},
+const SYSTEM_FOLDER_DEFS: { id: string; nameKey: string }[] = [
+	{ id: "__brouillon", nameKey: "icorrespondance.folders.draft" },
+	{ id: "__envoye", nameKey: "icorrespondance.folders.sent" },
+	{ id: "__recu", nameKey: "icorrespondance.folders.received" },
+	{ id: "__corbeille", nameKey: "icorrespondance.folders.trash" },
 ];
+
+function buildSystemFolders(t: (key: string) => string): FolderItem[] {
+	return SYSTEM_FOLDER_DEFS.map((d) => ({
+		id: d.id,
+		name: t(d.nameKey),
+		parentFolderId: null,
+		tags: [],
+		fileCount: 0,
+		subfolderCount: 0,
+		updatedAt: "",
+		createdBy: "",
+		isSystem: true,
+	}));
+}
 
 // ═══════════════════════════════════════════════════════════════
 // ANIMATIONS
@@ -436,7 +416,7 @@ function VaultFolderCard({
 			className={cn(
 				"group relative flex h-full w-full flex-col items-center justify-center rounded-2xl p-2",
 				isDragOver ? "bg-primary/10 ring-2 ring-primary/50" : "",
-				isSelected && !isDragOver && "bg-violet-500/10 ring-2 ring-violet-500",
+				isSelected && !isDragOver && "bg-primary/10 ring-2 ring-primary",
 				className,
 			)}
 		>
@@ -467,7 +447,7 @@ function VaultFolderCard({
 							<motion.span
 								initial={{ scale: 0 }}
 								animate={{ scale: 1 }}
-								className="flex h-5 min-w-5 items-center justify-center gap-0.5 rounded-full bg-violet-500 px-1 text-[9px] font-bold text-white shadow-sm"
+								className="flex h-5 min-w-5 items-center justify-center gap-0.5 rounded-full bg-primary px-1 text-[9px] font-bold text-white shadow-sm"
 							>
 								<Folder className="h-2.5 w-2.5" />
 								{subfolderCount}
@@ -645,7 +625,7 @@ function FolderContextMenu({
 								}}
 								className="flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-muted"
 							>
-								<Pencil className="h-3.5 w-3.5 text-violet-400" />
+								<Pencil className="h-3.5 w-3.5 text-primary" />
 								Renommer
 							</button>
 						)}
@@ -703,9 +683,9 @@ function InfoDialog({
 				<div className="border-b border-border/50 px-5 pt-5 pb-3">
 					<div className="flex items-center gap-2 text-sm font-semibold">
 						{itemType === "folder" ? (
-							<Folder className="h-4 w-4 text-violet-400" />
+							<Folder className="h-4 w-4 text-primary" />
 						) : (
-							<Mail className="h-4 w-4 text-violet-400" />
+							<Mail className="h-4 w-4 text-primary" />
 						)}
 						Informations
 					</div>
@@ -715,9 +695,9 @@ function InfoDialog({
 						<div className="flex items-center justify-between">
 							<p className="flex items-center gap-1.5 text-[9px] font-semibold tracking-wider text-muted-foreground/60 uppercase">
 								{itemType === "folder" ? (
-									<Folder className="h-3 w-3 text-violet-400" />
+									<Folder className="h-3 w-3 text-primary" />
 								) : (
-									<Mail className="h-3 w-3 text-violet-400" />
+									<Mail className="h-3 w-3 text-primary" />
 								)}
 								Titre/Nom
 							</p>
@@ -831,7 +811,7 @@ function InfoDialog({
 								{item.tags.map((tag: string) => (
 									<span
 										key={tag}
-										className="rounded-md border border-violet-500/20 bg-violet-500/10 px-1.5 py-0.5 text-[9px] text-violet-300"
+										className="rounded-md border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[9px] text-primary"
 									>
 										{tag}
 									</span>
@@ -886,18 +866,58 @@ export interface ICorrespondancePageProps {
 export default function ICorrespondancePage({
 	InlineAISuggestion,
 }: ICorrespondancePageProps = {}) {
+	// ─── i18n ─────────────────────────────────────────────
+	const { t } = useTranslation();
+
 	// ─── Org context ────────────────────────────────────────
 	const { activeOrgId } = useOrg();
 	const { hasMin: hasCorrAccess } = useModuleAccess("correspondence");
 	const canCreateCorr = hasCorrAccess("editor");
 	const canAdminCorr = hasCorrAccess("admin");
 
-	// ─── Active tab ──────────────────────────────────────────
-	const [activeTab, setActiveTab] = useState<ActiveTab>("correspondance");
+	// ─── URL-synced state ──────────────────────────────────
+	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
+
+	const updateUrl = useCallback(
+		(updates: Record<string, string | null>) => {
+			const next = new URLSearchParams(searchParams.toString());
+			for (const [k, v] of Object.entries(updates)) {
+				if (v === null || v === "") next.delete(k);
+				else next.set(k, v);
+			}
+			const qs = next.toString();
+			router.replace(qs ? `${pathname}?${qs}` : pathname);
+		},
+		[router, pathname, searchParams],
+	);
+
+	const tabParam = searchParams.get("tab") as ActiveTab | null;
+	const activeTab: ActiveTab =
+		tabParam === "correspondance" ||
+		tabParam === "dossiers" ||
+		tabParam === "dashboard"
+			? tabParam
+			: "dashboard";
+	const setActiveTab = useCallback(
+		(t: ActiveTab) => {
+			updateUrl({
+				tab: t,
+				// On tab change, drop folder/id/dossierId to avoid stale context
+				folder: t === "correspondance" ? searchParams.get("folder") : null,
+				id: null,
+				dossierId: t === "dossiers" ? searchParams.get("dossierId") : null,
+			});
+		},
+		[updateUrl, searchParams],
+	);
 
 	// ─── Dossier state ──────────────────────────────────────
-	const [selectedDossierId, setSelectedDossierId] = useState<string | null>(
-		null,
+	const selectedDossierId = searchParams.get("dossierId");
+	const setSelectedDossierId = useCallback(
+		(id: string | null) => updateUrl({ dossierId: id }),
+		[updateUrl],
 	);
 	const [showDossierWizard, setShowDossierWizard] = useState(false);
 
@@ -1257,7 +1277,7 @@ export default function ICorrespondancePage({
 
 	const folders = useMemo(
 		(): FolderItem[] => [
-			...SYSTEM_FOLDERS,
+			...buildSystemFolders(t),
 			...(rawFolders as any[]).map((f) => ({
 				id: f._id as string,
 				name: f.name,
@@ -1270,15 +1290,33 @@ export default function ICorrespondancePage({
 				isSystem: false,
 			})),
 		],
-		[rawFolders],
+		[rawFolders, t],
 	);
 
 	// ─── State ──────────────────────────────────────────────
-	const [viewMode, setViewMode] = useState<ViewMode>("grid");
-	const [currentFolderId, setCurrentFolderId] = useState<string | null>(
-		"__brouillon",
+	const viewParam = searchParams.get("view") as ViewMode | null;
+	const viewMode: ViewMode =
+		viewParam === "grid" || viewParam === "list" || viewParam === "column"
+			? viewParam
+			: "grid";
+	const setViewMode = useCallback(
+		(v: ViewMode) => updateUrl({ view: v === "grid" ? null : v }),
+		[updateUrl],
 	);
-	const [openDetailId, setOpenDetailId] = useState<string | null>(null);
+
+	const folderParam = searchParams.get("folder");
+	const currentFolderId: string | null = folderParam ?? "__recu";
+	const setCurrentFolderId = useCallback(
+		(id: string | null) => updateUrl({ folder: id }),
+		[updateUrl],
+	);
+
+	const openDetailId = searchParams.get("id");
+	const setOpenDetailId = useCallback(
+		(id: string | null) => updateUrl({ id }),
+		[updateUrl],
+	);
+
 	const [statusFilter, setStatusFilter] = useState<CorrStatus | "all">("all");
 	const [sortBy, setSortBy] = useState("date");
 	const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -1477,7 +1515,7 @@ export default function ICorrespondancePage({
 		try {
 			const isRealFolder =
 				currentFolderId !== null &&
-				!SYSTEM_FOLDERS.find((f) => f.id === currentFolderId);
+				!SYSTEM_FOLDER_DEFS.find((f) => f.id === currentFolderId);
 			await createFolderMutation.mutateAsync({
 				orgId: activeOrgId,
 				name: newFolderName.trim(),
@@ -1579,16 +1617,18 @@ export default function ICorrespondancePage({
 				className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
 			>
 				<div className="flex items-center gap-3">
-					<div className="flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br from-indigo-600 to-violet-500 shadow-lg shadow-indigo-500/20">
-						<Mail className="h-5 w-5 text-white" />
+					<div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
+						<Mail className="h-5 w-5 text-primary" />
 					</div>
 					<div>
 						<h1 className="text-2xl font-bold tracking-tight">
-							iCorrespondance
+							{t("icorrespondance.title")}
 						</h1>
 						<p className="text-sm text-muted-foreground">
-							{correspondences.length} correspondances · {dossiers.length}{" "}
-							dossiers de procédure
+							{t("icorrespondance.subtitleCount", {
+								corr: correspondences.length,
+								dossiers: dossiers.length,
+							})}
 						</p>
 					</div>
 				</div>
@@ -1600,24 +1640,24 @@ export default function ICorrespondancePage({
 								className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs transition-colors hover:bg-muted"
 							>
 								<FolderPlus className="h-3.5 w-3.5" />
-								Nouveau dossier
+								{t("icorrespondance.actions.newFolder")}
 							</button>
 							<button
 								onClick={() => setShowNewCorrWizard(true)}
-								className="flex items-center gap-1.5 rounded-lg bg-linear-to-r from-indigo-600 to-violet-500 px-3 py-1.5 text-xs text-white transition-colors hover:from-indigo-700 hover:to-violet-600"
+								className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/90"
 							>
 								<Plus className="h-3.5 w-3.5" />
-								Nouvelle correspondance
+								{t("icorrespondance.actions.newCorrespondance")}
 							</button>
 						</>
 					)}
 					{activeTab === "dossiers" && !selectedDossierId && canCreateCorr && (
 						<button
 							onClick={() => setShowDossierWizard(true)}
-							className="flex items-center gap-1.5 rounded-lg bg-linear-to-r from-indigo-600 to-violet-500 px-3 py-1.5 text-xs text-white transition-colors hover:from-indigo-700 hover:to-violet-600"
+							className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/90"
 						>
 							<Plus className="h-3.5 w-3.5" />
-							Nouveau dossier de procédure
+							{t("icorrespondance.actions.newProcedureDossier")}
 						</button>
 					)}
 				</div>
@@ -1629,26 +1669,27 @@ export default function ICorrespondancePage({
 					{[
 						{
 							key: "correspondance" as ActiveTab,
-							label: "Correspondance",
+							label: t("icorrespondance.tabs.correspondance"),
 							icon: Mail,
 						},
-						{ key: "dossiers" as ActiveTab, label: "Dossiers", icon: Folder },
+						{
+							key: "dossiers" as ActiveTab,
+							label: t("icorrespondance.tabs.dossiers"),
+							icon: Folder,
+						},
 						{
 							key: "dashboard" as ActiveTab,
-							label: "Tableau de bord",
+							label: t("icorrespondance.tabs.dashboard"),
 							icon: BarChart3,
 						},
 					].map((tab) => (
 						<button
 							key={tab.key}
-							onClick={() => {
-								setActiveTab(tab.key);
-								setSelectedDossierId(null);
-							}}
+							onClick={() => setActiveTab(tab.key)}
 							className={cn(
 								"flex flex-1 items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium transition-all",
 								activeTab === tab.key
-									? "bg-violet-500/15 text-violet-300 shadow-sm"
+									? "bg-primary/10 text-primary shadow-sm"
 									: "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
 							)}
 						>
@@ -1688,7 +1729,7 @@ export default function ICorrespondancePage({
 										<div className="relative max-w-[360px] min-w-[200px] flex-1">
 											<Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
 											<input
-												placeholder="Rechercher dans les correspondances…"
+												placeholder={t("icorrespondance.search.placeholder")}
 												value={search}
 												onChange={(e) => setSearch(e.target.value)}
 												className="h-8 w-full rounded-lg border border-border/50 bg-muted/50 px-3 pl-8 text-xs focus:ring-1 focus:ring-primary/30 focus:outline-none"
@@ -1696,21 +1737,23 @@ export default function ICorrespondancePage({
 										</div>
 										<div className="hidden h-6 w-px bg-border/50 sm:block" />
 										<div className="flex items-center gap-1">
-											{STATUS_FILTERS.map((f) => (
+											{STATUS_FILTER_VALUES.map((value) => (
 												<button
-													key={f.value}
-													onClick={() => setStatusFilter(f.value)}
+													key={value}
+													onClick={() => setStatusFilter(value)}
 													className={cn(
 														"rounded-full px-2.5 py-1 text-[11px] font-medium transition-all",
-														statusFilter === f.value
-															? "bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/30"
+														statusFilter === value
+															? "bg-primary/15 text-primary ring-1 ring-primary/25"
 															: "text-muted-foreground hover:bg-muted",
 													)}
 												>
-													{f.label}
-													{statusCounts[f.value] !== undefined && (
+													{value === "all"
+														? t("icorrespondance.status.all")
+														: t(`icorrespondance.status.${value}`)}
+													{statusCounts[value] !== undefined && (
 														<span className="ml-1 text-[9px] opacity-60">
-															({statusCounts[f.value]})
+															({statusCounts[value]})
 														</span>
 													)}
 												</button>
@@ -1726,7 +1769,7 @@ export default function ICorrespondancePage({
 														setStatusFilter("all");
 													}}
 												>
-													<X className="h-3 w-3" /> Effacer
+													<X className="h-3 w-3" /> {t("icorrespondance.actions.clear")}
 												</button>
 											</>
 										)}
@@ -1839,16 +1882,14 @@ export default function ICorrespondancePage({
 										{foldersWithCounts.length === 0 &&
 											currentFiles.length === 0 && (
 												<div className="flex flex-col items-center py-16 text-center">
-													<div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-500/10">
-														<FolderOpen className="h-8 w-8 text-indigo-400/60" />
+													<div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+														<FolderOpen className="h-8 w-8 text-primary/60" />
 													</div>
 													<h3 className="mb-1 text-lg font-semibold">
-														Dossier vide
+														{t("icorrespondance.folders.empty")}
 													</h3>
 													<p className="max-w-sm text-sm text-muted-foreground">
-														Ce dossier ne contient aucune correspondance. Créez
-														une nouvelle correspondance ou importez des
-														fichiers.
+														{t("icorrespondance.folders.emptyDescription")}
 													</p>
 												</div>
 											)}
@@ -1951,7 +1992,7 @@ export default function ICorrespondancePage({
 																	"flex h-6 w-6 shrink-0 items-center justify-center rounded-md",
 																	isCopyItem
 																		? "bg-zinc-500/10"
-																		: "bg-violet-500/10",
+																		: "bg-primary/10",
 																)}
 															>
 																<Mail
@@ -1959,7 +2000,7 @@ export default function ICorrespondancePage({
 																		"h-3 w-3",
 																		isCopyItem
 																			? "text-zinc-400"
-																			: "text-violet-400",
+																			: "text-primary",
 																	)}
 																/>
 															</div>
@@ -2117,7 +2158,7 @@ export default function ICorrespondancePage({
 																onClick={() => setOpenDetailId(corr.id)}
 																className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-muted"
 															>
-																<Mail className="h-3.5 w-3.5 shrink-0 text-violet-400" />
+																<Mail className="h-3.5 w-3.5 shrink-0 text-primary" />
 																<span className="truncate">{corr.title}</span>
 															</button>
 														))}
@@ -2147,7 +2188,7 @@ export default function ICorrespondancePage({
 									>
 										<div className="border-b border-border/50 px-5 pt-5 pb-3">
 											<div className="flex items-center gap-2 text-sm font-semibold">
-												<FolderPlus className="h-5 w-5 text-violet-400" />
+												<FolderPlus className="h-5 w-5 text-primary" />
 												Nouveau Dossier
 											</div>
 										</div>
@@ -2179,7 +2220,7 @@ export default function ICorrespondancePage({
 											<button
 												onClick={handleCreateFolder}
 												disabled={!newFolderName.trim() || isCreatingFolder}
-												className="flex items-center gap-1.5 rounded-md bg-linear-to-r from-indigo-600 to-violet-500 px-3 py-1.5 text-xs text-white transition-colors disabled:opacity-50"
+												className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
 											>
 												{isCreatingFolder ? (
 													<Loader2 className="h-4 w-4 animate-spin" />
@@ -2247,21 +2288,19 @@ export default function ICorrespondancePage({
 						}
 						recentActivity={recentActivity}
 						onNewCorrespondance={() => {
-							setActiveTab("correspondance");
+							updateUrl({ tab: "correspondance", folder: "__recu", id: null });
 							if (canCreateCorr) setShowNewCorrWizard(true);
 						}}
 						onNewDossier={() => {
-							setActiveTab("dossiers");
+							updateUrl({ tab: "dossiers", dossierId: null });
 							if (canCreateCorr) setShowDossierWizard(true);
 						}}
-						onNavigateInbox={() => {
-							setActiveTab("correspondance");
-							setCurrentFolderId("__recu");
-						}}
-						onNavigateOutbox={() => {
-							setActiveTab("correspondance");
-							setCurrentFolderId("__envoye");
-						}}
+						onNavigateInbox={() =>
+							updateUrl({ tab: "correspondance", folder: "__recu", id: null })
+						}
+						onNavigateOutbox={() =>
+							updateUrl({ tab: "correspondance", folder: "__envoye", id: null })
+						}
 					/>
 				</motion.div>
 			)}
@@ -2296,7 +2335,7 @@ export default function ICorrespondancePage({
 					>
 						<div className="border-b border-border/50 px-5 pt-5 pb-3">
 							<div className="flex items-center gap-2 text-sm font-semibold">
-								<Pencil className="h-4 w-4 text-violet-400" />
+								<Pencil className="h-4 w-4 text-primary" />
 								Renommer le dossier
 							</div>
 						</div>
@@ -2328,7 +2367,7 @@ export default function ICorrespondancePage({
 							<button
 								onClick={submitRenameFolder}
 								disabled={!renameFolderName.trim() || isRenamingFolder}
-								className="flex items-center gap-1.5 rounded-md bg-violet-600 px-3 py-1.5 text-xs text-white transition-colors hover:bg-violet-700 disabled:opacity-50"
+								className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
 							>
 								{isRenamingFolder ? (
 									<Loader2 className="h-3.5 w-3.5 animate-spin" />

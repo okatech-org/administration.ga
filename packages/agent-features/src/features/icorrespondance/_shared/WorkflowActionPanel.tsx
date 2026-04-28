@@ -59,7 +59,7 @@ const ACTION_CONFIG: Record<
   signer: {
     label: "Signer",
     icon: Pen,
-    color: "bg-indigo-600 hover:bg-indigo-700 text-white",
+    color: "bg-primary hover:bg-primary/90 text-primary-foreground",
     description: "Apposer votre signature",
   },
   suspendre: {

@@ -90,7 +90,7 @@ export function DossierCreateWizard({
         {/* Header */}
         <div className="px-5 pt-5 pb-3 border-b border-border/50 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2 text-sm font-semibold">
-            <FolderPlus className="h-5 w-5 text-violet-400" />
+            <FolderPlus className="h-5 w-5 text-primary" />
             Nouveau dossier de procédure
           </div>
           <button onClick={onClose} className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted transition-colors">
@@ -109,7 +109,7 @@ export function DossierCreateWizard({
               )}>
                 <div className={cn(
                   "h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold border",
-                  idx === step ? "bg-violet-500/20 border-violet-500 text-violet-400" :
+                  idx === step ? "bg-primary/20 border-primary text-primary" :
                   idx < step ? "bg-emerald-500/20 border-emerald-500 text-emerald-400" :
                   "bg-muted/50 border-border/50 text-muted-foreground/40",
                 )}>
@@ -137,7 +137,7 @@ export function DossierCreateWizard({
                     onClick={() => setCategoryFilter(null)}
                     className={cn(
                       "px-2.5 py-1 rounded-full text-[10px] font-medium transition-all",
-                      !categoryFilter ? "bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/30" : "text-muted-foreground hover:bg-muted",
+                      !categoryFilter ? "bg-primary/15 text-primary ring-1 ring-primary/25" : "text-muted-foreground hover:bg-muted",
                     )}
                   >
                     Tous
@@ -148,7 +148,7 @@ export function DossierCreateWizard({
                       onClick={() => setCategoryFilter(cat)}
                       className={cn(
                         "px-2.5 py-1 rounded-full text-[10px] font-medium transition-all",
-                        categoryFilter === cat ? "bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/30" : "text-muted-foreground hover:bg-muted",
+                        categoryFilter === cat ? "bg-primary/15 text-primary ring-1 ring-primary/25" : "text-muted-foreground hover:bg-muted",
                       )}
                     >
                       {CATEGORY_LABELS[cat] ?? cat}
@@ -169,12 +169,12 @@ export function DossierCreateWizard({
                     className={cn(
                       "w-full flex items-start gap-3 p-3 rounded-xl border transition-all text-left",
                       selectedType?._id === td._id
-                        ? "border-violet-500/40 bg-violet-500/10"
+                        ? "border-primary/40 bg-primary/10"
                         : "border-border/50 hover:border-border hover:bg-muted/30",
                     )}
                   >
-                    <div className="h-9 w-9 rounded-lg bg-violet-500/15 flex items-center justify-center shrink-0">
-                      <FileText className="h-4 w-4 text-violet-400" />
+                    <div className="h-9 w-9 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+                      <FileText className="h-4 w-4 text-primary" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs font-medium">{td.label.fr}</p>
@@ -329,7 +329,7 @@ export function DossierCreateWizard({
             <button
               onClick={() => setStep(step + 1)}
               disabled={step === 0 && !selectedType}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-gradient-to-r from-indigo-600 to-violet-500 text-white disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
               Suivant
               <ArrowRight className="h-3.5 w-3.5" />
@@ -338,7 +338,7 @@ export function DossierCreateWizard({
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || !selectedType}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-gradient-to-r from-indigo-600 to-violet-500 text-white disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
               {isSubmitting ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
