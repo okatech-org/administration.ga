@@ -41,18 +41,6 @@ const CATEGORY_CONFIG: Record<
 	administration: { label: "Administration", order: 4 },
 };
 
-// Legacy categories (de l'ancien registre) — fallback silencieux
-const LEGACY_CATEGORY_LABEL: Record<string, string> = {
-	core: "Cœur métier",
-	consular: "Consulaire",
-	diplomatic: "Diplomatique",
-	tools: "Outils",
-	finance: "Finance",
-	admin: "Administration",
-	community: "Communauté",
-	communication: "Communication",
-	special: "Autres",
-};
 
 /**
  * Bloc d'identité & juridiction — condense en une seule carte :
@@ -302,9 +290,7 @@ function ModulesByCategory({
 		}
 		const catKey = def.category;
 		const catLabel =
-			CATEGORY_CONFIG[catKey as ModuleCategory]?.label ??
-			LEGACY_CATEGORY_LABEL[catKey] ??
-			catKey;
+			CATEGORY_CONFIG[catKey as ModuleCategory]?.label ?? catKey;
 		if (!grouped.has(catKey)) {
 			grouped.set(catKey, { label: catLabel, items: [] });
 		}
