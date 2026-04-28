@@ -8,14 +8,10 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
 	ArrowLeft,
 	Building2,
-	Calendar,
-	ClipboardList,
 	Crown,
-	Edit,
 	ExternalLink,
 	FileStack,
 	FileText,
-	IdCard,
 	Package,
 	Phone,
 	Settings2,
@@ -28,6 +24,7 @@ import { OrgMembersTable } from "@/components/admin/org-members-table";
 import { OrgServicesTable } from "@/components/admin/org-services-table";
 import { OrgTemplatesTab } from "@/components/admin/OrgTemplatesTab";
 import { RepOverviewPanel } from "@/components/admin/rep-overview";
+import { OrgSettingsPanel } from "@/components/admin/settings/OrgSettingsPanel";
 import { OrgCallsTab } from "@/components/dashboard/org-calls-tab";
 import { OrgModulesTab } from "@/components/dashboard/org-modules-tab";
 import { OrgPositionsTab } from "@/components/dashboard/org-positions-tab";
@@ -151,8 +148,6 @@ export default function OrgDetailPage() {
 		"agents",
 		"positions",
 		"services",
-		"requests",
-		"registry",
 		"templates",
 		"modules",
 		"calls",
@@ -321,12 +316,6 @@ export default function OrgDetailPage() {
 								{t("superadmin.organizations.viewPublic", "Page publique")}
 							</a>
 						</Button>
-						<Button size="sm" asChild>
-							<Link href={`/reps/${orgId}/edit`}>
-								<Edit className="mr-1.5 h-3.5 w-3.5" />
-								{t("superadmin.common.edit")}
-							</Link>
-						</Button>
 					</div>
 				}
 			/>
@@ -369,14 +358,6 @@ export default function OrgDetailPage() {
 								</Badge>
 							)}
 						</TabsTrigger>
-						<TabsTrigger value="requests" className="gap-1.5 text-xs sm:text-sm">
-							<ClipboardList className="h-4 w-4" />
-							{t("superadmin.organizations.tabs.requests", "Demandes")}
-						</TabsTrigger>
-						<TabsTrigger value="registry" className="gap-1.5 text-xs sm:text-sm">
-							<IdCard className="h-4 w-4" />
-							{t("superadmin.organizations.tabs.registry", "Registre")}
-						</TabsTrigger>
 						<TabsTrigger value="templates" className="gap-1.5 text-xs sm:text-sm">
 							<FileStack className="h-4 w-4" />
 							Modèles
@@ -418,74 +399,6 @@ export default function OrgDetailPage() {
 					<OrgServicesTable orgId={orgId as Id<"orgs">} />
 				</TabsContent>
 
-				{/* ─── Tab: Requests ──────────────────────────────── */}
-				<TabsContent value="requests" className="space-y-4">
-					<QueryErrorBoundary fallback={<PermissionFallback />}>
-						<OrgRequestsTab orgId={orgId as Id<"orgs">} lang={lang} />
-					</QueryErrorBoundary>
-				</TabsContent>
-
-				{/* ─── Tab: Registry ──────────────────────────────── */}
-				<TabsContent value="registry" className="space-y-4">
-					<div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-						<KpiCard
-							icon={Users}
-							label={t("dashboard.consularRegistry.stats.total", "Total")}
-							value={registryStats?.total ?? "—"}
-							accent="#6366f1"
-						/>
-						<KpiCard
-							icon={Calendar}
-							label={t(
-								"dashboard.consularRegistry.stats.requested",
-								"Demandés",
-							)}
-							value={registryStats?.requested ?? "—"}
-							accent="#f59e0b"
-						/>
-						<KpiCard
-							icon={IdCard}
-							label={t(
-								"dashboard.consularRegistry.stats.active",
-								"Actifs",
-							)}
-							value={registryStats?.active ?? "—"}
-							accent="#10b981"
-						/>
-						<KpiCard
-							icon={FileText}
-							label={t(
-								"dashboard.consularRegistry.stats.expired",
-								"Expirés",
-							)}
-							value={registryStats?.expired ?? "—"}
-							accent="#ef4444"
-						/>
-					</div>
-
-					<FlatCard>
-						<div className="flex flex-col items-center justify-center py-8 text-muted-foreground p-3 lg:p-4">
-							<IdCard className="h-10 w-10 mb-3 opacity-30" />
-							<p className="text-sm">
-								{t(
-									"superadmin.organizations.registryInfo",
-									"Vue détaillée du registre consulaire disponible dans la page de gestion de l'organisme.",
-								)}
-							</p>
-							<Button
-								variant="outline"
-								size="sm"
-								className="mt-3"
-								asChild
-							>
-								<Link href="/admin/consular-registry">
-									{t("superadmin.organizations.openRegistry", "Ouvrir le registre")}
-								</Link>
-							</Button>
-						</div>
-					</FlatCard>
-				</TabsContent>
-
 				{/* ─── Tab: Modèles de documents (attribution + vignettes A4) ─── */}
 				<TabsContent value="templates" className="space-y-4">
 					<OrgTemplatesTab orgId={orgId as Id<"orgs">} />
@@ -506,58 +419,9 @@ export default function OrgDetailPage() {
 
 				{/* ─── Tab: Settings ──────────────────────────────── */}
 				<TabsContent value="settings" className="space-y-4">
-					<FlatCard>
-						<div className="p-3 lg:p-4">
-							<SectionHeader
-								icon={<Settings2 className="h-4 w-4" />}
-								title={t(
-									"superadmin.organizations.tabs.settings",
-									"Paramètres",
-								)}
-							/>
-							<p className="text-xs text-muted-foreground mb-3">
-								{t(
-									"superadmin.organizations.settingsDesc",
-									"Configuration et paramètres de l'organisme",
-								)}
-							</p>
-							{org.settings ? (
-								<dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-									{Object.entries(
-										org.settings as Record<string, unknown>,
-									).map(([key, value]) => (
-										<div key={key}>
-											<dt className="text-xs font-medium text-muted-foreground">
-												{key}
-											</dt>
-											<dd className="mt-0.5 text-sm">
-												{typeof value === "boolean" ? (
-													<Badge
-														variant={value ? "default" : "secondary"}
-														className="text-[10px]"
-													>
-														{value ? "Activé" : "Désactivé"}
-													</Badge>
-												) : typeof value === "object" ? (
-													<code className="text-xs bg-muted px-1.5 py-0.5 rounded">
-														{JSON.stringify(value, null, 2).slice(0, 100)}
-													</code>
-												) : (
-													String(value)
-												)}
-											</dd>
-										</div>
-									))}
-								</dl>
-							) : (
-								<p className="text-sm text-muted-foreground italic">
-									{t("superadmin.common.noData")}
-								</p>
-							)}
-						</div>
-					</FlatCard>
+					<OrgSettingsPanel orgId={orgId as Id<"orgs">} />
 
-					{/* Quick info */}
+					{/* Quick info — métadonnées techniques */}
 					<FlatCard>
 						<div className="p-3 lg:p-4">
 							<dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
@@ -606,103 +470,4 @@ export default function OrgDetailPage() {
 			</Tabs>
 		</div>
 	)
-}
-
-// ─── Requests Sub-component (isolated for error boundary) ───────────────────
-
-function OrgRequestsTab({ orgId, lang }: { orgId: Id<"orgs">; lang: string }) {
-	const { t } = useTranslation();
-	const router = useRouter();
-
-	const { results: requests, isLoading: isRequestsLoading } =
-		useAuthenticatedPaginatedQuery(
-			api.functions.requests.listByOrg,
-			{ orgId },
-			{ initialNumItems: 10 },
-		);
-
-	return (
-		<FlatCard>
-			<div className="p-3 lg:p-4">
-				<SectionHeader
-					icon={<ClipboardList className="h-4 w-4" />}
-					title={t("superadmin.organizations.tabs.requests", "Demandes")}
-				/>
-				<p className="text-xs text-muted-foreground mb-3">
-					{t(
-						"superadmin.organizations.requestsDesc",
-						"Dernières demandes de services pour cet organisme",
-					)}
-				</p>
-				{isRequestsLoading && requests.length === 0 ? (
-					<div className="space-y-2">
-						{[1, 2, 3].map((i) => (
-							<Skeleton key={i} className="h-12 w-full" />
-						))}
-					</div>
-				) : requests.length > 0 ? (
-					<div className="space-y-2">
-						{requests.slice(0, 20).map((req: any) => (
-							<div
-								key={req._id}
-								role="button"
-								tabIndex={0}
-								className="flex items-center justify-between rounded-lg border border-border/50 p-3 hover:bg-muted/30 transition-colors cursor-pointer"
-								onClick={() => router.push(`/requests/${req._id}`)}
-								onKeyDown={(e) => {
-									if (e.key === "Enter" || e.key === " ") {
-										e.preventDefault()
-										router.push(`/requests/${req._id}`)
-									}
-								}}
-							>
-								<div className="flex items-center gap-3 min-w-0">
-									<div className="rounded-md bg-primary/10 p-1.5 shrink-0">
-										<FileText className="h-3.5 w-3.5 text-primary" />
-									</div>
-									<div className="min-w-0">
-										<p className="text-sm font-medium font-mono truncate">
-											{req.reference || req._id.slice(-8)}
-										</p>
-										<p className="text-xs text-muted-foreground truncate">
-											{req.user
-												? `${req.user.firstName || ""} ${req.user.lastName || ""}`.trim()
-												: "—"}
-										</p>
-									</div>
-								</div>
-								<div className="flex items-center gap-2 shrink-0">
-									<Badge
-										variant="secondary"
-										className="text-[10px] px-1.5"
-									>
-										{String(t(
-											`fields.requestStatus.options.${req.status}`,
-											req.status,
-										))}
-									</Badge>
-									<span className="text-xs text-muted-foreground">
-										{new Date(req._creationTime).toLocaleDateString(
-											lang === "fr" ? "fr-FR" : "en-US",
-											{ day: "numeric", month: "short" },
-										)}
-									</span>
-								</div>
-							</div>
-						))}
-					</div>
-				) : (
-					<div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-						<ClipboardList className="h-10 w-10 mb-3 opacity-30" />
-						<p className="text-sm">
-							{t(
-								"superadmin.organizations.requestsEmpty",
-								"Aucune demande pour cet organisme",
-							)}
-						</p>
-					</div>
-				)}
-			</div>
-		</FlatCard>
-	);
 }
