@@ -20,7 +20,7 @@ import {
   useRegisterSection,
   useSettingsFormOptional,
 } from "@workspace/settings-form";
-import { Copy, Home, Mail, MapPin, Navigation } from "lucide-react";
+import { Copy, Home, Mail, MapPin, Navigation, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FlatCard } from "@/components/design-system/flat-card";
@@ -37,6 +37,10 @@ import {
   useAuthenticatedConvexQuery,
   useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
+import {
+  AddressAutocomplete,
+  type ResolvedAddress,
+} from "../AddressAutocomplete";
 import type { SettingsSectionProps } from "../SettingsTabsLayout";
 
 interface AddressFields {
@@ -188,6 +192,24 @@ export function AddressesSection({
               push();
             }}
             countryOptions={countryOptions}
+            withAutocomplete
+            onAutocompleteResolve={(resolved) => {
+              setPhysical((prev) => ({
+                street: resolved.street || prev.street,
+                city: resolved.city || prev.city,
+                postalCode: resolved.postalCode || prev.postalCode,
+                country: resolved.country ?? prev.country,
+                lat:
+                  resolved.lat !== undefined
+                    ? String(resolved.lat)
+                    : prev.lat,
+                lng:
+                  resolved.lng !== undefined
+                    ? String(resolved.lng)
+                    : prev.lng,
+              }));
+              push();
+            }}
           />
 
           {/* GPS */}
@@ -196,6 +218,10 @@ export function AddressesSection({
               <Navigation className="h-3.5 w-3.5" />
               Coordonnées GPS
             </FieldLabel>
+            <p className="text-[11px] text-muted-foreground mb-2">
+              Renseignées automatiquement à la sélection d'une suggestion
+              Google. Modifiables manuellement si besoin.
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field>
                 <FieldLabel className="text-xs text-muted-foreground">
@@ -324,13 +350,39 @@ function AddressFieldsEditor({
   value,
   onChange,
   countryOptions,
+  withAutocomplete = false,
+  onAutocompleteResolve,
 }: {
   value: AddressFields;
   onChange: (v: AddressFields) => void;
   countryOptions: ComboboxOption<CountryCode>[];
+  withAutocomplete?: boolean;
+  onAutocompleteResolve?: (resolved: ResolvedAddress) => void;
 }) {
+  // État local du champ de recherche : initialisé avec l'adresse actuelle
+  // mais ensuite indépendant pour permettre une recherche sans casser
+  // les valeurs déjà renseignées.
+  const [searchText, setSearchText] = useState<string>(value.street);
+
   return (
     <FieldGroup>
+      {withAutocomplete && onAutocompleteResolve && (
+        <Field>
+          <FieldLabel className="flex items-center gap-1.5">
+            <Search className="h-3.5 w-3.5" />
+            Recherche d'adresse
+          </FieldLabel>
+          <AddressAutocomplete
+            value={searchText}
+            onTextChange={setSearchText}
+            onResolve={(resolved) => {
+              setSearchText(resolved.formatted);
+              onAutocompleteResolve(resolved);
+            }}
+            placeholder="Tapez le nom du bâtiment ou une adresse…"
+          />
+        </Field>
+      )}
       <Field>
         <FieldLabel>Rue et numéro</FieldLabel>
         <Input
