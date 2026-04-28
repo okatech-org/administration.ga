@@ -3,7 +3,7 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { DocumentSheet } from "@workspace/ui/components/document-sheet";
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import type { ComponentType } from "react";
 import { toast } from "sonner";
 import { useOrg } from "../../shell/org-provider";
@@ -22,19 +22,13 @@ import {
 	Mail,
 	Search,
 	Clock,
-	Lock,
-	Users2,
-	Building2,
 	Folder,
 	FolderOpen,
 	FolderPlus,
 	Loader2,
 	X,
 	MoreHorizontal,
-	Share2,
-	Send,
 	Info,
-	KeyRound,
 	Tag,
 	Trash2,
 	User,
@@ -589,26 +583,21 @@ function BreadcrumbPath({
 
 function FolderContextMenu({
 	itemId,
-	itemName,
 	itemType,
-	onShare,
 	onInfo,
-	onTransmit,
-	onManageAccess,
 	onDelete,
 	isSystem,
 }: {
 	itemId: string;
 	itemName: string;
 	itemType: "folder" | "correspondence";
-	onShare?: (id: string, type: string) => void;
 	onInfo?: (id: string) => void;
-	onTransmit?: (id: string) => void;
-	onManageAccess?: (id: string) => void;
 	onDelete?: (id: string) => void;
 	isSystem?: boolean;
 }) {
 	const [open, setOpen] = useState(false);
+	const hasActions = !!onInfo || (!isSystem && !!onDelete);
+	if (!hasActions) return null;
 	return (
 		<div className="relative">
 			<button
@@ -632,18 +621,6 @@ function FolderContextMenu({
 						<div className="px-3 py-1.5 text-[10px] text-muted-foreground/60">
 							{itemType === "folder" ? "Dossier" : "Correspondance"} — Actions
 						</div>
-						{onShare && (
-							<button
-								onClick={() => {
-									onShare(itemId, itemType);
-									setOpen(false);
-								}}
-								className="flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-muted"
-							>
-								<Share2 className="h-3.5 w-3.5 text-blue-400" />
-								Partager
-							</button>
-						)}
 						{onInfo && (
 							<button
 								onClick={() => {
@@ -654,30 +631,6 @@ function FolderContextMenu({
 							>
 								<Info className="h-3.5 w-3.5 text-sky-400" />
 								Informations
-							</button>
-						)}
-						{onTransmit && (
-							<button
-								onClick={() => {
-									onTransmit(itemId);
-									setOpen(false);
-								}}
-								className="flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-muted"
-							>
-								<Send className="h-3.5 w-3.5 text-violet-400" />
-								Transmettre
-							</button>
-						)}
-						{itemType === "folder" && onManageAccess && (
-							<button
-								onClick={() => {
-									onManageAccess(itemId);
-									setOpen(false);
-								}}
-								className="flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-muted"
-							>
-								<KeyRound className="h-3.5 w-3.5 text-amber-400" />
-								Gérer accès
 							</button>
 						)}
 						{!isSystem && onDelete && (
@@ -705,269 +658,6 @@ function FolderContextMenu({
 // ═══════════════════════════════════════════════════════════════
 // DIALOGS
 // ═══════════════════════════════════════════════════════════════
-
-function ShareDialog({
-	open,
-	onClose,
-	targetName,
-}: {
-	open: boolean;
-	onClose: () => void;
-	targetName: string;
-}) {
-	const [visibility, setVisibility] = useState<"private" | "team" | "shared">(
-		"private",
-	);
-	const visOptions = [
-		{
-			value: "private" as const,
-			label: "Privé",
-			desc: "Seul vous pouvez voir ce contenu",
-			icon: Lock,
-			color: "text-zinc-400",
-		},
-		{
-			value: "team" as const,
-			label: "Équipe / Interne",
-			desc: "Visible par les membres de l'organisme",
-			icon: Users2,
-			color: "text-indigo-400",
-		},
-		{
-			value: "shared" as const,
-			label: "Partagé / Restreint",
-			desc: "Visible par les personnes sélectionnées",
-			icon: Building2,
-			color: "text-emerald-400",
-		},
-	];
-	if (!open) return null;
-	return (
-		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-			onClick={onClose}
-		>
-			<div
-				className="w-full max-w-md rounded-2xl border border-white/5 bg-popover shadow-2xl"
-				onClick={(e) => e.stopPropagation()}
-			>
-				<div className="border-b border-border/50 px-5 pt-5 pb-3">
-					<div className="flex items-center gap-2 text-sm font-semibold">
-						<Share2 className="h-4 w-4 text-blue-400" />
-						Partager — {targetName}
-					</div>
-				</div>
-				<div className="space-y-3 p-5">
-					<p className="text-xs text-muted-foreground">
-						Définissez la visibilité de ce contenu.
-					</p>
-					<div className="space-y-2">
-						{visOptions.map((opt) => (
-							<button
-								key={opt.value}
-								onClick={() => setVisibility(opt.value)}
-								className={cn(
-									"flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all",
-									visibility === opt.value
-										? "border-primary/40 bg-primary/10"
-										: "border-border/50 hover:border-border",
-								)}
-							>
-								<opt.icon className={cn("h-5 w-5 shrink-0", opt.color)} />
-								<div>
-									<p className="text-xs font-medium">{opt.label}</p>
-									<p className="text-[10px] text-muted-foreground">
-										{opt.desc}
-									</p>
-								</div>
-							</button>
-						))}
-					</div>
-				</div>
-				<div className="flex justify-end gap-2 border-t border-border/50 px-5 py-3">
-					<button
-						onClick={onClose}
-						className="rounded-md border border-border px-3 py-1.5 text-xs transition-colors hover:bg-muted"
-					>
-						Annuler
-					</button>
-					<button
-						onClick={onClose}
-						className="rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/90"
-					>
-						Appliquer
-					</button>
-				</div>
-			</div>
-		</div>
-	);
-}
-
-function ManageAccessDialog({
-	open,
-	onClose,
-	targetName,
-}: {
-	open: boolean;
-	onClose: () => void;
-	targetName: string;
-}) {
-	const [accessLevel, setAccessLevel] = useState("private");
-	const options = [
-		{ value: "private", label: "Privé Restreint" },
-		{ value: "team", label: "Équipe (Interne)" },
-		{ value: "specific", label: "Accès Spécifique" },
-	];
-	if (!open) return null;
-	return (
-		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-			onClick={onClose}
-		>
-			<div
-				className="w-full max-w-md rounded-2xl border border-amber-500/20 bg-popover shadow-2xl"
-				onClick={(e) => e.stopPropagation()}
-			>
-				<div className="border-b border-border/50 px-5 pt-5 pb-3">
-					<div className="flex items-center gap-2 text-sm font-semibold">
-						<KeyRound className="h-4 w-4 text-amber-400" />
-						Gérer les accès du dossier (Admin)
-					</div>
-					<p className="mt-1 text-[10px] text-muted-foreground">{targetName}</p>
-				</div>
-				<div className="space-y-3 p-5">
-					<div className="space-y-2">
-						{options.map((opt) => (
-							<button
-								key={opt.value}
-								onClick={() => setAccessLevel(opt.value)}
-								className={cn(
-									"w-full rounded-lg border p-3 text-left text-xs font-medium transition-all",
-									accessLevel === opt.value
-										? "border-amber-500/20 bg-amber-500/10 text-amber-300"
-										: "border-border/50 text-muted-foreground hover:border-border",
-								)}
-							>
-								{opt.label}
-							</button>
-						))}
-					</div>
-				</div>
-				<div className="flex justify-end gap-2 border-t border-border/50 px-5 py-3">
-					<button
-						onClick={onClose}
-						className="rounded-md border border-border px-3 py-1.5 text-xs transition-colors hover:bg-muted"
-					>
-						Annuler
-					</button>
-					<button
-						onClick={onClose}
-						className="rounded-md bg-amber-600 px-3 py-1.5 text-xs text-white transition-colors hover:bg-amber-700"
-					>
-						Appliquer les accès
-					</button>
-				</div>
-			</div>
-		</div>
-	);
-}
-
-function TransmitDialog({
-	open,
-	onClose,
-	targetName,
-}: {
-	open: boolean;
-	onClose: () => void;
-	targetName: string;
-}) {
-	const [recipient, setRecipient] = useState("");
-	const recipients = [
-		{ value: "minstry", label: "Ministère des Affaires Étrangères" },
-		{ value: "embassy-paris", label: "Ambassade de France" },
-		{ value: "embassy-washington", label: "Ambassade des USA" },
-		{ value: "onu", label: "Mission Permanente auprès de l'ONU" },
-		{ value: "ue", label: "Ambassade auprès de l'UE" },
-		{ value: "custom", label: "Destinataire personnalisé" },
-	];
-
-	if (!open) return null;
-	return (
-		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-			onClick={onClose}
-		>
-			<div
-				className="w-full max-w-md rounded-2xl border border-violet-500/20 bg-popover shadow-2xl"
-				onClick={(e) => e.stopPropagation()}
-			>
-				<div className="border-b border-border/50 px-5 pt-5 pb-3">
-					<div className="flex items-center gap-2 text-sm font-semibold">
-						<Send className="h-4 w-4 text-violet-400" />
-						Transmettre — {targetName}
-					</div>
-				</div>
-				<div className="space-y-3 p-5">
-					<p className="text-xs text-muted-foreground">
-						Sélectionnez le destinataire de cette correspondance.
-					</p>
-					<div className="space-y-2">
-						{recipients.map((opt) => (
-							<button
-								key={opt.value}
-								onClick={() => setRecipient(opt.value)}
-								className={cn(
-									"flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all",
-									recipient === opt.value
-										? "border-violet-500/40 bg-violet-500/10"
-										: "border-border/50 hover:border-border",
-								)}
-							>
-								<div
-									className={cn(
-										"flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border-2",
-										recipient === opt.value
-											? "border-violet-400"
-											: "border-muted-foreground/20",
-									)}
-								>
-									{recipient === opt.value && (
-										<div className="h-1.5 w-1.5 rounded-full bg-violet-400" />
-									)}
-								</div>
-								<div>
-									<p className="text-xs font-medium">{opt.label}</p>
-								</div>
-							</button>
-						))}
-					</div>
-					{recipient === "custom" && (
-						<input
-							placeholder="Adresse e-mail du destinataire"
-							className="mt-2 h-9 w-full rounded-lg border border-border bg-muted/50 px-3 text-xs focus:ring-1 focus:ring-primary/30 focus:outline-none"
-						/>
-					)}
-				</div>
-				<div className="flex justify-end gap-2 border-t border-border/50 px-5 py-3">
-					<button
-						onClick={onClose}
-						className="rounded-md border border-border px-3 py-1.5 text-xs transition-colors hover:bg-muted"
-					>
-						Annuler
-					</button>
-					<button
-						onClick={onClose}
-						disabled={!recipient}
-						className="flex items-center gap-1.5 rounded-md bg-violet-600 px-3 py-1.5 text-xs text-white transition-colors hover:bg-violet-700 disabled:opacity-50"
-					>
-						<Send className="h-3.5 w-3.5" />
-						Transmettre
-					</button>
-				</div>
-			</div>
-		</div>
-	);
-}
 
 function InfoDialog({
 	open,
@@ -1407,24 +1097,37 @@ export default function ICorrespondancePage({
 		[selectedDossierId, validatePieceMutation],
 	);
 
+	const [rejectPieceCode, setRejectPieceCode] = useState<string | null>(null);
+	const [rejectReason, setRejectReason] = useState("");
+	const [isRejecting, setIsRejecting] = useState(false);
+
 	const handleRejectDossierPiece = useCallback(
-		async (pieceCode: string) => {
+		(pieceCode: string) => {
 			if (!selectedDossierId) return;
-			const reason = prompt("Motif du rejet :");
-			if (!reason) return;
-			try {
-				await rejectPieceMutation.mutateAsync({
-					dossierId: selectedDossierId as Id<"dossierProcedures">,
-					pieceCode,
-					reason,
-				});
-				toast.success("Pièce rejetée");
-			} catch {
-				toast.error("Erreur lors du rejet");
-			}
+			setRejectPieceCode(pieceCode);
+			setRejectReason("");
 		},
-		[selectedDossierId, rejectPieceMutation],
+		[selectedDossierId],
 	);
+
+	const submitRejectPiece = useCallback(async () => {
+		if (!selectedDossierId || !rejectPieceCode || !rejectReason.trim()) return;
+		setIsRejecting(true);
+		try {
+			await rejectPieceMutation.mutateAsync({
+				dossierId: selectedDossierId as Id<"dossierProcedures">,
+				pieceCode: rejectPieceCode,
+				reason: rejectReason.trim(),
+			});
+			toast.success("Pièce rejetée");
+			setRejectPieceCode(null);
+			setRejectReason("");
+		} catch {
+			toast.error("Erreur lors du rejet");
+		} finally {
+			setIsRejecting(false);
+		}
+	}, [selectedDossierId, rejectPieceCode, rejectReason, rejectPieceMutation]);
 
 	// ─── Convex queries — 4 espaces exclusifs ──────────────────
 	const { data: rawFolders = [] } = useAuthenticatedConvexQuery(
@@ -1450,6 +1153,21 @@ export default function ICorrespondancePage({
 	const { data: espaceCounts } = useAuthenticatedConvexQuery(
 		api.functions.correspondanceCore.getEspaceCounts,
 		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
+
+	// ─── Recherche full-text serveur ────────────────────────
+	const [search, setSearch] = useState("");
+	const [debouncedSearch, setDebouncedSearch] = useState("");
+	useEffect(() => {
+		const id = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+		return () => clearTimeout(id);
+	}, [search]);
+	const isSearching = debouncedSearch.length >= 2;
+	const { data: searchResults = [] } = useAuthenticatedConvexQuery(
+		api.functions.correspondance.searchItems,
+		activeOrgId && isSearching
+			? { orgId: activeOrgId, searchText: debouncedSearch, limit: 100 }
+			: "skip",
 	);
 	const rawItems = useMemo(
 		() => [
@@ -1542,18 +1260,11 @@ export default function ICorrespondancePage({
 		"__brouillon",
 	);
 	const [openDetailId, setOpenDetailId] = useState<string | null>(null);
-	const [search, setSearch] = useState("");
 	const [statusFilter, setStatusFilter] = useState<CorrStatus | "all">("all");
 	const [sortBy, setSortBy] = useState("date");
 	const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
 	// ─── Dialog states ───────────────────────────────────────
-	const [shareDialogOpen, setShareDialogOpen] = useState(false);
-	const [shareTargetName, setShareTargetName] = useState("");
-	const [manageAccessOpen, setManageAccessOpen] = useState(false);
-	const [manageAccessTargetName, setManageAccessTargetName] = useState("");
-	const [transmitDialogOpen, setTransmitDialogOpen] = useState(false);
-	const [transmitTargetName, setTransmitTargetName] = useState("");
 	const [infoDialogOpen, setInfoDialogOpen] = useState(false);
 	const [infoItem, setInfoItem] = useState<any>(null);
 	const [infoItemType, setInfoItemType] = useState<"folder" | "correspondence">(
@@ -1595,12 +1306,46 @@ export default function ICorrespondancePage({
 		}));
 	}, [currentFolders, correspondences, folders]);
 
+	const searchCorrespondences = useMemo(
+		(): CorrespondenceItem[] =>
+			(searchResults as any[]).map((item) => ({
+				id: item._id,
+				_id: item._id,
+				reference: item.reference,
+				title: item.title,
+				type: item.type as CorrespondenceType,
+				sender: item.senderName,
+				senderInitials: (item.senderName ?? "")
+					.split(" ")
+					.map((w: string) => w[0] ?? "")
+					.join("")
+					.substring(0, 2)
+					.toUpperCase(),
+				recipient: item.recipientName,
+				updatedAt: new Date(item.updatedAt).toLocaleDateString("fr-FR"),
+				updatedAtTs: item.updatedAt,
+				status: item.status as CorrStatus,
+				tags: item.tags ?? [],
+				priority: item.priority as Priority,
+				folderId: item.folderId ?? "__brouillon",
+				attachments: item.documents?.length ?? 0,
+				isCopy: item.isCopy ?? false,
+				recipientStatus: item.recipientStatus,
+				copyOwnerOrgId: item.copyOwnerOrgId,
+				documents: item.documents ?? [],
+				deletedAt: item.deletedAt,
+			})),
+		[searchResults],
+	);
+
 	const currentFiles = useMemo(() => {
-		if (currentFolderId === null) return [];
+		if (currentFolderId === null && !isSearching) return [];
 
 		let items: CorrespondenceItem[];
 
-		if (currentFolderId === "__brouillon") {
+		if (isSearching) {
+			items = searchCorrespondences;
+		} else if (currentFolderId === "__brouillon") {
 			items = correspondences.filter(
 				(d) => d.status === "draft" && !d.isCopy && !d.deletedAt,
 			);
@@ -1617,21 +1362,10 @@ export default function ICorrespondancePage({
 				(d) => d.folderId === currentFolderId && !d.deletedAt,
 			);
 		}
-		if (search) {
-			const q = search.toLowerCase();
-			items = items.filter(
-				(d) =>
-					d.title.toLowerCase().includes(q) ||
-					d.reference.toLowerCase().includes(q) ||
-					d.sender.toLowerCase().includes(q) ||
-					d.recipient.toLowerCase().includes(q) ||
-					d.tags.some((t) => t.toLowerCase().includes(q)),
-			);
-		}
 		if (statusFilter !== "all") {
 			items = items.filter((d) => d.status === statusFilter);
 		}
-		items.sort((a, b) => {
+		items = [...items].sort((a, b) => {
 			let cmp = 0;
 			switch (sortBy) {
 				case "name":
@@ -1652,7 +1386,15 @@ export default function ICorrespondancePage({
 			return sortDir === "asc" ? cmp : -cmp;
 		});
 		return items;
-	}, [correspondences, currentFolderId, search, statusFilter, sortBy, sortDir]);
+	}, [
+		correspondences,
+		currentFolderId,
+		isSearching,
+		searchCorrespondences,
+		statusFilter,
+		sortBy,
+		sortDir,
+	]);
 
 	const statusCounts = useMemo(() => {
 		const counts: Record<string, number> = { all: correspondences.length };
@@ -1670,36 +1412,6 @@ export default function ICorrespondancePage({
 	const handleNavigate = useCallback(
 		(folderId: string | null) => setCurrentFolderId(folderId),
 		[],
-	);
-
-	const handleShare = useCallback(
-		(id: string, type: string) => {
-			const name =
-				type === "folder"
-					? folders.find((f) => f.id === id)?.name
-					: correspondences.find((d) => d.id === id)?.title;
-			setShareTargetName(name || "");
-			setShareDialogOpen(true);
-		},
-		[folders, correspondences],
-	);
-
-	const handleManageAccess = useCallback(
-		(id: string) => {
-			const name = folders.find((f) => f.id === id)?.name || "";
-			setManageAccessTargetName(name);
-			setManageAccessOpen(true);
-		},
-		[folders],
-	);
-
-	const handleOpenTransmit = useCallback(
-		(id: string) => {
-			const corr = correspondences.find((d) => d.id === id);
-			setTransmitTargetName(corr?.title || "");
-			setTransmitDialogOpen(true);
-		},
-		[correspondences],
 	);
 
 	const handleOpenInfo = useCallback(
@@ -2013,9 +1725,7 @@ export default function ICorrespondancePage({
 																	itemId={folder.id}
 																	itemName={folder.name}
 																	itemType="folder"
-																	onShare={handleShare}
 																	onInfo={handleOpenInfo}
-																	onManageAccess={handleManageAccess}
 																	onDelete={
 																		!folder.isSystem ? handleDelete : undefined
 																	}
@@ -2179,7 +1889,7 @@ export default function ICorrespondancePage({
 															"group grid cursor-pointer grid-cols-12 gap-2 border-b border-border/30 px-4 py-2.5 transition-colors hover:bg-muted/30",
 															isCopyItem && "opacity-70",
 														)}
-														onClick={() => handleOpenInfo(corr.id)}
+														onClick={() => setOpenDetailId(corr.id)}
 													>
 														<div className="col-span-4 flex items-center gap-2">
 															<div
@@ -2350,7 +2060,7 @@ export default function ICorrespondancePage({
 														{currentFiles.map((corr) => (
 															<button
 																key={corr.id}
-																onClick={() => handleOpenInfo(corr.id)}
+																onClick={() => setOpenDetailId(corr.id)}
 																className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-muted"
 															>
 																<Mail className="h-3.5 w-3.5 shrink-0 text-violet-400" />
@@ -2482,8 +2192,22 @@ export default function ICorrespondancePage({
 							}
 						}
 						recentActivity={recentActivity}
-						onNavigateCorrespondance={() => setActiveTab("correspondance")}
-						onNavigateDossiers={() => setActiveTab("dossiers")}
+						onNewCorrespondance={() => {
+							setActiveTab("correspondance");
+							if (canCreateCorr) setShowNewCorrWizard(true);
+						}}
+						onNewDossier={() => {
+							setActiveTab("dossiers");
+							if (canCreateCorr) setShowDossierWizard(true);
+						}}
+						onNavigateInbox={() => {
+							setActiveTab("correspondance");
+							setCurrentFolderId("__recu");
+						}}
+						onNavigateOutbox={() => {
+							setActiveTab("correspondance");
+							setCurrentFolderId("__envoye");
+						}}
 					/>
 				</motion.div>
 			)}
@@ -2499,27 +2223,71 @@ export default function ICorrespondancePage({
 			)}
 
 			{/* ── Dialogs ── */}
-			<ShareDialog
-				open={shareDialogOpen}
-				onClose={() => setShareDialogOpen(false)}
-				targetName={shareTargetName}
-			/>
-			<ManageAccessDialog
-				open={manageAccessOpen}
-				onClose={() => setManageAccessOpen(false)}
-				targetName={manageAccessTargetName}
-			/>
-			<TransmitDialog
-				open={transmitDialogOpen}
-				onClose={() => setTransmitDialogOpen(false)}
-				targetName={transmitTargetName}
-			/>
 			<InfoDialog
 				open={infoDialogOpen}
 				onClose={() => setInfoDialogOpen(false)}
 				item={infoItem || { id: "", name: "" }}
 				itemType={infoItemType}
 			/>
+
+			{/* ── Reject piece dialog ── */}
+			{rejectPieceCode !== null && (
+				<div
+					className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+					onClick={() => !isRejecting && setRejectPieceCode(null)}
+				>
+					<div
+						className="w-full max-w-md rounded-2xl border border-border/50 bg-popover shadow-2xl"
+						onClick={(e) => e.stopPropagation()}
+					>
+						<div className="border-b border-border/50 px-5 pt-5 pb-3">
+							<div className="flex items-center gap-2 text-sm font-semibold">
+								<X className="h-4 w-4 text-red-400" />
+								Rejeter la pièce
+							</div>
+							<p className="mt-1 text-[11px] text-muted-foreground">
+								Indiquez le motif du rejet — il sera transmis au demandeur.
+							</p>
+						</div>
+						<div className="space-y-3 p-5">
+							<label className="text-xs font-medium" htmlFor="reject-reason">
+								Motif du rejet *
+							</label>
+							<textarea
+								id="reject-reason"
+								value={rejectReason}
+								onChange={(e) => setRejectReason(e.target.value)}
+								placeholder="Ex: pièce illisible, signature manquante…"
+								rows={4}
+								disabled={isRejecting}
+								className="w-full resize-none rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs focus:ring-1 focus:ring-primary/30 focus:outline-none"
+								autoFocus
+							/>
+						</div>
+						<div className="flex justify-end gap-2 border-t border-border/50 px-5 py-3">
+							<button
+								onClick={() => setRejectPieceCode(null)}
+								disabled={isRejecting}
+								className="rounded-md border border-border px-3 py-1.5 text-xs transition-colors hover:bg-muted disabled:opacity-50"
+							>
+								Annuler
+							</button>
+							<button
+								onClick={submitRejectPiece}
+								disabled={!rejectReason.trim() || isRejecting}
+								className="flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-xs text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+							>
+								{isRejecting ? (
+									<Loader2 className="h-3.5 w-3.5 animate-spin" />
+								) : (
+									<X className="h-3.5 w-3.5" />
+								)}
+								Rejeter
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</motion.div>
 	);
 }

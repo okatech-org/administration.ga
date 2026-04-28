@@ -53,8 +53,10 @@ interface ActivityItem {
 interface DashboardProps {
 	stats: DashboardStats;
 	recentActivity: ActivityItem[];
-	onNavigateCorrespondance: () => void;
-	onNavigateDossiers: () => void;
+	onNewCorrespondance: () => void;
+	onNewDossier: () => void;
+	onNavigateInbox: () => void;
+	onNavigateOutbox: () => void;
 	isLoading?: boolean;
 }
 
@@ -73,13 +75,13 @@ const ACTION_BADGE_STYLES: Record<string, string> = {
 };
 
 const ACTION_LABELS: Record<string, string> = {
-	created: "Cr\u00e9\u00e9",
-	approved: "Approuv\u00e9",
-	rejected: "Rejet\u00e9",
-	transferred: "Transf\u00e9r\u00e9",
-	commented: "Comment\u00e9",
-	updated: "Mis \u00e0 jour",
-	archived: "Archiv\u00e9",
+	created: "Créé",
+	approved: "Approuvé",
+	rejected: "Rejeté",
+	transferred: "Transféré",
+	commented: "Commenté",
+	updated: "Mis à jour",
+	archived: "Archivé",
 };
 
 const cardVariants = {
@@ -131,13 +133,9 @@ function StatCard({
 						{isLoading ? (
 							<Skeleton className="mb-1 h-7 w-16" />
 						) : (
-							<p className="text-2xl font-bold text-foreground">
-								{value}
-							</p>
+							<p className="text-2xl font-bold text-foreground">{value}</p>
 						)}
-						<p className="truncate text-sm text-muted-foreground">
-							{label}
-						</p>
+						<p className="truncate text-sm text-muted-foreground">{label}</p>
 					</div>
 				</div>
 			</FlatCard>
@@ -172,9 +170,7 @@ function ActivityFeed({
 		return (
 			<div className="flex flex-col items-center justify-center py-10 text-center">
 				<Clock className="mb-3 h-10 w-10 text-muted-foreground/40" />
-				<p className="text-sm text-muted-foreground">
-					Aucune activit\u00e9 r\u00e9cente
-				</p>
+				<p className="text-sm text-muted-foreground">Aucune activité récente</p>
 			</div>
 		);
 	}
@@ -212,7 +208,7 @@ function ActivityFeed({
 							<span className="font-medium text-foreground/80">
 								{item.itemReference}
 							</span>
-							{" \u2014 "}
+							{" — "}
 							{item.itemTitle}
 						</p>
 						{item.comment && (
@@ -234,38 +230,42 @@ function ActivityFeed({
 }
 
 function QuickActions({
-	onNavigateCorrespondance,
-	onNavigateDossiers,
+	onNewCorrespondance,
+	onNewDossier,
+	onNavigateInbox,
+	onNavigateOutbox,
 }: {
-	onNavigateCorrespondance: () => void;
-	onNavigateDossiers: () => void;
+	onNewCorrespondance: () => void;
+	onNewDossier: () => void;
+	onNavigateInbox: () => void;
+	onNavigateOutbox: () => void;
 }) {
 	const actions = [
 		{
 			label: "Nouvelle correspondance",
 			icon: Plus,
-			onClick: onNavigateCorrespondance,
+			onClick: onNewCorrespondance,
 			colorClass:
 				"bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20",
 		},
 		{
-			label: "Nouveau dossier",
+			label: "Nouveau dossier de procédure",
 			icon: Folder,
-			onClick: onNavigateDossiers,
+			onClick: onNewDossier,
 			colorClass:
 				"bg-violet-500/10 text-violet-600 dark:text-violet-400 hover:bg-violet-500/20",
 		},
 		{
-			label: "Registre entrant",
+			label: "Voir les courriers reçus",
 			icon: Mail,
-			onClick: onNavigateCorrespondance,
+			onClick: onNavigateInbox,
 			colorClass:
 				"bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20",
 		},
 		{
-			label: "Registre sortant",
+			label: "Voir les courriers envoyés",
 			icon: Send,
-			onClick: onNavigateCorrespondance,
+			onClick: onNavigateOutbox,
 			colorClass:
 				"bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/20",
 		},
@@ -309,8 +309,10 @@ function QuickActions({
 export function Dashboard({
 	stats,
 	recentActivity,
-	onNavigateCorrespondance,
-	onNavigateDossiers,
+	onNewCorrespondance,
+	onNewDossier,
+	onNavigateInbox,
+	onNavigateOutbox,
 	isLoading,
 }: DashboardProps) {
 	const statCards = [
@@ -321,7 +323,7 @@ export function Dashboard({
 			colorClass: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
 		},
 		{
-			label: "En attente d\u2019approbation",
+			label: "En attente d'approbation",
 			value: stats.correspondance.pendingApprovals,
 			icon: Clock,
 			colorClass: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
@@ -330,8 +332,7 @@ export function Dashboard({
 			label: "Dossiers en cours",
 			value: stats.dossiers.myDossiers,
 			icon: Folder,
-			colorClass:
-				"bg-violet-500/15 text-violet-600 dark:text-violet-400",
+			colorClass: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
 		},
 		{
 			label: "En retard",
@@ -366,21 +367,17 @@ export function Dashboard({
 						<div className="flex items-center justify-between">
 							<div>
 								<h4 className="text-base font-semibold text-foreground">
-									Activit\u00e9 r\u00e9cente
+									Activité récente
 								</h4>
 								<p className="text-sm text-muted-foreground">
-									Derni\u00e8res actions sur les
-									correspondances et dossiers
+									Dernières actions sur les correspondances et dossiers
 								</p>
 							</div>
 							<BookOpen className="h-5 w-5 text-muted-foreground/50" />
 						</div>
 					</div>
 					<div className="p-3 lg:p-4">
-						<ActivityFeed
-							items={recentActivity}
-							isLoading={isLoading}
-						/>
+						<ActivityFeed items={recentActivity} isLoading={isLoading} />
 					</div>
 				</FlatCard>
 
@@ -391,15 +388,15 @@ export function Dashboard({
 							Actions rapides
 						</h4>
 						<p className="text-sm text-muted-foreground">
-							Acc\u00e8s direct aux op\u00e9rations courantes
+							Accès direct aux opérations courantes
 						</p>
 					</div>
 					<div className="p-3 lg:p-4">
 						<QuickActions
-							onNavigateCorrespondance={
-								onNavigateCorrespondance
-							}
-							onNavigateDossiers={onNavigateDossiers}
+							onNewCorrespondance={onNewCorrespondance}
+							onNewDossier={onNewDossier}
+							onNavigateInbox={onNavigateInbox}
+							onNavigateOutbox={onNavigateOutbox}
 						/>
 					</div>
 				</FlatCard>
