@@ -12,7 +12,7 @@ export function useModuleAccessLevel(orgId: Id<"orgs"> | undefined) {
 			(moduleCode: string): ModuleAccessLevel | null => {
 				if (!isReady) return null
 
-				const mapping = MODULE_ACCESS_TASKS[moduleCode]
+				const mapping = MODULE_ACCESS_TASKS[moduleCode as keyof typeof MODULE_ACCESS_TASKS]
 				if (!mapping) return null
 
 				const levels: ModuleAccessLevel[] = ["admin", "editor", "reader"]
@@ -20,7 +20,7 @@ export function useModuleAccessLevel(orgId: Id<"orgs"> | undefined) {
 					const requiredTasks = mapping[level]
 					if (!requiredTasks || requiredTasks.length === 0) continue
 
-					const hasAll = requiredTasks.every((task) => canDo(task))
+					const hasAll = requiredTasks.every((task: string) => canDo(task))
 					if (hasAll) return level
 				}
 

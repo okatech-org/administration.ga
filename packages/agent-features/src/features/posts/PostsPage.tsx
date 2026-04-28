@@ -57,7 +57,7 @@ const categoryLabels: Record<
 export default function PostsPage() {
   const { activeOrgId } = useOrg();
   const { t } = useTranslation();
-  const { hasMin: hasComAccess } = useModuleAccess("communication");
+  const { hasMin: hasComAccess } = useModuleAccess("news");
   const canPublish = hasComAccess("editor");
   // canAdminCom reserved for future use
   void hasComAccess("admin");

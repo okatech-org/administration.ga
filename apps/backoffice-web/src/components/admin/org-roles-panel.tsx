@@ -1786,12 +1786,10 @@ const MODULE_CATEGORIES: {
 	key: ModuleCategory;
 	label: { fr: string; en: string };
 }[] = [
-	{ key: "core", label: { fr: "Modules de base", en: "Core modules" } },
-	{ key: "consular", label: { fr: "Modules consulaires", en: "Consular modules" } },
-	{ key: "diplomatic", label: { fr: "Modules diplomatiques", en: "Diplomatic modules" } },
-	{ key: "tools", label: { fr: "Communication & Outils", en: "Communication & Tools" } },
-	{ key: "finance", label: { fr: "Finance", en: "Finance" } },
-	{ key: "admin", label: { fr: "Administration", en: "Administration" } },
+	{ key: "operations", label: { fr: "Opérations", en: "Operations" } },
+	{ key: "ibureau", label: { fr: "iBureau", en: "iBureau" } },
+	{ key: "gestion", label: { fr: "Gestion", en: "Management" } },
+	{ key: "administration", label: { fr: "Administration", en: "Administration" } },
 ];
 
 function OrgModulesSection({

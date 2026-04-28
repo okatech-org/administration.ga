@@ -1181,7 +1181,7 @@ export default function ICorrespondancePage({
 }: ICorrespondancePageProps = {}) {
 	// ─── Org context ────────────────────────────────────────
 	const { activeOrgId } = useOrg();
-	const { hasMin: hasCorrAccess } = useModuleAccess("correspondance");
+	const { hasMin: hasCorrAccess } = useModuleAccess("correspondence");
 	const canCreateCorr = hasCorrAccess("editor");
 	const canAdminCorr = hasCorrAccess("admin");
 

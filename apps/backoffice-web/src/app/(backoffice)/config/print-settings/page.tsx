@@ -313,7 +313,7 @@ export default function PrintSettingsPage() {
 									<div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
 										<XCircle className="h-4 w-4" />
 										<span className="text-xs">
-											Module inactif — Activez le module "consular_cards" dans les paramètres de l'organisation
+											Module inactif — Activez le module "Affaires Consulaires" dans les paramètres de l'organisation
 										</span>
 									</div>
 								)}

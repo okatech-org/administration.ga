@@ -27,30 +27,24 @@ interface OrgModulesTabProps {
 }
 
 const CATEGORY_ORDER: string[] = [
-	"core",
-	"consular",
-	"diplomatic",
-	"tools",
-	"finance",
-	"admin",
+	"operations",
+	"ibureau",
+	"gestion",
+	"administration",
 ];
 
 const CATEGORY_LABELS: Record<string, { fr: string; en: string }> = {
-	core: { fr: "Modules essentiels", en: "Core modules" },
-	consular: { fr: "Modules consulaires", en: "Consular modules" },
-	diplomatic: { fr: "Modules diplomatiques", en: "Diplomatic modules" },
-	tools: { fr: "Communication & Outils", en: "Communication & Tools" },
-	finance: { fr: "Finance", en: "Finance" },
-	admin: { fr: "Administration", en: "Administration" },
+	operations: { fr: "Opérations", en: "Operations" },
+	ibureau: { fr: "iBureau", en: "iBureau" },
+	gestion: { fr: "Gestion", en: "Management" },
+	administration: { fr: "Administration", en: "Administration" },
 };
 
 const CATEGORY_STYLE: Record<string, string> = {
-	core: "border-emerald-500/30 bg-emerald-500/5",
-	consular: "border-indigo-500/30 bg-indigo-500/5",
-	diplomatic: "border-red-500/30 bg-red-500/5",
-	tools: "border-sky-500/30 bg-sky-500/5",
-	finance: "border-yellow-500/30 bg-yellow-500/5",
-	admin: "border-zinc-500/30 bg-zinc-500/5",
+	operations: "border-emerald-500/30 bg-emerald-500/5",
+	ibureau: "border-indigo-500/30 bg-indigo-500/5",
+	gestion: "border-yellow-500/30 bg-yellow-500/5",
+	administration: "border-zinc-500/30 bg-zinc-500/5",
 };
 
 export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {

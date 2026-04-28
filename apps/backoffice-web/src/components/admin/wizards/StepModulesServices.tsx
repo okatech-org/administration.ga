@@ -26,12 +26,11 @@ const RECOMMENDED_BY_TYPE: Record<
 > = {
   embassy: {
     modules: [
-      "passports",
-      "visas",
-      "civil_status",
-      "consular_registrations",
-      "communication",
-      "correspondance",
+      "consular_affairs",
+      "diplomatic_affairs",
+      "news",
+      "correspondence",
+      "community",
     ],
     services: [
       "Demande de visa",
@@ -43,11 +42,9 @@ const RECOMMENDED_BY_TYPE: Record<
   },
   general_consulate: {
     modules: [
-      "passports",
-      "visas",
-      "civil_status",
-      "consular_registrations",
-      "communication",
+      "consular_affairs",
+      "news",
+      "community",
     ],
     services: [
       "Demande de visa",
@@ -57,7 +54,7 @@ const RECOMMENDED_BY_TYPE: Record<
     ],
   },
   high_commission: {
-    modules: ["passports", "visas", "consular_registrations", "communication"],
+    modules: ["consular_affairs", "news"],
     services: ["Demande de visa", "Carte consulaire"],
   },
 };

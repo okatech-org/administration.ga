@@ -3,6 +3,7 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import {
+	MODULE_ACCESS_TASKS,
 	MODULE_REGISTRY,
 	type ModuleCategory,
 	type ModuleCodeValue,
@@ -314,33 +315,34 @@ const RISK_STYLE: Record<string, { color: string; bg: string; label: { fr: strin
 	critical: { color: "text-red-600", bg: "bg-red-500/10", label: { fr: "Critique", en: "Critical" } },
 };
 
-// ─── Module → tasks mapping (derived) ───────────────────────────
+// ─── Module → tasks mapping (canonical) ─────────────────────────
+// Source : MODULE_ACCESS_TASKS — union des 3 niveaux d'accès par module.
 const MODULE_TASKS: Record<string, string[]> = (() => {
 	const out: Record<string, string[]> = {};
-	for (const code of ALL_TASK_CODES) {
-		const moduleKey = code.split(".")[0];
-		if (!out[moduleKey]) out[moduleKey] = [];
-		out[moduleKey].push(code);
+	for (const [code, levels] of Object.entries(MODULE_ACCESS_TASKS)) {
+		if (!levels) continue;
+		const set = new Set<string>([
+			...(levels.reader ?? []),
+			...(levels.editor ?? []),
+			...(levels.admin ?? []),
+		]);
+		out[code] = Array.from(set);
 	}
 	return out;
 })();
 
 // ─── Module category labels & order ─────────────────────────────
 const MODULE_CATEGORY_LABELS: Record<ModuleCategory, { fr: string; en: string }> = {
-	core: { fr: "Modules fondamentaux", en: "Core modules" },
-	consular: { fr: "Modules consulaires", en: "Consular modules" },
-	diplomatic: { fr: "Modules diplomatiques", en: "Diplomatic modules" },
-	tools: { fr: "Communication & Outils", en: "Communication & Tools" },
-	finance: { fr: "Finance", en: "Finance" },
-	admin: { fr: "Administration", en: "Administration" },
+	operations: { fr: "Opérations", en: "Operations" },
+	ibureau: { fr: "iBureau", en: "iBureau" },
+	gestion: { fr: "Gestion", en: "Management" },
+	administration: { fr: "Administration", en: "Administration" },
 };
 const MODULE_CATEGORY_ORDER: ModuleCategory[] = [
-	"core",
-	"consular",
-	"diplomatic",
-	"tools",
-	"finance",
-	"admin",
+	"operations",
+	"ibureau",
+	"gestion",
+	"administration",
 ];
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -2432,12 +2434,10 @@ const MODULE_CATEGORIES: {
 	key: ModuleCategory;
 	label: { fr: string; en: string };
 }[] = [
-	{ key: "core", label: { fr: "Modules de base", en: "Core modules" } },
-	{ key: "consular", label: { fr: "Modules consulaires", en: "Consular modules" } },
-	{ key: "diplomatic", label: { fr: "Modules diplomatiques", en: "Diplomatic modules" } },
-	{ key: "tools", label: { fr: "Communication & Outils", en: "Communication & Tools" } },
-	{ key: "finance", label: { fr: "Finance", en: "Finance" } },
-	{ key: "admin", label: { fr: "Administration", en: "Administration" } },
+	{ key: "operations", label: { fr: "Opérations", en: "Operations" } },
+	{ key: "ibureau", label: { fr: "iBureau", en: "iBureau" } },
+	{ key: "gestion", label: { fr: "Gestion", en: "Management" } },
+	{ key: "administration", label: { fr: "Administration", en: "Administration" } },
 ];
 
 function OrgModulesSection({

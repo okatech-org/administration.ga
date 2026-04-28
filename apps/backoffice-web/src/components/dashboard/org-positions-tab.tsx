@@ -227,25 +227,28 @@ const TASK_LABELS: Record<string, { fr: string; en: string }> = {
 };
 
 // ─── Module-to-tasks mapping ────────────────────────────────────
+// Source de vérité : MODULE_ACCESS_TASKS (canonical → tasks par niveau).
 const MODULE_TASKS: Record<string, string[]> = {};
-for (const code of ALL_TASK_CODES) {
-	const moduleKey = code.split(".")[0];
-	if (!MODULE_TASKS[moduleKey]) MODULE_TASKS[moduleKey] = [];
-	MODULE_TASKS[moduleKey].push(code);
+for (const [code, levels] of Object.entries(MODULE_ACCESS_TASKS)) {
+	if (!levels) continue;
+	const set = new Set<string>([
+		...(levels.reader ?? []),
+		...(levels.editor ?? []),
+		...(levels.admin ?? []),
+	]);
+	MODULE_TASKS[code] = Array.from(set);
 }
-if (!MODULE_TASKS["org"]) MODULE_TASKS["org"] = ["org.view"];
-if (!MODULE_TASKS["schedules"]) MODULE_TASKS["schedules"] = ["schedules.view", "schedules.manage"];
+MODULE_TASKS["org"] = ["org.view"];
+MODULE_TASKS["schedules"] = ["schedules.view", "schedules.manage"];
 
 // ─── Module category labels ────────────────────────────────────
 const CATEGORY_LABELS: Record<string, { fr: string; en: string }> = {
-	core: { fr: "Modules fondamentaux", en: "Core modules" },
-	consular: { fr: "Modules consulaires", en: "Consular modules" },
-	diplomatic: { fr: "Modules diplomatiques", en: "Diplomatic modules" },
-	tools: { fr: "Communication & Outils", en: "Communication & Tools" },
-	finance: { fr: "Finances & Paiements", en: "Finance & Payments" },
-	admin: { fr: "Administration", en: "Administration" },
+	operations: { fr: "Opérations", en: "Operations" },
+	ibureau: { fr: "iBureau", en: "iBureau" },
+	gestion: { fr: "Gestion", en: "Management" },
+	administration: { fr: "Administration", en: "Administration" },
 };
-const CATEGORY_ORDER: string[] = ["core", "consular", "diplomatic", "tools", "finance", "admin"];
+const CATEGORY_ORDER: string[] = ["operations", "ibureau", "gestion", "administration"];
 
 // ─── Grade icons for position cards ─────────────────────────────
 const GRADE_ICONS: Record<string, string> = {
@@ -497,7 +500,7 @@ function ModuleAccessCard({
 	lang: string;
 }) {
 	const moduleDef = MODULE_REGISTRY[moduleCode as ModuleCodeValue];
-	const mapping = MODULE_ACCESS_TASKS[moduleCode];
+	const mapping = MODULE_ACCESS_TASKS[moduleCode as ModuleCodeValue];
 	if (!moduleDef) return null;
 
 	const derivedTasks = currentLevel && mapping ? (mapping[currentLevel] ?? []) : [];
@@ -554,7 +557,7 @@ function ModuleAccessCard({
 			{derivedTasks.length > 0 && (
 				<div className="px-3 pb-2 pt-0 border-t border-border/20">
 					<div className="flex flex-wrap gap-1 pt-1.5">
-						{derivedTasks.map((task) => {
+						{derivedTasks.map((task: string) => {
 							const label = TASK_LABELS[task];
 							return (
 								<Badge key={task} variant="outline" className="text-[9px] px-1.5 py-0 h-4 text-muted-foreground">
@@ -591,9 +594,9 @@ function ModuleAccessSelector({
 	}, [moduleAccess]);
 
 	const modulesByCategory = useMemo(() => {
-		const result: Record<string, string[]> = { core: [], consular: [], diplomatic: [], tools: [], finance: [], admin: [] };
+		const result: Record<string, string[]> = { operations: [], ibureau: [], gestion: [], administration: [] };
 		for (const [code, def] of Object.entries(MODULE_REGISTRY)) {
-			const mapping = MODULE_ACCESS_TASKS[code];
+			const mapping = MODULE_ACCESS_TASKS[code as ModuleCodeValue];
 			if (!mapping) continue;
 			// Filtrer par modules activés dans l'org (si fourni et non vide)
 			if (orgEnabledModules && orgEnabledModules.size > 0 && !orgEnabledModules.has(code)) continue;
@@ -838,7 +841,7 @@ function PositionFormSheet({
 		tasks.add("org.view");
 		tasks.add("schedules.view");
 		for (const entry of moduleAccessConfig) {
-			const mapping = MODULE_ACCESS_TASKS[entry.moduleCode];
+			const mapping = MODULE_ACCESS_TASKS[entry.moduleCode as ModuleCodeValue];
 			if (mapping) {
 				const moduleTasks = mapping[entry.accessLevel] ?? [];
 				for (const t of moduleTasks) tasks.add(t);

@@ -123,7 +123,7 @@ export default function IAgendaPage() {
 	const [activeTab, setActiveTab] = useState("calendar");
 	const [currentMonth, setCurrentMonth] = useState(new Date());
 	const { activeOrgId } = useOrg();
-	const { hasMin: hasAgendaAccess } = useModuleAccess("appointments");
+	const { hasMin: hasAgendaAccess } = useModuleAccess("calendar");
 	const canManage = hasAgendaAccess("editor");
 
 	// ── Données Convex ──

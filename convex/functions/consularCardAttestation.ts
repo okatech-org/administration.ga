@@ -243,7 +243,7 @@ export const isPrintEnabled = query({
 
     // Check both: printEnabled setting AND module enabled
     const hasPrintSetting = org.settings?.printEnabled ?? false;
-    const hasModule = org.modules?.includes("consular_cards" as any) ?? false;
+    const hasModule = org.modules?.includes("consular_affairs") ?? false;
 
     return hasPrintSetting && hasModule;
   },

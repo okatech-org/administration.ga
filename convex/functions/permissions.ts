@@ -262,7 +262,7 @@ export const getResolvedMenuForUser = backofficeQuery({
         } else if (!hasTask) {
           reason = "Pas de permission";
         } else {
-          const mapping = MODULE_ACCESS_TASKS[m.code];
+          const mapping = MODULE_ACCESS_TASKS[m.code as keyof typeof MODULE_ACCESS_TASKS];
           if (mapping) {
             for (const level of ["admin", "editor", "reader"] as const) {
               const requiredTasks = mapping[level];

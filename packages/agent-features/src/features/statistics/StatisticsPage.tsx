@@ -108,7 +108,7 @@ const tooltipStyle = {
 export default function StatisticsPage() {
 	const { t, i18n } = useTranslation();
 	const { activeOrg, activeOrgId } = useOrg();
-	const { hasMin: hasStatsAccess } = useModuleAccess("analytics");
+	const { hasMin: hasStatsAccess } = useModuleAccess("statistics");
 	const canExportStats = hasStatsAccess("admin");
 	const [period, setPeriod] = useState<"week" | "month" | "year">("month");
 	const dateFnsLocale = i18n.language?.startsWith("fr") ? fr : enUS;

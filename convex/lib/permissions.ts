@@ -307,31 +307,16 @@ export async function assertCanAccessService(
  * Présence d'au moins l'un d'entre eux dans `org.modules` → l'org est consulaire
  * et a un accès "natif" aux contacts citoyens de sa juridiction.
  */
-const CONSULAR_AFFAIRS_MODULES: ReadonlyArray<ModuleCodeValue> = [
-  "consular_registrations",
-  "consular_cards",
-  "passports",
-  "visas",
-  "civil_status",
-] as ModuleCodeValue[];
-
 /**
- * Une org « gère les affaires consulaires » si elle a au moins un module
- * consulaire spécifique activé (passeports, visas, état civil, cartes ou
- * inscriptions consulaires).
- *
- * Exemples :
- *   - Consulat Général Gabon Paris → ["consular_registrations","consular_cards","passports"] → true
- *   - Ambassade Gabon France (non consulaire) → [] ou ["communication"] → false
+ * Une org « gère les affaires consulaires » si le module `consular_affairs`
+ * est activé.
  */
 export function orgHandlesConsularAffairs(
   org: Doc<"orgs"> | null | undefined,
 ): boolean {
   const modules = org?.modules;
   if (!modules || modules.length === 0) return false;
-  return CONSULAR_AFFAIRS_MODULES.some((m) =>
-    (modules as ModuleCodeValue[]).includes(m),
-  );
+  return (modules as string[]).includes("consular_affairs");
 }
 
 /**

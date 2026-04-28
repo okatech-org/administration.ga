@@ -54,7 +54,7 @@ import { usePageContext } from "../../hooks/use-page-context";
 export default function PaymentsDashboardPage() {
 	const { t, i18n } = useTranslation();
 	const { activeOrg } = useOrg();
-	const { hasMin: hasFinAccess } = useModuleAccess("finance");
+	const { hasMin: hasFinAccess } = useModuleAccess("payments");
 	const canManageFinance = hasFinAccess("admin");
 	const [dateRange, setDateRange] = useState("30");
 	const viewed = useRef(false);

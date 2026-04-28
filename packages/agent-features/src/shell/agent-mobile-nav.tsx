@@ -5,9 +5,12 @@ import {
 	Bot,
 	Calendar,
 	ClipboardList,
+	Handshake,
 	Home,
+	MessagesSquare,
 	Menu,
 	Moon,
+	Newspaper,
 	Settings,
 	Sun,
 	Users,
@@ -86,13 +89,14 @@ export function AgentMobileNav() {
 
 	const mainItems: NavItem[] = [
 		{ title: "Dashboard", url: "/", icon: Home },
-		{ title: "Demandes", url: "/requests", icon: ClipboardList },
+		{ title: "Affaires Cons.", url: "/affaires-consulaires", icon: ClipboardList },
 		{ title: "iAgenda", url: "/iagenda", icon: Calendar },
+		{ title: "iCom", url: "/icom", icon: MessagesSquare },
 	];
 
 	const sheetItems: NavItem[] = [
 		{ title: "Affaires Diplo.", url: "/affaires-diplomatiques", icon: Users },
-		{ title: "Affaires Cons.", url: "/affaires-consulaires", icon: Users },
+		{ title: "Actualités", url: "/posts", icon: Newspaper },
 		{ title: "Paramètres", url: "/settings", icon: Settings },
 	];
 

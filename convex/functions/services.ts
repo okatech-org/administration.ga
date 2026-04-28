@@ -610,8 +610,8 @@ export const getServiceAccessForMember = query({
 
     let fallbackLevel: string | null = null;
     if (moduleAccess) {
-      const requestsAccess = moduleAccess.find((m) => m.moduleCode === "requests");
-      fallbackLevel = requestsAccess?.accessLevel ?? null;
+      const consularAccess = moduleAccess.find((m) => m.moduleCode === "consular_affairs");
+      fallbackLevel = consularAccess?.accessLevel ?? null;
     } else if (position.tasks) {
       // Legacy: dériver du task set
       const tasks = new Set(position.tasks);
