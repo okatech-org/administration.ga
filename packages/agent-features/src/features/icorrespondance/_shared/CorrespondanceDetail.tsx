@@ -15,7 +15,6 @@ import {
 	FileText,
 	FolderOpen,
 	Loader2,
-	MessageSquare,
 	MoreHorizontal,
 	Paperclip,
 	Send,
@@ -119,7 +118,7 @@ export function CorrespondanceDetail({
 	);
 
 	const { mutateAsync: sendCorrespondance, isPending: isSending } = useConvexMutationQuery(
-		api.functions.correspondance.sendCorrespondance,
+		api.functions.correspondanceCore.sendCorrespondance,
 	);
 
 	const { mutateAsync: deleteItem, isPending: isDeleting } = useConvexMutationQuery(
@@ -143,14 +142,7 @@ export function CorrespondanceDetail({
 	}
 
 	const isCopy = (item as any).isCopy === true;
-	const docs = (item as any).documents ?? [];
-	const attachments = item.attachments ?? [];
-	const allDocs = docs.length > 0 ? docs : attachments.map((a: any, i: number) => ({
-		...a,
-		ordre: i + 1,
-		isMainDocument: i === 0,
-		label: a.filename,
-	}));
+	const allDocs = (item as any).documents ?? [];
 
 	const selectedDoc = allDocs[selectedDocIndex] ?? allDocs[0];
 	const stCfg = STATUS_LABELS[item.status] ?? STATUS_LABELS.draft;
@@ -217,19 +209,6 @@ export function CorrespondanceDetail({
 						{isSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
 						Envoyer
 					</Button>
-				)}
-
-				{item.status === "received" && !isCopy && (
-					<>
-						<Button variant="outline" size="sm" className="gap-1.5">
-							<MessageSquare className="h-3.5 w-3.5" />
-							Répondre
-						</Button>
-						<Button variant="outline" size="sm" className="gap-1.5">
-							<Send className="h-3.5 w-3.5" />
-							Transmettre
-						</Button>
-					</>
 				)}
 
 				<Button variant="outline" size="sm" onClick={handleClasser} className="gap-1.5">

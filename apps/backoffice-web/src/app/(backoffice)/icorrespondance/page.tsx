@@ -1359,7 +1359,7 @@ export default function ICorrespondancePage() {
         tags: item.tags,
         priority: item.priority as Priority,
         folderId: item.folderId ?? "__toutes-correspondances",
-        attachments: item.attachments?.length ?? 0,
+        attachments: item.documents?.length ?? 0,
       })),
     [rawItems]
   )
@@ -1681,7 +1681,7 @@ export default function ICorrespondancePage() {
         comment: newCorr.comment.trim() || undefined,
         tags: [],
         requiresApproval: false,
-        attachments: [],
+        documents: [],
       })
       setNewCorr({
         title: "",

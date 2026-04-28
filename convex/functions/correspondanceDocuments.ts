@@ -55,18 +55,8 @@ export const addDocumentToCorrespondance = authMutation({
       isMainDocument: args.isMainDocument ?? (currentDocs.length === 0),
     };
 
-    // Aussi ajouter dans attachments (rétrocompatibilité)
-    const currentAttachments = item.attachments ?? [];
-
     await ctx.db.patch(args.itemId, {
       documents: [...currentDocs, newDoc],
-      attachments: [...currentAttachments, {
-        storageId: args.storageId,
-        filename: args.filename,
-        mimeType: args.mimeType,
-        sizeBytes: args.sizeBytes,
-        uploadedAt: now,
-      }],
       updatedAt: now,
     });
 
@@ -122,13 +112,9 @@ export const removeDocumentFromCorrespondance = authMutation({
 
     // Retirer du dossier
     const newDocs = docs.filter((_, i) => i !== args.documentIndex);
-    const newAttachments = (item.attachments ?? []).filter(
-      (a) => a.storageId !== removedDoc.storageId,
-    );
 
     await ctx.db.patch(args.itemId, {
       documents: newDocs,
-      attachments: newAttachments,
       updatedAt: now,
     });
 
@@ -220,26 +206,6 @@ export const classerCorrespondanceDansIDocument = authMutation({
       createdDocIds.push(docId as string);
     }
 
-    // Si pas de documents enrichis, transférer les attachments legacy
-    if (docs.length === 0 && item.attachments.length > 0) {
-      for (const att of item.attachments) {
-        const docId = await ctx.db.insert("documents", {
-          ownerId: item.orgId,
-          files: [{
-            storageId: att.storageId,
-            filename: att.filename,
-            mimeType: att.mimeType,
-            sizeBytes: att.sizeBytes,
-            uploadedAt: att.uploadedAt,
-          }],
-          label: `${item.reference} — ${att.filename}`,
-          status: DocumentStatus.Pending,
-          updatedAt: now,
-        });
-        createdDocIds.push(docId as string);
-      }
-    }
-
     // Soft-delete le correspondanceItem
     await ctx.db.patch(args.itemId, {
       deletedAt: now,
@@ -299,17 +265,8 @@ export const importDocumentFromIDocument = authMutation({
       isMainDocument: currentDocs.length === 0,
     };
 
-    const currentAttachments = item.attachments ?? [];
-
     await ctx.db.patch(args.correspondanceItemId, {
       documents: [...currentDocs, newDoc],
-      attachments: [...currentAttachments, {
-        storageId: file.storageId,
-        filename: file.filename,
-        mimeType: file.mimeType,
-        sizeBytes: file.sizeBytes,
-        uploadedAt: file.uploadedAt,
-      }],
       updatedAt: now,
     });
 
@@ -404,13 +361,6 @@ export const disperseCorrespondance = authMutation({
         comment: `Documents dispersés depuis ${item.reference}`,
         tags: ["dispersé", ...item.tags],
         requiresApproval: false,
-        attachments: groupDocs.map((d) => ({
-          storageId: d.storageId,
-          filename: d.filename,
-          mimeType: d.mimeType,
-          sizeBytes: d.sizeBytes,
-          uploadedAt: d.uploadedAt,
-        })),
         documents: groupDocs,
         confidentialite: item.confidentialite,
         parentItemId: args.itemId,
@@ -430,22 +380,17 @@ export const disperseCorrespondance = authMutation({
     // Retirer les documents dispersés du dossier original
     const remainingDocs = docs.filter((_, i) => !dispersedIndices.has(i))
       .map((d, i) => ({ ...d, ordre: i + 1 }));
-    const remainingAttachments = (item.attachments ?? []).filter(
-      (a) => !docs.some((d, i) => dispersedIndices.has(i) && d.storageId === a.storageId),
-    );
 
     if (remainingDocs.length === 0) {
       // Tous les documents sont dispersés → archiver le dossier
       await ctx.db.patch(args.itemId, {
         documents: [],
-        attachments: [],
         status: "archived",
         updatedAt: now,
       });
     } else {
       await ctx.db.patch(args.itemId, {
         documents: remainingDocs,
-        attachments: remainingAttachments,
         updatedAt: now,
       });
     }

@@ -47,16 +47,16 @@ export function ApprovalPanel({ itemId, currentUserId, status }: ApprovalPanelPr
 	const [showCommentInput, setShowCommentInput] = useState(false);
 
 	const { data: steps, isPending } = useAuthenticatedConvexQuery(
-		api.functions.correspondance.getApprovalSteps,
+		api.functions.correspondanceCore.getApprovalSteps,
 		{ itemId },
 	);
 
 	const { mutateAsync: approveStep, isPending: isApproving } = useConvexMutationQuery(
-		api.functions.correspondance.approveChainStep,
+		api.functions.correspondanceCore.approveAndSend,
 	);
 
 	const { mutateAsync: rejectStep, isPending: isRejecting } = useConvexMutationQuery(
-		api.functions.correspondance.rejectChainStep,
+		api.functions.correspondanceCore.rejectCorrespondance,
 	);
 
 	if (isPending) {

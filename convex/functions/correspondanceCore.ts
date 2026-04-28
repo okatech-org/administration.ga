@@ -304,7 +304,7 @@ export const sendCorrespondance = authMutation({
 
     // Vérifier les documents
     const docs = item.documents ?? [];
-    if (docs.length === 0 && item.attachments.length === 0) {
+    if (docs.length === 0) {
       throw new Error("Un dossier de correspondance doit contenir au moins un document");
     }
 
@@ -513,7 +513,6 @@ async function _executeEnvoi(
     comment: item.comment,
     tags: item.tags ?? [],
     requiresApproval: false,
-    attachments: item.attachments ?? [],
     documents: (item.documents ?? []).map((d: any) => ({
       ...d,
       copyWatermark: false,
@@ -603,8 +602,8 @@ async function _executeEnvoi(
         senderOrg: item.senderOrg ?? "",
         recipientName: item.recipientName,
         comment: item.comment,
-        hasAttachments: (item.documents ?? []).length > 0 || item.attachments.length > 0,
-        attachmentCount: (item.documents ?? []).length || item.attachments.length,
+        hasAttachments: (item.documents ?? []).length > 0,
+        attachmentCount: (item.documents ?? []).length,
         itemId: originalId,
       },
     );
@@ -927,7 +926,6 @@ export const respondToCorrespondance = authMutation({
       comment: `En réponse à ${item.reference}`,
       tags: ["réponse"],
       requiresApproval: false,
-      attachments: [],
       documents: [],
       confidentialite: item.confidentialite ?? "standard",
       parentItemId: args.itemId,
@@ -1029,14 +1027,6 @@ export const getDossier = authQuery({
       })),
     );
 
-    // URLs des attachments legacy
-    const attachmentsWithUrls = await Promise.all(
-      (item.attachments ?? []).map(async (att) => ({
-        ...att,
-        url: await ctx.storage.getUrl(att.storageId),
-      })),
-    );
-
     // Historique workflow
     const workflowSteps = await ctx.db
       .query("correspondanceWorkflowSteps")
@@ -1066,7 +1056,6 @@ export const getDossier = authQuery({
     return {
       ...item,
       documents: docsWithUrls,
-      attachments: attachmentsWithUrls,
       workflowSteps,
       approvalSteps: approvalSteps.sort((a, b) => a.ordre - b.ordre),
       recipients,
@@ -1078,6 +1067,25 @@ export const getDossier = authQuery({
         createdAt: r.createdAt,
       })),
     };
+  },
+});
+
+/**
+ * Obtenir les étapes d'approbation d'un dossier (chaîne hiérarchique).
+ */
+export const getApprovalSteps = authQuery({
+  args: { itemId: v.id("correspondanceItems") },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item || item.deletedAt) return [];
+
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "view");
+
+    return await ctx.db
+      .query("correspondanceApprovalSteps")
+      .withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+      .collect();
   },
 });
 
@@ -1097,7 +1105,7 @@ async function _enrichWithUrls(ctx: { storage: { getUrl: (id: Id<"_storage">) =>
       return {
         ...item,
         documents: docsWithUrls,
-        documentCount: (item.documents ?? []).length || item.attachments?.length || 0,
+        documentCount: (item.documents ?? []).length,
       };
     }),
   );

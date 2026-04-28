@@ -192,11 +192,12 @@ export const correspondanceItemsTable = defineTable({
   approvedAt: v.optional(v.number()),
   sentAt: v.optional(v.number()),
 
-  // Attachments (legacy — rétrocompatibilité)
-  attachments: v.array(correspondanceAttachmentValidator),
-
-  // Documents enrichis (remplace progressivement attachments)
+  // Documents enrichis du dossier
   documents: v.optional(v.array(correspondanceDocumentValidator)),
+
+  // Champ legacy — toléré pour la rétrocompatibilité des anciens documents,
+  // jamais lu ni écrit. À supprimer via migration une fois les données purgées.
+  attachments: v.optional(v.array(correspondanceAttachmentValidator)),
 
   // Direction (for register views)
   direction: v.optional(v.union(v.literal("incoming"), v.literal("outgoing"))),

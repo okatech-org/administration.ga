@@ -95,7 +95,7 @@ export function NewCorrespondanceWizard({
 	);
 
 	const sendCorrespondanceMutation = useConvexMutationQuery(
-		api.functions.correspondance.sendCorrespondance,
+		api.functions.correspondanceCore.sendCorrespondance,
 	);
 
 	// ─── Handlers ──────────────────────────────────────────
@@ -167,7 +167,7 @@ export function NewCorrespondanceWizard({
 						orgName: r.orgName,
 					})),
 					comment: comment.trim() || undefined,
-					attachments: attachments.map((a) => ({
+					documents: attachments.map((a) => ({
 						storageId: a.storageId as Id<"_storage">,
 						filename: a.filename,
 						mimeType: a.mimeType,

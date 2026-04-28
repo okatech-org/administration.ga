@@ -1507,7 +1507,7 @@ export default function ICorrespondancePage({
 				tags: item.tags,
 				priority: item.priority as Priority,
 				folderId: item.folderId ?? "__brouillon",
-				attachments: item.attachments?.length ?? 0,
+				attachments: item.documents?.length ?? 0,
 				isCopy: item.isCopy ?? false,
 				recipientStatus: item.recipientStatus,
 				copyOwnerOrgId: item.copyOwnerOrgId,
@@ -2059,9 +2059,7 @@ export default function ICorrespondancePage({
 															date={corr.updatedAt}
 															status={corr.status}
 															priority={corr.priority}
-															documentCount={
-																corr.documents?.length || corr.attachments
-															}
+															documentCount={corr.documents?.length ?? corr.attachments}
 															isCopy={corr.isCopy}
 															recipientStatus={corr.recipientStatus}
 															onClick={() => setOpenDetailId(corr.id)}
