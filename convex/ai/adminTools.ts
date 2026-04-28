@@ -23,7 +23,6 @@ export const ADMIN_TOOL_PERMISSIONS: Record<string, TaskCodeValue> = {
   getRegistryStats: "consular_registrations.view",
   getAppointmentsList: "appointments.view",
   getTeamMembers: "team.view",
-  getOrgMailInbox: "digital_mail.view",
   getRecentPayments: "payments.view",
   getOrgPosts: "communication.publish",
   getAgentContext: "requests.view",
@@ -32,7 +31,6 @@ export const ADMIN_TOOL_PERMISSIONS: Record<string, TaskCodeValue> = {
   addNoteToRequest: "requests.view",
   assignRequest: "requests.assign",
   manageAppointment: "appointments.manage",
-  sendOrgMail: "digital_mail.manage",
 };
 
 // Tool names that require user confirmation before execution
@@ -41,7 +39,6 @@ export const ADMIN_MUTATIVE_TOOLS = [
   "addNoteToRequest",
   "assignRequest",
   "manageAppointment",
-  "sendOrgMail",
 ] as const;
 
 // Tool names that are UI actions (handled by frontend)
@@ -183,20 +180,6 @@ const adminToolsTemplate = [
     parameters: {
       type: "object" as const,
       properties: {},
-    },
-  },
-  {
-    name: "getOrgMailInbox",
-    description:
-      "Liste les messages de la boîte mail de l'organisation.",
-    parameters: {
-      type: "object" as const,
-      properties: {
-        folder: {
-          type: "string",
-          description: "Dossier: inbox (défaut), sent, trash, starred",
-        },
-      },
     },
   },
   {
@@ -352,29 +335,6 @@ const adminToolsTemplate = [
         },
       },
       required: ["appointmentId", "action"],
-    },
-  },
-  {
-    name: "sendOrgMail",
-    description:
-      "Envoie un message officiel depuis la boîte mail de l'organisation. Nécessite confirmation.",
-    parameters: {
-      type: "object" as const,
-      properties: {
-        recipientOwnerId: {
-          type: "string",
-          description: "Identifiant du destinataire (profil)",
-        },
-        subject: {
-          type: "string",
-          description: "Objet du message",
-        },
-        body: {
-          type: "string",
-          description: "Contenu du message",
-        },
-      },
-      required: ["recipientOwnerId", "subject", "body"],
     },
   },
 ];

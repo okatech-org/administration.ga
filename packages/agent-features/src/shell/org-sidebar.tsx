@@ -12,7 +12,6 @@ import {
 	FolderOpen,
 	Globe2,
 	Home,
-	Mail,
 	MessagesSquare,
 	Moon,
 	Newspaper,
@@ -122,7 +121,6 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 		{
 			label: "iBureau",
 			items: [
-				{ title: "iBoîte", url: "/iboite", icon: Mail, requires: "digital_mail.view", moduleCode: "digital_mail" },
 				{ title: "iCorrespondance", url: "/icorrespondance", icon: FolderOpen, requires: "correspondance.view", moduleCode: "correspondance" },
 				{ title: "iDocument", url: "/idocument", icon: FileText, requires: "documents.view", moduleCode: "documents" },
 				{ title: "iAgenda", url: "/iagenda", icon: Calendar, requires: "appointments.view", moduleCode: "appointments" },

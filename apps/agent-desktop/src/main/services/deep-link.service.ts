@@ -38,12 +38,10 @@ export class DeepLinkService {
   }
 
   private handleUrl(url: string): void {
-    // Parse diplomate://navigate/iboite/abc123 → /iboite/abc123
     try {
       const parsed = new URL(url)
       if (parsed.host === "navigate") {
-        const path = parsed.pathname // e.g. /iboite/abc123
-        this.onNavigateCallback?.(path)
+        this.onNavigateCallback?.(parsed.pathname)
       }
     } catch {
       // Invalid URL, ignore

@@ -32,7 +32,6 @@ export type SectionKey =
   | "jurisdiction"
   | "calendar"
   | "calls"
-  | "iboite"
   | "correspondance"
   | "notifications"
   | "chats"
@@ -117,7 +116,6 @@ export function useCompletionScore(
       jurisdiction: empty,
       calendar: empty,
       calls: empty,
-      iboite: empty,
       correspondance: empty,
       notifications: empty,
       chats: empty,
@@ -142,7 +140,6 @@ export function useCompletionScore(
     const branding = org.branding;
     const settings = org.settings;
     const corr = settings?.correspondanceConfig;
-    const internalMail = (settings as { internalMail?: { defaultSignature?: unknown; replyTemplates?: unknown[] } } | undefined)?.internalMail;
     const notif = (settings as { notifications?: { channels?: unknown; events?: unknown[] } } | undefined)?.notifications;
 
     sections.identity = evalChecks([
@@ -190,15 +187,6 @@ export function useCompletionScore(
 
     sections.calls = evalChecks([
       { key: "atLeastOneLine", ok: (callLines?.length ?? 0) > 0 },
-    ]);
-
-    sections.iboite = evalChecks([
-      {
-        key: "configured",
-        ok: Boolean(internalMail?.defaultSignature) ||
-          (Array.isArray(internalMail?.replyTemplates) &&
-            (internalMail?.replyTemplates?.length ?? 0) > 0),
-      },
     ]);
 
     sections.correspondance = evalChecks([

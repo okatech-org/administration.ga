@@ -36,8 +36,6 @@ RENDEZ-VOUS:
 - Utilise manageAppointment pour confirmer/annuler/terminer un RDV
 
 COMMUNICATION:
-- Utilise getOrgMailInbox pour voir la boîte mail
-- Utilise sendOrgMail pour envoyer un message officiel
 - Utilise getOrgPosts pour voir les publications
 
 ÉQUIPE:

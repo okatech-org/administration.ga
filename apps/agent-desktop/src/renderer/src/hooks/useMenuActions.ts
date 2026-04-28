@@ -11,7 +11,6 @@ export function useMenuActions(onNavigate: (path: string) => void) {
     const unsubscribe = window.desktopApi.menu.onAction((action) => {
       const pathMap: Record<string, string> = {
         "navigate:dashboard": "/",
-        "navigate:iboite": "/iboite",
         "navigate:icorrespondance": "/icorrespondance",
         "navigate:idocument": "/idocument",
         "navigate:iagenda": "/iagenda",

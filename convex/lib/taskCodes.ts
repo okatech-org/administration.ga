@@ -132,11 +132,6 @@ export const TaskCode = {
   payments: {
     view: "payments.view",
   },
-  // Digital Mail
-  digital_mail: {
-    view: "digital_mail.view",
-    manage: "digital_mail.manage",
-  },
   // Meetings & Calls
   meetings: {
     create: "meetings.create",
@@ -342,9 +337,6 @@ export const taskCodeValidator = v.union(
   v.literal(TaskCode.community_events.manage),
   // Payments
   v.literal(TaskCode.payments.view),
-  // Digital Mail
-  v.literal(TaskCode.digital_mail.view),
-  v.literal(TaskCode.digital_mail.manage),
   // Chat peer-to-peer
   v.literal(TaskCode.chats.view),
   v.literal(TaskCode.chats.send),
@@ -487,9 +479,6 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   [TaskCode.community_events.manage]: "medium",
   // Payments
   [TaskCode.payments.view]: "medium",
-  // Digital Mail
-  [TaskCode.digital_mail.view]: "low",
-  [TaskCode.digital_mail.manage]: "medium",
   // Chat peer-to-peer
   [TaskCode.chats.view]: "low",
   [TaskCode.chats.send]: "low",

@@ -5,9 +5,9 @@ import type { NativeNotification, NotificationCategory } from "@workspace/deskto
  * Hook that bridges Convex real-time notifications with native OS notifications.
  * Mount once inside the authenticated app boundary.
  *
- * `onNavigate` receives a react-router pathname (e.g. `/iboite`). It is invoked
- * when the user clicks an OS notification or when a notification carries a link
- * the app should resolve to an internal route.
+ * `onNavigate` receives a react-router pathname (e.g. `/icorrespondance`). It is
+ * invoked when the user clicks an OS notification or when a notification carries
+ * a link the app should resolve to an internal route.
  */
 export function useNativeNotifications(
   onNavigate: (path: string) => void
@@ -55,7 +55,6 @@ function resolvePath(
   category?: NotificationCategory
 ): string | null {
   const knownPrefixes = [
-    "/iboite",
     "/icorrespondance",
     "/idocument",
     "/iagenda",
@@ -78,7 +77,6 @@ function resolvePath(
   // Fallback by category
   if (category) {
     const categoryPaths: Partial<Record<NotificationCategory, string>> = {
-      mail: "/iboite",
       approval: "/icorrespondance",
       appointment: "/appointments",
       payment: "/payments",

@@ -2,7 +2,6 @@ import { Tray, Menu, nativeImage, app, type BrowserWindow } from "electron"
 import path from "path"
 
 export interface TrayStatus {
-  unreadMail?: number
   pendingApprovals?: number
   printerName?: string
   printerConnected?: boolean
@@ -54,17 +53,11 @@ export class TrayService {
   private rebuildMenu(): void {
     if (!this.tray) return
 
-    const { unreadMail = 0, pendingApprovals = 0, printerName, printerConnected } = this.status
+    const { pendingApprovals = 0, printerName, printerConnected } = this.status
 
     const template: Electron.MenuItemConstructorOptions[] = []
 
     // Status section
-    if (unreadMail > 0) {
-      template.push({
-        label: `${unreadMail} courrier${unreadMail > 1 ? "s" : ""} non lu${unreadMail > 1 ? "s" : ""}`,
-        enabled: false,
-      })
-    }
     if (pendingApprovals > 0) {
       template.push({
         label: `${pendingApprovals} approbation${pendingApprovals > 1 ? "s" : ""} en attente`,
@@ -89,13 +82,6 @@ export class TrayService {
         click: () => this.showWindow(),
       },
       {
-        label: "Nouveau courrier",
-        click: () => {
-          this.showWindow()
-          this.onActionCallback?.("navigate:iboite")
-        },
-      },
-      {
         label: "Scanner peripheriques",
         click: () => {
           this.onActionCallback?.("printer:scan")
@@ -113,12 +99,7 @@ export class TrayService {
 
   private updateTooltip(): void {
     if (!this.tray) return
-    const { unreadMail = 0 } = this.status
-    const tooltip =
-      unreadMail > 0
-        ? `Diplomate.ga - ${unreadMail} non lu${unreadMail > 1 ? "s" : ""}`
-        : "Diplomate.ga"
-    this.tray.setToolTip(tooltip)
+    this.tray.setToolTip("Diplomate.ga")
   }
 
   private getIconPath(): string {

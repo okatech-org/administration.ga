@@ -33,11 +33,6 @@ export function registerMenuIpc(
       label: "Fichier",
       submenu: [
         {
-          label: "Nouveau courrier",
-          accelerator: "CmdOrCtrl+N",
-          click: () => sendAction("navigate:iboite"),
-        },
-        {
           label: "Imprimer",
           accelerator: "CmdOrCtrl+P",
           click: () => sendAction("navigate:impression"),
@@ -81,23 +76,18 @@ export function registerMenuIpc(
           click: () => sendAction("navigate:dashboard"),
         },
         {
-          label: "Boite de reception",
-          accelerator: "CmdOrCtrl+2",
-          click: () => sendAction("navigate:iboite"),
-        },
-        {
           label: "Correspondance",
-          accelerator: "CmdOrCtrl+3",
+          accelerator: "CmdOrCtrl+2",
           click: () => sendAction("navigate:icorrespondance"),
         },
         {
           label: "Documents",
-          accelerator: "CmdOrCtrl+4",
+          accelerator: "CmdOrCtrl+3",
           click: () => sendAction("navigate:idocument"),
         },
         {
           label: "Agenda",
-          accelerator: "CmdOrCtrl+5",
+          accelerator: "CmdOrCtrl+4",
           click: () => sendAction("navigate:iagenda"),
         },
       ],

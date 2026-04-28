@@ -75,8 +75,20 @@ export const ModuleCode = {
 
 export type ModuleCodeValue = (typeof ModuleCode)[keyof typeof ModuleCode];
 
-/** All module codes as a flat array */
-export const ALL_MODULE_CODES: ModuleCodeValue[] = Object.values(ModuleCode);
+/**
+ * Modules retired from the active product.
+ * The validator + ModuleCode enum still include them so legacy rows in
+ * `org.modules` / `position.modules` keep validating. New orgs and UI lists
+ * must filter these out via {@link ALL_MODULE_CODES} (already filtered).
+ */
+export const REMOVED_MODULE_CODES: readonly ModuleCodeValue[] = [
+  ModuleCode.digital_mail,
+];
+
+/** All currently-active module codes (excludes {@link REMOVED_MODULE_CODES}). */
+export const ALL_MODULE_CODES: ModuleCodeValue[] = Object.values(ModuleCode).filter(
+  (code) => !REMOVED_MODULE_CODES.includes(code),
+);
 
 // ═══════════════════════════════════════════════════════════════
 // MODULE CATEGORIES
@@ -220,6 +232,13 @@ export interface ModuleDefinition {
   isCore: boolean;   // Core modules cannot be disabled
   /** Sous-modules/onglets activables individuellement */
   capabilities?: CapabilityDefinition[];
+  /**
+   * Module retiré du produit actif. L'entrée reste dans le registre pour que
+   * les valeurs legacy stockées en DB continuent de valider et de s'afficher
+   * dans l'historique. Les UIs actives doivent filtrer ces modules via
+   * {@link REMOVED_MODULE_CODES} ou {@link ALL_MODULE_CODES}.
+   */
+  isRemoved?: boolean;
 }
 
 export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
@@ -427,16 +446,12 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   [ModuleCode.digital_mail]: {
     code: ModuleCode.digital_mail,
     label: { fr: "iBoîte", en: "iBoîte" },
-    description: { fr: "Messagerie interne et courrier dématérialisé", en: "Internal messaging and digital mail" },
+    description: { fr: "Messagerie interne et courrier dématérialisé (module retiré)", en: "Internal messaging and digital mail (removed module)" },
     icon: "Mail",
     color: "text-blue-400",
     category: "tools",
     isCore: false,
-    capabilities: [
-      { code: "mail", label: { fr: "Messagerie", en: "Mail" } },
-      { code: "packages", label: { fr: "Colis", en: "Packages" } },
-      { code: "calls", label: { fr: "Appels", en: "Calls" } },
-    ],
+    isRemoved: true,
   },
   [ModuleCode.meetings]: {
     code: ModuleCode.meetings,
@@ -739,11 +754,6 @@ export const MODULE_ACCESS_TASKS: Partial<Record<string, Record<ModuleAccessLeve
     editor: ["consular_registrations.view", "consular_registrations.manage"],
     admin: ["consular_registrations.view", "consular_registrations.manage"],
   },
-  digital_mail: {
-    reader: ["digital_mail.view"],
-    editor: ["digital_mail.view", "digital_mail.manage"],
-    admin: ["digital_mail.view", "digital_mail.manage"],
-  },
   meetings: {
     reader: ["meetings.view_history", "meetings.join"],
     editor: ["meetings.view_history", "meetings.join", "meetings.create"],
@@ -894,7 +904,6 @@ export const SIDEBAR_MODULE_GROUPS: SidebarModuleGroup[] = [
     label: { fr: "iBureau", en: "iBureau" },
     icon: "Briefcase",
     modules: [
-      ModuleCode.digital_mail,
       ModuleCode.correspondance,
       ModuleCode.documents,
       ModuleCode.appointments,
@@ -1237,14 +1246,14 @@ const ORG_TYPE_MODULE_MAP: Record<string, ModuleCodeValue[]> = {
     ModuleCode.civil_status, ModuleCode.passports, ModuleCode.visas,
     ModuleCode.associations, ModuleCode.companies, ModuleCode.community_events,
     ModuleCode.finance, ModuleCode.payments,
-    ModuleCode.communication, ModuleCode.tutorials, ModuleCode.digital_mail, ModuleCode.meetings,
+    ModuleCode.communication, ModuleCode.tutorials, ModuleCode.meetings,
     ModuleCode.roles, ModuleCode.permissions, ModuleCode.org_config, ModuleCode.services_config,
     ModuleCode.analytics, ModuleCode.monitoring, ModuleCode.statistics,
   ],
   permanent_mission: [
     ...CORE_MODULE_CODES,
     ModuleCode.associations, ModuleCode.companies, ModuleCode.community_events,
-    ModuleCode.communication, ModuleCode.tutorials, ModuleCode.digital_mail, ModuleCode.meetings,
+    ModuleCode.communication, ModuleCode.tutorials, ModuleCode.meetings,
     ModuleCode.analytics, ModuleCode.monitoring, ModuleCode.statistics,
   ],
   high_commission: [...ALL_MODULE_CODES],

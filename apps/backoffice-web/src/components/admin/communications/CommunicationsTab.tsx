@@ -5,7 +5,6 @@
  *
  * Regroupe les vues opérationnelles des canaux internes :
  *   - Téléphonie (CallLinesTab existant)
- *   - Stats iBoîte (volume, threads actifs)
  *   - Stats iAsted (conversations, escalation rate)
  *
  * Les paramètres détaillés restent dans /reps/{orgId}/edit (zone Configuration).
@@ -13,7 +12,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { Bot, Mail, MessageSquare, Phone } from "lucide-react";
+import { Bot, MessageSquare, Phone } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { CallLinesTab } from "@/components/admin/call-lines-tab";
 import { Badge } from "@/components/ui/badge";
@@ -31,14 +30,10 @@ export function CommunicationsTab({ orgId }: CommunicationsTabProps) {
   const { t } = useTranslation();
   return (
     <Tabs defaultValue="phone">
-      <TabsList className="grid grid-cols-3 sm:inline-flex h-auto p-1 bg-[#F4F3ED] dark:bg-[#171616]">
+      <TabsList className="grid grid-cols-2 sm:inline-flex h-auto p-1 bg-[#F4F3ED] dark:bg-[#171616]">
         <TabsTrigger value="phone" className="gap-1.5 text-xs sm:text-sm">
           <Phone className="h-4 w-4" />
           {t("superadmin.communications.phone", "Téléphonie")}
-        </TabsTrigger>
-        <TabsTrigger value="iboite" className="gap-1.5 text-xs sm:text-sm">
-          <Mail className="h-4 w-4" />
-          {t("superadmin.communications.iboite", "iBoîte")}
         </TabsTrigger>
         <TabsTrigger value="iasted" className="gap-1.5 text-xs sm:text-sm">
           <Bot className="h-4 w-4" />
@@ -50,76 +45,10 @@ export function CommunicationsTab({ orgId }: CommunicationsTabProps) {
         <CallLinesTab orgId={orgId} />
       </TabsContent>
 
-      <TabsContent value="iboite" className="mt-4">
-        <IboiteStats orgId={orgId} />
-      </TabsContent>
-
       <TabsContent value="iasted" className="mt-4">
         <IAstedStats orgId={orgId} />
       </TabsContent>
     </Tabs>
-  );
-}
-
-// ─── Stats iBoîte ──────────────────────────────────────────────
-function IboiteStats({ orgId }: { orgId: Id<"orgs"> }) {
-  const { data: org } = useAuthenticatedConvexQuery(
-    api.functions.orgs.getById,
-    { orgId },
-  );
-
-  const internalMail = (org?.settings as { internalMail?: { defaultSignature?: unknown; replyTemplates?: unknown[]; autoResponder?: { enabled?: boolean }; stamps?: unknown[] } } | undefined)?.internalMail;
-  const templatesCount = Array.isArray(internalMail?.replyTemplates)
-    ? internalMail.replyTemplates.length
-    : 0;
-  const stampsCount = Array.isArray(internalMail?.stamps)
-    ? internalMail.stamps.length
-    : 0;
-  const hasSignature = Boolean(internalMail?.defaultSignature);
-  const autoResponderActive = internalMail?.autoResponder?.enabled === true;
-
-  return (
-    <div className="space-y-3">
-      <FlatCard>
-        <div className="p-4">
-          <SectionHeader
-            icon={<Mail className="h-4 w-4 text-purple-600" />}
-            title="Configuration iBoîte"
-          />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
-            <StatCard
-              label="Templates de réponse"
-              value={templatesCount}
-              hint={templatesCount === 0 ? "Aucun configuré" : undefined}
-            />
-            <StatCard
-              label="Tampons digitaux"
-              value={stampsCount}
-              hint={stampsCount === 0 ? "Aucun configuré" : undefined}
-            />
-            <StatCard
-              label="Signature par défaut"
-              value={hasSignature ? "✓ OK" : "—"}
-              valueColor={hasSignature ? "text-emerald-600" : "text-muted-foreground"}
-              hint={!hasSignature ? "Non définie" : undefined}
-            />
-            <StatCard
-              label="Auto-répondeur"
-              value={autoResponderActive ? "✓ Actif" : "—"}
-              valueColor={autoResponderActive ? "text-emerald-600" : "text-muted-foreground"}
-            />
-          </div>
-        </div>
-      </FlatCard>
-
-      <FlatCard>
-        <div className="p-4 text-center text-muted-foreground text-sm">
-          <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-30" />
-          <p>Métriques détaillées (volume messages, threads actifs)</p>
-          <p className="text-xs mt-1">Disponible en Phase C avec analytics par canal</p>
-        </div>
-      </FlatCard>
-    </div>
   );
 }
 

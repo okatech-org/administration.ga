@@ -601,7 +601,7 @@ export const seedEspagne = mutation({
 				"consular_registrations", "consular_notifications", "consular_cards",
 				"civil_status", "visas",
 				"finance", "payments",
-				"communication", "digital_mail", "meetings",
+				"communication", "meetings",
 				"team", "settings", "analytics", "statistics",
 			],
 			settings: {

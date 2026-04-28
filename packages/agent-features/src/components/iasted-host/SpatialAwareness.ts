@@ -20,11 +20,6 @@ const PAGE_CONTEXT: Record<string, PageContext> = {
 		capabilities: ["traiter les demandes", "changer les statuts", "assigner", "ajouter des notes"],
 		suggestions: ["Demandes en attente", "Statistiques des demandes"],
 	},
-	"/iboite": {
-		module: "iBoîte",
-		capabilities: ["lire les messages", "envoyer un mail sécurisé", "gérer les appels"],
-		suggestions: ["Messages non lus", "Envoyer un courrier"],
-	},
 	"/icorrespondance": {
 		module: "iCorrespondance",
 		capabilities: ["créer une correspondance", "suivre l'approbation", "consulter les dossiers"],

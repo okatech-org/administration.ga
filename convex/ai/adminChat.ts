@@ -508,30 +508,6 @@ export const executeAction = action({
           break;
         }
 
-        case "sendOrgMail": {
-          const typedArgs = actionArgs as {
-            recipientOwnerId: string;
-            subject: string;
-            body: string;
-          };
-
-          await ctx.runMutation(api.functions.sendMail.send, {
-            recipientOwnerId: typedArgs.recipientOwnerId as any,
-            recipientOwnerType: "profile" as any,
-            subject: typedArgs.subject,
-            content: typedArgs.body,
-            type: "email" as any,
-            senderOwnerId: orgId as any,
-            senderOwnerType: "organization" as any,
-          });
-
-          result = {
-            success: true,
-            data: { message: "Message envoyé" },
-          };
-          break;
-        }
-
         default:
           throw new Error(`Unknown action: ${actionType}`);
       }

@@ -85,7 +85,6 @@ const fileDialogApi = {
 
 const trayApi = {
   updateStatus: (status: {
-    unreadMail?: number
     pendingApprovals?: number
     printerName?: string
     printerConnected?: boolean

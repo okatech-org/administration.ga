@@ -27,7 +27,6 @@ import {
   Globe2,
   Home,
   Info,
-  Mail,
   MessagesSquare,
   Palette,
   Phone,
@@ -66,7 +65,6 @@ const SETTINGS_SECTIONS: SettingsSectionItem[] = [
   { key: "calendar", label: "Horaires & Calendrier", icon: CalendarDays, description: "Horaires, jours fériés, fermetures", zone: "Identité & Localisation" },
   // Communication
   { key: "calls", label: "iAppel (paramètres)", icon: Phone, description: "Timeouts, recording, fallback", zone: "Communication" },
-  { key: "iboite", label: "iBoîte", icon: Mail, description: "Tampons, signatures, templates", zone: "Communication" },
   { key: "correspondance", label: "iCorrespondance", icon: FileSignature, description: "Référence, types, signature", zone: "Communication" },
   { key: "notifications", label: "Notifications", icon: Bell, description: "Canaux × events, quiet hours", zone: "Communication" },
   { key: "chats", label: "Chats P2P", icon: MessagesSquare, description: "Routage, pièces jointes", zone: "Communication" },

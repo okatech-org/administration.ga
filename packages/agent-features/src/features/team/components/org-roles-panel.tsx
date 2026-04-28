@@ -271,8 +271,6 @@ const TASK_LABELS: Record<string, { fr: string; en: string }> = {
 	"community_events.view": { fr: "Consulter les événements", en: "View events" },
 	"community_events.manage": { fr: "Gérer les événements", en: "Manage events" },
 	"payments.view": { fr: "Consulter les paiements", en: "View payments" },
-	"digital_mail.view": { fr: "Consulter le courrier", en: "View mail" },
-	"digital_mail.manage": { fr: "Gérer le courrier", en: "Manage mail" },
 	"meetings.create": { fr: "Créer des réunions", en: "Create meetings" },
 	"meetings.join": { fr: "Rejoindre des réunions", en: "Join meetings" },
 	"meetings.manage": { fr: "Gérer les réunions", en: "Manage meetings" },

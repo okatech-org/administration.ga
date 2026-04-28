@@ -12,7 +12,6 @@ import {
 	Info,
 	LifeBuoy,
 	Loader2,
-	Mail,
 	MessageSquare,
 	Send,
 	User,
@@ -312,17 +311,6 @@ export default function SuperadminTicketDetail() {
 										>
 											<User className="h-3.5 w-3.5 mr-2 shrink-0" />
 											Voir le profil
-										</Button>
-										<Button
-											variant="outline"
-											size="sm"
-											className="w-full text-xs h-8 bg-background"
-											asChild
-										>
-											<Link href="/my-space/iboite">
-												<Mail className="h-3.5 w-3.5 mr-2 shrink-0 text-primary" />
-												Envoyer un message
-											</Link>
 										</Button>
 									</div>
 								</div>

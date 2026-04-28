@@ -77,7 +77,6 @@ import {
   ProjetsPage,
   TargetDetailPage,
 } from "@workspace/agent-features/features/affaires-diplomatiques"
-import IBoitePage from "@workspace/agent-features/features/iboite"
 import ICorrespondancePage from "@workspace/agent-features/features/icorrespondance"
 import IDocumentPage from "@workspace/agent-features/features/idocument"
 import IAgendaPage from "@workspace/agent-features/features/iagenda"
@@ -223,7 +222,7 @@ export function App() {
 
   // Native desktop integrations (notification click → navigate, tray sync, menu bar)
   useNativeNotifications(handleNavigate)
-  useTraySync(handleNavigate)
+  useTraySync()
   useMenuActions(handleNavigate)
 
   return (
@@ -362,7 +361,6 @@ export function App() {
         </Route>
 
         {/* iSuite */}
-        <Route path="/iboite" element={<IBoitePage />} />
         <Route path="/icorrespondance" element={<ICorrespondancePage />} />
         <Route path="/idocument" element={<IDocumentPage />} />
         <Route path="/iagenda" element={<IAgendaPage />} />

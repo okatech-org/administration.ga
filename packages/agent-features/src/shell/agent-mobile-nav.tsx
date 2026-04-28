@@ -6,7 +6,6 @@ import {
 	Calendar,
 	ClipboardList,
 	Home,
-	Mail,
 	Menu,
 	Moon,
 	Settings,
@@ -88,7 +87,6 @@ export function AgentMobileNav() {
 	const mainItems: NavItem[] = [
 		{ title: "Dashboard", url: "/", icon: Home },
 		{ title: "Demandes", url: "/requests", icon: ClipboardList },
-		{ title: "iBoite", url: "/iboite", icon: Mail },
 		{ title: "iAgenda", url: "/iagenda", icon: Calendar },
 	];
 

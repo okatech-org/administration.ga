@@ -44,10 +44,6 @@ export type AnalyticsEvents = {
 		is_online_meeting?: boolean
 	}
 	myspace_appointment_cancelled: never
-	myspace_iboite_message_sent: {
-		recipient_org?: string
-		subject_category?: string
-	}
 	myspace_vault_document_added: {
 		file_extension: string
 		file_size_category?: string

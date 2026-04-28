@@ -52,7 +52,6 @@ export function RepDashboard({ orgId }: RepDashboardProps) {
     jurisdiction: t("superadmin.dashboard.sections.jurisdiction", "Juridiction"),
     calendar: t("superadmin.dashboard.sections.calendar", "Calendrier"),
     calls: t("superadmin.dashboard.sections.calls", "Téléphonie"),
-    iboite: t("superadmin.dashboard.sections.iboite", "iBoîte"),
     correspondance: t("superadmin.dashboard.sections.correspondance", "iCorrespondance"),
     notifications: t("superadmin.dashboard.sections.notifications", "Notifications"),
     chats: t("superadmin.dashboard.sections.chats", "Chats P2P"),

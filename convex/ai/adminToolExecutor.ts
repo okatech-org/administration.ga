@@ -193,18 +193,6 @@ export async function executeAdminReadTool(
         orgId,
       });
 
-    case "getOrgMailInbox": {
-      const typedArgs = args as { folder?: string };
-      return (
-        await ctx.runQuery(api.functions.digitalMail.list, {
-          ownerId: orgId as any,
-          ownerType: "organization" as any,
-          folder: (typedArgs.folder as any) ?? undefined,
-          paginationOpts: { numItems: 10, cursor: null },
-        })
-      ).page;
-    }
-
     case "getRecentPayments":
       try {
         return await ctx.runQuery(api.functions.requests.getStatsByOrg, {

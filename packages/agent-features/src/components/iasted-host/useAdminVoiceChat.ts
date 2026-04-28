@@ -36,7 +36,6 @@ const TOOL_DESCRIPTIONS: Record<
     `Assigner la demande ${a.requestId} à l'agent ${a.agentId}`,
   manageAppointment: (a) =>
     `${a.action} le rendez-vous ${a.appointmentId}`,
-  sendOrgMail: (a) => `Envoyer un mail: ${a.subject}`,
 };
 
 type VoiceState =

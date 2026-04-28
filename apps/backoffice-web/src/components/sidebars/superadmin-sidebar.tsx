@@ -16,7 +16,6 @@ import {
 	Globe,
 	LayoutDashboard,
 	LifeBuoy,
-	Mail,
 	Moon,
 	Newspaper,
 	ScrollText,
@@ -162,12 +161,6 @@ export function SuperadminSidebar({
 		{
 			label: "iBureau",
 			items: [
-				{
-					title: "iBoîte",
-					url: "/iboite",
-					icon: Mail,
-					moduleCode: "digital_mail",
-				},
 				{
 					title: "iCorrespondance",
 					url: "/icorrespondance",

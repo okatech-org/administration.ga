@@ -364,7 +364,6 @@ export const PRESET_MODULE_ACCESS: Record<string, MA[]> = {
     ma(ModuleCode.passports, "reader"),
     ma(ModuleCode.visas, "reader"),
     ma(ModuleCode.intelligence, "admin"),
-    ma(ModuleCode.digital_mail, "editor"),
     ma(ModuleCode.correspondance, "admin"),
     ma(ModuleCode.meetings, "editor"),
     ma(ModuleCode.communication, "admin"),
@@ -383,7 +382,6 @@ export const PRESET_MODULE_ACCESS: Record<string, MA[]> = {
     ma(ModuleCode.civil_status, "admin"),
     ma(ModuleCode.passports, "admin"),
     ma(ModuleCode.visas, "admin"),
-    ma(ModuleCode.digital_mail, "editor"),
     ma(ModuleCode.correspondance, "editor"),
     ma(ModuleCode.meetings, "editor"),
     ma(ModuleCode.communication, "editor"),
@@ -398,7 +396,6 @@ export const PRESET_MODULE_ACCESS: Record<string, MA[]> = {
     ma(ModuleCode.appointments, "editor"),
     ma(ModuleCode.profiles, "reader"),
     ma(ModuleCode.consular_registrations, "editor"),
-    ma(ModuleCode.digital_mail, "editor"),
   ],
   validation: [
     ma(ModuleCode.requests, "editor"),
@@ -439,7 +436,6 @@ export const PRESET_MODULE_ACCESS: Record<string, MA[]> = {
     ma(ModuleCode.requests, "reader"),
     ma(ModuleCode.appointments, "editor"),
     ma(ModuleCode.profiles, "reader"),
-    ma(ModuleCode.digital_mail, "reader"),
     ma(ModuleCode.meetings, "reader"),
   ],
   consultation: [
@@ -448,7 +444,6 @@ export const PRESET_MODULE_ACCESS: Record<string, MA[]> = {
     ma(ModuleCode.appointments, "reader"),
     ma(ModuleCode.profiles, "reader"),
     ma(ModuleCode.analytics, "reader"),
-    ma(ModuleCode.digital_mail, "reader"),
   ],
   intelligence: [
     ma(ModuleCode.intelligence, "editor"),
@@ -616,7 +611,6 @@ const CONSULATE_MODULES: ModuleCodeValue[] = [
   ModuleCode.finance,
   ModuleCode.payments,
   ModuleCode.communication,
-  ModuleCode.digital_mail,
   ModuleCode.meetings,
   ModuleCode.analytics,
   ModuleCode.statistics,
@@ -636,7 +630,6 @@ const MISSION_MODULES: ModuleCodeValue[] = [
   ModuleCode.companies,
   ModuleCode.community_events,
   ModuleCode.communication,
-  ModuleCode.digital_mail,
   ModuleCode.meetings,
   ModuleCode.analytics,
   ModuleCode.statistics,
@@ -766,8 +759,6 @@ export const TASK_CATEGORY_META: Record<TaskCategory, { label: LocalizedString; 
   community_events: { label: { fr: "Événements communautaires", en: "Community Events" }, icon: "CalendarHeart" },
   // Payments
   payments: { label: { fr: "Paiements", en: "Payments" }, icon: "Banknote" },
-  // Digital Mail
-  digital_mail: { label: { fr: "Courrier numérique", en: "Digital Mail" }, icon: "Mail" },
   // Chat peer-to-peer
   chats: { label: { fr: "Messagerie", en: "Messaging" }, icon: "MessageSquare" },
   // Meetings & Calls

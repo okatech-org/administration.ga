@@ -25,11 +25,6 @@ const PAGE_CONTEXT: Record<string, PageContext> = {
 		capabilities: ["gérer les comptes", "attribuer des rôles"],
 		suggestions: ["Utilisateurs actifs", "Comptes en attente"],
 	},
-	"/iboite": {
-		module: "iBoîte",
-		capabilities: ["lire les messages", "envoyer un courrier"],
-		suggestions: ["Messages non lus", "Envoyer un message"],
-	},
 	"/icorrespondance": {
 		module: "iCorrespondance",
 		capabilities: ["gérer les correspondances", "suivre les dossiers"],

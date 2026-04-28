@@ -197,7 +197,6 @@ const MENU_MODULES = [
   { code: "intelligence", label: "Aff. Diplomatiques", requires: "intelligence.view", section: "Opérations" },
   { code: "requests", label: "Aff. Consulaires", requires: "requests.view", section: "Opérations" },
   { code: "communication", label: "Actualités", requires: "communication.publish", section: "Opérations" },
-  { code: "digital_mail", label: "iBoîte", requires: "digital_mail.view", section: "iBureau" },
   { code: "correspondance", label: "iCorrespondance", requires: "correspondance.view", section: "iBureau" },
   { code: "documents", label: "iDocument", requires: "documents.view", section: "iBureau" },
   { code: "appointments", label: "iAgenda", requires: "appointments.view", section: "iBureau" },

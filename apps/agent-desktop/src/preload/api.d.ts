@@ -18,7 +18,6 @@ import type {
 import type { ContextMenuItem } from "@workspace/desktop-shared/context-menu-types"
 
 interface TrayStatus {
-  unreadMail?: number
   pendingApprovals?: number
   printerName?: string
   printerConnected?: boolean

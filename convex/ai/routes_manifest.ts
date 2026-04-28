@@ -69,8 +69,6 @@ export const MY_SPACE_ROUTES: Record<string, string> = {
     "Reprogrammer un rendez-vous",
   "/my-space/meetings": "Mes réunions et visioconférences",
   "/my-space/notifications": "Mes notifications",
-  "/my-space/iboite":
-    "iBoîte — messagerie interne consulaire (envoyer/recevoir des messages)",
   "/my-space/iagenda": "iAgenda — agenda personnel (RDV, réunions, événements)",
   "/my-space/idocument":
     "iDocument — coffre-fort numérique de mes documents officiels",
@@ -129,7 +127,6 @@ export const ADMIN_ROUTES: Record<string, string> = {
   "/meetings": "Réunions et visioconférences",
   "/icorrespondance":
     "iCorrespondance — gestion des correspondances officielles entrantes/sortantes",
-  "/iboite": "iBoîte — messagerie interne consulaire (vue agent)",
   "/iagenda": "iAgenda — agenda partagé de l'organisation",
   "/iarchive": "iArchive — archives documentaires consulaires",
   "/iasted": "iAsted — assistant IA des agents",
@@ -201,7 +198,6 @@ export const DASHBOARD_ROUTES: Record<string, string> = {
   "/affaires-diplomatiques":
     "Module Affaires Diplomatiques (vue super-admin cross-org)",
   "/iagenda": "iAgenda — vue super-admin",
-  "/iboite": "iBoîte — vue super-admin",
   "/icorrespondance": "iCorrespondance — vue super-admin",
   "/idocument": "iDocument — vue super-admin",
   "/ai/contacts":
