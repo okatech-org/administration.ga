@@ -344,6 +344,57 @@ export const correspondanceApprovalStepsTable = defineTable({
   .index("by_approver_status", ["approverId", "status"]);
 
 /**
+ * Signatures électroniques simples (niveau 1 eIDAS) apposées sur un document
+ * d'un dossier de correspondance.
+ *
+ * Mécanique : sceau serveur visible (tampon graphique) + horodatage + hash
+ * SHA-256 du document scellé. Preuve d'intention, pas de certificat utilisateur.
+ */
+export const correspondanceSignaturesTable = defineTable({
+  itemId: v.id("correspondanceItems"),
+  // Document signé (référencé par storageId du PDF original avant scellement)
+  originalStorageId: v.id("_storage"),
+  // Document scellé final (avec page d'attestation + tampon visuel)
+  sealedStorageId: v.id("_storage"),
+  documentLabel: v.optional(v.string()),
+  // Auteur de la signature (denormalized pour l'historique légal)
+  signerId: v.id("users"),
+  signerName: v.string(),
+  signerTitle: v.optional(v.string()),
+  signerOrgId: v.id("orgs"),
+  signerOrgName: v.string(),
+  // Preuve cryptographique
+  documentHash: v.string(), // SHA-256 hex du sealedStorageId
+  serialNumber: v.string(), // n° unique de série du sceau
+  signedAt: v.number(),
+})
+  .index("by_item", ["itemId"])
+  .index("by_signer", ["signerId"])
+  .index("by_serial", ["serialNumber"]);
+
+/**
+ * Annotations / commentaires libres sur un dossier de correspondance.
+ *
+ * À distinguer de `correspondanceWorkflowSteps` : ces commentaires sont des
+ * notes humaines (instructions de traitement, remarques internes) tandis que
+ * les workflow steps tracent les actions système (envoi, approbation, etc.).
+ *
+ * Visibilité = "internal" : seulement pour les membres de l'org propriétaire.
+ */
+export const correspondanceAnnotationsTable = defineTable({
+  itemId: v.id("correspondanceItems"),
+  orgId: v.id("orgs"),
+  authorId: v.id("users"),
+  authorName: v.string(),
+  content: v.string(),
+  createdAt: v.number(),
+  updatedAt: v.optional(v.number()),
+  deletedAt: v.optional(v.number()),
+})
+  .index("by_item", ["itemId"])
+  .index("by_item_created", ["itemId", "createdAt"]);
+
+/**
  * Recipients junction table.
  * Tracks primary recipient (holder) and CC recipients for each correspondance item.
  * Needed because Convex doesn't support indexing into arrays.

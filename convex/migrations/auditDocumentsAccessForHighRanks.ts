@@ -145,7 +145,7 @@ function resolveEffectiveTasks(position: Doc<"positions">): Set<string> {
 	if (moduleAccess && moduleAccess.length > 0) {
 		const set = new Set<string>();
 		for (const entry of moduleAccess) {
-			const mapping = MODULE_ACCESS_TASKS[entry.moduleCode];
+			const mapping = MODULE_ACCESS_TASKS[entry.moduleCode as keyof typeof MODULE_ACCESS_TASKS];
 			if (!mapping) continue;
 			for (const task of mapping[entry.accessLevel]) set.add(task);
 		}

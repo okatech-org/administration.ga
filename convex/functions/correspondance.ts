@@ -23,6 +23,8 @@ import {
   requireCorrespondanceAccess,
   generateSequentialReference,
   assertValidTransition,
+  assertConfidentialityClearance,
+  filterByConfidentialityClearance,
 } from "../lib/correspondanceHelpers";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask, isSuperAdmin } from "../lib/permissions";
@@ -121,6 +123,8 @@ export const getItems = authQuery({
       items = items.filter((i) => i.folderId === args.folderId);
     }
 
+    items = await filterByConfidentialityClearance(ctx, ctx.user, items);
+
     // Enrichir avec les URLs de storage des documents
     const itemsWithUrls = await Promise.all(
       items.map(async (item) => {
@@ -148,6 +152,7 @@ export const getItem = authQuery({
     // Vérifier l'accès à l'org propriétaire
     const orgId = item.copyOwnerOrgId ?? item.orgId;
     await requireCorrespondanceAccess(ctx, ctx.user, orgId, "view");
+    await assertConfidentialityClearance(ctx, ctx.user, item);
 
     const documentsWithUrls = await Promise.all(
       (item.documents ?? []).map(async (doc) => ({
@@ -601,7 +606,8 @@ export const searchItems = authQuery({
       )
       .collect();
 
-    return results.filter((i) => !i.deletedAt);
+    const visible = results.filter((i) => !i.deletedAt);
+    return await filterByConfidentialityClearance(ctx, ctx.user, visible);
   },
 });
 

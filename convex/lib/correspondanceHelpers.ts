@@ -10,7 +10,7 @@
 import type { QueryCtx, MutationCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import { getMembership } from "./auth";
-import { assertCanDoTask } from "./permissions";
+import { assertCanDoTask, isSuperAdmin } from "./permissions";
 import { error, ErrorCode } from "./errors";
 import { TaskCode } from "./taskCodes";
 
@@ -33,6 +33,120 @@ export async function requireCorrespondanceAccess(
   const membership = await getMembership(ctx, user._id, orgId);
   await assertCanDoTask(ctx, user, membership, TaskCode.correspondance[taskCode]);
   return membership;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// HABILITATION PAR NIVEAU DE CONFIDENTIALITÉ
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Hiérarchie des grades du plus bas au plus haut.
+ * Reproduite ici pour éviter une dépendance cyclique.
+ */
+const GRADE_ORDER = ["external", "agent", "secretary", "counselor", "deputy_chief", "chief"] as const;
+
+/**
+ * Grade minimum requis pour accéder à un dossier selon son niveau de confidentialité.
+ * Les parties prenantes (créateur, destinataire principal, approbateur en cours)
+ * conservent toujours leur accès indépendamment de leur grade.
+ */
+const CONFIDENTIALITY_MIN_GRADE: Record<string, (typeof GRADE_ORDER)[number]> = {
+  standard: "external",
+  confidentiel: "secretary",
+  secret: "deputy_chief",
+};
+
+/**
+ * Récupère le grade de l'utilisateur dans une organisation, ou "external"
+ * s'il n'a pas de membership ou pas de position attachée.
+ */
+async function getUserGradeInOrg(
+  ctx: AuthContext,
+  userId: Id<"users">,
+  orgId: Id<"orgs">,
+): Promise<(typeof GRADE_ORDER)[number]> {
+  const membership = await ctx.db
+    .query("memberships")
+    .withIndex("by_user_org_deletedAt", (q: any) =>
+      q.eq("userId", userId).eq("orgId", orgId).eq("deletedAt", undefined),
+    )
+    .first();
+  if (!membership?.positionId) return "external";
+  const position = (await ctx.db.get(membership.positionId)) as any;
+  const grade = position?.grade ?? "agent";
+  return GRADE_ORDER.includes(grade) ? grade : "agent";
+}
+
+/**
+ * Détermine si un utilisateur peut accéder à un dossier compte tenu de son
+ * niveau de confidentialité. Les parties prenantes (créateur, destinataire
+ * principal, détenteur courant, approbateur) gardent toujours l'accès.
+ */
+export async function userCanReadConfidentiality(
+  ctx: AuthContext,
+  user: Doc<"users">,
+  item: Pick<
+    Doc<"correspondanceItems">,
+    | "confidentialite"
+    | "orgId"
+    | "copyOwnerOrgId"
+    | "createdBy"
+    | "primaryRecipientId"
+    | "currentHolderId"
+    | "assignedToId"
+  >,
+): Promise<boolean> {
+  const level = item.confidentialite ?? "standard";
+  if (level === "standard") return true;
+  if (isSuperAdmin(user)) return true;
+
+  const stakeholder =
+    item.createdBy === user._id ||
+    item.primaryRecipientId === user._id ||
+    item.currentHolderId === user._id ||
+    item.assignedToId === user._id;
+  if (stakeholder) return true;
+
+  const orgId = item.copyOwnerOrgId ?? item.orgId;
+  const userGrade = await getUserGradeInOrg(ctx, user._id, orgId);
+  const requiredGrade = CONFIDENTIALITY_MIN_GRADE[level] ?? "deputy_chief";
+  return GRADE_ORDER.indexOf(userGrade) >= GRADE_ORDER.indexOf(requiredGrade);
+}
+
+/**
+ * Lève une erreur si l'utilisateur n'a pas l'habilitation pour le niveau
+ * de confidentialité du dossier.
+ */
+export async function assertConfidentialityClearance(
+  ctx: AuthContext,
+  user: Doc<"users">,
+  item: Parameters<typeof userCanReadConfidentiality>[2],
+): Promise<void> {
+  const ok = await userCanReadConfidentiality(ctx, user, item);
+  if (!ok) {
+    throw error(
+      ErrorCode.INSUFFICIENT_PERMISSIONS,
+      `Habilitation insuffisante pour ce dossier (${item.confidentialite ?? "standard"}).`,
+    );
+  }
+}
+
+/**
+ * Filtre une liste de dossiers en ne gardant que ceux que l'utilisateur peut lire.
+ * À utiliser dans toute query qui retourne plusieurs items.
+ */
+export async function filterByConfidentialityClearance<T extends Parameters<typeof userCanReadConfidentiality>[2]>(
+  ctx: AuthContext,
+  user: Doc<"users">,
+  items: T[],
+): Promise<T[]> {
+  const allowed: T[] = [];
+  for (const item of items) {
+    if (await userCanReadConfidentiality(ctx, user, item)) {
+      allowed.push(item);
+    }
+  }
+  return allowed;
 }
 
 // ═════════════════════════════════════════════════════════════════════════════

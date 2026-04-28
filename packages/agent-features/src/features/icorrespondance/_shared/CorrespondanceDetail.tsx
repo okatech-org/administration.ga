@@ -80,6 +80,7 @@ import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
 } from "@workspace/api/hooks";
+import { AnnotationsPanel } from "./AnnotationsPanel";
 import { ApprovalPanel } from "./ApprovalPanel";
 import { WorkflowTimeline } from "./WorkflowTimeline";
 import { TrackingTimeline } from "./TrackingTimeline";
@@ -448,6 +449,9 @@ export function CorrespondanceDetail({
 							arrivalDate={(item as any).arrivalDate}
 						/>
 					)}
+
+					{/* Commentaires internes */}
+					<AnnotationsPanel itemId={itemId} currentUserId={currentUserId} />
 
 					{/* Historique workflow */}
 					<WorkflowTimelineWrapper itemId={itemId} />

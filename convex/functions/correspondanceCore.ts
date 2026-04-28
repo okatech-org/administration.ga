@@ -13,6 +13,7 @@
 
 import { type Infer, v } from "convex/values";
 import { authMutation, authQuery } from "../lib/customFunctions";
+import { internalMutation, internalQuery } from "../_generated/server";
 import { internal } from "../_generated/api";
 import type { MutationCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
@@ -34,6 +35,8 @@ import {
   generateSequentialReference,
   generateArrivalReference,
   generateDepartureReference,
+  assertConfidentialityClearance,
+  filterByConfidentialityClearance,
 } from "../lib/correspondanceHelpers";
 import { isSuperAdmin } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
@@ -93,7 +96,8 @@ export const getBrouillons = authQuery({
       }
     }
 
-    return _enrichWithUrls(ctx, items);
+    const allowed = await filterByConfidentialityClearance(ctx, ctx.user, items);
+    return _enrichWithUrls(ctx, allowed);
   },
 });
 
@@ -124,7 +128,8 @@ export const getEnvoyes = authQuery({
       items = items.filter((i) => i.recipientStatus === args.recipientStatusFilter);
     }
 
-    return _enrichWithUrls(ctx, items);
+    const allowed = await filterByConfidentialityClearance(ctx, ctx.user, items);
+    return _enrichWithUrls(ctx, allowed);
   },
 });
 
@@ -168,7 +173,8 @@ export const getRecus = authQuery({
       items = items.filter((i) => i.assignedToId === ctx.user._id);
     }
 
-    return _enrichWithUrls(ctx, items);
+    const allowed = await filterByConfidentialityClearance(ctx, ctx.user, items);
+    return _enrichWithUrls(ctx, allowed);
   },
 });
 
@@ -642,6 +648,15 @@ async function _executeEnvoi(
     });
   }
 
+  // Filigrane "COPIE" sur les PDFs de la copie expéditeur (asynchrone).
+  // Ne bloque pas l'envoi : si le watermarking échoue, la copie reste lisible
+  // mais sans filigrane visuel.
+  await ctx.scheduler.runAfter(
+    0,
+    internal.functions.correspondanceWatermark.applyWatermarksToCopy,
+    { copyItemId: itemId },
+  );
+
   return { status: "sent", copyId: itemId, originalId };
 }
 
@@ -836,6 +851,42 @@ export const registerIncoming = authMutation({
       isRead: true,
       createdAt: now,
     });
+
+    // Accusé de réception côté expéditeur : log dans la timeline de la copie
+    // + email à l'expéditeur si une adresse est connue.
+    const senderCopy = await ctx.db
+      .query("correspondanceItems")
+      .withIndex("by_original", (q: any) => q.eq("originalItemId", args.itemId))
+      .first();
+
+    if (senderCopy) {
+      await ctx.db.insert("correspondanceWorkflowSteps", {
+        itemId: senderCopy._id,
+        stepType: "REGISTERED",
+        actorId: ctx.user._id,
+        actorName: ctx.user.name ?? ctx.user.email,
+        comment: `Accusé de réception — Reçu et enregistré par ${item.recipientOrg ?? item.recipientName} sous réf. ${ref}`,
+        isRead: false,
+        createdAt: now,
+      });
+    }
+
+    if (item.senderEmail) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.functions.correspondanceEmail.sendAcknowledgmentEmail,
+        {
+          senderEmail: item.senderEmail,
+          senderName: item.senderName,
+          reference: item.reference,
+          arrivalReference: ref,
+          title: item.title,
+          recipientOrg: item.recipientOrg ?? ctx.user.name ?? "Organisation destinataire",
+          receivedAt: now,
+          copyItemId: senderCopy?._id,
+        },
+      );
+    }
   },
 });
 
@@ -1018,6 +1069,7 @@ export const getDossier = authQuery({
     // Contrôle d'accès
     const orgId = item.copyOwnerOrgId ?? item.orgId;
     await requireCorrespondanceAccess(ctx, ctx.user, orgId, "view");
+    await assertConfidentialityClearance(ctx, ctx.user, item);
 
     // URLs des documents enrichis
     const docsWithUrls = await Promise.all(
@@ -1110,3 +1162,319 @@ async function _enrichWithUrls(ctx: { storage: { getUrl: (id: Id<"_storage">) =>
     }),
   );
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// INTERNAL — Helpers pour le watermarking asynchrone
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Lecture interne d'un item pour l'action de watermark.
+ * Pas de contrôle d'accès — appelée depuis une action système.
+ */
+export const _getItemForWatermark = internalQuery({
+  args: { itemId: v.id("correspondanceItems") },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item || item.deletedAt) return null;
+    return { documents: item.documents ?? [] };
+  },
+});
+
+/**
+ * Lecture interne pour la signature électronique.
+ * Vérifie l'autorisation et retourne le document à signer + l'identité du signataire.
+ */
+export const _getItemForSigning = internalQuery({
+  args: {
+    itemId: v.id("correspondanceItems"),
+    documentIndex: v.number(),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<
+    | { error: string }
+    | {
+        item: { reference: string; title: string };
+        doc: { storageId: string; filename: string; mimeType: string; label?: string };
+        signer: { id: Id<"users">; name: string; title?: string; orgId: Id<"orgs">; orgName: string };
+      }
+  > => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item || item.deletedAt) return { error: "Dossier introuvable" };
+
+    const docs = item.documents ?? [];
+    if (args.documentIndex < 0 || args.documentIndex >= docs.length) {
+      return { error: "Index de document invalide" };
+    }
+    const doc = docs[args.documentIndex];
+
+    // Identité du signataire courant
+    const userIdentity = await ctx.auth.getUserIdentity();
+    if (!userIdentity) return { error: "Non authentifié" };
+    const userId = userIdentity.subject.split("|")[0] as Id<"users">;
+    const user = await ctx.db.get(userId);
+    if (!user) return { error: "Utilisateur introuvable" };
+
+    // Autorisation : créateur, approbateur courant, ou super admin
+    const isCreator = item.createdBy === user._id;
+    const isApprover = item.currentHolderId === user._id;
+    const superAdmin = isSuperAdmin(user);
+    if (!isCreator && !isApprover && !superAdmin) {
+      return {
+        error:
+          "Seul le créateur, l'approbateur courant ou un super-admin peut signer ce document.",
+      };
+    }
+
+    // Position + org du signataire pour le tampon
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    const membership = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_org_deletedAt", (q: any) =>
+        q.eq("userId", user._id).eq("orgId", orgId).eq("deletedAt", undefined),
+      )
+      .first();
+    let signerTitle: string | undefined;
+    if (membership?.positionId) {
+      const position = (await ctx.db.get(membership.positionId)) as any;
+      const t = position?.title;
+      signerTitle = typeof t === "string" ? t : t?.fr;
+    }
+    const org = await ctx.db.get(orgId);
+
+    return {
+      item: { reference: item.reference, title: item.title },
+      doc: {
+        storageId: doc.storageId,
+        filename: doc.filename,
+        mimeType: doc.mimeType,
+        label: doc.label,
+      },
+      signer: {
+        id: user._id,
+        name: user.name ?? user.email ?? "Signataire",
+        title: signerTitle,
+        orgId,
+        orgName: org?.name ?? "—",
+      },
+    };
+  },
+});
+
+/**
+ * Persiste un enregistrement de signature et remplace le storageId du document
+ * par sa version scellée dans `item.documents`.
+ */
+export const _recordSignature = internalMutation({
+  args: {
+    itemId: v.id("correspondanceItems"),
+    documentIndex: v.number(),
+    originalStorageId: v.id("_storage"),
+    sealedStorageId: v.id("_storage"),
+    documentLabel: v.optional(v.string()),
+    signerId: v.id("users"),
+    signerName: v.string(),
+    signerTitle: v.optional(v.string()),
+    signerOrgId: v.id("orgs"),
+    signerOrgName: v.string(),
+    documentHash: v.string(),
+    serialNumber: v.string(),
+    signedAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const signatureId = await ctx.db.insert("correspondanceSignatures", {
+      itemId: args.itemId,
+      originalStorageId: args.originalStorageId,
+      sealedStorageId: args.sealedStorageId,
+      documentLabel: args.documentLabel,
+      signerId: args.signerId,
+      signerName: args.signerName,
+      signerTitle: args.signerTitle,
+      signerOrgId: args.signerOrgId,
+      signerOrgName: args.signerOrgName,
+      documentHash: args.documentHash,
+      serialNumber: args.serialNumber,
+      signedAt: args.signedAt,
+    });
+
+    // Remplacer le storageId du document signé par sa version scellée
+    const item = await ctx.db.get(args.itemId);
+    if (item) {
+      const docs = [...(item.documents ?? [])];
+      if (args.documentIndex >= 0 && args.documentIndex < docs.length) {
+        docs[args.documentIndex] = {
+          ...docs[args.documentIndex],
+          storageId: args.sealedStorageId,
+        };
+        await ctx.db.patch(args.itemId, { documents: docs, updatedAt: args.signedAt });
+      }
+    }
+
+    // Trace dans le workflow audit
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: args.itemId,
+      stepType: "APPROVED",
+      actorId: args.signerId,
+      actorName: args.signerName,
+      comment: `Document signé électroniquement (sceau ${args.serialNumber})`,
+      isRead: true,
+      createdAt: args.signedAt,
+    });
+
+    return { signatureId };
+  },
+});
+
+/**
+ * Liste les signatures apposées sur un dossier (pour affichage UI).
+ */
+export const listSignatures = authQuery({
+  args: { itemId: v.id("correspondanceItems") },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item) return [];
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "view");
+    await assertConfidentialityClearance(ctx, ctx.user, item);
+
+    return await ctx.db
+      .query("correspondanceSignatures")
+      .withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+      .collect();
+  },
+});
+
+/**
+ * Lecture interne pour la génération PDF officielle.
+ * Charge l'item, sa config de type et le nom de l'org.
+ */
+export const _getItemForPdfGeneration = internalQuery({
+  args: { itemId: v.id("correspondanceItems") },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item || item.deletedAt) return null;
+
+    const typeConfig = await ctx.db
+      .query("correspondanceTypeConfigs")
+      .withIndex("by_org_type", (q: any) =>
+        q.eq("orgId", item.orgId).eq("typeCode", item.type),
+      )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .first();
+
+    const org = await ctx.db.get(item.orgId);
+
+    return {
+      item: {
+        reference: item.reference,
+        title: item.title,
+        type: item.type,
+        senderName: item.senderName,
+        senderOrg: item.senderOrg,
+        recipientName: item.recipientName,
+        recipientOrg: item.recipientOrg,
+        comment: item.comment,
+        createdAt: item.createdAt,
+      },
+      typeConfig: typeConfig
+        ? {
+            headerConfig: typeConfig.headerConfig,
+          }
+        : null,
+      orgName: org?.name ?? null,
+    };
+  },
+});
+
+/**
+ * Attache un PDF généré comme document principal du dossier.
+ * Si un PDF généré existait déjà (même nom de fichier suffixé `_generated`),
+ * il est remplacé.
+ */
+export const _attachGeneratedPdf = internalMutation({
+  args: {
+    itemId: v.id("correspondanceItems"),
+    storageId: v.id("_storage"),
+    filename: v.string(),
+    sizeBytes: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item) return { replaced: false };
+    const now = Date.now();
+    const existing = item.documents ?? [];
+
+    // Détecter un PDF officiel précédemment généré (label spécifique)
+    const generatedIdx = existing.findIndex(
+      (d) => d.label === "Document officiel généré",
+    );
+
+    const newDoc = {
+      storageId: args.storageId,
+      filename: args.filename,
+      mimeType: "application/pdf",
+      sizeBytes: args.sizeBytes,
+      uploadedAt: now,
+      documentType: "lettre",
+      label: "Document officiel généré",
+      ordre: 1,
+      isMainDocument: true,
+    };
+
+    let newDocuments;
+    if (generatedIdx >= 0) {
+      // Remplacement : supprimer l'ancien storage pour libérer
+      const oldStorageId = existing[generatedIdx].storageId;
+      try {
+        await ctx.storage.delete(oldStorageId);
+      } catch {
+        // ignore : le blob a peut-être déjà été supprimé
+      }
+      newDocuments = [...existing];
+      newDocuments[generatedIdx] = newDoc;
+    } else {
+      // Nouveau : pousser en tête, décaler les autres en perdant le flag main
+      newDocuments = [
+        newDoc,
+        ...existing.map((d, i) => ({ ...d, ordre: i + 2, isMainDocument: false })),
+      ];
+    }
+
+    await ctx.db.patch(args.itemId, {
+      documents: newDocuments,
+      updatedAt: now,
+    });
+
+    return { replaced: generatedIdx >= 0 };
+  },
+});
+
+/**
+ * Remplace les storageId des documents PDF d'une copie par leurs versions
+ * filigranées. Conserve l'ordre et toutes les métadonnées.
+ */
+export const _replaceWatermarkedStorageIds = internalMutation({
+  args: {
+    itemId: v.id("correspondanceItems"),
+    updates: v.array(
+      v.object({
+        oldStorageId: v.string(),
+        newStorageId: v.id("_storage"),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item) return;
+    const map = new Map(args.updates.map((u) => [u.oldStorageId, u.newStorageId]));
+    const newDocs = (item.documents ?? []).map((doc) => {
+      const next = map.get(doc.storageId);
+      return next ? { ...doc, storageId: next } : doc;
+    });
+    await ctx.db.patch(args.itemId, {
+      documents: newDocs,
+      updatedAt: Date.now(),
+    });
+  },
+});

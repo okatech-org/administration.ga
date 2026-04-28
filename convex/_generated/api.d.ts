@@ -98,11 +98,14 @@ import type * as functions_consularNotifications from "../functions/consularNoti
 import type * as functions_consularRegistrations from "../functions/consularRegistrations.js";
 import type * as functions_contactSearch from "../functions/contactSearch.js";
 import type * as functions_correspondance from "../functions/correspondance.js";
+import type * as functions_correspondanceAnnotations from "../functions/correspondanceAnnotations.js";
 import type * as functions_correspondanceConfig from "../functions/correspondanceConfig.js";
 import type * as functions_correspondanceCore from "../functions/correspondanceCore.js";
 import type * as functions_correspondanceDashboard from "../functions/correspondanceDashboard.js";
 import type * as functions_correspondanceDocuments from "../functions/correspondanceDocuments.js";
 import type * as functions_correspondanceEmail from "../functions/correspondanceEmail.js";
+import type * as functions_correspondancePdfGeneration from "../functions/correspondancePdfGeneration.js";
+import type * as functions_correspondanceSignature from "../functions/correspondanceSignature.js";
 import type * as functions_correspondanceWatermark from "../functions/correspondanceWatermark.js";
 import type * as functions_cv from "../functions/cv.js";
 import type * as functions_cvAI from "../functions/cvAI.js";
@@ -235,6 +238,7 @@ import type * as migrations_grantDocumentsAdminToHighRanks from "../migrations/g
 import type * as migrations_initCardCounter from "../migrations/initCardCounter.js";
 import type * as migrations_migrateActionRequiredTypes from "../migrations/migrateActionRequiredTypes.js";
 import type * as migrations_migrateEmergencyContacts from "../migrations/migrateEmergencyContacts.js";
+import type * as migrations_normalizeModuleCodes from "../migrations/normalizeModuleCodes.js";
 import type * as migrations_normalizePhones from "../migrations/normalizePhones.js";
 import type * as migrations_renameDocumentFiles from "../migrations/renameDocumentFiles.js";
 import type * as migrations_rollbackDocumentsAdminForHighRanks from "../migrations/rollbackDocumentsAdminForHighRanks.js";
@@ -439,11 +443,14 @@ declare const fullApi: ApiFromModules<{
   "functions/consularRegistrations": typeof functions_consularRegistrations;
   "functions/contactSearch": typeof functions_contactSearch;
   "functions/correspondance": typeof functions_correspondance;
+  "functions/correspondanceAnnotations": typeof functions_correspondanceAnnotations;
   "functions/correspondanceConfig": typeof functions_correspondanceConfig;
   "functions/correspondanceCore": typeof functions_correspondanceCore;
   "functions/correspondanceDashboard": typeof functions_correspondanceDashboard;
   "functions/correspondanceDocuments": typeof functions_correspondanceDocuments;
   "functions/correspondanceEmail": typeof functions_correspondanceEmail;
+  "functions/correspondancePdfGeneration": typeof functions_correspondancePdfGeneration;
+  "functions/correspondanceSignature": typeof functions_correspondanceSignature;
   "functions/correspondanceWatermark": typeof functions_correspondanceWatermark;
   "functions/cv": typeof functions_cv;
   "functions/cvAI": typeof functions_cvAI;
@@ -576,6 +583,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/initCardCounter": typeof migrations_initCardCounter;
   "migrations/migrateActionRequiredTypes": typeof migrations_migrateActionRequiredTypes;
   "migrations/migrateEmergencyContacts": typeof migrations_migrateEmergencyContacts;
+  "migrations/normalizeModuleCodes": typeof migrations_normalizeModuleCodes;
   "migrations/normalizePhones": typeof migrations_normalizePhones;
   "migrations/renameDocumentFiles": typeof migrations_renameDocumentFiles;
   "migrations/rollbackDocumentsAdminForHighRanks": typeof migrations_rollbackDocumentsAdminForHighRanks;

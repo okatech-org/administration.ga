@@ -9,6 +9,7 @@
  */
 
 import { internalMutation } from "../_generated/server";
+import { internal } from "../_generated/api";
 
 const BATCH_SIZE = 100;
 
@@ -92,6 +93,30 @@ export const checkOverdueSla = internalMutation({
             isRead: false,
             createdAt: now,
           });
+
+          // Email à l'agent responsable :
+          // - draft / pending / approved : créateur (côté expéditeur)
+          // - received : agent assigné, sinon créateur original
+          const responsibleUserId =
+            status === "received" ? (item.assignedToId ?? item.createdBy) : item.createdBy;
+          const responsibleUser = await ctx.db.get(responsibleUserId);
+
+          if (responsibleUser?.email) {
+            await ctx.scheduler.runAfter(
+              0,
+              internal.functions.correspondanceEmail.sendSlaAlertEmail,
+              {
+                recipientEmail: responsibleUser.email,
+                recipientName: responsibleUser.name ?? responsibleUser.email,
+                reference: item.reference,
+                title: item.title,
+                delayDays,
+                dateReponseAttendue: item.dateReponseAttendue,
+                itemId: item._id,
+                status,
+              },
+            );
+          }
 
           totalAlerted++;
         }

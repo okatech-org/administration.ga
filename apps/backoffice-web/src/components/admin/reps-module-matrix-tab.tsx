@@ -26,32 +26,22 @@ const CATEGORY_META: Record<
 	ModuleCategory,
 	{ label: { fr: string; en: string }; color: string; bgColor: string }
 > = {
-	core: {
-		label: { fr: "Coeur de système", en: "Core" },
+	operations: {
+		label: { fr: "Opérations", en: "Operations" },
 		color: "text-emerald-600",
 		bgColor: "bg-emerald-50 dark:bg-emerald-950/30",
 	},
-	consular: {
-		label: { fr: "Services consulaires", en: "Consular services" },
+	ibureau: {
+		label: { fr: "iBureau", en: "iBureau" },
 		color: "text-blue-600",
 		bgColor: "bg-blue-50 dark:bg-blue-950/30",
 	},
-	diplomatic: {
-		label: { fr: "Modules diplomatiques", en: "Diplomatic" },
-		color: "text-purple-600",
-		bgColor: "bg-purple-50 dark:bg-purple-950/30",
-	},
-	tools: {
-		label: { fr: "Communication & Outils", en: "Communication & Tools" },
-		color: "text-teal-600",
-		bgColor: "bg-teal-50 dark:bg-teal-950/30",
-	},
-	finance: {
-		label: { fr: "Finance", en: "Finance" },
+	gestion: {
+		label: { fr: "Gestion", en: "Management" },
 		color: "text-amber-600",
 		bgColor: "bg-amber-50 dark:bg-amber-950/30",
 	},
-	admin: {
+	administration: {
 		label: { fr: "Administration", en: "Administration" },
 		color: "text-red-600",
 		bgColor: "bg-red-50 dark:bg-red-950/30",

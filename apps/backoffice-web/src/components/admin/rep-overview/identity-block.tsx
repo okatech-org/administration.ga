@@ -35,16 +35,20 @@ const CATEGORY_CONFIG: Record<
 	ModuleCategory,
 	{ label: string; order: number }
 > = {
-	core: { label: "Cœur métier", order: 1 },
-	consular: { label: "Consulaire", order: 2 },
-	diplomatic: { label: "Diplomatique", order: 3 },
-	tools: { label: "Outils", order: 4 },
-	finance: { label: "Finance", order: 5 },
-	admin: { label: "Administration", order: 6 },
+	operations: { label: "Opérations", order: 1 },
+	ibureau: { label: "iBureau", order: 2 },
+	gestion: { label: "Gestion", order: 3 },
+	administration: { label: "Administration", order: 4 },
 };
 
 // Legacy categories (de l'ancien registre) — fallback silencieux
 const LEGACY_CATEGORY_LABEL: Record<string, string> = {
+	core: "Cœur métier",
+	consular: "Consulaire",
+	diplomatic: "Diplomatique",
+	tools: "Outils",
+	finance: "Finance",
+	admin: "Administration",
 	community: "Communauté",
 	communication: "Communication",
 	special: "Autres",
