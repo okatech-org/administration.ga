@@ -11,12 +11,16 @@ import { DocumentSheetFile } from "@workspace/ui/components/document-sheet";
 import {
 	ArrowLeft,
 	Archive,
+	BookmarkCheck,
 	Download,
 	FileText,
 	FolderOpen,
 	Loader2,
 	MoreHorizontal,
 	Paperclip,
+	Pencil,
+	Reply,
+	RotateCcw,
 	Send,
 	Trash2,
 	UserCheck,
@@ -83,6 +87,9 @@ import {
 } from "@workspace/api/hooks";
 import { AnnotationsPanel } from "./AnnotationsPanel";
 import { ApprovalPanel } from "./ApprovalPanel";
+import { AssignDialog } from "./AssignDialog";
+import { EditDraftDialog } from "./EditDraftDialog";
+import { RespondDialog } from "./RespondDialog";
 import { SignaturesPanel } from "./SignaturesPanel";
 import { WorkflowTimeline } from "./WorkflowTimeline";
 import { TrackingTimeline } from "./TrackingTimeline";
@@ -114,6 +121,9 @@ export function CorrespondanceDetail({
 }: CorrespondanceDetailProps) {
 	const [selectedDocIndex, setSelectedDocIndex] = useState(0);
 	const [selectedDocViewer, setSelectedDocViewer] = useState<ViewerDoc | null>(null);
+	const [editOpen, setEditOpen] = useState(false);
+	const [respondOpen, setRespondOpen] = useState(false);
+	const [assignOpen, setAssignOpen] = useState(false);
 
 	const { data: item, isPending } = useAuthenticatedConvexQuery(
 		api.functions.correspondance.getItem,
@@ -126,6 +136,14 @@ export function CorrespondanceDetail({
 
 	const { mutateAsync: deleteItem, isPending: isDeleting } = useConvexMutationQuery(
 		api.functions.correspondance.deleteItem,
+	);
+
+	const { mutateAsync: restoreItem, isPending: isRestoring } = useConvexMutationQuery(
+		api.functions.correspondance.restoreFromTrash,
+	);
+
+	const { mutateAsync: registerIncoming, isPending: isRegistering } = useConvexMutationQuery(
+		api.functions.correspondanceCore.registerIncoming,
 	);
 
 	const { mutateAsync: classerDansIDocument } = useConvexMutationQuery(
@@ -158,6 +176,7 @@ export function CorrespondanceDetail({
 	}
 
 	const isCopy = (item as any).isCopy === true;
+	const isDeleted = !!(item as any).deletedAt;
 	const allDocs = (item as any).documents ?? [];
 
 	const selectedDoc = allDocs[selectedDocIndex] ?? allDocs[0];
@@ -189,6 +208,25 @@ export function CorrespondanceDetail({
 			onBack();
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur");
+		}
+	};
+
+	const handleRestore = async () => {
+		try {
+			await restoreItem({ itemId });
+			toast.success("Correspondance restaurée");
+			onBack();
+		} catch (e: any) {
+			toast.error(e?.message ?? "Erreur lors de la restauration");
+		}
+	};
+
+	const handleRegisterIncoming = async () => {
+		try {
+			await registerIncoming({ itemId });
+			toast.success("Courrier enregistré (numéro d'arrivée attribué)");
+		} catch (e: any) {
+			toast.error(e?.message ?? "Erreur lors de l'enregistrement");
 		}
 	};
 
@@ -252,7 +290,36 @@ export function CorrespondanceDetail({
 				) : null}
 
 				{/* Actions correspondance selon le contexte */}
-				{item.status === "draft" && !isCopy && (
+				{isDeleted && (
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={handleRestore}
+						disabled={isRestoring}
+						className="gap-1.5"
+					>
+						{isRestoring ? (
+							<Loader2 className="h-3.5 w-3.5 animate-spin" />
+						) : (
+							<RotateCcw className="h-3.5 w-3.5" />
+						)}
+						Restaurer
+					</Button>
+				)}
+
+				{item.status === "draft" && !isCopy && !isDeleted && (
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => setEditOpen(true)}
+						className="gap-1.5"
+					>
+						<Pencil className="h-3.5 w-3.5" />
+						Modifier
+					</Button>
+				)}
+
+				{item.status === "draft" && !isCopy && !isDeleted && (
 					<Button
 						variant="outline"
 						size="sm"
@@ -269,10 +336,51 @@ export function CorrespondanceDetail({
 					</Button>
 				)}
 
-				{item.status === "draft" && !isCopy && (
+				{item.status === "draft" && !isCopy && !isDeleted && (
 					<Button size="sm" onClick={handleSend} disabled={isSending} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
 						{isSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
 						Envoyer
+					</Button>
+				)}
+
+				{item.status === "received" && !isDeleted && !(item as any).arrivalReference && (
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={handleRegisterIncoming}
+						disabled={isRegistering}
+						className="gap-1.5"
+					>
+						{isRegistering ? (
+							<Loader2 className="h-3.5 w-3.5 animate-spin" />
+						) : (
+							<BookmarkCheck className="h-3.5 w-3.5" />
+						)}
+						Enregistrer (n° d'arrivée)
+					</Button>
+				)}
+
+				{item.status === "received" && !isDeleted && (
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => setAssignOpen(true)}
+						className="gap-1.5"
+					>
+						<UserCheck className="h-3.5 w-3.5" />
+						{(item as any).assignedToId ? "Réassigner" : "Assigner"}
+					</Button>
+				)}
+
+				{item.status === "received" && !isDeleted && (
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => setRespondOpen(true)}
+						className="gap-1.5"
+					>
+						<Reply className="h-3.5 w-3.5" />
+						Répondre
 					</Button>
 				)}
 
@@ -544,6 +652,54 @@ export function CorrespondanceDetail({
 			</div>
 			
 			<DocumentViewerModal isOpen={!!selectedDocViewer} onClose={() => setSelectedDocViewer(null)} document={selectedDocViewer} />
+
+			{item.status === "draft" && !isCopy && (
+				<EditDraftDialog
+					open={editOpen}
+					onClose={() => setEditOpen(false)}
+					item={{
+						_id: item._id as Id<"correspondanceItems">,
+						title: item.title,
+						comment: item.comment,
+						priority: item.priority as "normal" | "urgent" | "confidentiel" | undefined,
+						tags: item.tags,
+					}}
+				/>
+			)}
+
+			{item.status === "received" && (
+				<RespondDialog
+					open={respondOpen}
+					onClose={() => setRespondOpen(false)}
+					originalItem={{
+						_id: item._id as Id<"correspondanceItems">,
+						reference: item.reference,
+						title: item.title,
+						type: item.type as
+							| "note_verbale"
+							| "lettre_officielle"
+							| "circulaire"
+							| "telegramme"
+							| "memorandum"
+							| "communique",
+						priority: item.priority as
+							| "normal"
+							| "urgent"
+							| "confidentiel"
+							| undefined,
+					}}
+				/>
+			)}
+
+			{item.status === "received" && (
+				<AssignDialog
+					open={assignOpen}
+					onClose={() => setAssignOpen(false)}
+					itemId={item._id as Id<"correspondanceItems">}
+					orgId={currentOrgId as Id<"orgs">}
+					currentAssignedToId={(item as any).assignedToId}
+				/>
+			)}
 		</div>
 	);
 }

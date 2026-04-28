@@ -29,6 +29,7 @@ import {
 	X,
 	MoreHorizontal,
 	Info,
+	Pencil,
 	Tag,
 	Trash2,
 	User,
@@ -585,6 +586,7 @@ function FolderContextMenu({
 	itemId,
 	itemType,
 	onInfo,
+	onRename,
 	onDelete,
 	isSystem,
 }: {
@@ -592,11 +594,13 @@ function FolderContextMenu({
 	itemName: string;
 	itemType: "folder" | "correspondence";
 	onInfo?: (id: string) => void;
+	onRename?: (id: string) => void;
 	onDelete?: (id: string) => void;
 	isSystem?: boolean;
 }) {
 	const [open, setOpen] = useState(false);
-	const hasActions = !!onInfo || (!isSystem && !!onDelete);
+	const hasActions =
+		!!onInfo || (!isSystem && (!!onRename || !!onDelete));
 	if (!hasActions) return null;
 	return (
 		<div className="relative">
@@ -631,6 +635,18 @@ function FolderContextMenu({
 							>
 								<Info className="h-3.5 w-3.5 text-sky-400" />
 								Informations
+							</button>
+						)}
+						{!isSystem && onRename && (
+							<button
+								onClick={() => {
+									onRename(itemId);
+									setOpen(false);
+								}}
+								className="flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-muted"
+							>
+								<Pencil className="h-3.5 w-3.5 text-violet-400" />
+								Renommer
 							</button>
 						)}
 						{!isSystem && onDelete && (
@@ -1189,6 +1205,9 @@ export default function ICorrespondancePage({
 	const deleteFolderMutation = useConvexMutationQuery(
 		api.functions.correspondance.deleteFolder,
 	);
+	const renameFolderMutation = useConvexMutationQuery(
+		api.functions.correspondance.renameFolder,
+	);
 	const deleteItemMutation = useConvexMutationQuery(
 		api.functions.correspondance.deleteItem,
 	);
@@ -1275,6 +1294,10 @@ export default function ICorrespondancePage({
 	const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
 	const [newFolderName, setNewFolderName] = useState("");
 	const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+
+	const [renameFolderId, setRenameFolderId] = useState<string | null>(null);
+	const [renameFolderName, setRenameFolderName] = useState("");
+	const [isRenamingFolder, setIsRenamingFolder] = useState(false);
 
 	// ─── New correspondance wizard ──────────────────────────
 	const [showNewCorrWizard, setShowNewCorrWizard] = useState(false);
@@ -1472,6 +1495,34 @@ export default function ICorrespondancePage({
 			setIsCreatingFolder(false);
 		}
 	}, [newFolderName, activeOrgId, currentFolderId, createFolderMutation]);
+
+	const handleStartRename = useCallback(
+		(id: string) => {
+			const folder = folders.find((f) => f.id === id);
+			if (!folder || folder.isSystem) return;
+			setRenameFolderId(id);
+			setRenameFolderName(folder.name);
+		},
+		[folders],
+	);
+
+	const submitRenameFolder = useCallback(async () => {
+		if (!renameFolderId || !renameFolderName.trim()) return;
+		setIsRenamingFolder(true);
+		try {
+			await renameFolderMutation.mutateAsync({
+				folderId: renameFolderId as Id<"correspondanceFolders">,
+				name: renameFolderName.trim(),
+			});
+			toast.success("Dossier renommé");
+			setRenameFolderId(null);
+			setRenameFolderName("");
+		} catch {
+			toast.error("Erreur lors du renommage");
+		} finally {
+			setIsRenamingFolder(false);
+		}
+	}, [renameFolderId, renameFolderName, renameFolderMutation]);
 
 	const handleDelete = useCallback(
 		async (id: string) => {
@@ -1726,6 +1777,9 @@ export default function ICorrespondancePage({
 																	itemName={folder.name}
 																	itemType="folder"
 																	onInfo={handleOpenInfo}
+																	onRename={
+																		!folder.isSystem ? handleStartRename : undefined
+																	}
 																	onDelete={
 																		!folder.isSystem ? handleDelete : undefined
 																	}
@@ -2229,6 +2283,64 @@ export default function ICorrespondancePage({
 				item={infoItem || { id: "", name: "" }}
 				itemType={infoItemType}
 			/>
+
+			{/* ── Rename folder dialog ── */}
+			{renameFolderId !== null && (
+				<div
+					className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+					onClick={() => !isRenamingFolder && setRenameFolderId(null)}
+				>
+					<div
+						className="w-full max-w-md rounded-2xl border border-border/50 bg-popover shadow-2xl"
+						onClick={(e) => e.stopPropagation()}
+					>
+						<div className="border-b border-border/50 px-5 pt-5 pb-3">
+							<div className="flex items-center gap-2 text-sm font-semibold">
+								<Pencil className="h-4 w-4 text-violet-400" />
+								Renommer le dossier
+							</div>
+						</div>
+						<div className="space-y-3 p-5">
+							<label className="text-xs font-medium" htmlFor="rename-folder">
+								Nouveau nom *
+							</label>
+							<input
+								id="rename-folder"
+								value={renameFolderName}
+								onChange={(e) => setRenameFolderName(e.target.value)}
+								disabled={isRenamingFolder}
+								className="h-9 w-full rounded-lg border border-border bg-muted/50 px-3 text-xs focus:ring-1 focus:ring-primary/30 focus:outline-none"
+								autoFocus
+								onKeyDown={(e) => {
+									if (e.key === "Enter" && renameFolderName.trim())
+										submitRenameFolder();
+								}}
+							/>
+						</div>
+						<div className="flex justify-end gap-2 border-t border-border/50 px-5 py-3">
+							<button
+								onClick={() => setRenameFolderId(null)}
+								disabled={isRenamingFolder}
+								className="rounded-md border border-border px-3 py-1.5 text-xs transition-colors hover:bg-muted disabled:opacity-50"
+							>
+								Annuler
+							</button>
+							<button
+								onClick={submitRenameFolder}
+								disabled={!renameFolderName.trim() || isRenamingFolder}
+								className="flex items-center gap-1.5 rounded-md bg-violet-600 px-3 py-1.5 text-xs text-white transition-colors hover:bg-violet-700 disabled:opacity-50"
+							>
+								{isRenamingFolder ? (
+									<Loader2 className="h-3.5 w-3.5 animate-spin" />
+								) : (
+									<Pencil className="h-3.5 w-3.5" />
+								)}
+								Renommer
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{/* ── Reject piece dialog ── */}
 			{rejectPieceCode !== null && (
