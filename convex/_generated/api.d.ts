@@ -238,7 +238,6 @@ import type * as migrations_grantDocumentsAdminToHighRanks from "../migrations/g
 import type * as migrations_initCardCounter from "../migrations/initCardCounter.js";
 import type * as migrations_migrateActionRequiredTypes from "../migrations/migrateActionRequiredTypes.js";
 import type * as migrations_migrateEmergencyContacts from "../migrations/migrateEmergencyContacts.js";
-import type * as migrations_normalizeModuleCodes from "../migrations/normalizeModuleCodes.js";
 import type * as migrations_normalizePhones from "../migrations/normalizePhones.js";
 import type * as migrations_renameDocumentFiles from "../migrations/renameDocumentFiles.js";
 import type * as migrations_rollbackDocumentsAdminForHighRanks from "../migrations/rollbackDocumentsAdminForHighRanks.js";
@@ -583,7 +582,6 @@ declare const fullApi: ApiFromModules<{
   "migrations/initCardCounter": typeof migrations_initCardCounter;
   "migrations/migrateActionRequiredTypes": typeof migrations_migrateActionRequiredTypes;
   "migrations/migrateEmergencyContacts": typeof migrations_migrateEmergencyContacts;
-  "migrations/normalizeModuleCodes": typeof migrations_normalizeModuleCodes;
   "migrations/normalizePhones": typeof migrations_normalizePhones;
   "migrations/renameDocumentFiles": typeof migrations_renameDocumentFiles;
   "migrations/rollbackDocumentsAdminForHighRanks": typeof migrations_rollbackDocumentsAdminForHighRanks;

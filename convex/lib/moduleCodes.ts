@@ -112,17 +112,10 @@ export const accessLevelValidator = v.union(
 export type ModuleAccessMap = Partial<Record<ModuleCodeValue, ModuleAccessLevel>>;
 
 // ═══════════════════════════════════════════════════════════════
-// CONVEX VALIDATOR — canonical + legacy literals (transition)
+// CONVEX VALIDATOR — canonical only
 // ═══════════════════════════════════════════════════════════════
-//
-// Le validator accepte les 13 codes canoniques (nouvelles écritures) ET
-// les codes legacy encore présents en base avant que la migration
-// `internal.migrations.normalizeModuleCodes.run` n'ait tourné en prod.
-// Une fois la migration lancée et vérifiée, narrow ce validator aux
-// 13 canoniques uniquement.
 
 export const moduleCodeValidator = v.union(
-  // Canonical (13)
   v.literal("profile"),
   v.literal("diplomatic_affairs"),
   v.literal("consular_affairs"),
@@ -136,37 +129,6 @@ export const moduleCodeValidator = v.union(
   v.literal("payments"),
   v.literal("statistics"),
   v.literal("settings"),
-  // Legacy — encore en base avant migration prod
-  v.literal("iprofil"),
-  v.literal("intelligence"),
-  v.literal("requests"),
-  v.literal("communication"),
-  v.literal("correspondance"),
-  v.literal("appointments"),
-  v.literal("passports"),
-  v.literal("visas"),
-  v.literal("civil_status"),
-  v.literal("consular_registrations"),
-  v.literal("consular_notifications"),
-  v.literal("consular_cards"),
-  v.literal("cv"),
-  v.literal("tutorials"),
-  v.literal("associations"),
-  v.literal("companies"),
-  v.literal("community_events"),
-  v.literal("meetings"),
-  v.literal("ai_assistant"),
-  v.literal("roles"),
-  v.literal("permissions"),
-  v.literal("profiles"),
-  v.literal("citizen_profiles"),
-  v.literal("finance"),
-  v.literal("analytics"),
-  v.literal("monitoring"),
-  v.literal("org_config"),
-  v.literal("services_config"),
-  v.literal("platform_settings"),
-  v.literal("digital_mail"),
 );
 
 // ═══════════════════════════════════════════════════════════════
