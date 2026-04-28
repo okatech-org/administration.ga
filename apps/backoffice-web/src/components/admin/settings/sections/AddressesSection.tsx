@@ -20,27 +20,26 @@ import {
   useRegisterSection,
   useSettingsFormOptional,
 } from "@workspace/settings-form";
-import { Copy, Home, Mail, MapPin, Navigation, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Copy, Home, Mail } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { SectionHeader } from "@/components/design-system/section-header";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  AddressInput,
+  type AutocompleteAdapter,
+  type AddressValue,
+} from "@workspace/ui/components/address-input";
+import {
   useAuthenticatedConvexQuery,
   useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
-import {
-  AddressAutocomplete,
-  type ResolvedAddress,
-} from "../AddressAutocomplete";
+import { usePlacesAutocomplete } from "@/hooks/use-places-autocomplete";
 import type { SettingsSectionProps } from "../SettingsTabsLayout";
 
 interface AddressFields {
@@ -185,84 +184,14 @@ export function AddressesSection({
             Adresse du bâtiment principal de la représentation (visible
             publiquement sur la page de l'ambassade/consulat).
           </p>
-          <AddressFieldsEditor
+          <PhysicalAddressEditor
             value={physical}
             onChange={(next) => {
               setPhysical(next);
               push();
             }}
             countryOptions={countryOptions}
-            withAutocomplete
-            onAutocompleteResolve={(resolved) => {
-              setPhysical((prev) => ({
-                street: resolved.street || prev.street,
-                city: resolved.city || prev.city,
-                postalCode: resolved.postalCode || prev.postalCode,
-                country: resolved.country ?? prev.country,
-                lat:
-                  resolved.lat !== undefined
-                    ? String(resolved.lat)
-                    : prev.lat,
-                lng:
-                  resolved.lng !== undefined
-                    ? String(resolved.lng)
-                    : prev.lng,
-              }));
-              push();
-            }}
           />
-
-          {/* GPS */}
-          <div className="mt-4 pt-4 border-t border-border/40">
-            <FieldLabel className="flex items-center gap-1.5 mb-2">
-              <Navigation className="h-3.5 w-3.5" />
-              Coordonnées GPS
-            </FieldLabel>
-            <p className="text-[11px] text-muted-foreground mb-2">
-              Renseignées automatiquement à la sélection d'une suggestion
-              Google. Modifiables manuellement si besoin.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field>
-                <FieldLabel className="text-xs text-muted-foreground">
-                  Latitude
-                </FieldLabel>
-                <Input
-                  type="number"
-                  step="0.000001"
-                  value={physical.lat ?? ""}
-                  onChange={(e) => {
-                    setPhysical({ ...physical, lat: e.target.value });
-                    push();
-                  }}
-                  placeholder="40.416775"
-                />
-              </Field>
-              <Field>
-                <FieldLabel className="text-xs text-muted-foreground">
-                  Longitude
-                </FieldLabel>
-                <Input
-                  type="number"
-                  step="0.000001"
-                  value={physical.lng ?? ""}
-                  onChange={(e) => {
-                    setPhysical({ ...physical, lng: e.target.value });
-                    push();
-                  }}
-                  placeholder="-3.703790"
-                />
-              </Field>
-            </div>
-            {physical.lat && physical.lng && (
-              <div className="mt-2">
-                <Badge variant="secondary" className="text-[10px]">
-                  <MapPin className="h-3 w-3 mr-1" />
-                  {physical.lat}, {physical.lng}
-                </Badge>
-              </div>
-            )}
-          </div>
         </div>
       </FlatCard>
 
@@ -300,7 +229,7 @@ export function AddressesSection({
                   Copier depuis adresse physique
                 </Button>
               </div>
-              <AddressFieldsEditor
+              <PostalAddressEditor
                 value={postal}
                 onChange={(next) => {
                   setPostal(next);
@@ -345,71 +274,82 @@ export function AddressesSection({
   );
 }
 
-// ─── Sous-composant : éditeur de champs adresse ────────────────
-function AddressFieldsEditor({
+// ─── Adapter Convex Places → interface AutocompleteAdapter ─────
+function usePlacesAutocompleteAdapter(): AutocompleteAdapter {
+  const hook = usePlacesAutocomplete({ debounceMs: 350 });
+  return useMemo(
+    () => ({
+      setInput: hook.setInput,
+      predictions: hook.predictions.map((p) => ({
+        placeId: p.placeId,
+        mainText: p.mainText,
+        secondaryText: p.secondaryText,
+      })),
+      isLoading: hook.isLoading,
+      getPlaceDetails: async (placeId: string) => {
+        const details = await hook.getPlaceDetails(placeId);
+        if (!details) return null;
+        return {
+          street: details.street,
+          city: details.city,
+          postalCode: details.postalCode,
+          countryCode: details.countryCode,
+          formattedAddress: details.formattedAddress,
+          lat: details.lat,
+          lng: details.lng,
+        };
+      },
+      clear: hook.clear,
+    }),
+    [
+      hook.setInput,
+      hook.predictions,
+      hook.isLoading,
+      hook.getPlaceDetails,
+      hook.clear,
+    ],
+  );
+}
+
+// ─── Adresse physique : avec autocomplete + GPS + completion score ─
+function PhysicalAddressEditor({
   value,
   onChange,
   countryOptions,
-  withAutocomplete = false,
-  onAutocompleteResolve,
 }: {
   value: AddressFields;
   onChange: (v: AddressFields) => void;
   countryOptions: ComboboxOption<CountryCode>[];
-  withAutocomplete?: boolean;
-  onAutocompleteResolve?: (resolved: ResolvedAddress) => void;
 }) {
-  // État local du champ de recherche : initialisé avec l'adresse actuelle
-  // mais ensuite indépendant pour permettre une recherche sans casser
-  // les valeurs déjà renseignées.
-  const [searchText, setSearchText] = useState<string>(value.street);
+  const adapter = usePlacesAutocompleteAdapter();
+
+  const addressValue: AddressValue = {
+    street: value.street,
+    city: value.city,
+    postalCode: value.postalCode,
+    country: value.country,
+    lat: value.lat,
+    lng: value.lng,
+  };
 
   return (
-    <FieldGroup>
-      {withAutocomplete && onAutocompleteResolve && (
-        <Field>
-          <FieldLabel className="flex items-center gap-1.5">
-            <Search className="h-3.5 w-3.5" />
-            Recherche d'adresse
-          </FieldLabel>
-          <AddressAutocomplete
-            value={searchText}
-            onTextChange={setSearchText}
-            onResolve={(resolved) => {
-              setSearchText(resolved.formatted);
-              onAutocompleteResolve(resolved);
-            }}
-            placeholder="Tapez le nom du bâtiment ou une adresse…"
-          />
-        </Field>
-      )}
-      <Field>
-        <FieldLabel>Rue et numéro</FieldLabel>
-        <Input
-          value={value.street}
-          onChange={(e) => onChange({ ...value, street: e.target.value })}
-        />
-      </Field>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field>
-          <FieldLabel>Ville</FieldLabel>
-          <Input
-            value={value.city}
-            onChange={(e) => onChange({ ...value, city: e.target.value })}
-          />
-        </Field>
-        <Field>
-          <FieldLabel>Code postal</FieldLabel>
-          <Input
-            value={value.postalCode}
-            onChange={(e) =>
-              onChange({ ...value, postalCode: e.target.value })
-            }
-          />
-        </Field>
-      </div>
-      <Field>
-        <FieldLabel>Pays</FieldLabel>
+    <AddressInput
+      value={addressValue}
+      onChange={(next) =>
+        onChange({
+          street: next.street,
+          city: next.city,
+          postalCode: next.postalCode,
+          country: (next.country as CountryCode) || value.country,
+          lat: next.lat !== undefined ? String(next.lat) : undefined,
+          lng: next.lng !== undefined ? String(next.lng) : undefined,
+        })
+      }
+      autocomplete={adapter}
+      showCoordinates
+      showCompletion
+      idPrefix="physical"
+      countrySelector={
         <Combobox
           options={countryOptions}
           value={value.country}
@@ -419,8 +359,57 @@ function AddressFieldsEditor({
           placeholder="Choisir un pays…"
           searchPlaceholder="Rechercher…"
         />
-      </Field>
-    </FieldGroup>
+      }
+    />
+  );
+}
+
+// ─── Adresse postale : sans GPS, avec completion ─────────────────
+function PostalAddressEditor({
+  value,
+  onChange,
+  countryOptions,
+}: {
+  value: AddressFields;
+  onChange: (v: AddressFields) => void;
+  countryOptions: ComboboxOption<CountryCode>[];
+}) {
+  const adapter = usePlacesAutocompleteAdapter();
+
+  const addressValue: AddressValue = {
+    street: value.street,
+    city: value.city,
+    postalCode: value.postalCode,
+    country: value.country,
+  };
+
+  return (
+    <AddressInput
+      value={addressValue}
+      onChange={(next) =>
+        onChange({
+          street: next.street,
+          city: next.city,
+          postalCode: next.postalCode,
+          country: (next.country as CountryCode) || value.country,
+        })
+      }
+      autocomplete={adapter}
+      showCoordinates={false}
+      showCompletion
+      idPrefix="postal"
+      countrySelector={
+        <Combobox
+          options={countryOptions}
+          value={value.country}
+          onValueChange={(v) =>
+            onChange({ ...value, country: v as CountryCode })
+          }
+          placeholder="Choisir un pays…"
+          searchPlaceholder="Rechercher…"
+        />
+      }
+    />
   );
 }
 
