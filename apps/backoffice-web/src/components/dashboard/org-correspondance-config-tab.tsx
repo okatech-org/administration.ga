@@ -14,20 +14,26 @@ import {
 	Check,
 	ChevronDown,
 	ChevronRight,
+	FileImage,
 	Loader2,
 	Mail,
 	Plus,
+	Save,
 	Settings,
 	Shield,
 	Sparkles,
+	Upload,
+	X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/design-system/flat-card";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
@@ -63,6 +69,10 @@ export function OrgCorrespondanceConfigTab({ orgId }: OrgCorrespondanceConfigTab
 
 	const { mutateAsync: updateConfig, isPending: isUpdating } = useConvexMutationQuery(
 		api.functions.correspondanceConfig.updateTypeConfig,
+	);
+
+	const { mutateAsync: generateUploadUrl } = useConvexMutationQuery(
+		api.functions.correspondance.generateUploadUrl,
 	);
 
 	const handleInit = async () => {
@@ -273,11 +283,210 @@ export function OrgCorrespondanceConfigTab({ orgId }: OrgCorrespondanceConfigTab
 											</div>
 										</div>
 									</div>
+
+									{/* Mise en page (header/footer/logo) */}
+									<HeaderConfigEditor
+										configId={config._id}
+										initialConfig={config.headerConfig}
+										onSave={async (headerConfig) => {
+											await updateConfig({ configId: config._id, headerConfig });
+										}}
+										generateUploadUrl={generateUploadUrl}
+									/>
 								</div>
 							)}
 						</FlatCard>
 					);
 				})}
+			</div>
+		</div>
+	);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// HEADER CONFIG EDITOR
+// ═════════════════════════════════════════════════════════════════════════════
+
+interface HeaderConfig {
+	logoStorageId?: Id<"_storage">;
+	headerText?: string;
+	footerText?: string;
+}
+
+interface HeaderConfigEditorProps {
+	configId: Id<"correspondanceTypeConfigs">;
+	initialConfig: HeaderConfig | undefined;
+	onSave: (config: HeaderConfig) => Promise<void>;
+	generateUploadUrl: (args: Record<string, never>) => Promise<string>;
+}
+
+function HeaderConfigEditor({
+	initialConfig,
+	onSave,
+	generateUploadUrl,
+}: HeaderConfigEditorProps) {
+	const [headerText, setHeaderText] = useState(initialConfig?.headerText ?? "");
+	const [footerText, setFooterText] = useState(initialConfig?.footerText ?? "");
+	const [logoStorageId, setLogoStorageId] = useState<Id<"_storage"> | undefined>(
+		initialConfig?.logoStorageId,
+	);
+	const [isUploading, setIsUploading] = useState(false);
+	const [isSaving, setIsSaving] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		setHeaderText(initialConfig?.headerText ?? "");
+		setFooterText(initialConfig?.footerText ?? "");
+		setLogoStorageId(initialConfig?.logoStorageId);
+	}, [initialConfig]);
+
+	const isDirty =
+		headerText !== (initialConfig?.headerText ?? "") ||
+		footerText !== (initialConfig?.footerText ?? "") ||
+		logoStorageId !== initialConfig?.logoStorageId;
+
+	const handleLogoUpload = async (file: File) => {
+		if (!file.type.startsWith("image/")) {
+			toast.error("Le logo doit être une image (PNG, JPG)");
+			return;
+		}
+		if (file.size > 2 * 1024 * 1024) {
+			toast.error("Logo trop volumineux (max 2 Mo)");
+			return;
+		}
+		setIsUploading(true);
+		try {
+			const uploadUrl = await generateUploadUrl({});
+			const res = await fetch(uploadUrl, {
+				method: "POST",
+				headers: { "Content-Type": file.type },
+				body: file,
+			});
+			if (!res.ok) throw new Error("Upload échoué");
+			const { storageId } = (await res.json()) as { storageId: Id<"_storage"> };
+			setLogoStorageId(storageId);
+			toast.success("Logo prêt — n'oubliez pas d'enregistrer");
+		} catch (e: any) {
+			toast.error(e?.message ?? "Erreur upload logo");
+		} finally {
+			setIsUploading(false);
+		}
+	};
+
+	const handleSave = async () => {
+		setIsSaving(true);
+		try {
+			await onSave({
+				logoStorageId,
+				headerText: headerText.trim() || undefined,
+				footerText: footerText.trim() || undefined,
+			});
+			toast.success("Mise en page enregistrée");
+		} catch (e: any) {
+			toast.error(e?.message ?? "Erreur enregistrement");
+		} finally {
+			setIsSaving(false);
+		}
+	};
+
+	return (
+		<div className="mt-4 pt-4 border-t border-border/30 space-y-3">
+			<div className="flex items-center justify-between">
+				<h5 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+					Mise en page (PDF officiel)
+				</h5>
+				{isDirty && (
+					<Button
+						size="sm"
+						onClick={handleSave}
+						disabled={isSaving}
+						className="gap-1.5 h-7 text-xs"
+					>
+						{isSaving ? (
+							<Loader2 className="h-3 w-3 animate-spin" />
+						) : (
+							<Save className="h-3 w-3" />
+						)}
+						Enregistrer
+					</Button>
+				)}
+			</div>
+
+			<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+				<div className="space-y-1.5">
+					<label className="text-[10px] font-medium text-muted-foreground">
+						En-tête (haut du document)
+					</label>
+					<Textarea
+						value={headerText}
+						onChange={(e) => setHeaderText(e.target.value)}
+						placeholder="République Gabonaise&#10;Ministère des Affaires étrangères"
+						rows={2}
+						className="text-xs resize-none"
+					/>
+				</div>
+
+				<div className="space-y-1.5">
+					<label className="text-[10px] font-medium text-muted-foreground">
+						Pied de page
+					</label>
+					<Textarea
+						value={footerText}
+						onChange={(e) => setFooterText(e.target.value)}
+						placeholder="Adresse, téléphone, mention légale…"
+						rows={2}
+						className="text-xs resize-none"
+					/>
+				</div>
+			</div>
+
+			<div className="space-y-1.5">
+				<label className="text-[10px] font-medium text-muted-foreground">
+					Logo (PNG/JPG, max 2 Mo)
+				</label>
+				<div className="flex items-center gap-2">
+					<input
+						ref={fileInputRef}
+						type="file"
+						accept="image/png,image/jpeg"
+						className="hidden"
+						onChange={(e) => {
+							const file = e.target.files?.[0];
+							if (file) handleLogoUpload(file);
+						}}
+					/>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => fileInputRef.current?.click()}
+						disabled={isUploading}
+						className="gap-1.5 h-8 text-xs"
+					>
+						{isUploading ? (
+							<Loader2 className="h-3.5 w-3.5 animate-spin" />
+						) : (
+							<Upload className="h-3.5 w-3.5" />
+						)}
+						{logoStorageId ? "Remplacer" : "Charger un logo"}
+					</Button>
+					{logoStorageId && (
+						<>
+							<Badge variant="outline" className="text-[9px] gap-1">
+								<FileImage className="h-3 w-3" />
+								Logo configuré
+							</Badge>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-7 w-7 text-muted-foreground hover:text-destructive"
+								onClick={() => setLogoStorageId(undefined)}
+								title="Retirer le logo"
+							>
+								<X className="h-3 w-3" />
+							</Button>
+						</>
+					)}
+				</div>
 			</div>
 		</div>
 	);

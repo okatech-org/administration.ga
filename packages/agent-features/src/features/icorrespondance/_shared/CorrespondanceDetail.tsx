@@ -78,10 +78,12 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import {
 	useAuthenticatedConvexQuery,
+	useConvexActionQuery,
 	useConvexMutationQuery,
 } from "@workspace/api/hooks";
 import { AnnotationsPanel } from "./AnnotationsPanel";
 import { ApprovalPanel } from "./ApprovalPanel";
+import { SignaturesPanel } from "./SignaturesPanel";
 import { WorkflowTimeline } from "./WorkflowTimeline";
 import { TrackingTimeline } from "./TrackingTimeline";
 import { cn } from "@workspace/ui/lib/utils";
@@ -134,6 +136,19 @@ export function CorrespondanceDetail({
 		api.functions.correspondanceDocuments.removeDocumentFromCorrespondance,
 	);
 
+	const { mutateAsync: generatePdf, isPending: isGeneratingPdf } = useConvexActionQuery(
+		api.functions.correspondancePdfGeneration.generateOfficialPdf,
+	);
+
+	const { mutateAsync: signDocumentAction, isPending: isSigning } = useConvexActionQuery(
+		api.functions.correspondanceSignature.signDocument,
+	);
+
+	const { data: signatures } = useAuthenticatedConvexQuery(
+		api.functions.correspondanceCore.listSignatures,
+		{ itemId },
+	);
+
 	if (isPending || !item) {
 		return (
 			<div className="flex items-center justify-center h-96">
@@ -177,6 +192,38 @@ export function CorrespondanceDetail({
 		}
 	};
 
+	const handleGeneratePdf = async () => {
+		try {
+			const result = await generatePdf({ itemId });
+			if (result && "error" in result) {
+				toast.error(result.error);
+			} else {
+				toast.success(
+					(result as { replaced: boolean }).replaced
+						? "Document officiel régénéré"
+						: "Document officiel généré et attaché",
+				);
+			}
+		} catch (e: any) {
+			toast.error(e?.message ?? "Erreur lors de la génération");
+		}
+	};
+
+	const handleSignDoc = async (docIndex: number) => {
+		try {
+			const result = await signDocumentAction({ itemId, documentIndex: docIndex });
+			if (result && "error" in result) {
+				toast.error(result.error);
+			} else {
+				toast.success(
+					`Document signé (sceau ${(result as { serialNumber: string }).serialNumber})`,
+				);
+			}
+		} catch (e: any) {
+			toast.error(e?.message ?? "Erreur lors de la signature");
+		}
+	};
+
 	const handleRemoveDoc = async (docIndex: number) => {
 		try {
 			await removeDocument({ itemId, documentIndex: docIndex });
@@ -205,6 +252,23 @@ export function CorrespondanceDetail({
 				) : null}
 
 				{/* Actions correspondance selon le contexte */}
+				{item.status === "draft" && !isCopy && (
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={handleGeneratePdf}
+						disabled={isGeneratingPdf}
+						className="gap-1.5"
+					>
+						{isGeneratingPdf ? (
+							<Loader2 className="h-3.5 w-3.5 animate-spin" />
+						) : (
+							<FileText className="h-3.5 w-3.5" />
+						)}
+						Générer le document officiel
+					</Button>
+				)}
+
 				{item.status === "draft" && !isCopy && (
 					<Button size="sm" onClick={handleSend} disabled={isSending} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
 						{isSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
@@ -369,6 +433,24 @@ export function CorrespondanceDetail({
 								<div className="flex items-center gap-2">
 									{!isCopy && selectedDoc.url && (
 										<>
+											{selectedDoc.mimeType === "application/pdf" &&
+												["draft", "pending", "approved"].includes(item.status) && (
+													<Button
+														variant="outline"
+														size="sm"
+														onClick={() => handleSignDoc(selectedDocIndex)}
+														disabled={isSigning}
+														className="gap-1.5"
+														title="Signer électroniquement ce document"
+													>
+														{isSigning ? (
+															<Loader2 className="h-3.5 w-3.5 animate-spin" />
+														) : (
+															<UserCheck className="h-3.5 w-3.5" />
+														)}
+														Signer
+													</Button>
+												)}
 											<Button variant="outline" size="sm" onClick={() => setSelectedDocViewer({ id: selectedDoc.id || String(selectedDocIndex), title: selectedDoc.filename, url: selectedDoc.url, mimeType: selectedDoc.mimeType })} className="gap-1.5 hidden sm:flex">
 												<Maximize className="h-3.5 w-3.5" />
 												Agrandir
@@ -449,6 +531,9 @@ export function CorrespondanceDetail({
 							arrivalDate={(item as any).arrivalDate}
 						/>
 					)}
+
+					{/* Signatures électroniques */}
+					<SignaturesPanel signatures={signatures} />
 
 					{/* Commentaires internes */}
 					<AnnotationsPanel itemId={itemId} currentUserId={currentUserId} />
