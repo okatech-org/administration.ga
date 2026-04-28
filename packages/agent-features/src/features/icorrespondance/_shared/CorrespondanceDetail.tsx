@@ -17,6 +17,7 @@ import {
 	Download,
 	FileText,
 	FolderOpen,
+	GripVertical,
 	Import,
 	Loader2,
 	MoreHorizontal,
@@ -32,6 +33,7 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 
@@ -124,12 +126,15 @@ export function CorrespondanceDetail({
 	onBack,
 	InlineAISuggestion,
 }: CorrespondanceDetailProps) {
+	const { t } = useTranslation();
 	const [selectedDocIndex, setSelectedDocIndex] = useState(0);
 	const [selectedDocViewer, setSelectedDocViewer] = useState<ViewerDoc | null>(null);
 	const [editOpen, setEditOpen] = useState(false);
 	const [respondOpen, setRespondOpen] = useState(false);
 	const [assignOpen, setAssignOpen] = useState(false);
 	const [importOpen, setImportOpen] = useState(false);
+	const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+	const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
 	const { data: item, isPending } = useAuthenticatedConvexQuery(
 		api.functions.correspondance.getItem,
@@ -203,7 +208,7 @@ export function CorrespondanceDetail({
 	const handleSend = async () => {
 		try {
 			await sendCorrespondance({ itemId });
-			toast.success("Correspondance envoyée ");
+			toast.success(t("icorrespondance.toasts.correspondanceSent"));
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur lors de l'envoi");
 		}
@@ -222,7 +227,7 @@ export function CorrespondanceDetail({
 	const handleDelete = async () => {
 		try {
 			await deleteItem({ itemId });
-			toast.success("Correspondance supprimée");
+			toast.success(t("icorrespondance.toasts.correspondanceDeleted"));
 			onBack();
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur");
@@ -232,7 +237,7 @@ export function CorrespondanceDetail({
 	const handleRestore = async () => {
 		try {
 			await restoreItem({ itemId });
-			toast.success("Correspondance restaurée");
+			toast.success(t("icorrespondance.toasts.correspondanceRestored"));
 			onBack();
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur lors de la restauration");
@@ -242,7 +247,7 @@ export function CorrespondanceDetail({
 	const handleRegisterIncoming = async () => {
 		try {
 			await registerIncoming({ itemId });
-			toast.success("Courrier enregistré (numéro d'arrivée attribué)");
+			toast.success(t("icorrespondance.toasts.registered"));
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur lors de l'enregistrement");
 		}
@@ -333,13 +338,33 @@ export function CorrespondanceDetail({
 		}
 	};
 
+	const reorderTo = async (fromIndex: number, toIndex: number) => {
+		if (
+			fromIndex === toIndex ||
+			fromIndex < 0 ||
+			toIndex < 0 ||
+			fromIndex >= allDocs.length ||
+			toIndex >= allDocs.length
+		) {
+			return;
+		}
+		const order = allDocs.map((_: unknown, i: number) => i);
+		const [moved] = order.splice(fromIndex, 1);
+		order.splice(toIndex, 0, moved);
+		try {
+			await reorderDocuments({ itemId, newOrder: order });
+		} catch (e: any) {
+			toast.error(e?.message ?? "Erreur lors du réordonnancement");
+		}
+	};
+
 	return (
 		<div className="space-y-4">
 			{/* ── Barre navigation + actions CORRESPONDANCE ── */}
 			<div className="flex items-center gap-3 flex-wrap">
 				<Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5">
 					<ArrowLeft className="h-3.5 w-3.5" />
-					Retour
+					{t("icorrespondance.actions.back")}
 				</Button>
 
 				<div className="flex-1" />
@@ -365,7 +390,7 @@ export function CorrespondanceDetail({
 						) : (
 							<RotateCcw className="h-3.5 w-3.5" />
 						)}
-						Restaurer
+						{t("icorrespondance.actions.restore")}
 					</Button>
 				)}
 
@@ -377,7 +402,7 @@ export function CorrespondanceDetail({
 						className="gap-1.5"
 					>
 						<Pencil className="h-3.5 w-3.5" />
-						Modifier
+						{t("icorrespondance.actions.edit")}
 					</Button>
 				)}
 
@@ -394,14 +419,14 @@ export function CorrespondanceDetail({
 						) : (
 							<FileText className="h-3.5 w-3.5" />
 						)}
-						Générer le document officiel
+						{t("icorrespondance.actions.generateOfficial")}
 					</Button>
 				)}
 
 				{item.status === "draft" && !isCopy && !isDeleted && (
 					<Button size="sm" onClick={handleSend} disabled={isSending} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
 						{isSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-						Envoyer
+						{t("icorrespondance.actions.send")}
 					</Button>
 				)}
 
@@ -418,7 +443,7 @@ export function CorrespondanceDetail({
 						) : (
 							<BookmarkCheck className="h-3.5 w-3.5" />
 						)}
-						Enregistrer (n° d'arrivée)
+						{t("icorrespondance.actions.register")}
 					</Button>
 				)}
 
@@ -430,7 +455,9 @@ export function CorrespondanceDetail({
 						className="gap-1.5"
 					>
 						<UserCheck className="h-3.5 w-3.5" />
-						{(item as any).assignedToId ? "Réassigner" : "Assigner"}
+						{(item as any).assignedToId
+							? t("icorrespondance.actions.reassign")
+							: t("icorrespondance.actions.assign")}
 					</Button>
 				)}
 
@@ -442,13 +469,13 @@ export function CorrespondanceDetail({
 						className="gap-1.5"
 					>
 						<Reply className="h-3.5 w-3.5" />
-						Répondre
+						{t("icorrespondance.actions.reply")}
 					</Button>
 				)}
 
 				<Button variant="outline" size="sm" onClick={handleClasser} className="gap-1.5">
 					<Archive className="h-3.5 w-3.5" />
-					Classer dans iDocument
+					{t("icorrespondance.actions.classify")}
 				</Button>
 
 				<DropdownMenu>
@@ -460,7 +487,7 @@ export function CorrespondanceDetail({
 					<DropdownMenuContent align="end">
 						<DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
 							<Trash2 className="mr-2 h-3.5 w-3.5" />
-							Supprimer
+							{t("icorrespondance.actions.delete")}
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -475,7 +502,7 @@ export function CorrespondanceDetail({
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2 flex-wrap">
 							{isCopy && (
-								<span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/40 bg-muted/40 px-1.5 py-0.5 rounded">Copie</span>
+								<span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/40 bg-muted/40 px-1.5 py-0.5 rounded">{t("icorrespondance.detail.copy")}</span>
 							)}
 							<span className="text-[10px] font-mono text-muted-foreground">{item.reference}</span>
 							<Badge className={cn("text-[9px]", stCfg.color)}>{stCfg.label}</Badge>
@@ -502,7 +529,7 @@ export function CorrespondanceDetail({
 					<div className="flex items-center justify-between">
 						<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
 							<Paperclip className="h-3 w-3" />
-							Documents ({allDocs.length})
+							{t("icorrespondance.detail.documents")} ({allDocs.length})
 						</h3>
 						{!isCopy && !isDeleted && (
 							<div className="flex items-center gap-1">
@@ -511,10 +538,10 @@ export function CorrespondanceDetail({
 									size="sm"
 									onClick={() => setImportOpen(true)}
 									className="h-7 gap-1 px-2 text-[11px]"
-									title="Importer depuis iDocument"
+									title={t("icorrespondance.import.title")}
 								>
 									<Import className="h-3 w-3" />
-									Importer
+									{t("icorrespondance.actions.import")}
 								</Button>
 								<Button
 									variant="ghost"
@@ -528,7 +555,7 @@ export function CorrespondanceDetail({
 									) : (
 										<Plus className="h-3 w-3" />
 									)}
-									Ajouter
+									{t("icorrespondance.actions.add")}
 								</Button>
 							</div>
 						)}
@@ -536,10 +563,52 @@ export function CorrespondanceDetail({
 					<div className="grid grid-cols-1 gap-3">
 						{allDocs.map((doc: any, i: number) => {
 							const label = doc.label ?? doc.filename;
-							const subtitle = `${doc.isMainDocument ? "Document principal" : "Annexe"}${doc.copyWatermark ? " • COPIE" : ""}`;
+							const subtitle = `${doc.isMainDocument ? t("icorrespondance.detail.mainDocument") : t("icorrespondance.detail.annexe")}${doc.copyWatermark ? ` • ${t("icorrespondance.detail.copy").toUpperCase()}` : ""}`;
 							const isSelected = selectedDocIndex === i;
+							const canReorder = !isCopy && !isDeleted && allDocs.length > 1;
+							const isDragging = draggingIndex === i;
+							const isDragTarget =
+								dragOverIndex === i && draggingIndex !== null && draggingIndex !== i;
 							return (
-								<div key={doc.storageId ?? i} className="flex flex-col gap-1.5">
+								<div
+									key={doc.storageId ?? i}
+									className={cn(
+										"group flex flex-col gap-1.5 transition-all",
+										canReorder && "cursor-grab active:cursor-grabbing",
+										isDragging && "opacity-40",
+										isDragTarget && "ring-2 ring-primary/60 ring-offset-2",
+									)}
+									draggable={canReorder}
+									onDragStart={(e) => {
+										if (!canReorder) return;
+										setDraggingIndex(i);
+										e.dataTransfer.effectAllowed = "move";
+										// Some browsers need data set to start drag
+										e.dataTransfer.setData("text/plain", String(i));
+									}}
+									onDragEnd={() => {
+										setDraggingIndex(null);
+										setDragOverIndex(null);
+									}}
+									onDragOver={(e) => {
+										if (!canReorder || draggingIndex === null) return;
+										e.preventDefault();
+										e.dataTransfer.dropEffect = "move";
+										if (dragOverIndex !== i) setDragOverIndex(i);
+									}}
+									onDragLeave={() => {
+										if (dragOverIndex === i) setDragOverIndex(null);
+									}}
+									onDrop={(e) => {
+										if (!canReorder || draggingIndex === null) return;
+										e.preventDefault();
+										const from = draggingIndex;
+										const to = i;
+										setDraggingIndex(null);
+										setDragOverIndex(null);
+										if (from !== to) reorderTo(from, to);
+									}}
+								>
 									<div
 										className={cn(
 											"relative",
@@ -555,10 +624,19 @@ export function CorrespondanceDetail({
 											ariaLabel={`Sélectionner ${label}`}
 											overlays={
 												<>
+													{canReorder && (
+														<div
+															className="pointer-events-none absolute bottom-2 left-2 inline-flex items-center gap-1 rounded bg-background/90 px-1.5 py-0.5 text-[0.6rem] text-muted-foreground shadow-sm opacity-0 transition-opacity group-hover:opacity-100"
+															title={t("icorrespondance.detail.dragToReorder")}
+														>
+															<GripVertical className="h-3 w-3" />
+															{t("icorrespondance.detail.dragToReorder")}
+														</div>
+													)}
 													{doc.isMainDocument ? (
 														<div className="absolute left-2 top-2">
 															<span className="inline-flex rounded bg-primary/90 px-1.5 py-0.5 text-[0.6rem] font-medium uppercase text-primary-foreground shadow-sm">
-																Principal
+																{t("icorrespondance.detail.mainDocument")}
 															</span>
 														</div>
 													) : null}
@@ -578,14 +656,14 @@ export function CorrespondanceDetail({
 																<DropdownMenuContent align="end">
 																	<DropdownMenuItem>
 																		<Download className="mr-2 h-3.5 w-3.5" />
-																		Télécharger
+																		{t("icorrespondance.actions.download")}
 																	</DropdownMenuItem>
 																	{i > 0 && (
 																		<DropdownMenuItem
 																			onClick={() => moveDoc(i, -1)}
 																		>
 																			<ArrowUp className="mr-2 h-3.5 w-3.5" />
-																			Déplacer vers le haut
+																			{t("icorrespondance.detail.moveUp")}
 																		</DropdownMenuItem>
 																	)}
 																	{i < allDocs.length - 1 && (
@@ -593,7 +671,7 @@ export function CorrespondanceDetail({
 																			onClick={() => moveDoc(i, 1)}
 																		>
 																			<ArrowDown className="mr-2 h-3.5 w-3.5" />
-																			Déplacer vers le bas
+																			{t("icorrespondance.detail.moveDown")}
 																		</DropdownMenuItem>
 																	)}
 																	<DropdownMenuSeparator />
@@ -602,7 +680,7 @@ export function CorrespondanceDetail({
 																		className="text-destructive"
 																	>
 																		<Trash2 className="mr-2 h-3.5 w-3.5" />
-																		Retirer du dossier
+																		{t("icorrespondance.detail.removeFromFolder")}
 																	</DropdownMenuItem>
 																</DropdownMenuContent>
 															</DropdownMenu>

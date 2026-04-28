@@ -9,6 +9,7 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Check, Loader2, MessageCircle, Pencil, Send, Trash2, X } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@workspace/ui/components/button";
 import { Textarea } from "@workspace/ui/components/textarea";
@@ -33,6 +34,7 @@ function formatRelativeDate(ts: number): string {
 }
 
 export function AnnotationsPanel({ itemId, currentUserId }: AnnotationsPanelProps) {
+	const { t } = useTranslation();
 	const [draft, setDraft] = useState("");
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editingContent, setEditingContent] = useState("");
@@ -61,7 +63,7 @@ export function AnnotationsPanel({ itemId, currentUserId }: AnnotationsPanelProp
 			await addAnnotation({ itemId, content: trimmed });
 			setDraft("");
 		} catch (e: any) {
-			toast.error(e?.message ?? "Erreur lors de l'ajout du commentaire");
+			toast.error(e?.message ?? t("icorrespondance.toasts.genericError"));
 		}
 	};
 
@@ -69,7 +71,7 @@ export function AnnotationsPanel({ itemId, currentUserId }: AnnotationsPanelProp
 		try {
 			await deleteAnnotation({ annotationId });
 		} catch (e: any) {
-			toast.error(e?.message ?? "Erreur lors de la suppression");
+			toast.error(e?.message ?? t("icorrespondance.toasts.genericError"));
 		}
 	};
 
@@ -92,7 +94,7 @@ export function AnnotationsPanel({ itemId, currentUserId }: AnnotationsPanelProp
 			});
 			cancelEdit();
 		} catch (e: any) {
-			toast.error(e?.message ?? "Erreur lors de la modification");
+			toast.error(e?.message ?? t("icorrespondance.toasts.genericError"));
 		}
 	};
 
@@ -100,7 +102,7 @@ export function AnnotationsPanel({ itemId, currentUserId }: AnnotationsPanelProp
 		<div className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
 			<div className="flex items-center gap-2">
 				<MessageCircle className="h-4 w-4 text-muted-foreground" />
-				<h4 className="text-sm font-semibold">Commentaires</h4>
+				<h4 className="text-sm font-semibold">{t("icorrespondance.comments.title")}</h4>
 				{annotations && annotations.length > 0 && (
 					<span className="text-[10px] text-muted-foreground">
 						({annotations.length})
@@ -125,7 +127,7 @@ export function AnnotationsPanel({ itemId, currentUserId }: AnnotationsPanelProp
 									<span className="text-[10px] text-muted-foreground">
 										{formatRelativeDate(a.createdAt)}
 										{a.updatedAt && a.updatedAt !== a.createdAt && (
-											<span className="ml-1 italic">(modifié)</span>
+											<span className="ml-1 italic">{t("icorrespondance.comments.edited")}</span>
 										)}
 									</span>
 								</div>
@@ -171,7 +173,7 @@ export function AnnotationsPanel({ itemId, currentUserId }: AnnotationsPanelProp
 											className="h-7 gap-1 px-2 text-[11px]"
 										>
 											<X className="h-3 w-3" />
-											Annuler
+											{t("icorrespondance.actions.cancel")}
 										</Button>
 										<Button
 											size="sm"
@@ -184,7 +186,7 @@ export function AnnotationsPanel({ itemId, currentUserId }: AnnotationsPanelProp
 											) : (
 												<Check className="h-3 w-3" />
 											)}
-											Enregistrer
+											{t("icorrespondance.comments.save")}
 										</Button>
 									</div>
 								</div>
@@ -196,7 +198,7 @@ export function AnnotationsPanel({ itemId, currentUserId }: AnnotationsPanelProp
 				</div>
 			) : (
 				<p className="text-xs text-muted-foreground italic">
-					Aucun commentaire pour ce dossier.
+					{t("icorrespondance.comments.empty")}
 				</p>
 			)}
 
@@ -204,7 +206,7 @@ export function AnnotationsPanel({ itemId, currentUserId }: AnnotationsPanelProp
 				<Textarea
 					value={draft}
 					onChange={(e) => setDraft(e.target.value)}
-					placeholder="Ajouter un commentaire interne…"
+					placeholder={t("icorrespondance.comments.placeholder")}
 					rows={2}
 					className="text-xs resize-none"
 				/>
@@ -220,7 +222,7 @@ export function AnnotationsPanel({ itemId, currentUserId }: AnnotationsPanelProp
 						) : (
 							<Send className="h-3.5 w-3.5" />
 						)}
-						Publier
+						{t("icorrespondance.actions.publish")}
 					</Button>
 				</div>
 			</div>

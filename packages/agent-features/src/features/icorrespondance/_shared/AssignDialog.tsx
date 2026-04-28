@@ -4,6 +4,7 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Loader2, Search, UserCheck, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { Button } from "@workspace/ui/components/button";
@@ -36,6 +37,7 @@ export function AssignDialog({
 	orgId,
 	currentAssignedToId,
 }: AssignDialogProps) {
+	const { t } = useTranslation();
 	const [search, setSearch] = useState("");
 	const [selectedUserId, setSelectedUserId] = useState<string | null>(
 		currentAssignedToId ?? null,
@@ -76,10 +78,10 @@ export function AssignDialog({
 				itemId,
 				agentId: selectedUserId as Id<"users">,
 			});
-			toast.success("Correspondance assignée");
+			toast.success(t("icorrespondance.assign.toastAssigned"));
 			onClose();
 		} catch (e: any) {
-			toast.error(e?.message ?? "Erreur lors de l'assignation");
+			toast.error(e?.message ?? t("icorrespondance.toasts.genericError"));
 		}
 	};
 
@@ -89,20 +91,19 @@ export function AssignDialog({
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<UserCheck className="h-4 w-4" />
-						Assigner à un agent
+						{t("icorrespondance.assign.title")}
 					</DialogTitle>
 				</DialogHeader>
 				<div className="space-y-3 py-2">
 					<p className="text-xs text-muted-foreground">
-						L'agent sélectionné sera notifié et le statut côté expéditeur
-						passera à « en attente ».
+						{t("icorrespondance.assign.hint")}
 					</p>
 					<div className="relative">
 						<Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
 						<Input
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
-							placeholder="Rechercher un agent…"
+							placeholder={t("icorrespondance.assign.searchPlaceholder")}
 							disabled={isAssigning}
 							className="pl-8"
 						/>
@@ -114,7 +115,7 @@ export function AssignDialog({
 							</div>
 						) : contacts.length === 0 ? (
 							<p className="p-4 text-center text-xs text-muted-foreground">
-								Aucun agent trouvé
+								{t("icorrespondance.assign.empty")}
 							</p>
 						) : (
 							<ul className="divide-y divide-border/40">
@@ -164,7 +165,7 @@ export function AssignDialog({
 				<DialogFooter>
 					<Button variant="outline" onClick={onClose} disabled={isAssigning}>
 						<X className="mr-1.5 h-3.5 w-3.5" />
-						Annuler
+						{t("icorrespondance.actions.cancel")}
 					</Button>
 					<Button
 						onClick={submit}
@@ -175,7 +176,7 @@ export function AssignDialog({
 						) : (
 							<UserCheck className="mr-1.5 h-3.5 w-3.5" />
 						)}
-						Assigner
+						{t("icorrespondance.actions.assign")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

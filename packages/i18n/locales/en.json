@@ -6034,7 +6034,10 @@
 			"generateOfficial": "Generate official document",
 			"close": "Close",
 			"back": "Back",
-			"classify": "Classify in iDocument"
+			"classify": "Classify in iDocument",
+			"import": "Import",
+			"add": "Add",
+			"publish": "Publish"
 		},
 		"folders": {
 			"draft": "Drafts",
@@ -6082,6 +6085,83 @@
 			"grid": "Grid",
 			"list": "List",
 			"column": "Columns"
+		},
+		"detail": {
+			"copy": "Copy",
+			"from": "From",
+			"to": "To",
+			"documents": "Documents",
+			"empty": "No documents",
+			"dragToReorder": "Drag to reorder",
+			"moveUp": "Move up",
+			"moveDown": "Move down",
+			"removeFromFolder": "Remove from folder",
+			"mainDocument": "Main",
+			"annexe": "Annex"
+		},
+		"comments": {
+			"title": "Comments",
+			"placeholder": "Add an internal comment…",
+			"publish": "Publish",
+			"empty": "No comments on this file.",
+			"edited": "(edited)",
+			"save": "Save"
+		},
+		"approval": {
+			"title": "Approval chain",
+			"approve": "Approve",
+			"reject": "Reject",
+			"reasonPlaceholder": "Reason (optional)",
+			"rejectReasonRequired": "Rejection reason"
+		},
+		"signatures": {
+			"title": "Signatures",
+			"empty": "No signatures yet."
+		},
+		"editDraft": {
+			"title": "Edit draft",
+			"titleField": "Title *",
+			"priority": "Priority",
+			"tags": "Tags (comma-separated)",
+			"comment": "Internal comment",
+			"save": "Save"
+		},
+		"respond": {
+			"title": "Reply",
+			"hint": "A new correspondence will be created as a draft with sender and recipient swapped. You can then attach documents and submit it.",
+			"prefilledTitle": "Reply to {{ref}}",
+			"type": "Type",
+			"create": "Create reply",
+			"toastCreated": "Reply draft created"
+		},
+		"assign": {
+			"title": "Assign to an agent",
+			"hint": "The selected agent will be notified and the sender-side status will move to \"pending\".",
+			"searchPlaceholder": "Search an agent…",
+			"empty": "No agent found",
+			"toastAssigned": "Correspondence assigned"
+		},
+		"import": {
+			"title": "Import from iDocument",
+			"hint": "Pick a document from the organisation's iDocument library to attach it to this correspondence.",
+			"searchPlaceholder": "Search a document…",
+			"empty": "No document found",
+			"toastImported": "Document imported from iDocument"
+		},
+		"reject": {
+			"pieceTitle": "Reject piece",
+			"pieceHint": "Provide a reason — it will be sent to the requester.",
+			"reason": "Rejection reason *",
+			"reasonPlaceholder": "e.g. illegible, missing signature…"
+		},
+		"renameFolder": {
+			"title": "Rename folder",
+			"name": "New name *"
+		},
+		"newFolder": {
+			"title": "New folder",
+			"name": "Folder name *",
+			"placeholder": "e.g. Verbal Notes 2026"
 		}
 	}
 }

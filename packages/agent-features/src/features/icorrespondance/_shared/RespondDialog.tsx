@@ -4,6 +4,7 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Loader2, Reply, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { Button } from "@workspace/ui/components/button";
@@ -48,14 +49,14 @@ interface RespondDialogProps {
 	onResponseCreated?: (responseId: Id<"correspondanceItems">) => void;
 }
 
-const TYPE_LABELS: Record<CorrespondenceType, string> = {
-	note_verbale: "Note verbale",
-	lettre_officielle: "Lettre officielle",
-	circulaire: "Circulaire",
-	telegramme: "Télégramme",
-	memorandum: "Mémorandum",
-	communique: "Communiqué",
-};
+const TYPE_KEYS: CorrespondenceType[] = [
+	"note_verbale",
+	"lettre_officielle",
+	"circulaire",
+	"telegramme",
+	"memorandum",
+	"communique",
+];
 
 export function RespondDialog({
 	open,
@@ -63,6 +64,7 @@ export function RespondDialog({
 	originalItem,
 	onResponseCreated,
 }: RespondDialogProps) {
+	const { t } = useTranslation();
 	const [title, setTitle] = useState("");
 	const [type, setType] = useState<CorrespondenceType>(originalItem.type);
 	const [priority, setPriority] = useState<Priority>(
@@ -71,11 +73,15 @@ export function RespondDialog({
 
 	useEffect(() => {
 		if (open) {
-			setTitle(`Réponse à ${originalItem.reference}`);
+			setTitle(
+				t("icorrespondance.respond.prefilledTitle", {
+					ref: originalItem.reference,
+				}),
+			);
 			setType(originalItem.type);
 			setPriority(originalItem.priority ?? "normal");
 		}
-	}, [open, originalItem]);
+	}, [open, originalItem, t]);
 
 	const { mutateAsync: respond, isPending } = useConvexMutationQuery(
 		api.functions.correspondanceCore.respondToCorrespondance,
@@ -83,7 +89,7 @@ export function RespondDialog({
 
 	const submit = async () => {
 		if (!title.trim()) {
-			toast.error("Le titre est requis");
+			toast.error(t("icorrespondance.editDraft.titleField"));
 			return;
 		}
 		try {
@@ -93,13 +99,13 @@ export function RespondDialog({
 				type,
 				priority,
 			});
-			toast.success("Brouillon de réponse créé");
+			toast.success(t("icorrespondance.respond.toastCreated"));
 			onClose();
 			if (result?.responseId) {
 				onResponseCreated?.(result.responseId);
 			}
 		} catch (e: any) {
-			toast.error(e?.message ?? "Erreur lors de la création de la réponse");
+			toast.error(e?.message ?? t("icorrespondance.toasts.genericError"));
 		}
 	};
 
@@ -109,17 +115,17 @@ export function RespondDialog({
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<Reply className="h-4 w-4" />
-						Répondre — {originalItem.reference}
+						{t("icorrespondance.respond.title")} — {originalItem.reference}
 					</DialogTitle>
 				</DialogHeader>
 				<div className="space-y-4 py-2">
 					<p className="text-xs text-muted-foreground">
-						Une nouvelle correspondance sera créée en brouillon avec
-						l'expéditeur et le destinataire inversés. Vous pourrez ensuite y
-						joindre des documents et la soumettre.
+						{t("icorrespondance.respond.hint")}
 					</p>
 					<div className="space-y-1.5">
-						<Label htmlFor="resp-title">Titre *</Label>
+						<Label htmlFor="resp-title">
+							{t("icorrespondance.editDraft.titleField")}
+						</Label>
 						<Input
 							id="resp-title"
 							value={title}
@@ -130,7 +136,9 @@ export function RespondDialog({
 					</div>
 					<div className="grid grid-cols-2 gap-3">
 						<div className="space-y-1.5">
-							<Label htmlFor="resp-type">Type</Label>
+							<Label htmlFor="resp-type">
+								{t("icorrespondance.respond.type")}
+							</Label>
 							<Select
 								value={type}
 								onValueChange={(v) => setType(v as CorrespondenceType)}
@@ -140,18 +148,18 @@ export function RespondDialog({
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									{(Object.keys(TYPE_LABELS) as CorrespondenceType[]).map(
-										(t) => (
-											<SelectItem key={t} value={t}>
-												{TYPE_LABELS[t]}
-											</SelectItem>
-										),
-									)}
+									{TYPE_KEYS.map((tk) => (
+										<SelectItem key={tk} value={tk}>
+											{t(`icorrespondance.types.${tk}`)}
+										</SelectItem>
+									))}
 								</SelectContent>
 							</Select>
 						</div>
 						<div className="space-y-1.5">
-							<Label htmlFor="resp-priority">Priorité</Label>
+							<Label htmlFor="resp-priority">
+								{t("icorrespondance.editDraft.priority")}
+							</Label>
 							<Select
 								value={priority}
 								onValueChange={(v) => setPriority(v as Priority)}
@@ -161,9 +169,15 @@ export function RespondDialog({
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="normal">Normale</SelectItem>
-									<SelectItem value="urgent">Urgente</SelectItem>
-									<SelectItem value="confidentiel">Confidentielle</SelectItem>
+									<SelectItem value="normal">
+										{t("icorrespondance.priority.normal")}
+									</SelectItem>
+									<SelectItem value="urgent">
+										{t("icorrespondance.priority.urgent")}
+									</SelectItem>
+									<SelectItem value="confidentiel">
+										{t("icorrespondance.priority.confidentiel")}
+									</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
@@ -172,7 +186,7 @@ export function RespondDialog({
 				<DialogFooter>
 					<Button variant="outline" onClick={onClose} disabled={isPending}>
 						<X className="mr-1.5 h-3.5 w-3.5" />
-						Annuler
+						{t("icorrespondance.actions.cancel")}
 					</Button>
 					<Button onClick={submit} disabled={isPending || !title.trim()}>
 						{isPending ? (
@@ -180,7 +194,7 @@ export function RespondDialog({
 						) : (
 							<Reply className="mr-1.5 h-3.5 w-3.5" />
 						)}
-						Créer la réponse
+						{t("icorrespondance.respond.create")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

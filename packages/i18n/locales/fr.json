@@ -6599,7 +6599,10 @@
 			"generateOfficial": "Générer le document officiel",
 			"close": "Fermer",
 			"back": "Retour",
-			"classify": "Classer dans iDocument"
+			"classify": "Classer dans iDocument",
+			"import": "Importer",
+			"add": "Ajouter",
+			"publish": "Publier"
 		},
 		"folders": {
 			"draft": "Brouillons",
@@ -6647,6 +6650,83 @@
 			"grid": "Grille",
 			"list": "Liste",
 			"column": "Colonnes"
+		},
+		"detail": {
+			"copy": "Copie",
+			"from": "De",
+			"to": "À",
+			"documents": "Documents",
+			"empty": "Aucun document",
+			"dragToReorder": "Glisser pour réordonner",
+			"moveUp": "Déplacer vers le haut",
+			"moveDown": "Déplacer vers le bas",
+			"removeFromFolder": "Retirer du dossier",
+			"mainDocument": "Principal",
+			"annexe": "Annexe"
+		},
+		"comments": {
+			"title": "Commentaires",
+			"placeholder": "Ajouter un commentaire interne…",
+			"publish": "Publier",
+			"empty": "Aucun commentaire pour ce dossier.",
+			"edited": "(modifié)",
+			"save": "Enregistrer"
+		},
+		"approval": {
+			"title": "Chaîne d'approbation",
+			"approve": "Approuver",
+			"reject": "Rejeter",
+			"reasonPlaceholder": "Motif (optionnel)",
+			"rejectReasonRequired": "Motif du rejet"
+		},
+		"signatures": {
+			"title": "Signatures",
+			"empty": "Aucune signature apposée."
+		},
+		"editDraft": {
+			"title": "Modifier le brouillon",
+			"titleField": "Titre *",
+			"priority": "Priorité",
+			"tags": "Tags (séparés par des virgules)",
+			"comment": "Commentaire interne",
+			"save": "Enregistrer"
+		},
+		"respond": {
+			"title": "Répondre",
+			"hint": "Une nouvelle correspondance sera créée en brouillon avec l'expéditeur et le destinataire inversés. Vous pourrez ensuite y joindre des documents et la soumettre.",
+			"prefilledTitle": "Réponse à {{ref}}",
+			"type": "Type",
+			"create": "Créer la réponse",
+			"toastCreated": "Brouillon de réponse créé"
+		},
+		"assign": {
+			"title": "Assigner à un agent",
+			"hint": "L'agent sélectionné sera notifié et le statut côté expéditeur passera à « en attente ».",
+			"searchPlaceholder": "Rechercher un agent…",
+			"empty": "Aucun agent trouvé",
+			"toastAssigned": "Correspondance assignée"
+		},
+		"import": {
+			"title": "Importer depuis iDocument",
+			"hint": "Sélectionnez un document de la bibliothèque iDocument de l'organisation pour l'attacher à cette correspondance.",
+			"searchPlaceholder": "Rechercher un document…",
+			"empty": "Aucun document trouvé",
+			"toastImported": "Document importé depuis iDocument"
+		},
+		"reject": {
+			"pieceTitle": "Rejeter la pièce",
+			"pieceHint": "Indiquez le motif du rejet — il sera transmis au demandeur.",
+			"reason": "Motif du rejet *",
+			"reasonPlaceholder": "Ex: pièce illisible, signature manquante…"
+		},
+		"renameFolder": {
+			"title": "Renommer le dossier",
+			"name": "Nouveau nom *"
+		},
+		"newFolder": {
+			"title": "Nouveau Dossier",
+			"name": "Nom du dossier *",
+			"placeholder": "Ex: Notes Verbales 2026"
 		}
 	}
 }

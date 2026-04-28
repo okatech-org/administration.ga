@@ -4,6 +4,7 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { FileText, Import, Loader2, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { Button } from "@workspace/ui/components/button";
@@ -34,6 +35,7 @@ export function ImportFromIDocumentDialog({
 	correspondanceItemId,
 	orgId,
 }: ImportFromIDocumentDialogProps) {
+	const { t } = useTranslation();
 	const [search, setSearch] = useState("");
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -64,11 +66,11 @@ export function ImportFromIDocumentDialog({
 				correspondanceItemId,
 				documentId: selectedId as Id<"documents">,
 			});
-			toast.success("Document importé depuis iDocument");
+			toast.success(t("icorrespondance.import.toastImported"));
 			onClose();
 			setSelectedId(null);
 		} catch (e: any) {
-			toast.error(e?.message ?? "Erreur lors de l'import");
+			toast.error(e?.message ?? t("icorrespondance.toasts.genericError"));
 		}
 	};
 
@@ -78,20 +80,19 @@ export function ImportFromIDocumentDialog({
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<Import className="h-4 w-4" />
-						Importer depuis iDocument
+						{t("icorrespondance.import.title")}
 					</DialogTitle>
 				</DialogHeader>
 				<div className="space-y-3 py-2">
 					<p className="text-xs text-muted-foreground">
-						Sélectionnez un document de la bibliothèque iDocument de
-						l'organisation pour l'attacher à cette correspondance.
+						{t("icorrespondance.import.hint")}
 					</p>
 					<div className="relative">
 						<Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
 						<Input
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
-							placeholder="Rechercher un document…"
+							placeholder={t("icorrespondance.import.searchPlaceholder")}
 							disabled={isImporting}
 							className="pl-8"
 						/>
@@ -103,7 +104,7 @@ export function ImportFromIDocumentDialog({
 							</div>
 						) : filtered.length === 0 ? (
 							<p className="p-4 text-center text-xs text-muted-foreground">
-								Aucun document trouvé
+								{t("icorrespondance.import.empty")}
 							</p>
 						) : (
 							<ul className="divide-y divide-border/40">
@@ -156,7 +157,7 @@ export function ImportFromIDocumentDialog({
 				<DialogFooter>
 					<Button variant="outline" onClick={onClose} disabled={isImporting}>
 						<X className="mr-1.5 h-3.5 w-3.5" />
-						Annuler
+						{t("icorrespondance.actions.cancel")}
 					</Button>
 					<Button onClick={submit} disabled={!selectedId || isImporting}>
 						{isImporting ? (
@@ -164,7 +165,7 @@ export function ImportFromIDocumentDialog({
 						) : (
 							<Import className="mr-1.5 h-3.5 w-3.5" />
 						)}
-						Importer
+						{t("icorrespondance.actions.import")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>
