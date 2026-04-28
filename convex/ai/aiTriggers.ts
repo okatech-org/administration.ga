@@ -29,7 +29,9 @@ async function isAIAssistantActiveOnOrg(
 ): Promise<boolean> {
   const org = await ctx.db.get(orgId);
   if (!org || !org.modules) return false;
-  return org.modules.includes("ai_assistant" as never);
+  // ai_assistant a été absorbé dans messaging — la capability ai_assistant
+  // se vérifie via orgModuleConfig[messaging].capabilities (non vérifié ici).
+  return org.modules.includes("messaging");
 }
 
 // ═══════════════════════════════════════════════════════════════

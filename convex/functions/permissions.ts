@@ -193,16 +193,17 @@ export const resetAll = superadminMutation({
 // ═══════════════════════════════════════════════════════════════
 
 const MENU_MODULES = [
-  { code: "iprofil", label: "iProfil", requires: null, section: "Commandes" },
-  { code: "intelligence", label: "Aff. Diplomatiques", requires: "intelligence.view", section: "Opérations" },
-  { code: "requests", label: "Aff. Consulaires", requires: "requests.view", section: "Opérations" },
-  { code: "communication", label: "Actualités", requires: "communication.publish", section: "Opérations" },
-  { code: "correspondance", label: "iCorrespondance", requires: "correspondance.view", section: "iBureau" },
+  { code: "profile", label: "iProfil", requires: null, section: "Commandes" },
+  { code: "diplomatic_affairs", label: "Aff. Diplomatiques", requires: "intelligence.view", section: "Opérations" },
+  { code: "consular_affairs", label: "Aff. Consulaires", requires: "requests.view", section: "Opérations" },
+  { code: "news", label: "Actualités", requires: "communication.publish", section: "Opérations" },
+  { code: "correspondence", label: "iCorrespondance", requires: "correspondance.view", section: "iBureau" },
   { code: "documents", label: "iDocument", requires: "documents.view", section: "iBureau" },
-  { code: "appointments", label: "iAgenda", requires: "appointments.view", section: "iBureau" },
+  { code: "calendar", label: "iAgenda", requires: "appointments.view", section: "iBureau" },
+  { code: "messaging", label: "iCom", requires: null, section: "iBureau" },
   { code: "team", label: "Équipe", requires: "team.view", section: "Gestion" },
-  { code: "finance", label: "Paiements", requires: "finance.view", section: "Gestion" },
-  { code: "analytics", label: "Statistiques", requires: "analytics.view", section: "Gestion" },
+  { code: "payments", label: "Paiements", requires: "finance.view", section: "Gestion" },
+  { code: "statistics", label: "Statistiques", requires: "analytics.view", section: "Gestion" },
   { code: "settings", label: "Paramètres", requires: "settings.view", section: "Administration" },
 ] as const;
 
@@ -250,7 +251,7 @@ export const getResolvedMenuForUser = backofficeQuery({
     return {
       isSuperAdmin: false,
       modules: MENU_MODULES.map((m) => {
-        const orgEnabled = !hasOrgModules || orgModules.has(m.code) || m.code === "iprofil";
+        const orgEnabled = !hasOrgModules || orgModules.has(m.code) || m.code === "profile";
         const hasTask = !m.requires || resolvedTasks.has(m.requires);
         const isVisible = orgEnabled && hasTask;
 

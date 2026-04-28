@@ -81,7 +81,7 @@ export const resolveCapabilityConfigInternal = internalQuery({
         blockedReason: "org_not_found",
       };
     }
-    if (!org.modules || !org.modules.includes("ai_assistant" as never)) {
+    if (!org.modules || !org.modules.includes("messaging")) {
       return {
         enabled: false,
         autoApplyAllowed: false,

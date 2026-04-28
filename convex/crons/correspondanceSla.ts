@@ -33,7 +33,7 @@ export const checkOverdueSla = internalMutation({
 
     for (const org of orgs) {
       // Vérifier si le module correspondance est activé pour cette org
-      if (org.modules && !org.modules.includes("correspondance" as any)) {
+      if (org.modules && !org.modules.includes("correspondence")) {
         continue;
       }
 

@@ -24,7 +24,7 @@ import {
   chatsConfigValidator,
 } from "../lib/validators"
 import { taskCodeValidator } from "../lib/taskCodes"
-import { moduleCodeValidator } from "../lib/moduleCodes"
+import { MODULE_ACCESS_TASKS, moduleCodeValidator } from "../lib/moduleCodes"
 import { countryCodeValidator, CountryCode } from "../lib/countryCodeValidator"
 import { canDoTask } from "../lib/permissions"
 import {
@@ -608,6 +608,19 @@ export const getModuleImpactAnalysis = authQuery({
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
       .collect()
 
+    // Récupère les préfixes de tasks legacy associés au module canonique
+    // (ex: consular_affairs → ["requests", "consular_registrations", "passports", ...])
+    const moduleTaskPrefixes = new Set<string>()
+    const mapping = MODULE_ACCESS_TASKS[args.moduleCode as keyof typeof MODULE_ACCESS_TASKS]
+    if (mapping) {
+      for (const level of ["reader", "editor", "admin"] as const) {
+        for (const t of mapping[level] ?? []) {
+          const prefix = t.split(".")[0]
+          if (prefix) moduleTaskPrefixes.add(prefix)
+        }
+      }
+    }
+
     const positionsImpacted = positions
       .filter((p) => !p.deletedAt)
       .filter((p) => {
@@ -615,7 +628,10 @@ export const getModuleImpactAnalysis = authQuery({
         const moduleAccess =
           (p as { moduleAccess?: { moduleCode: string }[] }).moduleAccess ?? []
         return (
-          tasks.some((t: string) => t.startsWith(`${args.moduleCode}.`)) ||
+          tasks.some((t: string) => {
+            const prefix = t.split(".")[0]
+            return prefix && moduleTaskPrefixes.has(prefix)
+          }) ||
           moduleAccess.some((m) => m.moduleCode === args.moduleCode)
         )
       })

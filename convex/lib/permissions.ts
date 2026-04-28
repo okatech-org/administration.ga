@@ -3,7 +3,29 @@ import type { Doc } from "../_generated/dataModel";
 import { error, ErrorCode } from "./errors";
 import { UserRole, PermissionEffect } from "./constants";
 import type { TaskCodeValue } from "./taskCodes";
-import { ALL_MODULE_CODES, type ModuleCodeValue, type ModuleAccessLevel, resolveTaskCodesFromModuleAccess } from "./moduleCodes";
+import { ALL_MODULE_CODES, MODULE_ACCESS_TASKS, type ModuleCodeValue, type ModuleAccessLevel, resolveTaskCodesFromModuleAccess } from "./moduleCodes";
+
+/**
+ * Reverse index : task code → canonical module code.
+ * Permet de trouver le module canonique qui régit une task donnée
+ * (les tasks gardent leurs préfixes legacy comme `requests.view` alors
+ * que les modules ont été renommés en canonical comme `consular_affairs`).
+ */
+const TASK_TO_MODULE: Record<string, ModuleCodeValue> = (() => {
+  const out: Record<string, ModuleCodeValue> = {};
+  for (const [moduleCode, levels] of Object.entries(MODULE_ACCESS_TASKS)) {
+    if (!levels) continue;
+    const allTasks = new Set<string>([
+      ...(levels.reader ?? []),
+      ...(levels.editor ?? []),
+      ...(levels.admin ?? []),
+    ]);
+    for (const task of allTasks) {
+      out[task] = moduleCode as ModuleCodeValue;
+    }
+  }
+  return out;
+})();
 
 // ============================================
 // Types
@@ -91,16 +113,18 @@ export async function canDoTask(
   if (overrideEffect === PermissionEffect.Grant) return true;
 
   // Org-level module check: is this feature activated for the org?
-  // Only applies when the task code prefix maps to a known module code.
-  // Task prefixes like "org" or "schedules" that don't correspond to a
-  // toggleable module are skipped — access is controlled by position tasks only.
-  const moduleCode = taskCode.split(".")[0];
+  // Resolve the canonical module from the task via TASK_TO_MODULE
+  // (les tasks gardent leurs préfixes legacy, les modules ont été renommés).
+  // Tasks "org.*" / "schedules.*" sans entrée dans MODULE_ACCESS_TASKS sont
+  // transversales — pas de gating module à appliquer.
+  const canonicalModule = TASK_TO_MODULE[taskCode];
 
   const org = await ctx.db.get(membership.orgId);
   if (
     org?.modules &&
-    ALL_MODULE_CODES.includes(moduleCode as ModuleCodeValue) &&
-    !org.modules.includes(moduleCode as any)
+    canonicalModule &&
+    ALL_MODULE_CODES.includes(canonicalModule) &&
+    !(org.modules as string[]).includes(canonicalModule)
   ) {
     return false;
   }
@@ -266,9 +290,9 @@ export async function canAccessService(
     return accessLevelIncludes(explicit.accessLevel, requiredLevel);
   }
 
-  // 2. Fallback sur moduleAccess["requests"] de la position
+  // 2. Fallback sur moduleAccess["consular_affairs"] de la position
   const moduleAccess = (position as { moduleAccess?: Array<{ moduleCode: string; accessLevel: string }> })
-    .moduleAccess?.find((m) => m.moduleCode === "requests");
+    .moduleAccess?.find((m) => m.moduleCode === "consular_affairs");
   if (moduleAccess) {
     return accessLevelIncludes(moduleAccess.accessLevel, requiredLevel);
   }

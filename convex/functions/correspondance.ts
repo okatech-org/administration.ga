@@ -529,7 +529,7 @@ export const listAvailableRecipients = authQuery({
     // Filter orgs with correspondance module
     const corrOrgs = allOrgs.filter(
       (org: any) =>
-        org.modules?.includes("correspondance") || true, // fallback: include all active orgs
+        org.modules?.includes("correspondence") || true, // fallback: include all active orgs
     );
 
     // For each org, get members with positions

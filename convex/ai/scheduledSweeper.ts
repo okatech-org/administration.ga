@@ -48,7 +48,7 @@ export const listOrgsWithAIAssistant = internalQuery({
     // depasse cette limite il faudra refondre via un index dedie.
     const orgs = await ctx.db.query("orgs").take(1000);
     const filtered = orgs.filter((o) =>
-      Array.isArray(o.modules) && o.modules.includes("ai_assistant" as never),
+      Array.isArray(o.modules) && (o.modules as string[]).includes("messaging"),
     );
     return filtered.slice(0, limit).map((o) => o._id);
   },
