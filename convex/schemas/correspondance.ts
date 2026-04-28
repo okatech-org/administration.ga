@@ -377,6 +377,19 @@ export const correspondanceSignaturesTable = defineTable({
   documentHash: v.string(), // SHA-256 hex du sealedStorageId
   serialNumber: v.string(), // n° unique de série du sceau
   signedAt: v.number(),
+  // Niveau eIDAS de la signature :
+  //   1 = simple (sceau serveur, par défaut)
+  //   2 = avancée (certificat utilisateur)
+  //   3 = qualifiée (certificat émis par un PSCO sur dispositif sécurisé)
+  // Champ optionnel pour rétro-compat avec les rows existants (= niveau 1).
+  signatureLevel: v.optional(
+    v.union(v.literal(1), v.literal(2), v.literal(3)),
+  ),
+  // Référence externe quand la signature est déléguée à un prestataire eIDAS
+  // (DocuSign / Lex Persona / CertEurope / ...). Permet la traçabilité +
+  // récupération du justificatif côté provider.
+  qualifiedProvider: v.optional(v.string()), // ex. "lex-persona", "docusign"
+  qualifiedProviderRef: v.optional(v.string()), // envelope/agreement ID côté provider
 })
   .index("by_item", ["itemId"])
   .index("by_signer", ["signerId"])

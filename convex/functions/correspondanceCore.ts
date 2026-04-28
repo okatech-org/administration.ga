@@ -1492,6 +1492,11 @@ export const _recordSignature = internalMutation({
     documentHash: v.string(),
     serialNumber: v.string(),
     signedAt: v.number(),
+    signatureLevel: v.optional(
+      v.union(v.literal(1), v.literal(2), v.literal(3)),
+    ),
+    qualifiedProvider: v.optional(v.string()),
+    qualifiedProviderRef: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const signatureId = await ctx.db.insert("correspondanceSignatures", {
@@ -1507,6 +1512,9 @@ export const _recordSignature = internalMutation({
       documentHash: args.documentHash,
       serialNumber: args.serialNumber,
       signedAt: args.signedAt,
+      signatureLevel: args.signatureLevel,
+      qualifiedProvider: args.qualifiedProvider,
+      qualifiedProviderRef: args.qualifiedProviderRef,
     });
 
     // Remplacer le storageId du document signé par sa version scellée

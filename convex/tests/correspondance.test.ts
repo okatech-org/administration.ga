@@ -18,6 +18,7 @@ import {
   canGradeReadConfidentiality,
   GRADE_ORDER,
   CONFIDENTIALITY_MIN_GRADE,
+  applyReferencePattern,
 } from "../lib/correspondanceHelpers";
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -432,5 +433,73 @@ describe("canGradeReadConfidentiality", () => {
       expect(standardIdx).toBeLessThan(confidentielIdx);
       expect(confidentielIdx).toBeLessThan(secretIdx);
     });
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// PATTERN DE RÉFÉRENCE (Sprint 2 — B2)
+// ═════════════════════════════════════════════════════════════════════════════
+
+describe("applyReferencePattern", () => {
+  it("remplace les tokens YYYY, YY, TYPE, NNNNN", () => {
+    const result = applyReferencePattern(
+      "DIPL/{YYYY}/{TYPE}/{NNNNN}",
+      { year: 2026, typeCode: "NV", sequence: 42 },
+    );
+    expect(result).toBe("DIPL/2026/NV/00042");
+  });
+
+  it("supporte le token {YY} en année 2 chiffres", () => {
+    expect(
+      applyReferencePattern("FR-{YY}-{NN}", {
+        year: 2026,
+        typeCode: "L",
+        sequence: 3,
+      }),
+    ).toBe("FR-26-03");
+  });
+
+  it("ajuste le padding au nombre de N dans le token", () => {
+    const vars = { year: 2026, typeCode: "X", sequence: 7 };
+    expect(applyReferencePattern("a-{N}-b", vars)).toBe("a-7-b");
+    expect(applyReferencePattern("a-{NN}-b", vars)).toBe("a-07-b");
+    expect(applyReferencePattern("a-{NNNN}-b", vars)).toBe("a-0007-b");
+    expect(applyReferencePattern("a-{NNNNNNN}-b", vars)).toBe("a-0000007-b");
+  });
+
+  it("ne tronque pas si la séquence dépasse la largeur de padding", () => {
+    expect(
+      applyReferencePattern("{NN}", { year: 2026, typeCode: "X", sequence: 12345 }),
+    ).toBe("12345");
+  });
+
+  it("remplace toutes les occurrences d'un même token", () => {
+    expect(
+      applyReferencePattern("{YYYY}-{YYYY}-{TYPE}", {
+        year: 2026,
+        typeCode: "Z",
+        sequence: 1,
+      }),
+    ).toBe("2026-2026-Z");
+  });
+
+  it("laisse intacts les caractères non-tokens (slash, dash, espaces)", () => {
+    expect(
+      applyReferencePattern("Mémo / {YYYY} | n° {NN}", {
+        year: 2026,
+        typeCode: "MEM",
+        sequence: 9,
+      }),
+    ).toBe("Mémo / 2026 | n° 09");
+  });
+
+  it("est insensible à un type vide (typeCode = '')", () => {
+    expect(
+      applyReferencePattern("{YYYY}/{TYPE}/{NN}", {
+        year: 2026,
+        typeCode: "",
+        sequence: 4,
+      }),
+    ).toBe("2026//04");
   });
 });

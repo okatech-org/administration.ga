@@ -109,6 +109,7 @@ import type * as functions_correspondanceInternalManifest from "../functions/cor
 import type * as functions_correspondancePdfGeneration from "../functions/correspondancePdfGeneration.js";
 import type * as functions_correspondancePostalManifest from "../functions/correspondancePostalManifest.js";
 import type * as functions_correspondancePostalManifestQueries from "../functions/correspondancePostalManifestQueries.js";
+import type * as functions_correspondanceQualifiedSignature from "../functions/correspondanceQualifiedSignature.js";
 import type * as functions_correspondanceSignature from "../functions/correspondanceSignature.js";
 import type * as functions_correspondanceWatermark from "../functions/correspondanceWatermark.js";
 import type * as functions_cv from "../functions/cv.js";
@@ -210,6 +211,7 @@ import type * as lib_projectDocHelpers from "../lib/projectDocHelpers.js";
 import type * as lib_projectDocxGenerator from "../lib/projectDocxGenerator.js";
 import type * as lib_projectPdfGenerator from "../lib/projectPdfGenerator.js";
 import type * as lib_projectPptxGenerator from "../lib/projectPptxGenerator.js";
+import type * as lib_qualifiedSignatureProviders from "../lib/qualifiedSignatureProviders.js";
 import type * as lib_referenceHelpers from "../lib/referenceHelpers.js";
 import type * as lib_registrationFormData from "../lib/registrationFormData.js";
 import type * as lib_requestWorkflow from "../lib/requestWorkflow.js";
@@ -457,6 +459,7 @@ declare const fullApi: ApiFromModules<{
   "functions/correspondancePdfGeneration": typeof functions_correspondancePdfGeneration;
   "functions/correspondancePostalManifest": typeof functions_correspondancePostalManifest;
   "functions/correspondancePostalManifestQueries": typeof functions_correspondancePostalManifestQueries;
+  "functions/correspondanceQualifiedSignature": typeof functions_correspondanceQualifiedSignature;
   "functions/correspondanceSignature": typeof functions_correspondanceSignature;
   "functions/correspondanceWatermark": typeof functions_correspondanceWatermark;
   "functions/cv": typeof functions_cv;
@@ -558,6 +561,7 @@ declare const fullApi: ApiFromModules<{
   "lib/projectDocxGenerator": typeof lib_projectDocxGenerator;
   "lib/projectPdfGenerator": typeof lib_projectPdfGenerator;
   "lib/projectPptxGenerator": typeof lib_projectPptxGenerator;
+  "lib/qualifiedSignatureProviders": typeof lib_qualifiedSignatureProviders;
   "lib/referenceHelpers": typeof lib_referenceHelpers;
   "lib/registrationFormData": typeof lib_registrationFormData;
   "lib/requestWorkflow": typeof lib_requestWorkflow;
