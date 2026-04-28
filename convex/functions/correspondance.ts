@@ -25,6 +25,7 @@ import {
   assertValidTransition,
   assertConfidentialityClearance,
   filterByConfidentialityClearance,
+  buildCorrespondanceSearchText,
 } from "../lib/correspondanceHelpers";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask, isSuperAdmin } from "../lib/permissions";
@@ -219,6 +220,7 @@ export const createItem = authMutation({
     const now = Date.now();
     const reference = await generateSequentialReference(ctx, args.type);
 
+    const tags = args.tags ?? [];
     const itemId = await ctx.db.insert("correspondanceItems", {
       orgId: args.orgId,
       folderId: args.folderId,
@@ -235,7 +237,7 @@ export const createItem = authMutation({
       recipientOrg: args.recipientOrg,
       recipientEmail: args.recipientEmail,
       comment: args.comment,
-      tags: args.tags ?? [],
+      tags,
       requiresApproval: args.requiresApproval ?? false,
       direction: args.direction ?? "outgoing",
       dateReponseAttendue: args.dateReponseAttendue,
@@ -253,6 +255,16 @@ export const createItem = authMutation({
       // Mécanisme de copie — brouillon = original appartenant à l'org
       isCopy: false,
       copyOwnerOrgId: args.orgId,
+      searchText: buildCorrespondanceSearchText({
+        title: args.title,
+        reference,
+        senderName: args.senderName,
+        senderOrg: args.senderOrg,
+        recipientName: args.recipientName,
+        recipientOrg: args.recipientOrg,
+        comment: args.comment,
+        tags,
+      }),
       createdAt: now,
       updatedAt: now,
     });
@@ -323,6 +335,26 @@ export const updateItem = authMutation({
     if (fields.priority !== undefined) updates.priority = fields.priority;
     if (fields.comment !== undefined) updates.comment = fields.comment;
     if (fields.tags !== undefined) updates.tags = fields.tags;
+
+    // Si un champ searchable a changé, recalculer searchText
+    const searchTouched =
+      fields.title !== undefined ||
+      fields.comment !== undefined ||
+      fields.tags !== undefined;
+    if (searchTouched) {
+      updates.searchText = buildCorrespondanceSearchText({
+        title: fields.title ?? item.title,
+        reference: item.reference,
+        senderName: item.senderName,
+        senderOrg: item.senderOrg,
+        recipientName: item.recipientName,
+        recipientOrg: item.recipientOrg,
+        comment: fields.comment ?? item.comment,
+        tags: fields.tags ?? item.tags,
+        arrivalReference: item.arrivalReference,
+      });
+    }
+
     await ctx.db.patch(itemId, updates as any);
   },
 });
@@ -589,25 +621,69 @@ export const listAvailableRecipients = authQuery({
 // SEARCH
 // ═════════════════════════════════════════════════════════════════════════════
 
-/** Search items by text (uses search index) */
+/**
+ * Recherche full-text dans tous les dossiers d'une org.
+ *
+ * Cherche sur le champ `searchText` dénormalisé qui agrège title, reference,
+ * sender/recipient (name + org), comment, tags et arrivalReference.
+ *
+ * Filtres optionnels :
+ *   - type           (note_verbale, lettre_officielle…)
+ *   - status         (draft, pending, sent, received, archived…)
+ *   - confidentialite (standard, confidentiel, secret)
+ *   - isCopy         (true = uniquement les copies expéditeur, false = originaux)
+ *   - dateFrom/dateTo (intervalle sur createdAt, en ms)
+ *
+ * Le filtrage par confidentialité au niveau permission est appliqué après
+ * la recherche, donc un agent sans habilitation ne verra pas les résultats
+ * confidentiels même s'ils matchent.
+ */
 export const searchItems = authQuery({
   args: {
     orgId: v.id("orgs"),
     searchText: v.string(),
+    type: v.optional(correspondanceTypeValidator),
+    status: v.optional(correspondanceStatusValidator),
+    confidentialite: v.optional(
+      v.union(v.literal("standard"), v.literal("confidentiel"), v.literal("secret")),
+    ),
+    isCopy: v.optional(v.boolean()),
+    dateFrom: v.optional(v.number()),
+    dateTo: v.optional(v.number()),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
-    if (!args.searchText.trim()) return [];
+    const trimmed = args.searchText.trim();
+    if (!trimmed) return [];
+
+    const max = args.limit ?? 50;
 
     const results = await ctx.db
       .query("correspondanceItems")
-      .withSearchIndex("search_title", (q) =>
-        q.search("title", args.searchText).eq("orgId", args.orgId),
-      )
-      .collect();
+      .withSearchIndex("search_all", (q) => {
+        let builder = q
+          .search("searchText", trimmed)
+          .eq("copyOwnerOrgId", args.orgId);
+        if (args.type !== undefined) builder = builder.eq("type", args.type);
+        if (args.status !== undefined) builder = builder.eq("status", args.status);
+        if (args.confidentialite !== undefined) {
+          builder = builder.eq("confidentialite", args.confidentialite);
+        }
+        if (args.isCopy !== undefined) builder = builder.eq("isCopy", args.isCopy);
+        return builder;
+      })
+      .take(max * 2); // marge pour absorber les filtres post-search
 
-    const visible = results.filter((i) => !i.deletedAt);
-    return await filterByConfidentialityClearance(ctx, ctx.user, visible);
+    const visible = results.filter((i) => {
+      if (i.deletedAt) return false;
+      if (args.dateFrom !== undefined && i.createdAt < args.dateFrom) return false;
+      if (args.dateTo !== undefined && i.createdAt > args.dateTo) return false;
+      return true;
+    });
+
+    const allowed = await filterByConfidentialityClearance(ctx, ctx.user, visible);
+    return allowed.slice(0, max);
   },
 });
 

@@ -37,6 +37,7 @@ import {
   generateDepartureReference,
   assertConfidentialityClearance,
   filterByConfidentialityClearance,
+  buildCorrespondanceSearchText,
 } from "../lib/correspondanceHelpers";
 import { isSuperAdmin } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
@@ -527,6 +528,16 @@ async function _executeEnvoi(
     parentItemId: item.parentItemId,
     dateReponseAttendue: item.dateReponseAttendue,
     readByIds: [],
+    searchText: buildCorrespondanceSearchText({
+      title: item.title,
+      reference: item.reference,
+      senderName: item.senderName,
+      senderOrg: item.senderOrg,
+      recipientName: item.recipientName,
+      recipientOrg: item.recipientOrg,
+      comment: item.comment,
+      tags: item.tags,
+    }),
     createdAt: now,
     updatedAt: now,
   });
@@ -836,6 +847,17 @@ export const registerIncoming = authMutation({
     await ctx.db.patch(args.itemId, {
       arrivalReference: ref,
       arrivalDate: now,
+      searchText: buildCorrespondanceSearchText({
+        title: item.title,
+        reference: item.reference,
+        senderName: item.senderName,
+        senderOrg: item.senderOrg,
+        recipientName: item.recipientName,
+        recipientOrg: item.recipientOrg,
+        comment: item.comment,
+        tags: item.tags,
+        arrivalReference: ref,
+      }),
       updatedAt: now,
     });
 
@@ -981,6 +1003,16 @@ export const respondToCorrespondance = authMutation({
       confidentialite: item.confidentialite ?? "standard",
       parentItemId: args.itemId,
       readByIds: [ctx.user._id as string],
+      searchText: buildCorrespondanceSearchText({
+        title: args.title,
+        reference,
+        senderName: item.recipientName,
+        senderOrg: item.recipientOrg,
+        recipientName: item.senderName,
+        recipientOrg: item.senderOrg,
+        comment: `En réponse à ${item.reference}`,
+        tags: ["réponse"],
+      }),
       createdAt: now,
       updatedAt: now,
     });
@@ -1177,6 +1209,80 @@ export const _getItemForWatermark = internalQuery({
     const item = await ctx.db.get(args.itemId);
     if (!item || item.deletedAt) return null;
     return { documents: item.documents ?? [] };
+  },
+});
+
+/**
+ * Lecture interne pour le bordereau d'envoi postal.
+ * Charge tous les courriers sortants (copies expéditeur) d'une org sur la période.
+ */
+export const _collectPostalManifestData = internalQuery({
+  args: {
+    orgId: v.id("orgs"),
+    dateFrom: v.number(),
+    dateTo: v.number(),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<
+    | { error: string }
+    | {
+        orgName: string;
+        operatorName: string;
+        items: Array<{
+          reference: string;
+          title: string;
+          type: string;
+          recipientName: string;
+          recipientOrg?: string;
+          recipientEmail?: string;
+          sentAt?: number;
+          createdAt: number;
+        }>;
+      }
+  > => {
+    const org = await ctx.db.get(args.orgId);
+    if (!org) return { error: "Organisation introuvable" };
+
+    const userIdentity = await ctx.auth.getUserIdentity();
+    let operatorName = "—";
+    if (userIdentity) {
+      const userId = userIdentity.subject.split("|")[0] as Id<"users">;
+      const user = await ctx.db.get(userId);
+      operatorName = user?.name ?? user?.email ?? "—";
+    }
+
+    // Tous les items envoyés (copies expéditeur, isCopy=true) dans la fenêtre
+    const all = await ctx.db
+      .query("correspondanceItems")
+      .withIndex("by_owner_org_copy", (q: any) =>
+        q.eq("copyOwnerOrgId", args.orgId).eq("isCopy", true),
+      )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .collect();
+
+    const inWindow = all
+      .filter((i: any) => {
+        const ts = i.sentAt ?? i.createdAt;
+        return ts >= args.dateFrom && ts <= args.dateTo;
+      })
+      .sort((a: any, b: any) => (a.sentAt ?? a.createdAt) - (b.sentAt ?? b.createdAt));
+
+    return {
+      orgName: org.name ?? "—",
+      operatorName,
+      items: inWindow.map((i: any) => ({
+        reference: i.reference,
+        title: i.title,
+        type: i.type,
+        recipientName: i.recipientName,
+        recipientOrg: i.recipientOrg,
+        recipientEmail: i.recipientEmail,
+        sentAt: i.sentAt,
+        createdAt: i.createdAt,
+      })),
+    };
   },
 });
 

@@ -104,7 +104,10 @@ import type * as functions_correspondanceCore from "../functions/correspondanceC
 import type * as functions_correspondanceDashboard from "../functions/correspondanceDashboard.js";
 import type * as functions_correspondanceDocuments from "../functions/correspondanceDocuments.js";
 import type * as functions_correspondanceEmail from "../functions/correspondanceEmail.js";
+import type * as functions_correspondanceInbound from "../functions/correspondanceInbound.js";
 import type * as functions_correspondancePdfGeneration from "../functions/correspondancePdfGeneration.js";
+import type * as functions_correspondancePostalManifest from "../functions/correspondancePostalManifest.js";
+import type * as functions_correspondancePostalManifestQueries from "../functions/correspondancePostalManifestQueries.js";
 import type * as functions_correspondanceSignature from "../functions/correspondanceSignature.js";
 import type * as functions_correspondanceWatermark from "../functions/correspondanceWatermark.js";
 import type * as functions_cv from "../functions/cv.js";
@@ -448,7 +451,10 @@ declare const fullApi: ApiFromModules<{
   "functions/correspondanceDashboard": typeof functions_correspondanceDashboard;
   "functions/correspondanceDocuments": typeof functions_correspondanceDocuments;
   "functions/correspondanceEmail": typeof functions_correspondanceEmail;
+  "functions/correspondanceInbound": typeof functions_correspondanceInbound;
   "functions/correspondancePdfGeneration": typeof functions_correspondancePdfGeneration;
+  "functions/correspondancePostalManifest": typeof functions_correspondancePostalManifest;
+  "functions/correspondancePostalManifestQueries": typeof functions_correspondancePostalManifestQueries;
   "functions/correspondanceSignature": typeof functions_correspondanceSignature;
   "functions/correspondanceWatermark": typeof functions_correspondanceWatermark;
   "functions/cv": typeof functions_cv;

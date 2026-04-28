@@ -56,6 +56,7 @@ import { NewCorrespondanceWizard } from "./_shared/NewCorrespondanceWizard";
 import { CorrespondanceDossier } from "./_shared/CorrespondanceDossier";
 import { CorrespondanceDetail } from "./_shared/CorrespondanceDetail";
 import type { InlineAISuggestionProps } from "./_shared/CorrespondanceDetail";
+import { PostalManifestExport } from "./_shared/PostalManifestExport";
 
 type ActiveTab = "correspondance" | "dossiers" | "dashboard";
 
@@ -1966,7 +1967,10 @@ export default function ICorrespondancePage({
 												</button>
 											</>
 										)}
-										<div className="ml-auto">
+										<div className="ml-auto flex items-center gap-2">
+											{currentFolderId === "__envoye" && activeOrgId && (
+												<PostalManifestExport orgId={activeOrgId as Id<"orgs">} />
+											)}
 											<ViewModeToggle value={viewMode} onChange={setViewMode} />
 										</div>
 									</div>

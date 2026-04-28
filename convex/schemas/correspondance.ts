@@ -215,6 +215,12 @@ export const correspondanceItemsTable = defineTable({
     v.literal("secret"),
   )),
 
+  // Champ dénormalisé pour la recherche full-text (concaténation de
+  // title, reference, senderName, senderOrg, recipientName, recipientOrg,
+  // comment, tags). Mis à jour automatiquement à chaque insert/patch via
+  // `buildCorrespondanceSearchText`.
+  searchText: v.optional(v.string()),
+
   // Read tracking
   readByIds: v.optional(v.array(v.string())),
 
@@ -252,7 +258,11 @@ export const correspondanceItemsTable = defineTable({
   .index("by_owner_org_status", ["copyOwnerOrgId", "status"])
   .index("by_owner_org_copy", ["copyOwnerOrgId", "isCopy"])
   .index("by_original", ["originalItemId"])
-  .searchIndex("search_title", { searchField: "title", filterFields: ["orgId"] });
+  .searchIndex("search_title", { searchField: "title", filterFields: ["orgId"] })
+  .searchIndex("search_all", {
+    searchField: "searchText",
+    filterFields: ["copyOwnerOrgId", "type", "status", "confidentialite", "isCopy"],
+  });
 
 /**
  * Workflow audit trail for correspondence items.

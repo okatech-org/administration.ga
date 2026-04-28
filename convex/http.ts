@@ -1076,4 +1076,159 @@ http.route({
   }),
 });
 
+// ============================================================================
+// iCorrespondance — Webhook email entrant
+// ----------------------------------------------------------------------------
+// Reçoit un payload JSON générique d'un parser inbound (Resend Inbound Parse,
+// Postmark, SendGrid Inbound Parse, ou relais SMTP custom). Crée un dossier
+// de correspondance reçu dans l'org cible.
+//
+// Sécurité : header `X-Inbound-Secret` doit matcher CORRESPONDANCE_INBOUND_SECRET.
+// Sans secret configuré côté serveur, le webhook est désactivé (503).
+//
+// Payload attendu :
+//   {
+//     "orgId": "..." (optionnel, sinon résolu via to.email),
+//     "messageId": "..." (optionnel, pour la dédup),
+//     "from": { "email": "...", "name": "..." },
+//     "to": { "email": "...", "name": "..." },
+//     "subject": "...",
+//     "text": "...",
+//     "html": "...",
+//     "attachments": [{ "filename": "...", "mimeType": "...", "contentBase64": "..." }]
+//   }
+// ============================================================================
+
+http.route({
+  path: "/webhooks/correspondance-inbound",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    // Limite à 30 Mo (un email avec PJ peut être lourd).
+    if (isPayloadTooLarge(request, 30_000_000)) {
+      return new Response("Payload too large", { status: 413 });
+    }
+
+    const inboundSecret = process.env.CORRESPONDANCE_INBOUND_SECRET;
+    if (!inboundSecret) {
+      console.warn("[icorrespondance] CORRESPONDANCE_INBOUND_SECRET missing — webhook disabled");
+      return new Response("Webhook disabled", { status: 503 });
+    }
+
+    const provided = request.headers.get("x-inbound-secret") ?? "";
+    if (provided !== inboundSecret) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    let payload: any;
+    try {
+      payload = await request.json();
+    } catch {
+      return new Response("Invalid JSON", { status: 400 });
+    }
+
+    // Validation minimale (la mutation revalidera via les validators Convex)
+    if (
+      !payload ||
+      typeof payload !== "object" ||
+      !payload.from?.email ||
+      !payload.to?.email ||
+      typeof payload.subject !== "string"
+    ) {
+      return new Response("Missing required fields (from.email, to.email, subject)", {
+        status: 400,
+      });
+    }
+
+    // Upload des pièces jointes (base64 → storage). httpAction peut faire
+    // storage.store, contrairement aux mutations.
+    const MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024;
+    const MAX_ATTACHMENTS = 20;
+    const incoming = Array.isArray(payload.attachments) ? payload.attachments : [];
+    if (incoming.length > MAX_ATTACHMENTS) {
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          reason: "too_many_attachments",
+          message: `Max ${MAX_ATTACHMENTS} pièces jointes, reçu ${incoming.length}.`,
+        }),
+        { status: 422, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const uploadedAttachments: Array<{
+      storageId: string;
+      filename: string;
+      mimeType: string;
+      sizeBytes: number;
+    }> = [];
+
+    for (const att of incoming) {
+      if (
+        !att ||
+        typeof att.filename !== "string" ||
+        typeof att.mimeType !== "string" ||
+        typeof att.contentBase64 !== "string"
+      ) {
+        return new Response("Invalid attachment shape", { status: 400 });
+      }
+      let bytes: Uint8Array;
+      try {
+        const binary = atob(att.contentBase64);
+        bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      } catch {
+        return new Response(
+          `Invalid base64 for attachment ${att.filename}`,
+          { status: 400 },
+        );
+      }
+      if (bytes.length > MAX_ATTACHMENT_SIZE) {
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            reason: "attachment_too_large",
+            message: `Pièce jointe ${att.filename} : ${bytes.length} octets (max ${MAX_ATTACHMENT_SIZE}).`,
+          }),
+          { status: 422, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      const blob = new Blob([bytes as BlobPart], { type: att.mimeType });
+      const storageId = await ctx.storage.store(blob);
+      uploadedAttachments.push({
+        storageId: storageId as string,
+        filename: att.filename,
+        mimeType: att.mimeType,
+        sizeBytes: bytes.length,
+      });
+    }
+
+    try {
+      const result = await ctx.runMutation(
+        internal.functions.correspondanceInbound.ingestInboundEmail,
+        {
+          orgId: payload.orgId,
+          messageId: payload.messageId,
+          from: payload.from,
+          to: payload.to,
+          subject: payload.subject,
+          text: payload.text,
+          html: payload.html,
+          attachments: uploadedAttachments as any,
+        },
+      );
+
+      return new Response(JSON.stringify(result), {
+        status: (result as any).ok === false ? 422 : 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err: any) {
+      console.error("[icorrespondance] Inbound webhook error:", err);
+      return new Response(
+        JSON.stringify({ ok: false, error: err?.message ?? "internal_error" }),
+        { status: 500, headers: { "Content-Type": "application/json" } },
+      );
+    }
+  }),
+});
+
 export default http;

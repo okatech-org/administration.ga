@@ -10,7 +10,11 @@ import { v } from "convex/values";
 import { authMutation, authQuery } from "../lib/customFunctions";
 import { DocumentStatus } from "../lib/constants";
 import { correspondanceDocumentValidator } from "../schemas/correspondance";
-import { requireCorrespondanceAccess, generateSequentialReference } from "../lib/correspondanceHelpers";
+import {
+  requireCorrespondanceAccess,
+  generateSequentialReference,
+  buildCorrespondanceSearchText,
+} from "../lib/correspondanceHelpers";
 import { error, ErrorCode } from "../lib/errors";
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -340,13 +344,16 @@ export const disperseCorrespondance = authMutation({
       // Créer une nouvelle correspondance brouillon avec référence séquentielle
       const reference = await generateSequentialReference(ctx, item.type);
 
+      const dispersedTitle = `[Dispersé] ${item.title}`;
+      const dispersedComment = `Documents dispersés depuis ${item.reference}`;
+      const dispersedTags = ["dispersé", ...item.tags];
       const newItemId = await ctx.db.insert("correspondanceItems", {
         orgId: item.orgId,
         copyOwnerOrgId: item.copyOwnerOrgId ?? item.orgId,
         isCopy: false,
         createdBy: ctx.user._id,
         reference,
-        title: `[Dispersé] ${item.title}`,
+        title: dispersedTitle,
         type: item.type,
         priority: item.priority,
         status: "draft",
@@ -358,13 +365,23 @@ export const disperseCorrespondance = authMutation({
         recipientName: group.recipientName,
         recipientOrg: group.recipientOrgName,
         primaryRecipientOrgId: group.recipientOrgId,
-        comment: `Documents dispersés depuis ${item.reference}`,
-        tags: ["dispersé", ...item.tags],
+        comment: dispersedComment,
+        tags: dispersedTags,
         requiresApproval: false,
         documents: groupDocs,
         confidentialite: item.confidentialite,
         parentItemId: args.itemId,
         readByIds: [ctx.user._id as string],
+        searchText: buildCorrespondanceSearchText({
+          title: dispersedTitle,
+          reference,
+          senderName: item.recipientName,
+          senderOrg: item.recipientOrg,
+          recipientName: group.recipientName,
+          recipientOrg: group.recipientOrgName,
+          comment: dispersedComment,
+          tags: dispersedTags,
+        }),
         createdAt: now,
         updatedAt: now,
       });

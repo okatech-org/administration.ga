@@ -14,6 +14,10 @@ import { describe, it, expect } from "vitest";
 import {
   isValidTransition,
   assertValidTransition,
+  buildCorrespondanceSearchText,
+  canGradeReadConfidentiality,
+  GRADE_ORDER,
+  CONFIDENTIALITY_MIN_GRADE,
 } from "../lib/correspondanceHelpers";
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -263,5 +267,170 @@ describe("hiérarchie des grades diplomatiques", () => {
         gradeOrder.indexOf(gradeOrder[i - 1]),
       );
     }
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SEARCH TEXT (champ dénormalisé pour la recherche full-text)
+// ═════════════════════════════════════════════════════════════════════════════
+
+describe("buildCorrespondanceSearchText", () => {
+  it("concatène tous les champs présents avec un espace", () => {
+    const result = buildCorrespondanceSearchText({
+      title: "Visite officielle",
+      reference: "DIPL/2026/NV/00042",
+      senderName: "Ambassade du Gabon",
+      senderOrg: "Mission Permanente",
+      recipientName: "Ministère des Affaires Étrangères",
+      recipientOrg: "République Française",
+      comment: "Demande de rendez-vous protocolaire",
+      tags: ["urgent", "protocole"],
+    });
+
+    expect(result).toContain("Visite officielle");
+    expect(result).toContain("DIPL/2026/NV/00042");
+    expect(result).toContain("Ambassade du Gabon");
+    expect(result).toContain("Mission Permanente");
+    expect(result).toContain("Ministère des Affaires Étrangères");
+    expect(result).toContain("République Française");
+    expect(result).toContain("rendez-vous protocolaire");
+    expect(result).toContain("urgent");
+    expect(result).toContain("protocole");
+  });
+
+  it("ignore les champs absents (undefined/null) sans erreur", () => {
+    const result = buildCorrespondanceSearchText({
+      title: "Note Verbale",
+      reference: "DIPL/2026/NV/001",
+    });
+    expect(result).toBe("Note Verbale DIPL/2026/NV/001");
+  });
+
+  it("ignore un tableau de tags vide", () => {
+    const result = buildCorrespondanceSearchText({
+      title: "Test",
+      tags: [],
+    });
+    expect(result).toBe("Test");
+  });
+
+  it("inclut arrivalReference si fourni (cas post-réception)", () => {
+    const result = buildCorrespondanceSearchText({
+      title: "Note reçue",
+      reference: "DIPL/2026/NV/00001",
+      arrivalReference: "ARR/2026/00042",
+    });
+    expect(result).toContain("ARR/2026/00042");
+  });
+
+  it("retourne une chaîne vide pour un input entièrement vide", () => {
+    expect(buildCorrespondanceSearchText({})).toBe("");
+  });
+
+  it("trim les espaces en bordure (cas où seul tags est présent)", () => {
+    const result = buildCorrespondanceSearchText({
+      tags: ["solo"],
+    });
+    expect(result).toBe("solo");
+  });
+
+  it("préserve l'ordre title → reference → sender → recipient → comment → arrivalRef → tags", () => {
+    const result = buildCorrespondanceSearchText({
+      title: "T",
+      reference: "R",
+      senderName: "SN",
+      senderOrg: "SO",
+      recipientName: "RN",
+      recipientOrg: "RO",
+      comment: "C",
+      arrivalReference: "AR",
+      tags: ["TAG1", "TAG2"],
+    });
+    expect(result).toBe("T R SN SO RN RO C AR TAG1 TAG2");
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// HABILITATION PAR NIVEAU DE CONFIDENTIALITÉ (fonction pure)
+// ═════════════════════════════════════════════════════════════════════════════
+
+describe("canGradeReadConfidentiality", () => {
+  describe("niveau standard", () => {
+    it("autorise tous les grades, y compris external", () => {
+      for (const grade of GRADE_ORDER) {
+        expect(canGradeReadConfidentiality(grade, "standard")).toBe(true);
+      }
+    });
+
+    it("autorise même quand confidentialite est undefined (defaut = standard)", () => {
+      expect(canGradeReadConfidentiality("external", undefined)).toBe(true);
+    });
+  });
+
+  describe("niveau confidentiel (min = secretary)", () => {
+    it("rejette external", () => {
+      expect(canGradeReadConfidentiality("external", "confidentiel")).toBe(false);
+    });
+
+    it("rejette agent", () => {
+      expect(canGradeReadConfidentiality("agent", "confidentiel")).toBe(false);
+    });
+
+    it("autorise secretary (seuil minimum)", () => {
+      expect(canGradeReadConfidentiality("secretary", "confidentiel")).toBe(true);
+    });
+
+    it("autorise tous les grades >= secretary", () => {
+      for (const grade of ["secretary", "counselor", "deputy_chief", "chief"] as const) {
+        expect(canGradeReadConfidentiality(grade, "confidentiel")).toBe(true);
+      }
+    });
+  });
+
+  describe("niveau secret (min = deputy_chief)", () => {
+    it("rejette external, agent, secretary, counselor", () => {
+      for (const grade of ["external", "agent", "secretary", "counselor"] as const) {
+        expect(canGradeReadConfidentiality(grade, "secret")).toBe(false);
+      }
+    });
+
+    it("autorise deputy_chief (seuil minimum)", () => {
+      expect(canGradeReadConfidentiality("deputy_chief", "secret")).toBe(true);
+    });
+
+    it("autorise chief", () => {
+      expect(canGradeReadConfidentiality("chief", "secret")).toBe(true);
+    });
+  });
+
+  describe("niveau inconnu (defensive)", () => {
+    it("traite un niveau non reconnu comme deputy_chief minimum", () => {
+      // Comportement défensif : si on ajoute un niveau et qu'on oublie la map,
+      // on tombe sur deputy_chief par défaut (plutôt que d'autoriser largement)
+      expect(canGradeReadConfidentiality("agent", "top_secret_xyz")).toBe(false);
+      expect(canGradeReadConfidentiality("deputy_chief", "top_secret_xyz")).toBe(true);
+    });
+  });
+
+  describe("invariants de la matrice CONFIDENTIALITY_MIN_GRADE", () => {
+    it("standard a le seuil le plus bas", () => {
+      const standardIdx = GRADE_ORDER.indexOf(CONFIDENTIALITY_MIN_GRADE.standard);
+      const confidentielIdx = GRADE_ORDER.indexOf(CONFIDENTIALITY_MIN_GRADE.confidentiel);
+      expect(standardIdx).toBeLessThan(confidentielIdx);
+    });
+
+    it("secret a le seuil le plus haut", () => {
+      const confidentielIdx = GRADE_ORDER.indexOf(CONFIDENTIALITY_MIN_GRADE.confidentiel);
+      const secretIdx = GRADE_ORDER.indexOf(CONFIDENTIALITY_MIN_GRADE.secret);
+      expect(secretIdx).toBeGreaterThan(confidentielIdx);
+    });
+
+    it("les seuils sont strictement croissants : standard < confidentiel < secret", () => {
+      const standardIdx = GRADE_ORDER.indexOf(CONFIDENTIALITY_MIN_GRADE.standard);
+      const confidentielIdx = GRADE_ORDER.indexOf(CONFIDENTIALITY_MIN_GRADE.confidentiel);
+      const secretIdx = GRADE_ORDER.indexOf(CONFIDENTIALITY_MIN_GRADE.secret);
+      expect(standardIdx).toBeLessThan(confidentielIdx);
+      expect(confidentielIdx).toBeLessThan(secretIdx);
+    });
   });
 });

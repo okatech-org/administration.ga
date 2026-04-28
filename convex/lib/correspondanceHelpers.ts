@@ -36,6 +36,46 @@ export async function requireCorrespondanceAccess(
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// CHAMP DÉNORMALISÉ POUR LA RECHERCHE FULL-TEXT
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Construit le contenu textuel agrégé d'un dossier pour l'index de recherche.
+ * À appeler à chaque insert et chaque patch qui touche un champ searchable.
+ *
+ * Champs concaténés :
+ *   - title, reference (identifiants)
+ *   - senderName, senderOrg, recipientName, recipientOrg (correspondants)
+ *   - comment (corps), tags (mots-clés)
+ *   - arrivalReference (numéro de registre destinataire, après réception)
+ */
+export function buildCorrespondanceSearchText(item: {
+  title?: string | null;
+  reference?: string | null;
+  senderName?: string | null;
+  senderOrg?: string | null;
+  recipientName?: string | null;
+  recipientOrg?: string | null;
+  comment?: string | null;
+  tags?: string[] | null;
+  arrivalReference?: string | null;
+}): string {
+  const parts: string[] = [];
+  if (item.title) parts.push(item.title);
+  if (item.reference) parts.push(item.reference);
+  if (item.senderName) parts.push(item.senderName);
+  if (item.senderOrg) parts.push(item.senderOrg);
+  if (item.recipientName) parts.push(item.recipientName);
+  if (item.recipientOrg) parts.push(item.recipientOrg);
+  if (item.comment) parts.push(item.comment);
+  if (item.arrivalReference) parts.push(item.arrivalReference);
+  if (item.tags && item.tags.length > 0) parts.push(...item.tags);
+  // Convex search est en lower-case insensitive, mais on normalise pour
+  // garantir un comportement homogène entre create/patch et types entrants.
+  return parts.join(" ").trim();
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // HABILITATION PAR NIVEAU DE CONFIDENTIALITÉ
 // ═════════════════════════════════════════════════════════════════════════════
 
@@ -43,18 +83,40 @@ export async function requireCorrespondanceAccess(
  * Hiérarchie des grades du plus bas au plus haut.
  * Reproduite ici pour éviter une dépendance cyclique.
  */
-const GRADE_ORDER = ["external", "agent", "secretary", "counselor", "deputy_chief", "chief"] as const;
+export const GRADE_ORDER = [
+  "external",
+  "agent",
+  "secretary",
+  "counselor",
+  "deputy_chief",
+  "chief",
+] as const;
+
+export type Grade = (typeof GRADE_ORDER)[number];
 
 /**
  * Grade minimum requis pour accéder à un dossier selon son niveau de confidentialité.
  * Les parties prenantes (créateur, destinataire principal, approbateur en cours)
  * conservent toujours leur accès indépendamment de leur grade.
  */
-const CONFIDENTIALITY_MIN_GRADE: Record<string, (typeof GRADE_ORDER)[number]> = {
+export const CONFIDENTIALITY_MIN_GRADE: Record<string, Grade> = {
   standard: "external",
   confidentiel: "secretary",
   secret: "deputy_chief",
 };
+
+/**
+ * Vérifie si un grade donné est suffisant pour lire un niveau de confidentialité.
+ * Fonction pure — testable sans contexte Convex.
+ */
+export function canGradeReadConfidentiality(
+  grade: Grade,
+  confidentialite: string | undefined,
+): boolean {
+  const level = confidentialite ?? "standard";
+  const required = CONFIDENTIALITY_MIN_GRADE[level] ?? "deputy_chief";
+  return GRADE_ORDER.indexOf(grade) >= GRADE_ORDER.indexOf(required);
+}
 
 /**
  * Récupère le grade de l'utilisateur dans une organisation, ou "external"
@@ -64,7 +126,7 @@ async function getUserGradeInOrg(
   ctx: AuthContext,
   userId: Id<"users">,
   orgId: Id<"orgs">,
-): Promise<(typeof GRADE_ORDER)[number]> {
+): Promise<Grade> {
   const membership = await ctx.db
     .query("memberships")
     .withIndex("by_user_org_deletedAt", (q: any) =>
@@ -74,7 +136,7 @@ async function getUserGradeInOrg(
   if (!membership?.positionId) return "external";
   const position = (await ctx.db.get(membership.positionId)) as any;
   const grade = position?.grade ?? "agent";
-  return GRADE_ORDER.includes(grade) ? grade : "agent";
+  return (GRADE_ORDER as readonly string[]).includes(grade) ? grade : "agent";
 }
 
 /**
@@ -109,8 +171,7 @@ export async function userCanReadConfidentiality(
 
   const orgId = item.copyOwnerOrgId ?? item.orgId;
   const userGrade = await getUserGradeInOrg(ctx, user._id, orgId);
-  const requiredGrade = CONFIDENTIALITY_MIN_GRADE[level] ?? "deputy_chief";
-  return GRADE_ORDER.indexOf(userGrade) >= GRADE_ORDER.indexOf(requiredGrade);
+  return canGradeReadConfidentiality(userGrade, level);
 }
 
 /**
