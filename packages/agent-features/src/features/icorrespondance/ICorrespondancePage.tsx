@@ -952,6 +952,10 @@ export default function ICorrespondancePage({
 		api.functions.correspondanceDashboard.getRecentActivity,
 		activeOrgId ? { orgId: activeOrgId, limit: 20 } : "skip",
 	);
+	const { data: dossierStats } = useAuthenticatedConvexQuery(
+		api.functions.correspondanceDashboard.getDossierStats,
+		activeOrgId ? { orgId: activeOrgId } : "skip",
+	);
 
 	// ─── iAsted page context (avant les mutations pour rester groupé en haut) ──
 	const pageEntities = useMemo<PageEntity[]>(() => {
@@ -2286,6 +2290,7 @@ export default function ICorrespondancePage({
 								dossiers: { total: 0, byStatus: {}, overdue: 0, myDossiers: 0 },
 							}
 						}
+						dossierStats={dossierStats as any}
 						recentActivity={recentActivity}
 						onNewCorrespondance={() => {
 							updateUrl({ tab: "correspondance", folder: "__recu", id: null });

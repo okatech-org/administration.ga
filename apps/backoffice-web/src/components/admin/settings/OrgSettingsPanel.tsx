@@ -37,6 +37,7 @@ import { CallSettingsSection } from "./sections/CallSettingsSection";
 import { ChatsSection } from "./sections/ChatsSection";
 import { ContactsSection } from "./sections/ContactsSection";
 import { CorrespondanceSection } from "./sections/CorrespondanceSection";
+import { CorrespondanceTypesSection } from "./sections/CorrespondanceTypesSection";
 import { IAstedSection } from "./sections/IAstedSection";
 import { IdentitySection } from "./sections/IdentitySection";
 import { JurisdictionSection } from "./sections/JurisdictionSection";
@@ -136,6 +137,13 @@ const GROUPS: SettingsTabGroup[] = [
         icon: Mail,
         component: CorrespondanceSection,
         completionKey: "correspondance",
+      },
+      {
+        key: "correspondance-types",
+        label: "Types de correspondance",
+        icon: ScrollText,
+        component: CorrespondanceTypesSection,
+        completionKey: "correspondance-types",
       },
       {
         key: "calls",

@@ -6,11 +6,14 @@ import {
 	AlertTriangle,
 	ArrowRight,
 	BookOpen,
+	CheckCircle2,
 	Clock,
 	Folder,
 	Mail,
+	Percent,
 	Plus,
 	Send,
+	Timer,
 	User,
 } from "lucide-react";
 import { motion } from "motion/react";
@@ -40,6 +43,20 @@ interface DashboardStats {
 	};
 }
 
+export interface DossierStats {
+	totalDossiers: number;
+	byType: {
+		typeId: string;
+		typeCode: string;
+		typeLabel: { fr?: string; en?: string } | string;
+		total: number;
+		byStatus: Record<string, number>;
+	}[];
+	avgProcessingDays: number;
+	rejectionRate: number;
+	slaComplianceRate: number;
+}
+
 interface ActivityItem {
 	type: string;
 	action: string;
@@ -52,6 +69,7 @@ interface ActivityItem {
 
 interface DashboardProps {
 	stats: DashboardStats;
+	dossierStats?: DossierStats | null;
 	recentActivity: ActivityItem[];
 	onNewCorrespondance: () => void;
 	onNewDossier: () => void;
@@ -308,6 +326,7 @@ function QuickActions({
 
 export function Dashboard({
 	stats,
+	dossierStats,
 	recentActivity,
 	onNewCorrespondance,
 	onNewDossier,
@@ -358,6 +377,36 @@ export function Dashboard({
 					/>
 				))}
 			</div>
+
+			{/* ---------- Dossier KPIs ---------- */}
+			{dossierStats && dossierStats.totalDossiers > 0 && (
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+					<StatCard
+						label="Délai moyen de traitement (jours)"
+						value={dossierStats.avgProcessingDays}
+						icon={Timer}
+						colorClass="bg-blue-500/15 text-blue-600 dark:text-blue-400"
+						index={0}
+						isLoading={isLoading}
+					/>
+					<StatCard
+						label="Conformité SLA (%)"
+						value={dossierStats.slaComplianceRate}
+						icon={CheckCircle2}
+						colorClass="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+						index={1}
+						isLoading={isLoading}
+					/>
+					<StatCard
+						label="Taux de rejet (%)"
+						value={dossierStats.rejectionRate}
+						icon={Percent}
+						colorClass="bg-rose-500/15 text-rose-600 dark:text-rose-400"
+						index={2}
+						isLoading={isLoading}
+					/>
+				</div>
+			)}
 
 			{/* ---------- Two-column layout ---------- */}
 			<div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

@@ -10,15 +10,19 @@ import type { Id } from "@convex/_generated/dataModel";
 import { DocumentSheetFile } from "@workspace/ui/components/document-sheet";
 import {
 	ArrowLeft,
+	ArrowDown,
+	ArrowUp,
 	Archive,
 	BookmarkCheck,
 	Download,
 	FileText,
 	FolderOpen,
+	Import,
 	Loader2,
 	MoreHorizontal,
 	Paperclip,
 	Pencil,
+	Plus,
 	Reply,
 	RotateCcw,
 	Send,
@@ -89,6 +93,7 @@ import { AnnotationsPanel } from "./AnnotationsPanel";
 import { ApprovalPanel } from "./ApprovalPanel";
 import { AssignDialog } from "./AssignDialog";
 import { EditDraftDialog } from "./EditDraftDialog";
+import { ImportFromIDocumentDialog } from "./ImportFromIDocumentDialog";
 import { RespondDialog } from "./RespondDialog";
 import { SignaturesPanel } from "./SignaturesPanel";
 import { WorkflowTimeline } from "./WorkflowTimeline";
@@ -124,6 +129,7 @@ export function CorrespondanceDetail({
 	const [editOpen, setEditOpen] = useState(false);
 	const [respondOpen, setRespondOpen] = useState(false);
 	const [assignOpen, setAssignOpen] = useState(false);
+	const [importOpen, setImportOpen] = useState(false);
 
 	const { data: item, isPending } = useAuthenticatedConvexQuery(
 		api.functions.correspondance.getItem,
@@ -152,6 +158,18 @@ export function CorrespondanceDetail({
 
 	const { mutateAsync: removeDocument } = useConvexMutationQuery(
 		api.functions.correspondanceDocuments.removeDocumentFromCorrespondance,
+	);
+
+	const { mutateAsync: addDocument, isPending: isAddingDoc } = useConvexMutationQuery(
+		api.functions.correspondanceDocuments.addDocumentToCorrespondance,
+	);
+
+	const { mutateAsync: reorderDocuments } = useConvexMutationQuery(
+		api.functions.correspondanceDocuments.reorderDocuments,
+	);
+
+	const { mutateAsync: generateUploadUrl } = useConvexMutationQuery(
+		api.functions.correspondance.generateUploadUrl,
 	);
 
 	const { mutateAsync: generatePdf, isPending: isGeneratingPdf } = useConvexActionQuery(
@@ -268,6 +286,50 @@ export function CorrespondanceDetail({
 			toast.success("Document retiré et classé dans iDocument ");
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur");
+		}
+	};
+
+	const handleAddDoc = () => {
+		const input = document.createElement("input");
+		input.type = "file";
+		input.accept =
+			".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx";
+		input.onchange = async () => {
+			const file = input.files?.[0];
+			if (!file) return;
+			try {
+				const url = (await generateUploadUrl({})) as string;
+				const res = await fetch(url, {
+					method: "POST",
+					headers: { "Content-Type": file.type },
+					body: file,
+				});
+				const { storageId } = await res.json();
+				await addDocument({
+					itemId,
+					storageId,
+					filename: file.name,
+					mimeType: file.type,
+					sizeBytes: file.size,
+					label: file.name,
+				});
+				toast.success("Document ajouté");
+			} catch (e: any) {
+				toast.error(e?.message ?? "Erreur lors de l'ajout du document");
+			}
+		};
+		input.click();
+	};
+
+	const moveDoc = async (fromIndex: number, direction: -1 | 1) => {
+		const toIndex = fromIndex + direction;
+		if (toIndex < 0 || toIndex >= allDocs.length) return;
+		const order = allDocs.map((_: unknown, i: number) => i);
+		[order[fromIndex], order[toIndex]] = [order[toIndex], order[fromIndex]];
+		try {
+			await reorderDocuments({ itemId, newOrder: order });
+		} catch (e: any) {
+			toast.error(e?.message ?? "Erreur lors du réordonnancement");
 		}
 	};
 
@@ -437,10 +499,40 @@ export function CorrespondanceDetail({
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 				{/* Liste des documents — vignettes A4 fidèles */}
 				<div className="space-y-3">
-					<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-						<Paperclip className="h-3 w-3" />
-						Documents ({allDocs.length})
-					</h3>
+					<div className="flex items-center justify-between">
+						<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+							<Paperclip className="h-3 w-3" />
+							Documents ({allDocs.length})
+						</h3>
+						{!isCopy && !isDeleted && (
+							<div className="flex items-center gap-1">
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={() => setImportOpen(true)}
+									className="h-7 gap-1 px-2 text-[11px]"
+									title="Importer depuis iDocument"
+								>
+									<Import className="h-3 w-3" />
+									Importer
+								</Button>
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={handleAddDoc}
+									disabled={isAddingDoc}
+									className="h-7 gap-1 px-2 text-[11px]"
+								>
+									{isAddingDoc ? (
+										<Loader2 className="h-3 w-3 animate-spin" />
+									) : (
+										<Plus className="h-3 w-3" />
+									)}
+									Ajouter
+								</Button>
+							</div>
+						)}
+					</div>
 					<div className="grid grid-cols-1 gap-3">
 						{allDocs.map((doc: any, i: number) => {
 							const label = doc.label ?? doc.filename;
@@ -488,6 +580,22 @@ export function CorrespondanceDetail({
 																		<Download className="mr-2 h-3.5 w-3.5" />
 																		Télécharger
 																	</DropdownMenuItem>
+																	{i > 0 && (
+																		<DropdownMenuItem
+																			onClick={() => moveDoc(i, -1)}
+																		>
+																			<ArrowUp className="mr-2 h-3.5 w-3.5" />
+																			Déplacer vers le haut
+																		</DropdownMenuItem>
+																	)}
+																	{i < allDocs.length - 1 && (
+																		<DropdownMenuItem
+																			onClick={() => moveDoc(i, 1)}
+																		>
+																			<ArrowDown className="mr-2 h-3.5 w-3.5" />
+																			Déplacer vers le bas
+																		</DropdownMenuItem>
+																	)}
 																	<DropdownMenuSeparator />
 																	<DropdownMenuItem
 																		onClick={() => handleRemoveDoc(i)}
@@ -698,6 +806,15 @@ export function CorrespondanceDetail({
 					itemId={item._id as Id<"correspondanceItems">}
 					orgId={currentOrgId as Id<"orgs">}
 					currentAssignedToId={(item as any).assignedToId}
+				/>
+			)}
+
+			{!isCopy && !isDeleted && (
+				<ImportFromIDocumentDialog
+					open={importOpen}
+					onClose={() => setImportOpen(false)}
+					correspondanceItemId={item._id as Id<"correspondanceItems">}
+					orgId={currentOrgId as Id<"orgs">}
 				/>
 			)}
 		</div>
