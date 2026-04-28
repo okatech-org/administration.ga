@@ -852,6 +852,9 @@ export const orgSettingsValidator = v.object({
       maxDays: v.optional(v.number()),
       escalationMembershipIds: v.optional(v.array(v.id("memberships"))),
     }))),
+    // Adresse email qui reçoit les courriers externes pour cette org.
+    // Le webhook /webhooks/correspondance-inbound résout l'org via cette adresse.
+    inboundEmailAddress: v.optional(v.string()),
   })),
 
   // ── Carte consulaire & impression ──

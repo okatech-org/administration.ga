@@ -17,6 +17,7 @@
 
 import { api } from "@convex/_generated/api";
 import {
+  AtSign,
   FileSignature,
   FileText,
   Fingerprint,
@@ -88,6 +89,7 @@ export function CorrespondanceSection({
   const [watermarkEnabled, setWatermarkEnabled] = useState(false);
   const [watermarkText, setWatermarkText] = useState("COPIE");
   const [watermarkOpacity, setWatermarkOpacity] = useState(0.3);
+  const [inboundEmailAddress, setInboundEmailAddress] = useState("");
 
   const { trigger, flush, hasPending, status, errorMessage } = useDebouncedSave<void>({
     readOnly,
@@ -123,6 +125,7 @@ export function CorrespondanceSection({
               text: watermarkText,
               opacity: watermarkOpacity,
             },
+            inboundEmailAddress: inboundEmailAddress.trim() || undefined,
           },
         },
       });
@@ -155,6 +158,7 @@ export function CorrespondanceSection({
     setWatermarkEnabled(cc?.watermarkConfig?.enabled ?? false);
     setWatermarkText(cc?.watermarkConfig?.text ?? "COPIE");
     setWatermarkOpacity(cc?.watermarkConfig?.opacity ?? 0.3);
+    setInboundEmailAddress((cc as any)?.inboundEmailAddress ?? "");
   }, [org, hasPending]);
 
   const push = () => trigger();
@@ -445,6 +449,46 @@ export function CorrespondanceSection({
                   </div>
                 </label>
               </div>
+            </div>
+          </FlatCard>
+
+          {/* ─── Email entrant ───────────────────────── */}
+          <FlatCard>
+            <div className="p-4">
+              <SectionHeader
+                icon={<AtSign className="h-4 w-4 text-cyan-600" />}
+                title="Email entrant"
+              />
+              <p className="text-xs text-muted-foreground mb-3">
+                Adresse email qui reçoit les courriers externes pour cette
+                représentation. Les emails reçus seront automatiquement convertis
+                en correspondances reçues. Configurez votre service de parsing
+                inbound (Postmark, Resend, SendGrid…) pour POST sur le webhook
+                Convex avec le header <code className="text-[10px] bg-muted px-1 rounded">X-Inbound-Secret</code>.
+              </p>
+              <Field>
+                <FieldLabel>Adresse de réception</FieldLabel>
+                <Input
+                  type="email"
+                  value={inboundEmailAddress}
+                  onChange={(e) => {
+                    setInboundEmailAddress(e.target.value);
+                    push();
+                  }}
+                  placeholder="consulat-paris@inbound.consulat.ga"
+                />
+              </Field>
+              {inboundEmailAddress.trim() && (
+                <div className="mt-3 rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs space-y-1">
+                  <p className="font-medium text-cyan-700 dark:text-cyan-400">
+                    Routage actif
+                  </p>
+                  <p className="text-muted-foreground">
+                    Tout email envoyé à cette adresse sera créé comme
+                    correspondance reçue dans cette représentation.
+                  </p>
+                </div>
+              )}
             </div>
           </FlatCard>
 
