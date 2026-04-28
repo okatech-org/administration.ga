@@ -42,6 +42,7 @@ import {
   useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
+import { LocalizedField, type LocalizedValue } from "../LocalizedField";
 import type { SettingsSectionProps } from "../SettingsTabsLayout";
 
 type LifecycleStatus =
@@ -116,21 +117,24 @@ export function IdentitySection({ orgId, onStatusChange }: SettingsSectionProps)
   const { mutateAsync: updateIdentity } = useConvexMutationQuery(
     api.functions.orgs.updateIdentityExtended,
   );
+  const { mutateAsync: updateOrgNameMut } = useConvexMutationQuery(
+    api.functions.orgs.updateOrgName,
+  );
   const { mutateAsync: updateStatusMut } = useConvexMutationQuery(
     api.functions.orgs.updateStatus,
   );
 
   // État local miroir du serveur
-  const [officialName, setOfficialName] = useState("");
-  const [officialNameLocal, setOfficialNameLocal] = useState("");
+  const [nameI18n, setNameI18n] = useState<Record<string, string>>({});
   const [accreditedTo, setAccreditedTo] = useState<CountryCode[]>([]);
   const [status, setStatus] = useState<LifecycleStatus>("active");
   const [openedAt, setOpenedAt] = useState<string>("");
   const [closedAt, setClosedAt] = useState<string>("");
 
-  // Auto-save identityExtended (sauf status qui a sa propre mutation).
+  // Auto-save identityExtended (sauf status et nameI18n qui ont leurs propres mutations).
   // BUG FIX #5 : `status` est RETIRÉ du payload — géré exclusivement par
   // updateStatusMut (mutation dédiée avec son propre audit).
+  // Le nom multilingue est aussi extrait et géré par updateOrgName.
   const {
     trigger: triggerIdentitySave,
     flush,
@@ -138,19 +142,24 @@ export function IdentitySection({ orgId, onStatusChange }: SettingsSectionProps)
     status: saveStatus,
     errorMessage,
   } = useDebouncedSave<{
-    officialName?: string;
-    officialNameLocal?: string;
+    nameI18n?: Record<string, string>;
     accreditedTo?: CountryCode[];
     openedAt?: number;
     closedAt?: number;
   }>({
     readOnly,
     onSave: async (val) => {
+      // 1. Sauvegarde du nom multilingue (mutation dédiée)
+      if (val.nameI18n && Object.values(val.nameI18n).some((s) => s.trim())) {
+        await updateOrgNameMut({
+          orgId,
+          nameI18n: val.nameI18n,
+        });
+      }
+      // 2. Sauvegarde des autres champs identityExtended
       await updateIdentity({
         orgId,
         identityExtended: {
-          officialName: val.officialName || undefined,
-          officialNameLocal: val.officialNameLocal || undefined,
           accreditedTo: val.accreditedTo?.length ? val.accreditedTo : undefined,
           openedAt: val.openedAt,
           closedAt: val.closedAt,
@@ -176,8 +185,18 @@ export function IdentitySection({ orgId, onStatusChange }: SettingsSectionProps)
     if (!org) return;
     if (hasPending()) return;
     const id = org.identityExtended ?? {};
-    setOfficialName(id.officialName ?? org.name ?? "");
-    setOfficialNameLocal(id.officialNameLocal ?? "");
+    // nameI18n est la source de vérité ; à défaut on hydrate depuis les
+    // anciens champs (officialName, officialNameLocal) ou name plat pour
+    // les rows pas encore migrés.
+    const incomingI18n = (org as any).nameI18n ?? {};
+    if (Object.keys(incomingI18n).length === 0) {
+      const fallback: Record<string, string> = {};
+      if (id.officialName || org.name) fallback.fr = id.officialName ?? org.name ?? "";
+      if (id.officialNameLocal) fallback.local = id.officialNameLocal;
+      setNameI18n(fallback);
+    } else {
+      setNameI18n(incomingI18n);
+    }
     setAccreditedTo((id.accreditedTo ?? []) as CountryCode[]);
     setStatus((id.status ?? (org.isActive ? "active" : "inactive")) as LifecycleStatus);
     setOpenedAt(id.openedAt ? new Date(id.openedAt).toISOString().slice(0, 10) : "");
@@ -186,8 +205,7 @@ export function IdentitySection({ orgId, onStatusChange }: SettingsSectionProps)
 
   const pushIdentity = (override?: Partial<Parameters<typeof triggerIdentitySave>[0]>) => {
     triggerIdentitySave({
-      officialName,
-      officialNameLocal,
+      nameI18n,
       accreditedTo,
       openedAt: openedAt ? new Date(openedAt).getTime() : undefined,
       closedAt: closedAt ? new Date(closedAt).getTime() : undefined,
@@ -260,8 +278,26 @@ export function IdentitySection({ orgId, onStatusChange }: SettingsSectionProps)
               value={status}
               onValueChange={(v) => handleStatusChange(v as LifecycleStatus)}
             >
-              <SelectTrigger className="w-full">
-                <SelectValue />
+              <SelectTrigger className="w-full h-auto py-2">
+                <SelectValue asChild>
+                  {currentStatus ? (
+                    <div className="flex items-center gap-2 text-left">
+                      <currentStatus.icon
+                        className={cn("h-4 w-4 shrink-0", currentStatus.color)}
+                      />
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium leading-tight">
+                          {currentStatus.label}
+                        </div>
+                        <div className="text-xs text-muted-foreground leading-tight">
+                          {currentStatus.description}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <span>—</span>
+                  )}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {STATUS_OPTIONS.map((opt) => (
@@ -296,26 +332,23 @@ export function IdentitySection({ orgId, onStatusChange }: SettingsSectionProps)
           </p>
           <FieldGroup>
             <Field>
-              <FieldLabel>Nom officiel (français)</FieldLabel>
-              <Input
-                value={officialName}
-                onChange={(e) => {
-                  setOfficialName(e.target.value);
-                  pushIdentity({ officialName: e.target.value });
+              <FieldLabel>Nom officiel</FieldLabel>
+              <LocalizedField
+                locales={["fr", "en", "local"]}
+                value={nameI18n as LocalizedValue}
+                placeholder={{
+                  fr: "Ambassade de la République Gabonaise en Espagne",
+                  en: "Embassy of the Gabonese Republic in Spain",
+                  local: "Embajada de la República Gabonesa en España",
                 }}
-                placeholder="Ambassade de la République Gabonaise en Espagne"
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel>Nom officiel (langue locale)</FieldLabel>
-              <Input
-                value={officialNameLocal}
-                onChange={(e) => {
-                  setOfficialNameLocal(e.target.value);
-                  pushIdentity({ officialNameLocal: e.target.value });
+                onChange={(next: LocalizedValue) => {
+                  const cleaned: Record<string, string> = {};
+                  for (const [loc, val] of Object.entries(next)) {
+                    if (typeof val === "string") cleaned[loc] = val;
+                  }
+                  setNameI18n(cleaned);
+                  pushIdentity({ nameI18n: cleaned });
                 }}
-                placeholder="Embajada de la República Gabonesa en España"
               />
             </Field>
 

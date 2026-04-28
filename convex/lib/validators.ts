@@ -943,10 +943,15 @@ export const orgStatusValidator = v.union(
 
 export type OrgStatus = Infer<typeof orgStatusValidator>;
 
-// Identité étendue (nom officiel multilingue, accréditation, cycle de vie)
+// Identité étendue (accréditation, cycle de vie).
+// Le nom multilingue n'est plus ici — il est porté par `org.nameI18n`
+// (LocalizedString). `officialName` et `officialNameLocal` sont conservés
+// optionnels pour tolérer les rows existants jusqu'à la migration.
 export const orgIdentityExtendedValidator = v.object({
-  officialName: v.optional(v.string()), // "Ambassade de la République Gabonaise en Espagne"
-  officialNameLocal: v.optional(v.string()), // "Embajada de la República Gabonesa en España"
+  /** @deprecated Utiliser `org.nameI18n.fr` */
+  officialName: v.optional(v.string()),
+  /** @deprecated Utiliser `org.nameI18n.<langue locale>` */
+  officialNameLocal: v.optional(v.string()),
   accreditedTo: v.optional(v.array(countryCodeValidator)), // pays d'accréditation
   status: v.optional(orgStatusValidator),
   openedAt: v.optional(v.number()), // date d'ouverture
@@ -1011,9 +1016,11 @@ export const brandColorsValidator = v.object({
 
 export type BrandColors = Infer<typeof brandColorsValidator>;
 
-// Description publique multilingue
+// Description publique multilingue. Toutes les locales sont optionnelles —
+// l'UI doit afficher une version par défaut quand la locale demandée est absente
+// (cf. helper `getLocalized`).
 export const publicDescriptionValidator = v.object({
-  fr: v.string(),
+  fr: v.optional(v.string()),
   en: v.optional(v.string()),
   local: v.optional(v.string()), // langue du pays hôte (ex: es pour Espagne)
 });

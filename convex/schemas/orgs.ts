@@ -10,6 +10,7 @@ import {
   orgAddressesValidator,
   orgJurisdictionValidator,
   orgBrandingValidator,
+  localizedStringValidator,
 } from "../lib/validators";
 import { countryCodeValidator } from "../lib/countryCodeValidator";
 import { moduleCodeValidator } from "../lib/moduleCodes";
@@ -26,7 +27,14 @@ import { moduleCodeValidator } from "../lib/moduleCodes";
 export const orgsTable = defineTable({
   // Identité
   slug: v.string(),
+  // Nom plat (canonique en français, conservé pour compatibilité avec tous
+  // les call-sites qui attendent une string). Utiliser `getOrgName(org, locale)`
+  // pour la lecture i18n-aware — il préfère `nameI18n` quand présent.
   name: v.string(),
+  // Nom multilingue (Record<localeCode, string>). Source de vérité pour
+  // l'édition multilingue ; `name` est synchronisé sur la locale "fr" ou,
+  // à défaut, la première locale renseignée.
+  nameI18n: v.optional(localizedStringValidator),
   type: orgTypeValidator,
 
   // Localisation (champs historiques - à migrer vers `addresses` et `jurisdiction`)

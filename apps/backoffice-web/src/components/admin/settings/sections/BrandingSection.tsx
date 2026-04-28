@@ -32,11 +32,11 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import {
   useAuthenticatedConvexQuery,
   useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
+import { LocalizedField, type LocalizedValue } from "../LocalizedField";
 import type { SettingsSectionProps } from "../SettingsTabsLayout";
 import {
   useDebouncedSave,
@@ -87,13 +87,14 @@ export function BrandingSection({
             secondary: secondaryColor || undefined,
             accent: accentColor || undefined,
           },
-          publicDescription: descFr
-            ? {
-                fr: descFr,
-                en: descEn || undefined,
-                local: descLocal || undefined,
-              }
-            : undefined,
+          publicDescription:
+            descFr || descEn || descLocal
+              ? {
+                  fr: descFr || undefined,
+                  en: descEn || undefined,
+                  local: descLocal || undefined,
+                }
+              : undefined,
           socialLinks: {
             facebook: facebook || undefined,
             twitter: twitter || undefined,
@@ -215,43 +216,29 @@ export function BrandingSection({
             Texte affiché sur la page publique de la représentation. Visible par
             tous les citoyens et partenaires.
           </p>
-          <div className="space-y-3">
-            <Field>
-              <FieldLabel>Français *</FieldLabel>
-              <Textarea
-                value={descFr}
-                onChange={(e) => {
-                  setDescFr(e.target.value);
-                  push();
-                }}
-                rows={4}
-                placeholder="L'Ambassade de la République Gabonaise en Espagne accueille la diaspora gabonaise et travaille activement au renforcement des liens bilatéraux…"
-              />
-            </Field>
-            <Field>
-              <FieldLabel>Anglais (optionnel)</FieldLabel>
-              <Textarea
-                value={descEn}
-                onChange={(e) => {
-                  setDescEn(e.target.value);
-                  push();
-                }}
-                rows={3}
-              />
-            </Field>
-            <Field>
-              <FieldLabel>Langue locale (optionnel)</FieldLabel>
-              <Textarea
-                value={descLocal}
-                onChange={(e) => {
-                  setDescLocal(e.target.value);
-                  push();
-                }}
-                rows={3}
-                placeholder="Traduction dans la langue du pays d'accueil (espagnol, portugais, arabe, etc.)"
-              />
-            </Field>
-          </div>
+          <Field>
+            <FieldLabel>Description</FieldLabel>
+            <LocalizedField
+              multiline
+              rows={4}
+              locales={["fr", "en", "local"]}
+              value={{ fr: descFr, en: descEn, local: descLocal }}
+              placeholder={{
+                fr: "L'Ambassade de la République Gabonaise en Espagne accueille la diaspora gabonaise et travaille activement au renforcement des liens bilatéraux…",
+                en: "The Embassy of the Gabonese Republic welcomes the Gabonese diaspora and works to strengthen bilateral ties…",
+                local: "Traduction dans la langue du pays d'accueil (espagnol, portugais, arabe, etc.)",
+              }}
+              onChange={(next: LocalizedValue) => {
+                const fr = next.fr ?? "";
+                const en = next.en ?? "";
+                const local = next.local ?? "";
+                setDescFr(fr);
+                setDescEn(en);
+                setDescLocal(local);
+                push();
+              }}
+            />
+          </Field>
         </div>
       </FlatCard>
 

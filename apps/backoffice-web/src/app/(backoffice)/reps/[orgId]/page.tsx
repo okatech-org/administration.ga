@@ -9,15 +9,21 @@ import {
 	ArrowLeft,
 	Building2,
 	Crown,
-	ExternalLink,
 	FileStack,
 	FileText,
+	Info,
 	Package,
 	Phone,
 	Settings2,
 	ShieldAlert,
 	Users,
 } from "lucide-react";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { useTranslation } from "react-i18next";
 import { OrgMembersTable } from "@/components/admin/org-members-table";
@@ -272,7 +278,50 @@ export default function OrgDetailPage() {
 			{/* ── Header ───────────────────────────────────────────── */}
 			<PageHeader
 				icon={<Building2 className="h-5 w-5" />}
-				title={org.name}
+				title={
+					<span className="inline-flex items-center gap-1.5">
+						{org.name}
+						<TooltipProvider delayDuration={200}>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<button
+										type="button"
+										className="inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
+										aria-label="Métadonnées de la représentation"
+									>
+										<Info className="h-3.5 w-3.5" />
+									</button>
+								</TooltipTrigger>
+								<TooltipContent side="bottom" className="text-xs">
+									<dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+										<dt className="text-muted-foreground">Créé le</dt>
+										<dd className="font-medium">
+											{new Date(org._creationTime).toLocaleDateString(
+												lang === "fr" ? "fr-FR" : "en-US",
+												{ day: "numeric", month: "long", year: "numeric" },
+											)}
+										</dd>
+										<dt className="text-muted-foreground">Mis à jour</dt>
+										<dd className="font-medium">
+											{org.updatedAt
+												? new Date(org.updatedAt).toLocaleDateString(
+														lang === "fr" ? "fr-FR" : "en-US",
+														{
+															day: "numeric",
+															month: "long",
+															year: "numeric",
+														},
+													)
+												: "—"}
+										</dd>
+										<dt className="text-muted-foreground">Slug</dt>
+										<dd className="font-mono">{org.slug}</dd>
+									</dl>
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
+					</span>
+				}
 				subtitle={
 					<div className="flex flex-wrap items-center gap-2 mt-0.5">
 						<Badge
@@ -308,16 +357,6 @@ export default function OrgDetailPage() {
 				}
 				showBackButton
 				onBack={() => router.push("/reps")}
-				actions={
-					<div className="flex items-center gap-2 shrink-0">
-						<Button variant="outline" size="sm" asChild>
-							<a href={`/reps/${org.slug}`} target="_blank" rel="noopener noreferrer">
-								<ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-								{t("superadmin.organizations.viewPublic", "Page publique")}
-							</a>
-						</Button>
-					</div>
-				}
 			/>
 
 			{/* ── Tabs ─────────────────────────────────────────────── */}

@@ -341,7 +341,10 @@ export const update = authMutation({
 // ============================================================================
 
 /**
- * Met à jour le bloc identité étendue (nom officiel, accréditation, cycle de vie).
+ * Met à jour le bloc identité étendue (accréditation, cycle de vie).
+ *
+ * Le nom multilingue n'est plus géré ici — voir `updateOrgName` qui maintient
+ * `name` (string plate) + `nameI18n` (LocalizedString) en cohérence.
  */
 export const updateIdentityExtended = authMutation({
   args: {
@@ -364,6 +367,56 @@ export const updateIdentityExtended = authMutation({
       entiteId: args.orgId,
       userId: ctx.user._id,
       apres: { identityExtended: args.identityExtended },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    })
+
+    return args.orgId
+  },
+})
+
+/**
+ * Met à jour le nom multilingue d'une organisation.
+ *
+ * `nameI18n` est la source de vérité éditée. Le champ plat `name` est
+ * maintenu en cohérence (locale "fr" en priorité, sinon première locale
+ * non vide) pour rétrocompatibilité avec tous les call-sites qui lisent
+ * encore `org.name` directement.
+ */
+export const updateOrgName = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    nameI18n: v.record(v.string(), v.string()),
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId)
+    await assertCanDoTask(ctx, ctx.user, membership, "settings.manage")
+
+    // Filtrer les locales vides
+    const cleaned: Record<string, string> = {}
+    for (const [locale, value] of Object.entries(args.nameI18n)) {
+      const trimmed = value.trim()
+      if (trimmed) cleaned[locale] = trimmed
+    }
+    if (Object.keys(cleaned).length === 0) {
+      throw new Error("Au moins une langue doit être renseignée pour le nom de l'organisation.")
+    }
+
+    // Locale canonique : fr en priorité, sinon première locale non vide
+    const canonicalName = cleaned.fr ?? Object.values(cleaned)[0]
+
+    await ctx.db.patch(args.orgId, {
+      name: canonicalName,
+      nameI18n: cleaned,
+      updatedAt: Date.now(),
+    })
+
+    await logCortexAction(ctx, {
+      action: "UPDATE_ORG_IDENTITY",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgs",
+      entiteId: args.orgId,
+      userId: ctx.user._id,
+      apres: { name: canonicalName, nameI18n: cleaned },
       signalType: SIGNAL_TYPES.ORG_MODIFIEE,
     })
 

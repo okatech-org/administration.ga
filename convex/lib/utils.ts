@@ -165,3 +165,20 @@ export function getLocalized(
   }
   return "";
 }
+
+/**
+ * Résout le nom d'une organisation pour la langue demandée.
+ *
+ * Préfère `org.nameI18n[lang]` (objet multilingue) puis tombe sur `org.name`
+ * (string canonique). Toujours non-vide tant que l'org a un nom plat.
+ */
+export function getOrgName(
+  org: { name: string; nameI18n?: LocalizedString },
+  lang?: string,
+): string {
+  if (org.nameI18n) {
+    const localized = getLocalized(org.nameI18n, lang);
+    if (localized) return localized;
+  }
+  return org.name ?? "";
+}
