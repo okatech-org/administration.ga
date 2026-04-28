@@ -106,6 +106,7 @@ import type * as functions_correspondanceDocuments from "../functions/correspond
 import type * as functions_correspondanceEmail from "../functions/correspondanceEmail.js";
 import type * as functions_correspondanceInbound from "../functions/correspondanceInbound.js";
 import type * as functions_correspondanceInternalManifest from "../functions/correspondanceInternalManifest.js";
+import type * as functions_correspondanceOcr from "../functions/correspondanceOcr.js";
 import type * as functions_correspondancePdfGeneration from "../functions/correspondancePdfGeneration.js";
 import type * as functions_correspondancePostalManifest from "../functions/correspondancePostalManifest.js";
 import type * as functions_correspondancePostalManifestQueries from "../functions/correspondancePostalManifestQueries.js";
@@ -201,6 +202,7 @@ import type * as lib_ical from "../lib/ical.js";
 import type * as lib_legacyProfileToCardNumber from "../lib/legacyProfileToCardNumber.js";
 import type * as lib_moduleCodes from "../lib/moduleCodes.js";
 import type * as lib_neocortex from "../lib/neocortex.js";
+import type * as lib_ocrProviders from "../lib/ocrProviders.js";
 import type * as lib_orgHelpers from "../lib/orgHelpers.js";
 import type * as lib_permissions from "../lib/permissions.js";
 import type * as lib_phone from "../lib/phone.js";
@@ -456,6 +458,7 @@ declare const fullApi: ApiFromModules<{
   "functions/correspondanceEmail": typeof functions_correspondanceEmail;
   "functions/correspondanceInbound": typeof functions_correspondanceInbound;
   "functions/correspondanceInternalManifest": typeof functions_correspondanceInternalManifest;
+  "functions/correspondanceOcr": typeof functions_correspondanceOcr;
   "functions/correspondancePdfGeneration": typeof functions_correspondancePdfGeneration;
   "functions/correspondancePostalManifest": typeof functions_correspondancePostalManifest;
   "functions/correspondancePostalManifestQueries": typeof functions_correspondancePostalManifestQueries;
@@ -551,6 +554,7 @@ declare const fullApi: ApiFromModules<{
   "lib/legacyProfileToCardNumber": typeof lib_legacyProfileToCardNumber;
   "lib/moduleCodes": typeof lib_moduleCodes;
   "lib/neocortex": typeof lib_neocortex;
+  "lib/ocrProviders": typeof lib_ocrProviders;
   "lib/orgHelpers": typeof lib_orgHelpers;
   "lib/permissions": typeof lib_permissions;
   "lib/phone": typeof lib_phone;

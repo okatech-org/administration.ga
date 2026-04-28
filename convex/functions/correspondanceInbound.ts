@@ -17,6 +17,7 @@
 
 import { v } from "convex/values";
 import { internalMutation } from "../_generated/server";
+import { internal } from "../_generated/api";
 import { MailFolder, MailOwnerType, MailSenderType, MailType } from "../lib/constants";
 import {
   buildCorrespondanceSearchText,
@@ -230,6 +231,22 @@ export const ingestInboundEmail = internalMutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    // ─── 9. OCR différé sur les pièces jointes scannées (Sprint 4 — D1) ──
+    // L'extraction tourne dans une action Node — on schedule pour ne pas
+    // bloquer la confirmation HTTP du webhook ; idempotent côté
+    // `_recordOcrResult` (tag `ocr-processed`).
+    const hasOcrCandidate = documents.some(
+      (d) =>
+        d.mimeType === "application/pdf" || d.mimeType.startsWith("image/"),
+    );
+    if (hasOcrCandidate) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.functions.correspondanceOcr._runOcrInternal,
+        { itemId },
+      );
+    }
 
     return { ok: true, itemId, reference, arrivalReference };
   },

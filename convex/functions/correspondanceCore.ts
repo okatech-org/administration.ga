@@ -1213,6 +1213,84 @@ export const _getItemForWatermark = internalQuery({
 });
 
 /**
+ * Lecture interne pour la pipeline OCR (Sprint 4 — D1).
+ *
+ * Retourne les pièces jointes du dossier + le commentaire/searchText courants
+ * pour que l'action OCR puisse fusionner le texte extrait sans perdre les
+ * champs déjà saisis.
+ */
+export const _getItemForOcr = internalQuery({
+  args: { itemId: v.id("correspondanceItems") },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item || item.deletedAt) return null;
+    return {
+      documents: item.documents ?? [],
+      title: item.title,
+      reference: item.reference,
+      senderName: item.senderName,
+      senderOrg: item.senderOrg,
+      recipientName: item.recipientName,
+      recipientOrg: item.recipientOrg,
+      comment: item.comment,
+      tags: item.tags ?? [],
+      arrivalReference: item.arrivalReference,
+    };
+  },
+});
+
+/**
+ * Enregistre le résultat de la pipeline OCR : ajoute le texte extrait au
+ * `searchText` (concaténation) et au `comment` quand il est vide. Idempotent
+ * — on n'ajoute pas deux fois le même fragment OCR (détecté via tag).
+ */
+export const _recordOcrResult = internalMutation({
+  args: {
+    itemId: v.id("correspondanceItems"),
+    extractedText: v.string(),
+    provider: v.string(),
+    pageCount: v.optional(v.number()),
+    confidence: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item || item.deletedAt) return { ok: false };
+    const existingTags = item.tags ?? [];
+    if (existingTags.includes("ocr-processed")) {
+      return { ok: false, reason: "already-processed" };
+    }
+    const newTags = [...existingTags, "ocr-processed", `ocr:${args.provider}`];
+    const trimmedExtract = args.extractedText.trim();
+    const newComment =
+      !item.comment || item.comment === "(corps vide)" || item.comment.length < 20
+        ? trimmedExtract || item.comment
+        : item.comment;
+    const newSearchText = [item.searchText ?? "", trimmedExtract]
+      .filter(Boolean)
+      .join(" ")
+      .slice(0, 8000); // Convex search index handles up to ~8KB efficiently
+    await ctx.db.patch(args.itemId, {
+      tags: newTags,
+      comment: newComment,
+      searchText: newSearchText,
+      updatedAt: Date.now(),
+    });
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: args.itemId,
+      stepType: "TRANSMITTED",
+      actorId: (item.copyOwnerOrgId ?? item.orgId) as any,
+      actorName: `OCR (${args.provider})`,
+      comment: `Texte extrait par OCR — ${trimmedExtract.length} caractère(s)${
+        args.pageCount ? `, ${args.pageCount} page(s)` : ""
+      }${args.confidence ? `, confiance ${(args.confidence * 100).toFixed(0)}%` : ""}.`,
+      isRead: true,
+      createdAt: Date.now(),
+    });
+    return { ok: true };
+  },
+});
+
+/**
  * Lecture interne pour le bordereau d'envoi postal.
  * Charge tous les courriers sortants (copies expéditeur) d'une org sur la période.
  */

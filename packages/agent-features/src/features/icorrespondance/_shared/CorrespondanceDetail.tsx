@@ -26,6 +26,7 @@ import {
 	Plus,
 	Reply,
 	RotateCcw,
+	ScanText,
 	Send,
 	Trash2,
 	UserCheck,
@@ -177,6 +178,10 @@ export function CorrespondanceDetail({
 		api.functions.correspondance.generateUploadUrl,
 	);
 
+	const { mutateAsync: runOcr, isPending: isOcrRunning } = useConvexActionQuery(
+		api.functions.correspondanceOcr.runOcrOnItem,
+	);
+
 	const { mutateAsync: generatePdf, isPending: isGeneratingPdf } = useConvexActionQuery(
 		api.functions.correspondancePdfGeneration.generateOfficialPdf,
 	);
@@ -241,6 +246,41 @@ export function CorrespondanceDetail({
 			onBack();
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur lors de la restauration");
+		}
+	};
+
+	const handleRunOcr = async () => {
+		try {
+			const result = (await runOcr({ itemId })) as
+				| {
+						ok: true;
+						provider: string;
+						charsExtracted: number;
+						pageCount?: number;
+				  }
+				| { error: string }
+				| { ok: false; reason: string };
+			if ("error" in result) {
+				toast.error(result.error);
+				return;
+			}
+			if ("ok" in result && result.ok === false) {
+				toast.info(
+					result.reason === "already-processed"
+						? "OCR déjà appliqué sur ce dossier."
+						: result.reason === "no-text-extracted"
+							? "Aucun texte n'a pu être extrait des pièces jointes."
+							: "OCR ignoré.",
+				);
+				return;
+			}
+			toast.success(
+				`OCR terminé : ${result.charsExtracted} caractère(s) extraits${
+					result.pageCount ? ` sur ${result.pageCount} page(s)` : ""
+				}.`,
+			);
+		} catch (e: any) {
+			toast.error(e?.message ?? t("icorrespondance.toasts.genericError"));
 		}
 	};
 
@@ -472,6 +512,31 @@ export function CorrespondanceDetail({
 						{t("icorrespondance.actions.reply")}
 					</Button>
 				)}
+
+				{item.status === "received" &&
+					!isDeleted &&
+					!(item.tags ?? []).includes("ocr-processed") &&
+					(item.documents ?? []).some(
+						(d: any) =>
+							d.mimeType === "application/pdf" ||
+							(d.mimeType ?? "").startsWith("image/"),
+					) && (
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={handleRunOcr}
+							disabled={isOcrRunning}
+							className="gap-1.5"
+							title="Extraire le texte des pièces scannées"
+						>
+							{isOcrRunning ? (
+								<Loader2 className="h-3.5 w-3.5 animate-spin" />
+							) : (
+								<ScanText className="h-3.5 w-3.5" />
+							)}
+							OCR
+						</Button>
+					)}
 
 				<Button variant="outline" size="sm" onClick={handleClasser} className="gap-1.5">
 					<Archive className="h-3.5 w-3.5" />
