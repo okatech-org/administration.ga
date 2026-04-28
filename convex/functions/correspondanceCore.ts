@@ -972,7 +972,7 @@ export const respondToCorrespondance = authMutation({
     await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
 
     const org = await ctx.db.get(orgId) as any;
-    const reference = await generateSequentialReference(ctx, args.type);
+    const reference = await generateSequentialReference(ctx, args.type, orgId);
 
     // Créer la réponse en brouillon avec expéditeur/destinataire inversés
     const responseId = await ctx.db.insert("correspondanceItems", {
@@ -1282,6 +1282,111 @@ export const _collectPostalManifestData = internalQuery({
         sentAt: i.sentAt,
         createdAt: i.createdAt,
       })),
+    };
+  },
+});
+
+/**
+ * Collecteur de données pour le bordereau de transmission INTERNE.
+ *
+ * Liste les courriers ASSIGNÉS au sein de l'organisation sur une période,
+ * éventuellement filtrés par agent destinataire (`assignedToId`).
+ * Sert d'attestation de transmission inter-services à signer par
+ * l'expéditeur du registre courrier et l'agent récepteur.
+ */
+export const _collectInternalManifestData = internalQuery({
+  args: {
+    orgId: v.id("orgs"),
+    dateFrom: v.number(),
+    dateTo: v.number(),
+    assignedToId: v.optional(v.id("users")),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<
+    | { error: string }
+    | {
+        orgName: string;
+        operatorName: string;
+        assignedAgentName?: string;
+        items: Array<{
+          reference: string;
+          arrivalReference?: string;
+          title: string;
+          type: string;
+          senderName: string;
+          senderOrg?: string;
+          assignedToName?: string;
+          assignedAt?: number;
+          createdAt: number;
+        }>;
+      }
+  > => {
+    const org = await ctx.db.get(args.orgId);
+    if (!org) return { error: "Organisation introuvable" };
+
+    const userIdentity = await ctx.auth.getUserIdentity();
+    let operatorName = "—";
+    if (userIdentity) {
+      const userId = userIdentity.subject.split("|")[0] as Id<"users">;
+      const user = await ctx.db.get(userId);
+      operatorName = user?.name ?? user?.email ?? "—";
+    }
+
+    let assignedAgentName: string | undefined;
+    if (args.assignedToId) {
+      const u = await ctx.db.get(args.assignedToId);
+      assignedAgentName = (u as any)?.name ?? (u as any)?.email;
+    }
+
+    // Items reçus par l'org et assignés (assignedToId défini), dans la fenêtre.
+    const all = await ctx.db
+      .query("correspondanceItems")
+      .withIndex("by_owner_org_status", (q: any) =>
+        q.eq("copyOwnerOrgId", args.orgId).eq("status", "received"),
+      )
+      .filter((q) =>
+        q.and(
+          q.neq(q.field("isCopy"), true),
+          q.eq(q.field("deletedAt"), undefined),
+          q.neq(q.field("assignedToId"), undefined),
+        ),
+      )
+      .collect();
+
+    const filtered = all.filter((i: any) => {
+      if (args.assignedToId && i.assignedToId !== args.assignedToId) return false;
+      const ts = i.updatedAt ?? i.createdAt;
+      return ts >= args.dateFrom && ts <= args.dateTo;
+    });
+
+    // Enrichir avec le nom de l'agent
+    const enriched = await Promise.all(
+      filtered.map(async (i: any) => {
+        const u = i.assignedToId ? await ctx.db.get(i.assignedToId) : null;
+        return {
+          reference: i.reference,
+          arrivalReference: i.arrivalReference,
+          title: i.title,
+          type: i.type,
+          senderName: i.senderName,
+          senderOrg: i.senderOrg,
+          assignedToName:
+            (u as any)?.name ?? (u as any)?.email ?? undefined,
+          assignedAt: i.updatedAt,
+          createdAt: i.createdAt,
+        };
+      }),
+    );
+
+    enriched.sort((a, b) => (a.assignedAt ?? a.createdAt) - (b.assignedAt ?? b.createdAt));
+
+    return {
+      orgName: org.name ?? "—",
+      operatorName,
+      assignedAgentName,
+      items: enriched,
     };
   },
 });

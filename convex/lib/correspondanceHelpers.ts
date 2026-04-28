@@ -233,9 +233,30 @@ const TYPE_CODES: Record<string, string> = {
  * Utilise la table `counters` avec un compteur nommé par type + année.
  * Les mutations Convex sont sérialisées, donc pas de race condition.
  */
+/**
+ * Applique les tokens d'un pattern de référence :
+ *   - {YYYY} : année 4 chiffres
+ *   - {YY}   : année 2 chiffres
+ *   - {TYPE} : code type courrier
+ *   - {N}, {NN}, {NNNN}, {NNNNN}, … : séquence avec padding du nombre de N
+ */
+export function applyReferencePattern(
+  pattern: string,
+  vars: { year: number; typeCode: string; sequence: number },
+): string {
+  return pattern
+    .replace(/\{YYYY\}/g, String(vars.year))
+    .replace(/\{YY\}/g, String(vars.year).slice(-2))
+    .replace(/\{TYPE\}/g, vars.typeCode)
+    .replace(/\{(N+)\}/g, (_, ns: string) =>
+      String(vars.sequence).padStart(ns.length, "0"),
+    );
+}
+
 export async function generateSequentialReference(
   ctx: MutationCtx,
   type: string,
+  orgId?: Id<"orgs">,
 ): Promise<string> {
   const year = new Date().getFullYear();
   const typeCode = TYPE_CODES[type] ?? type.substring(0, 3).toUpperCase();
@@ -255,8 +276,32 @@ export async function generateSequentialReference(
     await ctx.db.insert("counters", { name: counterName, value: nextValue });
   }
 
-  const sequence = String(nextValue).padStart(5, "0");
-  return `DIPL/${year}/${typeCode}/${sequence}`;
+  // Résolution du pattern : type-level (typeConfig.referencePattern) puis
+  // org-level (settings.correspondanceConfig.defaultReferencePattern), enfin
+  // fallback historique `DIPL/{YYYY}/{TYPE}/{NNNNN}`.
+  let pattern: string | undefined;
+  if (orgId) {
+    const typeConfig = await ctx.db
+      .query("correspondanceTypeConfigs")
+      .withIndex("by_org_type", (q: any) =>
+        q.eq("orgId", orgId).eq("typeCode", type),
+      )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .first();
+    pattern = (typeConfig as any)?.referencePattern;
+    if (!pattern) {
+      const org = await ctx.db.get(orgId);
+      pattern = (org as any)?.settings?.correspondanceConfig
+        ?.defaultReferencePattern;
+    }
+  }
+  if (!pattern) pattern = "DIPL/{YYYY}/{TYPE}/{NNNNN}";
+
+  return applyReferencePattern(pattern, {
+    year,
+    typeCode,
+    sequence: nextValue,
+  });
 }
 
 // ═════════════════════════════════════════════════════════════════════════════

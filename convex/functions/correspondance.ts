@@ -218,7 +218,11 @@ export const createItem = authMutation({
   handler: async (ctx, args) => {
     await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "create");
     const now = Date.now();
-    const reference = await generateSequentialReference(ctx, args.type);
+    const reference = await generateSequentialReference(
+      ctx,
+      args.type,
+      args.orgId,
+    );
 
     const tags = args.tags ?? [];
     const itemId = await ctx.db.insert("correspondanceItems", {

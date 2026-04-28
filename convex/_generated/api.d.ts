@@ -105,6 +105,7 @@ import type * as functions_correspondanceDashboard from "../functions/correspond
 import type * as functions_correspondanceDocuments from "../functions/correspondanceDocuments.js";
 import type * as functions_correspondanceEmail from "../functions/correspondanceEmail.js";
 import type * as functions_correspondanceInbound from "../functions/correspondanceInbound.js";
+import type * as functions_correspondanceInternalManifest from "../functions/correspondanceInternalManifest.js";
 import type * as functions_correspondancePdfGeneration from "../functions/correspondancePdfGeneration.js";
 import type * as functions_correspondancePostalManifest from "../functions/correspondancePostalManifest.js";
 import type * as functions_correspondancePostalManifestQueries from "../functions/correspondancePostalManifestQueries.js";
@@ -452,6 +453,7 @@ declare const fullApi: ApiFromModules<{
   "functions/correspondanceDocuments": typeof functions_correspondanceDocuments;
   "functions/correspondanceEmail": typeof functions_correspondanceEmail;
   "functions/correspondanceInbound": typeof functions_correspondanceInbound;
+  "functions/correspondanceInternalManifest": typeof functions_correspondanceInternalManifest;
   "functions/correspondancePdfGeneration": typeof functions_correspondancePdfGeneration;
   "functions/correspondancePostalManifest": typeof functions_correspondancePostalManifest;
   "functions/correspondancePostalManifestQueries": typeof functions_correspondancePostalManifestQueries;

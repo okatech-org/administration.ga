@@ -140,7 +140,11 @@ export const ingestInboundEmail = internalMutation({
     const body = args.text?.trim() || stripHtmlBasic(args.html ?? "") || "(corps vide)";
 
     // ─── 5. Génération des références ──────────────────────────
-    const reference = await generateSequentialReference(ctx, "lettre_officielle");
+    const reference = await generateSequentialReference(
+      ctx,
+      "lettre_officielle",
+      org._id,
+    );
     const arrivalReference = await generateArrivalReference(ctx, org._id);
 
     const senderName = args.from.name?.trim() || args.from.email;
