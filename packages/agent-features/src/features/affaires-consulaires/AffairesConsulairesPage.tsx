@@ -20,7 +20,6 @@ import {
 	UserSearch,
 	Users,
 	CheckCircle2,
-	AlertTriangle,
 	TrendingUp,
 	FileText,
 	CreditCard,
@@ -44,9 +43,9 @@ const MODULES = [
 		icon: ClipboardList,
 		href: "/requests",
 		taskCode: "requests.view",
-		color: "text-blue-500",
-		bg: "bg-blue-500/10",
-		hoverBorder: "hover:border-blue-500/30",
+		color: "text-primary",
+		bg: "bg-primary/10",
+		hoverBorder: "hover:border-primary/30",
 	},
 	{
 		id: "profils",
@@ -55,9 +54,9 @@ const MODULES = [
 		icon: UserSearch,
 		href: "/affaires-consulaires/profiles",
 		taskCode: "profiles.view",
-		color: "text-indigo-500",
-		bg: "bg-indigo-500/10",
-		hoverBorder: "hover:border-indigo-500/30",
+		color: "text-accent-blue",
+		bg: "bg-accent-blue/10",
+		hoverBorder: "hover:border-accent-blue/30",
 	},
 	{
 		id: "registre",
@@ -66,9 +65,9 @@ const MODULES = [
 		icon: IdCard,
 		href: "/consular-registry",
 		taskCode: "consular_registrations.view",
-		color: "text-emerald-500",
-		bg: "bg-emerald-500/10",
-		hoverBorder: "hover:border-emerald-500/30",
+		color: "text-success",
+		bg: "bg-success/10",
+		hoverBorder: "hover:border-success/30",
 	},
 ] as const;
 
@@ -127,8 +126,8 @@ export default function AffairesConsulairesPage() {
 				transition={{ duration: 0.18 }}
 				className="flex items-center gap-3"
 			>
-				<div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-					<Users className="h-5 w-5 text-blue-500" />
+				<div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+					<Users className="h-5 w-5 text-primary" />
 				</div>
 				<div>
 					<h1 className="text-xl font-bold">Affaires Consulaires</h1>
@@ -242,8 +241,8 @@ function ConsularOverview({
 			label: "Demandes totales",
 			value: requestStats?.total,
 			icon: FileText,
-			color: "text-blue-500",
-			bg: "bg-blue-500/10",
+			color: "text-primary",
+			bg: "bg-primary/10",
 			href: "/requests",
 			loading: isLoadingReq,
 			desc: completedTotal != null ? `${completedTotal} traitées` : undefined,
@@ -253,8 +252,8 @@ function ConsularOverview({
 			label: "En attente",
 			value: pending,
 			icon: Hourglass,
-			color: "text-amber-500",
-			bg: "bg-amber-500/10",
+			color: "text-warning",
+			bg: "bg-warning/10",
 			href: "/requests",
 			loading: isLoadingReq,
 			alert: pending != null && pending > 0,
@@ -265,8 +264,8 @@ function ConsularOverview({
 			label: "En traitement",
 			value: inProgress,
 			icon: TrendingUp,
-			color: "text-purple-500",
-			bg: "bg-purple-500/10",
+			color: "text-accent-purple",
+			bg: "bg-accent-purple/10",
 			href: "/requests",
 			loading: isLoadingReq,
 			desc: "Production / validées",
@@ -276,8 +275,8 @@ function ConsularOverview({
 			label: "Prêtes à retirer",
 			value: readyPickup,
 			icon: CheckCircle2,
-			color: "text-emerald-500",
-			bg: "bg-emerald-500/10",
+			color: "text-success",
+			bg: "bg-success/10",
 			href: "/requests",
 			loading: isLoadingReq,
 			alert: readyPickup != null && readyPickup > 0,
@@ -288,8 +287,8 @@ function ConsularOverview({
 			label: "Profils citoyens",
 			value: profiles?.length,
 			icon: Users,
-			color: "text-indigo-500",
-			bg: "bg-indigo-500/10",
+			color: "text-accent-blue",
+			bg: "bg-accent-blue/10",
 			href: "/affaires-consulaires/profiles",
 			loading: profiles === undefined,
 			desc: "Rattachés au consulat",
@@ -299,8 +298,8 @@ function ConsularOverview({
 			label: "Inscrits au registre",
 			value: registryStats?.active,
 			icon: CreditCard,
-			color: "text-teal-500",
-			bg: "bg-teal-500/10",
+			color: "text-success",
+			bg: "bg-success/10",
 			href: "/consular-registry",
 			loading: isLoadingReg,
 			desc: registryStats ? `${registryStats.total} au total` : undefined,
@@ -316,33 +315,6 @@ function ConsularOverview({
 		loading: boolean;
 		alert?: boolean;
 		desc?: string;
-	}>;
-
-	// Quick alerts
-	const alerts = [
-		registryStats?.requested != null && registryStats.requested > 0 && {
-			id: "reg_pending",
-			msg: `${registryStats.requested} inscription${registryStats.requested > 1 ? "s" : ""} en attente de traitement`,
-			href: "/consular-registry",
-			icon: AlertTriangle,
-			color: "text-amber-500",
-			bg: "bg-amber-500/10 border-amber-500/20",
-		},
-		readyPickup != null && readyPickup > 0 && {
-			id: "ready_pickup",
-			msg: `${readyPickup} dossier${readyPickup > 1 ? "s" : ""} prêt${readyPickup > 1 ? "s" : ""} à remettre au demandeur`,
-			href: "/requests",
-			icon: CheckCircle2,
-			color: "text-emerald-500",
-			bg: "bg-emerald-500/10 border-emerald-500/20",
-		},
-	].filter(Boolean) as Array<{
-		id: string;
-		msg: string;
-		href: string;
-		icon: any;
-		color: string;
-		bg: string;
 	}>;
 
 	return (
@@ -367,14 +339,14 @@ function ConsularOverview({
 						>
 							<Link
 								href={kpi.href}
-								className={`flex flex-col gap-2 p-4 rounded-xl border bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-muted/30 transition-all cursor-pointer group ${kpi.alert ? "border-amber-500/30" : "border-border/50"}`}
+								className={`flex flex-col gap-2 p-4 rounded-xl border bg-card hover:bg-muted/30 transition-all cursor-pointer group ${kpi.alert ? "border-warning/30" : "border-border/50"}`}
 							>
 								<div className="flex items-center justify-between">
 									<div className={`h-8 w-8 rounded-lg ${kpi.bg} flex items-center justify-center`}>
 										<Icon className={`h-4 w-4 ${kpi.color}`} />
 									</div>
 									{kpi.alert && (
-										<span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+										<span className="h-2 w-2 rounded-full bg-warning animate-pulse" />
 									)}
 								</div>
 								{kpi.loading ? (
@@ -395,31 +367,6 @@ function ConsularOverview({
 					);
 				})}
 			</div>
-
-			{/* Alert strip */}
-			{alerts.length > 0 && (
-				<motion.div
-					initial={{ opacity: 0 }}
-					animate={{ opacity: 1 }}
-					transition={{ delay: 0.3 }}
-					className="flex flex-col gap-2"
-				>
-					{alerts.map((alert) => {
-						const Icon = alert.icon;
-						return (
-							<Link
-								key={alert.id}
-								href={alert.href}
-								className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border ${alert.bg} hover:opacity-80 transition-opacity cursor-pointer group`}
-							>
-								<Icon className={`h-4 w-4 ${alert.color} shrink-0`} />
-								<span className="text-sm font-medium flex-1">{alert.msg}</span>
-								<ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
-							</Link>
-						);
-					})}
-				</motion.div>
-			)}
 
 			{/* Activity split: requests by top statuses */}
 			{requestStats && (requestStats.total > 0) && (
@@ -445,15 +392,15 @@ function ConsularOverview({
 // ─── Status bar visual ────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, { bar: string; label: string; text: string }> = {
-	submitted:  { bar: "bg-blue-500",   label: "Soumise",    text: "text-blue-600 dark:text-blue-400" },
-	pending:    { bar: "bg-amber-500",  label: "En attente", text: "text-amber-600 dark:text-amber-400" },
-	under_review: { bar: "bg-purple-500", label: "En revue", text: "text-purple-600 dark:text-purple-400" },
-	in_production: { bar: "bg-cyan-500",  label: "Production", text: "text-cyan-600 dark:text-cyan-400" },
-	validated:  { bar: "bg-teal-500",   label: "Validée",   text: "text-teal-600 dark:text-teal-400" },
-	ready_for_pickup: { bar: "bg-emerald-500", label: "À retirer", text: "text-emerald-600 dark:text-emerald-400" },
-	completed:  { bar: "bg-green-500",  label: "Terminée",  text: "text-green-600 dark:text-green-400" },
-	rejected:   { bar: "bg-red-400",    label: "Rejetée",   text: "text-red-600 dark:text-red-400" },
-	cancelled:  { bar: "bg-gray-400",   label: "Annulée",   text: "text-gray-500" },
+	submitted:        { bar: "bg-primary",        label: "Soumise",    text: "text-primary" },
+	pending:          { bar: "bg-warning",        label: "En attente", text: "text-warning" },
+	under_review:     { bar: "bg-accent-purple",  label: "En revue",   text: "text-accent-purple" },
+	in_production:    { bar: "bg-accent-blue",    label: "Production", text: "text-accent-blue" },
+	validated:        { bar: "bg-success",        label: "Validée",    text: "text-success" },
+	ready_for_pickup: { bar: "bg-accent-orange",  label: "À retirer",  text: "text-accent-orange" },
+	completed:        { bar: "bg-success",        label: "Terminée",   text: "text-success" },
+	rejected:         { bar: "bg-destructive",    label: "Rejetée",    text: "text-destructive" },
+	cancelled:        { bar: "bg-muted-foreground", label: "Annulée",  text: "text-muted-foreground" },
 };
 
 function StatusBar({ statusCounts, total }: { statusCounts: Record<string, number>; total: number }) {
@@ -467,14 +414,14 @@ function StatusBar({ statusCounts, total }: { statusCounts: Record<string, numbe
 			{/* Proportional bar */}
 			<div className="flex h-2 rounded-full overflow-hidden bg-muted gap-0.5">
 				{entries.map(([status, count]) => {
-					const cfg = STATUS_COLORS[status] ?? { bar: "bg-slate-400" };
+					const cfg = STATUS_COLORS[status] ?? { bar: "bg-muted-foreground", label: status, text: "text-muted-foreground" };
 					const pct = Math.max(2, (count / total) * 100);
 					return (
 						<div
 							key={status}
 							className={`${cfg.bar} transition-all`}
 							style={{ width: `${pct}%` }}
-							title={`${cfg.label ?? status}: ${count}`}
+							title={`${cfg.label}: ${count}`}
 						/>
 					);
 				})}
@@ -483,7 +430,7 @@ function StatusBar({ statusCounts, total }: { statusCounts: Record<string, numbe
 			{/* Legend */}
 			<div className="flex flex-wrap gap-x-4 gap-y-1.5">
 				{entries.map(([status, count]) => {
-					const cfg = STATUS_COLORS[status] ?? { bar: "bg-slate-400", label: status, text: "text-muted-foreground" };
+					const cfg = STATUS_COLORS[status] ?? { bar: "bg-muted-foreground", label: status, text: "text-muted-foreground" };
 					const pct = Math.round((count / total) * 100);
 					return (
 						<div key={status} className="flex items-center gap-1.5">
