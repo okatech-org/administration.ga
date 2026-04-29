@@ -27,8 +27,12 @@ const placeholderSourceValidator = v.union(
 export const fieldMappingValidator = v.record(
   v.string(),
   v.object({
-    source: placeholderSourceValidator,
+    source: v.optional(placeholderSourceValidator),
     path: v.optional(v.string()),
+    // Literal value override — when set, the resolver returns this string
+    // directly without consulting any bucket. Used by the manual mapping UI
+    // when the data does not exist anywhere in the request.
+    literal: v.optional(v.string()),
   }),
 );
 

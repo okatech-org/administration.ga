@@ -4494,9 +4494,43 @@
 				"mapped": "mapped",
 				"empty": "empty",
 				"error": "error",
+				"mapAction": "Map",
 				"emptyWarning": "{{count}} variable(s) without value — generation will complete but the PDF will be blank at those spots.",
 				"errorWarning": "A variable failed to resolve — fix the template mapping or auto-gen rule before generating.",
 				"noPlaceholders": "This template has no variables — generation will produce the content as-is."
+			},
+			"banner": {
+				"allResolvedTitle": "All variables resolved",
+				"allResolvedBody": "The document is ready to generate.",
+				"emptyTitle_one": "{{count}} variable without value",
+				"emptyTitle_other": "{{count}} variables without value",
+				"emptyBody": "Generation will continue but those spots will be blank in the PDF.",
+				"errorsTitle_one": "{{count}} unresolved variable",
+				"errorsTitle_other": "{{count}} unresolved variables",
+				"errorsBody": "Map these manually before generating to avoid a silent error."
+			},
+			"visualPreview": {
+				"title": "Document preview",
+				"loading": "Rendering preview…",
+				"unavailable": "Preview unavailable — make sure the template has content."
+			},
+			"mapping": {
+				"sheetTitle": "Manual variable mapping",
+				"description": "For each variable, pick a different source/path, or type a free value. Statuses update live.",
+				"openButton": "Map manually",
+				"confirmButton": "Confirm mapping",
+				"cancelButton": "Cancel mapping",
+				"resetTooltip": "Remove this mapping",
+				"expand": "Edit",
+				"collapse": "Close",
+				"useLiteralLabel": "Type a free value",
+				"literalLabel": "Value",
+				"literalPlaceholder": "Text that will appear in the document",
+				"sourceLabel": "Source",
+				"pathLabel": "Path",
+				"pathPlaceholder": "Pick a field…",
+				"pathSearchPlaceholder": "Search a field…",
+				"pathEmpty": "No field available for this source."
 			},
 			"section": {
 				"title": "Official documents",
@@ -4515,7 +4549,9 @@
 				"signLabel": "Sign document",
 				"publishLabel": "Publish to citizen",
 				"unpublishLabel": "Unpublish from citizen",
-				"downloadLabel": "Download"
+				"downloadLabel": "Download",
+				"deleteLabel": "Delete document",
+				"deleteConfirm": "Permanently delete \"{{label}}\"? This cannot be undone."
 			},
 			"chip": {
 				"signed": "Signed",
@@ -4530,6 +4566,8 @@
 				"signFailed": "Signature failed",
 				"published": "Document published to citizen",
 				"unpublished": "Document removed from citizen view",
+				"deleted": "Document deleted",
+				"deleteFailed": "Delete failed",
 				"actionFailed": "Action failed"
 			}
 		},

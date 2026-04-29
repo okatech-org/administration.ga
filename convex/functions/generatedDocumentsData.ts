@@ -15,7 +15,14 @@ import {
 	type MutationCtx,
 } from "../_generated/server";
 import { authMutation, authQuery } from "../lib/customFunctions";
-import { buildSystemBucket, resolvePlaceholders } from "../lib/placeholderResolver";
+import {
+	buildSystemBucket,
+	describeResolution,
+	resolvePlaceholders,
+} from "../lib/placeholderResolver";
+import { fieldMappingValidator } from "../schemas/orgServices";
+import { collectPlaceholderKeys } from "@workspace/document-rendering/placeholder-utils";
+import { canDoTask } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
 import {
 	assertCanPublishDocuments,
@@ -34,23 +41,9 @@ export const loadGenerationContext = internalQuery({
 		templateId: v.id("documentTemplates"),
 		requestId: v.id("requests"),
 		// Per-placeholder mapping override applied during resolution. When a
-		// key matches an entry, (source, path) override the descriptor.
-		fieldMappingOverride: v.optional(
-			v.record(
-				v.string(),
-				v.object({
-					source: v.union(
-						v.literal("user"),
-						v.literal("profile"),
-						v.literal("request"),
-						v.literal("formData"),
-						v.literal("org"),
-						v.literal("system"),
-					),
-					path: v.optional(v.string()),
-				}),
-			),
-		),
+		// key matches an entry, (source, path) override the descriptor, or
+		// `literal` short-circuits the resolution with a free-text value.
+		fieldMappingOverride: v.optional(fieldMappingValidator),
 	},
 	handler: async (ctx, args) => {
 		const template = await ctx.db.get(args.templateId);
@@ -87,8 +80,26 @@ export const loadGenerationContext = internalQuery({
 		const service = orgService ? await ctx.db.get(orgService.serviceId) : null;
 		const serviceName = service ? pickLocalized(service.name as unknown) : undefined;
 
-		// Resolve placeholders.
-		const placeholders = template.placeholders ?? [];
+		// Resolve placeholders. Merge declared descriptors with placeholders
+		// referenced inline in the Tiptap content (same logic as the preview
+		// query) — otherwise an inline `{{key}}` without a descriptor would
+		// throw `PlaceholderResolutionError` from substitutePlaceholders.
+		const declared = template.placeholders ?? [];
+		const inlineKeys = template.content
+			? collectPlaceholderKeys(template.content as never)
+			: new Set<string>();
+		const declaredKeys = new Set(declared.map((p) => p.key));
+		const placeholders: Array<{
+			key: string;
+			source: "user" | "profile" | "request" | "formData" | "org" | "system";
+			path?: string;
+			label?: Record<string, string>;
+		}> = [...declared];
+		for (const key of inlineKeys) {
+			if (!declaredKeys.has(key)) {
+				placeholders.push({ key, source: "formData", path: key });
+			}
+		}
 		const system = buildSystemBucket({
 			requestReference: request.reference,
 			documentNumber: "", // assigned at persist time
@@ -133,12 +144,18 @@ export const loadGenerationContext = internalQuery({
 });
 
 /**
- * Read-only preview of placeholder resolution against a request. Returns a
- * per-key status (`resolved` / `empty` / `error`) so the agent can verify
- * the values BEFORE clicking Generate. Powers the new "Aperçu" phase in
- * `OfficialDocumentsSection > GenerateDialog`.
+ * Read-only preview of placeholder resolution against a request, plus the
+ * template's Tiptap content and the catalogue of available bucket paths for
+ * the manual-mapping autocomplete. Powers the 2-stage "Aperçu / Mapping"
+ * UI in `OfficialDocumentsSection > GenerateDialog`.
  *
- * Never throws on missing values — the worst case is `status: "empty"`.
+ * Returns:
+ *  - `placeholders`: per-key status (`resolved` / `empty` / `error`) — never
+ *     throws on missing values, so the UI can render a banner.
+ *  - `templateContent`: Tiptap JSON of the template body for the visual preview.
+ *  - `availablePaths`: flat list of `(source, path, sampleValue)` triples
+ *     covering ~3 levels of each bucket — feeds the path autocomplete.
+ *
  * Permission: `documents.generate` on the request's org (gated like the
  * generation action itself; super-admin bypasses).
  */
@@ -146,22 +163,7 @@ export const previewResolvedPlaceholders = authQuery({
 	args: {
 		requestId: v.id("requests"),
 		templateId: v.id("documentTemplates"),
-		fieldMappingOverride: v.optional(
-			v.record(
-				v.string(),
-				v.object({
-					source: v.union(
-						v.literal("user"),
-						v.literal("profile"),
-						v.literal("request"),
-						v.literal("formData"),
-						v.literal("org"),
-						v.literal("system"),
-					),
-					path: v.optional(v.string()),
-				}),
-			),
-		),
+		fieldMappingOverride: v.optional(fieldMappingValidator),
 	},
 	handler: async (ctx, args) => {
 		const template = await ctx.db.get(args.templateId);
@@ -177,7 +179,6 @@ export const previewResolvedPlaceholders = authQuery({
 			.first();
 		// Reuse `documents.generate` as the gate — the same permission that
 		// controls running the generation itself.
-		const { canDoTask } = await import("../lib/permissions");
 		const allowed = await canDoTask(ctx, ctx.user, membership, "documents.generate");
 		if (!allowed) {
 			throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
@@ -200,30 +201,203 @@ export const previewResolvedPlaceholders = authQuery({
 			requestReference: request.reference,
 			documentNumber: "",
 			orgName: org.name,
+			cityName: org.branding?.cityName,
+			signerName: org.branding?.signerName,
+			signerTitle: org.branding?.signerTitle,
 		});
 
-		const { describeResolution } = await import("../lib/placeholderResolver");
-		const placeholders = (template.placeholders ?? []) as Parameters<
+		const buckets = {
+			user: user as unknown as Record<string, unknown>,
+			profile,
+			request: {
+				...(request as unknown as Record<string, unknown>),
+				serviceName,
+			},
+			org: org as unknown as Record<string, unknown>,
+			formData: request.formData as Record<string, unknown> | undefined,
+			system,
+		} satisfies Record<string, Record<string, unknown> | undefined>;
+
+		const declared = (template.placeholders ?? []) as Parameters<
 			typeof describeResolution
 		>[0];
 
-		return describeResolution(
-			placeholders,
-			{
-				user: user as unknown as Record<string, unknown>,
-				profile,
-				request: {
-					...(request as unknown as Record<string, unknown>),
-					serviceName,
-				},
-				org: org as unknown as Record<string, unknown>,
-				formData: request.formData as Record<string, unknown> | undefined,
-				system,
-			},
-			{ mappingOverride: args.fieldMappingOverride },
-		);
+		// Merge the descriptor array with placeholders found INLINE in the
+		// Tiptap content. A `{{key}}` node in the body without a matching
+		// descriptor would silently fail at generation time — surface it in
+		// the preview so the agent can see (and remap) it. For inline-only
+		// keys we default to source="formData" + path=key, mirroring the
+		// resolver's expectations.
+		const inlineKeys = template.content
+			? collectPlaceholderKeys(template.content as never)
+			: new Set<string>();
+		const declaredKeys = new Set(declared.map((p) => p.key));
+		const merged = [...declared];
+		for (const key of inlineKeys) {
+			if (!declaredKeys.has(key)) {
+				merged.push({ key, source: "formData", path: key });
+			}
+		}
+
+		const placeholderEntries = describeResolution(merged, buckets, {
+			mappingOverride: args.fieldMappingOverride,
+		});
+
+		const formSchema = (service?.formSchema ?? null) as FormSchemaShape | null;
+		const availablePaths = buildAvailablePaths(buckets, formSchema);
+
+		return {
+			placeholders: placeholderEntries,
+			templateContent: template.content,
+			availablePaths,
+		};
 	},
 });
+
+/**
+ * Build the catalogue of fields the agent can map to in the manual mapping UI.
+ *
+ * Curated whitelist per source, NOT a recursive walker — agents shouldn't see
+ * `actionsRequired`, `documents`, validation timestamps, etc. Each entry has
+ * a human-readable `label` (the form field's localized label, or a hard-coded
+ * French label for meta/system fields), the technical `path`, and a short
+ * `sampleValue` from the actual request data.
+ */
+const SOURCES = ["user", "profile", "request", "formData", "org", "system"] as const;
+type SourceName = (typeof SOURCES)[number];
+
+interface AvailablePathEntry {
+	source: SourceName;
+	path: string;
+	label: string;
+	sampleValue: string;
+}
+
+interface FormSchemaShape {
+	sections?: Array<{
+		id: string;
+		title?: { fr?: string; en?: string };
+		fields?: Array<{
+			id: string;
+			label?: { fr?: string; en?: string };
+		}>;
+	}>;
+}
+
+function buildAvailablePaths(
+	buckets: Record<SourceName, Record<string, unknown> | undefined>,
+	formSchema: FormSchemaShape | null,
+): AvailablePathEntry[] {
+	const out: AvailablePathEntry[] = [];
+
+	const push = (
+		source: SourceName,
+		path: string,
+		label: string,
+	) => {
+		const value = readPathLocal(buckets[source], path);
+		out.push({ source, path, label, sampleValue: formatSample(value) });
+	};
+
+	// — user — identité du compte courant (pas la cible du document)
+	push("user", "firstName", "Prénom du compte");
+	push("user", "lastName", "Nom du compte");
+	push("user", "email", "Email du compte");
+	push("user", "phone", "Téléphone du compte");
+
+	// — profile — bénéficiaire du document
+	push("profile", "identity.firstName", "Prénom");
+	push("profile", "identity.lastName", "Nom");
+	push("profile", "identity.birthDate", "Date de naissance");
+	push("profile", "identity.birthPlace", "Lieu de naissance");
+	push("profile", "identity.birthCountry", "Pays de naissance");
+	push("profile", "identity.nationality", "Nationalité");
+	push("profile", "identity.gender", "Genre");
+	push("profile", "contactInfo.email", "Email du bénéficiaire");
+	push("profile", "contactInfo.phone", "Téléphone du bénéficiaire");
+	push("profile", "contactInfo.street", "Adresse — rue");
+	push("profile", "contactInfo.city", "Adresse — ville");
+	push("profile", "contactInfo.postalCode", "Adresse — code postal");
+	push("profile", "contactInfo.country", "Adresse — pays");
+
+	// — request — méta-info de la demande (whitelist serrée, pas le dump)
+	push("request", "reference", "Référence de la demande");
+	push("request", "status", "Statut");
+	push("request", "priority", "Priorité");
+	push("request", "submittedAt", "Date de soumission (timestamp)");
+	push("request", "updatedAt", "Date de mise à jour (timestamp)");
+	push("request", "serviceName", "Nom du service");
+
+	// — formData — dérivé du formSchema du service, pour avoir des labels
+	if (formSchema?.sections) {
+		for (const section of formSchema.sections) {
+			const sectionTitle = pickLoc(section.title);
+			for (const field of section.fields ?? []) {
+				const path = `${section.id}.${field.id}`;
+				const baseLabel = pickLoc(field.label) ?? field.id;
+				const fullLabel = sectionTitle
+					? `${sectionTitle} — ${baseLabel}`
+					: baseLabel;
+				push("formData", path, fullLabel);
+			}
+		}
+	}
+
+	// — org — branding officiel
+	push("org", "name", "Nom de l'organisme");
+	push("org", "branding.cityName", "Ville (pied de page)");
+	push("org", "branding.signerName", "Nom du signataire");
+	push("org", "branding.signerTitle", "Titre du signataire");
+
+	// — system — placeholders calculés au moment de la génération
+	push("system", "today", "Date du jour");
+	push("system", "todayIso", "Date du jour (ISO)");
+	push("system", "submissionDate", "Date de soumission");
+	push("system", "requestReference", "Référence de la demande");
+	push("system", "documentNumber", "Numéro du document");
+	push("system", "orgName", "Nom de l'organisme");
+	push("system", "city", "Ville");
+	push("system", "signerName", "Nom du signataire");
+	push("system", "signerTitle", "Titre du signataire");
+
+	return out;
+}
+
+function readPathLocal(
+	bucket: Record<string, unknown> | undefined,
+	path: string,
+): unknown {
+	if (!bucket) return undefined;
+	const parts = path.split(".").filter(Boolean);
+	let cursor: unknown = bucket;
+	for (const part of parts) {
+		if (cursor === null || cursor === undefined) return undefined;
+		if (typeof cursor !== "object") return undefined;
+		cursor = (cursor as Record<string, unknown>)[part];
+	}
+	return cursor;
+}
+
+function pickLoc(v: unknown): string | undefined {
+	if (!v || typeof v !== "object") return undefined;
+	const obj = v as Record<string, unknown>;
+	if (typeof obj.fr === "string" && obj.fr.length > 0) return obj.fr;
+	if (typeof obj.en === "string" && obj.en.length > 0) return obj.en;
+	return undefined;
+}
+
+function formatSample(v: unknown): string {
+	if (v === null || v === undefined) return "";
+	if (typeof v === "object") {
+		const obj = v as Record<string, unknown>;
+		if (typeof obj.fr === "string") return formatSample(obj.fr);
+		if (typeof obj.en === "string") return formatSample(obj.en);
+		if (Array.isArray(v)) return `${v.length} élément(s)`;
+		return "";
+	}
+	const s = String(v);
+	return s.length > 60 ? `${s.slice(0, 57)}…` : s;
+}
 
 // ============================================================================
 // INTERNAL — persist a generated document record
@@ -615,6 +789,47 @@ export const unpublish = authMutation({
 			publishedToCitizen: false,
 			unpublishedAt: Date.now(),
 		});
+		return args.documentId;
+	},
+});
+
+/**
+ * Hard-delete a generated document. Removes the storage blob, then the row.
+ * Gated by `documents.generate` (the same permission that produced it).
+ * Refuses to delete a signed document — those are evidentiary, the agent
+ * should unpublish/regenerate instead.
+ */
+export const deleteGenerated = authMutation({
+	args: { documentId: v.id("generatedDocuments") },
+	handler: async (ctx, args) => {
+		const doc = await ctx.db.get(args.documentId);
+		if (!doc) throw new Error("Document introuvable");
+
+		const membership = await ctx.db
+			.query("memberships")
+			.withIndex("by_user_org", (q) =>
+				q.eq("userId", ctx.user._id).eq("orgId", doc.orgId),
+			)
+			.first();
+		const allowed = await canDoTask(
+			ctx,
+			ctx.user,
+			membership,
+			"documents.generate",
+		);
+		if (!allowed) {
+			throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
+		}
+
+		if (doc.signatureStatus === "signed") {
+			throw error(
+				ErrorCode.VALIDATION_ERROR,
+				"Un document signé ne peut pas être supprimé — désindexe-le ou régénère-le à la place.",
+			);
+		}
+
+		await ctx.storage.delete(doc.storageId);
+		await ctx.db.delete(args.documentId);
 		return args.documentId;
 	},
 });

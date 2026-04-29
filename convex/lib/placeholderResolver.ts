@@ -28,19 +28,24 @@ export interface ResolverContext {
 }
 
 /**
- * Per-placeholder override of `(source, path)`. When a key matches a
- * `mappingOverride` entry, the resolver pulls from `(override.source,
- * override.path ?? key)` instead of the descriptor's defaults.
+ * Per-placeholder override of `(source, path)` OR a literal value. When a key
+ * matches a `mappingOverride` entry:
+ *  - if `literal` is set, the resolver returns it directly (skips bucket lookup);
+ *  - otherwise the resolver pulls from `(override.source ?? descriptor.source,
+ *     override.path ?? descriptor.path ?? key)`.
  *
  * Used by:
  *  - `autoGenerationRule.fieldMapping` (PR4) to wire a template's
  *     placeholders to the actual fields of a service formSchema.
  *  - The manual generation flow (`generateFromTemplate`) when an agent
- *     wants to override the convention for a one-shot generation.
+ *     wants to override the convention for a one-shot generation, including
+ *     supplying free-text values for placeholders whose data does not exist
+ *     anywhere in the request.
  */
 export interface FieldMappingOverride {
-	source: PlaceholderDescriptor["source"];
+	source?: PlaceholderDescriptor["source"];
 	path?: string;
+	literal?: string;
 }
 export type FieldMapping = Record<string, FieldMappingOverride>;
 
@@ -80,6 +85,13 @@ export function resolvePlaceholders(
 
 	for (const p of placeholders) {
 		const override = opts.mappingOverride?.[p.key];
+		// Literal value override short-circuits the bucket lookup — used when
+		// the data does not exist in the request and the agent supplies a
+		// free-text value during the manual mapping flow.
+		if (override?.literal !== undefined) {
+			resolved[p.key] = override.literal;
+			continue;
+		}
 		const source = override?.source ?? p.source;
 		const path = override?.path ?? p.path ?? p.key;
 		const bucket = pickBucket(source, ctx);
@@ -114,6 +126,20 @@ export function describeResolution(
 	const out: PlaceholderResolutionEntry[] = [];
 	for (const p of placeholders) {
 		const override = opts.mappingOverride?.[p.key];
+		// Literal value override short-circuits the bucket lookup — surfaced
+		// in the preview as `resolved` + `fromMapping: true`.
+		if (override?.literal !== undefined) {
+			out.push({
+				key: p.key,
+				label: p.label,
+				source: override.source ?? p.source,
+				path: override.path ?? p.path ?? p.key,
+				value: override.literal,
+				status: "resolved",
+				fromMapping: true,
+			});
+			continue;
+		}
 		const source = override?.source ?? p.source;
 		const path = override?.path ?? p.path ?? p.key;
 		try {

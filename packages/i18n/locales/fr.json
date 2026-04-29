@@ -5083,9 +5083,43 @@
 				"mapped": "mapping",
 				"empty": "vide",
 				"error": "erreur",
+				"mapAction": "Mapper",
 				"emptyWarning": "{{count}} variable(s) sans valeur — la génération ira jusqu'au bout mais le PDF affichera un blanc à ces emplacements.",
 				"errorWarning": "Une variable a échoué — corrige le mapping côté template ou règle d'auto-gen avant de générer.",
 				"noPlaceholders": "Ce modèle n'a pas de variables — la génération produira le contenu tel quel."
+			},
+			"banner": {
+				"allResolvedTitle": "Toutes les variables sont résolues",
+				"allResolvedBody": "Le document peut être généré tel quel.",
+				"emptyTitle_one": "{{count}} variable sans valeur",
+				"emptyTitle_other": "{{count}} variables sans valeur",
+				"emptyBody": "La génération continuera mais ces emplacements apparaîtront vides dans le PDF.",
+				"errorsTitle_one": "{{count}} variable non résolue",
+				"errorsTitle_other": "{{count}} variables non résolues",
+				"errorsBody": "Mappe ces variables manuellement avant de générer pour éviter une erreur silencieuse."
+			},
+			"visualPreview": {
+				"title": "Aperçu du document",
+				"loading": "Rendu de l'aperçu…",
+				"unavailable": "Aperçu indisponible — vérifie que le modèle a un contenu."
+			},
+			"mapping": {
+				"sheetTitle": "Mapping manuel des variables",
+				"description": "Pour chaque variable, choisis une autre source/un autre chemin, ou saisis une valeur libre. Les statuts se mettent à jour à chaque modification.",
+				"openButton": "Mapper manuellement",
+				"confirmButton": "Confirmer le mapping",
+				"cancelButton": "Annuler le mapping",
+				"resetTooltip": "Retirer ce mapping",
+				"expand": "Modifier",
+				"collapse": "Fermer",
+				"useLiteralLabel": "Saisir une valeur libre",
+				"literalLabel": "Valeur",
+				"literalPlaceholder": "Texte qui apparaîtra dans le document",
+				"sourceLabel": "Source",
+				"pathLabel": "Chemin",
+				"pathPlaceholder": "Choisir un champ…",
+				"pathSearchPlaceholder": "Rechercher un champ…",
+				"pathEmpty": "Aucun champ disponible pour cette source."
 			},
 			"section": {
 				"title": "Documents officiels",
@@ -5104,7 +5138,9 @@
 				"signLabel": "Signer le document",
 				"publishLabel": "Publier au citoyen",
 				"unpublishLabel": "Retirer du citoyen",
-				"downloadLabel": "Télécharger"
+				"downloadLabel": "Télécharger",
+				"deleteLabel": "Supprimer le document",
+				"deleteConfirm": "Supprimer définitivement « {{label}} » ? Cette action est irréversible."
 			},
 			"chip": {
 				"signed": "Signé",
@@ -5119,6 +5155,8 @@
 				"signFailed": "Échec de la signature",
 				"published": "Document publié au citoyen",
 				"unpublished": "Document retiré de la vue citoyen",
+				"deleted": "Document supprimé",
+				"deleteFailed": "Échec de la suppression",
 				"actionFailed": "Échec de l'opération"
 			}
 		},

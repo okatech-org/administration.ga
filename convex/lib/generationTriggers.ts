@@ -28,8 +28,9 @@ export interface ResolvedAutoTrigger {
 	fieldMapping?: Record<
 		string,
 		{
-			source: "user" | "profile" | "request" | "formData" | "org" | "system";
+			source?: "user" | "profile" | "request" | "formData" | "org" | "system";
 			path?: string;
+			literal?: string;
 		}
 	>;
 }

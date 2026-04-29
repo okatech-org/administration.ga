@@ -18,6 +18,7 @@ import type { ActionCtx } from "../_generated/server";
 import { internalAction } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import { authAction } from "../lib/customFunctions";
+import { fieldMappingValidator } from "../schemas/orgServices";
 
 /**
  * Shape of the resolved generation context returned by
@@ -49,23 +50,9 @@ export const generateFromTemplate = authAction({
 			),
 		),
 		// Per-placeholder mapping override applied during resolution. When a
-		// key is present, (source, path) override the descriptor defaults.
-		fieldMappingOverride: v.optional(
-			v.record(
-				v.string(),
-				v.object({
-					source: v.union(
-						v.literal("user"),
-						v.literal("profile"),
-						v.literal("request"),
-						v.literal("formData"),
-						v.literal("org"),
-						v.literal("system"),
-					),
-					path: v.optional(v.string()),
-				}),
-			),
-		),
+		// key is present, (source, path) override the descriptor defaults, or
+		// `literal` short-circuits the resolution with a free-text value.
+		fieldMappingOverride: v.optional(fieldMappingValidator),
 	},
 	handler: async (ctx, args): Promise<{ documentId: Id<"generatedDocuments">; storageId: Id<"_storage">; pdfSha256: string }> => {
 		return runGeneration(ctx, {
@@ -94,22 +81,7 @@ export const generateFromTemplateInternal = internalAction({
 		autoPublishOverride: v.optional(v.boolean()),
 		// Per-placeholder mapping override — auto-gen rules forward their
 		// `fieldMapping` here so the resolver picks the right field.
-		fieldMappingOverride: v.optional(
-			v.record(
-				v.string(),
-				v.object({
-					source: v.union(
-						v.literal("user"),
-						v.literal("profile"),
-						v.literal("request"),
-						v.literal("formData"),
-						v.literal("org"),
-						v.literal("system"),
-					),
-					path: v.optional(v.string()),
-				}),
-			),
-		),
+		fieldMappingOverride: v.optional(fieldMappingValidator),
 	},
 	handler: async (ctx, args): Promise<{ documentId: Id<"generatedDocuments">; storageId: Id<"_storage">; pdfSha256: string }> => {
 		return runGeneration(ctx, {
@@ -136,8 +108,9 @@ async function runGeneration(
 		fieldMappingOverride?: Record<
 			string,
 			{
-				source: "user" | "profile" | "request" | "formData" | "org" | "system";
+				source?: "user" | "profile" | "request" | "formData" | "org" | "system";
 				path?: string;
+				literal?: string;
 			}
 		>;
 	},
