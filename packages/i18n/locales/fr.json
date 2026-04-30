@@ -6776,6 +6776,24 @@
 			"title": "Nouveau Dossier",
 			"name": "Nom du dossier *",
 			"placeholder": "Ex: Notes Verbales 2026"
+		},
+		"disperse": {
+			"action": "Disperser",
+			"hint": "Répartir les pièces vers plusieurs destinataires"
+		}
+	},
+	"idocument": {
+		"origin": {
+			"banner": "Pièce d'un courrier",
+			"openCorrespondance": "Ouvrir le courrier",
+			"classedOn": "classé le"
+		},
+		"sources": {
+			"all": "Toutes sources",
+			"correspondance": "Courrier",
+			"upload": "Upload",
+			"inboundEmail": "Email entrant",
+			"scan": "Scan"
 		}
 	}
 }

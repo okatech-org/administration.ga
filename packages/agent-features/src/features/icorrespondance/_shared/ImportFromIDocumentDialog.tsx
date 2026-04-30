@@ -3,7 +3,7 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { FileText, Import, Loader2, Search, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -37,27 +37,52 @@ export function ImportFromIDocumentDialog({
 }: ImportFromIDocumentDialogProps) {
 	const { t } = useTranslation();
 	const [search, setSearch] = useState("");
+	const [debouncedSearch, setDebouncedSearch] = useState("");
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 
-	const { data: docs, isPending } = useAuthenticatedConvexQuery(
-		api.functions.documents.getByOwner,
-		open ? { ownerId: orgId } : "skip",
-	);
+	// Debounce 300 ms — recherche serveur full-text (Phase 1 — searchIndex
+	// `search_all` côté documents). Quand l'agent ne tape rien, on retombe sur
+	// le listing complet (limité côté frontend).
+	useEffect(() => {
+		const id = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+		return () => clearTimeout(id);
+	}, [search]);
+
+	const isSearching = debouncedSearch.length >= 2;
+
+	const { data: searchResults, isPending: isSearchPending } =
+		useAuthenticatedConvexQuery(
+			api.functions.documents.searchByOwner,
+			open && isSearching
+				? { ownerId: orgId, searchText: debouncedSearch, limit: 50 }
+				: "skip",
+		);
+
+	const { data: allDocs, isPending: isListPending } =
+		useAuthenticatedConvexQuery(
+			api.functions.documents.getByOwner,
+			open && !isSearching ? { ownerId: orgId } : "skip",
+		);
+
+	const isPending = isSearching ? isSearchPending : isListPending;
+	const docs = (isSearching ? searchResults : allDocs) as any[] | undefined;
 
 	const { mutateAsync: importDoc, isPending: isImporting } = useConvexMutationQuery(
 		api.functions.correspondanceDocuments.importDocumentFromIDocument,
 	);
 
 	const filtered = useMemo(() => {
-		const list = ((docs as any[]) ?? []).filter((d) => d.files?.length);
-		if (!search.trim()) return list;
+		const list = (docs ?? []).filter((d) => d.files?.length);
+		// Le filtrage est déjà fait côté serveur quand isSearching ;
+		// fallback côté client pour le listing complet (cas "tapez 1 lettre").
+		if (isSearching || !search.trim()) return list;
 		const q = search.toLowerCase();
 		return list.filter(
 			(d) =>
 				(d.label ?? "").toLowerCase().includes(q) ||
 				(d.files?.[0]?.filename ?? "").toLowerCase().includes(q),
 		);
-	}, [docs, search]);
+	}, [docs, search, isSearching]);
 
 	const submit = async () => {
 		if (!selectedId) return;

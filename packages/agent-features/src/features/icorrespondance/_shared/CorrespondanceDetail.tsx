@@ -37,6 +37,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { motion } from "motion/react";
+import { useRouter } from "@workspace/routing";
 
 export interface InlineAISuggestionProps {
 	targetType: string;
@@ -95,6 +96,7 @@ import {
 import { AnnotationsPanel } from "./AnnotationsPanel";
 import { ApprovalPanel } from "./ApprovalPanel";
 import { AssignDialog } from "./AssignDialog";
+import { DisperseDialog } from "./DisperseDialog";
 import { EditDraftDialog } from "./EditDraftDialog";
 import { ImportFromIDocumentDialog } from "./ImportFromIDocumentDialog";
 import { RespondDialog } from "./RespondDialog";
@@ -128,12 +130,14 @@ export function CorrespondanceDetail({
 	InlineAISuggestion,
 }: CorrespondanceDetailProps) {
 	const { t } = useTranslation();
+	const router = useRouter();
 	const [selectedDocIndex, setSelectedDocIndex] = useState(0);
 	const [selectedDocViewer, setSelectedDocViewer] = useState<ViewerDoc | null>(null);
 	const [editOpen, setEditOpen] = useState(false);
 	const [respondOpen, setRespondOpen] = useState(false);
 	const [assignOpen, setAssignOpen] = useState(false);
 	const [importOpen, setImportOpen] = useState(false);
+	const [disperseOpen, setDisperseOpen] = useState(false);
 	const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
 	const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -221,8 +225,18 @@ export function CorrespondanceDetail({
 
 	const handleClasser = async () => {
 		try {
-			await classerDansIDocument({ itemId });
-			toast.success("Dossier classé dans iDocument ");
+			const result = (await classerDansIDocument({ itemId })) as {
+				documentIds?: string[];
+			};
+			const firstDocId = result?.documentIds?.[0];
+			toast.success("Dossier classé dans iDocument", {
+				action: firstDocId
+					? {
+							label: "Voir",
+							onClick: () => router.push(`/idocument?id=${firstDocId}`),
+						}
+					: undefined,
+			});
 			onBack();
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur lors du classement");
@@ -537,6 +551,19 @@ export function CorrespondanceDetail({
 							OCR
 						</Button>
 					)}
+
+				{item.status === "received" && !isDeleted && allDocs.length > 1 && (
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => setDisperseOpen(true)}
+						className="gap-1.5"
+						title={t("icorrespondance.disperse.hint")}
+					>
+						<Send className="h-3.5 w-3.5" />
+						{t("icorrespondance.disperse.action")}
+					</Button>
+				)}
 
 				<Button variant="outline" size="sm" onClick={handleClasser} className="gap-1.5">
 					<Archive className="h-3.5 w-3.5" />
@@ -958,6 +985,20 @@ export function CorrespondanceDetail({
 					onClose={() => setImportOpen(false)}
 					correspondanceItemId={item._id as Id<"correspondanceItems">}
 					orgId={currentOrgId as Id<"orgs">}
+				/>
+			)}
+
+			{item.status === "received" && !isDeleted && (
+				<DisperseDialog
+					open={disperseOpen}
+					onOpenChange={setDisperseOpen}
+					itemId={item._id as Id<"correspondanceItems">}
+					documents={(allDocs as any[]).map((d) => ({
+						filename: d.filename,
+						label: d.label,
+						storageId: d.storageId,
+						isMainDocument: !!d.isMainDocument,
+					}))}
 				/>
 			)}
 		</div>

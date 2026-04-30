@@ -6211,6 +6211,24 @@
 			"title": "New folder",
 			"name": "Folder name *",
 			"placeholder": "e.g. Verbal Notes 2026"
+		},
+		"disperse": {
+			"action": "Disperse",
+			"hint": "Split the attachments across multiple recipients"
+		}
+	},
+	"idocument": {
+		"origin": {
+			"banner": "From a correspondence",
+			"openCorrespondance": "Open correspondence",
+			"classedOn": "filed on"
+		},
+		"sources": {
+			"all": "All sources",
+			"correspondance": "Correspondence",
+			"upload": "Upload",
+			"inboundEmail": "Inbound email",
+			"scan": "Scan"
 		}
 	}
 }
