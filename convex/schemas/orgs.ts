@@ -2,6 +2,7 @@ import { defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
   orgTypeValidator,
+  ministrySubTypeValidator,
   addressValidator,
   orgSettingsValidator,
   weeklyScheduleValidator,
@@ -36,6 +37,14 @@ export const orgsTable = defineTable({
   // à défaut, la première locale renseignée.
   nameI18n: v.optional(localizedStringValidator),
   type: orgTypeValidator,
+  // Sous-type ministère (renseigné uniquement si type === "ministry").
+  // Détermine le template de postes et les modules pré-activés (foreign_affairs
+  // pour le MAE, justice/finance/interior pour les autres ministères futurs).
+  ministrySubType: v.optional(ministrySubTypeValidator),
+  // Hiérarchie organique : un consulat/ambassade peut être rattaché à un
+  // ministère de tutelle. Validé côté mutation : parent doit être de type
+  // "ministry". Aucune contrainte cyclique car arborescence à 2 niveaux max.
+  parentOrgId: v.optional(v.id("orgs")),
 
   // Localisation (champs historiques - à migrer vers `addresses` et `jurisdiction`)
   country: countryCodeValidator,
@@ -119,5 +128,6 @@ export const orgsTable = defineTable({
 })
   .index("by_slug", ["slug"])
   .index("by_country", ["country"])
+  .index("by_parent", ["parentOrgId"])
   .index("by_active_notDeleted", ["isActive", "deletedAt"])
   .searchIndex("search_name", { searchField: "name" });

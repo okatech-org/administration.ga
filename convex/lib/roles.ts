@@ -15,7 +15,7 @@
  *   - Task codes are typed via TaskCodeValue import
  */
 
-import { OrganizationType } from "./constants";
+import { OrganizationType, MinistrySubType } from "./constants";
 import { TaskCode, type TaskCodeValue } from "./taskCodes";
 import { ModuleCode, ALL_MODULE_CODES, CORE_MODULE_CODES, type ModuleCodeValue, type ModuleAccessLevel } from "./moduleCodes";
 import type { LocalizedString } from "./validators";
@@ -251,6 +251,53 @@ export const POSITION_TASK_PRESETS: TaskPresetDefinition[] = [
       TaskCode.meetings.create, TaskCode.meetings.join, TaskCode.meetings.manage, TaskCode.meetings.view_history,
     ],
   },
+  // ─── Presets ministériels ──────────────────────────────────
+  // Notes : pas de TaskCode.* dédié pour les modules réseau (ils ont leurs
+  // propres codes "network.*.view" gérés via moduleAccess). Le preset porte
+  // donc seulement les tasks transversales — les modules réseau sont attribués
+  // en moduleAccess via PRESET_MODULE_ACCESS plus bas.
+  {
+    code: "ministry_cabinet",
+    label: { fr: "Cabinet ministériel", en: "Ministerial Cabinet" },
+    description: { fr: "Pilotage stratégique du ministère et arbitrages", en: "Ministry strategic steering and decisions" },
+    icon: "Crown",
+    color: "text-amber-600",
+    tasks: [
+      TaskCode.documents.view, TaskCode.documents.validate, TaskCode.documents.publish,
+      TaskCode.communication.publish, TaskCode.communication.notify,
+      TaskCode.org.view, TaskCode.statistics.view, TaskCode.analytics.view, TaskCode.analytics.export,
+      TaskCode.team.view, TaskCode.team.manage, TaskCode.team.assign_roles,
+      TaskCode.settings.view, TaskCode.settings.manage,
+      TaskCode.schedules.view, TaskCode.schedules.manage,
+      TaskCode.meetings.create, TaskCode.meetings.join, TaskCode.meetings.manage, TaskCode.meetings.view_history,
+    ],
+  },
+  {
+    code: "ministry_direction",
+    label: { fr: "Direction ministérielle", en: "Ministry Department" },
+    description: { fr: "Direction métier (politiques, économique, juridique, etc.)", en: "Operational department (political, economic, legal, etc.)" },
+    icon: "Briefcase",
+    color: "text-blue-600",
+    tasks: [
+      TaskCode.documents.view, TaskCode.documents.validate, TaskCode.documents.generate,
+      TaskCode.communication.publish, TaskCode.communication.notify,
+      TaskCode.org.view, TaskCode.statistics.view, TaskCode.analytics.view,
+      TaskCode.team.view,
+      TaskCode.schedules.view,
+      TaskCode.meetings.create, TaskCode.meetings.join, TaskCode.meetings.view_history,
+    ],
+  },
+  {
+    code: "network_supervision",
+    label: { fr: "Supervision réseau", en: "Network Supervision" },
+    description: { fr: "Vue agrégée des organismes rattachés (lecture seule)", en: "Aggregated view of subordinate orgs (read-only)" },
+    icon: "Network",
+    color: "text-red-500",
+    tasks: [
+      // Tasks transversales — l'accès réseau est porté par moduleAccess ci-dessous.
+      TaskCode.org.view, TaskCode.statistics.view, TaskCode.analytics.view, TaskCode.analytics.export,
+    ],
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -339,6 +386,16 @@ export const EMBASSY_MINISTRY_GROUPS: MinistryGroupTemplate[] = [
 export const CONSULATE_MINISTRY_GROUPS: MinistryGroupTemplate[] = [
   { code: "mae", label: { fr: "Affaires Étrangères", en: "Foreign Affairs" }, description: { fr: "Ministère des Affaires Étrangères", en: "Ministry of Foreign Affairs" }, icon: "Globe", sortOrder: 1 },
   { code: "finances", label: { fr: "Finances", en: "Finance" }, description: { fr: "Ministère des Finances", en: "Ministry of Finance" }, icon: "Wallet", sortOrder: 2 },
+];
+
+// ─── MINISTRY (foreign_affairs) groups ──────────────────────
+// Groupes internes au ministère : cabinet, secrétariat général, directions
+// métier. Sert d'organigramme de référence pour le MAE.
+export const MINISTRY_FOREIGN_AFFAIRS_GROUPS: MinistryGroupTemplate[] = [
+  { code: "cabinet", label: { fr: "Cabinet", en: "Cabinet" }, description: { fr: "Cabinet du Ministre", en: "Minister's Cabinet" }, icon: "Crown", sortOrder: 1 },
+  { code: "secretariat_general", label: { fr: "Secrétariat Général", en: "General Secretariat" }, description: { fr: "Direction administrative générale", en: "General administrative direction" }, icon: "Landmark", sortOrder: 2 },
+  { code: "inspection_generale", label: { fr: "Inspection Générale", en: "General Inspectorate" }, description: { fr: "Contrôle interne et audit", en: "Internal control and audit" }, icon: "ShieldCheck", sortOrder: 3 },
+  { code: "directions", label: { fr: "Directions", en: "Departments" }, description: { fr: "Directions métier du ministère", en: "Operational departments" }, icon: "Building2", sortOrder: 4 },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -438,6 +495,33 @@ export const PRESET_MODULE_ACCESS: Record<string, MA[]> = {
   ],
   meetings: [
     ma(ModuleCode.messaging, "admin"),
+  ],
+  // ─── Ministériels ──────────────────────────────────────────
+  ministry_cabinet: [
+    ma(ModuleCode.documents, "admin"),
+    ma(ModuleCode.correspondence, "admin"),
+    ma(ModuleCode.diplomatic_affairs, "admin"),
+    ma(ModuleCode.calendar, "editor"),
+    ma(ModuleCode.messaging, "editor"),
+    ma(ModuleCode.news, "admin"),
+    ma(ModuleCode.team, "admin"),
+    ma(ModuleCode.statistics, "admin"),
+    ma(ModuleCode.settings, "admin"),
+  ],
+  ministry_direction: [
+    ma(ModuleCode.documents, "editor"),
+    ma(ModuleCode.correspondence, "editor"),
+    ma(ModuleCode.diplomatic_affairs, "editor"),
+    ma(ModuleCode.calendar, "editor"),
+    ma(ModuleCode.messaging, "editor"),
+    ma(ModuleCode.news, "editor"),
+    ma(ModuleCode.team, "reader"),
+    ma(ModuleCode.statistics, "reader"),
+  ],
+  network_supervision: [
+    ma(ModuleCode.network_diplomatic_oversight, "editor"),
+    ma(ModuleCode.network_correspondence_oversight, "editor"),
+    ma(ModuleCode.network_intelligence, "editor"),
   ],
 };
 
@@ -570,6 +654,21 @@ export interface OrganizationTemplate {
   ministryGroups?: MinistryGroupTemplate[];
   /** Default modules activated for this org type */
   modules: ModuleCodeValue[];
+  /**
+   * Sous-templates indexés par discriminator (ex: ministrySubType).
+   * Quand renseigné, l'appelant doit choisir un sous-template via
+   * `getOrgTemplate(type, subType)` qui retourne le sous-template fusionné
+   * sur le template parent. Permet de partager la coquille (label, icon)
+   * tout en variant positions/modules selon le sous-type.
+   */
+  subTemplates?: Record<string, {
+    label: LocalizedString;
+    description?: LocalizedString;
+    icon?: string;
+    positions: PositionTemplate[];
+    ministryGroups?: MinistryGroupTemplate[];
+    modules: ModuleCodeValue[];
+  }>;
 }
 
 // ─── Default module sets per org type ────────────────────
@@ -602,6 +701,62 @@ const MISSION_MODULES: ModuleCodeValue[] = [
   ModuleCode.news,
   ModuleCode.messaging,
   ModuleCode.statistics,
+];
+
+/**
+ * Modules pré-activés pour le Ministère des Affaires Étrangères.
+ * Pilotage local (l'activité propre du ministère) + supervision réseau (vue
+ * agrégée sur les organismes rattachés via parentOrgId).
+ *
+ * Volontairement absents : consular_affairs, payments, profile (irrelevants
+ * pour un ministère qui n'exécute pas l'opérationnel terrain).
+ */
+const MINISTRY_FOREIGN_AFFAIRS_MODULES: ModuleCodeValue[] = [
+  // Pilotage local
+  ModuleCode.diplomatic_affairs,
+  ModuleCode.correspondence,
+  ModuleCode.documents,
+  ModuleCode.calendar,
+  ModuleCode.messaging,
+  ModuleCode.news,
+  ModuleCode.team,
+  ModuleCode.statistics,
+  ModuleCode.settings,
+  // Supervision réseau (exclusifs ministry)
+  ModuleCode.network_diplomatic_oversight,
+  ModuleCode.network_correspondence_oversight,
+  ModuleCode.network_intelligence,
+];
+
+// ─── MINISTRY (foreign_affairs) positions ───────────────────
+//
+// Liste étendue : Cabinet (ministre, dircab, conseillers, secrétariat)
+// + Direction générale (SG, IG) + 8 directions métier. Tous les membres
+// du cabinet et du SG portent le preset `network_supervision` en plus
+// de leur preset principal — ils ont besoin de la vue réseau pour piloter.
+
+export const MINISTRY_FOREIGN_AFFAIRS_POSITIONS: PositionTemplate[] = [
+  // ── Cabinet ──
+  { code: "minister", title: { fr: "Ministre", en: "Minister" }, description: { fr: "Membre du Gouvernement — direction politique et arbitrage final", en: "Member of Government — political leadership and final arbitration" }, level: 1, perm: 40, grade: "chief", ministryCode: "cabinet", taskPresets: ["ministry_cabinet", "network_supervision"], isRequired: true },
+  { code: "chief_of_staff", title: { fr: "Directeur de cabinet", en: "Chief of Staff" }, description: { fr: "Coordination du cabinet et arbitrage administratif", en: "Cabinet coordination and administrative arbitration" }, level: 2, perm: 32, grade: "deputy_chief", ministryCode: "cabinet", taskPresets: ["ministry_cabinet", "network_supervision"], isRequired: true },
+  { code: "technical_advisor", title: { fr: "Conseiller technique", en: "Technical Advisor" }, description: { fr: "Conseil thématique au Ministre (multiple)", en: "Thematic advisory to the Minister (multiple)" }, level: 3, perm: 22, grade: "counselor", ministryCode: "cabinet", taskPresets: ["ministry_direction", "network_supervision"], isRequired: false },
+  { code: "private_secretary", title: { fr: "Secrétaire particulier·ère", en: "Private Secretary" }, description: { fr: "Agenda, correspondance personnelle et coordination quotidienne du Ministre", en: "Schedule, personal correspondence and daily coordination for the Minister" }, level: 4, perm: 18, grade: "agent", ministryCode: "cabinet", taskPresets: ["ministry_direction"], isRequired: false },
+  { code: "mission_officer", title: { fr: "Chargé·e de mission", en: "Mission Officer" }, description: { fr: "Dossiers ad hoc et missions spéciales (multiple)", en: "Ad-hoc files and special missions (multiple)" }, level: 4, perm: 16, grade: "agent", ministryCode: "cabinet", taskPresets: ["ministry_direction"], isRequired: false },
+  { code: "press_attache", title: { fr: "Attaché·e de presse", en: "Press Attaché" }, description: { fr: "Relations presse, communiqués et image du ministère", en: "Press relations, communiqués and ministry image" }, level: 4, perm: 16, grade: "agent", ministryCode: "cabinet", taskPresets: ["ministry_direction"], isRequired: false },
+
+  // ── Direction générale ──
+  { code: "secretary_general", title: { fr: "Secrétaire Général", en: "Secretary General" }, description: { fr: "Première autorité administrative — coordination des directions et continuité du service", en: "Highest administrative authority — coordination of departments and service continuity" }, level: 2, perm: 30, grade: "deputy_chief", ministryCode: "secretariat_general", taskPresets: ["ministry_cabinet", "network_supervision"], isRequired: true },
+  { code: "inspector_general", title: { fr: "Inspecteur Général", en: "Inspector General" }, description: { fr: "Audit interne, contrôle de conformité et inspection du réseau", en: "Internal audit, compliance control and network inspection" }, level: 2, perm: 28, grade: "deputy_chief", ministryCode: "inspection_generale", taskPresets: ["ministry_direction", "network_supervision"], isRequired: false },
+
+  // ── Directions métier ──
+  { code: "dir_consular_affairs", title: { fr: "Directeur des Affaires Consulaires", en: "Director of Consular Affairs" }, description: { fr: "Pivot supervision réseau consulaire — politiques consulaires et accompagnement des postes", en: "Consular network supervision pivot — consular policies and post support" }, level: 3, perm: 25, grade: "counselor", ministryCode: "directions", taskPresets: ["ministry_direction", "network_supervision"], isRequired: true },
+  { code: "dir_political_affairs", title: { fr: "Directeur des Affaires Politiques", en: "Director of Political Affairs" }, description: { fr: "Relations bilatérales et multilatérales, analyse géopolitique", en: "Bilateral and multilateral relations, geopolitical analysis" }, level: 3, perm: 25, grade: "counselor", ministryCode: "directions", taskPresets: ["ministry_direction", "network_supervision"], isRequired: false },
+  { code: "dir_economic_cooperation", title: { fr: "Directeur des Affaires Économiques et Coopération", en: "Director of Economic Affairs and Cooperation" }, description: { fr: "Pilote du pipeline de coopération diplomatique et facilitation économique", en: "Diplomatic cooperation pipeline lead and economic facilitation" }, level: 3, perm: 25, grade: "counselor", ministryCode: "directions", taskPresets: ["ministry_direction", "network_supervision"], isRequired: true },
+  { code: "dir_legal_affairs", title: { fr: "Directeur des Affaires Juridiques", en: "Director of Legal Affairs" }, description: { fr: "Conformité juridique des actes diplomatiques et conventions", en: "Legal compliance of diplomatic acts and conventions" }, level: 3, perm: 22, grade: "counselor", ministryCode: "directions", taskPresets: ["ministry_direction"], isRequired: false },
+  { code: "dir_protocol", title: { fr: "Directeur du Protocole", en: "Director of Protocol" }, description: { fr: "Protocole d'État, visites officielles et cérémonies", en: "State protocol, official visits and ceremonies" }, level: 3, perm: 20, grade: "counselor", ministryCode: "directions", taskPresets: ["ministry_direction"], isRequired: false },
+  { code: "dir_human_resources", title: { fr: "Directeur des Ressources Humaines", en: "Director of Human Resources" }, description: { fr: "Gestion du personnel diplomatique, mutations et concours", en: "Diplomatic staff management, transfers and competitive examinations" }, level: 3, perm: 22, grade: "counselor", ministryCode: "directions", taskPresets: ["ministry_direction"], isRequired: false },
+  { code: "dir_administration_finance", title: { fr: "Directeur Administratif et Financier", en: "Director of Administration and Finance" }, description: { fr: "Budget du ministère, marchés et logistique", en: "Ministry budget, procurement and logistics" }, level: 3, perm: 22, grade: "counselor", ministryCode: "directions", taskPresets: ["ministry_direction"], isRequired: false },
+  { code: "dir_communication", title: { fr: "Directeur de la Communication", en: "Director of Communication" }, description: { fr: "Stratégie de communication institutionnelle et image du Gabon à l'étranger", en: "Institutional communication strategy and Gabon's image abroad" }, level: 3, perm: 20, grade: "counselor", ministryCode: "directions", taskPresets: ["ministry_direction"], isRequired: false },
 ];
 
 // ─── HIGH REPRESENTATION positions (same as Embassy with elevated chief title) ─
@@ -664,6 +819,25 @@ export const ORGANIZATION_TEMPLATES: OrganizationTemplate[] = [
     modules: [...CORE_MODULE_CODES],
   },
   {
+    type: OrganizationType.Ministry,
+    label: { fr: "Ministère", en: "Ministry" },
+    description: { fr: "Tutelle gouvernementale — chapeaute les organismes rattachés via parentOrgId", en: "Government oversight body — supervises subordinate orgs via parentOrgId" },
+    icon: "Landmark",
+    // Le template top-level reste vide ; chaque sous-type fournit ses positions/modules.
+    positions: [],
+    modules: [...CORE_MODULE_CODES],
+    subTemplates: {
+      [MinistrySubType.ForeignAffairs]: {
+        label: { fr: "Affaires Étrangères", en: "Foreign Affairs" },
+        description: { fr: "Ministère des Affaires Étrangères — pilote du réseau diplomatique gabonais", en: "Ministry of Foreign Affairs — Gabonese diplomatic network steward" },
+        icon: "Globe",
+        positions: MINISTRY_FOREIGN_AFFAIRS_POSITIONS,
+        ministryGroups: MINISTRY_FOREIGN_AFFAIRS_GROUPS,
+        modules: MINISTRY_FOREIGN_AFFAIRS_MODULES,
+      },
+    },
+  },
+  {
     type: "custom",
     label: { fr: "Personnalisé", en: "Custom" },
     description: { fr: "Configuration entièrement personnalisée", en: "Fully custom configuration" },
@@ -694,6 +868,7 @@ populateModuleAccess(HONORARY_CONSULATE_POSITIONS);
 populateModuleAccess(HIGH_COMMISSION_POSITIONS);
 populateModuleAccess(PERMANENT_MISSION_POSITIONS);
 populateModuleAccess(HIGH_REPRESENTATION_POSITIONS);
+populateModuleAccess(MINISTRY_FOREIGN_AFFAIRS_POSITIONS);
 
 // ═══════════════════════════════════════════════════════════════
 // TASK CATEGORY METADATA (icons + labels for UI)
@@ -768,6 +943,37 @@ export function getPresetTasks(presetCodes: string[]): TaskCodeValue[] {
 /** Get template by org type */
 export function getOrgTemplate(type: OrgTemplateType): OrganizationTemplate | undefined {
   return ORGANIZATION_TEMPLATES.find((t) => t.type === type);
+}
+
+/**
+ * Résout le template effectif pour un type d'organisme donné, en sélectionnant
+ * le bon sous-template si applicable (ex: ministry × foreign_affairs).
+ * Retourne `{ positions, modules, ministryGroups }` prêts à instancier.
+ *
+ * Si `subTemplates` est défini sur le template parent et que `subType` est
+ * fourni, le sous-template gagne. Sinon retourne les valeurs du parent.
+ */
+export function resolveOrgTemplate(
+  type: OrgTemplateType,
+  subType?: string,
+): { positions: PositionTemplate[]; modules: ModuleCodeValue[]; ministryGroups?: MinistryGroupTemplate[] } | undefined {
+  const tpl = getOrgTemplate(type);
+  if (!tpl) return undefined;
+
+  if (subType && tpl.subTemplates?.[subType]) {
+    const sub = tpl.subTemplates[subType];
+    return {
+      positions: sub.positions,
+      modules: sub.modules,
+      ministryGroups: sub.ministryGroups,
+    };
+  }
+
+  return {
+    positions: tpl.positions,
+    modules: tpl.modules,
+    ministryGroups: tpl.ministryGroups,
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════

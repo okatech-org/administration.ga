@@ -39,6 +39,7 @@ const CATEGORY_CONFIG: Record<
 	ibureau: { label: "iBureau", order: 2 },
 	gestion: { label: "Gestion", order: 3 },
 	administration: { label: "Administration", order: 4 },
+	network: { label: "Réseau diplomatique", order: 5 },
 };
 
 

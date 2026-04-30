@@ -10,6 +10,7 @@ import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types"
 import {
   RequestStatus,
   orgTypeValidator,
+  ministrySubTypeValidator,
   addressValidator,
   orgSettingsValidator,
   localizedStringValidator,
@@ -24,7 +25,8 @@ import {
   chatsConfigValidator,
 } from "../lib/validators"
 import { taskCodeValidator } from "../lib/taskCodes"
-import { MODULE_ACCESS_TASKS, moduleCodeValidator } from "../lib/moduleCodes"
+import { MODULE_ACCESS_TASKS, moduleCodeValidator, accessLevelValidator, NETWORK_MODULE_CODES, isNetworkModule } from "../lib/moduleCodes"
+import { OrganizationType } from "../lib/constants"
 import { countryCodeValidator, CountryCode } from "../lib/countryCodeValidator"
 import { canDoTask } from "../lib/permissions"
 import {
@@ -207,6 +209,10 @@ export const create = authMutation({
     phone: v.optional(v.string()),
     email: v.optional(v.string()),
     website: v.optional(v.string()),
+    // Sous-type ministériel (uniquement pertinent si type === "ministry").
+    ministrySubType: v.optional(ministrySubTypeValidator),
+    // Org parent — pour rattacher un consulat/ambassade à un ministère de tutelle.
+    parentOrgId: v.optional(v.id("orgs")),
     // Positions to create (pre-filled from template, possibly edited)
     positions: v.optional(
       v.array(
@@ -217,6 +223,17 @@ export const create = authMutation({
           level: v.number(),
           grade: v.optional(v.string()),
           tasks: v.array(taskCodeValidator),
+          // moduleAccess accepté optionnellement — utilisé par les nouveaux
+          // templates (notamment ministry) qui définissent l'accès via modules
+          // plutôt que via tasks plates.
+          moduleAccess: v.optional(
+            v.array(
+              v.object({
+                moduleCode: moduleCodeValidator,
+                accessLevel: accessLevelValidator,
+              })
+            )
+          ),
           isRequired: v.optional(v.boolean()),
         })
       )
@@ -235,6 +252,46 @@ export const create = authMutation({
 
     if (existing) {
       throw error(ErrorCode.ORG_SLUG_EXISTS)
+    }
+
+    // Validation : si parentOrgId fourni, il doit pointer vers un ministry actif.
+    if (args.parentOrgId) {
+      const parent = await ctx.db.get(args.parentOrgId)
+      if (!parent || parent.deletedAt) {
+        throw error(ErrorCode.VALIDATION_ERROR, "Organisme parent introuvable")
+      }
+      if (parent.type !== OrganizationType.Ministry) {
+        throw error(
+          ErrorCode.VALIDATION_ERROR,
+          "Seul un ministère peut être désigné comme organisme parent"
+        )
+      }
+    }
+
+    // Validation : ministrySubType est exigé si type === "ministry", interdit sinon.
+    if (args.type === OrganizationType.Ministry) {
+      if (!args.ministrySubType) {
+        throw error(
+          ErrorCode.VALIDATION_ERROR,
+          "Un sous-type est requis pour un ministère"
+        )
+      }
+    } else if (args.ministrySubType) {
+      throw error(
+        ErrorCode.VALIDATION_ERROR,
+        "ministrySubType ne peut être renseigné que pour un ministère"
+      )
+    }
+
+    // Validation : modules network_* uniquement sur un ministry.
+    if (args.modules && args.type !== OrganizationType.Ministry) {
+      const networkOnConsulate = args.modules.find((m) => isNetworkModule(m))
+      if (networkOnConsulate) {
+        throw error(
+          ErrorCode.VALIDATION_ERROR,
+          `Le module "${networkOnConsulate}" est exclusif au type "ministry"`
+        )
+      }
     }
 
     const { positions, templateType, modules, ...orgData } = args
@@ -264,6 +321,7 @@ export const create = authMutation({
           level: pos.level,
           grade: pos.grade,
           tasks: pos.tasks,
+          moduleAccess: pos.moduleAccess,
           isRequired: pos.isRequired ?? false,
           isActive: true,
           createdBy: ctx.user._id,
@@ -278,11 +336,101 @@ export const create = authMutation({
       entiteType: "orgs",
       entiteId: orgId,
       userId: ctx.user._id,
-      apres: { name: args.name, slug: args.slug, type: args.type },
+      apres: {
+        name: args.name,
+        slug: args.slug,
+        type: args.type,
+        ministrySubType: args.ministrySubType,
+        parentOrgId: args.parentOrgId,
+      },
       signalType: SIGNAL_TYPES.ORG_CREEE,
     })
 
     return orgId
+  },
+})
+
+/**
+ * Liste les organismes rattachés à un parent (ministère de tutelle).
+ * Utilisé par les vues "Réseau diplomatique" pour récupérer les consulats/
+ * ambassades supervisés par un ministère.
+ */
+export const listChildren = query({
+  args: { parentOrgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    const children = await ctx.db
+      .query("orgs")
+      .withIndex("by_parent", (q) => q.eq("parentOrgId", args.parentOrgId))
+      .collect()
+
+    return children.filter((org) => !org.deletedAt && org.isActive)
+  },
+})
+
+/**
+ * Modifie le rattachement parent d'un organisme. Réservé aux super-admin
+ * (décision structurelle : qui supervise qui).
+ */
+export const setParentOrg = authMutation({
+  args: {
+    orgId: v.id("orgs"),
+    parentOrgId: v.optional(v.union(v.id("orgs"), v.null())),
+  },
+  handler: async (ctx, args) => {
+    if (!ctx.user.isSuperadmin) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS)
+    }
+
+    const org = await ctx.db.get(args.orgId)
+    if (!org || org.deletedAt) {
+      throw error(ErrorCode.NOT_FOUND, "Organisme introuvable")
+    }
+
+    const newParentId = args.parentOrgId ?? undefined
+
+    if (newParentId) {
+      if (newParentId === args.orgId) {
+        throw error(
+          ErrorCode.VALIDATION_ERROR,
+          "Un organisme ne peut pas être son propre parent"
+        )
+      }
+      const parent = await ctx.db.get(newParentId)
+      if (!parent || parent.deletedAt) {
+        throw error(ErrorCode.VALIDATION_ERROR, "Organisme parent introuvable")
+      }
+      if (parent.type !== OrganizationType.Ministry) {
+        throw error(
+          ErrorCode.VALIDATION_ERROR,
+          "Seul un ministère peut être désigné comme organisme parent"
+        )
+      }
+      // Un ministère ne peut pas être enfant d'un autre organisme — on garde
+      // l'arborescence à 2 niveaux pour le MVP.
+      if (org.type === OrganizationType.Ministry) {
+        throw error(
+          ErrorCode.VALIDATION_ERROR,
+          "Un ministère ne peut pas être rattaché à un autre organisme"
+        )
+      }
+    }
+
+    await ctx.db.patch(args.orgId, {
+      parentOrgId: newParentId,
+      updatedAt: Date.now(),
+    })
+
+    await logCortexAction(ctx, {
+      action: "SET_ORG_PARENT",
+      categorie: CATEGORIES_ACTION.METIER,
+      entiteType: "orgs",
+      entiteId: args.orgId,
+      userId: ctx.user._id,
+      apres: { parentOrgId: newParentId ?? null },
+      signalType: SIGNAL_TYPES.ORG_MODIFIEE,
+    })
+
+    return args.orgId
   },
 })
 

@@ -46,6 +46,11 @@ const CATEGORY_META: Record<
 		color: "text-red-600",
 		bgColor: "bg-red-50 dark:bg-red-950/30",
 	},
+	network: {
+		label: { fr: "Réseau diplomatique", en: "Diplomatic Network" },
+		color: "text-rose-600",
+		bgColor: "bg-rose-50 dark:bg-rose-950/30",
+	},
 };
 
 // ─── Props ─────────────────────────────────────────────────────

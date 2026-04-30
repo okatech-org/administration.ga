@@ -1,7 +1,7 @@
 import type { QueryCtx, MutationCtx } from "../_generated/server";
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { error, ErrorCode } from "./errors";
-import { UserRole, PermissionEffect } from "./constants";
+import { UserRole, OrganizationType, PermissionEffect } from "./constants";
 import type { TaskCodeValue } from "./taskCodes";
 import { ALL_MODULE_CODES, MODULE_ACCESS_TASKS, type ModuleCodeValue, type ModuleAccessLevel, resolveTaskCodesFromModuleAccess } from "./moduleCodes";
 
@@ -394,3 +394,46 @@ export async function canViewCitizenContacts(
   return tasks.has("citizen_profiles.view");
 }
 
+// ============================================
+// Ministry Supervision (network_* modules)
+// ============================================
+
+/**
+ * Garde pour les endpoints d'agrégation `ministry.*` : exige que l'utilisateur
+ * appartienne à un org `type === "ministry"` et que cet org soit bien le
+ * ministère ciblé. Lecture seule — n'accorde aucun droit d'écriture sur les
+ * orgs rattachées, c'est la sémantique du concept de supervision.
+ *
+ * Retourne le couple `{ membership, ministry }` quand l'accès est autorisé,
+ * sinon throw `INSUFFICIENT_PERMISSIONS`. SuperAdmin contourne la garde.
+ */
+export async function requireMinistryMembership(
+  ctx: AuthContext,
+  user: Doc<"users">,
+  ministryId: Id<"orgs">,
+): Promise<{ membership: Doc<"memberships"> | null; ministry: Doc<"orgs"> }> {
+  const ministry = await ctx.db.get(ministryId);
+  if (!ministry || ministry.deletedAt) {
+    throw error(ErrorCode.NOT_FOUND, "Ministère introuvable");
+  }
+  if (ministry.type !== OrganizationType.Ministry) {
+    throw error(ErrorCode.VALIDATION_ERROR, "L'organisme cible n'est pas un ministère");
+  }
+
+  if (isSuperAdmin(user)) {
+    return { membership: null, ministry };
+  }
+
+  const membership = await ctx.db
+    .query("memberships")
+    .withIndex("by_user_org_deletedAt", (q) =>
+      q.eq("userId", user._id).eq("orgId", ministryId).eq("deletedAt", undefined),
+    )
+    .unique();
+
+  if (!membership) {
+    throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
+  }
+
+  return { membership, ministry };
+}

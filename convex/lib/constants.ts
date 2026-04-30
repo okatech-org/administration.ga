@@ -155,6 +155,21 @@ export enum OrganizationType {
   HighCommission = "high_commission", // Haut-Commissariat (Commonwealth)
   PermanentMission = "permanent_mission", // Mission Permanente (ONU, etc.)
   ThirdParty = "third_party", // Partenaire tiers
+  // Tutelle / supervision
+  Ministry = "ministry", // Ministère (chapeaute consulats, ambassades, etc.)
+}
+
+/**
+ * Sous-types de ministère — disambiguent l'organigramme et les modules
+ * pré-activés à la création. Le premier sous-type livré est `foreign_affairs`
+ * (Ministère des Affaires Étrangères). Les autres sont prévus pour évolution.
+ */
+export enum MinistrySubType {
+  ForeignAffairs = "foreign_affairs", // MAE
+  Justice = "justice",
+  Finance = "finance",
+  Interior = "interior",
+  Other = "other",
 }
 
 export enum DocumentStatus {

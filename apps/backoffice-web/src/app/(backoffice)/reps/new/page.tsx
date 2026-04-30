@@ -1,7 +1,8 @@
 "use client";
 
 import { api } from "@convex/_generated/api";
-import { OrganizationType } from "@convex/lib/constants";
+import type { Id } from "@convex/_generated/dataModel";
+import { OrganizationType, MinistrySubType } from "@convex/lib/constants";
 import { CountryCode } from "@convex/lib/countryCodeValidator";
 import { getPresetTasks } from "@convex/lib/roles";
 import type { TaskCodeValue } from "@convex/lib/taskCodes";
@@ -67,21 +68,35 @@ interface PositionDraft {
 	isRequired: boolean;
 }
 
+interface TemplatePositionData {
+	code: string;
+	title: { fr?: string; en?: string };
+	description?: { fr?: string; en?: string };
+	level: number;
+	grade?: string;
+	taskPresets: string[];
+	isRequired: boolean;
+}
+
 interface TemplateData {
 	type: string;
 	label: { fr?: string; en?: string };
 	description: { fr?: string; en?: string };
 	icon: string;
 	modules?: string[];
-	positions: Array<{
-		code: string;
-		title: { fr?: string; en?: string };
+	positions: TemplatePositionData[];
+	/**
+	 * Sous-templates indexés par discriminator (ex: ministrySubType="foreign_affairs").
+	 * Quand renseigné, l'utilisateur doit en sélectionner un avant d'éditer les
+	 * postes. Les positions/modules viennent du sous-template choisi.
+	 */
+	subTemplates?: Record<string, {
+		label: { fr?: string; en?: string };
 		description?: { fr?: string; en?: string };
-		level: number;
-		grade?: string;
-		taskPresets: string[];
-		isRequired: boolean;
-	}>
+		icon?: string;
+		positions: TemplatePositionData[];
+		modules: string[];
+	}>;
 }
 
 // ─── Helpers ───────────────────────────────────────────────────
@@ -194,6 +209,12 @@ export default function NewOrganizationPage() {
 	const [selectedTemplate, setSelectedTemplate] = useState<TemplateData | null>(
 		null,
 	)
+	// Sous-type sélectionné (uniquement pour les templates avec subTemplates,
+	// ex: "ministry" → "foreign_affairs"). Null tant que pas choisi.
+	const [selectedSubType, setSelectedSubType] = useState<string | null>(null);
+	// Org parent (rattachement à un ministère de tutelle). Optionnel ; n'est
+	// proposé que pour les types non-ministry.
+	const [selectedParentOrgId, setSelectedParentOrgId] = useState<Id<"orgs"> | "">("");
 
 	// Editable positions
 	const [positions, setPositions] = useState<PositionDraft[]>([]);
@@ -207,25 +228,66 @@ export default function NewOrganizationPage() {
 		{},
 	)
 
+	// Liste des ministères existants (pour rattachement parent).
+	const { data: ministries } = useConvexQuery(
+		api.functions.orgs.list,
+		{ type: OrganizationType.Ministry },
+	)
+
 	const { mutateAsync: createOrg, isPending } = useConvexMutationQuery(
 		api.functions.orgs.create,
 	)
 
-	// When selecting a template, pre-fill positions
+	/**
+	 * Calcule les positions et modules effectifs en tenant compte du
+	 * sous-template sélectionné s'il y en a un.
+	 */
+	const effectiveTemplate = useMemo(() => {
+		if (!selectedTemplate) return null;
+		if (selectedTemplate.subTemplates && selectedSubType) {
+			const sub = selectedTemplate.subTemplates[selectedSubType];
+			if (sub) {
+				return {
+					positions: sub.positions,
+					modules: sub.modules ?? selectedTemplate.modules,
+				};
+			}
+		}
+		return {
+			positions: selectedTemplate.positions,
+			modules: selectedTemplate.modules ?? [],
+		};
+	}, [selectedTemplate, selectedSubType]);
+
+	// When selecting a template, pre-fill positions (or wait for sub-type choice).
 	const handleSelectTemplate = useCallback((template: TemplateData) => {
 		setSelectedTemplate(template);
-		setPositions(template.positions.map((p) => templatePositionToDraft(p)));
-		setStep("positions");
+		setSelectedSubType(null);
+
+		// Si le template n'a pas de sous-templates, on peut directement avancer.
+		if (!template.subTemplates) {
+			setPositions(template.positions.map((p) => templatePositionToDraft(p)));
+			setStep("positions");
+		}
 	}, []);
+
+	// Quand un sous-template est choisi, on bascule sur l'étape postes.
+	const handleSelectSubType = useCallback((subType: string) => {
+		if (!selectedTemplate?.subTemplates?.[subType]) return;
+		setSelectedSubType(subType);
+		const sub = selectedTemplate.subTemplates[subType];
+		setPositions(sub.positions.map((p) => templatePositionToDraft(p)));
+		setStep("positions");
+	}, [selectedTemplate]);
 
 	// Reset to template defaults
 	const handleResetPositions = useCallback(() => {
-		if (selectedTemplate) {
+		if (effectiveTemplate) {
 			setPositions(
-				selectedTemplate.positions.map((p) => templatePositionToDraft(p)),
+				effectiveTemplate.positions.map((p) => templatePositionToDraft(p)),
 			)
 		}
-	}, [selectedTemplate]);
+	}, [effectiveTemplate]);
 
 	// Remove a position
 	const handleRemovePosition = useCallback((id: string) => {
@@ -283,11 +345,19 @@ export default function NewOrganizationPage() {
 				return
 			}
 
+			// Si template ministry, sous-type obligatoire (validé côté backend aussi).
+			if (selectedTemplate.type === OrganizationType.Ministry && !selectedSubType) {
+				toast.error("Veuillez sélectionner un sous-type de ministère");
+				return
+			}
+
 			try {
 				await createOrg({
 					name: value.name,
 					slug: value.slug,
 					type: selectedTemplate.type as OrganizationType,
+					ministrySubType: (selectedSubType ?? undefined) as MinistrySubType | undefined,
+					parentOrgId: selectedParentOrgId || undefined,
 					address: {
 						street: value.address.street,
 						city: value.address.city,
@@ -301,7 +371,7 @@ export default function NewOrganizationPage() {
 					website: value.website || undefined,
 					timezone: value.timezone,
 					templateType: selectedTemplate.type,
-					modules: selectedTemplate.modules as any,
+					modules: (effectiveTemplate?.modules ?? selectedTemplate.modules) as any,
 					positions: positions.map((p) => ({
 						code: p.code,
 						title: p.title,
@@ -365,6 +435,46 @@ export default function NewOrganizationPage() {
 							à partir du modèle.
 						</p>
 					</div>
+
+					{/* Sous-template picker — affiché quand un template avec subTemplates
+					    est sélectionné mais pas encore résolu en sous-type. */}
+					{selectedTemplate?.subTemplates && !selectedSubType && (
+						<div className="rounded-xl border-2 border-primary bg-primary/5 p-5 space-y-3">
+							<div>
+								<h3 className="font-semibold text-base">
+									{getLocalizedValue(selectedTemplate.label, lang)} — choisir un type
+								</h3>
+								<p className="text-sm text-muted-foreground mt-0.5">
+									Ce template propose plusieurs déclinaisons. Sélectionnez celle
+									qui correspond à l'organisme à créer.
+								</p>
+							</div>
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+								{Object.entries(selectedTemplate.subTemplates).map(([key, sub]) => (
+									<button
+										type="button"
+										key={key}
+										onClick={() => handleSelectSubType(key)}
+										className="text-left p-4 rounded-lg border-2 border-border hover:border-primary/40 transition-all bg-background"
+									>
+										<h4 className="font-medium text-sm">
+											{getLocalizedValue(sub.label, lang)}
+										</h4>
+										{sub.description && (
+											<p className="text-xs text-muted-foreground mt-1">
+												{getLocalizedValue(sub.description, lang)}
+											</p>
+										)}
+										<div className="flex items-center gap-2 mt-3">
+											<Badge variant="secondary" className="text-xs">
+												{sub.positions.length} postes
+											</Badge>
+										</div>
+									</button>
+								))}
+							</div>
+						</div>
+					)}
 
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 						{(templates as TemplateData[] | undefined)?.map((template) => {
@@ -794,6 +904,41 @@ export default function NewOrganizationPage() {
 									</div>
 								</div>
 							</FieldGroup>
+
+							{/* Ministère de tutelle — uniquement pour les types non-ministry,
+							    optionnel. Permet de rattacher l'organisme à un ministère pour
+							    qu'il apparaisse dans sa vue "Réseau diplomatique". */}
+							{selectedTemplate?.type !== OrganizationType.Ministry &&
+								(ministries as { _id: Id<"orgs">; name: string }[] | undefined)?.length ? (
+								<div className="pt-4">
+									<h3 className="font-medium mb-2">Ministère de tutelle</h3>
+									<Field>
+										<FieldLabel>Rattacher à un ministère (optionnel)</FieldLabel>
+										<Select
+											value={selectedParentOrgId || "none"}
+											onValueChange={(v) =>
+												setSelectedParentOrgId(v === "none" ? "" : (v as Id<"orgs">))
+											}
+										>
+											<SelectTrigger>
+												<SelectValue placeholder="Aucun" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="none">Aucun</SelectItem>
+												{(ministries as { _id: Id<"orgs">; name: string }[]).map((m) => (
+													<SelectItem key={m._id} value={m._id}>
+														{m.name}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										<p className="text-xs text-muted-foreground">
+											L'organisme sera visible dans la vue "Réseau diplomatique"
+											du ministère choisi.
+										</p>
+									</Field>
+								</div>
+							) : null}
 
 							{/* Advanced */}
 							<div className="pt-6 border-t mt-6">

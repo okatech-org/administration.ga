@@ -337,12 +337,14 @@ const MODULE_CATEGORY_LABELS: Record<ModuleCategory, { fr: string; en: string }>
 	ibureau: { fr: "iBureau", en: "iBureau" },
 	gestion: { fr: "Gestion", en: "Management" },
 	administration: { fr: "Administration", en: "Administration" },
+	network: { fr: "Réseau diplomatique", en: "Diplomatic Network" },
 };
 const MODULE_CATEGORY_ORDER: ModuleCategory[] = [
 	"operations",
 	"ibureau",
 	"gestion",
 	"administration",
+	"network",
 ];
 
 // ─── Helpers ────────────────────────────────────────────────────

@@ -138,6 +138,7 @@ import type * as functions_meetings from "../functions/meetings.js";
 import type * as functions_memberships from "../functions/memberships.js";
 import type * as functions_messages from "../functions/messages.js";
 import type * as functions_migrations from "../functions/migrations.js";
+import type * as functions_ministry from "../functions/ministry.js";
 import type * as functions_missedCalls from "../functions/missedCalls.js";
 import type * as functions_notifications from "../functions/notifications.js";
 import type * as functions_orgCalendar from "../functions/orgCalendar.js";
@@ -490,6 +491,7 @@ declare const fullApi: ApiFromModules<{
   "functions/memberships": typeof functions_memberships;
   "functions/messages": typeof functions_messages;
   "functions/migrations": typeof functions_migrations;
+  "functions/ministry": typeof functions_ministry;
   "functions/missedCalls": typeof functions_missedCalls;
   "functions/notifications": typeof functions_notifications;
   "functions/orgCalendar": typeof functions_orgCalendar;

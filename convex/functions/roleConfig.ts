@@ -11,6 +11,7 @@ import {
   POSITION_TASK_PRESETS,
   ORGANIZATION_TEMPLATES,
   getOrgTemplate,
+  resolveOrgTemplate,
   getPresetTasks,
   type OrgTemplateType,
 } from "../lib/roles";
@@ -133,17 +134,31 @@ export const initializeFromTemplate = mutation({
   args: {
     orgId: v.id("orgs"),
     templateType: v.string(),
+    // Sous-type (ex: ministrySubType="foreign_affairs"). Quand le template
+    // top-level expose `subTemplates`, ce champ sélectionne lequel utiliser.
+    subType: v.optional(v.string()),
   },
-  handler: async (ctx, { orgId, templateType }) => {
+  handler: async (ctx, { orgId, templateType, subType }) => {
     const user = await requireAuth(ctx);
     if (!isSuperAdmin(user)) {
       throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
     }
 
-    const template = getOrgTemplate(templateType as OrgTemplateType);
-    if (!template) {
+    const baseTemplate = getOrgTemplate(templateType as OrgTemplateType);
+    if (!baseTemplate) {
       throw error(ErrorCode.TEMPLATE_NOT_FOUND);
     }
+    const resolved = resolveOrgTemplate(templateType as OrgTemplateType, subType);
+    if (!resolved) {
+      throw error(ErrorCode.TEMPLATE_NOT_FOUND);
+    }
+    // Use resolved positions/modules/ministryGroups for instantiation.
+    const template = {
+      ...baseTemplate,
+      positions: resolved.positions,
+      modules: resolved.modules,
+      ministryGroups: resolved.ministryGroups,
+    };
 
     const now = Date.now();
 
@@ -211,17 +226,28 @@ export const resetToTemplate = mutation({
   args: {
     orgId: v.id("orgs"),
     templateType: v.string(),
+    subType: v.optional(v.string()),
   },
-  handler: async (ctx, { orgId, templateType }) => {
+  handler: async (ctx, { orgId, templateType, subType }) => {
     const user = await requireAuth(ctx);
     if (!isSuperAdmin(user)) {
       throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
     }
 
-    const template = getOrgTemplate(templateType as OrgTemplateType);
-    if (!template) {
+    const baseTemplate = getOrgTemplate(templateType as OrgTemplateType);
+    if (!baseTemplate) {
       throw error(ErrorCode.TEMPLATE_NOT_FOUND);
     }
+    const resolved = resolveOrgTemplate(templateType as OrgTemplateType, subType);
+    if (!resolved) {
+      throw error(ErrorCode.TEMPLATE_NOT_FOUND);
+    }
+    const template = {
+      ...baseTemplate,
+      positions: resolved.positions,
+      modules: resolved.modules,
+      ministryGroups: resolved.ministryGroups,
+    };
 
     const now = Date.now();
 

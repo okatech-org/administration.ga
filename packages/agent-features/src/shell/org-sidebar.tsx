@@ -13,8 +13,10 @@ import {
 	Globe2,
 	Handshake,
 	Home,
+	Mailbox,
 	MessagesSquare,
 	Moon,
+	Network,
 	Newspaper,
 	Settings2,
 	Sun,
@@ -134,6 +136,17 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 				{ title: "Équipe", url: "/team", icon: Users2, requires: "team.view", moduleCode: "team" },
 				{ title: "Paiements", url: "/payments", icon: CreditCard, requires: "finance.view", moduleCode: "payments" },
 				{ title: "Statistiques", url: "/statistics", icon: BarChart3, requires: "analytics.view", moduleCode: "statistics" },
+			],
+		},
+		{
+			// Réseau diplomatique — visible uniquement pour les organismes de
+			// type ministry (les modules network_* ne peuvent être activés
+			// qu'à ce niveau, le filtre `isModuleEnabled` les masque ailleurs).
+			label: "Réseau diplomatique",
+			items: [
+				{ title: "Pipeline réseau", url: "/network/diplomatic-pipeline", icon: Network, requires: "network.diplomatic.view", moduleCode: "network_diplomatic_oversight" },
+				{ title: "Correspondance réseau", url: "/network/correspondence", icon: Mailbox, requires: "network.correspondence.view", moduleCode: "network_correspondence_oversight" },
+				{ title: "Intelligence réseau", url: "/network/intelligence", icon: BarChart3, requires: "network.intelligence.view", moduleCode: "network_intelligence" },
 			],
 		},
 		...(extraSections ?? []),

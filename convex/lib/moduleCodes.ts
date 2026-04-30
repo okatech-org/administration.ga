@@ -39,6 +39,14 @@ export const ModuleCode = {
 
   // Administration
   settings: "settings",
+
+  // Supervision réseau (exclusifs aux organismes de type "ministry")
+  // Ces modules donnent une vue agrégée en lecture seule des organismes
+  // rattachés au ministère via parentOrgId. Ils ne peuvent pas être activés
+  // sur un consulat/ambassade — validation côté mutation.
+  network_diplomatic_oversight: "network_diplomatic_oversight",
+  network_correspondence_oversight: "network_correspondence_oversight",
+  network_intelligence: "network_intelligence",
 } as const;
 
 export type ModuleCodeValue = (typeof ModuleCode)[keyof typeof ModuleCode];
@@ -54,7 +62,8 @@ export type ModuleCategory =
   | "operations"
   | "ibureau"
   | "gestion"
-  | "administration";
+  | "administration"
+  | "network";
 
 // ═══════════════════════════════════════════════════════════════
 // MODULE ACCESS LEVELS — Granular permission tiers
@@ -129,6 +138,10 @@ export const moduleCodeValidator = v.union(
   v.literal("payments"),
   v.literal("statistics"),
   v.literal("settings"),
+  // Supervision réseau (ministry-only)
+  v.literal("network_diplomatic_oversight"),
+  v.literal("network_correspondence_oversight"),
+  v.literal("network_intelligence"),
 );
 
 // ═══════════════════════════════════════════════════════════════
@@ -389,7 +402,75 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
       { code: "platform", label: { fr: "Paramètres plateforme", en: "Platform settings" } },
     ],
   },
+
+  // ─── Réseau diplomatique (ministry-only) ──────────────────
+  network_diplomatic_oversight: {
+    code: "network_diplomatic_oversight",
+    label: { fr: "Pipeline réseau", en: "Network Pipeline" },
+    description: {
+      fr: "Vue consolidée du pipeline diplomatique des organismes rattachés",
+      en: "Consolidated view of the diplomatic pipeline across subordinate orgs",
+    },
+    icon: "Network",
+    color: "text-red-500",
+    category: "network",
+    isCore: false,
+    capabilities: [
+      { code: "targets", label: { fr: "Cibles consolidées", en: "Consolidated targets" } },
+      { code: "plans", label: { fr: "Plans stratégiques", en: "Strategic plans" } },
+      { code: "projects", label: { fr: "Projets de coopération", en: "Cooperation projects" } },
+    ],
+  },
+  network_correspondence_oversight: {
+    code: "network_correspondence_oversight",
+    label: { fr: "Correspondance réseau", en: "Network Correspondence" },
+    description: {
+      fr: "Courriers du réseau diplomatique, lecture seule",
+      en: "Network correspondence, read-only",
+    },
+    icon: "Mailbox",
+    color: "text-cyan-500",
+    category: "network",
+    isCore: false,
+    capabilities: [
+      { code: "incoming", label: { fr: "Courriers entrants", en: "Incoming" } },
+      { code: "outgoing", label: { fr: "Courriers sortants", en: "Outgoing" } },
+      { code: "circulars", label: { fr: "Circulaires", en: "Circulars" } },
+    ],
+  },
+  network_intelligence: {
+    code: "network_intelligence",
+    label: { fr: "Intelligence réseau", en: "Network Intelligence" },
+    description: {
+      fr: "Tableau de bord exécutif et KPI agrégés par organisme rattaché",
+      en: "Executive dashboard and KPIs aggregated by subordinate org",
+    },
+    icon: "BarChart3",
+    color: "text-amber-500",
+    category: "network",
+    isCore: false,
+    capabilities: [
+      { code: "kpis", label: { fr: "KPI consolidés", en: "Consolidated KPIs" } },
+      { code: "breakdown", label: { fr: "Répartition par poste", en: "Per-post breakdown" } },
+      { code: "exports", label: { fr: "Exports", en: "Exports" } },
+    ],
+  },
 };
+
+/**
+ * Codes des modules de supervision réseau, exclusifs au type d'organisme
+ * "ministry". Utilisé pour rejeter toute tentative d'activation sur un autre
+ * type d'organisme (cf. orgs.create / update validation).
+ */
+export const NETWORK_MODULE_CODES: ModuleCodeValue[] = [
+  "network_diplomatic_oversight",
+  "network_correspondence_oversight",
+  "network_intelligence",
+];
+
+export function isNetworkModule(code: string): boolean {
+  return (NETWORK_MODULE_CODES as string[]).includes(code);
+}
 
 // ═══════════════════════════════════════════════════════════════
 // DERIVED CONSTANTS
@@ -533,6 +614,24 @@ export const MODULE_ACCESS_TASKS: Partial<Record<ModuleCodeValue, Record<ModuleA
       "ai_assistant.configure", "ai_assistant.auto_apply", "ai_assistant.admin", "ai_assistant.audit",
     ],
   },
+  // ─── Réseau diplomatique (ministry-only) ──────────────────
+  // Lecture seule cross-org : reader = consultation, editor = filtres avancés
+  // + exports, admin = configuration des filtres partagés.
+  network_diplomatic_oversight: {
+    reader: ["network.diplomatic.view"],
+    editor: ["network.diplomatic.view", "network.diplomatic.export"],
+    admin: ["network.diplomatic.view", "network.diplomatic.export", "network.diplomatic.configure"],
+  },
+  network_correspondence_oversight: {
+    reader: ["network.correspondence.view"],
+    editor: ["network.correspondence.view", "network.correspondence.export"],
+    admin: ["network.correspondence.view", "network.correspondence.export", "network.correspondence.configure"],
+  },
+  network_intelligence: {
+    reader: ["network.intelligence.view"],
+    editor: ["network.intelligence.view", "network.intelligence.export"],
+    admin: ["network.intelligence.view", "network.intelligence.export", "network.intelligence.configure"],
+  },
 };
 
 export function getTasksForModuleAccess(
@@ -569,6 +668,7 @@ export const CATEGORY_LABELS: Record<ModuleCategory, LocalizedString> = {
   ibureau: { fr: "iBureau", en: "iBureau" },
   gestion: { fr: "Gestion", en: "Management" },
   administration: { fr: "Administration", en: "Administration" },
+  network: { fr: "Réseau diplomatique", en: "Diplomatic Network" },
 };
 
 export const CATEGORY_ORDER: ModuleCategory[] = [
@@ -576,6 +676,7 @@ export const CATEGORY_ORDER: ModuleCategory[] = [
   "ibureau",
   "gestion",
   "administration",
+  "network",
 ];
 
 export function getCoreModules(): ModuleDefinition[] {
@@ -632,6 +733,16 @@ export const SIDEBAR_MODULE_GROUPS: SidebarModuleGroup[] = [
     icon: "Settings",
     modules: [
       "settings",
+    ],
+  },
+  {
+    key: "network",
+    label: { fr: "Réseau diplomatique", en: "Diplomatic Network" },
+    icon: "Network",
+    modules: [
+      "network_diplomatic_oversight",
+      "network_correspondence_oversight",
+      "network_intelligence",
     ],
   },
 ];

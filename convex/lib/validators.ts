@@ -1,6 +1,7 @@
 import { Infer, v } from "convex/values";
 import {
   OrganizationType as OrgType,
+  MinistrySubType,
   MemberRole,
   PublicUserType,
   RequestStatus,
@@ -96,10 +97,20 @@ export const orgTypeValidator = v.union(
   v.literal(OrgType.HighCommission),
   v.literal(OrgType.PermanentMission),
   v.literal(OrgType.ThirdParty),
+  v.literal(OrgType.Ministry),
   // Legacy types (kept for backward compatibility with existing data)
   v.literal("consulate"),
   v.literal("honorary_consulate"),
   v.literal("other"),
+);
+
+// Sous-type d'un ministère (uniquement pertinent quand type === "ministry").
+export const ministrySubTypeValidator = v.union(
+  v.literal(MinistrySubType.ForeignAffairs),
+  v.literal(MinistrySubType.Justice),
+  v.literal(MinistrySubType.Finance),
+  v.literal(MinistrySubType.Interior),
+  v.literal(MinistrySubType.Other),
 );
 
 // Public user types (for citizen profiles)
