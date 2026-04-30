@@ -181,3 +181,49 @@ export const syncLegacyOrgFields = internalMutation({
   },
 });
 
+
+/**
+ * Cleanup legacy module codes from `orgs.modules`.
+ *
+ * Strips obsolete entries (intelligence, communication, requests, passports,
+ * visas, civil_status, consular_registrations, consular_notifications,
+ * consular_cards, appointments, finance, analytics, chats, meetings,
+ * ai_assistant) that pre-date the canonical 13+3 module model. Run once,
+ * then drop these literals from `moduleCodeValidator`.
+ *
+ * Idempotent — repeated runs are no-ops.
+ */
+export const cleanupLegacyOrgModules = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const LEGACY_CODES = new Set([
+      "intelligence",
+      "communication",
+      "requests",
+      "passports",
+      "visas",
+      "civil_status",
+      "consular_registrations",
+      "consular_notifications",
+      "consular_cards",
+      "appointments",
+      "finance",
+      "analytics",
+      "chats",
+      "meetings",
+      "ai_assistant",
+    ]);
+
+    const orgs = await ctx.db.query("orgs").collect();
+    let cleaned = 0;
+    for (const org of orgs) {
+      if (!org.modules || org.modules.length === 0) continue;
+      const next = (org.modules as string[]).filter((m) => !LEGACY_CODES.has(m));
+      if (next.length !== org.modules.length) {
+        await ctx.db.patch(org._id, { modules: next as typeof org.modules });
+        cleaned++;
+      }
+    }
+    return { cleaned, total: orgs.length };
+  },
+});

@@ -77,12 +77,23 @@ export const orgsTable = defineTable({
   headOfMission: v.optional(v.string()), // Name of head of mission
   headOfMissionTitle: v.optional(v.string()), // Title (Ambassadeur, Consul Général...)
   staffCount: v.optional(v.number()), // Staff count
-  modules: v.optional(v.array(moduleCodeValidator)), // Active feature modules (typed)
-  // Configuration modulaire enrichie avec capabilities/sous-modules par module
+  // Active feature modules. Stocké comme `string[]` (et non `moduleCodeValidator[]`)
+  // pour tolérer les codes legacy hérités d'anciens schémas (ex: "intelligence",
+  // "requests", "profiles", etc. fusionnés depuis dans les codes canoniques).
+  // Les nouveaux writes passent par les API publiques qui valident toujours
+  // contre `moduleCodeValidator`. Une migration `migrations.cleanupLegacyOrgModules`
+  // nettoie ces tableaux ; cette tolérance reste comme filet de sécurité.
+  modules: v.optional(v.array(v.string())),
+  // Configuration modulaire enrichie avec capabilities/sous-modules par module.
+  // Même tolérance legacy : `moduleCode` accepté comme string brut.
   orgModuleConfig: v.optional(v.array(v.object({
-    moduleCode: moduleCodeValidator,
+    moduleCode: v.string(),
     enabled: v.boolean(),
     capabilities: v.optional(v.array(v.string())),
+    // Flag legacy : indique qu'un module a été activé hors-template (action
+    // manuelle d'un admin). Présent sur d'anciennes rangées, conservé pour
+    // ne pas casser la validation. Reste optionnel pour les nouveaux writes.
+    isOutOfTemplate: v.optional(v.boolean()),
   }))),
   jurisdictionNotes: v.optional(v.string()), // Notes on jurisdiction (historique)
 
