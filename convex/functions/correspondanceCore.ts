@@ -1721,15 +1721,25 @@ export const _attachGeneratedPdf = internalMutation({
 
     let newDocuments;
     if (generatedIdx >= 0) {
-      // Remplacement : supprimer l'ancien storage pour libérer
-      const oldStorageId = existing[generatedIdx].storageId;
-      try {
-        await ctx.storage.delete(oldStorageId);
-      } catch {
-        // ignore : le blob a peut-être déjà été supprimé
-      }
+      // Remplacement : archiver l'ancien dans `versions[]` au lieu de
+      // supprimer le blob (Phase 5 — versioning + audit trail).
+      const old = existing[generatedIdx];
+      const previousVersions = (old as any).versions ?? [];
       newDocuments = [...existing];
-      newDocuments[generatedIdx] = newDoc;
+      newDocuments[generatedIdx] = {
+        ...newDoc,
+        versions: [
+          ...previousVersions,
+          {
+            storageId: old.storageId,
+            filename: old.filename,
+            mimeType: old.mimeType,
+            sizeBytes: old.sizeBytes,
+            uploadedAt: old.uploadedAt,
+            reason: "regenerated-official-pdf",
+          },
+        ],
+      } as typeof newDoc & { versions: any[] };
     } else {
       // Nouveau : pousser en tête, décaler les autres en perdant le flag main
       newDocuments = [
@@ -1767,7 +1777,25 @@ export const _replaceWatermarkedStorageIds = internalMutation({
     const map = new Map(args.updates.map((u) => [u.oldStorageId, u.newStorageId]));
     const newDocs = (item.documents ?? []).map((doc) => {
       const next = map.get(doc.storageId);
-      return next ? { ...doc, storageId: next } : doc;
+      if (!next) return doc;
+      // Phase 5 — versioning : archiver l'original (avant filigrane) dans
+      // `versions[]` plutôt que de l'écraser silencieusement.
+      const previousVersions = (doc as any).versions ?? [];
+      return {
+        ...doc,
+        storageId: next,
+        versions: [
+          ...previousVersions,
+          {
+            storageId: doc.storageId,
+            filename: doc.filename,
+            mimeType: doc.mimeType,
+            sizeBytes: doc.sizeBytes,
+            uploadedAt: doc.uploadedAt,
+            reason: "watermark-applied",
+          },
+        ],
+      };
     });
     await ctx.db.patch(args.itemId, {
       documents: newDocs,

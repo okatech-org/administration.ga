@@ -131,6 +131,22 @@ export const correspondanceDocumentValidator = v.object({
   ordre: v.number(),
   isMainDocument: v.boolean(),
   copyWatermark: v.optional(v.boolean()),
+  /**
+   * Versions antérieures du fichier remplacées (regénération PDF officiel,
+   * application de filigrane, amendement). Phase 5 du plan d'alignement.
+   */
+  versions: v.optional(
+    v.array(
+      v.object({
+        storageId: v.id("_storage"),
+        filename: v.string(),
+        mimeType: v.string(),
+        sizeBytes: v.number(),
+        uploadedAt: v.number(),
+        reason: v.optional(v.string()),
+      }),
+    ),
+  ),
 });
 
 // ─── Tables ──────────────────────────────────────────────────────────────────
