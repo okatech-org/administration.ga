@@ -3,7 +3,7 @@
 import { api } from "@convex/_generated/api"
 import type { Id } from "@convex/_generated/dataModel"
 import { DocumentSheet } from "@workspace/ui/components/document-sheet"
-import { Link } from "@workspace/routing"
+import { Link, useRouter } from "@workspace/routing"
 import React, { useState, useMemo, useCallback, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "motion/react"
@@ -24,6 +24,7 @@ import {
   Clock,
   Lock,
   Landmark,
+  Mail,
   Users2,
   Scale,
   Building2,
@@ -67,6 +68,17 @@ type CountingStartEvent =
   | "date_gel"
   | "date_manuelle"
 
+interface DocOrigin {
+  type: "correspondance" | "upload" | "inbound-email" | "scan"
+  correspondanceReference?: string
+  correspondanceArrivalRef?: string
+  senderName?: string
+  recipientName?: string
+  sourceDate?: number
+  classedAt?: number
+  classedByUserId?: string
+}
+
 interface DocItem {
   id: string
   title: string
@@ -82,6 +94,10 @@ interface DocItem {
   archiveCategorySlug?: string | null
   mimeType?: string
   url?: string | null
+  /** Back-pointer vers le courrier source (Phase 1 — alignement iCorr). */
+  linkedCorrespondanceItemId?: string
+  /** Provenance dénormalisée pour affichage (Phase 1 — alignement iCorr). */
+  origin?: DocOrigin
 }
 
 interface FolderItem {
@@ -1719,6 +1735,7 @@ function InfoDialog({
   onClose,
   item,
   itemType,
+  onNavigateCorrespondance,
 }: {
   open: boolean
   onClose: () => void
@@ -1729,8 +1746,11 @@ function InfoDialog({
     status?: string
     tags?: string[]
     updatedAt?: string
+    linkedCorrespondanceItemId?: string
+    origin?: DocOrigin
   }
   itemType: "folder" | "document"
+  onNavigateCorrespondance?: (itemId: string) => void
 }) {
   if (!open) return null
   const statusLabel =
@@ -1763,6 +1783,55 @@ function InfoDialog({
           </div>
         </div>
         <div className="space-y-4 px-5 py-4">
+          {/* ── Bandeau de provenance (Phase 3 — alignement iCorr) ── */}
+          {itemType === "document" && item.origin?.type === "correspondance" && (
+            <div className="space-y-2 rounded-xl border border-primary/30 bg-primary/5 p-3">
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                <Mail className="h-3 w-3" />
+                Pièce d'un courrier
+              </div>
+              <div className="space-y-0.5 text-xs">
+                {item.origin.correspondanceReference && (
+                  <p className="font-mono text-[11px] text-foreground/90">
+                    {item.origin.correspondanceReference}
+                    {item.origin.correspondanceArrivalRef
+                      ? ` (${item.origin.correspondanceArrivalRef})`
+                      : ""}
+                  </p>
+                )}
+                {(item.origin.senderName || item.origin.recipientName) && (
+                  <p className="text-[11px] text-muted-foreground">
+                    {item.origin.senderName ? `de ${item.origin.senderName}` : ""}
+                    {item.origin.senderName && item.origin.recipientName ? " → " : ""}
+                    {item.origin.recipientName ?? ""}
+                  </p>
+                )}
+                {item.origin.classedAt && (
+                  <p className="text-[10px] text-muted-foreground/70">
+                    classé le{" "}
+                    {new Date(item.origin.classedAt).toLocaleDateString("fr-FR", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </p>
+                )}
+              </div>
+              {item.linkedCorrespondanceItemId && onNavigateCorrespondance && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onNavigateCorrespondance(item.linkedCorrespondanceItemId!)
+                    onClose()
+                  }}
+                  className="mt-1 inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  <Mail className="h-3 w-3" />
+                  Ouvrir le courrier
+                </button>
+              )}
+            </div>
+          )}
           <div className="space-y-2 rounded-xl border border-border/50 bg-card p-3">
             <div className="flex items-center justify-between">
               <p className="flex items-center gap-1.5 text-[9px] font-semibold tracking-wider text-muted-foreground/60 uppercase">
@@ -1866,9 +1935,17 @@ export default function IDocumentPage() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<DocStatus | "all">("all")
+  type SourceFilter =
+    | "all"
+    | "correspondance"
+    | "upload"
+    | "inbound-email"
+    | "scan"
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all")
   const [sortBy, setSortBy] = useState("date")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
   const { activeOrgId } = useOrg()
+  const router = useRouter()
   const { hasMin: hasDocAccess } = useModuleAccess("documents")
   const canEditDocs = hasDocAccess("editor")
   const canAdminDocs = hasDocAccess("admin")
@@ -1970,12 +2047,14 @@ export default function IDocumentPage() {
           : doc.status === "pending"
             ? "draft"
             : doc.status) as DocStatus,
-        tags: [],
+        tags: doc.tags ?? [],
         version: 1,
         folderId: doc.folderId ?? null,
         archiveCategorySlug: doc.category ?? null,
         mimeType: doc.files?.[0]?.mimeType ?? "application/pdf",
         url: doc.files?.[0]?.url,
+        linkedCorrespondanceItemId: doc.linkedCorrespondanceItemId ?? undefined,
+        origin: doc.origin ?? undefined,
       })),
     [rawDocuments]
   )
@@ -2190,6 +2269,9 @@ export default function IDocumentPage() {
     if (statusFilter !== "all") {
       items = items.filter((d) => d.status === statusFilter)
     }
+    if (sourceFilter !== "all") {
+      items = items.filter((d) => d.origin?.type === sourceFilter)
+    }
     items.sort((a, b) => {
       let cmp = 0
       switch (sortBy) {
@@ -2211,7 +2293,7 @@ export default function IDocumentPage() {
       return sortDir === "asc" ? cmp : -cmp
     })
     return items
-  }, [documents, currentFolderId, search, statusFilter, sortBy, sortDir])
+  }, [documents, currentFolderId, search, statusFilter, sourceFilter, sortBy, sortDir])
 
   // ─── Status counts ──────────────────────────────────────
   const statusCounts = useMemo(() => {
@@ -2286,6 +2368,8 @@ export default function IDocumentPage() {
           status: doc.status,
           tags: doc.tags,
           updatedAt: doc.updatedAt,
+          linkedCorrespondanceItemId: doc.linkedCorrespondanceItemId,
+          origin: doc.origin,
         })
         setInfoItemType("document")
       }
@@ -2294,7 +2378,8 @@ export default function IDocumentPage() {
     [folders, documents]
   )
 
-  const hasActiveFilters = statusFilter !== "all" || search
+  const hasActiveFilters =
+    statusFilter !== "all" || sourceFilter !== "all" || search
 
   // ═══════════════════════════════════════════════════════
   // RENDER
@@ -2406,6 +2491,31 @@ export default function IDocumentPage() {
                 </button>
               </>
             )}
+            <div className="hidden h-6 w-px bg-border/50 sm:block" />
+            <div className="flex items-center gap-1">
+              {(
+                [
+                  { value: "all", label: "Toutes sources" },
+                  { value: "correspondance", label: "Courrier" },
+                  { value: "upload", label: "Upload" },
+                  { value: "inbound-email", label: "Email entrant" },
+                  { value: "scan", label: "Scan" },
+                ] as { value: SourceFilter; label: string }[]
+              ).map((f) => (
+                <button
+                  key={f.value}
+                  onClick={() => setSourceFilter(f.value)}
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-[11px] font-medium transition-all",
+                    sourceFilter === f.value
+                      ? "bg-primary/15 text-primary ring-1 ring-primary/25"
+                      : "text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
             <div className="ml-auto">
               <ViewModeToggle value={viewMode} onChange={setViewMode} />
             </div>
@@ -3170,6 +3280,9 @@ export default function IDocumentPage() {
         onClose={() => setInfoDialogOpen(false)}
         item={infoItem || { id: "", name: "" }}
         itemType={infoItemType}
+        onNavigateCorrespondance={(itemId) =>
+          router.push(`/icorrespondance?tab=correspondance&id=${itemId}`)
+        }
       />
       <DocumentViewerModal
         isOpen={!!selectedDocViewer}
