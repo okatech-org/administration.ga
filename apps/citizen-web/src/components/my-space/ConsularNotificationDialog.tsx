@@ -1,6 +1,14 @@
 import { api } from "@convex/_generated/api";
 import type { CountryCode } from "@convex/lib/constants";
-import { Building2, Check, Loader2, MapPin, X } from "lucide-react";
+import {
+	Building2,
+	Check,
+	FileClock,
+	Loader2,
+	MapPin,
+	X,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -21,6 +29,7 @@ type DialogState =
 	| "select_country"
 	| "checking"
 	| "org_found"
+	| "already_in_progress"
 	| "submitting"
 	| "success"
 	| "not_found"
@@ -37,12 +46,14 @@ export function ConsularNotificationDialog({
 	onOpenChange,
 }: ConsularNotificationDialogProps) {
 	const { t } = useTranslation();
+	const router = useRouter();
 	const [dialogState, setDialogState] = useState<DialogState>("select_country");
 	const [destinationCountry, setDestinationCountry] = useState<
 		CountryCode | undefined
 	>();
 	const [orgName, setOrgName] = useState("");
 	const [reference, setReference] = useState("");
+	const [existingReference, setExistingReference] = useState("");
 	const [errorMessage, setErrorMessage] = useState("");
 
 	// Only query when a country is selected and we're in checking state
@@ -68,6 +79,11 @@ export function ConsularNotificationDialog({
 			case "found":
 				setOrgName(orgResult.orgName ?? "");
 				setDialogState("org_found");
+				break;
+			case "already_in_progress":
+				setOrgName(orgResult.orgName ?? "");
+				setExistingReference(orgResult.reference ?? "");
+				setDialogState("already_in_progress");
 				break;
 			case "not_applicable":
 				setDialogState("not_applicable");
@@ -95,6 +111,7 @@ export function ConsularNotificationDialog({
 			setDestinationCountry(undefined);
 			setOrgName("");
 			setReference("");
+			setExistingReference("");
 			setErrorMessage("");
 		}
 	}, [open]);
@@ -114,6 +131,10 @@ export function ConsularNotificationDialog({
 				setOrgName(result.orgName ?? "");
 				setReference(result.reference ?? "");
 				setDialogState("success");
+			} else if (result.status === "already_in_progress") {
+				setOrgName(result.orgName ?? "");
+				setExistingReference(result.reference ?? "");
+				setDialogState("already_in_progress");
 			} else {
 				setDialogState("error");
 				setErrorMessage(
@@ -139,8 +160,15 @@ export function ConsularNotificationDialog({
 	const handleBack = useCallback(() => {
 		setDialogState("select_country");
 		setOrgName("");
+		setExistingReference("");
 		setErrorMessage("");
 	}, []);
+
+	const handleViewExistingRequest = useCallback(() => {
+		if (!existingReference) return;
+		router.push(`/my-space/requests/${existingReference}`);
+		onOpenChange(false);
+	}, [existingReference, router, onOpenChange]);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -237,6 +265,55 @@ export function ConsularNotificationDialog({
 									{t(
 										"mySpace.notification.dialog.confirm",
 										"Confirmer le signalement",
+									)}
+								</Button>
+							</div>
+						</div>
+					)}
+
+					{/* Already in progress */}
+					{dialogState === "already_in_progress" && (
+						<div className="space-y-4">
+							<div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+								<FileClock className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+								<div>
+									<p className="text-sm font-medium text-amber-700">
+										{t(
+											"mySpace.notification.dialog.alreadyInProgress.title",
+											"Vous avez déjà signalé ce déplacement",
+										)}
+									</p>
+									<p className="text-sm text-muted-foreground mt-1">
+										{t(
+											"mySpace.notification.dialog.alreadyInProgress.description",
+											"Un signalement vers ce pays est en cours de traitement auprès de {{orgName}}.",
+											{ orgName },
+										)}
+									</p>
+									{existingReference && (
+										<p className="text-sm mt-1">
+											{t("mySpace.notification.dialog.reference")} :{" "}
+											<span className="font-mono font-semibold text-primary">
+												{existingReference}
+											</span>
+										</p>
+									)}
+								</div>
+							</div>
+							<div className="flex gap-2 justify-end flex-wrap">
+								<Button variant="outline" onClick={handleBack}>
+									{t(
+										"mySpace.notification.dialog.alreadyInProgress.changeCountry",
+										"Choisir un autre pays",
+									)}
+								</Button>
+								<Button
+									onClick={handleViewExistingRequest}
+									disabled={!existingReference}
+								>
+									{t(
+										"mySpace.notification.dialog.alreadyInProgress.viewRequest",
+										"Voir mon signalement",
 									)}
 								</Button>
 							</div>

@@ -454,7 +454,12 @@
 				"notFound": "No consular office available",
 				"notFoundDescription": "No consular office currently offers this service online for your country of residence. Please try again later.",
 				"retry": "Try again later",
-				"retryNow": "Retry"
+				"retryNow": "Retry",
+				"alreadyInProgress": {
+					"title": "You already have a request in progress",
+					"description": "A consular registration request is currently being processed by {{orgName}}.",
+					"viewRequest": "View my request"
+				}
 			}
 		},
 		"notification": {
@@ -476,7 +481,13 @@
 				"notFound": "No consulate found for this destination country.",
 				"unknownError": "An unknown error occurred.",
 				"submissionFailed": "Submission failed.",
-				"unexpectedError": "Unexpected error."
+				"unexpectedError": "Unexpected error.",
+				"alreadyInProgress": {
+					"title": "You have already reported this travel",
+					"description": "A notification for this country is currently being processed by {{orgName}}.",
+					"viewRequest": "View my notification",
+					"changeCountry": "Choose another country"
+				}
 			}
 		},
 		"consularCard": {

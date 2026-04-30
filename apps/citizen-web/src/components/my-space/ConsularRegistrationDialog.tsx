@@ -4,9 +4,11 @@ import {
 	AlertTriangle,
 	Building2,
 	CheckCircle2,
+	FileClock,
 	Loader2,
 	Send,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -23,6 +25,7 @@ import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 type DialogState =
 	| "checking"
 	| "org_found"
+	| "already_in_progress"
 	| "submitting"
 	| "success"
 	| "not_found"
@@ -40,6 +43,7 @@ export function ConsularRegistrationDialog({
 	onSuccess,
 }: ConsularRegistrationDialogProps) {
 	const { t } = useTranslation();
+	const router = useRouter();
 	const submitRequest = useMutation(
 		api.functions.profiles.submitRegistrationRequest,
 	);
@@ -52,12 +56,18 @@ export function ConsularRegistrationDialog({
 
 	const [state, setState] = useState<DialogState>("checking");
 	const [reference, setReference] = useState<string | null>(null);
+	const [existingReference, setExistingReference] = useState<string | null>(
+		null,
+	);
+	const [existingOrgName, setExistingOrgName] = useState<string>("");
 
 	// React to the query result
 	useEffect(() => {
 		if (!open) {
 			setState("checking");
 			setReference(null);
+			setExistingReference(null);
+			setExistingOrgName("");
 			return;
 		}
 
@@ -65,6 +75,10 @@ export function ConsularRegistrationDialog({
 
 		if (orgCheck.status === "found") {
 			setState("org_found");
+		} else if (orgCheck.status === "already_in_progress") {
+			setExistingReference(orgCheck.reference ?? null);
+			setExistingOrgName(orgCheck.orgName ?? "");
+			setState("already_in_progress");
 		} else if (
 			orgCheck.status === "no_org_found" ||
 			orgCheck.status === "no_service"
@@ -82,6 +96,10 @@ export function ConsularRegistrationDialog({
 			if (res.status === "success") {
 				setReference(res.reference ?? null);
 				setState("success");
+			} else if (res.status === "already_in_progress") {
+				setExistingReference(res.reference ?? null);
+				setExistingOrgName(res.orgName ?? "");
+				setState("already_in_progress");
 			} else {
 				setState("error");
 			}
@@ -90,7 +108,18 @@ export function ConsularRegistrationDialog({
 		}
 	}, [submitRequest]);
 
-	const orgName = orgCheck?.status === "found" ? orgCheck.orgName : undefined;
+	const handleViewExistingRequest = useCallback(() => {
+		if (!existingReference) return;
+		router.push(`/my-space/requests/${existingReference}`);
+		onOpenChange(false);
+	}, [existingReference, router, onOpenChange]);
+
+	const orgName =
+		orgCheck?.status === "found"
+			? orgCheck.orgName
+			: orgCheck?.status === "already_in_progress"
+				? orgCheck.orgName
+				: undefined;
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -109,6 +138,12 @@ export function ConsularRegistrationDialog({
 							t(
 								"mySpace.registration.dialog.readyDescription",
 								"Un organisme consulaire a été trouvé pour votre pays de résidence.",
+							)}
+						{state === "already_in_progress" &&
+							t(
+								"mySpace.registration.dialog.alreadyInProgress.description",
+								"Une demande d'inscription consulaire est en cours de traitement auprès de {{orgName}}.",
+								{ orgName: existingOrgName },
 							)}
 						{state === "submitting" &&
 							t(
@@ -141,6 +176,37 @@ export function ConsularRegistrationDialog({
 							<div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
 								<Loader2 className="h-8 w-8 text-primary animate-spin" />
 							</div>
+						</div>
+					)}
+
+					{/* Already in progress — show existing request reference */}
+					{state === "already_in_progress" && (
+						<div className="flex flex-col items-center gap-4 w-full">
+							<div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center">
+								<FileClock className="h-8 w-8 text-amber-600" />
+							</div>
+							<p className="text-base font-semibold text-center">
+								{t(
+									"mySpace.registration.dialog.alreadyInProgress.title",
+									"Vous avez déjà une demande en cours",
+								)}
+							</p>
+							{existingOrgName && (
+								<div className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2.5 rounded-lg border border-primary/20 w-full justify-center">
+									<Building2 className="h-4 w-4 shrink-0" />
+									<span className="font-medium">{existingOrgName}</span>
+								</div>
+							)}
+							{existingReference && (
+								<div className="text-center">
+									<span className="text-xs text-muted-foreground">
+										{t("mySpace.registration.dialog.reference")}
+									</span>
+									<p className="font-mono text-sm font-semibold text-primary">
+										{existingReference}
+									</p>
+								</div>
+							)}
 						</div>
 					)}
 
@@ -235,6 +301,29 @@ export function ConsularRegistrationDialog({
 				</div>
 
 				<DialogFooter>
+					{/* Already in progress → view existing or close */}
+					{state === "already_in_progress" && (
+						<div className="flex gap-2 w-full">
+							<Button
+								variant="outline"
+								className="flex-1"
+								onClick={() => onOpenChange(false)}
+							>
+								{t("common.close")}
+							</Button>
+							<Button
+								className="flex-1"
+								onClick={handleViewExistingRequest}
+								disabled={!existingReference}
+							>
+								{t(
+									"mySpace.registration.dialog.alreadyInProgress.viewRequest",
+									"Voir ma demande",
+								)}
+							</Button>
+						</div>
+					)}
+
 					{/* Org found → confirm or cancel */}
 					{state === "org_found" && (
 						<div className="flex gap-2 w-full">

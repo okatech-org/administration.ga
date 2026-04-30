@@ -1239,7 +1239,12 @@
 				"notFound": "Aucun organisme disponible",
 				"notFoundDescription": "Aucun organisme consulaire n'offre ce service en ligne pour votre pays de résidence. Veuillez réessayer plus tard.",
 				"retry": "Réessayer plus tard",
-				"retryNow": "Réessayer"
+				"retryNow": "Réessayer",
+				"alreadyInProgress": {
+					"title": "Vous avez déjà une demande en cours",
+					"description": "Une demande d'inscription consulaire est en cours de traitement auprès de {{orgName}}.",
+					"viewRequest": "Voir ma demande"
+				}
 			}
 		},
 		"notification": {
@@ -1261,7 +1266,13 @@
 				"notFound": "Aucun consulat compétent trouvé pour ce pays de destination.",
 				"unknownError": "Une erreur inconnue est survenue.",
 				"submissionFailed": "La soumission a échoué.",
-				"unexpectedError": "Erreur inattendue."
+				"unexpectedError": "Erreur inattendue.",
+				"alreadyInProgress": {
+					"title": "Vous avez déjà signalé ce déplacement",
+					"description": "Un signalement vers ce pays est en cours de traitement auprès de {{orgName}}.",
+					"viewRequest": "Voir mon signalement",
+					"changeCountry": "Choisir un autre pays"
+				}
 			}
 		},
 		"consularCard": {

@@ -404,6 +404,79 @@ export const requestRegistration = authMutation({
 });
 
 /**
+ * Statuts de `requests` qui indiquent qu'une demande est cloturee
+ * (rejetee, annulee, terminee). Si la `request` parente est dans cet
+ * ensemble, l'enregistrement consulaire associe ne bloque plus une
+ * nouvelle soumission.
+ */
+const CLOSED_REQUEST_STATUSES = new Set<string>([
+  RequestStatus.Rejected,
+  RequestStatus.Cancelled,
+  RequestStatus.Completed,
+]);
+
+/**
+ * Cherche une inscription consulaire encore "en cours" pour un profil :
+ * status ∈ {Requested, Active} et request parente non cloturee.
+ * Retourne l'enregistrement + sa request + l'org, ou null.
+ */
+async function findInProgressRegistration(
+  ctx: { db: any },
+  profileId: Id<"profiles">,
+) {
+  const registrations = await ctx.db
+    .query("consularRegistrations")
+    .withIndex("by_profile", (q: any) => q.eq("profileId", profileId))
+    .collect();
+
+  for (const reg of registrations) {
+    if (
+      reg.status !== RegistrationStatus.Requested &&
+      reg.status !== RegistrationStatus.Active
+    ) {
+      continue;
+    }
+    const request = await ctx.db.get(reg.requestId);
+    if (!request) continue;
+    if (CLOSED_REQUEST_STATUSES.has(request.status)) continue;
+    const org = await ctx.db.get(reg.orgId);
+    return { registration: reg, request, org };
+  }
+  return null;
+}
+
+/**
+ * Cherche un signalement consulaire encore "en cours" pour un profil
+ * et un org donne (l'org represente le pays de destination resolu via
+ * sa juridiction). Retourne l'enregistrement + sa request, ou null.
+ */
+async function findInProgressNotification(
+  ctx: { db: any },
+  profileId: Id<"profiles">,
+  orgId: Id<"orgs">,
+) {
+  const notifications = await ctx.db
+    .query("consularNotifications")
+    .withIndex("by_profile", (q: any) => q.eq("profileId", profileId))
+    .collect();
+
+  for (const notif of notifications) {
+    if (notif.orgId !== orgId) continue;
+    if (
+      notif.status !== RegistrationStatus.Requested &&
+      notif.status !== RegistrationStatus.Active
+    ) {
+      continue;
+    }
+    const request = await ctx.db.get(notif.requestId);
+    if (!request) continue;
+    if (CLOSED_REQUEST_STATUSES.has(request.status)) continue;
+    return { notification: notif, request };
+  }
+  return null;
+}
+
+/**
  * Find the appropriate org for consular registration (read-only).
  * Does NOT create any request — just checks if an org exists.
  */
@@ -421,6 +494,18 @@ export const findRegistrationOrg = authQuery({
 
     if (profile.userType !== "long_stay") {
       return { status: "not_applicable" as const };
+    }
+
+    const inProgress = await findInProgressRegistration(ctx, profile._id);
+    if (inProgress) {
+      return {
+        status: "already_in_progress" as const,
+        reference: inProgress.request.reference,
+        requestId: inProgress.request._id,
+        orgName: inProgress.org?.name ?? "",
+        requestStatus: inProgress.request.status,
+        registrationStatus: inProgress.registration.status,
+      };
     }
 
     const userCountry =
@@ -498,6 +583,17 @@ export const submitRegistrationRequest = authMutation({
     // Only for long_stay and short_stay
     if (profile.userType !== "long_stay" && profile.userType !== "short_stay") {
       return { status: "not_applicable" as const };
+    }
+
+    // Defense in depth : bloquer si une inscription est deja en cours
+    const inProgress = await findInProgressRegistration(ctx, profile._id);
+    if (inProgress) {
+      return {
+        status: "already_in_progress" as const,
+        reference: inProgress.request.reference,
+        requestId: inProgress.request._id,
+        orgName: inProgress.org?.name ?? "",
+      };
     }
 
     // Get user's country of residence
@@ -657,6 +753,24 @@ export const findNotificationOrg = authQuery({
 
       const jurisdictions = org.jurisdictionCountries ?? [];
       if (jurisdictions.includes(targetCountry as CountryCode)) {
+        // Bloquer si un signalement vers ce pays (= cet org) est deja en cours
+        const inProgress = await findInProgressNotification(
+          ctx,
+          profile._id,
+          org._id,
+        );
+        if (inProgress) {
+          return {
+            status: "already_in_progress" as const,
+            reference: inProgress.request.reference,
+            requestId: inProgress.request._id,
+            orgName: org.name,
+            country: targetCountry,
+            requestStatus: inProgress.request.status,
+            notificationStatus: inProgress.notification.status,
+          };
+        }
+
         return {
           status: "found" as const,
           orgId: org._id,
@@ -719,6 +833,21 @@ export const submitNotificationRequest = authMutation({
 
       const jurisdictions = org.jurisdictionCountries ?? [];
       if (jurisdictions.includes(targetCountry as CountryCode)) {
+        // Defense in depth : bloquer si signalement deja en cours pour cet org
+        const inProgress = await findInProgressNotification(
+          ctx,
+          profile._id,
+          org._id,
+        );
+        if (inProgress) {
+          return {
+            status: "already_in_progress" as const,
+            reference: inProgress.request.reference,
+            requestId: inProgress.request._id,
+            orgName: org.name,
+          };
+        }
+
         const now = Date.now();
 
         // Auto-attach documents from profile vault
