@@ -176,6 +176,7 @@ import type * as functions_templateApplicabilityMigration from "../functions/tem
 import type * as functions_testSeeds from "../functions/testSeeds.js";
 import type * as functions_tickets from "../functions/tickets.js";
 import type * as functions_tutorials from "../functions/tutorials.js";
+import type * as functions_unifiedSearch from "../functions/unifiedSearch.js";
 import type * as functions_userPreferences from "../functions/userPreferences.js";
 import type * as functions_users from "../functions/users.js";
 import type * as functions_voicemails from "../functions/voicemails.js";
@@ -193,6 +194,7 @@ import type * as lib_constants from "../lib/constants.js";
 import type * as lib_correspondanceHelpers from "../lib/correspondanceHelpers.js";
 import type * as lib_countryCodeValidator from "../lib/countryCodeValidator.js";
 import type * as lib_customFunctions from "../lib/customFunctions.js";
+import type * as lib_documentHelpers from "../lib/documentHelpers.js";
 import type * as lib_documentPermissions from "../lib/documentPermissions.js";
 import type * as lib_emailTemplates from "../lib/emailTemplates.js";
 import type * as lib_encryption from "../lib/encryption.js";
@@ -529,6 +531,7 @@ declare const fullApi: ApiFromModules<{
   "functions/testSeeds": typeof functions_testSeeds;
   "functions/tickets": typeof functions_tickets;
   "functions/tutorials": typeof functions_tutorials;
+  "functions/unifiedSearch": typeof functions_unifiedSearch;
   "functions/userPreferences": typeof functions_userPreferences;
   "functions/users": typeof functions_users;
   "functions/voicemails": typeof functions_voicemails;
@@ -546,6 +549,7 @@ declare const fullApi: ApiFromModules<{
   "lib/correspondanceHelpers": typeof lib_correspondanceHelpers;
   "lib/countryCodeValidator": typeof lib_countryCodeValidator;
   "lib/customFunctions": typeof lib_customFunctions;
+  "lib/documentHelpers": typeof lib_documentHelpers;
   "lib/documentPermissions": typeof lib_documentPermissions;
   "lib/emailTemplates": typeof lib_emailTemplates;
   "lib/encryption": typeof lib_encryption;

@@ -42,6 +42,7 @@ import { useAuthClient } from "./auth-client-provider";
 import { LogoutButton } from "./logout-button";
 import { useOrg } from "./org-provider";
 import { OrgSwitcher } from "./org-switcher";
+import { UnifiedSearchTrigger } from "./unified-search";
 
 export interface NavItem {
 	title: string;
@@ -200,7 +201,7 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 				)}
 			>
 				{/* Org Switcher */}
-				<div className={cn("mb-4", isExpanded ? "px-0" : "")}>
+				<div className={cn("mb-3", isExpanded ? "px-0" : "")}>
 					{isExpanded ? (
 						<OrgSwitcher />
 					) : (
@@ -214,6 +215,11 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 							</div>
 						</Link>
 					)}
+				</div>
+
+				{/* Recherche unifiée (Phase 5 — alignement iCorr ↔ iDoc) */}
+				<div className={cn("mb-4", isExpanded ? "px-0" : "")}>
+					<UnifiedSearchTrigger expanded={isExpanded} />
 				</div>
 
 				{/* Navigation Items */}
