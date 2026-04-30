@@ -817,3 +817,86 @@ export const updateDocumentStatus = backofficeMutation({
     return { success: true };
   },
 });
+
+// ═════════════════════════════════════════════════════════════════════════════
+// FILIATION iCorrespondance ↔ iDocument (Phase 2 — alignement)
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Liste les documents iDocument liés à un courrier (back-pointer
+ * `linkedCorrespondanceItemId`). Utilisé par la query inverse côté
+ * iCorrespondance pour afficher "Documents classés" à côté d'un courrier
+ * archivé.
+ */
+export const listByLinkedCorrespondance = authQuery({
+  args: { itemId: v.id("correspondanceItems") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("documents")
+      .withIndex("by_correspondance_item", (q) =>
+        q.eq("linkedCorrespondanceItemId", args.itemId),
+      )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .collect();
+  },
+});
+
+/**
+ * Recherche full-text serveur dans les documents d'une organisation
+ * (Phase 1 — searchIndex `search_all`). Pendant exact de
+ * `correspondance.searchItems`, exploitable par la barre de recherche
+ * unifiée et par le dialog d'import.
+ */
+export const searchByOwner = authQuery({
+  args: {
+    ownerId: v.union(v.id("users"), v.id("orgs"), v.id("profiles"), v.id("childProfiles")),
+    searchText: v.string(),
+    status: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const trimmed = args.searchText.trim();
+    if (!trimmed) return [];
+
+    // Autorisation : même règle que `getByOwner`.
+    const isSuperadmin =
+      ctx.user.isSuperadmin || ctx.user.role === "super_admin";
+    const isOwnUser = args.ownerId === (ctx.user._id as string);
+    let isOwnProfile = false;
+    if (!isOwnUser) {
+      const profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+        .unique();
+      isOwnProfile = profile?._id === args.ownerId;
+    }
+    let isOrgMember = false;
+    if (!isOwnUser && !isOwnProfile) {
+      const membership = await getMembership(
+        ctx,
+        ctx.user._id,
+        args.ownerId as any,
+      );
+      isOrgMember = !!membership;
+    }
+    if (!isSuperadmin && !isOwnUser && !isOwnProfile && !isOrgMember) {
+      return [];
+    }
+
+    const max = args.limit ?? 50;
+    const results = await ctx.db
+      .query("documents")
+      .withSearchIndex("search_all", (q) => {
+        let builder = q.search("searchText", trimmed).eq("ownerId", args.ownerId);
+        if (args.status !== undefined) {
+          builder = builder.eq("status", args.status as any);
+        }
+        return builder;
+      })
+      .take(max * 2);
+
+    return results
+      .filter((d) => !d.deletedAt)
+      .slice(0, max);
+  },
+});

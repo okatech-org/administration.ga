@@ -15,6 +15,7 @@ import {
   generateSequentialReference,
   buildCorrespondanceSearchText,
 } from "../lib/correspondanceHelpers";
+import { buildDocumentSearchText } from "../lib/documentHelpers";
 import { error, ErrorCode } from "../lib/errors";
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -99,19 +100,43 @@ export const removeDocumentFromCorrespondance = authMutation({
 
     const removedDoc = docs[args.documentIndex];
 
-    // Créer le document dans iDocument (table documents)
-    const documentId = await ctx.db.insert("documents", {
-      ownerId: item.orgId,
-      files: [{
+    // Créer le document dans iDocument (table documents) avec back-pointer + origin
+    const docLabel = removedDoc.label ?? `Extrait de ${item.reference}`;
+    const docTags = ["source:correspondance"];
+    const docOrigin = {
+      type: "correspondance" as const,
+      correspondanceReference: item.reference,
+      correspondanceArrivalRef: item.arrivalReference,
+      senderName: item.senderName,
+      recipientName: item.recipientName,
+      sourceDate: item.createdAt,
+      classedAt: now,
+      classedByUserId: ctx.user._id,
+    };
+    const docFiles = [
+      {
         storageId: removedDoc.storageId,
         filename: removedDoc.filename,
         mimeType: removedDoc.mimeType,
         sizeBytes: removedDoc.sizeBytes,
         uploadedAt: removedDoc.uploadedAt,
-      }],
-      label: removedDoc.label ?? `Extrait de ${item.reference}`,
+      },
+    ];
+    const documentId = await ctx.db.insert("documents", {
+      ownerId: item.orgId,
+      files: docFiles,
+      label: docLabel,
       status: DocumentStatus.Pending,
       updatedAt: now,
+      linkedCorrespondanceItemId: args.itemId,
+      origin: docOrigin,
+      tags: docTags,
+      searchText: buildDocumentSearchText({
+        label: docLabel,
+        files: docFiles,
+        tags: docTags,
+        origin: docOrigin,
+      }),
     });
 
     // Retirer du dossier
@@ -191,21 +216,49 @@ export const classerCorrespondanceDansIDocument = authMutation({
 
     const docs = item.documents ?? [];
     const createdDocIds: string[] = [];
+    const docTags = [
+      "source:correspondance",
+      ...(args.tags ?? []),
+    ];
+    const docOrigin = {
+      type: "correspondance" as const,
+      correspondanceReference: item.reference,
+      correspondanceArrivalRef: item.arrivalReference,
+      senderName: item.senderName,
+      recipientName: item.recipientName,
+      sourceDate: item.createdAt,
+      classedAt: now,
+      classedByUserId: ctx.user._id,
+    };
 
-    // Transférer chaque document vers iDocument
+    // Transférer chaque document vers iDocument avec back-pointer + origin
     for (const doc of docs) {
-      const docId = await ctx.db.insert("documents", {
-        ownerId: item.orgId,
-        files: [{
+      const files = [
+        {
           storageId: doc.storageId,
           filename: doc.filename,
           mimeType: doc.mimeType,
           sizeBytes: doc.sizeBytes,
           uploadedAt: doc.uploadedAt,
-        }],
-        label: doc.label ?? `${item.reference} — ${doc.filename}`,
+        },
+      ];
+      const label = doc.label ?? `${item.reference} — ${doc.filename}`;
+      const docId = await ctx.db.insert("documents", {
+        ownerId: item.orgId,
+        files,
+        label,
         status: DocumentStatus.Pending,
         updatedAt: now,
+        linkedCorrespondanceItemId: args.itemId,
+        origin: docOrigin,
+        tags: docTags,
+        archiveCategorySlug: args.category,
+        searchText: buildDocumentSearchText({
+          label,
+          files,
+          tags: docTags,
+          origin: docOrigin,
+        }),
       });
       createdDocIds.push(docId as string);
     }

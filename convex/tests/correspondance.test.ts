@@ -20,6 +20,7 @@ import {
   CONFIDENTIALITY_MIN_GRADE,
   applyReferencePattern,
 } from "../lib/correspondanceHelpers";
+import { buildDocumentSearchText } from "../lib/documentHelpers";
 
 // ═════════════════════════════════════════════════════════════════════════════
 // MATRICE DE TRANSITIONS
@@ -501,5 +502,71 @@ describe("applyReferencePattern", () => {
         sequence: 4,
       }),
     ).toBe("2026//04");
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SEARCH TEXT iDOCUMENT (Phase 1 — alignement iDoc ↔ iCorr)
+// ═════════════════════════════════════════════════════════════════════════════
+
+describe("buildDocumentSearchText", () => {
+  it("concatène label + category + filenames + tags + origin", () => {
+    const result = buildDocumentSearchText({
+      label: "Mémo accréditation Ambassadeur",
+      category: "consulaire",
+      documentType: "memorandum",
+      files: [{ filename: "memo-2026.pdf" }, { filename: "annexe.pdf" }],
+      tags: ["source:correspondance", "urgent"],
+      origin: {
+        senderName: "MAE Paris",
+        recipientName: "Ambassade Gabon",
+        correspondanceReference: "DIPL/2026/MEM/00042",
+        correspondanceArrivalRef: "ARR/2026/00018",
+      },
+    });
+    expect(result).toContain("Mémo accréditation");
+    expect(result).toContain("consulaire");
+    expect(result).toContain("memo-2026.pdf");
+    expect(result).toContain("annexe.pdf");
+    expect(result).toContain("source:correspondance");
+    expect(result).toContain("MAE Paris");
+    expect(result).toContain("DIPL/2026/MEM/00042");
+    expect(result).toContain("ARR/2026/00018");
+  });
+
+  it("tolère un input vide", () => {
+    expect(buildDocumentSearchText({})).toBe("");
+  });
+
+  it("tolère l'absence de tags / files / origin", () => {
+    expect(
+      buildDocumentSearchText({
+        label: "Note interne",
+        category: "interne",
+      }),
+    ).toBe("Note interne interne");
+  });
+
+  it("ne crashe pas sur des filenames vides", () => {
+    expect(
+      buildDocumentSearchText({
+        label: "X",
+        files: [{ filename: "" }, { filename: "ok.pdf" }],
+      }),
+    ).toBe("X ok.pdf");
+  });
+
+  it("tronque à 8000 caractères pour rester sous la limite searchIndex", () => {
+    const big = "a".repeat(10_000);
+    const result = buildDocumentSearchText({ label: big });
+    expect(result.length).toBe(8000);
+  });
+
+  it("préserve l'ordre label → origin", () => {
+    const result = buildDocumentSearchText({
+      label: "AAA",
+      origin: { senderName: "ZZZ" },
+    });
+    expect(result.indexOf("AAA")).toBeLessThan(result.indexOf("ZZZ"));
   });
 });
