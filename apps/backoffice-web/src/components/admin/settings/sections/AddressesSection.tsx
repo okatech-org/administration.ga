@@ -32,14 +32,13 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AddressInput,
-  type AutocompleteAdapter,
   type AddressValue,
 } from "@workspace/ui/components/address-input";
 import {
   useAuthenticatedConvexQuery,
   useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
-import { usePlacesAutocomplete } from "@/hooks/use-places-autocomplete";
+import { usePlacesAutocompleteAdapter } from "@/hooks/use-places-autocomplete-adapter";
 import type { SettingsSectionProps } from "../SettingsTabsLayout";
 
 interface AddressFields {
@@ -271,43 +270,6 @@ export function AddressesSection({
         </div>
       </FlatCard>
     </div>
-  );
-}
-
-// ─── Adapter Convex Places → interface AutocompleteAdapter ─────
-function usePlacesAutocompleteAdapter(): AutocompleteAdapter {
-  const hook = usePlacesAutocomplete({ debounceMs: 350 });
-  return useMemo(
-    () => ({
-      setInput: hook.setInput,
-      predictions: hook.predictions.map((p) => ({
-        placeId: p.placeId,
-        mainText: p.mainText,
-        secondaryText: p.secondaryText,
-      })),
-      isLoading: hook.isLoading,
-      getPlaceDetails: async (placeId: string) => {
-        const details = await hook.getPlaceDetails(placeId);
-        if (!details) return null;
-        return {
-          street: details.street,
-          city: details.city,
-          postalCode: details.postalCode,
-          countryCode: details.countryCode,
-          formattedAddress: details.formattedAddress,
-          lat: details.lat,
-          lng: details.lng,
-        };
-      },
-      clear: hook.clear,
-    }),
-    [
-      hook.setInput,
-      hook.predictions,
-      hook.isLoading,
-      hook.getPlaceDetails,
-      hook.clear,
-    ],
   );
 }
 

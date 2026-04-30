@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { Switch } from "@/components/ui/switch";
-import { Check, Layers, Loader2, Lock, Save } from "lucide-react";
+import { Check, Layers, Loader2, Save } from "lucide-react";
 import {
 	MODULE_REGISTRY,
 	CATEGORY_ORDER,
@@ -236,9 +236,9 @@ export function RepsModuleMatrixTab({
 													mod.code,
 												)
 											: true;
-										const canToggle =
-											isMatrixEditable &&
-											!mod.isCore;
+										// Plus de verrouillage par "isCore" — le super-admin peut
+										// toggler n'importe quel module, y compris les modules core.
+										const canToggle = isMatrixEditable;
 
 										return (
 											<div
@@ -333,9 +333,6 @@ export function RepsModuleMatrixTab({
 																mod.label
 																	.fr}
 														</span>
-														{mod.isCore && (
-															<Lock className="h-2.5 w-2.5 text-emerald-500 shrink-0" />
-														)}
 														{selectedOrgType &&
 															isActive &&
 															!canToggle && (

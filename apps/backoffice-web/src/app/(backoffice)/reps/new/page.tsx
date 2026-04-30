@@ -6,6 +6,11 @@ import { OrganizationType, MinistrySubType } from "@convex/lib/constants";
 import { CountryCode } from "@convex/lib/countryCodeValidator";
 import { getPresetTasks } from "@convex/lib/roles";
 import type { TaskCodeValue } from "@convex/lib/taskCodes";
+import {
+	MODULE_ACCESS_TASKS,
+	MODULE_REGISTRY,
+	type ModuleCodeValue,
+} from "@convex/lib/moduleCodes";
 import { useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
 import {
@@ -42,6 +47,12 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { MultiSelect } from "@/components/ui/multi-select";
+import {
+	AddressInput,
+	type AddressValue,
+} from "@workspace/ui/components/address-input";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import { usePlacesAutocompleteAdapter } from "@/hooks/use-places-autocomplete-adapter";
 import {
 	Select,
 	SelectContent,
@@ -125,6 +136,51 @@ function templatePositionToDraft(
 		tasks: getPresetTasks(pos.taskPresets ?? []),
 		isRequired: pos.isRequired,
 	}
+}
+
+// ─── Task → Module mapping ──────────────────────────────────────
+// Inverse de MODULE_ACCESS_TASKS pour identifier le module canonique d'un
+// task code donné (ex: "documents.view" → "documents", "intelligence.view"
+// → "diplomatic_affairs"). Utilisé pour grouper les tâches d'un poste par
+// module et afficher des badges lisibles côté UI.
+const TASK_TO_MODULE: Record<string, ModuleCodeValue> = (() => {
+	const out: Record<string, ModuleCodeValue> = {}
+	for (const [moduleCode, levels] of Object.entries(MODULE_ACCESS_TASKS)) {
+		if (!levels) continue
+		const all = new Set<string>([
+			...(levels.reader ?? []),
+			...(levels.editor ?? []),
+			...(levels.admin ?? []),
+		])
+		for (const task of all) {
+			out[task] = moduleCode as ModuleCodeValue
+		}
+	}
+	return out
+})()
+
+/**
+ * Groupe les task codes d'un poste par module canonique et retourne un tableau
+ * `[{ moduleCode, label, count }]` trié par nombre de tâches décroissant.
+ */
+function summarizeTasksByModule(
+	tasks: string[],
+	lang: string,
+): Array<{ moduleCode: string; label: string; count: number }> {
+	const counts = new Map<string, number>()
+	for (const t of tasks) {
+		const mod = TASK_TO_MODULE[t] ?? t.split(".")[0] ?? "other"
+		counts.set(mod, (counts.get(mod) ?? 0) + 1)
+	}
+	return Array.from(counts.entries())
+		.map(([moduleCode, count]) => {
+			const def = MODULE_REGISTRY[moduleCode as ModuleCodeValue]
+			const label = def
+				? getLocalizedValue(def.label, lang)
+				: moduleCode
+			return { moduleCode, label, count }
+		})
+		.sort((a, b) => b.count - a.count)
 }
 
 const GRADE_CONFIG: Record<string, { label: string; color: string }> = {
@@ -300,6 +356,20 @@ export default function NewOrganizationPage() {
 		setAddDialogOpen(false);
 	}, []);
 
+	// Adapter d'autocomplétion d'adresse (Google Places via action Convex).
+	const addressAdapter = usePlacesAutocompleteAdapter();
+
+	// Options pays pour le Combobox dans AddressInput. Mémo simple — la liste
+	// CountryCode est exhaustive.
+	const countryOptions = useMemo<ComboboxOption<CountryCode>[]>(
+		() =>
+			Object.values(CountryCode).map((code) => ({
+				value: code,
+				label: code,
+			})),
+		[],
+	);
+
 	// Org form
 	const form = useForm({
 		defaultValues: {
@@ -310,6 +380,8 @@ export default function NewOrganizationPage() {
 				city: "",
 				postalCode: "",
 				country: CountryCode.GA,
+				lat: undefined as number | undefined,
+				lng: undefined as number | undefined,
 			},
 			email: "",
 			phone: "",
@@ -363,7 +435,10 @@ export default function NewOrganizationPage() {
 						city: value.address.city,
 						postalCode: value.address.postalCode,
 						country: value.address.country,
-						coordinates: undefined,
+						coordinates:
+							value.address.lat !== undefined && value.address.lng !== undefined
+								? { lat: value.address.lat, lng: value.address.lng }
+								: undefined,
 					},
 					country: value.address.country,
 					email: value.email || undefined,
@@ -625,26 +700,34 @@ export default function NewOrganizationPage() {
 									</p>
 								</div>
 
-								{/* Modules */}
-								<div className="hidden sm:flex gap-1 shrink-0">
-									{pos.tasks.slice(0, 3).map((mod) => (
-										<Badge
-											key={mod}
-											variant="outline"
-											className="text-[10px] px-1.5 py-0"
-										>
-											{mod}
-										</Badge>
-									))}
-									{pos.tasks.length > 3 && (
-										<Badge
-											variant="outline"
-											className="text-[10px] px-1.5 py-0"
-										>
-											+{pos.tasks.length - 3}
-										</Badge>
-									)}
-								</div>
+								{/* Modules — groupés par module canonique avec libellé i18n */}
+								{(() => {
+									const summary = summarizeTasksByModule(pos.tasks, lang)
+									return (
+										<div className="hidden sm:flex gap-1 shrink-0">
+											{summary.slice(0, 3).map(({ moduleCode, label, count }) => (
+												<Badge
+													key={moduleCode}
+													variant="outline"
+													className="text-[10px] px-1.5 py-0"
+												>
+													{label}
+													<span className="ml-1 opacity-60 tabular-nums">
+														{count}
+													</span>
+												</Badge>
+											))}
+											{summary.length > 3 && (
+												<Badge
+													variant="outline"
+													className="text-[10px] px-1.5 py-0"
+												>
+													+{summary.length - 3}
+												</Badge>
+											)}
+										</div>
+									)
+								})()}
 
 								{/* Delete */}
 								<Button
@@ -769,81 +852,68 @@ export default function NewOrganizationPage() {
 									}}
 								/>
 
-								{/* Address Section */}
+								{/* Address Section — autocomplétion + GPS via Google Places */}
 								<div className="pt-4">
 									<h3 className="font-medium mb-2">
 										{t("superadmin.organizations.form.address")}
 									</h3>
-									<div className="grid gap-4">
-										<form.Field
-											name="address.street"
-											children={(field) => (
-												<Field>
-													<FieldLabel htmlFor={field.name}>
-														{t("superadmin.organizations.form.street")}
-													</FieldLabel>
-													<Input
-														id={field.name}
-														value={field.state.value}
-														onChange={(e) => field.handleChange(e.target.value)}
-													/>
-												</Field>
-											)}
-										/>
-										<div className="grid grid-cols-2 gap-4">
-											<form.Field
-												name="address.city"
-												children={(field) => (
-													<Field>
-														<FieldLabel htmlFor={field.name}>
-															{t("superadmin.organizations.form.city")}
-														</FieldLabel>
-														<Input
-															id={field.name}
-															value={field.state.value}
-															onChange={(e) =>
-																field.handleChange(e.target.value)
+									<form.Subscribe
+										selector={(state) => state.values.address}
+										children={(addressState) => {
+											const value: AddressValue = {
+												street: addressState.street,
+												city: addressState.city,
+												postalCode: addressState.postalCode,
+												country: addressState.country,
+												lat: addressState.lat,
+												lng: addressState.lng,
+											};
+											return (
+												<AddressInput
+													value={value}
+													onChange={(next) => {
+														form.setFieldValue("address.street", next.street);
+														form.setFieldValue("address.city", next.city);
+														form.setFieldValue(
+															"address.postalCode",
+															next.postalCode,
+														);
+														form.setFieldValue(
+															"address.country",
+															(next.country as CountryCode) ||
+																addressState.country,
+														);
+														form.setFieldValue(
+															"address.lat",
+															next.lat !== undefined ? Number(next.lat) : undefined,
+														);
+														form.setFieldValue(
+															"address.lng",
+															next.lng !== undefined ? Number(next.lng) : undefined,
+														);
+													}}
+													autocomplete={addressAdapter}
+													showCoordinates
+													showCompletion
+													idPrefix="org-create"
+													countrySelector={
+														<Combobox
+															options={countryOptions}
+															value={addressState.country}
+															onValueChange={(v) =>
+																form.setFieldValue(
+																	"address.country",
+																	v as CountryCode,
+																)
 															}
+															placeholder="Choisir un pays…"
+															searchPlaceholder="Rechercher…"
 														/>
-													</Field>
-												)}
-											/>
-											<form.Field
-												name="address.postalCode"
-												children={(field) => (
-													<Field>
-														<FieldLabel htmlFor={field.name}>
-															{t("superadmin.organizations.form.postalCode")}
-														</FieldLabel>
-														<Input
-															id={field.name}
-															value={field.state.value}
-															onChange={(e) =>
-																field.handleChange(e.target.value)
-															}
-														/>
-													</Field>
-												)}
-											/>
-										</div>
-										<form.Field
-											name="address.country"
-											children={(field) => (
-												<Field>
-													<FieldLabel htmlFor={field.name}>
-														{t("superadmin.organizations.form.country")}
-													</FieldLabel>
-													<Input
-														id={field.name}
-														value={field.state.value}
-														onChange={(e) =>
-															field.handleChange(e.target.value as CountryCode)
-														}
-													/>
-												</Field>
-											)}
-										/>
-									</div>
+													}
+												/>
+											);
+										}}
+									/>
 								</div>
 
 								{/* Contact Section */}

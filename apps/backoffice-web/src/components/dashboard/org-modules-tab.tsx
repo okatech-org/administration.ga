@@ -19,7 +19,6 @@ import {
 	ClipboardList,
 	FileText,
 	Loader2,
-	Lock,
 	Package,
 	RotateCcw,
 	Users,
@@ -92,11 +91,13 @@ export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {
 		if (org?.orgModuleConfig && (org.orgModuleConfig as OrgModuleConfigEntry[]).length > 0) {
 			return org.orgModuleConfig as OrgModuleConfigEntry[];
 		}
-		// Fallback : créer depuis le champ flat modules[]
+		// Fallback : créer depuis le champ flat modules[].
+		// On respecte strictement l'état persisté — pas de promotion auto des
+		// modules core, l'admin garde la main complète.
 		const mods = new Set(currentModules);
 		return Object.values(MODULE_REGISTRY).map((def) => ({
 			moduleCode: def.code,
-			enabled: mods.has(def.code) || def.isCore,
+			enabled: mods.has(def.code),
 			capabilities: getDefaultCapabilities(def.code as ModuleCodeValue),
 		}));
 	}, [org, currentModules]);
@@ -128,7 +129,9 @@ export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {
 
 	const applyToggleModule = useCallback(
 		(moduleCode: string, enabled: boolean) => {
-			if (coreModuleSet.has(moduleCode)) return;
+			// Aucune restriction côté UI : super-admin peut toggler n'importe
+			// quel module, y compris les modules « core ». Le marquage `isCore`
+			// reste utilisé seulement pour le visuel (badge) et l'init par défaut.
 			setPendingConfig((prev) => {
 				const next = [...prev];
 				const idx = next.findIndex((e) => e.moduleCode === moduleCode);
@@ -145,13 +148,14 @@ export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {
 			});
 			setIsDirty(true);
 		},
-		[coreModuleSet],
+		[],
 	);
 
-	// Intercepte les désactivations pour analyser l'impact via modale
+	// Intercepte les désactivations pour analyser l'impact via modale.
+	// La modale s'affiche pour TOUS les modules (core ou non) : c'est l'écran
+	// d'avertissement qui informe l'admin de l'impact réel avant action.
 	const handleToggleModule = useCallback(
 		(moduleCode: string, enabled: boolean) => {
-			if (coreModuleSet.has(moduleCode)) return;
 			// Activation immédiate sans validation
 			if (enabled) {
 				applyToggleModule(moduleCode, true);
@@ -160,7 +164,7 @@ export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {
 			// Désactivation : passe par la modale d'impact
 			setModuleToDisable(moduleCode);
 		},
-		[coreModuleSet, applyToggleModule],
+		[applyToggleModule],
 	);
 
 	const handleToggleCapability = useCallback(
@@ -194,13 +198,13 @@ export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {
 
 	const handleSave = async () => {
 		try {
-			const configToSend = pendingConfig
-				.filter((c) => c.enabled || coreModuleSet.has(c.moduleCode))
-				.map((c) => ({
-					moduleCode: c.moduleCode as ModuleCodeValue,
-					enabled: c.enabled || coreModuleSet.has(c.moduleCode),
-					capabilities: c.capabilities,
-				}));
+			// On envoie EXACTEMENT l'état coché par l'utilisateur — plus aucune
+			// promotion automatique des core modules. Le super-admin a la main.
+			const configToSend = pendingConfig.map((c) => ({
+				moduleCode: c.moduleCode as ModuleCodeValue,
+				enabled: c.enabled,
+				capabilities: c.capabilities,
+			}));
 
 			await updateConfig({ orgId, config: configToSend });
 			setIsDirty(false);
@@ -221,7 +225,10 @@ export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {
 		const templateModuleSet = new Set(template.modules as string[]);
 		const newConfig: OrgModuleConfigEntry[] = Object.values(MODULE_REGISTRY).map((def) => ({
 			moduleCode: def.code,
-			enabled: templateModuleSet.has(def.code) || def.isCore,
+			// Strictement la liste du template, sans promotion automatique
+			// des modules core (le template d'un ministère par exemple n'a
+			// volontairement pas `consular_affairs`).
+			enabled: templateModuleSet.has(def.code),
 			capabilities: getDefaultCapabilities(def.code as ModuleCodeValue),
 		}));
 		setPendingConfig(newConfig);
@@ -491,7 +498,7 @@ function SidebarGroupCard({
 	onToggleExpand: (code: string) => void;
 }) {
 	const enabledInGroup = group.modules.filter(
-		(m) => configMap.get(m)?.enabled || coreModuleSet.has(m),
+		(m) => configMap.get(m)?.enabled === true,
 	).length;
 
 	return (
@@ -511,8 +518,9 @@ function SidebarGroupCard({
 						const def = MODULE_REGISTRY[moduleCode as ModuleCodeValue];
 						if (!def) return null;
 						const config = configMap.get(moduleCode);
-						const isEnabled = config?.enabled || coreModuleSet.has(moduleCode);
-						const isCore = coreModuleSet.has(moduleCode);
+						// `isEnabled` reflète strictement l'état persisté. Le super-admin
+						// peut désactiver n'importe quel module, même core.
+						const isEnabled = config?.enabled ?? false;
 						const hasCaps = def.capabilities && def.capabilities.length > 0;
 						const isExpanded = expandedModules.has(moduleCode);
 						const activeCaps = config?.capabilities ?? [];
@@ -523,7 +531,6 @@ function SidebarGroupCard({
 								className={cn(
 									"rounded-lg border transition-all",
 									isEnabled ? "border-border bg-[#FDFCFA] dark:bg-[#21201E]/77" : "border-border/40 bg-muted/20 opacity-60",
-									isCore && "border-emerald-500/30",
 								)}
 							>
 								<div className="flex items-center gap-2.5 px-3 py-2.5">
@@ -548,7 +555,6 @@ function SidebarGroupCard({
 											<span className="text-sm font-medium truncate">
 												{def.label[lang as "fr" | "en"]}
 											</span>
-											{isCore && <Lock className="h-3 w-3 text-emerald-500 shrink-0" />}
 										</div>
 										<p className="text-[10px] text-muted-foreground truncate">
 											{def.description[lang as "fr" | "en"]}
@@ -565,7 +571,7 @@ function SidebarGroupCard({
 									<Switch
 										checked={isEnabled}
 										onCheckedChange={(checked) => onToggleModule(moduleCode, checked)}
-										disabled={isCore || isSaving}
+										disabled={isSaving}
 										className="shrink-0"
 									/>
 								</div>
