@@ -1,6 +1,6 @@
 "use client";
 
-import { PhoneOff, User, Voicemail as VoicemailIcon, X } from "lucide-react";
+import { User, Voicemail as VoicemailIcon, X } from "lucide-react";
 import { useRouter } from "@workspace/routing";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -420,25 +420,9 @@ export function CallCenterShell({
         onDisconnected={handleSlotDisconnected}
       />
 
-      {/* Raccroche flottant quand un appel est actif (dupliqué pour ergonomie).
-          Double garde : slot actif côté client ET appel encore connu du serveur.
-          Protège d'un store zombie si la réconciliation n'a pas encore eu lieu. */}
-      {activeSlotId && activeCalls.length > 0 && (
-        <div className="pointer-events-auto fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full border bg-card px-3 py-2 shadow-lg">
-          <span className="text-[11px] font-semibold text-muted-foreground">
-            {t("callCenter.activeBar.title")}
-          </span>
-          <Button
-            size="sm"
-            variant="destructive"
-            className="h-8 gap-1.5"
-            onClick={() => handleEndActive(activeSlotId)}
-          >
-            <PhoneOff className="h-3.5 w-3.5" />
-            {t("callCenter.action.end")}
-          </Button>
-        </div>
-      )}
+      {/* Pill flottant Raccrocher → désormais global (`GlobalCallPill` monté
+          dans `AppShell`). Persiste sur toutes les routes et redirige vers
+          /icom?tab=icall au clic. */}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Pause, Phone, PhoneOff, Play } from "lucide-react";
+import { Phone, PhoneOff, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Id } from "@convex/_generated/dataModel";
@@ -139,30 +139,20 @@ function SlotPill({
         </span>
       </button>
 
-      {/* Hold / Resume (Sprint 2) */}
-      {isHeld
-        ? onResume && (
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6"
-              onClick={onResume}
-              title={t("callCenter.action.resume")}
-            >
-              <Play className="h-3 w-3" />
-            </Button>
-          )
-        : onHold && (
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6"
-              onClick={onHold}
-              title={t("callCenter.action.hold")}
-            >
-              <Pause className="h-3 w-3" />
-            </Button>
-          )}
+      {/* Resume uniquement (le Hold reste accessible depuis la vue centrale).
+          La barre des appels actifs reste minimaliste : focus + raccrocher,
+          + reprendre quand un appel est parqué. */}
+      {isHeld && onResume && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-6 w-6"
+          onClick={onResume}
+          title={t("callCenter.action.resume")}
+        >
+          <Play className="h-3 w-3" />
+        </Button>
+      )}
 
       <Button
         size="icon"
