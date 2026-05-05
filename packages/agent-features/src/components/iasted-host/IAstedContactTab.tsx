@@ -695,9 +695,7 @@ function SearchResultRow({
 		.toUpperCase()
 		.slice(0, 2);
 
-	const showActions =
-		(contact.source === "team" || contact.source === "network") &&
-		!!contact.userId;
+	const showActions = !!contact.userId;
 
 	return (
 		<li className="group relative flex items-center gap-2 px-3 py-3 hover:bg-muted/30 transition-colors">
