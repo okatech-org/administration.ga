@@ -76,6 +76,9 @@ export function useCallCenter() {
   const { mutateAsync: callUserMutation } = useConvexMutationQuery(
     api.functions.meetings.callUser,
   );
+  const { mutateAsync: setCallRingingMutation } = useConvexMutationQuery(
+    api.functions.meetings.setCallRinging,
+  );
   const { mutateAsync: declineMutation } = useConvexMutationQuery(
     api.functions.meetings.declineCall,
   );
@@ -251,6 +254,9 @@ export function useCallCenter() {
           roomName: tokenResult.roomName,
           joinedAt: Date.now(),
         });
+        // Transition initiating → ringing so the callee's GlobalCallAlert
+        // picks up the call and rings.
+        await setCallRingingMutation({ meetingId });
         toast.success("Rappel en cours…");
         return { meetingId };
       } catch (err: any) {
@@ -258,7 +264,7 @@ export function useCallCenter() {
         throw err;
       }
     },
-    [callBackMissedMutation, getOrFetchToken, upsertSlot],
+    [callBackMissedMutation, getOrFetchToken, upsertSlot, setCallRingingMutation],
   );
 
   const callBackRecent = useCallback(
@@ -278,6 +284,9 @@ export function useCallCenter() {
           roomName: tokenResult.roomName,
           joinedAt: Date.now(),
         });
+        // Transition initiating → ringing so the callee's GlobalCallAlert
+        // picks up the call and rings.
+        await setCallRingingMutation({ meetingId });
         toast.success("Rappel en cours…");
         return { meetingId };
       } catch (err: any) {
@@ -285,7 +294,7 @@ export function useCallCenter() {
         throw err;
       }
     },
-    [callUserMutation, getOrFetchToken, upsertSlot],
+    [callUserMutation, getOrFetchToken, upsertSlot, setCallRingingMutation],
   );
 
   const transfer = useCallback(

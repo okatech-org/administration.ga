@@ -1408,6 +1408,7 @@ export const callBackMissedCall = authMutation({
       title: `Rappel — ${mc.caller.displayName ?? "Usager"}`,
       type: "call",
       status: "active",
+      callStatus: "initiating",
       roomName,
       orgId: mc.orgId,
       createdBy: ctx.user._id,

@@ -50,19 +50,28 @@ const CALL_CENTER_ENABLED = FEATURES.callCenter;
  * If there is an active call where the user is a participant but hasn't joined,
  * this shows a floating notification and rings.
  *
- * Wrapper qui désactive l'alerte dans /icom quand le Centre d'Appels est actif :
- * respecte les Règles des Hooks en laissant le composant interne se démonter
- * proprement plutôt qu'un early-return au milieu d'un arbre de hooks.
+ * Sur /icom (Centre d'Appels actif), la file d'appels org-inbound est gérée
+ * par le shell : on supprime cette branche de l'alerte. En revanche, les
+ * appels directs (callUser → autre agent) ne sont PAS dans la file Centre
+ * d'Appels, donc on laisse passer la branche "personal meeting" pour que
+ * l'agent puisse être joint en direct même sur /icom.
  */
 export function GlobalCallAlert() {
 	const pathname = usePathname();
-	const shouldSuppressForCallCenter =
+	const suppressOrgCallsForCallCenter =
 		CALL_CENTER_ENABLED && !!pathname && pathname.startsWith("/icom");
-	if (shouldSuppressForCallCenter) return null;
-	return <GlobalCallAlertInner />;
+	return (
+		<GlobalCallAlertInner
+			suppressOrgCalls={suppressOrgCallsForCallCenter}
+		/>
+	);
 }
 
-function GlobalCallAlertInner() {
+function GlobalCallAlertInner({
+	suppressOrgCalls,
+}: {
+	suppressOrgCalls: boolean;
+}) {
 	const { t } = useTranslation();
 	const isMobile = useIsMobile();
 
@@ -129,8 +138,12 @@ function GlobalCallAlertInner() {
 		return true;
 	});
 
-	// Prioritize inbound org calls, then personal meetings
-	const incomingOrgCall = inboundOrgCalls?.[0] ?? null;
+	// Prioritize inbound org calls, then personal meetings.
+	// Sur /icom, la file org-inbound est gérée par le Centre d'Appels — on
+	// ne signale ici que les appels personnels (callUser direct, etc.).
+	const incomingOrgCall = suppressOrgCalls
+		? null
+		: (inboundOrgCalls?.[0] ?? null);
 
 	const candidateCall = incomingOrgCall ?? incomingPersonalMeeting ?? null;
 	// Ignorer explicitement un meetingId déjà traité localement (raccroché,

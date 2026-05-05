@@ -44,6 +44,7 @@ import { useOrg } from "../../shell/org-provider";
 import { useContactSearch, type ContactSource } from "../../hooks/useContactSearch";
 import { useCallCenter } from "../../hooks/use-call-center";
 import { useMeeting } from "../../hooks/use-meeting";
+import { useRingtone } from "../../hooks/use-ringtone";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@workspace/api/hooks";
 import { useCallStore } from "../../stores/call-store";
 import { FEATURES } from "../../lib/feature-flags";
@@ -214,15 +215,25 @@ function LegacyCallTab() {
 
 	// Hook meeting lifecycle (LiveKit token, connect, disconnect)
 	const {
+		meeting,
 		token,
 		wsUrl,
 		connect,
 		disconnect,
 	} = useMeeting(activeMeetingId ?? undefined);
 
+	// Caller-side ringback tone : joue tant que l'appel est en sonnerie.
+	// Stoppe automatiquement quand le callee décroche (callStatus → "connected").
+	useRingtone(meeting?.callStatus === "ringing");
+
 	// Mutation appel direct agent→utilisateur
 	const { mutateAsync: callUser, isPending: isCallingUser } = useConvexMutationQuery(
 		api.functions.meetings.callUser,
+	);
+
+	// Mutation transition initiating → ringing (rend l'appel visible au callee)
+	const { mutateAsync: setCallRinging } = useConvexMutationQuery(
+		api.functions.meetings.setCallRinging,
 	);
 
 	// Mutation refuser un appel entrant
@@ -269,6 +280,8 @@ function LegacyCallTab() {
 			setGlobalMeetingId(meetingId);
 
 			await connect(meetingId);
+			// Transition initiating → ringing : rend l'appel visible au callee.
+			await setCallRinging({ meetingId });
 			toast.success(subTab === "audio" ? "Appel audio en cours..." : "Appel vidéo en cours...");
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur lors de l'appel");

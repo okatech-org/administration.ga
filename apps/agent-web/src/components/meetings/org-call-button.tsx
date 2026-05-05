@@ -6,13 +6,14 @@ import {
 	LiveKitRoom,
 } from "@livekit/components-react";
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
-import { Loader2, Phone, PhoneOff, ChevronDown } from "lucide-react";
+import { Loader2, Phone, ChevronDown } from "lucide-react";
 import type { ComponentProps } from "react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
+import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 import {
 	Dialog,
 	DialogContent,
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/sheet";
 import { useMeeting } from "@/hooks/use-meeting";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useRingtone } from "@/hooks/use-ringtone";
 import { useConvexMutationQuery, useConvexQuery } from "@/integrations/convex/hooks";
 
 interface OrgCallButtonProps {
@@ -55,9 +57,6 @@ export function OrgCallButton({
 		null,
 	);
 	const [showLineSelector, setShowLineSelector] = useState(false);
-	// Guard contre les disconnects LiveKit transitoires (StrictMode, ICE).
-	const hasConnectedRef = useRef(false);
-	const userHangUpRef = useRef(false);
 
 	// Fetch call lines for this org
 	const { data: callLines } = useConvexQuery(
@@ -68,26 +67,46 @@ export function OrgCallButton({
 	const callOrgMutation = useConvexMutationQuery(
 		api.functions.meetings.callOrganization,
 	);
+	const setCallRingingMutation = useConvexMutationQuery(
+		api.functions.meetings.setCallRinging,
+	);
 
-	const { token, wsUrl, connect, disconnect } = useMeeting(
+	const { meeting, token, wsUrl, connect, disconnect } = useMeeting(
 		activeMeetingId ?? undefined,
 	);
+
+	const cleanupCallState = useCallback(() => {
+		setActiveMeetingId(null);
+	}, []);
+
+	const {
+		onConnected: onLiveKitConnected,
+		onDisconnected: onLiveKitDisconnected,
+		markUserHangUp,
+		reset: resetDisconnectGuard,
+	} = useLiveKitDisconnectGuard(cleanupCallState);
+
+	// Caller-side ringback: play while the call is "ringing" (waiting for callee).
+	// Stops automatically when the callee picks up (callStatus → "connected").
+	useRingtone(meeting?.callStatus === "ringing");
 
 	const initiateCall = useCallback(async (callLineId?: Id<"callLines">) => {
 		try {
 			setShowLineSelector(false);
-			hasConnectedRef.current = false;
-			userHangUpRef.current = false;
+			resetDisconnectGuard();
 			const result = await callOrgMutation.mutateAsync({
 				orgId,
 				callLineId,
 			});
 			setActiveMeetingId(result.meetingId);
 			await connect(result.meetingId);
+			// Transition call to "ringing" — makes it visible to other agents
+			// and starts the caller's ringback tone via the meeting query.
+			await setCallRingingMutation.mutateAsync({ meetingId: result.meetingId });
 		} catch (err) {
 			console.error("Failed to call organization:", err);
 		}
-	}, [orgId, callOrgMutation, connect]);
+	}, [orgId, callOrgMutation, setCallRingingMutation, connect, resetDisconnectGuard]);
 
 	const handleCall = useCallback(async () => {
 		// If there are multiple active lines, show selector
@@ -102,18 +121,12 @@ export function OrgCallButton({
 	}, [callLines, initiateCall]);
 
 	const handleHangUp = useCallback(async () => {
-		userHangUpRef.current = true;
+		markUserHangUp();
 		if (activeMeetingId) {
 			await disconnect(activeMeetingId);
 		}
 		setActiveMeetingId(null);
-		hasConnectedRef.current = false;
-	}, [activeMeetingId, disconnect]);
-
-	const handleLiveKitDisconnected = useCallback(() => {
-		if (!hasConnectedRef.current) return;
-		void handleHangUp();
-	}, [handleHangUp]);
+	}, [activeMeetingId, disconnect, markUserHangUp]);
 
 	const isInCall = activeMeetingId !== null;
 	const activeLines = callLines?.filter((l) => l.isActive) ?? [];
@@ -128,10 +141,8 @@ export function OrgCallButton({
 					audio={true}
 					video={false}
 					options={LIVEKIT_CALL_ROOM_OPTIONS}
-					onConnected={() => {
-						hasConnectedRef.current = true;
-					}}
-					onDisconnected={handleLiveKitDisconnected}
+					onConnected={onLiveKitConnected}
+					onDisconnected={onLiveKitDisconnected}
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>

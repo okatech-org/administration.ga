@@ -893,6 +893,7 @@ export const callUser = authMutation({
       title: `Appel — ${targetUser.firstName ?? ""} ${targetUser.lastName ?? ""}`.trim(),
       type: "call",
       status: "active",
+      callStatus: "initiating",
       roomName,
       orgId: args.orgId,
       createdBy: ctx.user._id,

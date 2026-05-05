@@ -24,6 +24,7 @@ import { ConsularNotificationDialog } from "./ConsularNotificationDialog"
 import { ConsularRegistrationDialog } from "./ConsularRegistrationDialog"
 import { MobileNavBar } from "./mobile-nav-bar"
 import { CitizenIAstedWindow } from "@/components/ai/iasted/CitizenIAstedWindow"
+import { GlobalCallAlert } from "@/components/meetings/global-call-alert"
 import { MySpaceSidebar } from "./my-space-sidebar"
 
 const SIDEBAR_STORAGE_KEY = "myspace-sidebar-expanded"
@@ -105,6 +106,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
 
         <MobileNavBar />
         <CitizenIAstedWindow />
+        <GlobalCallAlert />
       </div>
     </ConsularThemeContext.Provider>
   )
