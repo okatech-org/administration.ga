@@ -10,7 +10,7 @@ import "@livekit/components-styles";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import type { Id } from "@convex/_generated/dataModel";
-import type { CallSlot } from "@/stores/call-store";
+import { useCallStore, type CallSlot } from "@/stores/call-store";
 
 /**
  * CallRoomMount — LiveKit invisible par slot du Centre d'Appels.
@@ -75,20 +75,23 @@ export function CallRoomMount({
 }
 
 /**
- * Synchronise l'état du microphone local selon `isActive`.
- * - isActive=true  → mic on (l'agent parle et entend)
+ * Synchronise l'état du microphone local selon `isActive` et le mute manuel.
  * - isActive=false → mic off (slot en hold, silencieux des deux côtés)
+ * - isActive=true + micMuted=false → mic on (l'agent parle et entend)
+ * - isActive=true + micMuted=true  → mic off (mute manuel par l'agent)
  */
 function MicController({ isActive }: { isActive: boolean }) {
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
+  const { micMuted } = useCallStore();
+  const enabled = isActive && !micMuted;
 
   useEffect(() => {
     if (!room || !localParticipant) return;
     let cancelled = false;
     // Appel idempotent : LiveKit ignore les no-ops
     localParticipant
-      .setMicrophoneEnabled(isActive)
+      .setMicrophoneEnabled(enabled)
       .catch((err) => {
         if (!cancelled) {
           // eslint-disable-next-line no-console
@@ -98,7 +101,7 @@ function MicController({ isActive }: { isActive: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [isActive, room, localParticipant]);
+  }, [enabled, room, localParticipant]);
 
   return null;
 }

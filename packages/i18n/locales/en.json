@@ -3664,6 +3664,8 @@
 			"resume": "Resume",
 			"transfer": "Transfer",
 			"end": "Hang up",
+			"mute": "Mute microphone",
+			"unmute": "Unmute microphone",
 			"viewContext": "View context"
 		},
 		"activeBar": {

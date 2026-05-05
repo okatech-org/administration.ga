@@ -33,11 +33,17 @@ export interface CallSlot {
 interface CallStoreState {
   slots: Map<Id<"meetings">, CallSlot>;
   activeSlotId: Id<"meetings"> | null;
+  /**
+   * Intent utilisateur de mute manuel pour le slot actif.
+   * Reset à `false` à chaque nouveau slot actif (décrochage / swap / resume).
+   */
+  micMuted: boolean;
 }
 
 const state: CallStoreState = {
   slots: new Map(),
   activeSlotId: null,
+  micMuted: false,
 };
 
 const listeners = new Set<() => void>();
@@ -47,10 +53,12 @@ let snapshot: {
   slots: ReadonlyArray<CallSlot>;
   activeSlotId: Id<"meetings"> | null;
   activeMeetingId: Id<"meetings"> | null; // alias rétrocompat
+  micMuted: boolean;
 } = {
   slots: [],
   activeSlotId: null,
   activeMeetingId: null,
+  micMuted: false,
 };
 
 function rebuildSnapshot() {
@@ -58,6 +66,7 @@ function rebuildSnapshot() {
     slots: Array.from(state.slots.values()),
     activeSlotId: state.activeSlotId,
     activeMeetingId: state.activeSlotId,
+    micMuted: state.micMuted,
   };
 }
 
@@ -99,6 +108,10 @@ export const callStore = {
           state.slots.delete(state.activeSlotId);
         }
       }
+      // Nouveau slot actif → mute reset (décrocher = parler).
+      if (state.activeSlotId !== slot.meetingId) {
+        state.micMuted = false;
+      }
       state.activeSlotId = slot.meetingId;
     }
     emit();
@@ -109,6 +122,7 @@ export const callStore = {
     state.slots.delete(meetingId);
     if (state.activeSlotId === meetingId) {
       state.activeSlotId = null;
+      state.micMuted = false;
     }
     emit();
   },
@@ -117,12 +131,28 @@ export const callStore = {
   setActiveSlot(meetingId: Id<"meetings"> | null) {
     if (meetingId === null) {
       state.activeSlotId = null;
+      state.micMuted = false;
       emit();
       return;
     }
     if (!state.slots.has(meetingId)) return;
+    if (state.activeSlotId !== meetingId) {
+      state.micMuted = false;
+    }
     state.activeSlotId = meetingId;
     emit();
+  },
+
+  /** Intent de mute manuel sur le slot actif. */
+  setMicMuted(muted: boolean) {
+    if (state.micMuted === muted) return;
+    state.micMuted = muted;
+    emit();
+  },
+
+  /** Etat courant du mute manuel. */
+  getMicMuted(): boolean {
+    return state.micMuted;
   },
 
   /** Accès read-only aux slots courants. */
@@ -144,6 +174,7 @@ export const callStore = {
         state.slots.delete(state.activeSlotId);
       }
       state.activeSlotId = null;
+      state.micMuted = false;
       emit();
       return;
     }
@@ -153,6 +184,9 @@ export const callStore = {
       meetingId: id,
       status: existing?.status ?? "active",
     });
+    if (state.activeSlotId !== id) {
+      state.micMuted = false;
+    }
     state.activeSlotId = id;
     emit();
   },
@@ -169,9 +203,11 @@ export function useCallStore() {
     activeSlotId: current.activeSlotId,
     // Rétrocompat : certains composants historiques consomment ce nom.
     globalActiveMeetingId: current.activeMeetingId,
+    micMuted: current.micMuted,
     setGlobalMeetingId: callStore.setGlobalMeetingId,
     upsertSlot: callStore.upsertSlot,
     removeSlot: callStore.removeSlot,
     setActiveSlot: callStore.setActiveSlot,
+    setMicMuted: callStore.setMicMuted,
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Pause, Phone, PhoneOff, Play } from "lucide-react";
+import { Mic, MicOff, Pause, Phone, PhoneOff, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Id } from "@convex/_generated/dataModel";
@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useCitizenContext } from "@/hooks/use-citizen-context";
+import { useCallStore } from "@/stores/call-store";
 import type { ActiveCallSlot } from "./ActiveCallsBar";
 
 /**
@@ -30,6 +31,7 @@ export function ActiveConversationView({
 }) {
   const { t } = useTranslation();
   const { context } = useCitizenContext(call._id as Id<"meetings">);
+  const { micMuted, setMicMuted } = useCallStore();
 
   const isHeld = call.callStatus === "on_hold";
   const baseTs = isHeld ? call.parkedAt : call.answeredAt;
@@ -154,6 +156,31 @@ export function ActiveConversationView({
             {t("callCenter.action.hold")}
           </Button>
         )}
+        <Button
+          size="lg"
+          variant={micMuted ? "default" : "secondary"}
+          aria-pressed={micMuted}
+          disabled={isHeld}
+          className={cn(
+            "h-12 gap-2",
+            micMuted && "bg-amber-500 text-white hover:bg-amber-500/90",
+          )}
+          onClick={() => setMicMuted(!micMuted)}
+          title={
+            micMuted
+              ? t("callCenter.action.unmute")
+              : t("callCenter.action.mute")
+          }
+        >
+          {micMuted ? (
+            <MicOff className="h-4 w-4" />
+          ) : (
+            <Mic className="h-4 w-4" />
+          )}
+          {micMuted
+            ? t("callCenter.action.unmute")
+            : t("callCenter.action.mute")}
+        </Button>
         <Button
           size="lg"
           variant="destructive"

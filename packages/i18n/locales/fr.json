@@ -4254,6 +4254,8 @@
 			"resume": "Reprendre",
 			"transfer": "Transférer",
 			"end": "Raccrocher",
+			"mute": "Couper le micro",
+			"unmute": "Réactiver le micro",
 			"viewContext": "Voir le contexte"
 		},
 		"activeBar": {
