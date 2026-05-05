@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic, MicOff, Pause, Phone, PhoneOff, Play } from "lucide-react";
+import { Mic, MicOff, Phone, PhoneOff, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Id } from "@convex/_generated/dataModel";
@@ -133,9 +133,11 @@ export function ActiveConversationView({
         </span>
       </div>
 
-      {/* Contrôles primaires */}
+      {/* Contrôles primaires — Mute / End. Le Hold (Sprint 2) est retiré
+          de la vue centrale ; reprendre un appel parqué reste possible
+          depuis le slot pill de la barre des appels actifs. */}
       <div className="flex items-center gap-3">
-        {isHeld ? (
+        {isHeld && (
           <Button
             size="lg"
             variant="secondary"
@@ -144,16 +146,6 @@ export function ActiveConversationView({
           >
             <Play className="h-4 w-4" />
             {t("callCenter.action.resume")}
-          </Button>
-        ) : (
-          <Button
-            size="lg"
-            variant="secondary"
-            className="h-12 gap-2"
-            onClick={() => onHold(call._id as Id<"meetings">)}
-          >
-            <Pause className="h-4 w-4" />
-            {t("callCenter.action.hold")}
           </Button>
         )}
         <Button
