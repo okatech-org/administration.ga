@@ -224,6 +224,9 @@ export const listQueuedCallsForAgent = authQuery({
           ).length;
           if (joinedCount > 1) continue;
         }
+        // L'agent a explicitement refusé cet appel → on l'écarte de SA file.
+        // L'appel reste visible aux autres agents éligibles.
+        if (c.declinedBy?.includes(ctx.user._id)) continue;
         // Timeout visuel côté lecture — la cron finalise en base
         if (now - c._creationTime > CALL_RING_TIMEOUT_MS) continue;
 

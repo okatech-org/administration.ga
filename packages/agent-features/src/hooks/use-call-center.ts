@@ -321,8 +321,15 @@ export function useCallCenter() {
     async (meetingId: Id<"meetings">) => {
       try {
         await declineMutation({ meetingId });
-      } catch {
-        // Peut déjà être terminé — silencieux
+      } catch (err: any) {
+        // L'appel peut déjà être terminé côté serveur (raccrochage de
+        // l'appelant juste avant le clic décline). On surface l'erreur
+        // pour les autres cas (permission, validation), où le silence
+        // donnait l'impression que le bouton était cassé.
+        const msg: string = err?.data?.message ?? err?.message ?? "";
+        if (msg && !/non trouvé|already|déjà/i.test(msg)) {
+          toast.error(msg);
+        }
       }
     },
     [declineMutation],

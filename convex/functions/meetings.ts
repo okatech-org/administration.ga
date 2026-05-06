@@ -761,6 +761,9 @@ export const listInboundOrgCalls = authQuery({
         // Auto-timeout: if ringing too long, don't show (stale call)
         if (now - c._creationTime > CALL_RING_TIMEOUT_MS) continue;
 
+        // L'agent a explicitement refusé cet appel → l'exclure de sa vue.
+        if (c.declinedBy?.includes(ctx.user._id)) continue;
+
         // Call line filtering: if the call targets a specific line,
         // only agents on that line should see it.
         // Fallback: if the line has no agents assigned, broadcast to all.
