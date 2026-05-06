@@ -18,6 +18,7 @@ interface MeetingRoomProps {
 	token: string;
 	wsUrl: string;
 	onDisconnect: () => void;
+	mediaType?: "audio" | "video";
 }
 
 // ============================================
@@ -28,7 +29,8 @@ interface MeetingRoomProps {
  * MeetingRoom — Full-featured audio/video conferencing room.
  * Wraps LiveKit's VideoConference with custom controls and styling.
  */
-export function MeetingRoom({ token, wsUrl, onDisconnect }: MeetingRoomProps) {
+export function MeetingRoom({ token, wsUrl, onDisconnect, mediaType }: MeetingRoomProps) {
+	const isVideo = mediaType === "video";
 	const handleUserHangUp = useCallback(() => {
 		onDisconnect();
 	}, [onDisconnect]);
@@ -51,13 +53,14 @@ export function MeetingRoom({ token, wsUrl, onDisconnect }: MeetingRoomProps) {
 				serverUrl={wsUrl}
 				connect={true}
 				audio={true}
+				video={isVideo}
 				options={LIVEKIT_CALL_ROOM_OPTIONS}
 				onConnected={onConnected}
 				onDisconnected={onDisconnected}
 				className="flex flex-col flex-1"
 				style={{ height: "100%" }}
 			>
-				<CustomCallUI onHangUp={handleHangUpClick} />
+				<CustomCallUI onHangUp={handleHangUpClick} mediaType={mediaType} />
 			</LiveKitRoom>
 		</div>
 	);

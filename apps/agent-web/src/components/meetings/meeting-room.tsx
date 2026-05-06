@@ -27,6 +27,7 @@ interface MeetingRoomProps {
 	onDisconnect: () => void;
 	/** Meeting ID — requis pour activer le bouton d'enregistrement. */
 	meetingId?: Id<"meetings">;
+	mediaType?: "audio" | "video";
 }
 
 // ============================================
@@ -42,7 +43,9 @@ export function MeetingRoom({
 	wsUrl,
 	onDisconnect,
 	meetingId,
+	mediaType,
 }: MeetingRoomProps) {
+	const isVideo = mediaType === "video";
 	const cleanupOnDisconnect = useCallback(() => {
 		onDisconnect();
 	}, [onDisconnect]);
@@ -97,6 +100,7 @@ export function MeetingRoom({
 				serverUrl={wsUrl}
 				connect={true}
 				audio={true}
+				video={isVideo}
 				options={LIVEKIT_CALL_ROOM_OPTIONS}
 				onConnected={onConnected}
 				onDisconnected={onDisconnected}
@@ -105,6 +109,7 @@ export function MeetingRoom({
 			>
 				<CustomCallUI
 					onHangUp={handleUserHangUp}
+					mediaType={mediaType}
 					recording={
 						meetingId
 							? {

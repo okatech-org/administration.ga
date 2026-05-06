@@ -272,7 +272,7 @@ export function CitizenCallTab() {
 								onDisconnected={onLiveKitDisconnected}
 								className="flex flex-col flex-1"
 							>
-								<CustomCallUI onHangUp={handleHangUp} title={activeCallLabel ?? undefined} />
+								<CustomCallUI onHangUp={handleHangUp} title={activeCallLabel ?? undefined} mediaType="audio" />
 							</LiveKitRoom>
 						</div>
 					) : (

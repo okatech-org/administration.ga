@@ -3,10 +3,12 @@
 import {
   LiveKitRoom,
   RoomAudioRenderer,
+  useConnectionState,
   useLocalParticipant,
   useRoomContext,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
+import { ConnectionState } from "livekit-client";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import type { Id } from "@convex/_generated/dataModel";
@@ -83,13 +85,17 @@ export function CallRoomMount({
 function MicController({ isActive }: { isActive: boolean }) {
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
+  const connectionState = useConnectionState();
   const { micMuted } = useCallStore();
   const enabled = isActive && !micMuted;
+  const isConnected = connectionState === ConnectionState.Connected;
 
   useEffect(() => {
-    if (!room || !localParticipant) return;
+    if (!room || !localParticipant || !isConnected) return;
     let cancelled = false;
-    // Appel idempotent : LiveKit ignore les no-ops
+    // Appel idempotent : LiveKit ignore les no-ops. On attend que la room
+    // soit Connected pour éviter que setMicrophoneEnabled soit appelé avant
+    // l'établissement WebRTC (ce qui pouvait laisser le mic non publié).
     localParticipant
       .setMicrophoneEnabled(enabled)
       .catch((err) => {
@@ -101,7 +107,7 @@ function MicController({ isActive }: { isActive: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [enabled, room, localParticipant]);
+  }, [enabled, room, localParticipant, isConnected]);
 
   return null;
 }

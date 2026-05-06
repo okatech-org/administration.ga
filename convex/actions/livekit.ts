@@ -92,10 +92,12 @@ export const requestToken = action({
       ttl: "2h",
     });
 
-    // Enforcement per-user : seuls les citoyens sont bridés au microphone.
-    // Les agents gardent la possibilité d'activer la caméra via le toggle
-    // CustomCallUI, même dans un meeting dont mediaType === "audio"
-    // (par ex. appel entrant initié par un citoyen via callOrganization).
+    // Enforcement per-user : les citoyens sont restreints aux sources
+    // pertinentes pour le mediaType de la réunion.
+    //  - mediaType="audio"  → micro uniquement (empêche caméra + screenshare)
+    //  - mediaType="video"  → micro + caméra + partage d'écran
+    // Les agents gardent un grant non restreint (peuvent toggler caméra dans
+    // les appels audio "callOrganization" si besoin opérationnel).
     const isCitizen: boolean = await ctx.runQuery(
       internal.functions.meetings.isAuthSubjectCitizen,
       { authSubject: identity.subject },
@@ -107,7 +109,19 @@ export const requestToken = action({
       canPublish: true,
       canSubscribe: true,
       canPublishData: true,
-      ...(isCitizen ? { canPublishSources: [TrackSource.MICROPHONE] } : {}),
+      ...(isCitizen
+        ? {
+            canPublishSources:
+              meeting.mediaType === "video"
+                ? [
+                    TrackSource.MICROPHONE,
+                    TrackSource.CAMERA,
+                    TrackSource.SCREEN_SHARE,
+                    TrackSource.SCREEN_SHARE_AUDIO,
+                  ]
+                : [TrackSource.MICROPHONE],
+          }
+        : {}),
     });
 
     const jwt = await token.toJwt();

@@ -40,6 +40,12 @@ interface CustomCallUIProps {
 	/** Optional title to display in the header */
 	title?: string;
 	/**
+	 * Type de média de la session.
+	 *  - "video" (default) : caméra et partage d'écran activables, caméra ON par défaut.
+	 *  - "audio" : caméra et partage d'écran masqués, micro uniquement.
+	 */
+	mediaType?: "audio" | "video";
+	/**
 	 * Recording controls. If undefined, the recording button is hidden —
 	 * utilisé pour n'exposer le bouton qu'aux agents (le parent wire la
 	 * mutation Convex `callRecordings.startRecording`/`stopRecording`).
@@ -249,14 +255,23 @@ function ControlButton({
  * - Mobile: remote video fullscreen + local PiP (bottom-right corner)
  * - Desktop: side-by-side 2-column grid
  */
-export function CustomCallUI({ onHangUp, title, recording }: CustomCallUIProps) {
+export function CustomCallUI({ onHangUp, title, mediaType = "video", recording }: CustomCallUIProps) {
 	const { t } = useTranslation();
 	const connectionState = useConnectionState();
 	const isConnected = connectionState === ConnectionState.Connected;
 	const timer = useCallTimer(isConnected);
+	const isVideoSession = mediaType === "video";
 
 	// Local participant
 	const { localParticipant } = useLocalParticipant();
+
+	// Force le micro ON dès la connexion établie. Compense le délai de
+	// publication de la track LiveKit qui faisait apparaître MicOff
+	// visuellement dans `useTrackToggle.enabled`. Idempotent côté LiveKit.
+	useEffect(() => {
+		if (!isConnected || !localParticipant) return;
+		localParticipant.setMicrophoneEnabled(true).catch(() => {});
+	}, [isConnected, localParticipant]);
 
 	// Remote participants
 	const remoteParticipants = useRemoteParticipants();
@@ -548,28 +563,32 @@ export function CustomCallUI({ onHangUp, title, recording }: CustomCallUIProps) 
 						}
 						pending={micPending}
 					/>
-					<ControlButton
-						onClick={() => toggleCamera()}
-						active={cameraEnabled}
-						icon={cameraEnabled ? Camera : CameraOff}
-						label={
-							cameraEnabled
-								? t("meetings.camera", "Caméra")
-								: t("meetings.cameraOff", "Caméra off")
-						}
-						pending={cameraPending}
-					/>
-					<ControlButton
-						onClick={() => toggleScreenShare()}
-						active={screenShareEnabled}
-						icon={screenShareEnabled ? MonitorX : MonitorUp}
-						label={
-							screenShareEnabled
-								? t("meetings.stopScreenShare", "Arrêter")
-								: t("meetings.screenShare", "Partager")
-						}
-						pending={screenSharePending}
-					/>
+					{isVideoSession && (
+						<ControlButton
+							onClick={() => toggleCamera()}
+							active={cameraEnabled}
+							icon={cameraEnabled ? Camera : CameraOff}
+							label={
+								cameraEnabled
+									? t("meetings.camera", "Caméra")
+									: t("meetings.cameraOff", "Caméra off")
+							}
+							pending={cameraPending}
+						/>
+					)}
+					{isVideoSession && (
+						<ControlButton
+							onClick={() => toggleScreenShare()}
+							active={screenShareEnabled}
+							icon={screenShareEnabled ? MonitorX : MonitorUp}
+							label={
+								screenShareEnabled
+									? t("meetings.stopScreenShare", "Arrêter")
+									: t("meetings.screenShare", "Partager")
+							}
+							pending={screenSharePending}
+						/>
+					)}
 					{recording && (
 						<ControlButton
 							onClick={recording.onToggle}

@@ -19,6 +19,7 @@ export function useMeeting(meetingId?: Id<"meetings">) {
 	const [token, setToken] = useState<string | null>(null);
 	const [wsUrl, setWsUrl] = useState<string | null>(null);
 	const [roomName, setRoomName] = useState<string | null>(null);
+	const [mediaType, setMediaType] = useState<"audio" | "video" | null>(null);
 	const [isConnecting, setIsConnecting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -62,6 +63,7 @@ export function useMeeting(meetingId?: Id<"meetings">) {
 				setToken(result.token);
 				setWsUrl(result.wsUrl);
 				setRoomName(result.roomName);
+				setMediaType(result.mediaType);
 			} catch (err) {
 				setError((err as Error).message);
 				console.error("Failed to connect to meeting:", err);
@@ -82,6 +84,7 @@ export function useMeeting(meetingId?: Id<"meetings">) {
 				setToken(null);
 				setWsUrl(null);
 				setRoomName(null);
+				setMediaType(null);
 			} catch (err) {
 				console.error("Failed to leave meeting:", err);
 			}
@@ -94,6 +97,7 @@ export function useMeeting(meetingId?: Id<"meetings">) {
 		token,
 		wsUrl,
 		roomName,
+		mediaType,
 		isConnecting,
 		error,
 		connect,

@@ -30,6 +30,7 @@ export interface MeetingRoomInjectedProps {
 	wsUrl: string;
 	onDisconnect: () => void;
 	meetingId?: Id<"meetings">;
+	mediaType?: "audio" | "video";
 }
 
 export interface PreJoinScreenInjectedProps {
@@ -64,6 +65,7 @@ export default function MeetingsPage({
 		meeting,
 		token,
 		wsUrl,
+		mediaType,
 		isConnecting,
 		error,
 		connect,
@@ -96,6 +98,8 @@ export default function MeetingsPage({
 				type: "meeting",
 				orgId: activeOrgId,
 				participantIds: [],
+				// Réunion = audio + vidéo par défaut (l'utilisateur peut couper).
+				mediaType: "video",
 			});
 			setActiveMeetingId(result.meetingId);
 			setShowPreJoin(true);
@@ -177,6 +181,7 @@ export default function MeetingsPage({
 						token={token}
 						wsUrl={wsUrl}
 						meetingId={activeMeetingId}
+						mediaType={mediaType ?? undefined}
 						onDisconnect={handleDisconnect}
 					/>
 				</div>
