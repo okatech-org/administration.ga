@@ -21,25 +21,29 @@ const CALL_RING_TIMEOUT_MS = 120_000;
 type LinePriority = "urgent" | "high" | "normal";
 
 /**
- * Dérive la priorité visuelle d'un appel à partir de la ligne.
- * - callLines.priority ≤ 1 → "urgent"
- * - callLines.priority === 2 → "high"
- * - sinon → "normal"
+ * Dérive la priorité visuelle d'un appel.
  *
- * Si l'appel porte déjà un champ `priority` explicite, il prévaut.
+ * `callLines.priority` est un entier d'ORDRE D'AFFICHAGE (1 = première ligne
+ * créée, 2 = deuxième, etc. — voir `callLines.create`), pas un niveau
+ * d'urgence. On ne peut donc pas en déduire "urgent" sans pollution : toute
+ * org avec une seule ligne d'accueil tombait à priority=1 et tous ses
+ * appels étaient marqués urgents à tort.
+ *
+ * Règle actuelle : seul le champ explicite `meeting.priority` (posé par un
+ * agent ou un automatisme) peut élever la priorité. Par défaut → "normal".
+ *
+ * TODO : si on veut marquer une LIGNE comme urgente intentionnellement,
+ * ajouter un champ `urgency` dédié sur `callLinesTable`.
  */
 function derivePriority(
   meeting: Doc<"meetings">,
-  line: Doc<"callLines"> | null,
+  _line: Doc<"callLines"> | null,
 ): LinePriority {
   if (meeting.priority) {
     const p = meeting.priority;
     if (p === "low") return "normal";
     return p;
   }
-  if (!line) return "normal";
-  if (line.priority <= 1) return "urgent";
-  if (line.priority === 2) return "high";
   return "normal";
 }
 
