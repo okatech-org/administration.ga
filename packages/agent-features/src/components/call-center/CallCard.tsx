@@ -180,10 +180,7 @@ export function CallCard({
         <Button
           size="icon"
           className={cn(
-            "h-9 w-9",
-            call.priority === "urgent"
-              ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              : "bg-primary text-primary-foreground hover:bg-primary/90",
+            "h-9 w-9 bg-emerald-600 text-white hover:bg-emerald-700",
           )}
           onClick={(e) => {
             e.stopPropagation();
