@@ -41,6 +41,9 @@ interface OrgCallButtonProps {
 	label?: string;
 	/** When provided, uses callRequestAgent to link the call to this request */
 	requestId?: Id<"requests">;
+	/** Fired when the call interface opens — useful for parents that need to
+	 *  close their own modal/sheet so the call dialog isn't stacked behind. */
+	onCallStart?: () => void;
 }
 
 /**
@@ -56,6 +59,7 @@ export function OrgCallButton({
 	variant = "default",
 	label,
 	requestId,
+	onCallStart,
 }: OrgCallButtonProps) {
 	const { t } = useTranslation();
 	const isMobile = useIsMobile();
@@ -131,6 +135,9 @@ export function OrgCallButton({
 			}
 
 			setActiveMeetingId(meetingId);
+			// Notifie le parent (ex. BottomSheet "Contacter") qu'il doit se
+			// fermer pour ne pas masquer le Dialog/Sheet d'appel qui s'ouvre.
+			onCallStart?.();
 			await connect(meetingId);
 			// Transition call to "ringing" — makes it visible to agents
 			await setCallRingingMutation.mutateAsync({ meetingId });
@@ -145,6 +152,7 @@ export function OrgCallButton({
 		setCallRingingMutation,
 		connect,
 		resetDisconnectGuard,
+		onCallStart,
 	]);
 
 	const handleCall = useCallback(async () => {
