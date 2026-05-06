@@ -13,17 +13,13 @@ import "@livekit/components-styles";
 import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 import {
-	Building2,
 	Calendar,
 	Check,
 	ClipboardCopy,
-	Globe,
 	Loader2,
 	Mic,
 	PhoneOff,
 	Plus,
-	Search,
-	Shield,
 	Users,
 	Video,
 	X,
@@ -31,23 +27,21 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "@workspace/routing";
 import { toast } from "sonner";
-import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
-import { Checkbox } from "@workspace/ui/components/checkbox";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { Switch } from "@workspace/ui/components/switch";
 import { CustomCallUI } from "../meetings/custom-call-ui";
 import { useOrg } from "../../shell/org-provider";
-import { useContactSearch, type ContactSource } from "../../hooks/useContactSearch";
 import { useMeeting } from "../../hooks/use-meeting";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
 } from "@workspace/api/hooks";
 import { cn } from "@workspace/ui/lib/utils";
+import { ParticipantPicker } from "./ParticipantPicker";
 
 type ViewState = "list" | "create" | "prejoin" | "incall";
 
@@ -62,12 +56,6 @@ function formatParticipants(
 	if (labels.length <= 3) return labels.join(", ");
 	return `${labels.slice(0, 2).join(", ")} +${labels.length - 2}`;
 }
-
-const MEETING_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; icon: typeof Users }> = [
-	{ id: "all", label: "Tous", icon: Users },
-	{ id: "team", label: "Équipe", icon: Shield },
-	{ id: "network", label: "Réseau", icon: Globe },
-];
 
 export function IAstedMeetingTab() {
 	const { activeOrgId } = useOrg();
@@ -110,15 +98,6 @@ export function IAstedMeetingTab() {
 	const [scheduledTime, setScheduledTime] = useState("");
 	const [recordingEnabled, setRecordingEnabled] = useState(false);
 	const [copiedLink, setCopiedLink] = useState(false);
-
-	// Recherche intelligente cross-org pour invitation
-	const {
-		groups: contactGroups,
-		isPending: contactsLoading,
-		filters: contactFilters,
-		setSearch: setContactSearch,
-		setSource: setContactSource,
-	} = useContactSearch();
 
 	// Hook meeting lifecycle
 	const {
@@ -178,7 +157,6 @@ export function IAstedMeetingTab() {
 		setScheduledDate("");
 		setScheduledTime("");
 		setRecordingEnabled(false);
-		setContactSearch("");
 	};
 
 	const handleCancelMeeting = async (meetingId: Id<"meetings">) => {
@@ -272,14 +250,14 @@ export function IAstedMeetingTab() {
 		setTimeout(() => setCopiedLink(false), 2000);
 	};
 
-	const toggleParticipant = (userId: string) => {
+	const toggleParticipant = useCallback((userId: string) => {
 		setSelectedParticipants((prev) => {
 			const next = new Set(prev);
 			if (next.has(userId)) next.delete(userId);
 			else next.add(userId);
 			return next;
 		});
-	};
+	}, []);
 
 	// ════════════════════════════════════════════════════════════
 	// VUE: IN CALL
@@ -457,90 +435,11 @@ export function IAstedMeetingTab() {
 								<Users className="h-3.5 w-3.5" />
 								Inviter des participants ({selectedParticipants.size})
 							</Label>
-							<div className="relative">
-								<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-								<Input
-									value={contactFilters.searchTerm}
-									onChange={(e) => setContactSearch(e.target.value)}
-									placeholder="Rechercher (nom, poste, org)..."
-									className="h-8 pl-8 text-xs"
-								/>
-							</div>
-							{/* Segments source */}
-							<div className="flex items-center gap-1">
-								{MEETING_SEGMENTS.map((seg) => (
-									<button
-										key={seg.id}
-										type="button"
-										onClick={() => setContactSource(seg.id)}
-										className={cn(
-											"text-[9px] px-1.5 py-0.5 rounded-md font-medium transition-colors",
-											contactFilters.source === seg.id
-												? "bg-primary text-primary-foreground"
-												: "text-muted-foreground hover:bg-muted",
-										)}
-									>
-										{seg.label}
-									</button>
-								))}
-							</div>
-							<div className="max-h-[200px] overflow-y-auto border rounded-lg">
-								{contactsLoading ? (
-									<div className="flex items-center justify-center py-4">
-										<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-									</div>
-								) : contactGroups.length > 0 ? (
-									contactGroups.map((group: any) => (
-										<div key={group.org.id}>
-											{/* En-tête org */}
-											<div className="flex items-center gap-1.5 px-3 py-1 bg-muted/20 sticky top-0">
-												<Building2 className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
-												<span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
-													{group.org.name}
-												</span>
-												{group.org.country && (
-													<span className="text-[7px] text-muted-foreground/60">{group.org.country}</span>
-												)}
-											</div>
-											{group.contacts.map((c: any) => {
-												const isSelected = selectedParticipants.has(c.userId);
-												return (
-													<label
-														key={c.id}
-														className={cn(
-															"flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors",
-															isSelected ? "bg-primary/5" : "hover:bg-muted/30",
-														)}
-													>
-														<Checkbox
-															checked={isSelected}
-															onCheckedChange={() => toggleParticipant(c.userId)}
-															className="h-4 w-4"
-														/>
-														<Avatar className="h-7 w-7">
-															<AvatarImage src={c.avatar} />
-															<AvatarFallback className={cn("text-[9px]",
-																c.source === "team" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
-															)}>
-																{c.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
-															</AvatarFallback>
-														</Avatar>
-														<div className="flex-1 min-w-0">
-															<p className="text-xs font-medium truncate">{c.lastName} {c.firstName}</p>
-															<p className="text-[10px] text-muted-foreground truncate">{c.position}</p>
-														</div>
-														{isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
-													</label>
-												);
-											})}
-										</div>
-									))
-								) : (
-									<p className="text-xs text-muted-foreground text-center py-4">
-										{contactFilters.searchTerm ? "Aucun résultat" : "Aucun contact"}
-									</p>
-								)}
-							</div>
+							<ParticipantPicker
+								activeOrgId={activeOrgId ?? null}
+								selectedParticipants={selectedParticipants}
+								onToggle={toggleParticipant}
+							/>
 						</div>
 					</div>
 				</ScrollArea>
