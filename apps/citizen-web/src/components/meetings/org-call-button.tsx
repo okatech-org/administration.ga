@@ -298,7 +298,9 @@ export function OrgCallButton({
 				<Sheet open={isInCall} onOpenChange={(o) => !o && handleHangUp()}>
 					<SheetContent
 						side="bottom"
-						className="p-0 h-dvh w-full bg-zinc-950 border-none rounded-none focus:outline-none flex flex-col pt-10"
+						// z-[120] : passe au-dessus du BottomSheet "Contacter" (z-[90/91])
+						// pour que l'UI d'appel ne soit jamais masquée.
+						className="z-[120] p-0 h-dvh w-full bg-zinc-950 border-none rounded-none focus:outline-none flex flex-col pt-10"
 					>
 						<SheetTitle className="sr-only">
 							{orgName || t("meetings.callInProgress")}

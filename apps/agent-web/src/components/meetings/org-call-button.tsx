@@ -233,7 +233,9 @@ export function OrgCallButton({
 				<Sheet open={isInCall} onOpenChange={(o) => !o && handleHangUp()}>
 					<SheetContent
 						side="bottom"
-						className="p-0 h-[100dvh] w-full bg-zinc-950 border-none rounded-none focus:outline-none flex flex-col pt-10"
+						// z-[120] : garantit que l'UI d'appel passe au-dessus de tout
+						// autre overlay (BottomSheet, drawer, etc.).
+						className="z-[120] p-0 h-[100dvh] w-full bg-zinc-950 border-none rounded-none focus:outline-none flex flex-col pt-10"
 					>
 						<SheetTitle className="sr-only">
 							{orgName || t("meetings.callInProgress", "Appel en cours")}
