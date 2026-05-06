@@ -170,7 +170,6 @@ export function MobileCallFAB({ variant = "horizontal" }: { variant?: "horizonta
 											orgAddress={rep.address}
 											className="h-11 text-sm font-semibold bg-[#0072B9] hover:bg-[#0072B9]/90 text-white transition-transform active:scale-[0.97] rounded-xl w-full"
 											label="Appeler"
-											onCallStart={() => setIsOpen(false)}
 										/>
 									</div>
 								</div>
