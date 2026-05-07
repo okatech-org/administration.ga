@@ -34,6 +34,31 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { ImageCropDialog } from "./ImageCropDialog";
 
+function isFileAccepted(file: File, accept: string): boolean {
+	const patterns = accept
+		.split(",")
+		.map((s) => s.trim())
+		.filter(Boolean);
+	if (patterns.length === 0) return true;
+	const mime = file.type.toLowerCase();
+	const name = file.name.toLowerCase();
+	return patterns.some((pattern) => {
+		const p = pattern.toLowerCase();
+		if (p.startsWith(".")) return name.endsWith(p);
+		if (p.endsWith("/*")) return mime.startsWith(p.slice(0, -1));
+		return mime === p;
+	});
+}
+
+function formatHintFromAccept(accept: string): string {
+	return accept
+		.split(",")
+		.map((s) => s.trim())
+		.filter(Boolean)
+		.map((p) => p.replace("/*", "").replace("application/", "").toUpperCase())
+		.join(", ");
+}
+
 async function compressImageIfNeeded(file: File): Promise<File> {
 	if (!file.type.startsWith("image/") || file.size <= 1 * 1024 * 1024) {
 		return file;
@@ -381,6 +406,12 @@ export const DocumentUploadZone = forwardRef<
 
 				// Validate files
 				for (const file of fileArray) {
+					if (!isFileAccepted(file, accept)) {
+						setError(
+							`Format de fichier non autorisé. Formats acceptés : ${formatHintFromAccept(accept)}`,
+						);
+						return;
+					}
 					if (file.size > maxSize) {
 						setError(
 							`Fichier trop volumineux. Max: ${Math.round(maxSize / 1024 / 1024)}MB`,
@@ -417,6 +448,7 @@ export const DocumentUploadZone = forwardRef<
 			},
 			[
 				disabled,
+				accept,
 				maxSize,
 				maxFiles,
 				uploadedFiles.length,
