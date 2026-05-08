@@ -15,11 +15,22 @@
 import { api } from "@convex/_generated/api";
 import "mapbox-gl/dist/mapbox-gl.css";
 import * as mapboxgl from "mapbox-gl";
-import { Globe, Loader2, MapPin, MapPinOff, Target } from "lucide-react";
+import {
+	Baby,
+	Building2,
+	Globe,
+	Loader2,
+	MapPin,
+	MapPinOff,
+	Target,
+	UserCircle,
+	Users,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
+import { PageHeader } from "@workspace/agent-features/components/my-space";
 import { useOrg } from "@workspace/agent-features/shell";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -41,11 +52,13 @@ import {
 // ─── Types ─────────────────────────────────────────────────
 type TargetKind = "profile" | "child_profile" | "diplomatic_target" | "agent";
 type GeoSource = "gps" | "fallback";
+type Gender = "male" | "female" | "unknown";
 
 interface MapPoint {
 	id: string;
 	kind: TargetKind;
 	geoSource: GeoSource;
+	gender: Gender;
 	label: string;
 	country?: string;
 	coords: [number, number];
@@ -61,11 +74,29 @@ const KIND_COLORS: Record<TargetKind, string> = {
 };
 
 const KIND_LABEL: Record<TargetKind, string> = {
-	profile: "Profil",
+	profile: "Profil citoyen",
 	child_profile: "Mineur",
-	diplomatic_target: "Cible diplo.",
+	diplomatic_target: "Cible diplomatique",
 	agent: "Agent",
 };
+
+const KIND_ICON: Record<TargetKind, React.ElementType> = {
+	profile: Users,
+	child_profile: Baby,
+	diplomatic_target: Building2,
+	agent: UserCircle,
+};
+
+const GENDER_GLYPH: Record<Gender, string> = {
+	male: "♂",
+	female: "♀",
+	unknown: "",
+};
+
+function normalizeGender(g?: string | null): Gender {
+	if (g === "male" || g === "female") return g;
+	return "unknown";
+}
 
 function escapeHtml(s: string | null | undefined): string {
 	if (s == null) return "";
@@ -89,6 +120,9 @@ export default function IntelligenceMapInteractive() {
 	// Filtres
 	const [kindFilter, setKindFilter] = useState<"all" | TargetKind>("all");
 	const [geoFilter, setGeoFilter] = useState<"all" | GeoSource>("all");
+	const [genderFilter, setGenderFilter] = useState<"all" | "male" | "female">(
+		"all",
+	);
 	const [activeContinent, setActiveContinent] = useState<Continent | null>(
 		null,
 	);
@@ -105,11 +139,15 @@ export default function IntelligenceMapInteractive() {
 		const out: MapPoint[] = [];
 		for (const p of serverPoints) {
 			const kind = p.targetType as TargetKind;
+			const gender = normalizeGender(
+				(p as { gender?: string | null }).gender,
+			);
 			if (p.lat !== undefined && p.lng !== undefined) {
 				out.push({
 					id: `${p.targetType}:${p.targetId}`,
 					kind,
 					geoSource: "gps",
+					gender,
 					label: p.label || "(sans nom)",
 					country: p.country,
 					coords: [p.lng, p.lat],
@@ -124,6 +162,7 @@ export default function IntelligenceMapInteractive() {
 					id: `${p.targetType}:${p.targetId}`,
 					kind,
 					geoSource: "fallback",
+					gender,
 					label: p.label || "(sans nom)",
 					country: p.country,
 					coords: cap,
@@ -165,6 +204,7 @@ export default function IntelligenceMapInteractive() {
 		return allPoints.filter((p) => {
 			if (kindFilter !== "all" && p.kind !== kindFilter) return false;
 			if (geoFilter !== "all" && p.geoSource !== geoFilter) return false;
+			if (genderFilter !== "all" && p.gender !== genderFilter) return false;
 			if (activeContinent) {
 				if (!p.country || getContinent(p.country) !== activeContinent)
 					return false;
@@ -172,7 +212,14 @@ export default function IntelligenceMapInteractive() {
 			if (selectedCountry && p.country !== selectedCountry) return false;
 			return true;
 		});
-	}, [allPoints, kindFilter, geoFilter, activeContinent, selectedCountry]);
+	}, [
+		allPoints,
+		kindFilter,
+		geoFilter,
+		genderFilter,
+		activeContinent,
+		selectedCountry,
+	]);
 
 	const stats = useMemo(() => {
 		const total = filteredPoints.length;
@@ -255,7 +302,7 @@ export default function IntelligenceMapInteractive() {
 			}).setHTML(
 				`<div style="font-family: system-ui, -apple-system, sans-serif; min-width: 240px; background-color: #020617; border: 1px solid #1e293b; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); overflow: hidden;">
 					<div style="padding: 10px 14px; border-bottom: 1px solid #1e293b;">
-						<span style="display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #ffffff; background-color: ${color}; padding: 2px 8px; border-radius: 9999px;">${KIND_LABEL[point.kind]}${point.geoSource === "fallback" ? " · capitale" : ""}</span>
+						<span style="display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #ffffff; background-color: ${color}; padding: 2px 8px; border-radius: 9999px;">${KIND_LABEL[point.kind]}${point.gender !== "unknown" ? ` &middot; ${GENDER_GLYPH[point.gender]}` : ""}${point.geoSource === "fallback" ? " &middot; capitale" : ""}</span>
 					</div>
 					<div style="padding: 12px 14px;">
 						<div style="font-weight: 600; font-size: 14px; color: #f8fafc; margin-bottom: 4px; line-height: 1.3;">${escapeHtml(point.label)}</div>
@@ -335,6 +382,18 @@ export default function IntelligenceMapInteractive() {
 		},
 	];
 
+	const genderDropdownOptions: ComboboxOption[] = [
+		{ value: ALL, label: `Tous (${allPoints.length})` },
+		{
+			value: "male",
+			label: `♂ Hommes (${allPoints.filter((p) => p.gender === "male").length})`,
+		},
+		{
+			value: "female",
+			label: `♀ Femmes (${allPoints.filter((p) => p.gender === "female").length})`,
+		},
+	];
+
 	const continentDropdownOptions: ComboboxOption[] = [
 		{ value: ALL, label: "Tous les continents" },
 		...continents.map((c) => ({
@@ -358,13 +417,28 @@ export default function IntelligenceMapInteractive() {
 	const hasActiveFilter =
 		kindFilter !== "all" ||
 		geoFilter !== "all" ||
+		genderFilter !== "all" ||
 		activeContinent !== null ||
 		selectedCountry !== null;
 
+	const resetFilters = () => {
+		setKindFilter("all");
+		setGeoFilter("all");
+		setGenderFilter("all");
+		setActiveContinent(null);
+		setSelectedCountry(null);
+	};
+
 	return (
-		<div className="flex flex-col gap-3 p-4 lg:p-6 overflow-y-auto citizen-scrollbar">
+		<div className="flex flex-col gap-6 p-4 lg:p-6 overflow-y-auto citizen-scrollbar">
+			<PageHeader
+				icon={<Globe className="h-5 w-5 text-rose-500" />}
+				title="Carte du renseignement"
+				subtitle="Répartition mondiale des profils surveillés, mineurs, contacts diplomatiques et agents."
+			/>
+
 			{/* Filter row */}
-			<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
+			<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
 				<MapFilterField label="Type">
 					<Combobox
 						options={kindDropdownOptions}
@@ -373,6 +447,20 @@ export default function IntelligenceMapInteractive() {
 							setKindFilter(v === ALL ? "all" : (v as TargetKind))
 						}
 						placeholder="Type"
+						searchPlaceholder="Filtrer…"
+						emptyText="—"
+						className="h-9"
+					/>
+				</MapFilterField>
+
+				<MapFilterField label="Genre">
+					<Combobox
+						options={genderDropdownOptions}
+						value={genderFilter === "all" ? ALL : genderFilter}
+						onValueChange={(v) =>
+							setGenderFilter(v === ALL ? "all" : (v as "male" | "female"))
+						}
+						placeholder="Genre"
 						searchPlaceholder="Filtrer…"
 						emptyText="—"
 						className="h-9"
@@ -427,12 +515,7 @@ export default function IntelligenceMapInteractive() {
 						size="sm"
 						className="h-9 w-full font-normal"
 						disabled={!hasActiveFilter}
-						onClick={() => {
-							setKindFilter("all");
-							setGeoFilter("all");
-							setActiveContinent(null);
-							setSelectedCountry(null);
-						}}
+						onClick={resetFilters}
 					>
 						Réinitialiser
 					</Button>
@@ -516,6 +599,35 @@ export default function IntelligenceMapInteractive() {
 					<LegendItem color={KIND_COLORS.agent} label="Agent" />
 				</div>
 			</div>
+
+			{/* Chips toggle type — affichage rapide d'une catégorie. Cliquer
+			    deux fois sur la même chip réactive « Tous ». */}
+			<div className="flex flex-wrap items-center gap-2">
+				<span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mr-1">
+					Affichage rapide
+				</span>
+				<KindChip
+					active={kindFilter === "all"}
+					color="text-foreground"
+					icon={Target}
+					label="Tous"
+					count={allPoints.length}
+					onClick={() => setKindFilter("all")}
+				/>
+				{(["profile", "child_profile", "diplomatic_target", "agent"] as const).map(
+					(k) => (
+						<KindChip
+							key={k}
+							active={kindFilter === k}
+							color={KIND_COLORS[k]}
+							icon={KIND_ICON[k]}
+							label={KIND_LABEL[k]}
+							count={allPoints.filter((p) => p.kind === k).length}
+							onClick={() => setKindFilter(kindFilter === k ? "all" : k)}
+						/>
+					),
+				)}
+			</div>
 		</div>
 	);
 }
@@ -574,6 +686,57 @@ function LegendItem({ color, label }: { color: string; label: string }) {
 			/>
 			<span>{label}</span>
 		</div>
+	);
+}
+
+function KindChip({
+	active,
+	color,
+	icon: Icon,
+	label,
+	count,
+	onClick,
+}: {
+	active: boolean;
+	color: string;
+	icon: React.ElementType;
+	label: string;
+	count: number;
+	onClick: () => void;
+}) {
+	const isHex = color.startsWith("#");
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			className={cn(
+				"inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all active:scale-[0.97]",
+				active
+					? "border-foreground/40 bg-foreground/[0.08] text-foreground shadow-sm"
+					: "border-border/60 bg-background hover:border-foreground/30 hover:bg-muted/40 text-muted-foreground",
+			)}
+		>
+			<span
+				className={cn(
+					"inline-flex items-center justify-center rounded-full p-0.5",
+					active ? "ring-2 ring-offset-1 ring-offset-background" : "",
+				)}
+				style={isHex ? { color, ...(active ? { boxShadow: `0 0 0 2px ${color}` } : {}) } : undefined}
+			>
+				<Icon className="h-3 w-3" />
+			</span>
+			<span className={isHex ? "" : color}>{label}</span>
+			<span
+				className={cn(
+					"inline-flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums",
+					active
+						? "bg-foreground/20 text-foreground"
+						: "bg-muted text-muted-foreground",
+				)}
+			>
+				{count}
+			</span>
+		</button>
 	);
 }
 

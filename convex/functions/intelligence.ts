@@ -230,15 +230,28 @@ export const getMapData = authQuery({
 
     const profiles = await ctx.db.query("profiles").collect();
 
+    const ADULT_AGE_MS = 18 * 365.25 * 24 * 60 * 60 * 1000;
+    const isMinor = (birthDate?: number): boolean => {
+      if (!birthDate) return false;
+      return Date.now() - birthDate < ADULT_AGE_MS;
+    };
+
     const points = profiles.map((p) => {
       const coords = (p as any).addresses?.residence?.coordinates as
         | { lat: number; lng: number }
         | undefined;
+      const minor = isMinor(p.identity?.birthDate);
       return {
-        targetType: "profile" as const,
+        targetType: (minor ? "child_profile" : "profile") as
+          | "profile"
+          | "child_profile",
         targetId: p._id,
         label: `${p.identity?.firstName ?? ""} ${p.identity?.lastName ?? ""}`.trim(),
         country: p.countryOfResidence ?? undefined,
+        gender: (p.identity?.gender ?? undefined) as
+          | "male"
+          | "female"
+          | undefined,
         lat: coords?.lat,
         lng: coords?.lng,
       };
@@ -256,6 +269,7 @@ export const getMapData = authQuery({
         targetId: t._id,
         label: t.name,
         country: t.country ?? undefined,
+        gender: undefined as "male" | "female" | undefined,
         lat: undefined as number | undefined,
         lng: undefined as number | undefined,
       }));
