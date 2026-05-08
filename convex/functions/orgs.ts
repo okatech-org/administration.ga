@@ -2,7 +2,7 @@ import { v } from "convex/values"
 import { query } from "../_generated/server"
 import { createInvitedUserHelper } from "../lib/users"
 import { authQuery, authMutation } from "../lib/customFunctions"
-import { getMembership } from "../lib/auth"
+import { getMembership, getCurrentUser } from "../lib/auth"
 import { assertCanDoTask } from "../lib/permissions"
 import { error, ErrorCode } from "../lib/errors"
 import { logCortexAction } from "../lib/neocortex"
@@ -25,7 +25,8 @@ import {
   chatsConfigValidator,
 } from "../lib/validators"
 import { taskCodeValidator } from "../lib/taskCodes"
-import { MODULE_ACCESS_TASKS, moduleCodeValidator, accessLevelValidator, NETWORK_MODULE_CODES, isNetworkModule } from "../lib/moduleCodes"
+import { MODULE_ACCESS_TASKS, moduleCodeValidator, accessLevelValidator, NETWORK_MODULE_CODES, isNetworkModule, isIntelligenceAgencyModule } from "../lib/moduleCodes"
+import { isIntelligenceAgency, isCallerIntelAgency } from "../lib/intelligenceAgencyVisibility"
 import { OrganizationType } from "../lib/constants"
 import { countryCodeValidator, CountryCode } from "../lib/countryCodeValidator"
 import { canDoTask } from "../lib/permissions"
@@ -47,6 +48,10 @@ import {
 
 /**
  * List all active organizations
+ *
+ * Les organismes de type `intelligence_agency` sont masqués par défaut.
+ * Un appelant qui appartient à une agence de renseignement souverain peut
+ * les voir.
  */
 export const list = query({
   args: {
@@ -69,7 +74,12 @@ export const list = query({
       orgs = orgs.filter((org) => org.country === args.country)
     }
 
-    return orgs
+    // Cloisonnement : masquer les agences de renseignement aux non-membres.
+    const user = await getCurrentUser(ctx)
+    const callerIsIntel = user
+      ? await isCallerIntelAgency(ctx, user._id)
+      : false
+    return orgs.filter((o) => callerIsIntel || !isIntelligenceAgency(o))
   },
 })
 
@@ -90,10 +100,13 @@ export const listByJurisdiction = query({
       )
       .take(200)
 
-    // Filter to consulates/embassies that have this country in their jurisdiction
+    // Filter to consulates/embassies that have this country in their jurisdiction.
+    // Les agences de renseignement n'apparaissent jamais ici (elles ne servent
+    // pas de juridiction consulaire et sont cloisonnées).
     const consulateTypes = ["embassy", "consulate", "general_consulate"]
 
     return orgs.filter((org) => {
+      if (isIntelligenceAgency(org)) return false
       if (!consulateTypes.includes(org.type)) return false
       if (!org.jurisdictionCountries || org.jurisdictionCountries.length === 0)
         return false
@@ -106,6 +119,9 @@ export const listByJurisdiction = query({
 
 /**
  * Get organization by slug
+ *
+ * Cloisonnement : retourne null pour une intelligence_agency sauf si l'appelant
+ * est lui-même membre d'une agence de renseignement.
  */
 export const getBySlug = query({
   args: { slug: v.string() },
@@ -116,18 +132,34 @@ export const getBySlug = query({
       .unique()
 
     if (org?.deletedAt) return null
+    if (!org) return null
+    if (isIntelligenceAgency(org)) {
+      const user = await getCurrentUser(ctx)
+      if (!user) return null
+      const ok = await isCallerIntelAgency(ctx, user._id)
+      if (!ok) return null
+    }
     return org
   },
 })
 
 /**
  * Get organization by ID
+ *
+ * Cloisonnement : retourne null pour une intelligence_agency sauf si l'appelant
+ * est lui-même membre d'une agence de renseignement.
  */
 export const getById = query({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
     const org = await ctx.db.get(args.orgId)
-    if (org?.deletedAt) return null
+    if (!org || org.deletedAt) return null
+    if (isIntelligenceAgency(org)) {
+      const user = await getCurrentUser(ctx)
+      if (!user) return null
+      const ok = await isCallerIntelAgency(ctx, user._id)
+      if (!ok) return null
+    }
     return org
   },
 })
@@ -154,6 +186,14 @@ export const getDetailedById = query({
   handler: async (ctx, args) => {
     const org = await ctx.db.get(args.orgId)
     if (!org || org.deletedAt) return null
+
+    // Cloisonnement intelligence_agency : invisible aux non-membres.
+    if (isIntelligenceAgency(org)) {
+      const user = await getCurrentUser(ctx)
+      if (!user) return null
+      const ok = await isCallerIntelAgency(ctx, user._id)
+      if (!ok) return null
+    }
 
     const [address, schedule, headOfMissionName, logoUrl, timezone] =
       await Promise.all([
@@ -294,6 +334,20 @@ export const create = authMutation({
       }
     }
 
+    // Validation : modules intelligence (agence) uniquement sur intelligence_agency.
+    if (
+      args.modules &&
+      args.type !== OrganizationType.IntelligenceAgency
+    ) {
+      const intelOnOther = args.modules.find((m) => isIntelligenceAgencyModule(m))
+      if (intelOnOther) {
+        throw error(
+          ErrorCode.VALIDATION_ERROR,
+          `Le module "${intelOnOther}" est exclusif au type "intelligence_agency"`
+        )
+      }
+    }
+
     const { positions, templateType, modules, ...orgData } = args
 
     const orgId = await ctx.db.insert("orgs", {
@@ -363,7 +417,17 @@ export const listChildren = query({
       .withIndex("by_parent", (q) => q.eq("parentOrgId", args.parentOrgId))
       .collect()
 
-    return children.filter((org) => !org.deletedAt && org.isActive)
+    const user = await getCurrentUser(ctx)
+    const callerIsIntel = user
+      ? await isCallerIntelAgency(ctx, user._id)
+      : false
+
+    return children.filter(
+      (org) =>
+        !org.deletedAt &&
+        org.isActive &&
+        (callerIsIntel || !isIntelligenceAgency(org)),
+    )
   },
 })
 
@@ -1051,10 +1115,21 @@ export const updateChatsConfig = authMutation({
 
 /**
  * Get organization members
+ *
+ * Cloisonnement intelligence_agency : retourne une liste vide si l'org est
+ * une agence de renseignement et que l'appelant n'en fait pas partie.
  */
 export const getMembers = query({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.orgId)
+    if (org && isIntelligenceAgency(org)) {
+      const user = await getCurrentUser(ctx)
+      if (!user) return []
+      const ok = await isCallerIntelAgency(ctx, user._id, args.orgId)
+      if (!ok) return []
+    }
+
     const memberships = await ctx.db
       .query("memberships")
       .withIndex("by_org_deletedAt", (q) =>
@@ -1108,6 +1183,13 @@ export const getMembers = query({
 export const listOrgDiplomaticMembers = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    // Cloisonnement intel agency : invisible aux non-membres.
+    const org = await ctx.db.get(args.orgId)
+    if (org && isIntelligenceAgency(org)) {
+      const ok = await isCallerIntelAgency(ctx, ctx.user._id, args.orgId)
+      if (!ok) return []
+    }
+
     const callerMembership = await getMembership(ctx, ctx.user._id, args.orgId)
     await assertCanDoTask(ctx, ctx.user, callerMembership, "team.view")
 

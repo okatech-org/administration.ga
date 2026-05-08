@@ -69,25 +69,25 @@ const QUICK_LINKS: Array<{
 	icon: React.ElementType;
 }> = [
 	{
-		href: "/intelligence/profiles",
+		href: "/agence/profiles",
 		label: "Profils surveillés",
 		desc: "Recherche multi-cibles",
 		icon: UserSearch,
 	},
 	{
-		href: "/intelligence/watchlists",
+		href: "/agence/watchlists",
 		label: "Listes de surveillance",
 		desc: "Dossiers thématiques",
 		icon: Eye,
 	},
 	{
-		href: "/intelligence/notes",
+		href: "/agence/notes",
 		label: "Notes critiques",
 		desc: "Flux des signalements",
 		icon: StickyNote,
 	},
 	{
-		href: "/intelligence/map",
+		href: "/agence/map",
 		label: "Cartographie",
 		desc: "Répartition mondiale",
 		icon: Globe,
@@ -134,14 +134,14 @@ export default function IntelligenceDashboard() {
 							value={data.criticalNotes}
 							icon={AlertTriangle}
 							tone="critical"
-							href="/intelligence/notes"
+							href="/agence/notes"
 						/>
 						<KpiTile
 							label="Élevées"
 							value={data.highNotes}
 							icon={AlertTriangle}
 							tone="warning"
-							href="/intelligence/notes"
+							href="/agence/notes"
 						/>
 						<KpiTile
 							label="Signalements"

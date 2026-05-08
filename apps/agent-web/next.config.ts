@@ -94,6 +94,18 @@ const nextConfig: NextConfig = {
         destination: "/icom/:path*",
         permanent: true,
       },
+      // /intelligence -> /agence (module recantonné sous /agence/* après
+      // migration vers le type d'organisme intelligence_agency).
+      {
+        source: "/intelligence",
+        destination: "/agence",
+        permanent: true,
+      },
+      {
+        source: "/intelligence/:path*",
+        destination: "/agence/:path*",
+        permanent: true,
+      },
     ]
   },
 }

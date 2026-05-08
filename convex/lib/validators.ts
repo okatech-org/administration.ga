@@ -98,6 +98,7 @@ export const orgTypeValidator = v.union(
   v.literal(OrgType.PermanentMission),
   v.literal(OrgType.ThirdParty),
   v.literal(OrgType.Ministry),
+  v.literal(OrgType.IntelligenceAgency),
   // Legacy types (kept for backward compatibility with existing data)
   v.literal("consulate"),
   v.literal("honorary_consulate"),
@@ -1376,7 +1377,6 @@ export const notificationTypeValidator = v.union(
   // In-app types
   v.literal(NotificationType.NewMessage),
   v.literal(NotificationType.StatusUpdate),
-  v.literal(NotificationType.PaymentSuccess),
   v.literal(NotificationType.ActionRequired),
   v.literal(NotificationType.DocumentValidated),
   v.literal(NotificationType.DocumentRejected),

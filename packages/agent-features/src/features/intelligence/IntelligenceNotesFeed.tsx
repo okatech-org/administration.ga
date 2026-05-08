@@ -106,7 +106,7 @@ export default function IntelligenceNotesFeed() {
 										transition={{ delay: i * 0.02 }}
 									>
 										<Link
-											href={`/intelligence/profiles/${n.targetType}/${n.targetId}`}
+											href={`/agence/profiles/${n.targetType}/${n.targetId}`}
 											className="block rounded-lg border border-border/50 bg-background/60 hover:bg-muted/40 hover:border-rose-500/30 transition-all p-3 space-y-2"
 										>
 											<div className="flex items-center gap-1.5 flex-wrap">

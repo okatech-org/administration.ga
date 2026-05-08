@@ -6,7 +6,6 @@ import {
 	Calendar,
 	ChevronsLeft,
 	ChevronsRight,
-	CreditCard,
 	Eye,
 	FileText,
 	FolderOpen,
@@ -139,7 +138,6 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 			label: "Gestion",
 			items: [
 				{ title: "Équipe", url: "/team", icon: Users2, requires: "team.view", moduleCode: "team" },
-				{ title: "Paiements", url: "/payments", icon: CreditCard, requires: "finance.view", moduleCode: "payments" },
 				{ title: "Statistiques", url: "/statistics", icon: BarChart3, requires: "analytics.view", moduleCode: "statistics" },
 			],
 		},
@@ -155,16 +153,19 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 			],
 		},
 		{
-			// Renseignement diplomatique — module cloisonné, ministry-only.
-			// Visible uniquement pour les porteurs du preset
-			// `intelligence_services` (cabinet ministre, SG, IG, etc.).
+			// Renseignement souverain — module cloisonné, exclusif au type
+			// d'organisme `intelligence_agency`. Routes namespacées sous
+			// /agence/* (cf. INTELLIGENCE_AGENCY_MODULE_CODES). Invisible
+			// des autres organismes : seuls les agents d'une agence
+			// souveraine voient cette section (filtre `moduleCode` +
+			// validation côté création d'organisme).
 			label: "Renseignement",
 			items: [
-				{ title: "Vue d'ensemble", url: "/intelligence", icon: ShieldAlert, requires: "intelligence.profiles.view", moduleCode: "intelligence" },
-				{ title: "Profils", url: "/intelligence/profiles", icon: UserSearch, requires: "intelligence.profiles.search", moduleCode: "intelligence" },
-				{ title: "Listes de surveillance", url: "/intelligence/watchlists", icon: Eye, requires: "intelligence.watchlists.view", moduleCode: "intelligence" },
-				{ title: "Notes", url: "/intelligence/notes", icon: StickyNote, requires: "intelligence.notes.view", moduleCode: "intelligence" },
-				{ title: "Carte", url: "/intelligence/map", icon: Globe, requires: "intelligence.map.view", moduleCode: "intelligence" },
+				{ title: "Vue d'ensemble", url: "/agence", icon: ShieldAlert, requires: "intelligence.profiles.view", moduleCode: "intelligence" },
+				{ title: "Profils", url: "/agence/profiles", icon: UserSearch, requires: "intelligence.profiles.search", moduleCode: "intelligence" },
+				{ title: "Listes de surveillance", url: "/agence/watchlists", icon: Eye, requires: "intelligence.watchlists.view", moduleCode: "intelligence" },
+				{ title: "Notes", url: "/agence/notes", icon: StickyNote, requires: "intelligence.notes.view", moduleCode: "intelligence" },
+				{ title: "Carte", url: "/agence/map", icon: Globe, requires: "intelligence.map.view", moduleCode: "intelligence" },
 			],
 		},
 		...(extraSections ?? []),

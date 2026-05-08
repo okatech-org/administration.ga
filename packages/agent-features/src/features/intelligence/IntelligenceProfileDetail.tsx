@@ -99,7 +99,7 @@ export default function IntelligenceProfileDetail({ targetType, targetId }: Prop
 		<div className="flex flex-col gap-4 p-4 lg:p-6 max-w-6xl mx-auto w-full">
 			{/* Sticky breadcrumb */}
 			<div className="flex items-center gap-3 -mx-4 lg:-mx-6 px-4 lg:px-6 py-3 border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-				<Link href="/intelligence/profiles">
+				<Link href="/agence/profiles">
 					<Button variant="ghost" size="sm">
 						<ArrowLeft className="h-4 w-4 mr-1" /> Profils
 					</Button>

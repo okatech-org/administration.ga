@@ -157,6 +157,10 @@ export enum OrganizationType {
   ThirdParty = "third_party", // Partenaire tiers
   // Tutelle / supervision
   Ministry = "ministry", // Ministère (chapeaute consulats, ambassades, etc.)
+  // Renseignement souverain — totalement cloisonné des autres organismes.
+  // Seul type autorisé à activer le module `intelligence`. Invisible des
+  // listes, annuaires et recherches inter-organismes (cf. visibility helper).
+  IntelligenceAgency = "intelligence_agency",
 }
 
 /**
@@ -219,7 +223,6 @@ export enum NotificationType {
   // In-app notification types
   NewMessage = "new_message",
   StatusUpdate = "status_update",
-  PaymentSuccess = "payment_success",
   ActionRequired = "action_required",
   DocumentValidated = "document_validated",
   DocumentRejected = "document_rejected",
@@ -321,7 +324,6 @@ export enum ActivityType {
   DocumentValidated = "document_validated",
   DocumentDeleted = "document_deleted",
   DocumentRejected = "document_rejected",
-  PaymentReceived = "payment_received",
   RequestCompleted = "request_completed",
   RequestCancelled = "request_cancelled",
   CommentAdded = "comment_added",
@@ -935,7 +937,6 @@ export enum ServiceStepType {
   Form = "form",
   Documents = "documents",
   Appointment = "appointment",
-  Payment = "payment",
   Review = "review",
   Delivery = "delivery",
 }
@@ -947,7 +948,6 @@ export enum RequestActionType {
   DocumentAdded = "document_added",
   DocumentValidated = "document_validated",
   AppointmentScheduled = "appointment_scheduled",
-  PaymentReceived = "payment_received",
   Completed = "completed",
   ProfileUpdate = "profile_update",
   DocumentUpdated = "document_updated",

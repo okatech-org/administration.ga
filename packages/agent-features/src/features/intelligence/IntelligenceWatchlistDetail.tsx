@@ -74,7 +74,7 @@ export default function IntelligenceWatchlistDetail({ watchlistId }: Props) {
 	return (
 		<div className="flex flex-col gap-4 p-4 lg:p-6 max-w-6xl mx-auto w-full">
 			<div className="flex items-center gap-3 -mx-4 lg:-mx-6 px-4 lg:px-6 py-3 border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-				<Link href="/intelligence/watchlists">
+				<Link href="/agence/watchlists">
 					<Button variant="ghost" size="sm">
 						<ArrowLeft className="h-4 w-4 mr-1" /> Listes
 					</Button>
@@ -196,7 +196,7 @@ export default function IntelligenceWatchlistDetail({ watchlistId }: Props) {
 													<Icon className={cn("h-3.5 w-3.5", meta.color)} />
 												</div>
 												<Link
-													href={`/intelligence/profiles/${it.targetType}/${it.targetId}`}
+													href={`/agence/profiles/${it.targetType}/${it.targetId}`}
 													className="flex-1 min-w-0"
 												>
 													<p className="text-sm font-medium truncate">

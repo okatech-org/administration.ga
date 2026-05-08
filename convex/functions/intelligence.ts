@@ -1,8 +1,9 @@
 /**
- * Module Renseignement diplomatique — queries de lecture transverses.
+ * Module Renseignement souverain — queries de lecture transverses.
  *
- * Toutes les fonctions exigent au minimum `intelligence.profiles.view`.
- * Le module est exclusif au type d'organisme `ministry` (cf. NETWORK_MODULE_CODES).
+ * Toutes les fonctions exigent au minimum `intelligence.profiles.view`
+ * ET que l'appelant appartienne à un organisme de type `intelligence_agency`
+ * (cf. INTELLIGENCE_AGENCY_MODULE_CODES + assertCallerIsIntelAgency).
  *
  * Les opérations sensibles laissent une trace dans `auditLog`
  * (table=intelligenceAccess, operation=read).
@@ -13,6 +14,7 @@ import type { Id } from "../_generated/dataModel";
 import { authQuery } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
+import { assertCallerIsIntelAgency } from "../lib/intelligenceAgencyVisibility";
 
 const targetTypeValidator = v.union(
   v.literal("profile"),
@@ -35,6 +37,7 @@ export const searchProfiles = authQuery({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,
@@ -148,6 +151,7 @@ export const getProfileWithNotes = authQuery({
     targetId: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,
@@ -220,6 +224,7 @@ export const getMapData = authQuery({
     ),
   },
   handler: async (ctx, args) => {
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(ctx, ctx.user, membership, "intelligence.map.view");
 
@@ -287,6 +292,7 @@ export const getBriefing = authQuery({
     targetId: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,
@@ -445,6 +451,7 @@ export const getRiskScore = authQuery({
     targetId: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,
@@ -503,6 +510,7 @@ export const getRiskScore = authQuery({
 export const getDashboardCounts = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,

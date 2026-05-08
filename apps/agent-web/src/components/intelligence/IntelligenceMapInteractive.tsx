@@ -168,7 +168,7 @@ export default function IntelligenceMapInteractive() {
 					<div style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: ${color}; margin-bottom: 4px;">${p.geolocated ? "GPS précis" : "Capitale (fallback)"}</div>
 					<div style="font-weight: 600; font-size: 13px; margin-bottom: 2px;">${escapeHtml(p.label)}</div>
 					${p.country ? `<div style="font-size: 11px; opacity: 0.6;">${escapeHtml(p.country)}</div>` : ""}
-					<a href="/intelligence/profiles/${p.targetType}/${p.targetId}" style="display: inline-block; margin-top: 8px; font-size: 11px; color: ${color}; text-decoration: underline;">Voir la fiche →</a>
+					<a href="/agence/profiles/${p.targetType}/${p.targetId}" style="display: inline-block; margin-top: 8px; font-size: 11px; color: ${color}; text-decoration: underline;">Voir la fiche →</a>
 				</div>`,
 			);
 
