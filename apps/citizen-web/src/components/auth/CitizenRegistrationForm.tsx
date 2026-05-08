@@ -152,6 +152,13 @@ function buildRegistrationSchema(config: RegistrationConfig) {
 				.optional(),
 			postalCode: z.string().optional(),
 			country: z.enum(CountryCode).or(z.literal("")).optional(),
+			// GPS coordinates of the residence address (set by Places autocomplete)
+			coordinates: z
+				.object({
+					lat: z.number(),
+					lng: z.number(),
+				})
+				.optional(),
 			// Homeland address
 			homelandStreet: z.string().optional(),
 			homelandCity: z.string().optional(),
@@ -234,6 +241,7 @@ type RegistrationFormValues = {
 		city?: string;
 		postalCode?: string;
 		country?: (typeof CountryCode)[keyof typeof CountryCode];
+		coordinates?: { lat: number; lng: number };
 		homelandStreet?: string;
 		homelandCity?: string;
 		homelandPostalCode?: string;
@@ -868,6 +876,9 @@ export function CitizenRegistrationForm({
 									city: data.contactInfo.city || "",
 									postalCode: data.contactInfo.postalCode || "",
 									country: data.contactInfo.country || CountryCode.FR,
+									...(data.contactInfo.coordinates
+										? { coordinates: data.contactInfo.coordinates }
+										: {}),
 								},
 							}
 						: {}),

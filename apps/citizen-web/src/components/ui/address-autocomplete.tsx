@@ -19,6 +19,7 @@ export interface Address {
   city: string;
   postalCode: string;
   country: CountryCode;
+  coordinates?: { lat: number; lng: number };
 }
 
 interface AddressAutocompleteProps {
@@ -86,6 +87,8 @@ export function AddressAutocomplete({
       city: address?.city ?? "",
       postalCode: address?.postalCode ?? "",
       country: address?.country ?? CountryCode.FR,
+      // Manual edits invalidate any previously resolved coordinates.
+      ...(field === "street" ? { coordinates: undefined } : { coordinates: address?.coordinates }),
       [field]: value,
     });
   };
@@ -105,6 +108,10 @@ export function AddressAutocomplete({
             details.countryCode ?
               mapCountryCode(details.countryCode)
             : address?.country || CountryCode.FR,
+          coordinates:
+            details.lat != null && details.lng != null
+              ? { lat: details.lat, lng: details.lng }
+              : undefined,
         });
         clear();
       }

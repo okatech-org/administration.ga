@@ -1,6 +1,8 @@
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
-import { backofficeQuery, superadminQuery, superadminMutation, backofficeMutation } from "../lib/customFunctions";
+import { internalQuery, internalMutation } from "../_generated/server";
+import { internal } from "../_generated/api";
+import { backofficeQuery, superadminQuery, superadminMutation, backofficeMutation, superadminAction } from "../lib/customFunctions";
 import { error, ErrorCode } from "../lib/errors";
 import { getEffectiveRole } from "../lib/auth";
 import { UserRole } from "../lib/constants";
@@ -1595,5 +1597,191 @@ export const updateMembershipContactVisibility = backofficeMutation({
     });
 
     return args.membershipId;
+  },
+});
+
+/**
+ * List all child profiles enriched with parent profile coordinates,
+ * for plotting on the superadmin users map. Children inherit the parent's
+ * residence GPS when they have no address of their own.
+ */
+export const listChildProfilesForMap = backofficeQuery({
+  args: {},
+  handler: async (ctx) => {
+    const children = await ctx.db.query("childProfiles").collect();
+
+    const parentIds = [...new Set(children.map((c) => c.authorUserId))];
+    const parentProfiles = await Promise.all(
+      parentIds.map(async (uid) =>
+        ctx.db
+          .query("profiles")
+          .withIndex("by_user", (q) => q.eq("userId", uid))
+          .unique(),
+      ),
+    );
+
+    const coordsByParent = new Map<string, { lat: number; lng: number } | null>();
+    for (const p of parentProfiles) {
+      if (!p) continue;
+      const coords =
+        p.addresses?.residence?.coordinates ??
+        p.addresses?.homeland?.coordinates ??
+        null;
+      coordsByParent.set(p.userId as string, coords ?? null);
+    }
+
+    return children.map((c) => ({
+      _id: c._id,
+      authorUserId: c.authorUserId,
+      firstName: c.identity?.firstName,
+      lastName: c.identity?.lastName,
+      gender: c.identity?.gender,
+      birthDate: c.identity?.birthDate,
+      countryOfResidence: c.countryOfResidence,
+      coordinates: coordsByParent.get(c.authorUserId as string) ?? null,
+    }));
+  },
+});
+
+// ─── Backfill : géocodage des adresses de profils ──────────────────────────
+//
+// Beaucoup de profils ont une adresse texte (rue / ville / pays) saisie
+// manuellement, sans le champ optionnel `coordinates`. Sans GPS, ces profils
+// n'apparaissent pas sur la carte des utilisateurs. Ce backfill appelle
+// l'API Google Geocoding pour chaque profil concerné et patch les coords.
+//
+// Architecture : superadmin action → list internal query → geocodeAddress
+// action → patch internal mutation. Paginé pour respecter le timeout d'action
+// Convex (≈ 10 min) et la quota Google (~50 QPS).
+
+interface ProfileToGeocode {
+  profileId: string;
+  addressLine: string;
+  countryCode?: string;
+}
+
+export const _listProfilesNeedingGeocoding = internalQuery({
+  args: {
+    cursor: v.union(v.string(), v.null()),
+    limit: v.number(),
+  },
+  handler: async (ctx, { cursor, limit }) => {
+    const page = await ctx.db
+      .query("profiles")
+      .order("desc")
+      .paginate({ cursor, numItems: limit });
+
+    const candidates: ProfileToGeocode[] = [];
+    for (const p of page.page) {
+      const residence = p.addresses?.residence;
+      if (!residence) continue;
+      if (residence.coordinates?.lat && residence.coordinates?.lng) continue;
+      const street = (residence.street ?? "").trim();
+      const city = (residence.city ?? "").trim();
+      const country = (residence.country ?? "").trim();
+      if (!street && !city) continue;
+      const addressLine = [street, residence.postalCode, city, country]
+        .filter((s) => s && String(s).trim().length > 0)
+        .join(", ");
+      if (addressLine.length < 5) continue;
+      candidates.push({
+        profileId: p._id,
+        addressLine,
+        countryCode: country || undefined,
+      });
+    }
+
+    return {
+      candidates,
+      continueCursor: page.continueCursor,
+      isDone: page.isDone,
+    };
+  },
+});
+
+export const _patchProfileCoordinates = internalMutation({
+  args: {
+    profileId: v.id("profiles"),
+    lat: v.number(),
+    lng: v.number(),
+  },
+  handler: async (ctx, { profileId, lat, lng }) => {
+    const profile = await ctx.db.get(profileId);
+    if (!profile?.addresses?.residence) return false;
+    const next = {
+      ...profile.addresses,
+      residence: {
+        ...profile.addresses.residence,
+        coordinates: { lat, lng },
+      },
+    };
+    await ctx.db.patch(profileId, { addresses: next });
+    return true;
+  },
+});
+
+/**
+ * Géocode un batch de profils sans coordonnées. Reprend depuis `cursor`,
+ * traite jusqu'à `pageSize` profils (défaut 200), retourne le prochain
+ * curseur. À appeler en boucle depuis le client jusqu'à `isDone === true`.
+ */
+export const backfillProfileCoordinates = superadminAction({
+  args: {
+    cursor: v.optional(v.union(v.string(), v.null())),
+    pageSize: v.optional(v.number()),
+  },
+  handler: async (
+    ctx,
+    { cursor = null, pageSize = 200 },
+  ): Promise<{
+    scanned: number;
+    updated: number;
+    skipped: number;
+    failed: number;
+    continueCursor: string | null;
+    isDone: boolean;
+  }> => {
+    const { candidates, continueCursor, isDone } = await ctx.runQuery(
+      internal.functions.admin._listProfilesNeedingGeocoding,
+      { cursor, limit: pageSize },
+    );
+
+    let updated = 0;
+    let failed = 0;
+
+    for (const c of candidates) {
+      const res: {
+        success: boolean;
+        lat?: number;
+        lng?: number;
+        error?: string;
+      } = await ctx.runAction(internal.functions.places.geocodeAddress, {
+        address: c.addressLine,
+        region: c.countryCode,
+      });
+
+      if (res.success && res.lat != null && res.lng != null) {
+        const patched = await ctx.runMutation(
+          internal.functions.admin._patchProfileCoordinates,
+          { profileId: c.profileId as any, lat: res.lat, lng: res.lng },
+        );
+        if (patched) updated++;
+        else failed++;
+      } else {
+        failed++;
+      }
+
+      // Throttle to stay well under Google's 50 QPS limit
+      await new Promise((r) => setTimeout(r, 25));
+    }
+
+    return {
+      scanned: candidates.length,
+      updated,
+      skipped: 0,
+      failed,
+      continueCursor: isDone ? null : continueCursor,
+      isDone,
+    };
   },
 });

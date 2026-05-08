@@ -109,6 +109,13 @@ function buildForeignerSchema(_config: RegistrationConfig) {
 			city: z.string().optional(),
 			postalCode: z.string().optional(),
 			country: z.string().optional(),
+			// GPS coordinates of the residence (set by Places autocomplete)
+			coordinates: z
+				.object({
+					lat: z.number(),
+					lng: z.number(),
+				})
+				.optional(),
 			emergencyContacts: z
 				.array(
 					z.object({
@@ -158,6 +165,7 @@ type ForeignerFormValues = {
 		city?: string;
 		postalCode?: string;
 		country?: string;
+		coordinates?: { lat: number; lng: number };
 		emergencyContacts: Array<{
 			firstName: string;
 			lastName: string;
@@ -734,6 +742,9 @@ export function ForeignerRegistrationForm({
 									postalCode: data.contactInfo.postalCode || "",
 									country:
 										(data.contactInfo.country as CountryCode) || CountryCode.FR,
+									...(data.contactInfo.coordinates
+										? { coordinates: data.contactInfo.coordinates }
+										: {}),
 								},
 							}
 						: {}),

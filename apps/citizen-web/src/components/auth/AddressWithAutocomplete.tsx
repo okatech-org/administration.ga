@@ -75,6 +75,16 @@ export function AddressWithAutocomplete({
             mapCountryCode(details.countryCode),
           );
         }
+        // Persist GPS coordinates so the address shows up on the superadmin
+        // map and any feature relying on geographic data without re-geocoding.
+        if (details.lat != null && details.lng != null) {
+          form.setValue("contactInfo.coordinates", {
+            lat: details.lat,
+            lng: details.lng,
+          });
+        } else {
+          form.setValue("contactInfo.coordinates", undefined);
+        }
         clear();
         setInput(details.street || "");
       }
@@ -86,6 +96,10 @@ export function AddressWithAutocomplete({
   const handleInputChange = (value: string) => {
     setInput(value);
     form.setValue("contactInfo.street", value);
+    // User is editing the street manually — previously selected coordinates
+    // no longer match this address, so drop them. They'll be re-set if the
+    // user picks another suggestion.
+    form.setValue("contactInfo.coordinates", undefined);
     if (value.length >= 3) {
       setShowSuggestions(true);
     } else {
@@ -146,6 +160,7 @@ export function AddressWithAutocomplete({
                   onClick={() => {
                     clear();
                     form.setValue("contactInfo.street", "");
+                    form.setValue("contactInfo.coordinates", undefined);
                     setInput("");
                   }}
                 >

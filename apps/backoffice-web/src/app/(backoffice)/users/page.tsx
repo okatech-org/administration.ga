@@ -6,10 +6,29 @@ import { useConvex } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { DataTable } from "@/components/ui/data-table";
 import { columns, corpsAdminColumns } from "@/components/admin/users-columns";
+import dynamic from "next/dynamic";
 import { ProfilesView } from "@/components/admin/profiles-view";
 import { DiplomaticProfilesView } from "@/components/admin/diplomatic-profiles-view";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Shield, Users as UsersIcon } from "lucide-react";
+
+// Mapbox-GL touches `window` / WebGL at module load and breaks Next's SSR
+// analysis even from a "use client" file — load the map view client-only,
+// same pattern as citizen-web's WorldMapSection (apps/citizen-web/src/app/(public)/page.tsx:12).
+const UsersMapView = dynamic(
+  () =>
+    import("@/components/admin/users-map-view").then((m) => ({
+      default: m.UsersMapView,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
+        Chargement de la carte…
+      </div>
+    ),
+  },
+);
+import { Crown, Map as MapIcon, Shield, Users as UsersIcon } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -24,7 +43,7 @@ import { PageHeader } from "@/components/design-system/page-header";
 import { TabSwitcher } from "@/components/design-system/tab-switcher";
 import { FlatCard } from "@/components/design-system/flat-card";
 
-type ViewMode = "accounts" | "profiles" | "diplomatic";
+type ViewMode = "accounts" | "profiles" | "diplomatic" | "map";
 
 type UserTab = "all" | "backoffice" | "corps" | "agents" | "users" | "inactive";
 
@@ -54,6 +73,7 @@ const VIEW_MODES: { id: ViewMode; label: string; icon: React.ElementType }[] = [
   { id: "accounts", label: "Comptes", icon: UsersIcon },
   { id: "profiles", label: "Profils Consulaires", icon: Crown },
   { id: "diplomatic", label: "Corps Diplomatique", icon: Shield },
+  { id: "map", label: "Carte", icon: MapIcon },
 ];
 
 export default function UsersPage() {
@@ -331,6 +351,7 @@ export default function UsersPage() {
     accounts: "Gestion des comptes de la plateforme",
     profiles: "Profils consulaires des citoyens et ressortissants",
     diplomatic: "Profils diplomatiques du corps administratif",
+    map: "Vision géographique : citoyens et agents répartis dans le monde",
   };
 
   // Tabs pour le switcher de vue principale
@@ -368,6 +389,9 @@ export default function UsersPage() {
 
       {/* ── Vue Corps Diplomatique ── */}
       {view === "diplomatic" && <DiplomaticProfilesView />}
+
+      {/* ── Vue Carte (répartition géographique) ── */}
+      {view === "map" && <UsersMapView />}
 
       {/* ── Vue Comptes (existant) ── */}
       {view === "accounts" && <>
