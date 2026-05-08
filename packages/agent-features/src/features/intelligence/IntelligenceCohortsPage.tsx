@@ -7,17 +7,14 @@ import { useState } from "react";
 import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@workspace/ui/components/select";
+	Combobox,
+	type ComboboxOption,
+} from "@workspace/ui/components/combobox";
+import { Label } from "@workspace/ui/components/label";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { cn } from "@workspace/ui/lib/utils";
+import { getAllCountriesSorted } from "@workspace/shared/utils/country";
 
 import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
@@ -42,6 +39,19 @@ const SECTOR_LABELS: Record<string, string> = {
 };
 
 const SECTORS = Object.keys(SECTOR_LABELS);
+
+const ALL_COUNTRIES = "__all__";
+
+const COUNTRY_OPTIONS: ComboboxOption[] = (() => {
+	const all = getAllCountriesSorted();
+	return [
+		{ value: ALL_COUNTRIES, label: "Tous les pays" },
+		...all.map((c) => ({
+			value: c.code,
+			label: `${c.flag} ${c.name} (${c.code})`,
+		})),
+	];
+})();
 
 export default function IntelligenceCohortsPage() {
 	const { activeOrgId } = useOrg();
@@ -80,13 +90,15 @@ export default function IntelligenceCohortsPage() {
 
 			<div className="flex flex-wrap items-end gap-3">
 				<div className="flex flex-col gap-1.5">
-					<Label htmlFor="country">Pays de résidence (ISO 2 lettres)</Label>
-					<Input
-						id="country"
-						className="w-48"
-						placeholder="Ex: FR, BE, US"
-						value={country}
-						onChange={(e) => setCountry(e.target.value.toUpperCase())}
+					<Label>Pays de résidence</Label>
+					<Combobox
+						options={COUNTRY_OPTIONS}
+						value={country || ALL_COUNTRIES}
+						onValueChange={(v) => setCountry(v === ALL_COUNTRIES ? "" : v)}
+						placeholder="Tous les pays"
+						searchPlaceholder="Rechercher un pays…"
+						emptyText="Aucun pays."
+						className="h-9 w-64"
 					/>
 				</div>
 			</div>

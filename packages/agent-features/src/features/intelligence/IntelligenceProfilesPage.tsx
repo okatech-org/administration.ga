@@ -1,14 +1,13 @@
 "use client";
 
 import { api } from "@convex/_generated/api";
-import { Link, useRouter } from "@workspace/routing";
+import { useRouter } from "@workspace/routing";
 import {
 	Building2,
 	Baby,
 	ChevronLeft,
 	ChevronRight,
 	Globe,
-	Loader2,
 	Search,
 	UserSearch,
 	Users,
@@ -22,6 +21,10 @@ import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
+import {
+	Combobox,
+	type ComboboxOption,
+} from "@workspace/ui/components/combobox";
 import { Input } from "@workspace/ui/components/input";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import {
@@ -30,6 +33,7 @@ import {
 	TabsTrigger,
 } from "@workspace/ui/components/tabs";
 import { cn } from "@workspace/ui/lib/utils";
+import { getAllCountriesSorted } from "@workspace/shared/utils/country";
 
 import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
@@ -53,6 +57,19 @@ const TABS: Array<{
 	{ key: "contacts", types: ["diplomatic_target"], label: "Contacts", icon: Building2 },
 	{ key: "agents", types: ["agent"], label: "Agents", icon: UserCircle },
 ];
+
+const ALL_COUNTRIES = "__all__";
+
+const COUNTRY_OPTIONS: ComboboxOption[] = (() => {
+	const all = getAllCountriesSorted();
+	return [
+		{ value: ALL_COUNTRIES, label: "Tous les pays" },
+		...all.map((c) => ({
+			value: c.code,
+			label: `${c.flag} ${c.name} (${c.code})`,
+		})),
+	];
+})();
 
 const TYPE_META: Record<IntelTargetType, { label: string; icon: React.ElementType; color: string }> = {
 	profile: { label: "Citoyen", icon: Users, color: "text-blue-600 dark:text-blue-400" },
@@ -121,12 +138,12 @@ export default function IntelligenceProfilesPage() {
 			>
 				<div className="flex flex-col md:flex-row gap-2">
 					<div className="relative flex-1">
-						<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+						<Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
 							value={search}
 							onChange={(e) => handleSearchChange(e.target.value)}
 							placeholder="Rechercher par nom, matricule, identifiant…"
-							className="pl-9 pr-9 h-10"
+							className="pl-10 pr-10 h-10"
 						/>
 						{search && (
 							<button
@@ -138,19 +155,18 @@ export default function IntelligenceProfilesPage() {
 							</button>
 						)}
 					</div>
-					<div className="relative md:w-40">
-						<Globe className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-						<Input
-							value={country}
-							onChange={(e) => {
-								setCountry(e.target.value.toUpperCase());
-								setPage(1);
-							}}
-							placeholder="Pays (FR, GA…)"
-							className="pl-9 h-10 uppercase"
-							maxLength={2}
-						/>
-					</div>
+					<Combobox
+						options={COUNTRY_OPTIONS}
+						value={country || ALL_COUNTRIES}
+						onValueChange={(v) => {
+							setCountry(v === ALL_COUNTRIES ? "" : v);
+							setPage(1);
+						}}
+						placeholder="Tous les pays"
+						searchPlaceholder="Rechercher un pays…"
+						emptyText="Aucun pays."
+						className="h-10 md:w-56"
+					/>
 				</div>
 
 				<Tabs value={tab} onValueChange={onTabChange}>

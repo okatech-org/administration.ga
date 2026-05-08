@@ -140,6 +140,27 @@ export function getActiveContinents(
 	);
 }
 
+/**
+ * Liste complète des pays connus (ISO 2 lettres) triée par nom français.
+ * Source : keys de COUNTRY_CONTINENT — exhaustive vis-à-vis du fallback
+ * "non rattaché" qui retourne null pour getContinent.
+ */
+export function getAllCountriesSorted(): Array<{
+	code: string;
+	name: string;
+	flag: string;
+	continent: Continent | null;
+}> {
+	return Object.keys(COUNTRY_CONTINENT)
+		.map((code) => ({
+			code,
+			name: getCountryName(code),
+			flag: getCountryFlag(code),
+			continent: getContinent(code),
+		}))
+		.sort((a, b) => a.name.localeCompare(b.name, "fr"));
+}
+
 // ── Organization type display helpers ──────────────────
 const ORG_TYPE_META: Record<string, { label: string; emoji: string }> = {
 	embassy: { label: "Ambassade", emoji: "" },
