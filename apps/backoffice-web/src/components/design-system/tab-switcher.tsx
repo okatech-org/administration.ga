@@ -42,7 +42,7 @@ export function TabSwitcher({
 						type="button"
 						onClick={() => onTabChange(tab.key)}
 						className={cn(
-							"flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 justify-center active:scale-[0.97]",
+							"flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 justify-center active:scale-[0.97] whitespace-nowrap",
 							isActive
 								? "bg-primary text-primary-foreground"
 								: "text-muted-foreground hover:text-foreground hover:bg-[#EBE6DC]/50 dark:hover:bg-[#383633]/50",
