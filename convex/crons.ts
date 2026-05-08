@@ -213,6 +213,26 @@ crons.interval(
   internal.ai.scheduledSweeper.sweep,
 );
 
+// --- Renseignement souverain : évaluation périodique des règles d'alerte ---
+// Toutes les 15 min : pour chaque règle d'alerte active, vérifie si la
+// condition est satisfaite (Phase 1 : watchlist_match) et crée une
+// `intelligenceAlerts` à destination des memberships notifiés.
+crons.interval(
+  "evaluate-intelligence-alerts",
+  { minutes: 15 },
+  internal.functions.intelligenceAlerts.evaluateRules,
+);
+
+// --- Renseignement souverain : recalcul hebdo des enclaves GEOINT ---
+// Pour chaque org intelligence_agency, applique DBSCAN (epsilon=2km,
+// minPts=5) sur les profils géolocalisés et persiste un snapshot dans
+// `intelligenceEnclaves`. Recalcul hebdo le lundi 4h UTC.
+crons.weekly(
+  "recompute-intelligence-enclaves",
+  { dayOfWeek: "monday", hourUTC: 4, minuteUTC: 0 },
+  internal.functions.intelligenceGeoint.recomputeAllEnclaves,
+);
+
 // --- Phase D1 : sync legacy orgs fields (horaire) ---
 // Maintient la synchronisation entre champs plats historiques (address,
 // headOfMission, jurisdictionCountries, openingHours) et nouveaux sous-objets

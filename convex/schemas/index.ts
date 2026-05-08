@@ -28,6 +28,17 @@ export {
   intelligenceWatchlistItemsTable,
 } from "./intelligenceWatchlists";
 export { intelligenceLinksTable } from "./intelligenceLinks";
+export { intelligenceAuditLogTable } from "./intelligenceAuditLog";
+export {
+  intelligenceAlertRulesTable,
+  intelligenceAlertsTable,
+} from "./intelligenceAlerts";
+export {
+  intelligenceCasesTable,
+  intelligenceCaseEntitiesTable,
+  intelligenceCaseEventsTable,
+} from "./intelligenceCases";
+export { intelligenceEnclavesTable } from "./intelligenceEnclaves";
 export { consularRegistrationsTable } from "./consularRegistrations";
 export { consularNotificationsTable } from "./consularNotifications";
 export { cvTable } from "./cv";

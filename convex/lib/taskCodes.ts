@@ -132,6 +132,12 @@ export const TaskCode = {
     links_manage: "intelligence.links.manage",
     // Génération de briefings
     briefing_generate: "intelligence.briefing.generate",
+    // Dossiers d'investigation (cases) — Phase 1.1
+    cases_view: "intelligence.cases.view",
+    cases_create: "intelligence.cases.create",
+    cases_edit: "intelligence.cases.edit",
+    cases_close: "intelligence.cases.close",
+    cases_archive: "intelligence.cases.archive",
   },
   // Consular services
   consular_registrations: {
@@ -356,6 +362,11 @@ export const taskCodeValidator = v.union(
   v.literal(TaskCode.intelligence.links_view),
   v.literal(TaskCode.intelligence.links_manage),
   v.literal(TaskCode.intelligence.briefing_generate),
+  v.literal(TaskCode.intelligence.cases_view),
+  v.literal(TaskCode.intelligence.cases_create),
+  v.literal(TaskCode.intelligence.cases_edit),
+  v.literal(TaskCode.intelligence.cases_close),
+  v.literal(TaskCode.intelligence.cases_archive),
   // Consular Registrations
   v.literal(TaskCode.consular_registrations.view),
   v.literal(TaskCode.consular_registrations.manage),
@@ -510,6 +521,11 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   [TaskCode.intelligence.links_view]: "high",
   [TaskCode.intelligence.links_manage]: "high",
   [TaskCode.intelligence.briefing_generate]: "high",
+  [TaskCode.intelligence.cases_view]: "high",
+  [TaskCode.intelligence.cases_create]: "high",
+  [TaskCode.intelligence.cases_edit]: "high",
+  [TaskCode.intelligence.cases_close]: "high",
+  [TaskCode.intelligence.cases_archive]: "critical",
   // Consular Registrations
   [TaskCode.consular_registrations.view]: "low",
   [TaskCode.consular_registrations.manage]: "high",

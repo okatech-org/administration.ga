@@ -19,6 +19,7 @@ import { getMembership } from "../lib/auth";
 import { assertCanDoTask, canDoTask } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
 import { assertCallerIsIntelAgency } from "../lib/intelligenceAgencyVisibility";
+import { logIntelAccess } from "../lib/intelligenceAudit";
 
 const targetTypeValidator = v.union(
   v.literal("profile"),
@@ -184,6 +185,23 @@ export const create = authMutation({
       },
     });
 
+    await logIntelAccess(ctx, {
+      orgId: args.orgId,
+      actorId: ctx.user._id,
+      actorMembershipId: membership?._id,
+      action: "notes.create",
+      targetType: "note",
+      targetId: noteId,
+      classification: args.classification,
+      metadata: {
+        targetType: args.targetType,
+        targetId: args.targetId,
+        category: args.category,
+        severity: args.severity,
+      },
+      outcome: "success",
+    });
+
     return noteId;
   },
 });
@@ -246,6 +264,17 @@ export const update = authMutation({
       changes: patch,
     });
 
+    await logIntelAccess(ctx, {
+      orgId: args.orgId,
+      actorId: ctx.user._id,
+      action: "notes.update",
+      targetType: "note",
+      targetId: args.noteId,
+      classification: args.classification ?? note.classification,
+      metadata: { changedFields: Object.keys(patch) },
+      outcome: "success",
+    });
+
     return args.noteId;
   },
 });
@@ -289,6 +318,17 @@ export const remove = authMutation({
       docId: args.noteId,
       actorId: ctx.user._id,
       changes: { byAuthor: isAuthor },
+    });
+
+    await logIntelAccess(ctx, {
+      orgId: args.orgId,
+      actorId: ctx.user._id,
+      action: "notes.delete",
+      targetType: "note",
+      targetId: args.noteId,
+      classification: note.classification,
+      metadata: { byAuthor: isAuthor },
+      outcome: "success",
     });
 
     return args.noteId;
