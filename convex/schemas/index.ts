@@ -39,6 +39,7 @@ export {
   intelligenceCaseEventsTable,
 } from "./intelligenceCases";
 export { intelligenceEnclavesTable } from "./intelligenceEnclaves";
+export { intelligenceBriefingsTable } from "./intelligenceBriefings";
 export { consularRegistrationsTable } from "./consularRegistrations";
 export { consularNotificationsTable } from "./consularNotifications";
 export { cvTable } from "./cv";

@@ -10,6 +10,7 @@
 
 import type * as actions_gcpMonitoring from "../actions/gcpMonitoring.js";
 import type * as actions_iAstedPromptGenerator from "../actions/iAstedPromptGenerator.js";
+import type * as actions_intelligenceBriefings from "../actions/intelligenceBriefings.js";
 import type * as actions_livekit from "../actions/livekit.js";
 import type * as actions_posthog from "../actions/posthog.js";
 import type * as actions_posthogHealthCheck from "../actions/posthogHealthCheck.js";
@@ -135,8 +136,10 @@ import type * as functions_generatedDocumentsData from "../functions/generatedDo
 import type * as functions_guides from "../functions/guides.js";
 import type * as functions_intelligence from "../functions/intelligence.js";
 import type * as functions_intelligenceAlerts from "../functions/intelligenceAlerts.js";
+import type * as functions_intelligenceBriefings from "../functions/intelligenceBriefings.js";
 import type * as functions_intelligenceCases from "../functions/intelligenceCases.js";
 import type * as functions_intelligenceGeoint from "../functions/intelligenceGeoint.js";
+import type * as functions_intelligenceGraph from "../functions/intelligenceGraph.js";
 import type * as functions_intelligenceLinks from "../functions/intelligenceLinks.js";
 import type * as functions_intelligenceNotes from "../functions/intelligenceNotes.js";
 import type * as functions_intelligenceTal from "../functions/intelligenceTal.js";
@@ -320,6 +323,7 @@ import type * as schemas_guides from "../schemas/guides.js";
 import type * as schemas_index from "../schemas/index.js";
 import type * as schemas_intelligenceAlerts from "../schemas/intelligenceAlerts.js";
 import type * as schemas_intelligenceAuditLog from "../schemas/intelligenceAuditLog.js";
+import type * as schemas_intelligenceBriefings from "../schemas/intelligenceBriefings.js";
 import type * as schemas_intelligenceCases from "../schemas/intelligenceCases.js";
 import type * as schemas_intelligenceEnclaves from "../schemas/intelligenceEnclaves.js";
 import type * as schemas_intelligenceLinks from "../schemas/intelligenceLinks.js";
@@ -383,6 +387,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   "actions/gcpMonitoring": typeof actions_gcpMonitoring;
   "actions/iAstedPromptGenerator": typeof actions_iAstedPromptGenerator;
+  "actions/intelligenceBriefings": typeof actions_intelligenceBriefings;
   "actions/livekit": typeof actions_livekit;
   "actions/posthog": typeof actions_posthog;
   "actions/posthogHealthCheck": typeof actions_posthogHealthCheck;
@@ -508,8 +513,10 @@ declare const fullApi: ApiFromModules<{
   "functions/guides": typeof functions_guides;
   "functions/intelligence": typeof functions_intelligence;
   "functions/intelligenceAlerts": typeof functions_intelligenceAlerts;
+  "functions/intelligenceBriefings": typeof functions_intelligenceBriefings;
   "functions/intelligenceCases": typeof functions_intelligenceCases;
   "functions/intelligenceGeoint": typeof functions_intelligenceGeoint;
+  "functions/intelligenceGraph": typeof functions_intelligenceGraph;
   "functions/intelligenceLinks": typeof functions_intelligenceLinks;
   "functions/intelligenceNotes": typeof functions_intelligenceNotes;
   "functions/intelligenceTal": typeof functions_intelligenceTal;
@@ -693,6 +700,7 @@ declare const fullApi: ApiFromModules<{
   "schemas/index": typeof schemas_index;
   "schemas/intelligenceAlerts": typeof schemas_intelligenceAlerts;
   "schemas/intelligenceAuditLog": typeof schemas_intelligenceAuditLog;
+  "schemas/intelligenceBriefings": typeof schemas_intelligenceBriefings;
   "schemas/intelligenceCases": typeof schemas_intelligenceCases;
   "schemas/intelligenceEnclaves": typeof schemas_intelligenceEnclaves;
   "schemas/intelligenceLinks": typeof schemas_intelligenceLinks;
