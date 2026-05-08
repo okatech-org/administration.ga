@@ -136,7 +136,7 @@ export default function IntelligenceProfileDetail({ targetType, targetId }: Prop
 							</SheetTrigger>
 							<SheetContent
 								side="right"
-								className="w-full sm:max-w-2xl overflow-y-auto"
+								className="w-full sm:max-w-5xl overflow-y-auto"
 							>
 								<SheetHeader>
 									<SheetTitle className="flex items-center gap-2">
