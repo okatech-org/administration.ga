@@ -96,9 +96,9 @@ export default function IntelligenceProfileDetail({ targetType, targetId }: Prop
 		.toUpperCase() || "?";
 
 	return (
-		<div className="flex flex-col gap-6 p-4 md:p-6 w-full max-w-6xl mx-auto">
+		<div className="flex flex-col gap-4 p-4 lg:p-6 max-w-6xl mx-auto w-full">
 			{/* Sticky breadcrumb */}
-			<div className="flex items-center gap-3 -mx-4 md:-mx-6 px-4 md:px-6 py-3 border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+			<div className="flex items-center gap-3 -mx-4 lg:-mx-6 px-4 lg:px-6 py-3 border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
 				<Link href="/intelligence/profiles">
 					<Button variant="ghost" size="sm">
 						<ArrowLeft className="h-4 w-4 mr-1" /> Profils

@@ -10,6 +10,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { FlatCard, PageHeader } from "@workspace/agent-features/components/my-space";
 import { useOrg } from "@workspace/agent-features/shell";
+import { Switch } from "@workspace/ui/components/switch";
+import { Label } from "@workspace/ui/components/label";
 
 import { MAPBOX_CONFIG, getCapitalCoords } from "@/lib/mapbox";
 
@@ -23,8 +25,8 @@ interface MapPoint {
 	geolocated: boolean;
 }
 
-const KIND_COLOR = "#e11d48";
-const KIND_COLOR_FALLBACK = "#fb923c";
+const COLOR_GPS = "#e11d48";
+const COLOR_FALLBACK = "#fb923c";
 
 function escapeHtml(s: string): string {
 	return s
@@ -39,11 +41,11 @@ export default function IntelligenceMapInteractive() {
 	const { activeOrgId } = useOrg();
 	const { theme } = useTheme();
 
-	const mapContainer = useRef<HTMLDivElement | null>(null);
+	const mapContainer = useRef<HTMLDivElement>(null);
 	const map = useRef<mapboxgl.Map | null>(null);
 	const markersRef = useRef<mapboxgl.Marker[]>([]);
-	const popupRef = useRef<mapboxgl.Popup | null>(null);
 	const [mapReady, setMapReady] = useState(false);
+	const [showFallback, setShowFallback] = useState(false);
 
 	const { data: serverPoints, isPending } = useAuthenticatedConvexQuery(
 		api.functions.intelligence.getMapData,
@@ -65,6 +67,7 @@ export default function IntelligenceMapInteractive() {
 						geolocated: true,
 					};
 				}
+				if (!showFallback) return null;
 				const cap = getCapitalCoords(p.country);
 				if (cap) {
 					return {
@@ -80,8 +83,26 @@ export default function IntelligenceMapInteractive() {
 				return null;
 			})
 			.filter((p): p is MapPoint => p !== null);
+	}, [serverPoints, showFallback]);
+
+	const stats = useMemo(() => {
+		if (!serverPoints)
+			return { total: 0, geolocated: 0, withoutGps: 0, countries: 0 };
+		const geolocated = serverPoints.filter(
+			(p) => p.lat !== undefined && p.lng !== undefined,
+		).length;
+		const countries = new Set(
+			serverPoints.map((p) => p.country).filter(Boolean),
+		).size;
+		return {
+			total: serverPoints.length,
+			geolocated,
+			withoutGps: serverPoints.length - geolocated,
+			countries,
+		};
 	}, [serverPoints]);
 
+	// ── Init map (mirror backoffice users-map-view) ────────────────────────
 	useEffect(() => {
 		if (!mapContainer.current) return;
 		if (map.current) return;
@@ -109,18 +130,20 @@ export default function IntelligenceMapInteractive() {
 				"star-intensity": isDark ? 0.6 : 0,
 			});
 			setMapReady(true);
+			// Force resize after the layout settles
+			setTimeout(() => map.current?.resize(), 50);
 		});
 
 		return () => {
 			markersRef.current.forEach((m) => m.remove());
 			markersRef.current = [];
-			popupRef.current?.remove();
 			map.current?.remove();
 			map.current = null;
 			setMapReady(false);
 		};
 	}, [theme]);
 
+	// ── Refresh markers ──────────────────────────────────────────────────────
 	useEffect(() => {
 		if (!map.current || !mapReady) return;
 		const m = map.current;
@@ -129,13 +152,13 @@ export default function IntelligenceMapInteractive() {
 		markersRef.current = [];
 
 		for (const p of points) {
-			const color = p.geolocated ? KIND_COLOR : KIND_COLOR_FALLBACK;
+			const color = p.geolocated ? COLOR_GPS : COLOR_FALLBACK;
 
 			const el = document.createElement("div");
 			el.style.cursor = "pointer";
 			el.innerHTML = `
 				<div style="position: relative; width: 18px; height: 18px;">
-					<div style="position: absolute; inset: 0; border-radius: 9999px; background-color: ${color}; opacity: 0.25; animation: ping 1.6s cubic-bezier(0,0,0.2,1) infinite;"></div>
+					<div style="position: absolute; inset: 0; border-radius: 9999px; background-color: ${color}; opacity: 0.3; animation: ping 1.6s cubic-bezier(0,0,0.2,1) infinite;"></div>
 					<div style="position: relative; width: 14px; height: 14px; margin: 2px; border-radius: 9999px; background-color: ${color}; border: 2px solid #ffffff;"></div>
 				</div>
 			`;
@@ -158,12 +181,7 @@ export default function IntelligenceMapInteractive() {
 		}
 	}, [points, mapReady]);
 
-	const stats = useMemo(() => {
-		const total = points.length;
-		const geolocated = points.filter((p) => p.geolocated).length;
-		const countries = new Set(points.map((p) => p.country).filter(Boolean)).size;
-		return { total, geolocated, countries };
-	}, [points]);
+	const noToken = !MAPBOX_CONFIG.accessToken;
 
 	return (
 		<div className="flex flex-col gap-4 p-4 lg:p-6 max-w-6xl mx-auto w-full">
@@ -173,64 +191,107 @@ export default function IntelligenceMapInteractive() {
 				subtitle="Répartition mondiale des profils surveillés et contacts diplomatiques."
 			/>
 
-			<div className="grid grid-cols-3 gap-3">
-				<FlatCard className="p-3">
+			{/* Stats tiles */}
+			<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+				<FlatCard className="p-4">
 					<p className="text-[11px] text-muted-foreground uppercase tracking-wide">
 						Total
 					</p>
-					<p className="text-xl font-bold tabular-nums">{stats.total}</p>
+					<p className="text-2xl font-bold tabular-nums">{stats.total}</p>
 				</FlatCard>
-				<FlatCard className="p-3">
+				<FlatCard className="p-4">
 					<p className="text-[11px] text-muted-foreground uppercase tracking-wide">
 						GPS précis
 					</p>
-					<p className="text-xl font-bold tabular-nums">{stats.geolocated}</p>
+					<p className="text-2xl font-bold tabular-nums">{stats.geolocated}</p>
 				</FlatCard>
-				<FlatCard className="p-3">
+				<FlatCard className="p-4">
+					<p className="text-[11px] text-muted-foreground uppercase tracking-wide">
+						Sans GPS
+					</p>
+					<p className="text-2xl font-bold tabular-nums">{stats.withoutGps}</p>
+				</FlatCard>
+				<FlatCard className="p-4">
 					<p className="text-[11px] text-muted-foreground uppercase tracking-wide">
 						Pays
 					</p>
-					<p className="text-xl font-bold tabular-nums">{stats.countries}</p>
+					<p className="text-2xl font-bold tabular-nums">{stats.countries}</p>
 				</FlatCard>
 			</div>
 
-			<FlatCard className="p-0 overflow-hidden">
-				<div className="relative">
-					<div ref={mapContainer} className="w-full" style={{ minHeight: 560 }} />
-					{(isPending || !mapReady) && (
-						<div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-							<Loader2 className="h-5 w-5 animate-spin mr-2" />
-							{isPending ? "Chargement des points…" : "Initialisation carte…"}
-						</div>
-					)}
-					{mapReady && points.length === 0 && !isPending && (
-						<div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 pointer-events-none">
-							<div className="bg-background/90 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-								<MapPin className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-								<p className="text-sm font-medium">Aucun point à afficher</p>
-								<p className="text-xs text-muted-foreground mt-1">
-									Aucun profil ni contact géolocalisé pour cette org.
-								</p>
+			{/* Toggle fallback */}
+			{stats.withoutGps > 0 && (
+				<FlatCard className="p-3 flex items-center gap-3">
+					<Switch
+						id="map-fallback"
+						checked={showFallback}
+						onCheckedChange={setShowFallback}
+					/>
+					<Label htmlFor="map-fallback" className="text-xs cursor-pointer flex-1">
+						Afficher les {stats.withoutGps} profils sans GPS sur la capitale de leur pays
+					</Label>
+				</FlatCard>
+			)}
+
+			{/* Map */}
+			<div className="relative h-[600px] w-full overflow-hidden rounded-xl border border-border/50 bg-muted/20">
+				<div ref={mapContainer} className="absolute inset-0 h-full w-full" />
+
+				{noToken ? (
+					<div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+						<MapPin className="h-8 w-8 text-muted-foreground/40 mb-2" />
+						<p className="text-sm font-medium">Carte indisponible</p>
+						<p className="text-xs text-muted-foreground mt-1 max-w-md">
+							Configurez{" "}
+							<code className="text-[10px] bg-muted/60 px-1 py-0.5 rounded">
+								NEXT_PUBLIC_MAPBOX_TOKEN
+							</code>{" "}
+							dans agent-web/.env.local pour activer la carte interactive.
+						</p>
+					</div>
+				) : (
+					<>
+						{(isPending || !mapReady) && (
+							<div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm pointer-events-none">
+								<Loader2 className="h-5 w-5 animate-spin mr-2" />
+								<span className="text-sm text-muted-foreground">
+									{isPending ? "Chargement des points…" : "Initialisation carte…"}
+								</span>
 							</div>
-						</div>
-					)}
-				</div>
-				<div className="px-4 py-3 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
-					<div className="flex items-center gap-3">
-						<span className="flex items-center gap-1.5">
-							<span className="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-background" />
-							GPS précis
-						</span>
+						)}
+						{mapReady && points.length === 0 && !isPending && (
+							<div className="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-auto">
+								<div className="bg-background/95 backdrop-blur-sm rounded-lg px-3 py-2 border border-border/50 text-center">
+									<p className="text-xs font-medium">
+										{stats.withoutGps > 0
+											? `Aucun profil géolocalisé. Activez le fallback ou lancez la migration.`
+											: "Aucune cible sur cette org."}
+									</p>
+								</div>
+							</div>
+						)}
+					</>
+				)}
+			</div>
+
+			{/* Legend */}
+			<FlatCard className="p-3 flex items-center justify-between text-xs text-muted-foreground">
+				<div className="flex items-center gap-3">
+					<span className="flex items-center gap-1.5">
+						<span className="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-background" />
+						GPS précis
+					</span>
+					{showFallback && (
 						<span className="flex items-center gap-1.5">
 							<span className="inline-block w-2.5 h-2.5 rounded-full bg-orange-400 ring-2 ring-background" />
 							Capitale (fallback)
 						</span>
-					</div>
-					<span className="flex items-center gap-1">
-						<MapPin className="h-3 w-3" /> {stats.total} point
-						{stats.total > 1 ? "s" : ""}
-					</span>
+					)}
 				</div>
+				<span className="flex items-center gap-1">
+					<MapPin className="h-3 w-3" />
+					{points.length} affiché{points.length > 1 ? "s" : ""}
+				</span>
 			</FlatCard>
 		</div>
 	);
