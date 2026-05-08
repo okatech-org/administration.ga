@@ -7,14 +7,12 @@ import { useState } from "react";
 import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
-import {
-	Combobox,
-	type ComboboxOption,
-} from "@workspace/ui/components/combobox";
+import { Combobox } from "@workspace/ui/components/combobox";
 import { Label } from "@workspace/ui/components/label";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { cn } from "@workspace/ui/lib/utils";
-import { getAllCountriesSorted } from "@workspace/shared/utils/country";
+
+import { useCountryOptions } from "../../hooks/use-country-options";
 
 import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
@@ -42,21 +40,11 @@ const SECTORS = Object.keys(SECTOR_LABELS);
 
 const ALL_COUNTRIES = "__all__";
 
-const COUNTRY_OPTIONS: ComboboxOption[] = (() => {
-	const all = getAllCountriesSorted();
-	return [
-		{ value: ALL_COUNTRIES, label: "Tous les pays" },
-		...all.map((c) => ({
-			value: c.code,
-			label: `${c.flag} ${c.name} (${c.code})`,
-		})),
-	];
-})();
-
 export default function IntelligenceCohortsPage() {
 	const { activeOrgId } = useOrg();
 	const [country, setCountry] = useState<string>("");
 	const [selectedSector, setSelectedSector] = useState<string | null>(null);
+	const countryOptions = useCountryOptions({ allValue: ALL_COUNTRIES });
 
 	const { data: stats, isLoading: statsLoading } = useAuthenticatedConvexQuery(
 		api.functions.intelligenceTal.getSectorStats,
@@ -92,7 +80,7 @@ export default function IntelligenceCohortsPage() {
 				<div className="flex flex-col gap-1.5">
 					<Label>Pays de résidence</Label>
 					<Combobox
-						options={COUNTRY_OPTIONS}
+						options={countryOptions}
 						value={country || ALL_COUNTRIES}
 						onValueChange={(v) => setCountry(v === ALL_COUNTRIES ? "" : v)}
 						placeholder="Tous les pays"
