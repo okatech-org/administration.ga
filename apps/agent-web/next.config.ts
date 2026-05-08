@@ -60,11 +60,18 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://*.convex.cloud https://*.posthog.com`,
-              "style-src 'self' 'unsafe-inline'",
+              // Mapbox GL exécute des scripts depuis api.mapbox.com pour
+              // les styles vectoriels — sans cette autorisation, le globe
+              // rend en wireframe sans pays/continents.
+              `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://*.convex.cloud https://*.posthog.com https://api.mapbox.com`,
+              "style-src 'self' 'unsafe-inline' https://api.mapbox.com",
+              "style-src-elem 'self' 'unsafe-inline' https://api.mapbox.com",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
-              `connect-src 'self' ${isDev ? "http://127.0.0.1:* ws://127.0.0.1:* ws://localhost:*" : ""} https://*.convex.cloud https://*.convex.site wss://*.convex.cloud https://*.posthog.com https://*.stripe.com https://*.mapbox.com https://api.livekit.cloud wss://*.livekit.cloud https://livekit.consulat.ga wss://livekit.consulat.ga`,
+              // Workers Mapbox (rendu vectoriel hors thread principal).
+              "worker-src 'self' blob:",
+              // Tiles + events Mapbox doivent être listés explicitement.
+              `connect-src 'self' ${isDev ? "http://127.0.0.1:* ws://127.0.0.1:* ws://localhost:*" : ""} https://*.convex.cloud https://*.convex.site wss://*.convex.cloud https://*.posthog.com https://*.stripe.com https://*.mapbox.com https://api.mapbox.com https://*.tiles.mapbox.com https://events.mapbox.com https://api.livekit.cloud wss://*.livekit.cloud https://livekit.consulat.ga wss://livekit.consulat.ga`,
               "frame-src 'self' blob: https://*.stripe.com",
               "media-src 'self' blob:",
               "object-src 'none'",
