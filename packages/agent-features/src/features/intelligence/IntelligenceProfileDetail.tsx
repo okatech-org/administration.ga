@@ -1,7 +1,17 @@
 "use client";
 
 import { api } from "@convex/_generated/api";
-import { ArrowLeft, Building2, Baby, Globe, Loader2, ShieldAlert, UserCircle, Users } from "lucide-react";
+import {
+	ArrowLeft,
+	Building2,
+	Baby,
+	ExternalLink,
+	Globe,
+	Loader2,
+	ShieldAlert,
+	UserCircle,
+	Users,
+} from "lucide-react";
 import { Link } from "@workspace/routing";
 import { motion } from "motion/react";
 
@@ -107,6 +117,14 @@ export default function IntelligenceProfileDetail({ targetType, targetId }: Prop
 				<div className="text-muted-foreground/40">/</div>
 				<span className="text-sm font-medium truncate flex-1 min-w-0">{title}</span>
 				<div className="flex items-center gap-2 shrink-0">
+					{targetType === "profile" && (
+						<Link href={`/affaires-consulaires/profiles/${targetId}`}>
+							<Button variant="outline" size="sm">
+								<ExternalLink className="h-3 w-3 mr-1" />
+								Dossier consulaire
+							</Button>
+						</Link>
+					)}
 					<AddToWatchlistButton targetType={targetType} targetId={targetId} />
 					<IntelligenceBriefingButton targetType={targetType} targetId={targetId} />
 				</div>

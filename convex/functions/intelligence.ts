@@ -91,12 +91,16 @@ export const searchProfiles = authQuery({
     if (args.types.includes("child_profile")) {
       const children = await ctx.db.query("childProfiles").take(limit);
       for (const c of children) {
-        const fullName = `${(c as any).firstName ?? ""} ${(c as any).lastName ?? ""}`.trim();
+        const fn = c.identity?.firstName ?? "";
+        const ln = c.identity?.lastName ?? "";
+        const fullName = `${fn} ${ln}`.trim();
         if (query && !fullName.toLowerCase().includes(query)) continue;
+        if (args.country && c.countryOfResidence !== args.country) continue;
         results.push({
           targetType: "child_profile",
           targetId: c._id,
           label: fullName || "(sans nom)",
+          country: c.countryOfResidence ?? undefined,
         });
       }
     }

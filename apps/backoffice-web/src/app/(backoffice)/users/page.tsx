@@ -77,7 +77,7 @@ const VIEW_MODES: { id: ViewMode; label: string; icon: React.ElementType }[] = [
   { id: "profiles", label: "Profils Consulaires", icon: Crown },
   { id: "diplomatic", label: "Corps Diplomatique", icon: Shield },
   { id: "skills", label: "Compétences", icon: Sparkles },
-  { id: "map", label: "Carte", icon: MapIcon },
+  { id: "map", label: "Carte des utilisateurs", icon: MapIcon },
 ];
 
 export default function UsersPage() {

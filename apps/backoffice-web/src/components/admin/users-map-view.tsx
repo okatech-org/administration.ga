@@ -671,6 +671,70 @@ export function UsersMapView() {
 				</div>
 			</div>
 
+			{/* Chips toggle population — synchronisé avec les filtres
+			    Population + Âge ci-dessus. Reclic = remet « Tous ». */}
+			<div className="flex flex-wrap items-center gap-2">
+				<span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mr-1">
+					Affichage rapide
+				</span>
+				<KindChip
+					active={
+						populationFilter === "all" &&
+						ageFilter === "all" &&
+						genderFilter === "all"
+					}
+					color="text-foreground"
+					icon={MapPin}
+					label="Tous"
+					count={allPoints.length}
+					onClick={() => {
+						setPopulationFilter("all");
+						setAgeFilter("all");
+					}}
+				/>
+				<KindChip
+					active={populationFilter === "citizens" && ageFilter === "adults"}
+					color={KIND_COLORS.citizen_adult}
+					icon={Users}
+					label="Citoyen adulte"
+					count={
+						allPoints.filter((p) => p.kind === "citizen_adult").length
+					}
+					onClick={() => {
+						const isActive =
+							populationFilter === "citizens" && ageFilter === "adults";
+						setPopulationFilter(isActive ? "all" : "citizens");
+						setAgeFilter(isActive ? "all" : "adults");
+					}}
+				/>
+				<KindChip
+					active={ageFilter === "children"}
+					color={KIND_COLORS.citizen_child}
+					icon={MapPinOff}
+					label="Mineur"
+					count={
+						allPoints.filter((p) => p.kind === "citizen_child").length
+					}
+					onClick={() => {
+						const isActive = ageFilter === "children";
+						setPopulationFilter(isActive ? "all" : "citizens");
+						setAgeFilter(isActive ? "all" : "children");
+					}}
+				/>
+				<KindChip
+					active={populationFilter === "agents"}
+					color={KIND_COLORS.agent}
+					icon={Shield}
+					label="Agent"
+					count={allPoints.filter((p) => p.kind === "agent").length}
+					onClick={() => {
+						const isActive = populationFilter === "agents";
+						setPopulationFilter(isActive ? "all" : "agents");
+						setAgeFilter("all");
+					}}
+				/>
+			</div>
+
 			{/* Pilote l'appel déclenché depuis le popup Mapbox (innerHTML).
 			    targetUser est remplacé à chaque clic sur un bouton "Audio"/"Vidéo"
 			    dans le popup ; le nonce force le re-déclenchement de l'effet. */}
@@ -743,5 +807,53 @@ function LegendItem({ color, label }: { color: string; label: string }) {
 			/>
 			<span>{label}</span>
 		</div>
+	);
+}
+
+function KindChip({
+	active,
+	color,
+	icon: Icon,
+	label,
+	count,
+	onClick,
+}: {
+	active: boolean;
+	color: string;
+	icon: React.ElementType;
+	label: string;
+	count: number;
+	onClick: () => void;
+}) {
+	const isHex = color.startsWith("#");
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			className={cn(
+				"inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all active:scale-[0.97]",
+				active
+					? "border-foreground/40 bg-foreground/[0.08] text-foreground shadow-sm"
+					: "border-border/60 bg-background hover:border-foreground/30 hover:bg-muted/40 text-muted-foreground",
+			)}
+		>
+			<span
+				className="inline-flex items-center justify-center rounded-full p-0.5"
+				style={isHex ? { color } : undefined}
+			>
+				<Icon className="h-3 w-3" />
+			</span>
+			<span className={isHex ? "" : color}>{label}</span>
+			<span
+				className={cn(
+					"inline-flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums",
+					active
+						? "bg-foreground/20 text-foreground"
+						: "bg-muted text-muted-foreground",
+				)}
+			>
+				{count}
+			</span>
+		</button>
 	);
 }
