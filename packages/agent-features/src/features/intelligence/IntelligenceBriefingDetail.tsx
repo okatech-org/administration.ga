@@ -37,8 +37,8 @@ export default function IntelligenceBriefingDetail({ briefingId }: Props) {
 
 	if (isLoading) {
 		return (
-			<div className="mx-auto max-w-3xl p-6">
-				<Skeleton className="h-8 w-1/2 mb-4" />
+			<div className="flex flex-col gap-4 p-4 lg:p-6">
+				<Skeleton className="h-8 w-1/2" />
 				<Skeleton className="h-64 w-full" />
 			</div>
 		);
@@ -46,7 +46,7 @@ export default function IntelligenceBriefingDetail({ briefingId }: Props) {
 
 	if (!briefing) {
 		return (
-			<div className="mx-auto max-w-3xl p-6 text-sm text-muted-foreground">
+			<div className="flex flex-col gap-4 p-4 lg:p-6 text-sm text-muted-foreground">
 				Briefing introuvable.
 			</div>
 		);
@@ -65,7 +65,7 @@ export default function IntelligenceBriefingDetail({ briefingId }: Props) {
 	};
 
 	return (
-		<div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4 sm:p-6">
+		<div className="flex flex-col gap-6 p-4 lg:p-6 overflow-y-auto citizen-scrollbar">
 			<div className="flex items-center justify-between gap-2">
 				<Button variant="ghost" size="sm" asChild>
 					<Link href="/agence/briefings">

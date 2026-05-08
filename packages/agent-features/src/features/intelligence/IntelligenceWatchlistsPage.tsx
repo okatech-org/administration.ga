@@ -108,7 +108,7 @@ export default function IntelligenceWatchlistsPage() {
 	};
 
 	return (
-		<div className="flex flex-col gap-4 p-4 lg:p-6 max-w-6xl mx-auto w-full">
+		<div className="flex flex-col gap-6 p-4 lg:p-6 overflow-y-auto citizen-scrollbar">
 			<PageHeader
 				icon={<Eye className="h-5 w-5 text-rose-500" />}
 				title="Listes de surveillance"

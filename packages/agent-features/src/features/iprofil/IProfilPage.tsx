@@ -174,7 +174,7 @@ export default function IProfilPage() {
 	const statusInfo = STATUS_CONFIG[status] ?? STATUS_CONFIG.en_poste;
 
 	return (
-		<div className="flex flex-col gap-6 p-4 lg:p-6 max-w-4xl mx-auto h-full overflow-y-auto citizen-scrollbar">
+		<div className="flex flex-col gap-6 p-4 lg:p-6 h-full overflow-y-auto citizen-scrollbar">
 			{/* ─── Header Card ─── */}
 			<FlatCard>
 				<div className="p-3 lg:p-4">

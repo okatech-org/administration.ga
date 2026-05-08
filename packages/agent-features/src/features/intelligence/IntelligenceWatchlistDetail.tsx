@@ -72,7 +72,7 @@ export default function IntelligenceWatchlistDetail({ watchlistId }: Props) {
 	};
 
 	return (
-		<div className="flex flex-col gap-4 p-4 lg:p-6 max-w-6xl mx-auto w-full">
+		<div className="flex flex-col gap-6 p-4 lg:p-6 overflow-y-auto citizen-scrollbar">
 			<div className="flex items-center gap-3 -mx-4 lg:-mx-6 px-4 lg:px-6 py-3 border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
 				<Link href="/agence/watchlists">
 					<Button variant="ghost" size="sm">
