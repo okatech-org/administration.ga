@@ -139,7 +139,7 @@ export default function IntelligenceProfileDetail({ targetType, targetId }: Prop
 							<SheetContent
 								side="right"
 								className="w-full overflow-y-auto"
-								style={{ maxWidth: "min(1280px, 95vw)" }}
+								style={{ maxWidth: "min(960px, 95vw)" }}
 							>
 								<SheetHeader>
 									<SheetTitle className="flex items-center gap-2">
