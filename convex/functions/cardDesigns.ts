@@ -57,7 +57,8 @@ export const getById = authQuery({
 /**
  * Get the org's default card design (single-design-per-org model).
  * Resolves via org.settings.defaultCardDesignId with fallback to first active design.
- * Returns a lightweight summary (no base64 image data).
+ * Returns the full design (backgrounds, elements with imageData) so any client
+ * can render it faithfully — same source of truth as the desktop printer.
  */
 export const getByOrg = authQuery({
 	args: {
@@ -86,26 +87,7 @@ export const getByOrg = authQuery({
 
 		if (!design) return null;
 
-		return {
-			_id: design._id,
-			_creationTime: design._creationTime,
-			name: design.name,
-			description: design.description,
-			backgroundColor: design.backgroundColor,
-			backgroundOpacity: design.backgroundOpacity,
-			frontElements: design.frontElements.map((el: any) => ({
-				...el,
-				imageData: el.imageData ? "__has_image__" : null,
-			})),
-			backElements: design.backElements.map((el: any) => ({
-				...el,
-				imageData: el.imageData ? "__has_image__" : null,
-			})),
-			printDuplex: design.printDuplex,
-			version: design.version,
-			updatedAt: design.updatedAt,
-			createdBy: design.createdBy,
-		};
+		return design;
 	},
 });
 
