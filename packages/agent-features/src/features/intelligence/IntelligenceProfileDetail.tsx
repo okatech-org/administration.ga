@@ -5,7 +5,7 @@ import {
 	ArrowLeft,
 	Building2,
 	Baby,
-	ExternalLink,
+	FileText,
 	Globe,
 	Loader2,
 	ShieldAlert,
@@ -19,9 +19,18 @@ import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+} from "@workspace/ui/components/sheet";
 import { cn } from "@workspace/ui/lib/utils";
 
 import { FlatCard } from "../../components/my-space/flat-card";
+import { CitizenDossierSections } from "../../components/profile/citizen-dossier-sections";
 import { useOrg } from "../../shell/org-provider";
 
 import { AddToWatchlistButton } from "./AddToWatchlistButton";
@@ -117,13 +126,33 @@ export default function IntelligenceProfileDetail({ targetType, targetId }: Prop
 				<div className="text-muted-foreground/40">/</div>
 				<span className="text-sm font-medium truncate flex-1 min-w-0">{title}</span>
 				<div className="flex items-center gap-2 shrink-0">
-					{targetType === "profile" && (
-						<Link href={`/affaires-consulaires/profiles/${targetId}`}>
-							<Button variant="outline" size="sm">
-								<ExternalLink className="h-3 w-3 mr-1" />
-								Dossier consulaire
-							</Button>
-						</Link>
+					{targetType === "profile" && data?.target && (
+						<Sheet>
+							<SheetTrigger asChild>
+								<Button variant="outline" size="sm">
+									<FileText className="h-3 w-3 mr-1" />
+									Dossier consulaire
+								</Button>
+							</SheetTrigger>
+							<SheetContent
+								side="right"
+								className="w-full sm:max-w-2xl overflow-y-auto"
+							>
+								<SheetHeader>
+									<SheetTitle className="flex items-center gap-2">
+										<FileText className="h-4 w-4 text-rose-500" />
+										Dossier consulaire — {title}
+									</SheetTitle>
+									<SheetDescription>
+										Lecture seule. Données issues du registre consulaire,
+										consultées depuis l'agence de renseignement.
+									</SheetDescription>
+								</SheetHeader>
+								<div className="px-4 pb-6">
+									<CitizenDossierSections profile={data.target} />
+								</div>
+							</SheetContent>
+						</Sheet>
 					)}
 					<AddToWatchlistButton targetType={targetType} targetId={targetId} />
 					<IntelligenceAIBriefingButton
