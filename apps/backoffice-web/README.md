@@ -51,12 +51,12 @@ bun run typecheck
 ### Variables d'environnement (`apps/backoffice-web/.env.local`)
 
 ```env
-VITE_CONVEX_URL=              # URL Convex (voir dashboard Convex)
-VITE_CONVEX_SITE_URL=         # URL site HTTP Convex
-VITE_SITE_URL=                # URL de l'app (ex: http://localhost:3002)
-VITE_POSTHOG_KEY=             # Clé PostHog
-VITE_POSTHOG_HOST=            # Host PostHog
-VITE_DEV_ACCOUNTS='[...]'    # Comptes de test (dev uniquement, optionnel)
+NEXT_PUBLIC_CONVEX_URL=             # URL Convex (voir dashboard Convex)
+CONVEX_SITE_URL=                    # URL site HTTP Convex
+NEXT_PUBLIC_SITE_URL=               # URL de l'app (ex: http://localhost:3002)
+NEXT_PUBLIC_POSTHOG_KEY=            # Clé PostHog
+NEXT_PUBLIC_POSTHOG_HOST=           # Host PostHog
+NEXT_PUBLIC_DEV_ACCOUNTS='[...]'    # Comptes de test (dev uniquement, optionnel)
 ```
 
 ## Structure

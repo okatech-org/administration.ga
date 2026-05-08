@@ -59,14 +59,14 @@ Chaque app a son propre `.env.local`. Variables requises :
 
 | Variable | Description | Exemple |
 |----------|-------------|---------|
-| `VITE_CONVEX_URL` | URL du déploiement Convex | `https://xxx.eu-west-1.convex.cloud` |
-| `VITE_CONVEX_SITE_URL` | URL HTTP du site Convex | `https://xxx.eu-west-1.convex.site` |
-| `VITE_SITE_URL` | URL de l'app (pour l'auth) | `http://consulat.local:3000` |
-| `VITE_POSTHOG_KEY` | Clé PostHog | |
-| `VITE_POSTHOG_HOST` | Host PostHog | |
-| `VITE_STRIPE_PUBLISHABLE_KEY` | Clé publique Stripe | |
-| `VITE_LIVEKIT_WS_URL` | URL WebSocket LiveKit | |
-| `VITE_MAPBOX_TOKEN` | Token Mapbox (citizen-web uniquement) | |
+| `NEXT_PUBLIC_CONVEX_URL` | URL du déploiement Convex | `https://xxx.eu-west-1.convex.cloud` |
+| `CONVEX_SITE_URL` | URL HTTP du site Convex | `https://xxx.eu-west-1.convex.site` |
+| `NEXT_PUBLIC_SITE_URL` | URL de l'app (pour l'auth) | `http://consulat.local:3000` |
+| `NEXT_PUBLIC_POSTHOG_KEY` | Clé PostHog | |
+| `NEXT_PUBLIC_POSTHOG_HOST` | Host PostHog | |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Clé publique Stripe | |
+| `NEXT_PUBLIC_LIVEKIT_WS_URL` | URL WebSocket LiveKit | |
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | Token Mapbox (citizen-web uniquement) | |
 
 ### Variables Convex (backend)
 
@@ -203,13 +203,13 @@ Les redirections `www.` vers apex sont gérées par un middleware Nitro (`server
 | Secret | Description |
 |--------|-------------|
 | `WIF_PROVIDER` | Workload Identity Federation provider GCP |
-| `VITE_CONVEX_URL` | URL Convex **production** |
-| `VITE_CONVEX_SITE_URL` | URL site Convex **production** |
-| `VITE_POSTHOG_KEY` | Clé PostHog |
-| `VITE_POSTHOG_HOST` | Host PostHog |
-| `VITE_LIVEKIT_WS_URL` | URL WebSocket LiveKit |
-| `VITE_STRIPE_PUBLISHABLE_KEY` | Clé publique Stripe |
-| `VITE_MAPBOX_TOKEN` | Token Mapbox |
+| `NEXT_PUBLIC_CONVEX_URL` | URL Convex **production** |
+| `CONVEX_SITE_URL` | URL site Convex **production** |
+| `NEXT_PUBLIC_POSTHOG_KEY` | Clé PostHog |
+| `NEXT_PUBLIC_POSTHOG_HOST` | Host PostHog |
+| `NEXT_PUBLIC_LIVEKIT_WS_URL` | URL WebSocket LiveKit |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Clé publique Stripe |
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | Token Mapbox |
 
 ### Deploy manuel
 

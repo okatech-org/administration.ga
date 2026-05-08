@@ -18,9 +18,7 @@ import {
  * transitent par le meme domaine que le frontend (admin.consulat.ga).
  */
 export default defineEventHandler(async (event) => {
-	const CONVEX_SITE_URL =
-		process.env.CONVEX_SITE_URL ||
-		process.env.VITE_CONVEX_SITE_URL;
+	const CONVEX_SITE_URL = process.env.CONVEX_SITE_URL;
 
 	if (!CONVEX_SITE_URL) {
 		console.error("[auth-proxy] CONVEX_SITE_URL not configured");

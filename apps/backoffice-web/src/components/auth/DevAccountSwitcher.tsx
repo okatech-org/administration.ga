@@ -24,7 +24,7 @@ interface DevAccountGroup {
 	accounts: DevAccount[];
 }
 
-/** Parse les comptes dev depuis VITE_DEV_ACCOUNTS et les groupe par group. */
+/** Parse les comptes dev depuis NEXT_PUBLIC_DEV_ACCOUNTS et les groupe par group. */
 function parseDevAccounts(): DevAccountGroup[] {
 	try {
 		const raw = process.env.NEXT_PUBLIC_DEV_ACCOUNTS;
