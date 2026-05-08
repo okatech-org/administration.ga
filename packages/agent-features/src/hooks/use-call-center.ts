@@ -14,10 +14,15 @@ import { callStore, useCallStore } from "../stores/call-store";
 /**
  * Traces détaillées des transitions de slot pour le debug.
  * Activer via `NEXT_PUBLIC_DEBUG_CALLS=1` dans `.env.local`.
+ *
+ * `process` n'existe pas dans le renderer Electron — guard pour rester
+ * compatible agent-web (Next.js) et agent-desktop (Vite/Electron).
  */
-const DEBUG_CALLS =
-  process.env.NEXT_PUBLIC_DEBUG_CALLS === "1" ||
-  process.env.NEXT_PUBLIC_DEBUG_CALLS === "true";
+const DEBUG_CALLS_ENV =
+  typeof process !== "undefined" && process.env
+    ? process.env.NEXT_PUBLIC_DEBUG_CALLS
+    : undefined;
+const DEBUG_CALLS = DEBUG_CALLS_ENV === "1" || DEBUG_CALLS_ENV === "true";
 const trace = (...args: unknown[]) => {
   if (DEBUG_CALLS) {
     // eslint-disable-next-line no-console
