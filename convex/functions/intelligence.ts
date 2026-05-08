@@ -390,6 +390,114 @@ export const getBriefing = authQuery({
 });
 
 /**
+ * Score de risque agrégé pour une cible.
+ *
+ * Algorithme : somme pondérée des notes vivantes.
+ *   contribution = poids(gravité) × mult(catégorie) × décroissance(âge)
+ *
+ * Poids gravité       : low=1, medium=4, high=10, critical=25
+ * Multiplicateur cat. : observation=0.5, lead=0.7, risk=1.0, flag=1.5
+ * Décroissance        : 1.0 (≤30j) → 0.5 (90j) → 0.2 (180j) → 0.1 (360j)
+ * Statut vérification : confirmed ×1.0, unverified ×0.7, disputed ×0.3
+ *
+ * Le score est capé à 100. Les notes expirées (expiresAt < now) sont
+ * ignorées. Les notes supprimées (tombstone) aussi.
+ *
+ * Tier dérivé :
+ *   0–9   : minimal
+ *   10–29 : low
+ *   30–59 : moderate
+ *   60–100: high
+ */
+const SEVERITY_WEIGHT = { low: 1, medium: 4, high: 10, critical: 25 } as const;
+const CATEGORY_MULT = {
+  observation: 0.5,
+  lead: 0.7,
+  risk: 1.0,
+  flag: 1.5,
+} as const;
+const VERIFIED_MULT = {
+  confirmed: 1.0,
+  unverified: 0.7,
+  disputed: 0.3,
+} as const;
+const DAY_MS = 86_400_000;
+
+function freshnessMultiplier(ageDays: number): number {
+  if (ageDays <= 30) return 1.0;
+  if (ageDays <= 90) return 0.5;
+  if (ageDays <= 180) return 0.2;
+  if (ageDays <= 360) return 0.1;
+  return 0.05;
+}
+
+function tierFromScore(score: number): "minimal" | "low" | "moderate" | "high" {
+  if (score >= 60) return "high";
+  if (score >= 30) return "moderate";
+  if (score >= 10) return "low";
+  return "minimal";
+}
+
+export const getRiskScore = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+    targetType: targetTypeValidator,
+    targetId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(
+      ctx,
+      ctx.user,
+      membership,
+      "intelligence.profiles.view",
+    );
+
+    const notes = await ctx.db
+      .query("intelligenceNotes")
+      .withIndex("by_target", (q) =>
+        q.eq("targetType", args.targetType).eq("targetId", args.targetId),
+      )
+      .collect();
+
+    const now = Date.now();
+    let raw = 0;
+    let liveCount = 0;
+    const counts: Record<string, number> = {
+      critical: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
+    };
+
+    for (const n of notes) {
+      if (n.deletedAt !== undefined) continue;
+      if (n.expiresAt !== undefined && n.expiresAt < now) continue;
+
+      liveCount += 1;
+      counts[n.severity] = (counts[n.severity] ?? 0) + 1;
+
+      const ageDays = Math.max(0, (now - n._creationTime) / DAY_MS);
+      const sev = SEVERITY_WEIGHT[n.severity];
+      const cat = CATEGORY_MULT[n.category];
+      const ver =
+        n.verified !== undefined
+          ? VERIFIED_MULT[n.verified as keyof typeof VERIFIED_MULT]
+          : VERIFIED_MULT.unverified;
+      raw += sev * cat * freshnessMultiplier(ageDays) * ver;
+    }
+
+    const score = Math.min(100, Math.round(raw));
+    return {
+      score,
+      tier: tierFromScore(score),
+      liveCount,
+      counts,
+    };
+  },
+});
+
+/**
  * Compteurs pour le dashboard Intelligence (top KPI).
  */
 export const getDashboardCounts = authQuery({

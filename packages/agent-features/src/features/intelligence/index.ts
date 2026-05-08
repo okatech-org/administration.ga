@@ -9,3 +9,4 @@ export { IntelligenceNotesPanel } from "./IntelligenceNotesPanel";
 export { IntelligenceLinksPanel } from "./IntelligenceLinksPanel";
 export { IntelligenceBriefingButton } from "./IntelligenceBriefingButton";
 export { AddToWatchlistButton } from "./AddToWatchlistButton";
+export { RiskScoreBadge } from "./RiskScoreBadge";

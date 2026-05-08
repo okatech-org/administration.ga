@@ -246,6 +246,7 @@ import type * as migrations_backfillAggregates from "../migrations/backfillAggre
 import type * as migrations_backfillCopyOwnerOrgId from "../migrations/backfillCopyOwnerOrgId.js";
 import type * as migrations_backfillEmptyFormData from "../migrations/backfillEmptyFormData.js";
 import type * as migrations_backfillProfileAttachment from "../migrations/backfillProfileAttachment.js";
+import type * as migrations_backfillProfileCoordinates from "../migrations/backfillProfileCoordinates.js";
 import type * as migrations_backfillRequestResidencePermit from "../migrations/backfillRequestResidencePermit.js";
 import type * as migrations_fixIdentityPhotos from "../migrations/fixIdentityPhotos.js";
 import type * as migrations_fixOwnerIds from "../migrations/fixOwnerIds.js";
@@ -608,6 +609,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/backfillCopyOwnerOrgId": typeof migrations_backfillCopyOwnerOrgId;
   "migrations/backfillEmptyFormData": typeof migrations_backfillEmptyFormData;
   "migrations/backfillProfileAttachment": typeof migrations_backfillProfileAttachment;
+  "migrations/backfillProfileCoordinates": typeof migrations_backfillProfileCoordinates;
   "migrations/backfillRequestResidencePermit": typeof migrations_backfillRequestResidencePermit;
   "migrations/fixIdentityPhotos": typeof migrations_fixIdentityPhotos;
   "migrations/fixOwnerIds": typeof migrations_fixOwnerIds;

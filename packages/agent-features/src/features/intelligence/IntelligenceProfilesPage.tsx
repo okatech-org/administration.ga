@@ -18,6 +18,8 @@ import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
 import { useOrg } from "../../shell/org-provider";
 
+import { RiskScoreBadge } from "./RiskScoreBadge";
+
 type IntelTargetType = "profile" | "child_profile" | "diplomatic_target" | "agent";
 
 const TYPE_LABELS: Record<IntelTargetType, string> = {
@@ -121,6 +123,11 @@ export default function IntelligenceProfilesPage() {
 												)}
 											</div>
 											<div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+												<RiskScoreBadge
+													targetType={r.targetType}
+													targetId={r.targetId}
+													compact
+												/>
 												{r.country && <span>{r.country}</span>}
 												<span className="px-1.5 py-0.5 rounded bg-foreground/5">
 													{TYPE_LABELS[r.targetType]}

@@ -15,6 +15,7 @@ import { AddToWatchlistButton } from "./AddToWatchlistButton";
 import { IntelligenceBriefingButton } from "./IntelligenceBriefingButton";
 import { IntelligenceLinksPanel } from "./IntelligenceLinksPanel";
 import { IntelligenceNotesPanel } from "./IntelligenceNotesPanel";
+import { RiskScoreBadge } from "./RiskScoreBadge";
 
 type IntelTargetType = "profile" | "child_profile" | "diplomatic_target" | "agent";
 
@@ -98,6 +99,10 @@ export default function IntelligenceProfileDetail({ targetType, targetId }: Prop
 				title={title}
 				subtitle={`${TYPE_LABELS[targetType]}${subtitle ? ` · ${subtitle}` : ""}`}
 			/>
+
+			<div className="flex flex-wrap items-center gap-2">
+				<RiskScoreBadge targetType={targetType} targetId={targetId} />
+			</div>
 
 			{targetType === "child_profile" && (
 				<FlatCard className="p-3 text-xs border-l-4 border-l-amber-500">
