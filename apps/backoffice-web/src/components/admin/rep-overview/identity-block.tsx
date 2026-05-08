@@ -40,6 +40,7 @@ const CATEGORY_CONFIG: Record<
 	gestion: { label: "Gestion", order: 3 },
 	administration: { label: "Administration", order: 4 },
 	network: { label: "Réseau diplomatique", order: 5 },
+	intelligence: { label: "Renseignement", order: 6 },
 };
 
 

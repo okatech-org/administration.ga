@@ -51,6 +51,11 @@ const CATEGORY_META: Record<
 		color: "text-rose-600",
 		bgColor: "bg-rose-50 dark:bg-rose-950/30",
 	},
+	intelligence: {
+		label: { fr: "Renseignement", en: "Intelligence" },
+		color: "text-rose-700",
+		bgColor: "bg-rose-100 dark:bg-rose-950/40",
+	},
 };
 
 // ─── Props ─────────────────────────────────────────────────────

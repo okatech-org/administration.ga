@@ -323,6 +323,65 @@ export const POSITION_TASK_PRESETS: TaskPresetDefinition[] = [
       TaskCode.org.view,
     ],
   },
+  {
+    code: "intelligence_agency_director",
+    label: { fr: "Direction de l'Agence", en: "Agency Direction" },
+    description: {
+      fr: "Direction d'une agence souveraine — accès admin total au module Renseignement (dossiers, notes, watchlists, alertes, briefings IA, graphe, GEOINT)",
+      en: "Sovereign agency direction — full admin access to the Intelligence module",
+    },
+    icon: "ShieldAlert",
+    color: "text-rose-700",
+    tasks: [
+      TaskCode.intelligence.profiles_view,
+      TaskCode.intelligence.profiles_search,
+      TaskCode.intelligence.profiles_export,
+      TaskCode.intelligence.notes_view,
+      TaskCode.intelligence.notes_create,
+      TaskCode.intelligence.notes_delete_own,
+      TaskCode.intelligence.notes_delete_any,
+      TaskCode.intelligence.map_view,
+      TaskCode.intelligence.watchlists_view,
+      TaskCode.intelligence.watchlists_manage,
+      TaskCode.intelligence.links_view,
+      TaskCode.intelligence.links_manage,
+      TaskCode.intelligence.briefing_generate,
+      TaskCode.intelligence.cases_view,
+      TaskCode.intelligence.cases_create,
+      TaskCode.intelligence.cases_edit,
+      TaskCode.intelligence.cases_close,
+      TaskCode.intelligence.cases_archive,
+      TaskCode.intelligence.configure,
+      TaskCode.org.view,
+    ],
+  },
+  {
+    code: "intelligence_agency_analyst",
+    label: { fr: "Analyste Renseignement", en: "Intelligence Analyst" },
+    description: {
+      fr: "Analyste opérationnel — création de notes, dossiers, briefings et exploitation du graphe",
+      en: "Operational analyst — note/case/briefing creation and graph exploitation",
+    },
+    icon: "ShieldAlert",
+    color: "text-rose-500",
+    tasks: [
+      TaskCode.intelligence.profiles_view,
+      TaskCode.intelligence.profiles_search,
+      TaskCode.intelligence.notes_view,
+      TaskCode.intelligence.notes_create,
+      TaskCode.intelligence.notes_delete_own,
+      TaskCode.intelligence.map_view,
+      TaskCode.intelligence.watchlists_view,
+      TaskCode.intelligence.watchlists_manage,
+      TaskCode.intelligence.links_view,
+      TaskCode.intelligence.links_manage,
+      TaskCode.intelligence.briefing_generate,
+      TaskCode.intelligence.cases_view,
+      TaskCode.intelligence.cases_create,
+      TaskCode.intelligence.cases_edit,
+      TaskCode.org.view,
+    ],
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -547,6 +606,20 @@ export const PRESET_MODULE_ACCESS: Record<string, MA[]> = {
   ],
   intelligence_services: [
     ma(ModuleCode.intelligence, "editor"),
+  ],
+  // ─── Agence de renseignement souveraine ────────────────────
+  intelligence_agency_director: [
+    ma(ModuleCode.intelligence, "admin"),
+    ma(ModuleCode.team, "admin"),
+    ma(ModuleCode.settings, "admin"),
+    ma(ModuleCode.profile, "admin"),
+    ma(ModuleCode.messaging, "editor"),
+  ],
+  intelligence_agency_analyst: [
+    ma(ModuleCode.intelligence, "editor"),
+    ma(ModuleCode.team, "reader"),
+    ma(ModuleCode.profile, "editor"),
+    ma(ModuleCode.messaging, "editor"),
   ],
 };
 
@@ -793,6 +866,23 @@ export const HIGH_REPRESENTATION_POSITIONS: PositionTemplate[] = [
   ...EMBASSY_POSITIONS.filter(p => p.code !== "ambassador"),
 ];
 
+// ─── INTELLIGENCE AGENCY positions (organisme souverain cloisonné) ─
+//
+// Hiérarchie minimale d'une agence de renseignement : direction (général,
+// adjoint), chef de section, analystes seniors et juniors, officier de
+// terrain. Tous portent le preset `intelligence_agency_*` qui leur donne
+// accès au module Renseignement (dossiers, notes, watchlists, alertes,
+// briefings IA, graphe, GEOINT) selon leur niveau.
+
+export const INTELLIGENCE_AGENCY_POSITIONS: PositionTemplate[] = [
+  { code: "agency_director", title: { fr: "Directeur Général", en: "Director General" }, description: { fr: "Direction de l'agence — autorité opérationnelle et arbitrage stratégique", en: "Agency direction — operational authority and strategic arbitration" }, level: 1, perm: 40, grade: "chief", ministryCode: "presidence", taskPresets: ["intelligence_agency_director"], isRequired: true },
+  { code: "deputy_director", title: { fr: "Directeur Général Adjoint", en: "Deputy Director" }, description: { fr: "Adjoint du Directeur Général — coordination des sections opérationnelles", en: "Deputy to the Director General — coordination of operational sections" }, level: 2, perm: 32, grade: "deputy_chief", ministryCode: "presidence", taskPresets: ["intelligence_agency_director"], isRequired: false },
+  { code: "section_chief", title: { fr: "Chef de Section", en: "Section Chief" }, description: { fr: "Pilote d'une section thématique (diaspora, économique, contre-ingérence, cyber)", en: "Lead of a thematic section (diaspora, economic, counter-interference, cyber)" }, level: 3, perm: 24, grade: "counselor", ministryCode: "presidence", taskPresets: ["intelligence_agency_director"], isRequired: false },
+  { code: "senior_analyst", title: { fr: "Analyste Senior", en: "Senior Analyst" }, description: { fr: "Conduit les enquêtes complexes, supervise les briefings et valide les notes critiques", en: "Leads complex investigations, supervises briefings and validates critical notes" }, level: 3, perm: 20, grade: "counselor", ministryCode: "presidence", taskPresets: ["intelligence_agency_analyst"], isRequired: false },
+  { code: "analyst", title: { fr: "Analyste", en: "Analyst" }, description: { fr: "Production de notes, exploitation du graphe et tenue des dossiers d'investigation", en: "Note production, graph exploitation and investigation case tracking" }, level: 4, perm: 16, grade: "agent", ministryCode: "presidence", taskPresets: ["intelligence_agency_analyst"], isRequired: false },
+  { code: "field_officer", title: { fr: "Officier de Terrain", en: "Field Officer" }, description: { fr: "Collecte de renseignement humain et terrain, alimente les notes et watchlists", en: "Human and field intelligence collection, feeds notes and watchlists" }, level: 4, perm: 14, grade: "agent", ministryCode: "presidence", taskPresets: ["intelligence_agency_analyst"], isRequired: false },
+];
+
 export const ORGANIZATION_TEMPLATES: OrganizationTemplate[] = [
   {
     type: OrganizationType.Embassy,
@@ -865,6 +955,20 @@ export const ORGANIZATION_TEMPLATES: OrganizationTemplate[] = [
     },
   },
   {
+    type: OrganizationType.IntelligenceAgency,
+    label: { fr: "Agence de Renseignement", en: "Intelligence Agency" },
+    description: { fr: "Organisme souverain cloisonné — totalement invisible des autres organismes (consulats, ambassades, ministères). Seul autorisé à activer le module Renseignement.", en: "Cloistered sovereign body — fully invisible from other orgs. Only entity allowed to activate the Intelligence module." },
+    icon: "ShieldAlert",
+    positions: INTELLIGENCE_AGENCY_POSITIONS,
+    modules: [
+      ModuleCode.profile,
+      ModuleCode.team,
+      ModuleCode.settings,
+      ModuleCode.messaging,
+      ModuleCode.intelligence,
+    ],
+  },
+  {
     type: "custom",
     label: { fr: "Personnalisé", en: "Custom" },
     description: { fr: "Configuration entièrement personnalisée", en: "Fully custom configuration" },
@@ -896,6 +1000,7 @@ populateModuleAccess(HIGH_COMMISSION_POSITIONS);
 populateModuleAccess(PERMANENT_MISSION_POSITIONS);
 populateModuleAccess(HIGH_REPRESENTATION_POSITIONS);
 populateModuleAccess(MINISTRY_FOREIGN_AFFAIRS_POSITIONS);
+populateModuleAccess(INTELLIGENCE_AGENCY_POSITIONS);
 
 // ═══════════════════════════════════════════════════════════════
 // TASK CATEGORY METADATA (icons + labels for UI)
