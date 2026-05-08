@@ -72,7 +72,7 @@ const SETTINGS_SECTIONS: SettingsSectionItem[] = [
   // iAsted
   { key: "iasted", label: "Configuration iAsted", icon: Bot, description: "Persona, tools, langues, escalation", zone: "iAsted" },
   // Opérations
-  { key: "services", label: "Services & Tarification", icon: CreditCard, description: "Pricing Stripe, SLA", zone: "Opérations" },
+  { key: "services", label: "Services & Tarification", icon: CreditCard, description: "Tarification, SLA", zone: "Opérations" },
   { key: "branding", label: "Branding & Page publique", icon: Palette, description: "Couleurs, description, réseaux sociaux", zone: "Opérations" },
 ];
 

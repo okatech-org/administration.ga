@@ -34,24 +34,6 @@ export const getStaleRequests = internalQuery({
   },
 });
 
-export const getFailedPayments24h = internalQuery({
-  args: { since: v.number() },
-  handler: async (ctx, args) => {
-    const failed = await ctx.db
-      .query("payments")
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("status"), "failed"),
-          q.gte(q.field("_creationTime"), args.since),
-        ),
-      )
-      .take(500);
-
-    const totalAmount = failed.reduce((sum, p) => sum + p.amount, 0);
-    return { count: failed.length, totalAmount };
-  },
-});
-
 export const getPendingVerifications = internalQuery({
   args: { olderThan: v.number() },
   handler: async (ctx, args) => {

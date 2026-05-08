@@ -378,7 +378,7 @@ export function IntelligenceLinksPanel({ targetType, targetId }: Props) {
 									className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/60 border border-border/30 hover:border-border/50 transition-colors"
 								>
 									<Link
-										href={`/intelligence/profiles/${l.otherType}/${l.otherId}`}
+										href={`/agence/profiles/${l.otherType}/${l.otherId}`}
 										className="flex items-center gap-2 flex-1 min-w-0"
 									>
 										{l.direction === "outgoing" ? (

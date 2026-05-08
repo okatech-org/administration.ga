@@ -1406,7 +1406,6 @@ export const setActionRequired = authMutation({
       v.literal("upload_document"),
       v.literal("complete_info"),
       v.literal("schedule_appointment"),
-      v.literal("make_payment"),
       v.literal("confirm_info"),
     ),
     message: v.string(),

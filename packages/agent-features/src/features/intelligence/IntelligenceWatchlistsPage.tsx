@@ -243,7 +243,7 @@ export default function IntelligenceWatchlistsPage() {
 										exit={{ opacity: 0, scale: 0.97 }}
 										transition={{ delay: i * 0.02 }}
 									>
-										<Link href={`/intelligence/watchlists/${l._id}`}>
+										<Link href={`/agence/watchlists/${l._id}`}>
 											<div className="flex flex-col gap-3 p-4 rounded-xl border border-border/50 bg-[#FDFCFA] dark:bg-[#21201E]/77 hover:bg-muted/40 hover:border-rose-500/30 transition-all cursor-pointer h-full">
 												<div className="flex items-start gap-2">
 													<div className="rounded-md bg-rose-500/10 p-1.5 shrink-0">

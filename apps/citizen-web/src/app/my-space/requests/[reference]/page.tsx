@@ -33,7 +33,6 @@ import { useFormFillOptional } from "@/components/ai/FormFillContext";
 import { ActiveCallBanner } from "@/components/meetings/active-call-banner";
 import { OrgCallButton } from "@/components/meetings/org-call-button";
 import { ActionRequiredCard } from "@/components/my-space/action-required-card";
-import { PaymentForm } from "@/components/payment/PaymentForm";
 import { DocumentChecklist } from "@/components/shared/DocumentChecklist";
 import { OfficialDocumentsPanel } from "@/components/requests/OfficialDocumentsPanel";
 import { DynamicForm } from "@/components/services/DynamicForm";
@@ -781,56 +780,6 @@ export default function UserRequestDetail() {
 							</div>
 						</FlatCard>
 					)}
-					{/* Payment Section */}
-					{(() => {
-						const pricing = (request.orgService as any)?.pricing;
-						const needsPayment =
-							pricing &&
-							pricing.amount > 0 &&
-							request.paymentStatus !== "succeeded";
-						const serviceName =
-							getLocalizedValue(
-								(request.service as any)?.name,
-								i18n.language,
-							) || "Service";
-
-						if (!needsPayment) return null;
-
-						return (
-							<FlatCard>
-								<div className="p-3 lg:p-4 pb-0">
-									<h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight">
-										<CreditCard className="h-5 w-5" />
-										{t("payment.title")}
-									</h3>
-									<p className="text-sm text-muted-foreground mt-1.5">
-										{request.paymentStatus === "pending" ||
-										request.paymentStatus === "processing"
-											? t("payment.pending")
-											: t("payment.required")}
-									</p>
-								</div>
-								<div className="p-3 lg:p-4">
-									{request.paymentStatus === "failed" && (
-										<Alert variant="destructive" className="mb-4">
-											<AlertTriangle className="h-4 w-4" />
-											<AlertDescription>{t("payment.failed")}</AlertDescription>
-										</Alert>
-									)}
-									<PaymentForm
-										requestId={request._id}
-										amount={pricing.amount}
-										currency={pricing.currency || "eur"}
-										serviceName={serviceName}
-										onSuccess={() => {
-											toast.success(t("payment.successToast"));
-										}}
-									/>
-								</div>
-							</FlatCard>
-						);
-					})()}
-
 					{/* Official documents released by the consulate (delivered PDFs) */}
 					<OfficialDocumentsPanel requestId={request._id} />
 

@@ -29,7 +29,6 @@ import {
   dossierProceduresByOrg,
   documentsByOwnerCategory,
   documentsByOwnerExpiry,
-  paymentsByOrg,
   missedCallsByOrgStatus,
   missedCallsByOrgReason,
 } from "../lib/aggregates";
@@ -71,7 +70,6 @@ triggers.register("correspondanceItems", correspondanceItemsByOrg.idempotentTrig
 triggers.register("dossierProcedures", dossierProceduresByOrg.idempotentTrigger());
 triggers.register("documents", documentsByOwnerCategory.idempotentTrigger());
 triggers.register("documents", documentsByOwnerExpiry.idempotentTrigger());
-triggers.register("payments", paymentsByOrg.idempotentTrigger());
 triggers.register("missedCalls", missedCallsByOrgStatus.idempotentTrigger());
 triggers.register("missedCalls", missedCallsByOrgReason.idempotentTrigger());
 
@@ -441,7 +439,6 @@ triggers.register("childProfiles", async (_ctx, change) => {
 
 const AUDITED_TABLES = [
   "requests",
-  "payments",
   "documents",
   "consularRegistrations",
   "consularNotifications",

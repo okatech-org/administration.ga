@@ -10,6 +10,7 @@ import { authQuery, authMutation } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
+import { assertCallerIsIntelAgency } from "../lib/intelligenceAgencyVisibility";
 
 const targetTypeValidator = v.union(
   v.literal("profile"),
@@ -37,6 +38,7 @@ const themeValidator = v.union(
 export const list = authQuery({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,
@@ -84,6 +86,7 @@ export const get = authQuery({
     orgId: v.id("orgs"),
   },
   handler: async (ctx, args) => {
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,
@@ -165,6 +168,7 @@ export const create = authMutation({
     const name = args.name.trim();
     if (!name) throw error(ErrorCode.INVALID_ARGUMENT);
 
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,
@@ -207,6 +211,7 @@ export const update = authMutation({
       throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
     }
 
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,
@@ -248,6 +253,7 @@ export const archive = authMutation({
       throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
     }
 
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,
@@ -282,6 +288,7 @@ export const addItem = authMutation({
       throw error(ErrorCode.NOT_FOUND);
     }
 
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,
@@ -328,6 +335,7 @@ export const removeItem = authMutation({
       throw error(ErrorCode.NOT_FOUND);
     }
 
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,
@@ -353,6 +361,7 @@ export const listForTarget = authQuery({
     targetId: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,

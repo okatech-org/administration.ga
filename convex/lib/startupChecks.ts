@@ -20,8 +20,6 @@ const SECRET_RULES: SecretRule[] = [
   { name: "Trusted Origins", envVar: "TRUSTED_ORIGINS", required: true },
   { name: "Convex Site URL", envVar: "CONVEX_SITE_URL", required: true },
   { name: "Gemini API Key", envVar: "GEMINI_API_KEY", minLength: 20, required: true },
-  { name: "Stripe Secret Key", envVar: "STRIPE_SECRET_KEY", minLength: 20, required: false, prodOnly: true },
-  { name: "Stripe Webhook Secret", envVar: "STRIPE_WEBHOOK_SECRET", minLength: 20, required: false, prodOnly: true },
   { name: "LiveKit API Key", envVar: "LIVEKIT_API_KEY", required: false, prodOnly: true },
   { name: "LiveKit API Secret", envVar: "LIVEKIT_API_SECRET", minLength: 20, required: false, prodOnly: true },
   { name: "Bird API Key", envVar: "BIRD_API_KEY", minLength: 20, required: false, prodOnly: true },

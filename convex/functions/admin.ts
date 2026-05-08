@@ -930,7 +930,6 @@ async function collectUserEntities(ctx: any, userId: any) {
 
   const memberships = await collectByUser("memberships", "by_user_org", "userId");
   const notifications = await collectByUser("notifications", "by_user", "userId");
-  const payments = await collectByUser("payments", "by_user", "userId");
   const meetings = await collectByUser("meetings", "by_createdBy", "createdBy");
   const cv = await collectByUser("cv", "by_user", "userId");
   const digitalMail = await collectByUser("digitalMail", "by_user", "userId");
@@ -990,7 +989,6 @@ async function collectUserEntities(ctx: any, userId: any) {
     agentNotes,
     memberships,
     notifications,
-    payments,
     meetings,
     cv,
     digitalMail,
@@ -1030,7 +1028,6 @@ export const getUserDeletionPreview = backofficeQuery({
       agentNotes: entities.agentNotes.length,
       memberships: entities.memberships.length,
       notifications: entities.notifications.length,
-      payments: entities.payments.length,
       meetings: entities.meetings.length,
       cv: entities.cv.length,
       digitalMail: entities.digitalMail.length,
@@ -1064,7 +1061,7 @@ export const getUserDeletionPreview = backofficeQuery({
  * Permanently delete user and ALL associated data.
  * Back-office users can permanently delete users they outrank.
  * Cascade deletes: profile, child profiles, requests, documents (+ storage),
- * events, agent notes, memberships, payments, notifications, meetings, cv,
+ * events, agent notes, memberships, notifications, meetings, cv,
  * digital mail, delivery packages, association/company members, conversations,
  * call lines, tickets, messages.
  */
@@ -1161,7 +1158,6 @@ export const permanentlyDeleteUser = backofficeMutation({
     // 9. Secondary tables
     const secondaryEntities = [
       ...entities.notifications,
-      ...entities.payments,
       ...entities.meetings,
       ...entities.cv,
       ...entities.digitalMail,

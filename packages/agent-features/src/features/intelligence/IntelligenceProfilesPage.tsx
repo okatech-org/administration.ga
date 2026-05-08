@@ -219,7 +219,7 @@ export default function IntelligenceProfilesPage() {
 									index={i}
 									searchTerm={debouncedSearch}
 									onOpen={() =>
-										router.push(`/intelligence/profiles/${r.targetType}/${r.targetId}`)
+										router.push(`/agence/profiles/${r.targetType}/${r.targetId}`)
 									}
 								/>
 							))}

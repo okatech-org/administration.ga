@@ -115,33 +115,6 @@ export const emailTemplates = {
     ),
   }),
 
-  // Payment confirmation
-  paymentConfirmation: (data: {
-    userName: string;
-    requestRef: string;
-    serviceName: string;
-    amount: string;
-    currency: string;
-    requestUrl: string;
-  }, platform?: PlatformConfig) => ({
-    subject: `Paiement confirmé - ${data.requestRef}`,
-    html: emailLayout(
-      "Paiement Confirmé",
-      `
-			<p>Bonjour ${data.userName},</p>
-			<p>Votre paiement a été reçu et confirmé. Merci !</p>
-			<div class="info-box">
-				<p><strong>Demande :</strong> ${data.requestRef}</p>
-				<p><strong>Service :</strong> ${data.serviceName}</p>
-				<p><strong>Montant :</strong> ${data.amount} ${data.currency}</p>
-			</div>
-			<p style="text-align: center; margin-top: 25px;">
-				<a href="${data.requestUrl}" class="button">Voir ma demande</a>
-			</p>
-		`,
-      platform,
-    ),
-  }),
 
   // Action required
   actionRequired: (data: {
@@ -375,56 +348,6 @@ export const notifyStatusUpdate = internalMutation({
           serviceName,
           newStatus: args.newStatus,
           statusLabel,
-          requestUrl: `${appUrl}/my-space/requests/${request.reference}`,
-        },
-      },
-    );
-
-
-  },
-});
-
-/**
- * Send payment confirmation
- */
-export const notifyPaymentSuccess = internalMutation({
-  args: {
-    requestId: v.id("requests"),
-    amount: v.number(),
-    currency: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const request = await ctx.db.get(args.requestId);
-    if (!request) return;
-
-    const user = await ctx.db.get(request.userId);
-    if (!user?.email) return;
-
-    const orgService = await ctx.db.get(request.orgServiceId);
-    const service = orgService ? await ctx.db.get(orgService.serviceId) : null;
-    const serviceName =
-      service?.name ?
-        typeof service.name === "object" ?
-          service.name.fr
-        : service.name
-      : "Service";
-
-    const appUrl = process.env.APP_URL || "https://consulat.ga";
-    const userName = user.name || "Cher(e) usager";
-    const amount = `${(args.amount / 100).toFixed(2)} ${args.currency.toUpperCase()}`;
-
-    await ctx.scheduler.runAfter(
-      0,
-      internal.functions.notifications.sendNotificationEmail,
-      {
-        to: user.email,
-        template: "paymentConfirmation",
-        data: {
-          userName,
-          requestRef: request.reference,
-          serviceName,
-          amount: (args.amount / 100).toFixed(2),
-          currency: args.currency.toUpperCase(),
           requestUrl: `${appUrl}/my-space/requests/${request.reference}`,
         },
       },

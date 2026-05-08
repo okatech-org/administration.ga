@@ -281,10 +281,6 @@
 				"title": "Digital documents",
 				"description": "Access your official documents online"
 			},
-			"payment": {
-				"title": "Secure payment",
-				"description": "Pay your consular fees securely"
-			},
 			"appointments": {
 				"title": "Simplified appointments",
 				"description": "Book your slots in just a few clicks"
@@ -2684,24 +2680,21 @@
 			"documents": "Missing documents",
 			"info": "Additional information needed",
 			"appointment": "Appointment required",
-			"payment": "Payment required",
 			"confirm": "Confirmation required"
 		},
 		"actionButton": {
-				"documents": "Attach documents",
-				"info": "Complete information",
-				"appointment": "Book appointment",
-				"payment": "Proceed to payment",
-				"confirm": "Confirm information"
-			},
-			"actionSheet": {
-				"documents": "Documents required",
-				"info": "Missing information",
-				"appointment": "Appointment",
-				"payment": "Payment",
-				"confirm": "Confirmation required"
-			},
-			"actionSent": "Response sent successfully",
+			"documents": "Attach documents",
+			"info": "Complete information",
+			"appointment": "Book appointment",
+			"confirm": "Confirm information"
+		},
+		"actionSheet": {
+			"documents": "Documents required",
+			"info": "Missing information",
+			"appointment": "Appointment",
+			"confirm": "Confirmation required"
+		},
+		"actionSent": "Response sent successfully",
 		"actionError": "Error sending response",
 		"required": "Required",
 		"uploaded": "Uploaded",
@@ -2744,7 +2737,6 @@
 				"documents": "Missing documents",
 				"info": "Additional information needed",
 				"appointment": "Appointment required",
-				"payment": "Payment required",
 				"confirm": "Confirmation required"
 			}
 		},
@@ -2786,21 +2778,6 @@
 			"added": "Note added",
 			"addError": "Error adding note"
 		}
-	},
-	"payment": {
-		"title": "Payment",
-		"pending": "Payment being processed",
-		"required": "Payment required for this service",
-		"failed": "Payment failed. Please try again.",
-		"successToast": "Payment successful!",
-		"error": "Payment error",
-		"success": "Payment successful!",
-		"successTitle": "Payment successful",
-		"processing": "Processing...",
-		"initError": "Initialization error",
-		"noSecret": "Unable to create payment",
-		"succeeded": "Succeeded",
-		"refunded": "Refunded"
 	},
 	"request": {
 		"submitted_success": "Request submitted successfully",
@@ -4012,7 +3989,6 @@
 			"consularRegistry": "Consular Registry",
 			"appointments": "Appointments",
 			"statistics": "Statistics",
-			"payments": "Payments",
 			"posts": "News",
 			"team": "Team",
 			"roles": "Roles & Positions",
@@ -4951,25 +4927,6 @@
 			}
 		}
 	},
-	"payments": {
-		"title": "Payments Dashboard",
-		"subtitle": "Transaction and revenue tracking",
-		"last7days": "Last 7 days",
-		"last30days": "Last 30 days",
-		"last90days": "Last 3 months",
-		"totalRevenue": "Total revenue",
-		"transactions": "Transactions",
-		"successRate": "Success rate",
-		"avgTransaction": "Avg. transaction",
-		"revenueEvolution": "Revenue evolution",
-		"statusDistribution": "Distribution by status",
-		"recentTransactions": "Recent transactions",
-		"date": "Date",
-		"reference": "Reference",
-		"amount": "Amount",
-		"status": "Status",
-		"noTransactions": "No transactions"
-	},
 	"appointments": {
 		"cancelled": "Appointment cancelled",
 		"cancelError": "Error cancelling appointment",
@@ -5540,7 +5497,6 @@
 				"printQueue": "Print Queue",
 				"printer": "Printer",
 				"statistics": "Statistics",
-				"payments": "Payments",
 				"team": "Team",
 				"settings": "Settings",
 				"impression": "Printing",
@@ -5738,10 +5694,6 @@
 				"title": "Statistics",
 				"desc": "Statistical dashboards — integration in progress"
 			},
-			"payments": {
-				"title": "Payments",
-				"desc": "Transaction tracking — integration in progress"
-			},
 			"team": {
 				"title": "Team",
 				"desc": "Member management — integration in progress"
@@ -5896,127 +5848,17 @@
 		"bookingError": "Booking error"
 	},
 	"idocument": {
-		"status": {
-			"pending": "Pending",
-			"validated": "Validated",
-			"rejected": "Rejected",
-			"expired": "Expired",
-			"expiring": "Expiring soon"
+		"origin": {
+			"banner": "From a correspondence",
+			"openCorrespondance": "Open correspondence",
+			"classedOn": "filed on"
 		},
-		"folders": {
-			"identityCivil": "Identity & Civil Status",
-			"identityCivilDesc": "Passport, birth certificate, nationality, residence, employment",
-			"officialDocs": "Official Documents",
-			"officialDocsDesc": "Certificates, official acts, justice, decisions, forms",
-			"title": "Folders"
-		},
-		"categories": {
-			"identity": "Identity",
-			"civilStatus": "Civil Status",
-			"nationality": "Nationality",
-			"residence": "Residence",
-			"employment": "Employment",
-			"income": "Income",
-			"certificates": "Certificates",
-			"officialCertificates": "Official Acts",
-			"justice": "Justice",
-			"administrativeDecisions": "Administrative Decisions",
-			"housing": "Housing",
-			"vehicle": "Vehicle",
-			"education": "Education",
-			"languageIntegration": "Language & Integration",
-			"health": "Health",
-			"taxation": "Taxation",
-			"other": "Other",
-			"forms": "Forms"
-		},
-		"addDocument": "Add a document",
-		"searchDocuments": "Search your documents...",
-		"selectCategory": "Select a category...",
-		"selectType": "Select a type...",
-		"labelPlaceholder": "E.g.: John's Passport, February 2026 Invoice...",
-		"dropFiles": "Drop files here or click to browse",
-		"selectForPreview": "Select a document for preview",
-		"labels": {
-			"category": "Category",
-			"documentType": "Document type",
-			"label": "Label",
-			"expiryDate": "Expiry date (optional)",
-			"files": "File(s)"
-		},
-		"subtitle": "Digital vault",
-		"systemFolders": {
-			"all": "All documents",
-			"trash": "Trash",
-			"vault": "Vault"
-		},
-		"uncategorized": "Uncategorized",
-		"thisDocument": "This document",
-		"expired": "Expired",
-		"expiresOn": "Expires on",
-		"inDays": "in {{count}} days",
-		"documentDetails": "Document details",
-		"searchResults": "Search results",
-		"documents": "documents",
-		"items": "items",
-		"system": "System",
-		"searchType": "Search a type...",
-		"noCategoryFound": "No category found",
-		"noTypeFound": "No type found",
-		"filesReady": "{{count}} file(s) ready",
-		"info": {
-			"name": "Name",
-			"type": "Type",
-			"expiration": "Expiration",
-			"files": "Files",
-			"timestamps": "Dates",
-			"createdAt": "Created on",
-			"updatedAt": "Updated on"
-		},
-		"table": {
-			"name": "Name",
-			"category": "Category",
-			"modified": "Modified",
-			"status": "Status",
-			"expiration": "Expiration",
-			"files": "Files"
-		},
-		"stats": {
-			"documents": "Documents",
-			"expiringSoon": "Expiring soon",
-			"expired": "Expired"
-		},
-		"empty": {
-			"noResults": "No results",
-			"noResultsDesc": "No documents match your search",
-			"emptyFolder": "Empty folder",
-			"emptyFolderDesc": "This folder contains no documents",
-			"noDocumentFound": "No document found",
-			"noContent": "No content",
-			"noDocument": "No document"
-		},
-		"actions": {
-			"preview": "Preview",
-			"info": "Information",
-			"download": "Download",
-			"delete": "Delete"
-		},
-		"delete": {
-			"confirmTitle": "Delete this document?",
-			"confirmMessage": "This action is irreversible."
-		},
-		"viewMode": {
-			"grid": "Grid",
-			"list": "List",
-			"column": "Columns"
-		},
-		"toasts": {
-			"documentAdded": "Document added successfully",
-			"saveError": "Error saving",
-			"downloadError": "Error downloading",
-			"documentDeleted": "Document deleted",
-			"deleteError": "Error deleting",
-			"uploadError": "Error uploading"
+		"sources": {
+			"all": "All sources",
+			"correspondance": "Correspondence",
+			"upload": "Upload",
+			"inboundEmail": "Inbound email",
+			"scan": "Scan"
 		}
 	},
 	"demarches": {
@@ -6217,20 +6059,6 @@
 		"disperse": {
 			"action": "Disperse",
 			"hint": "Split the attachments across multiple recipients"
-		}
-	},
-	"idocument": {
-		"origin": {
-			"banner": "From a correspondence",
-			"openCorrespondance": "Open correspondence",
-			"classedOn": "filed on"
-		},
-		"sources": {
-			"all": "All sources",
-			"correspondance": "Correspondence",
-			"upload": "Upload",
-			"inboundEmail": "Inbound email",
-			"scan": "Scan"
 		}
 	}
 }

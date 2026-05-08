@@ -83,14 +83,6 @@ const EVENT_CATEGORIES = [
       { code: "missed_call.created", label: "Appel manqué à rappeler" },
     ],
   },
-  {
-    title: "Paiements",
-    events: [
-      { code: "payment.succeeded", label: "Paiement réussi" },
-      { code: "payment.failed", label: "Paiement échoué" },
-      { code: "payment.refunded", label: "Remboursement effectué" },
-    ],
-  },
 ];
 
 export function NotificationsSection({

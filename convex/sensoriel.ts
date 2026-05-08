@@ -4,7 +4,7 @@ import { internal } from "./_generated/api";
 // Example of a webhook receiver acting as sensory input
 export const webhookEntrant = httpAction(async (ctx, request) => {
   const payload = await request.text();
-  const signature = request.headers.get("stripe-signature");
+  const signature = request.headers.get("x-webhook-signature");
 
   // Example: Convert external webhook data into an internal signal
   try {

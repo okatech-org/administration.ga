@@ -327,24 +327,7 @@ export const documentsByOwnerExpiry = new TableAggregate<{
 });
 
 // ---------------------------------------------------------------------------
-// 22. Payments by Org
-//     Namespace: orgId
-//     SortKey: [status, _creationTime]
-//     SumValue: amount (en centimes) → permet .sum() O(log n)
-// ---------------------------------------------------------------------------
-export const paymentsByOrg = new TableAggregate<{
-  Namespace: string;
-  Key: [string, number]; // [status, _creationTime]
-  DataModel: DataModel;
-  TableName: "payments";
-}>(components.paymentsByOrg, {
-  namespace: (doc) => doc.orgId,
-  sortKey: (doc) => [doc.status, doc._creationTime],
-  sumValue: (doc) => doc.amount,
-});
-
-// ---------------------------------------------------------------------------
-// 23. Missed Calls by Org — callbackStatus + time
+// 22. Missed Calls by Org — callbackStatus + time
 // ---------------------------------------------------------------------------
 export const missedCallsByOrgStatus = new TableAggregate<{
   Namespace: string;

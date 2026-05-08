@@ -149,10 +149,6 @@ export const TaskCode = {
     view: "community_events.view",
     manage: "community_events.manage",
   },
-  // Payments
-  payments: {
-    view: "payments.view",
-  },
   // Meetings & Calls
   meetings: {
     create: "meetings.create",
@@ -370,8 +366,6 @@ export const taskCodeValidator = v.union(
   // Community Events
   v.literal(TaskCode.community_events.view),
   v.literal(TaskCode.community_events.manage),
-  // Payments
-  v.literal(TaskCode.payments.view),
   // Chat peer-to-peer
   v.literal(TaskCode.chats.view),
   v.literal(TaskCode.chats.send),
@@ -526,8 +520,6 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   // Community Events
   [TaskCode.community_events.view]: "low",
   [TaskCode.community_events.manage]: "medium",
-  // Payments
-  [TaskCode.payments.view]: "medium",
   // Chat peer-to-peer
   [TaskCode.chats.view]: "low",
   [TaskCode.chats.send]: "low",

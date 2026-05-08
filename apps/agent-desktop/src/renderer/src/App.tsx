@@ -90,7 +90,6 @@ import IAstedPage from "@workspace/agent-features/features/iasted"
 import CallsPage from "@workspace/agent-features/features/calls"
 import MeetingsPage from "@workspace/agent-features/features/meetings"
 import StatisticsPage from "@workspace/agent-features/features/statistics"
-import PaymentsPage from "@workspace/agent-features/features/payments"
 import TeamPage from "@workspace/agent-features/features/team"
 import SettingsPage from "@workspace/agent-features/features/settings"
 
@@ -401,7 +400,6 @@ export function App() {
 
         {/* Ops */}
         <Route path="/statistics" element={<StatisticsPage />} />
-        <Route path="/payments" element={<PaymentsPage />} />
         <Route path="/team" element={<TeamPage />} />
         <Route path="/settings" element={<SettingsPage />} />
 

@@ -36,7 +36,6 @@ app.use(aggregate, { name: "correspondanceItemsByOrg" });
 app.use(aggregate, { name: "dossierProceduresByOrg" });
 app.use(aggregate, { name: "documentsByOwnerCategory" });
 app.use(aggregate, { name: "documentsByOwnerExpiry" });
-app.use(aggregate, { name: "paymentsByOrg" });
 app.use(aggregate, { name: "missedCallsByOrgStatus" });
 app.use(aggregate, { name: "missedCallsByOrgReason" });
 

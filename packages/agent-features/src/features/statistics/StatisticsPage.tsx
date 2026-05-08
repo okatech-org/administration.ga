@@ -132,11 +132,6 @@ export default function StatisticsPage() {
 			: "skip",
 	);
 
-	const { data: payments } = useAuthenticatedConvexQuery(
-		api.functions.payments.listByOrg,
-		activeOrgId ? { orgId: activeOrgId } : "skip",
-	);
-
 	usePageContext({
 		module: "statistics",
 		title: "Statistiques",
@@ -152,10 +147,6 @@ export default function StatisticsPage() {
 		const regPage = registrations?.page ?? [];
 		const activeRegs = regPage.filter((r: any) => r.status === "Active").length;
 		const cardsGenerated = regPage.filter((r: any) => r.cardNumber).length;
-
-		const totalRevenue = (payments ?? [])
-			.filter((p: any) => p.status === "succeeded")
-			.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
 
 		return [
 			{
@@ -208,18 +199,8 @@ export default function StatisticsPage() {
 				color: "text-indigo-600",
 				bgColor: "bg-indigo-500/10",
 			},
-			{
-				title: t("admin.stats.totalRevenue"),
-				value: new Intl.NumberFormat(
-					i18n.language === "fr" ? "fr-FR" : "en-US",
-					{ style: "currency", currency: "EUR", maximumFractionDigits: 0 },
-				).format(totalRevenue),
-				icon: CreditCard,
-				color: "text-green-600",
-				bgColor: "bg-green-500/10",
-			},
 		];
-	}, [stats, registrations, payments, t, i18n.language]);
+	}, [stats, registrations, t]);
 
 	const trendData = useMemo(() => {
 		if (!stats?.trend) return [];

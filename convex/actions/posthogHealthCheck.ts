@@ -29,19 +29,7 @@ export const run = internalAction({
       });
     }
 
-    // 2. Failed payments in last 24h
-    const failedPayments = await ctx.runQuery(
-      internal.crons.posthogHealthCheck.getFailedPayments24h,
-      { since: now - DAY_MS },
-    );
-    if (failedPayments.count > 0) {
-      await captureServerEvent("system", "server_health_failed_payments_24h", {
-        count: failedPayments.count,
-        totalAmount: failedPayments.totalAmount,
-      });
-    }
-
-    // 3. Pending document verifications older than 48h
+    // 2. Pending document verifications older than 48h
     const pendingVerifs = await ctx.runQuery(
       internal.crons.posthogHealthCheck.getPendingVerifications,
       { olderThan: now - 2 * DAY_MS },

@@ -271,7 +271,6 @@ const TASK_LABELS: Record<string, { fr: string; en: string }> = {
 	"consular_cards.manage": { fr: "Gérer les cartes consulaires", en: "Manage consular cards" },
 	"community_events.view": { fr: "Consulter les événements", en: "View events" },
 	"community_events.manage": { fr: "Gérer les événements", en: "Manage events" },
-	"payments.view": { fr: "Consulter les paiements", en: "View payments" },
 	"meetings.create": { fr: "Créer des réunions", en: "Create meetings" },
 	"meetings.join": { fr: "Rejoindre des réunions", en: "Join meetings" },
 	"meetings.manage": { fr: "Gérer les réunions", en: "Manage meetings" },
@@ -338,6 +337,7 @@ const MODULE_CATEGORY_LABELS: Record<ModuleCategory, { fr: string; en: string }>
 	gestion: { fr: "Gestion", en: "Management" },
 	administration: { fr: "Administration", en: "Administration" },
 	network: { fr: "Réseau diplomatique", en: "Diplomatic Network" },
+	intelligence: { fr: "Renseignement", en: "Intelligence" },
 };
 const MODULE_CATEGORY_ORDER: ModuleCategory[] = [
 	"operations",
@@ -345,6 +345,7 @@ const MODULE_CATEGORY_ORDER: ModuleCategory[] = [
 	"gestion",
 	"administration",
 	"network",
+	"intelligence",
 ];
 
 // ─── Helpers ────────────────────────────────────────────────────

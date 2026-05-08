@@ -34,7 +34,6 @@ export const ModuleCode = {
 
   // Gestion
   team: "team",
-  payments: "payments",
   statistics: "statistics",
 
   // Administration
@@ -65,7 +64,8 @@ export type ModuleCategory =
   | "ibureau"
   | "gestion"
   | "administration"
-  | "network";
+  | "network"
+  | "intelligence";
 
 // ═══════════════════════════════════════════════════════════════
 // MODULE ACCESS LEVELS — Granular permission tiers
@@ -137,7 +137,6 @@ export const moduleCodeValidator = v.union(
   v.literal("calendar"),
   v.literal("messaging"),
   v.literal("team"),
-  v.literal("payments"),
   v.literal("statistics"),
   v.literal("settings"),
   // Supervision réseau (ministry-only)
@@ -352,23 +351,6 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
       { code: "supervise", label: { fr: "Supervision opérationnelle", en: "Operational supervision" } },
     ],
   },
-  payments: {
-    code: "payments",
-    label: { fr: "Paiements", en: "Payments" },
-    description: {
-      fr: "Gestion financière, transactions et paiements consulaires",
-      en: "Financial management, transactions and consular payments",
-    },
-    icon: "CreditCard",
-    color: "text-yellow-600",
-    category: "gestion",
-    isCore: false,
-    capabilities: [
-      { code: "revenue", label: { fr: "Recettes", en: "Revenue" } },
-      { code: "expenses", label: { fr: "Dépenses", en: "Expenses" } },
-      { code: "transactions", label: { fr: "Transactions", en: "Transactions" } },
-    ],
-  },
   statistics: {
     code: "statistics",
     label: { fr: "Statistiques", en: "Statistics" },
@@ -462,12 +444,12 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     code: "intelligence",
     label: { fr: "Renseignement", en: "Intelligence" },
     description: {
-      fr: "Module de renseignement diplomatique : profils, notes confidentielles, cartographie",
-      en: "Diplomatic intelligence module: profiles, confidential notes, mapping",
+      fr: "Module de renseignement souverain : profils, notes confidentielles, cartographie, dossiers",
+      en: "Sovereign intelligence module: profiles, confidential notes, mapping, cases",
     },
     icon: "ShieldAlert",
     color: "text-rose-500",
-    category: "network",
+    category: "intelligence",
     isCore: false,
     capabilities: [
       { code: "profiles", label: { fr: "Profils surveillés", en: "Watched profiles" } },
@@ -486,11 +468,26 @@ export const NETWORK_MODULE_CODES: ModuleCodeValue[] = [
   "network_diplomatic_oversight",
   "network_correspondence_oversight",
   "network_intelligence",
-  "intelligence",
 ];
 
 export function isNetworkModule(code: string): boolean {
   return (NETWORK_MODULE_CODES as string[]).includes(code);
+}
+
+/**
+ * Codes des modules exclusifs au type d'organisme "intelligence_agency".
+ * Le module `intelligence` (et ses extensions futures : cases, TAL, GEOINT,
+ * briefings) ne peut être activé que sur un organisme de renseignement
+ * souverain — pas sur un ministère, consulat ou ambassade. Symétriquement,
+ * une intelligence_agency ne peut activer QUE des modules de cette catégorie
+ * (pas de courrier, pas de RDV, pas de team management standard).
+ */
+export const INTELLIGENCE_AGENCY_MODULE_CODES: ModuleCodeValue[] = [
+  "intelligence",
+];
+
+export function isIntelligenceAgencyModule(code: string): boolean {
+  return (INTELLIGENCE_AGENCY_MODULE_CODES as string[]).includes(code);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -576,11 +573,6 @@ export const MODULE_ACCESS_TASKS: Partial<Record<ModuleCodeValue, Record<ModuleA
     reader: ["profiles.view"],
     editor: ["profiles.view", "profiles.manage"],
     admin: ["profiles.view", "profiles.manage", "team.assign_roles"],
-  },
-  payments: {
-    reader: ["payments.view", "finance.view"],
-    editor: ["payments.view", "finance.view", "finance.collect"],
-    admin: ["payments.view", "finance.view", "finance.collect", "finance.manage"],
   },
   news: {
     reader: ["communication.notify"],
@@ -729,6 +721,7 @@ export const CATEGORY_LABELS: Record<ModuleCategory, LocalizedString> = {
   gestion: { fr: "Gestion", en: "Management" },
   administration: { fr: "Administration", en: "Administration" },
   network: { fr: "Réseau diplomatique", en: "Diplomatic Network" },
+  intelligence: { fr: "Renseignement", en: "Intelligence" },
 };
 
 export const CATEGORY_ORDER: ModuleCategory[] = [
@@ -737,6 +730,7 @@ export const CATEGORY_ORDER: ModuleCategory[] = [
   "gestion",
   "administration",
   "network",
+  "intelligence",
 ];
 
 export function getCoreModules(): ModuleDefinition[] {
@@ -783,7 +777,6 @@ export const SIDEBAR_MODULE_GROUPS: SidebarModuleGroup[] = [
     icon: "BarChart3",
     modules: [
       "team",
-      "payments",
       "statistics",
     ],
   },
@@ -803,6 +796,13 @@ export const SIDEBAR_MODULE_GROUPS: SidebarModuleGroup[] = [
       "network_diplomatic_oversight",
       "network_correspondence_oversight",
       "network_intelligence",
+    ],
+  },
+  {
+    key: "intelligence",
+    label: { fr: "Renseignement", en: "Intelligence" },
+    icon: "ShieldAlert",
+    modules: [
       "intelligence",
     ],
   },
@@ -1060,7 +1060,6 @@ const ORG_TYPE_MODULE_MAP: Record<string, ModuleCodeValue[]> = {
     ...CORE_MODULE_CODES,
     "consular_affairs",
     "community",
-    "payments",
     "news",
     "messaging",
     "statistics",
@@ -1080,6 +1079,13 @@ const ORG_TYPE_MODULE_MAP: Record<string, ModuleCodeValue[]> = {
   ],
   third_party: [...CORE_MODULE_CODES],
   custom: [...CORE_MODULE_CODES],
+  intelligence_agency: [
+    "profile",
+    "team",
+    "settings",
+    "messaging",
+    "intelligence",
+  ],
 };
 
 const ORG_TYPE_LABELS: Record<string, string> = {
@@ -1091,6 +1097,7 @@ const ORG_TYPE_LABELS: Record<string, string> = {
   honorary_consulate: "Consulat Honoraire",
   third_party: "Partenaire Tiers",
   custom: "Personnalisé",
+  intelligence_agency: "Agence de Renseignement",
 };
 
 const ORG_TYPE_EMOJIS: Record<string, string> = {
@@ -1102,4 +1109,5 @@ const ORG_TYPE_EMOJIS: Record<string, string> = {
   honorary_consulate: "",
   third_party: "",
   custom: "",
+  intelligence_agency: "",
 };

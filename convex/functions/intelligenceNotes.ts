@@ -18,6 +18,7 @@ import { authQuery, authMutation } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask, canDoTask } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
+import { assertCallerIsIntelAgency } from "../lib/intelligenceAgencyVisibility";
 
 const targetTypeValidator = v.union(
   v.literal("profile"),
@@ -88,6 +89,7 @@ export const listByTarget = authQuery({
     includeDeleted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,
@@ -145,6 +147,7 @@ export const create = authMutation({
       throw error(ErrorCode.INVALID_ARGUMENT);
     }
 
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,
@@ -206,6 +209,7 @@ export const update = authMutation({
       throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
     }
 
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,
@@ -260,6 +264,7 @@ export const remove = authMutation({
       throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
     }
 
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
 
     const isAuthor = note.authorId === ctx.user._id;
@@ -300,6 +305,7 @@ export const listCritical = authQuery({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
     const membership = await getMembership(ctx, ctx.user._id, args.orgId);
     await assertCanDoTask(
       ctx,

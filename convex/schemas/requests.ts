@@ -4,19 +4,17 @@ import { requestStatusValidator, requestPriorityValidator } from "../lib/validat
 
 /**
  * Action required types for user follow-up
- * Note: Includes legacy types (documents, info, payment) for migration
+ * Note: Includes legacy types (documents, info) for migration
  */
 export const actionRequiredTypeValidator = v.union(
   // New types
   v.literal("upload_document"),      // Upload un document spécifique
   v.literal("complete_info"),        // Compléter des champs manquants
   v.literal("schedule_appointment"), // Prendre RDV
-  v.literal("make_payment"),         // Effectuer paiement
   v.literal("confirm_info"),         // Confirmer des informations
   // Legacy types (for migration)
   v.literal("documents"),
-  v.literal("info"),
-  v.literal("payment")
+  v.literal("info")
 );
 
 /**
@@ -89,15 +87,6 @@ export const requestsTable = defineTable({
   // Linked appointments
   depositAppointmentId: v.optional(v.id("appointments")),  // RDV dépôt
   pickupAppointmentId: v.optional(v.id("appointments")),   // RDV retrait
-
-  // Payment
-  paymentStatus: v.optional(v.union(
-    v.literal("pending"),
-    v.literal("processing"),
-    v.literal("succeeded"),
-    v.literal("failed"),
-    v.literal("refunded")
-  )),
 
   // Delivery mode (how the result will be delivered)
   delivery: v.optional(v.object({

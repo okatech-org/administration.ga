@@ -256,7 +256,6 @@ const DELETION_LABELS: Record<string, string> = {
   agentNotes: "Notes agents",
   memberships: "Affiliations",
   notifications: "Notifications",
-  payments: "Paiements",
   meetings: "Rendez-vous",
   cv: "CV",
   digitalMail: "Courrier numérique",

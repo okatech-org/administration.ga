@@ -10,7 +10,6 @@ export const WAREHOUSE_TABLES = [
   "users",
   "requests",
   "documents",
-  "payments",
   "appointments",
   "auditLog",
   "orgs",
@@ -28,7 +27,6 @@ const SENSITIVE_FIELDS: Partial<Record<WarehouseTableName, string[]>> = {
   users: ["authId", "preferences", "pinHash", "pinLockedUntil", "pinFailedAttempts", "lastOtpVerifiedAt"],
   profiles: ["passportNumber", "nationalId", "phoneNumber", "addressLine1", "addressLine2"],
   auditLog: ["actorTokenIdentifier", "changes"],
-  payments: ["stripeCustomerId", "stripePaymentIntentId"],
 };
 
 /**

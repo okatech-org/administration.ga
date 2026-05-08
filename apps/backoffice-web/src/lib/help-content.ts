@@ -127,8 +127,8 @@ export const HELP = {
   // ─── Services ────────────────────────────────────────
   services: {
     pricing: {
-      fr: "Tarif appliqué au citoyen pour ce service. Stripe est utilisé pour le paiement (EUR/USD/XAF supportés).",
-      en: "Fee applied to citizen for this service. Stripe is used for payment (EUR/USD/XAF supported).",
+      fr: "Tarif appliqué au citoyen pour ce service (EUR/USD/XAF supportés).",
+      en: "Fee applied to citizen for this service (EUR/USD/XAF supported).",
     },
     sla: {
       fr: "Délai de traitement indicatif communiqué au citoyen. Utilisé pour les alertes 'demande en retard' dans le dashboard.",

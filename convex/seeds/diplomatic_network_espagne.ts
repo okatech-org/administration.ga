@@ -486,82 +486,6 @@ const VISA_FORM_SCHEMA = {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// DATA — Modèle de reçu de paiement
-// ═══════════════════════════════════════════════════════════════
-
-const PAYMENT_RECEIPT_TEMPLATE = {
-	name: { fr: "Reçu de paiement — Services consulaires", en: "Payment receipt — Consular services" },
-	description: { fr: "Reçu remis après paiement d'un service consulaire", en: "Receipt issued after payment of a consular service" },
-	templateType: "receipt" as const,
-	content: {
-		header: {
-			showLogo: true,
-			showOrgName: true,
-			showOrgAddress: true,
-			title: { fr: "REÇU DE PAIEMENT", en: "PAYMENT RECEIPT" },
-			subtitle: { fr: "Ambassade de la République Gabonaise — Madrid", en: "Embassy of the Gabonese Republic — Madrid" },
-		},
-		body: [
-			{
-				type: "paragraph" as const,
-				content: { fr: "Reçu N° : {{referenceNumber}}", en: "Receipt No.: {{referenceNumber}}" },
-				style: { fontWeight: "bold" as const, fontSize: 14 },
-			},
-			{
-				type: "paragraph" as const,
-				content: { fr: "Date : {{currentDate}}", en: "Date: {{currentDate}}" },
-			},
-			{
-				type: "paragraph" as const,
-				content: { fr: "Nous soussignés, Ambassade de la République Gabonaise en Espagne, attestons avoir reçu de :", en: "We the undersigned, Embassy of the Gabonese Republic in Spain, acknowledge receipt from:" },
-				style: { marginTop: 20 },
-			},
-			{
-				type: "paragraph" as const,
-				content: { fr: "Nom : {{applicantFullName}}\nPasseport N° : {{passportNumber}}\nNationalité : {{nationality}}", en: "Name: {{applicantFullName}}\nPassport No.: {{passportNumber}}\nNationality: {{nationality}}" },
-				style: { marginTop: 10, fontWeight: "bold" as const },
-			},
-			{
-				type: "paragraph" as const,
-				content: { fr: "La somme de : {{amount}} {{currency}}", en: "The sum of: {{amount}} {{currency}}" },
-				style: { marginTop: 20, fontSize: 14, fontWeight: "bold" as const },
-			},
-			{
-				type: "paragraph" as const,
-				content: { fr: "Motif : {{serviceName}}", en: "Reason: {{serviceName}}" },
-				style: { marginTop: 10 },
-			},
-			{
-				type: "signature" as const,
-				content: { fr: "Le/La Chancelier(e)", en: "The Chancellor" },
-				style: { marginTop: 40, textAlign: "right" as const },
-			},
-		],
-		footer: {
-			showDate: true,
-			showSignature: true,
-			signatureTitle: { fr: "Le/La Chancelier(e) de l'Ambassade", en: "The Chancellor of the Embassy" },
-			additionalText: { fr: "Ce reçu ne constitue pas un visa. Il atteste uniquement du paiement effectué.", en: "This receipt does not constitute a visa. It only certifies the payment made." },
-		},
-	},
-	placeholders: [
-		{ key: "referenceNumber", label: { fr: "Numéro de référence", en: "Reference number" }, source: "system" as const },
-		{ key: "currentDate", label: { fr: "Date du jour", en: "Current date" }, source: "system" as const },
-		{ key: "applicantFullName", label: { fr: "Nom complet", en: "Full name" }, source: "user" as const, path: "identity.firstName + identity.lastName" },
-		{ key: "passportNumber", label: { fr: "N° passeport", en: "Passport number" }, source: "formData" as const, path: "formData.passeport.passportNumber" },
-		{ key: "nationality", label: { fr: "Nationalité", en: "Nationality" }, source: "user" as const, path: "identity.nationality" },
-		{ key: "amount", label: { fr: "Montant", en: "Amount" }, source: "request" as const, path: "pricing.amount" },
-		{ key: "currency", label: { fr: "Devise", en: "Currency" }, source: "request" as const, path: "pricing.currency" },
-		{ key: "serviceName", label: { fr: "Nom du service", en: "Service name" }, source: "request" as const, path: "service.name" },
-	],
-	isGlobal: false,
-	isActive: true,
-	paperSize: "A4" as const,
-	orientation: "portrait" as const,
-	version: 1,
-};
-
-// ═══════════════════════════════════════════════════════════════
 // MUTATION — seedEspagne
 // ═══════════════════════════════════════════════════════════════
 
@@ -574,7 +498,6 @@ export const seedEspagne = mutation({
 			services: { created: 0, skipped: 0 },
 			orgServices: { created: 0, skipped: 0 },
 			formTemplate: "",
-			documentTemplate: "",
 			errors: [] as string[],
 		};
 
@@ -607,7 +530,6 @@ export const seedEspagne = mutation({
 				"news",
 				"community",
 				"team",
-				"payments",
 				"statistics",
 				"settings",
 			],
@@ -784,26 +706,6 @@ export const seedEspagne = mutation({
 			results.errors.push(`formTemplate: ${error instanceof Error ? error.message : String(error)}`);
 		}
 
-		// ── 6. Create payment receipt document template ──────────
-		try {
-			const existingDoc = await ctx.db
-				.query("documentTemplates")
-				.withIndex("by_org", (q) => q.eq("orgId", org._id).eq("isActive", true))
-				.first();
-
-			if (existingDoc) {
-				results.documentTemplate = "skipped (already exists)";
-			} else {
-				await ctx.db.insert("documentTemplates", {
-					...PAYMENT_RECEIPT_TEMPLATE,
-					orgId: org._id,
-					updatedAt: Date.now(),
-				});
-				results.documentTemplate = "created";
-			}
-		} catch (error) {
-			results.errors.push(`documentTemplate: ${error instanceof Error ? error.message : String(error)}`);
-		}
 
 		return results;
 	},

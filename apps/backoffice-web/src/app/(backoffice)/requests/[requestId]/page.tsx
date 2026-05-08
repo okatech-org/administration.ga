@@ -315,7 +315,6 @@ function RequestDetailPage() {
 						upload_document: "Documents",
 						complete_info: "Informations",
 						schedule_appointment: "Rendez-vous",
-						make_payment: "Paiement",
 						confirm_info: "Confirmation",
 					};
 					return (
