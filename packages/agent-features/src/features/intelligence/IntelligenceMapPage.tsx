@@ -5,17 +5,16 @@ import { Globe, Loader2, MapPin } from "lucide-react";
 import { useMemo } from "react";
 
 import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
+import { Badge } from "@workspace/ui/components/badge";
+import { Skeleton } from "@workspace/ui/components/skeleton";
 
 import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
 import { useOrg } from "../../shell/org-provider";
 
 /**
- * Vue cartographique du module Renseignement.
- *
- * Première itération : agrégat textuel par pays (sans Mapbox).
- * Le rendu Mapbox sera branché en seconde itération une fois
- * `NEXT_PUBLIC_MAPBOX_TOKEN` configuré sur agent-web.
+ * Vue cartographique tabulaire (fallback sans Mapbox).
+ * Activée quand `NEXT_PUBLIC_MAPBOX_TOKEN` n'est pas défini.
  */
 export default function IntelligenceMapPage() {
 	const { activeOrgId } = useOrg();
@@ -66,93 +65,115 @@ export default function IntelligenceMapPage() {
 	}, [points]);
 
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4 max-w-6xl mx-auto w-full">
+		<div className="flex flex-col gap-4 p-4 lg:p-6 max-w-6xl mx-auto w-full">
 			<PageHeader
 				icon={<Globe className="h-5 w-5 text-rose-500" />}
 				title="Carte du renseignement"
 				subtitle="Répartition mondiale des profils surveillés et contacts diplomatiques."
 			/>
 
-			<FlatCard className="p-3 text-xs border-l-4 border-l-amber-500 text-muted-foreground">
-				<p className="font-medium text-foreground mb-1">
-					Vue tabulaire — itération initiale
+			<FlatCard className="p-3 border-l-4 border-l-amber-500/70">
+				<p className="text-xs font-medium">Vue tabulaire</p>
+				<p className="text-[11px] text-muted-foreground mt-1">
+					Configurez{" "}
+					<code className="text-[10px] bg-muted/50 px-1 py-0.5 rounded">
+						NEXT_PUBLIC_MAPBOX_TOKEN
+					</code>{" "}
+					dans agent-web pour activer la carte interactive.
 				</p>
-				La carte interactive Mapbox sera disponible une fois{" "}
-				<code className="bg-muted px-1 rounded">NEXT_PUBLIC_MAPBOX_TOKEN</code>{" "}
-				configuré et la migration de geocoding exécutée. En attendant : agrégat
-				par pays ci-dessous.
 			</FlatCard>
 
-			{isPending ? (
-				<div className="flex items-center justify-center py-12 text-muted-foreground">
-					<Loader2 className="h-5 w-5 animate-spin mr-2" />
-					Chargement…
-				</div>
-			) : (
-				<>
-					<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+			<div className="grid grid-cols-3 gap-3">
+				{isPending ? (
+					<>
+						<Skeleton className="h-[72px] rounded-xl" />
+						<Skeleton className="h-[72px] rounded-xl" />
+						<Skeleton className="h-[72px] rounded-xl" />
+					</>
+				) : (
+					<>
 						<FlatCard className="p-4">
-							<p className="text-xs text-muted-foreground uppercase tracking-wide">
-								Total points
+							<p className="text-[11px] text-muted-foreground uppercase tracking-wide">
+								Total
 							</p>
 							<p className="text-2xl font-bold tabular-nums">{totals.total}</p>
 						</FlatCard>
 						<FlatCard className="p-4">
-							<p className="text-xs text-muted-foreground uppercase tracking-wide">
-								Géolocalisés (GPS)
+							<p className="text-[11px] text-muted-foreground uppercase tracking-wide">
+								GPS précis
 							</p>
-							<p className="text-2xl font-bold tabular-nums">
-								{totals.geolocated}
-							</p>
+							<p className="text-2xl font-bold tabular-nums">{totals.geolocated}</p>
 						</FlatCard>
 						<FlatCard className="p-4">
-							<p className="text-xs text-muted-foreground uppercase tracking-wide">
-								Pays distincts
+							<p className="text-[11px] text-muted-foreground uppercase tracking-wide">
+								Pays
 							</p>
 							<p className="text-2xl font-bold tabular-nums">{grouped.length}</p>
 						</FlatCard>
-					</div>
+					</>
+				)}
+			</div>
 
-					<FlatCard>
-						<div className="p-3 border-b border-foreground/5">
-							<h2 className="text-sm font-semibold flex items-center gap-2">
-								<MapPin className="h-4 w-4" /> Répartition par pays
-							</h2>
-						</div>
-						<div className="divide-y divide-foreground/5">
-							{grouped.map((g) => (
-								<div
-									key={g.country}
-									className="flex items-center justify-between p-3"
-								>
-									<div className="min-w-0">
-										<p className="text-sm font-medium">{g.country}</p>
-										<p className="text-xs text-muted-foreground truncate">
-											{g.labels.join(" · ")}
-											{g.geolocated + g.countryOnly > g.labels.length && " …"}
-										</p>
-									</div>
-									<div className="flex items-center gap-2 text-xs shrink-0">
-										<span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-											{g.geolocated} GPS
-										</span>
-										{g.countryOnly > 0 && (
-											<span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-												{g.countryOnly} pays seul
-											</span>
-										)}
-									</div>
+			<FlatCard>
+				<div className="flex items-center gap-2.5 rounded-t-xl bg-muted/40 px-4 py-3 border-b border-border/50">
+					<div className="rounded-md bg-rose-500/10 p-1.5">
+						<MapPin className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+					</div>
+					<span className="text-base font-bold flex-1">Répartition par pays</span>
+					{grouped.length > 0 && (
+						<Badge
+							variant="outline"
+							className="text-[10px] h-5 px-2 bg-muted/50 text-muted-foreground border-border/50"
+						>
+							{grouped.length}
+						</Badge>
+					)}
+				</div>
+
+				{isPending ? (
+					<div className="p-4 space-y-2">
+						<Skeleton className="h-12 w-full rounded-lg" />
+						<Skeleton className="h-12 w-full rounded-lg" />
+					</div>
+				) : grouped.length === 0 ? (
+					<p className="p-8 text-center text-sm text-muted-foreground">
+						Aucun point à afficher.
+					</p>
+				) : (
+					<div className="divide-y divide-border/30">
+						{grouped.map((g) => (
+							<div
+								key={g.country}
+								className="flex items-center justify-between px-4 py-3 gap-3"
+							>
+								<div className="min-w-0 flex-1">
+									<p className="text-sm font-medium">{g.country}</p>
+									<p className="text-[11px] text-muted-foreground truncate">
+										{g.labels.join(" · ")}
+										{g.geolocated + g.countryOnly > g.labels.length && " …"}
+									</p>
 								</div>
-							))}
-							{grouped.length === 0 && (
-								<p className="p-6 text-center text-sm text-muted-foreground">
-									Aucun point à afficher.
-								</p>
-							)}
-						</div>
-					</FlatCard>
-				</>
-			)}
+								<div className="flex items-center gap-1.5 shrink-0">
+									<Badge
+										variant="outline"
+										className="text-[10px] h-5 px-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+									>
+										{g.geolocated} GPS
+									</Badge>
+									{g.countryOnly > 0 && (
+										<Badge
+											variant="outline"
+											className="text-[10px] h-5 px-2 bg-muted/50 text-muted-foreground border-border/50"
+										>
+											{g.countryOnly} pays
+										</Badge>
+									)}
+								</div>
+							</div>
+						))}
+					</div>
+				)}
+			</FlatCard>
 		</div>
 	);
 }

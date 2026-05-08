@@ -2,8 +2,17 @@
 
 import { api } from "@convex/_generated/api";
 import { Link } from "@workspace/routing";
-import { ArrowDownLeft, ArrowUpRight, Loader2, Network, Plus, Search, Trash2 } from "lucide-react";
+import {
+	ArrowDownLeft,
+	ArrowUpRight,
+	Loader2,
+	Network,
+	Plus,
+	Search,
+	Trash2,
+} from "lucide-react";
 import { useMemo, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 
 import {
@@ -29,7 +38,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@workspace/ui/components/select";
+import { Skeleton } from "@workspace/ui/components/skeleton";
 import { Textarea } from "@workspace/ui/components/textarea";
+import { cn } from "@workspace/ui/lib/utils";
 
 import { FlatCard } from "../../components/my-space/flat-card";
 import { useOrg } from "../../shell/org-provider";
@@ -45,10 +56,16 @@ const RELATIONSHIP_LABELS: Record<string, string> = {
 	other: "Autre",
 };
 
+const STRENGTH_LABELS: Record<string, string> = {
+	weak: "Faible",
+	medium: "Moyenne",
+	strong: "Forte",
+};
+
 const STRENGTH_CLASSES: Record<string, string> = {
-	weak: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300",
-	medium: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
-	strong: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300",
+	weak: "bg-muted/50 text-muted-foreground border-border/50",
+	medium: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+	strong: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
 };
 
 const TYPE_OPTIONS: Array<{
@@ -105,7 +122,6 @@ export function IntelligenceLinksPanel({ targetType, targetId }: Props) {
 	);
 
 	const filteredResults = useMemo(() => {
-		// Exclure la cible courante des résultats de recherche
 		return (searchResults ?? []).filter(
 			(r) => !(r.targetType === targetType && r.targetId === targetId),
 		);
@@ -154,15 +170,23 @@ export function IntelligenceLinksPanel({ targetType, targetId }: Props) {
 	};
 
 	return (
-		<FlatCard className="p-4 space-y-3">
-			<div className="flex items-center justify-between">
-				<h3 className="text-sm font-semibold flex items-center gap-2">
-					<Network className="h-4 w-4 text-rose-500" />
-					Réseau de relations
-				</h3>
+		<FlatCard>
+			<div className="flex items-center gap-2.5 rounded-t-xl bg-muted/40 px-4 py-3 border-b border-border/50">
+				<div className="rounded-md bg-blue-500/10 p-1.5">
+					<Network className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+				</div>
+				<span className="text-base font-bold flex-1">Réseau de relations</span>
+				{links && links.length > 0 && (
+					<Badge
+						variant="outline"
+						className="text-[10px] h-5 px-2 bg-muted/50 text-muted-foreground border-border/50"
+					>
+						{links.length}
+					</Badge>
+				)}
 				<Dialog open={open} onOpenChange={setOpen}>
 					<DialogTrigger asChild>
-						<Button size="sm" variant="outline">
+						<Button size="sm" variant="outline" className="h-7">
 							<Plus className="h-3 w-3 mr-1" /> Lien
 						</Button>
 					</DialogTrigger>
@@ -173,7 +197,7 @@ export function IntelligenceLinksPanel({ targetType, targetId }: Props) {
 						<div className="space-y-3">
 							<div className="grid grid-cols-2 gap-2">
 								<div className="space-y-1">
-									<Label>Type de cible</Label>
+									<Label className="text-xs">Type de cible</Label>
 									<Select
 										value={pickedType}
 										onValueChange={(v) => {
@@ -195,7 +219,7 @@ export function IntelligenceLinksPanel({ targetType, targetId }: Props) {
 									</Select>
 								</div>
 								<div className="space-y-1">
-									<Label>Relation</Label>
+									<Label className="text-xs">Relation</Label>
 									<Select value={relationship} onValueChange={setRelationship}>
 										<SelectTrigger>
 											<SelectValue />
@@ -212,13 +236,14 @@ export function IntelligenceLinksPanel({ targetType, targetId }: Props) {
 							</div>
 
 							<div className="space-y-1">
-								<Label>Cible liée</Label>
+								<Label className="text-xs">Cible liée</Label>
 								{pickedId ? (
-									<div className="flex items-center justify-between gap-2 rounded-md border border-foreground/10 p-2 text-sm">
+									<div className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-muted/30 p-2 text-sm">
 										<span className="truncate">{pickedLabel}</span>
 										<Button
 											variant="ghost"
 											size="sm"
+											className="h-7"
 											onClick={() => {
 												setPickedId(null);
 												setPickedLabel("");
@@ -230,12 +255,12 @@ export function IntelligenceLinksPanel({ targetType, targetId }: Props) {
 								) : (
 									<>
 										<div className="relative">
-											<Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+											<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 											<Input
 												value={searchQuery}
 												onChange={(e) => setSearchQuery(e.target.value)}
 												placeholder="Rechercher (≥ 2 caractères)…"
-												className="pl-8"
+												className="pl-9"
 											/>
 										</div>
 										{isSearching ? (
@@ -244,7 +269,7 @@ export function IntelligenceLinksPanel({ targetType, targetId }: Props) {
 												Recherche…
 											</div>
 										) : filteredResults.length > 0 ? (
-											<div className="border border-foreground/5 rounded-md max-h-48 overflow-y-auto divide-y divide-foreground/5">
+											<div className="border border-border/50 rounded-md max-h-48 overflow-y-auto divide-y divide-border/30">
 												{filteredResults.map((r) => (
 													<button
 														type="button"
@@ -253,7 +278,7 @@ export function IntelligenceLinksPanel({ targetType, targetId }: Props) {
 															setPickedId(r.targetId);
 															setPickedLabel(r.label);
 														}}
-														className="w-full text-left px-2 py-1.5 hover:bg-foreground/5 text-sm flex items-center justify-between gap-2"
+														className="w-full text-left px-3 py-2 hover:bg-muted/50 text-sm flex items-center justify-between gap-2"
 													>
 														<span className="truncate">{r.label}</span>
 														{r.country && (
@@ -275,7 +300,7 @@ export function IntelligenceLinksPanel({ targetType, targetId }: Props) {
 
 							<div className="grid grid-cols-2 gap-2">
 								<div className="space-y-1">
-									<Label>Force</Label>
+									<Label className="text-xs">Force</Label>
 									<Select value={strength} onValueChange={setStrength}>
 										<SelectTrigger>
 											<SelectValue />
@@ -288,7 +313,7 @@ export function IntelligenceLinksPanel({ targetType, targetId }: Props) {
 									</Select>
 								</div>
 								<div className="space-y-1">
-									<Label>Vérification</Label>
+									<Label className="text-xs">Vérification</Label>
 									<Select value={verified} onValueChange={setVerified}>
 										<SelectTrigger>
 											<SelectValue />
@@ -303,7 +328,7 @@ export function IntelligenceLinksPanel({ targetType, targetId }: Props) {
 							</div>
 
 							<div className="space-y-1">
-								<Label>Description</Label>
+								<Label className="text-xs">Description</Label>
 								<Textarea
 									value={description}
 									onChange={(e) => setDescription(e.target.value)}
@@ -320,9 +345,9 @@ export function IntelligenceLinksPanel({ targetType, targetId }: Props) {
 								onClick={handleCreate}
 								disabled={!pickedId || isCreating}
 							>
-								{isCreating ? (
+								{isCreating && (
 									<Loader2 className="h-3 w-3 animate-spin mr-1" />
-								) : null}
+								)}
 								Créer le lien
 							</Button>
 						</DialogFooter>
@@ -330,61 +355,74 @@ export function IntelligenceLinksPanel({ targetType, targetId }: Props) {
 				</Dialog>
 			</div>
 
-			{isLoading ? (
-				<div className="flex items-center justify-center py-6 text-muted-foreground">
-					<Loader2 className="h-4 w-4 animate-spin mr-2" />
-					Chargement…
-				</div>
-			) : !links?.length ? (
-				<p className="text-xs text-muted-foreground py-4 text-center">
-					Aucun lien renseigné pour cette cible.
-				</p>
-			) : (
-				<div className="space-y-1.5">
-					{links.map((l) => (
-						<div
-							key={l._id}
-							className="flex items-center gap-2 p-2 rounded-md hover:bg-foreground/5 transition-colors"
-						>
-							<Link
-								href={`/intelligence/profiles/${l.otherType}/${l.otherId}`}
-								className="flex items-center gap-2 flex-1 min-w-0"
-							>
-								{l.direction === "outgoing" ? (
-									<ArrowUpRight className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-								) : (
-									<ArrowDownLeft className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-								)}
-								<span className="text-sm font-medium truncate flex-1">
-									{l.otherLabel}
-								</span>
-							</Link>
-							<Badge variant="outline" className="text-[10px]">
-								{RELATIONSHIP_LABELS[l.relationship] ?? l.relationship}
-							</Badge>
-							{l.strength && (
-								<span
-									className={`px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide ${
-										STRENGTH_CLASSES[l.strength] ?? ""
-									}`}
+			<div className="p-4">
+				{isLoading ? (
+					<div className="space-y-2">
+						<Skeleton className="h-12 w-full rounded-lg" />
+						<Skeleton className="h-12 w-full rounded-lg" />
+					</div>
+				) : !links?.length ? (
+					<p className="text-xs text-muted-foreground py-6 text-center">
+						Aucun lien renseigné pour cette cible.
+					</p>
+				) : (
+					<div className="space-y-2">
+						<AnimatePresence mode="popLayout">
+							{links.map((l) => (
+								<motion.div
+									key={l._id}
+									layout
+									initial={{ opacity: 0, y: 4 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: 4 }}
+									className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/60 border border-border/30 hover:border-border/50 transition-colors"
 								>
-									{l.strength}
-								</span>
-							)}
-							{l.direction === "outgoing" && (
-								<Button
-									variant="ghost"
-									size="sm"
-									className="h-6 w-6 p-0"
-									onClick={() => handleRemove(l._id)}
-								>
-									<Trash2 className="h-3 w-3" />
-								</Button>
-							)}
-						</div>
-					))}
-				</div>
-			)}
+									<Link
+										href={`/intelligence/profiles/${l.otherType}/${l.otherId}`}
+										className="flex items-center gap-2 flex-1 min-w-0"
+									>
+										{l.direction === "outgoing" ? (
+											<ArrowUpRight className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+										) : (
+											<ArrowDownLeft className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+										)}
+										<span className="text-sm font-medium truncate flex-1">
+											{l.otherLabel}
+										</span>
+									</Link>
+									<Badge
+										variant="outline"
+										className="text-[10px] h-5 px-2 bg-muted/50 text-muted-foreground border-border/50"
+									>
+										{RELATIONSHIP_LABELS[l.relationship] ?? l.relationship}
+									</Badge>
+									{l.strength && (
+										<Badge
+											variant="outline"
+											className={cn(
+												"text-[10px] h-5 px-2",
+												STRENGTH_CLASSES[l.strength] ?? "",
+											)}
+										>
+											{STRENGTH_LABELS[l.strength] ?? l.strength}
+										</Badge>
+									)}
+									{l.direction === "outgoing" && (
+										<Button
+											variant="ghost"
+											size="sm"
+											className="h-6 w-6 p-0"
+											onClick={() => handleRemove(l._id)}
+										>
+											<Trash2 className="h-3 w-3" />
+										</Button>
+									)}
+								</motion.div>
+							))}
+						</AnimatePresence>
+					</div>
+				)}
+			</div>
 		</FlatCard>
 	);
 }

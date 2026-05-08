@@ -16,16 +16,16 @@ const TIER_LABELS: Record<string, string> = {
 };
 
 const TIER_CLASSES: Record<string, string> = {
-	minimal: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
-	low: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
-	moderate: "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200",
-	high: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200",
+	minimal: "bg-muted/50 text-muted-foreground border-border/50",
+	low: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+	moderate:
+		"bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
+	high: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
 };
 
 interface Props {
 	targetType: "profile" | "child_profile" | "diplomatic_target" | "agent";
 	targetId: string;
-	/** Affichage compact (sans le label tier) */
 	compact?: boolean;
 }
 
@@ -39,7 +39,7 @@ export function RiskScoreBadge({ targetType, targetId, compact = false }: Props)
 
 	if (isLoading || !data) {
 		return (
-			<span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+			<span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
 				<Loader2 className="h-3 w-3 animate-spin" />
 			</span>
 		);
@@ -49,13 +49,13 @@ export function RiskScoreBadge({ targetType, targetId, compact = false }: Props)
 		return (
 			<span
 				className={cn(
-					"inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs",
+					"inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border",
 					TIER_CLASSES.minimal,
 				)}
 				title="Aucune note vivante"
 			>
 				<ShieldCheck className="h-3 w-3" />
-				{compact ? "—" : "Aucun signalement"}
+				{!compact && <span>Aucun signalement</span>}
 			</span>
 		);
 	}
@@ -63,7 +63,7 @@ export function RiskScoreBadge({ targetType, targetId, compact = false }: Props)
 	return (
 		<span
 			className={cn(
-				"inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium",
+				"inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border font-medium",
 				TIER_CLASSES[data.tier] ?? TIER_CLASSES.minimal,
 			)}
 			title={`Score : ${data.score}/100 — ${data.liveCount} note${data.liveCount > 1 ? "s" : ""} vivante${data.liveCount > 1 ? "s" : ""}`}

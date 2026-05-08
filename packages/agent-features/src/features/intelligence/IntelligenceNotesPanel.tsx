@@ -4,8 +4,18 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
-import { AlertTriangle, Flag, Loader2, Send, Target, Trash2 } from "lucide-react";
+import {
+	AlertTriangle,
+	Eye,
+	Flag,
+	Loader2,
+	Send,
+	StickyNote,
+	Target,
+	Trash2,
+} from "lucide-react";
 import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 
 import {
@@ -35,6 +45,36 @@ type IntelSource = "humint" | "osint" | "internal" | "tip" | "other";
 type IntelClassification = "internal" | "restricted" | "secret" | "top_secret";
 type IntelVerified = "unverified" | "confirmed" | "disputed";
 
+const SEVERITY_LABELS: Record<IntelSeverity, string> = {
+	low: "Faible",
+	medium: "Moyen",
+	high: "Élevé",
+	critical: "Critique",
+};
+
+const SEVERITY_CLASSES: Record<IntelSeverity, string> = {
+	low: "bg-muted/50 text-muted-foreground border-border/50",
+	medium:
+		"bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+	high:
+		"bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
+	critical: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+};
+
+const CATEGORY_LABELS: Record<IntelCategory, string> = {
+	observation: "Observation",
+	risk: "Risque",
+	flag: "Signalement",
+	lead: "Piste",
+};
+
+const CATEGORY_ICONS: Record<IntelCategory, React.ElementType> = {
+	observation: Eye,
+	risk: AlertTriangle,
+	flag: Flag,
+	lead: Target,
+};
+
 const SOURCE_LABELS: Record<IntelSource, string> = {
 	humint: "HUMINT",
 	osint: "OSINT",
@@ -51,10 +91,11 @@ const CLASSIFICATION_LABELS: Record<IntelClassification, string> = {
 };
 
 const CLASSIFICATION_CLASSES: Record<IntelClassification, string> = {
-	internal: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
-	restricted: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200",
-	secret: "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200",
-	top_secret: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200",
+	internal: "bg-muted/50 text-muted-foreground border-border/50",
+	restricted: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+	secret:
+		"bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
+	top_secret: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
 };
 
 const VERIFIED_LABELS: Record<IntelVerified, string> = {
@@ -63,32 +104,12 @@ const VERIFIED_LABELS: Record<IntelVerified, string> = {
 	disputed: "Contesté",
 };
 
-const SEVERITY_LABELS: Record<IntelSeverity, string> = {
-	low: "Faible",
-	medium: "Moyen",
-	high: "Élevé",
-	critical: "Critique",
-};
-
-const SEVERITY_CLASSES: Record<IntelSeverity, string> = {
-	low: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
-	medium: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
-	high: "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200",
-	critical: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200",
-};
-
-const CATEGORY_LABELS: Record<IntelCategory, string> = {
-	observation: "Observation",
-	risk: "Risque",
-	flag: "Signalement",
-	lead: "Piste",
-};
-
-const CATEGORY_ICONS: Record<IntelCategory, React.ElementType> = {
-	observation: Target,
-	risk: AlertTriangle,
-	flag: Flag,
-	lead: Target,
+const VERIFIED_CLASSES: Record<IntelVerified, string> = {
+	unverified: "bg-muted/50 text-muted-foreground border-border/50",
+	confirmed:
+		"bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+	disputed:
+		"bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
 };
 
 interface IntelligenceNotesPanelProps {
@@ -105,7 +126,8 @@ export function IntelligenceNotesPanel({
 	const [category, setCategory] = useState<IntelCategory>("observation");
 	const [severity, setSeverity] = useState<IntelSeverity>("medium");
 	const [source, setSource] = useState<IntelSource>("humint");
-	const [classification, setClassification] = useState<IntelClassification>("internal");
+	const [classification, setClassification] =
+		useState<IntelClassification>("internal");
 	const [verified, setVerified] = useState<IntelVerified>("unverified");
 
 	const { data: me } = useAuthenticatedConvexQuery(
@@ -160,190 +182,215 @@ export function IntelligenceNotesPanel({
 	};
 
 	return (
-		<FlatCard className="p-4 space-y-4">
-			<div className="flex items-center justify-between">
-				<h3 className="text-sm font-semibold flex items-center gap-2">
-					<AlertTriangle className="h-4 w-4 text-rose-500" />
-					Notes Renseignement
-				</h3>
-				<Badge variant="outline" className="text-xs">
-					Cloisonné — Intelligence uniquement
+		<FlatCard>
+			<div className="flex items-center gap-2.5 rounded-t-xl bg-muted/40 px-4 py-3 border-b border-border/50">
+				<div className="rounded-md bg-rose-500/10 p-1.5">
+					<StickyNote className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+				</div>
+				<span className="text-base font-bold flex-1">Notes Renseignement</span>
+				<Badge
+					variant="outline"
+					className="text-[10px] h-5 px-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+				>
+					Cloisonné
 				</Badge>
 			</div>
 
-			<div className="space-y-2 rounded-md border border-foreground/5 p-3">
-				<Textarea
-					value={content}
-					onChange={(e) => setContent(e.target.value)}
-					placeholder="Ajouter une note confidentielle…"
-					rows={3}
-					className="resize-none"
-				/>
-				<div className="flex flex-wrap items-center gap-2">
-					<Select value={category} onValueChange={(v) => setCategory(v as IntelCategory)}>
-						<SelectTrigger className="h-8 w-32 text-xs">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{(Object.keys(CATEGORY_LABELS) as IntelCategory[]).map((c) => (
-								<SelectItem key={c} value={c} className="text-xs">
-									{CATEGORY_LABELS[c]}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-					<Select value={severity} onValueChange={(v) => setSeverity(v as IntelSeverity)}>
-						<SelectTrigger className="h-8 w-28 text-xs">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{(Object.keys(SEVERITY_LABELS) as IntelSeverity[]).map((s) => (
-								<SelectItem key={s} value={s} className="text-xs">
-									{SEVERITY_LABELS[s]}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-					<Select value={source} onValueChange={(v) => setSource(v as IntelSource)}>
-						<SelectTrigger className="h-8 w-28 text-xs">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{(Object.keys(SOURCE_LABELS) as IntelSource[]).map((s) => (
-								<SelectItem key={s} value={s} className="text-xs">
-									{SOURCE_LABELS[s]}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-					<Select
-						value={classification}
-						onValueChange={(v) => setClassification(v as IntelClassification)}
-					>
-						<SelectTrigger className="h-8 w-32 text-xs">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{(Object.keys(CLASSIFICATION_LABELS) as IntelClassification[]).map(
-								(c) => (
+			<div className="p-4 space-y-4">
+				{/* Composer */}
+				<div className="space-y-2 rounded-lg bg-muted/30 p-3 border border-border/30">
+					<Textarea
+						value={content}
+						onChange={(e) => setContent(e.target.value)}
+						placeholder="Ajouter une note confidentielle…"
+						rows={3}
+						className="resize-none border-border/50 bg-background"
+					/>
+					<div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+						<Select value={category} onValueChange={(v) => setCategory(v as IntelCategory)}>
+							<SelectTrigger className="h-8 text-xs">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{(Object.keys(CATEGORY_LABELS) as IntelCategory[]).map((c) => (
 									<SelectItem key={c} value={c} className="text-xs">
-										{CLASSIFICATION_LABELS[c]}
+										{CATEGORY_LABELS[c]}
 									</SelectItem>
-								),
+								))}
+							</SelectContent>
+						</Select>
+						<Select value={severity} onValueChange={(v) => setSeverity(v as IntelSeverity)}>
+							<SelectTrigger className="h-8 text-xs">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{(Object.keys(SEVERITY_LABELS) as IntelSeverity[]).map((s) => (
+									<SelectItem key={s} value={s} className="text-xs">
+										{SEVERITY_LABELS[s]}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<Select value={source} onValueChange={(v) => setSource(v as IntelSource)}>
+							<SelectTrigger className="h-8 text-xs">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{(Object.keys(SOURCE_LABELS) as IntelSource[]).map((s) => (
+									<SelectItem key={s} value={s} className="text-xs">
+										{SOURCE_LABELS[s]}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<Select
+							value={classification}
+							onValueChange={(v) => setClassification(v as IntelClassification)}
+						>
+							<SelectTrigger className="h-8 text-xs">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{(Object.keys(CLASSIFICATION_LABELS) as IntelClassification[]).map(
+									(c) => (
+										<SelectItem key={c} value={c} className="text-xs">
+											{CLASSIFICATION_LABELS[c]}
+										</SelectItem>
+									),
+								)}
+							</SelectContent>
+						</Select>
+						<Select value={verified} onValueChange={(v) => setVerified(v as IntelVerified)}>
+							<SelectTrigger className="h-8 text-xs">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{(Object.keys(VERIFIED_LABELS) as IntelVerified[]).map((v) => (
+									<SelectItem key={v} value={v} className="text-xs">
+										{VERIFIED_LABELS[v]}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+					<div className="flex justify-end">
+						<Button
+							size="sm"
+							onClick={handleSend}
+							disabled={!content.trim() || isSending}
+						>
+							{isSending ? (
+								<Loader2 className="h-3 w-3 animate-spin mr-1" />
+							) : (
+								<Send className="h-3 w-3 mr-1" />
 							)}
-						</SelectContent>
-					</Select>
-					<Select value={verified} onValueChange={(v) => setVerified(v as IntelVerified)}>
-						<SelectTrigger className="h-8 w-32 text-xs">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{(Object.keys(VERIFIED_LABELS) as IntelVerified[]).map((v) => (
-								<SelectItem key={v} value={v} className="text-xs">
-									{VERIFIED_LABELS[v]}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-					<Button
-						size="sm"
-						onClick={handleSend}
-						disabled={!content.trim() || isSending}
-						className="ml-auto"
-					>
-						{isSending ? (
-							<Loader2 className="h-3 w-3 animate-spin" />
-						) : (
-							<Send className="h-3 w-3" />
-						)}
-						Enregistrer
-					</Button>
+							Enregistrer
+						</Button>
+					</div>
 				</div>
-			</div>
 
-			<div className="space-y-2">
-				{isLoading ? (
-					<>
-						<Skeleton className="h-16 w-full" />
-						<Skeleton className="h-16 w-full" />
-					</>
-				) : !notes?.length ? (
-					<p className="text-xs text-muted-foreground py-4 text-center">
-						Aucune note pour ce profil.
-					</p>
-				) : (
-					notes.map((n) => {
-						const Icon = CATEGORY_ICONS[n.category];
-						const isOwn = me?._id === n.authorId;
-						return (
-							<div
-								key={n._id}
-								className="rounded-md border border-foreground/5 p-3 space-y-1.5"
-							>
-								<div className="flex items-center gap-2 text-xs flex-wrap">
-									<Icon className="h-3 w-3" />
-									<span className="font-medium">{CATEGORY_LABELS[n.category]}</span>
-									<span
-										className={cn(
-											"px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide",
-											SEVERITY_CLASSES[n.severity],
-										)}
+				{/* Notes list */}
+				<div className="space-y-2">
+					{isLoading ? (
+						<>
+							<Skeleton className="h-20 w-full rounded-lg" />
+							<Skeleton className="h-20 w-full rounded-lg" />
+						</>
+					) : !notes?.length ? (
+						<p className="text-xs text-muted-foreground py-6 text-center">
+							Aucune note pour cette cible.
+						</p>
+					) : (
+						<AnimatePresence mode="popLayout">
+							{notes.map((n) => {
+								const Icon = CATEGORY_ICONS[n.category];
+								const isOwn = me?._id === n.authorId;
+								return (
+									<motion.div
+										key={n._id}
+										layout
+										initial={{ opacity: 0, y: 4 }}
+										animate={{ opacity: 1, y: 0 }}
+										exit={{ opacity: 0, y: 4 }}
+										className="rounded-lg border border-border/50 bg-background/60 p-3 space-y-2"
 									>
-										{SEVERITY_LABELS[n.severity]}
-									</span>
-									{n.classification && (
-										<span
-											className={cn(
-												"px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide",
-												CLASSIFICATION_CLASSES[n.classification as IntelClassification],
+										<div className="flex items-center gap-1.5 flex-wrap">
+											<Icon className="h-3 w-3 text-muted-foreground" />
+											<span className="text-xs font-medium">
+												{CATEGORY_LABELS[n.category]}
+											</span>
+											<Badge
+												variant="outline"
+												className={cn(
+													"text-[10px] h-4 px-1.5",
+													SEVERITY_CLASSES[n.severity],
+												)}
+											>
+												{SEVERITY_LABELS[n.severity]}
+											</Badge>
+											{n.classification && (
+												<Badge
+													variant="outline"
+													className={cn(
+														"text-[10px] h-4 px-1.5",
+														CLASSIFICATION_CLASSES[n.classification as IntelClassification],
+													)}
+												>
+													{CLASSIFICATION_LABELS[n.classification as IntelClassification]}
+												</Badge>
 											)}
-										>
-											{CLASSIFICATION_LABELS[n.classification as IntelClassification]}
-										</span>
-									)}
-									{n.source && (
-										<span className="px-1.5 py-0.5 rounded bg-foreground/5 text-[10px] uppercase tracking-wide">
-											{SOURCE_LABELS[n.source as IntelSource]}
-										</span>
-									)}
-									{n.verified && n.verified !== "unverified" && (
-										<span
-											className={cn(
-												"px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide",
-												n.verified === "confirmed"
-													? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-													: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+											{n.source && (
+												<Badge
+													variant="outline"
+													className="text-[10px] h-4 px-1.5 bg-muted/50 text-muted-foreground border-border/50"
+												>
+													{SOURCE_LABELS[n.source as IntelSource]}
+												</Badge>
 											)}
-										>
-											{VERIFIED_LABELS[n.verified as IntelVerified]}
-										</span>
-									)}
-									<span className="ml-auto text-muted-foreground">
-										{n.author
-											? `${n.author.firstName ?? ""} ${n.author.lastName ?? ""}`.trim() || "Agent"
-											: "Agent inconnu"}
-										{" · "}
-										{formatDistanceToNow(n._creationTime, {
-											addSuffix: true,
-											locale: fr,
-										})}
-									</span>
-									{isOwn && (
-										<Button
-											variant="ghost"
-											size="sm"
-											className="h-6 w-6 p-0"
-											onClick={() => handleDelete(n._id)}
-										>
-											<Trash2 className="h-3 w-3" />
-										</Button>
-									)}
-								</div>
-								<p className="text-sm whitespace-pre-wrap">{n.content}</p>
-							</div>
-						);
-					})
-				)}
+											{n.verified && n.verified !== "unverified" && (
+												<Badge
+													variant="outline"
+													className={cn(
+														"text-[10px] h-4 px-1.5",
+														VERIFIED_CLASSES[n.verified as IntelVerified],
+													)}
+												>
+													{VERIFIED_LABELS[n.verified as IntelVerified]}
+												</Badge>
+											)}
+										</div>
+
+										<p className="text-sm whitespace-pre-wrap">{n.content}</p>
+
+										<div className="flex items-center justify-between pt-1 border-t border-border/30 text-[11px] text-muted-foreground">
+											<span>
+												{n.author
+													? `${n.author.firstName ?? ""} ${n.author.lastName ?? ""}`.trim() ||
+														"Agent"
+													: "Agent inconnu"}
+												{" · "}
+												{formatDistanceToNow(n._creationTime, {
+													addSuffix: true,
+													locale: fr,
+												})}
+											</span>
+											{isOwn && (
+												<Button
+													variant="ghost"
+													size="sm"
+													className="h-6 w-6 p-0"
+													onClick={() => handleDelete(n._id)}
+												>
+													<Trash2 className="h-3 w-3" />
+												</Button>
+											)}
+										</div>
+									</motion.div>
+								);
+							})}
+						</AnimatePresence>
+					)}
+				</div>
 			</div>
 		</FlatCard>
 	);
