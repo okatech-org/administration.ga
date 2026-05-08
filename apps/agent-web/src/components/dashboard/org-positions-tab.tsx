@@ -250,8 +250,17 @@ const CATEGORY_LABELS: Record<string, { fr: string; en: string }> = {
 	ibureau: { fr: "iBureau", en: "iBureau" },
 	gestion: { fr: "Gestion", en: "Management" },
 	administration: { fr: "Administration", en: "Administration" },
+	network: { fr: "Réseau diplomatique", en: "Diplomatic Network" },
+	intelligence: { fr: "Renseignement", en: "Intelligence" },
 };
-const CATEGORY_ORDER: string[] = ["operations", "ibureau", "gestion", "administration"];
+const CATEGORY_ORDER: string[] = [
+	"operations",
+	"ibureau",
+	"gestion",
+	"administration",
+	"network",
+	"intelligence",
+];
 
 // ─── Grade icons for position cards ─────────────────────────────
 const GRADE_ICONS: Record<string, string> = {
@@ -388,7 +397,14 @@ function ModulePermissionSelector({
 	lang: string;
 }) {
 	const modulesByCategory = useMemo(() => {
-		const result: Record<string, string[]> = { operations: [], ibureau: [], gestion: [], administration: [] };
+		const result: Record<string, string[]> = {
+			operations: [],
+			ibureau: [],
+			gestion: [],
+			administration: [],
+			network: [],
+			intelligence: [],
+		};
 		for (const [code, def] of Object.entries(MODULE_REGISTRY)) {
 			const tasks = MODULE_TASKS[code];
 			if (tasks && tasks.length > 0) {
