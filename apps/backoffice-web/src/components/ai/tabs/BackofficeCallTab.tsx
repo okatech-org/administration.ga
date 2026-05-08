@@ -5,10 +5,6 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { LiveKitRoom } from "@livekit/components-react";
-import "@livekit/components-styles";
-import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
-import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 import {
 	Building2,
 	Globe,
@@ -16,28 +12,19 @@ import {
 	Phone,
 	PhoneCall,
 	PhoneMissed,
-	PhoneOff,
 	Search,
 	Shield,
 	Users,
 	Video,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+import { ActiveCallDialog } from "@/components/meetings/active-call-dialog";
 import { useContactSearch, type ContactSource } from "@/hooks/useContactSearch";
-import { useMeeting } from "@/hooks/use-meeting";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { useCallStore } from "@/stores/call-store";
 import { cn } from "@/lib/utils";
@@ -61,7 +48,6 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 	const { globalActiveMeetingId, setGlobalMeetingId } = useCallStore();
 
 	const { groups, isPending: contactsLoading, filters, setSearch, setSource } = useContactSearch(orgId);
-	const { token, wsUrl, connect, disconnect } = useMeeting(activeMeetingId ?? undefined);
 	const { mutateAsync: callUser } = useConvexMutationQuery(api.functions.meetings.callUser);
 
 	const { data: rawMeetings, isPending } = useAuthenticatedConvexQuery(
@@ -72,18 +58,6 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 	const meetingsArray = Array.isArray(rawMeetings) ? (rawMeetings as any)?.meetings ?? rawMeetings : [];
 	const callHistory = useMemo(() => (meetingsArray as any[]).filter((m: any) => m.type === "call").slice(0, 15), [meetingsArray]);
 
-	const cleanupCallState = useCallback(() => {
-		setActiveMeetingId(null);
-		setGlobalMeetingId(null);
-	}, [setGlobalMeetingId]);
-
-	const {
-		onConnected: onLiveKitConnected,
-		onDisconnected: onLiveKitDisconnected,
-		markUserHangUp,
-		reset: resetDisconnectGuard,
-	} = useLiveKitDisconnectGuard(cleanupCallState);
-
 	const handleCall = async (targetUserId: string, mediaType: SubTab) => {
 		if (!orgId || globalActiveMeetingId) {
 			toast.error("Un appel est déjà en cours");
@@ -91,7 +65,6 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 		}
 		setPendingCallUserId(targetUserId);
 		try {
-			resetDisconnectGuard();
 			// mediaType "video" côté token permet audio+vidéo — le paramètre
 			// `video` de LiveKitRoom contrôle la publication caméra initiale.
 			const result = await callUser({
@@ -103,7 +76,6 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 			setActiveMeetingId(meetingId);
 			setActiveMediaType(mediaType);
 			setGlobalMeetingId(meetingId);
-			await connect(meetingId);
 			toast.success(mediaType === "audio" ? "Appel audio en cours..." : "Appel vidéo en cours...");
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur lors de l'appel");
@@ -114,13 +86,10 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 		}
 	};
 
-	const handleHangUp = async () => {
-		markUserHangUp();
-		if (activeMeetingId) await disconnect(activeMeetingId);
-		cleanupCallState();
+	const handleDialogClose = () => {
+		setActiveMeetingId(null);
+		setGlobalMeetingId(null);
 	};
-
-	const isInCall = activeMeetingId !== null && token && wsUrl;
 
 	if (!orgId) {
 		return (
@@ -243,45 +212,11 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 				</div>
 			</ScrollArea>
 
-			<Dialog open={!!isInCall} onOpenChange={(open) => { if (!open) handleHangUp(); }}>
-				<DialogContent className="max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800">
-					<DialogTitle className="sr-only">
-						{activeMediaType === "audio" ? "Appel audio" : "Appel vidéo"}
-					</DialogTitle>
-					<DialogDescription className="sr-only">
-						Interface d'appel active. Utilisez les commandes pour poursuivre la conversation ou raccrocher.
-					</DialogDescription>
-					{token && wsUrl ? (
-						<div className="flex flex-col flex-1 bg-zinc-950">
-							<div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0">
-								<div className="flex items-center gap-2">
-									<Badge className="text-[9px] bg-red-500/15 text-red-400">En direct</Badge>
-									<span className="text-xs text-zinc-400">{activeMediaType === "audio" ? "Appel audio" : "Appel vidéo"}</span>
-								</div>
-								<Button variant="destructive" size="sm" onClick={handleHangUp} className="h-7 text-[10px] gap-1"><PhoneOff className="h-3 w-3" />Raccrocher</Button>
-							</div>
-							<LiveKitRoom
-								token={token}
-								serverUrl={wsUrl}
-								connect={true}
-								audio={true}
-								video={activeMediaType === "video"}
-								options={LIVEKIT_CALL_ROOM_OPTIONS}
-								onConnected={onLiveKitConnected}
-								onDisconnected={onLiveKitDisconnected}
-								className="flex flex-col flex-1"
-							>
-								<CustomCallUI onHangUp={handleHangUp} />
-							</LiveKitRoom>
-						</div>
-					) : (
-						<div className="flex flex-col items-center justify-center flex-1 gap-4 text-white bg-zinc-950">
-							<Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
-							<p className="text-sm text-zinc-400">Connexion en cours...</p>
-						</div>
-					)}
-				</DialogContent>
-			</Dialog>
+			<ActiveCallDialog
+				meetingId={activeMeetingId}
+				mediaType={activeMediaType}
+				onClose={handleDialogClose}
+			/>
 		</div>
 	);
 }

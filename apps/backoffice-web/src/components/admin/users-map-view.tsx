@@ -15,21 +15,19 @@
 import * as mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { api } from "@convex/_generated/api";
-import { useAction } from "convex/react";
+import type { Id } from "@convex/_generated/dataModel";
 import i18n from "i18next";
-import { Baby, Loader2, MapPin, MapPinOff, Shield, Sparkles, Users } from "lucide-react";
+import { Loader2, MapPin, MapPinOff, Shield, Users } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import { getLocalizedValue } from "@/lib/i18n-utils";
 import { MAPBOX_CONFIG } from "@/config/mapbox";
 import { getCapitalCoords } from "@/lib/country-capitals";
 import {
 	type Continent,
+	CONTINENT_META,
 	getActiveContinents,
 	getContinent,
-	getContinentEmoji,
-	getContinentLabel,
 	getCountryFlag,
 	getCountryName,
 } from "@/lib/country-utils";
@@ -37,6 +35,17 @@ import {
 	useAuthenticatedConvexQuery,
 	useAuthenticatedPaginatedQuery,
 } from "@/integrations/convex/hooks";
+import {
+	Combobox,
+	type ComboboxOption,
+} from "@workspace/ui/components/combobox";
+import { Button } from "@workspace/ui/components/button";
+import { useCurrentAdminRole } from "@/hooks/use-current-admin-role";
+import {
+	SuperAdminCallTrigger,
+	type SuperAdminCallTargetUser,
+} from "./super-admin-call-trigger";
+import type { ActiveCallMediaType } from "@/components/meetings/active-call-dialog";
 import { cn } from "@/lib/utils";
 
 // ─── Types ─────────────────────────────────────────────────
@@ -97,11 +106,22 @@ function escapeHtml(s: string | null | undefined): string {
 // ─── Component ─────────────────────────────────────────────
 export function UsersMapView() {
 	const { theme } = useTheme();
+	const { isSuperAdmin } = useCurrentAdminRole();
 	const mapContainer = useRef<HTMLDivElement>(null);
 	const map = useRef<mapboxgl.Map | null>(null);
 	const markersRef = useRef<mapboxgl.Marker[]>([]);
 	const popupRef = useRef<mapboxgl.Popup | null>(null);
 	const [mapReady, setMapReady] = useState(false);
+
+	// Pour la variante "controlled" de SuperAdminCallTrigger : on conserve la
+	// dernière cible cliquée + un nonce qui force le re-déclenchement de l'effet
+	// même si l'utilisateur clique deux fois sur le même point.
+	const [pendingCallTarget, setPendingCallTarget] = useState<{
+		user: SuperAdminCallTargetUser;
+		mediaType: ActiveCallMediaType;
+		nonce: number;
+	} | null>(null);
+	const callNonceRef = useRef(0);
 
 	// Filters
 	const [populationFilter, setPopulationFilter] = useState<"all" | "citizens" | "agents">("all");
@@ -134,50 +154,6 @@ export function UsersMapView() {
 	useEffect(() => {
 		if (profilesStatus === "CanLoadMore") loadMore(200);
 	}, [profilesStatus, loadMore]);
-
-	// Backfill geocoding state
-	const backfillAction = useAction(api.functions.admin.backfillProfileCoordinates);
-	const [backfill, setBackfill] = useState<{
-		running: boolean;
-		scanned: number;
-		updated: number;
-		failed: number;
-	}>({ running: false, scanned: 0, updated: 0, failed: 0 });
-
-	const runBackfill = async () => {
-		if (backfill.running) return;
-		setBackfill({ running: true, scanned: 0, updated: 0, failed: 0 });
-		const toastId = toast.loading("Géocodage des adresses…");
-		let cursor: string | null = null;
-		let totals = { scanned: 0, updated: 0, failed: 0 };
-		try {
-			let isDone = false;
-			let safety = 0;
-			while (!isDone && safety++ < 200) {
-				const res = await backfillAction({ cursor, pageSize: 200 });
-				totals = {
-					scanned: totals.scanned + res.scanned,
-					updated: totals.updated + res.updated,
-					failed: totals.failed + res.failed,
-				};
-				cursor = res.continueCursor;
-				isDone = res.isDone;
-				setBackfill({ running: !isDone, ...totals });
-				toast.loading(
-					`Géocodage… ${totals.updated} mis à jour / ${totals.scanned} traités`,
-					{ id: toastId },
-				);
-			}
-			toast.success(
-				`Backfill terminé : ${totals.updated} adresses géocodées, ${totals.failed} échecs.`,
-				{ id: toastId },
-			);
-		} catch (e) {
-			toast.error(`Échec du backfill : ${(e as Error).message}`, { id: toastId });
-		} finally {
-			setBackfill((b) => ({ ...b, running: false }));
-		}
-	};
 
 	// ── Build raw point list (before filters) ──
 	const allPoints = useMemo<MapPoint[]>(() => {
@@ -364,6 +340,13 @@ export function UsersMapView() {
 			`;
 
 			const detailUrl = point.userId ? `/users/${point.userId}` : null;
+			const callButtonsHtml =
+				isSuperAdmin && point.userId
+					? `<div style="display: flex; gap: 6px; padding-top: 8px; margin-top: 8px; border-top: 1px solid #1e293b;">
+							<button type="button" data-call-action="audio" data-user-id="${escapeHtml(point.userId)}" data-call-name="${escapeHtml(point.name)}" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 500; color: #10b981; background-color: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 6px; padding: 5px 8px; cursor: pointer;">📞 Audio</button>
+							<button type="button" data-call-action="video" data-user-id="${escapeHtml(point.userId)}" data-call-name="${escapeHtml(point.name)}" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 500; color: #3b82f6; background-color: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); border-radius: 6px; padding: 5px 8px; cursor: pointer;">🎥 Vidéo</button>
+						</div>`
+					: "";
 			// Wrapper has its own opaque background (slate-950) + border so the
 			// popup is readable on top of the dark Mapbox globe — same pattern
 			// as apps/citizen-web/src/components/home/WorldMapSection.tsx:174.
@@ -380,6 +363,7 @@ export function UsersMapView() {
 						<div style="font-weight: 600; font-size: 14px; color: #f8fafc; margin-bottom: 4px; line-height: 1.3;">${escapeHtml(point.name)}</div>
 						${point.subtitle ? `<div style="font-size: 11px; color: #94a3b8; margin-bottom: 10px;">${escapeHtml(point.subtitle)}</div>` : ""}
 						${detailUrl ? `<a href="${detailUrl}" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; color: ${color}; text-decoration: none; padding-top: 4px;">Voir la fiche &rarr;</a>` : ""}
+						${callButtonsHtml}
 					</div>
 				</div>`,
 			);
@@ -391,7 +375,38 @@ export function UsersMapView() {
 
 			markersRef.current.push(marker);
 		}
-	}, [mapReady, filteredPoints]);
+	}, [mapReady, filteredPoints, isSuperAdmin]);
+
+	// Event delegation : capture les clics sur les boutons d'appel injectés
+	// dans les popups Mapbox (rendus en innerHTML). Stocke la cible cliquée
+	// pour que `<SuperAdminCallTrigger variant="controlled">` lance l'appel.
+	useEffect(() => {
+		if (!isSuperAdmin) return;
+		const handler = (e: MouseEvent) => {
+			const target = e.target as HTMLElement | null;
+			const btn = target?.closest<HTMLElement>("[data-call-action]");
+			if (!btn) return;
+			const action = btn.getAttribute("data-call-action");
+			const userId = btn.getAttribute("data-user-id");
+			const name = btn.getAttribute("data-call-name") ?? "";
+			if (!userId || (action !== "audio" && action !== "video")) return;
+			e.preventDefault();
+			e.stopPropagation();
+			callNonceRef.current += 1;
+			setPendingCallTarget({
+				user: {
+					_id: userId as Id<"users">,
+					firstName: name,
+					lastName: null,
+					email: null,
+				},
+				mediaType: action,
+				nonce: callNonceRef.current,
+			});
+		};
+		document.addEventListener("click", handler, true);
+		return () => document.removeEventListener("click", handler, true);
+	}, [isSuperAdmin]);
 
 	// ── Recenter on country selection ──
 	useEffect(() => {
@@ -428,148 +443,168 @@ export function UsersMapView() {
 		);
 	}
 
+	// ── Filter dropdown options (with counts) — single Combobox primitive
+	//    used everywhere for visual consistency with the Comptes view.
+	const POP_ALL = "__all__";
+	const populationDropdownOptions: ComboboxOption[] = [
+		{ value: POP_ALL, label: `Tous (${allPoints.length})` },
+		{
+			value: "citizens",
+			label: `Citoyens (${allPoints.filter((p) => p.kind !== "agent").length})`,
+		},
+		{
+			value: "agents",
+			label: `Agents (${allPoints.filter((p) => p.kind === "agent").length})`,
+		},
+	];
+
+	const genderDropdownOptions: ComboboxOption[] = [
+		{ value: POP_ALL, label: `Tous (${allPoints.length})` },
+		{
+			value: "male",
+			label: `♂ Hommes (${allPoints.filter((p) => p.gender === "male").length})`,
+		},
+		{
+			value: "female",
+			label: `♀ Femmes (${allPoints.filter((p) => p.gender === "female").length})`,
+		},
+	];
+
+	const ageDropdownOptions: ComboboxOption[] = [
+		{ value: POP_ALL, label: `Tous (${allPoints.length})` },
+		{
+			value: "adults",
+			label: `Adultes (${allPoints.filter((p) => p.kind !== "citizen_child").length})`,
+		},
+		{
+			value: "children",
+			label: `Enfants (${allPoints.filter((p) => p.kind === "citizen_child").length})`,
+		},
+	];
+
+	const continentDropdownOptions: ComboboxOption[] = [
+		{ value: POP_ALL, label: "Tous les continents" },
+		...continents.map((c) => ({
+			value: c,
+			label: `${CONTINENT_META[c].label} (${
+				allPoints.filter((p) => p.country && getContinent(p.country) === c).length
+			})`,
+		})),
+	];
+
+	const countryDropdownOptions: ComboboxOption[] = [
+		{ value: POP_ALL, label: "Tous les pays" },
+		...countryOptions.map((opt) => ({
+			value: opt.code,
+			label: `${opt.label} (${opt.count})`,
+		})),
+	];
+
+	const hasActiveFilter =
+		populationFilter !== "all" ||
+		genderFilter !== "all" ||
+		ageFilter !== "all" ||
+		activeContinent !== null ||
+		selectedCountry !== null;
+
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-4 pt-6">
-			{/* Header + stats */}
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<h1 className="text-3xl font-bold tracking-tight">Carte des utilisateurs</h1>
-					<p className="text-muted-foreground">
-						Vision géographique globale : citoyens, enfants et agents diplomatiques.
-					</p>
-				</div>
+		<div className="flex flex-1 flex-col gap-3 p-4 pt-4">
+			{/* Filter row — single Combobox primitive for all 5 filters,
+			    same visual treatment as the Comptes view. */}
+			<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
+				<MapFilterField label="Population">
+					<Combobox
+						options={populationDropdownOptions}
+						value={populationFilter === "all" ? POP_ALL : populationFilter}
+						onValueChange={(v) =>
+							setPopulationFilter(
+								v === POP_ALL ? "all" : (v as "citizens" | "agents"),
+							)
+						}
+						placeholder="Population"
+						searchPlaceholder="Filtrer…"
+						emptyText="—"
+						className="h-9"
+					/>
+				</MapFilterField>
 
-				<div className="flex flex-wrap items-center gap-2">
-					<StatChip icon={MapPin} label="affichés" value={stats.total} />
-					<StatChip icon={Users} label="citoyens" value={stats.citizens} />
-					<StatChip icon={Shield} label="agents" value={stats.agents} />
-					{stats.withoutGps > 0 && (
-						<StatChip
-							icon={MapPinOff}
-							label="sans GPS"
-							value={stats.withoutGps}
-							tone="warning"
-						/>
-					)}
-					{stats.withoutGps > 0 && (
-						<button
-							type="button"
-							onClick={runBackfill}
-							disabled={backfill.running}
-							className={cn(
-								"flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary transition-colors",
-								"hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60",
-							)}
-							title="Géocode toutes les adresses sans GPS via Google Geocoding"
-						>
-							{backfill.running ? (
-								<Loader2 className="h-3.5 w-3.5 animate-spin" />
-							) : (
-								<Sparkles className="h-3.5 w-3.5" />
-							)}
-							<span>
-								{backfill.running
-									? `Géocodage… ${backfill.updated}/${backfill.scanned}`
-									: "Géocoder les adresses"}
-							</span>
-						</button>
-					)}
-				</div>
-			</div>
+				<MapFilterField label="Genre">
+					<Combobox
+						options={genderDropdownOptions}
+						value={genderFilter === "all" ? POP_ALL : genderFilter}
+						onValueChange={(v) =>
+							setGenderFilter(
+								v === POP_ALL ? "all" : (v as "male" | "female"),
+							)
+						}
+						placeholder="Genre"
+						searchPlaceholder="Filtrer…"
+						emptyText="—"
+						className="h-9"
+					/>
+				</MapFilterField>
 
-			{/* Filter chips */}
-			<div className="flex flex-col gap-2">
-				<div className="flex flex-wrap gap-2">
-					<FilterGroup label="Population">
-						<Chip active={populationFilter === "all"} onClick={() => setPopulationFilter("all")}>Tous</Chip>
-						<Chip active={populationFilter === "citizens"} onClick={() => setPopulationFilter("citizens")}>
-							<Users className="h-3.5 w-3.5" /> Citoyens
-						</Chip>
-						<Chip active={populationFilter === "agents"} onClick={() => setPopulationFilter("agents")}>
-							<Shield className="h-3.5 w-3.5" /> Agents
-						</Chip>
-					</FilterGroup>
+				<MapFilterField label="Âge">
+					<Combobox
+						options={ageDropdownOptions}
+						value={ageFilter === "all" ? POP_ALL : ageFilter}
+						onValueChange={(v) =>
+							setAgeFilter(
+								v === POP_ALL ? "all" : (v as "adults" | "children"),
+							)
+						}
+						placeholder="Âge"
+						searchPlaceholder="Filtrer…"
+						emptyText="—"
+						className="h-9"
+					/>
+				</MapFilterField>
 
-					<FilterGroup label="Genre">
-						<Chip active={genderFilter === "all"} onClick={() => setGenderFilter("all")}>Tous</Chip>
-						<Chip active={genderFilter === "male"} onClick={() => setGenderFilter("male")}>♂ Hommes</Chip>
-						<Chip active={genderFilter === "female"} onClick={() => setGenderFilter("female")}>♀ Femmes</Chip>
-					</FilterGroup>
+				<MapFilterField label="Continent">
+					<Combobox
+						options={continentDropdownOptions}
+						value={activeContinent ?? POP_ALL}
+						onValueChange={(v) =>
+							setActiveContinent(v === POP_ALL ? null : (v as Continent))
+						}
+						placeholder="Tous les continents"
+						searchPlaceholder="Filtrer…"
+						emptyText="Aucun continent."
+						className="h-9"
+					/>
+				</MapFilterField>
 
-					<FilterGroup label="Âge">
-						<Chip active={ageFilter === "all"} onClick={() => setAgeFilter("all")}>Tous</Chip>
-						<Chip active={ageFilter === "adults"} onClick={() => setAgeFilter("adults")}>Adultes</Chip>
-						<Chip active={ageFilter === "children"} onClick={() => setAgeFilter("children")}>
-							<Baby className="h-3.5 w-3.5" /> Enfants
-						</Chip>
-					</FilterGroup>
-				</div>
+				<MapFilterField label="Pays">
+					<Combobox
+						options={countryDropdownOptions}
+						value={selectedCountry ?? POP_ALL}
+						onValueChange={(v) =>
+							setSelectedCountry(v === POP_ALL ? null : v)
+						}
+						placeholder="Tous les pays"
+						searchPlaceholder="Rechercher un pays…"
+						emptyText="Aucun pays."
+						className="h-9"
+					/>
+				</MapFilterField>
 
-				{continents.length > 0 && (
-					<div className="flex flex-wrap gap-1.5 rounded-xl bg-muted/50 p-1">
-						<button
-							type="button"
-							onClick={() => setActiveContinent(null)}
-							className={cn(
-								"flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all",
-								activeContinent === null
-									? "bg-background text-foreground"
-									: "text-muted-foreground hover:bg-background/50 hover:text-foreground",
-							)}
-						>
-							<span>Tous continents</span>
-						</button>
-						{continents.map((continent) => (
-							<button
-								key={continent}
-								type="button"
-								onClick={() => setActiveContinent(continent)}
-								className={cn(
-									"flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all",
-									activeContinent === continent
-										? "bg-background text-foreground"
-										: "text-muted-foreground hover:bg-background/50 hover:text-foreground",
-								)}
-							>
-								<span>{getContinentEmoji(continent)}</span>
-								<span className="hidden sm:inline">{getContinentLabel(continent)}</span>
-							</button>
-						))}
-					</div>
-				)}
-
-				{countryOptions.length > 0 && (
-					<div className="flex flex-wrap gap-1 px-1">
-						<button
-							type="button"
-							onClick={() => setSelectedCountry(null)}
-							className={cn(
-								"flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all",
-								!selectedCountry
-									? "border border-primary/20 bg-primary/10 text-primary"
-									: "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
-							)}
-						>
-							Tous les pays
-						</button>
-						{countryOptions.map((opt) => (
-							<button
-								key={opt.code}
-								type="button"
-								onClick={() => setSelectedCountry(opt.code)}
-								className={cn(
-									"flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all",
-									selectedCountry === opt.code
-										? "border border-primary/20 bg-primary/10 text-primary"
-										: "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
-								)}
-							>
-								<span>{opt.label}</span>
-								<span className="ml-0.5 text-[10px] opacity-70">{opt.count}</span>
-							</button>
-						))}
-					</div>
-				)}
+				<MapFilterField label=" ">
+					<Button
+						variant="outline"
+						size="sm"
+						className="h-9 w-full font-normal"
+						disabled={!hasActiveFilter}
+						onClick={() => {
+							setPopulationFilter("all");
+							setGenderFilter("all");
+							setAgeFilter("all");
+							setActiveContinent(null);
+							setSelectedCountry(null);
+						}}
+					>
+						Réinitialiser
+					</Button>
+				</MapFilterField>
 			</div>
 
 			{/* Strip the Mapbox default popup chrome so our custom dark wrapper
@@ -607,8 +642,23 @@ export function UsersMapView() {
 			<div className="relative h-[600px] w-full overflow-hidden rounded-xl border bg-muted/20">
 				<div ref={mapContainer} className="absolute inset-0 h-full w-full" />
 
+				{/* Compact stats overlay (top-right) — replaces the page header. */}
+				<div className="absolute right-4 top-4 z-10 flex flex-wrap items-center gap-1.5 rounded-lg border bg-background/95 px-2 py-1.5 text-xs shadow-lg backdrop-blur">
+					<StatChip icon={MapPin} label="affichés" value={stats.total} />
+					<StatChip icon={Users} label="citoyens" value={stats.citizens} />
+					<StatChip icon={Shield} label="agents" value={stats.agents} />
+					{stats.withoutGps > 0 && (
+						<StatChip
+							icon={MapPinOff}
+							label="sans GPS"
+							value={stats.withoutGps}
+							tone="warning"
+						/>
+					)}
+				</div>
+
 				{isDataLoading && (
-					<div className="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-lg border bg-background/95 px-3 py-1.5 text-xs shadow-lg backdrop-blur">
+					<div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-lg border bg-background/95 px-3 py-1.5 text-xs shadow-lg backdrop-blur">
 						<Loader2 className="h-3.5 w-3.5 animate-spin" />
 						<span>Chargement…</span>
 					</div>
@@ -620,6 +670,21 @@ export function UsersMapView() {
 					<LegendItem color={KIND_COLORS.agent} label="Agent (capitale)" />
 				</div>
 			</div>
+
+			{/* Pilote l'appel déclenché depuis le popup Mapbox (innerHTML).
+			    targetUser est remplacé à chaque clic sur un bouton "Audio"/"Vidéo"
+			    dans le popup ; le nonce force le re-déclenchement de l'effet. */}
+			{pendingCallTarget && (
+				<SuperAdminCallTrigger
+					key={pendingCallTarget.user._id}
+					targetUser={pendingCallTarget.user}
+					variant="controlled"
+					programmaticTrigger={{
+						mediaType: pendingCallTarget.mediaType,
+						nonce: pendingCallTarget.nonce,
+					}}
+				/>
+			)}
 		</div>
 	);
 }
@@ -639,52 +704,33 @@ function StatChip({
 	return (
 		<div
 			className={cn(
-				"flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm",
+				"flex items-center gap-1 rounded px-1.5 py-0.5",
 				tone === "warning"
-					? "border border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-					: "bg-muted/50",
+					? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+					: "",
 			)}
 		>
-			<Icon className="h-3.5 w-3.5 text-muted-foreground" />
-			<span className="font-medium">{value}</span>
+			<Icon className="h-3 w-3 text-muted-foreground" />
+			<span className="font-semibold">{value}</span>
 			<span className="text-muted-foreground">{label}</span>
 		</div>
 	);
 }
 
-function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
-	return (
-		<div className="flex items-center gap-1.5">
-			<span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-				{label}
-			</span>
-			<div className="flex items-center gap-1 rounded-lg bg-muted/40 p-0.5">{children}</div>
-		</div>
-	);
-}
-
-function Chip({
-	active,
-	onClick,
+function MapFilterField({
+	label,
 	children,
 }: {
-	active: boolean;
-	onClick: () => void;
+	label: string;
 	children: React.ReactNode;
 }) {
 	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className={cn(
-				"flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all",
-				active
-					? "bg-background text-foreground shadow-sm"
-					: "text-muted-foreground hover:text-foreground",
-			)}
-		>
+		<div className="flex flex-col gap-1">
+			<span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+				{label}
+			</span>
 			{children}
-		</button>
+		</div>
 	);
 }
 

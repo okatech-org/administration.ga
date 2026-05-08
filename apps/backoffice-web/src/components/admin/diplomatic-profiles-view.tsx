@@ -10,7 +10,9 @@
  */
 
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import Link from "next/link";
+import { SuperAdminCallTrigger } from "./super-admin-call-trigger";
 import {
 	Award,
 	Briefcase,
@@ -419,6 +421,20 @@ function DiplomaticMemberCard({ member }: { member: any }) {
 							</Badge>
 						</div>
 					</div>
+					{user?._id && (
+						<div onClick={(e) => e.preventDefault()} className="shrink-0">
+							<SuperAdminCallTrigger
+								targetUser={{
+									_id: user._id as Id<"users">,
+									firstName: user.firstName,
+									lastName: user.lastName,
+									email: user.email,
+									avatarUrl: user.avatarUrl,
+								}}
+								variant="icon-buttons"
+							/>
+						</div>
+					)}
 				</div>
 
 				{/* Org */}

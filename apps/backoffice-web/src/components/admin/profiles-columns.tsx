@@ -1,12 +1,14 @@
 "use client"
 
 import type { ColumnDef } from "@tanstack/react-table"
+import type { Id } from "@convex/_generated/dataModel"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { getCountryFlag, getCountryName, getOrgTypeEmoji, getOrgTypeLabel } from "@/lib/country-utils"
 import { Baby, Building2, Eye, Phone } from "lucide-react"
 import Link from "next/link"
+import { SuperAdminCallTrigger } from "./super-admin-call-trigger"
 
 // ── Types ──────────────────────────────────────────────
 type ProfileRow = {
@@ -250,14 +252,29 @@ const representationCol: ColumnDef<ProfileRow> = {
 const actionsCol: ColumnDef<ProfileRow> = {
   id: "actions",
   cell: ({ row }) => {
+    const p = row.original
     return (
-      <Link
-        href={`/profiles/${row.original._id}`}
-        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <Eye className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">Voir</span>
-      </Link>
+      <div className="flex items-center gap-1">
+        <Link
+          href={`/profiles/${p._id}`}
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Eye className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Voir</span>
+        </Link>
+        {p.userId && (
+          <SuperAdminCallTrigger
+            targetUser={{
+              _id: p.userId as Id<"users">,
+              firstName: p.identity?.firstName,
+              lastName: p.identity?.lastName,
+              email: p.user?.email,
+              avatarUrl: p.avatarUrl,
+            }}
+            variant="icon-buttons"
+          />
+        )}
+      </div>
     )
   },
   enableSorting: false,

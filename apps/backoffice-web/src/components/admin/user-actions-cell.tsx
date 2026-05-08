@@ -30,6 +30,7 @@ import { api } from "@convex/_generated/api"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useCurrentAdminRole } from "@/hooks/use-current-admin-role"
+import { SuperAdminCallTrigger } from "./super-admin-call-trigger"
 
 interface UserActionsCellProps {
   user: Doc<"users">
@@ -38,7 +39,7 @@ interface UserActionsCellProps {
 export function UserActionsCell({ user }: UserActionsCellProps) {
   const { t } = useTranslation()
   const router = useRouter()
-  const { canManageUser } = useCurrentAdminRole()
+  const { canManageUser, isSuperAdmin: callerIsSuperAdmin } = useCurrentAdminRole()
   const [showRoleDialog, setShowRoleDialog] = useState(false)
   const [showModulesDialog, setShowModulesDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -140,7 +141,23 @@ export function UserActionsCell({ user }: UserActionsCellProps) {
             <Eye className="mr-2 h-4 w-4" />
             {t("superadmin.common.view")}
           </DropdownMenuItem>
-          
+
+          {!isTrashed && callerIsSuperAdmin && (
+            <>
+              <DropdownMenuSeparator />
+              <SuperAdminCallTrigger
+                targetUser={{
+                  _id: user._id,
+                  firstName: (user as any).firstName,
+                  lastName: (user as any).lastName,
+                  email: user.email,
+                  avatarUrl: (user as any).avatarUrl,
+                }}
+                variant="menu-items"
+              />
+            </>
+          )}
+
           {!isTrashed && canManage && (
             <>
               <DropdownMenuItem onClick={() => setShowRoleDialog(true)} className="cursor-pointer focus:bg-muted focus:text-foreground">

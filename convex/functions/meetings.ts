@@ -1100,6 +1100,101 @@ export const callRequestAgent = authMutation({
   },
 });
 
+/**
+ * Backoffice (Super Admin / Admin) calls a user from the global Users page.
+ *
+ * Contrairement à `callUser`, cette mutation ne reçoit pas d'orgId : elle est
+ * pensée pour le bouton « Lancer un appel » de la page `/users` du backoffice,
+ * où l'admin n'a pas sélectionné d'organisation au préalable.
+ *
+ * Résolution de l'orgId :
+ *   1. Première membership active de la cible (l'appel est tracé dans son org)
+ *   2. Sinon, première membership active du caller (fallback)
+ *   3. Sinon, erreur lisible
+ *
+ * Réservée aux utilisateurs back-office (super_admin, admin_system, admin,
+ * sous_admin) — bypasse les gates de tâches `meetings.create` au même titre
+ * que la branche backoffice de `callUser` (cf. ligne 871).
+ */
+export const callUserAsAdmin = authMutation({
+  args: {
+    targetUserId: v.id("users"),
+    mediaType: v.optional(v.union(v.literal("audio"), v.literal("video"))),
+  },
+  handler: async (ctx, args) => {
+    if (!isBackOfficeUser(ctx.user)) {
+      throw error(
+        ErrorCode.INSUFFICIENT_PERMISSIONS,
+        "Cette action est réservée aux administrateurs.",
+      );
+    }
+
+    if (args.targetUserId === ctx.user._id) {
+      throw error(ErrorCode.INVALID_ARGUMENT, "Vous ne pouvez pas vous appeler vous-même.");
+    }
+
+    const targetUser = await ctx.db.get(args.targetUserId);
+    if (!targetUser) throw error(ErrorCode.NOT_FOUND, "Utilisateur non trouvé");
+
+    const resolveFirstOrg = async (
+      userId: Id<"users">,
+    ): Promise<Id<"orgs"> | null> => {
+      const memberships = await ctx.db
+        .query("memberships")
+        .withIndex("by_user_org", (q: any) => q.eq("userId", userId))
+        .collect();
+      const active = memberships.filter((m) => !m.deletedAt);
+      return active[0]?.orgId ?? null;
+    };
+
+    let orgId = await resolveFirstOrg(args.targetUserId);
+    if (!orgId) orgId = await resolveFirstOrg(ctx.user._id);
+    if (!orgId) {
+      throw error(
+        ErrorCode.INVALID_ARGUMENT,
+        "Aucune organisation rattachée à cet utilisateur ou à votre compte — impossible de lancer l'appel.",
+      );
+    }
+
+    const org = await ctx.db.get(orgId);
+    if (!org) throw error(ErrorCode.NOT_FOUND, "Organisation non trouvée");
+
+    await endStaleCalls(ctx, ctx.user._id);
+
+    const roomName = generateRoomName(org.slug);
+    const targetName =
+      `${targetUser.firstName ?? ""} ${targetUser.lastName ?? ""}`.trim() ||
+      targetUser.email ||
+      "Appel";
+
+    const meetingId = await ctx.db.insert("meetings", {
+      title: `Appel — ${targetName}`,
+      type: "call",
+      status: "active",
+      callStatus: "initiating",
+      roomName,
+      orgId,
+      createdBy: ctx.user._id,
+      mediaType: args.mediaType ?? "audio",
+      participants: [
+        {
+          userId: ctx.user._id,
+          role: "host",
+          joinedAt: Date.now(),
+        },
+        {
+          userId: args.targetUserId,
+          role: "participant",
+        },
+      ],
+      maxParticipants: 2,
+      startedAt: Date.now(),
+    });
+
+    return { meetingId, roomName };
+  },
+});
+
 // ============================================
 // CALL STATE MACHINE MUTATIONS
 // ============================================
