@@ -49,7 +49,6 @@ import { useAuthClient } from "./auth-client-provider";
 import { LogoutButton } from "./logout-button";
 import { useOrg } from "./org-provider";
 import { OrgSwitcher } from "./org-switcher";
-import { UnifiedSearchTrigger } from "./unified-search";
 
 export interface NavItem {
 	title: string;
@@ -92,7 +91,7 @@ function SidebarText({
 	return (
 		<span
 			className={cn(
-				"truncate text-[15.5px] font-semibold whitespace-nowrap transition-opacity duration-200",
+				"truncate text-sm font-semibold whitespace-nowrap transition-opacity duration-200",
 				isExpanded ? "opacity-100 delay-100" : "opacity-0 w-0 overflow-hidden",
 				className,
 			)}
@@ -224,7 +223,7 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 				className={cn(
 					"flex flex-col py-3 px-3 h-full overflow-hidden",
 					"transition-[width] duration-300 ease-in-out",
-					isExpanded ? "w-56 items-stretch" : "w-[68px] items-center",
+					isExpanded ? "w-64 items-stretch" : "w-[68px] items-center",
 				)}
 			>
 				{/* Org Switcher */}
@@ -233,7 +232,7 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 						<OrgSwitcher />
 					) : (
 						<Link href="/" className="flex items-center justify-center">
-							<div className="size-12 shrink-0 rounded-full bg-[#FDFCFA] dark:bg-[#21201E]/77 flex items-center justify-center overflow-hidden">
+							<div className="size-10 shrink-0 rounded-full bg-[#FDFCFA] dark:bg-[#21201E]/77 flex items-center justify-center overflow-hidden">
 								<img
 									src="/icons/apple-icon.png"
 									alt="Logo"
@@ -242,11 +241,6 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 							</div>
 						</Link>
 					)}
-				</div>
-
-				{/* Recherche unifiée (Phase 5 — alignement iCorr ↔ iDoc) */}
-				<div className={cn("mb-4", isExpanded ? "px-0" : "")}>
-					<UnifiedSearchTrigger expanded={isExpanded} />
 				</div>
 
 				{/* Navigation Items */}
@@ -289,7 +283,7 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 										className={cn(
 											"transition-all duration-200 active:scale-[0.97]",
 											isExpanded
-												? "w-full justify-start gap-3 px-3 h-11 rounded-lg"
+												? "w-full justify-start gap-3 px-3 h-9 rounded-xl"
 												: "w-11 h-11 rounded-full",
 											active
 												? "bg-primary/10 dark:bg-primary/20 text-primary font-bold hover:bg-primary/15 hover:text-primary"
@@ -298,7 +292,7 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 										)}
 									>
 										<Link href={item.url}>
-											<item.icon className="size-5 shrink-0" />
+											<item.icon className="size-[18px] shrink-0" />
 											<SidebarText isExpanded={isExpanded}>
 												{item.title}
 											</SidebarText>
@@ -334,7 +328,7 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 				{/* Bottom Controls */}
 				<div
 					className={cn(
-						"flex flex-col gap-1.5 pt-4 border-t border-foreground/5",
+						"flex flex-col gap-1.5 pt-3 border-t border-foreground/5",
 						!isExpanded && "items-center",
 					)}
 				>
@@ -410,7 +404,7 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 							isExpanded ? "px-1" : "justify-center",
 						)}
 					>
-						<Avatar className="h-9 w-9 rounded-full shrink-0">
+						<Avatar className="size-8 rounded-full shrink-0">
 							<AvatarImage src={userAvatar} alt={userName} />
 							<AvatarFallback className="rounded-full text-xs">
 								{userName
@@ -424,8 +418,8 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 						{isExpanded && (
 							<>
 								<div className="flex-1 min-w-0">
-									<p className="text-sm font-medium truncate">{userName}</p>
-									<p className="text-xs text-muted-foreground truncate">
+									<p className="text-xs font-medium truncate">{userName}</p>
+									<p className="text-[10px] text-muted-foreground truncate">
 										{userEmail}
 									</p>
 								</div>

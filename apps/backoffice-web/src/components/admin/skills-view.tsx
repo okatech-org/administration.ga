@@ -629,7 +629,7 @@ export function SkillsView() {
 								<>
 									Top 10 métiers déclarés
 									<span className="ml-2 text-xs font-normal text-muted-foreground">
-										profession.title du profil consulaire
+										d'après le profil consulaire
 									</span>
 								</>
 							}

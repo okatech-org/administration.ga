@@ -9,6 +9,7 @@ import { columns, corpsAdminColumns } from "@/components/admin/users-columns";
 import dynamic from "next/dynamic";
 import { ProfilesView } from "@/components/admin/profiles-view";
 import { DiplomaticProfilesView } from "@/components/admin/diplomatic-profiles-view";
+import { SkillsView } from "@/components/admin/skills-view";
 import { Badge } from "@/components/ui/badge";
 
 // Mapbox-GL touches `window` / WebGL at module load and breaks Next's SSR
@@ -28,7 +29,7 @@ const UsersMapView = dynamic(
     ),
   },
 );
-import { Crown, Map as MapIcon, Shield, Users as UsersIcon, X } from "lucide-react";
+import { Crown, Map as MapIcon, Shield, Sparkles, Users as UsersIcon, X } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -43,16 +44,9 @@ import { PageHeader } from "@/components/design-system/page-header";
 import { TabSwitcher } from "@/components/design-system/tab-switcher";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { Combobox, type ComboboxOption } from "@workspace/ui/components/combobox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@workspace/ui/components/select";
 import { Button } from "@workspace/ui/components/button";
 
-type ViewMode = "accounts" | "profiles" | "diplomatic" | "map";
+type ViewMode = "accounts" | "profiles" | "diplomatic" | "map" | "skills";
 
 type UserTab = "all" | "backoffice" | "corps" | "agents" | "users" | "inactive";
 
@@ -82,6 +76,7 @@ const VIEW_MODES: { id: ViewMode; label: string; icon: React.ElementType }[] = [
   { id: "accounts", label: "Comptes", icon: UsersIcon },
   { id: "profiles", label: "Profils Consulaires", icon: Crown },
   { id: "diplomatic", label: "Corps Diplomatique", icon: Shield },
+  { id: "skills", label: "Compétences", icon: Sparkles },
   { id: "map", label: "Carte", icon: MapIcon },
 ];
 
@@ -276,6 +271,7 @@ export default function UsersPage() {
     accounts: "Gestion des comptes de la plateforme",
     profiles: "Profils consulaires des citoyens et ressortissants",
     diplomatic: "Profils diplomatiques du corps administratif",
+    skills: "Recherche et répartition des compétences et métiers",
     map: "Vision géographique : citoyens et agents répartis dans le monde",
   };
 
@@ -339,83 +335,83 @@ export default function UsersPage() {
       {/* ── Vue Corps Diplomatique ── */}
       {view === "diplomatic" && <DiplomaticProfilesView />}
 
+      {/* ── Vue Compétences (agrégation skills + métiers) ── */}
+      {view === "skills" && <SkillsView />}
+
       {/* ── Vue Carte (répartition géographique) ── */}
       {view === "map" && <UsersMapView />}
 
       {/* ── Vue Comptes (existant) ── */}
       {view === "accounts" && <>
 
-      {/* Filter row — replaces the previous user-type / continent / country
-          navigation bars. All filters compose; each shows its current count. */}
-      <div className="flex flex-wrap items-end gap-2">
-        <FilterField label="Population" className="w-[200px]">
-          <Select
-            value={activeTab}
+      {/* Filter row — single Combobox primitive used for all 5 filters so
+          they share the exact same trigger button, height, padding, hover
+          and chevron styling. The "all" sentinel is the first option in each
+          list and clears the filter when picked. */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
+        <FilterField label="Population">
+          <Combobox
+            options={[
+              {
+                value: "__all__",
+                label: `Tous (${populationCounts.all})`,
+              },
+              ...populationOptions
+                .filter((o) => o.value !== "all")
+                .map((o) => ({ value: o.value, label: o.label })),
+            ]}
+            value={activeTab === "all" ? "__all__" : activeTab}
             onValueChange={(v) => {
-              setActiveTab(v as UserTab);
+              setActiveTab(v === "__all__" ? "all" : (v as UserTab));
               setActiveRole(null);
             }}
-          >
-            <SelectTrigger className="h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {populationOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Population"
+            searchPlaceholder="Filtrer…"
+            emptyText="Aucune option."
+            className="h-9"
+          />
         </FilterField>
 
-        <FilterField label="Rôle" className="w-[200px]">
-          <Select
-            value={activeRole ?? "all"}
-            onValueChange={(v) => setActiveRole(v === "all" ? null : v)}
-          >
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Tous les rôles" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                Tous les rôles ({users?.length ?? 0})
-              </SelectItem>
-              {roleOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FilterField>
-
-        <FilterField label="Continent" className="w-[200px]">
-          <Select
-            value={activeContinent ?? "all"}
-            onValueChange={(v) =>
-              setActiveContinent(v === "all" ? null : (v as Continent))
-            }
-          >
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Tous les continents" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les continents</SelectItem>
-              {continentOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FilterField>
-
-        <FilterField label="Pays" className="w-[260px]">
+        <FilterField label="Rôle">
           <Combobox
-            options={countryComboboxOptions}
-            value={activeCountry ?? undefined}
-            onValueChange={(v) => setActiveCountry(v || null)}
+            options={[
+              { value: "__all__", label: `Tous les rôles (${users?.length ?? 0})` },
+              ...roleOptions,
+            ]}
+            value={activeRole ?? "__all__"}
+            onValueChange={(v) => setActiveRole(v === "__all__" ? null : v)}
+            placeholder="Tous les rôles"
+            searchPlaceholder="Filtrer…"
+            emptyText="Aucun rôle."
+            className="h-9"
+          />
+        </FilterField>
+
+        <FilterField label="Continent">
+          <Combobox
+            options={[
+              { value: "__all__", label: "Tous les continents" },
+              ...continentOptions,
+            ]}
+            value={activeContinent ?? "__all__"}
+            onValueChange={(v) =>
+              setActiveContinent(v === "__all__" ? null : (v as Continent))
+            }
+            placeholder="Tous les continents"
+            searchPlaceholder="Filtrer…"
+            emptyText="Aucun continent."
+            className="h-9"
+          />
+        </FilterField>
+
+        <FilterField label="Pays">
+          <Combobox
+            options={[
+              { value: "__all__", label: "Tous les pays" },
+              ...countryComboboxOptions,
+            ]}
+            value={activeCountry ?? "__all__"}
+            onValueChange={(v) => setActiveCountry(v === "__all__" ? null : v)}
             placeholder="Tous les pays"
             searchPlaceholder="Rechercher un pays…"
             emptyText="Aucun pays."
@@ -423,31 +419,32 @@ export default function UsersPage() {
           />
         </FilterField>
 
-        <FilterField label="Statut" className="w-[160px]">
-          <Select
-            value={activeStatus ?? "all"}
+        <FilterField label="Statut">
+          <Combobox
+            options={[
+              { value: "__all__", label: "Tous statuts" },
+              { value: "active", label: `Actif (${statusCounts.active})` },
+              { value: "inactive", label: `Inactif (${statusCounts.inactive})` },
+            ]}
+            value={activeStatus ?? "__all__"}
             onValueChange={(v) =>
-              setActiveStatus(v === "all" ? null : (v as "active" | "inactive"))
+              setActiveStatus(
+                v === "__all__" ? null : (v as "active" | "inactive"),
+              )
             }
-          >
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Tous statuts" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous statuts</SelectItem>
-              <SelectItem value="active">Actif ({statusCounts.active})</SelectItem>
-              <SelectItem value="inactive">
-                Inactif ({statusCounts.inactive})
-              </SelectItem>
-            </SelectContent>
-          </Select>
+            placeholder="Tous statuts"
+            searchPlaceholder="Filtrer…"
+            emptyText="—"
+            className="h-9"
+          />
         </FilterField>
 
-        {hasActiveFilter && (
+        <FilterField label={hasActiveFilter ? "Action" : " "}>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="h-9"
+            className="h-9 w-full font-normal"
+            disabled={!hasActiveFilter}
             onClick={() => {
               setActiveTab("all");
               setActiveRole(null);
@@ -456,10 +453,10 @@ export default function UsersPage() {
               setActiveStatus(null);
             }}
           >
+            <X className="mr-1.5 h-3.5 w-3.5" />
             Réinitialiser
-            <X className="ml-1 h-3.5 w-3.5" />
           </Button>
-        )}
+        </FilterField>
       </div>
 
       <FlatCard>

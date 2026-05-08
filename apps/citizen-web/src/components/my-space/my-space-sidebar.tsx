@@ -64,7 +64,7 @@ function SidebarText({
   return (
     <span
       className={cn(
-        "truncate text-[15.5px] whitespace-nowrap transition-opacity duration-200",
+        "truncate text-sm whitespace-nowrap transition-opacity duration-200",
         isExpanded ? "opacity-100 delay-100" : "opacity-0 w-0 overflow-hidden",
         className
       )}
@@ -134,14 +134,14 @@ export function MySpaceSidebar({
         className={cn(
           "flex flex-col py-3 px-3 h-full overflow-y-auto overflow-x-hidden",
           "transition-[width] duration-300 ease-in-out",
-          isExpanded ? "w-56 items-stretch" : "w-[68px] items-center"
+          isExpanded ? "w-64 items-stretch" : "w-[68px] items-center"
         )}
       >
         {/* Logo */}
         <div className={cn("mb-3", isExpanded ? "px-1" : "")}>
           <Link href="/" className={cn("flex items-center", isExpanded && "gap-2.5")}>
-            <div className="size-11 shrink-0 rounded-xl flex items-center justify-center overflow-hidden">
-              <Image src="/icons/apple-icon.png" alt="Logo" width={44} height={44} className="w-full h-full object-contain" />
+            <div className="size-10 shrink-0 rounded-full flex items-center justify-center overflow-hidden">
+              <Image src="/icons/apple-icon.png" alt="Logo" width={40} height={40} className="w-full h-full object-contain" />
             </div>
             <div
               className={cn(
@@ -149,7 +149,7 @@ export function MySpaceSidebar({
                 isExpanded ? "opacity-100 delay-100" : "opacity-0 w-0"
               )}
             >
-              <span className="text-base font-black tracking-[0.2em]">CONSULAT</span>
+              <span className="text-sm font-black tracking-[0.2em]">CONSULAT</span>
               <span className="text-[10px] text-muted-foreground font-medium tracking-[0.12em]">
                 Espace Numérique
               </span>
@@ -191,15 +191,15 @@ export function MySpaceSidebar({
                   <Link
                     href={item.url}
                     className={cn(
-                      "flex items-center transition-all duration-200 rounded-lg",
-                      isExpanded ? "w-full gap-3 px-3 h-11" : "w-11 h-11 justify-center",
+                      "flex items-center transition-all duration-200 rounded-xl",
+                      isExpanded ? "w-full gap-3 px-3 h-9" : "w-11 h-11 justify-center rounded-full",
                       active
                         ? "font-bold text-primary bg-primary/10 dark:bg-primary/20 dark:text-primary"
                         : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     )}
                   >
                     <item.icon
-                      className={cn("size-5 shrink-0 transition-colors", active && "text-primary dark:text-primary")}
+                      className={cn("size-[18px] shrink-0 transition-colors", active && "text-primary dark:text-primary")}
                     />
                     <SidebarText isExpanded={isExpanded}>{item.title}</SidebarText>
                     {!isExpanded && <span className="sr-only">{item.title}</span>}
@@ -238,13 +238,13 @@ export function MySpaceSidebar({
                     type="button"
                     onClick={() => setChildrenOpen(!childrenOpen)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-3 h-11 transition-all duration-200 text-[15.5px] rounded-lg",
+                      "w-full flex items-center gap-3 px-3 h-9 transition-all duration-200 text-sm rounded-xl",
                       childrenOpen
                         ? "active bg-rose-500/10 text-rose-600 font-bold border border-rose-500/10"
                         : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     )}
                   >
-                    <Users className="size-5 shrink-0" />
+                    <Users className="size-[18px] shrink-0" />
                     <span className="flex-1 text-left truncate">{t("mySpace.myChildren")}</span>
                     <span className="text-[8px] bg-rose-500/12 text-rose-500 font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
                       {children.length}
@@ -262,13 +262,13 @@ export function MySpaceSidebar({
                             key={child._id}
                             href={childUrl}
                             className={cn(
-                              "flex items-center gap-2.5 px-3 h-10 text-[14px] rounded-lg",
+                              "flex items-center gap-2.5 px-3 h-8 text-sm rounded-xl",
                               active
                                 ? "active text-rose-600 font-bold bg-rose-500/10 border border-rose-500/10"
                                 : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
                             )}
                           >
-                            <Baby className="size-[18px] shrink-0" />
+                            <Baby className="size-4 shrink-0" />
                             <span className="truncate">{child.identity?.firstName ?? "Enfant"}</span>
                           </Link>
                         )
@@ -291,7 +291,7 @@ export function MySpaceSidebar({
                       )}
                       onClick={() => setChildrenOpen(!childrenOpen)}
                     >
-                      <Users className="size-5" />
+                      <Users className="size-[18px]" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right" sideOffset={10} className="bg-card border-0">
@@ -308,14 +308,14 @@ export function MySpaceSidebar({
               <Link
                 href="/my-space/settings"
                 className={cn(
-                  "flex items-center transition-all duration-200 rounded-lg",
-                  isExpanded ? "w-full gap-3 px-3 h-11" : "w-11 h-11 justify-center",
+                  "flex items-center transition-all duration-200 rounded-xl",
+                  isExpanded ? "w-full gap-3 px-3 h-9" : "w-11 h-11 justify-center rounded-full",
                   isActive("/my-space/settings")
                     ? "font-bold text-primary bg-primary/10 dark:bg-primary/20 dark:text-primary"
                     : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
-                <Settings className={cn("size-5 shrink-0 transition-colors", isActive("/my-space/settings") && "text-primary dark:text-primary")} />
+                <Settings className={cn("size-[18px] shrink-0 transition-colors", isActive("/my-space/settings") && "text-primary dark:text-primary")} />
                 <SidebarText isExpanded={isExpanded}>{t("mySpace.nav.settings")}</SidebarText>
               </Link>
             ) : (
@@ -330,7 +330,7 @@ export function MySpaceSidebar({
                         : "font-semibold text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    <Settings className={cn("size-5 shrink-0 transition-colors", isActive("/my-space/settings") && "text-primary dark:text-primary")} />
+                    <Settings className={cn("size-[18px] shrink-0 transition-colors", isActive("/my-space/settings") && "text-primary dark:text-primary")} />
                     <span className="sr-only">{t("mySpace.nav.settings")}</span>
                   </Link>
                 </TooltipTrigger>
@@ -405,7 +405,7 @@ export function MySpaceSidebar({
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="relative">
-                  <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <span className="text-xs font-bold text-primary dark:text-primary">
                       {session?.user?.name?.[0] || "U"}
                     </span>

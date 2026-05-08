@@ -1,8 +1,6 @@
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
-import { internalQuery, internalMutation } from "../_generated/server";
-import { internal } from "../_generated/api";
-import { backofficeQuery, superadminQuery, superadminMutation, backofficeMutation, superadminAction } from "../lib/customFunctions";
+import { backofficeQuery, superadminQuery, superadminMutation, backofficeMutation } from "../lib/customFunctions";
 import { error, ErrorCode } from "../lib/errors";
 import { getEffectiveRole } from "../lib/auth";
 import { UserRole } from "../lib/constants";
@@ -202,6 +200,60 @@ export const listAllUsersChunk = backofficeQuery({
 });
 
 /**
+ * Fetch users in chunks with their profession + CV skills, for the
+ * /users?view=skills back-office aggregation. Aggregation happens client-side
+ * to avoid materialising the full cross-product server-side.
+ */
+export const listSkillsChunk = backofficeQuery({
+  args: {
+    cursor: v.union(v.string(), v.null()),
+  },
+  handler: async (ctx, args) => {
+    const paginated = await ctx.db
+      .query("users")
+      .order("desc")
+      .paginate({ cursor: args.cursor, numItems: 300 });
+
+    const rows = await Promise.all(
+      paginated.page.map(async (u) => {
+        const profile = await ctx.db
+          .query("profiles")
+          .withIndex("by_user", (q: any) => q.eq("userId", u._id))
+          .unique();
+        const cv = await ctx.db
+          .query("cv")
+          .withIndex("by_user", (q: any) => q.eq("userId", u._id))
+          .unique();
+
+        return {
+          _id: u._id,
+          firstName: u.firstName ?? null,
+          lastName: u.lastName ?? null,
+          email: u.email ?? null,
+          role: getEffectiveRole(u),
+          residenceCountry:
+            profile?.countryOfResidence ||
+            profile?.addresses?.residence?.country ||
+            profile?.identity?.nationality ||
+            null,
+          profession: profile?.profession ?? null,
+          skills: cv?.skills ?? [],
+          cvTitle: cv?.title ?? null,
+          isActive: u.isActive,
+          deletedAt: (u as any).deletedAt ?? null,
+        };
+      }),
+    );
+
+    return {
+      page: rows,
+      isDone: paginated.isDone,
+      continueCursor: paginated.continueCursor,
+    };
+  },
+});
+
+/**
  * Get single enriched user
  */
 export const getUser = backofficeQuery({
@@ -214,12 +266,22 @@ export const getUser = backofficeQuery({
 });
 
 /**
- * List all organizations
+ * List all organizations.
+ *
+ * Par défaut filtre les organismes en corbeille (deletedAt set). Passe
+ * `mode: "trash"` pour ne récupérer QUE les soft-deleted, ou `mode: "all"`
+ * pour tout voir (compat anciennes vues).
  */
 export const listOrgs = backofficeQuery({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.db.query("orgs").take(200);
+  args: {
+    mode: v.optional(v.union(v.literal("active"), v.literal("trash"), v.literal("all"))),
+  },
+  handler: async (ctx, args) => {
+    const mode = args.mode ?? "active";
+    const all = await ctx.db.query("orgs").take(500);
+    if (mode === "all") return all.slice(0, 200);
+    if (mode === "trash") return all.filter((o) => !!o.deletedAt).slice(0, 200);
+    return all.filter((o) => !o.deletedAt).slice(0, 200);
   },
 });
 
@@ -1474,7 +1536,453 @@ export const disableOrg = superadminMutation({
 export const enableOrg = superadminMutation({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.orgId, { isActive: true });
+    await ctx.db.patch(args.orgId, { isActive: true, deletedAt: undefined });
+  },
+});
+
+// ─── Org deletion (super-admin only) ────────────────────────────────────────
+// Flux 2-temps :
+//   1) softDeleteOrg → met deletedAt + isActive=false sur l'org et ses memberships.
+//      Bloqué si des données opérationnelles "actives" existent encore.
+//   2) hardDeleteOrg → purge cascade définitive (org doit déjà être en corbeille).
+
+const TERMINAL_REQUEST_STATUSES = ["completed", "cancelled", "rejected"] as const;
+const TERMINAL_DOSSIER_STATUSES = ["clos", "archive", "rejete"] as const;
+const TERMINAL_INTEL_STATUSES = ["closed", "archived"] as const;
+const TERMINAL_CORRESPONDANCE_STATUSES = ["archived", "rejected"] as const;
+
+async function computeOrgDeletionImpact(ctx: any, orgId: any) {
+  // Memberships actifs (non soft-deleted)
+  const activeMemberships = await ctx.db
+    .query("memberships")
+    .withIndex("by_org_deletedAt", (q: any) =>
+      q.eq("orgId", orgId).eq("deletedAt", undefined),
+    )
+    .collect();
+
+  // Requests non terminales
+  const allRequests = await ctx.db
+    .query("requests")
+    .withIndex("by_org_status", (q: any) => q.eq("orgId", orgId))
+    .collect();
+  const openRequests = allRequests.filter(
+    (r: any) => !TERMINAL_REQUEST_STATUSES.includes(r.status),
+  );
+
+  // Dossiers non terminaux
+  const allDossiers = await ctx.db
+    .query("dossierProcedures")
+    .withIndex("by_org", (q: any) => q.eq("orgId", orgId))
+    .collect();
+  const openDossiers = allDossiers.filter(
+    (d: any) => !TERMINAL_DOSSIER_STATUSES.includes(d.status),
+  );
+
+  // Intelligence cases non terminaux
+  const allIntelCases = await ctx.db
+    .query("intelligenceCases")
+    .withIndex("by_org_status", (q: any) => q.eq("orgId", orgId))
+    .collect();
+  const openIntelCases = allIntelCases.filter(
+    (c: any) => !TERMINAL_INTEL_STATUSES.includes(c.status),
+  );
+
+  // Correspondance non archivée
+  const allCorrespondance = await ctx.db
+    .query("correspondanceItems")
+    .withIndex("by_org_status", (q: any) => q.eq("orgId", orgId))
+    .collect();
+  const openCorrespondance = allCorrespondance.filter(
+    (c: any) => !TERMINAL_CORRESPONDANCE_STATUSES.includes(c.status),
+  );
+
+  const blockers = {
+    activeMemberships: activeMemberships.length,
+    openRequests: openRequests.length,
+    openDossiers: openDossiers.length,
+    openIntelCases: openIntelCases.length,
+    openCorrespondance: openCorrespondance.length,
+  };
+  const totalBlockers =
+    blockers.activeMemberships +
+    blockers.openRequests +
+    blockers.openDossiers +
+    blockers.openIntelCases +
+    blockers.openCorrespondance;
+
+  // Volumes (informatif, pas bloquant) — comptés tous statuts confondus
+  const volumes = {
+    requestsTotal: allRequests.length,
+    dossiersTotal: allDossiers.length,
+    correspondanceTotal: allCorrespondance.length,
+    intelCasesTotal: allIntelCases.length,
+  };
+
+  return { blockers, totalBlockers, volumes };
+}
+
+/**
+ * Query d'impact — appelée par la modale de suppression pour afficher
+ * ce qui bloque ou ce qui va être affecté.
+ */
+export const getOrgDeletionImpact = superadminQuery({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, { orgId }) => {
+    const org = await ctx.db.get(orgId);
+    if (!org) throw error(ErrorCode.ORG_NOT_FOUND);
+    const impact = await computeOrgDeletionImpact(ctx, orgId);
+    return {
+      org: {
+        _id: org._id,
+        name: org.name,
+        slug: org.slug,
+        deletedAt: org.deletedAt,
+        isActive: org.isActive,
+      },
+      ...impact,
+    };
+  },
+});
+
+/**
+ * Déposer un organisme à la corbeille (soft-delete).
+ * Bloqué si des données actives subsistent.
+ */
+export const softDeleteOrg = superadminMutation({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, { orgId }) => {
+    const org = await ctx.db.get(orgId);
+    if (!org) throw error(ErrorCode.ORG_NOT_FOUND);
+    if (org.deletedAt) {
+      throw error(ErrorCode.VALIDATION_ERROR, "Organisme déjà à la corbeille");
+    }
+
+    // Re-check côté serveur (le client peut être obsolète)
+    const { totalBlockers, blockers } = await computeOrgDeletionImpact(ctx, orgId);
+    if (totalBlockers > 0) {
+      throw error(
+        ErrorCode.VALIDATION_ERROR,
+        `BLOCKERS:${JSON.stringify(blockers)}`,
+      );
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(orgId, { deletedAt: now, isActive: false });
+
+    // Cascade soft sur memberships : verrouille les sessions backoffice de l'org
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_org_deletedAt", (q: any) =>
+        q.eq("orgId", orgId).eq("deletedAt", undefined),
+      )
+      .collect();
+    for (const m of memberships) {
+      await ctx.db.patch(m._id, { deletedAt: now });
+    }
+
+    await logCortexAction(ctx, {
+      action: "org.softDelete",
+      categorie: CATEGORIES_ACTION.SECURITE,
+      entiteType: "orgs",
+      entiteId: orgId as unknown as string,
+      userId: ctx.user._id as unknown as string,
+      avant: { name: org.name, slug: org.slug },
+      apres: { deletedAt: now, membershipsRevoked: memberships.length },
+      signalType: SIGNAL_TYPES.TYPE_SUPPRIME,
+      destination: CORTEX.HIPPOCAMPE,
+      priorite: "HIGH",
+    });
+
+    return { ok: true, membershipsRevoked: memberships.length };
+  },
+});
+
+/**
+ * Restaurer un organisme depuis la corbeille.
+ * Ne ré-active PAS automatiquement les memberships (l'admin re-invite explicitement).
+ */
+export const restoreOrg = superadminMutation({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, { orgId }) => {
+    const org = await ctx.db.get(orgId);
+    if (!org) throw error(ErrorCode.ORG_NOT_FOUND);
+    if (!org.deletedAt) {
+      throw error(ErrorCode.VALIDATION_ERROR, "Organisme déjà actif");
+    }
+    await ctx.db.patch(orgId, { deletedAt: undefined, isActive: true });
+
+    await logCortexAction(ctx, {
+      action: "org.restore",
+      categorie: CATEGORIES_ACTION.SECURITE,
+      entiteType: "orgs",
+      entiteId: orgId as unknown as string,
+      userId: ctx.user._id as unknown as string,
+      avant: { deletedAt: org.deletedAt },
+      apres: { deletedAt: null },
+      signalType: SIGNAL_TYPES.TYPE_MODIFIE,
+      destination: CORTEX.HIPPOCAMPE,
+      priorite: "NORMAL",
+    });
+
+    return { ok: true };
+  },
+});
+
+// Helper : supprime toutes les rangées d'une table indexées par orgId.
+async function purgeByOrgIndex(
+  ctx: any,
+  table: string,
+  index: string,
+  orgId: any,
+) {
+  const rows = await ctx.db
+    .query(table)
+    .withIndex(index, (q: any) => q.eq("orgId", orgId))
+    .collect();
+  for (const r of rows) await ctx.db.delete(r._id);
+  return rows.length;
+}
+
+// Helper : version filtre (pour tables sans index by_org).
+async function purgeByOrgFilter(ctx: any, table: string, orgId: any) {
+  const rows = await ctx.db
+    .query(table)
+    .filter((q: any) => q.eq(q.field("orgId"), orgId))
+    .collect();
+  for (const r of rows) await ctx.db.delete(r._id);
+  return rows.length;
+}
+
+/**
+ * Purge définitive d'un organisme (hard-delete cascade).
+ * Pré-requis : org doit être en corbeille (deletedAt set) et le slug confirmé.
+ *
+ * Cascade sélective :
+ *   - SUPPRIME : toutes les données opérationnelles scopées à l'org.
+ *   - PRÉSERVE : intelligenceAuditLog (rétention légale).
+ *   - NULLIFIE : profiles.managedByOrgId/signaledToOrgId, users.allowedOrgs[].
+ */
+export const hardDeleteOrg = superadminMutation({
+  args: {
+    orgId: v.id("orgs"),
+    confirmSlug: v.string(),
+  },
+  handler: async (ctx, { orgId, confirmSlug }) => {
+    const org = await ctx.db.get(orgId);
+    if (!org) throw error(ErrorCode.ORG_NOT_FOUND);
+    if (!org.deletedAt) {
+      throw error(
+        ErrorCode.VALIDATION_ERROR,
+        "Soft-delete requis avant la purge définitive",
+      );
+    }
+    if (org.slug !== confirmSlug) {
+      throw error(ErrorCode.VALIDATION_ERROR, "Slug de confirmation invalide");
+    }
+
+    const counts: Record<string, number> = {};
+
+    // ── 1a. Children-first : collecter les parents puis nettoyer leurs enfants
+    //        avant de supprimer les parents eux-mêmes.
+
+    // Dossiers + sous-tables
+    const dossiers = await ctx.db
+      .query("dossierProcedures")
+      .withIndex("by_org", (q: any) => q.eq("orgId", orgId))
+      .collect();
+    for (const dossier of dossiers) {
+      for (const subTable of [
+        "dossierPieces",
+        "dossierTransitions",
+        "copiesPassage",
+        "journalActions",
+      ]) {
+        const children = await ctx.db
+          .query(subTable as any)
+          .withIndex("by_dossier", (q: any) => q.eq("dossierId", dossier._id))
+          .collect();
+        for (const c of children) await ctx.db.delete(c._id);
+        counts[subTable] = (counts[subTable] ?? 0) + children.length;
+      }
+      await ctx.db.delete(dossier._id);
+    }
+    counts.dossierProcedures = dossiers.length;
+
+    // Correspondance items + sous-tables
+    const corrItems = await ctx.db
+      .query("correspondanceItems")
+      .withIndex("by_org", (q: any) => q.eq("orgId", orgId))
+      .collect();
+    for (const item of corrItems) {
+      for (const subTable of [
+        "correspondanceWorkflowSteps",
+        "correspondanceRecipients",
+        "correspondanceApprovalSteps",
+        "correspondanceSignatures",
+        "correspondanceAnnotations",
+      ]) {
+        const children = await ctx.db
+          .query(subTable as any)
+          .withIndex("by_item", (q: any) => q.eq("itemId", item._id))
+          .collect();
+        for (const c of children) await ctx.db.delete(c._id);
+        counts[subTable] = (counts[subTable] ?? 0) + children.length;
+      }
+      await ctx.db.delete(item._id);
+    }
+    counts.correspondanceItems = corrItems.length;
+
+    // Intelligence cases + sous-tables (caseEntities, caseEvents)
+    const intelCases = await ctx.db
+      .query("intelligenceCases")
+      .withIndex("by_org_status", (q: any) => q.eq("orgId", orgId))
+      .collect();
+    for (const c of intelCases) {
+      const ents = await ctx.db
+        .query("intelligenceCaseEntities")
+        .withIndex("by_case", (q: any) => q.eq("caseId", c._id))
+        .collect();
+      for (const e of ents) await ctx.db.delete(e._id);
+      counts.intelligenceCaseEntities =
+        (counts.intelligenceCaseEntities ?? 0) + ents.length;
+
+      const events = await ctx.db
+        .query("intelligenceCaseEvents")
+        .withIndex("by_case_timestamp", (q: any) => q.eq("caseId", c._id))
+        .collect();
+      for (const ev of events) await ctx.db.delete(ev._id);
+      counts.intelligenceCaseEvents =
+        (counts.intelligenceCaseEvents ?? 0) + events.length;
+
+      await ctx.db.delete(c._id);
+    }
+    counts.intelligenceCases = intelCases.length;
+
+    // ── 1b. Tables purgées directement par orgId ─────────────────────
+    // Tuples : [tableName, indexName | null]. null → utilise un filter.
+    const orgScopedTables: Array<[string, string | null]> = [
+      ["memberships", "by_org"],
+      ["agentSchedules", "by_org"],
+      ["agentPresence", "by_org"],
+      ["aiAgentPresence", "by_org"],
+      ["aiCapabilityConfig", "by_org"],
+      ["aiSuggestions", "by_org_status"],
+      ["aiActivityLog", "by_org"],
+      ["userAIPreferences", "by_org"],
+      ["appointments", "by_org_date"],
+      ["appointmentWaitlist", "by_org_service_status"],
+      ["callLines", "by_org"],
+      ["callNotes", "by_org_updated"],
+      ["callRecordings", "by_org_started"],
+      ["missedCalls", "by_org"],
+      ["voicemails", null],
+      ["supervisionSessions", "by_org"],
+      ["cardDesigns", "by_org"],
+      ["printJobs", "by_org_status"],
+      ["consularNotifications", "by_org_status"],
+      ["consularRegistrations", "by_org_status"],
+      ["correspondanceFolders", "by_org"],
+      ["correspondanceTypeConfigs", "by_org"],
+      ["diplomaticTargets", "by_org"],
+      ["diplomaticLetters", "by_org"],
+      ["diplomaticPlans", "by_org"],
+      ["diplomaticReports", "by_org"],
+      ["diplomaticProjects", "by_org"],
+      ["diplomaticPriorities", "by_org"],
+      ["diplomaticDocuments", "by_org"],
+      ["typeDemarches", "by_org"],
+      ["documents", "by_org"],
+      ["documentVerifications", "by_org"],
+      ["generatedDocuments", "by_org_status"],
+      ["formTemplates", "by_org"],
+      ["meetings", "by_org"],
+      ["orgCalendar", "by_org"],
+      ["orgEscalationPolicy", "by_org"],
+      ["orgIAstedConfig", "by_org"],
+      ["orgRoleTemplates", "by_org"],
+      ["orgServices", "by_org_active"],
+      ["intelligenceNotes", "by_org_severity"],
+      ["intelligenceLinks", "by_org"],
+      ["intelligenceBriefings", "by_org_target"],
+      ["intelligenceWatchlists", "by_org"],
+      ["intelligenceAlerts", "by_org_active"],
+      ["intelligenceEnclaves", "by_org_snapshot"],
+      ["archivePolicies", "by_org"],
+      ["posts", null],
+      ["guides", null],
+    ];
+
+    for (const [table, index] of orgScopedTables) {
+      try {
+        if (index) {
+          counts[table] = await purgeByOrgIndex(ctx, table, index, orgId);
+        } else {
+          counts[table] = await purgeByOrgFilter(ctx, table, orgId);
+        }
+      } catch {
+        // Fallback safety net
+        try {
+          counts[table] = await purgeByOrgFilter(ctx, table, orgId);
+        } catch {
+          counts[table] = 0;
+        }
+      }
+    }
+
+    // ── 2. Nullifier les pointeurs vers cet org (sans supprimer l'entité) ──
+
+    // profiles.managedByOrgId / signaledToOrgId / workplace[].orgId
+    const allProfiles = await ctx.db.query("profiles").collect();
+    let profilesNullified = 0;
+    for (const p of allProfiles) {
+      const patch: Record<string, unknown> = {};
+      if ((p as any).managedByOrgId === orgId) patch.managedByOrgId = undefined;
+      if ((p as any).signaledToOrgId === orgId) patch.signaledToOrgId = undefined;
+      const workplace = (p as any).workplace as
+        | Array<{ orgId?: string }>
+        | undefined;
+      if (workplace?.some((w) => w.orgId === orgId)) {
+        patch.workplace = workplace.filter((w) => w.orgId !== orgId);
+      }
+      if (Object.keys(patch).length > 0) {
+        await ctx.db.patch(p._id, patch as any);
+        profilesNullified++;
+      }
+    }
+    counts.profilesNullified = profilesNullified;
+
+    // users.allowedOrgs (retirer orgId du tableau)
+    const allUsers = await ctx.db.query("users").collect();
+    let usersUpdated = 0;
+    for (const u of allUsers) {
+      const allowed = (u as any).allowedOrgs as Array<string> | undefined;
+      if (allowed?.includes(orgId as unknown as string)) {
+        await ctx.db.patch(u._id, {
+          allowedOrgs: allowed.filter((id) => id !== orgId),
+        } as any);
+        usersUpdated++;
+      }
+    }
+    counts.usersAllowedOrgsCleaned = usersUpdated;
+
+    // ── 3. Supprimer l'org elle-même ────────────────────────────────
+    await ctx.db.delete(orgId);
+
+    // ── 4. Audit ───────────────────────────────────────────────────
+    await logCortexAction(ctx, {
+      action: "org.hardDelete",
+      categorie: CATEGORIES_ACTION.SECURITE,
+      entiteType: "orgs",
+      entiteId: orgId as unknown as string,
+      userId: ctx.user._id as unknown as string,
+      avant: { name: org.name, slug: org.slug, type: org.type },
+      apres: { cascadeCounts: counts },
+      signalType: SIGNAL_TYPES.TYPE_SUPPRIME,
+      destination: CORTEX.HIPPOCAMPE,
+      priorite: "CRITICAL",
+    });
+
+    return { ok: true, counts };
   },
 });
 
@@ -1639,145 +2147,3 @@ export const listChildProfilesForMap = backofficeQuery({
   },
 });
 
-// ─── Backfill : géocodage des adresses de profils ──────────────────────────
-//
-// Beaucoup de profils ont une adresse texte (rue / ville / pays) saisie
-// manuellement, sans le champ optionnel `coordinates`. Sans GPS, ces profils
-// n'apparaissent pas sur la carte des utilisateurs. Ce backfill appelle
-// l'API Google Geocoding pour chaque profil concerné et patch les coords.
-//
-// Architecture : superadmin action → list internal query → geocodeAddress
-// action → patch internal mutation. Paginé pour respecter le timeout d'action
-// Convex (≈ 10 min) et la quota Google (~50 QPS).
-
-interface ProfileToGeocode {
-  profileId: string;
-  addressLine: string;
-  countryCode?: string;
-}
-
-export const _listProfilesNeedingGeocoding = internalQuery({
-  args: {
-    cursor: v.union(v.string(), v.null()),
-    limit: v.number(),
-  },
-  handler: async (ctx, { cursor, limit }) => {
-    const page = await ctx.db
-      .query("profiles")
-      .order("desc")
-      .paginate({ cursor, numItems: limit });
-
-    const candidates: ProfileToGeocode[] = [];
-    for (const p of page.page) {
-      const residence = p.addresses?.residence;
-      if (!residence) continue;
-      if (residence.coordinates?.lat && residence.coordinates?.lng) continue;
-      const street = (residence.street ?? "").trim();
-      const city = (residence.city ?? "").trim();
-      const country = (residence.country ?? "").trim();
-      if (!street && !city) continue;
-      const addressLine = [street, residence.postalCode, city, country]
-        .filter((s) => s && String(s).trim().length > 0)
-        .join(", ");
-      if (addressLine.length < 5) continue;
-      candidates.push({
-        profileId: p._id,
-        addressLine,
-        countryCode: country || undefined,
-      });
-    }
-
-    return {
-      candidates,
-      continueCursor: page.continueCursor,
-      isDone: page.isDone,
-    };
-  },
-});
-
-export const _patchProfileCoordinates = internalMutation({
-  args: {
-    profileId: v.id("profiles"),
-    lat: v.number(),
-    lng: v.number(),
-  },
-  handler: async (ctx, { profileId, lat, lng }) => {
-    const profile = await ctx.db.get(profileId);
-    if (!profile?.addresses?.residence) return false;
-    const next = {
-      ...profile.addresses,
-      residence: {
-        ...profile.addresses.residence,
-        coordinates: { lat, lng },
-      },
-    };
-    await ctx.db.patch(profileId, { addresses: next });
-    return true;
-  },
-});
-
-/**
- * Géocode un batch de profils sans coordonnées. Reprend depuis `cursor`,
- * traite jusqu'à `pageSize` profils (défaut 200), retourne le prochain
- * curseur. À appeler en boucle depuis le client jusqu'à `isDone === true`.
- */
-export const backfillProfileCoordinates = superadminAction({
-  args: {
-    cursor: v.optional(v.union(v.string(), v.null())),
-    pageSize: v.optional(v.number()),
-  },
-  handler: async (
-    ctx,
-    { cursor = null, pageSize = 200 },
-  ): Promise<{
-    scanned: number;
-    updated: number;
-    skipped: number;
-    failed: number;
-    continueCursor: string | null;
-    isDone: boolean;
-  }> => {
-    const { candidates, continueCursor, isDone } = await ctx.runQuery(
-      internal.functions.admin._listProfilesNeedingGeocoding,
-      { cursor, limit: pageSize },
-    );
-
-    let updated = 0;
-    let failed = 0;
-
-    for (const c of candidates) {
-      const res: {
-        success: boolean;
-        lat?: number;
-        lng?: number;
-        error?: string;
-      } = await ctx.runAction(internal.functions.places.geocodeAddress, {
-        address: c.addressLine,
-        region: c.countryCode,
-      });
-
-      if (res.success && res.lat != null && res.lng != null) {
-        const patched = await ctx.runMutation(
-          internal.functions.admin._patchProfileCoordinates,
-          { profileId: c.profileId as any, lat: res.lat, lng: res.lng },
-        );
-        if (patched) updated++;
-        else failed++;
-      } else {
-        failed++;
-      }
-
-      // Throttle to stay well under Google's 50 QPS limit
-      await new Promise((r) => setTimeout(r, 25));
-    }
-
-    return {
-      scanned: candidates.length,
-      updated,
-      skipped: 0,
-      failed,
-      continueCursor: isDone ? null : continueCursor,
-      isDone,
-    };
-  },
-});

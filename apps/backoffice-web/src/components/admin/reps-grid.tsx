@@ -4,7 +4,10 @@ import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import type { Doc } from "@convex/_generated/dataModel";
-import { Building2, Check, CheckSquare, ChevronLeft, ChevronRight, FileStack, Inbox, MapPin, Search, Settings, Eye, Edit, Power, FolderOpen, X } from "lucide-react";
+import { Building2, Check, CheckSquare, ChevronLeft, ChevronRight, FileStack, Inbox, MapPin, Search, Settings, Eye, Edit, Power, FolderOpen, X, Trash2, RotateCcw, ShieldAlert } from "lucide-react";
+import { useCurrentAdminRole } from "@/hooks/use-current-admin-role";
+import { DeleteOrgDialog } from "@/components/admin/delete-org-dialog";
+import { PurgeOrgDialog } from "@/components/admin/purge-org-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -89,7 +92,7 @@ export function RepsGrid({
 		setSelectedOrgIds(new Set());
 	}
 
-	const ITEMS_PER_PAGE = 9; // 3x3 grid
+	const ITEMS_PER_PAGE = 12; // 4x3 grid
 
 	// Réinitialiser les filtres et la page quand les données changent (changement de continent)
 	useEffect(() => {
@@ -129,6 +132,22 @@ export function RepsGrid({
 
 	const { mutate: disableOrg, isPending: isDisabling } = useConvexMutationQuery(api.functions.admin.disableOrg);
 	const { mutate: enableOrg, isPending: isEnabling } = useConvexMutationQuery(api.functions.admin.enableOrg);
+	const { mutate: restoreOrg, isPending: isRestoring } = useConvexMutationQuery(api.functions.admin.restoreOrg);
+
+	const { isSuperAdmin } = useCurrentAdminRole();
+	// Org cible pour les modales (soft-delete + purge). Une seule à la fois.
+	const [deleteTargetOrg, setDeleteTargetOrg] = useState<Doc<"orgs"> | null>(null);
+	const [purgeTargetOrg, setPurgeTargetOrg] = useState<Doc<"orgs"> | null>(null);
+
+	const handleRestore = async (e: React.MouseEvent, org: Doc<"orgs">) => {
+		e.stopPropagation();
+		try {
+			await restoreOrg({ orgId: org._id });
+			toast.success("Représentation restaurée");
+		} catch {
+			toast.error("Erreur lors de la restauration");
+		}
+	};
 
 	const handleToggleStatus = async (e: React.MouseEvent, org: Doc<"orgs">) => {
 		e.stopPropagation();
@@ -266,7 +285,7 @@ export function RepsGrid({
 								<FlatCard
 									key={org._id}
 									className={cn(
-										"relative flex flex-row h-full cursor-pointer hover:shadow-md transition-shadow group p-0 overflow-hidden",
+										"relative flex flex-col h-full cursor-pointer hover:shadow-md transition-shadow group p-0 overflow-hidden",
 										isSelected && "ring-2 ring-primary",
 									)}
 									onClick={() => {
@@ -293,7 +312,7 @@ export function RepsGrid({
 									) : null}
 
 									{/* Main Content Area */}
-									<div className={cn("flex-1 p-3 pr-2.5 flex flex-col gap-2", selectionMode && "pl-9")}>
+									<div className={cn("flex-1 p-3 flex flex-col gap-2", selectionMode && "pl-9")}>
 										{/* Header: Logo + Name */}
 										<div className="flex items-start gap-2.5">
 											<Avatar className="h-9 w-9 shrink-0 border border-border/50">
@@ -315,7 +334,7 @@ export function RepsGrid({
 												<Badge variant="secondary" className="px-1.5 py-0 h-5 text-[10px] font-medium bg-muted/60">
 													{getOrgTypeLabel(org.type)}
 												</Badge>
-												
+
 												<div className="flex items-center gap-1 font-medium text-foreground/80 text-[12px]">
 													<span className="text-xs">{getCountryFlag(org.country)}</span>
 													<span className="truncate max-w-[100px]">{getCountryName(org.country)}</span>
@@ -331,50 +350,97 @@ export function RepsGrid({
 										</div>
 									</div>
 
-									{/* Right Vertical Action Bar */}
-									<div className="w-[46px] shrink-0 border-l border-border/50 bg-muted/20 flex flex-col items-center py-2">
-										<div className="flex flex-col gap-1.5">
-											<Button
-												variant="ghost"
-												size="icon"
-												className="h-7 w-7 text-primary hover:bg-primary/15"
-												onClick={(e) => { e.stopPropagation(); router.push(`/reps/${org._id}`); }}
-												title="Gérer les requêtes"
-											>
-												<FolderOpen className="h-4 w-4" />
-											</Button>
-											<Button
-												variant="ghost"
-												size="icon"
-												className="h-7 w-7 text-muted-foreground hover:text-foreground"
-												onClick={(e) => {
-													e.stopPropagation();
-													setTemplatesOrg(org);
-												}}
-												title="Attribuer des modèles de documents"
-											>
-												<FileStack className="h-3.5 w-3.5" />
-											</Button>
-											<Button
-												variant="ghost"
-												size="icon"
-												className="h-7 w-7 text-muted-foreground hover:text-foreground"
-												onClick={(e) => { e.stopPropagation(); router.push(`/reps/${org._id}/edit`); }}
-												title="Modifier la représentation"
-											>
-												<Edit className="h-3.5 w-3.5" />
-											</Button>
+									{/* Bottom Horizontal Action Bar */}
+									<div className="border-t border-border/50 bg-muted/20 flex items-center justify-between gap-1.5 px-2 py-1.5">
+										<div className="flex items-center gap-1">
+											{org.deletedAt ? (
+												<>
+													{isSuperAdmin && (
+														<>
+															<Button
+																variant="ghost"
+																size="icon"
+																className="h-7 w-7 text-emerald-600 hover:bg-emerald-500/15"
+																onClick={(e) => handleRestore(e, org)}
+																disabled={isRestoring}
+																title="Restaurer"
+															>
+																<RotateCcw className="h-3.5 w-3.5" />
+															</Button>
+															<Button
+																variant="ghost"
+																size="icon"
+																className="h-7 w-7 text-destructive hover:bg-destructive/15"
+																onClick={(e) => {
+																	e.stopPropagation();
+																	setPurgeTargetOrg(org);
+																}}
+																title="Purger définitivement"
+															>
+																<ShieldAlert className="h-3.5 w-3.5" />
+															</Button>
+														</>
+													)}
+												</>
+											) : (
+												<>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-7 w-7 text-primary hover:bg-primary/15"
+														onClick={(e) => { e.stopPropagation(); router.push(`/reps/${org._id}`); }}
+														title="Gérer les requêtes"
+													>
+														<FolderOpen className="h-4 w-4" />
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-7 w-7 text-muted-foreground hover:text-foreground"
+														onClick={(e) => {
+															e.stopPropagation();
+															setTemplatesOrg(org);
+														}}
+														title="Attribuer des modèles de documents"
+													>
+														<FileStack className="h-3.5 w-3.5" />
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-7 w-7 text-muted-foreground hover:text-foreground"
+														onClick={(e) => { e.stopPropagation(); router.push(`/reps/${org._id}/edit`); }}
+														title="Modifier la représentation"
+													>
+														<Edit className="h-3.5 w-3.5" />
+													</Button>
+													{isSuperAdmin && (
+														<Button
+															variant="ghost"
+															size="icon"
+															className="h-7 w-7 text-destructive/80 hover:bg-destructive/15 hover:text-destructive"
+															onClick={(e) => {
+																e.stopPropagation();
+																setDeleteTargetOrg(org);
+															}}
+															title="Déplacer à la corbeille"
+														>
+															<Trash2 className="h-3.5 w-3.5" />
+														</Button>
+													)}
+												</>
+											)}
 										</div>
 
-										{/* Single Visual State Button for Active/Inactive */}
-										<div className="mt-auto flex flex-col items-center">
-											<Button 
+										{/* Active/Inactive toggle (caché pour les orgs en corbeille) */}
+										{!org.deletedAt && (
+											<Button
 												variant="ghost"
-												size="icon" 
+												size="icon"
 												className={cn(
 													"h-7 w-7 rounded-full transition-all duration-300",
-													org.isActive 
-														? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25 hover:text-emerald-700" 
+													org.isActive
+														? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25 hover:text-emerald-700"
 														: "bg-destructive/15 text-destructive/80 hover:bg-destructive/25 hover:text-destructive"
 												)}
 												disabled={isDisabling || isEnabling}
@@ -383,7 +449,7 @@ export function RepsGrid({
 											>
 												<Power className="h-3.5 w-3.5" />
 											</Button>
-										</div>
+										)}
 									</div>
 								</FlatCard>
 							);
@@ -424,6 +490,22 @@ export function RepsGrid({
 					open={!!templatesOrg}
 					onOpenChange={(open) => !open && setTemplatesOrg(null)}
 					org={templatesOrg}
+				/>
+			) : null}
+
+			{deleteTargetOrg ? (
+				<DeleteOrgDialog
+					org={deleteTargetOrg}
+					open={!!deleteTargetOrg}
+					onOpenChange={(open) => !open && setDeleteTargetOrg(null)}
+				/>
+			) : null}
+
+			{purgeTargetOrg ? (
+				<PurgeOrgDialog
+					org={purgeTargetOrg}
+					open={!!purgeTargetOrg}
+					onOpenChange={(open) => !open && setPurgeTargetOrg(null)}
 				/>
 			) : null}
 

@@ -7,7 +7,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Building2, Globe, Layers, Plus } from "lucide-react";
+import { Building2, Globe, Layers, Plus, Trash2 } from "lucide-react";
+import { useCurrentAdminRole } from "@/hooks/use-current-admin-role";
 import { ORGANIZATION_TEMPLATES } from "@convex/lib/roles";
 import { MODULE_REGISTRY } from "@convex/lib/moduleCodes";
 import { Button } from "@/components/ui/button";
@@ -35,12 +36,20 @@ export default function RepresentationsPage() {
 		Map<string, boolean>
 	>(new Map());
 
+	const { isSuperAdmin } = useCurrentAdminRole();
+
 	// ── Shared query ──
 	const {
 		data: orgs,
 		isPending,
 		error,
 	} = useAuthenticatedConvexQuery(api.functions.admin.listOrgs, {});
+
+	// Corbeille — uniquement chargée pour les super-admins quand la fonction le supporte.
+	const { data: trashedOrgs } = useAuthenticatedConvexQuery(
+		api.functions.admin.listOrgs,
+		isSuperAdmin ? { mode: "trash" } : "skip",
+	);
 
 	// ── Mutations for matrix tab ──
 	const { mutateAsync: updateOrgModules, isPending: isSavingModules } =
@@ -160,6 +169,20 @@ export default function RepresentationsPage() {
 						<Layers className="h-3.5 w-3.5" />
 						{lang === "fr" ? "Matrice Modules" : "Module Matrix"}
 					</TabsTrigger>
+					{isSuperAdmin && (
+						<TabsTrigger
+							value="trash"
+							className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-background data-[state=active]:text-destructive"
+						>
+							<Trash2 className="h-3.5 w-3.5" />
+							{lang === "fr" ? "Corbeille" : "Trash"}
+							{trashedOrgs && (trashedOrgs as any[]).length > 0 && (
+								<span className="text-[10px] text-destructive ml-0.5">
+									{(trashedOrgs as any[]).length}
+								</span>
+							)}
+						</TabsTrigger>
+					)}
 				</TabsList>
 
 				{/* ─── Onglet 1 : Liste des représentations ─── */}
@@ -208,6 +231,33 @@ export default function RepresentationsPage() {
 						isSavingModules={isSavingModules}
 					/>
 				</TabsContent>
+
+				{/* ─── Onglet 4 : Corbeille (super-admin only) ─── */}
+				{isSuperAdmin && (
+					<TabsContent value="trash" className="mt-4">
+						{trashedOrgs && (trashedOrgs as any[]).length > 0 ? (
+							<RepsGrid data={trashedOrgs as Doc<"orgs">[]} />
+						) : (
+							<div className="flex flex-col items-center gap-3 py-16 bg-background rounded-xl border border-border/60">
+								<div className="rounded-full bg-muted/60 p-4">
+									<Trash2 className="h-8 w-8 text-muted-foreground" />
+								</div>
+								<div className="text-center">
+									<p className="font-medium text-foreground/80">
+										{lang === "fr"
+											? "Corbeille vide"
+											: "Trash is empty"}
+									</p>
+									<p className="text-sm text-muted-foreground mt-1">
+										{lang === "fr"
+											? "Aucun organisme en attente de purge."
+											: "No organization pending purge."}
+									</p>
+								</div>
+							</div>
+						)}
+					</TabsContent>
+				)}
 			</Tabs>
 		</div>
 	);

@@ -357,12 +357,6 @@ export const create = authMutation({
       updatedAt: Date.now(),
     })
 
-    // Add creator as member (position assigned separately)
-    await ctx.db.insert("memberships", {
-      orgId,
-      userId: ctx.user._id,
-    })
-
     // Create positions from template/edited list
     if (positions && positions.length > 0) {
       const now = Date.now()

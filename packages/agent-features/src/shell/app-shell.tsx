@@ -51,10 +51,6 @@ import {
 } from "./iasted-side-panel";
 import { OrgProvider, useOrg } from "./org-provider";
 import { OrgSidebar, type NavSection } from "./org-sidebar";
-import {
-	UnifiedSearchDialog,
-	useUnifiedSearch,
-} from "./unified-search";
 
 const SIDEBAR_STORAGE_KEY = "admin-sidebar-expanded";
 
@@ -137,10 +133,6 @@ function DashboardLayout({
 	const pathname = usePathname();
 	const { isOpen: isSidePanelOpen, close: closeSidePanel } =
 		useIAstedSidePanel();
-	const {
-		isOpen: isUnifiedSearchOpen,
-		close: closeUnifiedSearch,
-	} = useUnifiedSearch();
 	// La page `/icom` monte son propre iChat via FullscreenShell ; monter
 	// `IAstedWindow` en parallèle créerait deux instances concurrentes de
 	// `useAdminAIChat` + `useAdminVoiceChat` (conflit de souscriptions Convex
@@ -240,10 +232,6 @@ function DashboardLayout({
 			)}
 			<GlobalCallAlert />
 			<GlobalCallPill />
-			<UnifiedSearchDialog
-				open={isUnifiedSearchOpen}
-				onClose={closeUnifiedSearch}
-			/>
 			{afterChildren}
 		</div>
 	);
