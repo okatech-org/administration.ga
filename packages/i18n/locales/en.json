@@ -1301,6 +1301,7 @@
 			"loading": "Loading...",
 			"view": "View",
 			"error": "An error occurred",
+			"notFoundOrRestricted": "This organization could not be found or its access is restricted.",
 			"retry": "Retry",
 			"save": "Save",
 			"cancel": "Cancel",

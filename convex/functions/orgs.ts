@@ -26,7 +26,7 @@ import {
 } from "../lib/validators"
 import { taskCodeValidator } from "../lib/taskCodes"
 import { MODULE_ACCESS_TASKS, moduleCodeValidator, accessLevelValidator, NETWORK_MODULE_CODES, isNetworkModule, isIntelligenceAgencyModule } from "../lib/moduleCodes"
-import { isIntelligenceAgency, isCallerIntelAgency } from "../lib/intelligenceAgencyVisibility"
+import { isIntelligenceAgency, isCallerIntelAgency, canSeeIntelAgencies } from "../lib/intelligenceAgencyVisibility"
 import { OrganizationType } from "../lib/constants"
 import { countryCodeValidator, CountryCode } from "../lib/countryCodeValidator"
 import { canDoTask } from "../lib/permissions"
@@ -75,11 +75,10 @@ export const list = query({
     }
 
     // Cloisonnement : masquer les agences de renseignement aux non-membres.
+    // Bypass pour les super-admins (cohérent avec le bypass de permissions.ts).
     const user = await getCurrentUser(ctx)
-    const callerIsIntel = user
-      ? await isCallerIntelAgency(ctx, user._id)
-      : false
-    return orgs.filter((o) => callerIsIntel || !isIntelligenceAgency(o))
+    const canSee = await canSeeIntelAgencies(ctx, user)
+    return orgs.filter((o) => canSee || !isIntelligenceAgency(o))
   },
 })
 
@@ -135,9 +134,8 @@ export const getBySlug = query({
     if (!org) return null
     if (isIntelligenceAgency(org)) {
       const user = await getCurrentUser(ctx)
-      if (!user) return null
-      const ok = await isCallerIntelAgency(ctx, user._id)
-      if (!ok) return null
+      const canSee = await canSeeIntelAgencies(ctx, user)
+      if (!canSee) return null
     }
     return org
   },
@@ -156,9 +154,8 @@ export const getById = query({
     if (!org || org.deletedAt) return null
     if (isIntelligenceAgency(org)) {
       const user = await getCurrentUser(ctx)
-      if (!user) return null
-      const ok = await isCallerIntelAgency(ctx, user._id)
-      if (!ok) return null
+      const canSee = await canSeeIntelAgencies(ctx, user)
+      if (!canSee) return null
     }
     return org
   },
@@ -187,12 +184,12 @@ export const getDetailedById = query({
     const org = await ctx.db.get(args.orgId)
     if (!org || org.deletedAt) return null
 
-    // Cloisonnement intelligence_agency : invisible aux non-membres.
+    // Cloisonnement intelligence_agency : invisible aux non-membres
+    // (bypass super-admin via canSeeIntelAgencies).
     if (isIntelligenceAgency(org)) {
       const user = await getCurrentUser(ctx)
-      if (!user) return null
-      const ok = await isCallerIntelAgency(ctx, user._id)
-      if (!ok) return null
+      const canSee = await canSeeIntelAgencies(ctx, user)
+      if (!canSee) return null
     }
 
     const [address, schedule, headOfMissionName, logoUrl, timezone] =
@@ -412,15 +409,13 @@ export const listChildren = query({
       .collect()
 
     const user = await getCurrentUser(ctx)
-    const callerIsIntel = user
-      ? await isCallerIntelAgency(ctx, user._id)
-      : false
+    const canSee = await canSeeIntelAgencies(ctx, user)
 
     return children.filter(
       (org) =>
         !org.deletedAt &&
         org.isActive &&
-        (callerIsIntel || !isIntelligenceAgency(org)),
+        (canSee || !isIntelligenceAgency(org)),
     )
   },
 })

@@ -15,6 +15,7 @@ import type { GenericQueryCtx } from "convex/server";
 import type { DataModel, Doc, Id } from "../_generated/dataModel";
 import { OrganizationType } from "./constants";
 import { error, ErrorCode } from "./errors";
+import { isSuperAdmin } from "./permissions";
 
 type Ctx = GenericQueryCtx<DataModel>;
 
@@ -60,6 +61,25 @@ export async function isCallerIntelAgency(
     if (isIntelligenceAgency(org)) return true;
   }
   return false;
+}
+
+/**
+ * Visibilité d'une intel agency : un appelant peut consulter une org de
+ * type `intelligence_agency` s'il est super-admin OU s'il est lui-même
+ * membre d'une agence de renseignement.
+ *
+ * À utiliser exclusivement dans les queries de **lecture** (list, getById,
+ * getBySlug, getDetailedById, listChildren). Les mutations destructrices
+ * sur le module renseignement doivent garder la sémantique stricte
+ * `assertCallerIsIntelAgency` / `isCallerIntelAgency`.
+ */
+export async function canSeeIntelAgencies(
+  ctx: Ctx,
+  user: Doc<"users"> | null,
+): Promise<boolean> {
+  if (!user) return false;
+  if (isSuperAdmin(user)) return true;
+  return isCallerIntelAgency(ctx, user._id);
 }
 
 /**

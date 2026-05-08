@@ -230,12 +230,13 @@ export default function OrgDetailPage() {
 	}
 
 	if (orgError || !org) {
+		const message = orgError
+			? t("superadmin.common.error")
+			: t("superadmin.common.notFoundOrRestricted")
 		return (
 			<div className="flex flex-1 flex-col items-center justify-center gap-4 p-3 md:p-4">
 				<Building2 className="h-12 w-12 text-muted-foreground/30" />
-				<p className="text-muted-foreground">
-					{t("superadmin.common.error")}
-				</p>
+				<p className="text-muted-foreground">{message}</p>
 				<Button
 					variant="outline"
 					size="sm"

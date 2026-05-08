@@ -2144,6 +2144,7 @@
 			"loading": "Chargement...",
 			"view": "Voir",
 			"error": "Une erreur s'est produite",
+			"notFoundOrRestricted": "Cet organisme est introuvable ou son accès est restreint.",
 			"retry": "Réessayer",
 			"save": "Enregistrer",
 			"cancel": "Annuler",
