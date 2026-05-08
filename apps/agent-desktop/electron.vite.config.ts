@@ -50,11 +50,10 @@ export default defineConfig({
         "@workspace/i18n": resolve(__dirname, "../../packages/i18n/src"),
         "@workspace/routing": resolve(__dirname, "../../packages/routing/src"),
         "@workspace/agent-features": resolve(__dirname, "../../packages/agent-features/src"),
-        react: resolve(__dirname, "node_modules/react"),
-        "react-dom": resolve(__dirname, "node_modules/react-dom"),
-        "react/jsx-runtime": resolve(__dirname, "node_modules/react/jsx-runtime.js"),
-        "react/jsx-dev-runtime": resolve(__dirname, "node_modules/react/jsx-dev-runtime.js"),
       },
+      // dedupe garantit une seule copie de React dans le bundle, peu importe
+      // où Bun hoiste les modules dans le monorepo. Pas besoin d'aliases
+      // hardcodés vers node_modules/ (qui cassent quand Bun hoiste à la racine).
       dedupe: ["react", "react-dom"],
     },
     build: {
