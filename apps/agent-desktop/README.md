@@ -248,18 +248,19 @@ Les installeurs sont uploades comme GitHub Releases. Le systeme de mise a jour T
 
 ## Variables d'environnement
 
-Memes variables que `agent-web` :
+L'app desktop est un client Electron + Vite qui ne fait actuellement
+que l'authentification via Convex/Better Auth. Seules deux variables
+sont consommees par le code (`renderer/src/lib/{convex-provider,auth-client}.ts`)
+et injectees par le CI dans `.github/workflows/build-desktop.yml` :
 
 ```env
-VITE_CONVEX_URL=              # URL Convex
+VITE_CONVEX_URL=              # URL Convex (cloud)
 VITE_CONVEX_SITE_URL=         # URL site HTTP Convex
-VITE_SITE_URL=                # URL de l'app (https://diplomate.ga)
-VITE_POSTHOG_KEY=             # Cle PostHog
-VITE_POSTHOG_HOST=            # Host PostHog
-VITE_STRIPE_PUBLISHABLE_KEY=  # Cle publique Stripe
-VITE_LIVEKIT_WS_URL=          # URL WebSocket LiveKit
-VITE_MAPBOX_TOKEN=            # Token Mapbox
 ```
+
+Les autres integrations (PostHog, Stripe, LiveKit, Mapbox) ne sont
+pour l'instant cablees que cote apps web Next, qui exposent ces
+valeurs via leurs propres secrets `NEXT_PUBLIC_*`.
 
 ---
 
