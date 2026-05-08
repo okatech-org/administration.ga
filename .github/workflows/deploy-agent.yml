@@ -44,12 +44,12 @@ jobs:
           docker build \
             --no-cache \
             -f apps/agent-web/Dockerfile \
-            --build-arg NEXT_PUBLIC_CONVEX_URL=${{ secrets.VITE_CONVEX_URL }} \
-            --build-arg CONVEX_SITE_URL=${{ secrets.VITE_CONVEX_SITE_URL }} \
+            --build-arg NEXT_PUBLIC_CONVEX_URL=${{ secrets.NEXT_PUBLIC_CONVEX_URL }} \
+            --build-arg CONVEX_SITE_URL=${{ secrets.CONVEX_SITE_URL }} \
             --build-arg NEXT_PUBLIC_SITE_URL=https://diplomate.ga \
-            --build-arg NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.VITE_POSTHOG_KEY }} \
-            --build-arg NEXT_PUBLIC_POSTHOG_HOST=${{ secrets.VITE_POSTHOG_HOST }} \
-            --build-arg NEXT_PUBLIC_LIVEKIT_WS_URL=${{ secrets.VITE_LIVEKIT_WS_URL }} \
+            --build-arg NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }} \
+            --build-arg NEXT_PUBLIC_POSTHOG_HOST=${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }} \
+            --build-arg NEXT_PUBLIC_LIVEKIT_WS_URL=${{ secrets.NEXT_PUBLIC_LIVEKIT_WS_URL }} \
             --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }} \
             --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }} \
             -t "$IMAGE" \
@@ -71,7 +71,7 @@ jobs:
             --cpu=1 \
             --min-instances=0 \
             --max-instances=10 \
-            --set-env-vars="NODE_ENV=production,CONVEX_SITE_URL=${{ secrets.VITE_CONVEX_SITE_URL }}"
+            --set-env-vars="NODE_ENV=production,CONVEX_SITE_URL=${{ secrets.CONVEX_SITE_URL }}"
 
           # Force 100% traffic to the latest deployment (prevents manual pinning issues)
           gcloud run services update-traffic ${{ env.SERVICE_NAME }} \
