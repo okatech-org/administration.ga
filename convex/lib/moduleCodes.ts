@@ -47,6 +47,8 @@ export const ModuleCode = {
   network_diplomatic_oversight: "network_diplomatic_oversight",
   network_correspondence_oversight: "network_correspondence_oversight",
   network_intelligence: "network_intelligence",
+  // Renseignement diplomatique (services). Cloisonné, ministry-only.
+  intelligence: "intelligence",
 } as const;
 
 export type ModuleCodeValue = (typeof ModuleCode)[keyof typeof ModuleCode];
@@ -142,6 +144,7 @@ export const moduleCodeValidator = v.union(
   v.literal("network_diplomatic_oversight"),
   v.literal("network_correspondence_oversight"),
   v.literal("network_intelligence"),
+  v.literal("intelligence"),
 );
 
 // ═══════════════════════════════════════════════════════════════
@@ -455,6 +458,23 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
       { code: "exports", label: { fr: "Exports", en: "Exports" } },
     ],
   },
+  intelligence: {
+    code: "intelligence",
+    label: { fr: "Renseignement", en: "Intelligence" },
+    description: {
+      fr: "Module de renseignement diplomatique : profils, notes confidentielles, cartographie",
+      en: "Diplomatic intelligence module: profiles, confidential notes, mapping",
+    },
+    icon: "ShieldAlert",
+    color: "text-rose-500",
+    category: "network",
+    isCore: false,
+    capabilities: [
+      { code: "profiles", label: { fr: "Profils surveillés", en: "Watched profiles" } },
+      { code: "notes", label: { fr: "Notes confidentielles", en: "Confidential notes" } },
+      { code: "map", label: { fr: "Cartographie", en: "Map" } },
+    ],
+  },
 };
 
 /**
@@ -466,6 +486,7 @@ export const NETWORK_MODULE_CODES: ModuleCodeValue[] = [
   "network_diplomatic_oversight",
   "network_correspondence_oversight",
   "network_intelligence",
+  "intelligence",
 ];
 
 export function isNetworkModule(code: string): boolean {
@@ -632,6 +653,45 @@ export const MODULE_ACCESS_TASKS: Partial<Record<ModuleCodeValue, Record<ModuleA
     editor: ["network.intelligence.view", "network.intelligence.export"],
     admin: ["network.intelligence.view", "network.intelligence.export", "network.intelligence.configure"],
   },
+  intelligence: {
+    reader: [
+      "intelligence.profiles.view",
+      "intelligence.notes.view",
+      "intelligence.map.view",
+      "intelligence.watchlists.view",
+      "intelligence.links.view",
+    ],
+    editor: [
+      "intelligence.profiles.view",
+      "intelligence.profiles.search",
+      "intelligence.profiles.export",
+      "intelligence.notes.view",
+      "intelligence.notes.create",
+      "intelligence.notes.delete_own",
+      "intelligence.map.view",
+      "intelligence.watchlists.view",
+      "intelligence.watchlists.manage",
+      "intelligence.links.view",
+      "intelligence.links.manage",
+      "intelligence.briefing.generate",
+    ],
+    admin: [
+      "intelligence.profiles.view",
+      "intelligence.profiles.search",
+      "intelligence.profiles.export",
+      "intelligence.notes.view",
+      "intelligence.notes.create",
+      "intelligence.notes.delete_own",
+      "intelligence.notes.delete_any",
+      "intelligence.map.view",
+      "intelligence.watchlists.view",
+      "intelligence.watchlists.manage",
+      "intelligence.links.view",
+      "intelligence.links.manage",
+      "intelligence.briefing.generate",
+      "intelligence.configure",
+    ],
+  },
 };
 
 export function getTasksForModuleAccess(
@@ -743,6 +803,7 @@ export const SIDEBAR_MODULE_GROUPS: SidebarModuleGroup[] = [
       "network_diplomatic_oversight",
       "network_correspondence_oversight",
       "network_intelligence",
+      "intelligence",
     ],
   },
 ];

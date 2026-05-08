@@ -23,6 +23,12 @@ export { paymentsTable } from "./payments";
 export { documentVerificationsTable } from "./documentVerifications";
 export { agentNotesTable } from "./agentNotes";
 export { profileNotesTable } from "./profileNotes";
+export { intelligenceNotesTable } from "./intelligenceNotes";
+export {
+  intelligenceWatchlistsTable,
+  intelligenceWatchlistItemsTable,
+} from "./intelligenceWatchlists";
+export { intelligenceLinksTable } from "./intelligenceLinks";
 export { consularRegistrationsTable } from "./consularRegistrations";
 export { consularNotificationsTable } from "./consularNotifications";
 export { cvTable } from "./cv";

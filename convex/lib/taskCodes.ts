@@ -109,8 +109,29 @@ export const TaskCode = {
     view: "statistics.view",
   },
   intelligence: {
+    // Legacy gate for diplomatic_affairs module (kept for backwards compatibility).
     view: "intelligence.view",
     manage: "intelligence.manage",
+    // Granular tasks for the Intelligence module (renseignement diplomatique).
+    // Module exclusif au ministère ; cloisonnement strict vis-à-vis du module
+    // Affaires consulaires.
+    profiles_view: "intelligence.profiles.view",
+    profiles_search: "intelligence.profiles.search",
+    profiles_export: "intelligence.profiles.export",
+    notes_view: "intelligence.notes.view",
+    notes_create: "intelligence.notes.create",
+    notes_delete_own: "intelligence.notes.delete_own",
+    notes_delete_any: "intelligence.notes.delete_any",
+    map_view: "intelligence.map.view",
+    configure: "intelligence.configure",
+    // Watchlists (listes de surveillance) — organisation des cibles
+    watchlists_view: "intelligence.watchlists.view",
+    watchlists_manage: "intelligence.watchlists.manage",
+    // Liens entre cibles (cartographie des réseaux)
+    links_view: "intelligence.links.view",
+    links_manage: "intelligence.links.manage",
+    // Génération de briefings
+    briefing_generate: "intelligence.briefing.generate",
   },
   // Consular services
   consular_registrations: {
@@ -325,6 +346,20 @@ export const taskCodeValidator = v.union(
   // Intelligence
   v.literal(TaskCode.intelligence.view),
   v.literal(TaskCode.intelligence.manage),
+  v.literal(TaskCode.intelligence.profiles_view),
+  v.literal(TaskCode.intelligence.profiles_search),
+  v.literal(TaskCode.intelligence.profiles_export),
+  v.literal(TaskCode.intelligence.notes_view),
+  v.literal(TaskCode.intelligence.notes_create),
+  v.literal(TaskCode.intelligence.notes_delete_own),
+  v.literal(TaskCode.intelligence.notes_delete_any),
+  v.literal(TaskCode.intelligence.map_view),
+  v.literal(TaskCode.intelligence.configure),
+  v.literal(TaskCode.intelligence.watchlists_view),
+  v.literal(TaskCode.intelligence.watchlists_manage),
+  v.literal(TaskCode.intelligence.links_view),
+  v.literal(TaskCode.intelligence.links_manage),
+  v.literal(TaskCode.intelligence.briefing_generate),
   // Consular Registrations
   v.literal(TaskCode.consular_registrations.view),
   v.literal(TaskCode.consular_registrations.manage),
@@ -467,6 +502,20 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   // Intelligence
   [TaskCode.intelligence.view]: "critical",
   [TaskCode.intelligence.manage]: "critical",
+  [TaskCode.intelligence.profiles_view]: "high",
+  [TaskCode.intelligence.profiles_search]: "high",
+  [TaskCode.intelligence.profiles_export]: "critical",
+  [TaskCode.intelligence.notes_view]: "high",
+  [TaskCode.intelligence.notes_create]: "high",
+  [TaskCode.intelligence.notes_delete_own]: "medium",
+  [TaskCode.intelligence.notes_delete_any]: "critical",
+  [TaskCode.intelligence.map_view]: "high",
+  [TaskCode.intelligence.configure]: "critical",
+  [TaskCode.intelligence.watchlists_view]: "medium",
+  [TaskCode.intelligence.watchlists_manage]: "high",
+  [TaskCode.intelligence.links_view]: "high",
+  [TaskCode.intelligence.links_manage]: "high",
+  [TaskCode.intelligence.briefing_generate]: "high",
   // Consular Registrations
   [TaskCode.consular_registrations.view]: "low",
   [TaskCode.consular_registrations.manage]: "high",

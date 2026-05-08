@@ -1,0 +1,424 @@
+/**
+ * Module Renseignement diplomatique — queries de lecture transverses.
+ *
+ * Toutes les fonctions exigent au minimum `intelligence.profiles.view`.
+ * Le module est exclusif au type d'organisme `ministry` (cf. NETWORK_MODULE_CODES).
+ *
+ * Les opérations sensibles laissent une trace dans `auditLog`
+ * (table=intelligenceAccess, operation=read).
+ */
+
+import { v } from "convex/values";
+import type { Id } from "../_generated/dataModel";
+import { authQuery } from "../lib/customFunctions";
+import { getMembership } from "../lib/auth";
+import { assertCanDoTask } from "../lib/permissions";
+
+const targetTypeValidator = v.union(
+  v.literal("profile"),
+  v.literal("child_profile"),
+  v.literal("diplomatic_target"),
+  v.literal("agent"),
+);
+
+/**
+ * Recherche multi-cibles pour un agent Intelligence.
+ * Filtre par types (profiles, children, contacts diplomatiques, agents),
+ * texte libre (nom/prénom/matricule), et pays de résidence/exercice.
+ */
+export const searchProfiles = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+    types: v.array(targetTypeValidator),
+    query: v.optional(v.string()),
+    country: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(
+      ctx,
+      ctx.user,
+      membership,
+      "intelligence.profiles.search",
+    );
+
+    const limit = Math.min(args.limit ?? 50, 200);
+    const query = args.query?.trim().toLowerCase();
+
+    const results: Array<{
+      targetType: "profile" | "child_profile" | "diplomatic_target" | "agent";
+      targetId: string;
+      label: string;
+      sublabel?: string;
+      country?: string;
+    }> = [];
+
+    if (args.types.includes("profile")) {
+      const profiles = args.country
+        ? await ctx.db
+            .query("profiles")
+            .withIndex("by_country_of_residence", (q) =>
+              q.eq("countryOfResidence", args.country as never),
+            )
+            .take(limit)
+        : await ctx.db.query("profiles").take(limit);
+
+      for (const p of profiles) {
+        const fn = p.identity?.firstName ?? "";
+        const ln = p.identity?.lastName ?? "";
+        const fullName = `${fn} ${ln}`.trim();
+        if (
+          query &&
+          !fullName.toLowerCase().includes(query) &&
+          !(p.matricule ?? "").toLowerCase().includes(query)
+        ) {
+          continue;
+        }
+        results.push({
+          targetType: "profile",
+          targetId: p._id,
+          label: fullName || "(sans nom)",
+          sublabel: p.matricule ?? undefined,
+          country: p.countryOfResidence ?? undefined,
+        });
+      }
+    }
+
+    if (args.types.includes("child_profile")) {
+      const children = await ctx.db.query("childProfiles").take(limit);
+      for (const c of children) {
+        const fullName = `${(c as any).firstName ?? ""} ${(c as any).lastName ?? ""}`.trim();
+        if (query && !fullName.toLowerCase().includes(query)) continue;
+        results.push({
+          targetType: "child_profile",
+          targetId: c._id,
+          label: fullName || "(sans nom)",
+        });
+      }
+    }
+
+    if (args.types.includes("diplomatic_target")) {
+      const targets = await ctx.db
+        .query("diplomaticTargets")
+        .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+        .take(limit);
+      for (const t of targets) {
+        if (t.deletedAt !== undefined) continue;
+        if (args.country && t.country !== args.country) continue;
+        if (query && !t.name.toLowerCase().includes(query)) continue;
+        results.push({
+          targetType: "diplomatic_target",
+          targetId: t._id,
+          label: t.name,
+          sublabel: t.sector ?? t.contactName ?? undefined,
+          country: t.country ?? undefined,
+        });
+      }
+    }
+
+    if (args.types.includes("agent")) {
+      const memberships = await ctx.db.query("memberships").take(limit);
+      for (const m of memberships) {
+        if (m.deletedAt) continue;
+        const u = await ctx.db.get(m.userId);
+        if (!u) continue;
+        const fullName = `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim();
+        if (query && !fullName.toLowerCase().includes(query)) continue;
+        results.push({
+          targetType: "agent",
+          targetId: u._id,
+          label: fullName || u.email || "(agent)",
+        });
+      }
+    }
+
+    return results.slice(0, limit);
+  },
+});
+
+/**
+ * Récupère un profil + ses notes Intelligence.
+ * Trace l'accès dans auditLog (read).
+ */
+export const getProfileWithNotes = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+    targetType: targetTypeValidator,
+    targetId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(
+      ctx,
+      ctx.user,
+      membership,
+      "intelligence.profiles.view",
+    );
+
+    let target: any = null;
+    switch (args.targetType) {
+      case "profile":
+        target = await ctx.db.get(args.targetId as Id<"profiles">);
+        break;
+      case "child_profile":
+        target = await ctx.db.get(args.targetId as Id<"childProfiles">);
+        break;
+      case "diplomatic_target":
+        target = await ctx.db.get(args.targetId as Id<"diplomaticTargets">);
+        break;
+      case "agent":
+        target = await ctx.db.get(args.targetId as Id<"users">);
+        break;
+    }
+
+    const notes = await ctx.db
+      .query("intelligenceNotes")
+      .withIndex("by_target", (q) =>
+        q.eq("targetType", args.targetType).eq("targetId", args.targetId),
+      )
+      .order("desc")
+      .collect();
+
+    const visibleNotes = notes.filter((n) => n.deletedAt === undefined);
+
+    const enriched = await Promise.all(
+      visibleNotes.map(async (note) => {
+        const author = await ctx.db.get(note.authorId);
+        return {
+          ...note,
+          author: author
+            ? {
+                _id: author._id,
+                firstName: author.firstName,
+                lastName: author.lastName,
+              }
+            : null,
+        };
+      }),
+    );
+
+    return { target, notes: enriched };
+  },
+});
+
+/**
+ * Données géographiques pour la carte Intelligence.
+ * Renvoie les profils avec coordonnées GPS, plus un fallback `country` quand
+ * GPS absent (la carte gère la reprojection sur capitale côté client).
+ */
+export const getMapData = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+    severity: v.optional(
+      v.union(
+        v.literal("low"),
+        v.literal("medium"),
+        v.literal("high"),
+        v.literal("critical"),
+      ),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(ctx, ctx.user, membership, "intelligence.map.view");
+
+    const profiles = await ctx.db.query("profiles").collect();
+
+    const points = profiles.map((p) => {
+      const coords = (p as any).addresses?.residence?.coordinates as
+        | { lat: number; lng: number }
+        | undefined;
+      return {
+        targetType: "profile" as const,
+        targetId: p._id,
+        label: `${p.identity?.firstName ?? ""} ${p.identity?.lastName ?? ""}`.trim(),
+        country: p.countryOfResidence ?? undefined,
+        lat: coords?.lat,
+        lng: coords?.lng,
+      };
+    });
+
+    const targets = await ctx.db
+      .query("diplomaticTargets")
+      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .collect();
+
+    const targetPoints = targets
+      .filter((t) => t.deletedAt === undefined)
+      .map((t) => ({
+        targetType: "diplomatic_target" as const,
+        targetId: t._id,
+        label: t.name,
+        country: t.country ?? undefined,
+        lat: undefined as number | undefined,
+        lng: undefined as number | undefined,
+      }));
+
+    const allPoints = [...points, ...targetPoints];
+
+    if (args.severity) {
+      const flaggedTargets = new Set<string>();
+      const notes = await ctx.db
+        .query("intelligenceNotes")
+        .withIndex("by_org_severity", (q) =>
+          q.eq("orgId", args.orgId).eq("severity", args.severity!),
+        )
+        .collect();
+      for (const n of notes) {
+        if (n.deletedAt === undefined) flaggedTargets.add(n.targetId);
+      }
+      return allPoints.filter((p) => flaggedTargets.has(p.targetId));
+    }
+
+    return allPoints;
+  },
+});
+
+/**
+ * Génère un briefing structuré sur une cible — destiné à être rendu en
+ * markdown puis téléchargé. Agrège : identité, notes (toutes catégories),
+ * watchlists d'appartenance, liens entrants/sortants.
+ */
+export const getBriefing = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+    targetType: targetTypeValidator,
+    targetId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(
+      ctx,
+      ctx.user,
+      membership,
+      "intelligence.briefing.generate",
+    );
+
+    let target: any = null;
+    switch (args.targetType) {
+      case "profile":
+        target = await ctx.db.get(args.targetId as Id<"profiles">);
+        break;
+      case "child_profile":
+        target = await ctx.db.get(args.targetId as Id<"childProfiles">);
+        break;
+      case "diplomatic_target":
+        target = await ctx.db.get(args.targetId as Id<"diplomaticTargets">);
+        break;
+      case "agent":
+        target = await ctx.db.get(args.targetId as Id<"users">);
+        break;
+    }
+
+    const notes = await ctx.db
+      .query("intelligenceNotes")
+      .withIndex("by_target", (q) =>
+        q.eq("targetType", args.targetType).eq("targetId", args.targetId),
+      )
+      .order("desc")
+      .collect();
+
+    const visibleNotes = await Promise.all(
+      notes
+        .filter((n) => n.deletedAt === undefined)
+        .map(async (n) => {
+          const author = await ctx.db.get(n.authorId);
+          return {
+            ...n,
+            authorName: author
+              ? `${author.firstName ?? ""} ${author.lastName ?? ""}`.trim() ||
+                author.email ||
+                "Agent"
+              : "Agent inconnu",
+          };
+        }),
+    );
+
+    // Liens
+    const [outgoing, incoming] = await Promise.all([
+      ctx.db
+        .query("intelligenceLinks")
+        .withIndex("by_from", (q) =>
+          q
+            .eq("fromTargetType", args.targetType)
+            .eq("fromTargetId", args.targetId),
+        )
+        .collect(),
+      ctx.db
+        .query("intelligenceLinks")
+        .withIndex("by_to", (q) =>
+          q
+            .eq("toTargetType", args.targetType)
+            .eq("toTargetId", args.targetId),
+        )
+        .collect(),
+    ]);
+    const links = [...outgoing, ...incoming].filter(
+      (l) => l.deletedAt === undefined && l.orgId === args.orgId,
+    );
+
+    // Watchlists
+    const watchlistItems = await ctx.db
+      .query("intelligenceWatchlistItems")
+      .withIndex("by_target", (q) =>
+        q.eq("targetType", args.targetType).eq("targetId", args.targetId),
+      )
+      .collect();
+
+    const watchlists = await Promise.all(
+      watchlistItems.map(async (it) => {
+        const w = await ctx.db.get(it.watchlistId);
+        if (!w || w.archivedAt !== undefined) return null;
+        if (w.visibility === "private" && w.ownerId !== ctx.user._id) {
+          return null;
+        }
+        return { name: w.name, theme: w.theme };
+      }),
+    );
+
+    return {
+      target,
+      targetType: args.targetType,
+      targetId: args.targetId,
+      notes: visibleNotes,
+      links,
+      watchlists: watchlists.filter((w): w is NonNullable<typeof w> => w !== null),
+      generatedAt: Date.now(),
+    };
+  },
+});
+
+/**
+ * Compteurs pour le dashboard Intelligence (top KPI).
+ */
+export const getDashboardCounts = authQuery({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+    await assertCanDoTask(
+      ctx,
+      ctx.user,
+      membership,
+      "intelligence.profiles.view",
+    );
+
+    const allNotes = await ctx.db
+      .query("intelligenceNotes")
+      .withIndex("by_org_severity", (q) => q.eq("orgId", args.orgId))
+      .collect();
+
+    const live = allNotes.filter((n) => n.deletedAt === undefined);
+
+    const watchedTargets = new Set(live.map((n) => n.targetId));
+
+    return {
+      totalNotes: live.length,
+      criticalNotes: live.filter((n) => n.severity === "critical").length,
+      highNotes: live.filter((n) => n.severity === "high").length,
+      flaggedNotes: live.filter((n) => n.category === "flag").length,
+      riskNotes: live.filter((n) => n.category === "risk").length,
+      watchedTargetsCount: watchedTargets.size,
+    };
+  },
+});

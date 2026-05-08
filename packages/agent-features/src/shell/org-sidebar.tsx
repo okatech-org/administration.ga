@@ -10,6 +10,7 @@ import {
 	Eye,
 	FileText,
 	FolderOpen,
+	Globe,
 	Globe2,
 	Handshake,
 	Home,
@@ -19,8 +20,11 @@ import {
 	Network,
 	Newspaper,
 	Settings2,
+	ShieldAlert,
+	StickyNote,
 	Sun,
 	UserCircle,
+	UserSearch,
 	Users,
 	Users2,
 } from "lucide-react";
@@ -148,6 +152,19 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 				{ title: "Pipeline réseau", url: "/network/diplomatic-pipeline", icon: Network, requires: "network.diplomatic.view", moduleCode: "network_diplomatic_oversight" },
 				{ title: "Correspondance réseau", url: "/network/correspondence", icon: Mailbox, requires: "network.correspondence.view", moduleCode: "network_correspondence_oversight" },
 				{ title: "Intelligence réseau", url: "/network/intelligence", icon: BarChart3, requires: "network.intelligence.view", moduleCode: "network_intelligence" },
+			],
+		},
+		{
+			// Renseignement diplomatique — module cloisonné, ministry-only.
+			// Visible uniquement pour les porteurs du preset
+			// `intelligence_services` (cabinet ministre, SG, IG, etc.).
+			label: "Renseignement",
+			items: [
+				{ title: "Vue d'ensemble", url: "/intelligence", icon: ShieldAlert, requires: "intelligence.profiles.view", moduleCode: "intelligence" },
+				{ title: "Profils", url: "/intelligence/profiles", icon: UserSearch, requires: "intelligence.profiles.search", moduleCode: "intelligence" },
+				{ title: "Listes de surveillance", url: "/intelligence/watchlists", icon: Eye, requires: "intelligence.watchlists.view", moduleCode: "intelligence" },
+				{ title: "Notes", url: "/intelligence/notes", icon: StickyNote, requires: "intelligence.notes.view", moduleCode: "intelligence" },
+				{ title: "Carte", url: "/intelligence/map", icon: Globe, requires: "intelligence.map.view", moduleCode: "intelligence" },
 			],
 		},
 		...(extraSections ?? []),

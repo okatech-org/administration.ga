@@ -298,6 +298,31 @@ export const POSITION_TASK_PRESETS: TaskPresetDefinition[] = [
       TaskCode.org.view, TaskCode.statistics.view, TaskCode.analytics.view, TaskCode.analytics.export,
     ],
   },
+  {
+    code: "intelligence_services",
+    label: { fr: "Services de renseignement", en: "Intelligence Services" },
+    description: {
+      fr: "Accès aux profils, notes confidentielles et cartographie du module Renseignement",
+      en: "Access to profiles, confidential notes and mapping in the Intelligence module",
+    },
+    icon: "ShieldAlert",
+    color: "text-rose-600",
+    tasks: [
+      TaskCode.intelligence.profiles_view,
+      TaskCode.intelligence.profiles_search,
+      TaskCode.intelligence.profiles_export,
+      TaskCode.intelligence.notes_view,
+      TaskCode.intelligence.notes_create,
+      TaskCode.intelligence.notes_delete_own,
+      TaskCode.intelligence.map_view,
+      TaskCode.intelligence.watchlists_view,
+      TaskCode.intelligence.watchlists_manage,
+      TaskCode.intelligence.links_view,
+      TaskCode.intelligence.links_manage,
+      TaskCode.intelligence.briefing_generate,
+      TaskCode.org.view,
+    ],
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -523,6 +548,9 @@ export const PRESET_MODULE_ACCESS: Record<string, MA[]> = {
     ma(ModuleCode.network_correspondence_oversight, "editor"),
     ma(ModuleCode.network_intelligence, "editor"),
   ],
+  intelligence_services: [
+    ma(ModuleCode.intelligence, "editor"),
+  ],
 };
 
 const ACCESS_LEVEL_VALUE: Record<ModuleAccessLevel, number> = { reader: 1, editor: 2, admin: 3 };
@@ -726,6 +754,8 @@ const MINISTRY_FOREIGN_AFFAIRS_MODULES: ModuleCodeValue[] = [
   ModuleCode.network_diplomatic_oversight,
   ModuleCode.network_correspondence_oversight,
   ModuleCode.network_intelligence,
+  // Renseignement diplomatique (cloisonné, ministry-only)
+  ModuleCode.intelligence,
 ];
 
 // ─── MINISTRY (foreign_affairs) positions ───────────────────
@@ -737,20 +767,20 @@ const MINISTRY_FOREIGN_AFFAIRS_MODULES: ModuleCodeValue[] = [
 
 export const MINISTRY_FOREIGN_AFFAIRS_POSITIONS: PositionTemplate[] = [
   // ── Cabinet ──
-  { code: "minister", title: { fr: "Ministre", en: "Minister" }, description: { fr: "Membre du Gouvernement — direction politique et arbitrage final", en: "Member of Government — political leadership and final arbitration" }, level: 1, perm: 40, grade: "chief", ministryCode: "cabinet", taskPresets: ["ministry_cabinet", "network_supervision"], isRequired: true },
-  { code: "chief_of_staff", title: { fr: "Directeur de cabinet", en: "Chief of Staff" }, description: { fr: "Coordination du cabinet et arbitrage administratif", en: "Cabinet coordination and administrative arbitration" }, level: 2, perm: 32, grade: "deputy_chief", ministryCode: "cabinet", taskPresets: ["ministry_cabinet", "network_supervision"], isRequired: true },
+  { code: "minister", title: { fr: "Ministre", en: "Minister" }, description: { fr: "Membre du Gouvernement — direction politique et arbitrage final", en: "Member of Government — political leadership and final arbitration" }, level: 1, perm: 40, grade: "chief", ministryCode: "cabinet", taskPresets: ["ministry_cabinet", "network_supervision", "intelligence_services"], isRequired: true },
+  { code: "chief_of_staff", title: { fr: "Directeur de cabinet", en: "Chief of Staff" }, description: { fr: "Coordination du cabinet et arbitrage administratif", en: "Cabinet coordination and administrative arbitration" }, level: 2, perm: 32, grade: "deputy_chief", ministryCode: "cabinet", taskPresets: ["ministry_cabinet", "network_supervision", "intelligence_services"], isRequired: true },
   { code: "technical_advisor", title: { fr: "Conseiller technique", en: "Technical Advisor" }, description: { fr: "Conseil thématique au Ministre (multiple)", en: "Thematic advisory to the Minister (multiple)" }, level: 3, perm: 22, grade: "counselor", ministryCode: "cabinet", taskPresets: ["ministry_direction", "network_supervision"], isRequired: false },
   { code: "private_secretary", title: { fr: "Secrétaire particulier·ère", en: "Private Secretary" }, description: { fr: "Agenda, correspondance personnelle et coordination quotidienne du Ministre", en: "Schedule, personal correspondence and daily coordination for the Minister" }, level: 4, perm: 18, grade: "agent", ministryCode: "cabinet", taskPresets: ["ministry_direction"], isRequired: false },
   { code: "mission_officer", title: { fr: "Chargé·e de mission", en: "Mission Officer" }, description: { fr: "Dossiers ad hoc et missions spéciales (multiple)", en: "Ad-hoc files and special missions (multiple)" }, level: 4, perm: 16, grade: "agent", ministryCode: "cabinet", taskPresets: ["ministry_direction"], isRequired: false },
   { code: "press_attache", title: { fr: "Attaché·e de presse", en: "Press Attaché" }, description: { fr: "Relations presse, communiqués et image du ministère", en: "Press relations, communiqués and ministry image" }, level: 4, perm: 16, grade: "agent", ministryCode: "cabinet", taskPresets: ["ministry_direction"], isRequired: false },
 
   // ── Direction générale ──
-  { code: "secretary_general", title: { fr: "Secrétaire Général", en: "Secretary General" }, description: { fr: "Première autorité administrative — coordination des directions et continuité du service", en: "Highest administrative authority — coordination of departments and service continuity" }, level: 2, perm: 30, grade: "deputy_chief", ministryCode: "secretariat_general", taskPresets: ["ministry_cabinet", "network_supervision"], isRequired: true },
-  { code: "inspector_general", title: { fr: "Inspecteur Général", en: "Inspector General" }, description: { fr: "Audit interne, contrôle de conformité et inspection du réseau", en: "Internal audit, compliance control and network inspection" }, level: 2, perm: 28, grade: "deputy_chief", ministryCode: "inspection_generale", taskPresets: ["ministry_direction", "network_supervision"], isRequired: false },
+  { code: "secretary_general", title: { fr: "Secrétaire Général", en: "Secretary General" }, description: { fr: "Première autorité administrative — coordination des directions et continuité du service", en: "Highest administrative authority — coordination of departments and service continuity" }, level: 2, perm: 30, grade: "deputy_chief", ministryCode: "secretariat_general", taskPresets: ["ministry_cabinet", "network_supervision", "intelligence_services"], isRequired: true },
+  { code: "inspector_general", title: { fr: "Inspecteur Général", en: "Inspector General" }, description: { fr: "Audit interne, contrôle de conformité et inspection du réseau", en: "Internal audit, compliance control and network inspection" }, level: 2, perm: 28, grade: "deputy_chief", ministryCode: "inspection_generale", taskPresets: ["ministry_direction", "network_supervision", "intelligence_services"], isRequired: false },
 
   // ── Directions métier ──
   { code: "dir_consular_affairs", title: { fr: "Directeur des Affaires Consulaires", en: "Director of Consular Affairs" }, description: { fr: "Pivot supervision réseau consulaire — politiques consulaires et accompagnement des postes", en: "Consular network supervision pivot — consular policies and post support" }, level: 3, perm: 25, grade: "counselor", ministryCode: "directions", taskPresets: ["ministry_direction", "network_supervision"], isRequired: true },
-  { code: "dir_political_affairs", title: { fr: "Directeur des Affaires Politiques", en: "Director of Political Affairs" }, description: { fr: "Relations bilatérales et multilatérales, analyse géopolitique", en: "Bilateral and multilateral relations, geopolitical analysis" }, level: 3, perm: 25, grade: "counselor", ministryCode: "directions", taskPresets: ["ministry_direction", "network_supervision"], isRequired: false },
+  { code: "dir_political_affairs", title: { fr: "Directeur des Affaires Politiques", en: "Director of Political Affairs" }, description: { fr: "Relations bilatérales et multilatérales, analyse géopolitique", en: "Bilateral and multilateral relations, geopolitical analysis" }, level: 3, perm: 25, grade: "counselor", ministryCode: "directions", taskPresets: ["ministry_direction", "network_supervision", "intelligence_services"], isRequired: false },
   { code: "dir_economic_cooperation", title: { fr: "Directeur des Affaires Économiques et Coopération", en: "Director of Economic Affairs and Cooperation" }, description: { fr: "Pilote du pipeline de coopération diplomatique et facilitation économique", en: "Diplomatic cooperation pipeline lead and economic facilitation" }, level: 3, perm: 25, grade: "counselor", ministryCode: "directions", taskPresets: ["ministry_direction", "network_supervision"], isRequired: true },
   { code: "dir_legal_affairs", title: { fr: "Directeur des Affaires Juridiques", en: "Director of Legal Affairs" }, description: { fr: "Conformité juridique des actes diplomatiques et conventions", en: "Legal compliance of diplomatic acts and conventions" }, level: 3, perm: 22, grade: "counselor", ministryCode: "directions", taskPresets: ["ministry_direction"], isRequired: false },
   { code: "dir_protocol", title: { fr: "Directeur du Protocole", en: "Director of Protocol" }, description: { fr: "Protocole d'État, visites officielles et cérémonies", en: "State protocol, official visits and ceremonies" }, level: 3, perm: 20, grade: "counselor", ministryCode: "directions", taskPresets: ["ministry_direction"], isRequired: false },
