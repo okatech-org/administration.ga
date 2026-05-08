@@ -315,30 +315,75 @@ export function PropertiesPanel({
       {/* Image properties */}
       {element.type === "image" && (
         <Section title="Image">
-          {element.isDynamicField ? (
-            <p className="text-xs text-muted-foreground">Photo dynamique du citoyen</p>
-          ) : (
-            <Field label="Source">
-              <button
-                onClick={() => {
-                  const input = document.createElement("input")
-                  input.type = "file"
-                  input.accept = "image/*"
-                  input.onchange = () => {
-                    const file = input.files?.[0]
-                    if (!file) return
-                    const reader = new FileReader()
-                    reader.onload = () => update({ imageData: reader.result as string })
-                    reader.readAsDataURL(file)
-                  }
-                  input.click()
-                }}
-                className="w-full text-xs px-2 py-1.5 bg-muted border border-border rounded-md text-foreground hover:bg-muted/80 transition-colors"
-              >
-                Choisir une image...
-              </button>
-            </Field>
-          )}
+          {(() => {
+            const imageFields = Object.values(getFieldsByCategory(entityId))
+              .flat()
+              .filter((f: DynamicField) => f.type === "image")
+            return (
+              <>
+                {imageFields.length > 0 && (
+                  <label className="flex items-center gap-2 text-xs text-foreground">
+                    <input
+                      type="checkbox"
+                      checked={element.isDynamicField}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          update({
+                            isDynamicField: true,
+                            fieldKey: element.fieldKey || imageFields[0].key,
+                            // imageData garde sa valeur — utilise comme fallback si
+                            // le champ resolu est vide cote impression / preview
+                          })
+                        } else {
+                          update({ isDynamicField: false, fieldKey: "" })
+                        }
+                      }}
+                      className="rounded border-border accent-primary"
+                    />
+                    Champ dynamique
+                  </label>
+                )}
+
+                {element.isDynamicField ? (
+                  <Field label="Champ">
+                    <select
+                      value={element.fieldKey || imageFields[0]?.key || ""}
+                      onChange={(e) => update({ fieldKey: e.target.value })}
+                      className="w-full text-xs px-2 py-1.5 bg-muted border border-border rounded-md text-foreground"
+                    >
+                      {imageFields.map((f: DynamicField) => (
+                        <option key={f.key} value={f.key}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                ) : (
+                  <Field label="Source">
+                    <button
+                      onClick={() => {
+                        const input = document.createElement("input")
+                        input.type = "file"
+                        input.accept = "image/*"
+                        input.onchange = () => {
+                          const file = input.files?.[0]
+                          if (!file) return
+                          const reader = new FileReader()
+                          reader.onload = () =>
+                            update({ imageData: reader.result as string })
+                          reader.readAsDataURL(file)
+                        }
+                        input.click()
+                      }}
+                      className="w-full text-xs px-2 py-1.5 bg-muted border border-border rounded-md text-foreground hover:bg-muted/80 transition-colors"
+                    >
+                      Choisir une image...
+                    </button>
+                  </Field>
+                )}
+              </>
+            )
+          })()}
           <Field label="Détourage">
             <div className="flex bg-muted rounded-lg p-0.5">
               <button

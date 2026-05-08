@@ -49,7 +49,17 @@ function CardElementRenderer({
 }) {
   const shapeRef = useRef<Konva.Shape>(null)
   const trRef = useRef<Konva.Transformer>(null)
-  const image = useLoadedImage(element.type === "image" ? element.imageData : null)
+  // Resolve dynamic image fields (ex. citizen.photo) to the matching profile
+  // value when a preview profile is active — fallback to the element's own
+  // imageData (statique) si rien n'est resolu, pour matcher le rendu print.
+  const resolvedImageSrc =
+    element.type === "image"
+      ? element.isDynamicField
+        ? resolveFieldValue(element.fieldKey, previewProfile ?? null) ||
+          element.imageData
+        : element.imageData
+      : null
+  const image = useLoadedImage(resolvedImageSrc)
 
   useEffect(() => {
     if (isSelected && trRef.current && shapeRef.current) {
@@ -138,28 +148,61 @@ function CardElementRenderer({
           )
         }
       } else {
-        // Placeholder
-        shape = (
-          <Group {...commonProps}>
-            <Rect
-              width={element.width}
-              height={element.height}
-              fill={element.fillColor}
-              stroke={element.strokeColor}
-              strokeWidth={element.strokeWidth}
-              cornerRadius={element.cornerRadius}
-            />
-            <Text
-              text={element.isDynamicField ? " Photo" : " Image"}
-              width={element.width}
-              height={element.height}
-              align="center"
-              verticalAlign="middle"
-              fontSize={14}
-              fill="#6b7280"
-            />
-          </Group>
-        )
+        // Placeholder — respecte aussi le masque (cercle) pour que l'apercu
+        // editeur match le rendu d'impression.
+        const placeholderMask = element.mask ?? "none"
+        const w = element.width
+        const h = element.height
+        const placeholderLabel = element.isDynamicField ? " Photo" : " Image"
+        if (placeholderMask === "circle") {
+          const clipFunc = (ctx: Konva.Context) => {
+            ctx.beginPath()
+            ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, Math.PI * 2)
+            ctx.closePath()
+          }
+          shape = (
+            <Group {...commonProps} width={w} height={h} clipFunc={clipFunc}>
+              <Rect
+                width={w}
+                height={h}
+                fill={element.fillColor}
+                stroke={element.strokeColor}
+                strokeWidth={element.strokeWidth}
+              />
+              <Text
+                text={placeholderLabel}
+                width={w}
+                height={h}
+                align="center"
+                verticalAlign="middle"
+                fontSize={14}
+                fill="#6b7280"
+              />
+            </Group>
+          )
+        } else {
+          shape = (
+            <Group {...commonProps}>
+              <Rect
+                width={w}
+                height={h}
+                fill={element.fillColor}
+                stroke={element.strokeColor}
+                strokeWidth={element.strokeWidth}
+                cornerRadius={element.cornerRadius}
+              />
+              <Text
+                text={placeholderLabel}
+                width={w}
+                height={h}
+                align="center"
+                verticalAlign="middle"
+                fontSize={14}
+                fill="#6b7280"
+              />
+            </Group>
+          )
+        }
       }
       break
     }
