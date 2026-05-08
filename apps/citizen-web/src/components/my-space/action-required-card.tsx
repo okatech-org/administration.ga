@@ -8,7 +8,6 @@ import {
 	Calendar,
 	Check,
 	ChevronRight,
-	CreditCard,
 	FileText,
 	FileUp,
 	Loader2,
@@ -59,7 +58,6 @@ interface ActionRequired {
 		| "upload_document"
 		| "complete_info"
 		| "schedule_appointment"
-		| "make_payment"
 		| "confirm_info";
 	message: string;
 	// Rich metadata
@@ -117,16 +115,6 @@ function getActionConfig(type: ActionRequired["type"], t: (key: string, fallback
 				label: t("requests.actionTypes.appointment", "Rendez-vous"),
 				buttonLabel: t("requests.actionButton.appointment", "Prendre rendez-vous"),
 				sheetTitle: t("requests.actionSheet.appointment", "Rendez-vous"),
-				accentClass: "text-primary",
-				bgClass: "bg-primary/10",
-				borderClass: "border-primary/30",
-			};
-		case "make_payment":
-			return {
-				icon: <CreditCard className="h-4 w-4" />,
-				label: t("requests.actionTypes.payment", "Paiement"),
-				buttonLabel: t("requests.actionButton.payment", "Procéder au paiement"),
-				sheetTitle: t("requests.actionSheet.payment", "Paiement"),
 				accentClass: "text-primary",
 				bgClass: "bg-primary/10",
 				borderClass: "border-primary/30",
@@ -480,18 +468,6 @@ export function ActionRequiredCard({
 					</div>
 				);
 
-			case "make_payment":
-				return (
-					<div className="space-y-3">
-						<p className="text-sm text-muted-foreground">
-							{t(
-								"requests.paymentHint",
-								"Cliquez sur le bouton ci-dessous pour procéder au paiement sécurisé.",
-							)}
-						</p>
-					</div>
-				);
-
 			case "confirm_info":
 				return (
 					<div className="space-y-3">
@@ -556,8 +532,6 @@ export function ActionRequiredCard({
 					return t("requests.sendInfo", "Envoyer ma réponse");
 				case "schedule_appointment":
 					return t("requests.confirmAppointment", "Confirmer");
-				case "make_payment":
-					return t("requests.payNow", "Payer maintenant");
 				case "confirm_info":
 					return t("requests.confirmAndSend", "Confirmer");
 			}

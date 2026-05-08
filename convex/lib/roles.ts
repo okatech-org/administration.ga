@@ -445,7 +445,6 @@ export const PRESET_MODULE_ACCESS: Record<string, MA[]> = {
     ma(ModuleCode.messaging, "editor"),
     ma(ModuleCode.news, "admin"),
     ma(ModuleCode.team, "admin"),
-    ma(ModuleCode.payments, "reader"),
     ma(ModuleCode.statistics, "admin"),
     ma(ModuleCode.settings, "admin"),
   ],
@@ -457,7 +456,6 @@ export const PRESET_MODULE_ACCESS: Record<string, MA[]> = {
     ma(ModuleCode.messaging, "editor"),
     ma(ModuleCode.news, "editor"),
     ma(ModuleCode.team, "editor"),
-    ma(ModuleCode.payments, "editor"),
     ma(ModuleCode.statistics, "reader"),
   ],
   request_processing: [
@@ -489,7 +487,6 @@ export const PRESET_MODULE_ACCESS: Record<string, MA[]> = {
     ma(ModuleCode.calendar, "reader"),
   ],
   finance: [
-    ma(ModuleCode.payments, "admin"),
     ma(ModuleCode.statistics, "editor"),
   ],
   communication: [
@@ -704,12 +701,11 @@ export interface OrganizationTemplate {
 /** All modules — for full diplomatic posts */
 const ALL_MODULES: ModuleCodeValue[] = [...ALL_MODULE_CODES];
 
-/** Core + consular + community + payments + news + messaging + statistics — for consulates */
+/** Core + consular + community + news + messaging + statistics — for consulates */
 const CONSULATE_MODULES: ModuleCodeValue[] = [
   ...CORE_MODULE_CODES,
   ModuleCode.consular_affairs,
   ModuleCode.community,
-  ModuleCode.payments,
   ModuleCode.news,
   ModuleCode.messaging,
   ModuleCode.statistics,
@@ -736,7 +732,7 @@ const MISSION_MODULES: ModuleCodeValue[] = [
  * Pilotage local (l'activité propre du ministère) + supervision réseau (vue
  * agrégée sur les organismes rattachés via parentOrgId).
  *
- * Volontairement absents : consular_affairs, payments, profile (irrelevants
+ * Volontairement absents : consular_affairs, profile (irrelevants
  * pour un ministère qui n'exécute pas l'opérationnel terrain).
  */
 const MINISTRY_FOREIGN_AFFAIRS_MODULES: ModuleCodeValue[] = [
@@ -932,8 +928,6 @@ export const TASK_CATEGORY_META: Record<TaskCategory, { label: LocalizedString; 
   consular_cards: { label: { fr: "Cartes consulaires", en: "Consular Cards" }, icon: "CreditCard" },
   // Community
   community_events: { label: { fr: "Événements communautaires", en: "Community Events" }, icon: "CalendarHeart" },
-  // Payments
-  payments: { label: { fr: "Paiements", en: "Payments" }, icon: "Banknote" },
   // Chat peer-to-peer
   chats: { label: { fr: "Messagerie", en: "Messaging" }, icon: "MessageSquare" },
   // Meetings & Calls

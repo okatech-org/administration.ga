@@ -9,7 +9,6 @@ import {
 	ArrowRight,
 	Calendar,
 	CheckSquare,
-	CreditCard,
 	FileUp,
 	Info,
 } from "lucide-react";
@@ -41,7 +40,6 @@ const ACTION_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string
 	upload_document: FileUp,
 	complete_info: Info,
 	schedule_appointment: Calendar,
-	make_payment: CreditCard,
 	confirm_info: CheckSquare,
 };
 
@@ -50,7 +48,6 @@ function getActionLabel(type: string): string {
 		upload_document: "Fournir un document",
 		complete_info: "Completer des informations",
 		schedule_appointment: "Prendre rendez-vous",
-		make_payment: "Effectuer un paiement",
 		confirm_info: "Confirmer des informations",
 	};
 	return labels[type] ?? type;

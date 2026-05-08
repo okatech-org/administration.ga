@@ -202,7 +202,6 @@ const MENU_MODULES = [
   { code: "calendar", label: "iAgenda", requires: "appointments.view", section: "iBureau" },
   { code: "messaging", label: "iCom", requires: null, section: "iBureau" },
   { code: "team", label: "Équipe", requires: "team.view", section: "Gestion" },
-  { code: "payments", label: "Paiements", requires: "finance.view", section: "Gestion" },
   { code: "statistics", label: "Statistiques", requires: "analytics.view", section: "Gestion" },
   { code: "settings", label: "Paramètres", requires: "settings.view", section: "Administration" },
 ] as const;

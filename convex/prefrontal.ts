@@ -94,7 +94,7 @@ export const calculerPriorite = backofficeQuery({
       {
         // Ancienneté : plus c'est vieux, plus c'est prioritaire
         valeur: Math.min(1, ageJours / 30), // Plafond à 30 jours
-        poids: 0.3,
+        poids: 0.4,
       },
       {
         // Priorité explicite
@@ -106,14 +106,9 @@ export const calculerPriorite = backofficeQuery({
         poids: 0.4,
       },
       {
-        // Demande avec paiement validé → prioritaire
-        valeur: request.paymentStatus === "succeeded" ? 1 : 0,
-        poids: 0.2,
-      },
-      {
         // A un rendez-vous programmé → traiter avant
         valeur: request.status === "appointment_scheduled" ? 1 : 0,
-        poids: 0.1,
+        poids: 0.2,
       },
     ];
 
@@ -129,7 +124,6 @@ export const calculerPriorite = backofficeQuery({
       facteurs: {
         ageJours: Math.round(ageJours * 10) / 10,
         prioriteExplicite: request.priority,
-        paiementValide: request.paymentStatus === "succeeded",
       },
     };
   },

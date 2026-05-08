@@ -8,7 +8,6 @@ import {
 	Calendar,
 	CheckCircle2,
 	ChevronRight,
-	CreditCard,
 	FileUp,
 	Info,
 	PenLine,
@@ -24,7 +23,6 @@ type ActionType =
 	| "upload_document"
 	| "complete_info"
 	| "schedule_appointment"
-	| "make_payment"
 	| "confirm_info";
 
 export interface PendingAction {
@@ -59,12 +57,6 @@ const ACTION_CONFIG: Record<
 		label: "RDV a planifier",
 		color: "text-purple-600 dark:text-purple-400",
 		bgColor: "bg-purple-500/10",
-	},
-	make_payment: {
-		icon: CreditCard,
-		label: "Paiement a effectuer",
-		color: "text-green-600 dark:text-green-400",
-		bgColor: "bg-green-500/10",
 	},
 	confirm_info: {
 		icon: Info,

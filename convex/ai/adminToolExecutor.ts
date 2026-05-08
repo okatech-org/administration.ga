@@ -193,15 +193,6 @@ export async function executeAdminReadTool(
         orgId,
       });
 
-    case "getRecentPayments":
-      try {
-        return await ctx.runQuery(api.functions.requests.getStatsByOrg, {
-          orgId,
-        });
-      } catch {
-        return { message: "Module paiements non disponible" };
-      }
-
     case "getOrgPosts": {
       const result = await ctx.runQuery(api.functions.posts.listByOrg, {
         orgId,

@@ -38,7 +38,6 @@ import {
   dossierProceduresByOrg,
   documentsByOwnerCategory,
   documentsByOwnerExpiry,
-  paymentsByOrg,
   missedCallsByOrgStatus,
   missedCallsByOrgReason,
 } from "../lib/aggregates";
@@ -248,14 +247,6 @@ export const backfillDocumentsByExpiry = internalMutation({
   },
 });
 
-export const backfillPayments = internalMutation({
-  args: { cursor: v.optional(v.string()) },
-  handler: async (ctx, args) => {
-    await chainedBackfill(ctx, "payments", paymentsByOrg,
-      internal.migrations.backfillAggregates.backfillPayments, args.cursor);
-  },
-});
-
 export const backfillMissedCallsStatus = internalMutation({
   args: { cursor: v.optional(v.string()) },
   handler: async (ctx, args) => {
@@ -328,7 +319,6 @@ export const backfillAll = internalMutation({
       internal.migrations.backfillAggregates.backfillDossierProcedures,
       internal.migrations.backfillAggregates.backfillDocumentsByCategory,
       internal.migrations.backfillAggregates.backfillDocumentsByExpiry,
-      internal.migrations.backfillAggregates.backfillPayments,
       internal.migrations.backfillAggregates.backfillMissedCallsStatus,
       internal.migrations.backfillAggregates.backfillMissedCallsReason,
     ];
@@ -367,7 +357,6 @@ export const clearAll = internalMutation({
     await dossierProceduresByOrg.clearAll(ctx);
     await documentsByOwnerCategory.clearAll(ctx);
     await documentsByOwnerExpiry.clearAll(ctx);
-    await paymentsByOrg.clearAll(ctx);
     await missedCallsByOrgStatus.clearAll(ctx);
     await missedCallsByOrgReason.clearAll(ctx);
     console.log(" All aggregates cleared");

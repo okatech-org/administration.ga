@@ -24,7 +24,6 @@ export const clearAll = internalMutation({
 			"agentSchedules",
 			"messages",
 			"documentTemplates",
-			"payments",
 			"documentVerifications",
 			"agentNotes",
 			"consularRegistrations",

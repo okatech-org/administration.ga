@@ -314,10 +314,6 @@
 				"title": "Documents dématérialisés",
 				"description": "Accédez à vos documents officiels en ligne"
 			},
-			"payment": {
-				"title": "Paiement sécurisé",
-				"description": "Réglez vos frais consulaires en toute sécurité"
-			},
 			"appointments": {
 				"title": "Rendez-vous simplifiés",
 				"description": "Réservez vos créneaux en quelques clics"
@@ -946,24 +942,21 @@
 			"documents": "Documents manquants",
 			"info": "Informations à compléter",
 			"appointment": "Rendez-vous à prendre",
-			"payment": "Paiement requis",
 			"confirm": "Confirmation requise"
 		},
 		"actionButton": {
-				"documents": "Joindre les documents",
-				"info": "Compléter les informations",
-				"appointment": "Prendre rendez-vous",
-				"payment": "Procéder au paiement",
-				"confirm": "Confirmer les informations"
-			},
-			"actionSheet": {
-				"documents": "Documents à fournir",
-				"info": "Informations manquantes",
-				"appointment": "Rendez-vous",
-				"payment": "Paiement",
-				"confirm": "Confirmation requise"
-			},
-			"actionSent": "Réponse envoyée avec succès",
+			"documents": "Joindre les documents",
+			"info": "Compléter les informations",
+			"appointment": "Prendre rendez-vous",
+			"confirm": "Confirmer les informations"
+		},
+		"actionSheet": {
+			"documents": "Documents à fournir",
+			"info": "Informations manquantes",
+			"appointment": "Rendez-vous",
+			"confirm": "Confirmation requise"
+		},
+		"actionSent": "Réponse envoyée avec succès",
 		"actionError": "Erreur lors de l'envoi",
 		"required": "Requis",
 		"uploaded": "Téléchargé",
@@ -1006,7 +999,6 @@
 				"documents": "Documents manquants",
 				"info": "Informations à compléter",
 				"appointment": "Rendez-vous à prendre",
-				"payment": "Paiement requis",
 				"confirm": "Confirmation requise"
 			}
 		},
@@ -1048,21 +1040,6 @@
 			"added": "Note ajoutée",
 			"addError": "Erreur lors de l'ajout"
 		}
-	},
-	"payment": {
-		"title": "Paiement",
-		"pending": "Paiement en cours de traitement",
-		"required": "Paiement requis pour ce service",
-		"failed": "Le paiement a échoué. Veuillez réessayer.",
-		"successToast": "Paiement effectué avec succès !",
-		"error": "Erreur de paiement",
-		"success": "Paiement réussi !",
-		"successTitle": "Paiement réussi",
-		"processing": "Traitement...",
-		"initError": "Erreur d'initialisation",
-		"noSecret": "Impossible de créer le paiement",
-		"succeeded": "Réussi",
-		"refunded": "Remboursé"
 	},
 	"request": {
 		"submitted_success": "Demande soumise avec succès",
@@ -4623,7 +4600,6 @@
 			"consularRegistry": "Registre Consulaire",
 			"appointments": "Rendez-vous",
 			"statistics": "Statistiques",
-			"payments": "Paiements",
 			"posts": "Actualités",
 			"team": "Équipe",
 			"roles": "Rôles & Postes",
@@ -5534,25 +5510,6 @@
 			}
 		}
 	},
-	"payments": {
-		"title": "Tableau de bord Paiements",
-		"subtitle": "Suivi des transactions et revenus",
-		"last7days": "7 derniers jours",
-		"last30days": "30 derniers jours",
-		"last90days": "3 derniers mois",
-		"totalRevenue": "Revenus totaux",
-		"transactions": "Transactions",
-		"successRate": "Taux de succès",
-		"avgTransaction": "Moy. transaction",
-		"revenueEvolution": "Évolution des revenus",
-		"statusDistribution": "Répartition par statut",
-		"recentTransactions": "Transactions récentes",
-		"date": "Date",
-		"reference": "Référence",
-		"amount": "Montant",
-		"status": "Statut",
-		"noTransactions": "Aucune transaction"
-	},
 	"appointments": {
 		"cancelled": "Rendez-vous annulé",
 		"cancelError": "Erreur lors de l'annulation",
@@ -6105,7 +6062,6 @@
 				"printQueue": "File d'impression",
 				"printer": "Imprimante",
 				"statistics": "Statistiques",
-				"payments": "Paiements",
 				"team": "Équipe",
 				"settings": "Paramètres",
 				"impression": "Impression",
@@ -6303,10 +6259,6 @@
 				"title": "Statistiques",
 				"desc": "Tableaux de bord statistiques — en cours d'intégration"
 			},
-			"payments": {
-				"title": "Paiements",
-				"desc": "Suivi des transactions — en cours d'intégration"
-			},
 			"team": {
 				"title": "Équipe",
 				"desc": "Gestion des membres — en cours d'intégration"
@@ -6461,127 +6413,17 @@
 		"bookingError": "Erreur de réservation"
 	},
 	"idocument": {
-		"status": {
-			"pending": "En attente",
-			"validated": "Validé",
-			"rejected": "Rejeté",
-			"expired": "Expiré",
-			"expiring": "Expire bientôt"
+		"origin": {
+			"banner": "Pièce d'un courrier",
+			"openCorrespondance": "Ouvrir le courrier",
+			"classedOn": "classé le"
 		},
-		"folders": {
-			"identityCivil": "Identité & État civil",
-			"identityCivilDesc": "Passeport, acte de naissance, nationalité, résidence, emploi",
-			"officialDocs": "Documents officiels",
-			"officialDocsDesc": "Attestations, actes, justice, décisions, formulaires",
-			"title": "Dossiers"
-		},
-		"categories": {
-			"identity": "Identité",
-			"civilStatus": "État civil",
-			"nationality": "Nationalité",
-			"residence": "Résidence",
-			"employment": "Emploi",
-			"income": "Revenus",
-			"certificates": "Attestations",
-			"officialCertificates": "Actes officiels",
-			"justice": "Justice",
-			"administrativeDecisions": "Décisions admin.",
-			"housing": "Logement",
-			"vehicle": "Véhicule",
-			"education": "Éducation",
-			"languageIntegration": "Langue & intégration",
-			"health": "Santé",
-			"taxation": "Fiscalité",
-			"other": "Autre",
-			"forms": "Formulaires"
-		},
-		"addDocument": "Ajouter un document",
-		"searchDocuments": "Rechercher dans vos documents...",
-		"selectCategory": "Sélectionner une catégorie...",
-		"selectType": "Sélectionner un type...",
-		"labelPlaceholder": "Ex: Passeport de Jean, Facture Février 2026...",
-		"dropFiles": "Glissez vos fichiers ici ou cliquez pour parcourir",
-		"selectForPreview": "Sélectionnez un document pour l'aperçu",
-		"labels": {
-			"category": "Catégorie",
-			"documentType": "Type de document",
-			"label": "Libellé",
-			"expiryDate": "Date d'expiration (optionnel)",
-			"files": "Fichier(s)"
-		},
-		"subtitle": "Coffre-fort numérique",
-		"systemFolders": {
-			"all": "Tous les documents",
-			"trash": "Corbeille",
-			"vault": "Coffre-fort"
-		},
-		"uncategorized": "Non classé",
-		"thisDocument": "Ce document",
-		"expired": "Expiré",
-		"expiresOn": "Expire le",
-		"inDays": "dans {{count}} jours",
-		"documentDetails": "Détails du document",
-		"searchResults": "Résultats de recherche",
-		"documents": "documents",
-		"items": "éléments",
-		"system": "Système",
-		"searchType": "Rechercher un type...",
-		"noCategoryFound": "Aucune catégorie trouvée",
-		"noTypeFound": "Aucun type trouvé",
-		"filesReady": "{{count}} fichier(s) prêt(s)",
-		"info": {
-			"name": "Nom",
-			"type": "Type",
-			"expiration": "Expiration",
-			"files": "Fichiers",
-			"timestamps": "Dates",
-			"createdAt": "Créé le",
-			"updatedAt": "Modifié le"
-		},
-		"table": {
-			"name": "Nom",
-			"category": "Catégorie",
-			"modified": "Modifié",
-			"status": "Statut",
-			"expiration": "Expiration",
-			"files": "Fichiers"
-		},
-		"stats": {
-			"documents": "Documents",
-			"expiringSoon": "Expire bientôt",
-			"expired": "Expirés"
-		},
-		"empty": {
-			"noResults": "Aucun résultat",
-			"noResultsDesc": "Aucun document ne correspond à votre recherche",
-			"emptyFolder": "Dossier vide",
-			"emptyFolderDesc": "Ce dossier ne contient aucun document",
-			"noDocumentFound": "Aucun document trouvé",
-			"noContent": "Aucun contenu",
-			"noDocument": "Aucun document"
-		},
-		"actions": {
-			"preview": "Aperçu",
-			"info": "Informations",
-			"download": "Télécharger",
-			"delete": "Supprimer"
-		},
-		"delete": {
-			"confirmTitle": "Supprimer ce document ?",
-			"confirmMessage": "Cette action est irréversible."
-		},
-		"viewMode": {
-			"grid": "Grille",
-			"list": "Liste",
-			"column": "Colonnes"
-		},
-		"toasts": {
-			"documentAdded": "Document ajouté avec succès",
-			"saveError": "Erreur lors de la sauvegarde",
-			"downloadError": "Erreur lors du téléchargement",
-			"documentDeleted": "Document supprimé",
-			"deleteError": "Erreur lors de la suppression",
-			"uploadError": "Erreur lors de l'upload"
+		"sources": {
+			"all": "Toutes sources",
+			"correspondance": "Courrier",
+			"upload": "Upload",
+			"inboundEmail": "Email entrant",
+			"scan": "Scan"
 		}
 	},
 	"demarches": {
@@ -6782,20 +6624,6 @@
 		"disperse": {
 			"action": "Disperser",
 			"hint": "Répartir les pièces vers plusieurs destinataires"
-		}
-	},
-	"idocument": {
-		"origin": {
-			"banner": "Pièce d'un courrier",
-			"openCorrespondance": "Ouvrir le courrier",
-			"classedOn": "classé le"
-		},
-		"sources": {
-			"all": "Toutes sources",
-			"correspondance": "Courrier",
-			"upload": "Upload",
-			"inboundEmail": "Email entrant",
-			"scan": "Scan"
 		}
 	}
 }

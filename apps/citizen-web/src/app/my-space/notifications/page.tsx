@@ -10,7 +10,6 @@ import {
   Bell,
   CheckCheck,
   Clock,
-  CreditCard,
   FileText,
   Inbox,
   MessageSquare,
@@ -31,7 +30,6 @@ import { cn } from "@/lib/utils"
 const notificationIcons: Record<string, typeof Bell> = {
   new_message: MessageSquare,
   status_update: FileText,
-  payment_success: CreditCard,
   action_required: AlertTriangle,
   reminder: Clock,
 }

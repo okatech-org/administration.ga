@@ -7,7 +7,7 @@ import { v } from "convex/values";
  */
 export const auditLogTable = defineTable({
   // Target document info
-  table: v.string(), // e.g., "requests", "payments", "documents"
+  table: v.string(), // e.g., "requests", "documents"
   docId: v.string(),
   
   // Change info

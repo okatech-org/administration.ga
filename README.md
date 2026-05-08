@@ -30,7 +30,6 @@ gabon-diplomatie/
 | Auth | [Better Auth](https://better-auth.com/) (OTP email/SMS, OAuth IDN, multi-domaine) |
 | Monorepo | [Turborepo](https://turbo.build/) + [Bun](https://bun.sh/) 1.2.17 |
 | i18n | [i18next](https://www.i18next.com/) (FR/EN) |
-| Paiements | [Stripe](https://stripe.com/) |
 | Vidéo | [LiveKit](https://livekit.io/) (appels vidéo citoyen/agent) |
 | Cartes | [Mapbox GL](https://www.mapbox.com/) |
 | Analytics | [PostHog](https://posthog.com/) |
@@ -64,7 +63,6 @@ Chaque app a son propre `.env.local`. Variables requises :
 | `NEXT_PUBLIC_SITE_URL` | URL de l'app (pour l'auth) | `http://consulat.local:3000` |
 | `NEXT_PUBLIC_POSTHOG_KEY` | Clé PostHog | |
 | `NEXT_PUBLIC_POSTHOG_HOST` | Host PostHog | |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Clé publique Stripe | |
 | `NEXT_PUBLIC_LIVEKIT_WS_URL` | URL WebSocket LiveKit | |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | Token Mapbox (citizen-web uniquement) | |
 
@@ -76,8 +74,6 @@ Configurées via `bunx convex env set <KEY> <VALUE>` :
 |----------|-------------|
 | `TRUSTED_ORIGINS` | Origins autorisés pour Better Auth (séparés par virgule) |
 | `BETTER_AUTH_SECRET` | Secret pour la session Better Auth |
-| `STRIPE_SECRET_KEY` | Clé secrète Stripe |
-| `STRIPE_WEBHOOK_SECRET` | Secret webhook Stripe |
 | `LIVEKIT_API_KEY` | Clé API LiveKit |
 | `LIVEKIT_API_SECRET` | Secret API LiveKit |
 | `RESEND_API_KEY` | Clé API Resend (envoi emails) |
@@ -150,13 +146,13 @@ Le backend Convex est partagé entre les 3 apps.
 ```
 convex/
 ├── functions/       # Queries et mutations (users, services, requests, etc.)
-├── actions/         # Actions (livekit, stripe, envoi SMS/email)
+├── actions/         # Actions (livekit, envoi SMS/email)
 ├── schemas/         # Schémas des tables
 ├── betterAuth/      # Configuration Better Auth
 ├── ai/              # Chat AI, analyse de documents
 ├── lib/             # Helpers, constantes, validators
 ├── seeds/           # Données de seed (dev)
-└── http.ts          # Routes HTTP (webhooks Stripe, auth)
+└── http.ts          # Routes HTTP (auth)
 ```
 
 ### Déploiements Convex
@@ -208,7 +204,6 @@ Les redirections `www.` vers apex sont gérées par un middleware Nitro (`server
 | `NEXT_PUBLIC_POSTHOG_KEY` | Clé PostHog |
 | `NEXT_PUBLIC_POSTHOG_HOST` | Host PostHog |
 | `NEXT_PUBLIC_LIVEKIT_WS_URL` | URL WebSocket LiveKit |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Clé publique Stripe |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | Token Mapbox |
 
 ### Deploy manuel

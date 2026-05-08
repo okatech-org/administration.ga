@@ -192,7 +192,6 @@ const TASK_LABELS: Record<string, { fr: string; en: string }> = {
 	"consular_cards.manage": { fr: "Gérer les cartes consulaires", en: "Manage consular cards" },
 	"community_events.view": { fr: "Consulter les événements", en: "View events" },
 	"community_events.manage": { fr: "Gérer les événements", en: "Manage events" },
-	"payments.view": { fr: "Consulter les paiements", en: "View payments" },
 	"meetings.create": { fr: "Créer des réunions", en: "Create meetings" },
 	"meetings.join": { fr: "Rejoindre des réunions", en: "Join meetings" },
 	"meetings.manage": { fr: "Gérer les réunions", en: "Manage meetings" },

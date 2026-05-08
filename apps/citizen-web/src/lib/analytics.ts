@@ -83,10 +83,6 @@ export type AnalyticsEvents = {
 	admin_livekit_call_started: never;
 	admin_livekit_call_ended: { duration_seconds?: number };
 
-	admin_payment_viewed: never;
-	admin_payment_refunded: never;
-	admin_payment_receipt_generated: never;
-
 	admin_team_member_invited: never;
 	admin_service_configured: never;
 	admin_post_published: never;

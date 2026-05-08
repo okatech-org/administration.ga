@@ -103,7 +103,6 @@ export const ADMIN_ROUTES: Record<string, string> = {
   "/settings": "Paramètres du consulat / de l'agent",
   "/settings/ai-assistant": "Configuration de l'assistant IA (iAsted)",
   "/settings/signature": "Configuration de la signature électronique",
-  "/payments": "Paiements et transactions",
   "/posts": "Gestion des actualités/publications",
   "/posts/new": "Créer une nouvelle actualité",
   "/posts/$postId/edit": "Modifier une actualité",

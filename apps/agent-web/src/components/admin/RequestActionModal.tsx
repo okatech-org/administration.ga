@@ -6,7 +6,6 @@ import { getLocalized } from "@convex/lib/utils";
 import type { LocalizedString } from "@convex/lib/validators";
 import {
 	AlertTriangle,
-	CreditCard,
 	FileText,
 	FileWarning,
 	HelpCircle,
@@ -71,14 +70,6 @@ const ACTION_TYPES = [
 		icon: HelpCircle,
 		color: "text-blue-600 dark:text-blue-400",
 		bg: "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800",
-	},
-	{
-		value: "make_payment",
-		label: "Paiement requis",
-		description: "Le citoyen doit effectuer un paiement",
-		icon: CreditCard,
-		color: "text-emerald-600 dark:text-emerald-400",
-		bg: "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800",
 	},
 ] as const;
 

@@ -23,7 +23,6 @@ export const ADMIN_TOOL_PERMISSIONS: Record<string, TaskCodeValue> = {
   getRegistryStats: "consular_registrations.view",
   getAppointmentsList: "appointments.view",
   getTeamMembers: "team.view",
-  getRecentPayments: "payments.view",
   getOrgPosts: "communication.publish",
   getAgentContext: "requests.view",
   // Mutative tools
@@ -177,15 +176,6 @@ const adminToolsTemplate = [
     name: "getTeamMembers",
     description:
       "Liste les membres de l'équipe consulaire avec leur poste et rôle.",
-    parameters: {
-      type: "object" as const,
-      properties: {},
-    },
-  },
-  {
-    name: "getRecentPayments",
-    description:
-      "Liste les paiements récents reçus par l'organisation.",
     parameters: {
       type: "object" as const,
       properties: {},

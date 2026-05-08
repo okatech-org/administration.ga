@@ -151,7 +151,6 @@ import type * as functions_orgIAstedConfig from "../functions/orgIAstedConfig.js
 import type * as functions_orgOverview from "../functions/orgOverview.js";
 import type * as functions_orgRoleTemplates from "../functions/orgRoleTemplates.js";
 import type * as functions_orgs from "../functions/orgs.js";
-import type * as functions_payments from "../functions/payments.js";
 import type * as functions_permissions from "../functions/permissions.js";
 import type * as functions_pin from "../functions/pin.js";
 import type * as functions_places from "../functions/places.js";
@@ -206,6 +205,7 @@ import type * as lib_errors from "../lib/errors.js";
 import type * as lib_generationTriggers from "../lib/generationTriggers.js";
 import type * as lib_httpSecurity from "../lib/httpSecurity.js";
 import type * as lib_ical from "../lib/ical.js";
+import type * as lib_intelligenceAgencyVisibility from "../lib/intelligenceAgencyVisibility.js";
 import type * as lib_legacyProfileToCardNumber from "../lib/legacyProfileToCardNumber.js";
 import type * as lib_moduleCodes from "../lib/moduleCodes.js";
 import type * as lib_neocortex from "../lib/neocortex.js";
@@ -252,7 +252,6 @@ import type * as migrations_fixIdentityPhotos from "../migrations/fixIdentityPho
 import type * as migrations_fixOwnerIds from "../migrations/fixOwnerIds.js";
 import type * as migrations_grantDocumentsAdminToHighRanks from "../migrations/grantDocumentsAdminToHighRanks.js";
 import type * as migrations_initCardCounter from "../migrations/initCardCounter.js";
-import type * as migrations_migrateActionRequiredTypes from "../migrations/migrateActionRequiredTypes.js";
 import type * as migrations_migrateEmergencyContacts from "../migrations/migrateEmergencyContacts.js";
 import type * as migrations_normalizePhones from "../migrations/normalizePhones.js";
 import type * as migrations_renameDocumentFiles from "../migrations/renameDocumentFiles.js";
@@ -327,7 +326,6 @@ import type * as schemas_orgIAstedConfig from "../schemas/orgIAstedConfig.js";
 import type * as schemas_orgRoleTemplates from "../schemas/orgRoleTemplates.js";
 import type * as schemas_orgServices from "../schemas/orgServices.js";
 import type * as schemas_orgs from "../schemas/orgs.js";
-import type * as schemas_payments from "../schemas/payments.js";
 import type * as schemas_posts from "../schemas/posts.js";
 import type * as schemas_printJobs from "../schemas/printJobs.js";
 import type * as schemas_profileNotes from "../schemas/profileNotes.js";
@@ -514,7 +512,6 @@ declare const fullApi: ApiFromModules<{
   "functions/orgOverview": typeof functions_orgOverview;
   "functions/orgRoleTemplates": typeof functions_orgRoleTemplates;
   "functions/orgs": typeof functions_orgs;
-  "functions/payments": typeof functions_payments;
   "functions/permissions": typeof functions_permissions;
   "functions/pin": typeof functions_pin;
   "functions/places": typeof functions_places;
@@ -569,6 +566,7 @@ declare const fullApi: ApiFromModules<{
   "lib/generationTriggers": typeof lib_generationTriggers;
   "lib/httpSecurity": typeof lib_httpSecurity;
   "lib/ical": typeof lib_ical;
+  "lib/intelligenceAgencyVisibility": typeof lib_intelligenceAgencyVisibility;
   "lib/legacyProfileToCardNumber": typeof lib_legacyProfileToCardNumber;
   "lib/moduleCodes": typeof lib_moduleCodes;
   "lib/neocortex": typeof lib_neocortex;
@@ -615,7 +613,6 @@ declare const fullApi: ApiFromModules<{
   "migrations/fixOwnerIds": typeof migrations_fixOwnerIds;
   "migrations/grantDocumentsAdminToHighRanks": typeof migrations_grantDocumentsAdminToHighRanks;
   "migrations/initCardCounter": typeof migrations_initCardCounter;
-  "migrations/migrateActionRequiredTypes": typeof migrations_migrateActionRequiredTypes;
   "migrations/migrateEmergencyContacts": typeof migrations_migrateEmergencyContacts;
   "migrations/normalizePhones": typeof migrations_normalizePhones;
   "migrations/renameDocumentFiles": typeof migrations_renameDocumentFiles;
@@ -690,7 +687,6 @@ declare const fullApi: ApiFromModules<{
   "schemas/orgRoleTemplates": typeof schemas_orgRoleTemplates;
   "schemas/orgServices": typeof schemas_orgServices;
   "schemas/orgs": typeof schemas_orgs;
-  "schemas/payments": typeof schemas_payments;
   "schemas/posts": typeof schemas_posts;
   "schemas/printJobs": typeof schemas_printJobs;
   "schemas/profileNotes": typeof schemas_profileNotes;
@@ -779,7 +775,6 @@ export declare const components: {
   dossierProceduresByOrg: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"dossierProceduresByOrg">;
   documentsByOwnerCategory: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"documentsByOwnerCategory">;
   documentsByOwnerExpiry: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"documentsByOwnerExpiry">;
-  paymentsByOrg: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"paymentsByOrg">;
   missedCallsByOrgStatus: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"missedCallsByOrgStatus">;
   missedCallsByOrgReason: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"missedCallsByOrgReason">;
 };

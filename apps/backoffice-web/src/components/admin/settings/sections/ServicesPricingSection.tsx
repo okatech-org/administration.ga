@@ -10,9 +10,6 @@
  *   - Liste services actifs avec pricing (EUR / USD)
  *   - Indicateur SLA (délai standard)
  *   - CTA vers la page d'édition détaillée des services
- *
- * Contrainte utilisateur : Stripe uniquement (EUR/USD pour ressortissants à
- * l'étranger), pas de Mobile Money Gabon.
  */
 
 import { api } from "@convex/_generated/api";
@@ -58,8 +55,7 @@ export function ServicesPricingSection({ orgId }: SettingsSectionProps) {
                 <HelpTooltip content={HELP.services.pricing} />
               </div>
               <p className="text-xs text-muted-foreground mb-2">
-                Aperçu des services actifs et leur pricing. Paiement via Stripe
-                (EUR/USD) pour les ressortissants à l'étranger.
+                Aperçu des services actifs et leur tarification.
               </p>
               <div className="flex items-center gap-2">
                 <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20">
@@ -155,25 +151,6 @@ export function ServicesPricingSection({ orgId }: SettingsSectionProps) {
         </div>
       </FlatCard>
 
-      {/* ─── Note paiement ─────────────────────────── */}
-      <FlatCard>
-        <div className="p-4">
-          <div className="flex items-start gap-3">
-            <div className="rounded-lg bg-blue-500/10 p-2 shrink-0">
-              <CreditCard className="h-4 w-4 text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-medium text-sm mb-1">Paiement en ligne</h3>
-              <p className="text-xs text-muted-foreground">
-                Les paiements sont traités via <strong>Stripe</strong> en EUR et
-                USD. Destiné aux ressortissants gabonais à l'étranger. Les
-                moyens de paiement mobiles (Airtel Money, MTN, Orange Money) ne
-                sont pas activés pour cette représentation.
-              </p>
-            </div>
-          </div>
-        </div>
-      </FlatCard>
     </div>
   );
 }

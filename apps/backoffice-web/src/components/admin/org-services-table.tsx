@@ -94,7 +94,7 @@ export function OrgServicesTable({ orgId }: OrgServicesTableProps) {
 				orgId,
 				serviceId: selectedCommonService as Id<"services">,
 				pricing: {
-					// Store in euros (conversion to cents done only at Stripe call)
+					// Store in euros
 					amount: activationForm.fee,
 					currency: activationForm.currency,
 				},
