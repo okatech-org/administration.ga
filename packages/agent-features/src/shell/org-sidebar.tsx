@@ -199,12 +199,28 @@ export function OrgSidebar({ isExpanded = false, onToggle, extraSections }: OrgS
 		}))
 		.filter((section) => section.items.length > 0);
 
-	const isActive = (url: string) => {
-		if (url === "/") {
-			return pathname === "/";
+	// Sélectionne UN SEUL item actif : le plus long préfixe qui matche le
+	// pathname courant. Sans ça, /agence/profiles déclenche `/agence` ET
+	// `/agence/profiles` car les deux passent le test startsWith.
+	const allItemUrls = filteredSections.flatMap((s) => s.items.map((i) => i.url));
+	const bestMatchUrl = (() => {
+		if (!pathname) return null;
+		let best: string | null = null;
+		for (const url of allItemUrls) {
+			if (url === "/") {
+				if (pathname === "/") best = "/";
+				continue;
+			}
+			const matches =
+				pathname === url || pathname.startsWith(url + "/");
+			if (matches && (best === null || url.length > best.length)) {
+				best = url;
+			}
 		}
-		return !!pathname && pathname.startsWith(url);
-	};
+		return best;
+	})();
+
+	const isActive = (url: string) => url === bestMatchUrl;
 
 	const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en";
 	const toggleLanguage = () => {
