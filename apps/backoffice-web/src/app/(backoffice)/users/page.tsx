@@ -28,7 +28,7 @@ const UsersMapView = dynamic(
     ),
   },
 );
-import { Crown, Map as MapIcon, Shield, Users as UsersIcon } from "lucide-react";
+import { Crown, Map as MapIcon, Shield, Users as UsersIcon, X } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -42,6 +42,15 @@ import {
 import { PageHeader } from "@/components/design-system/page-header";
 import { TabSwitcher } from "@/components/design-system/tab-switcher";
 import { FlatCard } from "@/components/design-system/flat-card";
+import { Combobox, type ComboboxOption } from "@workspace/ui/components/combobox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
+import { Button } from "@workspace/ui/components/button";
 
 type ViewMode = "accounts" | "profiles" | "diplomatic" | "map";
 
@@ -83,13 +92,14 @@ export default function UsersPage() {
   const view = (searchParams.get("view") as ViewMode) || "accounts";
   const convex = useConvex();
 
+  // ── Filter state (Comptes view) ────────────────────────────────
+  // Five independent filters now drive the table — replaces the previous
+  // population / continent / country / org navigation bars.
   const [activeTab, setActiveTab] = useState<UserTab>("all");
+  const [activeRole, setActiveRole] = useState<string | null>(null);
   const [activeContinent, setActiveContinent] = useState<Continent | null>(null);
-  const [activeBackOfficeRole, setActiveBackOfficeRole] = useState<string | null>(null);
-
-  // Drill-down states for "Corps Administratif"
-  const [activeCorpsCountry, setActiveCorpsCountry] = useState<string | null>(null);
-  const [activeCorpsOrg, setActiveCorpsOrg] = useState<string | null>(null);
+  const [activeCountry, setActiveCountry] = useState<string | null>(null);
+  const [activeStatus, setActiveStatus] = useState<"active" | "inactive" | null>(null);
 
   const [users, setUsers] = useState<any[] | undefined>(undefined);
   const [isPending, setIsPending] = useState(true);
@@ -137,213 +147,128 @@ export default function UsersPage() {
     intel_agent: 1, education_agent: 1,
   };
 
-  // Tab filtering + tri intelligent
-  const tabFilteredUsers = useMemo(() => {
-    if (!users) return [];
-    switch (activeTab) {
-      case "backoffice":
-        // Filtrer + trier par hierarchie (Super Admin en premier)
-        return users
-          .filter((u: any) => BACKOFFICE_ROLES.includes(u.role))
-          .sort((a: any, b: any) => (ROLE_RANK[b.role] ?? 0) - (ROLE_RANK[a.role] ?? 0));
-      case "corps":
-        // Filtrer + trier par representation (orgName) pour regrouper visuellement
-        return users
-          .filter((u: any) => u.hasMembership)
-          .sort((a: any, b: any) => {
-            const orgA = a.membershipInfo?.orgName ?? "";
-            const orgB = b.membershipInfo?.orgName ?? "";
-            return orgA.localeCompare(orgB, "fr");
-          });
-      case "agents":
-        return users.filter((u: any) => AGENT_ROLES.includes(u.role));
-      case "users":
-        return users.filter((u: any) => !PRIVILEGED_ROLES.includes(u.role) && !u.hasMembership && u.isActive);
-      case "inactive":
-        return users.filter((u: any) => !u.isActive && !u.deletedAt);
-      default:
-        return users;
-    }
-  }, [users, activeTab]);
+  // ── Helper: classify a user into a population bucket ─────────
+  // Mirrors what the previous "Tous / Back-Office / Corps / Agents / Utilisateurs / Inactifs"
+  // navigation bar encoded.
+  const populationOf = (u: any): UserTab => {
+    if (!u.isActive && !u.deletedAt) return "inactive";
+    if (BACKOFFICE_ROLES.includes(u.role)) return "backoffice";
+    if (AGENT_ROLES.includes(u.role)) return "agents";
+    if (u.hasMembership) return "corps";
+    return "users";
+  };
 
-  // Sub-filtering: Back-Office / Agent role filter
-  const roleFilteredUsers = useMemo(() => {
-    if ((activeTab !== "backoffice" && activeTab !== "agents") || !activeBackOfficeRole) return tabFilteredUsers;
-    return tabFilteredUsers.filter((u: any) => u.role === activeBackOfficeRole);
-  }, [tabFilteredUsers, activeTab, activeBackOfficeRole]);
+  // Pick the country to use for geo filters. For corps members we prefer the
+  // org country (where they're posted); otherwise residenceCountry.
+  const countryOf = (u: any): string | undefined =>
+    u.membershipInfo?.orgCountry || u.residenceCountry;
 
-  // Continent filtering (on "all", "corps" and "agents" tabs)
-  const usersFilteredByContinent = useMemo(() => {
-    const source = activeTab === "backoffice" || activeTab === "agents" ? roleFilteredUsers : tabFilteredUsers;
-    if ((activeTab !== "all" && activeTab !== "corps" && activeTab !== "agents") || !activeContinent) return source;
-    return source.filter((u: any) => {
-      const country = activeTab === "corps" ? (u.membershipInfo?.orgCountry || u.residenceCountry) : u.residenceCountry;
-      return country && getContinent(country) === activeContinent;
-    });
-  }, [roleFilteredUsers, tabFilteredUsers, activeTab, activeContinent]);
-
-  // Country filtering (only on "corps" tab)
-  const usersFilteredByCountry = useMemo(() => {
-    if (activeTab !== "corps" || !activeCorpsCountry) return usersFilteredByContinent;
-    return usersFilteredByContinent.filter((u: any) => {
-      const country = u.membershipInfo?.orgCountry || u.residenceCountry;
-      return country === activeCorpsCountry;
-    });
-  }, [usersFilteredByContinent, activeTab, activeCorpsCountry]);
-
-  // Org filtering (final step for "corps" tab)
+  // ── Filter chain ────────────────────────────────────────────
+  // Apply filters sequentially. Each filter narrows the result.
   const filteredUsers = useMemo(() => {
-    if (activeTab !== "corps" || !activeCorpsOrg) return usersFilteredByCountry;
-    return usersFilteredByCountry.filter((u: any) => u.membershipInfo?.orgName === activeCorpsOrg);
-  }, [usersFilteredByCountry, activeTab, activeCorpsOrg]);
+    if (!users) return [];
+    let out: any[] = users;
+    if (activeTab !== "all") out = out.filter((u) => populationOf(u) === activeTab);
+    if (activeRole) out = out.filter((u: any) => u.role === activeRole);
+    if (activeContinent) {
+      out = out.filter((u: any) => {
+        const c = countryOf(u);
+        return c ? getContinent(c) === activeContinent : false;
+      });
+    }
+    if (activeCountry) out = out.filter((u: any) => countryOf(u) === activeCountry);
+    if (activeStatus === "active") out = out.filter((u: any) => u.isActive);
+    if (activeStatus === "inactive") out = out.filter((u: any) => !u.isActive && !u.deletedAt);
 
-  // Tab counts
-  const counts = useMemo(() => {
-    if (!users) return { all: 0, backoffice: 0, corps: 0, agents: 0, users: 0, inactive: 0 };
-    const bo = users.filter((u: any) => BACKOFFICE_ROLES.includes(u.role));
-    const corps = users.filter((u: any) => u.hasMembership);
-    const agents = users.filter((u: any) => AGENT_ROLES.includes(u.role));
-    const standard = users.filter((u: any) => !PRIVILEGED_ROLES.includes(u.role) && !u.hasMembership && u.isActive);
-    const inactive = users.filter((u: any) => !u.isActive && !u.deletedAt);
-    return {
-      all: users.length,
-      backoffice: bo.length,
-      corps: corps.length,
-      agents: agents.length,
-      users: standard.length,
-      inactive: inactive.length,
+    // Smart sort: backoffice → role hierarchy; corps → org name; else creation order
+    if (activeTab === "backoffice") {
+      out = [...out].sort((a, b) => (ROLE_RANK[b.role] ?? 0) - (ROLE_RANK[a.role] ?? 0));
+    } else if (activeTab === "corps") {
+      out = [...out].sort((a, b) =>
+        (a.membershipInfo?.orgName ?? "").localeCompare(b.membershipInfo?.orgName ?? "", "fr"),
+      );
+    }
+    return out;
+  }, [users, activeTab, activeRole, activeContinent, activeCountry, activeStatus]);
+
+  // ── Counts per filter option (computed against the FULL user list) ──
+  const populationCounts = useMemo(() => {
+    const result: Record<UserTab, number> = {
+      all: users?.length ?? 0,
+      backoffice: 0,
+      corps: 0,
+      agents: 0,
+      users: 0,
+      inactive: 0,
     };
+    for (const u of users ?? []) result[populationOf(u)]++;
+    return result;
   }, [users]);
 
-  // Back-office role counts
-  const backOfficeCounts = useMemo(() => {
-    if (!users) return {} as Record<string, number>;
+  const roleCounts = useMemo(() => {
     const result: Record<string, number> = {};
-    for (const role of BACKOFFICE_ROLES) {
-      result[role] = users.filter((u: any) => u.role === role).length;
+    for (const u of users ?? []) {
+      if (!u.role) continue;
+      result[u.role] = (result[u.role] ?? 0) + 1;
     }
     return result;
   }, [users]);
 
-  // Agent role counts
-  const agentCounts = useMemo(() => {
-    if (!users) return {} as Record<string, number>;
-    const result: Record<string, number> = {};
-    for (const role of AGENT_ROLES) {
-      result[role] = users.filter((u: any) => u.role === role).length;
-    }
-    return result;
-  }, [users]);
-
-  // Continent data (for "all", "corps" & "agents" tabs)
   const continentData = useMemo(() => {
-    const source = activeTab === "corps" || activeTab === "agents" ? tabFilteredUsers : users;
-    if (!source) return { continents: [] as Continent[], counts: {} as Record<Continent, number> };
-    const countryCodes = source
-      .map((u: any) => activeTab === "corps" ? (u.membershipInfo?.orgCountry || u.residenceCountry) : u.residenceCountry)
+    const codes = (users ?? [])
+      .map((u: any) => countryOf(u))
       .filter(Boolean) as string[];
-    const continents = getActiveContinents(countryCodes);
+    const continents = getActiveContinents(codes);
     const counts = {} as Record<Continent, number>;
-    for (const code of countryCodes) {
+    for (const code of codes) {
       const c = getContinent(code);
-      if (c) counts[c] = (counts[c] || 0) + 1;
+      if (c) counts[c] = (counts[c] ?? 0) + 1;
     }
     return { continents, counts };
-  }, [users, tabFilteredUsers, activeTab]);
+  }, [users]);
 
-  // Country data (for "corps" tab)
-  const corpsCountryData = useMemo(() => {
-    if (activeTab !== "corps") return { countries: [], counts: {} as Record<string, number> };
-    const source = usersFilteredByContinent;
-    const countries = new Set<string>();
-    const counts: Record<string, number> = {};
-    for (const u of source) {
-      const c = u.membershipInfo?.orgCountry || u.residenceCountry;
-      if (c) {
-        countries.add(c);
-        counts[c] = (counts[c] || 0) + 1;
-      }
-    }
-    return {
-      countries: Array.from(countries).sort((a, b) => getCountryName(a).localeCompare(getCountryName(b))),
-      counts,
-    };
-  }, [usersFilteredByContinent, activeTab]);
-
-  // Org data (for "corps" tab)
-  const corpsOrgData = useMemo(() => {
-    if (activeTab !== "corps") return { orgs: [], counts: {} as Record<string, number> };
-    const source = usersFilteredByCountry;
-    const orgs = new Set<string>();
-    const counts: Record<string, number> = {};
-    for (const u of source) {
-      const o = u.membershipInfo?.orgName;
-      if (o && o !== "—") {
-        orgs.add(o);
-        counts[o] = (counts[o] || 0) + 1;
-      }
-    }
-    return {
-      orgs: Array.from(orgs).sort((a, b) => a.localeCompare(b)),
-      counts,
-    };
-  }, [usersFilteredByCountry, activeTab]);
-
-  // Dynamic country filter options
+  // Country options follow the active continent (cascading filter UX).
   const countryOptions = useMemo(() => {
-    if (!filteredUsers || filteredUsers.length === 0) return [];
-    const countries = new Map<string, string>();
-    for (const user of filteredUsers) {
-      const country = (user as any).residenceCountry;
-      if (country && !countries.has(country)) {
-        countries.set(
-          country,
-          `${getCountryFlag(country)} ${getCountryName(country)}`,
-        );
-      }
+    const map = new Map<string, number>();
+    for (const u of users ?? []) {
+      const c = countryOf(u);
+      if (!c) continue;
+      if (activeContinent && getContinent(c) !== activeContinent) continue;
+      map.set(c, (map.get(c) ?? 0) + 1);
     }
-    return [...countries.entries()]
-      .map(([value, label]) => ({ value, label }))
+    return [...map.entries()]
+      .map(([code, count]) => ({
+        value: code,
+        label: `${getCountryFlag(code)} ${getCountryName(code)}`,
+        count,
+      }))
       .sort((a, b) => a.label.localeCompare(b.label));
-  }, [filteredUsers]);
+  }, [users, activeContinent]);
 
-  const filterableColumns = [
-    ...(activeTab === "all"
-      ? [
-          {
-            id: "role",
-            title: "Tous les rôles",
-            options: [
-              { label: "Utilisateur", value: "user" },
-              { label: "Super Admin", value: "super_admin" },
-              { label: "Admin Système", value: "admin_system" },
-              { label: "Admin", value: "admin" },
-              { label: "Agent Intel", value: "intel_agent" },
-              { label: "Agent Éducation", value: "education_agent" },
-            ],
-          },
-        ]
-      : []),
-    ...(countryOptions.length > 1
-      ? [
-          {
-            id: "residenceCountry",
-            title: "Tous les pays",
-            options: countryOptions,
-          },
-        ]
-      : []),
-    {
-      id: "isActive",
-      title: "Statut",
-      options: [
-        { label: "Actif", value: "true" },
-        { label: "Inactif", value: "false" },
-      ],
-    },
-  ];
+  const statusCounts = useMemo(() => {
+    const result = { active: 0, inactive: 0 };
+    for (const u of users ?? []) {
+      if (u.isActive) result.active++;
+      else if (!u.deletedAt) result.inactive++;
+    }
+    return result;
+  }, [users]);
 
-  const showContinentTabs = (activeTab === "all" || activeTab === "corps" || activeTab === "agents") && continentData.continents.length > 1;
+  // True when at least one filter narrows the data — used to render a "Reset" button.
+  const hasActiveFilter =
+    activeTab !== "all" ||
+    activeRole !== null ||
+    activeContinent !== null ||
+    activeCountry !== null ||
+    activeStatus !== null;
+
+  // Reset country if its continent no longer matches.
+  useEffect(() => {
+    if (activeCountry && activeContinent && getContinent(activeCountry) !== activeContinent) {
+      setActiveCountry(null);
+    }
+  }, [activeContinent, activeCountry]);
+
   const activeColumns = activeTab === "corps" ? corpsAdminColumns : columns;
 
   // Construire le sous-titre dynamique selon la vue active
@@ -361,12 +286,36 @@ export default function UsersPage() {
     icon: mode.icon as import("lucide-react").LucideIcon,
   }));
 
-  // Tabs pour les roles utilisateur (onglet comptes)
-  const userRoleTabs = TABS.map((tab) => ({
-    key: tab.id,
-    label: tab.label,
-    count: counts[tab.id],
+  // ── Filter row options (with counts) ────────────────────────
+  const populationOptions: ComboboxOption<UserTab>[] = TABS.map((tab) => ({
+    value: tab.id,
+    label: `${tab.label} (${populationCounts[tab.id]})`,
   }));
+
+  const allRoles = [
+    "super_admin", "admin_system", "admin", "sous_admin",
+    "intel_agent", "education_agent", "user",
+  ] as const;
+  const roleOptions: ComboboxOption<string>[] = allRoles
+    .filter((r) => (roleCounts[r] ?? 0) > 0)
+    .map((r) => ({
+      value: r,
+      label: `${ROLE_META[r]?.label ?? r} (${roleCounts[r] ?? 0})`,
+    }));
+
+  const continentOptions: ComboboxOption<Continent>[] = continentData.continents.map(
+    (c) => ({
+      value: c,
+      label: `${CONTINENT_META[c].label} (${continentData.counts[c] ?? 0})`,
+    }),
+  );
+
+  const countryComboboxOptions: ComboboxOption<string>[] = countryOptions.map(
+    (opt) => ({
+      value: opt.value,
+      label: `${opt.label} (${opt.count})`,
+    }),
+  );
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
@@ -396,250 +345,122 @@ export default function UsersPage() {
       {/* ── Vue Comptes (existant) ── */}
       {view === "accounts" && <>
 
-      {/* Main Tabs */}
-      <TabSwitcher
-        tabs={userRoleTabs}
-        activeTab={activeTab}
-        onTabChange={(key) => {
-          setActiveTab(key as UserTab);
-          setActiveContinent(null);
-          setActiveBackOfficeRole(null);
-          setActiveCorpsCountry(null);
-          setActiveCorpsOrg(null);
-        }}
-        className="flex-wrap"
-      />
+      {/* Filter row — replaces the previous user-type / continent / country
+          navigation bars. All filters compose; each shows its current count. */}
+      <div className="flex flex-wrap items-end gap-2">
+        <FilterField label="Population" className="w-[200px]">
+          <Select
+            value={activeTab}
+            onValueChange={(v) => {
+              setActiveTab(v as UserTab);
+              setActiveRole(null);
+            }}
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {populationOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FilterField>
 
-      {/* Continent Sub-Tabs (on "Tous", "Corps Admin" & "Agents" tabs) */}
-      {showContinentTabs && (
-        <div className="flex flex-wrap gap-1 px-1">
-          <button
-            type="button"
+        <FilterField label="Rôle" className="w-[200px]">
+          <Select
+            value={activeRole ?? "all"}
+            onValueChange={(v) => setActiveRole(v === "all" ? null : v)}
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Tous les rôles" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                Tous les rôles ({users?.length ?? 0})
+              </SelectItem>
+              {roleOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FilterField>
+
+        <FilterField label="Continent" className="w-[200px]">
+          <Select
+            value={activeContinent ?? "all"}
+            onValueChange={(v) =>
+              setActiveContinent(v === "all" ? null : (v as Continent))
+            }
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Tous les continents" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les continents</SelectItem>
+              {continentOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FilterField>
+
+        <FilterField label="Pays" className="w-[260px]">
+          <Combobox
+            options={countryComboboxOptions}
+            value={activeCountry ?? undefined}
+            onValueChange={(v) => setActiveCountry(v || null)}
+            placeholder="Tous les pays"
+            searchPlaceholder="Rechercher un pays…"
+            emptyText="Aucun pays."
+            className="h-9"
+          />
+        </FilterField>
+
+        <FilterField label="Statut" className="w-[160px]">
+          <Select
+            value={activeStatus ?? "all"}
+            onValueChange={(v) =>
+              setActiveStatus(v === "all" ? null : (v as "active" | "inactive"))
+            }
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Tous statuts" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous statuts</SelectItem>
+              <SelectItem value="active">Actif ({statusCounts.active})</SelectItem>
+              <SelectItem value="inactive">
+                Inactif ({statusCounts.inactive})
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </FilterField>
+
+        {hasActiveFilter && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9"
             onClick={() => {
+              setActiveTab("all");
+              setActiveRole(null);
               setActiveContinent(null);
-              setActiveCorpsCountry(null);
-              setActiveCorpsOrg(null);
+              setActiveCountry(null);
+              setActiveStatus(null);
             }}
-            className={cn(
-              "flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
-              !activeContinent
-                ? "bg-primary/10 text-primary border border-primary/20"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/80",
-            )}
           >
-            <span></span>
-            <span>Tous</span>
-            <span className="text-[10px] opacity-70 ml-0.5">
-              {activeTab !== "all" ? tabFilteredUsers.length : users?.length ?? 0}
-            </span>
-          </button>
-          {continentData.continents.map((continent) => {
-            const meta = CONTINENT_META[continent];
-            return (
-              <button
-                key={continent}
-                type="button"
-                onClick={() => {
-                  setActiveContinent(continent);
-                  setActiveCorpsCountry(null);
-                  setActiveCorpsOrg(null);
-                }}
-                className={cn(
-                  "flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
-                  activeContinent === continent
-                    ? "bg-primary/10 text-primary border border-primary/20"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/80",
-                )}
-              >
-                <span>{meta.emoji}</span>
-                <span>{meta.label}</span>
-                <span className="text-[10px] opacity-70 ml-0.5">
-                  {continentData.counts[continent] ?? 0}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Country Sub-Tabs (only on "Corps Admin") */}
-      {activeTab === "corps" && corpsCountryData.countries.length > 0 && (
-        <div className="flex flex-wrap gap-1 px-1">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveCorpsCountry(null);
-              setActiveCorpsOrg(null);
-            }}
-            className={cn(
-              "flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
-              !activeCorpsCountry
-                ? "bg-primary/10 text-primary border border-primary/20"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/80",
-            )}
-          >
-            <span></span>
-            <span>Tous les pays</span>
-            <span className="text-[10px] opacity-70 ml-0.5">
-              {usersFilteredByContinent.length}
-            </span>
-          </button>
-
-          {corpsCountryData.countries.map((country) => (
-            <button
-              key={country}
-              type="button"
-              onClick={() => {
-                setActiveCorpsCountry(country);
-                setActiveCorpsOrg(null);
-              }}
-              className={cn(
-                "flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
-                activeCorpsCountry === country
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/80",
-              )}
-            >
-              <span>{getCountryFlag(country)}</span>
-              <span>{getCountryName(country)}</span>
-              <span className="text-[10px] opacity-70 ml-0.5">
-                {corpsCountryData.counts[country] ?? 0}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Organizations Sub-Tabs (only on "Corps Admin" when a country is selected) */}
-      {activeTab === "corps" && activeCorpsCountry && corpsOrgData.orgs.length > 0 && (
-        <div className="flex flex-wrap gap-1 px-1">
-          <button
-            type="button"
-            onClick={() => setActiveCorpsOrg(null)}
-            className={cn(
-              "flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
-              !activeCorpsOrg
-                ? "bg-primary/10 text-primary border border-primary/20"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/80",
-            )}
-          >
-            <span></span>
-            <span>Toutes les représentations</span>
-            <span className="text-[10px] opacity-70 ml-0.5">
-              {usersFilteredByCountry.length}
-            </span>
-          </button>
-
-          {corpsOrgData.orgs.map((org) => (
-            <button
-              key={org}
-              type="button"
-              onClick={() => setActiveCorpsOrg(org)}
-              className={cn(
-                "flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all max-w-[200px]",
-                activeCorpsOrg === org
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/80",
-              )}
-            >
-              <span className="truncate">{org}</span>
-              <span className="text-[10px] opacity-70 ml-0.5 shrink-0">
-                {corpsOrgData.counts[org] ?? 0}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Back-Office Sub-Role Filters (clickable badges) */}
-      {activeTab === "backoffice" && (
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveBackOfficeRole(null)}
-            className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all",
-              !activeBackOfficeRole
-                ? "bg-primary/10 text-primary border-primary/30"
-                : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/50",
-            )}
-          >
-            <span></span>
-            <span className="font-medium">Tous</span>
-            <Badge variant="outline" className="h-5 min-w-[20px] px-1.5 text-[10px]">
-              {counts.backoffice}
-            </Badge>
-          </button>
-          {BACKOFFICE_ROLES.map((role) => {
-            const meta = ROLE_META[role];
-            const isActive = activeBackOfficeRole === role;
-            return (
-              <button
-                key={role}
-                type="button"
-                onClick={() => setActiveBackOfficeRole(isActive ? null : role)}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all",
-                  isActive
-                    ? cn(meta.color)
-                    : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                )}
-              >
-                <span>{meta.emoji}</span>
-                <span className="font-medium">{meta.label}</span>
-                <Badge variant="outline" className="h-5 min-w-[20px] px-1.5 text-[10px]">
-                  {backOfficeCounts[role]}
-                </Badge>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Agents Sub-Role Filters */}
-      {activeTab === "agents" && (
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveBackOfficeRole(null)}
-            className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all",
-              !activeBackOfficeRole
-                ? "bg-primary/10 text-primary border-primary/30"
-                : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/50",
-            )}
-          >
-            <span></span>
-            <span className="font-medium">Tous</span>
-            <Badge variant="outline" className="h-5 min-w-[20px] px-1.5 text-[10px]">
-              {counts.agents}
-            </Badge>
-          </button>
-          {AGENT_ROLES.map((role) => {
-            const meta = ROLE_META[role];
-            const isActive = activeBackOfficeRole === role;
-            return (
-              <button
-                key={role}
-                type="button"
-                onClick={() => setActiveBackOfficeRole(isActive ? null : role)}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all",
-                  isActive
-                    ? cn(meta.color)
-                    : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                )}
-              >
-                <span>{meta.emoji}</span>
-                <span className="font-medium">{meta.label}</span>
-                <Badge variant="outline" className="h-5 min-w-[20px] px-1.5 text-[10px]">
-                  {agentCounts[role]}
-                </Badge>
-              </button>
-            );
-          })}
-        </div>
-      )}
+            Réinitialiser
+            <X className="ml-1 h-3.5 w-3.5" />
+          </Button>
+        )}
+      </div>
 
       <FlatCard>
         <div className="p-3 lg:p-4">
@@ -648,13 +469,32 @@ export default function UsersPage() {
             data={filteredUsers}
             searchKeys={["name", "email", "phone", "residenceCountry"]}
             searchPlaceholder={t("superadmin.users.filters.searchPlaceholder")}
-            filterableColumns={filterableColumns}
             isLoading={isPending}
           />
         </div>
       </FlatCard>
 
       </>}
+    </div>
+  );
+}
+
+/** Small label + control wrapper used by the Comptes filter row. */
+function FilterField({
+  label,
+  className,
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={cn("flex flex-col gap-1", className)}>
+      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
+      {children}
     </div>
   );
 }
