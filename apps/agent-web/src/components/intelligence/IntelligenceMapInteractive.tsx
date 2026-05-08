@@ -251,6 +251,18 @@ export default function IntelligenceMapInteractive() {
 			accessToken: MAPBOX_CONFIG.accessToken,
 		});
 
+		// Contrôles natifs Mapbox : zoom +/- + boussole + échelle.
+		// Calque sur la carte super-admin pour une UX cohérente entre les
+		// deux vues.
+		map.current.addControl(
+			new mapboxgl.NavigationControl({ visualizePitch: false }),
+			"top-left",
+		);
+		map.current.addControl(
+			new mapboxgl.ScaleControl({ maxWidth: 120, unit: "metric" }),
+			"bottom-right",
+		);
+
 		map.current.on("style.load", () => {
 			map.current?.setFog({
 				color: isDark ? "rgb(10, 10, 20)" : "rgb(220, 220, 230)",
@@ -286,9 +298,9 @@ export default function IntelligenceMapInteractive() {
 			el.className = "intel-map-marker";
 			el.style.cursor = "pointer";
 			el.innerHTML = `
-				<div style="position: relative; width: 22px; height: 22px;">
+				<div style="position: relative; width: 28px; height: 28px;">
 					<div style="position: absolute; inset: 0; border-radius: 9999px; background-color: ${color}; opacity: 0.25; animation: ping 1.6s cubic-bezier(0,0,0.2,1) infinite;"></div>
-					<div style="position: relative; display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 9999px; background-color: ${color}; border: 2px solid #ffffff; box-shadow: 0 4px 8px rgba(0,0,0,0.3); ${point.geoSource === "fallback" ? "opacity: 0.7;" : ""}"></div>
+					<div style="position: relative; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; background-color: ${color}; color: #ffffff; font-weight: 700; font-size: 13px; border: 2px solid #ffffff; box-shadow: 0 4px 8px rgba(0,0,0,0.3); ${point.geoSource === "fallback" ? "opacity: 0.75;" : ""}">${point.gender !== "unknown" ? GENDER_GLYPH[point.gender] : ""}</div>
 				</div>
 			`;
 

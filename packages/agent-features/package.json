@@ -37,6 +37,7 @@
   },
   "peerDependencies": {
     "@livekit/components-react": "^2.9.0",
+    "@react-pdf/renderer": "^4.0.0",
     "@tanstack/react-form": "^1.0.0",
     "@tanstack/react-query": "^5.0.0",
     "@tanstack/react-table": "^8.0.0",

@@ -25,7 +25,7 @@ import { FlatCard } from "../../components/my-space/flat-card";
 import { useOrg } from "../../shell/org-provider";
 
 import { AddToWatchlistButton } from "./AddToWatchlistButton";
-import { IntelligenceBriefingButton } from "./IntelligenceBriefingButton";
+import { IntelligenceAIBriefingButton } from "./IntelligenceAIBriefingButton";
 import { IntelligenceLinksPanel } from "./IntelligenceLinksPanel";
 import { IntelligenceNotesPanel } from "./IntelligenceNotesPanel";
 import { RiskScoreBadge } from "./RiskScoreBadge";
@@ -126,7 +126,10 @@ export default function IntelligenceProfileDetail({ targetType, targetId }: Prop
 						</Link>
 					)}
 					<AddToWatchlistButton targetType={targetType} targetId={targetId} />
-					<IntelligenceBriefingButton targetType={targetType} targetId={targetId} />
+					<IntelligenceAIBriefingButton
+						targetType={targetType}
+						targetId={targetId}
+					/>
 				</div>
 			</div>
 

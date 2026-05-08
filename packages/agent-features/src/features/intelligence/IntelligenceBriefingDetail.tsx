@@ -2,8 +2,10 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { ArrowLeft, Download, Sparkles } from "lucide-react";
+import { ArrowLeft, FileDown, Loader2, Sparkles } from "lucide-react";
 import { Link } from "@workspace/routing";
+import { useState } from "react";
+import { toast } from "sonner";
 
 import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { Badge } from "@workspace/ui/components/badge";
@@ -13,6 +15,7 @@ import { SafeMarkdown } from "@workspace/chat/safe-markdown";
 
 import { FlatCard } from "../../components/my-space/flat-card";
 import { useOrg } from "../../shell/org-provider";
+import { downloadBriefingPDF } from "./pdf/briefing-pdf";
 
 const CLASSIFICATION_LABELS: Record<string, string> = {
 	internal: "Interne",
@@ -27,6 +30,7 @@ interface Props {
 
 export default function IntelligenceBriefingDetail({ briefingId }: Props) {
 	const { activeOrgId } = useOrg();
+	const [downloading, setDownloading] = useState(false);
 
 	const { data: briefing, isLoading } = useAuthenticatedConvexQuery(
 		api.functions.intelligenceBriefings.getBriefing,
@@ -52,16 +56,25 @@ export default function IntelligenceBriefingDetail({ briefingId }: Props) {
 		);
 	}
 
-	const handleDownload = () => {
-		const blob = new Blob([briefing.content], {
-			type: "text/markdown;charset=utf-8",
-		});
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = `${briefing.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.md`;
-		a.click();
-		URL.revokeObjectURL(url);
+	const handleDownloadPDF = async () => {
+		setDownloading(true);
+		try {
+			await downloadBriefingPDF({
+				title: briefing.title,
+				content: briefing.content,
+				classification: briefing.classification,
+				model: briefing.model,
+				generatedAt: briefing.generatedAt,
+				costMicroCents: briefing.costMicroCents,
+			});
+			toast.success("PDF téléchargé");
+		} catch (e) {
+			toast.error("Échec de la génération du PDF", {
+				description: e instanceof Error ? e.message : undefined,
+			});
+		} finally {
+			setDownloading(false);
+		}
 	};
 
 	return (
@@ -73,9 +86,18 @@ export default function IntelligenceBriefingDetail({ briefingId }: Props) {
 						Retour
 					</Link>
 				</Button>
-				<Button variant="outline" size="sm" onClick={handleDownload}>
-					<Download className="size-3.5" />
-					Markdown
+				<Button
+					variant="outline"
+					size="sm"
+					onClick={handleDownloadPDF}
+					disabled={downloading}
+				>
+					{downloading ? (
+						<Loader2 className="size-3.5 animate-spin" />
+					) : (
+						<FileDown className="size-3.5" />
+					)}
+					Télécharger le PDF
 				</Button>
 			</div>
 
