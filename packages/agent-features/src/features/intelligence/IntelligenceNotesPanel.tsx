@@ -117,6 +117,23 @@ interface IntelligenceNotesPanelProps {
 	targetId: string;
 }
 
+function NoteFieldGroup({
+	label,
+	children,
+}: {
+	label: string;
+	children: React.ReactNode;
+}) {
+	return (
+		<div className="flex flex-col gap-1">
+			<span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+				{label}
+			</span>
+			{children}
+		</div>
+	);
+}
+
 export function IntelligenceNotesPanel({
 	targetType,
 	targetId,
@@ -198,82 +215,119 @@ export function IntelligenceNotesPanel({
 
 			<div className="p-4 space-y-4">
 				{/* Composer */}
-				<div className="space-y-2 rounded-lg bg-muted/30 p-3 border border-border/30">
-					<Textarea
-						value={content}
-						onChange={(e) => setContent(e.target.value)}
-						placeholder="Ajouter une note confidentielle…"
-						rows={3}
-						className="resize-none border-border/50 bg-background"
-					/>
-					<div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-						<Select value={category} onValueChange={(v) => setCategory(v as IntelCategory)}>
-							<SelectTrigger className="h-8 text-xs">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{(Object.keys(CATEGORY_LABELS) as IntelCategory[]).map((c) => (
-									<SelectItem key={c} value={c} className="text-xs">
-										{CATEGORY_LABELS[c]}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						<Select value={severity} onValueChange={(v) => setSeverity(v as IntelSeverity)}>
-							<SelectTrigger className="h-8 text-xs">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{(Object.keys(SEVERITY_LABELS) as IntelSeverity[]).map((s) => (
-									<SelectItem key={s} value={s} className="text-xs">
-										{SEVERITY_LABELS[s]}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						<Select value={source} onValueChange={(v) => setSource(v as IntelSource)}>
-							<SelectTrigger className="h-8 text-xs">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{(Object.keys(SOURCE_LABELS) as IntelSource[]).map((s) => (
-									<SelectItem key={s} value={s} className="text-xs">
-										{SOURCE_LABELS[s]}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						<Select
-							value={classification}
-							onValueChange={(v) => setClassification(v as IntelClassification)}
+				<div className="space-y-3 rounded-lg bg-muted/30 p-4 border border-border/30">
+					<div className="space-y-1.5">
+						<label
+							htmlFor="intel-note-content"
+							className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
 						>
-							<SelectTrigger className="h-8 text-xs">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{(Object.keys(CLASSIFICATION_LABELS) as IntelClassification[]).map(
-									(c) => (
-										<SelectItem key={c} value={c} className="text-xs">
-											{CLASSIFICATION_LABELS[c]}
-										</SelectItem>
-									),
-								)}
-							</SelectContent>
-						</Select>
-						<Select value={verified} onValueChange={(v) => setVerified(v as IntelVerified)}>
-							<SelectTrigger className="h-8 text-xs">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{(Object.keys(VERIFIED_LABELS) as IntelVerified[]).map((v) => (
-									<SelectItem key={v} value={v} className="text-xs">
-										{VERIFIED_LABELS[v]}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+							Note confidentielle
+						</label>
+						<Textarea
+							id="intel-note-content"
+							value={content}
+							onChange={(e) => setContent(e.target.value)}
+							placeholder="Décrivez l'observation, le risque ou la piste…"
+							rows={3}
+							className="resize-none border-border/50 bg-background"
+						/>
 					</div>
-					<div className="flex justify-end">
+
+					<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+						<NoteFieldGroup label="Catégorie">
+							<Select
+								value={category}
+								onValueChange={(v) => setCategory(v as IntelCategory)}
+							>
+								<SelectTrigger className="h-9 text-xs w-full">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{(Object.keys(CATEGORY_LABELS) as IntelCategory[]).map((c) => (
+										<SelectItem key={c} value={c} className="text-xs">
+											{CATEGORY_LABELS[c]}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</NoteFieldGroup>
+
+						<NoteFieldGroup label="Sévérité">
+							<Select
+								value={severity}
+								onValueChange={(v) => setSeverity(v as IntelSeverity)}
+							>
+								<SelectTrigger className="h-9 text-xs w-full">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{(Object.keys(SEVERITY_LABELS) as IntelSeverity[]).map((s) => (
+										<SelectItem key={s} value={s} className="text-xs">
+											{SEVERITY_LABELS[s]}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</NoteFieldGroup>
+
+						<NoteFieldGroup label="Source">
+							<Select
+								value={source}
+								onValueChange={(v) => setSource(v as IntelSource)}
+							>
+								<SelectTrigger className="h-9 text-xs w-full">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{(Object.keys(SOURCE_LABELS) as IntelSource[]).map((s) => (
+										<SelectItem key={s} value={s} className="text-xs">
+											{SOURCE_LABELS[s]}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</NoteFieldGroup>
+
+						<NoteFieldGroup label="Classification">
+							<Select
+								value={classification}
+								onValueChange={(v) => setClassification(v as IntelClassification)}
+							>
+								<SelectTrigger className="h-9 text-xs w-full">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{(Object.keys(CLASSIFICATION_LABELS) as IntelClassification[]).map(
+										(c) => (
+											<SelectItem key={c} value={c} className="text-xs">
+												{CLASSIFICATION_LABELS[c]}
+											</SelectItem>
+										),
+									)}
+								</SelectContent>
+							</Select>
+						</NoteFieldGroup>
+
+						<NoteFieldGroup label="Vérification">
+							<Select
+								value={verified}
+								onValueChange={(v) => setVerified(v as IntelVerified)}
+							>
+								<SelectTrigger className="h-9 text-xs w-full">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{(Object.keys(VERIFIED_LABELS) as IntelVerified[]).map((v) => (
+										<SelectItem key={v} value={v} className="text-xs">
+											{VERIFIED_LABELS[v]}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</NoteFieldGroup>
+					</div>
+
+					<div className="flex justify-end pt-1">
 						<Button
 							size="sm"
 							onClick={handleSend}

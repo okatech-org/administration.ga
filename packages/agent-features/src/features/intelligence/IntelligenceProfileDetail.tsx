@@ -35,8 +35,10 @@ import { useOrg } from "../../shell/org-provider";
 
 import { AddToWatchlistButton } from "./AddToWatchlistButton";
 import { IntelligenceAIBriefingButton } from "./IntelligenceAIBriefingButton";
+import { IntelligenceBriefingsForTarget } from "./IntelligenceBriefingsForTarget";
 import { IntelligenceLinksPanel } from "./IntelligenceLinksPanel";
 import { IntelligenceNotesPanel } from "./IntelligenceNotesPanel";
+import { IntelligenceWatchlistsForTarget } from "./IntelligenceWatchlistsForTarget";
 import { RiskScoreBadge } from "./RiskScoreBadge";
 
 type IntelTargetType = "profile" | "child_profile" | "diplomatic_target" | "agent";
@@ -251,6 +253,16 @@ export default function IntelligenceProfileDetail({ targetType, targetId }: Prop
 								</p>
 							</FlatCard>
 						)}
+
+						<IntelligenceWatchlistsForTarget
+							targetType={targetType}
+							targetId={targetId}
+						/>
+
+						<IntelligenceBriefingsForTarget
+							targetType={targetType}
+							targetId={targetId}
+						/>
 					</aside>
 
 					{/* Center + right combined: notes + relations */}

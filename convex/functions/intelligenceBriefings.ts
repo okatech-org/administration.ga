@@ -12,7 +12,7 @@
 
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "../_generated/server";
-import { authQuery } from "../lib/customFunctions";
+import { authQuery, authMutation } from "../lib/customFunctions";
 import type { Id } from "../_generated/dataModel";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
@@ -105,6 +105,56 @@ export const getBriefing = authQuery({
 			throw error(ErrorCode.NOT_FOUND);
 		}
 		return b;
+	},
+});
+
+/**
+ * Soft-delete d'un briefing — réservé à son auteur (generatedBy).
+ * L'audit trail dans intelligenceAuditLog conserve la trace.
+ */
+export const deleteBriefing = authMutation({
+	args: {
+		orgId: v.id("orgs"),
+		briefingId: v.id("intelligenceBriefings"),
+	},
+	handler: async (ctx, args) => {
+		await assertCallerIsIntelAgency(ctx, ctx.user._id, args.orgId);
+		const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+		await assertCanDoTask(
+			ctx,
+			ctx.user,
+			membership,
+			"intelligence.briefing.generate",
+		);
+
+		const b = await ctx.db.get(args.briefingId);
+		if (!b || b.orgId !== args.orgId || b.deletedAt) {
+			throw error(ErrorCode.NOT_FOUND);
+		}
+		if (b.generatedBy !== ctx.user._id) {
+			throw error(
+				ErrorCode.INSUFFICIENT_PERMISSIONS,
+				"Seul l'auteur peut supprimer un briefing.",
+			);
+		}
+
+		const now = Date.now();
+		await ctx.db.patch(args.briefingId, { deletedAt: now });
+
+		await ctx.db.insert("intelligenceAuditLog", {
+			orgId: args.orgId,
+			action: "briefings.delete",
+			actorId: ctx.user._id,
+			actorMembershipId: membership?._id,
+			targetType: b.targetType === "case" ? "case" : b.targetType,
+			targetId: b.targetId,
+			classification: b.classification,
+			metadata: { briefingId: args.briefingId, model: b.model },
+			outcome: "success",
+			timestamp: now,
+		});
+
+		return args.briefingId;
 	},
 });
 
