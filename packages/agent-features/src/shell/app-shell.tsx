@@ -30,6 +30,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { IAstedTabId } from "@workspace/iasted";
 import { usePathname } from "@workspace/routing";
+import { SidebarProvider } from "@workspace/ui/components/sidebar";
 import { cn } from "@workspace/ui/lib/utils";
 import {
 	ConsularThemeContext,
@@ -186,22 +187,18 @@ function DashboardLayout({
 	}
 
 	const shellBody = (
-		<div
+		<SidebarProvider
+			open={isExpanded}
+			onOpenChange={setIsExpanded}
 			className={cn(
-				"citizen-layout relative flex h-dvh flex-col overflow-hidden md:flex-row md:h-screen",
+				"citizen-layout relative flex h-dvh min-h-0 flex-col overflow-hidden md:flex-row md:h-screen",
 				"print:block print:h-auto print:overflow-visible",
 				consularTheme === "homeomorphism" && "theme-homeomorphism",
 			)}
 		>
 			{beforeChildren}
-			<div className="hidden md:block p-4 pr-0 print:hidden">
-				<div className="h-full rounded-2xl bg-secondary overflow-hidden">
-					<OrgSidebar
-						isExpanded={isExpanded}
-						onToggle={() => setIsExpanded((prev) => !prev)}
-						extraSections={extraNavSections}
-					/>
-				</div>
+			<div className="hidden md:block print:hidden">
+				<OrgSidebar extraSections={extraNavSections} />
 			</div>
 			<main className="flex-1 overflow-hidden md:overflow-y-auto citizen-scrollbar px-3 min-[400px]:px-4 pt-3 pb-18 md:px-4 md:pt-4 md:pb-4 print:overflow-visible print:p-0">
 				{children}
@@ -233,7 +230,7 @@ function DashboardLayout({
 			<GlobalCallAlert />
 			<GlobalCallPill />
 			{afterChildren}
-		</div>
+		</SidebarProvider>
 	);
 
 	return wrapWithAIPresence ? wrapWithAIPresence(shellBody) : shellBody;

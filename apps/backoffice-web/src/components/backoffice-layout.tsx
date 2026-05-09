@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { BackofficeIAstedWindow } from "@/components/ai/BackofficeIAstedWindow"
 import { SuperadminGuard } from "@/components/guards/SuperadminGuard"
 import { SuperadminSidebar } from "@/components/sidebars/superadmin-sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
 
 const SIDEBAR_STORAGE_KEY = "superadmin-sidebar-expanded"
 
@@ -27,20 +28,19 @@ export function BackofficeLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SuperadminGuard>
-      <div className="backoffice-layout relative overflow-hidden h-screen flex">
-        <div className="hidden md:block p-4 pr-0">
-          <div className="h-full rounded-2xl bg-secondary overflow-hidden">
-            <SuperadminSidebar
-              isExpanded={isExpanded}
-              onToggle={() => setIsExpanded((prev) => !prev)}
-            />
-          </div>
+      <SidebarProvider
+        open={isExpanded}
+        onOpenChange={setIsExpanded}
+        className="backoffice-layout relative flex h-screen min-h-0 overflow-hidden"
+      >
+        <div className="hidden md:block">
+          <SuperadminSidebar />
         </div>
         <main className="flex-1 min-h-full overflow-y-auto citizen-scrollbar">
           {children}
         </main>
         <BackofficeIAstedWindow />
-      </div>
+      </SidebarProvider>
     </SuperadminGuard>
   )
 }

@@ -13,7 +13,6 @@ import {
   ChevronsRight,
   FileText,
   Globe,
-
   Moon,
   Settings,
   Sun,
@@ -21,11 +20,32 @@ import {
   Users,
 } from "lucide-react"
 import { useTheme } from "next-themes"
-import { useSyncExternalStore, useState } from "react"
+import { useState, useSyncExternalStore } from "react"
 import { useTranslation } from "react-i18next"
 import { api } from "@convex/_generated/api"
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks"
 import { LogoutButton } from "@/components/sidebars/logout-button"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  useSidebar,
+} from "@/components/ui/sidebar"
 import {
   Tooltip,
   TooltipContent,
@@ -39,7 +59,6 @@ interface NavItem {
   title: string
   url: string
   icon: React.ElementType
-  color?: string
 }
 
 interface NavSection {
@@ -47,43 +66,10 @@ interface NavSection {
   items: NavItem[]
 }
 
-interface MySpaceSidebarProps {
-  isExpanded?: boolean
-  onToggle?: () => void
-}
-
-function SidebarText({
-  isExpanded,
-  children,
-  className,
-}: {
-  isExpanded: boolean
-  children: React.ReactNode
-  className?: string
-}) {
-  return (
-    <span
-      className={cn(
-        "truncate text-sm whitespace-nowrap transition-opacity duration-200",
-        isExpanded ? "opacity-100 delay-100" : "opacity-0 w-0 overflow-hidden",
-        className
-      )}
-    >
-      {children}
-    </span>
-  )
-}
-
-export function MySpaceSidebar({
-  isExpanded = false,
-  onToggle,
-}: MySpaceSidebarProps) {
+export function MySpaceSidebar() {
   const pathname = usePathname()
   const { data: session } = authClient.useSession()
-  const { t, i18n } = useTranslation()
-  const { resolvedTheme, setTheme } = useTheme()
-  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
-  const isDark = mounted && resolvedTheme === "dark"
+  const { t } = useTranslation()
 
   const isActive = (url: string) => {
     if (url === "/my-space") {
@@ -96,8 +82,10 @@ export function MySpaceSidebar({
     api.functions.childProfiles.getMine,
     {}
   )
-  const children = (childProfiles ?? []) as Array<{ _id: string; identity?: { firstName?: string; lastName?: string } }>
-  const [childrenOpen, setChildrenOpen] = useState(false)
+  const children = (childProfiles ?? []) as Array<{
+    _id: string
+    identity?: { firstName?: string; lastName?: string }
+  }>
 
   const navSections: NavSection[] = [
     {
@@ -117,319 +105,454 @@ export function MySpaceSidebar({
     {
       label: t("mySpace.nav.sectionRequests"),
       items: [
-        { title: "Mes Démarches", url: "/my-space/services-demarches", icon: Briefcase },
+        {
+          title: "Mes Démarches",
+          url: "/my-space/services-demarches",
+          icon: Briefcase,
+        },
       ],
     },
   ]
 
+  return (
+    <TooltipProvider delayDuration={100}>
+      <Sidebar
+        variant="floating"
+        collapsible="icon"
+        className="border-none [&_[data-slot=sidebar-inner]]:bg-secondary [&_[data-slot=sidebar-inner]]:ring-0 [&_[data-slot=sidebar-inner]]:shadow-none"
+      >
+        <SidebarHeader className="px-3 pt-3 pb-3">
+          <Header />
+        </SidebarHeader>
+
+        <SidebarContent className="gap-0 px-3 citizen-scrollbar">
+          {navSections.map((section, sectionIdx) => (
+            <SidebarGroup
+              key={section.label ?? `section-${sectionIdx}`}
+              className="px-0 py-0"
+            >
+              {sectionIdx > 0 && (
+                <div className="mx-0 my-2 border-t border-foreground/5 pt-2 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-8" />
+              )}
+              {section.label && (
+                <SidebarGroupLabel className="mb-1 block h-auto px-3 py-0 text-[10px] font-extrabold tracking-widest text-muted-foreground/70 uppercase">
+                  {section.label}
+                </SidebarGroupLabel>
+              )}
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-0.5">
+                  {section.items.map((item) => {
+                    const active = isActive(item.url)
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={active}
+                          tooltip={item.title}
+                          className={cn(
+                            "h-9 gap-3 rounded-xl px-3 text-sm font-semibold text-muted-foreground transition-all duration-200",
+                            "hover:bg-muted/50 hover:text-foreground",
+                            "data-[active=true]:bg-primary/10 data-[active=true]:font-bold data-[active=true]:text-primary dark:data-[active=true]:bg-primary/20",
+                            "group-data-[collapsible=icon]:size-11! group-data-[collapsible=icon]:rounded-full! group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:mx-auto"
+                          )}
+                        >
+                          <Link href={item.url}>
+                            <item.icon className="size-[18px] shrink-0" />
+                            <span className="min-w-0 flex-1 truncate">
+                              {item.title}
+                            </span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+
+          {/* Children section */}
+          {children.length > 0 && (
+            <ChildrenSection
+              children={children}
+              isActive={isActive}
+              label={t("mySpace.nav.sectionTutor")}
+              myChildrenLabel={t("mySpace.myChildren")}
+            />
+          )}
+
+          {/* Settings — pushed to bottom of content area */}
+          <div className="mt-auto pb-2">
+            <SidebarMenu className="gap-0.5">
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive("/my-space/settings")}
+                  tooltip={t("mySpace.nav.settings")}
+                  className={cn(
+                    "h-9 gap-3 rounded-xl px-3 text-sm font-semibold text-muted-foreground transition-all duration-200",
+                    "hover:bg-muted/50 hover:text-foreground",
+                    "data-[active=true]:bg-primary/10 data-[active=true]:font-bold data-[active=true]:text-primary dark:data-[active=true]:bg-primary/20",
+                    "group-data-[collapsible=icon]:size-11! group-data-[collapsible=icon]:rounded-full! group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:mx-auto"
+                  )}
+                >
+                  <Link href="/my-space/settings">
+                    <Settings className="size-[18px] shrink-0" />
+                    <span className="min-w-0 flex-1 truncate">
+                      {t("mySpace.nav.settings")}
+                    </span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </div>
+        </SidebarContent>
+
+        <SidebarFooter className="border-t border-border px-3 pt-3">
+          <FooterControls
+            session={session}
+            collapseLabel={t("mySpace.nav.collapse")}
+            expandLabel={t("mySpace.nav.expand")}
+            lightLabel={t("theme.light")}
+            darkLabel={t("theme.dark")}
+          />
+        </SidebarFooter>
+      </Sidebar>
+    </TooltipProvider>
+  )
+}
+
+function Header() {
+  const { state } = useSidebar()
+  return (
+    <Link
+      href="/"
+      className={cn(
+        "flex items-center",
+        state === "expanded" ? "gap-2.5" : "justify-center"
+      )}
+    >
+      <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full">
+        <Image
+          src="/icons/apple-icon.png"
+          alt="Logo"
+          width={40}
+          height={40}
+          className="h-full w-full object-contain"
+        />
+      </div>
+      {state === "expanded" && (
+        <div className="flex flex-col overflow-hidden whitespace-nowrap">
+          <span className="text-sm font-black tracking-[0.2em]">CONSULAT</span>
+          <span className="text-[10px] font-medium tracking-[0.12em] text-muted-foreground">
+            Espace Numérique
+          </span>
+        </div>
+      )}
+    </Link>
+  )
+}
+
+interface ChildrenSectionProps {
+  children: Array<{
+    _id: string
+    identity?: { firstName?: string; lastName?: string }
+  }>
+  isActive: (url: string) => boolean
+  label: string
+  myChildrenLabel: string
+}
+
+function ChildrenSection({
+  children,
+  isActive,
+  label,
+  myChildrenLabel,
+}: ChildrenSectionProps) {
+  const { state } = useSidebar()
+  const [open, setOpen] = useState(false)
+  const isExpanded = state === "expanded"
+  const anyChildActive = children.some((c) =>
+    isActive(`/my-space/children/${c._id}`)
+  )
+
+  if (!isExpanded) {
+    return (
+      <SidebarGroup className="px-0 py-0">
+        <div className="mx-auto my-2 w-8 border-t border-foreground/5 pt-2" />
+        <SidebarGroupContent>
+          <SidebarMenu className="gap-0.5">
+            <SidebarMenuItem>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={myChildrenLabel}
+                    className={cn(
+                      "mx-auto flex size-11 items-center justify-center rounded-full transition-colors",
+                      anyChildActive
+                        ? "text-rose-600"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    )}
+                    onClick={() => setOpen(!open)}
+                  >
+                    <Users className="size-[18px]" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  sideOffset={10}
+                  className="border-0 bg-card"
+                >
+                  {myChildrenLabel} ({children.length})
+                </TooltipContent>
+              </Tooltip>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    )
+  }
+
+  return (
+    <SidebarGroup className="px-0 py-0">
+      <div className="mx-0 my-2 border-t border-foreground/5 pt-2" />
+      <SidebarGroupLabel className="mb-1.5 block px-3 text-[10px] font-extrabold tracking-widest text-muted-foreground/70 uppercase">
+        {label}
+      </SidebarGroupLabel>
+      <SidebarGroupContent>
+        <Collapsible open={open} onOpenChange={setOpen}>
+          <SidebarMenu className="gap-0.5">
+            <SidebarMenuItem>
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    "flex h-9 w-full items-center gap-3 rounded-xl px-3 text-sm transition-all duration-200",
+                    open
+                      ? "border border-rose-500/10 bg-rose-500/10 font-bold text-rose-600"
+                      : "font-semibold text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  )}
+                >
+                  <Users className="size-[18px] shrink-0" />
+                  <span className="flex-1 truncate text-left">
+                    {myChildrenLabel}
+                  </span>
+                  <span className="min-w-[18px] rounded-full bg-rose-500/12 px-1.5 py-0.5 text-center text-[8px] font-bold text-rose-500">
+                    {children.length}
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      "size-3 transition-transform duration-200",
+                      open && "rotate-180"
+                    )}
+                  />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarMenuSub className="mx-0 border-l-0 pl-4">
+                  {children.map((child) => {
+                    const childUrl = `/my-space/children/${child._id}`
+                    const active = isActive(childUrl)
+                    return (
+                      <SidebarMenuSubItem key={child._id}>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={active}
+                          className={cn(
+                            "h-8 gap-2.5 rounded-xl px-3 text-sm",
+                            active
+                              ? "border border-rose-500/10 bg-rose-500/10 font-bold text-rose-600 data-[active=true]:bg-rose-500/10 data-[active=true]:text-rose-600"
+                              : "font-semibold text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                          )}
+                        >
+                          <Link href={childUrl}>
+                            <Baby className="size-4 shrink-0" />
+                            <span className="truncate">
+                              {child.identity?.firstName ?? "Enfant"}
+                            </span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    )
+                  })}
+                </SidebarMenuSub>
+              </CollapsibleContent>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </Collapsible>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  )
+}
+
+interface FooterControlsProps {
+  session: ReturnType<typeof authClient.useSession>["data"]
+  collapseLabel: string
+  expandLabel: string
+  lightLabel: string
+  darkLabel: string
+}
+
+function FooterControls({
+  session,
+  collapseLabel,
+  expandLabel,
+  lightLabel,
+  darkLabel,
+}: FooterControlsProps) {
+  const { state, toggleSidebar } = useSidebar()
+  const { i18n } = useTranslation()
+  const { resolvedTheme, setTheme } = useTheme()
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
+  const isDark = mounted && resolvedTheme === "dark"
+  const isExpanded = state === "expanded"
   const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en"
   const toggleLanguage = () => {
     i18n.changeLanguage(currentLang === "fr" ? "en" : "fr")
   }
 
   return (
-    <TooltipProvider delayDuration={100}>
-      <aside
-        data-slot="sidebar"
+    <>
+      {isExpanded ? (
+        <div className="flex items-center gap-0.5 px-0.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={toggleLanguage}
+                className="flex h-9 items-center gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+              >
+                <Globe className="size-3.5" />
+                <span className="text-[10px] font-bold uppercase">
+                  {currentLang}
+                </span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              {currentLang === "fr"
+                ? "Switch to English"
+                : "Passer en Français"}
+            </TooltipContent>
+          </Tooltip>
+
+          <div className="flex-1" />
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                title={collapseLabel}
+                className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground"
+                onClick={toggleSidebar}
+              >
+                <ChevronsLeft className="size-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">{collapseLabel}</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => setTheme(isDark ? "light" : "dark")}
+                className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground"
+              >
+                {isDark ? (
+                  <Sun className="size-4 text-amber-500" />
+                ) : (
+                  <Moon className="size-4" />
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              {isDark ? lightLabel : darkLabel}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-0.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                title={expandLabel}
+                onClick={toggleSidebar}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+              >
+                <ChevronsRight className="size-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">{expandLabel}</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => setTheme(isDark ? "light" : "dark")}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+              >
+                {isDark ? (
+                  <Sun className="size-4 text-amber-500" />
+                ) : (
+                  <Moon className="size-4" />
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {isDark ? lightLabel : darkLabel}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      )}
+
+      {/* User info */}
+      <div
         className={cn(
-          "flex flex-col py-3 px-3 h-full overflow-y-auto overflow-x-hidden",
-          "transition-[width] duration-300 ease-in-out",
-          isExpanded ? "w-64 items-stretch" : "w-[68px] items-center"
+          "mt-1 flex items-center pt-2",
+          isExpanded
+            ? "gap-3 px-1"
+            : "flex-col justify-center gap-1.5"
         )}
       >
-        {/* Logo */}
-        <div className={cn("mb-3", isExpanded ? "px-1" : "")}>
-          <Link href="/" className={cn("flex items-center", isExpanded && "gap-2.5")}>
-            <div className="size-10 shrink-0 rounded-full flex items-center justify-center overflow-hidden">
-              <Image src="/icons/apple-icon.png" alt="Logo" width={40} height={40} className="w-full h-full object-contain" />
-            </div>
-            <div
-              className={cn(
-                "flex flex-col transition-opacity duration-200 overflow-hidden whitespace-nowrap",
-                isExpanded ? "opacity-100 delay-100" : "opacity-0 w-0"
-              )}
-            >
-              <span className="text-sm font-black tracking-[0.2em]">CONSULAT</span>
-              <span className="text-[10px] text-muted-foreground font-medium tracking-[0.12em]">
-                Espace Numérique
-              </span>
-            </div>
-          </Link>
-        </div>
-
-        <div className={cn("border-t border-border mb-3", !isExpanded && "w-8 mx-auto")} />
-
-        {/* Navigation */}
-        <nav
-          className={cn(
-            "flex flex-col gap-0.5 flex-1 overflow-y-auto overflow-x-hidden citizen-scrollbar",
-            !isExpanded && "items-center"
-          )}
-        >
-          {navSections.map((section, sectionIdx) => (
-            <div key={section.label ?? `section-${sectionIdx}`}>
-              {sectionIdx > 0 && (
-                <div
-                  className={cn(
-                    "my-2.5",
-                    isExpanded
-                      ? "border-t border-foreground/5 pt-2"
-                      : "border-t border-foreground/5 pt-2 w-8"
-                  )}
-                />
-              )}
-
-              {isExpanded && section.label && (
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/70 px-3 mb-1.5 block">
-                  {section.label}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="relative">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <span className="text-xs font-bold text-primary dark:text-primary">
+                  {session?.user?.name?.[0] || "U"}
                 </span>
-              )}
-
-              {section.items.map((item) => {
-                const active = isActive(item.url)
-                const button = (
-                  <Link
-                    href={item.url}
-                    className={cn(
-                      "flex items-center transition-all duration-200 rounded-xl",
-                      isExpanded ? "w-full gap-3 px-3 h-9" : "w-11 h-11 justify-center rounded-full",
-                      active
-                        ? "font-bold text-primary bg-primary/10 dark:bg-primary/20 dark:text-primary"
-                        : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    )}
-                  >
-                    <item.icon
-                      className={cn("size-[18px] shrink-0 transition-colors", active && "text-primary dark:text-primary")}
-                    />
-                    <SidebarText isExpanded={isExpanded}>{item.title}</SidebarText>
-                    {!isExpanded && <span className="sr-only">{item.title}</span>}
-                  </Link>
-                )
-
-                if (!isExpanded) {
-                  return (
-                    <Tooltip key={item.title}>
-                      <TooltipTrigger asChild>{button}</TooltipTrigger>
-                      <TooltipContent side="right" sideOffset={10} className="bg-card border-0 font-semibold">
-                        {item.title}
-                      </TooltipContent>
-                    </Tooltip>
-                  )
-                }
-
-                return <div key={item.title}>{button}</div>
-              })}
+              </div>
+              <div className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-primary" />
             </div>
-          ))}
-
-          {/* Children section */}
-          {children.length > 0 && (
-            <div>
-              <div className={cn("my-2.5", isExpanded ? "border-t border-foreground/5 pt-2" : "border-t border-foreground/5 pt-2 w-8")} />
-              {isExpanded && (
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/70 px-3 mb-1.5 block">
-                  {t("mySpace.nav.sectionTutor")}
-                </span>
-              )}
-
-              {isExpanded ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setChildrenOpen(!childrenOpen)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 h-9 transition-all duration-200 text-sm rounded-xl",
-                      childrenOpen
-                        ? "active bg-rose-500/10 text-rose-600 font-bold border border-rose-500/10"
-                        : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    )}
-                  >
-                    <Users className="size-[18px] shrink-0" />
-                    <span className="flex-1 text-left truncate">{t("mySpace.myChildren")}</span>
-                    <span className="text-[8px] bg-rose-500/12 text-rose-500 font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                      {children.length}
-                    </span>
-                    <ChevronDown className={cn("size-3 transition-transform duration-200", childrenOpen && "rotate-180")} />
-                  </button>
-
-                  <div className={cn("overflow-hidden transition-all duration-200 ease-in-out", childrenOpen ? "max-h-60 opacity-100 mt-0.5" : "max-h-0 opacity-0")}>
-                    <div className="pl-4 space-y-0.5">
-                      {children.map((child) => {
-                        const childUrl = `/my-space/children/${child._id}`
-                        const active = isActive(childUrl)
-                        return (
-                          <Link
-                            key={child._id}
-                            href={childUrl}
-                            className={cn(
-                              "flex items-center gap-2.5 px-3 h-8 text-sm rounded-xl",
-                              active
-                                ? "active text-rose-600 font-bold bg-rose-500/10 border border-rose-500/10"
-                                : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                            )}
-                          >
-                            <Baby className="size-4 shrink-0" />
-                            <span className="truncate">{child.identity?.firstName ?? "Enfant"}</span>
-                          </Link>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      title={t("mySpace.myChildren")}
-                      aria-label={t("mySpace.myChildren")}
-                      className={cn(
-                        "flex items-center justify-center w-11 h-11",
-                        children.some((c) => isActive(`/my-space/children/${c._id}`))
-                          ? "active text-rose-600"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                      onClick={() => setChildrenOpen(!childrenOpen)}
-                    >
-                      <Users className="size-[18px]" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" sideOffset={10} className="bg-card border-0">
-                    {t("mySpace.myChildren")} ({children.length})
-                  </TooltipContent>
-                </Tooltip>
-              )}
-            </div>
+          </TooltipTrigger>
+          {!isExpanded && (
+            <TooltipContent side="right">
+              {session?.user?.name || "Utilisateur"}
+            </TooltipContent>
           )}
-
-          {/* Settings */}
-          <div className={cn("mt-auto pb-2 min-h-[44px]")}>
-            {isExpanded ? (
-              <Link
-                href="/my-space/settings"
-                className={cn(
-                  "flex items-center transition-all duration-200 rounded-xl",
-                  isExpanded ? "w-full gap-3 px-3 h-9" : "w-11 h-11 justify-center rounded-full",
-                  isActive("/my-space/settings")
-                    ? "font-bold text-primary bg-primary/10 dark:bg-primary/20 dark:text-primary"
-                    : "font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                )}
-              >
-                <Settings className={cn("size-[18px] shrink-0 transition-colors", isActive("/my-space/settings") && "text-primary dark:text-primary")} />
-                <SidebarText isExpanded={isExpanded}>{t("mySpace.nav.settings")}</SidebarText>
-              </Link>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    href="/my-space/settings"
-                    className={cn(
-                      "flex items-center transition-all duration-200 w-11 h-11 justify-center",
-                      isActive("/my-space/settings")
-                        ? "active text-primary dark:text-primary font-black"
-                        : "font-semibold text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <Settings className={cn("size-[18px] shrink-0 transition-colors", isActive("/my-space/settings") && "text-primary dark:text-primary")} />
-                    <span className="sr-only">{t("mySpace.nav.settings")}</span>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right" sideOffset={10} className="bg-card border-0">
-                  {t("mySpace.nav.settings")}
-                </TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-        </nav>
-
-        {/* Bottom Controls */}
-        <div className={cn("flex flex-col gap-1 pt-3", !isExpanded && "items-center")}>
-          <div className={cn("border-t border-border mb-2", !isExpanded && "w-8")} />
-
-          {isExpanded ? (
-            <div className="flex items-center gap-0.5 px-0.5">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" onClick={toggleLanguage} className="flex items-center gap-1.5 h-9 px-2 text-muted-foreground hover:text-foreground">
-                    <Globe className="size-3.5" />
-                    <span className="text-[10px] font-bold uppercase">{currentLang}</span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">{currentLang === "fr" ? "Switch to English" : "Passer en Français"}</TooltipContent>
-              </Tooltip>
-
-              <div className="flex-1" />
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" title={t("mySpace.nav.collapse")} className="flex items-center justify-center h-9 w-9 text-muted-foreground hover:text-foreground" onClick={onToggle}>
-                    <ChevronsLeft className="size-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">{t("mySpace.nav.collapse")}</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" onClick={() => setTheme(isDark ? "light" : "dark")} className="flex items-center justify-center h-9 w-9 text-muted-foreground hover:text-foreground">
-                    {isDark ? <Sun className="size-4 text-amber-500" /> : <Moon className="size-4" />}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">{isDark ? t("theme.light") : t("theme.dark")}</TooltipContent>
-              </Tooltip>
+        </Tooltip>
+        {isExpanded && (
+          <>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold">
+                {session?.user?.name || "Utilisateur"}
+              </p>
+              <p className="truncate text-[10px] text-muted-foreground">
+                {session?.user?.email || ""}
+              </p>
             </div>
-          ) : (
-            <div className="flex flex-col items-center gap-0.5">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" title={t("mySpace.nav.expand")} onClick={onToggle} className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
-                    <ChevronsRight className="size-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">{t("mySpace.nav.expand")}</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" onClick={() => setTheme(isDark ? "light" : "dark")} className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
-                    {isDark ? <Sun className="size-4 text-amber-500" /> : <Moon className="size-4" />}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">{isDark ? t("theme.light") : t("theme.dark")}</TooltipContent>
-              </Tooltip>
-            </div>
-          )}
-
-          {/* User info */}
-          <div className={cn("flex items-center pt-2 mt-1", isExpanded ? "gap-3 px-1" : "flex-col gap-1.5 justify-center")}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="relative">
-                  <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-xs font-bold text-primary dark:text-primary">
-                      {session?.user?.name?.[0] || "U"}
-                    </span>
-                  </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-primary border-2 border-card" />
-                </div>
-              </TooltipTrigger>
-              {!isExpanded && (
-                <TooltipContent side="right">{session?.user?.name || "Utilisateur"}</TooltipContent>
-              )}
-            </Tooltip>
-            {isExpanded && (
-              <>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold truncate">{session?.user?.name || "Utilisateur"}</p>
-                  <p className="text-[10px] text-muted-foreground truncate">{session?.user?.email || ""}</p>
-                </div>
-                <LogoutButton />
-              </>
-            )}
-            {!isExpanded && <LogoutButton tooltipSide="right" />}
-          </div>
-        </div>
-      </aside>
-    </TooltipProvider>
+            <LogoutButton />
+          </>
+        )}
+        {!isExpanded && <LogoutButton tooltipSide="right" />}
+      </div>
+    </>
   )
 }

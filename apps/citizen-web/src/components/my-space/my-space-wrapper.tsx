@@ -14,6 +14,7 @@ import {
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { SidebarProvider } from "@/components/ui/sidebar"
 import {
   Tooltip,
   TooltipContent,
@@ -75,23 +76,18 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
 
   return (
     <ConsularThemeContext.Provider value={consularThemeValue}>
-      <div
+      <SidebarProvider
+        open={isExpanded}
+        onOpenChange={setUserExpanded}
         className={cn(
-          "citizen-layout relative flex",
+          "citizen-layout relative flex min-h-0",
           "h-dvh flex-col overflow-hidden md:flex-row md:h-screen",
           consularThemeValue.consularTheme === "homeomorphism" &&
             "theme-homeomorphism"
         )}
       >
-        <div className="" />
-
-        <div className="hidden md:block p-4 pr-0">
-          <div className="h-full rounded-2xl bg-secondary overflow-hidden">
-            <MySpaceSidebar
-              isExpanded={isExpanded}
-              onToggle={() => setUserExpanded((prev) => !prev)}
-            />
-          </div>
+        <div className="hidden md:block">
+          <MySpaceSidebar />
         </div>
 
         <main
@@ -107,7 +103,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
         <MobileNavBar />
         <CitizenIAstedWindow />
         <GlobalCallAlert />
-      </div>
+      </SidebarProvider>
     </ConsularThemeContext.Provider>
   )
 }

@@ -1,500 +1,451 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
-	Activity,
-	BookOpen,
-	Building2,
-	Calendar,
-	ChevronsLeft,
-	ChevronsRight,
-	Crown,
-	FileText,
-	Files,
-	FolderOpen,
-	Globe,
-	Handshake,
-	LayoutDashboard,
-	LifeBuoy,
-	Moon,
-	Newspaper,
-	ScrollText,
-	Settings,
-	Sun,
-	Users,
-} from "lucide-react";
-import { useTheme } from "next-themes";
-import { useTranslation } from "react-i18next";
-import { LogoutButton } from "@/components/sidebars/logout-button";
-import { Button } from "@/components/ui/button";
+  Activity,
+  BookOpen,
+  Building2,
+  Calendar,
+  ChevronsLeft,
+  ChevronsRight,
+  FileText,
+  Files,
+  FolderOpen,
+  Globe,
+  LayoutDashboard,
+  LifeBuoy,
+  Moon,
+  Newspaper,
+  ScrollText,
+  Settings,
+  Sun,
+  Users,
+} from "lucide-react"
+import { useTheme } from "next-themes"
+import { useTranslation } from "react-i18next"
+import { LogoutButton } from "@/components/sidebars/logout-button"
+import { Button } from "@/components/ui/button"
 import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useSuperAdminData } from "@/hooks/use-superadmin-data";
-import { cn } from "@/lib/utils";
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { useSuperAdminData } from "@/hooks/use-superadmin-data"
+import { cn } from "@/lib/utils"
 
-// ─── Types ──────────────────────────────────────────────
 interface NavItem {
-	title: string;
-	url: string;
-	icon: React.ElementType;
-	/** Module code — when set, item is shown only if user has this module in allowedModules */
-	moduleCode?: string;
+  title: string
+  url: string
+  icon: React.ElementType
+  /** Module code — when set, item is shown only if user has this module in allowedModules */
+  moduleCode?: string
 }
 
 interface NavSection {
-	label: string;
-	items: NavItem[];
+  label: string
+  items: NavItem[]
 }
 
-interface SuperadminSidebarProps {
-	isExpanded?: boolean;
-	onToggle?: () => void;
+export function SuperadminSidebar() {
+  const pathname = usePathname()
+  const { t } = useTranslation()
+  const user = useSuperAdminData()
+
+  const allNavSections: NavSection[] = [
+    {
+      label: "Réseau",
+      items: [
+        {
+          title: t("superadmin.nav.dashboard"),
+          url: "/",
+          icon: LayoutDashboard,
+        },
+        {
+          title: t("superadmin.nav.representations", "Représentations"),
+          url: "/reps",
+          icon: Building2,
+          moduleCode: "team",
+        },
+        {
+          title: t(
+            "superadmin.nav.affairesConsulaires",
+            "Affaires Consulaires"
+          ),
+          url: "/affaires-consulaires",
+          icon: Globe,
+          moduleCode: "consular_affairs",
+        },
+        {
+          title: t(
+            "superadmin.nav.affairesDiplomatiques",
+            "Affaires Diplomatiques"
+          ),
+          url: "/affaires-diplomatiques",
+          icon: Globe,
+          moduleCode: "diplomatic_affairs",
+        },
+      ],
+    },
+    {
+      label: "Population",
+      items: [
+        {
+          title: t("superadmin.nav.users"),
+          url: "/users",
+          icon: Users,
+          moduleCode: "team",
+        },
+        {
+          title: t("superadmin.nav.support"),
+          url: "/support",
+          icon: LifeBuoy,
+          moduleCode: "calendar",
+        },
+      ],
+    },
+    {
+      label: "iBureau",
+      items: [
+        {
+          title: "iCorrespondance",
+          url: "/icorrespondance",
+          icon: FolderOpen,
+          moduleCode: "correspondence",
+        },
+        {
+          title: "iDocument",
+          url: "/idocument",
+          icon: FileText,
+          moduleCode: "documents",
+        },
+        {
+          title: "Modèles de documents",
+          url: "/config/templates",
+          icon: Files,
+          moduleCode: "documents",
+        },
+        {
+          title: "iAgenda",
+          url: "/iagenda",
+          icon: Calendar,
+          moduleCode: "calendar",
+        },
+        {
+          title: t("superadmin.nav.appointments", "Rendez-vous"),
+          url: "/appointments",
+          icon: Calendar,
+          moduleCode: "calendar",
+        },
+      ],
+    },
+    {
+      label: "Sécurité & Système",
+      items: [
+        {
+          title: t("superadmin.nav.auditLogs"),
+          url: "/audit-logs",
+          icon: ScrollText,
+          moduleCode: "statistics",
+        },
+        {
+          title: t("superadmin.nav.monitoring", "Monitoring"),
+          url: "/monitoring",
+          icon: Activity,
+          moduleCode: "statistics",
+        },
+        {
+          title: t("superadmin.nav.settings"),
+          url: "/settings",
+          icon: Settings,
+          moduleCode: "settings",
+        },
+      ],
+    },
+    {
+      label: "Éditorial",
+      items: [
+        {
+          title: t("superadmin.nav.posts"),
+          url: "/posts",
+          icon: Newspaper,
+          moduleCode: "news",
+        },
+        {
+          title: t("superadmin.nav.tutorials"),
+          url: "/tutorials",
+          icon: BookOpen,
+          moduleCode: "news",
+        },
+        {
+          title: t("superadmin.nav.events"),
+          url: "/events",
+          icon: Calendar,
+          moduleCode: "community",
+        },
+      ],
+    },
+  ]
+
+  // SuperAdmin/AdminSystem with no allowedModules restriction → see everything
+  // Admins with specific allowedModules → only see items whose moduleCode is in the list
+  const allowedModules = user.userData?.allowedModules as string[] | undefined
+  const hasModuleRestriction =
+    !!allowedModules && allowedModules.length > 0 && !user.isSuperAdmin
+
+  const groups = hasModuleRestriction
+    ? allNavSections
+        .map((section) => ({
+          ...section,
+          items: section.items.filter(
+            (item) =>
+              !item.moduleCode || allowedModules.includes(item.moduleCode)
+          ),
+        }))
+        .filter((section) => section.items.length > 0)
+    : allNavSections
+
+  const isActive = (url: string) => {
+    if (url === "/") {
+      return pathname === "/"
+    }
+    return pathname.startsWith(url)
+  }
+
+  return (
+    <TooltipProvider delayDuration={100}>
+      <Sidebar
+        variant="sidebar"
+        collapsible="icon"
+        className="[&_[data-slot=sidebar-container]]:border-r-border/50 [&_[data-slot=sidebar-inner]]:bg-secondary"
+      >
+        <SidebarHeader className="px-3 pt-3 pb-3">
+          <Header
+            roleLabel={
+              user.userData?.role === "admin_system"
+                ? "Administration Système"
+                : user.userData?.role === "admin"
+                  ? "Administration"
+                  : "Super Administration"
+            }
+          />
+        </SidebarHeader>
+
+        <SidebarContent className="gap-0 px-3 citizen-scrollbar">
+          {groups.map((section, sectionIdx) => (
+            <SidebarGroup key={section.label} className="px-0 py-0">
+              {sectionIdx > 0 && (
+                <div className="mx-0 my-2 border-t border-foreground/5 pt-2 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-8" />
+              )}
+              <SidebarGroupLabel className="mb-1 block h-auto px-3 py-0 text-[10px] font-extrabold tracking-widest text-muted-foreground/70 uppercase">
+                {section.label}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-0.5">
+                  {section.items.map((item) => {
+                    const active = isActive(item.url)
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={active}
+                          tooltip={item.title}
+                          className={cn(
+                            "h-9 gap-3 rounded-xl px-3 text-sm text-muted-foreground transition-all duration-200",
+                            "hover:bg-[#EBE6DC]/50 hover:text-foreground dark:hover:bg-[#383633]/50",
+                            "data-[active=true]:bg-primary/10 data-[active=true]:font-bold data-[active=true]:text-primary data-[active=true]:hover:bg-primary/15 data-[active=true]:hover:text-primary",
+                            "group-data-[collapsible=icon]:size-11! group-data-[collapsible=icon]:rounded-full! group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:mx-auto"
+                          )}
+                        >
+                          <Link href={item.url}>
+                            <item.icon className="size-[18px] shrink-0" />
+                            <span className="min-w-0 flex-1 truncate">
+                              {item.title}
+                            </span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+        </SidebarContent>
+
+        <SidebarFooter className="border-t border-foreground/5 px-3 pt-3">
+          <FooterControls
+            user={user}
+            collapseLabel={t("mySpace.nav.collapse")}
+            expandLabel={t("mySpace.nav.expand")}
+            lightLabel={t("theme.light")}
+            darkLabel={t("theme.dark")}
+          />
+        </SidebarFooter>
+      </Sidebar>
+    </TooltipProvider>
+  )
 }
 
-// ─── Sub-components ─────────────────────────────────────
-
-/**
- * Text that fades in/out smoothly when the sidebar expands/collapses.
- */
-function SidebarText({
-	isExpanded,
-	children,
-	className,
-}: {
-	isExpanded: boolean;
-	children: React.ReactNode;
-	className?: string;
-}) {
-	return (
-		<span
-			className={cn(
-				"truncate text-sm whitespace-nowrap transition-opacity duration-200",
-				isExpanded ? "opacity-100 delay-100" : "opacity-0 w-0 overflow-hidden",
-				className,
-			)}
-		>
-			{children}
-		</span>
-	);
+function Header({ roleLabel }: { roleLabel: string }) {
+  const { state } = useSidebar()
+  return (
+    <Link
+      href="/"
+      className={cn(
+        "flex items-center",
+        state === "expanded" ? "gap-2" : "justify-center"
+      )}
+    >
+      <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#FDFCFA] dark:bg-[#21201E]">
+        <img
+          src="/icons/apple-icon.png"
+          alt="Logo"
+          className="h-full w-full object-contain"
+        />
+      </div>
+      {state === "expanded" && (
+        <div className="flex flex-col overflow-hidden whitespace-nowrap text-foreground">
+          <span className="text-sm font-bold">CONSULAT.GA</span>
+          <span className="text-xs text-foreground/60">{roleLabel}</span>
+        </div>
+      )}
+    </Link>
+  )
 }
 
-// ─── Main Component ─────────────────────────────────────
-export function SuperadminSidebar({
-	isExpanded = false,
-	onToggle,
-}: SuperadminSidebarProps) {
-	const pathname = usePathname();
-	const { t, i18n } = useTranslation();
-	const { theme, setTheme } = useTheme();
-	const user = useSuperAdminData();
+interface FooterControlsProps {
+  user: ReturnType<typeof useSuperAdminData>
+  collapseLabel: string
+  expandLabel: string
+  lightLabel: string
+  darkLabel: string
+}
 
+function FooterControls({
+  user,
+  collapseLabel,
+  expandLabel,
+  lightLabel,
+  darkLabel,
+}: FooterControlsProps) {
+  const { state, toggleSidebar } = useSidebar()
+  const { i18n } = useTranslation()
+  const { theme, setTheme } = useTheme()
+  const isExpanded = state === "expanded"
+  const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en"
+  const toggleLanguage = () => {
+    i18n.changeLanguage(currentLang === "fr" ? "en" : "fr")
+  }
 
-	// ─── Navigation Sections (4 axes) ───────────────────
-	const allNavSections: NavSection[] = [
-		// ═══════════════════════════════════════════════════
-		//  AXE 1 — RÉSEAU (Les Organismes)
-		// ═══════════════════════════════════════════════════
-		{
-			label: "Réseau",
-			items: [
-				{
-					title: t("superadmin.nav.dashboard"),
-					url: "/",
-					icon: LayoutDashboard,
-					// Dashboard always visible — no moduleCode
-				},
-				{
-					title: t("superadmin.nav.representations", "Représentations"),
-					url: "/reps",
-					icon: Building2,
-					moduleCode: "team",
-				},
-				{
-					title: t("superadmin.nav.affairesConsulaires", "Affaires Consulaires"),
-					url: "/affaires-consulaires",
-					icon: Globe,
-					moduleCode: "consular_affairs",
-				},
-				{
-					title: t("superadmin.nav.affairesDiplomatiques", "Affaires Diplomatiques"),
-					url: "/affaires-diplomatiques",
-					icon: Globe,
-					moduleCode: "diplomatic_affairs",
-				},
-			],
-		},
+  return (
+    <>
+      <div
+        className={cn(
+          "flex items-center gap-1 px-1",
+          !isExpanded && "flex-col"
+        )}
+      >
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleLanguage}
+          className="flex h-9 items-center gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+        >
+          <span className="text-base leading-none">
+            {currentLang === "fr" ? "🇫🇷" : "🇬🇧"}
+          </span>
+          <span className="text-xs font-medium uppercase">{currentLang}</span>
+        </Button>
 
-		// ═══════════════════════════════════════════════════
-		//  AXE 2 — POPULATION (Les Utilisateurs)
-		// ═══════════════════════════════════════════════════
-		{
-			label: "Population",
-			items: [
-				{
-					title: t("superadmin.nav.users"),
-					url: "/users",
-					icon: Users,
-					moduleCode: "team",
-				},
-				{
-					title: t("superadmin.nav.support"),
-					url: "/support",
-					icon: LifeBuoy,
-					moduleCode: "calendar",
-				},
-			],
-		},
+        {isExpanded && <div className="flex-1" />}
 
-		// ═══════════════════════════════════════════════════
-		//  AXE 3 — iBUREAU (Les Volets métier)
-		// ═══════════════════════════════════════════════════
-		{
-			label: "iBureau",
-			items: [
-				{
-					title: "iCorrespondance",
-					url: "/icorrespondance",
-					icon: FolderOpen,
-					moduleCode: "correspondence",
-				},
-				{
-					title: "iDocument",
-					url: "/idocument",
-					icon: FileText,
-					moduleCode: "documents",
-				},
-				{
-					title: "Modèles de documents",
-					url: "/config/templates",
-					icon: Files,
-					moduleCode: "documents",
-				},
-				{
-					title: "iAgenda",
-					url: "/iagenda",
-					icon: Calendar,
-					moduleCode: "calendar",
-				},
-				{
-					title: t("superadmin.nav.appointments", "Rendez-vous"),
-					url: "/appointments",
-					icon: Calendar,
-					moduleCode: "calendar",
-				},
-			],
-		},
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-muted-foreground hover:text-foreground"
+              onClick={toggleSidebar}
+            >
+              {isExpanded ? (
+                <ChevronsLeft className="size-4" />
+              ) : (
+                <ChevronsRight className="size-4" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side={isExpanded ? "top" : "right"}>
+            {isExpanded ? collapseLabel : expandLabel}
+          </TooltipContent>
+        </Tooltip>
 
-		// ═══════════════════════════════════════════════════
-		//  AXE 4 — SÉCURITÉ & SYSTÈME
-		// ═══════════════════════════════════════════════════
-		{
-			label: "Sécurité & Système",
-			items: [
-				{
-					title: t("superadmin.nav.auditLogs"),
-					url: "/audit-logs",
-					icon: ScrollText,
-					moduleCode: "statistics",
-				},
-				{
-					title: t("superadmin.nav.monitoring", "Monitoring"),
-					url: "/monitoring",
-					icon: Activity,
-					moduleCode: "statistics",
-				},
-				{
-					title: t("superadmin.nav.settings"),
-					url: "/settings",
-					icon: Settings,
-					moduleCode: "settings",
-				},
-			],
-		},
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="h-9 w-9 text-muted-foreground hover:text-foreground"
+            >
+              {theme === "dark" ? (
+                <Sun className="size-4" />
+              ) : (
+                <Moon className="size-4" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side={isExpanded ? "top" : "right"}>
+            {theme === "dark" ? lightLabel : darkLabel}
+          </TooltipContent>
+        </Tooltip>
+      </div>
 
-		// ═══════════════════════════════════════════════════
-		//  AXE 5 — ÉDITORIAL (Contenu public)
-		// ═══════════════════════════════════════════════════
-		{
-			label: "Éditorial",
-			items: [
-				{
-					title: t("superadmin.nav.posts"),
-					url: "/posts",
-					icon: Newspaper,
-					moduleCode: "news",
-				},
-				{
-					title: t("superadmin.nav.tutorials"),
-					url: "/tutorials",
-					icon: BookOpen,
-					moduleCode: "news",
-				},
-				{
-					title: t("superadmin.nav.events"),
-					url: "/events",
-					icon: Calendar,
-					moduleCode: "community",
-				},
-			],
-		},
-	];
-
-	// ─── Module-based filtering ─────────────────────────
-	// SuperAdmin/AdminSystem with no allowedModules restriction → see everything
-	// Admins with specific allowedModules → only see items whose moduleCode is in the list
-	const allowedModules = user.userData?.allowedModules as string[] | undefined;
-	const hasModuleRestriction = !!allowedModules && allowedModules.length > 0 && !user.isSuperAdmin;
-
-	const groups = hasModuleRestriction
-		? allNavSections
-				.map((section) => ({
-					...section,
-					items: section.items.filter(
-						(item) => !item.moduleCode || allowedModules.includes(item.moduleCode),
-					),
-				}))
-				.filter((section) => section.items.length > 0)
-		: allNavSections;
-
-	const isActive = (url: string) => {
-		if (url === "/") {
-			return pathname === "/";
-		}
-		return pathname.startsWith(url);
-	};
-
-	const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en";
-	const toggleLanguage = () => {
-		i18n.changeLanguage(currentLang === "fr" ? "en" : "fr");
-	};
-
-	return (
-		<TooltipProvider delayDuration={100}>
-			<aside
-				data-slot="sidebar"
-				className={cn(
-					"flex flex-col py-3 px-3 h-full overflow-hidden",
-					"transition-[width] duration-300 ease-in-out",
-					isExpanded ? "w-64 items-stretch" : "w-[68px] items-center",
-				)}
-			>
-				{/* ─── Logo ─────────────────────────────────── */}
-				<div className={cn("mb-3", isExpanded ? "px-2" : "")}>
-					<Link
-						href="/"
-						className={`flex items-center${isExpanded ? " gap-2" : ""}`}
-					>
-						<div className="size-10 shrink-0 rounded-full bg-[#FDFCFA] dark:bg-[#21201E] flex items-center justify-center overflow-hidden">
-							<img
-								src="/icons/apple-icon.png"
-								alt="Logo"
-								className="w-full h-full object-contain"
-							/>
-						</div>
-						<div
-							className={cn(
-								"flex flex-col text-foreground transition-opacity duration-200 overflow-hidden whitespace-nowrap",
-								isExpanded ? "opacity-100 delay-100" : "opacity-0 w-0",
-							)}
-						>
-							<span className="text-sm font-bold">CONSULAT.GA</span>
-							<span className="text-foreground/60 text-xs">
-								{user.userData?.role === "admin_system"
-									? "Administration Système"
-									: user.userData?.role === "admin"
-										? "Administration"
-										: "Super Administration"}
-							</span>
-						</div>
-					</Link>
-				</div>
-
-				{/* ─── Navigation ───────────────────────────── */}
-				<nav
-					className={cn(
-						"flex flex-col gap-0.5 flex-1 overflow-y-auto overflow-x-hidden citizen-scrollbar",
-						!isExpanded && "items-center",
-					)}
-				>
-					{groups.map((section, sectionIdx) => (
-						<div key={section.label}>
-							{/* Section separator */}
-							{sectionIdx > 0 && (
-								<div
-									className={cn(
-										"my-2",
-										isExpanded
-											? "border-t border-foreground/5 pt-2"
-											: "border-t border-foreground/5 pt-2 w-8",
-									)}
-								/>
-							)}
-
-							{/* Section label (expanded only) */}
-							{isExpanded && (
-								<span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/70 px-3 mb-1 block">
-									{section.label}
-								</span>
-							)}
-
-							{/* Items */}
-							{section.items.map((item) => {
-								const active = isActive(item.url);
-								const button = (
-									<Button
-										asChild
-										variant="ghost"
-										size={isExpanded ? "default" : "icon"}
-										className={cn(
-											"transition-all duration-200 group/item",
-											isExpanded
-												? "w-full justify-start gap-3 px-3 h-9 rounded-xl"
-												: "w-11 h-11 rounded-full",
-											active
-												? "bg-primary/10 text-primary font-bold hover:bg-primary/15 hover:text-primary"
-												: "text-muted-foreground hover:text-foreground hover:bg-[#EBE6DC]/50 dark:hover:bg-[#383633]/50",
-										)}
-									>
-										<Link href={item.url}>
-											<item.icon className="size-[18px] shrink-0" />
-											<SidebarText isExpanded={isExpanded}>
-												{item.title}
-											</SidebarText>
-											{!isExpanded && (
-												<span className="sr-only">{item.title}</span>
-											)}
-										</Link>
-									</Button>
-								);
-
-								if (!isExpanded) {
-									return (
-										<Tooltip key={item.title}>
-											<TooltipTrigger asChild>{button}</TooltipTrigger>
-											<TooltipContent side="right" sideOffset={10}>
-												{item.title}
-											</TooltipContent>
-										</Tooltip>
-									);
-								}
-
-								return <div key={item.title}>{button}</div>;
-							})}
-						</div>
-					))}
-				</nav>
-
-				{/* ─── Footer Controls ──────────────────────── */}
-				<div
-					className={cn(
-						"flex flex-col gap-1.5 pt-3 border-t border-foreground/5",
-						!isExpanded && "items-center",
-					)}
-				>
-					{/* Language + Collapse + Dark Mode row */}
-					<div
-						className={
-							`flex items-center gap-1 px-1${!isExpanded ? " flex-col" : ""}`
-						}
-					>
-						{/* Language Toggle */}
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={toggleLanguage}
-							className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground h-9 px-2"
-						>
-							<span className="text-base leading-none">
-								{currentLang === "fr" ? "🇫🇷" : "🇬🇧"}
-							</span>
-							<span className="text-xs font-medium uppercase">
-								{currentLang}
-							</span>
-						</Button>
-
-						<div className="flex-1" />
-
-						{/* Toggle Sidebar Button */}
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant="ghost"
-									size="icon"
-									className="h-9 w-9 text-muted-foreground hover:text-foreground"
-									onClick={onToggle}
-								>
-									{isExpanded ? (
-										<ChevronsLeft className="size-4" />
-									) : (
-										<ChevronsRight className="size-4" />
-									)}
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent side="top">
-								{isExpanded
-									? t("mySpace.nav.collapse")
-									: t("mySpace.nav.expand")}
-							</TooltipContent>
-						</Tooltip>
-
-						{/* Dark Mode Toggle */}
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant="ghost"
-									size="icon"
-									onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-									className="h-9 w-9 text-muted-foreground hover:text-foreground"
-								>
-									{theme === "dark" ? (
-										<Sun className="size-4" />
-									) : (
-										<Moon className="size-4" />
-									)}
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent side="top">
-								{theme === "dark" ? t("theme.light") : t("theme.dark")}
-							</TooltipContent>
-						</Tooltip>
-					</div>
-
-					{/* User info + Logout */}
-					<div
-						className={cn(
-							"flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[#EBE6DC]/50 dark:bg-[#383633]/50",
-							!isExpanded && "justify-center px-0 bg-transparent",
-						)}
-					>
-						<div className="size-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-							<span className="text-xs font-bold text-primary">
-								{user.userData?.firstName?.[0] || "A"}
-							</span>
-						</div>
-						{isExpanded && (
-							<>
-								<div className="flex-1 min-w-0">
-									<p className="text-xs font-medium truncate">
-										{user.userData?.firstName && user.userData?.lastName
-											? `${user.userData.firstName} ${user.userData.lastName}`
-											: user.userData?.firstName || "Admin"}
-									</p>
-									<p className="text-[10px] text-muted-foreground truncate">
-										{user.userData?.email || ""}
-									</p>
-								</div>
-								<LogoutButton />
-							</>
-						)}
-						{!isExpanded && <LogoutButton tooltipSide="right" />}
-					</div>
-				</div>
-			</aside>
-		</TooltipProvider>
-	);
+      {/* User info + Logout */}
+      <div
+        className={cn(
+          "flex items-center gap-2 rounded-lg px-2 py-1.5",
+          isExpanded
+            ? "bg-[#EBE6DC]/50 dark:bg-[#383633]/50"
+            : "justify-center bg-transparent px-0"
+        )}
+      >
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+          <span className="text-xs font-bold text-primary">
+            {user.userData?.firstName?.[0] || "A"}
+          </span>
+        </div>
+        {isExpanded && (
+          <>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-medium">
+                {user.userData?.firstName && user.userData?.lastName
+                  ? `${user.userData.firstName} ${user.userData.lastName}`
+                  : user.userData?.firstName || "Admin"}
+              </p>
+              <p className="truncate text-[10px] text-muted-foreground">
+                {user.userData?.email || ""}
+              </p>
+            </div>
+            <LogoutButton />
+          </>
+        )}
+        {!isExpanded && <LogoutButton tooltipSide="right" />}
+      </div>
+    </>
+  )
 }
