@@ -29,7 +29,7 @@ import {
 } from "@workspace/api/hooks";
 import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import { FEATURES } from "@workspace/shared/feature-flags";
-import { CustomCallUI } from "../components/meetings/custom-call-ui";
+import { DirectCallView } from "../components/meetings/DirectCallView";
 import { useCallCenter } from "../hooks/use-call-center";
 import { useIsMobile } from "../hooks/use-mobile";
 import { useMeeting } from "../hooks/use-meeting";
@@ -299,7 +299,7 @@ function GlobalCallAlertInner({
 	}, [activeMeetingData?.status, activeMeetingId, setGlobalMeetingId]);
 
 	const callContent = (
-		<div className="flex flex-col h-full bg-zinc-950 overflow-hidden">
+		<div className="flex flex-col h-full overflow-hidden">
 			{token && wsUrl ? (
 				<LiveKitRoom
 					token={token}
@@ -315,11 +315,14 @@ function GlobalCallAlertInner({
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
-					<CustomCallUI onHangUp={handleHangUp} title={callerName ?? activeCallToDisplay?.title} />
+					<DirectCallView
+						onHangUp={handleHangUp}
+						title={callerName ?? activeCallToDisplay?.title ?? undefined}
+					/>
 				</LiveKitRoom>
 			) : (
-				<div className="h-full flex items-center justify-center">
-					<Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+				<div className="h-full flex items-center justify-center call-hero-dark">
+					<Loader2 className="w-8 h-8 animate-spin text-white/40" />
 				</div>
 			)}
 		</div>

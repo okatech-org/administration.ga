@@ -5,7 +5,7 @@ import {
 } from "@livekit/components-react";
 import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
-import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+import { CitizenAudioCallView } from "@/components/meetings/CitizenAudioCallView";
 
 import { useQuery } from "convex/react";
 import { Loader2, Phone, PhoneCall, PhoneOff } from "lucide-react";
@@ -174,7 +174,7 @@ export function GlobalCallAlert() {
 	}, [activeMeetingData?.status, activeMeetingId, cleanupCallState]);
 
 	const callContent = (
-		<div className="flex flex-col h-full bg-zinc-950 overflow-hidden">
+		<div className="flex flex-col h-full overflow-hidden">
 			{token && wsUrl ? (
 				<LiveKitRoom
 					token={token}
@@ -188,11 +188,14 @@ export function GlobalCallAlert() {
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
-					<CustomCallUI onHangUp={handleHangUp} title={callerName ?? activeCallToDisplay?.title} />
+					<CitizenAudioCallView
+						onHangUp={handleHangUp}
+						title={callerName ?? activeCallToDisplay?.title ?? undefined}
+					/>
 				</LiveKitRoom>
 			) : (
-				<div className="h-full flex items-center justify-center">
-					<Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+				<div className="h-full flex items-center justify-center call-hero-dark">
+					<Loader2 className="w-8 h-8 animate-spin text-white/40" />
 				</div>
 			)}
 		</div>

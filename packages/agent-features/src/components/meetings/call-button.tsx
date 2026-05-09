@@ -5,7 +5,7 @@ import { LiveKitRoom } from "@livekit/components-react";
 import { Loader2, Phone } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CustomCallUI } from "./custom-call-ui";
+import { DirectCallView } from "./DirectCallView";
 import { Button } from "@workspace/ui/components/button";
 import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import {
@@ -20,6 +20,8 @@ import {
 	SheetDescription,
 	SheetTitle,
 } from "@workspace/ui/components/sheet";
+import { api } from "@convex/_generated/api";
+import { useConvexMutationQuery } from "@workspace/api/hooks";
 import { useMeeting } from "../../hooks/use-meeting";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { useRingtone } from "../../hooks/use-ringtone";
@@ -88,8 +90,19 @@ export function CallButton({
 		isConnecting,
 		connect,
 		disconnect,
-		createMeeting,
 	} = useMeeting(meetingId ?? undefined);
+
+	// Mutation `callUser` — crée une meeting avec callStatus="initiating",
+	// indispensable pour que la transition vers "ringing" puisse fonctionner
+	// et que le destinataire reçoive la sonnerie via GlobalCallAlert.
+	const { mutateAsync: callUser, isPending: isCallingUser } =
+		useConvexMutationQuery(api.functions.meetings.callUser);
+
+	// Mutation `setCallRinging` — fait passer callStatus de "initiating" à
+	// "ringing" pour que listMine fasse ringer le destinataire.
+	const { mutateAsync: setCallRinging } = useConvexMutationQuery(
+		api.functions.meetings.setCallRinging,
+	);
 
 	// Auto-close when the other side hangs up
 	useEffect(() => {
@@ -110,17 +123,20 @@ export function CallButton({
 		try {
 			hasConnectedRef.current = false;
 			userHangUpRef.current = false;
-			// Create meeting linked to context
-			const result = await createMeeting.mutateAsync({
-				title: `Appel ${new Date().toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}`,
-				type: "call",
+			// Crée la meeting via `callUser` (callStatus: "initiating")
+			// au lieu de `meetings.create` qui ne pose pas de callStatus
+			// — sans callStatus, le destinataire ne sonne pas.
+			//
+			// NB : `callUser` ne supporte pas requestId/appointmentId. Si on
+			// veut lier l'appel à un dossier, on peut soit étendre `callUser`
+			// soit faire un patch séparé après création — laissé en TODO si
+			// besoin réel (le contexte du dossier reste accessible via le panneau
+			// CitizenContextPanel pendant l'appel).
+			void requestId;
+			void appointmentId;
+			const result = await callUser({
 				orgId,
-				participantIds: [participantUserId],
-				requestId,
-				appointmentId,
-				// Grant audio + video publish permissions. L'agent bascule la caméra
-				// via le bouton de CustomCallUI ; les citoyens restent audio-only via
-				// la mutation callOrganization qui force mediaType="audio".
+				targetUserId: participantUserId,
 				mediaType: "video",
 			});
 			setMeetingId(result.meetingId);
@@ -130,6 +146,9 @@ export function CallButton({
 			captureEvent("admin_livekit_call_started");
 			// Connect to LiveKit
 			await connect(result.meetingId);
+			// Transition initiating → ringing : sans cette étape, listMine côté
+			// destinataire ne déclenche pas la sonnerie.
+			await setCallRinging({ meetingId: result.meetingId });
 		} catch (err) {
 			console.error("Failed to start call:", err);
 		}
@@ -138,7 +157,8 @@ export function CallButton({
 		participantUserId,
 		requestId,
 		appointmentId,
-		createMeeting,
+		callUser,
+		setCallRinging,
 		connect,
 		setGlobalMeetingId,
 	]);
@@ -173,7 +193,7 @@ export function CallButton({
 	}, [handleHangUp]);
 
 	const callContent = (
-		<div className="flex flex-col flex-1 min-h-0 h-full bg-zinc-950 overflow-hidden">
+		<div className="flex flex-col flex-1 min-h-0 h-full overflow-hidden">
 			{token && wsUrl ? (
 				<LiveKitRoom
 					token={token}
@@ -188,13 +208,13 @@ export function CallButton({
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
-					<CustomCallUI onHangUp={handleHangUp} title={displayLabel} />
+					<DirectCallView onHangUp={handleHangUp} title={displayLabel} />
 				</LiveKitRoom>
 			) : (
-				<div className="h-full flex items-center justify-center">
+				<div className="h-full flex items-center justify-center call-hero-dark">
 					<div className="text-center space-y-3">
-						<Loader2 className="w-8 h-8 animate-spin text-zinc-500 mx-auto" />
-						<p className="text-zinc-400 text-sm">
+						<Loader2 className="w-8 h-8 animate-spin text-white/40 mx-auto" />
+						<p className="text-white/60 text-sm">
 							{t("meetings.connecting", "Connexion au serveur d'appel...")}
 						</p>
 					</div>
@@ -209,10 +229,10 @@ export function CallButton({
 				variant={variant}
 				size={size}
 				onClick={handleCall}
-				disabled={isConnecting || createMeeting.isPending}
+				disabled={isConnecting || isCallingUser}
 				className={className}
 			>
-				{isConnecting || createMeeting.isPending ? (
+				{isConnecting || isCallingUser ? (
 					<Loader2 className="w-4 h-4 animate-spin mr-1.5" />
 				) : (
 					<Phone className="w-4 h-4 mr-1.5" />
