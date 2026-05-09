@@ -170,12 +170,38 @@ export function IAstedMeetingTab() {
 		}
 	};
 
+	// Calcul + validation centralisés du timestamp planifié.
+	// Statuts possibles :
+	//  - "immediate"  : date ET heure vides → démarrage immédiat
+	//  - "incomplete" : un seul des deux est rempli → erreur, ne pas créer
+	//  - "invalid"    : combo invalide ou date dans le passé → erreur
+	//  - "scheduled"  : timestamp valide dans le futur
+	const scheduleState = (() => {
+		const hasDate = !!scheduledDate;
+		const hasTime = !!scheduledTime;
+		if (!hasDate && !hasTime) return { kind: "immediate" as const };
+		if (hasDate !== hasTime) return { kind: "incomplete" as const };
+		const ts = new Date(`${scheduledDate}T${scheduledTime}`).getTime();
+		if (Number.isNaN(ts)) return { kind: "invalid" as const };
+		// Marge 1 min : si l'utilisateur tape une heure proche de maintenant,
+		// on accepte (sinon les "réunions instantanées avec date" plantent).
+		if (ts < Date.now() - 60_000) return { kind: "invalid" as const };
+		return { kind: "scheduled" as const, ts };
+	})();
+
 	const handleCreate = async () => {
 		if (!activeOrgId) return;
+		if (scheduleState.kind === "incomplete") {
+			toast.error("Renseignez la date ET l'heure, ou laissez les deux vides pour démarrer immédiatement");
+			return;
+		}
+		if (scheduleState.kind === "invalid") {
+			toast.error("La date/heure planifiée est invalide ou dans le passé");
+			return;
+		}
 		try {
-			const scheduledAt = scheduledDate && scheduledTime
-				? new Date(`${scheduledDate}T${scheduledTime}`).getTime()
-				: undefined;
+			const scheduledAt =
+				scheduleState.kind === "scheduled" ? scheduleState.ts : undefined;
 
 			const result = await createMeeting({
 				orgId: activeOrgId,
@@ -192,10 +218,10 @@ export function IAstedMeetingTab() {
 			resetForm();
 
 			if (scheduledAt) {
-				toast.success("Réunion planifiée ");
+				toast.success("Réunion planifiée");
 				setView("list");
 			} else {
-				toast.success("Réunion créée ");
+				toast.success("Réunion créée");
 				setView("prejoin");
 			}
 		} catch (e: any) {
@@ -459,11 +485,25 @@ export function IAstedMeetingTab() {
 				<div className="border-t px-4 py-3 flex items-center justify-between shrink-0">
 					<span className="text-[10px] text-muted-foreground">
 						{selectedParticipants.size} invité{selectedParticipants.size > 1 ? "s" : ""}
-						{scheduledDate && ` · Planifiée`}
+						{scheduleState.kind === "scheduled" && " · Planifiée"}
+						{scheduleState.kind === "incomplete" && (
+							<span className="text-destructive"> · Date OU heure manquante</span>
+						)}
+						{scheduleState.kind === "invalid" && (
+							<span className="text-destructive"> · Date passée ou invalide</span>
+						)}
 					</span>
-					<Button onClick={handleCreate} disabled={isCreating} className="gap-1.5 bg-primary hover:bg-primary/90">
+					<Button
+						onClick={handleCreate}
+						disabled={
+							isCreating ||
+							scheduleState.kind === "incomplete" ||
+							scheduleState.kind === "invalid"
+						}
+						className="gap-1.5 bg-primary hover:bg-primary/90"
+					>
 						{isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
-						{scheduledDate ? "Planifier" : "Démarrer"}
+						{scheduleState.kind === "scheduled" ? "Planifier" : "Démarrer maintenant"}
 					</Button>
 				</div>
 			</div>

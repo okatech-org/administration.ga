@@ -1,6 +1,12 @@
 "use client";
 
-import { useChat, useLocalParticipant } from "@livekit/components-react";
+import {
+  useChat,
+  useConnectionState,
+  useLocalParticipant,
+  useRemoteParticipants,
+} from "@livekit/components-react";
+import { ConnectionState } from "livekit-client";
 import { Send, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -30,6 +36,8 @@ export function MeetingChatPanel({
   const { t } = useTranslation();
   const { chatMessages, send, isSending } = useChat();
   const { localParticipant } = useLocalParticipant();
+  const remoteParticipants = useRemoteParticipants();
+  const connectionState = useConnectionState();
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -39,11 +47,31 @@ export function MeetingChatPanel({
     scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [chatMessages.length]);
 
+  // Warmup data channel — voir agent-web/MeetingChatPanel.tsx pour l'explication.
+  // Sans ce ping initial, le tout 1er `send` part avant que les peers n'aient
+  // négocié l'abonnement au topic 'lk.chat' → message vu localement uniquement.
+  const warmedUpRef = useRef(false);
+  useEffect(() => {
+    if (warmedUpRef.current) return;
+    if (connectionState !== ConnectionState.Connected) return;
+    if (!localParticipant) return;
+    if (remoteParticipants.length === 0) return;
+    warmedUpRef.current = true;
+    const encoder = new TextEncoder();
+    const data = encoder.encode("warmup");
+    localParticipant
+      .publishData(data, { reliable: true, topic: "lk.chat-warmup" })
+      .catch(() => {});
+  }, [connectionState, localParticipant, remoteParticipants.length]);
+
+  const isConnected = connectionState === ConnectionState.Connected;
+
   const handleSubmit = useCallback(
     async (e?: React.FormEvent) => {
       e?.preventDefault();
       const text = draft.trim();
       if (!text || isSending) return;
+      if (!isConnected) return;
       try {
         await send(text);
         setDraft("");
@@ -51,7 +79,7 @@ export function MeetingChatPanel({
         // Silencieux : si la room est déconnectée, le bouton sera quand même actif.
       }
     },
-    [draft, send, isSending],
+    [draft, send, isSending, isConnected],
   );
 
   const myIdentity = localParticipant?.identity;

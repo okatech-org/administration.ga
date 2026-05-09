@@ -1,6 +1,12 @@
 "use client";
 
-import { useChat, useLocalParticipant } from "@livekit/components-react";
+import {
+	useChat,
+	useConnectionState,
+	useLocalParticipant,
+	useRemoteParticipants,
+} from "@livekit/components-react";
+import { ConnectionState } from "livekit-client";
 import { Send, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -26,6 +32,8 @@ export function MeetingChatPanel({
   const { t } = useTranslation();
   const { chatMessages, send, isSending } = useChat();
   const { localParticipant } = useLocalParticipant();
+  const remoteParticipants = useRemoteParticipants();
+  const connectionState = useConnectionState();
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -34,11 +42,40 @@ export function MeetingChatPanel({
     scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [chatMessages.length]);
 
+  // BUG WORKAROUND : LiveKit useChat() perd le tout premier message de la
+  // session — le sender voit le message dans son historique local (ajouté
+  // optimiste), mais le `publishData` part avant que les peers n'aient
+  // négocié l'abonnement au topic 'lk.chat'. Les autres ne reçoivent jamais.
+  //
+  // Solution : envoyer un "warmup" ping sur un topic dédié dès que la room
+  // est Connected ET qu'un peer est présent. Ça force l'établissement du
+  // SCTP/DataChannel handshake et la souscription au topic 'lk.chat'.
+  // Les peers ne voient pas ce ping (topic différent, useChat l'ignore).
+  const warmedUpRef = useRef(false);
+  useEffect(() => {
+    if (warmedUpRef.current) return;
+    if (connectionState !== ConnectionState.Connected) return;
+    if (!localParticipant) return;
+    if (remoteParticipants.length === 0) return;
+    warmedUpRef.current = true;
+    const encoder = new TextEncoder();
+    const data = encoder.encode("warmup");
+    localParticipant
+      .publishData(data, { reliable: true, topic: "lk.chat-warmup" })
+      .catch(() => {
+        /* fail silent — au pire le 1er message échoue comme avant */
+      });
+  }, [connectionState, localParticipant, remoteParticipants.length]);
+
+  const isConnected = connectionState === ConnectionState.Connected;
+
   const handleSubmit = useCallback(
     async (e?: React.FormEvent) => {
       e?.preventDefault();
       const text = draft.trim();
       if (!text || isSending) return;
+      // Garde-fou : ne pas tenter d'envoyer si la room n'est pas Connected.
+      if (!isConnected) return;
       try {
         await send(text);
         setDraft("");
@@ -46,7 +83,7 @@ export function MeetingChatPanel({
         // ignore — room may have disconnected
       }
     },
-    [draft, send, isSending],
+    [draft, send, isSending, isConnected],
   );
 
   const myIdentity = localParticipant?.identity;

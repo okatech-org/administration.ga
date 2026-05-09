@@ -30,6 +30,7 @@ import {
 import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import { FEATURES } from "@workspace/shared/feature-flags";
 import { DirectCallView } from "../components/meetings/DirectCallView";
+import { MeetingStageView } from "../components/meetings-livekit/MeetingStageView";
 import { useCallCenter } from "../hooks/use-call-center";
 import { useIsMobile } from "../hooks/use-mobile";
 import { useMeeting } from "../hooks/use-meeting";
@@ -154,15 +155,27 @@ function GlobalCallAlertInner({
 		// Skip calls that are already answered or ended via callStatus
 		if (m.callStatus && m.callStatus !== "ringing" && m.callStatus !== "initiating") return false;
 		if (Date.now() - m._creationTime > 120_000) return false;
+		// Les RÉUNIONS (type="meeting") ne déclenchent PAS de sonnerie côté
+		// agent. L'agent les voit déjà dans iAgenda + iAsted iRéunion ; une
+		// sonnerie audible sur une réunion planifiée est inutilement intrusive.
+		// (Côté citoyen — fichier séparé — la sonnerie est conservée.)
+		if (m.type === "meeting") return false;
 		// Un appel que je viens d'initier (je suis `createdBy`) ne doit pas déclencher
 		// la sonnerie chez moi — je suis le caller, pas le callee.
 		if (me?._id && m.createdBy === me._id) return false;
-		// Si j'ai déjà rejoint cet appel (joinedAt renseigné), ce n'est plus un
-		// appel entrant : je suis en communication, pas à décrocher.
+		// Si je suis dans le tableau et que j'ai déjà soit rejoint (joinedAt
+		// + pas de leftAt = en com), soit quitté (leftAt renseigné),
+		// ne pas faire ringer. Notamment pour le cas "j'ai quitté la réunion
+		// mais elle est encore active côté serveur".
 		if (
 			me?._id &&
 			// biome-ignore lint/suspicious/noExplicitAny: participant shape from Convex
-			m.participants.some((p: any) => p.userId === me._id && p.joinedAt && !p.leftAt)
+			m.participants.some((p: any) => {
+				if (p.userId !== me._id) return false;
+				if (p.joinedAt && !p.leftAt) return true; // en communication
+				if (p.leftAt) return true; // déjà quitté
+				return false;
+			})
 		) {
 			return false;
 		}
@@ -298,6 +311,9 @@ function GlobalCallAlertInner({
 		}
 	}, [activeMeetingData?.status, activeMeetingId, setGlobalMeetingId]);
 
+	// Détection du type — si la meeting créée est de type="meeting", on rend
+	// la scène vidéo plein écran. Sinon, vue d'appel direct 1:1.
+	const isMeetingType = (activeMeetingData as any)?.type === "meeting";
 	const callContent = (
 		<div className="flex flex-col h-full overflow-hidden">
 			{token && wsUrl ? (
@@ -306,7 +322,7 @@ function GlobalCallAlertInner({
 					serverUrl={wsUrl}
 					connect={true}
 					audio={true}
-					video={false}
+					video={isMeetingType}
 					options={LIVEKIT_CALL_ROOM_OPTIONS}
 					onConnected={() => {
 						hasConnectedRef.current = true;
@@ -315,10 +331,21 @@ function GlobalCallAlertInner({
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
-					<DirectCallView
-						onHangUp={handleHangUp}
-						title={callerName ?? activeCallToDisplay?.title ?? undefined}
-					/>
+					{isMeetingType ? (
+						<MeetingStageView
+							meetingTitle={
+								(activeMeetingData as any)?.title ??
+								activeCallToDisplay?.title ??
+								"Réunion"
+							}
+							onHangUp={handleHangUp}
+						/>
+					) : (
+						<DirectCallView
+							onHangUp={handleHangUp}
+							title={callerName ?? activeCallToDisplay?.title ?? undefined}
+						/>
+					)}
 				</LiveKitRoom>
 			) : (
 				<div className="h-full flex items-center justify-center call-hero-dark">
