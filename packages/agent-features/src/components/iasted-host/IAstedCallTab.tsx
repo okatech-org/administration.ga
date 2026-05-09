@@ -100,7 +100,7 @@ export function IAstedCallTab({
 }: IAstedCallTabProps = {}) {
 	if (CALL_CENTER_ENABLED) {
 		return (
-			<CallCenterWithPostCallNote
+			<CallCenterShell
 				selectedLineId={selectedLineId}
 				onSelectLineId={onSelectLineId}
 				ringtoneMuted={ringtoneMuted}

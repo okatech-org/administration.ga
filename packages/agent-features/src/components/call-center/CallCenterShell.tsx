@@ -1,6 +1,14 @@
 "use client";
 
-import { User, Voicemail as VoicemailIcon, X } from "lucide-react";
+import {
+  Phone,
+  PhoneIncoming,
+  Plus,
+  Search,
+  User,
+  Voicemail as VoicemailIcon,
+  X,
+} from "lucide-react";
 import { useRouter } from "@workspace/routing";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -15,19 +23,12 @@ import { useCallCenter } from "../../hooks/use-call-center";
 import { useRingtone } from "../../hooks/use-ringtone";
 import { ActiveCallsBar, type ActiveCallSlot } from "./ActiveCallsBar";
 import { ActiveConversationView } from "./ActiveConversationView";
-import { CallContextDrawer } from "./CallContextDrawer";
+import { CallSidePane } from "./CallSidePane";
 import { CallRoomPool } from "./CallRoomMount";
-import { CollapsibleQueueBar } from "./CollapsibleQueueBar";
 import { IncomingCallQueue } from "./IncomingCallQueue";
 import { LineFilterDropdown } from "./LineFilterDropdown";
-import {
-  MissedCallsSection,
-  type MissedCallRow,
-} from "./MissedCallsSection";
-import {
-  RecentCallsSection,
-  type RecentCallRow,
-} from "./RecentCallsSection";
+import { TransferDialog } from "./TransferDialog";
+import type { RecentCallRow } from "./RecentCallsSection";
 import { SupervisionPanel } from "./SupervisionPanel";
 
 /**
@@ -95,6 +96,9 @@ export function CallCenterShell({
   const [pickingUpId, setPickingUpId] = useState<Id<"meetings"> | null>(null);
   const [callingBackIds, setCallingBackIds] = useState<Set<string>>(
     () => new Set(),
+  );
+  const [transferTargetId, setTransferTargetId] = useState<Id<"meetings"> | null>(
+    null,
   );
 
   // Filtrage par ligne
@@ -200,53 +204,38 @@ export function CallCenterShell({
     return (connected ?? activeCalls[0]) as ActiveCallSlot & { _id: string };
   }, [activeCalls, activeSlotId]);
 
-  // Rendu mutualisé de la colonne centrale — même code en mobile et desktop.
-  // Le filtre de ligne a été remonté dans le header iAppel (IAstedPage), donc
-  // pas de barre dédiée ici — on gagne un row de hauteur supplémentaire.
-  const centerColumn = (
+  // Colonne 1 : file d'appels permanente (tabs En attente / En cours / Terminés)
+  const queueColumn = (
+    <div className="w-[320px] shrink-0 hidden md:flex border-r">
+      <IncomingCallQueue
+        calls={filteredQueue as any}
+        activeCalls={activeCalls as ActiveCallSlot[]}
+        recentCalls={recentCalls as RecentCallRow[]}
+        focusedMeetingId={focusedMeetingId}
+        pickingUpId={pickingUpId}
+        onPickup={handlePickup}
+        onDecline={handleDecline}
+        onFocus={handleFocus}
+        onSelectActive={(id) => setFocusedMeetingId(id)}
+        onCallBackRecent={handleCallBackRecent}
+        pendingCallbackKeys={callingBackIds}
+      />
+    </div>
+  );
+
+  // Colonne 2 : zone conversation (ActiveConversationView ou empty state)
+  const conversationColumn = (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {conversationCall ? (
-        <>
-          {filteredQueue.length > 0 && (
-            <CollapsibleQueueBar
-              calls={filteredQueue as any}
-              focusedMeetingId={focusedMeetingId}
-              pickingUpId={pickingUpId}
-              onPickup={handlePickup}
-              onDecline={handleDecline}
-              onFocus={handleFocus}
-            />
-          )}
-          <ActiveConversationView
-            call={conversationCall}
-            onHold={(id) => hold(id)}
-            onResume={(id) => resume(id)}
-            onEnd={handleEndActive}
-          />
-        </>
-      ) : (
-        <IncomingCallQueue
-          calls={filteredQueue as any}
-          focusedMeetingId={focusedMeetingId}
-          pickingUpId={pickingUpId}
-          onPickup={handlePickup}
-          onDecline={handleDecline}
-          onFocus={handleFocus}
+        <ActiveConversationView
+          call={conversationCall}
+          onHold={(id) => hold(id)}
+          onResume={(id) => resume(id)}
+          onEnd={handleEndActive}
+          onRequestTransfer={(id) => setTransferTargetId(id)}
         />
-      )}
-      {(missedCalls.length > 0 || recentCalls.length > 0) && (
-        <div className="shrink-0 max-h-[50%] overflow-y-auto border-t bg-muted/10 px-3 pb-3">
-          <MissedCallsSection
-            rows={missedCalls as MissedCallRow[]}
-            pendingIds={callingBackIds}
-            onCallBack={handleCallBackMissed}
-          />
-          <RecentCallsSection
-            rows={recentCalls as RecentCallRow[]}
-            pendingIds={callingBackIds}
-            onCallBack={handleCallBackRecent}
-          />
-        </div>
+      ) : (
+        <ConversationEmptyState />
       )}
     </div>
   );
@@ -321,13 +310,31 @@ export function CallCenterShell({
           />
         )}
 
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           {compactShowVoicemail && VoicemailsList ? (
             <div className="h-full overflow-y-auto p-3">
               <VoicemailsList orgId={activeOrgId ?? null} />
             </div>
+          ) : conversationCall ? (
+            <ActiveConversationView
+              call={conversationCall}
+              onHold={(id) => hold(id)}
+              onResume={(id) => resume(id)}
+              onEnd={handleEndActive}
+              onRequestTransfer={(id) => setTransferTargetId(id)}
+            />
           ) : (
-            centerColumn
+            <IncomingCallQueue
+              calls={filteredQueue as any}
+              activeCalls={activeCalls as ActiveCallSlot[]}
+              recentCalls={recentCalls as RecentCallRow[]}
+              focusedMeetingId={focusedMeetingId}
+              pickingUpId={pickingUpId}
+              onPickup={handlePickup}
+              onDecline={handleDecline}
+              onFocus={handleFocus}
+              onSelectActive={(id) => setFocusedMeetingId(id)}
+            />
           )}
         </div>
 
@@ -345,24 +352,50 @@ export function CallCenterShell({
       {/* KPIs superviseur (silent fallback si pas de permission) */}
       <SupervisionPanel orgId={activeOrgId ?? null} />
 
-      {/* Barre des appels actifs (au-dessus des 3 colonnes) */}
-      <ActiveCallsBar
-        calls={activeCalls as ActiveCallSlot[]}
-        activeSlotId={activeSlotId}
-        onFocus={handleFocus}
-        onEnd={handleEndActive}
-        onHold={(id) => hold(id)}
-        onResume={(id) => resume(id)}
-      />
+      {/* Barre d'appels actifs concurrents (chips pour switch entre slots) */}
+      {activeCalls.length > 1 && (
+        <ActiveCallsBar
+          calls={activeCalls as ActiveCallSlot[]}
+          activeSlotId={activeSlotId}
+          onFocus={handleFocus}
+          onEnd={handleEndActive}
+          onHold={(id) => hold(id)}
+          onResume={(id) => resume(id)}
+        />
+      )}
 
-      {/* Layout 2 colonnes desktop, 1 colonne mobile.
-          Le filtre de lignes est intégré au header de centerColumn (popover),
-          donc plus besoin de rail/sheet dédié pour ça. */}
+      {/* Layout iCom — 3 colonnes desktop fidèle à la maquette
+          `agent-desktop.jsx > AgList | AgInCall | AgContextPane`.
+          Mobile : conversation prend toute la place, file + contexte dans des Sheets. */}
       {isMobile ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          {/* Barre mobile : juste le drawer contexte (le filtre lignes est
-              déjà dans le header de centerColumn ci-dessous) */}
-          <div className="flex shrink-0 items-center justify-end border-b bg-muted/10 px-3 py-2">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b bg-muted/10 px-3 py-2">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button size="sm" variant="outline" className="h-8 gap-1">
+                  <Phone className="h-3.5 w-3.5" />
+                  {t("callCenter.queue.title", "File d'appels")}
+                  {totalCount > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground ml-1">
+                      {totalCount}
+                    </span>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[320px] p-0">
+                <IncomingCallQueue
+                  calls={filteredQueue as any}
+                  activeCalls={activeCalls as ActiveCallSlot[]}
+                  recentCalls={recentCalls as RecentCallRow[]}
+                  focusedMeetingId={focusedMeetingId}
+                  pickingUpId={pickingUpId}
+                  onPickup={handlePickup}
+                  onDecline={handleDecline}
+                  onFocus={handleFocus}
+                  onSelectActive={(id) => setFocusedMeetingId(id)}
+                />
+              </SheetContent>
+            </Sheet>
             <Sheet>
               <SheetTrigger asChild>
                 <Button
@@ -372,11 +405,11 @@ export function CallCenterShell({
                   disabled={!drawerMeetingId}
                 >
                   <User className="h-3.5 w-3.5" />
-                  {t("callCenter.drawer.tabs.dossiers")}
+                  {t("callCenter.drawer.contextPane", "Contexte")}
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[360px] p-0">
-                <CallContextDrawer
+                <CallSidePane
                   meetingId={drawerMeetingId}
                   orgId={activeOrgId ?? null}
                   activeMeetingId={activeSlotId}
@@ -389,13 +422,13 @@ export function CallCenterShell({
             </Sheet>
           </div>
 
-          {centerColumn}
+          {conversationColumn}
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          {centerColumn}
-
-          <CallContextDrawer
+          {queueColumn}
+          {conversationColumn}
+          <CallSidePane
             meetingId={drawerMeetingId}
             orgId={activeOrgId ?? null}
             activeMeetingId={activeSlotId}
@@ -403,11 +436,6 @@ export function CallCenterShell({
               router.push(`/affaires-consulaires?request=${requestId}`)
             }
             onTransfer={transfer}
-            onEscalate={(id) => {
-              // Hook d'escalade : Sprint 6 enverra une notification au superviseur.
-              // Pour Sprint 5, toast déjà émis par QuickActions.
-              void id;
-            }}
           />
         </div>
       )}
@@ -420,9 +448,45 @@ export function CallCenterShell({
         onDisconnected={handleSlotDisconnected}
       />
 
+      {/* Transfer dialog — déclenché depuis ActiveConversationView ctl-bar */}
+      <TransferDialog
+        open={transferTargetId !== null}
+        onOpenChange={(open) => {
+          if (!open) setTransferTargetId(null);
+        }}
+        orgId={activeOrgId ?? null}
+        meetingId={transferTargetId}
+        onTransfer={transfer}
+      />
+
       {/* Pill flottant Raccrocher → désormais global (`GlobalCallPill` monté
           dans `AppShell`). Persiste sur toutes les routes et redirige vers
           /icom?tab=icall au clic. */}
+    </div>
+  );
+}
+
+/**
+ * Empty state de la colonne centrale quand aucun appel n'est actif.
+ * Suit la maquette : "Aucun appel actif · Vos prochains appels apparaîtront
+ * automatiquement ici. Le toast en bas-droite signale chaque entrée."
+ */
+function ConversationEmptyState() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-center bg-background">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted/40 mb-2">
+        <PhoneIncoming className="h-7 w-7 text-muted-foreground/60" />
+      </div>
+      <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-muted-foreground/80">
+        iCom — En attente
+      </p>
+      <h3 className="text-[20px] font-semibold tracking-tight max-w-md">
+        Aucun appel actif
+      </h3>
+      <p className="text-[13px] text-muted-foreground max-w-md leading-relaxed">
+        Vos prochains appels apparaîtront automatiquement ici. Le toast en
+        bas-droite signale chaque entrée, avec sonnerie.
+      </p>
     </div>
   );
 }

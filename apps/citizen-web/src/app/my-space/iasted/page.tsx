@@ -53,6 +53,7 @@ import {
 import { useCallStore } from "@/stores/call-store"
 import { useTranslation } from "react-i18next"
 import { PageHeader } from "@/components/my-space/page-header"
+import { CitizenCallTab } from "@/components/ai/iasted/CitizenCallTab"
 import { cn } from "@/lib/utils"
 
 const LiveKitRoom = dynamic(
@@ -230,41 +231,30 @@ export default function IAstedCitizenPage() {
     )
   }, [chatThreads, search])
 
+  // Crumb du topbar — adapte selon la tab active
+  const tabLabelMap: Record<TabId, string> = {
+    ichat: "iChat",
+    icall: "iAppel",
+    icontact: "iContact",
+  }
+  const crumbLabel = tabLabelMap[activeTab]
+
   return (
-    <div className="flex h-full flex-col gap-4 overflow-hidden">
-      <div className="shrink-0">
-        <PageHeader
-          title="iAsted"
-          subtitle={t("iasted.subtitle")}
-          icon={<ShieldCheck className="h-5 w-5" />}
-          actions={
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                router.push("/my-space")
-                setTimeout(
-                  () => window.dispatchEvent(new CustomEvent("iasted:open")),
-                  100
-                )
-              }}
-              className="h-8 gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground transition-transform hover:bg-muted/70 active:scale-[0.97]"
-            >
-              <Minimize2 className="h-3.5 w-3.5" />
-              {t("iasted.reduce")}
-            </Button>
-          }
-        />
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Topbar maquette — page-level, fullbleed, plus de carte-dans-carte */}
+      <div className="shrink-0 flex items-center gap-3 px-4 py-2.5 border-b">
+        <h1 className="text-lg font-bold tracking-tight">iAsted</h1>
+        {crumbLabel && (
+          <span className="text-sm text-muted-foreground">
+            / {crumbLabel}
+          </span>
+        )}
       </div>
 
-      {/* Card principale — 3 colonnes */}
-      <div className="flat-card-border flex min-h-0 flex-1 overflow-hidden rounded-xl border bg-card">
+      {/* Body — rail + content (toutes tabs, fullbleed) */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* ── Col 1 : Icônes navigation ── */}
         <div className="flex w-14 shrink-0 flex-col items-center gap-1 border-r border-foreground/5 py-3">
-          <div className="mb-4 flex items-center justify-center rounded-lg bg-foreground/8 p-1.5 dark:bg-foreground/5">
-            <ShieldCheck className="h-4 w-4" />
-          </div>
-
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon
             const isActive = activeTab === item.id
@@ -286,16 +276,6 @@ export default function IAstedCitizenPage() {
             )
           })}
 
-          <div className="flex-1" />
-
-          <button
-            type="button"
-            onClick={() => router.push("/my-space")}
-            title={t("iasted.reduce")}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-          >
-            <Minimize2 className="h-5 w-5" />
-          </button>
         </div>
 
         {activeTab === "ichat" ? (
@@ -721,7 +701,7 @@ export default function IAstedCitizenPage() {
               </span>
             </div>
             <div className="flex-1 overflow-hidden p-4">
-              {activeTab === "icall" && <IAppelContent />}
+              {activeTab === "icall" && <CitizenCallTab />}
               {activeTab === "icontact" && <IContactContent />}
             </div>
           </div>
@@ -1228,7 +1208,20 @@ function OrgContactCard({ org }: { org: any }) {
   const phone = contactInfo.phone ?? org.phone ?? org.mainPhone
   const email = contactInfo.email ?? org.email ?? org.mainEmail
   const website = contactInfo.website ?? org.website
-  const address = contactInfo.address ?? org.address
+  const rawAddress = contactInfo.address ?? org.address
+  const address = (() => {
+    if (!rawAddress) return null
+    if (typeof rawAddress === "string") return rawAddress
+    // Objet { street, city, postalCode, country }
+    return [
+      rawAddress.street,
+      rawAddress.postalCode,
+      rawAddress.city,
+      rawAddress.country,
+    ]
+      .filter(Boolean)
+      .join(", ")
+  })()
 
   const hasContacts = emergency || phone || email || website || address
   const typeLabel = ORG_TYPE_LABELS[org.type] ?? org.type ?? "Représentation"

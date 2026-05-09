@@ -500,6 +500,127 @@
   .delay-6 {
     animation-delay: 0.3s;
   }
+
+  /* ========================================
+     CALL SCREENS — utilitaires partagés
+     iAppel citoyen mobile/desktop + agent iCom + réunion
+     ======================================== */
+
+  /* Fond sombre fullscreen mobile (en-cours, hold, transfert)
+     Justifié : focus visuel téléphone-like, calque iOS. */
+  .call-hero-dark {
+    background: linear-gradient(180deg, #0a0d12 0%, #0c1524 80%);
+    color: #fff;
+  }
+
+  .call-hero-dark-warm {
+    background: linear-gradient(180deg, #0a0d12 0%, #1a1410 80%);
+    color: #fff;
+  }
+
+  /* Anneau pulsant autour de l'avatar pendant la sonnerie */
+  .av-ring {
+    position: relative;
+    display: inline-flex;
+  }
+  .av-ring::before,
+  .av-ring::after {
+    content: "";
+    position: absolute;
+    inset: -8px;
+    border-radius: 999px;
+    border: 2px solid currentColor;
+    opacity: 0.5;
+    animation: av-ring-pulse 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+  .av-ring::after {
+    animation-delay: 1.2s;
+  }
+  @keyframes av-ring-pulse {
+    0% {
+      transform: scale(0.92);
+      opacity: 0.6;
+    }
+    70% {
+      transform: scale(1.18);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1.18);
+      opacity: 0;
+    }
+  }
+
+  /* Barres animées "Sophie parle…" */
+  .call-bars-anim {
+    display: inline-flex;
+    gap: 3px;
+    align-items: flex-end;
+    height: 18px;
+  }
+  .call-bars-anim > span {
+    display: block;
+    width: 2.5px;
+    border-radius: 2px;
+    background: currentColor;
+    animation: call-bar 0.8s ease-in-out infinite alternate;
+    transform-origin: bottom;
+  }
+  .call-bars-anim > span:nth-child(1) { height: 8px; animation-delay: 0s; }
+  .call-bars-anim > span:nth-child(2) { height: 14px; animation-delay: 0.05s; }
+  .call-bars-anim > span:nth-child(3) { height: 6px; animation-delay: 0.1s; }
+  .call-bars-anim > span:nth-child(4) { height: 18px; animation-delay: 0.15s; }
+  .call-bars-anim > span:nth-child(5) { height: 10px; animation-delay: 0.2s; }
+  .call-bars-anim > span:nth-child(6) { height: 14px; animation-delay: 0.25s; }
+  .call-bars-anim > span:nth-child(7) { height: 8px; animation-delay: 0.3s; }
+  @keyframes call-bar {
+    from { transform: scaleY(0.4); }
+    to { transform: scaleY(1); }
+  }
+
+  /* Hold progress bar — "Estimation 1 min" */
+  .call-hold-shim {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .call-hold-shim > span {
+    display: block;
+    height: 100%;
+    background: var(--warning);
+    animation: call-hold-shim 2s ease-in-out infinite;
+  }
+  @keyframes call-hold-shim {
+    0% { width: 20%; }
+    50% { width: 80%; }
+    100% { width: 20%; }
+  }
+
+  /* Pulse ping (toast entrant) */
+  .call-pulse-ping {
+    position: relative;
+  }
+  .call-pulse-ping::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    border: 2px solid currentColor;
+    animation: call-pulse-ping 1.6s ease-out infinite;
+  }
+  @keyframes call-pulse-ping {
+    0% { transform: scale(0.95); opacity: 0.7; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+
+  /* Blink dot — état actif */
+  .call-blink {
+    animation: call-blink 1.4s ease-in-out infinite;
+  }
+  @keyframes call-blink {
+    50% { opacity: 0.3; }
+  }
 }
 
 

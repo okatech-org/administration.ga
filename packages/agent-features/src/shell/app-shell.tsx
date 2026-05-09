@@ -45,6 +45,7 @@ import {
 import { AgentMobileNav } from "./agent-mobile-nav";
 import { GlobalCallAlert } from "./global-call-alert";
 import { GlobalCallPill } from "./global-call-pill";
+import { GlobalQueuePill } from "./global-queue-pill";
 import { IAstedWindow } from "./iasted-window";
 import {
 	IAstedSidePanel,
@@ -229,6 +230,7 @@ function DashboardLayout({
 			)}
 			<GlobalCallAlert />
 			<GlobalCallPill />
+			<GlobalQueuePill />
 			{afterChildren}
 		</SidebarProvider>
 	);

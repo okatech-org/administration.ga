@@ -6,8 +6,8 @@ import {
 	LiveKitRoom,
 } from "@livekit/components-react";
 import { useQuery } from "convex/react";
-import { Loader2, Phone, PhoneCall, PhoneOff } from "lucide-react";
-import { usePathname } from "@workspace/routing";
+import { AlertTriangle, ArrowRight, Loader2, Phone, PhoneCall, PhoneOff } from "lucide-react";
+import { usePathname, useRouter } from "@workspace/routing";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@workspace/ui/components/button";
@@ -30,10 +30,14 @@ import {
 import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import { FEATURES } from "@workspace/shared/feature-flags";
 import { CustomCallUI } from "../components/meetings/custom-call-ui";
+import { useCallCenter } from "../hooks/use-call-center";
 import { useIsMobile } from "../hooks/use-mobile";
 import { useMeeting } from "../hooks/use-meeting";
 import { useRingtone } from "../hooks/use-ringtone";
+import { useRingtoneMutedPref } from "../hooks/use-ringtone-muted-pref";
 import { useCallStore } from "../stores/call-store";
+
+const PICKUP_REDIRECT_KEY = "call-center-pickup-redirect";
 
 /**
  * Feature flag Centre d'Appels — doit utiliser la même source que IAstedCallTab
@@ -74,6 +78,33 @@ function GlobalCallAlertInner({
 }) {
 	const { t } = useTranslation();
 	const isMobile = useIsMobile();
+	const router = useRouter();
+
+	// Préférence "Basculer vers iCom au décrochage d'un appel inbound"
+	// (org-call uniquement). Persistée en localStorage.
+	const [pickupRedirect, setPickupRedirect] = useState(false);
+	useEffect(() => {
+		try {
+			setPickupRedirect(localStorage.getItem(PICKUP_REDIRECT_KEY) === "true");
+		} catch {
+			/* SSR / blocked storage — par défaut Dialog */
+		}
+	}, []);
+	const togglePickupRedirect = useCallback(() => {
+		setPickupRedirect((prev) => {
+			const next = !prev;
+			try {
+				localStorage.setItem(PICKUP_REDIRECT_KEY, String(next));
+			} catch {
+				/* ignore */
+			}
+			return next;
+		});
+	}, []);
+
+	// Hook call-center — `pickup` accepte l'appel via le pool LiveKit central
+	// (pas de Dialog) quand l'agent active la préférence.
+	const { pickup } = useCallCenter();
 
 	const [activeMeetingId, setActiveMeetingId] = useState<Id<"meetings"> | null>(
 		null,
@@ -138,12 +169,15 @@ function GlobalCallAlertInner({
 		return true;
 	});
 
-	// Prioritize inbound org calls, then personal meetings.
-	// Sur /icom, la file org-inbound est gérée par le Centre d'Appels — on
-	// ne signale ici que les appels personnels (callUser direct, etc.).
-	const incomingOrgCall = suppressOrgCalls
-		? null
-		: (inboundOrgCalls?.[0] ?? null);
+	// Les appels org-inbound (file d'appels du centre d'appels) sont couverts
+	// par la file d'appels visible dans /icom (col 1) et par le drawer
+	// GlobalQueuePill flottant hors /icom. Ce toast ne signale donc plus que
+	// les appels PERSONNELS (callUser direct, agent-à-agent) — qui ne passent
+	// pas par la file org. `suppressOrgCalls` n'est plus utilisé pour gating
+	// mais conservé pour compat de signature.
+	void suppressOrgCalls;
+	void inboundOrgCalls;
+	const incomingOrgCall = null as null;
 
 	const candidateCall = incomingOrgCall ?? incomingPersonalMeeting ?? null;
 	// Ignorer explicitement un meetingId déjà traité localement (raccroché,
@@ -164,8 +198,17 @@ function GlobalCallAlertInner({
 		activeMeetingId ?? undefined,
 	);
 
-	// Ring tone plays if there is an active call, we haven't joined yet, AND we aren't in another call
-	useRingtone(!!activeCallToDisplay && !isCurrentlyInCall && !isBusyGlobally);
+	// Préférence "couper la sonnerie" partagée (pill, header iAppel, toast).
+	const { muted: ringtoneMuted } = useRingtoneMutedPref();
+
+	// Ring tone plays if there is an active call, we haven't joined yet, AND
+	// we aren't in another call AND la sonnerie n'est pas mutée.
+	useRingtone(
+		!!activeCallToDisplay &&
+			!isCurrentlyInCall &&
+			!isBusyGlobally &&
+			!ringtoneMuted,
+	);
 
 	// Look up the caller's name for the notification
 	const callerUser = useQuery(
@@ -180,14 +223,37 @@ function GlobalCallAlertInner({
 
 	const handleJoin = useCallback(async () => {
 		if (!activeCallToDisplay) return;
+		dismissedMeetingIdRef.current = null;
+
+		// Branche bascule iCom : appel org-inbound + agent a activé la préférence.
+		// Pickup via call-center (pool LiveKit centralisé) puis redirect.
+		const shouldRedirect = isOrgCall && pickupRedirect;
+		if (shouldRedirect) {
+			try {
+				await pickup(activeCallToDisplay._id);
+				router.push("/icom?tab=icall");
+				return;
+			} catch {
+				// Si le pickup centralisé échoue, on retombe sur le Dialog legacy
+				// pour que l'agent ne perde pas l'appel.
+			}
+		}
+
+		// Branche legacy — Dialog plein écran avec CustomCallUI.
 		userHangUpRef.current = false;
 		hasConnectedRef.current = false;
-		// Nouvelle intention : on autorise à nouveau la sonnerie pour cet ID.
-		dismissedMeetingIdRef.current = null;
 		setActiveMeetingId(activeCallToDisplay._id);
 		setGlobalMeetingId(activeCallToDisplay._id);
 		await connect(activeCallToDisplay._id);
-	}, [activeCallToDisplay, connect, setGlobalMeetingId]);
+	}, [
+		activeCallToDisplay,
+		connect,
+		setGlobalMeetingId,
+		pickupRedirect,
+		pickup,
+		router,
+		isOrgCall,
+	]);
 
 	const handleDecline = useCallback(async () => {
 		if (!activeCallToDisplay) return;
@@ -264,58 +330,91 @@ function GlobalCallAlertInner({
 
 	return (
 		<>
-			{/* Floating Banner when a call is coming in but not yet joined globally */}
-			{!isCurrentlyInCall && !isBusyGlobally && activeCallToDisplay && (
-				<div className="fixed top-4 left-1/2 -translate-x-1/2 z-100 w-[calc(100%-2rem)] max-w-xl animate-in slide-in-from-top-4 fade-in">
-					<div className="flex flex-col gap-3 rounded-2xl border border-emerald-500/40 bg-zinc-950/90 px-4 py-3 text-white backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-						<div className="flex min-w-0 items-center gap-3">
-							<div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/20">
-								<PhoneCall className="h-5 w-5 animate-pulse text-emerald-400" />
-								<span className="absolute inset-0 animate-ping rounded-full border border-emerald-500 opacity-75" />
+			{/* Toast bas-droite — design "AgToast"
+			    URGENT : liseré rouge + badge URGENCE.
+			    Standard : liseré primary, pulse subtil. */}
+			{!isCurrentlyInCall && !isBusyGlobally && activeCallToDisplay && (() => {
+				const isUrgent =
+					(activeCallToDisplay as any).priority === "urgent" ||
+					(activeCallToDisplay as any).priority === "high";
+				return (
+					<div className="fixed bottom-6 right-6 z-[100] w-[calc(100%-3rem)] max-w-md animate-in slide-in-from-bottom-4 fade-in sm:bottom-8 sm:right-8 flex flex-col gap-1.5">
+						<div className={`grid grid-cols-[44px_1fr_auto] items-center gap-3 rounded-2xl border bg-card px-3.5 py-3 shadow-xl ${
+							isUrgent ? "border-destructive/40" : "border-primary/30"
+						}`}>
+							{/* Icon pulse */}
+							<div className={`relative flex h-11 w-11 items-center justify-center rounded-full ${
+								isUrgent ? "bg-destructive/15 text-destructive" : "bg-primary/15 text-primary"
+							}`}>
+								<PhoneCall className="h-5 w-5" />
+								<span
+									className={`call-pulse-ping absolute inset-0 rounded-full ${
+										isUrgent ? "text-destructive" : "text-primary"
+									}`}
+									aria-hidden
+								/>
 							</div>
-							<div className="min-w-0 flex-1">
-								<p className="truncate text-sm font-semibold" title={activeCallToDisplay.title ?? undefined}>
-									{activeCallToDisplay.title || t("meetings.incomingCall", "Appel entrant")}
+
+							{/* Content */}
+							<div className="min-w-0">
+								<div className="flex items-center gap-1.5 flex-wrap">
+									<p className="truncate text-sm font-semibold text-foreground" title={activeCallToDisplay.title ?? undefined}>
+										{callerName ?? activeCallToDisplay.title ?? t("meetings.incomingCall", "Appel entrant")}
+									</p>
+									{isUrgent && (
+										<span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destructive">
+											<AlertTriangle className="h-2.5 w-2.5" />
+											{t("meetings.urgent", "Urgence")}
+										</span>
+									)}
+								</div>
+								<p className="mt-0.5 truncate text-[11.5px] text-muted-foreground">
+									{isOrgCall
+										? t("meetings.citizenCalling", "Un usager cherche à vous joindre")
+										: t("meetings.agentCalling", "Un agent cherche à vous joindre")}
 								</p>
-								<p className="truncate text-xs text-zinc-400">
-									{callerName
-										? callerName
-										: isOrgCall
-											? t(
-													"meetings.citizenCalling",
-													"Un usager cherche à vous joindre",
-												)
-											: t(
-													"meetings.agentCalling",
-													"Un agent cherche à vous joindre",
-												)}
-								</p>
+							</div>
+
+							{/* Actions */}
+							<div className="flex items-center gap-1.5 pl-1">
+								<Button
+									size="icon"
+									variant="ghost"
+									onClick={handleDecline}
+									aria-label={t("meetings.decline", "Refuser")}
+									title={t("meetings.decline", "Refuser")}
+									className="h-9 w-9 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+								>
+									<PhoneOff className="h-4 w-4" />
+								</Button>
+								<Button
+									size="icon"
+									onClick={handleJoin}
+									aria-label={t("meetings.answer", "Décrocher")}
+									title={t("meetings.answer", "Décrocher")}
+									className="h-9 w-9 rounded-full bg-success text-white hover:bg-success/90"
+								>
+									<Phone className="h-4 w-4" />
+								</Button>
 							</div>
 						</div>
-						<div className="flex shrink-0 items-center justify-end gap-2">
-							<Button
-								size="sm"
-								variant="ghost"
-								onClick={handleDecline}
-								aria-label={t("meetings.decline", "Refuser")}
-								className="gap-1.5 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300"
+
+						{/* Toggle bascule iCom — visible uniquement pour appels org */}
+						{isOrgCall && (
+							<button
+								type="button"
+								onClick={togglePickupRedirect}
+								className="self-end rounded-md px-2 py-1 text-[10.5px] text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors flex items-center gap-1"
 							>
-								<PhoneOff className="h-4 w-4" />
-								<span className="hidden sm:inline">{t("meetings.decline", "Refuser")}</span>
-							</Button>
-							<Button
-								size="sm"
-								onClick={handleJoin}
-								aria-label={t("meetings.answer", "Décrocher")}
-								className="gap-2 rounded-xl bg-emerald-600 text-white transition-transform hover:bg-emerald-700 active:scale-[0.97]"
-							>
-								<Phone className="h-4 w-4" />
-								<span className="hidden sm:inline">{t("meetings.answer", "Décrocher")}</span>
-							</Button>
-						</div>
+								<ArrowRight className="h-3 w-3" />
+								{pickupRedirect
+									? "Bascule iCom au décrochage : activée"
+									: "Activer la bascule iCom au décrochage"}
+							</button>
+						)}
 					</div>
-				</div>
-			)}
+				);
+			})()}
 
 			{/* The full screen / modal interface */}
 			{isCurrentlyInCall && isMobile ? (

@@ -5,7 +5,8 @@ import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 
 import { CustomCallUI } from "../meetings/custom-call-ui";
-import { AlertCircle, Loader2, Phone, Users, Video } from "lucide-react";
+import { MeetingChatPanel } from "./MeetingChatPanel";
+import { AlertCircle, Loader2, MessageSquare, Phone, Users, Video, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -16,6 +17,7 @@ import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
 } from "@workspace/api/hooks";
+import { cn } from "@workspace/ui/lib/utils";
 
 // ============================================
 // Types
@@ -75,6 +77,11 @@ export function MeetingRoom({
 	const [recordingPending, setRecordingPending] = useState(false);
 	const isRecording = !!activeRecording;
 
+	// Toggle chat side panel — visible uniquement pour les sessions vidéo
+	// (réunions) où le chat textuel a une vraie valeur.
+	const [chatOpen, setChatOpen] = useState(false);
+	const showChatToggle = isVideo;
+
 	const handleToggleRecording = useCallback(async () => {
 		if (!meetingId) return;
 		setRecordingPending(true);
@@ -107,19 +114,51 @@ export function MeetingRoom({
 				className="flex flex-col flex-1"
 				style={{ height: "100%" }}
 			>
-				<CustomCallUI
-					onHangUp={handleUserHangUp}
-					mediaType={mediaType}
-					recording={
-						meetingId
-							? {
-								isRecording,
-								isPending: recordingPending,
-								onToggle: handleToggleRecording,
+				<div className="flex flex-1 min-h-0 relative">
+					<div className={cn(
+						"flex flex-col flex-1 min-w-0",
+						chatOpen && showChatToggle && "md:mr-[320px]",
+					)}>
+						<CustomCallUI
+							onHangUp={handleUserHangUp}
+							mediaType={mediaType}
+							recording={
+								meetingId
+									? {
+										isRecording,
+										isPending: recordingPending,
+										onToggle: handleToggleRecording,
+									}
+									: undefined
 							}
-							: undefined
-					}
-				/>
+						/>
+					</div>
+
+					{/* Chat side panel (réunion vidéo uniquement) */}
+					{showChatToggle && (
+						<>
+							{/* Toggle button (top-right of room) — discret */}
+							<Button
+								type="button"
+								onClick={() => setChatOpen((v) => !v)}
+								variant="ghost"
+								size="icon"
+								aria-pressed={chatOpen}
+								aria-label={chatOpen ? "Fermer la discussion" : "Ouvrir la discussion"}
+								className="absolute top-2.5 right-2.5 z-30 h-8 w-8 rounded-lg bg-white/8 hover:bg-white/14 text-white"
+							>
+								{chatOpen ? <X className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
+							</Button>
+
+							{/* Panel */}
+							{chatOpen && (
+								<aside className="absolute right-0 top-0 bottom-0 w-full md:w-[320px] z-20 p-2.5 pt-12 md:pt-2.5 bg-zinc-950/95 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none">
+									<MeetingChatPanel onClose={() => setChatOpen(false)} />
+								</aside>
+							)}
+						</>
+					)}
+				</div>
 			</LiveKitRoom>
 		</div>
 	);
