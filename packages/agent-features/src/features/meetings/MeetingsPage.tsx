@@ -31,6 +31,7 @@ export interface MeetingRoomInjectedProps {
 	onDisconnect: () => void;
 	meetingId?: Id<"meetings">;
 	mediaType?: "audio" | "video";
+	title?: string;
 }
 
 export interface PreJoinScreenInjectedProps {
@@ -182,6 +183,7 @@ export default function MeetingsPage({
 						wsUrl={wsUrl}
 						meetingId={activeMeetingId}
 						mediaType={mediaType ?? undefined}
+						title={meeting?.title ?? undefined}
 						onDisconnect={handleDisconnect}
 					/>
 				</div>

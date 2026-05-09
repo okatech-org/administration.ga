@@ -34,6 +34,7 @@ import { Label } from "@workspace/ui/components/label";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { Switch } from "@workspace/ui/components/switch";
 import { CustomCallUI } from "../meetings/custom-call-ui";
+import { MeetingStageView } from "../meetings-livekit/MeetingStageView";
 import { useOrg } from "../../shell/org-provider";
 import { useMeeting } from "../../hooks/use-meeting";
 import {
@@ -263,9 +264,10 @@ export function IAstedMeetingTab() {
 	// VUE: IN CALL
 	// ════════════════════════════════════════════════════════════
 	if (view === "incall" && token && wsUrl) {
+		const isMeeting = (activeMeetingData as any)?.type === "meeting";
 		return (
 			<div className="flex flex-col flex-1 overflow-hidden bg-secondary rounded-lg">
-				{/* Barre d'actions réunion */}
+				{/* Barre d'actions réunion (host uniquement) */}
 				<div className="flex items-center justify-between px-3 py-2 bg-card border-b border-border shrink-0">
 					<div className="flex items-center gap-2">
 						<Badge className="text-[9px] bg-destructive/15 text-destructive">● En direct</Badge>
@@ -286,12 +288,21 @@ export function IAstedMeetingTab() {
 					token={token}
 					serverUrl={wsUrl}
 					connect={true}
+					audio={true}
+					video={isMeeting || (activeMeetingData as any)?.mediaType === "video"}
 					options={LIVEKIT_CALL_ROOM_OPTIONS}
 					onConnected={onLiveKitConnected}
 					onDisconnected={onLiveKitDisconnected}
 					className="flex flex-col flex-1"
 				>
-					<CustomCallUI onHangUp={handleDisconnect} />
+					{isMeeting ? (
+						<MeetingStageView
+							meetingTitle={(activeMeetingData as any)?.title ?? "Réunion"}
+							onHangUp={handleDisconnect}
+						/>
+					) : (
+						<CustomCallUI onHangUp={handleDisconnect} />
+					)}
 				</LiveKitRoom>
 			</div>
 		);

@@ -43,6 +43,14 @@ const CustomCallUI = dynamic(
 	{ ssr: false },
 );
 
+const MeetingStageView = dynamic(
+	() =>
+		import("@/components/meetings/MeetingStageView").then(
+			(mod) => mod.MeetingStageView,
+		),
+	{ ssr: false },
+);
+
 type ViewState = "prejoin" | "incall" | "empty";
 
 function MeetingsPageContent() {
@@ -117,27 +125,40 @@ function MeetingsPageContent() {
 
 	// -- Vue en appel --
 	if (view === "incall" && token && wsUrl) {
+		const isMeeting = (meeting as any)?.type === "meeting";
+		const isVideoSession =
+			(meeting as any)?.mediaType !== "audio" || isMeeting;
+
 		return (
 			<div className="flex flex-col h-[calc(100vh-4rem)] bg-zinc-950 rounded-xl overflow-hidden">
-				<div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0">
-					<div className="flex items-center gap-2">
-						<Badge className="text-[9px] bg-red-500/15 text-red-400">● {t("meetings.live")}</Badge>
-						<span className="text-xs text-zinc-400">{(meeting as any)?.title ?? t("meetings.meeting")}</span>
+				{!isMeeting && (
+					<div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0">
+						<div className="flex items-center gap-2">
+							<Badge className="text-[9px] bg-red-500/15 text-red-400">● {t("meetings.live")}</Badge>
+							<span className="text-xs text-zinc-400">{(meeting as any)?.title ?? t("meetings.meeting")}</span>
+						</div>
+						<Button variant="destructive" size="sm" onClick={handleLeave} className="h-7 text-[10px] gap-1">
+							<PhoneOff className="h-3 w-3" /> {t("meetings.leave")}
+						</Button>
 					</div>
-					<Button variant="destructive" size="sm" onClick={handleLeave} className="h-7 text-[10px] gap-1">
-						<PhoneOff className="h-3 w-3" /> {t("meetings.leave")}
-					</Button>
-				</div>
+				)}
 				<LiveKitRoom
 					token={token}
 					serverUrl={wsUrl}
 					connect={true}
 					audio={true}
-					video={(meeting as any)?.mediaType !== "audio"}
+					video={isVideoSession}
 					onDisconnected={handleLeave}
 					className="flex flex-col flex-1"
 				>
-					<CustomCallUI onHangUp={handleLeave} />
+					{isMeeting ? (
+						<MeetingStageView
+							meetingTitle={(meeting as any)?.title ?? t("meetings.meeting", "Réunion")}
+							onHangUp={handleLeave}
+						/>
+					) : (
+						<CustomCallUI onHangUp={handleLeave} />
+					)}
 				</LiveKitRoom>
 			</div>
 		);

@@ -24,6 +24,7 @@ import {
 	FileText,
 	Hourglass,
 	Loader2,
+	Video,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -120,6 +121,12 @@ export default function IAgendaPage() {
 	const { results: userRequests, isLoading: requestsLoading } = useAuthenticatedPaginatedQuery(
 		api.functions.requests.listMine, {}, { initialNumItems: 50 },
 	);
+	// Réunions invitées par les agents (visioconférences). On les affiche
+	// dans le calendrier comme des "événements" à côté des RDV consulaires.
+	const { data: meetingsData } = useAuthenticatedConvexQuery(
+		api.functions.meetings.listMine,
+		{},
+	);
 
 	// ─── Donnees derivees ──────────────────────────────────────
 	const today = new Date().toISOString().split("T")[0];
@@ -137,6 +144,41 @@ export default function IAgendaPage() {
 		[allAppointments, today],
 	);
 
+	// Réunions normalisées en (date YYYY-MM-DD, time HH:mm) pour cohérence
+	// avec AppointmentData, plus champs supplémentaires pour le rendu.
+	type CitizenMeetingItem = {
+		_id: string;
+		date: string;
+		time: string;
+		title: string;
+		hostName: string;
+		participantsCount: number;
+		startMs: number;
+		isCancelled: boolean;
+	};
+	const userMeetings: CitizenMeetingItem[] = useMemo(() => {
+		const meetings = ((meetingsData as any)?.meetings ?? []) as any[];
+		const names = ((meetingsData as any)?.participantNames ?? {}) as Record<string, string>;
+		return meetings
+			.filter((m) => m.type === "meeting")
+			.map((m) => {
+				const startMs = m.scheduledAt ?? m.startedAt ?? m._creationTime;
+				const d = new Date(startMs);
+				const date = d.toISOString().split("T")[0]!;
+				const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+				return {
+					_id: m._id as string,
+					date,
+					time,
+					title: m.title || "Réunion",
+					hostName: names[m.createdBy] ?? "Agent consulaire",
+					participantsCount: m.participants?.length ?? 0,
+					startMs,
+					isCancelled: m.status === "cancelled",
+				};
+			});
+	}, [meetingsData]);
+
 	const dayInfoMap = useMemo(() => {
 		const map = new Map<string, CalendarDayInfo>();
 		for (const apt of allAppointments) {
@@ -145,13 +187,28 @@ export default function IAgendaPage() {
 			if (existing) { existing.count++; existing.statuses.push(apt.status); }
 			else map.set(apt.date, { date: apt.date, count: 1, statuses: [apt.status] });
 		}
+		// Réunions : on les compte aussi pour faire apparaître un point sur le
+		// calendrier. Status "meeting" pour les distinguer dans la légende.
+		for (const m of userMeetings) {
+			if (m.isCancelled) continue;
+			const existing = map.get(m.date);
+			if (existing) { existing.count++; existing.statuses.push("meeting"); }
+			else map.set(m.date, { date: m.date, count: 1, statuses: ["meeting"] });
+		}
 		return map;
-	}, [allAppointments]);
+	}, [allAppointments, userMeetings]);
 
 	const selectedDayAppointments = useMemo(() => {
 		if (!selectedDate) return [];
 		return allAppointments.filter((a) => a.date === selectedDate).sort((a, b) => a.time.localeCompare(b.time));
 	}, [allAppointments, selectedDate]);
+
+	const selectedDayMeetings = useMemo(() => {
+		if (!selectedDate) return [] as CitizenMeetingItem[];
+		return userMeetings
+			.filter((m) => m.date === selectedDate && !m.isCancelled)
+			.sort((a, b) => a.startMs - b.startMs);
+	}, [userMeetings, selectedDate]);
 
 	const filteredAppointments = useMemo(() => {
 		const all = [...upcomingAppointments, ...pastAppointments];
@@ -310,12 +367,15 @@ export default function IAgendaPage() {
 										{t("common.clear")}
 									</button>
 								</div>
-								{selectedDayAppointments.length === 0 ? (
+								{selectedDayAppointments.length === 0 && selectedDayMeetings.length === 0 ? (
 									<p className="text-sm text-muted-foreground py-4 text-center">{t("iAgenda.noAppointmentToday")}</p>
 								) : (
 									<div className="space-y-2">
 										{selectedDayAppointments.map((apt) => (
 											<AppointmentCard key={apt._id} appointment={apt} onCancel={handleCancel} compact />
+										))}
+										{selectedDayMeetings.map((m) => (
+											<MeetingMiniCard key={m._id} meeting={m} />
 										))}
 									</div>
 								)}
@@ -688,5 +748,69 @@ export default function IAgendaPage() {
 				</div>
 			</div>
 		</div>
+	);
+}
+
+// ─────────────────────────────────────────────
+// Mini-carte réunion — affichée dans le jour sélectionné
+// ─────────────────────────────────────────────
+
+function MeetingMiniCard({
+	meeting,
+}: {
+	meeting: {
+		_id: string;
+		date: string;
+		time: string;
+		title: string;
+		hostName: string;
+		participantsCount: number;
+		startMs: number;
+	};
+}) {
+	const router = useRouter();
+	const minutesUntil = Math.floor((meeting.startMs - Date.now()) / 60_000);
+	// 15 min avant le début, et tant que la réunion est encore active côté
+	// serveur (status non-ended/cancelled). Le citoyen peut rejoindre une
+	// réunion qu'il vient de quitter.
+	const canJoin = minutesUntil <= 15;
+	const inProgress = minutesUntil < 0;
+
+	return (
+		<button
+			type="button"
+			onClick={canJoin ? () => router.push(`/my-space/iasted?tab=imeeting&join=${meeting._id}`) : undefined}
+			disabled={!canJoin}
+			className={`group flex w-full items-center gap-3 rounded-xl border bg-card p-3 text-left transition-colors ${
+				canJoin ? "hover:bg-secondary/40 cursor-pointer" : "opacity-90"
+			}`}
+		>
+			<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+				<Video className="h-4 w-4" />
+			</div>
+			<div className="min-w-0 flex-1">
+				<p className="text-sm font-semibold leading-tight truncate">
+					{meeting.title}
+				</p>
+				<p className="text-xs text-muted-foreground mt-0.5 truncate">
+					{meeting.time} · Avec {meeting.hostName}
+					{meeting.participantsCount > 2 && ` · ${meeting.participantsCount} participants`}
+				</p>
+			</div>
+			{canJoin && (
+				<span className="inline-flex items-center gap-1 rounded-full bg-success/15 text-success px-2.5 py-1 text-[10px] font-semibold">
+					{inProgress && <span className="h-1.5 w-1.5 rounded-full bg-success call-blink" />}
+					<Video className="h-3 w-3" />
+					{inProgress ? "Reprendre" : "Rejoindre"}
+				</span>
+			)}
+			{!canJoin && minutesUntil > 15 && (
+				<span className="text-[10px] text-muted-foreground">
+					{minutesUntil < 60
+						? `dans ${minutesUntil} min`
+						: `dans ${Math.floor(minutesUntil / 60)} h`}
+				</span>
+			)}
+		</button>
 	);
 }

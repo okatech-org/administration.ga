@@ -13,7 +13,7 @@ import { api } from "@convex/_generated/api"
 import type { Id } from "@convex/_generated/dataModel"
 import dynamic from "next/dynamic"
 import "@livekit/components-styles"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   Bot,
   Building2,
@@ -34,8 +34,9 @@ import {
   Send,
   Shield,
   ShieldCheck,
+  Video,
 } from "lucide-react"
-import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react"
+import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Markdown from "react-markdown"
 import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -46,6 +47,8 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
 import { useMeeting } from "@/hooks/use-meeting"
+import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options"
+import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard"
 import {
   useAuthenticatedConvexQuery,
   useConvexMutationQuery,
@@ -61,6 +64,14 @@ const LiveKitRoom = dynamic(
   { ssr: false }
 )
 
+const MeetingStageView = dynamic(
+  () =>
+    import("@/components/meetings/MeetingStageView").then(
+      (mod) => mod.MeetingStageView
+    ),
+  { ssr: false }
+)
+
 const CustomCallUI = dynamic(
   () =>
     import("@/components/meetings/custom-call-ui").then(
@@ -73,11 +84,12 @@ const CustomCallUI = dynamic(
 // Types & constantes
 // ─────────────────────────────────────────────
 
-type TabId = "ichat" | "icall" | "icontact"
+type TabId = "ichat" | "icall" | "imeeting" | "icontact"
 
 const NAV_ITEMS: Array<{ id: TabId; icon: typeof Phone; label: string }> = [
   { id: "ichat", icon: MessageSquare, label: "iChat" },
   { id: "icall", icon: Phone, label: "iAppel" },
+  { id: "imeeting", icon: Video, label: "iRéunion" },
   { id: "icontact", icon: Contact, label: "iContact" },
 ]
 
@@ -95,7 +107,18 @@ const MR_RAY_CONTACT = {
 
 export default function IAstedCitizenPage() {
   const { t } = useTranslation()
-  const [activeTab, setActiveTab] = useState<TabId>("ichat")
+  const searchParams = useSearchParams()
+  // Auto-bascule sur la tab demandée via ?tab=imeeting (depuis iAgenda).
+  const initialTab: TabId = (() => {
+    const tabParam = searchParams?.get("tab")
+    if (tabParam === "imeeting" || tabParam === "icall" || tabParam === "icontact" || tabParam === "ichat") {
+      return tabParam
+    }
+    return "ichat"
+  })()
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab)
+  // Meeting ID à rejoindre auto via ?join=<id> (depuis iAgenda).
+  const autoJoinMeetingId = searchParams?.get("join") ?? null
   const [selectedContact, setSelectedContact] = useState<any>(MR_RAY_CONTACT)
   const [search, setSearch] = useState("")
   const [messageInput, setMessageInput] = useState("")
@@ -686,22 +709,23 @@ export default function IAstedCitizenPage() {
             </div>
           </>
         ) : (
-          /* ── Onglets non-chat (iAppel, iContact) — 2 colonnes ── */
+          /* ── Onglets non-chat (iAppel, iRéunion, iContact) ── */
           <div className="flex flex-1 flex-col overflow-hidden">
             <div className="shrink-0 border-b border-foreground/5 px-4 py-3">
               <span className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
                 <div className="rounded-md bg-foreground/8 p-1 dark:bg-foreground/5">
-                  {activeTab === "icall" ? (
-                    <Phone className="h-3.5 w-3.5" />
-                  ) : (
-                    <Contact className="h-3.5 w-3.5" />
-                  )}
+                  {activeTab === "icall" && <Phone className="h-3.5 w-3.5" />}
+                  {activeTab === "imeeting" && <Video className="h-3.5 w-3.5" />}
+                  {activeTab === "icontact" && <Contact className="h-3.5 w-3.5" />}
                 </div>
-                {activeTab === "icall" ? "iAppel" : "iContact"}
+                {activeTab === "icall" && "iAppel"}
+                {activeTab === "imeeting" && "iRéunion"}
+                {activeTab === "icontact" && "iContact"}
               </span>
             </div>
             <div className="flex-1 overflow-hidden p-4">
               {activeTab === "icall" && <CitizenCallTab />}
+              {activeTab === "imeeting" && <CitizenMeetingsTab autoJoinMeetingId={autoJoinMeetingId} />}
               {activeTab === "icontact" && <IContactContent />}
             </div>
           </div>
@@ -1382,5 +1406,289 @@ function ContactLine({
         )}
       </div>
     </div>
+  )
+}
+
+// ─────────────────────────────────────────────
+// iRéunion — Liste des réunions du citoyen
+// ─────────────────────────────────────────────
+
+function CitizenMeetingsTab({
+  autoJoinMeetingId = null,
+}: {
+  autoJoinMeetingId?: string | null
+}) {
+  const router = useRouter()
+  const [activeMeetingId, setActiveMeetingId] = useState<Id<"meetings"> | null>(null)
+  const { token, wsUrl, connect, disconnect } = useMeeting(activeMeetingId ?? undefined)
+
+  const handleJoinMeeting = useCallback(
+    async (meetingId: Id<"meetings">) => {
+      setActiveMeetingId(meetingId)
+      try {
+        await connect(meetingId)
+      } catch (e: any) {
+        toast.error(e?.message ?? "Impossible de rejoindre la réunion")
+        setActiveMeetingId(null)
+      }
+    },
+    [connect],
+  )
+
+  // Auto-join via ?join=<id> dans l'URL (lien depuis iAgenda).
+  // On ne déclenche QU'UNE FOIS au mount pour ne pas re-joindre si l'utilisateur
+  // sort de la réunion ensuite.
+  const autoJoinTriggeredRef = useRef(false)
+  useEffect(() => {
+    if (autoJoinTriggeredRef.current) return
+    if (!autoJoinMeetingId) return
+    autoJoinTriggeredRef.current = true
+    void handleJoinMeeting(autoJoinMeetingId as Id<"meetings">)
+  }, [autoJoinMeetingId, handleJoinMeeting])
+
+  const cleanup = useCallback(() => {
+    setActiveMeetingId(null)
+  }, [])
+
+  const {
+    onConnected: onLiveKitConnected,
+    onDisconnected: onLiveKitDisconnected,
+    markUserHangUp,
+  } = useLiveKitDisconnectGuard(cleanup)
+
+  const handleLeave = useCallback(async () => {
+    markUserHangUp()
+    if (activeMeetingId) {
+      await disconnect(activeMeetingId)
+    }
+    cleanup()
+  }, [activeMeetingId, disconnect, markUserHangUp, cleanup])
+
+  const isInMeeting = activeMeetingId !== null && token && wsUrl
+
+  const { data: meetingsData, isPending } = useAuthenticatedConvexQuery(
+    api.functions.meetings.listMine,
+    {},
+  )
+
+  const meetings = useMemo(
+    () => ((meetingsData as any)?.meetings ?? []) as any[],
+    [meetingsData],
+  )
+  const participantNames = useMemo(
+    () => ((meetingsData as any)?.participantNames ?? {}) as Record<string, string>,
+    [meetingsData],
+  )
+
+  // "upcoming" = à venir OU en cours (status active, pas encore terminée).
+  // Le citoyen peut quitter et rejoindre tant que l'agent n'a pas fini la
+  // réunion. On ne se base donc PAS sur le temps écoulé depuis le début,
+  // mais sur le statut serveur.
+  const upcoming = useMemo(
+    () =>
+      meetings
+        .filter((m) => m.type === "meeting")
+        .filter((m) => m.status !== "ended" && m.status !== "cancelled")
+        .sort((a, b) => (a.scheduledAt ?? a._creationTime) - (b.scheduledAt ?? b._creationTime)),
+    [meetings],
+  )
+
+  const past = useMemo(
+    () =>
+      meetings
+        .filter((m) => m.type === "meeting")
+        .filter((m) => m.status === "ended" || m.status === "cancelled")
+        .sort((a, b) => (b.scheduledAt ?? b._creationTime) - (a.scheduledAt ?? a._creationTime))
+        .slice(0, 20),
+    [meetings],
+  )
+
+  // ── Si l'utilisateur a rejoint une réunion, on rend la scène plein-tab ──
+  if (isInMeeting) {
+    const activeMeeting = meetings.find((m) => m._id === activeMeetingId)
+    return (
+      <div className="flex flex-col h-full overflow-hidden bg-zinc-950 rounded-xl">
+        <LiveKitRoom
+          token={token}
+          serverUrl={wsUrl}
+          connect={true}
+          audio={true}
+          video={true}
+          options={LIVEKIT_CALL_ROOM_OPTIONS}
+          onConnected={onLiveKitConnected}
+          onDisconnected={onLiveKitDisconnected}
+          className="flex flex-col flex-1"
+          style={{ height: "100%" }}
+        >
+          <MeetingStageView
+            meetingTitle={activeMeeting?.title ?? "Réunion"}
+            onHangUp={handleLeave}
+          />
+        </LiveKitRoom>
+      </div>
+    )
+  }
+
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (meetings.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center px-6">
+        <div className="mb-3 rounded-full bg-primary/10 p-3">
+          <Video className="h-6 w-6 text-primary" />
+        </div>
+        <p className="text-sm font-semibold">Aucune réunion pour l'instant</p>
+        <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+          Quand un agent vous invitera à une réunion, elle apparaîtra ici.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <ScrollArea className="h-full">
+      <div className="space-y-6 px-1">
+        {upcoming.length > 0 && (
+          <section>
+            <h3 className="mb-3 text-[11px] uppercase tracking-[0.12em] font-semibold text-muted-foreground">
+              À venir ({upcoming.length})
+            </h3>
+            <ul className="space-y-2">
+              {upcoming.map((m) => (
+                <CitizenMeetingRow
+                  key={m._id}
+                  meeting={m}
+                  participantNames={participantNames}
+                  onJoin={() => handleJoinMeeting(m._id as Id<"meetings">)}
+                  variant="upcoming"
+                />
+              ))}
+            </ul>
+          </section>
+        )}
+        {past.length > 0 && (
+          <section>
+            <h3 className="mb-3 text-[11px] uppercase tracking-[0.12em] font-semibold text-muted-foreground">
+              Passées
+            </h3>
+            <ul className="space-y-2">
+              {past.map((m) => (
+                <CitizenMeetingRow
+                  key={m._id}
+                  meeting={m}
+                  participantNames={participantNames}
+                  onJoin={() => handleJoinMeeting(m._id as Id<"meetings">)}
+                  variant="past"
+                />
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
+    </ScrollArea>
+  )
+}
+
+function CitizenMeetingRow({
+  meeting,
+  participantNames,
+  onJoin,
+  variant,
+}: {
+  meeting: any
+  participantNames: Record<string, string>
+  onJoin: () => void
+  variant: "upcoming" | "past"
+}) {
+  const startMs = meeting.scheduledAt ?? meeting.startedAt ?? meeting._creationTime
+  const date = new Date(startMs)
+  const dateLabel = date.toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  })
+  const timeLabel = date.toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+
+  // Animateur (createdBy)
+  const hostName = participantNames[meeting.createdBy] ?? "Agent consulaire"
+
+  // Délai jusqu'à la réunion (négatif = déjà commencée)
+  const minutesUntil = Math.floor((startMs - Date.now()) / 60_000)
+  // Toute réunion active (variant "upcoming") est joignable :
+  //  - 15 min avant le début (préparation)
+  //  - pendant tout le temps qu'elle reste active côté serveur (en cours,
+  //    permet de rejoindre après avoir quitté tant que l'agent n'a pas terminé)
+  const canJoin = variant === "upcoming" && minutesUntil <= 15
+  const inProgress = variant === "upcoming" && minutesUntil < 0
+
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={canJoin ? onJoin : undefined}
+        disabled={!canJoin}
+        className={cn(
+          "w-full grid grid-cols-[44px_1fr_auto] items-center gap-3 rounded-2xl border bg-card px-4 py-3 text-left transition-colors",
+          canJoin && "hover:bg-secondary/40 cursor-pointer",
+          !canJoin && "opacity-90",
+          variant === "past" && "opacity-70",
+        )}
+      >
+        <div className="flex h-11 w-11 flex-col items-center justify-center rounded-xl bg-primary/10 text-primary leading-none">
+          <span className="text-[9px] tracking-wider font-semibold uppercase">
+            {date.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "")}
+          </span>
+          <span className="text-[16px] font-bold mt-0.5">{date.getDate()}</span>
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-[14px] font-semibold leading-tight truncate">
+              {meeting.title || "Réunion"}
+            </p>
+            {inProgress && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-success/15 text-success px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+                <span className="h-1.5 w-1.5 rounded-full bg-success call-blink" />
+                En cours
+              </span>
+            )}
+          </div>
+          <p className="text-[11.5px] text-muted-foreground mt-0.5">
+            {dateLabel} · {timeLabel}
+          </p>
+          <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+            Avec {hostName}
+            {meeting.participants?.length > 2 && ` · ${meeting.participants.length} participants`}
+          </p>
+        </div>
+        <div>
+          {canJoin && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 text-success px-3 py-1.5 text-[11px] font-semibold">
+              <Video className="h-3 w-3" />
+              {inProgress ? "Reprendre" : "Rejoindre"}
+            </span>
+          )}
+          {variant === "upcoming" && !canJoin && minutesUntil > 15 && (
+            <span className="text-[10.5px] text-muted-foreground">
+              dans {minutesUntil < 60 ? `${minutesUntil} min` : `${Math.floor(minutesUntil / 60)} h`}
+            </span>
+          )}
+          {variant === "past" && (
+            <span className="text-[10.5px] text-muted-foreground">
+              {meeting.status === "ended" ? "Terminée" : "Passée"}
+            </span>
+          )}
+        </div>
+      </button>
+    </li>
   )
 }

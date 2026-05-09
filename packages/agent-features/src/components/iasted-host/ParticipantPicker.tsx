@@ -160,12 +160,12 @@ function ParticipantPickerInner({
 		<div className="space-y-2">
 			{/* Recherche */}
 			<div className="relative">
-				<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+				<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 pointer-events-none" />
 				<Input
 					value={searchTerm}
 					onChange={(e) => setSearchTerm(e.target.value)}
 					placeholder="Rechercher (nom, poste, org)..."
-					className="h-8 pl-8 text-xs"
+					className="h-9 !pl-10 text-xs"
 					aria-label="Rechercher un participant"
 				/>
 				{isSearchPending && (

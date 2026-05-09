@@ -6,6 +6,7 @@ import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-discon
 
 import { CustomCallUI } from "@/components/meetings/custom-call-ui";
 import { MeetingChatPanel } from "@/components/meetings/MeetingChatPanel";
+import { MeetingStageView } from "@/components/meetings/MeetingStageView";
 import { AlertCircle, Loader2, MessageSquare, Phone, Users, Video, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -30,6 +31,8 @@ interface MeetingRoomProps {
 	/** Meeting ID — requis pour activer le bouton d'enregistrement. */
 	meetingId?: Id<"meetings">;
 	mediaType?: "audio" | "video";
+	/** Titre de la réunion à afficher dans le top bar (vidéo uniquement). */
+	title?: string;
 }
 
 // ============================================
@@ -46,8 +49,23 @@ export function MeetingRoom({
 	onDisconnect,
 	meetingId,
 	mediaType,
+	title,
 }: MeetingRoomProps) {
-	const isVideo = mediaType === "video";
+	// Récupère le meeting pour distinguer une RÉUNION (type="meeting", multi-
+	// participants, scène vidéo plein écran) d'un APPEL (type="call", 1:1).
+	// Pour les meetings, on rend MeetingStageView quel que soit le mediaType
+	// — la maquette définit la réunion comme un mode visuel distinct,
+	// indépendant du fait que les participants aient publié leur caméra.
+	const { data: meetingDoc } = useAuthenticatedConvexQuery(
+		api.functions.meetings.get,
+		meetingId ? { meetingId } : "skip",
+	);
+	const isMeeting = (meetingDoc as any)?.type === "meeting";
+	// LiveKit `video` controls whether the local camera is published. Pour
+	// les réunions, on autorise vidéo si mediaType="video" OU si type="meeting"
+	// (les permissions de scène sont activées par défaut côté token).
+	const isVideo = mediaType === "video" || isMeeting;
+
 	const cleanupOnDisconnect = useCallback(() => {
 		onDisconnect();
 	}, [onDisconnect]);
@@ -114,48 +132,66 @@ export function MeetingRoom({
 				className="flex flex-col flex-1"
 				style={{ height: "100%" }}
 			>
-				<div className="flex flex-1 min-h-0 relative">
-					<div className={cn(
-						"flex flex-col flex-1 min-w-0",
-						chatOpen && showChatToggle && "md:mr-[320px]",
-					)}>
-						<CustomCallUI
-							onHangUp={handleUserHangUp}
-							mediaType={mediaType}
-							recording={
-								meetingId
-									? {
+				{isMeeting ? (
+					/* ── RÉUNION (type="meeting") : nouvelle scène plein écran ── */
+					<MeetingStageView
+						meetingTitle={title ?? (meetingDoc as any)?.title ?? "Réunion"}
+						onHangUp={handleUserHangUp}
+						recording={
+							meetingId
+								? {
 										isRecording,
 										isPending: recordingPending,
 										onToggle: handleToggleRecording,
 									}
-									: undefined
-							}
-						/>
+								: undefined
+						}
+					/>
+				) : (
+					/* ── Audio uniquement : on garde CustomCallUI + chat optionnel ── */
+					<div className="flex flex-1 min-h-0 relative">
+						<div className={cn(
+							"flex flex-col flex-1 min-w-0",
+							chatOpen && showChatToggle && "md:mr-[320px]",
+						)}>
+							<CustomCallUI
+								onHangUp={handleUserHangUp}
+								mediaType={mediaType}
+								recording={
+									meetingId
+										? {
+											isRecording,
+											isPending: recordingPending,
+											onToggle: handleToggleRecording,
+										}
+										: undefined
+								}
+							/>
+						</div>
+
+						{showChatToggle && (
+							<>
+								<Button
+									type="button"
+									onClick={() => setChatOpen((v) => !v)}
+									variant="ghost"
+									size="icon"
+									aria-pressed={chatOpen}
+									aria-label={chatOpen ? "Fermer la discussion" : "Ouvrir la discussion"}
+									className="absolute top-2.5 right-2.5 z-30 h-8 w-8 rounded-lg bg-white/8 hover:bg-white/14 text-white"
+								>
+									{chatOpen ? <X className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
+								</Button>
+
+								{chatOpen && (
+									<aside className="absolute right-0 top-0 bottom-0 w-full md:w-[320px] z-20 p-2.5 pt-12 md:pt-2.5 bg-zinc-950/95 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none">
+										<MeetingChatPanel onClose={() => setChatOpen(false)} />
+									</aside>
+								)}
+							</>
+						)}
 					</div>
-
-					{showChatToggle && (
-						<>
-							<Button
-								type="button"
-								onClick={() => setChatOpen((v) => !v)}
-								variant="ghost"
-								size="icon"
-								aria-pressed={chatOpen}
-								aria-label={chatOpen ? "Fermer la discussion" : "Ouvrir la discussion"}
-								className="absolute top-2.5 right-2.5 z-30 h-8 w-8 rounded-lg bg-white/8 hover:bg-white/14 text-white"
-							>
-								{chatOpen ? <X className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
-							</Button>
-
-							{chatOpen && (
-								<aside className="absolute right-0 top-0 bottom-0 w-full md:w-[320px] z-20 p-2.5 pt-12 md:pt-2.5 bg-zinc-950/95 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none">
-									<MeetingChatPanel onClose={() => setChatOpen(false)} />
-								</aside>
-							)}
-						</>
-					)}
-				</div>
+				)}
 			</LiveKitRoom>
 		</div>
 	);

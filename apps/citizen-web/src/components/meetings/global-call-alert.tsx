@@ -6,6 +6,7 @@ import {
 import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 import { CitizenAudioCallView } from "@/components/meetings/CitizenAudioCallView";
+import { MeetingStageView } from "@/components/meetings/MeetingStageView";
 
 import { useQuery } from "convex/react";
 import { Loader2, Phone, PhoneCall, PhoneOff } from "lucide-react";
@@ -128,6 +129,15 @@ export function GlobalCallAlert() {
 	const handleDecline = useCallback(async () => {
 		if (!activeCallToDisplay) return;
 		dismissedMeetingIdRef.current = activeCallToDisplay._id;
+		// `declineCall` côté Convex ne s'applique qu'aux appels org-inbound
+		// (citoyen → org). Pour les réunions (type="meeting") ou les appels
+		// directs (callUser, qui ne sont pas isOrgInbound), on se contente
+		// de dismisser localement — le toast disparaît, l'invitation reste
+		// dans listMine et l'agent voit que le citoyen n'a pas rejoint.
+		const isOrgInbound =
+			(activeCallToDisplay as any).type === "call" &&
+			(activeCallToDisplay as any).isOrgInbound === true;
+		if (!isOrgInbound) return;
 		try {
 			await declineCallMutation.mutateAsync({ meetingId: activeCallToDisplay._id });
 		} catch {
@@ -173,6 +183,9 @@ export function GlobalCallAlert() {
 		}
 	}, [activeMeetingData?.status, activeMeetingId, cleanupCallState]);
 
+	// Détecte si c'est une réunion (visioconférence multi-participants) ou
+	// un appel 1:1 — la vue rendue est radicalement différente.
+	const isMeeting = (activeMeetingData as any)?.type === "meeting";
 	const callContent = (
 		<div className="flex flex-col h-full overflow-hidden">
 			{token && wsUrl ? (
@@ -181,17 +194,26 @@ export function GlobalCallAlert() {
 					serverUrl={wsUrl}
 					connect={true}
 					audio={true}
-					video={false}
+					video={isMeeting}
 					options={LIVEKIT_CALL_ROOM_OPTIONS}
 					onConnected={onLiveKitConnected}
 					onDisconnected={onLiveKitDisconnected}
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
-					<CitizenAudioCallView
-						onHangUp={handleHangUp}
-						title={callerName ?? activeCallToDisplay?.title ?? undefined}
-					/>
+					{isMeeting ? (
+						<MeetingStageView
+							meetingTitle={
+								(activeMeetingData as any)?.title ?? activeCallToDisplay?.title ?? "Réunion"
+							}
+							onHangUp={handleHangUp}
+						/>
+					) : (
+						<CitizenAudioCallView
+							onHangUp={handleHangUp}
+							title={callerName ?? activeCallToDisplay?.title ?? undefined}
+						/>
+					)}
 				</LiveKitRoom>
 			) : (
 				<div className="h-full flex items-center justify-center call-hero-dark">

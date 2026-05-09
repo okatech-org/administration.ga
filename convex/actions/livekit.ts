@@ -103,6 +103,14 @@ export const requestToken = action({
       { authSubject: identity.subject },
     );
 
+    // Pour les RÉUNIONS (type="meeting"), on accorde toujours les sources
+    // vidéo — la maquette définit la réunion comme une visioconférence
+    // multi-participants, indépendamment du flag mediaType qui ne contrôle
+    // que la publication initiale de la caméra côté client. Un citoyen invité
+    // à une réunion doit pouvoir activer sa caméra et partager son écran.
+    const isVideoCapable =
+      meeting.type === "meeting" || meeting.mediaType === "video";
+
     token.addGrant({
       roomJoin: true,
       room: meeting.roomName,
@@ -111,15 +119,14 @@ export const requestToken = action({
       canPublishData: true,
       ...(isCitizen
         ? {
-            canPublishSources:
-              meeting.mediaType === "video"
-                ? [
-                    TrackSource.MICROPHONE,
-                    TrackSource.CAMERA,
-                    TrackSource.SCREEN_SHARE,
-                    TrackSource.SCREEN_SHARE_AUDIO,
-                  ]
-                : [TrackSource.MICROPHONE],
+            canPublishSources: isVideoCapable
+              ? [
+                  TrackSource.MICROPHONE,
+                  TrackSource.CAMERA,
+                  TrackSource.SCREEN_SHARE,
+                  TrackSource.SCREEN_SHARE_AUDIO,
+                ]
+              : [TrackSource.MICROPHONE],
           }
         : {}),
     });
