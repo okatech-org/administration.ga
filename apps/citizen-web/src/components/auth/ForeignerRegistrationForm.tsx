@@ -62,7 +62,11 @@ import {
 	useConvexActionQuery,
 	useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
-import { captureEvent } from "@/lib/analytics";
+import { toRegistrationFlowType } from "@/lib/analytics";
+import {
+	getInvalidFieldPaths,
+	useRegistrationAnalytics,
+} from "@/lib/useRegistrationAnalytics";
 import { scrollToTop } from "@/lib/utils";
 import {
 	getRegistrationConfig,
@@ -445,11 +449,6 @@ export function ForeignerRegistrationForm({
 		},
 	});
 
-	// Track registration start on mount
-	useEffect(() => {
-		captureEvent("registration_started");
-	}, []);
-
 	// Dynamic steps from config
 	const steps = useMemo(
 		() =>
@@ -465,6 +464,14 @@ export function ForeignerRegistrationForm({
 	const currentStepId = steps[step]?.stepId;
 	const lastStepIndex = steps.length - 1;
 
+	// Centralised analytics tracking for the registration wizard.
+	// Handles registration_started + registration_step_viewed automatically.
+	const analytics = useRegistrationAnalytics({
+		flowType: toRegistrationFlowType(userType),
+		step,
+		steps,
+	});
+
 	// Auto-save debounce
 	const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 	const handleAutoSave = useCallback(() => {
@@ -477,15 +484,9 @@ export function ForeignerRegistrationForm({
 		}, 1000);
 	}, [step, steps, form, regStorage]);
 
+	// Scroll to top on step change (analytics step_viewed handled by hook)
 	useEffect(() => {
 		scrollToTop();
-		const currentStepInfo = steps[step];
-		if (currentStepInfo?.stepId) {
-			captureEvent("registration_step_viewed", {
-				step_name: currentStepInfo.stepId,
-			});
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [step]);
 
 	// Map stepId to form fields for validation
@@ -609,6 +610,9 @@ export function ForeignerRegistrationForm({
 		const isValid = await validateStep(step);
 		if (!isValid) {
 			console.warn("[Registration] Validation errors:", form.formState.errors);
+			analytics.trackValidationError(
+				getInvalidFieldPaths(form.formState.errors),
+			);
 			// Don't show generic toast for documents step — validateStep already shows specific toast
 			if (currentStepId !== "documents") {
 				toast.error(t("register.errors.fixErrors"));
@@ -643,7 +647,7 @@ export function ForeignerRegistrationForm({
 		}
 
 		if (currentStepId) {
-			captureEvent("registration_step_completed", { step_name: currentStepId });
+			analytics.trackStepCompleted();
 		}
 
 		setStep(step + 1);
@@ -651,6 +655,7 @@ export function ForeignerRegistrationForm({
 
 	const handlePrevious = () => {
 		if (step > 0) {
+			analytics.trackStepBack(step - 1);
 			setStep(step - 1);
 		}
 	};
@@ -700,9 +705,7 @@ export function ForeignerRegistrationForm({
 						documentType: docDef.documentType,
 						category: docDef.category,
 					});
-					captureEvent("registration_document_uploaded", {
-						document_type: docDef.documentType,
-					});
+					analytics.trackDocumentUploaded(docDef.documentType);
 
 					documentIds[docDef.key] = docId;
 				} catch (err) {
@@ -769,7 +772,7 @@ export function ForeignerRegistrationForm({
 
 			// No consular registration request for foreigners — just profile
 			setSubmissionState("success");
-			captureEvent("registration_submitted", {
+			analytics.trackSubmitted({
 				marital_status: undefined,
 				has_children: false,
 				jurisdiction_country: data.contactInfo.country,
@@ -806,7 +809,7 @@ export function ForeignerRegistrationForm({
 
 		if (images.length === 0) {
 			toast.error(t("register.scan.noDocuments"));
-			captureEvent("registration_ai_scan_failed", {
+			analytics.trackAiScanFailed({
 				error_type: "no_documents",
 				documents_attempted: 0,
 			});
@@ -821,13 +824,13 @@ export function ForeignerRegistrationForm({
 			if (!result.success) {
 				if (result.error?.startsWith("RATE_LIMITED:")) {
 					toast.error(result.error.replace("RATE_LIMITED:", ""));
-					captureEvent("registration_ai_scan_failed", {
+					analytics.trackAiScanFailed({
 						error_type: "rate_limited",
 						documents_attempted: images.length,
 					});
 				} else {
 					toast.error(t("register.scan.error"));
-					captureEvent("registration_ai_scan_failed", {
+					analytics.trackAiScanFailed({
 						error_type: "extraction_error",
 						documents_attempted: images.length,
 					});
@@ -923,7 +926,7 @@ export function ForeignerRegistrationForm({
 				fieldsUpdated++;
 			}
 
-			captureEvent("registration_ai_scan_used", {
+			analytics.trackAiScanUsed({
 				documents_scanned: images.length,
 				fields_extracted: fieldsUpdated,
 				scan_duration_ms: Date.now() - scanStart,
@@ -942,14 +945,14 @@ export function ForeignerRegistrationForm({
 		} catch (error) {
 			console.error("Document scan error:", error);
 			toast.error(t("register.scan.error"));
-			captureEvent("registration_ai_scan_failed", {
+			analytics.trackAiScanFailed({
 				error_type: "extraction_error",
 				documents_attempted: images.length,
 			});
 		} finally {
 			setIsScanning(false);
 		}
-	}, [form, extractDataFromImages, regStorage, t]);
+	}, [form, extractDataFromImages, regStorage, t, analytics]);
 
 	// Show loading only while Convex auth is initializing
 	if (isAuthLoading) {

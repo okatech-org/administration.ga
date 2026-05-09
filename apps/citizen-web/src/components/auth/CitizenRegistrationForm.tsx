@@ -67,7 +67,11 @@ import {
 	useConvexActionQuery,
 	useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
-import { captureEvent } from "@/lib/analytics";
+import { toRegistrationFlowType } from "@/lib/analytics";
+import {
+	getInvalidFieldPaths,
+	useRegistrationAnalytics,
+} from "@/lib/useRegistrationAnalytics";
 import { scrollToTop } from "@/lib/utils";
 import {
 	getRegistrationConfig,
@@ -571,11 +575,6 @@ export function CitizenRegistrationForm({
 		WorkStatus.Entrepreneur,
 	].includes(form.watch("professionalInfo.workStatus") as WorkStatus);
 
-	// Track registration start on mount
-	useEffect(() => {
-		captureEvent("registration_started");
-	}, []);
-
 	// Dynamic steps from config
 	const steps = regConfig.steps.map((s, index) => ({
 		id: index,
@@ -586,6 +585,15 @@ export function CitizenRegistrationForm({
 
 	const currentStepId = steps[step]?.stepId;
 	const lastStepIndex = steps.length - 1;
+
+	// Centralised analytics tracking for the registration wizard.
+	// Emits registration_started, registration_step_viewed (per step change),
+	// and exposes track* helpers for the rest of the form lifecycle.
+	const analytics = useRegistrationAnalytics({
+		flowType: toRegistrationFlowType(userType),
+		step,
+		steps,
+	});
 
 	// Auto-save debounce (must be after steps and form declarations)
 	const handleAutoSave = useCallback(() => {
@@ -598,15 +606,9 @@ export function CitizenRegistrationForm({
 		}, 1000);
 	}, [step, steps, form, regStorage]);
 
+	// Scroll to top on step change (analytics step_viewed is handled by the hook)
 	useEffect(() => {
 		scrollToTop();
-		const currentStepInfo = steps[step];
-		if (currentStepInfo?.stepId) {
-			captureEvent("registration_step_viewed", {
-				step_name: currentStepInfo.stepId,
-			});
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [step]);
 
 	// Map stepId to form fields for validation
@@ -740,6 +742,9 @@ export function CitizenRegistrationForm({
 		const isValid = await validateStep(step);
 		if (!isValid) {
 			console.warn("[Registration] Validation errors:", form.formState.errors);
+			analytics.trackValidationError(
+				getInvalidFieldPaths(form.formState.errors),
+			);
 			// Don't show generic toast for documents step — validateStep already shows specific toast
 			if (currentStepId !== "documents") {
 				toast.error(t("register.errors.fixErrors"));
@@ -775,7 +780,7 @@ export function CitizenRegistrationForm({
 		}
 
 		if (currentStepId) {
-			captureEvent("registration_step_completed", { step_name: currentStepId });
+			analytics.trackStepCompleted();
 		}
 
 		setStep(step + 1);
@@ -783,6 +788,7 @@ export function CitizenRegistrationForm({
 
 	const handlePrevious = () => {
 		if (step > 0) {
+			analytics.trackStepBack(step - 1);
 			setStep(step - 1);
 		}
 	};
@@ -833,9 +839,7 @@ export function CitizenRegistrationForm({
 						documentType: docDef.documentType,
 						category: docDef.category,
 					});
-					captureEvent("registration_document_uploaded", {
-						document_type: docDef.documentType,
-					});
+					analytics.trackDocumentUploaded(docDef.documentType);
 
 					documentIds[docDef.key] = docId;
 				} catch (err) {
@@ -961,7 +965,7 @@ export function CitizenRegistrationForm({
 						reference: result.reference,
 					});
 					setSubmissionState("success");
-					captureEvent("registration_submitted", {
+					analytics.trackSubmitted({
 						marital_status: data.familyInfo?.maritalStatus,
 						has_children: false, // We don't ask for children in the wizard directly
 						jurisdiction_country: data.contactInfo.country,
@@ -1019,7 +1023,7 @@ export function CitizenRegistrationForm({
 					"Veuillez d'abord uploader au moins un document",
 				),
 			);
-			captureEvent("registration_ai_scan_failed", {
+			analytics.trackAiScanFailed({
 				error_type: "no_documents",
 				documents_attempted: 0,
 			});
@@ -1034,13 +1038,13 @@ export function CitizenRegistrationForm({
 			if (!result.success) {
 				if (result.error?.startsWith("RATE_LIMITED:")) {
 					toast.error(result.error.replace("RATE_LIMITED:", ""));
-					captureEvent("registration_ai_scan_failed", {
+					analytics.trackAiScanFailed({
 						error_type: "rate_limited",
 						documents_attempted: images.length,
 					});
 				} else {
 					toast.error(t("register.scan.error"));
-					captureEvent("registration_ai_scan_failed", {
+					analytics.trackAiScanFailed({
 						error_type: "extraction_error",
 						documents_attempted: images.length,
 					});
@@ -1275,7 +1279,7 @@ export function CitizenRegistrationForm({
 				}
 			}
 
-			captureEvent("registration_ai_scan_used", {
+			analytics.trackAiScanUsed({
 				documents_scanned: images.length,
 				fields_extracted: fieldsUpdated,
 				scan_duration_ms: Date.now() - scanStart,
@@ -1290,14 +1294,14 @@ export function CitizenRegistrationForm({
 		} catch (error) {
 			console.error("Document scan error:", error);
 			toast.error(t("register.scan.error"));
-			captureEvent("registration_ai_scan_failed", {
+			analytics.trackAiScanFailed({
 				error_type: "extraction_error",
 				documents_attempted: images.length,
 			});
 		} finally {
 			setIsScanning(false);
 		}
-	}, [form, extractDataFromImages, regStorage, t]);
+	}, [form, extractDataFromImages, regStorage, t, analytics]);
 
 	// Show loading only while Convex auth is initializing
 	if (isAuthLoading) {

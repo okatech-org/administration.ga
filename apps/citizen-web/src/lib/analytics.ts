@@ -1,4 +1,25 @@
+import { PublicUserType } from "@convex/lib/constants";
 import posthog from "posthog-js";
+
+/**
+ * Type de flux d'inscription consulaire.
+ * Ajouté à tous les events `registration_*` via la propriété `flow_type`
+ * pour permettre la construction de funnels PostHog distincts par flux.
+ *
+ * - `long_stay`  : Citoyen gabonais résident à l'étranger > 6 mois
+ * - `short_stay` : Signalement consulaire (passage court < 6 mois)
+ * - `foreigner`  : Étranger (visa tourisme/business/long séjour/admin services)
+ */
+export type RegistrationFlowType = "long_stay" | "short_stay" | "foreigner";
+
+/** Mappe un PublicUserType vers le RegistrationFlowType correspondant. */
+export function toRegistrationFlowType(
+	userType: PublicUserType | string,
+): RegistrationFlowType {
+	if (userType === PublicUserType.LongStay) return "long_stay";
+	if (userType === PublicUserType.ShortStay) return "short_stay";
+	return "foreigner";
+}
 
 // Définition des événements et de leurs propriétés typées
 export type AnalyticsEvents = {
@@ -9,21 +30,67 @@ export type AnalyticsEvents = {
 	password_reset_requested: never;
 
 	// 2. Inscription Consulaire (Registration Wizard)
-	registration_started: never;
-	registration_step_viewed: { step_name: string };
-	registration_step_completed: { step_name: string };
-	registration_document_uploaded: { document_type: string };
+	//
+	// Pattern : tous les events portent `flow_type` (long_stay | short_stay | foreigner)
+	// pour pouvoir construire un Funnel Insight PostHog par flux. Voir
+	// `apps/citizen-web/docs/registration-tracking.md` pour les insights pré-définis.
+	registration_started: {
+		flow_type: RegistrationFlowType;
+		total_steps: number;
+	};
+	registration_step_viewed: {
+		flow_type: RegistrationFlowType;
+		step_name: string;
+		step_index: number;
+		total_steps: number;
+	};
+	registration_step_completed: {
+		flow_type: RegistrationFlowType;
+		step_name: string;
+		step_index: number;
+		total_steps: number;
+		time_on_step_ms: number;
+	};
+	registration_step_back: {
+		flow_type: RegistrationFlowType;
+		from_step: string;
+		to_step: string;
+		from_step_index: number;
+	};
+	registration_validation_error: {
+		flow_type: RegistrationFlowType;
+		step_name: string;
+		step_index: number;
+		field_paths: string[];
+		error_count: number;
+	};
+	registration_abandoned: {
+		flow_type: RegistrationFlowType;
+		last_step: string;
+		last_step_index: number;
+		total_steps: number;
+		completion_pct: number;
+		time_in_form_ms: number;
+	};
+	registration_document_uploaded: {
+		flow_type: RegistrationFlowType;
+		document_type: string;
+	};
 	registration_ai_scan_used: {
+		flow_type: RegistrationFlowType;
 		documents_scanned: number;
 		fields_extracted: number;
 		scan_duration_ms: number;
 		confidence: number;
 	};
 	registration_ai_scan_failed: {
+		flow_type: RegistrationFlowType;
 		error_type: "no_documents" | "rate_limited" | "extraction_error";
 		documents_attempted: number;
 	};
 	registration_submitted: {
+		flow_type: RegistrationFlowType;
+		total_time_ms: number;
 		marital_status?: string;
 		has_children?: boolean;
 		jurisdiction_country?: string;
@@ -108,6 +175,27 @@ export const captureEvent = <T extends keyof AnalyticsEvents>(
 	) {
 		try {
 			posthog.capture(eventName, properties);
+		} catch (error) {
+			console.error("Failed to capture analytics event:", error);
+		}
+	}
+};
+
+/**
+ * Variante de captureEvent qui force un envoi immédiat (best-effort).
+ * À utiliser pour les events émis pendant `beforeunload` / `visibilitychange=hidden`,
+ * où l'event risque d'être perdu si bufferisé. Repose sur `sendBeacon` côté posthog-js.
+ */
+export const captureEventInstant = <T extends keyof AnalyticsEvents>(
+	eventName: T,
+	...[properties]: EventProperties<T>
+) => {
+	if (
+		typeof window !== "undefined" &&
+		process.env.NEXT_PUBLIC_POSTHOG_KEY
+	) {
+		try {
+			posthog.capture(eventName, properties, { send_instantly: true });
 		} catch (error) {
 			console.error("Failed to capture analytics event:", error);
 		}
