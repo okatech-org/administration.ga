@@ -2085,7 +2085,7 @@ export const formTemplates: FormTemplate[] = [
 					},
 				],
 			},
-			// ── Section 4 : Adresse temporaire ──
+			// ── Section 4 : Adresse temporaire (optionnelle) ──
 			{
 				id: "temporary_address",
 				title: { fr: "Adresse de séjour", en: "Stay Address" },
@@ -2094,13 +2094,13 @@ export const formTemplates: FormTemplate[] = [
 						id: "stay_street",
 						type: FormFieldType.Text,
 						label: { fr: "Adresse / Hôtel", en: "Address / Hotel" },
-						required: true,
+						required: false,
 					},
 					{
 						id: "stay_city",
 						type: FormFieldType.Text,
 						label: { fr: "Ville", en: "City" },
-						required: true,
+						required: false,
 					},
 					{
 						id: "stay_country",
@@ -2185,6 +2185,14 @@ export const formTemplates: FormTemplate[] = [
 			{
 				type: DetailedDocumentType.Passport,
 				label: { fr: "Passeport en cours de validité", en: "Valid Passport" },
+				required: true,
+			},
+			{
+				type: DetailedDocumentType.ResidencePermit,
+				label: {
+					fr: "Visa ou titre de séjour en cours de validité",
+					en: "Valid visa or residence permit",
+				},
 				required: true,
 			},
 			{

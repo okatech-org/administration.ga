@@ -19,8 +19,12 @@ interface FileUploaderProps {
   label?: string;
   accept?: Record<string, string[]>;
   maxSize?: number;
-  docType: string;
+  /** Optional. If omitted, the document is created without a specific type
+   * (no auto-link to profile vault, no overwrite of existing consular docs). */
+  docType?: string;
   category?: string;
+  /** Optional explicit label persisted on the document record. */
+  documentLabel?: string;
 }
 
 export function FileUploader({
@@ -34,6 +38,7 @@ export function FileUploader({
   maxSize = 5 * 1024 * 1024,
   docType,
   category,
+  documentLabel,
 }: FileUploaderProps) {
   const { mutateAsync: generateUploadUrl } = useConvexMutationQuery(
     api.functions.documents.generateUploadUrl,
@@ -77,6 +82,7 @@ export function FileUploader({
             mimeType: file.type,
             documentType: docType as DetailedDocumentType | undefined,
             category: category as DocumentTypeCategory | undefined,
+            label: documentLabel,
           });
 
           await onUploadComplete(documentId);
@@ -96,6 +102,7 @@ export function FileUploader({
       createDocument,
       docType,
       category,
+      documentLabel,
       onUploadComplete,
       onUploadError,
     ],

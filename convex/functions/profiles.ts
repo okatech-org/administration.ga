@@ -786,7 +786,8 @@ export const findNotificationOrg = authQuery({
 
 /**
  * Submit notification (signalement) request.
- * User specifies the destination country, stay details and a proof of stay.
+ * User specifies the destination country, stay details, and proof of travel
+ * legality (visa or residence permit). Stay address is optional.
  * Available to both long_stay and short_stay Gabonese citizens.
  */
 export const submitNotificationRequest = authMutation({
@@ -802,11 +803,13 @@ export const submitNotificationRequest = authMutation({
       v.literal("studies"),
       v.literal("other"),
     ),
-    stayAddress: v.object({
-      street: v.string(),
-      city: v.string(),
-    }),
-    proofOfStayDocId: v.id("documents"),
+    stayAddress: v.optional(
+      v.object({
+        street: v.optional(v.string()),
+        city: v.optional(v.string()),
+      }),
+    ),
+    travelAuthorizationDocId: v.id("documents"),
   },
   handler: async (ctx, args) => {
     // Validate stay dates: end must be after start, duration capped at 180 days
@@ -831,14 +834,14 @@ export const submitNotificationRequest = authMutation({
       return { status: "not_applicable" as const };
     }
 
-    // Verify the proof-of-stay document belongs to the caller
-    const proofDoc = await ctx.db.get(args.proofOfStayDocId);
-    if (!proofDoc) {
+    // Verify the travel authorization document belongs to the caller
+    const authDoc = await ctx.db.get(args.travelAuthorizationDocId);
+    if (!authDoc) {
       throw error(ErrorCode.DOCUMENT_NOT_FOUND);
     }
-    const proofOwnerOk =
-      proofDoc.ownerId === profile._id || proofDoc.ownerId === ctx.user._id;
-    if (!proofOwnerOk) {
+    const authOwnerOk =
+      authDoc.ownerId === profile._id || authDoc.ownerId === ctx.user._id;
+    if (!authOwnerOk) {
       throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
     }
 
@@ -885,13 +888,16 @@ export const submitNotificationRequest = authMutation({
 
         const now = Date.now();
 
-        // Attach proof of stay + identity documents from profile vault
+        // Attach travel authorization + identity documents from profile vault
         const profileDocs = profile.documents ?? {};
         const vaultIds = Object.values(profileDocs).filter(
           (id): id is typeof id & string => id !== undefined,
         );
         const documentIds = Array.from(
-          new Set<string>([args.proofOfStayDocId as unknown as string, ...vaultIds]),
+          new Set<string>([
+            args.travelAuthorizationDocId as unknown as string,
+            ...vaultIds,
+          ]),
         ) as Id<"documents">[];
 
         // Build formData: profile fields + stay-specific sections (matching the
@@ -903,8 +909,8 @@ export const submitNotificationRequest = authMutation({
         const formData = {
           ...baseFormData,
           temporary_address: {
-            stay_street: args.stayAddress.street,
-            stay_city: args.stayAddress.city,
+            stay_street: args.stayAddress?.street,
+            stay_city: args.stayAddress?.city,
             stay_country: targetCountry,
           },
           stay_dates: {
@@ -912,7 +918,7 @@ export const submitNotificationRequest = authMutation({
             stay_end_date: formatDate(args.stayEndDate),
             stay_reason: args.stayReason,
           },
-          proof_of_stay_doc_id: args.proofOfStayDocId,
+          travel_authorization_doc_id: args.travelAuthorizationDocId,
         };
 
         // Create request as Draft — internalSubmit will transition to Submitted

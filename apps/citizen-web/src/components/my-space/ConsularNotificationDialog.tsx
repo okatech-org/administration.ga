@@ -1,5 +1,5 @@
 import { api } from "@convex/_generated/api";
-import { DetailedDocumentType, type CountryCode } from "@convex/lib/constants";
+import type { CountryCode } from "@convex/lib/constants";
 import type { Id } from "@convex/_generated/dataModel";
 import {
 	Building2,
@@ -84,7 +84,9 @@ export function ConsularNotificationDialog({
 	const [stayReason, setStayReason] = useState<StayReason | undefined>();
 	const [stayStreet, setStayStreet] = useState("");
 	const [stayCity, setStayCity] = useState("");
-	const [proofDocId, setProofDocId] = useState<Id<"documents"> | undefined>();
+	const [travelAuthDocId, setTravelAuthDocId] = useState<
+		Id<"documents"> | undefined
+	>();
 	const [stayFormError, setStayFormError] = useState("");
 
 	// Only query when a country is selected and we're in checking state
@@ -149,7 +151,7 @@ export function ConsularNotificationDialog({
 			setStayReason(undefined);
 			setStayStreet("");
 			setStayCity("");
-			setProofDocId(undefined);
+			setTravelAuthDocId(undefined);
 			setStayFormError("");
 		}
 	}, [open]);
@@ -188,14 +190,20 @@ export function ConsularNotificationDialog({
 			setStayFormError("Veuillez sélectionner le motif du séjour.");
 			return;
 		}
-		if (!stayStreet.trim() || !stayCity.trim()) {
-			setStayFormError("Veuillez renseigner l'adresse de séjour (rue et ville).");
+		if (!travelAuthDocId) {
+			setStayFormError("Veuillez joindre votre visa ou titre de séjour.");
 			return;
 		}
-		if (!proofDocId) {
-			setStayFormError("Veuillez joindre un justificatif de séjour.");
-			return;
-		}
+
+		const trimmedStreet = stayStreet.trim();
+		const trimmedCity = stayCity.trim();
+		const stayAddress =
+			trimmedStreet || trimmedCity
+				? {
+						...(trimmedStreet ? { street: trimmedStreet } : {}),
+						...(trimmedCity ? { city: trimmedCity } : {}),
+					}
+				: undefined;
 
 		setDialogState("submitting");
 		try {
@@ -204,8 +212,8 @@ export function ConsularNotificationDialog({
 				stayStartDate: stayStart.getTime(),
 				stayEndDate: stayEnd.getTime(),
 				stayReason,
-				stayAddress: { street: stayStreet.trim(), city: stayCity.trim() },
-				proofOfStayDocId: proofDocId,
+				stayAddress,
+				travelAuthorizationDocId: travelAuthDocId,
 			});
 
 			if (result.status === "success") {
@@ -244,7 +252,7 @@ export function ConsularNotificationDialog({
 		stayReason,
 		stayStreet,
 		stayCity,
-		proofDocId,
+		travelAuthDocId,
 		t,
 	]);
 
@@ -261,9 +269,12 @@ export function ConsularNotificationDialog({
 		setStayFormError("");
 	}, []);
 
-	const handleProofUploadComplete = useCallback(async (documentId: string) => {
-		setProofDocId(documentId as Id<"documents">);
-	}, []);
+	const handleTravelAuthUploadComplete = useCallback(
+		async (documentId: string) => {
+			setTravelAuthDocId(documentId as Id<"documents">);
+		},
+		[],
+	);
 
 	const handleViewExistingRequest = useCallback(() => {
 		if (!existingReference) return;
@@ -389,9 +400,9 @@ export function ConsularNotificationDialog({
 					{dialogState === "fill_stay_info" && (
 						<div className="space-y-4">
 							<p className="text-sm text-muted-foreground">
-								Renseignez les informations de votre séjour et joignez un
-								justificatif (réservation d'hôtel, attestation d'hébergement,
-								billet de retour, etc.).
+								Renseignez les dates et le motif de votre séjour, et joignez la
+								preuve de la légalité de votre voyage (visa pour le pays de
+								destination ou titre de séjour en cours de validité).
 							</p>
 
 							<div className="space-y-1.5">
@@ -423,7 +434,10 @@ export function ConsularNotificationDialog({
 							</div>
 
 							<div className="space-y-1.5">
-								<Label className="text-xs">Adresse / Hôtel</Label>
+								<Label className="text-xs text-muted-foreground">
+									Adresse / Hôtel{" "}
+									<span className="text-muted-foreground/70">(optionnel)</span>
+								</Label>
 								<Input
 									value={stayStreet}
 									onChange={(e) => setStayStreet(e.target.value)}
@@ -432,7 +446,10 @@ export function ConsularNotificationDialog({
 							</div>
 
 							<div className="space-y-1.5">
-								<Label className="text-xs">Ville</Label>
+								<Label className="text-xs text-muted-foreground">
+									Ville{" "}
+									<span className="text-muted-foreground/70">(optionnel)</span>
+								</Label>
 								<Input
 									value={stayCity}
 									onChange={(e) => setStayCity(e.target.value)}
@@ -442,27 +459,32 @@ export function ConsularNotificationDialog({
 
 							<div className="space-y-1.5">
 								<Label className="text-xs">
-									Justificatif de séjour <span className="text-destructive">*</span>
+									Visa ou titre de séjour{" "}
+									<span className="text-destructive">*</span>
 								</Label>
-								{proofDocId ? (
+								<p className="text-xs text-muted-foreground">
+									Visa délivré pour le pays de destination, ou titre de séjour
+									en cours de validité couvrant le voyage.
+								</p>
+								{travelAuthDocId ? (
 									<div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
 										<FileCheck2 className="h-4 w-4 text-green-600 shrink-0" />
 										<span className="text-sm text-green-700 flex-1">
-											Justificatif joint
+											Document joint
 										</span>
 										<Button
 											variant="ghost"
 											size="sm"
-											onClick={() => setProofDocId(undefined)}
+											onClick={() => setTravelAuthDocId(undefined)}
 										>
 											Remplacer
 										</Button>
 									</div>
 								) : (
 									<FileUploader
-										onUploadComplete={handleProofUploadComplete}
-										docType={DetailedDocumentType.HostingCertificate}
-										label="Glissez votre justificatif ici ou cliquez pour parcourir"
+										onUploadComplete={handleTravelAuthUploadComplete}
+										documentLabel="Visa ou titre de séjour"
+										label="Glissez votre visa ou titre de séjour ici ou cliquez pour parcourir"
 									/>
 								)}
 							</div>
