@@ -225,7 +225,7 @@ export const CircleMenu = ({
 		<div
 			ref={containerRef}
 			style={{ width: C.containerSize, height: C.containerSize }}
-			className="relative flex items-end justify-end place-self-end"
+			className="relative flex items-end justify-end place-self-end pointer-events-none"
 		>
 			<GooFilter />
 
@@ -265,7 +265,7 @@ export const CircleMenu = ({
 					animate={triggerAnimate}
 					initial={false}
 					style={{ height: C.itemSize, width: C.itemSize }}
-					className="relative rounded-full flex items-center justify-center cursor-pointer outline-none ring-0 hover:brightness-125 transition-all duration-100 bg-transparent"
+					className="relative rounded-full flex items-center justify-center cursor-pointer outline-none ring-0 hover:brightness-125 transition-all duration-100 bg-transparent pointer-events-auto"
 					onClick={handleTriggerClick}
 					aria-expanded={isOpen}
 					aria-label={isOpen ? "Interagir avec iAsted" : "Ouvrir iAsted"}
