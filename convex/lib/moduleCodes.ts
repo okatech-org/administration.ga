@@ -524,10 +524,13 @@ export const MODULE_ACCESS_TASKS: Partial<Record<ModuleCodeValue, Record<ModuleA
     reader: [
       "requests.view",
       "consular_registrations.view",
+      "consular_notifications.view",
     ],
     editor: [
       "requests.view", "requests.create", "requests.process", "requests.validate", "requests.complete",
       "consular_registrations.view", "consular_registrations.manage",
+      "consular_notifications.view",
+      "consular_cards.manage",
       "civil_status.transcribe", "civil_status.register",
       "passports.process", "passports.biometric",
       "visas.process", "visas.approve",
@@ -535,6 +538,8 @@ export const MODULE_ACCESS_TASKS: Partial<Record<ModuleCodeValue, Record<ModuleA
     admin: [
       "requests.view", "requests.create", "requests.process", "requests.validate", "requests.assign", "requests.delete", "requests.complete",
       "consular_registrations.view", "consular_registrations.manage",
+      "consular_notifications.view",
+      "consular_cards.manage",
       "civil_status.transcribe", "civil_status.register", "civil_status.certify",
       "passports.process", "passports.biometric", "passports.deliver",
       "visas.process", "visas.approve", "visas.stamp",
