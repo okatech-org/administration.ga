@@ -1228,10 +1228,14 @@ export const updateStatus = authMutation({
         | (typeof RegistrationStatus)[keyof typeof RegistrationStatus]
         | null = null;
 
-      if (args.status === RequestStatus.Completed) {
+      // Le dossier devient actif dès que la demande sort des étapes de revue.
+      // L'expiration est gérée par un cron séparé qui vérifie la validité des cartes.
+      if (
+        args.status === RequestStatus.Validated ||
+        args.status === RequestStatus.InProduction ||
+        args.status === RequestStatus.Completed
+      ) {
         regStatus = RegistrationStatus.Active;
-      } else if (args.status === RequestStatus.Cancelled) {
-        regStatus = RegistrationStatus.Expired;
       }
 
       if (regStatus) {

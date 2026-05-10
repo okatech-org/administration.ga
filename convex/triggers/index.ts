@@ -267,10 +267,14 @@ triggers.register("requests", async (ctx, change) => {
       | (typeof RegistrationStatus)[keyof typeof RegistrationStatus]
       | null = null;
 
-    if (newStatus === RequestStatus.Completed) {
+    // Le dossier devient actif dès que la demande sort des étapes de revue.
+    // L'expiration est gérée par un cron séparé qui vérifie la validité des cartes.
+    if (
+      newStatus === RequestStatus.Validated ||
+      newStatus === RequestStatus.InProduction ||
+      newStatus === RequestStatus.Completed
+    ) {
       regStatus = RegistrationStatus.Active;
-    } else if (newStatus === RequestStatus.Cancelled) {
-      regStatus = RegistrationStatus.Expired;
     }
 
     if (regStatus) {
