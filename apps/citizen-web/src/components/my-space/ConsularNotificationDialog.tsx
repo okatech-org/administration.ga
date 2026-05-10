@@ -1,11 +1,14 @@
 import { api } from "@convex/_generated/api";
-import type { CountryCode } from "@convex/lib/constants";
+import { DetailedDocumentType, type CountryCode } from "@convex/lib/constants";
+import type { Id } from "@convex/_generated/dataModel";
 import {
 	Building2,
 	Check,
+	FileCheck2,
 	FileClock,
 	Loader2,
 	MapPin,
+	Plane,
 	X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -15,26 +18,45 @@ import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
 } from "@/integrations/convex/hooks";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { FileUploader } from "@/components/common/file-uploader";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 type DialogState =
 	| "select_country"
 	| "checking"
 	| "org_found"
+	| "fill_stay_info"
 	| "already_in_progress"
 	| "submitting"
 	| "success"
 	| "not_found"
 	| "not_applicable"
 	| "error";
+
+type StayReason = "tourism" | "business" | "family" | "medical" | "studies" | "other";
+
+const STAY_REASON_OPTIONS: { value: StayReason; label: string }[] = [
+	{ value: "tourism", label: "Tourisme" },
+	{ value: "business", label: "Affaires" },
+	{ value: "family", label: "Visite familiale" },
+	{ value: "medical", label: "Raisons médicales" },
+	{ value: "studies", label: "Études / Formation" },
+	{ value: "other", label: "Autre" },
+];
+
+const MAX_STAY_DAYS = 180;
 
 interface ConsularNotificationDialogProps {
 	open: boolean;
@@ -55,6 +77,15 @@ export function ConsularNotificationDialog({
 	const [reference, setReference] = useState("");
 	const [existingReference, setExistingReference] = useState("");
 	const [errorMessage, setErrorMessage] = useState("");
+
+	// Stay info (filled in fill_stay_info step)
+	const [stayStart, setStayStart] = useState<Date | undefined>();
+	const [stayEnd, setStayEnd] = useState<Date | undefined>();
+	const [stayReason, setStayReason] = useState<StayReason | undefined>();
+	const [stayStreet, setStayStreet] = useState("");
+	const [stayCity, setStayCity] = useState("");
+	const [proofDocId, setProofDocId] = useState<Id<"documents"> | undefined>();
+	const [stayFormError, setStayFormError] = useState("");
 
 	// Only query when a country is selected and we're in checking state
 	const shouldQuery =
@@ -113,6 +144,13 @@ export function ConsularNotificationDialog({
 			setReference("");
 			setExistingReference("");
 			setErrorMessage("");
+			setStayStart(undefined);
+			setStayEnd(undefined);
+			setStayReason(undefined);
+			setStayStreet("");
+			setStayCity("");
+			setProofDocId(undefined);
+			setStayFormError("");
 		}
 	}, [open]);
 
@@ -121,11 +159,54 @@ export function ConsularNotificationDialog({
 		setDialogState("checking");
 	}, [destinationCountry]);
 
+	const handleProceedToStayForm = useCallback(() => {
+		setStayFormError("");
+		setDialogState("fill_stay_info");
+	}, []);
+
 	const handleSubmit = useCallback(async () => {
 		if (!destinationCountry) return;
+		setStayFormError("");
+
+		// Validate stay info
+		if (!stayStart || !stayEnd) {
+			setStayFormError("Veuillez renseigner les dates d'arrivée et de départ.");
+			return;
+		}
+		if (stayEnd < stayStart) {
+			setStayFormError("La date de départ doit être postérieure à la date d'arrivée.");
+			return;
+		}
+		const durationDays = Math.floor(
+			(stayEnd.getTime() - stayStart.getTime()) / (24 * 60 * 60 * 1000),
+		);
+		if (durationDays > MAX_STAY_DAYS) {
+			setStayFormError(`La durée du séjour ne peut excéder ${MAX_STAY_DAYS} jours.`);
+			return;
+		}
+		if (!stayReason) {
+			setStayFormError("Veuillez sélectionner le motif du séjour.");
+			return;
+		}
+		if (!stayStreet.trim() || !stayCity.trim()) {
+			setStayFormError("Veuillez renseigner l'adresse de séjour (rue et ville).");
+			return;
+		}
+		if (!proofDocId) {
+			setStayFormError("Veuillez joindre un justificatif de séjour.");
+			return;
+		}
+
 		setDialogState("submitting");
 		try {
-			const result = await submitRequest({ destinationCountry });
+			const result = await submitRequest({
+				destinationCountry,
+				stayStartDate: stayStart.getTime(),
+				stayEndDate: stayEnd.getTime(),
+				stayReason,
+				stayAddress: { street: stayStreet.trim(), city: stayCity.trim() },
+				proofOfStayDocId: proofDocId,
+			});
 
 			if (result.status === "success") {
 				setOrgName(result.orgName ?? "");
@@ -155,13 +236,33 @@ export function ConsularNotificationDialog({
 						),
 			);
 		}
-	}, [submitRequest, destinationCountry, t]);
+	}, [
+		submitRequest,
+		destinationCountry,
+		stayStart,
+		stayEnd,
+		stayReason,
+		stayStreet,
+		stayCity,
+		proofDocId,
+		t,
+	]);
 
 	const handleBack = useCallback(() => {
 		setDialogState("select_country");
 		setOrgName("");
 		setExistingReference("");
 		setErrorMessage("");
+		setStayFormError("");
+	}, []);
+
+	const handleBackFromStayForm = useCallback(() => {
+		setDialogState("org_found");
+		setStayFormError("");
+	}, []);
+
+	const handleProofUploadComplete = useCallback(async (documentId: string) => {
+		setProofDocId(documentId as Id<"documents">);
 	}, []);
 
 	const handleViewExistingRequest = useCallback(() => {
@@ -171,51 +272,57 @@ export function ConsularNotificationDialog({
 	}, [existingReference, router, onOpenChange]);
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-md">
-				<DialogHeader>
-					<DialogTitle>
-						{t("mySpace.notification.dialog.title")}
-					</DialogTitle>
-					<DialogDescription>
-						{t(
-							"mySpace.notification.dialog.description",
-							"Signalez votre déplacement temporaire auprès de la Représentation consulaire ou diplomatique compétente.",
-						)}
-					</DialogDescription>
-				</DialogHeader>
-
-				<div className="py-4 space-y-4">
+		<BottomSheet
+			open={open}
+			onOpenChange={onOpenChange}
+			title={t("mySpace.notification.dialog.title")}
+			icon={<Plane className="h-4 w-4 text-amber-600" />}
+			maxHeight="90vh"
+			maxWidthClass="max-w-xl"
+		>
+			<div className="px-4 py-4 sm:px-5 space-y-4">
+				<p className="text-sm text-muted-foreground">
+					{t(
+						"mySpace.notification.dialog.description",
+						"Signalez votre déplacement temporaire auprès de la Représentation consulaire ou diplomatique compétente.",
+					)}
+				</p>
+				<div className="space-y-4">
 					{/* Step 1: Select destination country */}
 					{dialogState === "select_country" && (
 						<div className="space-y-4">
-							<div className="flex items-start gap-3 p-3 bg-muted/50 border rounded-lg">
-								<MapPin className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-								<div className="flex-1 space-y-2">
+							<div className="p-3 bg-muted/50 border rounded-lg space-y-2">
+								<div className="flex items-center gap-2">
+									<MapPin className="h-5 w-5 text-muted-foreground shrink-0" />
 									<p className="text-sm font-medium">
 										{t(
 											"mySpace.notification.dialog.selectCountry",
 											"Dans quel pays vous rendez-vous ?",
 										)}
 									</p>
-									<CountrySelect
-										type="single"
-										selected={destinationCountry}
-										onChange={setDestinationCountry}
-										placeholder={t(
-											"mySpace.notification.dialog.countryPlaceholder",
-											"Sélectionner le pays de destination",
-										)}
-									/>
 								</div>
+								<CountrySelect
+									type="single"
+									selected={destinationCountry}
+									onChange={setDestinationCountry}
+									placeholder={t(
+										"mySpace.notification.dialog.countryPlaceholder",
+										"Sélectionner le pays de destination",
+									)}
+								/>
 							</div>
-							<div className="flex gap-2 justify-end">
-								<Button variant="outline" onClick={() => onOpenChange(false)}>
+							<div className="flex gap-2">
+								<Button
+									variant="outline"
+									onClick={() => onOpenChange(false)}
+									className="flex-1"
+								>
 									{t("common.cancel")}
 								</Button>
 								<Button
 									onClick={handleCountrySelected}
 									disabled={!destinationCountry}
+									className="flex-1"
 								>
 									{t("common.continue")}
 								</Button>
@@ -257,11 +364,125 @@ export function ConsularNotificationDialog({
 									"Confirmez-vous vouloir signaler votre présence auprès de ce consulat ?",
 								)}
 							</p>
-							<div className="flex gap-2 justify-end">
-								<Button variant="outline" onClick={handleBack}>
+							<div className="flex gap-2">
+								<Button
+									variant="outline"
+									onClick={handleBack}
+									className="flex-1"
+								>
 									{t("common.back")}
 								</Button>
-								<Button onClick={handleSubmit}>
+								<Button
+									onClick={handleProceedToStayForm}
+									className="flex-1"
+								>
+									{t(
+										"mySpace.notification.dialog.continueToStayInfo",
+										"Renseigner mon séjour",
+									)}
+								</Button>
+							</div>
+						</div>
+					)}
+
+					{/* Step 2: Fill stay information */}
+					{dialogState === "fill_stay_info" && (
+						<div className="space-y-4">
+							<p className="text-sm text-muted-foreground">
+								Renseignez les informations de votre séjour et joignez un
+								justificatif (réservation d'hôtel, attestation d'hébergement,
+								billet de retour, etc.).
+							</p>
+
+							<div className="space-y-1.5">
+								<Label className="text-xs">Date d'arrivée</Label>
+								<DatePicker date={stayStart} setDate={setStayStart} />
+							</div>
+							<div className="space-y-1.5">
+								<Label className="text-xs">Date de départ prévue</Label>
+								<DatePicker date={stayEnd} setDate={setStayEnd} />
+							</div>
+
+							<div className="space-y-1.5">
+								<Label className="text-xs">Motif du séjour</Label>
+								<Select
+									value={stayReason}
+									onValueChange={(v) => setStayReason(v as StayReason)}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Sélectionner un motif" />
+									</SelectTrigger>
+									<SelectContent>
+										{STAY_REASON_OPTIONS.map((opt) => (
+											<SelectItem key={opt.value} value={opt.value}>
+												{opt.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+
+							<div className="space-y-1.5">
+								<Label className="text-xs">Adresse / Hôtel</Label>
+								<Input
+									value={stayStreet}
+									onChange={(e) => setStayStreet(e.target.value)}
+									placeholder="Numéro et nom de rue, hôtel…"
+								/>
+							</div>
+
+							<div className="space-y-1.5">
+								<Label className="text-xs">Ville</Label>
+								<Input
+									value={stayCity}
+									onChange={(e) => setStayCity(e.target.value)}
+									placeholder="Ville de séjour"
+								/>
+							</div>
+
+							<div className="space-y-1.5">
+								<Label className="text-xs">
+									Justificatif de séjour <span className="text-destructive">*</span>
+								</Label>
+								{proofDocId ? (
+									<div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+										<FileCheck2 className="h-4 w-4 text-green-600 shrink-0" />
+										<span className="text-sm text-green-700 flex-1">
+											Justificatif joint
+										</span>
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={() => setProofDocId(undefined)}
+										>
+											Remplacer
+										</Button>
+									</div>
+								) : (
+									<FileUploader
+										onUploadComplete={handleProofUploadComplete}
+										docType={DetailedDocumentType.HostingCertificate}
+										label="Glissez votre justificatif ici ou cliquez pour parcourir"
+									/>
+								)}
+							</div>
+
+							{stayFormError && (
+								<div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+									<X className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+									<p className="text-sm text-destructive">{stayFormError}</p>
+								</div>
+							)}
+
+							<div className="flex gap-2">
+								<Button
+									variant="outline"
+									onClick={handleBackFromStayForm}
+									className="flex-1"
+								>
+									{t("common.back")}
+								</Button>
+								<Button onClick={handleSubmit} className="flex-1">
 									{t(
 										"mySpace.notification.dialog.confirm",
 										"Confirmer le signalement",
@@ -300,8 +521,12 @@ export function ConsularNotificationDialog({
 									)}
 								</div>
 							</div>
-							<div className="flex gap-2 justify-end flex-wrap">
-								<Button variant="outline" onClick={handleBack}>
+							<div className="flex flex-col sm:flex-row gap-2">
+								<Button
+									variant="outline"
+									onClick={handleBack}
+									className="flex-1"
+								>
 									{t(
 										"mySpace.notification.dialog.alreadyInProgress.changeCountry",
 										"Choisir un autre pays",
@@ -310,6 +535,7 @@ export function ConsularNotificationDialog({
 								<Button
 									onClick={handleViewExistingRequest}
 									disabled={!existingReference}
+									className="flex-1"
 								>
 									{t(
 										"mySpace.notification.dialog.alreadyInProgress.viewRequest",
@@ -363,11 +589,12 @@ export function ConsularNotificationDialog({
 									)}
 								</div>
 							</div>
-							<div className="flex justify-end">
-								<Button onClick={() => onOpenChange(false)}>
-									{t("common.close")}
-								</Button>
-							</div>
+							<Button
+								onClick={() => onOpenChange(false)}
+								className="w-full"
+							>
+								{t("common.close")}
+							</Button>
 						</div>
 					)}
 
@@ -391,11 +618,19 @@ export function ConsularNotificationDialog({
 									</p>
 								</div>
 							</div>
-							<div className="flex gap-2 justify-end">
-								<Button variant="outline" onClick={handleBack}>
+							<div className="flex gap-2">
+								<Button
+									variant="outline"
+									onClick={handleBack}
+									className="flex-1"
+								>
 									{t("common.back")}
 								</Button>
-								<Button variant="outline" onClick={() => onOpenChange(false)}>
+								<Button
+									variant="outline"
+									onClick={() => onOpenChange(false)}
+									className="flex-1"
+								>
 									{t("common.close")}
 								</Button>
 							</div>
@@ -409,18 +644,26 @@ export function ConsularNotificationDialog({
 								<X className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
 								<p className="text-sm text-destructive">{errorMessage}</p>
 							</div>
-							<div className="flex gap-2 justify-end">
-								<Button variant="outline" onClick={handleBack}>
+							<div className="flex gap-2">
+								<Button
+									variant="outline"
+									onClick={handleBack}
+									className="flex-1"
+								>
 									{t("common.back")}
 								</Button>
-								<Button variant="outline" onClick={() => onOpenChange(false)}>
+								<Button
+									variant="outline"
+									onClick={() => onOpenChange(false)}
+									className="flex-1"
+								>
 									{t("common.close")}
 								</Button>
 							</div>
 						</div>
 					)}
 				</div>
-			</DialogContent>
-		</Dialog>
+			</div>
+		</BottomSheet>
 	);
 }

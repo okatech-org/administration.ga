@@ -786,14 +786,38 @@ export const findNotificationOrg = authQuery({
 
 /**
  * Submit notification (signalement) request.
- * User specifies the destination country they are traveling to.
+ * User specifies the destination country, stay details and a proof of stay.
  * Available to both long_stay and short_stay Gabonese citizens.
  */
 export const submitNotificationRequest = authMutation({
   args: {
     destinationCountry: v.string(),
+    stayStartDate: v.number(),
+    stayEndDate: v.number(),
+    stayReason: v.union(
+      v.literal("tourism"),
+      v.literal("business"),
+      v.literal("family"),
+      v.literal("medical"),
+      v.literal("studies"),
+      v.literal("other"),
+    ),
+    stayAddress: v.object({
+      street: v.string(),
+      city: v.string(),
+    }),
+    proofOfStayDocId: v.id("documents"),
   },
   handler: async (ctx, args) => {
+    // Validate stay dates: end must be after start, duration capped at 180 days
+    if (args.stayEndDate < args.stayStartDate) {
+      throw error(ErrorCode.VALIDATION_ERROR, "La date de départ doit être postérieure à la date d'arrivée");
+    }
+    const MAX_STAY_MS = 180 * 24 * 60 * 60 * 1000;
+    if (args.stayEndDate - args.stayStartDate > MAX_STAY_MS) {
+      throw error(ErrorCode.VALIDATION_ERROR, "La durée du séjour ne peut excéder 180 jours");
+    }
+
     const profile = await ctx.db
       .query("profiles")
       .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
@@ -805,6 +829,17 @@ export const submitNotificationRequest = authMutation({
 
     if (profile.userType !== "long_stay" && profile.userType !== "short_stay") {
       return { status: "not_applicable" as const };
+    }
+
+    // Verify the proof-of-stay document belongs to the caller
+    const proofDoc = await ctx.db.get(args.proofOfStayDocId);
+    if (!proofDoc) {
+      throw error(ErrorCode.DOCUMENT_NOT_FOUND);
+    }
+    const proofOwnerOk =
+      proofDoc.ownerId === profile._id || proofDoc.ownerId === ctx.user._id;
+    if (!proofOwnerOk) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
     }
 
     const targetCountry = args.destinationCountry;
@@ -850,11 +885,35 @@ export const submitNotificationRequest = authMutation({
 
         const now = Date.now();
 
-        // Auto-attach documents from profile vault
+        // Attach proof of stay + identity documents from profile vault
         const profileDocs = profile.documents ?? {};
-        const documentIds = Object.values(profileDocs).filter(
+        const vaultIds = Object.values(profileDocs).filter(
           (id): id is typeof id & string => id !== undefined,
         );
+        const documentIds = Array.from(
+          new Set<string>([args.proofOfStayDocId as unknown as string, ...vaultIds]),
+        ) as Id<"documents">[];
+
+        // Build formData: profile fields + stay-specific sections (matching the
+        // consular-notification template in apps/citizen-web/src/lib/formTemplates.ts)
+        const baseFormData = buildRegistrationFormData(
+          profile as any,
+          profile.userType || "short_stay",
+        );
+        const formData = {
+          ...baseFormData,
+          temporary_address: {
+            stay_street: args.stayAddress.street,
+            stay_city: args.stayAddress.city,
+            stay_country: targetCountry,
+          },
+          stay_dates: {
+            stay_start_date: formatDate(args.stayStartDate),
+            stay_end_date: formatDate(args.stayEndDate),
+            stay_reason: args.stayReason,
+          },
+          proof_of_stay_doc_id: args.proofOfStayDocId,
+        };
 
         // Create request as Draft — internalSubmit will transition to Submitted
         const requestId = await ctx.db.insert("requests", {
@@ -865,7 +924,7 @@ export const submitNotificationRequest = authMutation({
           reference: "",
           status: RequestStatus.Draft,
           priority: RequestPriority.Normal,
-          formData: buildRegistrationFormData(profile as any, profile.userType || "short_stay"),
+          formData,
           documents: documentIds,
           updatedAt: now,
         });
@@ -877,6 +936,8 @@ export const submitNotificationRequest = authMutation({
           requestId: requestId,
           type: RegistrationType.Inscription,
           status: RegistrationStatus.Requested,
+          stayStartDate: args.stayStartDate,
+          stayEndDate: args.stayEndDate,
           signaledAt: now,
         });
 
@@ -895,6 +956,9 @@ export const submitNotificationRequest = authMutation({
             serviceCategory: "notification",
             notificationType: "signalement",
             destinationCountry: targetCountry,
+            stayStartDate: args.stayStartDate,
+            stayEndDate: args.stayEndDate,
+            stayReason: args.stayReason,
           },
         });
 

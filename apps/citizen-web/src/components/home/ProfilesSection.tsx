@@ -42,7 +42,7 @@ export function ProfilesSection() {
 			subtitleKey: "profiles.passage.subtitle",
 			descriptionKey: "profiles.passage.description",
 			color: "yellow" as const,
-			to: hasProfile ? "/my-space" : "/register?type=short_stay",
+			to: hasProfile ? "/my-space?action=signalement" : "/register?type=short_stay",
 			delay: 0.1,
 		},
 		{

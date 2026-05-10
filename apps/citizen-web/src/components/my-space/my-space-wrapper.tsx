@@ -2,6 +2,7 @@
 
 import { api } from "@convex/_generated/api"
 import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Building2, Info, Plane, Plus } from "lucide-react"
 import { useEffect, useSyncExternalStore, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -129,6 +130,21 @@ export function MySpaceHeader() {
 
   const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
+
+  // Auto-open the signalement dialog when arriving with ?action=signalement
+  // (e.g. from the public "Passage" profile card). Strip the param so a refresh
+  // doesn't reopen the dialog after the user closed it.
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("action") !== "signalement") return;
+    if (!canNotify) return;
+    setShowNotificationDialog(true);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("action");
+    const qs = params.toString();
+    router.replace(qs ? `?${qs}` : window.location.pathname, { scroll: false });
+  }, [searchParams, canNotify, router]);
 
   return (
     <>
