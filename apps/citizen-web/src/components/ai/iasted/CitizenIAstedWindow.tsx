@@ -71,7 +71,7 @@ export function CitizenIAstedWindow() {
 			{!open && (
 				<div
 					suppressHydrationWarning
-					className="fixed bottom-[62px] right-[62px] z-40 hidden lg:block"
+					className="fixed bottom-[62px] right-[62px] z-40 hidden lg:block pointer-events-none"
 				>
 					<CircleMenu
 						items={menuItems}
