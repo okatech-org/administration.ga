@@ -1,3 +1,14 @@
+import type { Metadata } from "next"
+import { buildMetadata } from "@/lib/seo"
+
+export const metadata: Metadata = buildMetadata({
+  title: "Politique de confidentialité",
+  description:
+    "Politique de confidentialité de Consulat.ga — traitement des données personnelles, droits des utilisateurs et conformité réglementaire.",
+  path: "/confidentialite",
+  noindex: true,
+})
+
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">

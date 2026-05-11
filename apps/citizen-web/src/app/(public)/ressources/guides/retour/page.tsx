@@ -1,7 +1,14 @@
-"use client"
+import type { Metadata } from "next"
+import { buildMetadata } from "@/lib/seo"
+import GuideRetourPageClient from "./retour-page-client"
 
-import { GuidePageLayout } from "@/components/guides/GuidePageLayout"
+export const metadata: Metadata = buildMetadata({
+  title: "Guide de retour au Gabon",
+  description:
+    "Préparer son retour au Gabon : déménagement international, dédouanement, scolarisation, immatriculation véhicule, reprise d'activité et démarches consulaires.",
+  path: "/ressources/guides/retour",
+})
 
 export default function GuideRetourPage() {
-  return <GuidePageLayout type="return" />
+  return <GuideRetourPageClient />
 }

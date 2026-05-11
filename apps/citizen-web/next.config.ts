@@ -33,6 +33,13 @@ const nextConfig: NextConfig = {
     return config
   },
   experimental: {},
+  images: {
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: [
+      { protocol: "https", hostname: "*.convex.cloud" },
+      { protocol: "https", hostname: "*.convex.site" },
+    ],
+  },
   async redirects() {
     return [
       {

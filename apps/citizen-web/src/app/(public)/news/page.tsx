@@ -3,28 +3,16 @@ import type { Metadata } from "next"
 import { Suspense } from "react"
 import { api } from "@convex/_generated/api"
 import { PostCategory } from "@convex/lib/constants"
+import { buildMetadata } from "@/lib/seo"
 import NewsLoading from "./loading"
 import { NewsPageClient } from "./news-page-client"
 
-export const metadata: Metadata = {
-  title: "Actualités | Consulat.ga",
+export const metadata: Metadata = buildMetadata({
+  title: "Actualités et communiqués officiels",
   description:
-    "Restez informé des dernières nouvelles, événements et communiqués officiels du Consulat du Gabon.",
-  openGraph: {
-    type: "website",
-    title: "Actualités — Consulat.ga",
-    description:
-      "Restez informé des dernières nouvelles, événements et communiqués officiels du Consulat du Gabon.",
-    url: "/news",
-    siteName: "Consulat.ga",
-  },
-  twitter: {
-    card: "summary",
-    title: "Actualités — Consulat.ga",
-    description:
-      "Restez informé des dernières nouvelles, événements et communiqués officiels du Consulat du Gabon.",
-  },
-}
+    "Restez informé des dernières nouvelles, événements et communiqués officiels du Consulat de la République Gabonaise.",
+  path: "/news",
+})
 
 function urlCategoryToPostCategory(value: string | undefined) {
   if (!value) return undefined

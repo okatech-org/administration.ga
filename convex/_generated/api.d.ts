@@ -174,6 +174,7 @@ import type * as functions_requests from "../functions/requests.js";
 import type * as functions_roleConfig from "../functions/roleConfig.js";
 import type * as functions_security from "../functions/security.js";
 import type * as functions_sendMail from "../functions/sendMail.js";
+import type * as functions_seo from "../functions/seo.js";
 import type * as functions_services from "../functions/services.js";
 import type * as functions_signatures from "../functions/signatures.js";
 import type * as functions_slots from "../functions/slots.js";
@@ -270,6 +271,7 @@ import type * as migrations_rollbackDocumentsAdminForHighRanks from "../migratio
 import type * as migrations_seedDiplomaticTemplates from "../migrations/seedDiplomaticTemplates.js";
 import type * as migrations_seedDiplomaticTemplatesData from "../migrations/seedDiplomaticTemplatesData.js";
 import type * as migrations_syncCitizenProfilesViewTask from "../migrations/syncCitizenProfilesViewTask.js";
+import type * as migrations_syncConsularNotificationSchema from "../migrations/syncConsularNotificationSchema.js";
 import type * as monitoring from "../monitoring.js";
 import type * as moteur from "../moteur.js";
 import type * as plasticite from "../plasticite.js";
@@ -551,6 +553,7 @@ declare const fullApi: ApiFromModules<{
   "functions/roleConfig": typeof functions_roleConfig;
   "functions/security": typeof functions_security;
   "functions/sendMail": typeof functions_sendMail;
+  "functions/seo": typeof functions_seo;
   "functions/services": typeof functions_services;
   "functions/signatures": typeof functions_signatures;
   "functions/slots": typeof functions_slots;
@@ -647,6 +650,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/seedDiplomaticTemplates": typeof migrations_seedDiplomaticTemplates;
   "migrations/seedDiplomaticTemplatesData": typeof migrations_seedDiplomaticTemplatesData;
   "migrations/syncCitizenProfilesViewTask": typeof migrations_syncCitizenProfilesViewTask;
+  "migrations/syncConsularNotificationSchema": typeof migrations_syncConsularNotificationSchema;
   monitoring: typeof monitoring;
   moteur: typeof moteur;
   plasticite: typeof plasticite;

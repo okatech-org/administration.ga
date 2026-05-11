@@ -2,6 +2,7 @@
 
 import { api } from "@convex/_generated/api"
 import { PostCategory } from "@convex/lib/constants"
+import Image from "next/image"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { format } from "date-fns"
@@ -70,12 +71,14 @@ function PostCard({ post }: { post: Post }) {
       href={`/news/${post.slug}`}
       className="group block bg-card rounded-xl overflow-hidden border flat-card-border hover:shadow-lg transition-all duration-300"
     >
-      <div className="aspect-[16/9] overflow-hidden bg-muted">
+      <div className="aspect-[16/9] overflow-hidden bg-muted relative">
         {post.coverImageUrl ? (
-          <img
+          <Image
             src={post.coverImageUrl}
             alt={post.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">

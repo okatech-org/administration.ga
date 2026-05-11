@@ -2,7 +2,13 @@ import { fetchQuery, preloadQuery } from "convex/nextjs"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { api } from "@convex/_generated/api"
+import { JsonLd } from "@/components/seo/JsonLd"
 import { getLocalizedValue } from "@/lib/i18n-utils"
+import {
+  breadcrumbSchema,
+  serviceSchema,
+} from "@/lib/json-ld"
+import { buildMetadata } from "@/lib/seo"
 import { ServiceDetailClient } from "./service-detail-client"
 
 type PageProps = {
@@ -16,27 +22,17 @@ export async function generateMetadata({
   const service = await fetchQuery(api.functions.services.getBySlug, { slug })
 
   if (!service) {
-    return { title: "Service introuvable | Consulat.ga" }
+    return { title: "Service introuvable", robots: { index: false } }
   }
 
   const name = getLocalizedValue(service.name, "fr")
   const description = getLocalizedValue(service.description, "fr")
 
-  return {
-    title: `${name} | Services consulaires`,
+  return buildMetadata({
+    title: name,
     description,
-    openGraph: {
-      type: "website",
-      title: `${name} — Consulat.ga`,
-      description,
-      siteName: "Consulat.ga",
-    },
-    twitter: {
-      card: "summary",
-      title: `${name} — Consulat.ga`,
-      description,
-    },
-  }
+    path: `/services/${slug}`,
+  })
 }
 
 export default async function ServiceDetailPage({ params }: PageProps) {
@@ -49,5 +45,27 @@ export default async function ServiceDetailPage({ params }: PageProps) {
 
   if (!service) notFound()
 
-  return <ServiceDetailClient preloaded={preloaded} />
+  const name = getLocalizedValue(service.name, "fr")
+  const description = getLocalizedValue(service.description, "fr")
+
+  return (
+    <>
+      <JsonLd
+        data={serviceSchema({
+          name,
+          description,
+          slug,
+          category: service.category as string | undefined,
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Accueil", path: "/" },
+          { name: "Services", path: "/services" },
+          { name, path: `/services/${slug}` },
+        ])}
+      />
+      <ServiceDetailClient preloaded={preloaded} />
+    </>
+  )
 }

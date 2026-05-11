@@ -2,6 +2,9 @@ import { fetchQuery, preloadQuery } from "convex/nextjs"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { api } from "@convex/_generated/api"
+import { JsonLd } from "@/components/seo/JsonLd"
+import { articleSchema, breadcrumbSchema } from "@/lib/json-ld"
+import { buildMetadata } from "@/lib/seo"
 import { PostDetailClient } from "./post-detail-client"
 
 type PageProps = {
@@ -15,31 +18,20 @@ export async function generateMetadata({
   const post = await fetchQuery(api.functions.posts.getBySlug, { slug })
 
   if (!post) {
-    return { title: "Article introuvable | Consulat.ga" }
+    return { title: "Article introuvable", robots: { index: false } }
   }
 
-  const images = post.coverImageUrl ? [{ url: post.coverImageUrl }] : undefined
-
-  return {
-    title: `${post.title} | Consulat.ga`,
+  return buildMetadata({
+    title: post.title,
     description: post.excerpt,
-    openGraph: {
-      type: "article",
-      title: post.title,
-      description: post.excerpt,
-      publishedTime: post.publishedAt
-        ? new Date(post.publishedAt).toISOString()
-        : undefined,
-      images,
-      siteName: "Consulat.ga",
-    },
-    twitter: {
-      card: post.coverImageUrl ? "summary_large_image" : "summary",
-      title: post.title,
-      description: post.excerpt,
-      images: post.coverImageUrl ? [post.coverImageUrl] : undefined,
-    },
-  }
+    path: `/news/${slug}`,
+    type: "article",
+    image: post.coverImageUrl ?? undefined,
+    publishedTime: post.publishedAt
+      ? new Date(post.publishedAt).toISOString()
+      : undefined,
+    modifiedTime: new Date(post._creationTime).toISOString(),
+  })
 }
 
 export default async function PostDetailPage({ params }: PageProps) {
@@ -52,5 +44,26 @@ export default async function PostDetailPage({ params }: PageProps) {
 
   if (!post) notFound()
 
-  return <PostDetailClient preloaded={preloaded} />
+  return (
+    <>
+      <JsonLd
+        data={articleSchema({
+          title: post.title,
+          description: post.excerpt,
+          slug,
+          image: post.coverImageUrl ?? undefined,
+          publishedAt: post.publishedAt,
+          updatedAt: post._creationTime,
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Accueil", path: "/" },
+          { name: "Actualités", path: "/news" },
+          { name: post.title, path: `/news/${slug}` },
+        ])}
+      />
+      <PostDetailClient preloaded={preloaded} />
+    </>
+  )
 }

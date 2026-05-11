@@ -1,6 +1,7 @@
 "use client"
 
 import { CountryCode, ServiceCategory } from "@convex/lib/constants"
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { changeLanguage } from "i18next"
@@ -55,9 +56,12 @@ export default function Header() {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-md overflow-hidden shrink-0">
-                <img
+                <Image
                   src="/icons/apple-icon.png"
-                  alt="Logo"
+                  alt="Consulat.ga"
+                  width={40}
+                  height={40}
+                  priority
                   className="w-10 h-10 object-contain"
                 />
               </div>
@@ -194,7 +198,7 @@ export default function Header() {
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-md overflow-hidden shrink-0">
-              <img src="/icons/apple-icon.png" alt="Logo" className="w-10 h-10 object-contain" />
+              <Image src="/icons/apple-icon.png" alt="Consulat.ga" width={40} height={40} className="w-10 h-10 object-contain" />
             </div>
             <div>
               <div className="font-bold text-foreground">Consulat.ga</div>

@@ -2,6 +2,9 @@ import { fetchQuery, preloadQuery } from "convex/nextjs"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { api } from "@convex/_generated/api"
+import { JsonLd } from "@/components/seo/JsonLd"
+import { breadcrumbSchema, governmentOfficeSchema } from "@/lib/json-ld"
+import { buildMetadata } from "@/lib/seo"
 import { OrgDetailClient } from "./org-detail-client"
 
 type PageProps = {
@@ -28,27 +31,17 @@ export async function generateMetadata({
   const org = await fetchQuery(api.functions.orgs.getBySlug, { slug })
 
   if (!org) {
-    return { title: "Représentation introuvable | Consulat.ga" }
+    return { title: "Représentation introuvable", robots: { index: false } }
   }
 
   const countryName = countryNames[org.address.country] || org.address.country
   const description = `${org.name} — ${org.address.city}, ${countryName}. Coordonnées, horaires et services consulaires.`
 
-  return {
-    title: `${org.name} | Consulat.ga`,
+  return buildMetadata({
+    title: org.name,
     description,
-    openGraph: {
-      type: "website",
-      title: `${org.name} — Consulat.ga`,
-      description,
-      siteName: "Consulat.ga",
-    },
-    twitter: {
-      card: "summary",
-      title: `${org.name} — Consulat.ga`,
-      description,
-    },
-  }
+    path: `/reps/${slug}`,
+  })
 }
 
 export default async function OrgDetailPage({ params }: PageProps) {
@@ -61,5 +54,34 @@ export default async function OrgDetailPage({ params }: PageProps) {
 
   if (!org) notFound()
 
-  return <OrgDetailClient preloaded={preloaded} />
+  const countryName = countryNames[org.address.country] || org.address.country
+  const description = `${org.name} — ${org.address.city}, ${countryName}. Coordonnées, horaires et services consulaires.`
+
+  return (
+    <>
+      <JsonLd
+        data={governmentOfficeSchema({
+          name: org.name,
+          slug,
+          description,
+          street: org.address.street,
+          city: org.address.city,
+          postalCode: (org.address as { postalCode?: string }).postalCode,
+          country: countryName,
+          phone: (org as { phone?: string }).phone,
+          email: (org as { email?: string }).email,
+          latitude: (org.address as { latitude?: number }).latitude,
+          longitude: (org.address as { longitude?: number }).longitude,
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Accueil", path: "/" },
+          { name: "Représentations", path: "/reps" },
+          { name: org.name, path: `/reps/${slug}` },
+        ])}
+      />
+      <OrgDetailClient preloaded={preloaded} />
+    </>
+  )
 }

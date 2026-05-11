@@ -2,6 +2,7 @@
 
 import { api } from "@convex/_generated/api"
 import { PostCategory } from "@convex/lib/constants"
+import Image from "next/image"
 import Link from "next/link"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
@@ -203,11 +204,14 @@ export function PostDetailClient({
           )}
 
           {post.coverImageUrl && (
-            <div className="aspect-[16/9] rounded-xl overflow-hidden bg-muted mb-8">
-              <img
+            <div className="aspect-[16/9] rounded-xl overflow-hidden bg-muted mb-8 relative">
+              <Image
                 src={post.coverImageUrl}
                 alt={post.title}
-                className="w-full h-full object-cover"
+                fill
+                sizes="(max-width: 1024px) 100vw, 800px"
+                priority
+                className="object-cover"
               />
             </div>
           )}
