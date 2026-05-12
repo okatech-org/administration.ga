@@ -71,7 +71,7 @@ const nextConfig: NextConfig = {
               // Workers Mapbox (rendu vectoriel hors thread principal).
               "worker-src 'self' blob:",
               // Tiles + events Mapbox doivent être listés explicitement.
-              `connect-src 'self' ${isDev ? "http://127.0.0.1:* ws://127.0.0.1:* ws://localhost:*" : ""} https://*.convex.cloud https://*.convex.site wss://*.convex.cloud https://*.posthog.com https://*.stripe.com https://*.mapbox.com https://api.mapbox.com https://*.tiles.mapbox.com https://events.mapbox.com https://api.livekit.cloud wss://*.livekit.cloud https://livekit.consulat.ga wss://livekit.consulat.ga`,
+              `connect-src 'self' ${isDev ? "http://127.0.0.1:* ws://127.0.0.1:* ws://localhost:*" : ""} https://*.convex.cloud https://*.convex.site wss://*.convex.cloud https://*.posthog.com https://*.stripe.com https://*.mapbox.com https://api.mapbox.com https://*.tiles.mapbox.com https://events.mapbox.com https://api.livekit.cloud wss://*.livekit.cloud https://livekit.consulat.ga wss://livekit.consulat.ga wss://generativelanguage.googleapis.com https://generativelanguage.googleapis.com`,
               "frame-src 'self' blob: https://*.stripe.com",
               "media-src 'self' blob:",
               "object-src 'none'",
