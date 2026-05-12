@@ -14,7 +14,6 @@ import {
   MicOff,
   Pause,
   PhoneOff,
-  Play,
   Plus,
   Users,
 } from "lucide-react";
@@ -43,13 +42,15 @@ import { AddAgentDialog } from "./AddAgentDialog";
  */
 export function ActiveConversationView({
   call,
-  onHold,
-  onResume,
+  onHold: _onHold,
+  onResume: _onResume,
   onEnd,
   onRequestTransfer,
 }: {
   call: ActiveCallSlot & { _id: string };
+  /** Préservé pour compat ; bouton retiré tant que la mécanique hold n'est pas finalisée. */
   onHold: (id: Id<"meetings">) => void;
+  /** Préservé pour compat ; bouton retiré tant que la mécanique hold n'est pas finalisée. */
   onResume: (id: Id<"meetings">) => void;
   onEnd: (id: Id<"meetings">) => void;
   onRequestTransfer?: (id: Id<"meetings">) => void;
@@ -257,10 +258,13 @@ export function ActiveConversationView({
         </div>
       )}
 
-      {/* ═══ Controls — 4 primaires + 2 secondaires ═══ */}
+      {/* ═══ Controls — 3 primaires + 2 secondaires ═══
+          Le bouton "Mettre en attente" a été retiré : la mécanique
+          serveur (putCallOnHold/resumeCall) n'est pas finalisée et le
+          bouton ne fonctionnait pas. À réintégrer quand le flux hold
+          sera fiable des deux côtés. */}
       <div className="shrink-0 px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 flex flex-col gap-2.5">
-        {/* Boutons primaires : Micro / Caméra / Hold-Resume / Raccrocher */}
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <CallControl
             icon={micMuted ? MicOff : Mic}
             label={
@@ -270,7 +274,6 @@ export function ActiveConversationView({
             }
             onClick={() => setMicMuted(!micMuted)}
             active={micMuted}
-            disabled={isHeld}
           />
           <CallControl
             icon={cameraEnabled ? Camera : CameraOff}
@@ -281,21 +284,7 @@ export function ActiveConversationView({
             }
             onClick={handleToggleCamera}
             active={cameraEnabled}
-            disabled={isHeld}
           />
-          {isHeld ? (
-            <CallControl
-              icon={Play}
-              label={t("callCenter.action.resume", "Reprendre")}
-              onClick={() => onResume(call._id as Id<"meetings">)}
-            />
-          ) : (
-            <CallControl
-              icon={Pause}
-              label={t("callCenter.action.hold", "En attente")}
-              onClick={() => onHold(call._id as Id<"meetings">)}
-            />
-          )}
           <CallControl
             icon={PhoneOff}
             label={t("callCenter.action.end", "Raccrocher")}

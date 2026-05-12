@@ -354,24 +354,50 @@ export function useCallCenter() {
 
   useEffect(() => {
     const serverIds = new Set(activeCalls.map((c: any) => c._id as string));
+    // Période de grâce avant éviction d'un slot non confirmé côté serveur.
+    // Indispensable pour les appels SORTANTS (callBackRecent, callUser…) :
+    //  - Le slot local est upserté en "active" dès la création du meeting.
+    //  - Le meeting démarre en callStatus "initiating" → "ringing" côté
+    //    serveur, et `listActiveCallsForUser` ne renvoie que les calls en
+    //    "connected"/"on_hold".
+    //  - Sans grâce, le reconcile évincerait immédiatement le slot, ce qui
+    //    démonterait la LiveKitRoom et couperait l'audio de l'agent appelant
+    //    AVANT même que le destinataire ait pu décrocher.
+    // 2 min correspond au timeout serveur (CALL_RING_TIMEOUT_MS) — au-delà
+    // le meeting passe à "missed" et le slot peut être évincé.
+    const RING_GRACE_MS = 120_000;
+    const now = Date.now();
     for (const slot of slots) {
       if (slot.status === "connecting") continue;
       if (!serverIds.has(slot.meetingId as string)) {
+        const sinceJoin = slot.joinedAt ? now - slot.joinedAt : Number.POSITIVE_INFINITY;
+        if (sinceJoin < RING_GRACE_MS) {
+          // Slot fraîchement créé en attente de décrochage — on garde.
+          continue;
+        }
         trace("reconcile:removeStaleSlot", slot.meetingId);
         callStore.removeSlot(slot.meetingId);
       }
     }
     if (activeSlotId && !serverIds.has(activeSlotId as string)) {
-      const firstConnected = activeCalls.find(
-        (c: any) => c.callStatus === "connected",
-      );
-      trace("reconcile:realignActive", {
-        stale: activeSlotId,
-        next: firstConnected?._id ?? null,
-      });
-      callStore.setActiveSlot(
-        (firstConnected?._id as Id<"meetings"> | undefined) ?? null,
-      );
+      // Mêmes garde-fous pour l'activeSlot : ne pas le réaligner sur un
+      // autre slot pendant la fenêtre de grâce d'un appel sortant.
+      const activeSlot = slots.find((s) => s.meetingId === activeSlotId);
+      const sinceJoin = activeSlot?.joinedAt
+        ? now - activeSlot.joinedAt
+        : Number.POSITIVE_INFINITY;
+      if (sinceJoin >= RING_GRACE_MS) {
+        const firstConnected = activeCalls.find(
+          (c: any) => c.callStatus === "connected",
+        );
+        trace("reconcile:realignActive", {
+          stale: activeSlotId,
+          next: firstConnected?._id ?? null,
+        });
+        callStore.setActiveSlot(
+          (firstConnected?._id as Id<"meetings"> | undefined) ?? null,
+        );
+      }
     }
   }, [activeCalls, slots, activeSlotId]);
 

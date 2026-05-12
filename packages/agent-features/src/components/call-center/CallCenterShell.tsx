@@ -160,9 +160,10 @@ export function CallCenterShell({
   const handleCallBackRecent = async (
     targetUserId: Id<"users">,
     orgId: Id<"orgs">,
+    rowId: string,
   ) => {
-    const key = `${targetUserId}:${orgId}`;
-    setCallingBackIds((prev) => new Set(prev).add(key));
+    // Clé par row pour isoler le spinner à la carte cliquée.
+    setCallingBackIds((prev) => new Set(prev).add(rowId));
     try {
       const { meetingId } = await callBackRecent(targetUserId, orgId);
       setFocusedMeetingId(meetingId);
@@ -171,7 +172,7 @@ export function CallCenterShell({
     } finally {
       setCallingBackIds((prev) => {
         const next = new Set(prev);
-        next.delete(key);
+        next.delete(rowId);
         return next;
       });
     }

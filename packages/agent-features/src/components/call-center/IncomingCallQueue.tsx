@@ -52,8 +52,9 @@ export function IncomingCallQueue({
   onCallBackRecent?: (
     userId: Id<"users">,
     orgId: Id<"orgs">,
+    rowId: string,
   ) => void | Promise<void>;
-  /** Set des clés `${userId}:${orgId}` actuellement en cours de rappel. */
+  /** Set des `row._id` actuellement en cours de rappel — un par carte. */
   pendingCallbackKeys?: Set<string>;
 }) {
   const { t } = useTranslation();
@@ -395,6 +396,7 @@ function EndedTab({
   onCallBackRecent?: (
     userId: Id<"users">,
     orgId: Id<"orgs">,
+    rowId: string,
   ) => void | Promise<void>;
   pendingCallbackKeys: Set<string>;
 }) {
@@ -460,6 +462,7 @@ function EndedRow({
   onCallBackRecent?: (
     userId: Id<"users">,
     orgId: Id<"orgs">,
+    rowId: string,
   ) => void | Promise<void>;
   pendingCallbackKeys: Set<string>;
 }) {
@@ -483,10 +486,12 @@ function EndedRow({
 
   const userId = row.caller?.userId as Id<"users"> | undefined;
   const orgId = row.orgId as Id<"orgs"> | null;
-  const callbackKey = userId && orgId ? `${userId}:${orgId}` : null;
-  const isCallingBack = callbackKey
-    ? pendingCallbackKeys.has(callbackKey)
-    : false;
+  // Clé par row pour isoler le spinner à la carte cliquée. Avant, on
+  // utilisait `${userId}:${orgId}` qui était partagé par toutes les rows
+  // d'un même couple (user, org) → toutes les cartes du même appelant
+  // affichaient le spinner en même temps.
+  const callbackKey = row._id;
+  const isCallingBack = pendingCallbackKeys.has(callbackKey);
   const canCallBack = !!(userId && orgId && onCallBackRecent);
 
   return (
@@ -517,7 +522,7 @@ function EndedRow({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            if (userId && orgId) onCallBackRecent?.(userId, orgId);
+            if (userId && orgId) onCallBackRecent?.(userId, orgId, row._id);
           }}
           disabled={isCallingBack}
           aria-label="Rappeler"

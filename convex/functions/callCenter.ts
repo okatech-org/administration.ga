@@ -412,9 +412,20 @@ export const listActiveCallsForUser = authQuery({
 
     const candidates: Doc<"meetings">[] = [];
 
-    // Parcours par org → callStatus "connected" puis "on_hold"
+    // Statuts retenus :
+    //  - "connected"/"on_hold" : appel décroché des deux côtés
+    //  - "ringing"/"initiating" : appel sortant en attente de décrochage —
+    //    AJOUTÉ pour que l'agent qui rappelle (callBackRecent/callUser)
+    //    voie sa propre conversation en cours côté iCom, au lieu de l'empty
+    //    state. Sans ça, l'agent n'avait aucun feedback visuel pendant la
+    //    sonnerie + audio sans UI = très perturbant.
     for (const orgId of orgIds) {
-      for (const status of ["connected", "on_hold"] as const) {
+      for (const status of [
+        "connected",
+        "on_hold",
+        "ringing",
+        "initiating",
+      ] as const) {
         const rows = await ctx.db
           .query("meetings")
           .withIndex("by_callStatus_and_org", (q) =>
@@ -423,35 +434,75 @@ export const listActiveCallsForUser = authQuery({
           .collect();
         for (const r of rows) {
           if (r.type !== "call") continue;
-          // Filtrer : l'agent est participant actif, ou il a décroché
           const isAnswerer = r.answeredBy === ctx.user._id;
           const isParticipant = r.participants.some(
             (p) => p.userId === ctx.user._id && !p.leftAt,
           );
-          if (!isAnswerer && !isParticipant) continue;
+          // Pour ringing/initiating : on n'expose le call qu'au CALLER
+          // (createdBy) — pas aux autres agents de l'org qui n'ont rien
+          // initié et ne doivent pas voir un appel sortant tiers comme
+          // "actif" pour eux.
+          if (status === "ringing" || status === "initiating") {
+            if (r.createdBy !== ctx.user._id) continue;
+          } else {
+            if (!isAnswerer && !isParticipant) continue;
+          }
           candidates.push(r);
         }
       }
     }
 
-    // Enrichir avec identité appelant
-    const callerIds = new Set<string>(
-      candidates.map((m) => m.createdBy as string),
-    );
-    const callerNames = new Map<string, string>();
-    for (const uid of callerIds) {
+    // Enrichir avec l'identité du CORRESPONDANT (l'autre participant que
+    // l'agent connecté). Pour un appel entrant (citoyen → org), c'est le
+    // créateur (citoyen). Pour un appel sortant (agent → citoyen via
+    // callUser/callBackRecent/callUserAsAdmin), c'est le destinataire (cible).
+    // Sans cette distinction, l'agent voyait SON PROPRE nom dans la vue
+    // d'appel quand il rappelait quelqu'un.
+    const userIdsToResolve = new Set<string>();
+    for (const m of candidates) {
+      userIdsToResolve.add(m.createdBy as string);
+      for (const p of m.participants) {
+        userIdsToResolve.add(p.userId as string);
+      }
+    }
+    const userNames = new Map<string, string>();
+    for (const uid of userIdsToResolve) {
       const u = await ctx.db.get(uid as Id<"users">);
       if (!u) {
-        callerNames.set(uid, "Usager");
+        userNames.set(uid, "Usager");
         continue;
       }
-      callerNames.set(
+      userNames.set(
         uid,
         [u.firstName, u.lastName].filter(Boolean).join(" ").trim() ||
           u.email ||
           "Usager",
       );
     }
+
+    const resolveCorrespondent = (m: Doc<"meetings">): {
+      userId: Id<"users">;
+      name: string;
+    } => {
+      // L'agent connecté est `ctx.user._id`. Le correspondant est :
+      //  - Si l'agent est `createdBy` (appel sortant) : le 1er autre
+      //    participant (la cible).
+      //  - Sinon (appel entrant) : `createdBy` (l'appelant original).
+      if (m.createdBy === ctx.user._id) {
+        const other = m.participants.find(
+          (p) => p.userId !== ctx.user._id,
+        );
+        const otherId = (other?.userId ?? m.createdBy) as Id<"users">;
+        return {
+          userId: otherId,
+          name: userNames.get(otherId as string) ?? "Usager",
+        };
+      }
+      return {
+        userId: m.createdBy,
+        name: userNames.get(m.createdBy as string) ?? "Usager",
+      };
+    };
 
     // Lignes
     const lineIds = new Set<string>(
@@ -469,6 +520,7 @@ export const listActiveCallsForUser = authQuery({
       .sort((a, b) => (b.answeredAt ?? 0) - (a.answeredAt ?? 0))
       .map((m) => {
         const line = m.callLineId ? lines.get(m.callLineId as string) : null;
+        const correspondent = resolveCorrespondent(m);
         return {
           _id: m._id,
           callStatus: m.callStatus ?? "connected",
@@ -476,8 +528,11 @@ export const listActiveCallsForUser = authQuery({
           parkedAt: m.parkedAt ?? null,
           mediaType: m.mediaType ?? "audio",
           orgId: m.orgId ?? null,
-          callerName: callerNames.get(m.createdBy as string) ?? "Usager",
-          callerUserId: m.createdBy,
+          // `callerName`/`callerUserId` = le correspondant à afficher dans la
+          // vue d'appel de l'agent connecté (et non `createdBy`, qui peut
+          // être l'agent lui-même pour un appel sortant).
+          callerName: correspondent.name,
+          callerUserId: correspondent.userId,
           lineLabel: line?.label ?? null,
           lineColor: line?.color ?? null,
           priority: derivePriority(m, line ?? null),

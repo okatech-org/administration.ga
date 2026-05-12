@@ -19,8 +19,25 @@ export const getCitizenContextForCall = authQuery({
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) return null;
 
-    // L'appelant est le createdBy du meeting (citoyen qui a composé le numéro).
-    const callerUserId = meeting.createdBy as Id<"users">;
+    // Le "citoyen" à afficher dans le side panel est le CORRESPONDANT de
+    // l'utilisateur connecté (qui regarde le side pane), pas un rôle fixe.
+    //
+    //  - Appel entrant (citoyen → org) : createdBy = citoyen → c'est lui.
+    //  - Appel sortant (agent → citoyen via callUser/callBackRecent/
+    //    callUserAsAdmin) : createdBy = agent ; le citoyen est le 1er
+    //    autre participant.
+    //
+    // Sans cette distinction, le side panel affichait l'agent lui-même
+    // quand il rappelait quelqu'un.
+    let callerUserId: Id<"users">;
+    if (meeting.createdBy === ctx.user._id) {
+      const other = meeting.participants.find(
+        (p) => p.userId !== ctx.user._id,
+      );
+      callerUserId = (other?.userId ?? meeting.createdBy) as Id<"users">;
+    } else {
+      callerUserId = meeting.createdBy as Id<"users">;
+    }
     const caller = await ctx.db.get(callerUserId);
     if (!caller) return null;
 

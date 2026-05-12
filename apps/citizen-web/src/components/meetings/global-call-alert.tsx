@@ -110,15 +110,22 @@ export function GlobalCallAlert() {
 	// Ring tone plays if there is an active call, we haven't joined yet, AND we aren't in another call
 	useRingtone(!!activeCallToDisplay && !isCurrentlyInCall && !isBusyGlobally);
 
-	// Look up the caller's name for the notification
+	// Look up the caller's name — gardé actif PENDANT l'appel aussi, sinon le
+	// nom de l'appelant disparaît après décrochage et la vue tombe sur le
+	// fallback "Votre correspondant". On résout `createdBy` depuis le meeting
+	// en cours (priorité aux données reactives `activeMeetingData`) ou depuis
+	// l'incoming toast.
+	const callerUserId =
+		(activeMeetingData as { createdBy?: Id<"users"> } | null | undefined)?.createdBy ??
+		activeCallToDisplay?.createdBy ??
+		null;
 	const callerUser = useQuery(
 		api.functions.users.getById,
-		activeCallToDisplay && !isCurrentlyInCall
-			? { userId: activeCallToDisplay.createdBy }
-			: "skip",
+		callerUserId ? { userId: callerUserId } : "skip",
 	);
 	const callerName = callerUser
-		? [callerUser.firstName, callerUser.lastName].filter(Boolean).join(" ")
+		? [callerUser.firstName, callerUser.lastName].filter(Boolean).join(" ") ||
+			null
 		: null;
 
 	// Decline mutation
@@ -211,7 +218,12 @@ export function GlobalCallAlert() {
 					) : (
 						<CitizenAudioCallView
 							onHangUp={handleHangUp}
-							title={callerName ?? activeCallToDisplay?.title ?? undefined}
+							// Ne pas tomber sur `meeting.title` qui contient le nom DU
+							// CITOYEN ("Appel — Berny Itoutou") — c'est l'info qu'on
+							// veut éviter. Si `callerName` n'est pas résolu, on laisse
+							// CitizenAudioCallView gérer son propre fallback ("Votre
+							// correspondant").
+							title={callerName ?? undefined}
 						/>
 					)}
 				</LiveKitRoom>
@@ -238,21 +250,23 @@ export function GlobalCallAlert() {
 								<span className="absolute inset-0 rounded-full border border-emerald-500 animate-ping opacity-75" />
 							</div>
 							<div>
+								{/* Affiche en grand le nom de l'APPELANT (agent), pas le
+								    titre du meeting qui contient le nom du citoyen lui-même.
+								    Le citoyen connaît déjà son nom — montrer qui l'appelle
+								    est l'info utile. */}
 								<p className="font-semibold text-sm">
-									{activeCallToDisplay.title || t("meetings.incomingCall")}
+									{callerName ?? t("meetings.incomingCall")}
 								</p>
 								<p className="text-xs text-zinc-400">
-									{callerName
-										? callerName
-										: isOrgCall
-											? t(
-													"meetings.citizenCalling",
-													"Un usager cherche à vous joindre",
-												)
-											: t(
-													"meetings.agentCalling",
-													"Un agent cherche à vous joindre",
-												)}
+									{isOrgCall
+										? t(
+												"meetings.citizenCalling",
+												"Un usager cherche à vous joindre",
+											)
+										: t(
+												"meetings.agentCalling",
+												"Un agent cherche à vous joindre",
+											)}
 								</p>
 							</div>
 						</div>
@@ -290,7 +304,7 @@ export function GlobalCallAlert() {
 						className="p-0 h-dvh w-full bg-zinc-950 border-none rounded-none focus:outline-none flex flex-col pt-10"
 					>
 						<SheetTitle className="sr-only">
-							{callerName ?? activeCallToDisplay?.title ?? t("meetings.callInProgress", "Appel en cours")}
+							{callerName ?? t("meetings.callInProgress", "Appel en cours")}
 						</SheetTitle>
 						<SheetDescription className="sr-only">
 							{t(
@@ -317,7 +331,7 @@ export function GlobalCallAlert() {
 						}
 					>
 						<DialogTitle className="sr-only">
-							{callerName ?? activeCallToDisplay?.title ?? t("meetings.callInProgress", "Appel en cours")}
+							{callerName ?? t("meetings.callInProgress", "Appel en cours")}
 						</DialogTitle>
 						<DialogDescription className="sr-only">
 							{t(
