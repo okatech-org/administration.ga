@@ -6414,6 +6414,128 @@
 		"bookingError": "Erreur de réservation"
 	},
 	"idocument": {
+		"status": {
+			"pending": "En attente",
+			"validated": "Validé",
+			"rejected": "Rejeté",
+			"expired": "Expiré",
+			"expiring": "Expire bientôt"
+		},
+		"folders": {
+			"identityCivil": "Identité & État civil",
+			"identityCivilDesc": "Passeport, acte de naissance, nationalité, résidence, emploi",
+			"officialDocs": "Documents officiels",
+			"officialDocsDesc": "Attestations, actes, justice, décisions, formulaires",
+			"title": "Dossiers"
+		},
+		"categories": {
+			"identity": "Identité",
+			"civilStatus": "État civil",
+			"nationality": "Nationalité",
+			"residence": "Résidence",
+			"employment": "Emploi",
+			"income": "Revenus",
+			"certificates": "Attestations",
+			"officialCertificates": "Actes officiels",
+			"justice": "Justice",
+			"administrativeDecisions": "Décisions admin.",
+			"housing": "Logement",
+			"vehicle": "Véhicule",
+			"education": "Éducation",
+			"languageIntegration": "Langue & intégration",
+			"health": "Santé",
+			"taxation": "Fiscalité",
+			"other": "Autre",
+			"forms": "Formulaires"
+		},
+		"addDocument": "Ajouter un document",
+		"searchDocuments": "Rechercher dans vos documents...",
+		"selectCategory": "Sélectionner une catégorie...",
+		"selectType": "Sélectionner un type...",
+		"labelPlaceholder": "Ex: Passeport de Jean, Facture Février 2026...",
+		"dropFiles": "Glissez vos fichiers ici ou cliquez pour parcourir",
+		"selectForPreview": "Sélectionnez un document pour l'aperçu",
+		"labels": {
+			"category": "Catégorie",
+			"documentType": "Type de document",
+			"label": "Libellé",
+			"expiryDate": "Date d'expiration (optionnel)",
+			"files": "Fichier(s)"
+		},
+		"subtitle": "Coffre-fort numérique",
+		"systemFolders": {
+			"all": "Tous les documents",
+			"trash": "Corbeille",
+			"vault": "Coffre-fort"
+		},
+		"uncategorized": "Non classé",
+		"thisDocument": "Ce document",
+		"expired": "Expiré",
+		"expiresOn": "Expire le",
+		"inDays": "dans {{count}} jours",
+		"documentDetails": "Détails du document",
+		"searchResults": "Résultats de recherche",
+		"documents": "documents",
+		"items": "éléments",
+		"system": "Système",
+		"searchType": "Rechercher un type...",
+		"noCategoryFound": "Aucune catégorie trouvée",
+		"noTypeFound": "Aucun type trouvé",
+		"filesReady": "{{count}} fichier(s) prêt(s)",
+		"info": {
+			"name": "Nom",
+			"type": "Type",
+			"expiration": "Expiration",
+			"files": "Fichiers",
+			"timestamps": "Dates",
+			"createdAt": "Créé le",
+			"updatedAt": "Modifié le"
+		},
+		"table": {
+			"name": "Nom",
+			"category": "Catégorie",
+			"modified": "Modifié",
+			"status": "Statut",
+			"expiration": "Expiration",
+			"files": "Fichiers"
+		},
+		"stats": {
+			"documents": "Documents",
+			"expiringSoon": "Expire bientôt",
+			"expired": "Expirés"
+		},
+		"empty": {
+			"noResults": "Aucun résultat",
+			"noResultsDesc": "Aucun document ne correspond à votre recherche",
+			"emptyFolder": "Dossier vide",
+			"emptyFolderDesc": "Ce dossier ne contient aucun document",
+			"noDocumentFound": "Aucun document trouvé",
+			"noContent": "Aucun contenu",
+			"noDocument": "Aucun document"
+		},
+		"actions": {
+			"preview": "Aperçu",
+			"info": "Informations",
+			"download": "Télécharger",
+			"delete": "Supprimer"
+		},
+		"delete": {
+			"confirmTitle": "Supprimer ce document ?",
+			"confirmMessage": "Cette action est irréversible."
+		},
+		"viewMode": {
+			"grid": "Grille",
+			"list": "Liste",
+			"column": "Colonnes"
+		},
+		"toasts": {
+			"documentAdded": "Document ajouté avec succès",
+			"saveError": "Erreur lors de la sauvegarde",
+			"downloadError": "Erreur lors du téléchargement",
+			"documentDeleted": "Document supprimé",
+			"deleteError": "Erreur lors de la suppression",
+			"uploadError": "Erreur lors de l'upload"
+		},
 		"origin": {
 			"banner": "Pièce d'un courrier",
 			"openCorrespondance": "Ouvrir le courrier",

@@ -5849,6 +5849,128 @@
 		"bookingError": "Booking error"
 	},
 	"idocument": {
+		"status": {
+			"pending": "Pending",
+			"validated": "Validated",
+			"rejected": "Rejected",
+			"expired": "Expired",
+			"expiring": "Expiring soon"
+		},
+		"folders": {
+			"identityCivil": "Identity & Civil Status",
+			"identityCivilDesc": "Passport, birth certificate, nationality, residence, employment",
+			"officialDocs": "Official Documents",
+			"officialDocsDesc": "Certificates, official acts, justice, decisions, forms",
+			"title": "Folders"
+		},
+		"categories": {
+			"identity": "Identity",
+			"civilStatus": "Civil Status",
+			"nationality": "Nationality",
+			"residence": "Residence",
+			"employment": "Employment",
+			"income": "Income",
+			"certificates": "Certificates",
+			"officialCertificates": "Official Acts",
+			"justice": "Justice",
+			"administrativeDecisions": "Administrative Decisions",
+			"housing": "Housing",
+			"vehicle": "Vehicle",
+			"education": "Education",
+			"languageIntegration": "Language & Integration",
+			"health": "Health",
+			"taxation": "Taxation",
+			"other": "Other",
+			"forms": "Forms"
+		},
+		"addDocument": "Add a document",
+		"searchDocuments": "Search your documents...",
+		"selectCategory": "Select a category...",
+		"selectType": "Select a type...",
+		"labelPlaceholder": "E.g.: John's Passport, February 2026 Invoice...",
+		"dropFiles": "Drop files here or click to browse",
+		"selectForPreview": "Select a document for preview",
+		"labels": {
+			"category": "Category",
+			"documentType": "Document type",
+			"label": "Label",
+			"expiryDate": "Expiry date (optional)",
+			"files": "File(s)"
+		},
+		"subtitle": "Digital vault",
+		"systemFolders": {
+			"all": "All documents",
+			"trash": "Trash",
+			"vault": "Vault"
+		},
+		"uncategorized": "Uncategorized",
+		"thisDocument": "This document",
+		"expired": "Expired",
+		"expiresOn": "Expires on",
+		"inDays": "in {{count}} days",
+		"documentDetails": "Document details",
+		"searchResults": "Search results",
+		"documents": "documents",
+		"items": "items",
+		"system": "System",
+		"searchType": "Search a type...",
+		"noCategoryFound": "No category found",
+		"noTypeFound": "No type found",
+		"filesReady": "{{count}} file(s) ready",
+		"info": {
+			"name": "Name",
+			"type": "Type",
+			"expiration": "Expiration",
+			"files": "Files",
+			"timestamps": "Dates",
+			"createdAt": "Created on",
+			"updatedAt": "Updated on"
+		},
+		"table": {
+			"name": "Name",
+			"category": "Category",
+			"modified": "Modified",
+			"status": "Status",
+			"expiration": "Expiration",
+			"files": "Files"
+		},
+		"stats": {
+			"documents": "Documents",
+			"expiringSoon": "Expiring soon",
+			"expired": "Expired"
+		},
+		"empty": {
+			"noResults": "No results",
+			"noResultsDesc": "No documents match your search",
+			"emptyFolder": "Empty folder",
+			"emptyFolderDesc": "This folder contains no documents",
+			"noDocumentFound": "No document found",
+			"noContent": "No content",
+			"noDocument": "No document"
+		},
+		"actions": {
+			"preview": "Preview",
+			"info": "Information",
+			"download": "Download",
+			"delete": "Delete"
+		},
+		"delete": {
+			"confirmTitle": "Delete this document?",
+			"confirmMessage": "This action is irreversible."
+		},
+		"viewMode": {
+			"grid": "Grid",
+			"list": "List",
+			"column": "Columns"
+		},
+		"toasts": {
+			"documentAdded": "Document added successfully",
+			"saveError": "Error saving",
+			"downloadError": "Error downloading",
+			"documentDeleted": "Document deleted",
+			"deleteError": "Error deleting",
+			"uploadError": "Error uploading"
+		},
 		"origin": {
 			"banner": "From a correspondence",
 			"openCorrespondance": "Open correspondence",

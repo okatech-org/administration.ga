@@ -267,7 +267,7 @@ export function CallButton({
 				>
 					<DialogContent
 						autoFocus={false}
-						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
+						className="sm:max-w-[420px] w-full h-[680px] max-h-[90vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 					>
 						<DialogTitle className="sr-only">
 							{displayLabel || t("meetings.callInProgress", "Appel en cours")}

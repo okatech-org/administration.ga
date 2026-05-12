@@ -49,6 +49,7 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 
 	const { groups, isPending: contactsLoading, filters, setSearch, setSource } = useContactSearch(orgId);
 	const { mutateAsync: callUser } = useConvexMutationQuery(api.functions.meetings.callUser);
+	const { mutateAsync: setCallRinging } = useConvexMutationQuery(api.functions.meetings.setCallRinging);
 
 	const { data: rawMeetings, isPending } = useAuthenticatedConvexQuery(
 		api.functions.meetings.listByOrg,
@@ -76,6 +77,7 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 			setActiveMeetingId(meetingId);
 			setActiveMediaType(mediaType);
 			setGlobalMeetingId(meetingId);
+			await setCallRinging({ meetingId });
 			toast.success(mediaType === "audio" ? "Appel audio en cours..." : "Appel vidéo en cours...");
 		} catch (e: any) {
 			toast.error(e?.message ?? "Erreur lors de l'appel");

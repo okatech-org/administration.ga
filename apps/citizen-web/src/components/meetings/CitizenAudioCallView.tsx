@@ -5,10 +5,14 @@ import {
 	useConnectionState,
 	useLocalParticipant,
 	useRemoteParticipants,
+	useTracks,
 	useTrackToggle,
+	VideoTrack,
 } from "@livekit/components-react";
 import { ConnectionState, Track } from "livekit-client";
 import {
+	Camera,
+	CameraOff,
 	Mic,
 	MicOff,
 	Pause,
@@ -16,9 +20,24 @@ import {
 	Plus,
 	Volume2,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+function describeCameraError(err: unknown): string {
+	const name = (err as { name?: string } | null)?.name ?? "";
+	if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+		return "Accès à la caméra refusé — autorisez-la dans la barre d'adresse du navigateur.";
+	}
+	if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+		return "Aucune caméra détectée — branchez un périphérique vidéo.";
+	}
+	if (name === "NotReadableError" || name === "TrackStartError") {
+		return "Caméra indisponible — un autre logiciel l'utilise peut-être.";
+	}
+	return "Impossible d'activer la caméra. Vérifiez les permissions du navigateur.";
+}
 
 interface CitizenAudioCallViewProps {
 	onHangUp: () => void;
@@ -100,6 +119,44 @@ export function CitizenAudioCallView({
 		source: Track.Source.Microphone,
 	});
 
+	// Caméra — initialement OFF, activable à la volée par l'utilisateur.
+	const { toggle: toggleCameraRaw, enabled: cameraEnabled } = useTrackToggle({
+		source: Track.Source.Camera,
+	});
+	const lastCameraErrorRef = useRef<string | null>(null);
+	const toggleCamera = useCallback(async () => {
+		try {
+			await toggleCameraRaw();
+			lastCameraErrorRef.current = null;
+		} catch (err) {
+			const msg = describeCameraError(err);
+			if (lastCameraErrorRef.current === msg) return;
+			lastCameraErrorRef.current = msg;
+			toast.error(msg);
+		}
+	}, [toggleCameraRaw]);
+
+	const cameraTracks = useTracks([Track.Source.Camera], {
+		onlySubscribed: false,
+	});
+	const remoteCameraTrack = useMemo(
+		() =>
+			cameraTracks.find(
+				(t) =>
+					t.participant.identity !== localParticipant?.identity &&
+					!t.publication.isMuted,
+			),
+		[cameraTracks, localParticipant?.identity],
+	);
+	const localCameraTrack = useMemo(
+		() =>
+			cameraTracks.find(
+				(t) => t.participant.identity === localParticipant?.identity,
+			),
+		[cameraTracks, localParticipant?.identity],
+	);
+	const showVideoStage = !!remoteCameraTrack || cameraEnabled;
+
 	// Détecte le moment où le premier remote rejoint pour démarrer le timer.
 	const answeredAtRef = useRef<number | null>(null);
 	if (hasRemote && answeredAtRef.current === null) {
@@ -120,10 +177,17 @@ export function CitizenAudioCallView({
 	}
 	const ringingTimer = useElapsedSince(startedAtRef.current);
 
+	// Priorité au nom propre : `participant.name` puis le `title` passé par
+	// le parent avant de tomber sur `participant.identity` (UUID interne
+	// illisible — ex. "570rjg5chav..."). Sans cette préférence, on affichait
+	// l'identity LiveKit côté UI quand le name n'était pas renseigné.
+	const isLikelyIdentityHash = (v: string | undefined): boolean =>
+		!!v && /^[a-z0-9_-]{16,}$/i.test(v) && !v.includes(" ");
+	const candidateName = remoteParticipants[0]?.name;
 	const remoteName =
-		remoteParticipants[0]?.name ||
-		remoteParticipants[0]?.identity ||
+		(candidateName && !isLikelyIdentityHash(candidateName) ? candidateName : null) ||
 		title ||
+		(candidateName ?? remoteParticipants[0]?.identity) ||
 		t("meetings.yourCorrespondent", "Votre correspondant");
 	const initials = getInitials(remoteName);
 
@@ -166,7 +230,35 @@ export function CitizenAudioCallView({
 				</span>
 			</div>
 
-			{/* Body — avatar + nom + carte contextuelle */}
+			{/* Body — scène vidéo si caméra activée d'un côté ou de l'autre,
+			    sinon la vue audio classique (avatar + nom + carte contextuelle). */}
+			{showVideoStage ? (
+				<div className="relative flex flex-1 min-h-0 overflow-hidden">
+					{remoteCameraTrack ? (
+						<VideoTrack
+							trackRef={remoteCameraTrack}
+							className="absolute inset-0 h-full w-full object-cover"
+						/>
+					) : (
+						<div className="flex flex-1 items-center justify-center text-white/60 text-sm">
+							{t("citizenCall.cameraOffRemote", "Caméra distante désactivée")}
+						</div>
+					)}
+					<div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+						<span className="rounded-full bg-black/40 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+							{remoteName}
+						</span>
+					</div>
+					{localCameraTrack && cameraEnabled && (
+						<div className="absolute bottom-3 right-3 h-28 w-20 overflow-hidden rounded-xl border border-white/20 shadow-lg">
+							<VideoTrack
+								trackRef={localCameraTrack}
+								className="h-full w-full object-cover -scale-x-100"
+							/>
+						</div>
+					)}
+				</div>
+			) : (
 			<div className="flex flex-1 flex-col items-center px-6 pt-8 pb-6 min-h-0 overflow-y-auto">
 				<div
 					className={cn(
@@ -255,9 +347,10 @@ export function CitizenAudioCallView({
 					</div>
 				)}
 			</div>
+			)}
 
-			{/* Controls */}
-			<div className="grid grid-cols-3 gap-3 px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-3 shrink-0">
+			{/* Controls — 4 boutons : Micro / Caméra / Haut-parleur / Raccrocher */}
+			<div className="grid grid-cols-4 gap-2 px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-3 shrink-0">
 				<CitizenCallControl
 					icon={micEnabled ? Mic : MicOff}
 					label={
@@ -267,6 +360,16 @@ export function CitizenAudioCallView({
 					}
 					onClick={() => toggleMic()}
 					active={!micEnabled}
+				/>
+				<CitizenCallControl
+					icon={cameraEnabled ? Camera : CameraOff}
+					label={
+						cameraEnabled
+							? t("meetings.camera", "Caméra")
+							: t("meetings.cameraOff", "Caméra off")
+					}
+					onClick={() => toggleCamera()}
+					active={cameraEnabled}
 				/>
 				<CitizenCallControl
 					icon={Volume2}
@@ -322,7 +425,7 @@ function CitizenCallControl({
 			>
 				<Icon className="h-6 w-6" />
 			</span>
-			<span className="text-[11px] text-white/70 font-medium">{label}</span>
+			<span className="text-[10px] text-white/70 font-medium text-center leading-tight">{label}</span>
 		</button>
 	);
 }

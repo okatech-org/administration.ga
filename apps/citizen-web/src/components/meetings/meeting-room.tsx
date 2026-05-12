@@ -4,7 +4,8 @@ import {
 import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 
-import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+import { CitizenAudioCallView } from "@/components/meetings/CitizenAudioCallView";
+import { MeetingStageView } from "@/components/meetings/MeetingStageView";
 import { AlertCircle, Loader2, Phone, Users, Video } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
@@ -19,6 +20,7 @@ interface MeetingRoomProps {
 	wsUrl: string;
 	onDisconnect: () => void;
 	mediaType?: "audio" | "video";
+	title?: string;
 }
 
 // ============================================
@@ -29,7 +31,7 @@ interface MeetingRoomProps {
  * MeetingRoom — Full-featured audio/video conferencing room.
  * Wraps LiveKit's VideoConference with custom controls and styling.
  */
-export function MeetingRoom({ token, wsUrl, onDisconnect, mediaType }: MeetingRoomProps) {
+export function MeetingRoom({ token, wsUrl, onDisconnect, mediaType, title }: MeetingRoomProps) {
 	const isVideo = mediaType === "video";
 	const handleUserHangUp = useCallback(() => {
 		onDisconnect();
@@ -60,7 +62,14 @@ export function MeetingRoom({ token, wsUrl, onDisconnect, mediaType }: MeetingRo
 				className="flex flex-col flex-1"
 				style={{ height: "100%" }}
 			>
-				<CustomCallUI onHangUp={handleHangUpClick} mediaType={mediaType} />
+				{isVideo ? (
+					<MeetingStageView
+						meetingTitle={title ?? "Réunion"}
+						onHangUp={handleHangUpClick}
+					/>
+				) : (
+					<CitizenAudioCallView onHangUp={handleHangUpClick} title={title} />
+				)}
 			</LiveKitRoom>
 		</div>
 	);

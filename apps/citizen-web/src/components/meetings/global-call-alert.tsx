@@ -310,7 +310,11 @@ export function GlobalCallAlert() {
 						autoFocus={false}
 						onInteractOutside={(e) => e.preventDefault()}
 						onEscapeKeyDown={(e) => e.preventDefault()}
-						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
+						className={
+							isMeeting
+								? "max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
+								: "sm:max-w-[420px] w-full h-[680px] max-h-[90vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
+						}
 					>
 						<DialogTitle className="sr-only">
 							{callerName ?? activeCallToDisplay?.title ?? t("meetings.callInProgress", "Appel en cours")}

@@ -38,8 +38,11 @@ const LiveKitRoom = dynamic(
 	{ ssr: false },
 );
 
-const CustomCallUI = dynamic(
-	() => import("@/components/meetings/custom-call-ui").then((mod) => mod.CustomCallUI),
+const CitizenAudioCallView = dynamic(
+	() =>
+		import("@/components/meetings/CitizenAudioCallView").then(
+			(mod) => mod.CitizenAudioCallView,
+		),
 	{ ssr: false },
 );
 
@@ -157,7 +160,10 @@ function MeetingsPageContent() {
 							onHangUp={handleLeave}
 						/>
 					) : (
-						<CustomCallUI onHangUp={handleLeave} />
+						<CitizenAudioCallView
+							onHangUp={handleLeave}
+							title={(meeting as any)?.title}
+						/>
 					)}
 				</LiveKitRoom>
 			</div>

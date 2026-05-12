@@ -422,7 +422,13 @@ function DiplomaticMemberCard({ member }: { member: any }) {
 						</div>
 					</div>
 					{user?._id && (
-						<div onClick={(e) => e.preventDefault()} className="shrink-0">
+						<div
+							onClick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+							}}
+							className="shrink-0"
+						>
 							<SuperAdminCallTrigger
 								targetUser={{
 									_id: user._id as Id<"users">,

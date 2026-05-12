@@ -28,6 +28,7 @@
     "@tiptap/pm": "^3.17.1",
     "@tiptap/react": "^3.17.1",
     "@tiptap/starter-kit": "^3.17.1",
+    "@workspace/agent-features": "workspace:*",
     "@workspace/api": "workspace:*",
     "@workspace/chat": "workspace:*",
     "@workspace/document-editor": "workspace:*",

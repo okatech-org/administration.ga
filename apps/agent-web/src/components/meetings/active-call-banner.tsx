@@ -3,7 +3,8 @@ import type { Id } from "@convex/_generated/dataModel";
 import {
 	LiveKitRoom,
 } from "@livekit/components-react";
-import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+import { DirectCallView } from "@workspace/agent-features/components/meetings";
+import { MeetingStageView } from "@/components/meetings/MeetingStageView";
 import { Loader2, Phone } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -121,6 +122,7 @@ export function ActiveCallBanner({ requestId }: ActiveCallBannerProps) {
 
 	if (!activeMeeting || (isBusyGlobally && !dialogOpen)) return null;
 
+	const isMeeting = (activeMeeting as any)?.type === "meeting";
 	const callContent = (
 		<div className="flex flex-col h-full bg-zinc-950 overflow-hidden">
 			{token && wsUrl ? (
@@ -129,6 +131,7 @@ export function ActiveCallBanner({ requestId }: ActiveCallBannerProps) {
 					serverUrl={wsUrl}
 					connect={true}
 					audio={true}
+					video={isMeeting}
 					options={LIVEKIT_CALL_ROOM_OPTIONS}
 					onConnected={() => {
 						hasConnectedRef.current = true;
@@ -137,7 +140,14 @@ export function ActiveCallBanner({ requestId }: ActiveCallBannerProps) {
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
-					<CustomCallUI onHangUp={handleHangUp} title={activeMeeting?.title} />
+					{isMeeting ? (
+						<MeetingStageView
+							meetingTitle={activeMeeting?.title ?? "Réunion"}
+							onHangUp={handleHangUp}
+						/>
+					) : (
+						<DirectCallView onHangUp={handleHangUp} title={activeMeeting?.title} />
+					)}
 				</LiveKitRoom>
 			) : (
 				<div className="h-full flex items-center justify-center">
@@ -208,7 +218,11 @@ export function ActiveCallBanner({ requestId }: ActiveCallBannerProps) {
 				>
 					<DialogContent
 						autoFocus={false}
-						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
+						className={
+							isMeeting
+								? "max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
+								: "sm:max-w-[420px] w-full h-[680px] max-h-[90vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
+						}
 					>
 						<DialogTitle className="sr-only">
 							{activeMeeting?.title ?? t("meetings.callInProgress", "Appel en cours")}

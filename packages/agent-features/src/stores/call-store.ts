@@ -38,12 +38,19 @@ interface CallStoreState {
    * Reset à `false` à chaque nouveau slot actif (décrochage / swap / resume).
    */
   micMuted: boolean;
+  /**
+   * Intent utilisateur d'activation caméra pour le slot actif.
+   * Reset à `false` à chaque nouveau slot actif — chaque appel démarre
+   * caméra coupée, l'agent active à la volée s'il veut passer en visio.
+   */
+  cameraEnabled: boolean;
 }
 
 const state: CallStoreState = {
   slots: new Map(),
   activeSlotId: null,
   micMuted: false,
+  cameraEnabled: false,
 };
 
 const listeners = new Set<() => void>();
@@ -54,11 +61,13 @@ let snapshot: {
   activeSlotId: Id<"meetings"> | null;
   activeMeetingId: Id<"meetings"> | null; // alias rétrocompat
   micMuted: boolean;
+  cameraEnabled: boolean;
 } = {
   slots: [],
   activeSlotId: null,
   activeMeetingId: null,
   micMuted: false,
+  cameraEnabled: false,
 };
 
 function rebuildSnapshot() {
@@ -67,6 +76,7 @@ function rebuildSnapshot() {
     activeSlotId: state.activeSlotId,
     activeMeetingId: state.activeSlotId,
     micMuted: state.micMuted,
+    cameraEnabled: state.cameraEnabled,
   };
 }
 
@@ -108,9 +118,11 @@ export const callStore = {
           state.slots.delete(state.activeSlotId);
         }
       }
-      // Nouveau slot actif → mute reset (décrocher = parler).
+      // Nouveau slot actif → mute reset (décrocher = parler) + caméra reset
+      // (chaque appel démarre sans vidéo).
       if (state.activeSlotId !== slot.meetingId) {
         state.micMuted = false;
+        state.cameraEnabled = false;
       }
       state.activeSlotId = slot.meetingId;
     }
@@ -123,6 +135,7 @@ export const callStore = {
     if (state.activeSlotId === meetingId) {
       state.activeSlotId = null;
       state.micMuted = false;
+      state.cameraEnabled = false;
     }
     emit();
   },
@@ -132,12 +145,14 @@ export const callStore = {
     if (meetingId === null) {
       state.activeSlotId = null;
       state.micMuted = false;
+      state.cameraEnabled = false;
       emit();
       return;
     }
     if (!state.slots.has(meetingId)) return;
     if (state.activeSlotId !== meetingId) {
       state.micMuted = false;
+      state.cameraEnabled = false;
     }
     state.activeSlotId = meetingId;
     emit();
@@ -153,6 +168,18 @@ export const callStore = {
   /** Etat courant du mute manuel. */
   getMicMuted(): boolean {
     return state.micMuted;
+  },
+
+  /** Intent d'activation caméra sur le slot actif. */
+  setCameraEnabled(enabled: boolean) {
+    if (state.cameraEnabled === enabled) return;
+    state.cameraEnabled = enabled;
+    emit();
+  },
+
+  /** Etat courant d'activation caméra. */
+  getCameraEnabled(): boolean {
+    return state.cameraEnabled;
   },
 
   /** Accès read-only aux slots courants. */
@@ -175,6 +202,7 @@ export const callStore = {
       }
       state.activeSlotId = null;
       state.micMuted = false;
+      state.cameraEnabled = false;
       emit();
       return;
     }
@@ -186,6 +214,7 @@ export const callStore = {
     });
     if (state.activeSlotId !== id) {
       state.micMuted = false;
+      state.cameraEnabled = false;
     }
     state.activeSlotId = id;
     emit();
@@ -204,10 +233,12 @@ export function useCallStore() {
     // Rétrocompat : certains composants historiques consomment ce nom.
     globalActiveMeetingId: current.activeMeetingId,
     micMuted: current.micMuted,
+    cameraEnabled: current.cameraEnabled,
     setGlobalMeetingId: callStore.setGlobalMeetingId,
     upsertSlot: callStore.upsertSlot,
     removeSlot: callStore.removeSlot,
     setActiveSlot: callStore.setActiveSlot,
     setMicMuted: callStore.setMicMuted,
+    setCameraEnabled: callStore.setCameraEnabled,
   };
 }

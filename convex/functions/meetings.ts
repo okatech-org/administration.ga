@@ -39,6 +39,25 @@ export const isAuthSubjectCitizen = internalQuery({
   },
 });
 
+/**
+ * Résout le nom affichable d'un utilisateur à partir de son authSubject.
+ * Utilisé par `actions/livekit.ts` pour fournir un `participant.name` propre
+ * (vrai prénom+nom depuis la DB) au lieu de retomber sur `identity.subject`
+ * qui est un hash interne illisible dans l'UI.
+ */
+export const getDisplayNameByAuthSubject = internalQuery({
+  args: { authSubject: v.string() },
+  handler: async (ctx, { authSubject }): Promise<string | null> => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_authId", (q: any) => q.eq("authId", authSubject))
+      .unique();
+    if (!user) return null;
+    const full = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+    return full || user.email || null;
+  },
+});
+
 // ============================================
 // Helpers
 // ============================================
@@ -480,7 +499,17 @@ export const join = authMutation({
     // For calls: check callStatus is answerable
     if (meeting.type === "call" && meeting.callStatus) {
       if (meeting.callStatus === "connected") {
-        throw error(ErrorCode.INVALID_ARGUMENT, "Cet appel est déjà pris par un autre agent");
+        // Exception : le caller original (createdBy) ET le destinataire qui a
+        // déjà décroché (answeredBy) peuvent rejoindre une room "connected"
+        // — ce sont les deux participants légitimes. Le rejet ne concerne
+        // qu'un tiers qui tenterait de pirater l'appel.
+        const isLegitimateRejoin =
+          ctx.user._id === meeting.createdBy ||
+          (meeting.answeredBy !== undefined &&
+            ctx.user._id === meeting.answeredBy);
+        if (!isLegitimateRejoin) {
+          throw error(ErrorCode.INVALID_ARGUMENT, "Cet appel est déjà pris par un autre agent");
+        }
       }
       if (meeting.callStatus === "ended" || meeting.callStatus === "missed" || meeting.callStatus === "declined") {
         throw error(ErrorCode.INVALID_ARGUMENT, "Cet appel est terminé");
@@ -527,11 +556,33 @@ export const join = authMutation({
       patch.startedAt = Date.now();
     }
 
-    // For inbound calls: transition callStatus to "connected"
-    if (meeting.type === "call" && meeting.isOrgInbound && meeting.callStatus === "ringing") {
+    // Transition callStatus → "connected" UNIQUEMENT quand un DESTINATAIRE
+    // (≠ caller) rejoint. Le caller (createdBy) qui rejoint sa propre room
+    // pour publier son audio ne doit pas déclencher la transition — sinon le
+    // call passe à "connected" avant même que le destinataire ait pu décrocher,
+    // et la mutation rejette ensuite le décrochage légitime du destinataire
+    // avec "Cet appel est déjà pris par un autre agent".
+    //
+    // Couvre les deux scénarios légitimes :
+    //  - Appel inbound (citoyen → org) : un agent qui décroche n'est pas le
+    //    createdBy → transition.
+    //  - Appel outbound (agent/admin → user via callUser/callBackRecent/
+    //    callUserAsAdmin) : le destinataire qui rejoint n'est pas le
+    //    createdBy → transition.
+    //
+    // Le caller qui rejoint passe ce bloc sans changement (état "ringing"
+    // préservé jusqu'au décrochage réel du destinataire).
+    const isCaller = ctx.user._id === meeting.createdBy;
+    if (
+      !isCaller &&
+      meeting.type === "call" &&
+      (meeting.callStatus === "ringing" || meeting.callStatus === "initiating")
+    ) {
       patch.callStatus = "connected";
-      patch.answeredBy = ctx.user._id;
-      patch.answeredAt = Date.now();
+      if (!meeting.answeredBy) {
+        patch.answeredBy = ctx.user._id;
+        patch.answeredAt = Date.now();
+      }
     }
 
     await ctx.db.patch(args.meetingId, patch);

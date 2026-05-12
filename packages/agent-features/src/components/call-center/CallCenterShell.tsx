@@ -21,10 +21,11 @@ import { useIsMobile } from "../../hooks/use-mobile";
 import { useOrg } from "../../shell/org-provider";
 import { useCallCenter } from "../../hooks/use-call-center";
 import { useRingtone } from "../../hooks/use-ringtone";
+import { RoomContext } from "@livekit/components-react";
 import { ActiveCallsBar, type ActiveCallSlot } from "./ActiveCallsBar";
 import { ActiveConversationView } from "./ActiveConversationView";
 import { CallSidePane } from "./CallSidePane";
-import { CallRoomPool } from "./CallRoomMount";
+import { useCallRoom } from "../../stores/call-room-registry";
 import { IncomingCallQueue } from "./IncomingCallQueue";
 import { LineFilterDropdown } from "./LineFilterDropdown";
 import { TransferDialog } from "./TransferDialog";
@@ -74,7 +75,6 @@ export function CallCenterShell({
     queue,
     activeCalls,
     activeSlotId,
-    slots,
     pickup,
     hangup,
     decline,
@@ -86,6 +86,12 @@ export function CallCenterShell({
     recentCalls,
     callBackRecent,
   } = useCallCenter();
+
+  // Room LiveKit du slot actif — exposée via `<RoomContext.Provider>` plus
+  // bas pour que ActiveConversationView accède aux hooks `useTracks`, etc.
+  // sans avoir à re-mount son propre `<LiveKitRoom>`. Le pool LiveKit vit
+  // au niveau AppShell pour survivre aux changements de route.
+  const activeRoom = useCallRoom(activeSlotId ?? undefined);
 
   const [internalLineId, setInternalLineId] = useState<string | "all">("all");
   // Mode contrôlé si IAstedPage gère le filtre dans son header.
@@ -171,13 +177,8 @@ export function CallCenterShell({
     }
   };
 
-  // Détection : le citoyen a raccroché alors que son slot était parqué.
-  // On nettoie le slot côté client (le backend a déjà terminé le meeting).
-  const handleSlotDisconnected = (meetingId: Id<"meetings">) => {
-    // On laisse le hangup wrapper du use-call-center gérer le cleanup complet
-    // côté serveur si on était actif, sinon on retire juste du store local.
-    void hangup(meetingId);
-  };
+  // Pool LiveKit géré au niveau AppShell (GlobalCallRoomHost) — on n'a plus
+  // besoin de gérer onDisconnected ici.
 
   // Totaux pour le rail gauche
   const totalCount = queue.length;
@@ -205,8 +206,9 @@ export function CallCenterShell({
   }, [activeCalls, activeSlotId]);
 
   // Colonne 1 : file d'appels permanente (tabs En attente / En cours / Terminés)
+  // Largeur portée par le grid parent ; le contenu est full-width interne.
   const queueColumn = (
-    <div className="w-[320px] shrink-0 hidden md:flex border-r">
+    <div className="hidden md:flex min-h-0 border-r overflow-hidden">
       <IncomingCallQueue
         calls={filteredQueue as any}
         activeCalls={activeCalls as ActiveCallSlot[]}
@@ -223,17 +225,26 @@ export function CallCenterShell({
     </div>
   );
 
-  // Colonne 2 : zone conversation (ActiveConversationView ou empty state)
+  // Colonne 2 : zone conversation (ActiveConversationView ou empty state).
+  // ActiveConversationView est rendue À L'INTÉRIEUR du LiveKitRoom du slot
+  // actif (via CallRoomPool.renderActive) pour avoir accès aux hooks
+  // LiveKit (`useTracks`, `VideoTrack`, etc.). Les slots parqués restent
+  // invisibles. La largeur est portée par le grid parent.
   const conversationColumn = (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      {conversationCall ? (
-        <ActiveConversationView
-          call={conversationCall}
-          onHold={(id) => hold(id)}
-          onResume={(id) => resume(id)}
-          onEnd={handleEndActive}
-          onRequestTransfer={(id) => setTransferTargetId(id)}
-        />
+    <div className="flex min-h-0 flex-col overflow-hidden border-r">
+      {conversationCall && activeRoom ? (
+        // Provide la Room LiveKit (montée au niveau AppShell) au sous-arbre
+        // de la vue active, pour qu'`useTracks`, `useLocalParticipant`,
+        // `VideoTrack`, etc. fonctionnent sans re-mount du `<LiveKitRoom>`.
+        <RoomContext.Provider value={activeRoom}>
+          <ActiveConversationView
+            call={conversationCall}
+            onHold={(id) => hold(id)}
+            onResume={(id) => resume(id)}
+            onEnd={handleEndActive}
+            onRequestTransfer={(id) => setTransferTargetId(id)}
+          />
+        </RoomContext.Provider>
       ) : (
         <ConversationEmptyState />
       )}
@@ -315,14 +326,16 @@ export function CallCenterShell({
             <div className="h-full overflow-y-auto p-3">
               <VoicemailsList orgId={activeOrgId ?? null} />
             </div>
-          ) : conversationCall ? (
-            <ActiveConversationView
-              call={conversationCall}
-              onHold={(id) => hold(id)}
-              onResume={(id) => resume(id)}
-              onEnd={handleEndActive}
-              onRequestTransfer={(id) => setTransferTargetId(id)}
-            />
+          ) : conversationCall && activeRoom ? (
+            <RoomContext.Provider value={activeRoom}>
+              <ActiveConversationView
+                call={conversationCall}
+                onHold={(id) => hold(id)}
+                onResume={(id) => resume(id)}
+                onEnd={handleEndActive}
+                onRequestTransfer={(id) => setTransferTargetId(id)}
+              />
+            </RoomContext.Provider>
           ) : (
             <IncomingCallQueue
               calls={filteredQueue as any}
@@ -337,12 +350,6 @@ export function CallCenterShell({
             />
           )}
         </div>
-
-        <CallRoomPool
-          slots={slots}
-          activeSlotId={activeSlotId}
-          onDisconnected={handleSlotDisconnected}
-        />
       </div>
     );
   }
@@ -425,7 +432,13 @@ export function CallCenterShell({
           {conversationColumn}
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 overflow-hidden">
+        // Grid 3-col fluide :
+        //  - file      : min 280px, idéal 320px, ne grandit pas au-delà
+        //  - conv      : 380–440px (forme téléphone)
+        //  - drawer    : 360px min, prend tout le reste de l'espace dispo
+        // → plus de largeurs hardcodées qui surdimensionnaient le centre et
+        //   coinçaient le drawer.
+        <div className="grid min-h-0 flex-1 overflow-hidden grid-cols-[minmax(280px,320px)_minmax(380px,440px)_minmax(360px,1fr)]">
           {queueColumn}
           {conversationColumn}
           <CallSidePane
@@ -440,13 +453,9 @@ export function CallCenterShell({
         </div>
       )}
 
-      {/* Pool LiveKit invisible — une room par slot avec token.
-          Mic activé uniquement sur le slot actif (les held restent connectés mais silencieux). */}
-      <CallRoomPool
-        slots={slots}
-        activeSlotId={activeSlotId}
-        onDisconnected={handleSlotDisconnected}
-      />
+      {/* Pool LiveKit : monté à l'intérieur de conversationColumn — voir
+          conversationColumn pour le rendu en mode actif (UI visible) ou
+          sr-only (legacy). Pas de double-mount ici. */}
 
       {/* Transfer dialog — déclenché depuis ActiveConversationView ctl-bar */}
       <TransferDialog

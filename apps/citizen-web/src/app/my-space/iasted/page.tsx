@@ -72,10 +72,10 @@ const MeetingStageView = dynamic(
   { ssr: false }
 )
 
-const CustomCallUI = dynamic(
+const CitizenAudioCallView = dynamic(
   () =>
-    import("@/components/meetings/custom-call-ui").then(
-      (mod) => mod.CustomCallUI
+    import("@/components/meetings/CitizenAudioCallView").then(
+      (mod) => mod.CitizenAudioCallView
     ),
   { ssr: false }
 )
@@ -1113,7 +1113,7 @@ function IAppelContent() {
                 minHeight: 0,
               }}
             >
-              <CustomCallUI
+              <CitizenAudioCallView
                 onHangUp={handleHangUp}
                 title={selectedOrg?.name ?? "Représentation consulaire"}
               />

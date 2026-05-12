@@ -86,30 +86,33 @@ export const requestToken = action({
       throw new Error("LIVEKIT_API_KEY and LIVEKIT_API_SECRET must be configured");
     }
 
+    // Résolution du nom propre depuis la DB — `identity.name` de better-auth
+    // peut tomber sur un hash ou être absent, ce qui faisait apparaître
+    // "570rjg5..." dans l'UI d'appel (côté correspondant).
+    const dbDisplayName: string | null = await ctx.runQuery(
+      internal.functions.meetings.getDisplayNameByAuthSubject,
+      { authSubject: identity.subject },
+    );
+
     const token = new AccessToken(apiKey, apiSecret, {
       identity: identity.subject,
-      name: identity.name ?? "Participant",
+      name: dbDisplayName ?? identity.name ?? "Participant",
       ttl: "2h",
     });
 
-    // Enforcement per-user : les citoyens sont restreints aux sources
-    // pertinentes pour le mediaType de la réunion.
-    //  - mediaType="audio"  → micro uniquement (empêche caméra + screenshare)
-    //  - mediaType="video"  → micro + caméra + partage d'écran
-    // Les agents gardent un grant non restreint (peuvent toggler caméra dans
-    // les appels audio "callOrganization" si besoin opérationnel).
+    // Enforcement per-user : les citoyens peuvent toujours toggler micro et
+    // caméra sur n'importe quel appel (audio comme vidéo). Le partage d'écran
+    // reste réservé aux RÉUNIONS multi-participants (type="meeting") — pas
+    // d'écran partagé dans un appel 1:1.
+    //
+    // Le bouton caméra est purement client : le token n'a qu'à ne pas
+    // l'empêcher. Les agents conservent un grant non restreint.
     const isCitizen: boolean = await ctx.runQuery(
       internal.functions.meetings.isAuthSubjectCitizen,
       { authSubject: identity.subject },
     );
 
-    // Pour les RÉUNIONS (type="meeting"), on accorde toujours les sources
-    // vidéo — la maquette définit la réunion comme une visioconférence
-    // multi-participants, indépendamment du flag mediaType qui ne contrôle
-    // que la publication initiale de la caméra côté client. Un citoyen invité
-    // à une réunion doit pouvoir activer sa caméra et partager son écran.
-    const isVideoCapable =
-      meeting.type === "meeting" || meeting.mediaType === "video";
+    const allowScreenShare = meeting.type === "meeting";
 
     token.addGrant({
       roomJoin: true,
@@ -119,14 +122,14 @@ export const requestToken = action({
       canPublishData: true,
       ...(isCitizen
         ? {
-            canPublishSources: isVideoCapable
+            canPublishSources: allowScreenShare
               ? [
                   TrackSource.MICROPHONE,
                   TrackSource.CAMERA,
                   TrackSource.SCREEN_SHARE,
                   TrackSource.SCREEN_SHARE_AUDIO,
                 ]
-              : [TrackSource.MICROPHONE],
+              : [TrackSource.MICROPHONE, TrackSource.CAMERA],
           }
         : {}),
     });

@@ -5,7 +5,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import {
 	LiveKitRoom,
 } from "@livekit/components-react";
-import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+import { DirectCallView } from "@workspace/agent-features/components/meetings";
 import { Loader2, Phone, ChevronDown } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useCallback, useState } from "react";
@@ -146,7 +146,7 @@ export function OrgCallButton({
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
-					<CustomCallUI onHangUp={handleHangUp} title={orgName} />
+					<DirectCallView onHangUp={handleHangUp} title={orgName} />
 				</LiveKitRoom>
 			) : (
 				<div className="h-full flex flex-col items-center justify-center gap-4 text-white">
@@ -253,7 +253,7 @@ export function OrgCallButton({
 				<Dialog open={isInCall} onOpenChange={(o) => !o && handleHangUp()}>
 					<DialogContent
 						autoFocus={false}
-						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
+						className="sm:max-w-[420px] w-full h-[680px] max-h-[90vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 					>
 						<DialogTitle className="sr-only">
 							{orgName || t("meetings.callInProgress", "Appel en cours")}

@@ -35,7 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
-import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+import { MeetingStageView } from "@workspace/agent-features/components/meetings-livekit";
 import { useContactSearch, type ContactSource } from "@/hooks/useContactSearch";
 import { useMeeting } from "@/hooks/use-meeting";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
@@ -133,12 +133,17 @@ export function BackofficeMeetingTab({ orgId }: BackofficeMeetingTabProps) {
 					token={token}
 					serverUrl={wsUrl}
 					connect={true}
+					audio={true}
+					video={true}
 					options={LIVEKIT_CALL_ROOM_OPTIONS}
 					onConnected={onLiveKitConnected}
 					onDisconnected={onLiveKitDisconnected}
 					className="flex flex-col flex-1"
 				>
-					<CustomCallUI onHangUp={handleDisconnect} />
+					<MeetingStageView
+						meetingTitle={(activeMeetingData as any)?.title ?? "Réunion"}
+						onHangUp={handleDisconnect}
+					/>
 				</LiveKitRoom>
 			</div>
 		);

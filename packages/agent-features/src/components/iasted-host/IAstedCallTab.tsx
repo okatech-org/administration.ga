@@ -39,7 +39,7 @@ import { Input } from "@workspace/ui/components/input";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { PostCallNoteDrawer } from "@workspace/iasted";
 import { CallCenterShell } from "../call-center";
-import { CustomCallUI } from "../meetings/custom-call-ui";
+import { DirectCallView } from "../meetings/DirectCallView";
 import { useOrg } from "../../shell/org-provider";
 import { useContactSearch, type ContactSource } from "../../hooks/useContactSearch";
 import { useCallCenter } from "../../hooks/use-call-center";
@@ -537,7 +537,7 @@ function LegacyCallTab() {
 			{/* ═══ Dialog LiveKit en cours d'appel ═══ */}
 			<Dialog open={!!isInCall} onOpenChange={(open) => { if (!open) handleHangUp(); }}>
 				<DialogContent
-					className="max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
+					className="sm:max-w-[420px] w-full h-[680px] max-h-[90vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 				>
 					<DialogTitle className="sr-only">
 						{subTab === "audio" ? "Appel audio" : "Appel vidéo"}
@@ -577,7 +577,7 @@ function LegacyCallTab() {
 								onDisconnected={handleLiveKitDisconnected}
 								className="flex flex-col flex-1"
 							>
-								<CustomCallUI onHangUp={handleHangUp} />
+								<DirectCallView onHangUp={handleHangUp} />
 							</LiveKitRoom>
 						</div>
 					) : (

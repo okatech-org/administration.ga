@@ -17,13 +17,9 @@
 
 import { useRouter } from "@workspace/routing";
 import {
-  Calendar,
   FileText,
   Loader2,
-  Mail,
-  Plus,
-  Send,
-  Users,
+  StickyNote,
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -39,12 +35,11 @@ import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { cn } from "@workspace/ui/lib/utils";
 import { useCitizenContext } from "../../hooks/use-citizen-context";
 import { OngoingDossierList } from "./OngoingDossierList";
-import { TransferDialog } from "./TransferDialog";
 
 interface CallSidePaneProps {
   /** Meeting actuellement focalisé dans la zone conversation. */
   meetingId: Id<"meetings"> | null;
-  /** Org active (pour TransferDialog). */
+  /** Org active — conservé pour compat (transfer dialog géré au shell). */
   orgId?: Id<"orgs"> | null;
   /** Meeting actif (différent de focused si l'agent regarde un autre slot). */
   activeMeetingId?: Id<"meetings"> | null;
@@ -57,20 +52,19 @@ interface CallSidePaneProps {
 
 export function CallSidePane({
   meetingId,
-  orgId,
-  activeMeetingId,
-  onTransfer,
+  orgId: _orgId,
+  activeMeetingId: _activeMeetingId,
+  onTransfer: _onTransfer,
   onOpenRequest,
 }: CallSidePaneProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const { context, isPending } = useCitizenContext(meetingId);
-  const [transferOpen, setTransferOpen] = useState(false);
 
   // ─── Empty state — aucun appel sélectionné ─────────────────────────
   if (!meetingId) {
     return (
-      <aside className="hidden lg:flex w-[360px] shrink-0 flex-col items-center justify-center border-l p-6 text-center bg-card/30">
+      <aside className="hidden lg:flex flex-col items-center justify-center border-l p-6 text-center bg-card/30 min-h-0">
         <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-muted/40">
           <FileText className="h-6 w-6 text-muted-foreground/60" />
         </div>
@@ -90,7 +84,7 @@ export function CallSidePane({
   // ─── Loading state ───────────────────────────────────────────────
   if (isPending || !context) {
     return (
-      <aside className="hidden lg:flex w-[360px] shrink-0 flex-col items-center justify-center border-l">
+      <aside className="hidden lg:flex flex-col items-center justify-center border-l min-h-0">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </aside>
     );
@@ -125,32 +119,10 @@ export function CallSidePane({
     }
   };
 
-  const handleCreateRequest = () => {
-    router.push(
-      callerUserId
-        ? `/affaires-consulaires?createForUserId=${callerUserId}`
-        : "/affaires-consulaires",
-    );
-  };
-
-  const handleScheduleAppointment = () => {
-    router.push(
-      callerUserId
-        ? `/appointments?createForUserId=${callerUserId}`
-        : "/appointments",
-    );
-  };
-
-  const handleSendEmail = () => {
-    if (caller.email) {
-      window.location.href = `mailto:${caller.email}`;
-    }
-  };
-
   const nextAppointment = upcomingAppointments?.[0];
 
   return (
-    <aside className="hidden lg:flex w-[360px] shrink-0 flex-col border-l bg-card/30 min-h-0">
+    <aside className="hidden lg:flex flex-col border-l bg-card/30 min-h-0 overflow-hidden">
       <ScrollArea className="flex-1 min-h-0">
         <div className="flex flex-col gap-5 px-5 py-5">
           {/* ── 1. Identité ─────────────────────────────────────── */}
@@ -266,57 +238,36 @@ export function CallSidePane({
 
           <Divider />
 
-          {/* ── 4. Actions rapides ─────────────────────────────── */}
+          {/* ── 4. Notes pendant l'appel ─────────────────────────
+              Remplace l'ancienne grille "Actions rapides". Le transfert
+              reste accessible via les contrôles secondaires de
+              ActiveConversationView, la création de demande / RDV depuis
+              le bouton "Voir" du profil citoyen. */}
           <section>
             <SectionHeader
               label={t(
-                "callCenter.quickActions.title",
-                "Actions rapides",
+                "callCenter.notes.title",
+                "Notes pendant l'appel",
               )}
+              icon={StickyNote}
             />
-            <div className="grid grid-cols-2 gap-2">
-              <QuickActionButton
-                icon={Plus}
-                label={t(
-                  "callCenter.quickActions.createRequest",
-                  "Créer demande",
-                )}
-                onClick={handleCreateRequest}
-              />
-              <QuickActionButton
-                icon={Calendar}
-                label={t(
-                  "callCenter.quickActions.scheduleAppointment",
-                  "Prendre RDV",
-                )}
-                onClick={handleScheduleAppointment}
-              />
-              <QuickActionButton
-                icon={Users}
-                label={t("callCenter.quickActions.transfer", "Transférer")}
-                onClick={() => setTransferOpen(true)}
-                disabled={!activeMeetingId || !onTransfer}
-              />
-              <QuickActionButton
-                icon={Mail}
-                label={t("callCenter.quickActions.sendEmail", "Envoyer email")}
-                onClick={handleSendEmail}
-                disabled={!caller.email}
-              />
-            </div>
+            <textarea
+              placeholder={t(
+                "callCenter.notes.placeholder",
+                "Notez les points clés de la conversation, les actions à prendre, les références…",
+              )}
+              className="w-full min-h-[140px] rounded-xl bg-secondary/40 px-3 py-2.5 text-[12.5px] leading-[1.55] text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+            />
+            <p className="mt-1.5 text-[10.5px] text-muted-foreground/70 italic">
+              {t(
+                "callCenter.notes.localOnly",
+                "Notes locales — sauvegarde automatique à venir.",
+              )}
+            </p>
           </section>
         </div>
       </ScrollArea>
 
-      {onTransfer && activeMeetingId && (
-        <TransferDialog
-          open={transferOpen}
-          onOpenChange={setTransferOpen}
-          orgId={orgId ?? null}
-          meetingId={activeMeetingId}
-          onTransfer={onTransfer}
-        />
-      )}
     </aside>
   );
 }
@@ -355,10 +306,19 @@ function Divider() {
   return <div className="h-px bg-border" />;
 }
 
-function SectionHeader({ label, count }: { label: string; count?: number }) {
+function SectionHeader({
+  label,
+  count,
+  icon: Icon,
+}: {
+  label: string;
+  count?: number;
+  icon?: React.ComponentType<{ className?: string }>;
+}) {
   return (
     <div className="flex items-center justify-between mb-2.5">
-      <h3 className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-muted-foreground/80">
+      <h3 className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.12em] font-semibold text-muted-foreground/80">
+        {Icon && <Icon className="h-3 w-3" />}
         {label}
       </h3>
       {count !== undefined && count > 0 && (
@@ -406,27 +366,3 @@ function NextAppointmentCard({ appointment }: { appointment: any }) {
   );
 }
 
-function QuickActionButton({
-  icon: Icon,
-  label,
-  onClick,
-  disabled,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      className="h-9 justify-start gap-2 text-[12px] font-medium px-3"
-      onClick={onClick}
-      disabled={disabled}
-    >
-      <Icon className="h-3.5 w-3.5 shrink-0" />
-      <span className="truncate">{label}</span>
-    </Button>
-  );
-}

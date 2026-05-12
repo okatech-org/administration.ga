@@ -12,7 +12,26 @@ import { ConnectionState } from "livekit-client";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import type { Id } from "@convex/_generated/dataModel";
+import { callRoomRegistry } from "../../stores/call-room-registry";
 import { useCallStore, type CallSlot } from "../../stores/call-store";
+
+/**
+ * Composant interne — capture la `Room` LiveKit créée par `<LiveKitRoom>` et
+ * la publie dans `callRoomRegistry` pour qu'un consumer hors du sous-arbre
+ * pool (ex. `ActiveConversationView` dans /icom) puisse la réutiliser via
+ * `<RoomContext.Provider>`.
+ */
+function RoomRegistrar({ meetingId }: { meetingId: Id<"meetings"> }) {
+  const room = useRoomContext();
+  useEffect(() => {
+    if (!room) return;
+    callRoomRegistry.register(meetingId, room);
+    return () => {
+      callRoomRegistry.unregister(meetingId, room);
+    };
+  }, [meetingId, room]);
+  return null;
+}
 
 /**
  * CallRoomMount — LiveKit invisible par slot du Centre d'Appels.
@@ -61,15 +80,15 @@ export function CallRoomMount({
         }
       }}
       onDisconnected={() => {
-        // Connexion jamais établie → erreur de transport, pas un raccroche.
-        // On laisse le slot vivre côté serveur ; la réconciliation ou un
-        // nouveau décrochage s'en occupera.
         if (!hasConnectedRef.current) return;
         onDisconnected(slot.meetingId);
       }}
-      // Ne sert qu'à maintenir la connexion en vie — pas d'UI
+      // Toujours invisible — la `Room` est exposée via `callRoomRegistry`
+      // pour que la vue iCom (ou autre consumer) la consomme via
+      // `<RoomContext.Provider>` dans son propre sous-arbre.
       className="sr-only"
     >
+      <RoomRegistrar meetingId={slot.meetingId} />
       <MicController isActive={isActive} />
       {isActive && <RoomAudioRenderer />}
     </LiveKitRoom>
@@ -77,27 +96,24 @@ export function CallRoomMount({
 }
 
 /**
- * Synchronise l'état du microphone local selon `isActive` et le mute manuel.
- * - isActive=false → mic off (slot en hold, silencieux des deux côtés)
- * - isActive=true + micMuted=false → mic on (l'agent parle et entend)
- * - isActive=true + micMuted=true  → mic off (mute manuel par l'agent)
+ * Synchronise mic + caméra selon `isActive` et l'état du store.
+ * - isActive=false → mic OFF + caméra OFF (slot parqué, silencieux des deux côtés)
+ * - isActive=true  → mic suit `!micMuted`, caméra suit `cameraEnabled`
  */
 function MicController({ isActive }: { isActive: boolean }) {
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
   const connectionState = useConnectionState();
-  const { micMuted } = useCallStore();
-  const enabled = isActive && !micMuted;
+  const { micMuted, cameraEnabled } = useCallStore();
+  const micShouldBeOn = isActive && !micMuted;
+  const cameraShouldBeOn = isActive && cameraEnabled;
   const isConnected = connectionState === ConnectionState.Connected;
 
   useEffect(() => {
     if (!room || !localParticipant || !isConnected) return;
     let cancelled = false;
-    // Appel idempotent : LiveKit ignore les no-ops. On attend que la room
-    // soit Connected pour éviter que setMicrophoneEnabled soit appelé avant
-    // l'établissement WebRTC (ce qui pouvait laisser le mic non publié).
     localParticipant
-      .setMicrophoneEnabled(enabled)
+      .setMicrophoneEnabled(micShouldBeOn)
       .catch((err) => {
         if (!cancelled) {
           // eslint-disable-next-line no-console
@@ -107,14 +123,37 @@ function MicController({ isActive }: { isActive: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [enabled, room, localParticipant, isConnected]);
+  }, [micShouldBeOn, room, localParticipant, isConnected]);
+
+  useEffect(() => {
+    if (!room || !localParticipant || !isConnected) return;
+    let cancelled = false;
+    localParticipant
+      .setCameraEnabled(cameraShouldBeOn)
+      .catch((err) => {
+        if (!cancelled) {
+          // eslint-disable-next-line no-console
+          console.warn("[CallSlot] setCameraEnabled failed:", err);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [cameraShouldBeOn, room, localParticipant, isConnected]);
 
   return null;
 }
 
 /**
  * Pool — monte un CallRoomMount par slot ayant un token.
- * À monter une seule fois dans CallCenterShell.
+ *
+ * MONTÉ AU NIVEAU GLOBAL (`AppShell`) pour que l'audio survive aux
+ * changements de route : un agent qui quitte /icom pendant un appel doit
+ * continuer à entendre son interlocuteur jusqu'à ce qu'il raccroche.
+ *
+ * Le pool est invisible (`sr-only`). Les `Room` LiveKit sont publiées dans
+ * `callRoomRegistry` et consommées par les vues UI dans /icom via
+ * `<RoomContext.Provider>` (voir CallCenterShell).
  */
 export function CallRoomPool({
   slots,
@@ -126,7 +165,7 @@ export function CallRoomPool({
   onDisconnected: (meetingId: Id<"meetings">) => void;
 }) {
   return (
-    <div className="pointer-events-none absolute h-0 w-0 overflow-hidden">
+    <div className="pointer-events-none fixed h-0 w-0 overflow-hidden">
       {slots.map((slot) => {
         if (!slot.token || !slot.wsUrl) return null;
         return (

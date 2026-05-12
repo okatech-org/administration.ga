@@ -26,7 +26,7 @@ import {
 	DialogDescription,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+import { DirectCallView } from "@workspace/agent-features/components/meetings";
 import { useMeeting } from "@/hooks/use-meeting";
 
 export type ActiveCallMediaType = "audio" | "video";
@@ -42,7 +42,7 @@ export function ActiveCallDialog({
 	mediaType,
 	onClose,
 }: ActiveCallDialogProps) {
-	const { token, wsUrl, connect, disconnect } = useMeeting(
+	const { meeting, token, wsUrl, connect, disconnect } = useMeeting(
 		meetingId ?? undefined,
 	);
 	const connectedRef = useRef<Id<"meetings"> | null>(null);
@@ -82,7 +82,7 @@ export function ActiveCallDialog({
 				if (!open) void handleHangUp();
 			}}
 		>
-			<DialogContent className="max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800">
+			<DialogContent className="sm:max-w-[420px] w-full h-[680px] max-h-[90vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800">
 				<DialogTitle className="sr-only">
 					{mediaType === "audio" ? "Appel audio" : "Appel vidéo"}
 				</DialogTitle>
@@ -121,7 +121,18 @@ export function ActiveCallDialog({
 							onDisconnected={onDisconnected}
 							className="flex flex-col flex-1"
 						>
-							<CustomCallUI onHangUp={handleHangUp} />
+							<DirectCallView
+								onHangUp={handleHangUp}
+								title={
+									// Le titre Convex est de la forme "Appel — Prénom Nom".
+									// On retire le préfixe pour ne montrer que le nom propre
+									// dans l'UI d'appel.
+									(meeting as { title?: string } | null)?.title?.replace(
+										/^Appel\s+[—-]\s+/,
+										"",
+									) ?? undefined
+								}
+							/>
 						</LiveKitRoom>
 					</div>
 				) : (

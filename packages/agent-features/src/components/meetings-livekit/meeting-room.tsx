@@ -4,8 +4,9 @@ import {
 import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 
-import { CustomCallUI } from "../meetings/custom-call-ui";
+import { DirectCallView } from "../meetings/DirectCallView";
 import { MeetingChatPanel } from "./MeetingChatPanel";
+import { MeetingStageView } from "./MeetingStageView";
 import { AlertCircle, Loader2, MessageSquare, Phone, Users, Video, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -47,7 +48,12 @@ export function MeetingRoom({
 	meetingId,
 	mediaType,
 }: MeetingRoomProps) {
-	const isVideo = mediaType === "video";
+	const { data: meetingDoc } = useAuthenticatedConvexQuery(
+		api.functions.meetings.get,
+		meetingId ? { meetingId } : "skip",
+	);
+	const isMeeting = (meetingDoc as any)?.type === "meeting";
+	const isVideo = mediaType === "video" || isMeeting;
 	const cleanupOnDisconnect = useCallback(() => {
 		onDisconnect();
 	}, [onDisconnect]);
@@ -119,19 +125,26 @@ export function MeetingRoom({
 						"flex flex-col flex-1 min-w-0",
 						chatOpen && showChatToggle && "md:mr-[320px]",
 					)}>
-						<CustomCallUI
-							onHangUp={handleUserHangUp}
-							mediaType={mediaType}
-							recording={
-								meetingId
-									? {
-										isRecording,
-										isPending: recordingPending,
-										onToggle: handleToggleRecording,
-									}
-									: undefined
-							}
-						/>
+						{isMeeting ? (
+							<MeetingStageView
+								meetingTitle={(meetingDoc as any)?.title ?? "Réunion"}
+								onHangUp={handleUserHangUp}
+								recording={
+									meetingId
+										? {
+											isRecording,
+											isPending: recordingPending,
+											onToggle: handleToggleRecording,
+										}
+										: undefined
+								}
+							/>
+						) : (
+							<DirectCallView
+								onHangUp={handleUserHangUp}
+								title={(meetingDoc as any)?.title}
+							/>
+						)}
 					</div>
 
 					{/* Chat side panel (réunion vidéo uniquement) */}

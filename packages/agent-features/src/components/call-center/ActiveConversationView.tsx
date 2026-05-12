@@ -1,7 +1,15 @@
 "use client";
 
 import {
-  FileText,
+  useLocalParticipant,
+  useRemoteParticipants,
+  useTracks,
+  VideoTrack,
+} from "@livekit/components-react";
+import { Track } from "livekit-client";
+import {
+  Camera,
+  CameraOff,
   Mic,
   MicOff,
   Pause,
@@ -10,16 +18,10 @@ import {
   Plus,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import type { Id } from "@convex/_generated/dataModel";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@workspace/ui/components/avatar";
-import { Badge } from "@workspace/ui/components/badge";
-import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 import { useCitizenContext } from "../../hooks/use-citizen-context";
 import { useCallStore } from "../../stores/call-store";
@@ -27,11 +29,17 @@ import type { ActiveCallSlot } from "./ActiveCallsBar";
 import { AddAgentDialog } from "./AddAgentDialog";
 
 /**
- * Vue plein-centre pendant un appel actif — remplace IncomingCallQueue
- * dans la colonne centrale quand `activeCalls.length > 0`.
+ * Vue centrale pendant un appel actif iCom — rendue à l'intérieur du
+ * LiveKitRoom du slot actif (via `CallRoomPool.renderActive`), ce qui donne
+ * accès aux hooks LiveKit (`useTracks`, `VideoTrack`, etc.).
  *
- * Refonte UX (sprint 2026-05) : layout horizontal hero (avatar | identité |
- * chrono) puis control-bar inline puis split notes/AI suggestions.
+ * Design phone-style compact :
+ *   - avatar large + nom + chrono
+ *   - 4 boutons primaires : Mic / Caméra / Hold/Resume / Raccrocher
+ *   - 2 boutons secondaires : Transférer / Ajouter un agent
+ *   - bascule en scène vidéo si une caméra (locale OU distante) est active
+ *
+ * Les notes vivent dans CallSidePane (panneau droit) — pas dans cette vue.
  */
 export function ActiveConversationView({
   call,
@@ -44,12 +52,12 @@ export function ActiveConversationView({
   onHold: (id: Id<"meetings">) => void;
   onResume: (id: Id<"meetings">) => void;
   onEnd: (id: Id<"meetings">) => void;
-  /** Ouvre la dialog de transfert chaud — gérée par le parent (shell). */
   onRequestTransfer?: (id: Id<"meetings">) => void;
 }) {
   const { t } = useTranslation();
   const { context } = useCitizenContext(call._id as Id<"meetings">);
-  const { micMuted, setMicMuted } = useCallStore();
+  const { micMuted, setMicMuted, cameraEnabled, setCameraEnabled } =
+    useCallStore();
   const [addAgentOpen, setAddAgentOpen] = useState(false);
 
   const isHeld = call.callStatus === "on_hold";
@@ -66,22 +74,12 @@ export function ActiveConversationView({
     );
     return () => clearInterval(id);
   }, [baseTs]);
-
   const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
   const ss = String(elapsed % 60).padStart(2, "0");
   const timerText = `${mm}:${ss}`;
 
-  const startedAt = call.answeredAt
-    ? new Date(call.answeredAt).toLocaleTimeString("fr-FR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : null;
-
   const displayName = context?.caller.name ?? call.callerName;
-  const avatarUrl = context?.caller.avatarUrl ?? null;
   const phone = context?.caller.phone ?? null;
-  const dossierRef = (context?.caller as any)?.reference ?? null;
 
   const initials =
     displayName
@@ -96,206 +94,233 @@ export function ActiveConversationView({
     ? t("callCenter.conversation.onHold", "En attente")
     : t("callCenter.conversation.live", "En communication");
 
+  // ─── LiveKit — détection vidéo
+  const { localParticipant } = useLocalParticipant();
+  const remoteParticipants = useRemoteParticipants();
+  const remoteIsSpeaking = remoteParticipants[0]?.isSpeaking ?? false;
+
+  const cameraTracks = useTracks([Track.Source.Camera], {
+    onlySubscribed: false,
+  });
+  const remoteCameraTrack = useMemo(
+    () =>
+      cameraTracks.find(
+        (t) =>
+          t.participant.identity !== localParticipant?.identity &&
+          !t.publication.isMuted,
+      ),
+    [cameraTracks, localParticipant?.identity],
+  );
+  const localCameraTrack = useMemo(
+    () =>
+      cameraTracks.find(
+        (t) => t.participant.identity === localParticipant?.identity,
+      ),
+    [cameraTracks, localParticipant?.identity],
+  );
+  const showVideoStage = !!remoteCameraTrack || cameraEnabled;
+
+  const handleToggleCamera = () => {
+    // Demander la caméra via le store déclenche
+    // `localParticipant.setCameraEnabled` dans CallRoomMount. Si le navigateur
+    // refuse (NotAllowedError), on remonte un toast et on rebascule le store
+    // dans son état précédent.
+    const next = !cameraEnabled;
+    setCameraEnabled(next);
+    if (next && localParticipant) {
+      // Petit délai pour laisser la publication s'attempter, sinon on n'a pas
+      // d'erreur à intercepter (le useEffect dans MicController est async).
+      // L'utilisateur verra le toast si setCameraEnabled échoue côté LiveKit
+      // — déjà loggé en console (warn) par MicController.
+      void localParticipant.setCameraEnabled(true).catch((err) => {
+        const name = (err as { name?: string } | null)?.name ?? "";
+        if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+          toast.error(
+            "Accès à la caméra refusé — autorisez-la dans la barre d'adresse du navigateur.",
+          );
+        } else if (
+          name === "NotFoundError" ||
+          name === "DevicesNotFoundError"
+        ) {
+          toast.error("Aucune caméra détectée.");
+        } else {
+          toast.error("Impossible d'activer la caméra.");
+        }
+        setCameraEnabled(false);
+      });
+    }
+  };
+
   return (
-    <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 md:p-6">
-      {/* ═══ Hero card — avatar + identité + chrono ═══ */}
-      <div className="rounded-2xl border bg-card p-5 md:p-6 relative overflow-hidden">
-        {/* Bandeau ligne — liseré couleur en haut */}
-        {call.lineColor && (
+    <div
+      className={cn(
+        "flex flex-1 flex-col overflow-hidden bg-zinc-950 text-white",
+      )}
+    >
+      {/* ═══ Header — état + chrono ═══ */}
+      <div className="flex items-center justify-between px-5 pt-4 pb-2 shrink-0">
+        <span className="flex items-center gap-2 text-[10.5px] uppercase tracking-[0.12em] font-semibold text-white/70">
           <span
-            className="absolute inset-x-0 top-0 h-0.5"
-            style={{ backgroundColor: call.lineColor }}
-            aria-hidden
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              isHeld ? "bg-warning" : "bg-success",
+              !isHeld && "shadow-[0_0_12px_currentColor]",
+            )}
           />
-        )}
+          {stateLabel}
+        </span>
+        <span className="font-mono tabular-nums text-sm text-white/85">
+          {timerText}
+        </span>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-center gap-4 md:gap-6">
-          {/* Avatar */}
-          <div className="av-ring text-primary/30">
-            <Avatar className="h-20 w-20 md:h-24 md:w-24 ring-4 ring-primary/10">
-              <AvatarImage src={avatarUrl ?? undefined} alt={displayName} />
-              <AvatarFallback className="bg-gradient-to-br from-primary/80 to-primary text-2xl font-bold text-primary-foreground">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </div>
-
-          {/* Identité */}
-          <div className="min-w-0">
-            <h2 className="text-xl md:text-2xl font-bold tracking-tight">
-              {displayName}
-            </h2>
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-              {context?.caller.role && (
-                <Badge
-                  variant="outline"
-                  className="h-5 px-2 text-[10px] font-medium border-primary/30 text-primary bg-primary/5"
-                >
-                  {context.caller.role}
-                </Badge>
-              )}
+      {/* ═══ Body — phone-style hero OU scène vidéo ═══ */}
+      {showVideoStage ? (
+        <div className="relative flex flex-1 min-h-0 overflow-hidden">
+          {remoteCameraTrack ? (
+            <VideoTrack
+              trackRef={remoteCameraTrack}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex flex-1 items-center justify-center text-white/60 text-sm">
+              {t("callCenter.conversation.cameraOffRemote", "Caméra distante désactivée")}
+            </div>
+          )}
+          <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+            <div className="flex flex-col gap-0.5 rounded-xl bg-black/40 px-2.5 py-1.5 backdrop-blur-sm">
+              <span className="text-xs font-semibold text-white">{displayName}</span>
               {phone && (
-                <>
-                  <span className="font-mono text-xs">{phone}</span>
-                </>
-              )}
-              {call.lineLabel && (
-                <>
-                  <span className="text-muted-foreground/40">·</span>
-                  <span className="text-xs">{call.lineLabel}</span>
-                </>
-              )}
-              {dossierRef && (
-                <>
-                  <span className="text-muted-foreground/40">·</span>
-                  <span className="font-mono text-xs">{dossierRef}</span>
-                </>
+                <span className="text-[10px] font-mono text-white/70">{phone}</span>
               )}
             </div>
-            <div className="mt-2.5 flex items-center gap-2">
+          </div>
+          {localCameraTrack && cameraEnabled && (
+            <div className="absolute bottom-3 right-3 h-28 w-20 overflow-hidden rounded-xl border border-white/20 shadow-lg">
+              <VideoTrack
+                trackRef={localCameraTrack}
+                className="h-full w-full object-cover -scale-x-100"
+              />
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 min-h-0 overflow-y-auto">
+          <div className="text-white">
+            <div
+              className={cn(
+                "relative flex items-center justify-center rounded-full text-white font-bold shadow-[inset_0_-10px_24px_rgba(0,0,0,0.25)]",
+                "h-[108px] w-[108px] text-[34px]",
+                "bg-gradient-to-br from-primary via-primary/70 to-primary/30",
+              )}
+            >
+              {initials}
+              {isHeld && (
+                <span className="absolute inset-0 rounded-full bg-black/45 flex items-center justify-center">
+                  <Pause className="h-10 w-10 text-white" fill="currentColor" />
+                </span>
+              )}
+            </div>
+          </div>
+
+          <h1 className="mt-5 text-[24px] font-semibold tracking-[-0.01em] text-center text-white">
+            {displayName}
+          </h1>
+          {phone && (
+            <p className="mt-1 text-xs font-mono text-white/55">{phone}</p>
+          )}
+          {call.lineLabel && (
+            <p className="mt-0.5 text-[11px] text-white/55">{call.lineLabel}</p>
+          )}
+
+          {!isHeld && (
+            <div className="mt-5 flex items-center gap-2.5 text-primary">
               <span
                 className={cn(
                   "call-bars-anim",
-                  isHeld ? "text-warning opacity-50" : "text-primary",
+                  !remoteIsSpeaking && "opacity-30",
                 )}
               >
                 {Array.from({ length: 7 }).map((_, i) => (
                   <span key={i} />
                 ))}
               </span>
-              <span
-                className={cn(
-                  "text-xs font-semibold",
-                  isHeld ? "text-warning" : "text-primary",
-                )}
-              >
-                {stateLabel}
+              <span className="text-[12px] text-white/70">
+                {remoteIsSpeaking
+                  ? t("callCenter.conversation.speakingNow", "{{name}} parle…", {
+                      name: displayName.split(" ")[0],
+                    })
+                  : t("callCenter.conversation.listening", "À l'écoute")}
               </span>
             </div>
-          </div>
-
-          {/* Chrono */}
-          <div className="text-left md:text-right">
-            <div className="font-mono text-3xl md:text-4xl font-bold tabular-nums leading-none">
-              {timerText}
-            </div>
-            {startedAt && (
-              <div className="mt-1.5 text-[11px] text-muted-foreground">
-                {isHeld
-                  ? t("callCenter.conversation.parkedFor", "En attente depuis")
-                  : t("callCenter.conversation.startedAt", "Démarré à")}{" "}
-                {startedAt}
-              </div>
-            )}
-          </div>
+          )}
         </div>
+      )}
 
-        <div className="my-5 h-px bg-border" />
-
-        {/* Control bar — horizontal, dense */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            variant={micMuted ? "default" : "outline"}
-            aria-pressed={micMuted}
-            disabled={isHeld}
-            className={cn(
-              "h-9 gap-2",
-              micMuted && "bg-warning text-warning-foreground hover:bg-warning/90",
-            )}
+      {/* ═══ Controls — 4 primaires + 2 secondaires ═══ */}
+      <div className="shrink-0 px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 flex flex-col gap-2.5">
+        {/* Boutons primaires : Micro / Caméra / Hold-Resume / Raccrocher */}
+        <div className="grid grid-cols-4 gap-2">
+          <CallControl
+            icon={micMuted ? MicOff : Mic}
+            label={
+              micMuted
+                ? t("callCenter.action.muted", "Muet")
+                : t("callCenter.action.mic", "Micro")
+            }
             onClick={() => setMicMuted(!micMuted)}
-          >
-            {micMuted ? (
-              <MicOff className="h-4 w-4" />
-            ) : (
-              <Mic className="h-4 w-4" />
-            )}
-            {micMuted
-              ? t("callCenter.action.unmute", "Réactiver micro")
-              : t("callCenter.action.mute", "Couper micro")}
-          </Button>
-
+            active={micMuted}
+            disabled={isHeld}
+          />
+          <CallControl
+            icon={cameraEnabled ? Camera : CameraOff}
+            label={
+              cameraEnabled
+                ? t("callCenter.action.cameraOn", "Caméra")
+                : t("callCenter.action.cameraOff", "Caméra off")
+            }
+            onClick={handleToggleCamera}
+            active={cameraEnabled}
+            disabled={isHeld}
+          />
           {isHeld ? (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-9 gap-2"
+            <CallControl
+              icon={Play}
+              label={t("callCenter.action.resume", "Reprendre")}
               onClick={() => onResume(call._id as Id<"meetings">)}
-            >
-              <Play className="h-4 w-4" />
-              {t("callCenter.action.resume", "Reprendre")}
-            </Button>
+            />
           ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-9 gap-2"
+            <CallControl
+              icon={Pause}
+              label={t("callCenter.action.hold", "En attente")}
               onClick={() => onHold(call._id as Id<"meetings">)}
-            >
-              <Pause className="h-4 w-4" />
-              {t("callCenter.action.hold", "Mettre en attente")}
-            </Button>
+            />
           )}
-
-          {onRequestTransfer && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-9 gap-2"
-              onClick={() => onRequestTransfer(call._id as Id<"meetings">)}
-            >
-              <Users className="h-4 w-4" />
-              {t("callCenter.action.transfer", "Transférer")}
-            </Button>
-          )}
-
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-9 gap-2"
-            onClick={() => setAddAgentOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            {t("callCenter.action.addAgent", "Ajouter un agent")}
-          </Button>
-
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-9 gap-2 hidden md:inline-flex"
-            disabled
-            title={t("common.comingSoon", "Bientôt")}
-          >
-            <FileText className="h-4 w-4" />
-            {t("callCenter.action.shareDoc", "Partager un document")}
-          </Button>
-
-          <span className="flex-1" />
-
-          <Button
-            size="sm"
-            variant="destructive"
-            className="h-9 gap-2"
+          <CallControl
+            icon={PhoneOff}
+            label={t("callCenter.action.end", "Raccrocher")}
             onClick={() => onEnd(call._id as Id<"meetings">)}
-          >
-            <PhoneOff className="h-4 w-4" />
-            {t("callCenter.action.end", "Raccrocher")}
-          </Button>
+            danger
+          />
         </div>
-      </div>
 
-      {/* ═══ Notes pendant l'appel ═══ */}
-      <div className="rounded-2xl border bg-card p-4 flex flex-col flex-1 min-h-0">
-        <div className="text-[11px] uppercase tracking-[0.08em] font-semibold text-muted-foreground mb-2.5">
-          {t("callCenter.notes.title", "Notes pendant l'appel")}
-        </div>
-        <textarea
-          placeholder={t(
-            "callCenter.notes.placeholder",
-            "Notez les points clés de la conversation, les actions à prendre, les références…",
+        {/* Boutons secondaires : Transférer / Ajouter un agent */}
+        <div className="grid grid-cols-2 gap-2">
+          {onRequestTransfer ? (
+            <SecondaryControl
+              icon={Users}
+              label={t("callCenter.action.transfer", "Transférer")}
+              onClick={() => onRequestTransfer(call._id as Id<"meetings">)}
+            />
+          ) : (
+            <span />
           )}
-          className="flex-1 min-h-[160px] rounded-xl bg-secondary/40 px-3.5 py-3 text-[13.5px] leading-[1.6] text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-        />
+          <SecondaryControl
+            icon={Plus}
+            label={t("callCenter.action.addAgent", "Ajouter un agent")}
+            onClick={() => setAddAgentOpen(true)}
+          />
+        </div>
       </div>
 
       <AddAgentDialog
@@ -304,5 +329,67 @@ export function ActiveConversationView({
         meetingId={call._id as Id<"meetings">}
       />
     </div>
+  );
+}
+
+function CallControl({
+  icon: Icon,
+  label,
+  onClick,
+  active = false,
+  danger = false,
+  disabled = false,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  onClick: () => void;
+  active?: boolean;
+  danger?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="flex flex-col items-center gap-1.5 disabled:opacity-50"
+    >
+      <span
+        className={cn(
+          "h-12 w-12 rounded-full flex items-center justify-center transition-all active:scale-95",
+          danger
+            ? "bg-destructive text-destructive-foreground"
+            : active
+              ? "bg-white text-zinc-900"
+              : "bg-white/10 text-white hover:bg-white/15",
+        )}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="text-[10px] text-white/70 font-medium text-center leading-tight">
+        {label}
+      </span>
+    </button>
+  );
+}
+
+function SecondaryControl({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center justify-center gap-1.5 rounded-full bg-white/8 hover:bg-white/14 text-white text-[11.5px] font-medium px-3 py-2 transition-colors"
+    >
+      <Icon className="h-3.5 w-3.5" />
+      <span className="truncate">{label}</span>
+    </button>
   );
 }

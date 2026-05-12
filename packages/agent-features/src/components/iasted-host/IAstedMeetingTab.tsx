@@ -33,7 +33,7 @@ import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { Switch } from "@workspace/ui/components/switch";
-import { CustomCallUI } from "../meetings/custom-call-ui";
+import { DirectCallView } from "../meetings/DirectCallView";
 import { MeetingStageView } from "../meetings-livekit/MeetingStageView";
 import { useOrg } from "../../shell/org-provider";
 import { useMeeting } from "../../hooks/use-meeting";
@@ -327,7 +327,10 @@ export function IAstedMeetingTab() {
 							onHangUp={handleDisconnect}
 						/>
 					) : (
-						<CustomCallUI onHangUp={handleDisconnect} />
+						<DirectCallView
+							onHangUp={handleDisconnect}
+							title={(activeMeetingData as any)?.title}
+						/>
 					)}
 				</LiveKitRoom>
 			</div>

@@ -7,7 +7,7 @@ import {
 } from "@livekit/components-react";
 import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
-import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+import { CitizenAudioCallView } from "@/components/meetings/CitizenAudioCallView";
 import type { VariantProps } from "class-variance-authority";
 import { Loader2, Phone, PhoneOff, ChevronDown, MapPin, MessageCircle } from "lucide-react";
 import Link from "next/link";
@@ -187,7 +187,7 @@ export function OrgCallButton({
 					className="flex-1 min-h-0 flex flex-col"
 					style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
 				>
-					<CustomCallUI onHangUp={handleHangUp} title={orgName} />
+					<CitizenAudioCallView onHangUp={handleHangUp} title={orgName} />
 				</LiveKitRoom>
 			) : (
 				<div className="h-full flex flex-col items-center justify-center gap-4 text-white">
@@ -318,7 +318,7 @@ export function OrgCallButton({
 				<Dialog open={isInCall} onOpenChange={(o) => !o && handleHangUp()}>
 					<DialogContent
 						autoFocus={false}
-						className="max-w-5xl sm:max-w-5xl w-full h-[80vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
+						className="sm:max-w-[420px] w-full h-[680px] max-h-[90vh] p-0 flex flex-col overflow-hidden bg-zinc-950 border-zinc-800"
 					>
 						<DialogTitle className="sr-only">
 							{orgName || t("meetings.callInProgress")}

@@ -4,7 +4,7 @@ import {
 import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 
-import { CustomCallUI } from "@/components/meetings/custom-call-ui";
+import { DirectCallView } from "@workspace/agent-features/components/meetings";
 import { MeetingChatPanel } from "@/components/meetings/MeetingChatPanel";
 import { MeetingStageView } from "@/components/meetings/MeetingStageView";
 import { AlertCircle, Loader2, MessageSquare, Phone, Users, Video, X } from "lucide-react";
@@ -154,18 +154,9 @@ export function MeetingRoom({
 							"flex flex-col flex-1 min-w-0",
 							chatOpen && showChatToggle && "md:mr-[320px]",
 						)}>
-							<CustomCallUI
+							<DirectCallView
 								onHangUp={handleUserHangUp}
-								mediaType={mediaType}
-								recording={
-									meetingId
-										? {
-											isRecording,
-											isPending: recordingPending,
-											onToggle: handleToggleRecording,
-										}
-										: undefined
-								}
+								title={title ?? (meetingDoc as any)?.title}
 							/>
 						</div>
 

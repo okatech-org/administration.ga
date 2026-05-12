@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { BackofficeIAstedWindow } from "@/components/ai/BackofficeIAstedWindow"
 import { SuperadminGuard } from "@/components/guards/SuperadminGuard"
 import { SuperadminSidebar } from "@/components/sidebars/superadmin-sidebar"
+import { GlobalCallAlert } from "@/components/meetings/global-call-alert"
 import { SidebarProvider } from "@/components/ui/sidebar"
 
 const SIDEBAR_STORAGE_KEY = "superadmin-sidebar-expanded"
@@ -40,6 +41,7 @@ export function BackofficeLayout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
         <BackofficeIAstedWindow />
+        <GlobalCallAlert />
       </SidebarProvider>
     </SuperadminGuard>
   )
