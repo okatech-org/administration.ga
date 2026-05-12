@@ -123,6 +123,10 @@ export const profilesTable = defineTable({
   .index("by_managed_org", ["managedByOrgId"])
   // Recherche de ressortissants par pays de résidence (filtre juridiction).
   .index("by_country_of_residence", ["countryOfResidence"])
+  // Recherche de ressortissants ayant signalé leur présence dans la juridiction
+  // (séjour temporaire < 6 mois). Cf. apps/agent-web/todos pour les points
+  // d'attention liés au cycle de vie de `signaledToOrgId`.
+  .index("by_signaled_org", ["signaledToOrgId"])
   .searchIndex("search_firstName", { searchField: "identity.firstName" })
   .searchIndex("search_lastName", { searchField: "identity.lastName" })
   .searchIndex("search_passportNumber", { searchField: "passportInfo.number" });

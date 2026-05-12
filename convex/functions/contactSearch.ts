@@ -191,9 +191,14 @@ async function loadCitizens(
 
 /**
  * Requêtes indexées parallèles : ressortissants gérés par `myOrgId` +
- * ressortissants résidant dans un des pays de juridiction. Fusion sans doublon
- * (priorité aux profils managedBy).
+ * ressortissants résidant dans un des pays de juridiction + ressortissants
+ * ayant signalé leur présence dans la juridiction (séjour temporaire).
+ * Fusion sans doublon (priorité : managedBy > résidence > signalement).
  * Utilisé par scope="jurisdiction" ET scope="backoffice" (avec org active).
+ *
+ * Note : on ne filtre pas ici sur la fraîcheur du signalement
+ * (`stayEndDate`) — `signaledToOrgId` n'est jamais nettoyé après expiration.
+ * Cf. `apps/agent-web/todos/signalement-cleanup-a-expiration.md`.
  */
 async function loadCitizensByOrgAndJurisdiction(
 	ctx: QueryCtx,
@@ -208,6 +213,11 @@ async function loadCitizensByOrgAndJurisdiction(
 		.withIndex("by_managed_org", (q) => q.eq("managedByOrgId", opts.myOrgId))
 		.take(opts.limit);
 
+	const signaledToPromise = ctx.db
+		.query("profiles")
+		.withIndex("by_signaled_org", (q) => q.eq("signaledToOrgId", opts.myOrgId))
+		.take(opts.limit);
+
 	// Pour chaque pays de juridiction, on charge via l'index country_of_residence.
 	// On prend `opts.limit` par pays pour laisser de la marge à la déduplication.
 	const byCountryPromises = opts.jurisdictionCountries.map((country) =>
@@ -219,8 +229,9 @@ async function loadCitizensByOrgAndJurisdiction(
 			.take(opts.limit),
 	);
 
-	const [managedBy, ...byCountryResults] = await Promise.all([
+	const [managedBy, signaledTo, ...byCountryResults] = await Promise.all([
 		managedByPromise,
+		signaledToPromise,
 		...byCountryPromises,
 	]);
 
@@ -237,6 +248,11 @@ async function loadCitizensByOrgAndJurisdiction(
 			seen.add(p._id as string);
 			merged.push(p);
 		}
+	}
+	for (const p of signaledTo) {
+		if (seen.has(p._id as string)) continue;
+		seen.add(p._id as string);
+		merged.push(p);
 	}
 
 	return merged.slice(0, opts.limit);
