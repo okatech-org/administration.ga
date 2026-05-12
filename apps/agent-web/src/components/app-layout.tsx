@@ -29,6 +29,7 @@ import {
 } from "@workspace/agent-features/components/iasted-host"
 import { VoicemailsList } from "@/components/call-center/VoicemailsList"
 import { HomeLandingSignIn } from "@/components/auth/HomeLandingSignIn"
+import { IAstedVoiceProvider } from "@/components/iasted/IAstedVoiceProvider"
 
 /**
  * Injected into <IAstedWindow>. Hosts the hooks (`useAdminAIChat`,
@@ -76,7 +77,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
         // (CallCenterShell dans iAppel rend déjà sa propre ActiveCallsBar).
         tab !== "icall" ? <GlobalActiveCallsBar /> : undefined
       }
-      wrapWithAIPresence={(body) => <AIPresenceProvider>{body}</AIPresenceProvider>}
+      wrapWithAIPresence={(body) => (
+        <AIPresenceProvider>
+          <IAstedVoiceProvider>{body}</IAstedVoiceProvider>
+        </AIPresenceProvider>
+      )}
     >
       {children}
     </AppShell>

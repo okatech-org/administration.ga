@@ -18,6 +18,17 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
     capacity: 5,
   },
 
+  // Realtime voice sessions (OpenAI gpt-4o-realtime via WebRTC).
+  // Coût élevé (audio output ~$0.24/min), on limite à 1 nouvelle session toutes
+  // les 30 secondes par utilisateur. La session active elle-même peut durer
+  // tant que la connexion WebRTC tient — c'est l'établissement qui est rate-limité.
+  aiRealtimeSession: {
+    kind: "token bucket",
+    rate: 2,
+    period: MINUTE,
+    capacity: 2,
+  },
+
   // ── Auth — brute-force protection ───────────────────────────
   // Login: 5 attempts per 15 min per email/IP
   "auth:login": {

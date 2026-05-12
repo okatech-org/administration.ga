@@ -16,6 +16,7 @@ import { CircleMenuReducedMotion } from "./CircleMenu.reduced-motion";
 import type { CircleMenuProps } from "./types";
 
 export type { CircleMenuItemConfig, CircleMenuProps } from "./types";
+export { IAstedTrigger3D, type IAstedTrigger3DProps } from "./IAstedTrigger3D";
 
 /**
  * CircleMenu — variante animée par défaut, statique si

@@ -15,9 +15,10 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { Menu, X } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type PointerEvent as ReactPointerEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
 import { CIRCLE_MENU, REDUCED_MOTION } from "../../tokens/animation";
+import { IAstedTrigger3D } from "./IAstedTrigger3D";
 import type { CircleMenuItemConfig, CircleMenuProps } from "./types";
 
 const pointOnArc = (i: number, n: number, r: number = CIRCLE_MENU.arcRadius) => {
@@ -88,10 +89,54 @@ export const CircleMenuReducedMotion = ({
 	defaultOpen = false,
 	onCloseComplete,
 	onTriggerClick,
+	// ── Mode 3D organique (animations désactivées via @media prefers-reduced-motion) ──
+	triggerVariant = "default",
+	voiceState = "idle",
+	audioLevel = 0,
+	onLongPress,
+	longPressDelayMs = 350,
+	voiceDisabled = false,
 }: CircleMenuProps) => {
 	const [isOpen, setIsOpen] = useState<boolean>(defaultOpen);
 
+	// Long-press detection (identique à la variante animée)
+	const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const longPressTriggeredRef = useRef(false);
+
+	const clearLongPressTimer = useCallback(() => {
+		if (longPressTimerRef.current) {
+			clearTimeout(longPressTimerRef.current);
+			longPressTimerRef.current = null;
+		}
+	}, []);
+
+	const handlePointerDown = useCallback(
+		(_event: ReactPointerEvent<HTMLButtonElement>) => {
+			if (!onLongPress || voiceDisabled) return;
+			longPressTriggeredRef.current = false;
+			clearLongPressTimer();
+			longPressTimerRef.current = setTimeout(() => {
+				longPressTriggeredRef.current = true;
+				if (typeof navigator !== "undefined" && navigator.vibrate) {
+					try { navigator.vibrate(15); } catch { /* ignore */ }
+				}
+				onLongPress();
+			}, longPressDelayMs);
+		},
+		[onLongPress, longPressDelayMs, voiceDisabled, clearLongPressTimer],
+	);
+
+	const handlePointerUp = useCallback(() => clearLongPressTimer(), [clearLongPressTimer]);
+	const handlePointerCancel = useCallback(() => clearLongPressTimer(), [clearLongPressTimer]);
+
+	useEffect(() => () => clearLongPressTimer(), [clearLongPressTimer]);
+
 	const handleTriggerClick = () => {
+		// Bypass si un long-press vient d'être déclenché (cohérent avec la variante animée).
+		if (longPressTriggeredRef.current) {
+			longPressTriggeredRef.current = false;
+			return;
+		}
 		if (isOpen) {
 			onTriggerClick?.();
 		} else {
@@ -104,6 +149,8 @@ export const CircleMenuReducedMotion = ({
 		onCloseComplete?.();
 	};
 
+	const is3D = triggerVariant === "3d-organic";
+
 	return (
 		<div
 			style={{
@@ -112,21 +159,40 @@ export const CircleMenuReducedMotion = ({
 			}}
 			className="relative flex items-center justify-center place-self-center transition-[width,height] duration-150"
 		>
-			{/* Trigger central */}
+			{/* Trigger central : variante 3D organique (auto-statique via @media reduce) OU disque classique */}
 			<div className="z-50 relative">
-				<button
-					type="button"
-					style={{ height: CIRCLE_MENU.itemSize, width: CIRCLE_MENU.itemSize }}
-					className={cn(
-						"rounded-full flex items-center justify-center cursor-pointer outline-none ring-0 z-50",
-						triggerClassName ?? "bg-foreground",
-					)}
-					onClick={handleTriggerClick}
-					aria-expanded={isOpen}
-					aria-label={isOpen ? "Interagir avec iAsted" : "Ouvrir iAsted"}
-				>
-					{openIcon}
-				</button>
+				{is3D ? (
+					<IAstedTrigger3D
+						voiceState={voiceState}
+						audioLevel={audioLevel}
+						size="sm"
+						isInterfaceOpen={isOpen}
+						disabled={voiceDisabled}
+						onClick={handleTriggerClick}
+						onPointerDown={handlePointerDown}
+						onPointerUp={handlePointerUp}
+						onPointerCancel={handlePointerCancel}
+						ariaLabel={
+							isOpen
+								? "iAsted ouvert — maintenir pour parler"
+								: "Ouvrir iAsted — maintenir pour parler"
+						}
+					/>
+				) : (
+					<button
+						type="button"
+						style={{ height: CIRCLE_MENU.itemSize, width: CIRCLE_MENU.itemSize }}
+						className={cn(
+							"rounded-full flex items-center justify-center cursor-pointer outline-none ring-0 z-50",
+							triggerClassName ?? "bg-foreground",
+						)}
+						onClick={handleTriggerClick}
+						aria-expanded={isOpen}
+						aria-label={isOpen ? "Interagir avec iAsted" : "Ouvrir iAsted"}
+					>
+						{openIcon}
+					</button>
+				)}
 
 				{/* Bouton close */}
 				<AnimatePresence>

@@ -28,7 +28,7 @@ import { useConvexAuth } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { IAstedTabId } from "@workspace/iasted";
+import type { IAstedTabId, IAstedVoiceController } from "@workspace/iasted";
 import { usePathname } from "@workspace/routing";
 import { SidebarProvider } from "@workspace/ui/components/sidebar";
 import { cn } from "@workspace/ui/lib/utils";
@@ -82,6 +82,16 @@ export interface AppShellProps {
 	 * polluting the web sidebar.
 	 */
 	extraNavSections?: NavSection[];
+	/**
+	 * Controller vocal injecté par l'app hôte. Quand fourni, le CircleMenu
+	 * adopte la variante 3D organique iAsted et le maintien long active la
+	 * conversation vocale OpenAI Realtime.
+	 *
+	 * L'app hôte construit ce controller via son hook `useIAstedHost()`
+	 * (cf. `apps/agent-web/src/components/iasted/use-iasted-host.ts`) qui
+	 * combine `useAction(api.ai.realtimeToken.create)` et `useRealtimeVoice`.
+	 */
+	voiceController?: IAstedVoiceController;
 }
 
 export function AppShell(props: AppShellProps) {
@@ -128,6 +138,7 @@ function DashboardLayout({
 	beforeChildren,
 	afterChildren,
 	extraNavSections,
+	voiceController,
 }: AppShellProps) {
 	const { isLoading, activeOrg, activeOrgId } = useOrg();
 	const { t } = useTranslation();
@@ -226,6 +237,7 @@ function DashboardLayout({
 					renderTab={renderIAstedTab}
 					renderCallQueueSlot={renderIAstedCallQueueSlot}
 					sidePanelOpen={isSidePanelOpen}
+					voiceController={voiceController}
 				/>
 			)}
 			<GlobalCallAlert />

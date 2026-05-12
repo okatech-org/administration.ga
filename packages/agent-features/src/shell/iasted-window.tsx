@@ -28,7 +28,9 @@ import {
   buildCircleMenuItems,
   defaultTriggerClassName,
   defaultTriggerIcon,
+  useIAstedVoiceController,
   type IAstedTabId,
+  type IAstedVoiceController,
 } from "@workspace/iasted"
 import { cn } from "@workspace/ui/lib/utils"
 import { useOrg } from "./org-provider"
@@ -52,17 +54,32 @@ export interface IAstedWindowProps {
    * dans la zone de contenu de la page au lieu de chevaucher le panneau.
    */
   sidePanelOpen?: boolean
+  /**
+   * Controller vocal injecté par l'app hôte (qui a accès à `useAction`
+   * pour récupérer un token OpenAI Realtime éphémère). Quand fourni, le
+   * trigger du CircleMenu adopte la variante 3D organique et le maintien
+   * long active la conversation vocale.
+   */
+  voiceController?: IAstedVoiceController
 }
 
 export function IAstedWindow({
   renderTab,
   renderCallQueueSlot,
   sidePanelOpen = false,
+  voiceController: voiceControllerProp,
 }: IAstedWindowProps) {
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<IAstedTabId>("ichat")
   const { activeOrg } = useOrg()
   const router = useRouter()
+  // Le voiceController peut venir de la prop (passée par AppShell) OU du
+  // context publié par un wrapper consumer (`IAstedVoiceContext.Provider`).
+  // Le context prime sur la prop pour permettre l'injection à un niveau
+  // intermédiaire (typiquement via `wrapWithAIPresence`).
+  const voiceControllerCtx = useIAstedVoiceController()
+  const voiceController: IAstedVoiceController | undefined =
+    voiceControllerCtx ?? voiceControllerProp
 
   const openWithTab = useCallback((tab: IAstedTabId) => {
     setActiveTab(tab)
@@ -120,6 +137,11 @@ export function IAstedWindow({
             items={menuItems}
             openIcon={defaultTriggerIcon("agent")}
             triggerClassName={defaultTriggerClassName("agent")}
+            triggerVariant={voiceController ? "3d-organic" : "default"}
+            voiceState={voiceController?.voiceState ?? "idle"}
+            audioLevel={voiceController?.audioLevel ?? 0}
+            voiceDisabled={voiceController ? !voiceController.available : false}
+            onLongPress={voiceController?.activateVoice}
           />
         </div>
       )}

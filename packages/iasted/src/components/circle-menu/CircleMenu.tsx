@@ -18,9 +18,10 @@
 
 import { AnimatePresence, motion, useAnimationControls } from "motion/react";
 import { Menu } from "lucide-react";
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { type PointerEvent as ReactPointerEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
 import { CIRCLE_MENU } from "../../tokens/animation";
+import { IAstedTrigger3D } from "./IAstedTrigger3D";
 import type { CircleMenuItemConfig, CircleMenuProps } from "./types";
 
 const C = CIRCLE_MENU;
@@ -169,10 +170,61 @@ export const CircleMenu = ({
 	itemClassName,
 	defaultOpen = false,
 	onCloseComplete,
+	// ── Mode 3D organique (iAsted vocal) ──
+	triggerVariant = "default",
+	voiceState = "idle",
+	audioLevel = 0,
+	onLongPress,
+	longPressDelayMs = 350,
+	voiceDisabled = false,
 }: CircleMenuProps) => {
 	const [isOpen, setIsOpen] = useState(false);
 	const triggerAnimate = useAnimationControls();
 	const containerRef = useRef<HTMLDivElement>(null);
+
+	// ── Long-press detection (mode 3D) ───────────────────────────
+	const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const longPressTriggeredRef = useRef(false);
+
+	const clearLongPressTimer = useCallback(() => {
+		if (longPressTimerRef.current) {
+			clearTimeout(longPressTimerRef.current);
+			longPressTimerRef.current = null;
+		}
+	}, []);
+
+	const handlePointerDown = useCallback(
+		(_event: ReactPointerEvent<HTMLButtonElement>) => {
+			if (!onLongPress || voiceDisabled) return;
+			longPressTriggeredRef.current = false;
+			clearLongPressTimer();
+			longPressTimerRef.current = setTimeout(() => {
+				longPressTriggeredRef.current = true;
+				// Feedback haptique léger si supporté
+				if (typeof navigator !== "undefined" && navigator.vibrate) {
+					try { navigator.vibrate(15); } catch { /* ignore */ }
+				}
+				onLongPress();
+			}, longPressDelayMs);
+		},
+		[onLongPress, longPressDelayMs, voiceDisabled, clearLongPressTimer],
+	);
+
+	const handlePointerUp = useCallback(
+		(_event: ReactPointerEvent<HTMLButtonElement>) => {
+			clearLongPressTimer();
+		},
+		[clearLongPressTimer],
+	);
+
+	const handlePointerCancel = useCallback(
+		(_event: ReactPointerEvent<HTMLButtonElement>) => {
+			clearLongPressTimer();
+		},
+		[clearLongPressTimer],
+	);
+
+	useEffect(() => () => clearLongPressTimer(), [clearLongPressTimer]);
 
 	const playOpenAnimation = useCallback(async () => {
 		setIsOpen(true);
@@ -199,6 +251,12 @@ export const CircleMenu = ({
 	}, []);
 
 	const handleTriggerClick = () => {
+		// Si un long-press vient d'être déclenché, on annule le clic suivant
+		// (sinon le tap qui suit le maintien rouvrirait/fermerait le menu).
+		if (longPressTriggeredRef.current) {
+			longPressTriggeredRef.current = false;
+			return;
+		}
 		if (isOpen) {
 			playCloseAnimation();
 		} else {
@@ -221,6 +279,8 @@ export const CircleMenu = ({
 		return () => document.removeEventListener("pointerdown", onPointerDown);
 	}, [isOpen, playCloseAnimation]);
 
+	const is3D = triggerVariant === "3d-organic";
+
 	return (
 		<div
 			ref={containerRef}
@@ -230,21 +290,25 @@ export const CircleMenu = ({
 			<GooFilter />
 
 			{/* Couche 1 : disques colorés sous le filtre goo (effet metaball).
-			   Trigger ancré en bas-à-droite ; les items déploient vers le haut-gauche. */}
+			   Trigger ancré en bas-à-droite ; les items déploient vers le haut-gauche.
+			   En mode 3D, on ne rend pas le trigger blob (il est remplacé par
+			   IAstedTrigger3D dans la couche overlay), seuls les item blobs restent. */}
 			<div
 				style={{ filter: `url(#${C.goo.filterId})` }}
 				className="absolute inset-0 flex items-end justify-end"
 			>
-				{/* Trigger blob */}
-				<motion.div
-					animate={triggerAnimate}
-					initial={false}
-					style={{ height: C.itemSize, width: C.itemSize }}
-					className={cn(
-						"rounded-full",
-						triggerClassName ?? "bg-foreground",
-					)}
-				/>
+				{/* Trigger blob (omis en mode 3D) */}
+				{!is3D && (
+					<motion.div
+						animate={triggerAnimate}
+						initial={false}
+						style={{ height: C.itemSize, width: C.itemSize }}
+						className={cn(
+							"rounded-full",
+							triggerClassName ?? "bg-foreground",
+						)}
+					/>
+				)}
 				{/* Item blobs (mêmes positions que la couche overlay) */}
 				{items.map((item, index) => (
 					<ItemBlob
@@ -259,25 +323,46 @@ export const CircleMenu = ({
 
 			{/* Couche 2 : icônes/labels nets, au-dessus du goo */}
 			<div className="absolute inset-0 flex items-end justify-end z-10">
-				{/* Trigger interactif (icône nette) */}
-				<motion.button
-					type="button"
-					animate={triggerAnimate}
-					initial={false}
-					style={{ height: C.itemSize, width: C.itemSize }}
-					className="relative rounded-full flex items-center justify-center cursor-pointer outline-none ring-0 hover:brightness-125 transition-all duration-100 bg-transparent pointer-events-auto"
-					onClick={handleTriggerClick}
-					aria-expanded={isOpen}
-					aria-label={isOpen ? "Interagir avec iAsted" : "Ouvrir iAsted"}
-				>
-					<motion.span
+				{/* Trigger interactif : variante 3D organique OU disque classique */}
+				{is3D ? (
+					<div className="pointer-events-auto">
+						<IAstedTrigger3D
+							voiceState={voiceState}
+							audioLevel={audioLevel}
+							size="md"
+							isInterfaceOpen={isOpen}
+							disabled={voiceDisabled}
+							onClick={handleTriggerClick}
+							onPointerDown={handlePointerDown}
+							onPointerUp={handlePointerUp}
+							onPointerCancel={handlePointerCancel}
+							ariaLabel={
+								isOpen
+									? "iAsted ouvert — maintenir pour parler"
+									: "Ouvrir iAsted — maintenir pour parler"
+							}
+						/>
+					</div>
+				) : (
+					<motion.button
+						type="button"
+						animate={triggerAnimate}
 						initial={false}
-						animate={{ scale: isOpen ? 1.2 : 1 }}
-						transition={C.springTriggerSubtle}
+						style={{ height: C.itemSize, width: C.itemSize }}
+						className="relative rounded-full flex items-center justify-center cursor-pointer outline-none ring-0 hover:brightness-125 transition-all duration-100 bg-transparent pointer-events-auto"
+						onClick={handleTriggerClick}
+						aria-expanded={isOpen}
+						aria-label={isOpen ? "Interagir avec iAsted" : "Ouvrir iAsted"}
 					>
-						{openIcon}
-					</motion.span>
-				</motion.button>
+						<motion.span
+							initial={false}
+							animate={{ scale: isOpen ? 1.2 : 1 }}
+							transition={C.springTriggerSubtle}
+						>
+							{openIcon}
+						</motion.span>
+					</motion.button>
+				)}
 
 				{/* Items interactifs (icônes nettes) */}
 				{items.map((item, index) => (

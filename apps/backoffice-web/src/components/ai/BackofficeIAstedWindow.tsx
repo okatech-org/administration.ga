@@ -29,6 +29,7 @@ import {
 import { useOrgSelector } from "@/hooks/use-org-selector";
 import { useSuperAdminData } from "@/hooks/use-superadmin-data";
 import { useBackofficeAIChat } from "@/hooks/useBackofficeAIChat";
+import { useIAstedHost } from "./use-iasted-host";
 
 // Tab components
 import { BackofficeChatTab } from "./tabs/BackofficeChatTab";
@@ -56,6 +57,17 @@ export function BackofficeIAstedWindow() {
 	// Dérivation du rôle effectif (pour les items CircleMenu admin-only)
 	const { isSuperAdmin, isBackOffice } = useSuperAdminData();
 	const role = isSuperAdmin ? "super_admin" : isBackOffice ? "admin" : "agent";
+
+	// Garde-fou UI : un utilisateur sans rôle admin/superadmin ne doit pas voir
+	// la fenêtre iAsted backoffice (le backend `realtimeToken.create` re-vérifie
+	// la permission, mais on évite d'instancier les hooks coûteux pour rien).
+	const hasBackofficeAccess = isSuperAdmin || isBackOffice;
+
+	// Controller vocal iAsted (OpenAI Realtime via WebRTC).
+	// Conditionnellement instancié — `useIAstedHost` est un hook, donc l'appel
+	// doit rester stable entre les renders : on l'appelle toujours, mais le
+	// CircleMenu n'utilisera le mode 3D que si l'accès est autorisé.
+	const voiceController = useIAstedHost({ orgId: activeOrgId ?? undefined });
 
 	// Chat IA
 	const chat = useBackofficeAIChat(activeOrgId);
@@ -101,6 +113,13 @@ export function BackofficeIAstedWindow() {
 						items={menuItems}
 						openIcon={defaultTriggerIcon("backoffice")}
 						triggerClassName={defaultTriggerClassName("backoffice")}
+						triggerVariant={hasBackofficeAccess ? "3d-organic" : "default"}
+						voiceState={voiceController.voiceState}
+						audioLevel={voiceController.audioLevel}
+						voiceDisabled={!hasBackofficeAccess || !voiceController.available}
+						onLongPress={
+							hasBackofficeAccess ? voiceController.activateVoice : undefined
+						}
 					/>
 				</div>
 			)}

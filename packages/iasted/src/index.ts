@@ -67,9 +67,39 @@ export {
 	CircleMenu,
 	CircleMenuAnimated,
 	CircleMenuReducedMotion,
+	IAstedTrigger3D,
 	type CircleMenuItemConfig,
 	type CircleMenuProps,
+	type IAstedTrigger3DProps,
 } from "./components/circle-menu";
+
+// Types — Realtime voice (consumés par CircleMenu, IAstedTrigger3D et le hook use-realtime-voice)
+export type {
+	VoiceState,
+	RealtimeMessage,
+	RealtimeVoiceTool,
+	RealtimeVoice,
+	RealtimeSessionInit,
+	RealtimeToolResult,
+	RealtimeToolHandler,
+	IAstedVoiceController,
+} from "./hooks/use-realtime-voice-types";
+
+// Hooks — Realtime voice + long-press
+export {
+	useRealtimeVoice,
+	type UseRealtimeVoiceOptions,
+	type UseRealtimeVoiceResult,
+} from "./hooks/use-realtime-voice";
+export {
+	useLongPress,
+	type UseLongPressOptions,
+	type UseLongPressResult,
+} from "./hooks/use-long-press";
+export {
+	IAstedVoiceContext,
+	useIAstedVoiceController,
+} from "./hooks/use-iasted-voice-context";
 
 // Components — Window
 export { WindowShell, WindowHeader, TabsNav } from "./components/window";
