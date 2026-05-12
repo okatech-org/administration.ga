@@ -19,6 +19,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 import { AIActionButton } from "./_shared/AIActionPanel";
 import {
 	useAuthenticatedConvexQuery,
@@ -79,6 +87,42 @@ export default function PlansPhase() {
 			console.error(error);
 		}
 	};
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = (plans ?? []).slice(0, 30).map((p: any) => ({
+		id: p._id,
+		type: "diplomatic-plan",
+		label: p.title ?? "Plan stratégique",
+		data: {
+			status: p.status,
+			category: p.category,
+			targetId: p.targetId,
+			objectivesCount: Array.isArray(p.objectives) ? p.objectives.length : 0,
+		},
+	}));
+	const pageActions: PageAction[] = [
+		{
+			id: "plans.regenerate_docs",
+			label: "Régénérer les documents d'un plan",
+			description:
+				"Régénère les documents Word d'un plan stratégique. params.planId requis.",
+			params: { planId: { type: "string" } },
+		},
+	];
+	usePageContext({
+		module: "diplomatic-plans",
+		title: "Plans stratégiques",
+		summary: `${plans?.length ?? 0} plan(s) stratégique(s).`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("plans.regenerate_docs", async (params) => {
+		const id = params?.planId as string | undefined;
+		if (!id) throw new Error("planId requis");
+		await handleRegenerate(id);
+		return { success: true };
+	});
 
 	if (isPending) {
 		return (

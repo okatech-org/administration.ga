@@ -54,7 +54,14 @@ import {
 import { useOrg } from "../../shell/org-provider"
 import { FlatCard } from "../../components/my-space/flat-card"
 import { SectionHeader } from "../../components/my-space/section-header"
-import { usePageContext } from "../../hooks/use-page-context"
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context"
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store"
 
 // ─── Chart colors ────────────────────────────────────────────────────────────
 const CHART_COLORS = [
@@ -94,13 +101,70 @@ export default function DashboardPage() {
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	)
 
+	const pageEntities: PageEntity[] = stats
+		? [
+			{
+				id: "kpi.requests-total",
+				type: "kpi",
+				label: "Demandes totales",
+				data: { value: stats.totalRequests ?? 0, period },
+			},
+			{
+				id: "kpi.requests-pending",
+				type: "kpi",
+				label: "Demandes en attente",
+				data: {
+					value: stats.statusCounts?.pending ?? 0,
+					period,
+				},
+			},
+			{
+				id: "kpi.requests-completed",
+				type: "kpi",
+				label: "Demandes complétées",
+				data: {
+					value: stats.statusCounts?.completed ?? 0,
+					period,
+				},
+			},
+			{
+				id: "kpi.agents-active",
+				type: "kpi",
+				label: "Agents actifs",
+				data: { value: agentData?.totalAgents ?? 0 },
+			},
+		]
+		: []
+	const pageActions: PageAction[] = [
+		{
+			id: "dashboard.set_period",
+			label: "Changer la période",
+			description:
+				"Met à jour la période d'analyse. params.period ∈ ['week','month','year'].",
+			params: { period: { type: "string" } },
+		},
+		{
+			id: "dashboard.export_json",
+			label: "Exporter les statistiques",
+			description:
+				"Télécharge un fichier JSON des KPIs courants. Aucun paramètre.",
+		},
+	]
 	usePageContext({
 		module: "dashboard",
 		title: "Tableau de bord",
-		summary: `Vue d'ensemble — période: ${period}.${stats ? ` ${stats.totalRequests ?? 0} demandes au total.` : ""}`,
-		visibleEntities: [],
-		availableActions: [],
+		summary: `Vue d'ensemble — période: ${period}.${stats ? ` ${stats.totalRequests ?? 0} demandes, ${stats.statusCounts?.pending ?? 0} en attente.` : ""}`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
 		scopedToolNames: ["getOrgDashboardStats"],
+	})
+	useRegisterPageAction("dashboard.set_period", async (params) => {
+		const p = params?.period as string | undefined
+		if (p !== "week" && p !== "month" && p !== "year") {
+			throw new Error("period must be 'week', 'month' or 'year'")
+		}
+		setPeriod(p)
+		return { success: true, period: p }
 	})
 
 	const handleExportJSON = async () => {
@@ -120,6 +184,11 @@ export default function DashboardPage() {
 			toast.error(t("admin.export.error"))
 		}
 	}
+
+	useRegisterPageAction("dashboard.export_json", async () => {
+		await handleExportJSON()
+		return { success: true }
+	})
 
 	const statCards = useMemo(() => {
 		if (!stats) return []

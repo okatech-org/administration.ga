@@ -8,7 +8,14 @@ import React, { useState, useMemo, useCallback, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { useOrg } from "../../shell/org-provider"
-import { usePageContext } from "../../hooks/use-page-context"
+import {
+  usePageContext,
+  useRegisterPageAction,
+} from "../../hooks/use-page-context"
+import type {
+  PageAction,
+  PageEntity,
+} from "../../stores/page-context-store"
 import { useModuleAccess } from "../../components/shared/access-gate"
 import { useOrgModules } from "../../hooks/useOrgModules"
 import { useCanDoTask } from "../../hooks/useCanDoTask"
@@ -1960,13 +1967,80 @@ export default function IDocumentPage() {
     activeOrgId ? { orgId: activeOrgId } : "skip"
   )
 
+  const pageEntities: PageEntity[] = (rawDocuments as any[])
+    .slice(0, 30)
+    .map((d: any) => ({
+      id: d._id,
+      type: "document",
+      label: d.title ?? d.fileName ?? "Document sans titre",
+      data: {
+        status: d.status,
+        confidentiality: d.confidentialityLevel,
+        source: d.source,
+        folderId: d.folderId,
+        mimeType: d.mimeType,
+        createdAt: d._creationTime,
+      },
+    }))
+  const pageActions: PageAction[] = [
+    {
+      id: "idocument.set_search",
+      label: "Rechercher dans le coffre",
+      description: "Filtre les documents par titre. params.query (string).",
+      params: { query: { type: "string" } },
+    },
+    {
+      id: "idocument.set_status_filter",
+      label: "Filtrer par statut",
+      description:
+        "Filtre la vue par statut de document. params.status ∈ ['all','draft','final','signed','archived'].",
+      params: { status: { type: "string" } },
+    },
+    {
+      id: "idocument.open_folder",
+      label: "Ouvrir un dossier",
+      description:
+        "Navigue dans l'arborescence du coffre. params.folderId requis (ou null pour la racine).",
+      params: { folderId: { type: "string" } },
+    },
+    {
+      id: "idocument.set_view_mode",
+      label: "Changer la vue",
+      description:
+        "Bascule entre la vue grille et la vue liste. params.mode ∈ ['grid','list'].",
+      params: { mode: { type: "string" } },
+    },
+  ]
   usePageContext({
     module: "idocument",
     title: "iDocument",
     summary: `${(rawDocuments as any[]).length} document(s) dans le coffre.${search ? ` Recherche: "${search}".` : ""}${statusFilter !== "all" ? ` Statut: ${statusFilter}.` : ""}`,
-    visibleEntities: [],
-    availableActions: [],
+    visibleEntities: pageEntities,
+    availableActions: pageActions,
     scopedToolNames: [],
+  })
+  useRegisterPageAction("idocument.set_search", async (params) => {
+    setSearch(String(params?.query ?? ""))
+    return { success: true }
+  })
+  useRegisterPageAction("idocument.set_status_filter", async (params) => {
+    const status = params?.status as string | undefined
+    if (!status) throw new Error("status requis")
+    setStatusFilter(status as DocStatus | "all")
+    return { success: true }
+  })
+  useRegisterPageAction("idocument.open_folder", async (params) => {
+    const folderId = params?.folderId
+    setCurrentFolderId(folderId === null ? null : String(folderId ?? ""))
+    return { success: true }
+  })
+  useRegisterPageAction("idocument.set_view_mode", async (params) => {
+    const mode = params?.mode as string | undefined
+    if (mode !== "grid" && mode !== "list") {
+      throw new Error("mode must be 'grid' or 'list'")
+    }
+    setViewMode(mode as ViewMode)
+    return { success: true }
   })
 
   // Upload mutation

@@ -22,6 +22,14 @@ import { useEffect, useState } from "react";
 import { useAction, useMutation } from "convex/react";
 import { toast } from "sonner";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 import { AIActionPanel, AIActionButton } from "./_shared/AIActionPanel";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
@@ -117,6 +125,63 @@ export default function LettresPhase() {
 	const filteredPlans = plans?.filter(
 		(p) => selectedTargetId && p.targetId === selectedTargetId,
 	);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = (letters ?? [])
+		.slice(0, 30)
+		.map((l: any) => ({
+			id: l._id,
+			type: "diplomatic-letter",
+			label: l.subject ?? "Lettre",
+			data: {
+				status: l.status,
+				letterFormat: l.letterFormat,
+				sentAt: l.sentAt,
+				recipientName: l.recipientName,
+				targetId: l.targetId,
+			},
+		}));
+	const pageActions: PageAction[] = [
+		{
+			id: "lettres.open_draft",
+			label: "Rédiger une nouvelle lettre",
+			description:
+				"Ouvre le dialogue de rédaction IA. params.targetId optionnel, params.planId optionnel.",
+			params: {
+				targetId: { type: "string" },
+				planId: { type: "string" },
+			},
+		},
+		{
+			id: "lettres.export_docx",
+			label: "Exporter une lettre en .docx",
+			description:
+				"Génère le document Word d'une lettre. params.letterId requis.",
+			params: { letterId: { type: "string" } },
+		},
+	];
+	usePageContext({
+		module: "diplomatic-lettres",
+		title: "Lettres diplomatiques",
+		summary: `${letters?.length ?? 0} lettre(s)${eligibleTargets ? ` · ${eligibleTargets.length} cible(s) éligibles` : ""}.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("lettres.open_draft", async (params) => {
+		const tid = params?.targetId as string | undefined;
+		const pid = params?.planId as string | undefined;
+		if (tid) setSelectedTargetId(tid);
+		if (pid) setSelectedPlanId(pid);
+		setShowDraftDialog(true);
+		return { success: true };
+	});
+	useRegisterPageAction("lettres.export_docx", async (params) => {
+		const id = params?.letterId as Id<"diplomaticLetters"> | undefined;
+		if (!id) throw new Error("letterId requis");
+		await requestDocx({ letterId: id });
+		return { success: true };
+	});
 
 	// Pre-remplir depuis les search params (navigation depuis $targetId.tsx ou plans.tsx)
 	const targetIdParam = searchParams.get("targetId");

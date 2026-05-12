@@ -33,6 +33,14 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useOrg } from "../../shell/org-provider";
 import { useCanDoTask } from "../../hooks/useCanDoTask";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
@@ -128,6 +136,85 @@ export default function ConsularProfilesPage() {
 	// ── Pagination ────────────────────────────────────────────────────────────
 	const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
 	const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = paginated.slice(0, 30).map((p: any) => ({
+		id: p._id,
+		type: "citizen-profile",
+		label: `${p.identity?.firstName ?? ""} ${p.identity?.lastName ?? ""}`.trim() || "Profil",
+		data: {
+			requestCount: p.requestCount,
+			completionScore: p.completionScore,
+			passportExpiry: p.passportInfo?.expiryDate,
+			lastActivity: p._creationTime,
+		},
+	}));
+	const pageActions: PageAction[] = [
+		{
+			id: "profiles-search.set_search",
+			label: "Rechercher un citoyen",
+			description: "Filtre par nom/email. params.query (string).",
+			params: { query: { type: "string" } },
+		},
+		{
+			id: "profiles-search.set_sort",
+			label: "Changer le tri",
+			description:
+				"Trie la liste. params.key ∈ ['requests','name_asc','name_desc','recent','score','passport_urgency'].",
+			params: { key: { type: "string" } },
+		},
+		{
+			id: "profiles-search.set_page",
+			label: "Aller à une page",
+			description:
+				"Change de page. params.page (number, 1-indexé) ou params.delta (entier relatif).",
+			params: { page: { type: "number" }, delta: { type: "number" } },
+		},
+		{
+			id: "profiles-search.open_profile",
+			label: "Ouvrir un profil",
+			description:
+				"Navigue vers la page détail d'un profil. params.profileId requis (depuis les entités visibles).",
+			params: { profileId: { type: "string" } },
+		},
+	];
+	usePageContext({
+		module: "profiles-search",
+		title: "Profils citoyens",
+		summary: `${sorted.length} profil(s)${debouncedSearch ? ` (recherche "${debouncedSearch}")` : ""} · Tri: ${sortKey} · Page ${page}/${totalPages}.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("profiles-search.set_search", async (params) => {
+		const q = String(params?.query ?? "");
+		setSearch(q);
+		setDebouncedSearch(q);
+		setPage(1);
+		return { success: true };
+	});
+	useRegisterPageAction("profiles-search.set_sort", async (params) => {
+		const k = params?.key as SortKey | undefined;
+		if (!k) throw new Error("key requis");
+		setSortKey(k);
+		setPage(1);
+		return { success: true };
+	});
+	useRegisterPageAction("profiles-search.set_page", async (params) => {
+		const p = params?.page as number | undefined;
+		const d = params?.delta as number | undefined;
+		if (typeof p === "number") setPage(Math.max(1, Math.min(totalPages, p)));
+		else if (typeof d === "number")
+			setPage((cur) => Math.max(1, Math.min(totalPages, cur + d)));
+		else throw new Error("page ou delta requis");
+		return { success: true };
+	});
+	useRegisterPageAction("profiles-search.open_profile", async (params) => {
+		const id = params?.profileId as string | undefined;
+		if (!id) throw new Error("profileId requis");
+		router.push(`/profiles/${id}`);
+		return { success: true };
+	});
 
 	// Permission guard
 	if (!canDo("profiles.view")) {

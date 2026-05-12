@@ -24,7 +24,14 @@ import { motion } from "motion/react";
 import { FlatCard } from "../../components/my-space/flat-card";
 import { useOrg } from "../../shell/org-provider";
 import { useOrgModules } from "../../hooks/useOrgModules";
-import { usePageContext } from "../../hooks/use-page-context";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -70,13 +77,50 @@ export default function ITemplatesPage() {
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
 
+	const pageEntities: PageEntity[] = (templates ?? [])
+		.slice(0, 30)
+		.map((tpl: any) => ({
+			id: tpl._id,
+			type: "template",
+			label: tpl.name ?? "Modèle sans nom",
+			data: {
+				type: tpl.type,
+				version: tpl.version,
+				updateAvailable: Boolean(tpl.sourceUpdateAvailable),
+			},
+		}));
+	const pageActions: PageAction[] = [
+		{
+			id: "itemplates.open_create",
+			label: "Créer un modèle",
+			description:
+				"Ouvre la modale de création de modèle (vierge ou cloné). Aucun paramètre.",
+		},
+		{
+			id: "itemplates.open_editor",
+			label: "Éditer un modèle",
+			description:
+				"Ouvre l'éditeur d'un modèle existant. params.templateId requis (depuis les entités visibles).",
+			params: { templateId: { type: "string" } },
+		},
+	];
 	usePageContext({
 		module: "itemplates",
 		title: "Modèles de documents",
 		summary: `${templates?.length ?? 0} modèle(s) configuré(s) pour cette organisation.`,
-		visibleEntities: [],
-		availableActions: [],
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
 		scopedToolNames: [],
+	});
+	useRegisterPageAction("itemplates.open_create", async () => {
+		setCreateOpen(true);
+		return { success: true };
+	});
+	useRegisterPageAction("itemplates.open_editor", async (params) => {
+		const id = params?.templateId as string | undefined;
+		if (!id) throw new Error("templateId requis");
+		router.push(`/itemplates/${id}`);
+		return { success: true };
 	});
 
 	if (!activeOrgId) {

@@ -5,6 +5,7 @@ import {
 	type PageAction,
 	type PageContextSnapshot,
 	type PageEntity,
+	type ShellContextSnapshot,
 } from "../stores/page-context-store";
 
 export type UsePageContextInput = {
@@ -82,6 +83,9 @@ export function usePageContext(input: UsePageContextInput): void {
  * - Le handler est remplacé si le composant rerender avec une nouvelle
  *   référence — `useCallback` côté appelant si vous voulez stabiliser.
  * - Désinscrit automatiquement au démontage.
+ *
+ * S'utilise aussi bien pour les actions page que pour les actions shell —
+ * les handlers vivent dans la même map.
  */
 export function useRegisterPageAction(
 	id: string,
@@ -97,4 +101,45 @@ export function useRegisterPageAction(
 		const unregister = pageContextStore.registerAction(id, wrapped);
 		return unregister;
 	}, [id]);
+}
+
+export type UseShellContextInput = {
+	summary?: string;
+	availableActions: PageAction[];
+};
+
+/**
+ * Déclare le contexte « shell » — actions globales disponibles peu importe
+ * la page courante (toggle thème, basculer une org, ouvrir un panneau...).
+ *
+ * À appeler une seule fois dans le composant `AppShell`. Le snapshot est
+ * fusionné côté formatter avec le snapshot page pour donner à l'IA la
+ * vue complète des actions exécutables.
+ *
+ * Les handlers s'enregistrent via `useRegisterPageAction(id, fn)` comme
+ * pour les actions page (mêmes IDs, même map). Convention : préfixer les
+ * IDs shell par `shell.` pour éviter les collisions (`shell.toggle_theme`).
+ */
+export function useShellContext(input: UseShellContextInput): void {
+	const stableKey = useMemo(
+		() =>
+			JSON.stringify({
+				summary: input.summary ?? "",
+				availableActions: input.availableActions,
+			}),
+		[input.summary, input.availableActions],
+	);
+
+	useEffect(() => {
+		const snapshot: ShellContextSnapshot = {
+			summary: input.summary,
+			availableActions: input.availableActions,
+			updatedAt: Date.now(),
+		};
+		pageContextStore.setShellSnapshot(snapshot);
+		return () => {
+			pageContextStore.setShellSnapshot(null);
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [stableKey]);
 }

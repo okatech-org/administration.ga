@@ -25,6 +25,14 @@ import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
 } from "@workspace/api/hooks";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 export default function AgentNewAppointmentPage() {
 	const { t } = useTranslation();
@@ -127,6 +135,135 @@ export default function AgentNewAppointmentPage() {
 		!!date &&
 		!!startTime &&
 		!isSubmitting;
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = [
+		...(profiles as any[] | undefined ?? [])
+			.slice(0, 10)
+			.map((p: any) => ({
+				id: p._id,
+				type: "citizen-profile",
+				label: `${p.identity?.firstName ?? ""} ${p.identity?.lastName ?? ""}`.trim() || "Profil",
+				data: { selected: p._id === attendeeProfileId },
+			})),
+		...(services as any[] | undefined ?? [])
+			.slice(0, 10)
+			.map((s: any) => ({
+				id: s._id,
+				type: "service",
+				label: s.serviceName ?? s.service?.slug ?? "Service",
+				data: { selected: s._id === orgServiceId },
+			})),
+		...((availableSlots as any[] | undefined) ?? [])
+			.slice(0, 10)
+			.map((slot: any) => ({
+				id: `${date}T${slot.startTime}`,
+				type: "available-slot",
+				label: `${date} ${slot.startTime}`,
+				data: {
+					startTime: slot.startTime,
+					selected: slot.startTime === startTime,
+				},
+			})),
+	];
+	const pageActions: PageAction[] = [
+		{
+			id: "appointment-new.search_citizen",
+			label: "Rechercher un citoyen",
+			description: "Met à jour la recherche citoyen. params.query (string).",
+			params: { query: { type: "string" } },
+		},
+		{
+			id: "appointment-new.select_citizen",
+			label: "Sélectionner un citoyen",
+			description:
+				"Choisit un citoyen. params.profileId requis (depuis les entités visibles).",
+			params: { profileId: { type: "string" } },
+		},
+		{
+			id: "appointment-new.select_service",
+			label: "Choisir un service",
+			description: "params.orgServiceId requis.",
+			params: { orgServiceId: { type: "string" } },
+		},
+		{
+			id: "appointment-new.set_date",
+			label: "Fixer la date",
+			description: "params.date au format YYYY-MM-DD.",
+			params: { date: { type: "string" } },
+		},
+		{
+			id: "appointment-new.select_slot",
+			label: "Choisir un créneau",
+			description:
+				"Sélectionne un créneau disponible. params.startTime requis (HH:MM).",
+			params: { startTime: { type: "string" } },
+		},
+		{
+			id: "appointment-new.set_appointment_type",
+			label: "Type de rendez-vous",
+			description: "params.type ∈ ['deposit','pickup'].",
+			params: { type: { type: "string" } },
+		},
+		{
+			id: "appointment-new.submit",
+			label: "Créer le rendez-vous",
+			description:
+				"Crée le rendez-vous une fois tous les champs renseignés. Confirmation requise.",
+			requiresConfirmation: true,
+		},
+	];
+	usePageContext({
+		module: "appointment-new",
+		title: "Nouveau rendez-vous",
+		summary: `Création RDV · Citoyen: ${selectedProfile ? `${selectedProfile.identity?.firstName ?? ""} ${selectedProfile.identity?.lastName ?? ""}`.trim() : "—"} · Service: ${selectedService?.serviceName ?? "—"} · ${date || "(pas de date)"} ${startTime || ""}.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("appointment-new.search_citizen", async (params) => {
+		setSearchTerm(String(params?.query ?? ""));
+		return { success: true };
+	});
+	useRegisterPageAction("appointment-new.select_citizen", async (params) => {
+		const id = params?.profileId as string | undefined;
+		if (!id) throw new Error("profileId requis");
+		setAttendeeProfileId(id);
+		return { success: true };
+	});
+	useRegisterPageAction("appointment-new.select_service", async (params) => {
+		const id = params?.orgServiceId as string | undefined;
+		if (!id) throw new Error("orgServiceId requis");
+		setOrgServiceId(id);
+		return { success: true };
+	});
+	useRegisterPageAction("appointment-new.set_date", async (params) => {
+		const d = params?.date as string | undefined;
+		if (!d) throw new Error("date requise");
+		setDate(d);
+		return { success: true };
+	});
+	useRegisterPageAction("appointment-new.select_slot", async (params) => {
+		const st = params?.startTime as string | undefined;
+		if (!st) throw new Error("startTime requis");
+		setStartTime(st);
+		return { success: true };
+	});
+	useRegisterPageAction(
+		"appointment-new.set_appointment_type",
+		async (params) => {
+			const t = params?.type as string | undefined;
+			if (t !== "deposit" && t !== "pickup") {
+				throw new Error("type must be 'deposit' or 'pickup'");
+			}
+			setAppointmentType(t);
+			return { success: true };
+		},
+	);
+	useRegisterPageAction("appointment-new.submit", async () => {
+		await handleSubmit();
+		return { success: true };
+	});
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4 md:p-6 max-w-4xl mx-auto w-full">

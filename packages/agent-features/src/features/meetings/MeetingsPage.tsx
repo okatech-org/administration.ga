@@ -21,7 +21,14 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { useOrg } from "../../shell";
 import { useMeeting } from "../../hooks/use-meeting";
-import { usePageContext } from "../../hooks/use-page-context";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 // ─── DI props ────────────────────────────────────────────────────────────────
 
@@ -82,12 +89,60 @@ export default function MeetingsPage({
 		);
 	const meetings = meetingsData?.meetings;
 
+	const pageEntities: PageEntity[] = (meetings ?? [])
+		.slice(0, 30)
+		.map((m: any) => ({
+			id: m._id,
+			type: "meeting",
+			label: m.title ?? "Réunion sans titre",
+			data: {
+				status: m.status,
+				type: m.type,
+				mediaType: m.mediaType,
+				startedAt: m.startedAt,
+				scheduledFor: m.scheduledFor,
+				participantCount: m.participantIds?.length ?? 0,
+			},
+		}));
+
+	const pageActions: PageAction[] = [
+		{
+			id: "meetings.create",
+			label: "Créer une réunion",
+			description:
+				"Crée et rejoint immédiatement une nouvelle réunion audio+vidéo. Aucun paramètre.",
+			requiresConfirmation: true,
+		},
+		{
+			id: "meetings.join",
+			label: "Rejoindre une réunion",
+			description:
+				"Rejoint une réunion existante. params.meetingId requis (depuis les entités visibles).",
+			params: { meetingId: { type: "string" } },
+		},
+		{
+			id: "meetings.end",
+			label: "Terminer la réunion active",
+			description:
+				"Termine la réunion en cours si l'utilisateur en a l'autorité. params.meetingId optionnel (défaut = réunion active).",
+			requiresConfirmation: true,
+			params: { meetingId: { type: "string" } },
+		},
+		{
+			id: "meetings.export_ics",
+			label: "Exporter une réunion en iCal",
+			description:
+				"Télécharge un fichier .ics pour ajouter la réunion à un agenda. params.meetingId requis.",
+			params: { meetingId: { type: "string" } },
+		},
+	];
+
 	usePageContext({
 		module: "meetings",
 		title: "Réunions",
 		summary: `${meetings?.length ?? 0} réunion(s).${activeMeetingId ? " Réunion active." : ""}`,
-		visibleEntities: [],
-		availableActions: [],
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
 		scopedToolNames: [],
 	});
 
@@ -153,6 +208,32 @@ export default function MeetingsPage({
 		await disconnect(activeMeetingId);
 		setActiveMeetingId(null);
 	}, [activeMeetingId, disconnect]);
+
+	// ─── iAsted action handlers ──────────────────────────────
+	useRegisterPageAction("meetings.create", async () => {
+		await handleCreateMeeting();
+		return { success: true };
+	});
+	useRegisterPageAction("meetings.join", async (params) => {
+		const id = params?.meetingId as Id<"meetings"> | undefined;
+		if (!id) throw new Error("meetingId requis");
+		handleJoinMeeting(id);
+		return { success: true };
+	});
+	useRegisterPageAction("meetings.end", async (params) => {
+		const id =
+			(params?.meetingId as Id<"meetings"> | undefined) ?? activeMeetingId;
+		if (!id) throw new Error("Aucune réunion active");
+		await endMeeting.mutateAsync({ meetingId: id });
+		if (id === activeMeetingId) await handleDisconnect();
+		return { success: true };
+	});
+	useRegisterPageAction("meetings.export_ics", async (params) => {
+		const id = params?.meetingId as Id<"meetings"> | undefined;
+		if (!id) throw new Error("meetingId requis");
+		await handleExportIcs(id);
+		return { success: true };
+	});
 
 	if (token && wsUrl && activeMeetingId) {
 		return (

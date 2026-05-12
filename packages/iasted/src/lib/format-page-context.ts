@@ -39,40 +39,88 @@ export interface PageContextLike {
 	scopedToolNames?: string[];
 }
 
+export interface ShellContextLike {
+	summary?: string;
+	availableActions: PageActionLike[];
+}
+
 const NO_CONTEXT = `## CONTEXTE PAGE COURANT
 Aucune page applicative active. Si l'utilisateur fait référence à un écran,
 demandez-lui d'ouvrir le module concerné ou proposez une navigation via
 \`navigate_to_module\`.`;
 
+/**
+ * Sérialise le contexte courant (page + shell) en bloc texte injectable
+ * dans le `instructions` d'une session OpenAI Realtime via `session.update`.
+ *
+ * Accepte deux formes d'entrée pour rétro-compatibilité :
+ * - `formatPageContextForVoice(pageSnapshot)` — comportement initial
+ * - `formatPageContextForVoice({ page, shell })` — fusion explicite
+ */
 export function formatPageContextForVoice(
-	snapshot: PageContextLike | null | undefined,
+	input:
+		| PageContextLike
+		| null
+		| undefined
+		| { page?: PageContextLike | null; shell?: ShellContextLike | null },
 ): string {
-	if (!snapshot) return NO_CONTEXT;
+	const { page, shell } = normalizeInput(input);
 
 	const lines: string[] = [];
-	lines.push("## CONTEXTE PAGE COURANT");
-	lines.push(`Page : ${snapshot.title} (${snapshot.pathname})`);
-	lines.push(`Module : ${snapshot.module}`);
-	if (snapshot.summary) {
-		lines.push(`État : ${snapshot.summary}`);
+
+	// ── Bloc shell (actions globales, toujours présent si déclaré) ──
+	if (shell && shell.availableActions.length > 0) {
+		lines.push("## ACTIONS GLOBALES (SHELL)");
+		if (shell.summary) {
+			lines.push(`État global : ${shell.summary}`);
+		}
+		lines.push(
+			"Actions disponibles partout dans l'application (déclenchables via `execute_page_action`) :",
+		);
+		for (const action of shell.availableActions) {
+			const confirm = action.requiresConfirmation
+				? " — CONFIRMATION REQUISE"
+				: "";
+			lines.push(`- ${action.id} : ${action.description}${confirm}`);
+			if (action.params && Object.keys(action.params).length > 0) {
+				lines.push(`  paramètres : ${formatParamsSummary(action.params)}`);
+			}
+		}
+		lines.push("");
 	}
 
-	if (snapshot.visibleEntities.length > 0) {
+	// ── Bloc page courante ───────────────────────────────────────
+	if (!page) {
+		lines.push(NO_CONTEXT);
+		return lines.join("\n");
+	}
+
+	lines.push("## CONTEXTE PAGE COURANT");
+	lines.push(`Page : ${page.title} (${page.pathname})`);
+	lines.push(`Module : ${page.module}`);
+	if (page.summary) {
+		lines.push(`État : ${page.summary}`);
+	}
+
+	if (page.visibleEntities.length > 0) {
 		lines.push("");
 		lines.push(
-			`Entités visibles (${snapshot.visibleEntities.length}) — utilisables comme paramètres d'action :`,
+			`Entités visibles (${page.visibleEntities.length}) — utilisables comme paramètres d'action :`,
 		);
-		for (const entity of snapshot.visibleEntities) {
-			lines.push(`- [${entity.type}] ${entity.label} (id: ${entity.id})`);
+		for (const entity of page.visibleEntities) {
+			const dataHint = formatEntityData(entity.data);
+			lines.push(
+				`- [${entity.type}] ${entity.label} (id: ${entity.id})${dataHint}`,
+			);
 		}
 	}
 
-	if (snapshot.availableActions.length > 0) {
+	if (page.availableActions.length > 0) {
 		lines.push("");
 		lines.push(
 			"Actions disponibles sur cette page (à déclencher via le tool `execute_page_action`) :",
 		);
-		for (const action of snapshot.availableActions) {
+		for (const action of page.availableActions) {
 			const confirm = action.requiresConfirmation
 				? " — CONFIRMATION REQUISE"
 				: "";
@@ -83,18 +131,50 @@ export function formatPageContextForVoice(
 		}
 		lines.push("");
 		lines.push(
-			"Règle : n'invoquez `execute_page_action` qu'avec un `actionId` listé ci-dessus. " +
+			"Règle : n'invoquez `execute_page_action` qu'avec un `actionId` listé ci-dessus ou dans la section ACTIONS GLOBALES. " +
 				"Pour toute action marquée CONFIRMATION REQUISE, demandez d'abord oralement " +
 				"à l'utilisateur, puis appelez l'action après son accord explicite.",
 		);
 	} else {
 		lines.push("");
 		lines.push(
-			"Aucune action exécutable n'est déclarée par cette page. Vous pouvez répondre aux questions et naviguer, mais ne tentez pas `execute_page_action`.",
+			"Aucune action exécutable n'est déclarée par cette page. Les actions globales restent utilisables.",
 		);
 	}
 
 	return lines.join("\n");
+}
+
+function normalizeInput(
+	input:
+		| PageContextLike
+		| null
+		| undefined
+		| { page?: PageContextLike | null; shell?: ShellContextLike | null },
+): { page: PageContextLike | null; shell: ShellContextLike | null } {
+	if (!input) return { page: null, shell: null };
+	// Discrimine la forme { page, shell } de la forme PageContextLike directe :
+	// PageContextLike a forcément un `module` (string), { page, shell } non.
+	if (typeof (input as PageContextLike).module === "string") {
+		return { page: input as PageContextLike, shell: null };
+	}
+	const obj = input as { page?: PageContextLike | null; shell?: ShellContextLike | null };
+	return { page: obj.page ?? null, shell: obj.shell ?? null };
+}
+
+function formatEntityData(data: Record<string, unknown> | undefined): string {
+	if (!data) return "";
+	const keys = Object.keys(data);
+	if (keys.length === 0) return "";
+	const parts: string[] = [];
+	for (const k of keys.slice(0, 5)) {
+		const v = data[k];
+		if (v == null) continue;
+		if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
+			parts.push(`${k}=${v}`);
+		}
+	}
+	return parts.length > 0 ? ` { ${parts.join(", ")} }` : "";
 }
 
 function formatParamsSummary(params: Record<string, unknown>): string {

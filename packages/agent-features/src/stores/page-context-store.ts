@@ -62,6 +62,21 @@ export type PageContextSnapshot = {
 	updatedAt: number;
 };
 
+/**
+ * Snapshot du layer « shell » — actions globales toujours disponibles
+ * indépendamment de la page courante (toggle thème, ouvrir la sidebar,
+ * basculer une organisation, etc.). Publié par l'AppShell via
+ * `useShellContext` et fusionné avec le snapshot page côté formatter.
+ */
+export type ShellContextSnapshot = {
+	/** Résumé court de l'état global (ex. « Thème clair, sidebar étendue »). */
+	summary?: string;
+	/** Actions globales déclenchables par l'IA via executePageAction. */
+	availableActions: PageAction[];
+	/** Timestamp de publication. */
+	updatedAt: number;
+};
+
 /** Limites de sécurité — protègent les tokens et les fuites de données. */
 export const PAGE_CONTEXT_LIMITS = {
 	MAX_ENTITIES: 50,
@@ -73,20 +88,24 @@ type PageActionHandler = (params?: Record<string, unknown>) => Promise<unknown>;
 
 interface PageContextState {
 	snapshot: PageContextSnapshot | null;
+	shellSnapshot: ShellContextSnapshot | null;
 	actionHandlers: Map<string, PageActionHandler>;
 }
 
 const state: PageContextState = {
 	snapshot: null,
+	shellSnapshot: null,
 	actionHandlers: new Map(),
 };
 
 const listeners = new Set<() => void>();
 
 let snapshotRef: PageContextSnapshot | null = null;
+let shellSnapshotRef: ShellContextSnapshot | null = null;
 
 function rebuild() {
 	snapshotRef = state.snapshot;
+	shellSnapshotRef = state.shellSnapshot;
 }
 
 function emit() {
@@ -103,6 +122,10 @@ function subscribe(listener: () => void) {
 
 function getSnapshot() {
 	return snapshotRef;
+}
+
+function getShellSnapshot() {
+	return shellSnapshotRef;
 }
 
 function clamp<T>(arr: T[], max: number): T[] {
@@ -145,6 +168,33 @@ export const pageContextStore = {
 	},
 
 	/**
+	 * Publie le snapshot du layer shell (actions globales). À appeler
+	 * depuis l'AppShell. Les caps s'appliquent comme pour le snapshot page.
+	 */
+	setShellSnapshot(input: ShellContextSnapshot | null) {
+		if (input === null) {
+			state.shellSnapshot = null;
+			emit();
+			return;
+		}
+		state.shellSnapshot = {
+			...input,
+			summary: input.summary
+				? clampString(input.summary, PAGE_CONTEXT_LIMITS.MAX_SUMMARY_CHARS)
+				: input.summary,
+			availableActions: clamp(
+				input.availableActions,
+				PAGE_CONTEXT_LIMITS.MAX_ACTIONS,
+			),
+		};
+		emit();
+	},
+
+	getShellSnapshot(): ShellContextSnapshot | null {
+		return state.shellSnapshot;
+	},
+
+	/**
 	 * Enregistre un handler pour une action. Retourne un unregister.
 	 * Si un handler existe déjà pour cet ID, il est remplacé.
 	 */
@@ -165,6 +215,7 @@ export const pageContextStore = {
 	/** Test-only / désinscription d'urgence. */
 	clear() {
 		state.snapshot = null;
+		state.shellSnapshot = null;
 		state.actionHandlers.clear();
 		emit();
 	},
@@ -174,7 +225,12 @@ export const pageContextStore = {
 	getSnapshotForReact: getSnapshot,
 };
 
-/** Hook React — read-only sur le snapshot. */
+/** Hook React — read-only sur le snapshot page. */
 export function usePageContextSnapshot(): PageContextSnapshot | null {
 	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+/** Hook React — read-only sur le snapshot shell (actions globales). */
+export function useShellContextSnapshot(): ShellContextSnapshot | null {
+	return useSyncExternalStore(subscribe, getShellSnapshot, getShellSnapshot);
 }

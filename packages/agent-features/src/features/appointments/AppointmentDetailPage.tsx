@@ -26,7 +26,10 @@ import {
 	usePageContext,
 	useRegisterPageAction,
 } from "../../hooks/use-page-context";
-import type { PageAction } from "../../stores/page-context-store";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { FlatCard } from "../../components/my-space/flat-card";
@@ -153,11 +156,31 @@ export default function AppointmentDetail() {
 		? `RDV ${a.date} ${a.time} · statut ${a.status} · ${a.attendee?.firstName ?? ""} ${a.attendee?.lastName ?? ""}${a.service?.name?.fr ? ` · service ${a.service.name.fr}` : ""}${a.request?.reference ? ` · demande ${a.request.reference}` : ""}.`
 		: "Chargement du rendez-vous…";
 
+	const pageEntities: PageEntity[] = appointment
+		? [
+			{
+				id: appointment._id,
+				type: "appointment",
+				label: `${a.date} ${a.time}`,
+				data: {
+					status: a.status,
+					date: a.date,
+					time: a.time,
+					attendeeName: a.attendee
+						? `${a.attendee.firstName ?? ""} ${a.attendee.lastName ?? ""}`.trim()
+						: undefined,
+					attendeeEmail: a.attendee?.email,
+					serviceName: a.service?.name?.fr ?? a.service?.name,
+					requestReference: a.request?.reference,
+				},
+			},
+		]
+		: [];
 	usePageContext({
 		module: "appointment-detail",
 		title: `RDV — ${a?.date ?? ""} ${a?.time ?? ""}`,
 		summary,
-		visibleEntities: [],
+		visibleEntities: pageEntities,
 		availableActions: pageActions,
 		scopedToolNames: ["getAppointmentsList"],
 	});

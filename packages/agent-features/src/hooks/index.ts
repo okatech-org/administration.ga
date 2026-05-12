@@ -20,5 +20,9 @@ export { useCitizenContext } from "./use-citizen-context"
 export {
 	usePageContext,
 	useRegisterPageAction,
+	useShellContext,
 } from "./use-page-context"
-export type { UsePageContextInput } from "./use-page-context"
+export type {
+	UsePageContextInput,
+	UseShellContextInput,
+} from "./use-page-context"

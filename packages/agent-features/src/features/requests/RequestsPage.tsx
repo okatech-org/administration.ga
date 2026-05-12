@@ -269,7 +269,13 @@ export default function RequestsPage() {
 		isLoading,
 	} = useAuthenticatedPaginatedQuery(
 		api.functions.requests.listByOrg,
-		viewMode === "table" && activeOrgId
+		// Anciennement gated sur `viewMode === "table"` — désormais toujours
+		// activé pour exposer les demandes à l'assistant IA (`pageEntities`)
+		// y compris en vue kanban (cf. ci-dessous). Surcoût : un fetch
+		// supplémentaire en kanban (en plus des 5 queries par colonne),
+		// mais ouvre l'IA à des questions du type « ouvre la première
+		// demande en attente ».
+		activeOrgId
 			? {
 					orgId: activeOrgId,
 					status: statusFilter !== "all" ? (statusFilter as any) : undefined,
@@ -321,9 +327,16 @@ export default function RequestsPage() {
 	// ─── iAsted page context ──────────────────────────────
 	const router = useRouter();
 	const pageEntities = useMemo<PageEntity[]>(() => {
-		// En vue table, on expose les demandes filtrées (cap 30).
-		if (viewMode === "table" && filteredRequests) {
-			return filteredRequests.slice(0, 30).map((r: any) => ({
+		// Cap à 30 entités, table ET kanban. En kanban, on enrichit avec
+		// `column` (libellé du regroupement) pour que l'IA comprenne le
+		// statut d'origine et puisse répondre à des questions du type
+		// « affiche la première demande en attente ».
+		if (!filteredRequests) return [];
+		return filteredRequests.slice(0, 30).map((r: any) => {
+			const column = KANBAN_COLUMNS.find((c) =>
+				c.statuses.includes(r.status),
+			);
+			return {
 				id: r.reference ?? r._id,
 				type: "request",
 				label: `${r.reference ?? "—"} · ${(r.serviceName as any)?.fr ?? "Service"}`,
@@ -331,6 +344,7 @@ export default function RequestsPage() {
 					_id: r._id,
 					reference: r.reference,
 					status: r.status,
+					column: column?.id,
 					userName: r.user
 						? `${r.user.firstName ?? ""} ${r.user.lastName ?? ""}`.trim()
 						: undefined,
@@ -339,10 +353,9 @@ export default function RequestsPage() {
 					submittedAt: r.submittedAt,
 					pendingActionsCount: r.pendingActionsCount,
 				},
-			}));
-		}
-		return [];
-	}, [viewMode, filteredRequests]);
+			};
+		});
+	}, [filteredRequests]);
 
 	const pageActions = useMemo<PageAction[]>(() => {
 		const statusList = STATUS_TABS.map((t) => t.key).join("','");

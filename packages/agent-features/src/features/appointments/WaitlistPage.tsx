@@ -14,6 +14,14 @@ import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
 } from "@workspace/api/hooks";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 const STATUS_BADGE: Record<string, { fr: string; en: string; tone: string }> = {
 	waiting: { fr: "En attente", en: "Waiting", tone: "bg-amber-500/10 text-amber-700" },
@@ -52,6 +60,46 @@ export default function AgentWaitlistPage() {
 	const others = (entries ?? []).filter(
 		(e: any) => e.status !== "waiting" && e.status !== "offered",
 	);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = (entries ?? [])
+		.slice(0, 30)
+		.map((e: any) => ({
+			id: e._id,
+			type: "waitlist-entry",
+			label: `${e.citizen?.firstName ?? ""} ${e.citizen?.lastName ?? ""}`.trim() || "Inscription",
+			data: {
+				status: e.status,
+				serviceId: e.orgServiceId,
+				serviceName: e.serviceName,
+				createdAt: e._creationTime,
+				expiresAt: e.expiresAt,
+			},
+		}));
+	const pageActions: PageAction[] = [
+		{
+			id: "appointment-waitlist.remove_entry",
+			label: "Supprimer de la liste d'attente",
+			description:
+				"Supprime une entrée de la liste d'attente. params.entryId requis.",
+			requiresConfirmation: true,
+			params: { entryId: { type: "string" } },
+		},
+	];
+	usePageContext({
+		module: "appointment-waitlist",
+		title: "Liste d'attente",
+		summary: `${waiting.length} en attente, ${offered.length} offre(s) actives, ${others.length} autre(s).`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("appointment-waitlist.remove_entry", async (params) => {
+		const id = params?.entryId as Id<"appointmentWaitlist"> | undefined;
+		if (!id) throw new Error("entryId requis");
+		await handleRemove(id);
+		return { success: true };
+	});
 
 	return (
 		<div className="flex flex-col gap-4 p-3 md:p-4">

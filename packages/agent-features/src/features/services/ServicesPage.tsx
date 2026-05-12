@@ -26,7 +26,14 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "motion/react";
 import { useOrg } from "../../shell/org-provider";
-import { usePageContext } from "../../hooks/use-page-context";
+import {
+  usePageContext,
+  useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+  PageAction,
+  PageEntity,
+} from "../../stores/page-context-store";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
@@ -224,13 +231,79 @@ export default function ServicesPage() {
     activeOrgId ? { orgId: activeOrgId, activeOnly: false } : "skip",
   );
 
+  const pageEntities: PageEntity[] = (orgServices ?? [])
+    .slice(0, 30)
+    .map((os: any) => ({
+      id: os._id,
+      type: "org-service",
+      label: os.serviceName ?? os.service?.slug ?? "Service",
+      data: {
+        catalogId: os.serviceId,
+        isActive: os.isActive,
+        fee: os.pricing?.amount,
+        currency: os.pricing?.currency,
+        requiresAppointment: os.requiresAppointment,
+      },
+    }));
+  const pageActions: PageAction[] = [
+    {
+      id: "services.set_search",
+      label: "Rechercher un service",
+      description: "Filtre par nom de service. params.query (string).",
+      params: { query: { type: "string" } },
+    },
+    {
+      id: "services.set_category",
+      label: "Filtrer par catégorie",
+      description:
+        "Filtre par catégorie. params.category (slug ou 'ALL').",
+      params: { category: { type: "string" } },
+    },
+    {
+      id: "services.toggle_active",
+      label: "Activer/désactiver un service",
+      description:
+        "Bascule l'état actif d'un service de l'organisation. params.orgServiceId requis.",
+      requiresConfirmation: true,
+      params: { orgServiceId: { type: "string" } },
+    },
+    {
+      id: "services.open_edit",
+      label: "Éditer un service",
+      description:
+        "Ouvre la page d'édition d'un service. params.orgServiceId requis.",
+      params: { orgServiceId: { type: "string" } },
+    },
+  ];
   usePageContext({
     module: "services",
     title: "Services",
     summary: `${orgServices?.length ?? 0} service(s) configuré(s) sur ${catalogServices?.length ?? 0} disponible(s).`,
-    visibleEntities: [],
-    availableActions: [],
+    visibleEntities: pageEntities,
+    availableActions: pageActions,
     scopedToolNames: [],
+  });
+  useRegisterPageAction("services.set_search", async (params) => {
+    setSearchQuery(String(params?.query ?? ""));
+    return { success: true };
+  });
+  useRegisterPageAction("services.set_category", async (params) => {
+    const c = params?.category as string | undefined;
+    if (!c) throw new Error("category requis");
+    setSelectedCategory(c);
+    return { success: true };
+  });
+  useRegisterPageAction("services.toggle_active", async (params) => {
+    const id = params?.orgServiceId as Id<"orgServices"> | undefined;
+    if (!id) throw new Error("orgServiceId requis");
+    await toggleActive({ orgServiceId: id });
+    return { success: true };
+  });
+  useRegisterPageAction("services.open_edit", async (params) => {
+    const id = params?.orgServiceId as string | undefined;
+    if (!id) throw new Error("orgServiceId requis");
+    router.push(`/services/${id}/edit`);
+    return { success: true };
   });
 
   // ── Mutations ────────────────────────────────────────────────────────────

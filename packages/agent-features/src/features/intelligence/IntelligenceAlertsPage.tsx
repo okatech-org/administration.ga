@@ -25,6 +25,14 @@ import { cn } from "@workspace/ui/lib/utils";
 import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 type AlertStatus = "new" | "acknowledged" | "dismissed";
 
@@ -63,6 +71,68 @@ export default function IntelligenceAlertsPage() {
 	const { mutateAsync: dismissMutate } = useConvexMutationQuery(
 		api.functions.intelligenceAlerts.dismissAlert,
 	);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = (alerts ?? []).slice(0, 30).map((a: any) => ({
+		id: a._id,
+		type: "intelligence-alert",
+		label: a.title ?? "Alerte",
+		data: {
+			severity: a.severity,
+			status: a.status,
+			createdAt: a.createdAt,
+		},
+	}));
+	const pageActions: PageAction[] = [
+		{
+			id: "alerts.set_status_filter",
+			label: "Filtrer par statut",
+			description:
+				"Filtre les alertes par statut. params.status ∈ ['new','acknowledged','dismissed'].",
+			params: { status: { type: "string" } },
+		},
+		{
+			id: "alerts.acknowledge",
+			label: "Marquer une alerte comme prise en compte",
+			description: "params.alertId requis.",
+			params: { alertId: { type: "string" } },
+		},
+		{
+			id: "alerts.dismiss",
+			label: "Rejeter une alerte",
+			description: "params.alertId requis.",
+			requiresConfirmation: true,
+			params: { alertId: { type: "string" } },
+		},
+	];
+	usePageContext({
+		module: "intelligence-alerts",
+		title: "Alertes renseignement",
+		summary: `${alerts?.length ?? 0} alerte(s) (statut: ${STATUS_LABELS[status]}).`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("alerts.set_status_filter", async (params) => {
+		const s = params?.status as AlertStatus | undefined;
+		if (!s) throw new Error("status requis");
+		setStatus(s);
+		return { success: true };
+	});
+	useRegisterPageAction("alerts.acknowledge", async (params) => {
+		const id = params?.alertId as Id<"intelligenceAlerts"> | undefined;
+		if (!id) throw new Error("alertId requis");
+		if (!activeOrgId) throw new Error("Aucune organisation active");
+		await ackMutate({ orgId: activeOrgId, alertId: id });
+		return { success: true };
+	});
+	useRegisterPageAction("alerts.dismiss", async (params) => {
+		const id = params?.alertId as Id<"intelligenceAlerts"> | undefined;
+		if (!id) throw new Error("alertId requis");
+		if (!activeOrgId) throw new Error("Aucune organisation active");
+		await dismissMutate({ orgId: activeOrgId, alertId: id });
+		return { success: true };
+	});
 
 	if (!activeOrgId) return null;
 

@@ -51,6 +51,7 @@ import { IAstedWindow } from "./iasted-window"
 import { IAstedSidePanel, useIAstedSidePanel } from "./iasted-side-panel"
 import { OrgProvider, useOrg } from "./org-provider"
 import { OrgSidebar, type NavSection } from "./org-sidebar"
+import { ShellContextActions } from "./shell-context-actions"
 
 const SIDEBAR_STORAGE_KEY = "admin-sidebar-expanded"
 
@@ -204,6 +205,10 @@ function DashboardLayout({
         consularTheme === "homeomorphism" && "theme-homeomorphism"
       )}
     >
+      <ShellContextActions
+        sidebarExpanded={isExpanded}
+        setSidebarExpanded={setIsExpanded}
+      />
       {beforeChildren}
       <div className="hidden md:block print:hidden">
         <OrgSidebar extraSections={extraNavSections} />

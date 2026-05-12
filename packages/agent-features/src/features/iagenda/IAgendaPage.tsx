@@ -29,7 +29,14 @@ import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { useOrg } from "../../shell/org-provider";
 import { useModuleAccess } from "../../components/shared/access-gate";
-import { usePageContext } from "../../hooks/use-page-context";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { FlatCard } from "../../components/my-space/flat-card";
@@ -149,14 +156,8 @@ export default function IAgendaPage() {
 		: [];
 	const isPending = eventsLoading || appointmentsLoading || meetingsLoading;
 
-	usePageContext({
-		module: "iagenda",
-		title: "iAgenda",
-		summary: `Onglet ${activeTab}. ${(rawAppointments as any[]).length} RDV, ${(rawCommunityEvents as any[]).length} événements communautaires.`,
-		visibleEntities: [],
-		availableActions: [],
-		scopedToolNames: [],
-	});
+	// usePageContext déplacé après le calcul de allEvents (voir plus bas)
+	// pour pouvoir exposer les entités à l'IA.
 
 	// ── Fusionner les deux sources en AgendaEvent[] ──
 	const allEvents: AgendaEvent[] = useMemo(() => {
@@ -237,6 +238,69 @@ export default function IAgendaPage() {
 	const pastEvents = allEvents.filter(
 		(e) => e.date < today || e.status === "cancelled",
 	);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = upcomingEvents
+		.slice(0, 30)
+		.map((e) => ({
+			id: e.id,
+			type: e.source,
+			label: e.title,
+			data: {
+				date: e.date,
+				time: e.time,
+				type: e.type,
+				status: e.status,
+				source: e.source,
+			},
+		}));
+	const pageActions: PageAction[] = [
+		{
+			id: "iagenda.switch_tab",
+			label: "Changer d'onglet",
+			description:
+				"Bascule entre les onglets de l'agenda. params.tab ∈ ['calendar','upcoming','past','community'].",
+			params: { tab: { type: "string" } },
+		},
+		{
+			id: "iagenda.go_to_month",
+			label: "Aller à un mois",
+			description:
+				"Navigue à un mois précis. params.month au format YYYY-MM ou params.delta (entier, mois relatifs).",
+			params: { month: { type: "string" }, delta: { type: "number" } },
+		},
+	];
+	usePageContext({
+		module: "iagenda",
+		title: "iAgenda",
+		summary: `Onglet ${activeTab}. ${upcomingEvents.length} événement(s) à venir, ${pastEvents.length} passés.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("iagenda.switch_tab", async (params) => {
+		const tab = params?.tab as string | undefined;
+		if (!tab) throw new Error("tab requis");
+		setActiveTab(tab);
+		return { success: true, tab };
+	});
+	useRegisterPageAction("iagenda.go_to_month", async (params) => {
+		const month = params?.month as string | undefined;
+		const delta = params?.delta as number | undefined;
+		if (month && /^\d{4}-\d{2}$/.test(month)) {
+			const [y, m] = month.split("-").map(Number);
+			setCurrentMonth(new Date(y!, (m ?? 1) - 1, 1));
+		} else if (typeof delta === "number") {
+			setCurrentMonth((cur) => {
+				const next = new Date(cur);
+				next.setMonth(next.getMonth() + delta);
+				return next;
+			});
+		} else {
+			throw new Error("Fournir month (YYYY-MM) ou delta (number)");
+		}
+		return { success: true };
+	});
 
 	// ── Calendrier du mois ──
 	const monthStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}`;

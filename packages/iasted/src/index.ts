@@ -112,6 +112,7 @@ export type {
 	PageContextLike,
 	PageEntityLike,
 	PageActionLike,
+	ShellContextLike,
 } from "./lib/format-page-context";
 
 // Components — Primitives

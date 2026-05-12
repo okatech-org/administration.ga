@@ -33,6 +33,7 @@ import { useOrg } from "@workspace/agent-features/shell";
 import {
 	pageContextStore,
 	usePageContextSnapshot,
+	useShellContextSnapshot,
 } from "@workspace/agent-features/stores";
 
 // Map module code → route Next.js dans agent-web
@@ -192,15 +193,19 @@ export function useIAstedHost(): IAstedVoiceController {
 	// Debounce léger : absorbe les republications transitoires lors d'une
 	// navigation (démontage de l'ancienne page + montage de la nouvelle).
 	const pageSnapshot = usePageContextSnapshot();
+	const shellSnapshot = useShellContextSnapshot();
 	useEffect(() => {
 		if (!voice.isConnected) return;
 		const timer = setTimeout(() => {
 			voice.updateSession({
-				pageContext: formatPageContextForVoice(pageSnapshot),
+				pageContext: formatPageContextForVoice({
+					page: pageSnapshot,
+					shell: shellSnapshot,
+				}),
 			});
 		}, 150);
 		return () => clearTimeout(timer);
-	}, [pageSnapshot, voice.isConnected, voice.updateSession]);
+	}, [pageSnapshot, shellSnapshot, voice.isConnected, voice.updateSession]);
 
 	const activateVoice = useCallback(async () => {
 		if (!available) {
@@ -234,11 +239,14 @@ export function useIAstedHost(): IAstedVoiceController {
 				);
 				return;
 			}
-			// Pré-charge le contexte page courant avant l'ouverture du
+			// Pré-charge le contexte page+shell courant avant l'ouverture du
 			// DataChannel : la première `session.update` envoyée à l'ouverture
 			// du DC inclura déjà ce bloc, évitant une fenêtre sans contexte.
 			voice.updateSession({
-				pageContext: formatPageContextForVoice(pageContextStore.getSnapshot()),
+				pageContext: formatPageContextForVoice({
+					page: pageContextStore.getSnapshot(),
+					shell: pageContextStore.getShellSnapshot(),
+				}),
 			});
 			await voice.connect({
 				ephemeralKey: session.ephemeralKey,

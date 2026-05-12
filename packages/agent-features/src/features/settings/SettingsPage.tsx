@@ -85,7 +85,14 @@ import { Textarea } from "@workspace/ui/components/textarea";
 import { SignatureSettingsCard } from "./components/signature-settings-card";
 import { useCanDoTask } from "../../hooks/useCanDoTask";
 import { type ConsularTheme, useConsularTheme } from "../../hooks/useConsularTheme";
-import { usePageContext } from "../../hooks/use-page-context";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
@@ -120,13 +127,55 @@ export default function DashboardSettings() {
 	// ── Session data ──
 	const { data: session } = authClient.useSession();
 
+	const settingsTabs: { id: string; label: string }[] = [
+		{ id: "profile", label: "Profil" },
+		{ id: "security", label: "Sécurité" },
+		{ id: "notifications", label: "Notifications" },
+		{ id: "preferences", label: "Préférences" },
+		{ id: "schedule", label: "Disponibilités" },
+		{ id: "call_lines", label: "Lignes d'appel" },
+	];
+	const pageEntities: PageEntity[] = settingsTabs.map((tab) => ({
+		id: `settings-tab.${tab.id}`,
+		type: "settings-tab",
+		label: tab.label,
+		data: { tabId: tab.id, active: tab.id === activeTab },
+	}));
+	const pageActions: PageAction[] = [
+		{
+			id: "settings.switch_tab",
+			label: "Changer d'onglet paramètres",
+			description:
+				"Active un onglet de paramètres. params.tab ∈ ['profile','security','notifications','preferences','schedule','call_lines'].",
+			params: { tab: { type: "string" } },
+		},
+		{
+			id: "settings.toggle_edit",
+			label: "Basculer le mode édition",
+			description:
+				"Active/désactive le mode édition de la section profil. params.editing (boolean optionnel, sinon toggle).",
+			params: { editing: { type: "boolean" } },
+		},
+	];
 	usePageContext({
 		module: "settings",
 		title: "Paramètres",
 		summary: `Paramètres du compte agent. Onglet ${activeTab}.${isEditing ? " Mode édition." : ""}`,
-		visibleEntities: [],
-		availableActions: [],
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
 		scopedToolNames: [],
+	});
+	useRegisterPageAction("settings.switch_tab", async (params) => {
+		const tab = params?.tab as string | undefined;
+		if (!tab) throw new Error("tab requis");
+		setActiveTab(tab);
+		return { success: true, tab };
+	});
+	useRegisterPageAction("settings.toggle_edit", async (params) => {
+		const editing = params?.editing;
+		if (typeof editing === "boolean") setIsEditing(editing);
+		else setIsEditing((cur) => !cur);
+		return { success: true };
 	});
 
 	// ── OTP reset state ──

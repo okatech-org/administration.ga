@@ -6,7 +6,14 @@ import { Link } from "@workspace/routing";
 import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useOrg } from "../../shell/org-provider";
-import { usePageContext } from "../../hooks/use-page-context";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
@@ -425,12 +432,63 @@ export default function IArchivePage() {
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
 
+	const pageEntities: PageEntity[] = (archivedDocs as any[])
+		.slice(0, 30)
+		.map((d: any) => ({
+			id: d._id,
+			type: "archived-document",
+			label: d.title ?? d.fileName ?? "Document archivé",
+			data: {
+				archiveStatus: d.archiveStatus,
+				category: d.categorySlug,
+				archivedAt: d.archivedAt,
+				retentionExpiresAt: d.retentionExpiresAt,
+			},
+		}));
+	const pageActions: PageAction[] = [
+		{
+			id: "iarchive.set_search",
+			label: "Rechercher",
+			description: "Filtre par titre. params.query (string).",
+			params: { query: { type: "string" } },
+		},
+		{
+			id: "iarchive.set_category",
+			label: "Filtrer par catégorie",
+			description:
+				"Filtre par catégorie d'archive. params.category (slug) ou null pour tout.",
+			params: { category: { type: "string" } },
+		},
+		{
+			id: "iarchive.set_status_filter",
+			label: "Filtrer par statut d'archivage",
+			description:
+				"Statut. params.status ∈ ['all','active','expired','pending_destruction'].",
+			params: { status: { type: "string" } },
+		},
+		{
+			id: "iarchive.restore",
+			label: "Restaurer un document",
+			description:
+				"Restaure un document depuis l'archive vers iDocument. params.documentId requis.",
+			requiresConfirmation: true,
+			params: { documentId: { type: "string" } },
+		},
+		{
+			id: "iarchive.permanent_delete",
+			label: "Supprimer définitivement",
+			description:
+				"Suppression définitive et irréversible d'un document archivé. params.documentId requis.",
+			requiresConfirmation: true,
+			params: { documentId: { type: "string" } },
+		},
+	];
 	usePageContext({
 		module: "iarchive",
 		title: "iArchive",
 		summary: `${(archivedDocs as any[]).length} document(s) archivé(s).${selectedCategory ? ` Catégorie: ${selectedCategory}.` : ""}${search ? ` Recherche: "${search}".` : ""}`,
-		visibleEntities: [],
-		availableActions: [],
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
 		scopedToolNames: [],
 	});
 
@@ -482,8 +540,38 @@ export default function IArchivePage() {
 			setConfirmDelete(null);
 		} catch {
 			toast.error("Erreur lors de la suppression");
+			// fall-through to outer catch is impossible without rethrow
 		}
 	};
+
+	// ─── iAsted action handlers ──────────────────────────────
+	useRegisterPageAction("iarchive.set_search", async (params) => {
+		setSearch(String(params?.query ?? ""));
+		return { success: true };
+	});
+	useRegisterPageAction("iarchive.set_category", async (params) => {
+		const cat = params?.category;
+		setSelectedCategory(cat == null ? null : String(cat));
+		return { success: true };
+	});
+	useRegisterPageAction("iarchive.set_status_filter", async (params) => {
+		const s = params?.status as string | undefined;
+		if (!s) throw new Error("status requis");
+		setStatusFilter(s as ArchiveStatusFilter);
+		return { success: true };
+	});
+	useRegisterPageAction("iarchive.restore", async (params) => {
+		const id = params?.documentId as string | undefined;
+		if (!id) throw new Error("documentId requis");
+		await handleRestore(id);
+		return { success: true };
+	});
+	useRegisterPageAction("iarchive.permanent_delete", async (params) => {
+		const id = params?.documentId as string | undefined;
+		if (!id) throw new Error("documentId requis");
+		await handlePermanentDelete(id);
+		return { success: true };
+	});
 
 	// biome-ignore lint/suspicious/noExplicitAny: doc shape varies
 	const handleView = (doc: any) => {

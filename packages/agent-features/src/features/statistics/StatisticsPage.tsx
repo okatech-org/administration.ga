@@ -64,7 +64,14 @@ import { useModuleAccess } from "../../components/shared/access-gate";
 import { FlatCard } from "../../components/my-space/flat-card";
 import { SectionHeader } from "../../components/my-space/section-header";
 import { captureEvent } from "../../lib/analytics";
-import { usePageContext } from "../../hooks/use-page-context";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 
 // ─── Chart colors ────────────────────────────────────────────────────────────
@@ -132,13 +139,58 @@ export default function StatisticsPage() {
 			: "skip",
 	);
 
+	const pageEntities: PageEntity[] = stats
+		? [
+			{
+				id: "kpi.total-requests",
+				type: "kpi",
+				label: "Demandes totales",
+				data: { value: stats.totalRequests ?? 0, period },
+			},
+			{
+				id: "kpi.pending-requests",
+				type: "kpi",
+				label: "Demandes en attente",
+				data: { value: stats.statusCounts?.pending ?? 0 },
+			},
+			{
+				id: "kpi.processing-requests",
+				type: "kpi",
+				label: "Demandes en traitement",
+				data: { value: stats.statusCounts?.processing ?? 0 },
+			},
+			{
+				id: "kpi.completed-requests",
+				type: "kpi",
+				label: "Demandes complétées",
+				data: { value: stats.statusCounts?.completed ?? 0 },
+			},
+		]
+		: [];
+	const pageActions: PageAction[] = [
+		{
+			id: "statistics.set_period",
+			label: "Changer la période",
+			description:
+				"Met à jour la période d'analyse. params.period ∈ ['week','month','year'].",
+			params: { period: { type: "string" } },
+		},
+	];
 	usePageContext({
 		module: "statistics",
 		title: "Statistiques",
 		summary: `Statistiques sur la période: ${period}.${stats ? ` ${stats.totalRequests ?? 0} demandes au total.` : ""}`,
-		visibleEntities: [],
-		availableActions: [],
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
 		scopedToolNames: ["getOrgDashboardStats"],
+	});
+	useRegisterPageAction("statistics.set_period", async (params) => {
+		const p = params?.period as string | undefined;
+		if (p !== "week" && p !== "month" && p !== "year") {
+			throw new Error("period must be 'week', 'month' or 'year'");
+		}
+		setPeriod(p);
+		return { success: true, period: p };
 	});
 
 	// ─── Derived data ─────────────────────────────────────────────────────

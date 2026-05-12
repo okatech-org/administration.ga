@@ -29,6 +29,14 @@ import { useAction } from "convex/react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 import { AIActionPanel, AIActionButton } from "./_shared/AIActionPanel";
 import { TargetPipelineCard } from "./_shared/TargetPipelineCard";
 import { Badge } from "@workspace/ui/components/badge";
@@ -185,6 +193,117 @@ export default function CiblesPhase() {
 			t.sector?.toLowerCase().includes(searchFilter.toLowerCase()) ||
 			t.country?.toLowerCase().includes(searchFilter.toLowerCase()),
 	);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = (filtered ?? [])
+		.slice(0, 30)
+		.map((t: any) => ({
+			id: t._id,
+			type: "diplomatic-target",
+			label: t.name,
+			data: {
+				priority: t.priority,
+				pipelinePhase: t.pipelinePhase,
+				sector: t.sector,
+				country: t.country,
+				type: t.type,
+			},
+		}));
+	const pageActions: PageAction[] = [
+		{
+			id: "cibles.set_search",
+			label: "Rechercher une cible",
+			description: "Filtre par nom, secteur, pays. params.query (string).",
+			params: { query: { type: "string" } },
+		},
+		{
+			id: "cibles.toggle_archived",
+			label: "Basculer entre actives et archivées",
+			description:
+				"Affiche les cibles actives ou archivées. params.archived (boolean) optionnel.",
+			params: { archived: { type: "boolean" } },
+		},
+		{
+			id: "cibles.open_add",
+			label: "Ouvrir l'ajout manuel",
+			description: "Ouvre la fenêtre d'ajout manuel de cible.",
+		},
+		{
+			id: "cibles.open_ai_discover",
+			label: "Lancer la découverte IA",
+			description:
+				"Ouvre la fenêtre de découverte assistée par IA selon les priorités diplomatiques.",
+		},
+		{
+			id: "cibles.generate_plan",
+			label: "Générer un plan stratégique",
+			description:
+				"Lance la génération d'un plan stratégique IA pour une cible. params.targetId requis.",
+			requiresConfirmation: true,
+			params: { targetId: { type: "string" } },
+		},
+		{
+			id: "cibles.archive",
+			label: "Archiver une cible",
+			description:
+				"Archive une cible (réversible). params.targetId requis.",
+			requiresConfirmation: true,
+			params: { targetId: { type: "string" } },
+		},
+		{
+			id: "cibles.restore",
+			label: "Restaurer une cible archivée",
+			description:
+				"Restaure une cible précédemment archivée. params.targetId requis.",
+			params: { targetId: { type: "string" } },
+		},
+	];
+	usePageContext({
+		module: "diplomatic-cibles",
+		title: "Cibles diplomatiques",
+		summary: `${filtered?.length ?? 0} cible(s)${showArchived ? " archivée(s)" : " active(s)"}${searchFilter ? ` · Recherche "${searchFilter}"` : ""}.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("cibles.set_search", async (params) => {
+		setSearchFilter(String(params?.query ?? ""));
+		return { success: true };
+	});
+	useRegisterPageAction("cibles.toggle_archived", async (params) => {
+		const v = params?.archived;
+		if (typeof v === "boolean") setShowArchived(v);
+		else setShowArchived((cur) => !cur);
+		return { success: true };
+	});
+	useRegisterPageAction("cibles.open_add", async () => {
+		setShowAddTarget(true);
+		return { success: true };
+	});
+	useRegisterPageAction("cibles.open_ai_discover", async () => {
+		setShowAIDiscover(true);
+		return { success: true };
+	});
+	useRegisterPageAction("cibles.generate_plan", async (params) => {
+		const id = params?.targetId as Id<"diplomaticTargets"> | undefined;
+		if (!id) throw new Error("targetId requis");
+		setStrategyTargetId(id);
+		setShowStrategyDialog(true);
+		await handleGenerateStrategy();
+		return { success: true };
+	});
+	useRegisterPageAction("cibles.archive", async (params) => {
+		const id = params?.targetId as Id<"diplomaticTargets"> | undefined;
+		if (!id) throw new Error("targetId requis");
+		await handleArchive(id);
+		return { success: true };
+	});
+	useRegisterPageAction("cibles.restore", async (params) => {
+		const id = params?.targetId as Id<"diplomaticTargets"> | undefined;
+		if (!id) throw new Error("targetId requis");
+		await handleRestore(id);
+		return { success: true };
+	});
 
 	if (isPending) {
 		return (

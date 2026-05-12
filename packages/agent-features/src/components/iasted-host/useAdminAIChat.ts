@@ -58,12 +58,38 @@ export function useAdminAIChat() {
 			setMessages((prev) => [...prev, userMessage]);
 
 			try {
-				const pageContext = pageContextStore.getSnapshot();
+				// Fusionne le snapshot page courant avec le snapshot shell
+				// (actions globales toggle thème / sidebar). Côté backend,
+				// `pageContext.availableActions` contient donc à la fois les
+				// actions page et les actions shell, indifférenciées —
+				// l'IA voit l'ensemble des actions exécutables.
+				const pageSnapshot = pageContextStore.getSnapshot();
+				const shellSnapshot = pageContextStore.getShellSnapshot();
+				const mergedPageContext = pageSnapshot
+					? {
+						...pageSnapshot,
+						availableActions: [
+							...(shellSnapshot?.availableActions ?? []),
+							...pageSnapshot.availableActions,
+						],
+					}
+					: shellSnapshot
+						? {
+							module: "shell",
+							pathname,
+							title: "Application",
+							summary: shellSnapshot.summary ?? "",
+							visibleEntities: [],
+							availableActions: shellSnapshot.availableActions,
+							scopedToolNames: [],
+							updatedAt: shellSnapshot.updatedAt,
+						}
+						: undefined;
 				const response = await chat({
 					conversationId: conversationId ?? undefined,
 					message: content,
 					currentPage: pathname,
-					pageContext: pageContext ?? undefined,
+					pageContext: mergedPageContext,
 					orgId: activeOrgId,
 					app: "agent",
 				});
@@ -111,11 +137,13 @@ export function useAdminAIChat() {
 								continue;
 							}
 
-							// Si l'action déclarée requiert confirmation, on la queue
-							const snapshot = pageContextStore.getSnapshot();
-							const declared = snapshot?.availableActions.find(
-								(a) => a.id === actionId,
-							);
+							// Si l'action déclarée requiert confirmation, on la queue.
+							// Cherche dans page ET dans shell (actions globales).
+							const pageSnap = pageContextStore.getSnapshot();
+							const shellSnap = pageContextStore.getShellSnapshot();
+							const declared =
+								pageSnap?.availableActions.find((a) => a.id === actionId) ??
+								shellSnap?.availableActions.find((a) => a.id === actionId);
 							if (declared?.requiresConfirmation) {
 								confirmableActions.push(action);
 								continue;
