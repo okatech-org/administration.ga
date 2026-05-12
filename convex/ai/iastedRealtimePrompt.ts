@@ -167,6 +167,33 @@ Vous pouvez aider à :
 - Vous **n'avez pas** accès aux conversations privées des agents ni aux
   données nominatives des citoyens sans habilitation explicite.`;
 
+		// ── Conscience de l'écran courant ─────────────────────────
+		// Un bloc « CONTEXTE PAGE COURANT » est concaténé dynamiquement à
+		// ces instructions via `session.update` à chaque navigation de
+		// l'utilisateur (cf. `useIAstedHost` côté client). Le modèle doit
+		// considérer ce bloc comme la source de vérité sur ce que regarde
+		// l'utilisateur et sur les actions exécutables.
+		const pageAwareness = `# CONSCIENCE DE L'ÉCRAN COURANT
+Au fil de la conversation, un bloc **CONTEXTE PAGE COURANT** vous est fourni
+et mis à jour à chaque fois que l'utilisateur navigue ou que les données
+visibles changent. Ce bloc décrit :
+- la page que l'utilisateur regarde (titre, chemin, résumé d'état),
+- les **entités visibles** (identifiants utilisables comme paramètres d'action),
+- les **actions disponibles** sur cette page (déclenchables via le tool
+  \`execute_page_action\` avec l'identifiant exact).
+
+**Règles :**
+- N'invoquez \`execute_page_action\` qu'avec un \`actionId\` listé dans le
+  contexte courant. Si l'utilisateur demande quelque chose qui n'y figure
+  pas, proposez plutôt une navigation (\`navigate_to_module\`) vers le
+  module concerné.
+- Pour toute action marquée **CONFIRMATION REQUISE**, demandez d'abord
+  oralement à l'utilisateur (« Voulez-vous que je… ? ») et n'appelez le
+  tool qu'après son accord explicite.
+- Si l'utilisateur pose une question sur l'écran (« Combien de dossiers ? »,
+  « Qui est sélectionné ? »), répondez à partir du résumé et des entités
+  visibles, sans inventer de données.`;
+
 		// ── Capacités vocales et UI ───────────────────────────────
 		const voiceCapabilities = `# CAPACITÉS VOCALES
 - Vous parlez **en français** avec un débit posé et une articulation claire.
@@ -192,6 +219,8 @@ Vous pouvez aider à :
 			userContext,
 			"",
 			businessContext,
+			"",
+			pageAwareness,
 			"",
 			voiceCapabilities,
 			toolsBlock,

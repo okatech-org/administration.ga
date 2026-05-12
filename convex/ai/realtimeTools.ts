@@ -89,6 +89,28 @@ const UI_TOOLS: RealtimeVoiceTool[] = [
 			required: ["action"],
 		},
 	},
+	{
+		type: "function",
+		name: "execute_page_action",
+		description:
+			"Déclenche une action déclarée par la page courante (cf. liste fournie dans la section 'Actions disponibles' du CONTEXTE PAGE COURANT). " +
+			"À n'invoquer que pour un actionId présent dans cette liste. " +
+			"Pour toute action marquée CONFIRMATION REQUISE, demandez d'abord oralement à l'utilisateur, puis appelez l'action uniquement après son accord explicite.",
+		parameters: {
+			type: "object",
+			properties: {
+				actionId: {
+					type: "string",
+					description: "Identifiant exact de l'action tel qu'annoncé dans le contexte page.",
+				},
+				params: {
+					type: "object",
+					description: "Paramètres à transmettre au handler frontend (clés/valeurs libres, doivent correspondre au schéma annoncé pour l'action).",
+				},
+			},
+			required: ["actionId"],
+		},
+	},
 ];
 
 // ─────────────────────────────────────────────────────────────

@@ -107,6 +107,12 @@ export type { WindowShellProps, WindowHeaderProps, TabsNavProps } from "./compon
 
 // Lib
 export { resolveIcon, registerIcon, listIcons } from "./lib/icon-resolver";
+export { formatPageContextForVoice } from "./lib/format-page-context";
+export type {
+	PageContextLike,
+	PageEntityLike,
+	PageActionLike,
+} from "./lib/format-page-context";
 
 // Components — Primitives
 export {

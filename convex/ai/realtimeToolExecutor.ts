@@ -135,6 +135,23 @@ function handleUITool(toolName: string, args: any): RealtimeToolResult {
 				message: `Action UI : ${args.action}`,
 				uiAction: { type: "control_ui", payload: { action: args.action, value: args.value } },
 			};
+		case "execute_page_action": {
+			// Passthrough côté serveur : le handler frontend (enregistré par
+			// la page via `useRegisterPageAction`) exécute l'action. La
+			// défense en profondeur reste dans la mutation Convex appelée
+			// par le handler, comme pour le chat texte (`useAdminAIChat`).
+			const actionId = typeof args.actionId === "string" ? args.actionId : "";
+			if (!actionId) {
+				return { success: false, message: "actionId manquant" };
+			}
+			const params =
+				args.params && typeof args.params === "object" ? args.params : {};
+			return {
+				success: true,
+				message: `Action transmise à l'interface : ${actionId}.`,
+				uiAction: { type: "execute_page_action", payload: { actionId, params } },
+			};
+		}
 		default:
 			return { success: false, message: `Tool UI non géré : ${toolName}` };
 	}

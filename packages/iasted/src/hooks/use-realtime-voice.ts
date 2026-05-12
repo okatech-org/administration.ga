@@ -27,6 +27,7 @@ import type {
 	RealtimeToolHandler,
 	RealtimeToolResult,
 	RealtimeVoice,
+	RealtimeVoiceTool,
 	VoiceState,
 } from "./use-realtime-voice-types";
 
@@ -104,6 +105,21 @@ export interface UseRealtimeVoiceResult {
 	clearMessages: () => void;
 	/** Envoie un message texte à l'agent (commande locale, sans audio). */
 	sendText: (text: string) => void;
+	/**
+	 * Met à jour la session OpenAI en cours via `session.update` :
+	 * - `pageContext` : bloc texte concaténé au `systemPrompt` de base
+	 *   (utilisé pour transmettre le contexte de la page courante au
+	 *   modèle pendant que la session est active). `null` efface le bloc.
+	 * - `tools` : remplace la liste de tools de base (rarement nécessaire ;
+	 *   par défaut, la session conserve les tools fournis à `connect`).
+	 *
+	 * No-op si la connexion n'est pas encore ouverte — la valeur est
+	 * mémorisée et appliquée à la prochaine ouverture du DataChannel.
+	 */
+	updateSession: (input: {
+		pageContext?: string | null;
+		tools?: RealtimeVoiceTool[];
+	}) => void;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -141,6 +157,12 @@ export function useRealtimeVoice({
 	const animationFrameRef = useRef<number | null>(null);
 	const currentTranscriptRef = useRef<string>("");
 	const sessionInitRef = useRef<RealtimeSessionInit | null>(null);
+	// Bloc texte du contexte page concaténé au systemPrompt de base (peut être
+	// modifié à chaud via `updateSession({ pageContext })`). Conservé en ref
+	// pour être réappliqué automatiquement à chaque réouverture du DataChannel
+	// (notamment lors d'une reconnexion ICE).
+	const pageContextRef = useRef<string | null>(null);
+	const sessionToolsRef = useRef<RealtimeVoiceTool[] | null>(null);
 	const speechRateRef = useRef<number>(defaultSpeechRate);
 	const isConnectingRef = useRef(false);
 	const reconnectAttemptsRef = useRef(0);
@@ -228,9 +250,50 @@ export function useRealtimeVoice({
 		}
 		stopAudioAnalysis();
 		currentTranscriptRef.current = "";
+		pageContextRef.current = null;
+		sessionToolsRef.current = null;
 		setIsConnected(false);
 		setVoiceState("idle");
 	}, [stopAudioAnalysis]);
+
+	// ── Compose + envoie `session.update` à OpenAI Realtime ────
+	// Concatène le bloc de contexte page (si présent) au systemPrompt de base
+	// et utilise les tools courants. No-op si le DataChannel n'est pas ouvert.
+	const sendSessionUpdate = useCallback(() => {
+		const dc = dcRef.current;
+		const session = sessionInitRef.current;
+		if (!dc || dc.readyState !== "open" || !session) return;
+		const baseInstructions = session.systemPrompt;
+		const pageContext = pageContextRef.current;
+		const instructions = pageContext
+			? `${baseInstructions}\n\n${pageContext}`
+			: baseInstructions;
+		const tools = sessionToolsRef.current ?? session.tools;
+		dc.send(
+			JSON.stringify({
+				type: "session.update",
+				session: {
+					voice: session.voice,
+					instructions,
+					tool_choice: "auto",
+					tools,
+				},
+			}),
+		);
+	}, []);
+
+	const updateSession = useCallback(
+		(input: { pageContext?: string | null; tools?: RealtimeVoiceTool[] }) => {
+			if (input.pageContext !== undefined) {
+				pageContextRef.current = input.pageContext;
+			}
+			if (input.tools !== undefined) {
+				sessionToolsRef.current = input.tools;
+			}
+			sendSessionUpdate();
+		},
+		[sendSessionUpdate],
+	);
 
 	// ── Parsing DataChannel messages ────────────────────────────
 	const handleDataChannelMessage = useCallback(
@@ -402,20 +465,11 @@ export function useRealtimeVoice({
 				dc.addEventListener("message", handleDataChannelMessage);
 
 				dc.addEventListener("open", () => {
-					// Configurer la session : voix, instructions, tools
-					const session = sessionInitRef.current;
-					if (!session) return;
-					dc.send(
-						JSON.stringify({
-							type: "session.update",
-							session: {
-								voice: session.voice,
-								instructions: session.systemPrompt,
-								tool_choice: "auto",
-								tools: session.tools,
-							},
-						}),
-					);
+					// Configurer la session : voix, instructions (avec contexte page
+					// si déjà défini), tools. Toute mise à jour ultérieure
+					// (navigation, changement de tools) passe par `updateSession`.
+					if (!sessionInitRef.current) return;
+					sendSessionUpdate();
 
 					if (autoGreet) {
 						setTimeout(() => {
@@ -492,7 +546,7 @@ export function useRealtimeVoice({
 				isConnectingRef.current = false;
 			}
 		},
-		[handleDataChannelMessage, startAudioAnalysis, cleanup, applyPlaybackRate, autoGreet],
+		[handleDataChannelMessage, startAudioAnalysis, cleanup, applyPlaybackRate, autoGreet, sendSessionUpdate],
 	);
 
 	// ── Déconnexion ────────────────────────────────────────────
@@ -541,6 +595,7 @@ export function useRealtimeVoice({
 		disconnect,
 		clearMessages,
 		sendText,
+		updateSession,
 	};
 }
 

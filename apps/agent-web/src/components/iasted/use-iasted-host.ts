@@ -20,15 +20,20 @@
 
 import { useAction } from "convex/react";
 import { useRouter } from "@workspace/routing";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
+	formatPageContextForVoice,
 	useRealtimeVoice,
 	type IAstedVoiceController,
 	type RealtimeToolResult,
 } from "@workspace/iasted";
 import { api } from "@convex/_generated/api";
 import { useOrg } from "@workspace/agent-features/shell";
+import {
+	pageContextStore,
+	usePageContextSnapshot,
+} from "@workspace/agent-features/stores";
 
 // Map module code → route Next.js dans agent-web
 const MODULE_ROUTES: Record<string, string> = {
@@ -93,6 +98,33 @@ export function useIAstedHost(): IAstedVoiceController {
 					// set_speech_rate : géré par le hook via voice.setSpeechRate (cf. plus bas)
 					break;
 				}
+				case "execute_page_action": {
+					// Action déclarée par la page courante via `usePageContext` +
+					// `useRegisterPageAction`. On exécute le handler enregistré
+					// dans `pageContextStore`. Le modèle est supposé avoir obtenu
+					// l'accord verbal de l'utilisateur pour les actions marquées
+					// `requiresConfirmation` (cf. prompt iAsted).
+					const actionId = uiAction.payload?.actionId as string | undefined;
+					const params = uiAction.payload?.params as
+						| Record<string, unknown>
+						| undefined;
+					if (!actionId) {
+						toast.warning("Action vocale sans identifiant.");
+						return;
+					}
+					const handler = pageContextStore.getActionHandler(actionId);
+					if (!handler) {
+						toast.warning(`Action « ${actionId} » introuvable sur la page courante.`);
+						return;
+					}
+					// Fire-and-forget : on n'attend pas la résolution pour ne pas bloquer
+					// le DataChannel ; les erreurs sont signalées par un toast.
+					void handler(params).catch((err) => {
+						const message = err instanceof Error ? err.message : "Erreur";
+						toast.error(`Action « ${actionId} » : ${message}`);
+					});
+					break;
+				}
 				case "draft_correspondence_intent":
 				case "generate_document_intent":
 				case "escalation_intent":
@@ -152,6 +184,24 @@ export function useIAstedHost(): IAstedVoiceController {
 		}, []),
 	});
 
+	// ── Synchronisation du contexte de page vers la session vocale ──
+	// Toute page d'agent-features publie son snapshot via `usePageContext`.
+	// Quand le snapshot change (navigation, filtre, mise à jour de liste)
+	// et qu'une session vocale est active, on pousse un `session.update`
+	// qui concatène le bloc de contexte au prompt système initial.
+	// Debounce léger : absorbe les republications transitoires lors d'une
+	// navigation (démontage de l'ancienne page + montage de la nouvelle).
+	const pageSnapshot = usePageContextSnapshot();
+	useEffect(() => {
+		if (!voice.isConnected) return;
+		const timer = setTimeout(() => {
+			voice.updateSession({
+				pageContext: formatPageContextForVoice(pageSnapshot),
+			});
+		}, 150);
+		return () => clearTimeout(timer);
+	}, [pageSnapshot, voice.isConnected, voice.updateSession]);
+
 	const activateVoice = useCallback(async () => {
 		if (!available) {
 			toast.warning(
@@ -184,6 +234,12 @@ export function useIAstedHost(): IAstedVoiceController {
 				);
 				return;
 			}
+			// Pré-charge le contexte page courant avant l'ouverture du
+			// DataChannel : la première `session.update` envoyée à l'ouverture
+			// du DC inclura déjà ce bloc, évitant une fenêtre sans contexte.
+			voice.updateSession({
+				pageContext: formatPageContextForVoice(pageContextStore.getSnapshot()),
+			});
 			await voice.connect({
 				ephemeralKey: session.ephemeralKey,
 				sessionId: session.sessionId ?? "",
