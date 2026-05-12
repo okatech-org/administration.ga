@@ -6,8 +6,6 @@ import {
   BellRing,
   Briefcase,
   Calendar,
-  ChevronsLeft,
-  ChevronsRight,
   Eye,
   FileText,
   FolderKanban,
@@ -49,7 +47,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@workspace/ui/components/sidebar"
 import {
   Tooltip,
@@ -356,8 +353,8 @@ export function OrgSidebar({ extraSections }: OrgSidebarProps) {
     <TooltipProvider delayDuration={100}>
       <Sidebar
         variant="sidebar"
-        collapsible="icon"
-        className="[&_[data-slot=sidebar-container]]:border-r-border/50 [&_[data-slot=sidebar-inner]]:bg-secondary"
+        collapsible="none"
+        className="border-r border-border/50 bg-secondary"
       >
         <SidebarHeader className="px-3 pt-3 pb-3">
           <OrgHeader />
@@ -420,8 +417,6 @@ export function OrgSidebar({ extraSections }: OrgSidebarProps) {
               const current = i18n.language?.startsWith("fr") ? "fr" : "en"
               i18n.changeLanguage(current === "fr" ? "en" : "fr")
             }}
-            collapseLabel={t("mySpace.nav.collapse")}
-            expandLabel={t("mySpace.nav.expand")}
             lightLabel={t("theme.light")}
             darkLabel={t("theme.dark")}
           />
@@ -432,21 +427,7 @@ export function OrgSidebar({ extraSections }: OrgSidebarProps) {
 }
 
 function OrgHeader() {
-  const { state } = useSidebar()
-  if (state === "expanded") {
-    return <OrgSwitcher />
-  }
-  return (
-    <Link href="/" className="flex items-center justify-center">
-      <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#FDFCFA] dark:bg-[#21201E]/77">
-        <img
-          src="/icons/apple-icon.png"
-          alt="Logo"
-          className="h-full w-full object-contain"
-        />
-      </div>
-    </Link>
-  )
+  return <OrgSwitcher />
 }
 
 interface FooterControlsProps {
@@ -455,8 +436,6 @@ interface FooterControlsProps {
   userAvatar: string
   lang: string | undefined
   onToggleLanguage: () => void
-  collapseLabel: string
-  expandLabel: string
   lightLabel: string
   darkLabel: string
 }
@@ -467,24 +446,15 @@ function FooterControls({
   userAvatar,
   lang,
   onToggleLanguage,
-  collapseLabel,
-  expandLabel,
   lightLabel,
   darkLabel,
 }: FooterControlsProps) {
-  const { state, toggleSidebar } = useSidebar()
   const { theme, setTheme } = useTheme()
-  const isExpanded = state === "expanded"
   const currentLang = lang?.startsWith("fr") ? "fr" : "en"
 
   return (
     <>
-      <div
-        className={cn(
-          "flex items-center gap-1 px-1",
-          !isExpanded && "flex-col"
-        )}
-      >
+      <div className="flex items-center gap-1 px-1">
         {/* Language Toggle */}
         <Button
           variant="ghost"
@@ -498,28 +468,7 @@ function FooterControls({
           <span className="text-xs font-medium uppercase">{currentLang}</span>
         </Button>
 
-        {isExpanded && <div className="flex-1" />}
-
-        {/* Toggle Sidebar Button */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 text-muted-foreground transition-transform hover:text-foreground active:scale-[0.97]"
-              onClick={toggleSidebar}
-            >
-              {isExpanded ? (
-                <ChevronsLeft className="size-4" />
-              ) : (
-                <ChevronsRight className="size-4" />
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side={isExpanded ? "top" : "right"}>
-            {isExpanded ? collapseLabel : expandLabel}
-          </TooltipContent>
-        </Tooltip>
+        <div className="flex-1" />
 
         {/* Dark Mode Toggle */}
         <Tooltip>
@@ -537,18 +486,13 @@ function FooterControls({
               )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side={isExpanded ? "top" : "right"}>
+          <TooltipContent side="top">
             {theme === "dark" ? lightLabel : darkLabel}
           </TooltipContent>
         </Tooltip>
       </div>
 
-      <div
-        className={cn(
-          "flex items-center gap-3 border-t border-foreground/5 pt-2",
-          isExpanded ? "px-1" : "justify-center"
-        )}
-      >
+      <div className="flex items-center gap-3 border-t border-foreground/5 px-1 pt-2">
         <Avatar className="size-8 shrink-0 rounded-full">
           <AvatarImage src={userAvatar} alt={userName} />
           <AvatarFallback className="rounded-full text-xs">
@@ -560,18 +504,13 @@ function FooterControls({
               .slice(0, 2)}
           </AvatarFallback>
         </Avatar>
-        {isExpanded && (
-          <>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium">{userName}</p>
-              <p className="truncate text-[10px] text-muted-foreground">
-                {userEmail}
-              </p>
-            </div>
-            <LogoutButton />
-          </>
-        )}
-        {!isExpanded && <LogoutButton tooltipSide="right" />}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-medium">{userName}</p>
+          <p className="truncate text-[10px] text-muted-foreground">
+            {userEmail}
+          </p>
+        </div>
+        <LogoutButton />
       </div>
     </>
   )

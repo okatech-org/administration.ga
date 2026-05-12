@@ -7,8 +7,6 @@ import {
   BookOpen,
   Building2,
   Calendar,
-  ChevronsLeft,
-  ChevronsRight,
   FileText,
   Files,
   FolderOpen,
@@ -37,7 +35,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar"
 import {
   Tooltip,
@@ -230,8 +227,8 @@ export function SuperadminSidebar() {
     <TooltipProvider delayDuration={100}>
       <Sidebar
         variant="sidebar"
-        collapsible="icon"
-        className="[&_[data-slot=sidebar-container]]:border-r-border/50 [&_[data-slot=sidebar-inner]]:bg-secondary"
+        collapsible="none"
+        className="border-r border-border/50 bg-secondary"
       >
         <SidebarHeader className="px-3 pt-3 pb-3">
           <Header
@@ -290,8 +287,6 @@ export function SuperadminSidebar() {
         <SidebarFooter className="border-t border-foreground/5 px-3 pt-3">
           <FooterControls
             user={user}
-            collapseLabel={t("mySpace.nav.collapse")}
-            expandLabel={t("mySpace.nav.expand")}
             lightLabel={t("theme.light")}
             darkLabel={t("theme.dark")}
           />
@@ -302,15 +297,8 @@ export function SuperadminSidebar() {
 }
 
 function Header({ roleLabel }: { roleLabel: string }) {
-  const { state } = useSidebar()
   return (
-    <Link
-      href="/"
-      className={cn(
-        "flex items-center",
-        state === "expanded" ? "gap-2" : "justify-center"
-      )}
-    >
+    <Link href="/" className="flex items-center gap-2">
       <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#FDFCFA] dark:bg-[#21201E]">
         <img
           src="/icons/apple-icon.png"
@@ -318,35 +306,27 @@ function Header({ roleLabel }: { roleLabel: string }) {
           className="h-full w-full object-contain"
         />
       </div>
-      {state === "expanded" && (
-        <div className="flex flex-col overflow-hidden whitespace-nowrap text-foreground">
-          <span className="text-sm font-bold">CONSULAT.GA</span>
-          <span className="text-xs text-foreground/60">{roleLabel}</span>
-        </div>
-      )}
+      <div className="flex flex-col overflow-hidden whitespace-nowrap text-foreground">
+        <span className="text-sm font-bold">CONSULAT.GA</span>
+        <span className="text-xs text-foreground/60">{roleLabel}</span>
+      </div>
     </Link>
   )
 }
 
 interface FooterControlsProps {
   user: ReturnType<typeof useSuperAdminData>
-  collapseLabel: string
-  expandLabel: string
   lightLabel: string
   darkLabel: string
 }
 
 function FooterControls({
   user,
-  collapseLabel,
-  expandLabel,
   lightLabel,
   darkLabel,
 }: FooterControlsProps) {
-  const { state, toggleSidebar } = useSidebar()
   const { i18n } = useTranslation()
   const { theme, setTheme } = useTheme()
-  const isExpanded = state === "expanded"
   const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en"
   const toggleLanguage = () => {
     i18n.changeLanguage(currentLang === "fr" ? "en" : "fr")
@@ -354,12 +334,7 @@ function FooterControls({
 
   return (
     <>
-      <div
-        className={cn(
-          "flex items-center gap-1 px-1",
-          !isExpanded && "flex-col"
-        )}
-      >
+      <div className="flex items-center gap-1 px-1">
         <Button
           variant="ghost"
           size="sm"
@@ -372,27 +347,7 @@ function FooterControls({
           <span className="text-xs font-medium uppercase">{currentLang}</span>
         </Button>
 
-        {isExpanded && <div className="flex-1" />}
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 text-muted-foreground hover:text-foreground"
-              onClick={toggleSidebar}
-            >
-              {isExpanded ? (
-                <ChevronsLeft className="size-4" />
-              ) : (
-                <ChevronsRight className="size-4" />
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side={isExpanded ? "top" : "right"}>
-            {isExpanded ? collapseLabel : expandLabel}
-          </TooltipContent>
-        </Tooltip>
+        <div className="flex-1" />
 
         <Tooltip>
           <TooltipTrigger asChild>
@@ -409,42 +364,30 @@ function FooterControls({
               )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side={isExpanded ? "top" : "right"}>
+          <TooltipContent side="top">
             {theme === "dark" ? lightLabel : darkLabel}
           </TooltipContent>
         </Tooltip>
       </div>
 
       {/* User info + Logout */}
-      <div
-        className={cn(
-          "flex items-center gap-2 rounded-lg px-2 py-1.5",
-          isExpanded
-            ? "bg-[#EBE6DC]/50 dark:bg-[#383633]/50"
-            : "justify-center bg-transparent px-0"
-        )}
-      >
+      <div className="flex items-center gap-2 rounded-lg bg-[#EBE6DC]/50 px-2 py-1.5 dark:bg-[#383633]/50">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
           <span className="text-xs font-bold text-primary">
             {user.userData?.firstName?.[0] || "A"}
           </span>
         </div>
-        {isExpanded && (
-          <>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium">
-                {user.userData?.firstName && user.userData?.lastName
-                  ? `${user.userData.firstName} ${user.userData.lastName}`
-                  : user.userData?.firstName || "Admin"}
-              </p>
-              <p className="truncate text-[10px] text-muted-foreground">
-                {user.userData?.email || ""}
-              </p>
-            </div>
-            <LogoutButton />
-          </>
-        )}
-        {!isExpanded && <LogoutButton tooltipSide="right" />}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-medium">
+            {user.userData?.firstName && user.userData?.lastName
+              ? `${user.userData.firstName} ${user.userData.lastName}`
+              : user.userData?.firstName || "Admin"}
+          </p>
+          <p className="truncate text-[10px] text-muted-foreground">
+            {user.userData?.email || ""}
+          </p>
+        </div>
+        <LogoutButton />
       </div>
     </>
   )

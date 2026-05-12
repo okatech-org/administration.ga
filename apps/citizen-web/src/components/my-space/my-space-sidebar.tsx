@@ -9,8 +9,6 @@ import {
   Briefcase,
   Calendar,
   ChevronDown,
-  ChevronsLeft,
-  ChevronsRight,
   FileText,
   Globe,
   Moon,
@@ -44,7 +42,6 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  useSidebar,
 } from "@/components/ui/sidebar"
 import {
   Tooltip,
@@ -118,8 +115,8 @@ export function MySpaceSidebar() {
     <TooltipProvider delayDuration={100}>
       <Sidebar
         variant="floating"
-        collapsible="icon"
-        className="border-none [&_[data-slot=sidebar-inner]]:bg-secondary [&_[data-slot=sidebar-inner]]:ring-0 [&_[data-slot=sidebar-inner]]:shadow-none"
+        collapsible="none"
+        className="border-none bg-secondary shadow-none ring-0"
       >
         <SidebarHeader className="px-3 pt-3 pb-3">
           <Header />
@@ -211,8 +208,6 @@ export function MySpaceSidebar() {
         <SidebarFooter className="border-t border-border px-3 pt-3">
           <FooterControls
             session={session}
-            collapseLabel={t("mySpace.nav.collapse")}
-            expandLabel={t("mySpace.nav.expand")}
             lightLabel={t("theme.light")}
             darkLabel={t("theme.dark")}
           />
@@ -223,15 +218,8 @@ export function MySpaceSidebar() {
 }
 
 function Header() {
-  const { state } = useSidebar()
   return (
-    <Link
-      href="/"
-      className={cn(
-        "flex items-center",
-        state === "expanded" ? "gap-2.5" : "justify-center"
-      )}
-    >
+    <Link href="/" className="flex items-center gap-2.5">
       <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full">
         <Image
           src="/icons/apple-icon.png"
@@ -241,14 +229,12 @@ function Header() {
           className="h-full w-full object-contain"
         />
       </div>
-      {state === "expanded" && (
-        <div className="flex flex-col overflow-hidden whitespace-nowrap">
-          <span className="text-sm font-black tracking-[0.2em]">CONSULAT</span>
-          <span className="text-[10px] font-medium tracking-[0.12em] text-muted-foreground">
-            Espace Numérique
-          </span>
-        </div>
-      )}
+      <div className="flex flex-col overflow-hidden whitespace-nowrap">
+        <span className="text-sm font-black tracking-[0.2em]">CONSULAT</span>
+        <span className="text-[10px] font-medium tracking-[0.12em] text-muted-foreground">
+          Espace Numérique
+        </span>
+      </div>
     </Link>
   )
 }
@@ -269,50 +255,7 @@ function ChildrenSection({
   label,
   myChildrenLabel,
 }: ChildrenSectionProps) {
-  const { state } = useSidebar()
   const [open, setOpen] = useState(false)
-  const isExpanded = state === "expanded"
-  const anyChildActive = children.some((c) =>
-    isActive(`/my-space/children/${c._id}`)
-  )
-
-  if (!isExpanded) {
-    return (
-      <SidebarGroup className="px-0 py-0">
-        <div className="mx-auto my-2 w-8 border-t border-foreground/5 pt-2" />
-        <SidebarGroupContent>
-          <SidebarMenu className="gap-0.5">
-            <SidebarMenuItem>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label={myChildrenLabel}
-                    className={cn(
-                      "mx-auto flex size-11 items-center justify-center rounded-full transition-colors",
-                      anyChildActive
-                        ? "text-rose-600"
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                    )}
-                    onClick={() => setOpen(!open)}
-                  >
-                    <Users className="size-[18px]" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  sideOffset={10}
-                  className="border-0 bg-card"
-                >
-                  {myChildrenLabel} ({children.length})
-                </TooltipContent>
-              </Tooltip>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-    )
-  }
 
   return (
     <SidebarGroup className="px-0 py-0">
@@ -388,20 +331,15 @@ function ChildrenSection({
 
 interface FooterControlsProps {
   session: ReturnType<typeof authClient.useSession>["data"]
-  collapseLabel: string
-  expandLabel: string
   lightLabel: string
   darkLabel: string
 }
 
 function FooterControls({
   session,
-  collapseLabel,
-  expandLabel,
   lightLabel,
   darkLabel,
 }: FooterControlsProps) {
-  const { state, toggleSidebar } = useSidebar()
   const { i18n } = useTranslation()
   const { resolvedTheme, setTheme } = useTheme()
   const mounted = useSyncExternalStore(
@@ -410,7 +348,6 @@ function FooterControls({
     () => false
   )
   const isDark = mounted && resolvedTheme === "dark"
-  const isExpanded = state === "expanded"
   const currentLang = i18n.language?.startsWith("fr") ? "fr" : "en"
   const toggleLanguage = () => {
     i18n.changeLanguage(currentLang === "fr" ? "en" : "fr")
@@ -418,140 +355,68 @@ function FooterControls({
 
   return (
     <>
-      {isExpanded ? (
-        <div className="flex items-center gap-0.5 px-0.5">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={toggleLanguage}
-                className="flex h-9 items-center gap-1.5 px-2 text-muted-foreground hover:text-foreground"
-              >
-                <Globe className="size-3.5" />
-                <span className="text-[10px] font-bold uppercase">
-                  {currentLang}
-                </span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              {currentLang === "fr"
-                ? "Switch to English"
-                : "Passer en Français"}
-            </TooltipContent>
-          </Tooltip>
-
-          <div className="flex-1" />
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                title={collapseLabel}
-                className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground"
-                onClick={toggleSidebar}
-              >
-                <ChevronsLeft className="size-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">{collapseLabel}</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => setTheme(isDark ? "light" : "dark")}
-                className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground"
-              >
-                {isDark ? (
-                  <Sun className="size-4 text-amber-500" />
-                ) : (
-                  <Moon className="size-4" />
-                )}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              {isDark ? lightLabel : darkLabel}
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center gap-0.5">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                title={expandLabel}
-                onClick={toggleSidebar}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-              >
-                <ChevronsRight className="size-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right">{expandLabel}</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => setTheme(isDark ? "light" : "dark")}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-              >
-                {isDark ? (
-                  <Sun className="size-4 text-amber-500" />
-                ) : (
-                  <Moon className="size-4" />
-                )}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {isDark ? lightLabel : darkLabel}
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      )}
-
-      {/* User info */}
-      <div
-        className={cn(
-          "mt-1 flex items-center pt-2",
-          isExpanded
-            ? "gap-3 px-1"
-            : "flex-col justify-center gap-1.5"
-        )}
-      >
+      <div className="flex items-center gap-0.5 px-0.5">
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="relative">
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                <span className="text-xs font-bold text-primary dark:text-primary">
-                  {session?.user?.name?.[0] || "U"}
-                </span>
-              </div>
-              <div className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-primary" />
-            </div>
+            <button
+              type="button"
+              onClick={toggleLanguage}
+              className="flex h-9 items-center gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+            >
+              <Globe className="size-3.5" />
+              <span className="text-[10px] font-bold uppercase">
+                {currentLang}
+              </span>
+            </button>
           </TooltipTrigger>
-          {!isExpanded && (
-            <TooltipContent side="right">
-              {session?.user?.name || "Utilisateur"}
-            </TooltipContent>
-          )}
+          <TooltipContent side="top">
+            {currentLang === "fr"
+              ? "Switch to English"
+              : "Passer en Français"}
+          </TooltipContent>
         </Tooltip>
-        {isExpanded && (
-          <>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold">
-                {session?.user?.name || "Utilisateur"}
-              </p>
-              <p className="truncate text-[10px] text-muted-foreground">
-                {session?.user?.email || ""}
-              </p>
-            </div>
-            <LogoutButton />
-          </>
-        )}
-        {!isExpanded && <LogoutButton tooltipSide="right" />}
+
+        <div className="flex-1" />
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => setTheme(isDark ? "light" : "dark")}
+              className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground"
+            >
+              {isDark ? (
+                <Sun className="size-4 text-amber-500" />
+              ) : (
+                <Moon className="size-4" />
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            {isDark ? lightLabel : darkLabel}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
+      {/* User info */}
+      <div className="mt-1 flex items-center gap-3 px-1 pt-2">
+        <div className="relative">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <span className="text-xs font-bold text-primary dark:text-primary">
+              {session?.user?.name?.[0] || "U"}
+            </span>
+          </div>
+          <div className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-primary" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-semibold">
+            {session?.user?.name || "Utilisateur"}
+          </p>
+          <p className="truncate text-[10px] text-muted-foreground">
+            {session?.user?.email || ""}
+          </p>
+        </div>
+        <LogoutButton />
       </div>
     </>
   )

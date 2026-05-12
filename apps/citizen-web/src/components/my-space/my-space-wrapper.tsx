@@ -4,7 +4,7 @@ import { api } from "@convex/_generated/api"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Building2, Info, Plane, Plus } from "lucide-react"
-import { useEffect, useSyncExternalStore, useState } from "react"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown"
 import { useCitizenData } from "@/hooks/use-citizen-data"
@@ -29,57 +29,17 @@ import { CitizenIAstedWindow } from "@/components/ai/iasted/CitizenIAstedWindow"
 import { GlobalCallAlert } from "@/components/meetings/global-call-alert"
 import { MySpaceSidebar } from "./my-space-sidebar"
 
-const SIDEBAR_STORAGE_KEY = "myspace-sidebar-expanded"
-
 interface MySpaceWrapperProps {
   children: React.ReactNode
   className?: string
 }
 
-function useIsTablet() {
-  const [isTablet, setIsTablet] = useState(false)
-  useEffect(() => {
-    const mql = window.matchMedia("(min-width: 768px) and (max-width: 1023px)")
-    const onChange = () => setIsTablet(mql.matches)
-    mql.addEventListener("change", onChange)
-    setIsTablet(mql.matches)
-    return () => mql.removeEventListener("change", onChange)
-  }, [])
-  return isTablet
-}
-
 export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
   const consularThemeValue = useConsularThemeState()
-  const isTablet = useIsTablet()
-
-  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
-  const [userExpanded, setUserExpanded] = useState(() => {
-    if (typeof window === "undefined") return true
-    try {
-      const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY)
-      return stored !== null ? stored === "true" : true
-    } catch {
-      return true
-    }
-  })
-
-  // Force collapsed on tablet (md–lg), respect user preference on desktop (lg+)
-  const isExpanded = isTablet ? false : userExpanded
-
-  useEffect(() => {
-    if (!mounted) return
-    try {
-      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(userExpanded))
-    } catch {
-      // Ignore localStorage errors
-    }
-  }, [userExpanded, mounted])
 
   return (
     <ConsularThemeContext.Provider value={consularThemeValue}>
       <SidebarProvider
-        open={isExpanded}
-        onOpenChange={setUserExpanded}
         className={cn(
           "citizen-layout relative flex min-h-0",
           "h-dvh flex-col overflow-hidden md:flex-row md:h-screen",
