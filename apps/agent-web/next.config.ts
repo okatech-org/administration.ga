@@ -1,3 +1,4 @@
+import { withPostHogConfig } from "@posthog/nextjs-config"
 import type { NextConfig } from "next"
 import path from "node:path"
 
@@ -16,6 +17,7 @@ const nextConfig: NextConfig = {
     "@workspace/shared",
     "@workspace/routing",
     "@workspace/agent-features",
+    "@workspace/posthog-shared",
     "@convex-dev/better-auth",
     "@convex-dev/react-query",
   ],
@@ -117,4 +119,16 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+export default process.env.POSTHOG_PERSONAL_API_KEY
+  ? withPostHogConfig(nextConfig, {
+      personalApiKey: process.env.POSTHOG_PERSONAL_API_KEY,
+      envId: process.env.POSTHOG_ENV_ID ?? "",
+      host:
+        process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://eu.i.posthog.com",
+      sourcemaps: {
+        enabled: true,
+        project: "agent-web",
+        version: process.env.GITHUB_SHA,
+      },
+    })
+  : nextConfig

@@ -1,3 +1,4 @@
+import { withPostHogConfig } from "@posthog/nextjs-config"
 import type { NextConfig } from "next"
 import path from "node:path"
 
@@ -12,6 +13,7 @@ const nextConfig: NextConfig = {
     "@workspace/ui",
     "@workspace/i18n",
     "@workspace/shared",
+    "@workspace/posthog-shared",
   ],
   turbopack: {
     resolveAlias: {
@@ -52,4 +54,18 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+// Source maps upload activé uniquement si POSTHOG_PERSONAL_API_KEY est fourni
+// au build (cf. workflow CI Cloud Run). Sinon export brut — pas de plantage en dev.
+export default process.env.POSTHOG_PERSONAL_API_KEY
+  ? withPostHogConfig(nextConfig, {
+      personalApiKey: process.env.POSTHOG_PERSONAL_API_KEY,
+      envId: process.env.POSTHOG_ENV_ID ?? "",
+      host:
+        process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://eu.i.posthog.com",
+      sourcemaps: {
+        enabled: true,
+        project: "citizen-web",
+        version: process.env.GITHUB_SHA,
+      },
+    })
+  : nextConfig
