@@ -1,0 +1,18 @@
+{
+  "name": "@workspace/posthog-shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Utilitaires PostHog partagés : scrubber RGPD (passeport, NIP, CNI, emails) appliqué via before_send côté client et posthog-node côté serveur.",
+  "exports": {
+    "./scrub-pii": "./src/scrub-pii.ts"
+  },
+  "scripts": {
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@workspace/tsconfig": "workspace:*",
+    "typescript": "^5.9.3"
+  }
+}
