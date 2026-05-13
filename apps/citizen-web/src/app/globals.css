@@ -30,13 +30,13 @@
   /* Gabon — versions profondes du prototype */
   --gabon-green-hex: #0a8a3b;
   --gabon-yellow-hex: #f1c531;
-  --gabon-blue-hex: #0b4f9c;
-  --gabon-blue-deep: #073871;
+  --gabon-blue-hex: #0072b9; /* Bleu primary de la charte */
+  --gabon-blue-deep: #005a94; /* Variante hover/active */
   /* HSL tokens (legacy — quelques composants utilisent encore var(--gabon-blue)
      comme triplet HSL via hsl(var(--gabon-blue))) */
   --gabon-green: 145 86% 29%;
   --gabon-yellow: 45 87% 57%;
-  --gabon-blue: 211 87% 33%;
+  --gabon-blue: 203 100% 36%;
 
   /* Statuts — versions Consulat */
   --status-success: #157a3d;
@@ -66,7 +66,7 @@
   --card-foreground: oklch(0.18 0.01 70);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.01 70);
-  --primary: #0b4f9c; /* Gabon-blue deep */
+  --primary: #0072b9; /* Gabon-blue charte */
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.96 0.012 85); /* #fbfaf6 surface-2 */
   --secondary-foreground: oklch(0.18 0.01 70);
@@ -76,16 +76,18 @@
   --accent-foreground: oklch(0.18 0.01 70);
   --border: oklch(0.91 0.008 85); /* #e6e2d8 */
   --input: oklch(0.91 0.008 85);
-  --ring: #0b4f9c;
+  --ring: #0072b9;
 
   /* Layout tokens existants */
   --mobile-nav-height: 60px;
 
-  /* Surface tokens citizen (conservés pour my-space) */
-  --citizen-surface-s1: var(--secondary);
-  --citizen-surface-s2: #fbfaf6;
-  --citizen-surface-s3: #efece4;
-  --citizen-surface-s4: #ffffff;
+  /* Surface tokens citizen (conservés pour my-space)
+     Recalibrés pour fond beige : s1/s4 = blanc (containers/sub-cards),
+     s2/s3 = chips & hover, clairement plus foncés que --background. */
+  --citizen-surface-s1: var(--card);
+  --citizen-surface-s2: oklch(0.94 0.012 85);
+  --citizen-surface-s3: oklch(0.91 0.014 85);
+  --citizen-surface-s4: var(--card);
   --citizen-surface-card: var(--card);
 }
 
@@ -203,7 +205,7 @@ body {
   --tw-ring-color: transparent;
   --tw-ring-shadow: 0 0 #0000;
   border: 2px solid var(--gabon-blue-hex);
-  box-shadow: 0 0 0 3px rgba(11, 79, 156, 0.12);
+  box-shadow: 0 0 0 3px rgba(0, 114, 185, 0.12);
 }
 .dark .card-recommended-blue {
   box-shadow: 0 0 0 3px rgba(46, 124, 214, 0.18);
@@ -245,7 +247,7 @@ body {
   background-color: rgba(241, 197, 49, 0.1);
 }
 .bg-gabon-blue-tint {
-  background-color: rgba(11, 79, 156, 0.08);
+  background-color: rgba(0, 114, 185, 0.08);
 }
 .dark .bg-gabon-green-tint {
   background-color: rgba(46, 176, 95, 0.15);
