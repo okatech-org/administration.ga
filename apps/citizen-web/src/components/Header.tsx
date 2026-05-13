@@ -12,7 +12,6 @@ import {
 import { FlagIcon } from "@/components/ui/flag-icon";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { ModeToggle } from "@/components/mode-toggle";
 import { CountryCode, ServiceCategory } from "@convex/lib/constants";
 import { changeLanguage } from "i18next";
 import {
@@ -47,6 +46,8 @@ export default function Header() {
 		{ label: t("header.nav.worldNetwork"), href: "/reps", icon: Globe },
 		{ label: t("header.nav.news"), href: "/news", icon: Newspaper },
 		{ label: t("header.nav.resources"), href: "/ressources", icon: BookOpen },
+		// Services placé en dernier ; le dropdown est rendu manuellement
+		// après la map pour conserver le menu déroulant par catégories.
 	];
 
 	const isActive = (href: string, exact?: boolean) =>
@@ -60,38 +61,6 @@ export default function Header() {
 
 					{/* Desktop navigation */}
 					<nav className="hidden items-center gap-1 text-sm font-medium lg:flex">
-						<div className="group relative">
-							<Button variant="ghost" size="sm" className="font-medium" asChild>
-								<Link
-									href="/services"
-									className="flex items-center gap-1.5 px-3 py-2 text-muted-foreground hover:text-foreground"
-								>
-									<span suppressHydrationWarning>
-										{t("header.nav.services")}
-									</span>
-									<ChevronDown className="size-3.5" />
-								</Link>
-							</Button>
-							<div className="invisible absolute left-0 top-full pt-2 opacity-0 transition-all group-hover:visible group-hover:opacity-100">
-								<div className="min-w-[220px] rounded-xl border border-border bg-card p-2 wizard-shadow-sm">
-									{Object.entries(ServiceCategory).map(([key, value]) => (
-										<Link
-											key={key}
-											href={`/services?category=${value}`}
-											className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-secondary"
-										>
-											<span
-												suppressHydrationWarning
-												className="text-sm font-medium"
-											>
-												{t(`services.categoriesMap.${value}`)}
-											</span>
-										</Link>
-									))}
-								</div>
-							</div>
-						</div>
-
 						{navLinks.map((link) => (
 							<Button
 								key={link.label}
@@ -112,17 +81,48 @@ export default function Header() {
 								</Link>
 							</Button>
 						))}
+
+						<div className="group relative">
+							<Button variant="ghost" size="sm" className="font-medium" asChild>
+								<Link
+									href="/services"
+									className="flex items-center gap-1.5 px-3 py-2 text-muted-foreground hover:text-foreground"
+								>
+									<span suppressHydrationWarning>
+										{t("header.nav.services")}
+									</span>
+									<ChevronDown className="size-3.5" />
+								</Link>
+							</Button>
+							<div className="invisible absolute right-0 top-full pt-2 opacity-0 transition-all group-hover:visible group-hover:opacity-100">
+								<div className="min-w-[220px] rounded-xl border border-border bg-card p-2 wizard-shadow-sm">
+									{Object.entries(ServiceCategory).map(([key, value]) => (
+										<Link
+											key={key}
+											href={`/services?category=${value}`}
+											className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-secondary"
+										>
+											<span
+												suppressHydrationWarning
+												className="text-sm font-medium"
+											>
+												{t(`services.categoriesMap.${value}`)}
+											</span>
+										</Link>
+									))}
+								</div>
+							</div>
+						</div>
 					</nav>
 
 					{/* Right side */}
 					<div className="flex items-center gap-2">
-						<ModeToggle />
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
 								<Button
 									variant="ghost"
 									size="sm"
-									className="h-8 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+									className="h-8 gap-1.5 px-2 text-muted-foreground hover:bg-secondary hover:text-foreground"
 								>
 									<FlagIcon
 										countryCode={

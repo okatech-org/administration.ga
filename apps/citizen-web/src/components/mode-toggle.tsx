@@ -33,9 +33,6 @@ export function ModeToggle() {
           <Moon className="mr-2 size-4" />
           {t("theme.dark")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
-          {t("theme.system")}
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

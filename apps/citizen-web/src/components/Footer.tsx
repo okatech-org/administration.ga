@@ -1,5 +1,6 @@
 "use client";
 
+import { ModeToggle } from "@/components/mode-toggle";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { Shield } from "lucide-react";
@@ -39,8 +40,8 @@ const SECTIONS: Section[] = [
 export function Footer() {
 	const { t } = useTranslation();
 	return (
-		<footer className="w-full border-t border-border bg-background px-6 pb-6 pt-8 text-sm text-muted-foreground sm:px-8">
-			<div className="grid gap-8 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+		<footer className="w-full border-t border-border bg-background text-sm text-muted-foreground">
+			<div className="grid gap-8 px-6 pb-10 pt-10 sm:px-8 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:pb-12 md:pt-14">
 				<div className="flex flex-col gap-3">
 					<div className="flex items-center gap-2">
 						<Shield className="size-4 text-gabon-blue" />
@@ -86,6 +87,18 @@ export function Footer() {
 						</ul>
 					</nav>
 				))}
+			</div>
+
+			<div className="border-t border-border">
+				<div className="flex flex-col items-center justify-between gap-3 px-6 py-4 text-xs sm:flex-row sm:px-8">
+					<p suppressHydrationWarning>
+						{t("footer.copyright", {
+							year: new Date().getFullYear(),
+							defaultValue: `© ${new Date().getFullYear()} Consulat.ga — République Gabonaise. Tous droits réservés.`,
+						})}
+					</p>
+					<ModeToggle />
+				</div>
 			</div>
 		</footer>
 	);

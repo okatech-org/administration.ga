@@ -14,9 +14,9 @@ export default function HeaderUser() {
 
   if (!session) {
     return (
-      <Button asChild variant="ghost" size="sm">
+      <Button asChild variant="outline" size="sm" className="gap-2">
         <Link href="/sign-in">
-          <LogIn className="w-4 h-4 mr-2" />
+          <LogIn className="size-4" />
           {t("header.nav.signIn")}
         </Link>
       </Button>
@@ -24,9 +24,9 @@ export default function HeaderUser() {
   }
 
   return (
-    <Button asChild variant="ghost" size="sm">
+    <Button asChild variant="outline" size="sm" className="gap-2">
       <Link href="/my-space">
-        <User className="w-4 h-4 mr-2" />
+        <User className="size-4" />
         {t("header.nav.mySpace")}
       </Link>
     </Button>
