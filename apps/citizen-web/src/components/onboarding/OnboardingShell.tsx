@@ -352,7 +352,7 @@ export function OnboardingShell() {
 			{/* Desktop */}
 			<div className="hidden md:block">
 				<header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-					<div className="mx-auto flex max-w-[1280px] items-center justify-between px-8 py-3">
+					<div className="mx-auto flex max-w-[1400px] items-center justify-between px-8 py-3">
 						<div className="flex items-center gap-2">
 							<span className="flex size-8 items-center justify-center rounded-lg bg-gabon-blue text-white">
 								<Globe className="size-4" />
@@ -378,7 +378,7 @@ export function OnboardingShell() {
 					</div>
 				</header>
 
-				<div className="mx-auto grid max-w-[1280px] grid-cols-[260px_1fr_320px] gap-8 px-8 py-8">
+				<div className="mx-auto grid max-w-[1400px] grid-cols-[260px_1fr_320px] gap-8 px-8 py-8">
 					<DesktopStepsSidebar
 						steps={steps}
 						currentIndex={stepIndex}

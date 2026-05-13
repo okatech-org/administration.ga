@@ -3518,6 +3518,69 @@
 		},
 		"documents_summary": "Documents fournis"
 	},
+	"onboarding": {
+		"welcome": {
+			"title": "Bienvenue sur le Portail Consulaire",
+			"subtitle": "Sélectionnez votre profil pour commencer l'inscription. Le processus prend environ 10 minutes — moins de 3 minutes avec le pré-remplissage par IA."
+		},
+		"profileSelector": {
+			"recommendedBadge": "Recommandé pour vous",
+			"cta": "Commencer l'inscription",
+			"foreigner": {
+				"back": "Retour",
+				"title": "Quel type de service vous concerne ?"
+			},
+			"visaTypes": {
+				"visa_tourism": {
+					"title": "Visa tourisme",
+					"subtitle": "Court séjour pour tourisme ou visite familiale"
+				},
+				"visa_business": {
+					"title": "Visa affaires",
+					"subtitle": "Court séjour pour missions professionnelles"
+				},
+				"visa_long_stay": {
+					"title": "Visa long séjour",
+					"subtitle": "Installation ou séjour prolongé au Gabon"
+				},
+				"admin_services": {
+					"title": "Services administratifs",
+					"subtitle": "Légalisation, apostille, certificats"
+				}
+			},
+			"profiles": {
+				"long_stay": {
+					"title": "Résident à l'étranger",
+					"subtitle": "Gabonais résidant à l'étranger depuis plus de 6 mois",
+					"benefits": {
+						"0": "Inscription consulaire complète",
+						"1": "Renouvellement de passeport",
+						"2": "Actes d'état civil",
+						"3": "Carte consulaire"
+					}
+				},
+				"short_stay": {
+					"title": "De passage",
+					"subtitle": "Gabonais de passage à l'étranger (moins de 6 mois)",
+					"benefits": {
+						"0": "Déclaration de passage",
+						"1": "Assistance consulaire",
+						"2": "Laissez-passer d'urgence"
+					}
+				},
+				"foreigner": {
+					"title": "Usager étranger",
+					"subtitle": "Demandes de visa et services administratifs",
+					"benefits": {
+						"0": "Demandes de visa",
+						"1": "Légalisation de documents",
+						"2": "Certificats spécifiques",
+						"3": "Assistance administrative"
+					}
+				}
+			}
+		}
+	},
 	"zod": {
 		"required": "Requis",
 		"invalid_type": "Attendu: {{expected}}, Reçu: {{received}}",

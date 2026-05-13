@@ -3152,6 +3152,69 @@
 		},
 		"documents_summary": "Documents provided"
 	},
+	"onboarding": {
+		"welcome": {
+			"title": "Welcome to the Consular Portal",
+			"subtitle": "Select your profile to start the registration. The process takes about 10 minutes — under 3 minutes with AI pre-fill."
+		},
+		"profileSelector": {
+			"recommendedBadge": "Recommended for you",
+			"cta": "Start registration",
+			"foreigner": {
+				"back": "Back",
+				"title": "Which type of service applies to you?"
+			},
+			"visaTypes": {
+				"visa_tourism": {
+					"title": "Tourism visa",
+					"subtitle": "Short stay for tourism or family visit"
+				},
+				"visa_business": {
+					"title": "Business visa",
+					"subtitle": "Short stay for professional missions"
+				},
+				"visa_long_stay": {
+					"title": "Long-stay visa",
+					"subtitle": "Settlement or extended stay in Gabon"
+				},
+				"admin_services": {
+					"title": "Administrative services",
+					"subtitle": "Legalisation, apostille, certificates"
+				}
+			},
+			"profiles": {
+				"long_stay": {
+					"title": "Resident abroad",
+					"subtitle": "Gabonese citizens residing abroad for more than 6 months",
+					"benefits": {
+						"0": "Complete consular registration",
+						"1": "Passport renewal",
+						"2": "Civil status documents",
+						"3": "Consular card"
+					}
+				},
+				"short_stay": {
+					"title": "Short stay",
+					"subtitle": "Gabonese citizens abroad for less than 6 months",
+					"benefits": {
+						"0": "Short-stay declaration",
+						"1": "Consular assistance",
+						"2": "Emergency travel document"
+					}
+				},
+				"foreigner": {
+					"title": "Foreign user",
+					"subtitle": "Visa requests and administrative services",
+					"benefits": {
+						"0": "Visa applications",
+						"1": "Document legalisation",
+						"2": "Specific certificates",
+						"3": "Administrative assistance"
+					}
+				}
+			}
+		}
+	},
 	"documents": {
 		"search": "Search...",
 		"preview": {

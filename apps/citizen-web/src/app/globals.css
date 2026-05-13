@@ -196,6 +196,19 @@ body {
   border-color: var(--gabon-blue-hex);
 }
 
+/* Onboarding profile card — recommended state.
+   Replace the default neutral ring with a colored border + tinted halo
+   that mirrors the prototype design tokens. */
+.card-recommended-blue {
+  --tw-ring-color: transparent;
+  --tw-ring-shadow: 0 0 #0000;
+  border: 2px solid var(--gabon-blue-hex);
+  box-shadow: 0 0 0 3px rgba(11, 79, 156, 0.12);
+}
+.dark .card-recommended-blue {
+  box-shadow: 0 0 0 3px rgba(46, 124, 214, 0.18);
+}
+
 .bg-gabon-gradient {
   background: linear-gradient(
     135deg,
