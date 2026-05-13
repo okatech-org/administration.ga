@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import {
 	ArrowRight,
@@ -17,7 +16,7 @@ import {
 	Upload,
 	X,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { OnboardingData } from "../types";
 import { useAIPrefill } from "../lib/useAIPrefill";
 
@@ -152,7 +151,16 @@ export function AIPrefillSheet({
 		handleClose();
 	};
 
-	const isMobile = useIsMobile();
+	// BottomSheet en dessous de `lg` (1024px) — desktop wizard apparaît à
+	// partir de cette taille, donc tablet → BottomSheet aussi.
+	const [useSheet, setUseSheet] = useState(false);
+	useEffect(() => {
+		const mql = window.matchMedia("(max-width: 1023px)");
+		const onChange = () => setUseSheet(mql.matches);
+		onChange();
+		mql.addEventListener("change", onChange);
+		return () => mql.removeEventListener("change", onChange);
+	}, []);
 
 	const body =
 		state.status === "analyzing" ? (
@@ -172,7 +180,7 @@ export function AIPrefillSheet({
 			/>
 		);
 
-	if (isMobile) {
+	if (useSheet) {
 		return (
 			<BottomSheet
 				open={open}

@@ -32,7 +32,7 @@ export function DesktopStepsSidebar({
 	const progress = total > 0 ? ((currentIndex + 1) / total) * 100 : 0;
 
 	return (
-		<aside className="sticky top-6 hidden flex-col gap-4 self-start md:flex">
+		<aside className="sticky top-6 hidden flex-col gap-4 self-start lg:flex">
 			{onChangeProfile && (
 				<Button
 					type="button"

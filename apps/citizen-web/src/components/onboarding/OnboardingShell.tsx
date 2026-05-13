@@ -332,8 +332,8 @@ export function OnboardingShell() {
 
   return (
     <div className="onboarding-root">
-      {/* Mobile */}
-      <div className="flex min-h-svh flex-col md:hidden">
+      {/* Mobile / tablet */}
+      <div className="flex min-h-svh flex-col lg:hidden">
         <OnboardingMobileHeader
           onBack={canPrev ? handlePrev : handleRestart}
           savedAt={savedAtLabel}
@@ -359,10 +359,10 @@ export function OnboardingShell() {
       </div>
 
       {/* Desktop */}
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <Header />
 
-        <div className="mx-auto grid grid-cols-[260px_1fr_320px] gap-8 px-8 py-8">
+        <div className="mx-auto grid max-w-[1400px] grid-cols-[260px_1fr_320px] gap-8 px-8 py-8">
           <DesktopStepsSidebar
             steps={steps}
             currentIndex={stepIndex}
