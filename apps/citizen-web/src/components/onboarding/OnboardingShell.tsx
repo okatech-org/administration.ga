@@ -1,6 +1,8 @@
 "use client";
 
 import "./onboarding.css";
+import { Footer } from "@/components/Footer";
+import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PublicUserType } from "@convex/lib/constants";
@@ -244,11 +246,15 @@ export function OnboardingShell() {
 
 	if (!userType) {
 		return (
-			<div className="onboarding-root">
-				<ProfileSelectorScreen
-					onSelectPrimary={(t) => setUserType(t)}
-					onSelectVisa={(t) => setUserType(t)}
-				/>
+			<div className="onboarding-root flex min-h-svh flex-col">
+				<Header />
+				<main className="flex-1">
+					<ProfileSelectorScreen
+						onSelectPrimary={(t) => setUserType(t)}
+						onSelectVisa={(t) => setUserType(t)}
+					/>
+				</main>
+				<Footer />
 			</div>
 		);
 	}

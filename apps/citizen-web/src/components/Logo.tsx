@@ -41,8 +41,8 @@ export function Logo({
 			{!compact && (
 				<span className="flex flex-col leading-[1.1]">
 					<strong className="text-[15px] font-bold">Consulat.ga</strong>
-					<small className="text-[11px] font-normal uppercase tracking-[0.04em] text-muted-foreground">
-						République gabonaise
+					<small className="text-[11px] font-normal text-muted-foreground">
+						République Gabonaise
 					</small>
 				</span>
 			)}

@@ -12,6 +12,7 @@ import {
 import { FlagIcon } from "@/components/ui/flag-icon";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { ModeToggle } from "@/components/mode-toggle";
 import { CountryCode, ServiceCategory } from "@convex/lib/constants";
 import { changeLanguage } from "i18next";
 import {
@@ -20,6 +21,7 @@ import {
 	ChevronDown,
 	FileText,
 	Globe,
+	Home,
 	Menu,
 	Newspaper,
 	X,
@@ -41,17 +43,19 @@ export default function Header() {
 	const [servicesExpanded, setServicesExpanded] = useState(false);
 
 	const navLinks = [
+		{ label: t("header.nav.home", "Accueil"), href: "/", icon: Home, exact: true },
 		{ label: t("header.nav.worldNetwork"), href: "/reps", icon: Globe },
 		{ label: t("header.nav.news"), href: "/news", icon: Newspaper },
 		{ label: t("header.nav.resources"), href: "/ressources", icon: BookOpen },
 	];
 
-	const isActive = (href: string) => pathname.startsWith(href);
+	const isActive = (href: string, exact?: boolean) =>
+		exact ? pathname === href : pathname.startsWith(href);
 
 	return (
 		<>
 			<header className="relative z-50 border-b border-border bg-background">
-				<div className="mx-auto flex max-w-7xl items-center justify-between px-4 pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 sm:px-6">
+				<div className="flex items-center justify-between px-4 pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 sm:px-8">
 					<Logo href="/" />
 
 					{/* Desktop navigation */}
@@ -100,7 +104,7 @@ export default function Header() {
 									href={link.href}
 									className={cn(
 										"text-muted-foreground hover:text-foreground",
-										isActive(link.href) &&
+										isActive(link.href, link.exact) &&
 											"bg-gabon-blue-tint text-gabon-blue hover:bg-gabon-blue-tint hover:text-gabon-blue",
 									)}
 								>
@@ -111,7 +115,8 @@ export default function Header() {
 					</nav>
 
 					{/* Right side */}
-					<div className="flex items-center gap-3">
+					<div className="flex items-center gap-2">
+						<ModeToggle />
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
 								<Button
