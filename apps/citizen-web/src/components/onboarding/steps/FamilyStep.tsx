@@ -52,7 +52,7 @@ export function FamilyStep({
 					value={data.maritalStatus ?? ""}
 					onValueChange={(v: MaritalStatus) => updateData({ maritalStatus: v })}
 				>
-					<SelectTrigger id="maritalStatus">
+					<SelectTrigger id="maritalStatus" className="w-full">
 						<SelectValue placeholder="Sélectionner" />
 					</SelectTrigger>
 					<SelectContent>

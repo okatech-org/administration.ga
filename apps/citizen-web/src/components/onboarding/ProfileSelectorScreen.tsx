@@ -87,7 +87,7 @@ export function ProfileSelectorScreen({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-9 px-6 py-12 md:px-8 md:py-16">
+    <div className="mx-auto flex w-full max-w-[1340px] flex-col gap-9 px-6 py-12 md:px-8 md:py-16">
       <header className="flex flex-col items-start gap-3">
         <h1
           suppressHydrationWarning
@@ -114,9 +114,7 @@ export function ProfileSelectorScreen({
                 key={p.code}
                 className={cn(
                   "relative flex flex-col gap-3.5 p-6 transition-shadow",
-                  recommended
-                    ? accent.recommended
-                    : "shadow-sm hover:shadow-md"
+                  recommended ? accent.recommended : "shadow-sm hover:shadow-md"
                 )}
               >
                 {recommended && (
@@ -148,7 +146,7 @@ export function ProfileSelectorScreen({
                       className="mt-2 text-sm text-muted-foreground"
                     >
                       {t(
-                        `onboarding.profileSelector.profiles.${p.code}.subtitle`,
+                        `onboarding.profileSelector.profiles.${p.code}.subtitle`
                       )}
                     </p>
                   </div>
@@ -164,7 +162,7 @@ export function ProfileSelectorScreen({
                           strokeWidth={2.5}
                         />
                         {t(
-                          `onboarding.profileSelector.profiles.${p.code}.benefits.${idx}`,
+                          `onboarding.profileSelector.profiles.${p.code}.benefits.${idx}`
                         )}
                       </li>
                     ))}
@@ -229,7 +227,7 @@ export function ProfileSelectorScreen({
                   <div className="flex-1">
                     <h3 suppressHydrationWarning className="font-semibold">
                       {t(
-                        `onboarding.profileSelector.visaTypes.${v.code}.title`,
+                        `onboarding.profileSelector.visaTypes.${v.code}.title`
                       )}
                     </h3>
                     <p
@@ -237,7 +235,7 @@ export function ProfileSelectorScreen({
                       className="mt-1 text-sm text-muted-foreground"
                     >
                       {t(
-                        `onboarding.profileSelector.visaTypes.${v.code}.subtitle`,
+                        `onboarding.profileSelector.visaTypes.${v.code}.subtitle`
                       )}
                     </p>
                   </div>

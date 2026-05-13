@@ -55,7 +55,7 @@ export function ProfessionStep({
 					value={data.workStatus ?? ""}
 					onValueChange={(v: WorkStatus) => updateData({ workStatus: v })}
 				>
-					<SelectTrigger id="workStatus">
+					<SelectTrigger id="workStatus" className="w-full">
 						<SelectValue placeholder="Sélectionner" />
 					</SelectTrigger>
 					<SelectContent>

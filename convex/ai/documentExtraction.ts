@@ -433,30 +433,46 @@ export const extractRegistrationDataFromImages = action({
         mimeType: v.string(),
       }),
     ),
+    // Identifiant de session anonyme — utilisé pour le rate-limit lorsque
+    // l'utilisateur n'est pas encore authentifié (phase Name de l'onboarding,
+    // avant signup). Si omis et user non-auth, l'appel est rejeté.
+    guestSessionId: v.optional(v.string()),
   },
-  handler: async (ctx, { images }): Promise<RegistrationExtractionResult> => {
-    // Verify authentication
+  handler: async (
+    ctx,
+    { images, guestSessionId },
+  ): Promise<RegistrationExtractionResult> => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      return {
-        success: false,
-        data: {
-          basicInfo: {},
-          passportInfo: {},
-          residencePermitInfo: {},
-          familyInfo: {},
-          contactInfo: {},
-        },
-        confidence: 0,
-        extractedFrom: [],
-        warnings: [],
-        error: "NOT_AUTHENTICATED",
-      };
-    }
 
-    // Rate limiting
-    const { ok, retryAfter } = await rateLimiter.limit(ctx, "aiChat", {
-      key: identity.subject,
+    // Rate limiting — utilisateur authentifié → bucket aiChat,
+    // sinon → bucket aiPrefillGuest keyé sur le sessionId client.
+    let bucket: "aiChat" | "aiPrefillGuest";
+    let rateKey: string;
+    if (identity) {
+      bucket = "aiChat";
+      rateKey = identity.subject;
+    } else {
+      if (!guestSessionId || guestSessionId.length < 8) {
+        return {
+          success: false,
+          data: {
+            basicInfo: {},
+            passportInfo: {},
+            residencePermitInfo: {},
+            familyInfo: {},
+            contactInfo: {},
+          },
+          confidence: 0,
+          extractedFrom: [],
+          warnings: [],
+          error: "MISSING_GUEST_SESSION",
+        };
+      }
+      bucket = "aiPrefillGuest";
+      rateKey = `guest:${guestSessionId}`;
+    }
+    const { ok, retryAfter } = await rateLimiter.limit(ctx, bucket, {
+      key: rateKey,
     });
     if (!ok) {
       const waitSeconds = Math.ceil((retryAfter ?? 0) / 1000);
@@ -494,9 +510,13 @@ export const extractRegistrationDataFromImages = action({
     }
 
     try {
-      // Build image contents directly from base64 args
+      // Gemini Vision accepts images AND application/pdf inline.
       const imageContents = images
-        .filter((img) => img.mimeType.startsWith("image/"))
+        .filter(
+          (img) =>
+            img.mimeType.startsWith("image/") ||
+            img.mimeType === "application/pdf",
+        )
         .map((img) => ({
           inlineData: {
             mimeType: img.mimeType,
@@ -517,7 +537,7 @@ export const extractRegistrationDataFromImages = action({
           confidence: 0,
           extractedFrom: [],
           warnings: [
-            "Aucun document image trouvé. Seuls les fichiers PDF ne sont pas encore supportés pour l'analyse.",
+            "Format non supporté. Utilisez JPG, PNG ou PDF.",
           ],
           error: "NO_IMAGES",
         };

@@ -33,10 +33,12 @@ export function IdentityStep({
 	data,
 	updateData,
 	onComplete,
+	setFile,
 }: {
 	data: OnboardingData;
 	updateData: (patch: Partial<OnboardingData>) => void;
 	onComplete: () => void;
+	setFile?: (key: string, file: File) => void;
 }) {
 	const verified = data._authState === "verified";
 
@@ -131,7 +133,12 @@ export function IdentityStep({
 			</div>
 
 			{phase === "name" && (
-				<NamePhase data={data} updateData={updateData} onNext={handleNext} />
+				<NamePhase
+					data={data}
+					updateData={updateData}
+					onNext={handleNext}
+					setFile={setFile}
+				/>
 			)}
 			{phase === "contact" && (
 				<ContactPhase

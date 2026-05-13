@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { ImageCropDialog } from "@/components/documents/ImageCropDialog";
 import { cn } from "@/lib/utils";
 import { PublicUserType } from "@convex/lib/constants";
 import {
@@ -16,7 +16,7 @@ import {
 	Upload,
 	X,
 } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type { OnboardingData } from "../types";
 
 export type RegistrationFiles = Record<string, File | undefined>;
@@ -159,20 +159,32 @@ function DocumentCard({
 	hasAIPrefill: boolean;
 }) {
 	const inputRef = useRef<HTMLInputElement>(null);
+	const [cropFile, setCropFile] = useState<File | null>(null);
 	const Icon = ICON_COMPONENTS[doc.icon];
 	const filled = Boolean(filename ?? file);
 	const autoFilled = hasAIPrefill && doc.autoFilled && !filled;
+	const isPhoto = doc.key === "identityPhoto";
 
 	const triggerInput = () => inputRef.current?.click();
 
+	const acceptFile = (f: File) => {
+		if (f.size > doc.maxSizeBytes) {
+			alert(`Le fichier dépasse la taille maximale (${doc.max}).`);
+			return;
+		}
+		if (isPhoto && f.type.startsWith("image/")) {
+			setCropFile(f);
+			return;
+		}
+		onFile(f);
+	};
+
 	return (
-		<Card
+		<div
 			className={cn(
-				"flex items-center gap-3 p-4 transition-colors",
+				"flex items-center gap-3 rounded-xl border p-4 transition-colors",
 				filled && "border-gabon-green bg-gabon-green-tint/40",
-				!filled &&
-					autoFilled &&
-					"border-gabon-blue bg-gabon-blue-tint/40",
+				!filled && autoFilled && "border-gabon-blue bg-gabon-blue-tint/40",
 				!filled && !autoFilled && "border-border bg-card",
 			)}
 		>
@@ -181,16 +193,16 @@ function DocumentCard({
 					"flex size-10 shrink-0 items-center justify-center rounded-lg",
 					filled && "bg-gabon-green text-white",
 					!filled && autoFilled && "bg-gabon-blue text-white",
-					!filled && !autoFilled && "bg-muted text-muted-foreground",
+					!filled && !autoFilled && "bg-secondary text-muted-foreground",
 				)}
 				aria-hidden="true"
 			>
 				{filled ? (
-					<Check className="size-5" strokeWidth={2.5} />
+					<Check className="size-[18px]" strokeWidth={2.5} />
 				) : autoFilled ? (
-					<Sparkles className="size-5" />
+					<Sparkles className="size-[18px]" />
 				) : (
-					<Icon className="size-5" />
+					<Icon className="size-[18px]" />
 				)}
 			</div>
 
@@ -219,12 +231,7 @@ function DocumentCard({
 				onChange={(e) => {
 					const f = e.target.files?.[0];
 					if (!f) return;
-					if (f.size > doc.maxSizeBytes) {
-						alert(`Le fichier dépasse la taille maximale (${doc.max}).`);
-						e.target.value = "";
-						return;
-					}
-					onFile(f);
+					acceptFile(f);
 					e.target.value = "";
 				}}
 			/>
@@ -233,8 +240,8 @@ function DocumentCard({
 				<Button
 					type="button"
 					variant="ghost"
-					size="sm"
-					className="h-8 text-muted-foreground hover:text-destructive"
+					size="icon"
+					className="size-8 text-muted-foreground hover:text-destructive"
 					onClick={onRemove}
 					aria-label="Supprimer le document"
 				>
@@ -243,16 +250,28 @@ function DocumentCard({
 			) : (
 				<Button
 					type="button"
-					variant="outline"
+					variant="ghost"
 					size="sm"
-					className="h-8"
+					className="h-8 border border-border bg-transparent text-foreground hover:bg-secondary"
 					onClick={triggerInput}
 				>
 					<Upload className="mr-1 size-3.5" />
 					Téléverser
 				</Button>
 			)}
-		</Card>
+
+			{isPhoto && (
+				<ImageCropDialog
+					open={cropFile !== null}
+					imageFile={cropFile}
+					onClose={() => setCropFile(null)}
+					onCropComplete={(cropped) => {
+						setCropFile(null);
+						onFile(cropped);
+					}}
+				/>
+			)}
+		</div>
 	);
 }
 
@@ -273,7 +292,7 @@ export function DocumentsStep({
 }) {
 	const docs = getDocsForUserType(userType);
 	const documents = data.documents ?? {};
-	const hasAIPrefill = false; // hook AI prefill plus tard
+	const hasAIPrefill = Boolean(data._hasAIPrefill);
 
 	const handleFile = (key: string, file: File) => {
 		setFile(key, file);

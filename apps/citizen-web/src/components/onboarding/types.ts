@@ -16,6 +16,8 @@ export type AddressData = {
 	city?: string;
 	postalCode?: string;
 	country?: string;
+	lat?: string | number;
+	lng?: string | number;
 };
 
 export type OnboardingData = {
@@ -23,6 +25,7 @@ export type OnboardingData = {
 	_identityPhase?: IdentityPhase;
 	_authState?: AuthState;
 	_pinPhase?: PinPhase;
+	_hasAIPrefill?: boolean;
 
 	// Identity — Name
 	firstName?: string;

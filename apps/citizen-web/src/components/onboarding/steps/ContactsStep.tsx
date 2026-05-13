@@ -1,12 +1,15 @@
 "use client";
 
+import { AddressInput } from "@workspace/ui/components/address-input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CountrySelect } from "@/components/ui/country-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { usePlacesAutocomplete } from "@/hooks/use-places-autocomplete";
 import { CountryCode, PublicUserType } from "@convex/lib/constants";
-import { Home, MapPin, Phone, Plus, Trash2 } from "lucide-react";
+import { Home, Phone, Plus, Trash2 } from "lucide-react";
+import { useMemo } from "react";
 import type { EmergencyContact, OnboardingData } from "../types";
 
 export function ContactsStep({
@@ -38,12 +41,49 @@ export function ContactsStep({
 		setEmergency(next);
 	};
 
-	const updateAddress = (key: "full" | "city" | "postalCode" | "country", v: string) => {
-		updateData({ address: { ...(data.address ?? {}), [key]: v } });
-	};
-
 	const updateHomeland = (key: "full", v: string) => {
 		updateData({ homeland: { ...(data.homeland ?? {}), [key]: v } });
+	};
+
+	const places = usePlacesAutocomplete({
+		components: "country:fr|country:ga|country:be|country:ch|country:ca|country:us|country:gb|country:de|country:es|country:it",
+		debounceMs: 350,
+	});
+
+	const autocompleteAdapter = useMemo(
+		() => ({
+			setInput: places.setInput,
+			predictions: places.predictions.map((p) => ({
+				placeId: p.placeId,
+				mainText: p.mainText,
+				secondaryText: p.secondaryText,
+			})),
+			isLoading: places.isLoading,
+			getPlaceDetails: async (placeId: string) => {
+				const d = await places.getPlaceDetails(placeId);
+				if (!d) return null;
+				return {
+					street: d.street,
+					city: d.city,
+					postalCode: d.postalCode,
+					countryCode: d.countryCode,
+					formattedAddress: d.formattedAddress,
+					lat: d.lat,
+					lng: d.lng,
+				};
+			},
+			clear: places.clear,
+		}),
+		[places],
+	);
+
+	const addressValue = {
+		street: data.address?.street ?? data.address?.full ?? "",
+		city: data.address?.city ?? "",
+		postalCode: data.address?.postalCode ?? "",
+		country: data.address?.country ?? CountryCode.FR,
+		lat: data.address?.lat,
+		lng: data.address?.lng,
 	};
 
 	return (
@@ -58,52 +98,51 @@ export function ContactsStep({
 				</p>
 			</header>
 
-			<Card className="bg-muted/40">
+			<Card>
 				<CardContent className="flex flex-col gap-4 p-5">
-					<div className="flex items-center gap-2">
-						<MapPin className="size-4 text-gabon-blue" />
-						<h3 className="text-sm font-semibold">Adresse de résidence</h3>
-					</div>
-					<div className="flex flex-col gap-2">
-						<Label htmlFor="addressFull">Adresse complète</Label>
-						<Input
-							id="addressFull"
-							value={data.address?.full ?? ""}
-							onChange={(e) => updateAddress("full", e.target.value)}
-							placeholder="Commencez à taper pour des suggestions…"
-						/>
-					</div>
-					<div className="grid gap-4 md:grid-cols-2">
-						<div className="flex flex-col gap-2">
-							<Label htmlFor="addressCity">Ville</Label>
-							<Input
-								id="addressCity"
-								value={data.address?.city ?? ""}
-								onChange={(e) => updateAddress("city", e.target.value)}
+					<AddressInput
+						value={addressValue}
+						onChange={(next) =>
+							updateData({
+								address: {
+									...(data.address ?? {}),
+									street: next.street,
+									city: next.city,
+									postalCode: next.postalCode,
+									country: next.country,
+									lat: next.lat,
+									lng: next.lng,
+								},
+							})
+						}
+						autocomplete={autocompleteAdapter}
+						countrySelector={
+							<CountrySelect
+								type="single"
+								selected={
+									(data.address?.country as CountryCode) ?? CountryCode.FR
+								}
+								onChange={(v) =>
+									updateData({
+										address: { ...(data.address ?? {}), country: v },
+									})
+								}
 							/>
-						</div>
-						<div className="flex flex-col gap-2">
-							<Label htmlFor="addressPostalCode">Code postal</Label>
-							<Input
-								id="addressPostalCode"
-								value={data.address?.postalCode ?? ""}
-								onChange={(e) => updateAddress("postalCode", e.target.value)}
-							/>
-						</div>
-					</div>
-					<div className="flex flex-col gap-2">
-						<Label>Pays</Label>
-						<CountrySelect
-							type="single"
-							selected={(data.address?.country as CountryCode) ?? CountryCode.FR}
-							onChange={(v) => updateAddress("country", v)}
-						/>
-					</div>
+						}
+						showCoordinates
+						labels={{
+							street: "Adresse",
+							streetPlaceholder: "Commencez à taper pour des suggestions…",
+							city: "Ville",
+							postalCode: "Code postal",
+							country: "Pays",
+						}}
+					/>
 				</CardContent>
 			</Card>
 
 			{wantsHomeland && (
-				<Card className="bg-muted/40">
+				<Card>
 					<CardContent className="flex flex-col gap-4 p-5">
 						<div className="flex items-center gap-2">
 							<Home className="size-4 text-gabon-green" />

@@ -7,10 +7,9 @@ import { ArrowRight, Check } from "lucide-react";
 
 export function SubmittedScreen({
 	reference,
-	onRestart,
 }: {
 	reference?: string;
-	onRestart: () => void;
+	onRestart?: () => void;
 }) {
 	const router = useRouter();
 	return (
@@ -45,24 +44,14 @@ export function SubmittedScreen({
 				</Card>
 			)}
 
-			<div className="flex w-full flex-col gap-2 sm:flex-row">
-				<Button
-					type="button"
-					variant="outline"
-					className="flex-1"
-					onClick={onRestart}
-				>
-					Nouvelle demande
-				</Button>
-				<Button
-					type="button"
-					className="flex-1"
-					onClick={() => router.push("/my-space")}
-				>
-					Mon espace
-					<ArrowRight className="ml-1 size-4" />
-				</Button>
-			</div>
+			<Button
+				type="button"
+				className="h-11 w-full bg-gabon-blue text-white hover:bg-gabon-blue-deep"
+				onClick={() => router.push("/my-space")}
+			>
+				Accéder à mon espace
+				<ArrowRight className="ml-1 size-4" />
+			</Button>
 		</div>
 	);
 }

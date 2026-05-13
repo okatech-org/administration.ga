@@ -3,21 +3,27 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { AIPrefillSheet } from "../../ui/AIPrefillSheet";
 import type { OnboardingData } from "../../types";
 
 export function NamePhase({
 	data,
 	updateData,
 	onNext,
+	setFile,
 }: {
 	data: OnboardingData;
 	updateData: (patch: Partial<OnboardingData>) => void;
 	onNext: () => void;
+	setFile?: (key: string, file: File) => void;
 }) {
 	const canContinue =
 		(data.firstName?.trim().length ?? 0) >= 2 &&
 		(data.lastName?.trim().length ?? 0) >= 2;
+
+	const [aiOpen, setAiOpen] = useState(false);
 
 	return (
 		<form
@@ -25,7 +31,7 @@ export function NamePhase({
 				e.preventDefault();
 				if (canContinue) onNext();
 			}}
-			className="flex flex-col gap-6"
+			className="flex min-h-[calc(100svh-260px)] flex-col gap-6 md:min-h-0"
 		>
 			<header className="flex flex-col gap-2">
 				<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
@@ -65,8 +71,51 @@ export function NamePhase({
 				</div>
 			</div>
 
-			<div className="flex justify-end">
-				<Button type="submit" disabled={!canContinue}>
+			<div className="relative overflow-hidden rounded-xl border border-border bg-gabon-blue-tint/40 p-4">
+				<div className="flex gap-3">
+					<div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-gabon-blue text-white">
+						<Sparkles className="size-5" strokeWidth={2.25} />
+					</div>
+					<div className="flex flex-1 flex-col gap-1.5">
+						<div className="flex items-start justify-between gap-2">
+							<h3 className="text-sm font-semibold">
+								Pré-remplissage par IA
+							</h3>
+							<span className="inline-flex items-center rounded-full border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+								Optionnel
+							</span>
+						</div>
+						<p className="text-xs leading-relaxed text-muted-foreground">
+							Téléversez votre passeport, justificatif de domicile et acte de
+							naissance pour remplir automatiquement la majorité du
+							formulaire.{" "}
+							<strong className="font-semibold text-foreground">
+								Gain de temps moyen : 8 minutes.
+							</strong>
+						</p>
+						<Button
+							type="button"
+							size="sm"
+							className="mt-1 w-fit bg-gabon-blue text-white hover:bg-gabon-blue-deep"
+							onClick={() => setAiOpen(true)}
+						>
+							<Sparkles className="mr-1.5 size-3.5" />
+							Commencer le pré-remplissage
+						</Button>
+					</div>
+				</div>
+			</div>
+
+			<AIPrefillSheet
+				open={aiOpen}
+				onClose={() => setAiOpen(false)}
+				onComplete={onNext}
+				updateData={updateData}
+				setFile={setFile}
+			/>
+
+			<div className="phase-footer mt-auto">
+				<Button type="submit" disabled={!canContinue} className="btn-next">
 					Continuer
 					<ArrowRight className="ml-1 size-4" />
 				</Button>

@@ -161,22 +161,31 @@ export async function submitRegistration(opts: {
 				}
 			: undefined,
 		addresses: {
-			residence: data.address?.full
-				? {
-						street: data.address.street ?? data.address.full ?? "",
-						city: data.address.city ?? "",
-						postalCode: data.address.postalCode ?? "",
-						country: (data.address.country as CountryCode) ?? CountryCode.FR,
-					}
-				: undefined,
-			homeland: data.homeland?.full
-				? {
-						street: data.homeland.street ?? data.homeland.full ?? "",
-						city: data.homeland.city ?? "",
-						postalCode: data.homeland.postalCode ?? "",
-						country: (data.homeland.country as CountryCode) ?? CountryCode.GA,
-					}
-				: undefined,
+			residence:
+				data.address?.street ||
+				data.address?.full ||
+				data.address?.city ||
+				data.address?.postalCode ||
+				data.address?.country
+					? {
+							street: data.address.street ?? data.address.full ?? "",
+							city: data.address.city ?? "",
+							postalCode: data.address.postalCode ?? "",
+							country: (data.address.country as CountryCode) ?? CountryCode.FR,
+						}
+					: undefined,
+			homeland:
+				data.homeland?.street ||
+				data.homeland?.full ||
+				data.homeland?.city ||
+				data.homeland?.country
+					? {
+							street: data.homeland.street ?? data.homeland.full ?? "",
+							city: data.homeland.city ?? "",
+							postalCode: data.homeland.postalCode ?? "",
+							country: (data.homeland.country as CountryCode) ?? CountryCode.GA,
+						}
+					: undefined,
 		},
 		family:
 			data.maritalStatus ||

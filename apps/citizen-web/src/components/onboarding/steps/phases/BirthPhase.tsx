@@ -91,7 +91,7 @@ export function BirthPhase({
 							updateData({ gender: v })
 						}
 					>
-						<SelectTrigger id="gender">
+						<SelectTrigger id="gender" className="w-full">
 							<SelectValue placeholder="Sélectionner" />
 						</SelectTrigger>
 						<SelectContent>
@@ -120,7 +120,7 @@ export function BirthPhase({
 							updateData({ nationalityAcquisition: v })
 						}
 					>
-						<SelectTrigger id="nationalityAcquisition">
+						<SelectTrigger id="nationalityAcquisition" className="w-full">
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>

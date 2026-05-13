@@ -18,6 +18,16 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
     capacity: 5,
   },
 
+  // Inscription pre-fill par invité (avant signup). Coût Gemini ≈ $0.02-0.05
+  // par appel, on limite à 5 par heure par sessionId client. Suffit pour 1-2
+  // ré-essais en cas de doc mal cadré sans permettre l'abus.
+  aiPrefillGuest: {
+    kind: "token bucket",
+    rate: 5,
+    period: HOUR,
+    capacity: 2,
+  },
+
   // Realtime voice sessions (OpenAI gpt-4o-realtime via WebRTC).
   // Coût élevé (audio output ~$0.24/min), on limite à 1 nouvelle session toutes
   // les 30 secondes par utilisateur. La session active elle-même peut durer
