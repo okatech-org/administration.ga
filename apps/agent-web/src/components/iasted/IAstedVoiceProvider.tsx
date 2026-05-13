@@ -14,10 +14,29 @@
 
 import { useEffect, type ReactNode } from "react";
 import { IAstedVoiceContext } from "@workspace/iasted";
-import { useIAstedHost } from "./use-iasted-host";
+import { useVoiceProvider } from "./use-voice-provider";
+import { RawGeminiVoiceProvider } from "@workspace/agent-features/components/iasted-host";
 
 export function IAstedVoiceProvider({ children }: { children: ReactNode }) {
-	const controller = useIAstedHost();
+	return (
+		<RawGeminiVoiceProvider>
+			<IAstedVoiceControllerProvider>
+				{children}
+			</IAstedVoiceControllerProvider>
+		</RawGeminiVoiceProvider>
+	);
+}
+
+/**
+ * Sous-composant interne : doit être monté DANS `<RawGeminiVoiceProvider>`
+ * pour que `useVoiceProvider` puisse lire l'instance Gemini singleton
+ * via `useRawGeminiVoice`.
+ */
+function IAstedVoiceControllerProvider({ children }: { children: ReactNode }) {
+	// Le controller est publié au niveau de l'AppShell — sa session
+	// (WebSocket Gemini ou WebRTC OpenAI) survit donc à la fermeture
+	// de la fenêtre flottante iAsted, conformément à l'UX attendue.
+	const controller = useVoiceProvider();
 
 	// Raccourci clavier global pour activer/désactiver la conversation
 	// vocale : Cmd+Shift+V (mac) ou Ctrl+Shift+V (Windows / Linux).

@@ -15,7 +15,7 @@
 import { useEffect } from "react";
 import type { IAstedChatColumnsProps } from "../../features/iasted";
 import { useAdminAIChat } from "./useAdminAIChat";
-import { useAdminVoiceChat } from "./useAdminVoiceChat";
+import { useRawGeminiVoiceStrict } from "./RawGeminiVoiceContext";
 import {
 	IASTED_CONTACT,
 	IAstedChatConversation,
@@ -26,7 +26,9 @@ import {
 
 export function IAstedChatColumns({ onUnreadCountChange }: IAstedChatColumnsProps) {
 	const chat = useAdminAIChat();
-	const voice = useAdminVoiceChat();
+	// Lit l'instance singleton publiée par RawGeminiVoiceProvider (hoisted
+	// au niveau IAstedVoiceProvider). Évite les sessions WebSocket dupliquées.
+	const voice = useRawGeminiVoiceStrict();
 
 	const chatState = useIAstedChat({
 		chat,

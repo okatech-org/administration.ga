@@ -19,7 +19,6 @@ import { authClient } from "@/lib/auth-client"
 import { AIPresenceProvider } from "@/components/ai/proactive/AIPresenceProvider"
 import {
   useAdminAIChat,
-  useAdminVoiceChat,
   IAstedInstantChatTab,
   IAstedContactTab,
   IAstedCallTab,
@@ -30,17 +29,21 @@ import {
 import { VoicemailsList } from "@/components/call-center/VoicemailsList"
 import { HomeLandingSignIn } from "@/components/auth/HomeLandingSignIn"
 import { IAstedVoiceProvider } from "@/components/iasted/IAstedVoiceProvider"
+import { useRawGeminiVoiceStrict } from "@workspace/agent-features/components/iasted-host"
 
 /**
- * Injected into <IAstedWindow>. Hosts the hooks (`useAdminAIChat`,
- * `useAdminVoiceChat`) + ties the tabs together. Stays in agent-web because
- * these hooks pull a full Convex subscription + LiveKit session — packaging
- * them would drag the entire admin chat graph into every consumer.
+ * Injected into <IAstedWindow>. Hosts les hooks chat + tie les tabs.
+ *
+ * Note (mai 2026) : `useAdminVoiceChat` n'est PLUS instancié ici. Il est
+ * désormais hoisté au niveau du `IAstedVoiceProvider` via
+ * `<RawGeminiVoiceProvider>` (singleton) pour que la session WebSocket
+ * Gemini survive à la fermeture de la fenêtre flottante. On lit l'état
+ * via `useRawGeminiVoice()`.
  */
 function IAstedTabHost({ tab }: { tab: IAstedTabId }) {
   const { activeOrgId } = useOrg()
   const chat = useAdminAIChat()
-  const voice = useAdminVoiceChat()
+  const voice = useRawGeminiVoiceStrict()
 
   switch (tab) {
     case "ichat":

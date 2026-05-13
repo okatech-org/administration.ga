@@ -18,7 +18,7 @@ import type {
 } from "@workspace/agent-features/features/iasted";
 import {
 	useAdminAIChat,
-	useAdminVoiceChat,
+	useRawGeminiVoiceStrict,
 	IASTED_CONTACT,
 	IAstedChatConversation,
 	IAstedChatList,
@@ -35,7 +35,10 @@ import { VoicemailsList as CallCenterVoicemailsList } from "@/components/call-ce
 
 function IAstedChatColumns({ onUnreadCountChange }: IAstedChatColumnsProps) {
 	const chat = useAdminAIChat();
-	const voice = useAdminVoiceChat();
+	// Lit l'instance singleton publiée par RawGeminiVoiceProvider (hoisted
+	// au niveau IAstedVoiceProvider de l'AppShell). Évite la duplication
+	// de session WebSocket avec la fenêtre flottante / side panel.
+	const voice = useRawGeminiVoiceStrict();
 
 	const chatState = useIAstedChat({
 		chat,

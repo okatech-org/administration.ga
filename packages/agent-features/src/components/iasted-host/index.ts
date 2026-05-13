@@ -40,6 +40,12 @@ export { useAdminAIChat } from "./useAdminAIChat";
 export type { Message, AdminAIAction } from "./useAdminAIChat";
 export { useAdminVoiceChat } from "./useAdminVoiceChat";
 export type { PendingConfirmation } from "./useAdminVoiceChat";
+export {
+	RawGeminiVoiceProvider,
+	useRawGeminiVoice,
+	useRawGeminiVoiceStrict,
+} from "./RawGeminiVoiceContext";
+export type { GeminiVoiceState } from "./RawGeminiVoiceContext";
 export { useStreamingChat } from "./useStreamingChat";
 export type {
 	StartChatArgs,

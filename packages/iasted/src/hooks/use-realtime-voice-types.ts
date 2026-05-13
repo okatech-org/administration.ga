@@ -16,7 +16,8 @@ export type VoiceState =
 	| "listening"
 	| "thinking"
 	| "processing"
-	| "speaking";
+	| "speaking"
+	| "error";
 
 // ─────────────────────────────────────────────────────────────
 // Message échangé pendant la session vocale
@@ -116,25 +117,65 @@ export type RealtimeToolHandler = (
 // controller agnostique avec une API minimale.
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * Identifiant du provider vocal sous-jacent. L'UI consomme uniquement
+ * `IAstedVoiceController` (interface canonique) — le providerId sert à
+ * afficher d'éventuels indicateurs et à gérer les features exclusives.
+ */
+export type VoiceProviderId = "openai-realtime" | "gemini-live";
+
+/**
+ * Capabilities exposées par un provider donné. L'UI lit ces flags pour
+ * gater les features non universellement supportées (changement de voix,
+ * push de contexte page, etc.). Toute capability absente est considérée
+ * comme `false`.
+ */
+export interface VoiceCapabilities {
+	/** Mise à jour des instructions système en cours de session (page context push). */
+	pageContextUpdate: boolean;
+	/** Function calling natif côté provider. */
+	toolCalling: boolean;
+	/** Changement de voix à chaud. */
+	voiceSelection: boolean;
+	/** Contrôle de vitesse de parole. */
+	speechRateControl: boolean;
+	/** Émet la transcription en streaming (sinon `messages` reste vide). */
+	realTimeTranscription: boolean;
+}
+
 export interface IAstedVoiceController {
-	/** Indique si le mode vocal est utilisable (OPENAI_API_KEY configurée + permission). */
+	/** Identifiant technique du provider (purement informatif côté UI). */
+	providerId: VoiceProviderId;
+	/** Libellé humain (« OpenAI Realtime », « Gemini Live »…) pour debug/UI. */
+	providerLabel: string;
+	/** Features supportées par le provider courant. */
+	capabilities: VoiceCapabilities;
+
+	/** Indique si le mode vocal est utilisable (clé configurée + permission). */
 	available: boolean;
-	/** Raison de l'indisponibilité, le cas échéant (`NOT_CONFIGURED`, `INSUFFICIENT_PERMISSIONS`, etc.). */
+	/** Raison de l'indisponibilité, le cas échéant. */
 	unavailableReason?: string;
 	/** État vocal courant — pilote les animations du trigger 3D. */
 	voiceState: VoiceState;
-	/** Niveau audio normalisé [0..1] — module la saturation du trigger 3D. */
+	/** Niveau audio normalisé [0..1]. */
 	audioLevel: number;
 	/** Active la session vocale (long-press du trigger). */
 	activateVoice: () => Promise<void> | void;
 	/** Termine la session vocale (clic ou commande "stop"). */
 	deactivateVoice: () => Promise<void> | void;
-	/** True quand la connexion WebRTC est établie. */
+	/** True quand la connexion (WebRTC / WebSocket) est établie. */
 	isConnected: boolean;
-	/** Transcription temps-réel (user + assistant) — exposée pour
-	 *  l'affichage dans la fenêtre iAsted et l'overlay flottant. */
+	/** Transcription temps-réel (peut être vide si le provider ne la streame pas). */
 	messages: RealtimeMessage[];
 	/** Vide la transcription (utile à la déconnexion ou via UI). */
 	clearMessages: () => void;
+
+	// ── Optionnelles (no-op silencieux si capability == false) ──
+	/** Change la voix de l'assistant. */
+	setVoice?: (voiceId: string) => void;
+	/** Change la vitesse de lecture (0.5..2.0). */
+	setSpeechRate?: (rate: number) => void;
+	/** Pousse un bloc texte concaténé au prompt système (page context). */
+	updatePageContext?: (text: string) => void;
 }
 

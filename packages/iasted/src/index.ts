@@ -83,6 +83,8 @@ export type {
 	RealtimeToolResult,
 	RealtimeToolHandler,
 	IAstedVoiceController,
+	VoiceProviderId,
+	VoiceCapabilities,
 } from "./hooks/use-realtime-voice-types";
 
 // Hooks — Realtime voice + long-press

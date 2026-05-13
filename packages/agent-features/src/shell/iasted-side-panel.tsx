@@ -27,7 +27,8 @@ import { IAstedAIChatPanel } from "../components/iasted-host/IAstedAIChatPanel"
 import { StreamingExplanationCard } from "../components/iasted-host/StreamingExplanationCard"
 import { VoiceButton } from "../components/iasted-host/VoiceButton"
 import { useAdminAIChat } from "../components/iasted-host/useAdminAIChat"
-import { useAdminVoiceChat } from "../components/iasted-host/useAdminVoiceChat"
+import { useRawGeminiVoiceStrict } from "../components/iasted-host/RawGeminiVoiceContext"
+import { useIAstedVoiceController } from "@workspace/iasted"
 
 const MD_BREAKPOINT = "(min-width: 768px)"
 
@@ -101,7 +102,13 @@ interface IAstedSidePanelContentProps {
 
 function IAstedSidePanelContent({ activeOrgName, onClose }: IAstedSidePanelContentProps) {
   const chat = useAdminAIChat()
-  const voice = useAdminVoiceChat()
+  // Lit l'instance Gemini singleton (hoisted dans IAstedVoiceProvider).
+  // Le bouton micro pilote désormais le controller canonique (Realtime ou
+  // Gemini selon `NEXT_PUBLIC_VOICE_PROVIDER`) — l'overlay Gemini interne
+  // continue de consommer `voice` pour les états bruts (transcription
+  // intermédiaire, pendingConfirmation, etc.).
+  const voice = useRawGeminiVoiceStrict()
+  const controller = useIAstedVoiceController()
 
   return (
     <div className="flex h-full flex-col rounded-2xl bg-secondary overflow-hidden">
@@ -121,12 +128,16 @@ function IAstedSidePanelContent({ activeOrgName, onClose }: IAstedSidePanelConte
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          {voice.isAvailable && (
+          {controller?.available && (
             <VoiceButton
-              isOpen={voice.isOpen}
-              onClick={() =>
-                voice.isOpen ? voice.closeOverlay() : voice.openOverlay()
-              }
+              isOpen={controller.isConnected}
+              onClick={() => {
+                if (controller.isConnected) {
+                  void controller.deactivateVoice()
+                } else {
+                  void controller.activateVoice()
+                }
+              }}
             />
           )}
           <Button
