@@ -6,6 +6,7 @@
  * re-vérification OTP obligatoire tous les 90 jours.
  */
 
+import { hashPassword, verifyPassword } from "better-auth/crypto";
 import { v } from "convex/values";
 import { query, mutation, internalMutation } from "../_generated/server";
 import { authQuery, authMutation, backofficeMutation, backofficeQuery } from "../lib/customFunctions";
@@ -160,10 +161,9 @@ export const verifyPin = internalMutation({
       return { success: false, error: ErrorCode.PIN_OTP_REQUIRED };
     }
 
-    // Vérifier le PIN via scrypt (import dynamique pour éviter les problèmes de bundling)
+    // Vérifier le PIN via scrypt
     let isValid = false;
     try {
-      const { verifyPassword } = await import("better-auth/crypto");
       isValid = await verifyPassword({ hash: pinHash, password: args.pin });
     } catch (cryptoErr: unknown) {
       // Erreur critique : le module crypto est indisponible
@@ -248,7 +248,6 @@ export const createPin = authMutation({
     }
 
     // Hasher le PIN
-    const { hashPassword } = await import("better-auth/crypto");
     const pinHash = await hashPassword(args.pin);
 
     await ctx.db.patch(user._id, {
@@ -289,7 +288,6 @@ export const updatePin = authMutation({
     if (!pinHash) throw error(ErrorCode.PIN_NOT_FOUND);
 
     // Vérifier l'ancien PIN
-    const { verifyPassword, hashPassword } = await import("better-auth/crypto");
     const isValid = await verifyPassword({ hash: pinHash, password: args.currentPin });
     if (!isValid) throw error(ErrorCode.PIN_INVALID);
 

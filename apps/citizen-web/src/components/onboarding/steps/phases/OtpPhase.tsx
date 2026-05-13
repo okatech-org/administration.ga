@@ -1,0 +1,274 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { authClient } from "@/lib/auth-client";
+import { api } from "@convex/_generated/api";
+import { useMutation } from "convex/react";
+import {
+	AlertTriangle,
+	ArrowLeft,
+	ArrowRight,
+	Loader2,
+	Mail,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useAuthSyncWait } from "../../lib/useAuthSyncWait";
+import { OtpInput } from "../../ui/OtpInput";
+import type { OnboardingData } from "../../types";
+
+type UiStage = "idle" | "verifying" | "signing-in" | "syncing" | "done";
+
+const COUNTDOWN_SECONDS = 50;
+
+export function OtpPhase({
+	data,
+	updateData,
+	onNext,
+	onPrev,
+}: {
+	data: OnboardingData;
+	updateData: (patch: Partial<OnboardingData>) => void;
+	onNext: () => void;
+	onPrev: () => void;
+}) {
+	const { waitForSync } = useAuthSyncWait();
+	const markOtpVerified = useMutation(api.functions.pin.markOtpVerified);
+	const [otp, setOtp] = useState<string>(data.otp ?? "");
+	const [error, setError] = useState<string | null>(null);
+	const [stage, setStage] = useState<UiStage>("idle");
+	const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
+	const [resending, setResending] = useState(false);
+	const lastAttemptedRef = useRef<string | null>(null);
+	const submittingRef = useRef(false);
+
+	const email = data.email ?? "";
+	const password = data.password ?? "";
+
+	useEffect(() => {
+		if (countdown <= 0) return;
+		const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+		return () => clearTimeout(t);
+	}, [countdown]);
+
+	useEffect(() => {
+		// Auto-submit dès 6 chiffres (anti-replay : refuse de retenter le même code)
+		if (
+			otp.length === 6 &&
+			!submittingRef.current &&
+			lastAttemptedRef.current !== otp
+		) {
+			void submit(otp);
+		}
+	}, [otp]);
+
+	const submit = async (code: string) => {
+		if (submittingRef.current) return;
+		if (!email) {
+			setError("Email manquant. Revenez à l'étape précédente.");
+			return;
+		}
+		if (!password) {
+			setError(
+				"Mot de passe non disponible (rechargement de page ?). Revenez à l'étape précédente.",
+			);
+			return;
+		}
+		submittingRef.current = true;
+		lastAttemptedRef.current = code;
+		setError(null);
+		setStage("verifying");
+		try {
+			const verify = await authClient.emailOtp.verifyEmail({
+				email,
+				otp: code,
+			});
+			if (verify.error) {
+				setError(
+					verify.error.message || "Code invalide ou expiré. Réessayez.",
+				);
+				setStage("idle");
+				return;
+			}
+
+			setStage("signing-in");
+			const signIn = await authClient.signIn.email({ email, password });
+			if (signIn.error) {
+				setError(
+					signIn.error.message ||
+						"Connexion automatique impossible. Réessayez.",
+				);
+				setStage("idle");
+				return;
+			}
+
+			setStage("syncing");
+			console.time("ensure-user-sync");
+			await waitForSync({ timeoutMs: 8000 });
+			console.timeEnd("ensure-user-sync");
+
+			// Marquer la vérification OTP côté Convex pour ouvrir la fenêtre PIN
+			// (RECENT_OTP_WINDOW_MS dans convex/functions/pin.ts).
+			await markOtpVerified({});
+
+			updateData({ _authState: "verified", otp: undefined });
+			setStage("done");
+			onNext();
+		} catch (err) {
+			console.error("OTP flow error:", err);
+			const message =
+				err instanceof Error && err.message === "auth_timeout"
+					? "La synchronisation a expiré. Réessayez."
+					: err instanceof Error
+						? err.message
+						: "Erreur inattendue. Réessayez.";
+			setError(message);
+			setStage("idle");
+		} finally {
+			submittingRef.current = false;
+		}
+	};
+
+	const handleResend = async () => {
+		if (resending || countdown > 0) return;
+		setResending(true);
+		setError(null);
+		try {
+			const res = await authClient.emailOtp.sendVerificationOtp({
+				email,
+				type: "email-verification",
+			});
+			if (res.error) {
+				setError(res.error.message || "Renvoi impossible.");
+			} else {
+				setCountdown(COUNTDOWN_SECONDS);
+				lastAttemptedRef.current = null;
+				setOtp("");
+				updateData({ otp: undefined });
+			}
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Renvoi impossible.");
+		} finally {
+			setResending(false);
+		}
+	};
+
+	const handleManualSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		if (otp.length === 6) void submit(otp);
+	};
+
+	const disabled =
+		stage === "verifying" || stage === "signing-in" || stage === "syncing";
+
+	if (stage === "syncing") {
+		return (
+			<div className="flex flex-col items-center gap-4 py-12 text-center">
+				<Loader2 className="size-10 animate-spin text-gabon-blue" />
+				<h2 className="text-xl font-semibold">Création de votre espace…</h2>
+				<p className="max-w-sm text-sm text-muted-foreground">
+					Nous synchronisons votre compte. Cela ne prendra que quelques
+					secondes.
+				</p>
+			</div>
+		);
+	}
+
+	return (
+		<form onSubmit={handleManualSubmit} className="flex flex-col gap-6">
+			<header className="flex flex-col gap-2">
+				<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+					Vérifions votre email
+				</h1>
+				<p className="text-sm text-muted-foreground">
+					Un code à 6 chiffres a été envoyé à{" "}
+					<strong className="text-foreground">
+						{email || "votre adresse"}
+					</strong>
+					.
+				</p>
+			</header>
+
+			<OtpInput
+				value={otp}
+				onChange={(v) => {
+					setOtp(v);
+					if (v !== otp) updateData({ otp: v });
+					if (error) setError(null);
+				}}
+				autoFocus
+				disabled={disabled}
+				hasError={!!error}
+				ariaLabel="Code de vérification à 6 chiffres"
+			/>
+
+			<div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+				<Mail className="size-4" />
+				{countdown > 0 ? (
+					<span>
+						Renvoyer le code dans{" "}
+						<strong className="font-mono tabular-nums text-foreground">
+							{countdown}s
+						</strong>
+					</span>
+				) : (
+					<Button
+						type="button"
+						variant="link"
+						size="sm"
+						className="h-auto p-0"
+						onClick={handleResend}
+						disabled={resending}
+					>
+						{resending ? "Envoi…" : "Renvoyer le code"}
+					</Button>
+				)}
+				<span aria-hidden="true">•</span>
+				<Button
+					type="button"
+					variant="link"
+					size="sm"
+					className="h-auto p-0"
+					onClick={onPrev}
+					disabled={disabled}
+				>
+					Modifier l'email
+				</Button>
+			</div>
+
+			{error && (
+				<div
+					role="alert"
+					className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+				>
+					<AlertTriangle className="mt-0.5 size-4 shrink-0" />
+					<span>{error}</span>
+				</div>
+			)}
+
+			<div className="flex justify-between">
+				<Button
+					type="button"
+					variant="outline"
+					onClick={onPrev}
+					disabled={disabled}
+				>
+					<ArrowLeft className="mr-1 size-4" />
+					Retour
+				</Button>
+				<Button type="submit" disabled={otp.length !== 6 || disabled}>
+					{stage === "verifying" || stage === "signing-in" ? (
+						<>
+							<Loader2 className="mr-1 size-4 animate-spin" />
+							{stage === "verifying" ? "Vérification…" : "Connexion…"}
+						</>
+					) : (
+						<>
+							Vérifier et continuer
+							<ArrowRight className="ml-1 size-4" />
+						</>
+					)}
+				</Button>
+			</div>
+		</form>
+	);
+}

@@ -48,7 +48,7 @@ export function CTASection() {
 					size="lg"
 					className="h-16 px-10 text-lg bg-(--gabon-yellow) hover:brightness-110 text-black font-bold shadow-xl hover:scale-105 transition-all"
 				>
-					<Link href="/sign-up">
+					<Link href="/register">
 						{t("cta.button")}
 						<ChevronRight className="w-6 h-6 ml-2" />
 					</Link>
