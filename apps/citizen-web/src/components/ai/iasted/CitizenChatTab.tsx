@@ -20,6 +20,8 @@ import {
 	ImageIcon,
 	Loader2,
 	MessageSquare,
+	Mic,
+	MicOff,
 	MoreVertical,
 	Paperclip,
 	Pin,
@@ -28,6 +30,7 @@ import {
 	User,
 	X,
 } from "lucide-react";
+import { useIAstedVoiceController } from "@workspace/iasted";
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { InlineMessageEditor } from "@workspace/chat/inline-message-editor";
 import { SafeMarkdown as Markdown } from "@workspace/chat/safe-markdown";
@@ -70,6 +73,10 @@ const MR_RAY_CONTACT = {
 export function CitizenChatTab() {
 	const [selectedThread, setSelectedThread] = useState<any>(null);
 	const [messageInput, setMessageInput] = useState("");
+	// Controller vocal OpenAI Realtime — publié par
+	// `<CitizenIAstedVoiceProvider>` autour du `MySpaceWrapper`. Permet
+	// d'activer la voix depuis le header de la conversation avec Mr Ray.
+	const realtimeVoice = useIAstedVoiceController();
 	// ID du message en cours d'édition (null = aucun). L'éditeur inline prend
 	// la place du contenu de la bulle concernée.
 	const [editingMessageId, setEditingMessageId] =
@@ -467,6 +474,42 @@ export function CitizenChatTab() {
 							{isStandard ? "Assistance Consulaire" : selectedThread.requestRef ? `Demande ${selectedThread.requestRef}` : "Agent consulaire"}
 						</p>
 					</div>
+					{/* Bouton micro — actif uniquement sur la conversation Mr Ray
+					    (le vocal cible le consul IA, pas un agent humain). */}
+					{isStandard && realtimeVoice?.available && (
+						<button
+							type="button"
+							onClick={() => {
+								if (realtimeVoice.isConnected) {
+									void realtimeVoice.deactivateVoice();
+								} else {
+									void realtimeVoice.activateVoice();
+								}
+							}}
+							className={cn(
+								"h-7 w-7 rounded-full flex items-center justify-center transition-colors shrink-0",
+								realtimeVoice.isConnected
+									? "bg-rose-500 text-white hover:bg-rose-600"
+									: "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400",
+							)}
+							aria-label={
+								realtimeVoice.isConnected
+									? "Raccrocher la conversation vocale"
+									: "Démarrer une conversation vocale"
+							}
+							title={
+								realtimeVoice.isConnected
+									? "Raccrocher"
+									: "Parler à iAsted"
+							}
+						>
+							{realtimeVoice.isConnected ? (
+								<MicOff className="h-3.5 w-3.5" />
+							) : (
+								<Mic className="h-3.5 w-3.5" />
+							)}
+						</button>
+					)}
 				</div>
 
 				{/* Messages */}
