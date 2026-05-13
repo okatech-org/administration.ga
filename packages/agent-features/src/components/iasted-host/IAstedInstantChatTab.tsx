@@ -71,11 +71,7 @@ import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@workspace/
 import { cn } from "@workspace/ui/lib/utils";
 import { useAdminAIChat } from "./useAdminAIChat";
 import { VoiceButton, VoiceChatContent } from "./VoiceButton";
-import {
-	MacrosPanel,
-	SmartSuggestionsRow,
-	useIAstedVoiceController,
-} from "@workspace/iasted";
+import { MacrosPanel, SmartSuggestionsRow } from "@workspace/iasted";
 import { parseIntent, resolveNavigationTarget } from "./IntentProcessor";
 import { getSuggestions } from "./SpatialAwareness";
 
@@ -749,15 +745,20 @@ export type IAstedChatState = ReturnType<typeof useIAstedChat>;
 
 // ════════════════════════════════════════════════════════════
 // IAstedChatVoiceOverlay — mode vocal plein onglet
-//
-// DÉPRÉCIÉ (mai 2026) : la session vocale est désormais portée par
-// OpenAI Realtime (cf. `useIAstedHost` côté agent-web + `VoiceFloatingTranscription`
-// au niveau du shell). Le composant reste exporté en stub vide pour
-// préserver les imports existants — il ne rend rien.
 // ════════════════════════════════════════════════════════════
 
-export function IAstedChatVoiceOverlay(_props: { voice: unknown }) {
-	return null;
+export function IAstedChatVoiceOverlay({ voice }: { voice: any }) {
+	return (
+		<VoiceChatContent
+			state={voice.state}
+			error={voice.error}
+			onClose={voice.closeOverlay}
+			pendingConfirmation={voice.pendingConfirmation}
+			isConfirming={voice.isConfirming}
+			onConfirm={voice.confirmPending}
+			onReject={voice.rejectPending}
+		/>
+	);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -812,11 +813,6 @@ export function IAstedChatConversation({
 		isUploading,
 	} = state;
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
-	// Controller Realtime (OpenAI). Le bouton micro de la conversation IA
-	// active/désactive la session vocale via ce controller. L'ancien
-	// `voice` (state Gemini) est conservé pour compatibilité mais ne pilote
-	// plus le bouton.
-	const realtimeVoice = useIAstedVoiceController();
 
 	// État vide — fullscreen sans sélection.
 	if (!selectedContact) {
@@ -882,20 +878,13 @@ export function IAstedChatConversation({
 									: (selectedContact.position ?? "Agent consulaire")}
 						</p>
 					</div>
-					{/* Voice toggle — active la session vocale OpenAI Realtime
-					    (anciennement Gemini Live, migré en mai 2026). Le visuel
-					    `VoiceButton` reste, mais le clic appelle désormais le
-					    controller Realtime exposé via `useIAstedVoiceController`. */}
-					{selectedContact.isAI && realtimeVoice?.available && (
+					{/* Voice toggle — actif uniquement pour le chat IA */}
+					{selectedContact.isAI && voice?.isAvailable && (
 						<VoiceButton
-							isOpen={realtimeVoice.isConnected}
-							onClick={() => {
-								if (realtimeVoice.isConnected) {
-									void realtimeVoice.deactivateVoice();
-								} else {
-									void realtimeVoice.activateVoice();
-								}
-							}}
+							isOpen={voice.isOpen}
+							onClick={() =>
+								voice.isOpen ? voice.closeOverlay() : voice.openOverlay()
+							}
 						/>
 					)}
 				</div>
@@ -1478,9 +1467,7 @@ export function IAstedInstantChatTab({ chat, voice }: IAstedInstantChatTabProps)
 	return (
 		<div className="relative flex flex-col flex-1 min-h-0">
 			{main}
-			{/* `FloatingVoiceOverlay` retiré (mai 2026) : la transcription
-			    vocale est maintenant rendue par `VoiceFloatingTranscription`
-			    au niveau du shell (cf. iasted-window.tsx). */}
+			{voice.isOpen && <FloatingVoiceOverlay voice={voice} />}
 		</div>
 	);
 }

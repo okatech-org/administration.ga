@@ -28,7 +28,6 @@ import { StreamingExplanationCard } from "../components/iasted-host/StreamingExp
 import { VoiceButton } from "../components/iasted-host/VoiceButton"
 import { useAdminAIChat } from "../components/iasted-host/useAdminAIChat"
 import { useAdminVoiceChat } from "../components/iasted-host/useAdminVoiceChat"
-import { useIAstedVoiceController } from "@workspace/iasted"
 
 const MD_BREAKPOINT = "(min-width: 768px)"
 
@@ -102,11 +101,7 @@ interface IAstedSidePanelContentProps {
 
 function IAstedSidePanelContent({ activeOrgName, onClose }: IAstedSidePanelContentProps) {
   const chat = useAdminAIChat()
-  // `voice` (Gemini) reste un stub no-op pour les composants downstream
-  // qui s'attendent à le recevoir. Le bouton micro pilote désormais le
-  // controller Realtime via `useIAstedVoiceController`.
   const voice = useAdminVoiceChat()
-  const realtimeVoice = useIAstedVoiceController()
 
   return (
     <div className="flex h-full flex-col rounded-2xl bg-secondary overflow-hidden">
@@ -126,16 +121,12 @@ function IAstedSidePanelContent({ activeOrgName, onClose }: IAstedSidePanelConte
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          {realtimeVoice?.available && (
+          {voice.isAvailable && (
             <VoiceButton
-              isOpen={realtimeVoice.isConnected}
-              onClick={() => {
-                if (realtimeVoice.isConnected) {
-                  void realtimeVoice.deactivateVoice()
-                } else {
-                  void realtimeVoice.activateVoice()
-                }
-              }}
+              isOpen={voice.isOpen}
+              onClick={() =>
+                voice.isOpen ? voice.closeOverlay() : voice.openOverlay()
+              }
             />
           )}
           <Button
