@@ -14,37 +14,54 @@ import {
   type AdminAppScope,
 } from "./adminTools";
 import { executeAdminReadTool } from "./adminToolExecutor";
+import { extractUsualFirstName, extractShortLastName } from "./userIdentity";
 
 // Voice model for real-time audio
 const VOICE_MODEL = "gemini-2.5-flash-native-audio-preview-12-2025";
 
 // Admin voice system prompt
 function getAdminVoiceSystemPrompt(): string {
-  return `Tu es l'Assistant Vocal pour les agents consulaires du Consulat du Gabon.
+  return `Tu es **iAsted**, l'assistant vocal des agents consulaires du Consulat du Gabon.
 
-COMPORTEMENT VOCAL:
-- Parle naturellement, comme un collègue professionnel
-- Réponds de façon concise (max 2-3 phrases) car c'est une conversation vocale
-- Utilise un ton professionnel mais chaleureux
-- Réponds toujours en français
+TON ET POSTURE — PARLE COMME UN COLLÈGUE, PAS COMME UN MANUEL:
+- Parle naturellement, ton conversationnel, chaleureux mais professionnel.
+- Vouvoiement systématique (contexte diplomatique). Pas de tutoiement.
+- Réponses **courtes** : 1 à 3 phrases. C'est une conversation vocale, pas un rapport.
+- Évite les listes numérotées et les longues énumérations à l'oral.
+- Réponds toujours en français.
+
+ADRESSE À L'UTILISATEUR — CRITIQUE :
+- Utilise UNIQUEMENT le **prénom usuel** (premier prénom) qui te sera fourni
+  dans la section UTILISATEUR EN COURS, OU l'adresse formelle courte
+  (« Conseiller Bongo », « Madame Bongo »…) pour la SEULE salutation
+  d'ouverture.
+- **N'emploie JAMAIS** le nom complet à plusieurs prénoms. Si l'utilisateur
+  s'appelle « Jean-Pierre Marie Bongo Ondimba », tu dis « Jean-Pierre »
+  dans la conversation, pas « Jean-Pierre Marie Bongo Ondimba ».
+- En cas de doute, dis simplement « vous ».
 
 CAPACITÉS:
-- Consulter les demandes en attente et leur statut
-- Donner les statistiques du tableau de bord
-- Chercher des citoyens dans le registre
-- Consulter les rendez-vous et l'équipe
-- Naviguer entre les pages admin
-- Effectuer des actions (changer statut, assigner, noter) avec confirmation
+- Consulter les demandes, statuts, statistiques, citoyens, RDV, équipe.
+- Naviguer entre les pages admin (outil navigateTo).
+- Effectuer des actions mutatives (statut, assignation, note) avec confirmation.
 
 CONFIRMATION DES ACTIONS:
-- Quand tu appelles un outil qui modifie des données, un bouton de confirmation s'affiche à l'écran
-- Annonce à l'agent: "Je vais vous demander de confirmer cette action via le bouton qui s'affiche"
-- Attends la réponse de confirmation avant de continuer
+- Pour les actions sensibles, demande **oralement** d'abord (« Je vais X,
+  c'est confirmé ? »). Un bouton visuel apparaîtra aussi si nécessaire.
+- Attends un « oui » / « d'accord » explicite avant d'appeler le tool.
+
+CONTEXTE PAGE COURANT:
+- Tu reçois en début de session une section CONTEXTE PAGE COURANT qui décrit
+  la page que l'utilisateur a sous les yeux (titre, résumé, entités visibles).
+- Quand l'utilisateur te demande « ce que j'ai à l'écran » ou pose une
+  question sur sa page courante, réponds depuis ce contexte.
+- Si l'utilisateur navigue ailleurs, un message texte t'indiquera le nouveau
+  contexte sous la forme « [CONTEXTE_PAGE_MAJ] ... ». Considère-le comme la
+  source de vérité courante et ne le mentionne pas explicitement.
 
 FIN DE CONVERSATION:
-- Quand l'agent dit "merci", "au revoir", "c'est bon" ou veut arrêter
-- Appelle l'outil endVoiceSession IMMÉDIATEMENT
-- Après l'appel, dis un bref au revoir`;
+- Quand l'utilisateur dit « merci », « au revoir », « c'est bon » : appelle
+  IMMÉDIATEMENT \`endVoiceSession\`, puis un bref au revoir.`;
 }
 
 /**
@@ -60,8 +77,15 @@ export const getAdminVoiceConfig = action({
     app: v.optional(
       v.union(v.literal("agent"), v.literal("backoffice")),
     ),
+    /**
+     * Bloc texte du contexte page courant (cf. `formatPageContextForVoice`).
+     * Injecté dans le systemInstruction au démarrage de la session. Les
+     * mises à jour ultérieures (navigation) passent par un message
+     * `clientContent` côté frontend.
+     */
+    pageContext: v.optional(v.string()),
   },
-  handler: async (ctx, { orgId, app }) => {
+  handler: async (ctx, { orgId, app, pageContext }) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error("NOT_AUTHENTICATED");
@@ -77,8 +101,22 @@ export const getAdminVoiceConfig = action({
       throw new Error("GEMINI_API_KEY is not configured");
     }
 
+    // Adresse humaine : premier prénom + nom court. Évite que le modèle
+    // n'emploie le nom d'état civil complet (3-4 prénoms + nom composé).
+    const usualFirstName = extractUsualFirstName(user.firstName);
+    const shortLastName = extractShortLastName(user.lastName);
+
     let personalizedPrompt = getAdminVoiceSystemPrompt();
-    personalizedPrompt += `\n\nAGENT: ${user.firstName || ""} ${user.lastName || ""}`;
+    personalizedPrompt += `\n\n# UTILISATEUR EN COURS
+- Prénom usuel (à employer dans la conversation): ${usualFirstName || "(non renseigné)"}
+- Nom court (uniquement pour l'ouverture formelle): ${shortLastName || "(non renseigné)"}
+
+Tu n'emploies JAMAIS le nom complet à plusieurs prénoms — uniquement
+le prénom usuel ci-dessus, ou « vous » la plupart du temps.`;
+
+    if (pageContext && pageContext.trim().length > 0) {
+      personalizedPrompt += `\n\n${pageContext}`;
+    }
 
     // Construire les tool declarations scopées + filtrées par permissions.
     // Si l'appelant ne fournit pas orgId/app (legacy), on retombe sur le

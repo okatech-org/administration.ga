@@ -13,9 +13,16 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { IAstedVoiceContext } from "@workspace/iasted";
+import {
+	IAstedVoiceContext,
+	formatPageContextForVoice,
+} from "@workspace/iasted";
 import { useVoiceProvider } from "./use-voice-provider";
 import { RawGeminiVoiceProvider } from "@workspace/agent-features/components/iasted-host";
+import {
+	usePageContextSnapshot,
+	useShellContextSnapshot,
+} from "@workspace/agent-features/stores";
 
 export function IAstedVoiceProvider({ children }: { children: ReactNode }) {
 	return (
@@ -69,6 +76,36 @@ function IAstedVoiceControllerProvider({ children }: { children: ReactNode }) {
 		window.addEventListener("keydown", handler);
 		return () => window.removeEventListener("keydown", handler);
 	}, [controller]);
+
+	// ── Synchronisation contexte page → session vocale ──
+	// Toute page d'agent-features publie son snapshot via `usePageContext`.
+	// Quand le snapshot change pendant une session vocale active, on
+	// pousse le bloc texte formaté via `controller.updatePageContext`
+	// si le provider courant supporte cette capability. Debounce léger
+	// pour absorber les republications transitoires lors d'une navigation.
+	const pageSnapshot = usePageContextSnapshot();
+	const shellSnapshot = useShellContextSnapshot();
+	useEffect(() => {
+		if (!controller.isConnected) return;
+		if (!controller.capabilities.pageContextUpdate) return;
+		if (!controller.updatePageContext) return;
+		const update = controller.updatePageContext;
+		const timer = setTimeout(() => {
+			update(
+				formatPageContextForVoice({
+					page: pageSnapshot,
+					shell: shellSnapshot,
+				}),
+			);
+		}, 150);
+		return () => clearTimeout(timer);
+	}, [
+		pageSnapshot,
+		shellSnapshot,
+		controller.isConnected,
+		controller.capabilities.pageContextUpdate,
+		controller.updatePageContext,
+	]);
 
 	return (
 		<IAstedVoiceContext.Provider value={controller}>

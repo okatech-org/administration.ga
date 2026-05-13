@@ -20,7 +20,7 @@
 
 import { useAction } from "convex/react";
 import { useRouter } from "@workspace/routing";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
 	formatPageContextForVoice,
@@ -30,11 +30,7 @@ import {
 } from "@workspace/iasted";
 import { api } from "@convex/_generated/api";
 import { useOrg } from "@workspace/agent-features/shell";
-import {
-	pageContextStore,
-	usePageContextSnapshot,
-	useShellContextSnapshot,
-} from "@workspace/agent-features/stores";
+import { pageContextStore } from "@workspace/agent-features/stores";
 
 // Map module code → route Next.js dans agent-web
 const MODULE_ROUTES: Record<string, string> = {
@@ -185,27 +181,12 @@ export function useIAstedHost(): IAstedVoiceController {
 		}, []),
 	});
 
-	// ── Synchronisation du contexte de page vers la session vocale ──
-	// Toute page d'agent-features publie son snapshot via `usePageContext`.
-	// Quand le snapshot change (navigation, filtre, mise à jour de liste)
-	// et qu'une session vocale est active, on pousse un `session.update`
-	// qui concatène le bloc de contexte au prompt système initial.
-	// Debounce léger : absorbe les republications transitoires lors d'une
-	// navigation (démontage de l'ancienne page + montage de la nouvelle).
-	const pageSnapshot = usePageContextSnapshot();
-	const shellSnapshot = useShellContextSnapshot();
-	useEffect(() => {
-		if (!voice.isConnected) return;
-		const timer = setTimeout(() => {
-			voice.updateSession({
-				pageContext: formatPageContextForVoice({
-					page: pageSnapshot,
-					shell: shellSnapshot,
-				}),
-			});
-		}, 150);
-		return () => clearTimeout(timer);
-	}, [pageSnapshot, shellSnapshot, voice.isConnected, voice.updateSession]);
+	// L'observation du `pageContextStore` et le push dynamique vers la
+	// session vocale sont désormais centralisés dans `IAstedVoiceProvider`
+	// (agnostique du provider). Ici, on expose simplement la méthode
+	// canonique `updatePageContext` via le controller retourné — c'est le
+	// provider qui décide quand l'appeler en fonction des changements du
+	// store et de la capability du provider courant.
 
 	const activateVoice = useCallback(async () => {
 		if (!available) {

@@ -15,6 +15,8 @@ import { useOrg } from "../../shell/org-provider";
 import { api } from "@convex/_generated/api";
 
 import { ADMIN_MUTATIVE_TOOLS } from "@convex/ai/adminTools";
+import { formatPageContextForVoice } from "@workspace/iasted";
+import { pageContextStore } from "../../stores/page-context-store";
 
 export type PendingConfirmation = {
   toolName: string;
@@ -61,6 +63,12 @@ interface UseAdminVoiceChatReturn {
   closeOverlay: () => void;
   confirmPending: () => Promise<void>;
   rejectPending: () => void;
+  /**
+   * Pousse une mise à jour de contexte page au modèle en cours de session.
+   * No-op si la WebSocket n'est pas ouverte. Voir l'implémentation pour
+   * les détails du protocole Gemini (`clientContent` + préfixe).
+   */
+  updatePageContext: (text: string) => void;
 }
 
 export function useAdminVoiceChat(): UseAdminVoiceChatReturn {
@@ -222,9 +230,20 @@ export function useAdminVoiceChat(): UseAdminVoiceChatReturn {
         return;
       }
 
+      // Construit le contexte page courant à transmettre au backend
+      // pour qu'il soit injecté dans le systemInstruction Gemini dès
+      // l'ouverture de la session. Les mises à jour ultérieures lors de
+      // la navigation passent par un message `clientContent` (cf.
+      // sendPageContextUpdate plus bas).
+      const initialPageContext = formatPageContextForVoice({
+        page: pageContextStore.getSnapshot(),
+        shell: pageContextStore.getShellSnapshot(),
+      });
+
       const config = await getVoiceConfig({
         orgId: activeOrgId,
         app: "agent",
+        pageContext: initialPageContext,
       });
 
       // Request microphone
@@ -481,6 +500,39 @@ export function useAdminVoiceChat(): UseAdminVoiceChatReturn {
     }
   }, [isSupported, getVoiceConfig, playNextAudio, state, executeVoiceTool]);
 
+  /**
+   * Pousse une mise à jour de contexte page au modèle Gemini en cours de
+   * session. Gemini Live ne supporte pas `session.update` natif pour le
+   * `systemInstruction`, mais on peut injecter un message texte côté
+   * « user » avec un préfixe `[CONTEXTE_PAGE_MAJ]` que le prompt système
+   * apprend à interpréter comme une mise à jour silencieuse. Le modèle
+   * absorbe le nouveau contexte sans le verbaliser.
+   *
+   * No-op si la WebSocket n'est pas ouverte (session inactive).
+   */
+  const updatePageContext = useCallback((text: string) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!text || text.trim().length === 0) return;
+    ws.send(
+      JSON.stringify({
+        client_content: {
+          turns: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: `[CONTEXTE_PAGE_MAJ]\n${text}\n[FIN_CONTEXTE_PAGE_MAJ]`,
+                },
+              ],
+            },
+          ],
+          turn_complete: false,
+        },
+      }),
+    );
+  }, []);
+
   const stopVoice = useCallback(() => {
     if (wsRef.current) {
       wsRef.current.close();
@@ -627,5 +679,6 @@ export function useAdminVoiceChat(): UseAdminVoiceChatReturn {
     closeOverlay,
     confirmPending,
     rejectPending,
+    updatePageContext,
   };
 }

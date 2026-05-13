@@ -69,7 +69,9 @@ export function useGeminiVoiceHost(): IAstedVoiceController {
 			providerId: "gemini-live",
 			providerLabel: "Gemini Live",
 			capabilities: {
-				pageContextUpdate: false,
+				// Push mid-session via clientContent + préfixe interprété par
+				// le prompt système (cf. useAdminVoiceChat.updatePageContext).
+				pageContextUpdate: true,
 				toolCalling: true,
 				voiceSelection: false,
 				speechRateControl: false,
@@ -91,6 +93,7 @@ export function useGeminiVoiceHost(): IAstedVoiceController {
 				/* no-op : pas de buffer de messages côté Gemini */
 			},
 			pendingConfirmation,
+			updatePageContext: voice.updatePageContext,
 		}),
 		[
 			voice.isAvailable,
@@ -98,6 +101,7 @@ export function useGeminiVoiceHost(): IAstedVoiceController {
 			voice.state,
 			voice.startVoice,
 			voice.stopVoice,
+			voice.updatePageContext,
 			messages,
 			pendingConfirmation,
 		],
