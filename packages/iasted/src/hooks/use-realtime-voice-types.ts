@@ -131,5 +131,10 @@ export interface IAstedVoiceController {
 	deactivateVoice: () => Promise<void> | void;
 	/** True quand la connexion WebRTC est établie. */
 	isConnected: boolean;
+	/** Transcription temps-réel (user + assistant) — exposée pour
+	 *  l'affichage dans la fenêtre iAsted et l'overlay flottant. */
+	messages: RealtimeMessage[];
+	/** Vide la transcription (utile à la déconnexion ou via UI). */
+	clearMessages: () => void;
 }
 

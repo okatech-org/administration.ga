@@ -167,6 +167,12 @@ export {
 // Components — Page (fullscreen)
 export { FullscreenShell, type FullscreenShellProps } from "./components/page";
 
+// Components — Voice (transcription overlay)
+export {
+	VoiceFloatingTranscription,
+	type VoiceFloatingTranscriptionProps,
+} from "./components/voice/VoiceFloatingTranscription";
+
 // Components — Config (backoffice)
 export {
 	ConfigPanelShell,

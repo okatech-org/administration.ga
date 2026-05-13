@@ -20,6 +20,7 @@
 
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { useEffect, useState } from "react";
+import { PhoneOff } from "lucide-react";
 import type { VoiceState } from "../../hooks/use-realtime-voice-types";
 
 // ─────────────────────────────────────────────────────────────
@@ -50,6 +51,12 @@ export interface IAstedTrigger3DProps {
 	/** Indique si le bouton est dans un état "indisponible" (mode vocal off). */
 	disabled?: boolean;
 	className?: string;
+	/**
+	 * Affiche un overlay « raccrocher » (icône PhoneOff rouge) au-dessus
+	 * du trigger. Activé quand une session vocale est en cours. Le tap
+	 * court devient le geste de raccrochage canonique.
+	 */
+	showHangUpOverlay?: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -396,6 +403,7 @@ export function IAstedTrigger3D({
 	ariaLabel,
 	disabled = false,
 	className,
+	showHangUpOverlay = false,
 }: IAstedTrigger3DProps) {
 	useInjectStyles();
 
@@ -421,9 +429,11 @@ export function IAstedTrigger3D({
 		ariaLabel ??
 		(disabled
 			? "Mode vocal indisponible"
-			: isInterfaceOpen
-				? "iAsted ouvert — maintenir pour parler"
-				: "Activer iAsted — maintenir pour parler");
+			: showHangUpOverlay
+				? "Raccrocher la conversation vocale"
+				: isInterfaceOpen
+					? "iAsted ouvert — maintenir pour parler"
+					: "Activer iAsted — maintenir pour parler");
 
 	return (
 		<div
@@ -452,6 +462,25 @@ export function IAstedTrigger3D({
 				<span className="highlight-layer" aria-hidden />
 				<span className="organic-membrane" aria-hidden />
 				<span className="wave-emission" aria-hidden />
+				{showHangUpOverlay && (
+					<span
+						aria-hidden
+						style={{
+							position: "absolute",
+							inset: 0,
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+							background: "rgba(220, 38, 38, 0.92)",
+							borderRadius: "50%",
+							color: "#fff",
+							pointerEvents: "none",
+							zIndex: 5,
+						}}
+					>
+						<PhoneOff size={Math.round(px * 0.4)} strokeWidth={2.2} />
+					</span>
+				)}
 			</button>
 		</div>
 	);

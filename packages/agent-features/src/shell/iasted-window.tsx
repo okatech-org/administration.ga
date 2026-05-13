@@ -23,6 +23,7 @@ import { ShieldCheck } from "lucide-react"
 import { type ReactNode, useCallback, useEffect, useState } from "react"
 import {
   CircleMenu,
+  VoiceFloatingTranscription,
   WindowShell,
   agentPreset,
   buildCircleMenuItems,
@@ -122,10 +123,17 @@ export function IAstedWindow({
     tabs.map((tab) => [tab, renderTab(tab)])
   ) as Record<IAstedTabId, ReactNode>
 
+  // Pendant une session vocale active, le FAB reste affiché même quand la
+  // fenêtre est ouverte : c'est le geste canonique pour raccrocher (tap
+  // court sur le FAB rouge avec icône PhoneOff).
+  const isVoiceConnected = voiceController?.isConnected === true
+  const showFab = !open || isVoiceConnected
+  const rightOffsetPx = sidePanelOpen ? 420 + 62 : 62
+
   return (
     <>
       {/* CircleMenu FAB — desktop only (mobile trigger via mobile nav dispatch iasted:open) */}
-      {!open && (
+      {showFab && (
         <div
           suppressHydrationWarning
           className={cn(
@@ -142,8 +150,25 @@ export function IAstedWindow({
             audioLevel={voiceController?.audioLevel ?? 0}
             voiceDisabled={voiceController ? !voiceController.available : false}
             onLongPress={voiceController?.activateVoice}
+            isVoiceConnected={isVoiceConnected}
+            onVoiceHangUp={voiceController?.deactivateVoice}
           />
         </div>
+      )}
+
+      {/* Overlay flottant — affiche les derniers tours de la conversation
+          vocale + bouton raccrocher. Reste visible que la fenêtre soit
+          ouverte ou fermée, pour que l'utilisateur puisse naviguer
+          librement et voir la transcription en parallèle. */}
+      {isVoiceConnected && voiceController && (
+        <VoiceFloatingTranscription
+          messages={voiceController.messages}
+          voiceState={voiceController.voiceState}
+          onHangUp={() => {
+            void voiceController.deactivateVoice()
+          }}
+          rightOffsetPx={rightOffsetPx}
+        />
       )}
 
       <WindowShell

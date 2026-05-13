@@ -177,6 +177,8 @@ export const CircleMenu = ({
 	onLongPress,
 	longPressDelayMs = 350,
 	voiceDisabled = false,
+	isVoiceConnected = false,
+	onVoiceHangUp,
 }: CircleMenuProps) => {
 	const [isOpen, setIsOpen] = useState(false);
 	const triggerAnimate = useAnimationControls();
@@ -195,6 +197,10 @@ export const CircleMenu = ({
 
 	const handlePointerDown = useCallback(
 		(_event: ReactPointerEvent<HTMLButtonElement>) => {
+			// Quand une session vocale est active, le tap court raccroche
+			// (cf. `handleTriggerClick`) et le long-press est désactivé pour
+			// éviter toute confusion. On ne démarre donc pas le timer.
+			if (isVoiceConnected) return;
 			if (!onLongPress || voiceDisabled) return;
 			longPressTriggeredRef.current = false;
 			clearLongPressTimer();
@@ -207,7 +213,7 @@ export const CircleMenu = ({
 				onLongPress();
 			}, longPressDelayMs);
 		},
-		[onLongPress, longPressDelayMs, voiceDisabled, clearLongPressTimer],
+		[onLongPress, longPressDelayMs, voiceDisabled, clearLongPressTimer, isVoiceConnected],
 	);
 
 	const handlePointerUp = useCallback(
@@ -255,6 +261,12 @@ export const CircleMenu = ({
 		// (sinon le tap qui suit le maintien rouvrirait/fermerait le menu).
 		if (longPressTriggeredRef.current) {
 			longPressTriggeredRef.current = false;
+			return;
+		}
+		// Session vocale active : le tap court raccroche au lieu d'ouvrir
+		// le menu d'items. C'est le geste de raccrochage canonique.
+		if (isVoiceConnected) {
+			onVoiceHangUp?.();
 			return;
 		}
 		if (isOpen) {
@@ -332,14 +344,17 @@ export const CircleMenu = ({
 							size="md"
 							isInterfaceOpen={isOpen}
 							disabled={voiceDisabled}
+							showHangUpOverlay={isVoiceConnected}
 							onClick={handleTriggerClick}
 							onPointerDown={handlePointerDown}
 							onPointerUp={handlePointerUp}
 							onPointerCancel={handlePointerCancel}
 							ariaLabel={
-								isOpen
-									? "iAsted ouvert — maintenir pour parler"
-									: "Ouvrir iAsted — maintenir pour parler"
+								isVoiceConnected
+									? "Raccrocher la conversation vocale"
+									: isOpen
+										? "iAsted ouvert — maintenir pour parler"
+										: "Ouvrir iAsted — maintenir pour parler"
 							}
 						/>
 					</div>

@@ -64,4 +64,15 @@ export interface CircleMenuProps {
 	 * permission refusée). Le trigger 3D s'affiche en mode désactivé.
 	 */
 	voiceDisabled?: boolean;
+	/**
+	 * Indique qu'une session vocale est ACTIVEMENT connectée. Quand `true`,
+	 * le tap court sur le trigger appelle `onVoiceHangUp` (raccroche)
+	 * au lieu d'ouvrir le menu d'items. Le long-press est désactivé.
+	 */
+	isVoiceConnected?: boolean;
+	/**
+	 * Callback déclenché sur tap court quand `isVoiceConnected === true`.
+	 * Doit appeler la fermeture de la session vocale (`deactivateVoice`).
+	 */
+	onVoiceHangUp?: () => void;
 }

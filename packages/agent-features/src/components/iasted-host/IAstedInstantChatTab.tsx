@@ -983,50 +983,10 @@ export function IAstedChatConversation({
 				)}
 			</ScrollArea>
 
-			{/* Actions IA en attente — confirmation explicite par carte. */}
-			{selectedContact.isAI && chat.pendingActions.length > 0 && (
-				<div className="border-t bg-muted/40 p-2.5 space-y-2">
-					{chat.pendingActions.map((action, i) => (
-						<div
-							key={i}
-							className="flex items-start gap-2.5 bg-background rounded-md p-3 border shadow-sm"
-						>
-							<div className="mt-0.5 rounded-full bg-primary/10 p-1.5 shrink-0">
-								<Bot className="h-3.5 w-3.5 text-primary" />
-							</div>
-							<div className="flex-1 min-w-0 space-y-2">
-								<div>
-									<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-										Action requise
-									</p>
-									<p className="text-sm font-medium leading-snug">
-										{action.reason ?? action.type}
-									</p>
-								</div>
-								<div className="flex items-center gap-1.5">
-									<Button
-										size="sm"
-										onClick={() => chat.confirmAction(action)}
-										className="h-7 text-xs px-3"
-										disabled={chat.isLoading}
-									>
-										Confirmer
-									</Button>
-									<Button
-										size="sm"
-										variant="ghost"
-										onClick={() => chat.rejectAction(action)}
-										className="h-7 text-xs px-3"
-										disabled={chat.isLoading}
-									>
-										Annuler
-									</Button>
-								</div>
-							</div>
-						</div>
-					))}
-				</div>
-			)}
+			{/* Cartes de confirmation supprimées (mai 2026) : la confirmation
+			    se fait désormais en langage naturel — l'IA demande
+			    « Voulez-vous que je… ? » et l'utilisateur répond. La défense
+			    en profondeur reste dans les mutations Convex. */}
 
 			{/* Smart Suggestions contextuelles */}
 			{suggestions.length > 0 && !messageInput.trim() && (

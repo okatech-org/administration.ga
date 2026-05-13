@@ -283,6 +283,8 @@ export function useIAstedHost(): IAstedVoiceController {
 			isConnected: voice.isConnected,
 			activateVoice,
 			deactivateVoice,
+			messages: voice.messages,
+			clearMessages: voice.clearMessages,
 		}),
 		[
 			available,
@@ -292,6 +294,8 @@ export function useIAstedHost(): IAstedVoiceController {
 			voice.isConnected,
 			activateVoice,
 			deactivateVoice,
+			voice.messages,
+			voice.clearMessages,
 		],
 	);
 }

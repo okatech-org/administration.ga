@@ -23,7 +23,6 @@ export function useAdminAIChat() {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [pendingActions, setPendingActions] = useState<AdminAIAction[]>([]);
 	const [conversationId, setConversationId] =
 		useState<Id<"conversations"> | null>(null);
 
@@ -41,11 +40,10 @@ export function useAdminAIChat() {
 		async (content: string) => {
 			if (!content.trim() || isLoading || !activeOrgId) return;
 
-			// Confirmation regex retirée : on ne tente plus de deviner si "oui",
-			// "ok", "non" sont une réponse à une action en attente. L'agent doit
-			// utiliser la carte de confirmation explicite (boutons Confirmer /
-			// Annuler) — voir <PendingActionCard>. Cela évite les faux positifs
-			// dans la conversation naturelle ("oui c'est ça", "ok continue…").
+			// Cartes de confirmation supprimées (mai 2026) : la confirmation
+			// passe par le langage naturel, l'IA pose la question, l'utilisateur
+			// répond. Toute action retournée par le backend est exécutée
+			// immédiatement côté frontend.
 
 			setIsLoading(true);
 			setError(null);
@@ -105,13 +103,16 @@ export function useAdminAIChat() {
 				};
 				setMessages((prev) => [...prev, assistantMessage]);
 
-				// Handle actions
+				// Handle actions — exécution directe systématique (mai 2026).
+				// La confirmation des actions sensibles se fait désormais en
+				// langage naturel : le modèle pose la question (« voulez-vous
+				// que je… ? ») et n'émet l'action qu'après accord verbal.
+				// La défense en profondeur reste dans les mutations Convex.
 				if (response.actions && response.actions.length > 0) {
-					const confirmableActions: AdminAIAction[] = [];
 					const resultMessages: Message[] = [];
 
 					for (const action of response.actions) {
-						// Navigation — exécutée immédiatement
+						// Navigation
 						if (action.type === "navigateTo") {
 							const route = action.args.route as string;
 							if (route) router.push(route);
@@ -137,18 +138,6 @@ export function useAdminAIChat() {
 								continue;
 							}
 
-							// Si l'action déclarée requiert confirmation, on la queue.
-							// Cherche dans page ET dans shell (actions globales).
-							const pageSnap = pageContextStore.getSnapshot();
-							const shellSnap = pageContextStore.getShellSnapshot();
-							const declared =
-								pageSnap?.availableActions.find((a) => a.id === actionId) ??
-								shellSnap?.availableActions.find((a) => a.id === actionId);
-							if (declared?.requiresConfirmation) {
-								confirmableActions.push(action);
-								continue;
-							}
-
 							try {
 								await handler(params);
 							} catch (e) {
@@ -161,17 +150,32 @@ export function useAdminAIChat() {
 							continue;
 						}
 
-						// Autres mutatives → confirmation backend
-						if (action.requiresConfirmation) {
-							confirmableActions.push(action);
+						// Autres mutatives — exécution directe via le backend
+						try {
+							const result = await executeActionMutation({
+								actionType: action.type,
+								actionArgs: action.args,
+								orgId: activeOrgId,
+								conversationId: conversationId ?? undefined,
+							});
+							if (result && (result as any).error) {
+								resultMessages.push({
+									role: "assistant",
+									content: `⚠️ ${(result as any).error}`,
+									timestamp: Date.now(),
+								});
+							}
+						} catch (e) {
+							resultMessages.push({
+								role: "assistant",
+								content: `⚠️ Erreur lors de l'action « ${action.type} » : ${(e as Error).message}`,
+								timestamp: Date.now(),
+							});
 						}
 					}
 
 					if (resultMessages.length > 0) {
 						setMessages((prev) => [...prev, ...resultMessages]);
-					}
-					if (confirmableActions.length > 0) {
-						setPendingActions(confirmableActions);
 					}
 				}
 			} catch (err) {
@@ -209,134 +213,15 @@ export function useAdminAIChat() {
 			conversationId,
 			isLoading,
 			pathname,
-			pendingActions,
 			router,
 			activeOrgId,
+			executeActionMutation,
 		],
 	);
-
-	// Confirm and execute a pending action
-	const confirmAction = useCallback(
-		async (action: AdminAIAction) => {
-			if (!activeOrgId) return;
-			setIsLoading(true);
-			setError(null);
-
-			try {
-				// UI actions
-				if (action.type === "navigateTo") {
-					const route = action.args.route as string;
-					if (route) {
-						router.push(route);
-					}
-					setPendingActions((prev) =>
-						prev.filter((a) => a !== action),
-					);
-					const resultMessage: Message = {
-						role: "assistant",
-						content: " Navigation effectuée.",
-						timestamp: Date.now(),
-					};
-					setMessages((prev) => [...prev, resultMessage]);
-					return { success: true };
-				}
-
-				// Page-scoped action — exécutée via le handler enregistré par la page
-				if (action.type === "executePageAction") {
-					const actionId = action.args.actionId as string;
-					const params = action.args.params as
-						| Record<string, unknown>
-						| undefined;
-					const handler = actionId
-						? pageContextStore.getActionHandler(actionId)
-						: undefined;
-
-					setPendingActions((prev) =>
-						prev.filter((a) => a !== action),
-					);
-
-					if (!handler) {
-						const errMsg: Message = {
-							role: "assistant",
-							content: `⚠️ Action « ${actionId} » introuvable.`,
-							timestamp: Date.now(),
-						};
-						setMessages((prev) => [...prev, errMsg]);
-						return {
-							success: false,
-							error: "Action handler not found",
-						};
-					}
-
-					try {
-						await handler(params);
-						const okMsg: Message = {
-							role: "assistant",
-							content: ` Action « ${actionId} » exécutée.`,
-							timestamp: Date.now(),
-						};
-						setMessages((prev) => [...prev, okMsg]);
-						return { success: true };
-					} catch (e) {
-						const errMsg: Message = {
-							role: "assistant",
-							content: `⚠️ Erreur: ${(e as Error).message}`,
-							timestamp: Date.now(),
-						};
-						setMessages((prev) => [...prev, errMsg]);
-						return { success: false, error: (e as Error).message };
-					}
-				}
-
-				// Mutative actions → backend
-				const result = await executeActionMutation({
-					actionType: action.type,
-					actionArgs: action.args,
-					orgId: activeOrgId,
-					conversationId: conversationId ?? undefined,
-				});
-
-				setPendingActions((prev) =>
-					prev.filter((a) => a !== action),
-				);
-
-				const resultMessage: Message = {
-					role: "assistant",
-					content: result.success
-						? ` ${(result.data as any)?.message || "Action exécutée"}`
-						: ` Erreur: ${result.error}`,
-					timestamp: Date.now(),
-				};
-				setMessages((prev) => [...prev, resultMessage]);
-
-				return result;
-			} catch (err) {
-				setError(
-					(err as Error).message || "Erreur lors de l'exécution",
-				);
-				return { success: false, error: (err as Error).message };
-			} finally {
-				setIsLoading(false);
-			}
-		},
-		[executeActionMutation, conversationId, router, activeOrgId],
-	);
-
-	// Reject an action
-	const rejectAction = useCallback((action: AdminAIAction) => {
-		setPendingActions((prev) => prev.filter((a) => a !== action));
-		const rejectMessage: Message = {
-			role: "assistant",
-			content: `Action "${action.reason || action.type}" annulée.`,
-			timestamp: Date.now(),
-		};
-		setMessages((prev) => [...prev, rejectMessage]);
-	}, []);
 
 	const newConversation = useCallback(() => {
 		setMessages([]);
 		setConversationId(null);
-		setPendingActions([]);
 		setError(null);
 	}, []);
 
@@ -344,11 +229,8 @@ export function useAdminAIChat() {
 		messages,
 		isLoading,
 		error,
-		pendingActions,
 		conversationId,
 		sendMessage,
-		confirmAction,
-		rejectAction,
 		newConversation,
 	};
 }
