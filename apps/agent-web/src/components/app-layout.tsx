@@ -12,7 +12,7 @@
  */
 
 import type { ReactNode } from "react"
-import type { IAstedTabId } from "@workspace/iasted"
+import { VoiceTab, type IAstedTabId } from "@workspace/iasted"
 import { AppShell, type SharedAuthClient } from "@workspace/agent-features/shell"
 import { useOrg } from "@workspace/agent-features/shell"
 import { authClient } from "@/lib/auth-client"
@@ -61,6 +61,11 @@ function IAstedTabHost({ tab }: { tab: IAstedTabId }) {
 
     case "imeeting":
       return <IAstedMeetingTab />
+    case "ivoice":
+      // L'onglet vocal lit le controller via IAstedVoiceContext (publié
+      // par <IAstedVoiceProvider> au niveau de l'AppShell). Indépendant
+      // du chat texte/voice raw — utilise uniquement le contrat canonique.
+      return <VoiceTab />
     case "isettings":
       return <IAstedSettingsTab />
     default:

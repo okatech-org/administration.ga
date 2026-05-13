@@ -12,7 +12,7 @@
  */
 
 import type { ReactNode } from "react";
-import { Bot, Contact, Headphones, MessageSquare, Phone } from "lucide-react";
+import { Bot, Contact, Headphones, MessageSquare, Mic, Phone } from "lucide-react";
 import type { CircleMenuItemConfig } from "../components/circle-menu/types";
 import type { IAstedSurface, IAstedTabId } from "../types/iasted";
 
@@ -64,6 +64,12 @@ export function buildCircleMenuItems(
 		className: "bg-amber-500 hover:bg-amber-400",
 		onClick: () => openWithTab("icontact"),
 	};
+	const iVoice: CircleMenuItemConfig = {
+		label: t("iasted.circle.ivoice", "Assistant Vocal"),
+		icon: <Mic {...iconProps} />,
+		className: "bg-violet-600 hover:bg-violet-500",
+		onClick: () => openWithTab("ivoice"),
+	};
 
 	if (surface === "citizen") {
 		const mrRay: CircleMenuItemConfig = {
@@ -72,12 +78,12 @@ export function buildCircleMenuItems(
 			className: "bg-rose-500 hover:bg-rose-400",
 			onClick: expand ?? (() => openWithTab("ichat")),
 		};
-		// citizen : Mr Ray + iChat + iAppel (pas d'iContact)
-		return [mrRay, iChat, iAppel];
+		// citizen : Mr Ray + iChat + iAppel + iVoice (pas d'iContact)
+		return [mrRay, iChat, iAppel, iVoice];
 	}
 
-	// agent / backoffice / agent-desktop : iChat + iAppel + iContact
-	return [iChat, iAppel, iContact];
+	// agent / backoffice / agent-desktop : iChat + iAppel + iContact + iVoice
+	return [iChat, iAppel, iContact, iVoice];
 }
 
 /** Icône du trigger par défaut (Bot blanc sur fond vert émeraude). */

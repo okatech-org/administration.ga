@@ -23,7 +23,8 @@ export type IAstedTabId =
 	| "imeeting"
 	| "iqueue"
 	| "ivoicemail"
-	| "isettings";
+	| "isettings"
+	| "ivoice";
 
 export interface IAstedTabDefinition {
 	id: IAstedTabId;

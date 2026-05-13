@@ -26,6 +26,7 @@ import { useMemo } from "react";
 import type {
 	IAstedVoiceController,
 	RealtimeMessage,
+	VoicePendingConfirmation,
 } from "@workspace/iasted";
 import { useRawGeminiVoiceStrict } from "@workspace/agent-features/components/iasted-host";
 
@@ -40,6 +41,28 @@ export function useGeminiVoiceHost(): IAstedVoiceController {
 	// l'instant — la fenêtre flottante de transcription affichera
 	// uniquement l'indicateur d'état (parle / écoute).
 	const messages: RealtimeMessage[] = useMemo(() => [], []);
+
+	// Mappe la confirmation Gemini brute vers le contrat canonique. La
+	// présence de cet objet déclenche l'affichage de la carte de
+	// confirmation dans `VoiceTab` (et autres consommateurs).
+	const pendingConfirmation: VoicePendingConfirmation | null = useMemo(
+		() =>
+			voice.pendingConfirmation
+				? {
+					description: voice.pendingConfirmation.description,
+					toolName: voice.pendingConfirmation.toolName,
+					confirm: voice.confirmPending,
+					reject: voice.rejectPending,
+					isConfirming: voice.isConfirming,
+				}
+				: null,
+		[
+			voice.pendingConfirmation,
+			voice.confirmPending,
+			voice.rejectPending,
+			voice.isConfirming,
+		],
+	);
 
 	return useMemo<IAstedVoiceController>(
 		() => ({
@@ -67,6 +90,7 @@ export function useGeminiVoiceHost(): IAstedVoiceController {
 			clearMessages: () => {
 				/* no-op : pas de buffer de messages côté Gemini */
 			},
+			pendingConfirmation,
 		}),
 		[
 			voice.isAvailable,
@@ -75,6 +99,7 @@ export function useGeminiVoiceHost(): IAstedVoiceController {
 			voice.startVoice,
 			voice.stopVoice,
 			messages,
+			pendingConfirmation,
 		],
 	);
 }

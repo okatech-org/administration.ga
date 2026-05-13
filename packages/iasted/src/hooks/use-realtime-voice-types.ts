@@ -177,5 +177,32 @@ export interface IAstedVoiceController {
 	setSpeechRate?: (rate: number) => void;
 	/** Pousse un bloc texte concaténé au prompt système (page context). */
 	updatePageContext?: (text: string) => void;
+
+	/**
+	 * Demande de confirmation utilisateur en cours, le cas échéant.
+	 *
+	 * Certains providers (Gemini Live) renvoient les appels d'outils
+	 * mutatifs avec une étape explicite de confirmation côté UI : le
+	 * provider attend l'accord avant d'exécuter. D'autres (OpenAI Realtime)
+	 * gèrent la confirmation par le langage naturel (l'IA demande
+	 * oralement, l'utilisateur répond, l'IA appelle ensuite).
+	 *
+	 * `undefined` = pas de confirmation en attente.
+	 */
+	pendingConfirmation?: VoicePendingConfirmation | null;
+}
+
+/** Demande de confirmation pour une action vocale (Gemini Live). */
+export interface VoicePendingConfirmation {
+	/** Description humaine de l'action à confirmer. */
+	description: string;
+	/** Identifiant technique de l'outil (optionnel, pour debug/log). */
+	toolName?: string;
+	/** Confirme et exécute. */
+	confirm: () => Promise<void> | void;
+	/** Rejette l'action. */
+	reject: () => void;
+	/** Indique qu'une confirmation est en cours (pour désactiver les boutons). */
+	isConfirming?: boolean;
 }
 

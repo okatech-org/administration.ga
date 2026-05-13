@@ -59,6 +59,12 @@ export const TAB_DEFINITIONS: Record<string, IAstedTabDefinition> = {
 		fallbackLabel: "Réglages",
 		iconName: "Settings",
 	},
+	ivoice: {
+		id: "ivoice",
+		labelKey: "iasted.tabs.ivoice",
+		fallbackLabel: "Assistant Vocal",
+		iconName: "Mic",
+	},
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -67,7 +73,7 @@ export const TAB_DEFINITIONS: Record<string, IAstedTabDefinition> = {
 
 export const citizenPreset: IAstedPreset = {
 	id: "citizen",
-	tabs: ["ichat", "icall", "icontact"],
+	tabs: ["ichat", "icall", "icontact", "ivoice"],
 	circleMenuItems: [
 		{
 			id: "mr-ray",
@@ -100,6 +106,14 @@ export const citizenPreset: IAstedPreset = {
 			className: "bg-amber-500 text-white",
 			opensTab: "icontact",
 		},
+		{
+			id: "ivoice",
+			labelKey: "iasted.circle.ivoice",
+			fallbackLabel: "Assistant Vocal",
+			iconName: "Mic",
+			className: "bg-violet-600 text-white",
+			opensTab: "ivoice",
+		},
 	],
 	flags: {
 		supportsMultiAgent: true,
@@ -124,7 +138,7 @@ export const agentPreset: IAstedPreset = {
 	id: "agent",
 	// La messagerie vocale n'est plus un onglet à part entière : elle est
 	// désormais accessible depuis l'onglet iAppel (sous-cas des appels).
-	tabs: ["ichat", "icontact", "icall", "imeeting", "isettings"],
+	tabs: ["ichat", "icontact", "icall", "imeeting", "ivoice", "isettings"],
 	flags: {
 		hasCallQueueSlot: true,
 		windowMode: "docked",
@@ -139,7 +153,7 @@ export const agentPreset: IAstedPreset = {
 
 export const backofficePreset: IAstedPreset = {
 	id: "backoffice",
-	tabs: ["ichat", "icontact", "icall", "imeeting", "isettings"],
+	tabs: ["ichat", "icontact", "icall", "imeeting", "ivoice", "isettings"],
 	flags: {
 		supportsConfigEditor: true,
 		windowMode: "docked",
@@ -153,7 +167,7 @@ export const backofficePreset: IAstedPreset = {
 
 export const agentDesktopPreset: IAstedPreset = {
 	id: "agent-desktop",
-	tabs: ["ichat", "icontact", "icall", "imeeting", "isettings"],
+	tabs: ["ichat", "icontact", "icall", "imeeting", "ivoice", "isettings"],
 	flags: {
 		hasCallQueueSlot: true,
 		windowMode: "docked-native",

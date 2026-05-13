@@ -14,11 +14,14 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	CircleMenu,
+	VoiceFloatingTranscription,
+	VoiceTab,
 	WindowShell,
 	buildCircleMenuItems,
 	citizenPreset,
 	defaultTriggerClassName,
 	defaultTriggerIcon,
+	useIAstedVoiceController,
 	type IAstedTabId,
 } from "@workspace/iasted";
 
@@ -26,18 +29,29 @@ import { CitizenChatTab } from "./CitizenChatTab";
 import { CitizenCallTab } from "./CitizenCallTab";
 import { CitizenContactTab } from "./CitizenContactTab";
 
-type CitizenTabId = Extract<IAstedTabId, "ichat" | "icall" | "icontact">;
+type CitizenTabId = Extract<
+	IAstedTabId,
+	"ichat" | "icall" | "icontact" | "ivoice"
+>;
 
 export function CitizenIAstedWindow() {
 	const router = useRouter();
 	const { t } = useTranslation();
+	// Controller vocal — fourni par <CitizenIAstedVoiceProvider> mounté
+	// dans `MySpaceWrapper`. `null` côté logged-out / outside provider.
+	const voiceController = useIAstedVoiceController();
 
 	const [open, setOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<CitizenTabId>("ichat");
 
 	const openWithTab = useCallback((tab: IAstedTabId) => {
-		// Citizen n'expose que 3 tabs ; filtrage safe (les tabs inconnues sont ignorées).
-		if (tab === "ichat" || tab === "icall" || tab === "icontact") {
+		// Citizen expose désormais 4 tabs ; filtrage safe.
+		if (
+			tab === "ichat" ||
+			tab === "icall" ||
+			tab === "icontact" ||
+			tab === "ivoice"
+		) {
 			setActiveTab(tab);
 			setOpen(true);
 		}
@@ -65,10 +79,15 @@ export function CitizenIAstedWindow() {
 		resolveLabel: t,
 	});
 
+	const isVoiceConnected = voiceController?.isConnected === true;
+	// FAB visible quand la fenêtre est fermée OU pendant une session
+	// vocale active (pour permettre raccrochage rapide depuis le FAB).
+	const showFab = !open || isVoiceConnected;
+
 	return (
 		<>
 			{/* CircleMenu FAB — desktop only (mobile uses nav bar) */}
-			{!open && (
+			{showFab && (
 				<div
 					suppressHydrationWarning
 					className="fixed bottom-[62px] right-[62px] z-40 hidden lg:block pointer-events-none"
@@ -77,8 +96,29 @@ export function CitizenIAstedWindow() {
 						items={menuItems}
 						openIcon={defaultTriggerIcon("citizen")}
 						triggerClassName={defaultTriggerClassName("citizen")}
+						triggerVariant={voiceController ? "3d-organic" : "default"}
+						voiceState={voiceController?.voiceState ?? "idle"}
+						audioLevel={voiceController?.audioLevel ?? 0}
+						voiceDisabled={
+							voiceController ? !voiceController.available : false
+						}
+						onLongPress={voiceController?.activateVoice}
+						isVoiceConnected={isVoiceConnected}
+						onVoiceHangUp={voiceController?.deactivateVoice}
 					/>
 				</div>
+			)}
+
+			{/* Overlay flottant — transcription + raccrocher pendant la
+			    session vocale, indépendamment de l'état de la fenêtre. */}
+			{isVoiceConnected && voiceController && (
+				<VoiceFloatingTranscription
+					messages={voiceController.messages}
+					voiceState={voiceController.voiceState}
+					onHangUp={() => {
+						void voiceController.deactivateVoice();
+					}}
+				/>
 			)}
 
 			<WindowShell
@@ -97,6 +137,7 @@ export function CitizenIAstedWindow() {
 					ichat: <CitizenChatTab />,
 					icall: <CitizenCallTab />,
 					icontact: <CitizenContactTab />,
+					ivoice: <VoiceTab />,
 				}}
 			/>
 		</>

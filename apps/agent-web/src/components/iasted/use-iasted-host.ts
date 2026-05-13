@@ -297,6 +297,9 @@ export function useIAstedHost(): IAstedVoiceController {
 			setSpeechRate: voice.setSpeechRate,
 			updatePageContext: (text: string) =>
 				voice.updateSession({ pageContext: text }),
+			// Confirmation par la voix (décision UX) : pas de carte modale.
+			// L'IA demande oralement, l'utilisateur répond, l'IA exécute.
+			pendingConfirmation: null,
 		}),
 		[
 			available,
