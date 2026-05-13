@@ -8,6 +8,7 @@ import { error, ErrorCode } from "../lib/errors";
 import { calculateCompletionScore } from "../lib/utils";
 import { legacyProfileToCardNumber } from "../lib/legacyProfileToCardNumber";
 import {
+  addressValidator,
   genderValidator,
   passportInfoValidator,
   EventType,
@@ -1140,22 +1141,8 @@ export const createFromRegistration = authMutation({
     ),
     addresses: v.optional(
       v.object({
-        residence: v.optional(
-          v.object({
-            street: v.optional(v.string()),
-            city: v.optional(v.string()),
-            postalCode: v.optional(v.string()),
-            country: v.optional(countryCodeValidator),
-          }),
-        ),
-        homeland: v.optional(
-          v.object({
-            street: v.optional(v.string()),
-            city: v.optional(v.string()),
-            postalCode: v.optional(v.string()),
-            country: v.optional(countryCodeValidator),
-          }),
-        ),
+        residence: v.optional(addressValidator),
+        homeland: v.optional(addressValidator),
       }),
     ),
     family: v.optional(
