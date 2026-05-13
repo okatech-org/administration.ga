@@ -14,13 +14,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	CircleMenu,
-	VoiceFloatingTranscription,
 	WindowShell,
 	buildCircleMenuItems,
 	citizenPreset,
 	defaultTriggerClassName,
 	defaultTriggerIcon,
-	useIAstedVoiceController,
 	type IAstedTabId,
 } from "@workspace/iasted";
 
@@ -33,10 +31,6 @@ type CitizenTabId = Extract<IAstedTabId, "ichat" | "icall" | "icontact">;
 export function CitizenIAstedWindow() {
 	const router = useRouter();
 	const { t } = useTranslation();
-	// Controller vocal (publié par `<CitizenIAstedVoiceProvider>` upstream).
-	// `undefined` si le provider n'est pas monté — on tombe alors en mode
-	// non-vocal (FAB classique) sans casser le rendu.
-	const voiceController = useIAstedVoiceController();
 
 	const [open, setOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<CitizenTabId>("ichat");
@@ -71,15 +65,10 @@ export function CitizenIAstedWindow() {
 		resolveLabel: t,
 	});
 
-	const isVoiceConnected = voiceController?.isConnected === true;
-	const showFab = !open || isVoiceConnected;
-
 	return (
 		<>
-			{/* CircleMenu FAB — desktop only (mobile uses nav bar).
-			    Reste visible pendant la session vocale pour permettre le
-			    raccrochage par tap court (icône PhoneOff rouge). */}
-			{showFab && (
+			{/* CircleMenu FAB — desktop only (mobile uses nav bar) */}
+			{!open && (
 				<div
 					suppressHydrationWarning
 					className="fixed bottom-[62px] right-[62px] z-40 hidden lg:block pointer-events-none"
@@ -88,30 +77,8 @@ export function CitizenIAstedWindow() {
 						items={menuItems}
 						openIcon={defaultTriggerIcon("citizen")}
 						triggerClassName={defaultTriggerClassName("citizen")}
-						triggerVariant={voiceController ? "3d-organic" : "default"}
-						voiceState={voiceController?.voiceState ?? "idle"}
-						audioLevel={voiceController?.audioLevel ?? 0}
-						voiceDisabled={
-							voiceController ? !voiceController.available : false
-						}
-						onLongPress={voiceController?.activateVoice}
-						isVoiceConnected={isVoiceConnected}
-						onVoiceHangUp={voiceController?.deactivateVoice}
 					/>
 				</div>
-			)}
-
-			{/* Overlay flottant — transcription + bouton raccrocher
-			    pendant la session vocale, indépendamment de l'état de
-			    la fenêtre principale. */}
-			{isVoiceConnected && voiceController && (
-				<VoiceFloatingTranscription
-					messages={voiceController.messages}
-					voiceState={voiceController.voiceState}
-					onHangUp={() => {
-						void voiceController.deactivateVoice();
-					}}
-				/>
 			)}
 
 			<WindowShell

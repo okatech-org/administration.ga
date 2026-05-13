@@ -26,7 +26,6 @@ import { ConsularNotificationDialog } from "./ConsularNotificationDialog"
 import { ConsularRegistrationDialog } from "./ConsularRegistrationDialog"
 import { MobileNavBar } from "./mobile-nav-bar"
 import { CitizenIAstedWindow } from "@/components/ai/iasted/CitizenIAstedWindow"
-import { CitizenIAstedVoiceProvider } from "@/components/iasted/CitizenIAstedVoiceProvider"
 import { GlobalCallAlert } from "@/components/meetings/global-call-alert"
 import { MySpaceSidebar } from "./my-space-sidebar"
 
@@ -40,34 +39,32 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
 
   return (
     <ConsularThemeContext.Provider value={consularThemeValue}>
-      <CitizenIAstedVoiceProvider>
-        <SidebarProvider
+      <SidebarProvider
+        className={cn(
+          "citizen-layout relative flex min-h-0",
+          "h-dvh flex-col overflow-hidden md:flex-row md:h-screen",
+          consularThemeValue.consularTheme === "homeomorphism" &&
+            "theme-homeomorphism"
+        )}
+      >
+        <div className="hidden md:block">
+          <MySpaceSidebar />
+        </div>
+
+        <main
           className={cn(
-            "citizen-layout relative flex min-h-0",
-            "h-dvh flex-col overflow-hidden md:flex-row md:h-screen",
-            consularThemeValue.consularTheme === "homeomorphism" &&
-              "theme-homeomorphism"
+            "flex-1 overflow-y-auto citizen-scrollbar",
+            "px-3 min-[400px]:px-4 pt-3 pb-[calc(var(--mobile-nav-height)+12px)] md:px-4 md:pt-4 md:pb-4",
+            className
           )}
         >
-          <div className="hidden md:block">
-            <MySpaceSidebar />
-          </div>
+          {children}
+        </main>
 
-          <main
-            className={cn(
-              "flex-1 overflow-y-auto citizen-scrollbar",
-              "px-3 min-[400px]:px-4 pt-3 pb-[calc(var(--mobile-nav-height)+12px)] md:px-4 md:pt-4 md:pb-4",
-              className
-            )}
-          >
-            {children}
-          </main>
-
-          <MobileNavBar />
-          <CitizenIAstedWindow />
-          <GlobalCallAlert />
-        </SidebarProvider>
-      </CitizenIAstedVoiceProvider>
+        <MobileNavBar />
+        <CitizenIAstedWindow />
+        <GlobalCallAlert />
+      </SidebarProvider>
     </ConsularThemeContext.Provider>
   )
 }
