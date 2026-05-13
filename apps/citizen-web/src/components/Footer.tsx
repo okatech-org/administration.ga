@@ -1,118 +1,103 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Shield } from "lucide-react"
-import { useTranslation } from "react-i18next"
-import { ModeToggle } from "./mode-toggle"
+import { ModeToggle } from "@/components/mode-toggle";
+import Link from "next/link";
+import { useTranslation } from "react-i18next";
+import { Shield } from "lucide-react";
 
-export const Footer = () => {
-  const { t } = useTranslation()
+type Section = {
+	heading: string;
+	links: { label: string; href: string }[];
+};
 
-  return (
-    <footer className="w-full border-t border-border bg-muted/30">
-      <div className="container mx-auto px-4 sm:px-6 py-8 md:py-16">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <Shield className="h-5 w-5 text-primary" />
-              <span className="font-bold">{t("footer.brand.name")}</span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {t("footer.brand.description")}
-            </p>
-          </div>
+const SECTIONS: Section[] = [
+	{
+		heading: "Services",
+		links: [
+			{ label: "Catalogue des services", href: "/services" },
+			{ label: "Tarifs", href: "/tarifs" },
+			{ label: "Formulaires à télécharger", href: "/formulaires" },
+			{ label: "Représentations diplomatiques", href: "/reps" },
+		],
+	},
+	{
+		heading: "Ressources",
+		links: [
+			{ label: "Actualités", href: "/news" },
+			{ label: "Guides et tutoriels", href: "/ressources" },
+			{
+				label: "Guide d'arrivée au Gabon",
+				href: "/ressources/guides/arrivee",
+			},
+			{ label: "Guide de retour", href: "/ressources/guides/retour" },
+			{ label: "Foire aux questions", href: "/faq" },
+		],
+	},
+	{
+		heading: "À propos",
+		links: [
+			{ label: "Mentions légales", href: "/mentions-legales" },
+			{ label: "Politique de confidentialité", href: "/confidentialite" },
+			{ label: "Accessibilité", href: "/accessibilite" },
+		],
+	},
+];
 
-          <nav aria-label="Services consulaires">
-            <h4 className="font-semibold mb-4">Services</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>
-                <Link href="/services" className="hover:text-foreground transition-colors">
-                  Catalogue des services
-                </Link>
-              </li>
-              <li>
-                <Link href="/tarifs" className="hover:text-foreground transition-colors">
-                  Tarifs
-                </Link>
-              </li>
-              <li>
-                <Link href="/formulaires" className="hover:text-foreground transition-colors">
-                  Formulaires à télécharger
-                </Link>
-              </li>
-              <li>
-                <Link href="/reps" className="hover:text-foreground transition-colors">
-                  Représentations diplomatiques
-                </Link>
-              </li>
-            </ul>
-          </nav>
+export function Footer() {
+	const { t } = useTranslation();
+	return (
+		<footer className="w-full border-t border-border bg-background">
+			<div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 sm:px-8 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:py-14">
+				<div className="flex flex-col gap-3">
+					<div className="flex items-center gap-2">
+						<Shield className="size-4 text-gabon-blue" />
+						<strong className="text-sm font-bold">
+							{t("footer.brand.name")}
+						</strong>
+					</div>
+					<p
+						className="max-w-[320px] text-sm text-muted-foreground"
+						suppressHydrationWarning
+					>
+						{t("footer.brand.description")}
+					</p>
+					<div
+						aria-hidden="true"
+						className="mt-2 flex h-1 w-16 overflow-hidden rounded-full"
+					>
+						<span className="flex-1 bg-gabon-green" />
+						<span className="flex-1 bg-gabon-yellow" />
+						<span className="flex-1 bg-gabon-blue" />
+					</div>
+				</div>
 
-          <nav aria-label="Ressources">
-            <h4 className="font-semibold mb-4">Ressources</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>
-                <Link href="/news" className="hover:text-foreground transition-colors">
-                  Actualités
-                </Link>
-              </li>
-              <li>
-                <Link href="/ressources" className="hover:text-foreground transition-colors">
-                  Guides et tutoriels
-                </Link>
-              </li>
-              <li>
-                <Link href="/ressources/guides/arrivee" className="hover:text-foreground transition-colors">
-                  Guide d'arrivée au Gabon
-                </Link>
-              </li>
-              <li>
-                <Link href="/ressources/guides/retour" className="hover:text-foreground transition-colors">
-                  Guide de retour
-                </Link>
-              </li>
-              <li>
-                <Link href="/ressources/guides/vie-pratique" className="hover:text-foreground transition-colors">
-                  Vie pratique
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="hover:text-foreground transition-colors">
-                  Foire aux questions
-                </Link>
-              </li>
-            </ul>
-          </nav>
+				{SECTIONS.map((section) => (
+					<nav key={section.heading} aria-label={section.heading}>
+						<h4 className="mb-3 text-sm font-semibold">{section.heading}</h4>
+						<ul className="flex flex-col gap-2 text-sm text-muted-foreground">
+							{section.links.map((l) => (
+								<li key={l.href}>
+									<Link
+										href={l.href}
+										className="transition-colors hover:text-foreground"
+									>
+										{l.label}
+									</Link>
+								</li>
+							))}
+						</ul>
+					</nav>
+				))}
+			</div>
 
-          <nav aria-label="Informations légales">
-            <h4 className="font-semibold mb-4">À propos</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>
-                <Link href="/mentions-legales" className="hover:text-foreground transition-colors">
-                  Mentions légales
-                </Link>
-              </li>
-              <li>
-                <Link href="/confidentialite" className="hover:text-foreground transition-colors">
-                  Politique de confidentialité
-                </Link>
-              </li>
-              <li>
-                <Link href="/accessibilite" className="hover:text-foreground transition-colors">
-                  Accessibilité
-                </Link>
-              </li>
-            </ul>
-          </nav>
-        </div>
-
-        <div className="max-w-6xl mx-auto mt-8 md:mt-12 pt-6 md:pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground text-center sm:text-left">
-            {t("footer.copyright", { year: new Date().getFullYear() })}
-          </p>
-          <ModeToggle />
-        </div>
-      </div>
-    </footer>
-  )
+			<div className="border-t border-border">
+				<div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 py-4 text-xs text-muted-foreground sm:flex-row sm:px-8">
+					<p suppressHydrationWarning>
+						{t("footer.copyright", { year: new Date().getFullYear() })}
+					</p>
+					<ModeToggle />
+				</div>
+			</div>
+		</footer>
+	);
 }

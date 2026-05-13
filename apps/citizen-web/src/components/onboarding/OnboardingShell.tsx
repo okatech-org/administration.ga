@@ -1,5 +1,6 @@
 "use client";
 
+import "./onboarding.css";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PublicUserType } from "@convex/lib/constants";
@@ -232,19 +233,23 @@ export function OnboardingShell() {
 
 	if (submittedRef !== null) {
 		return (
-			<SubmittedScreen
-				reference={submittedRef || undefined}
-				onRestart={handleRestart}
-			/>
+			<div className="onboarding-root">
+				<SubmittedScreen
+					reference={submittedRef || undefined}
+					onRestart={handleRestart}
+				/>
+			</div>
 		);
 	}
 
 	if (!userType) {
 		return (
-			<ProfileSelectorScreen
-				onSelectPrimary={(t) => setUserType(t)}
-				onSelectVisa={(t) => setUserType(t)}
-			/>
+			<div className="onboarding-root">
+				<ProfileSelectorScreen
+					onSelectPrimary={(t) => setUserType(t)}
+					onSelectVisa={(t) => setUserType(t)}
+				/>
+			</div>
 		);
 	}
 
@@ -313,7 +318,7 @@ export function OnboardingShell() {
 	})();
 
 	return (
-		<>
+		<div className="onboarding-root">
 			{/* Mobile */}
 			<div className="flex min-h-svh flex-col md:hidden">
 				<OnboardingMobileHeader
@@ -406,6 +411,6 @@ export function OnboardingShell() {
 					/>
 				</div>
 			</div>
-		</>
+		</div>
 	);
 }

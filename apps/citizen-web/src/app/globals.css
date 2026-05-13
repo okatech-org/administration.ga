@@ -1,8 +1,10 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 @import "../../../../packages/ui/src/styles/globals.css";
 
 @theme {
-  --font-sans: "Inter", sans-serif;
+  --font-sans: "IBM Plex Sans", "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
   /* Citizen surface colors — use with bg-citizen-s2, hover:bg-citizen-s3, etc. */
   --color-citizen-s2: var(--citizen-surface-s2);
@@ -11,45 +13,134 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
-   CITIZEN-WEB — Premium Dark Theme
-   Ref: shadcnblocks dark/light patterns
+   CITIZEN-WEB — Charte « Consulat.ga / République Gabonaise »
+   Palette warm beige + accents Gabon profonds (Bleu/Vert/Jaune).
+   Référence : refonte-inscription/project/Inscription Consulaire.html
    ══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* Gabon Official Colors */
-  --gabon-green: 153 69% 31%;
-  --gabon-green-hex: #009e60;
-  --gabon-yellow: 45 98% 54%;
-  --gabon-yellow-hex: #fcd116;
-  --gabon-blue: 214 52% 50%;
-  --gabon-blue-hex: #3a75c4;
+  /* ─── Tokens du prototype (couleurs hexa de référence) ────────────── */
+  --bg: #f7f6f2;
+  --bg-deep: #efece4;
+  --surface: #ffffff;
+  --surface-2: #fbfaf6;
+  --border-strong: #d2cdbf;
+  --text-faint: #9a9588;
 
-  /* Layout tokens */
+  /* Gabon — versions profondes du prototype */
+  --gabon-green-hex: #0a8a3b;
+  --gabon-yellow-hex: #f1c531;
+  --gabon-blue-hex: #0b4f9c;
+  --gabon-blue-deep: #073871;
+  /* HSL tokens (legacy — quelques composants utilisent encore var(--gabon-blue)
+     comme triplet HSL via hsl(var(--gabon-blue))) */
+  --gabon-green: 145 86% 29%;
+  --gabon-yellow: 45 87% 57%;
+  --gabon-blue: 211 87% 33%;
+
+  /* Statuts — versions Consulat */
+  --status-success: #157a3d;
+  --status-success-tint: #e3f1e8;
+  --status-warning: #a16e00;
+  --status-warning-tint: #faedca;
+  --status-danger: #b3261e;
+  --status-danger-tint: #fbe9e7;
+
+  /* Radius prototype */
+  --radius-sm-proto: 6px;
+  --radius-proto: 10px;
+  --radius-lg-proto: 14px;
+  --radius-xl-proto: 20px;
+
+  /* Ombres warm prototype */
+  --shadow-sm-proto: 0 1px 0 rgba(20, 19, 15, 0.04),
+    0 1px 2px rgba(20, 19, 15, 0.04);
+  --shadow-proto: 0 1px 0 rgba(20, 19, 15, 0.04),
+    0 6px 20px -10px rgba(20, 19, 15, 0.12);
+  --shadow-lg-proto: 0 18px 50px -22px rgba(20, 19, 15, 0.28);
+
+  /* ─── Override des tokens shadcn (héritent dans tous les composants) ── */
+  --background: oklch(0.97 0.01 90); /* #f7f6f2 warm beige */
+  --foreground: oklch(0.18 0.01 70); /* #14130f quasi-noir */
+  --card: oklch(1 0 0); /* blanc pur */
+  --card-foreground: oklch(0.18 0.01 70);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.01 70);
+  --primary: #0b4f9c; /* Gabon-blue deep */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.96 0.012 85); /* #fbfaf6 surface-2 */
+  --secondary-foreground: oklch(0.18 0.01 70);
+  --muted: oklch(0.96 0.012 85);
+  --muted-foreground: oklch(0.5 0.01 80); /* #6a665b text-muted */
+  --accent: oklch(0.96 0.012 85);
+  --accent-foreground: oklch(0.18 0.01 70);
+  --border: oklch(0.91 0.008 85); /* #e6e2d8 */
+  --input: oklch(0.91 0.008 85);
+  --ring: #0b4f9c;
+
+  /* Layout tokens existants */
   --mobile-nav-height: 60px;
 
-  /* Surface tokens */
+  /* Surface tokens citizen (conservés pour my-space) */
   --citizen-surface-s1: var(--secondary);
-  --citizen-surface-s2: #ebe6dc;
-  --citizen-surface-s3: #dcd7c7;
-  --citizen-surface-s4: #fdfcfa;
-
-  /* Citizen shared surface — cartes principales + menu latéral mobile */
-  --citizen-surface-card: var(--secondary);
+  --citizen-surface-s2: #fbfaf6;
+  --citizen-surface-s3: #efece4;
+  --citizen-surface-s4: #ffffff;
+  --citizen-surface-card: var(--card);
 }
 
 .dark {
-  --citizen-surface-s1: var(--secondary);
-  --citizen-surface-s2: #383633;
-  --citizen-surface-s3: rgba(74, 71, 68, 0.4);
-  --citizen-surface-s4: rgba(33, 32, 30, 0.77);
+  /* ─── Surfaces warm sombres ──────────────────────────────────────── */
+  --background: oklch(0.16 0.005 70); /* #1c1a17 — fond très sombre warm */
+  --foreground: oklch(0.95 0.005 80); /* #f0eee8 — texte off-white warm */
+  --card: oklch(0.2 0.005 70); /* #252220 — cartes légèrement plus claires */
+  --card-foreground: oklch(0.95 0.005 80);
+  --popover: oklch(0.2 0.005 70);
+  --popover-foreground: oklch(0.95 0.005 80);
+  --primary: #2e7cd6; /* Gabon-blue éclairci pour contraste dark */
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.23 0.005 70);
+  --secondary-foreground: oklch(0.85 0.005 80);
+  --muted: oklch(0.23 0.005 70);
+  --muted-foreground: oklch(0.65 0.005 80); /* contraste 5.5:1 sur fond dark */
+  --accent: oklch(0.23 0.005 70);
+  --accent-foreground: oklch(0.95 0.005 80);
+  --border: oklch(0.28 0.005 70); /* #3a3733 — visible warm */
+  --input: oklch(0.28 0.005 70);
+  --ring: #2e7cd6;
 
-  /* Citizen shared surface — cartes principales + menu latéral mobile */
-  --citizen-surface-card: rgba(
-    28,
-    27,
-    26,
-    0.57
-  ); /* Equivalent to #1C1B1A with 57% opacity */
+  /* Tokens prototype en dark */
+  --bg: #1c1a17;
+  --bg-deep: #14130f;
+  --surface: #252220;
+  --surface-2: #2a2725;
+  --border-strong: #45413c;
+  --text-faint: #6a665b;
+
+  /* Gabon en dark — accents éclaircis pour contraste */
+  --gabon-blue-hex: #2e7cd6;
+  --gabon-blue-deep: #4b8cd9;
+  --gabon-green-hex: #2eb05f;
+  --gabon-yellow-hex: #f5d048;
+
+  /* Surfaces citizen en dark */
+  --citizen-surface-s1: oklch(0.2 0.005 70);
+  --citizen-surface-s2: oklch(0.23 0.005 70);
+  --citizen-surface-s3: oklch(0.18 0.005 70);
+  --citizen-surface-s4: oklch(0.2 0.005 70);
+  --citizen-surface-card: oklch(0.2 0.005 70);
+}
+
+/* ─── Polices ──────────────────────────────────────────────────────── */
+html,
+body {
+  font-family: "IBM Plex Sans", "Inter", system-ui, -apple-system, sans-serif;
+  font-feature-settings: "ss01", "cv11"; /* IBM Plex stylistic alternates */
+}
+
+.font-mono,
+[class*="tabular-nums"] {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
 }
 
 /* ─── Flat Card Border ─── */
@@ -60,39 +151,19 @@
   border-color: oklch(1 0 0 / 0.05);
 }
 
-/* ─── Global: No shadows anywhere ─── */
-*,
-*::before,
-*::after {
-  box-shadow: none !important;
-  text-shadow: none !important;
-}
-
 /* ─── Design System v3.0 Surface Utilities ─── */
 
 .citizen-s1 {
-  background: var(--secondary);
-}
-.dark .citizen-s1 {
-  background: var(--secondary);
+  background: var(--citizen-surface-s1);
 }
 .citizen-s2 {
-  background: #ebe6dc;
-}
-.dark .citizen-s2 {
-  background: #383633;
+  background: var(--citizen-surface-s2);
 }
 .citizen-s3 {
-  background: #dcd7c7;
-}
-.dark .citizen-s3 {
-  background: rgba(74, 71, 68, 0.4);
+  background: var(--citizen-surface-s3);
 }
 .citizen-s4 {
-  background: #fdfcfa;
-}
-.dark .citizen-s4 {
-  background: rgba(33, 32, 30, 0.77);
+  background: var(--citizen-surface-s4);
 }
 
 /* ─── Gabon Color Utilities ─── */
@@ -153,23 +224,24 @@
   -webkit-text-fill-color: transparent;
 }
 
+/* Tints — recalculés à partir des nouveaux hex prototype */
 .bg-gabon-green-tint {
-  background-color: rgba(0, 158, 96, 0.08);
+  background-color: rgba(10, 138, 59, 0.08);
 }
 .bg-gabon-yellow-tint {
-  background-color: rgba(252, 209, 22, 0.08);
+  background-color: rgba(241, 197, 49, 0.1);
 }
 .bg-gabon-blue-tint {
-  background-color: rgba(58, 117, 196, 0.08);
+  background-color: rgba(11, 79, 156, 0.08);
 }
 .dark .bg-gabon-green-tint {
-  background-color: rgba(0, 158, 96, 0.15);
+  background-color: rgba(46, 176, 95, 0.15);
 }
 .dark .bg-gabon-yellow-tint {
-  background-color: rgba(252, 209, 22, 0.12);
+  background-color: rgba(245, 208, 72, 0.12);
 }
 .dark .bg-gabon-blue-tint {
-  background-color: rgba(58, 117, 196, 0.15);
+  background-color: rgba(46, 124, 214, 0.18);
 }
 
 /* ─── Gabon Flag Stripe (decorative) ─── */
@@ -199,20 +271,35 @@
 
 /* ─── Citizen Space Layout ─── */
 
-/* Scoped overrides : bg-muted → warm gray S2 dans l'espace citoyen */
 .citizen-layout {
-  background: var(--card);
+  background: var(--background);
   min-height: 100dvh;
-  --muted: 40 8% 90%;
 }
-.dark .citizen-layout {
-  background: #111111;
-  --muted: 30 4% 22%;
+
+/* ─── Wizard-specific shadows (réintroduit après suppression globale) ── */
+.wizard-shadow-sm {
+  box-shadow: var(--shadow-sm-proto);
+}
+.wizard-shadow {
+  box-shadow: var(--shadow-proto);
+}
+.wizard-shadow-lg {
+  box-shadow: var(--shadow-lg-proto);
 }
 
 /* ─── Animations ─── */
 
 @keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes wizardSlide {
   from {
     opacity: 0;
     transform: translateY(8px);
@@ -232,6 +319,9 @@
 }
 .animate-fade-in-up {
   animation: fadeInUp 0.4s ease-out forwards;
+}
+.wizard-slide {
+  animation: wizardSlide 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 .animate-shimmer {
   background: linear-gradient(
@@ -335,7 +425,7 @@ html {
   background: transparent;
 }
 .citizen-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
+  background: rgba(20, 19, 15, 0.12);
   border-radius: 10px;
 }
 .dark .citizen-scrollbar::-webkit-scrollbar-thumb {
@@ -379,7 +469,6 @@ html {
   @apply bg-background;
 }
 
-/* Select trigger plus visible en mode clair */
 .register-forms [data-slot="select-trigger"] {
   border: 1px solid oklch(0 0 0 / 0.12);
 }
