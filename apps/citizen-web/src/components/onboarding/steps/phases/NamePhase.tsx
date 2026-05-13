@@ -6,6 +6,10 @@ import { Label } from "@/components/ui/label";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import type {
+	AIScanFailedProps,
+	AIScanSuccessProps,
+} from "../../lib/useAIPrefill";
 import { AIPrefillSheet } from "../../ui/AIPrefillSheet";
 import type { OnboardingData } from "../../types";
 
@@ -14,11 +18,15 @@ export function NamePhase({
 	updateData,
 	onNext,
 	setFile,
+	onScanSuccess,
+	onScanFailed,
 }: {
 	data: OnboardingData;
 	updateData: (patch: Partial<OnboardingData>) => void;
 	onNext: () => void;
 	setFile?: (key: string, file: File) => void;
+	onScanSuccess?: (props: AIScanSuccessProps) => void;
+	onScanFailed?: (props: AIScanFailedProps) => void;
 }) {
 	const { t } = useTranslation();
 	const canContinue =
@@ -124,6 +132,8 @@ export function NamePhase({
 				onComplete={onNext}
 				updateData={updateData}
 				setFile={setFile}
+				onScanSuccess={onScanSuccess}
+				onScanFailed={onScanFailed}
 			/>
 
 			<div className="phase-footer mt-auto">

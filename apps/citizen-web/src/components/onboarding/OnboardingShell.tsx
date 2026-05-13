@@ -11,10 +11,16 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
+import {
+  captureEvent,
+  toRegistrationFlowType,
+} from "@/lib/analytics"
+import { useRegistrationAnalytics } from "@/lib/useRegistrationAnalytics"
 import { DesktopRecapSidebar } from "./DesktopRecapSidebar"
 import { DesktopStepsSidebar } from "./DesktopStepsSidebar"
 import {
   STEPS_BY_TYPE,
+  type IdentityPhase,
   type OnboardingStepKey,
 } from "./lib/onboardingFlow"
 import { submitRegistration } from "./lib/submitRegistration"
@@ -179,13 +185,51 @@ export function OnboardingShell() {
   const canPrev = stepIndex > 0
   const canNext = stepIndex < steps.length - 1
 
+  // ── PostHog analytics ──────────────────────────────────────────
+  // Émet automatiquement registration_started, registration_step_viewed
+  // (sur main step) et registration_abandoned (beforeunload).
+  const analyticsSteps = useMemo(
+    () => steps.map((s) => ({ stepId: s.key })),
+    [steps]
+  )
+  const flowType = userType
+    ? toRegistrationFlowType(userType)
+    : ("long_stay" as const)
+  const analytics = useRegistrationAnalytics({
+    flowType,
+    step: stepIndex,
+    steps: analyticsSteps,
+  })
+
+  // Sous-phases de IdentityStep : on émet un step_viewed séparé pour
+  // garder la granularité PIN/OTP dans les funnels. step_name suit le
+  // format `identity_<phase>` (identity_name, identity_contact, …).
+  const handleIdentityPhaseChange = useCallback(
+    (phase: IdentityPhase) => {
+      captureEvent("registration_step_viewed", {
+        flow_type: flowType,
+        step_name: `identity_${phase}`,
+        step_index: stepIndex,
+        total_steps: steps.length,
+      })
+    },
+    [flowType, stepIndex, steps.length]
+  )
+
+  const handleDocumentUploaded = useCallback(
+    (docKey: string) => analytics.trackDocumentUploaded(docKey),
+    [analytics]
+  )
+
   const handleNext = useCallback(() => {
+    analytics.trackStepCompleted()
     setStepIndex((i) => Math.min(i + 1, steps.length - 1))
-  }, [steps.length])
+  }, [analytics, steps.length])
 
   const handlePrev = useCallback(() => {
+    analytics.trackStepBack(Math.max(stepIndex - 1, 0))
     setStepIndex((i) => Math.max(i - 1, 0))
-  }, [])
+  }, [analytics, stepIndex])
 
   const handleJump = useCallback(
     (idx: number) => {
@@ -226,6 +270,11 @@ export function OnboardingShell() {
       })
       setSubmittedRef(result.reference ?? null)
       setIsSubmitted(true)
+      analytics.trackSubmitted({
+        marital_status: data.maritalStatus,
+        has_children: false,
+        jurisdiction_country: data.address?.country,
+      })
       // Purge le brouillon — soumission réussie.
       if (typeof window !== "undefined") {
         localStorage.removeItem(`${DRAFT_KEY_PREFIX}${userType}`)
@@ -240,7 +289,7 @@ export function OnboardingShell() {
     } finally {
       setSubmitting(false)
     }
-  }, [convex, data, files, userType, t])
+  }, [convex, data, files, userType, t, analytics])
 
   if (isSubmitted) {
     return (
@@ -285,6 +334,9 @@ export function OnboardingShell() {
             updateData={updateData}
             onComplete={handleNext}
             setFile={setFile}
+            onPhaseChange={handleIdentityPhaseChange}
+            onScanSuccess={analytics.trackAiScanUsed}
+            onScanFailed={analytics.trackAiScanFailed}
           />
         )
       case "family":
@@ -308,6 +360,7 @@ export function OnboardingShell() {
             files={files}
             setFile={setFile}
             removeFile={removeFile}
+            onDocumentUploaded={handleDocumentUploaded}
           />
         )
       case "review":

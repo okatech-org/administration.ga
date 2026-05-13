@@ -19,7 +19,11 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { OnboardingData } from "../types";
-import { useAIPrefill } from "../lib/useAIPrefill";
+import {
+	useAIPrefill,
+	type AIScanFailedProps,
+	type AIScanSuccessProps,
+} from "../lib/useAIPrefill";
 
 type DocKey = "passport" | "addressProof" | "birthCertificate";
 
@@ -69,12 +73,16 @@ export function AIPrefillSheet({
 	onComplete,
 	updateData,
 	setFile,
+	onScanSuccess,
+	onScanFailed,
 }: {
 	open: boolean;
 	onClose: () => void;
 	onComplete?: () => void;
 	updateData: (patch: Partial<OnboardingData>) => void;
 	setFile?: (key: string, file: File) => void;
+	onScanSuccess?: (props: AIScanSuccessProps) => void;
+	onScanFailed?: (props: AIScanFailedProps) => void;
 }) {
 	const [files, setFiles] = useState<Partial<Record<DocKey, File>>>({});
 	const [appliedPatch, setAppliedPatch] = useState<Partial<OnboardingData>>({});
@@ -85,6 +93,8 @@ export function AIPrefillSheet({
 			setAppliedPatch(patch);
 			updateData({ ...patch, _hasAIPrefill: true });
 		},
+		onScanSuccess,
+		onScanFailed,
 	});
 
 	const filledCount = Object.values(files).filter(Boolean).length;

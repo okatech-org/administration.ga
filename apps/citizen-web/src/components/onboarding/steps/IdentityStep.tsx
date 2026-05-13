@@ -1,8 +1,12 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type {
+	AIScanFailedProps,
+	AIScanSuccessProps,
+} from "../lib/useAIPrefill";
 import {
 	IDENTITY_PHASES,
 	type IdentityPhase,
@@ -34,11 +38,17 @@ export function IdentityStep({
 	updateData,
 	onComplete,
 	setFile,
+	onPhaseChange,
+	onScanSuccess,
+	onScanFailed,
 }: {
 	data: OnboardingData;
 	updateData: (patch: Partial<OnboardingData>) => void;
 	onComplete: () => void;
 	setFile?: (key: string, file: File) => void;
+	onPhaseChange?: (phase: IdentityPhase) => void;
+	onScanSuccess?: (props: AIScanSuccessProps) => void;
+	onScanFailed?: (props: AIScanFailedProps) => void;
 }) {
 	const { t } = useTranslation();
 	const verified = data._authState === "verified";
@@ -66,6 +76,14 @@ export function IdentityStep({
 	const [phase, setPhase] = useState<IdentityPhase>(initialPhase);
 
 	const phaseIndex = phases.indexOf(phase);
+
+	// Notify analytics on every phase entry (including the initial one).
+	const lastPhaseRef = useRef<IdentityPhase | null>(null);
+	useEffect(() => {
+		if (lastPhaseRef.current === phase) return;
+		lastPhaseRef.current = phase;
+		onPhaseChange?.(phase);
+	}, [phase, onPhaseChange]);
 
 	const handleNext = useCallback(() => {
 		const i = phases.indexOf(phase);
@@ -139,6 +157,8 @@ export function IdentityStep({
 					updateData={updateData}
 					onNext={handleNext}
 					setFile={setFile}
+					onScanSuccess={onScanSuccess}
+					onScanFailed={onScanFailed}
 				/>
 			)}
 			{phase === "contact" && (

@@ -163,10 +163,26 @@ export type AIPrefillState = {
 	error?: string;
 };
 
+export type AIScanSuccessProps = {
+	documents_scanned: number;
+	fields_extracted: number;
+	scan_duration_ms: number;
+	confidence: number;
+};
+
+export type AIScanFailedProps = {
+	error_type: "no_documents" | "rate_limited" | "extraction_error";
+	documents_attempted: number;
+};
+
 export function useAIPrefill({
 	onApply,
+	onScanSuccess,
+	onScanFailed,
 }: {
 	onApply: (patch: Partial<OnboardingData>) => void;
+	onScanSuccess?: (props: AIScanSuccessProps) => void;
+	onScanFailed?: (props: AIScanFailedProps) => void;
 }) {
 	const extract = useAction(
 		api.ai.documentExtraction.extractRegistrationDataFromImages,
@@ -179,7 +195,14 @@ export function useAIPrefill({
 
 	const runOnFiles = useCallback(
 		async (rawFiles: File[]) => {
-			if (rawFiles.length === 0) return;
+			if (rawFiles.length === 0) {
+				onScanFailed?.({
+					error_type: "no_documents",
+					documents_attempted: 0,
+				});
+				return;
+			}
+			const scanStart = Date.now();
 			setState({ status: "uploading" });
 			try {
 				const images = await Promise.all(
@@ -196,6 +219,10 @@ export function useAIPrefill({
 						status: "error",
 						error: "Formats supportés : JPG, PNG, PDF.",
 					});
+					onScanFailed?.({
+						error_type: "no_documents",
+						documents_attempted: rawFiles.length,
+					});
 					return;
 				}
 				setState({ status: "analyzing" });
@@ -204,11 +231,16 @@ export function useAIPrefill({
 					guestSessionId,
 				})) as ExtractionResult;
 				if (!result.success) {
+					const isRateLimit = result.error?.startsWith("RATE_LIMITED:");
 					setState({
 						status: "error",
 						error:
 							result.error?.replace(/^RATE_LIMITED:/, "") ||
 							"L'analyse a échoué. Réessayez.",
+					});
+					onScanFailed?.({
+						error_type: isRateLimit ? "rate_limited" : "extraction_error",
+						documents_attempted: rawFiles.length,
 					});
 					return;
 				}
@@ -219,19 +251,33 @@ export function useAIPrefill({
 						error:
 							"Aucun champ n'a pu être extrait. Vérifiez la qualité des documents.",
 					});
+					onScanFailed?.({
+						error_type: "extraction_error",
+						documents_attempted: rawFiles.length,
+					});
 					return;
 				}
 				onApply(patch);
 				setState({ status: "success", count });
+				onScanSuccess?.({
+					documents_scanned: rawFiles.length,
+					fields_extracted: count,
+					scan_duration_ms: Date.now() - scanStart,
+					confidence: result.confidence ?? 0,
+				});
 			} catch (err) {
 				console.error("AI prefill failed:", err);
 				setState({
 					status: "error",
 					error: err instanceof Error ? err.message : "L'analyse a échoué.",
 				});
+				onScanFailed?.({
+					error_type: "extraction_error",
+					documents_attempted: rawFiles.length,
+				});
 			}
 		},
-		[extract, onApply, guestSessionId],
+		[extract, onApply, guestSessionId, onScanSuccess, onScanFailed],
 	);
 
 	const openPicker = useCallback(() => {

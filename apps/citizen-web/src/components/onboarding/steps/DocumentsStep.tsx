@@ -297,6 +297,7 @@ export function DocumentsStep({
 	files,
 	setFile,
 	removeFile,
+	onDocumentUploaded,
 }: {
 	data: OnboardingData;
 	updateData: (patch: Partial<OnboardingData>) => void;
@@ -304,6 +305,7 @@ export function DocumentsStep({
 	files: RegistrationFiles;
 	setFile: (key: string, file: File) => void;
 	removeFile: (key: string) => void;
+	onDocumentUploaded?: (docKey: string) => void;
 }) {
 	const { t } = useTranslation();
 	const docs = getDocsForUserType(userType);
@@ -313,6 +315,7 @@ export function DocumentsStep({
 	const handleFile = (key: string, file: File) => {
 		setFile(key, file);
 		updateData({ documents: { ...documents, [key]: file.name } });
+		onDocumentUploaded?.(key);
 	};
 
 	const handleRemove = (key: string) => {
