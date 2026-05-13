@@ -117,6 +117,7 @@ export function IAstedWindow({
     "icontact",
     "icall",
     "imeeting",
+    "ivoice",
     "isettings",
   ]
   const tabContent = Object.fromEntries(
