@@ -2,13 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function OnboardingMobileActionBar({
 	onPrev,
 	onNext,
 	canPrev,
 	canNext,
-	nextLabel = "Continuer",
+	nextLabel,
 }: {
 	onPrev?: () => void;
 	onNext?: () => void;
@@ -16,6 +17,8 @@ export function OnboardingMobileActionBar({
 	canNext?: boolean;
 	nextLabel?: string;
 }) {
+	const { t } = useTranslation();
+	const label = nextLabel ?? t("onboarding.shell.nav.continue");
 	return (
 		<div className="sticky bottom-0 z-20 flex items-center gap-3 border-t border-border bg-background/95 px-3 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] backdrop-blur supports-[backdrop-filter]:bg-background/80">
 			<Button
@@ -23,7 +26,7 @@ export function OnboardingMobileActionBar({
 				size="icon"
 				onClick={onPrev}
 				disabled={!canPrev}
-				aria-label="Précédent"
+				aria-label={t("onboarding.shell.nav.previous")}
 				className="size-11 shrink-0"
 			>
 				<ArrowLeft className="size-5" />
@@ -33,7 +36,7 @@ export function OnboardingMobileActionBar({
 				onClick={onNext}
 				disabled={!canNext}
 			>
-				{nextLabel}
+				<span suppressHydrationWarning>{label}</span>
 				<ArrowRight className="ml-1 size-4" />
 			</Button>
 		</div>

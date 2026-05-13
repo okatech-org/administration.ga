@@ -3579,6 +3579,508 @@
 					}
 				}
 			}
+		},
+		"shell": {
+			"steps": {
+				"identity": {
+					"title": "Identité",
+					"description": "Vos nom, coordonnées, mot de passe, code PIN et informations d'état civil."
+				},
+				"family": {
+					"title": "Situation familiale",
+					"description": "Statut marital et filiation."
+				},
+				"contacts": {
+					"title": "Adresses & contacts d'urgence",
+					"description": "Vos adresses et les personnes à contacter en cas de besoin."
+				},
+				"profession": {
+					"title": "Situation professionnelle",
+					"description": "Votre activité actuelle."
+				},
+				"documents": {
+					"title": "Pièces justificatives",
+					"description": "Téléversez les pièces nécessaires à votre dossier."
+				},
+				"review": {
+					"title": "Révision et soumission",
+					"description": "Relisez votre dossier avant l'envoi."
+				}
+			},
+			"stepLabels": {
+				"identity": "Identité",
+				"family": "Famille",
+				"contacts": "Contacts",
+				"profession": "Profession",
+				"documents": "Documents",
+				"review": "Révision"
+			},
+			"profileTitles": {
+				"long_stay": "Inscription consulaire — Résident",
+				"short_stay": "Déclaration — Court séjour",
+				"visa_tourism": "Demande de visa — Tourisme",
+				"visa_business": "Demande de visa — Affaires",
+				"visa_long_stay": "Demande de visa — Long séjour",
+				"admin_services": "Services administratifs"
+			},
+			"nav": {
+				"previous": "Précédent",
+				"continue": "Continuer",
+				"changeProfile": "Changer de profil",
+				"changeProfileMobile": "Changer de profil",
+				"back": "Retour",
+				"help": "Aide"
+			},
+			"draft": {
+				"label": "Brouillon · {{time}}"
+			},
+			"progress": {
+				"global": "Progression globale",
+				"stepOf": "Étape {{current}} sur {{total}}"
+			},
+			"errors": {
+				"submitGeneric": "Une erreur est survenue lors de la soumission."
+			}
+		},
+		"recap": {
+			"title": "Récapitulatif",
+			"labels": {
+				"profile": "Profil",
+				"fullName": "Nom complet",
+				"email": "Email",
+				"phone": "Téléphone",
+				"birthDate": "Date de naissance",
+				"nationality": "Nationalité",
+				"address": "Adresse",
+				"passportNumber": "N° passeport",
+				"documents": "Documents"
+			},
+			"docCount": "{{count}} fourni(s)",
+			"help": {
+				"title": "Besoin d'aide ?",
+				"description": "Notre équipe est disponible du lundi au vendredi, 8h-18h.",
+				"cta": "Contacter le support"
+			}
+		},
+		"profileLabels": {
+			"long_stay": "Résident à l'étranger",
+			"short_stay": "De passage",
+			"visa_tourism": "Visa tourisme",
+			"visa_business": "Visa affaires",
+			"visa_long_stay": "Visa long séjour",
+			"admin_services": "Services administratifs"
+		},
+		"submitted": {
+			"title": "Dossier soumis",
+			"description": "Votre dossier a été transmis au service consulaire. Vous recevrez une notification par email dès qu'il sera traité.",
+			"refLabel": "Référence du dossier",
+			"refHelp": "Conservez cette référence pour suivre l'avancement de votre demande dans votre espace personnel.",
+			"cta": "Accéder à mon espace"
+		},
+		"identityPhaseLabels": {
+			"name": "Votre nom",
+			"contact": "Vos coordonnées",
+			"password": "Mot de passe",
+			"otp": "Vérification email",
+			"pin": "Code PIN",
+			"birth": "Naissance & nationalité",
+			"passport": "Passeport"
+		},
+		"aiPrefill": {
+			"upload": {
+				"title": "Pré-remplir avec mes documents",
+				"description": "Téléversez ces documents et l'IA remplira automatiquement vos informations d'identité, de passeport et d'adresse. Tous les champs resteront modifiables.",
+				"privacy": "Vos documents sont chiffrés et utilisés uniquement pour le pré-remplissage. Aucune copie n'est conservée par l'IA."
+			},
+			"docs": {
+				"passport": {
+					"label": "Passeport",
+					"hint": "Page d'identification"
+				},
+				"addressProof": {
+					"label": "Justificatif de domicile",
+					"hint": "Facture, quittance…"
+				},
+				"birthCertificate": {
+					"label": "Acte de naissance",
+					"hint": "Document officiel"
+				}
+			},
+			"buttons": {
+				"later": "Plus tard",
+				"analyze": "Analyser ({{filled}}/{{total}})",
+				"preparing": "Préparation…",
+				"continue": "Continuer le formulaire"
+			},
+			"analyzing": {
+				"title": "Analyse en cours…",
+				"description": "Nous extrayons les informations de vos documents pour pré-remplir le formulaire."
+			},
+			"done": {
+				"title": "Pré-remplissage réussi",
+				"descriptionOne": "{{count}} champ a été rempli automatiquement.",
+				"descriptionMany": "{{count}} champs ont été remplis automatiquement.",
+				"note": "Vous pourrez vérifier et modifier ces informations dans les prochaines étapes."
+			},
+			"fieldLabels": {
+				"firstName": "Prénom",
+				"lastName": "Nom",
+				"gender": "Genre",
+				"birthDate": "Date de naissance",
+				"birthPlace": "Lieu de naissance",
+				"birthCountry": "Pays de naissance",
+				"nationality": "Nationalité",
+				"nip": "NIP",
+				"passportNumber": "N° passeport",
+				"passportIssueDate": "Délivré le",
+				"passportExpiryDate": "Expire le",
+				"passportIssuingAuthority": "Autorité de délivrance",
+				"maritalStatus": "Statut matrimonial",
+				"fatherFirstName": "Prénom du père",
+				"fatherLastName": "Nom du père",
+				"motherFirstName": "Prénom de la mère",
+				"motherLastName": "Nom de la mère",
+				"spouseFirstName": "Prénom du conjoint",
+				"spouseLastName": "Nom du conjoint",
+				"address": "Adresse"
+			}
+		},
+		"passwordStrength": {
+			"ariaLabel": "Force du mot de passe",
+			"tooShort": "Trop court (minimum {{min}} caractères)",
+			"levels": {
+				"0": "Très faible",
+				"1": "Faible",
+				"2": "Acceptable",
+				"3": "Bon",
+				"4": "Excellent"
+			}
+		},
+		"numPad": {
+			"ariaLabel": "Pavé numérique",
+			"backspace": "Effacer le dernier chiffre"
+		},
+		"identity": {
+			"name": {
+				"title": "Bonjour, comment vous appelez-vous ?",
+				"subtitle": "Ces informations figureront sur votre dossier consulaire. Elles doivent correspondre à votre passeport.",
+				"firstName": "Prénom",
+				"firstNamePlaceholder": "Berny",
+				"lastName": "Nom de famille",
+				"lastNamePlaceholder": "Itoutou",
+				"continue": "Continuer",
+				"aiCard": {
+					"title": "Pré-remplissage par IA",
+					"badge": "Optionnel",
+					"description": "Téléversez votre passeport, justificatif de domicile et acte de naissance pour remplir automatiquement la majorité du formulaire.",
+					"gain": "Gain de temps moyen : 8 minutes.",
+					"cta": "Commencer le pré-remplissage"
+				}
+			},
+			"contact": {
+				"title": "Vos coordonnées",
+				"subtitle": "Nous enverrons un code de vérification à votre email. Votre numéro nous permettra de vous contacter en cas de besoin.",
+				"email": "Email",
+				"emailPlaceholder": "vous@exemple.com",
+				"emailHelp": "Vous recevrez un code de vérification à 6 chiffres.",
+				"phone": "Téléphone",
+				"phonePlaceholder": "+33 6 12 34 56 78",
+				"privacy": "Vos coordonnées sont chiffrées. En continuant, vous acceptez les",
+				"privacyTerms": "conditions d'utilisation",
+				"privacyAnd": "et la",
+				"privacyPrivacy": "politique de confidentialité",
+				"back": "Retour",
+				"continue": "Continuer"
+			},
+			"password": {
+				"title": "Créez votre mot de passe",
+				"subtitle": "Il sécurisera l'accès à votre espace consulaire. Choisissez-en un solide, vous l'utiliserez à chaque connexion.",
+				"label": "Mot de passe",
+				"placeholder": "••••••••••",
+				"toggleShow": "Afficher le mot de passe",
+				"toggleHide": "Masquer le mot de passe",
+				"help": "Au moins 10 caractères, une majuscule, un chiffre et un symbole.",
+				"robustness": "Robustesse",
+				"strength": {
+					"0": "Trop court",
+					"1": "Faible",
+					"2": "Moyen",
+					"3": "Bon",
+					"4": "Excellent"
+				},
+				"requirements": {
+					"length": "10 caractères",
+					"upper": "Une majuscule",
+					"digit": "Un chiffre",
+					"symbol": "Un symbole"
+				},
+				"confirmLabel": "Confirmer le mot de passe",
+				"confirmPlaceholder": "Retapez votre mot de passe",
+				"mismatch": "Les mots de passe ne correspondent pas.",
+				"signupFailed": "Inscription impossible.",
+				"genericError": "Une erreur est survenue. Veuillez réessayer.",
+				"sending": "Envoi en cours…",
+				"back": "Retour",
+				"continue": "Continuer"
+			},
+			"otp": {
+				"title": "Vérifions votre email",
+				"subtitlePrefix": "Un code à 6 chiffres a été envoyé à",
+				"subtitleFallback": "votre adresse",
+				"otpAriaLabel": "Code de vérification à 6 chiffres",
+				"missingEmail": "Email manquant. Revenez à l'étape précédente.",
+				"missingPassword": "Mot de passe non disponible (rechargement de page ?). Revenez à l'étape précédente.",
+				"invalidCode": "Code invalide ou expiré. Réessayez.",
+				"autoSignInFailed": "Connexion automatique impossible. Réessayez.",
+				"syncTimeout": "La synchronisation a expiré. Réessayez.",
+				"unexpectedError": "Erreur inattendue. Réessayez.",
+				"resendImpossible": "Renvoi impossible.",
+				"syncingTitle": "Création de votre espace…",
+				"syncingDescription": "Nous synchronisons votre compte. Cela ne prendra que quelques secondes.",
+				"resendIn": "Renvoyer le code dans",
+				"sending": "Envoi…",
+				"resend": "Renvoyer le code",
+				"editEmail": "Modifier l'email",
+				"back": "Retour",
+				"verifying": "Vérification…",
+				"signingIn": "Connexion…",
+				"submit": "Vérifier et continuer"
+			},
+			"pin": {
+				"createTitle": "Choisissez un code PIN",
+				"confirmTitle": "Confirmez votre code PIN",
+				"createSubtitle": "Un code à 6 chiffres pour accéder rapidement à votre espace. Évitez les dates de naissance ou les suites évidentes (123456, 000000…).",
+				"confirmSubtitle": "Saisissez à nouveau les 6 mêmes chiffres pour confirmer.",
+				"ariaCreate": "Saisir le code PIN",
+				"ariaConfirm": "Confirmer le code PIN",
+				"mismatch": "Les codes ne correspondent pas.",
+				"restart": "Recommencer",
+				"confirmed": "Code PIN confirmé",
+				"info": "Ce code restera lié à votre compte pour un accès rapide après votre première connexion. Il ne remplace pas votre mot de passe.",
+				"alreadyConfigured": "Code PIN déjà configuré, passage à l'étape suivante…",
+				"verifying": "Vérification…",
+				"genericError": "Erreur lors de la création du code PIN.",
+				"saving": "Enregistrement…",
+				"back": "Retour",
+				"continue": "Continuer"
+			},
+			"birth": {
+				"title": "Naissance et nationalité",
+				"subtitle": "Ces informations doivent correspondre à votre acte de naissance et à votre passeport.",
+				"birthDate": "Date de naissance",
+				"birthPlace": "Lieu de naissance",
+				"birthPlacePlaceholder": "Bikélé",
+				"birthCountry": "Pays de naissance",
+				"gender": "Genre",
+				"selectPlaceholder": "Sélectionner",
+				"genderOptions": {
+					"male": "Homme",
+					"female": "Femme"
+				},
+				"nationality": "Nationalité",
+				"nationalityAcquisition": "Acquisition de la nationalité",
+				"acquisitionOptions": {
+					"birth": "Naissance",
+					"naturalization": "Naturalisation",
+					"marriage": "Mariage"
+				},
+				"nip": "NIP (Numéro d'Identification Personnel)",
+				"nipOptional": "— optionnel",
+				"nipPlaceholder": "Figure sur votre carte d'identité gabonaise",
+				"back": "Retour",
+				"continue": "Continuer"
+			},
+			"passport": {
+				"title": "Votre passeport",
+				"subtitle": "Reportez les informations qui figurent sur la page d'identification de votre passeport.",
+				"number": "Numéro de passeport",
+				"numberPlaceholder": "24PP13071",
+				"issuingAuthority": "Autorité de délivrance",
+				"issuingAuthorityPlaceholder": "DGDI Libreville",
+				"issueDate": "Délivré le",
+				"expiryDate": "Expire le",
+				"back": "Retour",
+				"finish": "Terminer cette étape"
+			}
+		},
+		"family": {
+			"title": "Situation familiale",
+			"subtitle": "Indiquez votre statut marital ainsi que vos parents (filiation).",
+			"maritalStatus": {
+				"label": "Statut marital",
+				"placeholder": "Sélectionner",
+				"options": {
+					"Single": "Célibataire",
+					"Married": "Marié(e)",
+					"Divorced": "Divorcé(e)",
+					"Widowed": "Veuf(ve)",
+					"CivilUnion": "Union civile (PACS)",
+					"Cohabiting": "Concubinage"
+				}
+			},
+			"spouse": {
+				"title": "Votre conjoint(e)",
+				"lastName": "Nom de famille",
+				"firstName": "Prénom"
+			},
+			"filiation": {
+				"title": "Filiation",
+				"father": "Père",
+				"mother": "Mère",
+				"lastName": "Nom",
+				"firstName": "Prénom",
+				"motherBirthName": "Nom de naissance"
+			}
+		},
+		"contacts": {
+			"title": "Adresses et contacts",
+			"subtitle": "Vos coordonnées de résidence et personnes à contacter en cas d'urgence.",
+			"address": {
+				"street": "Adresse",
+				"streetPlaceholder": "Commencez à taper pour des suggestions…",
+				"city": "Ville",
+				"postalCode": "Code postal",
+				"country": "Pays"
+			},
+			"homeland": {
+				"title": "Adresse au Gabon",
+				"fullLabel": "Adresse complète",
+				"placeholder": "Quartier, rue, ville",
+				"help": "Adresse de référence dans votre pays d'origine."
+			},
+			"emergency": {
+				"title": "Contacts d'urgence",
+				"description": "Au moins une personne à contacter, idéalement dans le pays de résidence et au Gabon.",
+				"contactN": "Contact n°{{n}}",
+				"firstName": "Prénom",
+				"lastName": "Nom",
+				"phone": "Téléphone",
+				"email": "Email",
+				"country": "Pays du contact",
+				"add": "Ajouter un contact d'urgence",
+				"removeAria": "Supprimer le contact"
+			}
+		},
+		"profession": {
+			"title": "Situation professionnelle",
+			"subtitle": "Décrivez votre activité actuelle. Ces informations restent confidentielles.",
+			"workStatus": {
+				"label": "Statut professionnel",
+				"placeholder": "Sélectionner",
+				"options": {
+					"Employee": "Salarié(e)",
+					"SelfEmployed": "Indépendant(e)",
+					"Entrepreneur": "Entrepreneur(e)",
+					"Student": "Étudiant(e)",
+					"Retired": "Retraité(e)",
+					"Unemployed": "Sans emploi",
+					"Other": "Autre"
+				}
+			},
+			"workTitle": "Titre du poste",
+			"workTitlePlaceholder": "ex. Développeuse",
+			"workEmployer": "Employeur",
+			"workEmployerPlaceholder": "ex. Acme SARL"
+		},
+		"documents": {
+			"title": "Pièces justificatives",
+			"subtitle": "Téléversez les pièces requises pour votre dossier.",
+			"subtitleWithAi": "Certains documents ont déjà été récupérés depuis le pré-remplissage IA.",
+			"docs": {
+				"identityPhoto": {
+					"label": "Photo d'identité"
+				},
+				"passport": {
+					"label": "Passeport"
+				},
+				"birthCertificate": {
+					"label": "Acte de naissance"
+				},
+				"addressProof": {
+					"label": "Justificatif de domicile",
+					"hint": "Moins de 3 mois"
+				},
+				"residencePermit": {
+					"label": "Titre de séjour"
+				}
+			},
+			"buttons": {
+				"upload": "Téléverser",
+				"removeAria": "Supprimer le document"
+			},
+			"aiPrefilledBadge": "Pré-rempli IA",
+			"formatLine": "{{formats}} · max {{max}}",
+			"formatLineWithHint": "{{formats}} · max {{max}} · {{hint}}",
+			"tooLarge": "Le fichier dépasse la taille maximale ({{max}}).",
+			"footer": "Vos documents sont stockés de manière chiffrée et accessibles uniquement par les agents consulaires habilités."
+		},
+		"review": {
+			"title": "Vérifiez et soumettez",
+			"subtitle": "Relisez attentivement les informations avant de soumettre votre dossier.",
+			"banner": {
+				"strong": "Prêt à soumettre.",
+				"text": "Votre dossier sera transmis au service consulaire pour validation. Vous recevrez une notification dès que votre statut changera."
+			},
+			"editAction": "Modifier",
+			"sections": {
+				"identity": "Identité",
+				"passport": "Passeport",
+				"family": "Famille",
+				"contacts": "Adresses et contacts",
+				"profession": "Profession",
+				"documents": "Documents ({{filled}}/{{total}})"
+			},
+			"fields": {
+				"fullName": "Nom complet",
+				"birthDate": "Né(e) le",
+				"birthPlace": "Lieu de naissance",
+				"birthCountry": "Pays de naissance",
+				"gender": "Genre",
+				"nationality": "Nationalité",
+				"email": "Email",
+				"phone": "Téléphone",
+				"passportNumber": "N°",
+				"passportIssuingAuthority": "Autorité",
+				"passportIssueDate": "Délivré le",
+				"passportExpiryDate": "Expire le",
+				"maritalStatus": "Statut",
+				"father": "Père",
+				"mother": "Mère",
+				"address": "Adresse",
+				"country": "Pays",
+				"homeland": "Adresse Gabon",
+				"emergencyContacts": "Contacts d'urgence",
+				"workStatus": "Statut",
+				"workTitle": "Titre",
+				"workEmployer": "Employeur"
+			},
+			"gender": {
+				"male": "Homme",
+				"female": "Femme"
+			},
+			"maritalLabels": {
+				"Single": "Célibataire",
+				"Married": "Marié(e)",
+				"Divorced": "Divorcé(e)",
+				"Widowed": "Veuf(ve)",
+				"CivilUnion": "Union civile",
+				"Cohabiting": "Concubinage"
+			},
+			"workLabels": {
+				"Employee": "Salarié(e)",
+				"SelfEmployed": "Indépendant(e)",
+				"Entrepreneur": "Entrepreneur(e)",
+				"Student": "Étudiant(e)",
+				"Retired": "Retraité(e)",
+				"Unemployed": "Sans emploi",
+				"Other": "Autre"
+			},
+			"emergencyCount": "{{count}} enregistré(s)",
+			"docRequired": "Requis",
+			"docNotProvided": "Non fourni",
+			"consent": "Je certifie sur l'honneur l'exactitude des informations fournies et j'accepte les conditions générales d'utilisation.",
+			"submitting": "Soumission en cours…",
+			"submit": "Soumettre mon dossier"
 		}
 	},
 	"zod": {

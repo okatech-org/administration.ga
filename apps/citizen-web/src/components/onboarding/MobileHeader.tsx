@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, Info } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function OnboardingMobileHeader({
 	onBack,
@@ -10,6 +11,7 @@ export function OnboardingMobileHeader({
 	onBack?: () => void;
 	savedAt?: string;
 }) {
+	const { t } = useTranslation();
 	return (
 		<header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80">
 			{onBack ? (
@@ -17,7 +19,7 @@ export function OnboardingMobileHeader({
 					variant="ghost"
 					size="icon"
 					onClick={onBack}
-					aria-label="Retour"
+					aria-label={t("onboarding.shell.nav.back")}
 					className="size-9"
 				>
 					<ArrowLeft className="size-5" />
@@ -26,9 +28,12 @@ export function OnboardingMobileHeader({
 				<span className="size-9" />
 			)}
 			{savedAt ? (
-				<span className="inline-flex items-center gap-1.5 rounded-full bg-gabon-green-tint px-2.5 py-1 text-[11px] font-medium text-gabon-green">
+				<span
+					className="inline-flex items-center gap-1.5 rounded-full bg-gabon-green-tint px-2.5 py-1 text-[11px] font-medium text-gabon-green"
+					suppressHydrationWarning
+				>
 					<Check className="size-3" strokeWidth={3} />
-					Brouillon · {savedAt}
+					{t("onboarding.shell.draft.label", { time: savedAt })}
 				</span>
 			) : (
 				<span />
@@ -36,7 +41,7 @@ export function OnboardingMobileHeader({
 			<Button
 				variant="ghost"
 				size="icon"
-				aria-label="Aide"
+				aria-label={t("onboarding.shell.nav.help")}
 				className="size-9"
 			>
 				<Info className="size-5" />

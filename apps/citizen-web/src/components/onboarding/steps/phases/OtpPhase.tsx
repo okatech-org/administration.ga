@@ -12,6 +12,7 @@ import {
 	Mail,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuthSyncWait } from "../../lib/useAuthSyncWait";
 import { OtpInput } from "../../ui/OtpInput";
 import type { OnboardingData } from "../../types";
@@ -31,6 +32,7 @@ export function OtpPhase({
 	onNext: () => void;
 	onPrev: () => void;
 }) {
+	const { t } = useTranslation();
 	const { waitForSync } = useAuthSyncWait();
 	const markOtpVerified = useMutation(api.functions.pin.markOtpVerified);
 	const [otp, setOtp] = useState<string>(data.otp ?? "");
@@ -51,7 +53,6 @@ export function OtpPhase({
 	}, [countdown]);
 
 	useEffect(() => {
-		// Auto-submit dès 6 chiffres (anti-replay : refuse de retenter le même code)
 		if (
 			otp.length === 6 &&
 			!submittingRef.current &&
@@ -59,18 +60,17 @@ export function OtpPhase({
 		) {
 			void submit(otp);
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [otp]);
 
 	const submit = async (code: string) => {
 		if (submittingRef.current) return;
 		if (!email) {
-			setError("Email manquant. Revenez à l'étape précédente.");
+			setError(t("onboarding.identity.otp.missingEmail"));
 			return;
 		}
 		if (!password) {
-			setError(
-				"Mot de passe non disponible (rechargement de page ?). Revenez à l'étape précédente.",
-			);
+			setError(t("onboarding.identity.otp.missingPassword"));
 			return;
 		}
 		submittingRef.current = true;
@@ -84,7 +84,7 @@ export function OtpPhase({
 			});
 			if (verify.error) {
 				setError(
-					verify.error.message || "Code invalide ou expiré. Réessayez.",
+					verify.error.message || t("onboarding.identity.otp.invalidCode"),
 				);
 				setStage("idle");
 				return;
@@ -95,7 +95,7 @@ export function OtpPhase({
 			if (signIn.error) {
 				setError(
 					signIn.error.message ||
-						"Connexion automatique impossible. Réessayez.",
+						t("onboarding.identity.otp.autoSignInFailed"),
 				);
 				setStage("idle");
 				return;
@@ -106,8 +106,6 @@ export function OtpPhase({
 			await waitForSync({ timeoutMs: 8000 });
 			console.timeEnd("ensure-user-sync");
 
-			// Marquer la vérification OTP côté Convex pour ouvrir la fenêtre PIN
-			// (RECENT_OTP_WINDOW_MS dans convex/functions/pin.ts).
 			await markOtpVerified({});
 
 			updateData({ _authState: "verified", otp: undefined });
@@ -117,10 +115,10 @@ export function OtpPhase({
 			console.error("OTP flow error:", err);
 			const message =
 				err instanceof Error && err.message === "auth_timeout"
-					? "La synchronisation a expiré. Réessayez."
+					? t("onboarding.identity.otp.syncTimeout")
 					: err instanceof Error
 						? err.message
-						: "Erreur inattendue. Réessayez.";
+						: t("onboarding.identity.otp.unexpectedError");
 			setError(message);
 			setStage("idle");
 		} finally {
@@ -138,7 +136,9 @@ export function OtpPhase({
 				type: "email-verification",
 			});
 			if (res.error) {
-				setError(res.error.message || "Renvoi impossible.");
+				setError(
+					res.error.message || t("onboarding.identity.otp.resendImpossible"),
+				);
 			} else {
 				setCountdown(COUNTDOWN_SECONDS);
 				lastAttemptedRef.current = null;
@@ -146,7 +146,11 @@ export function OtpPhase({
 				updateData({ otp: undefined });
 			}
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Renvoi impossible.");
+			setError(
+				err instanceof Error
+					? err.message
+					: t("onboarding.identity.otp.resendImpossible"),
+			);
 		} finally {
 			setResending(false);
 		}
@@ -164,10 +168,14 @@ export function OtpPhase({
 		return (
 			<div className="flex flex-col items-center gap-4 py-12 text-center">
 				<Loader2 className="size-10 animate-spin text-gabon-blue" />
-				<h2 className="text-xl font-semibold">Création de votre espace…</h2>
-				<p className="max-w-sm text-sm text-muted-foreground">
-					Nous synchronisons votre compte. Cela ne prendra que quelques
-					secondes.
+				<h2 className="text-xl font-semibold" suppressHydrationWarning>
+					{t("onboarding.identity.otp.syncingTitle")}
+				</h2>
+				<p
+					className="max-w-sm text-sm text-muted-foreground"
+					suppressHydrationWarning
+				>
+					{t("onboarding.identity.otp.syncingDescription")}
 				</p>
 			</div>
 		);
@@ -176,13 +184,16 @@ export function OtpPhase({
 	return (
 		<form onSubmit={handleManualSubmit} className="flex flex-col gap-6">
 			<header className="flex flex-col gap-2">
-				<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-					Vérifions votre email
+				<h1
+					className="text-2xl font-semibold tracking-tight md:text-3xl"
+					suppressHydrationWarning
+				>
+					{t("onboarding.identity.otp.title")}
 				</h1>
-				<p className="text-sm text-muted-foreground">
-					Un code à 6 chiffres a été envoyé à{" "}
+				<p className="text-sm text-muted-foreground" suppressHydrationWarning>
+					{t("onboarding.identity.otp.subtitlePrefix")}{" "}
 					<strong className="text-foreground">
-						{email || "votre adresse"}
+						{email || t("onboarding.identity.otp.subtitleFallback")}
 					</strong>
 					.
 				</p>
@@ -198,14 +209,14 @@ export function OtpPhase({
 				autoFocus
 				disabled={disabled}
 				hasError={!!error}
-				ariaLabel="Code de vérification à 6 chiffres"
+				ariaLabel={t("onboarding.identity.otp.otpAriaLabel")}
 			/>
 
 			<div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
 				<Mail className="size-4" />
 				{countdown > 0 ? (
-					<span>
-						Renvoyer le code dans{" "}
+					<span suppressHydrationWarning>
+						{t("onboarding.identity.otp.resendIn")}{" "}
 						<strong className="font-mono tabular-nums text-foreground">
 							{countdown}s
 						</strong>
@@ -219,7 +230,11 @@ export function OtpPhase({
 						onClick={handleResend}
 						disabled={resending}
 					>
-						{resending ? "Envoi…" : "Renvoyer le code"}
+						<span suppressHydrationWarning>
+							{resending
+								? t("onboarding.identity.otp.sending")
+								: t("onboarding.identity.otp.resend")}
+						</span>
 					</Button>
 				)}
 				<span aria-hidden="true">•</span>
@@ -231,7 +246,9 @@ export function OtpPhase({
 					onClick={onPrev}
 					disabled={disabled}
 				>
-					Modifier l'email
+					<span suppressHydrationWarning>
+						{t("onboarding.identity.otp.editEmail")}
+					</span>
 				</Button>
 			</div>
 
@@ -253,17 +270,25 @@ export function OtpPhase({
 					disabled={disabled}
 				>
 					<ArrowLeft className="mr-1 size-4" />
-					Retour
+					<span suppressHydrationWarning>
+						{t("onboarding.identity.otp.back")}
+					</span>
 				</Button>
 				<Button type="submit" disabled={otp.length !== 6 || disabled}>
 					{stage === "verifying" || stage === "signing-in" ? (
 						<>
 							<Loader2 className="mr-1 size-4 animate-spin" />
-							{stage === "verifying" ? "Vérification…" : "Connexion…"}
+							<span suppressHydrationWarning>
+								{stage === "verifying"
+									? t("onboarding.identity.otp.verifying")
+									: t("onboarding.identity.otp.signingIn")}
+							</span>
 						</>
 					) : (
 						<>
-							Vérifier et continuer
+							<span suppressHydrationWarning>
+								{t("onboarding.identity.otp.submit")}
+							</span>
 							<ArrowRight className="ml-1 size-4" />
 						</>
 					)}

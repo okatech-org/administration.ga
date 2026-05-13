@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { CountryCode } from "@convex/lib/constants";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { OnboardingData } from "../../types";
 
 export function BirthPhase({
@@ -26,6 +27,7 @@ export function BirthPhase({
 	onNext: () => void;
 	onPrev: () => void;
 }) {
+	const { t } = useTranslation();
 	const canContinue =
 		!!data.birthDate &&
 		(data.birthPlace?.trim().length ?? 0) >= 2 &&
@@ -41,19 +43,22 @@ export function BirthPhase({
 			className="flex flex-col gap-6"
 		>
 			<header className="flex flex-col gap-2">
-				<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-					Naissance et nationalité
+				<h1
+					className="text-2xl font-semibold tracking-tight md:text-3xl"
+					suppressHydrationWarning
+				>
+					{t("onboarding.identity.birth.title")}
 				</h1>
-				<p className="text-sm text-muted-foreground">
-					Ces informations doivent correspondre à votre acte de naissance et à
-					votre passeport.
+				<p className="text-sm text-muted-foreground" suppressHydrationWarning>
+					{t("onboarding.identity.birth.subtitle")}
 				</p>
 			</header>
 
 			<div className="grid gap-4 md:grid-cols-2">
 				<div className="flex flex-col gap-2">
-					<Label htmlFor="birthDate">
-						Date de naissance <span className="text-destructive">*</span>
+					<Label htmlFor="birthDate" suppressHydrationWarning>
+						{t("onboarding.identity.birth.birthDate")}{" "}
+						<span className="text-destructive">*</span>
 					</Label>
 					<Input
 						id="birthDate"
@@ -63,18 +68,21 @@ export function BirthPhase({
 					/>
 				</div>
 				<div className="flex flex-col gap-2">
-					<Label htmlFor="birthPlace">
-						Lieu de naissance <span className="text-destructive">*</span>
+					<Label htmlFor="birthPlace" suppressHydrationWarning>
+						{t("onboarding.identity.birth.birthPlace")}{" "}
+						<span className="text-destructive">*</span>
 					</Label>
 					<Input
 						id="birthPlace"
 						value={data.birthPlace ?? ""}
 						onChange={(e) => updateData({ birthPlace: e.target.value })}
-						placeholder="Bikélé"
+						placeholder={t("onboarding.identity.birth.birthPlacePlaceholder")}
 					/>
 				</div>
 				<div className="flex flex-col gap-2">
-					<Label>Pays de naissance</Label>
+					<Label suppressHydrationWarning>
+						{t("onboarding.identity.birth.birthCountry")}
+					</Label>
 					<CountrySelect
 						type="single"
 						selected={(data.birthCountry as CountryCode) ?? CountryCode.GA}
@@ -82,8 +90,9 @@ export function BirthPhase({
 					/>
 				</div>
 				<div className="flex flex-col gap-2">
-					<Label htmlFor="gender">
-						Genre <span className="text-destructive">*</span>
+					<Label htmlFor="gender" suppressHydrationWarning>
+						{t("onboarding.identity.birth.gender")}{" "}
+						<span className="text-destructive">*</span>
 					</Label>
 					<Select
 						value={data.gender ?? ""}
@@ -92,17 +101,28 @@ export function BirthPhase({
 						}
 					>
 						<SelectTrigger id="gender" className="w-full">
-							<SelectValue placeholder="Sélectionner" />
+							<SelectValue
+								placeholder={t("onboarding.identity.birth.selectPlaceholder")}
+							/>
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="Male">Homme</SelectItem>
-							<SelectItem value="Female">Femme</SelectItem>
+							<SelectItem value="Male">
+								<span suppressHydrationWarning>
+									{t("onboarding.identity.birth.genderOptions.male")}
+								</span>
+							</SelectItem>
+							<SelectItem value="Female">
+								<span suppressHydrationWarning>
+									{t("onboarding.identity.birth.genderOptions.female")}
+								</span>
+							</SelectItem>
 						</SelectContent>
 					</Select>
 				</div>
 				<div className="flex flex-col gap-2">
-					<Label>
-						Nationalité <span className="text-destructive">*</span>
+					<Label suppressHydrationWarning>
+						{t("onboarding.identity.birth.nationality")}{" "}
+						<span className="text-destructive">*</span>
 					</Label>
 					<CountrySelect
 						type="single"
@@ -111,8 +131,8 @@ export function BirthPhase({
 					/>
 				</div>
 				<div className="flex flex-col gap-2">
-					<Label htmlFor="nationalityAcquisition">
-						Acquisition de la nationalité
+					<Label htmlFor="nationalityAcquisition" suppressHydrationWarning>
+						{t("onboarding.identity.birth.nationalityAcquisition")}
 					</Label>
 					<Select
 						value={data.nationalityAcquisition ?? "birth"}
@@ -124,24 +144,38 @@ export function BirthPhase({
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="birth">Naissance</SelectItem>
-							<SelectItem value="naturalization">Naturalisation</SelectItem>
-							<SelectItem value="marriage">Mariage</SelectItem>
+							<SelectItem value="birth">
+								<span suppressHydrationWarning>
+									{t("onboarding.identity.birth.acquisitionOptions.birth")}
+								</span>
+							</SelectItem>
+							<SelectItem value="naturalization">
+								<span suppressHydrationWarning>
+									{t(
+										"onboarding.identity.birth.acquisitionOptions.naturalization",
+									)}
+								</span>
+							</SelectItem>
+							<SelectItem value="marriage">
+								<span suppressHydrationWarning>
+									{t("onboarding.identity.birth.acquisitionOptions.marriage")}
+								</span>
+							</SelectItem>
 						</SelectContent>
 					</Select>
 				</div>
 				<div className="flex flex-col gap-2 md:col-span-2">
-					<Label htmlFor="nip">
-						NIP (Numéro d'Identification Personnel){" "}
+					<Label htmlFor="nip" suppressHydrationWarning>
+						{t("onboarding.identity.birth.nip")}{" "}
 						<span className="text-xs text-muted-foreground">
-							— optionnel
+							{t("onboarding.identity.birth.nipOptional")}
 						</span>
 					</Label>
 					<Input
 						id="nip"
 						value={data.nip ?? ""}
 						onChange={(e) => updateData({ nip: e.target.value })}
-						placeholder="Figure sur votre carte d'identité gabonaise"
+						placeholder={t("onboarding.identity.birth.nipPlaceholder")}
 					/>
 				</div>
 			</div>
@@ -149,10 +183,14 @@ export function BirthPhase({
 			<div className="flex justify-between">
 				<Button type="button" variant="outline" onClick={onPrev}>
 					<ArrowLeft className="mr-1 size-4" />
-					Retour
+					<span suppressHydrationWarning>
+						{t("onboarding.identity.birth.back")}
+					</span>
 				</Button>
 				<Button type="submit" disabled={!canContinue}>
-					Continuer
+					<span suppressHydrationWarning>
+						{t("onboarding.identity.birth.continue")}
+					</span>
 					<ArrowRight className="ml-1 size-4" />
 				</Button>
 			</div>

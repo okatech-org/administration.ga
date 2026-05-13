@@ -2,8 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
-	IDENTITY_PHASE_LABELS,
 	IDENTITY_PHASES,
 	type IdentityPhase,
 } from "../lib/onboardingFlow";
@@ -40,6 +40,7 @@ export function IdentityStep({
 	onComplete: () => void;
 	setFile?: (key: string, file: File) => void;
 }) {
+	const { t } = useTranslation();
 	const verified = data._authState === "verified";
 
 	const phases = useMemo<IdentityPhase[]>(() => IDENTITY_PHASES, []);
@@ -127,8 +128,8 @@ export function IdentityStep({
 						);
 					})}
 				</div>
-				<span className="text-xs text-muted-foreground">
-					{IDENTITY_PHASE_LABELS[phase]}
+				<span className="text-xs text-muted-foreground" suppressHydrationWarning>
+					{t(`onboarding.identityPhaseLabels.${phase}`)}
 				</span>
 			</div>
 

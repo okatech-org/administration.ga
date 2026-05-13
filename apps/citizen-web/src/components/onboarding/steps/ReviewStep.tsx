@@ -14,34 +14,18 @@ import {
 	Pencil,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getDocsForUserType } from "./DocumentsStep";
 import type { OnboardingData } from "../types";
 
-const MARITAL_LABELS: Record<string, string> = {
-	Single: "Célibataire",
-	Married: "Marié(e)",
-	Divorced: "Divorcé(e)",
-	Widowed: "Veuf(ve)",
-	CivilUnion: "Union civile",
-	Cohabiting: "Concubinage",
-};
-
-const WORK_LABELS: Record<string, string> = {
-	Employee: "Salarié(e)",
-	SelfEmployed: "Indépendant(e)",
-	Entrepreneur: "Entrepreneur(e)",
-	Student: "Étudiant(e)",
-	Retired: "Retraité(e)",
-	Unemployed: "Sans emploi",
-	Other: "Autre",
-};
-
 function ReviewSection({
 	title,
+	editLabel,
 	onEdit,
 	children,
 }: {
 	title: string;
+	editLabel: string;
 	onEdit?: () => void;
 	children: React.ReactNode;
 }) {
@@ -49,7 +33,10 @@ function ReviewSection({
 		<Card>
 			<CardContent className="flex flex-col gap-3 p-4">
 				<div className="flex items-center justify-between">
-					<strong className="text-xs font-semibold uppercase tracking-[0.04em] text-muted-foreground">
+					<strong
+						className="text-xs font-semibold uppercase tracking-[0.04em] text-muted-foreground"
+						suppressHydrationWarning
+					>
 						{title}
 					</strong>
 					{onEdit && (
@@ -61,7 +48,7 @@ function ReviewSection({
 							onClick={onEdit}
 						>
 							<Pencil className="size-3" />
-							Modifier
+							<span suppressHydrationWarning>{editLabel}</span>
 						</Button>
 					)}
 				</div>
@@ -76,7 +63,9 @@ function ReviewSection({
 function Row({ label, value }: { label: string; value?: React.ReactNode }) {
 	return (
 		<div>
-			<dt className="text-xs text-muted-foreground">{label}</dt>
+			<dt className="text-xs text-muted-foreground" suppressHydrationWarning>
+				{label}
+			</dt>
 			<dd className="mt-0.5 font-medium">
 				{value || <span className="text-muted-foreground/60">—</span>}
 			</dd>
@@ -99,6 +88,7 @@ export function ReviewStep({
 	submitting: boolean;
 	submitError: string | null;
 }) {
+	const { t } = useTranslation();
 	const [accepted, setAccepted] = useState(false);
 
 	const isLongStay = userType === PublicUserType.LongStay;
@@ -108,65 +98,86 @@ export function ReviewStep({
 
 	const fullName = [data.firstName, data.lastName].filter(Boolean).join(" ");
 	const genderLabel =
-		data.gender === "Male" ? "Homme" : data.gender === "Female" ? "Femme" : null;
+		data.gender === "Male"
+			? t("onboarding.review.gender.male")
+			: data.gender === "Female"
+				? t("onboarding.review.gender.female")
+				: null;
+
+	const editLabel = t("onboarding.review.editAction");
 
 	return (
 		<div className="flex flex-col gap-4">
 			<header className="flex flex-col gap-2">
-				<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-					Vérifiez et soumettez
+				<h1
+					className="text-2xl font-semibold tracking-tight md:text-3xl"
+					suppressHydrationWarning
+				>
+					{t("onboarding.review.title")}
 				</h1>
-				<p className="text-sm text-muted-foreground">
-					Relisez attentivement les informations avant de soumettre votre
-					dossier.
+				<p className="text-sm text-muted-foreground" suppressHydrationWarning>
+					{t("onboarding.review.subtitle")}
 				</p>
 			</header>
 
 			<div className="flex items-start gap-3 rounded-xl border border-gabon-blue/20 bg-gabon-blue-tint/40 p-4">
 				<CheckCircle2 className="mt-0.5 size-4 shrink-0 text-gabon-blue" />
-				<p className="text-sm">
-					<strong>Prêt à soumettre.</strong> Votre dossier sera transmis au
-					service consulaire pour validation. Vous recevrez une notification
-					dès que votre statut changera.
+				<p className="text-sm" suppressHydrationWarning>
+					<strong>{t("onboarding.review.banner.strong")}</strong>{" "}
+					{t("onboarding.review.banner.text")}
 				</p>
 			</div>
 
-			<ReviewSection title="Identité" onEdit={() => onJump("identity")}>
-				<Row label="Nom complet" value={fullName} />
-				<Row label="Né(e) le" value={data.birthDate} />
-				<Row label="Lieu de naissance" value={data.birthPlace} />
-				<Row label="Pays de naissance" value={data.birthCountry} />
-				<Row label="Genre" value={genderLabel} />
-				<Row label="Nationalité" value={data.nationality} />
-				<Row label="Email" value={data.email} />
-				<Row label="Téléphone" value={data.phone} />
+			<ReviewSection
+				title={t("onboarding.review.sections.identity")}
+				editLabel={editLabel}
+				onEdit={() => onJump("identity")}
+			>
+				<Row label={t("onboarding.review.fields.fullName")} value={fullName} />
+				<Row label={t("onboarding.review.fields.birthDate")} value={data.birthDate} />
+				<Row label={t("onboarding.review.fields.birthPlace")} value={data.birthPlace} />
+				<Row label={t("onboarding.review.fields.birthCountry")} value={data.birthCountry} />
+				<Row label={t("onboarding.review.fields.gender")} value={genderLabel} />
+				<Row label={t("onboarding.review.fields.nationality")} value={data.nationality} />
+				<Row label={t("onboarding.review.fields.email")} value={data.email} />
+				<Row label={t("onboarding.review.fields.phone")} value={data.phone} />
 			</ReviewSection>
 
 			{data.passportNumber && (
-				<ReviewSection title="Passeport" onEdit={() => onJump("identity")}>
-					<Row label="N°" value={data.passportNumber} />
-					<Row label="Autorité" value={data.passportIssuingAuthority} />
-					<Row label="Délivré le" value={data.passportIssueDate} />
-					<Row label="Expire le" value={data.passportExpiryDate} />
+				<ReviewSection
+					title={t("onboarding.review.sections.passport")}
+					editLabel={editLabel}
+					onEdit={() => onJump("identity")}
+				>
+					<Row label={t("onboarding.review.fields.passportNumber")} value={data.passportNumber} />
+					<Row label={t("onboarding.review.fields.passportIssuingAuthority")} value={data.passportIssuingAuthority} />
+					<Row label={t("onboarding.review.fields.passportIssueDate")} value={data.passportIssueDate} />
+					<Row label={t("onboarding.review.fields.passportExpiryDate")} value={data.passportExpiryDate} />
 				</ReviewSection>
 			)}
 
 			{isLongStay && (
-				<ReviewSection title="Famille" onEdit={() => onJump("family")}>
+				<ReviewSection
+					title={t("onboarding.review.sections.family")}
+					editLabel={editLabel}
+					onEdit={() => onJump("family")}
+				>
 					<Row
-						label="Statut"
+						label={t("onboarding.review.fields.maritalStatus")}
 						value={
-							data.maritalStatus ? MARITAL_LABELS[data.maritalStatus] : undefined
+							data.maritalStatus
+								? t(`onboarding.review.maritalLabels.${data.maritalStatus}`)
+								: undefined
 						}
 					/>
 					<Row
-						label="Père"
+						label={t("onboarding.review.fields.father")}
 						value={[data.fatherFirstName, data.fatherLastName]
 							.filter(Boolean)
 							.join(" ")}
 					/>
 					<Row
-						label="Mère"
+						label={t("onboarding.review.fields.mother")}
 						value={[data.motherFirstName, data.motherLastName]
 							.filter(Boolean)
 							.join(" ")}
@@ -175,39 +186,54 @@ export function ReviewStep({
 			)}
 
 			<ReviewSection
-				title="Adresses et contacts"
+				title={t("onboarding.review.sections.contacts")}
+				editLabel={editLabel}
 				onEdit={() => onJump("contacts")}
 			>
-				<Row label="Adresse" value={data.address?.full} />
-				<Row label="Pays" value={data.address?.country} />
+				<Row label={t("onboarding.review.fields.address")} value={data.address?.full} />
+				<Row label={t("onboarding.review.fields.country")} value={data.address?.country} />
 				{isLongStay && (
-					<Row label="Adresse Gabon" value={data.homeland?.full} />
+					<Row label={t("onboarding.review.fields.homeland")} value={data.homeland?.full} />
 				)}
 				<Row
-					label="Contacts d'urgence"
-					value={
-						(data.emergencyContacts ?? []).filter((c) => c.firstName).length +
-						" enregistré(s)"
-					}
+					label={t("onboarding.review.fields.emergencyContacts")}
+					value={t("onboarding.review.emergencyCount", {
+						count:
+							(data.emergencyContacts ?? []).filter((c) => c.firstName).length,
+					})}
 				/>
 			</ReviewSection>
 
 			{isLongStay && (
-				<ReviewSection title="Profession" onEdit={() => onJump("profession")}>
+				<ReviewSection
+					title={t("onboarding.review.sections.profession")}
+					editLabel={editLabel}
+					onEdit={() => onJump("profession")}
+				>
 					<Row
-						label="Statut"
-						value={data.workStatus ? WORK_LABELS[data.workStatus] : undefined}
+						label={t("onboarding.review.fields.workStatus")}
+						value={
+							data.workStatus
+								? t(`onboarding.review.workLabels.${data.workStatus}`)
+								: undefined
+						}
 					/>
-					<Row label="Titre" value={data.workTitle} />
-					<Row label="Employeur" value={data.workEmployer} />
+					<Row label={t("onboarding.review.fields.workTitle")} value={data.workTitle} />
+					<Row label={t("onboarding.review.fields.workEmployer")} value={data.workEmployer} />
 				</ReviewSection>
 			)}
 
 			<Card>
 				<CardContent className="flex flex-col gap-3 p-4">
 					<div className="flex items-center justify-between">
-						<strong className="text-xs font-semibold uppercase tracking-[0.04em] text-muted-foreground">
-							Documents ({filledDocs}/{totalDocs})
+						<strong
+							className="text-xs font-semibold uppercase tracking-[0.04em] text-muted-foreground"
+							suppressHydrationWarning
+						>
+							{t("onboarding.review.sections.documents", {
+								filled: filledDocs,
+								total: totalDocs,
+							})}
 						</strong>
 						<Button
 							type="button"
@@ -217,7 +243,7 @@ export function ReviewStep({
 							onClick={() => onJump("documents")}
 						>
 							<Pencil className="size-3" />
-							Modifier
+							<span suppressHydrationWarning>{editLabel}</span>
 						</Button>
 					</div>
 					<ul className="flex flex-col gap-2 text-sm">
@@ -232,14 +258,25 @@ export function ReviewStep({
 									) : (
 										<FileText className="size-4 shrink-0 text-muted-foreground" />
 									)}
-									<span className="min-w-0 flex-1 truncate">{d.label}</span>
+									<span
+										className="min-w-0 flex-1 truncate"
+										suppressHydrationWarning
+									>
+										{t(`onboarding.documents.docs.${d.key}.label`)}
+									</span>
 									{d.required && !name && (
-										<span className="inline-flex items-center rounded-full bg-gabon-yellow-tint px-1.5 py-0.5 text-[10px] font-medium text-gabon-yellow">
-											Requis
+										<span
+											className="inline-flex items-center rounded-full bg-gabon-yellow-tint px-1.5 py-0.5 text-[10px] font-medium text-gabon-yellow"
+											suppressHydrationWarning
+										>
+											{t("onboarding.review.docRequired")}
 										</span>
 									)}
-									<span className="ml-auto truncate text-xs text-muted-foreground">
-										{name || "Non fourni"}
+									<span
+										className="ml-auto truncate text-xs text-muted-foreground"
+										suppressHydrationWarning
+									>
+										{name || t("onboarding.review.docNotProvided")}
 									</span>
 								</li>
 							);
@@ -259,10 +296,7 @@ export function ReviewStep({
 					onCheckedChange={(c) => setAccepted(c === true)}
 					className="mt-0.5"
 				/>
-				<span>
-					Je certifie sur l'honneur l'exactitude des informations fournies et
-					j'accepte les conditions générales d'utilisation.
-				</span>
+				<span suppressHydrationWarning>{t("onboarding.review.consent")}</span>
 			</label>
 
 			{submitError && (
@@ -284,11 +318,13 @@ export function ReviewStep({
 				{submitting ? (
 					<>
 						<Loader2 className="mr-1 size-4 animate-spin" />
-						Soumission en cours…
+						<span suppressHydrationWarning>
+							{t("onboarding.review.submitting")}
+						</span>
 					</>
 				) : (
 					<>
-						Soumettre mon dossier
+						<span suppressHydrationWarning>{t("onboarding.review.submit")}</span>
 						<ArrowRight className="ml-1 size-4" />
 					</>
 				)}

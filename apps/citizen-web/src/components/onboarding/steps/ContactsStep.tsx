@@ -10,6 +10,7 @@ import { usePlacesAutocomplete } from "@/hooks/use-places-autocomplete";
 import { CountryCode, PublicUserType } from "@convex/lib/constants";
 import { Home, Phone, Plus, Trash2 } from "lucide-react";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import type { EmergencyContact, OnboardingData } from "../types";
 
 export function ContactsStep({
@@ -21,6 +22,7 @@ export function ContactsStep({
 	updateData: (patch: Partial<OnboardingData>) => void;
 	userType: PublicUserType;
 }) {
+	const { t } = useTranslation();
 	const isLong = userType === PublicUserType.LongStay;
 	const isForeigner =
 		userType === PublicUserType.VisaTourism ||
@@ -89,12 +91,14 @@ export function ContactsStep({
 	return (
 		<div className="flex flex-col gap-5">
 			<header className="flex flex-col gap-2">
-				<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-					Adresses et contacts
+				<h1
+					className="text-2xl font-semibold tracking-tight md:text-3xl"
+					suppressHydrationWarning
+				>
+					{t("onboarding.contacts.title")}
 				</h1>
-				<p className="text-sm text-muted-foreground">
-					Vos coordonnées de résidence et personnes à contacter en cas
-					d'urgence.
+				<p className="text-sm text-muted-foreground" suppressHydrationWarning>
+					{t("onboarding.contacts.subtitle")}
 				</p>
 			</header>
 
@@ -131,11 +135,13 @@ export function ContactsStep({
 						}
 						showCoordinates
 						labels={{
-							street: "Adresse",
-							streetPlaceholder: "Commencez à taper pour des suggestions…",
-							city: "Ville",
-							postalCode: "Code postal",
-							country: "Pays",
+							street: t("onboarding.contacts.address.street"),
+							streetPlaceholder: t(
+								"onboarding.contacts.address.streetPlaceholder",
+							),
+							city: t("onboarding.contacts.address.city"),
+							postalCode: t("onboarding.contacts.address.postalCode"),
+							country: t("onboarding.contacts.address.country"),
 						}}
 					/>
 				</CardContent>
@@ -146,18 +152,22 @@ export function ContactsStep({
 					<CardContent className="flex flex-col gap-4 p-5">
 						<div className="flex items-center gap-2">
 							<Home className="size-4 text-gabon-green" />
-							<h3 className="text-sm font-semibold">Adresse au Gabon</h3>
+							<h3 className="text-sm font-semibold" suppressHydrationWarning>
+								{t("onboarding.contacts.homeland.title")}
+							</h3>
 						</div>
 						<div className="flex flex-col gap-2">
-							<Label htmlFor="homelandFull">Adresse complète</Label>
+							<Label htmlFor="homelandFull" suppressHydrationWarning>
+								{t("onboarding.contacts.homeland.fullLabel")}
+							</Label>
 							<Input
 								id="homelandFull"
 								value={data.homeland?.full ?? ""}
 								onChange={(e) => updateHomeland("full", e.target.value)}
-								placeholder="Quartier, rue, ville"
+								placeholder={t("onboarding.contacts.homeland.placeholder")}
 							/>
-							<p className="text-xs text-muted-foreground">
-								Adresse de référence dans votre pays d'origine.
+							<p className="text-xs text-muted-foreground" suppressHydrationWarning>
+								{t("onboarding.contacts.homeland.help")}
 							</p>
 						</div>
 					</CardContent>
@@ -169,11 +179,12 @@ export function ContactsStep({
 					<CardContent className="flex flex-col gap-4 p-5">
 						<div className="flex items-center gap-2">
 							<Phone className="size-4 text-gabon-yellow" />
-							<h3 className="text-sm font-semibold">Contacts d'urgence</h3>
+							<h3 className="text-sm font-semibold" suppressHydrationWarning>
+								{t("onboarding.contacts.emergency.title")}
+							</h3>
 						</div>
-						<p className="text-xs text-muted-foreground">
-							Au moins une personne à contacter, idéalement dans le pays de
-							résidence et au Gabon.
+						<p className="text-xs text-muted-foreground" suppressHydrationWarning>
+							{t("onboarding.contacts.emergency.description")}
 						</p>
 
 						<div className="flex flex-col gap-3">
@@ -183,8 +194,11 @@ export function ContactsStep({
 									className="relative flex flex-col gap-3 rounded-xl border border-border bg-card p-4"
 								>
 									<div className="flex items-center justify-between">
-										<strong className="text-xs uppercase tracking-wide text-muted-foreground">
-											Contact n°{i + 1}
+										<strong
+											className="text-xs uppercase tracking-wide text-muted-foreground"
+											suppressHydrationWarning
+										>
+											{t("onboarding.contacts.emergency.contactN", { n: i + 1 })}
 										</strong>
 										{emergency.length > 1 && (
 											<Button
@@ -195,6 +209,9 @@ export function ContactsStep({
 												onClick={() =>
 													setEmergency(emergency.filter((_, j) => j !== i))
 												}
+												aria-label={t(
+													"onboarding.contacts.emergency.removeAria",
+												)}
 											>
 												<Trash2 className="size-3.5" />
 											</Button>
@@ -202,8 +219,9 @@ export function ContactsStep({
 									</div>
 									<div className="grid gap-3 md:grid-cols-2">
 										<div className="flex flex-col gap-2">
-											<Label>
-												Prénom <span className="text-destructive">*</span>
+											<Label suppressHydrationWarning>
+												{t("onboarding.contacts.emergency.firstName")}{" "}
+												<span className="text-destructive">*</span>
 											</Label>
 											<Input
 												value={ec.firstName ?? ""}
@@ -213,8 +231,9 @@ export function ContactsStep({
 											/>
 										</div>
 										<div className="flex flex-col gap-2">
-											<Label>
-												Nom <span className="text-destructive">*</span>
+											<Label suppressHydrationWarning>
+												{t("onboarding.contacts.emergency.lastName")}{" "}
+												<span className="text-destructive">*</span>
 											</Label>
 											<Input
 												value={ec.lastName ?? ""}
@@ -224,8 +243,9 @@ export function ContactsStep({
 											/>
 										</div>
 										<div className="flex flex-col gap-2">
-											<Label>
-												Téléphone <span className="text-destructive">*</span>
+											<Label suppressHydrationWarning>
+												{t("onboarding.contacts.emergency.phone")}{" "}
+												<span className="text-destructive">*</span>
 											</Label>
 											<Input
 												type="tel"
@@ -234,7 +254,9 @@ export function ContactsStep({
 											/>
 										</div>
 										<div className="flex flex-col gap-2">
-											<Label>Email</Label>
+											<Label suppressHydrationWarning>
+												{t("onboarding.contacts.emergency.email")}
+											</Label>
 											<Input
 												type="email"
 												value={ec.email ?? ""}
@@ -242,7 +264,9 @@ export function ContactsStep({
 											/>
 										</div>
 										<div className="flex flex-col gap-2 md:col-span-2">
-											<Label>Pays du contact</Label>
+											<Label suppressHydrationWarning>
+												{t("onboarding.contacts.emergency.country")}
+											</Label>
 											<CountrySelect
 												type="single"
 												selected={
@@ -261,7 +285,9 @@ export function ContactsStep({
 								onClick={() => setEmergency([...emergency, {}])}
 							>
 								<Plus className="mr-1 size-4" />
-								Ajouter un contact d'urgence
+								<span suppressHydrationWarning>
+									{t("onboarding.contacts.emergency.add")}
+								</span>
 							</Button>
 						</div>
 					</CardContent>

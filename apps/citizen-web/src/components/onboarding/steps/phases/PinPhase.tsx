@@ -12,6 +12,7 @@ import {
 	Shield,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { NumPad } from "../../ui/NumPad";
 import { OtpInput } from "../../ui/OtpInput";
 import type { OnboardingData } from "../../types";
@@ -43,6 +44,7 @@ export function PinPhase({
 	onNext: () => void;
 	onPrev: () => void;
 }) {
+	const { t } = useTranslation();
 	const isMobile = useIsMobile();
 	const { isAuthenticated } = useConvexAuth();
 	const pinStatus = useQuery(
@@ -54,9 +56,6 @@ export function PinPhase({
 	const otpRefreshedRef = useRef(false);
 	const autoAdvancedRef = useRef(false);
 
-	// Si l'utilisateur revient sur cette phase alors que le PIN est déjà créé
-	// côté serveur (retour en arrière, refresh, etc.), on saute directement à
-	// la phase suivante — pas besoin de re-saisir un PIN existant.
 	useEffect(() => {
 		if (pinStatus?.hasPin && !autoAdvancedRef.current) {
 			autoAdvancedRef.current = true;
@@ -65,13 +64,9 @@ export function PinPhase({
 		}
 	}, [pinStatus, onNext, updateData]);
 
-	// Filet de sécurité : rafraîchit la fenêtre OTP-verified au mount du PIN.
-	// L'OtpPhase appelle déjà markOtpVerified après signIn, mais ce double appel
-	// couvre les comptes existants ou les recompilations où le timestamp manque.
-	// Server-side `createPin` exige `Date.now() - lastOtpVerifiedAt < 10 min`.
 	useEffect(() => {
 		if (!isAuthenticated || otpRefreshedRef.current) return;
-		if (pinStatus?.hasPin) return; // inutile si le PIN existe déjà
+		if (pinStatus?.hasPin) return;
 		otpRefreshedRef.current = true;
 		markOtpVerified({}).catch((err) => {
 			console.error("markOtpVerified failed:", err);
@@ -93,11 +88,10 @@ export function PinPhase({
 	const mismatch =
 		stage === "confirm" && confirm.length === PIN_LENGTH && pin !== confirm;
 
-	// Auto-advance create → confirm une fois les 6 chiffres saisis
 	useEffect(() => {
 		if (stage === "create" && pin.length === PIN_LENGTH) {
-			const t = setTimeout(() => setStage("confirm"), 240);
-			return () => clearTimeout(t);
+			const tm = setTimeout(() => setStage("confirm"), 240);
+			return () => clearTimeout(tm);
 		}
 	}, [stage, pin]);
 
@@ -146,7 +140,6 @@ export function PinPhase({
 		setSubmitting(true);
 		try {
 			await createPin({ pin });
-			// PIN créé — purge des valeurs sensibles avant d'avancer
 			updateData({ pin: undefined, pinConfirm: undefined });
 			onNext();
 		} catch (err) {
@@ -154,9 +147,7 @@ export function PinPhase({
 			const message =
 				err instanceof Error
 					? err.message
-					: "Erreur lors de la création du code PIN.";
-			// PIN déjà créé côté serveur (race entre 2 onglets, double-clic, etc.)
-			// → on traite comme un succès et on avance.
+					: t("onboarding.identity.pin.genericError");
 			if (message.includes("PIN_ALREADY_EXISTS")) {
 				updateData({ pin: undefined, pinConfirm: undefined });
 				onNext();
@@ -166,17 +157,16 @@ export function PinPhase({
 		} finally {
 			setSubmitting(false);
 		}
-	}, [createPin, match, pin, submitting, updateData, onNext]);
+	}, [createPin, match, pin, submitting, updateData, onNext, t]);
 
-	// Affichage transitoire pendant la vérification du PIN existant
 	if (pinStatus === undefined || pinStatus?.hasPin) {
 		return (
 			<div className="flex flex-col items-center gap-3 py-12 text-center">
 				<Loader2 className="size-8 animate-spin text-gabon-blue" />
-				<p className="text-sm text-muted-foreground">
+				<p className="text-sm text-muted-foreground" suppressHydrationWarning>
 					{pinStatus?.hasPin
-						? "Code PIN déjà configuré, passage à l'étape suivante…"
-						: "Vérification…"}
+						? t("onboarding.identity.pin.alreadyConfigured")
+						: t("onboarding.identity.pin.verifying")}
 				</p>
 			</div>
 		);
@@ -185,15 +175,21 @@ export function PinPhase({
 	return (
 		<div className="flex flex-col gap-6">
 			<header className="flex flex-col gap-2">
-				<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+				<h1
+					className="text-2xl font-semibold tracking-tight md:text-3xl"
+					suppressHydrationWarning
+				>
 					{stage === "create"
-						? "Choisissez un code PIN"
-						: "Confirmez votre code PIN"}
+						? t("onboarding.identity.pin.createTitle")
+						: t("onboarding.identity.pin.confirmTitle")}
 				</h1>
-				<p className="max-w-lg text-sm text-muted-foreground">
+				<p
+					className="max-w-lg text-sm text-muted-foreground"
+					suppressHydrationWarning
+				>
 					{stage === "create"
-						? "Un code à 6 chiffres pour accéder rapidement à votre espace. Évitez les dates de naissance ou les suites évidentes (123456, 000000…)."
-						: "Saisissez à nouveau les 6 mêmes chiffres pour confirmer."}
+						? t("onboarding.identity.pin.createSubtitle")
+						: t("onboarding.identity.pin.confirmSubtitle")}
 				</p>
 			</header>
 
@@ -208,7 +204,9 @@ export function PinPhase({
 					autoFocus={!isMobile}
 					hasError={mismatch}
 					ariaLabel={
-						stage === "create" ? "Saisir le code PIN" : "Confirmer le code PIN"
+						stage === "create"
+							? t("onboarding.identity.pin.ariaCreate")
+							: t("onboarding.identity.pin.ariaConfirm")
 					}
 				/>
 
@@ -221,9 +219,12 @@ export function PinPhase({
 				)}
 
 				{stage === "confirm" && mismatch && (
-					<div className="flex flex-wrap items-center justify-center gap-2 text-sm text-destructive">
+					<div
+						className="flex flex-wrap items-center justify-center gap-2 text-sm text-destructive"
+						suppressHydrationWarning
+					>
 						<AlertTriangle className="size-4" />
-						Les codes ne correspondent pas.
+						{t("onboarding.identity.pin.mismatch")}
 						<Button
 							type="button"
 							variant="link"
@@ -231,24 +232,28 @@ export function PinPhase({
 							className="h-auto p-0 text-destructive underline"
 							onClick={handleRestart}
 						>
-							Recommencer
+							<span suppressHydrationWarning>
+								{t("onboarding.identity.pin.restart")}
+							</span>
 						</Button>
 					</div>
 				)}
 
 				{stage === "confirm" && match && !submitting && !error && (
-					<div className="flex items-center gap-2 text-sm text-gabon-green">
+					<div
+						className="flex items-center gap-2 text-sm text-gabon-green"
+						suppressHydrationWarning
+					>
 						<CheckCircle2 className="size-4" />
-						Code PIN confirmé
+						{t("onboarding.identity.pin.confirmed")}
 					</div>
 				)}
 			</div>
 
 			<div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
 				<Shield className="mt-0.5 size-4 shrink-0" />
-				<span>
-					Ce code restera lié à votre compte pour un accès rapide après votre
-					première connexion. Il ne remplace pas votre mot de passe.
+				<span suppressHydrationWarning>
+					{t("onboarding.identity.pin.info")}
 				</span>
 			</div>
 
@@ -270,17 +275,23 @@ export function PinPhase({
 					disabled={submitting}
 				>
 					<ArrowLeft className="mr-1 size-4" />
-					Retour
+					<span suppressHydrationWarning>
+						{t("onboarding.identity.pin.back")}
+					</span>
 				</Button>
 				<Button onClick={handleSubmit} disabled={!match || submitting}>
 					{submitting ? (
 						<>
 							<Loader2 className="mr-1 size-4 animate-spin" />
-							Enregistrement…
+							<span suppressHydrationWarning>
+								{t("onboarding.identity.pin.saving")}
+							</span>
 						</>
 					) : (
 						<>
-							Continuer
+							<span suppressHydrationWarning>
+								{t("onboarding.identity.pin.continue")}
+							</span>
 							<ArrowRight className="ml-1 size-4" />
 						</>
 					)}

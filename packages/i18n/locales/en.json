@@ -3213,6 +3213,508 @@
 					}
 				}
 			}
+		},
+		"shell": {
+			"steps": {
+				"identity": {
+					"title": "Identity",
+					"description": "Your name, contact details, password, PIN code and civil status information."
+				},
+				"family": {
+					"title": "Family situation",
+					"description": "Marital status and parentage."
+				},
+				"contacts": {
+					"title": "Addresses & emergency contacts",
+					"description": "Your addresses and people to contact when needed."
+				},
+				"profession": {
+					"title": "Professional situation",
+					"description": "Your current activity."
+				},
+				"documents": {
+					"title": "Supporting documents",
+					"description": "Upload the documents required for your file."
+				},
+				"review": {
+					"title": "Review and submit",
+					"description": "Review your file before submitting."
+				}
+			},
+			"stepLabels": {
+				"identity": "Identity",
+				"family": "Family",
+				"contacts": "Contacts",
+				"profession": "Profession",
+				"documents": "Documents",
+				"review": "Review"
+			},
+			"profileTitles": {
+				"long_stay": "Consular registration — Resident",
+				"short_stay": "Declaration — Short stay",
+				"visa_tourism": "Visa application — Tourism",
+				"visa_business": "Visa application — Business",
+				"visa_long_stay": "Visa application — Long stay",
+				"admin_services": "Administrative services"
+			},
+			"nav": {
+				"previous": "Previous",
+				"continue": "Continue",
+				"changeProfile": "Change profile",
+				"changeProfileMobile": "Change profile",
+				"back": "Back",
+				"help": "Help"
+			},
+			"draft": {
+				"label": "Draft · {{time}}"
+			},
+			"progress": {
+				"global": "Overall progress",
+				"stepOf": "Step {{current}} of {{total}}"
+			},
+			"errors": {
+				"submitGeneric": "An error occurred during submission."
+			}
+		},
+		"recap": {
+			"title": "Summary",
+			"labels": {
+				"profile": "Profile",
+				"fullName": "Full name",
+				"email": "Email",
+				"phone": "Phone",
+				"birthDate": "Date of birth",
+				"nationality": "Nationality",
+				"address": "Address",
+				"passportNumber": "Passport no.",
+				"documents": "Documents"
+			},
+			"docCount": "{{count}} provided",
+			"help": {
+				"title": "Need help?",
+				"description": "Our team is available Monday to Friday, 8am-6pm.",
+				"cta": "Contact support"
+			}
+		},
+		"profileLabels": {
+			"long_stay": "Resident abroad",
+			"short_stay": "Short stay",
+			"visa_tourism": "Tourism visa",
+			"visa_business": "Business visa",
+			"visa_long_stay": "Long-stay visa",
+			"admin_services": "Administrative services"
+		},
+		"submitted": {
+			"title": "File submitted",
+			"description": "Your file has been transmitted to the consular service. You will receive an email notification as soon as it is processed.",
+			"refLabel": "File reference",
+			"refHelp": "Keep this reference to track the progress of your application in your personal space.",
+			"cta": "Go to my space"
+		},
+		"identityPhaseLabels": {
+			"name": "Your name",
+			"contact": "Your contact details",
+			"password": "Password",
+			"otp": "Email verification",
+			"pin": "PIN code",
+			"birth": "Birth & nationality",
+			"passport": "Passport"
+		},
+		"aiPrefill": {
+			"upload": {
+				"title": "Pre-fill with my documents",
+				"description": "Upload these documents and the AI will automatically fill in your identity, passport and address information. All fields will remain editable.",
+				"privacy": "Your documents are encrypted and used only for pre-filling. No copy is kept by the AI."
+			},
+			"docs": {
+				"passport": {
+					"label": "Passport",
+					"hint": "Identification page"
+				},
+				"addressProof": {
+					"label": "Proof of address",
+					"hint": "Bill, receipt…"
+				},
+				"birthCertificate": {
+					"label": "Birth certificate",
+					"hint": "Official document"
+				}
+			},
+			"buttons": {
+				"later": "Later",
+				"analyze": "Analyse ({{filled}}/{{total}})",
+				"preparing": "Preparing…",
+				"continue": "Continue the form"
+			},
+			"analyzing": {
+				"title": "Analysis in progress…",
+				"description": "We are extracting information from your documents to pre-fill the form."
+			},
+			"done": {
+				"title": "Pre-fill successful",
+				"descriptionOne": "{{count}} field has been filled automatically.",
+				"descriptionMany": "{{count}} fields have been filled automatically.",
+				"note": "You can review and edit this information in the next steps."
+			},
+			"fieldLabels": {
+				"firstName": "First name",
+				"lastName": "Last name",
+				"gender": "Gender",
+				"birthDate": "Date of birth",
+				"birthPlace": "Place of birth",
+				"birthCountry": "Country of birth",
+				"nationality": "Nationality",
+				"nip": "PIN",
+				"passportNumber": "Passport no.",
+				"passportIssueDate": "Issued on",
+				"passportExpiryDate": "Expires on",
+				"passportIssuingAuthority": "Issuing authority",
+				"maritalStatus": "Marital status",
+				"fatherFirstName": "Father's first name",
+				"fatherLastName": "Father's last name",
+				"motherFirstName": "Mother's first name",
+				"motherLastName": "Mother's last name",
+				"spouseFirstName": "Spouse's first name",
+				"spouseLastName": "Spouse's last name",
+				"address": "Address"
+			}
+		},
+		"passwordStrength": {
+			"ariaLabel": "Password strength",
+			"tooShort": "Too short (minimum {{min}} characters)",
+			"levels": {
+				"0": "Very weak",
+				"1": "Weak",
+				"2": "Acceptable",
+				"3": "Good",
+				"4": "Excellent"
+			}
+		},
+		"numPad": {
+			"ariaLabel": "Numeric keypad",
+			"backspace": "Delete last digit"
+		},
+		"identity": {
+			"name": {
+				"title": "Hello, what is your name?",
+				"subtitle": "This information will appear on your consular file. It must match your passport.",
+				"firstName": "First name",
+				"firstNamePlaceholder": "Berny",
+				"lastName": "Last name",
+				"lastNamePlaceholder": "Itoutou",
+				"continue": "Continue",
+				"aiCard": {
+					"title": "AI pre-fill",
+					"badge": "Optional",
+					"description": "Upload your passport, proof of address and birth certificate to automatically fill in most of the form.",
+					"gain": "Average time saved: 8 minutes.",
+					"cta": "Start pre-filling"
+				}
+			},
+			"contact": {
+				"title": "Your contact details",
+				"subtitle": "We will send a verification code to your email. Your phone number lets us contact you when needed.",
+				"email": "Email",
+				"emailPlaceholder": "you@example.com",
+				"emailHelp": "You will receive a 6-digit verification code.",
+				"phone": "Phone",
+				"phonePlaceholder": "+33 6 12 34 56 78",
+				"privacy": "Your contact details are encrypted. By continuing, you accept the",
+				"privacyTerms": "terms of use",
+				"privacyAnd": "and the",
+				"privacyPrivacy": "privacy policy",
+				"back": "Back",
+				"continue": "Continue"
+			},
+			"password": {
+				"title": "Create your password",
+				"subtitle": "It will secure access to your consular space. Choose a strong one, you will use it for every login.",
+				"label": "Password",
+				"placeholder": "••••••••••",
+				"toggleShow": "Show password",
+				"toggleHide": "Hide password",
+				"help": "At least 10 characters, one uppercase letter, one digit and one symbol.",
+				"robustness": "Strength",
+				"strength": {
+					"0": "Too short",
+					"1": "Weak",
+					"2": "Medium",
+					"3": "Good",
+					"4": "Excellent"
+				},
+				"requirements": {
+					"length": "10 characters",
+					"upper": "One uppercase letter",
+					"digit": "One digit",
+					"symbol": "One symbol"
+				},
+				"confirmLabel": "Confirm password",
+				"confirmPlaceholder": "Re-enter your password",
+				"mismatch": "Passwords do not match.",
+				"signupFailed": "Sign-up failed.",
+				"genericError": "An error occurred. Please try again.",
+				"sending": "Sending…",
+				"back": "Back",
+				"continue": "Continue"
+			},
+			"otp": {
+				"title": "Let's verify your email",
+				"subtitlePrefix": "A 6-digit code has been sent to",
+				"subtitleFallback": "your address",
+				"otpAriaLabel": "6-digit verification code",
+				"missingEmail": "Missing email. Go back to the previous step.",
+				"missingPassword": "Password unavailable (page reload?). Go back to the previous step.",
+				"invalidCode": "Invalid or expired code. Try again.",
+				"autoSignInFailed": "Automatic sign-in failed. Try again.",
+				"syncTimeout": "Sync timed out. Try again.",
+				"unexpectedError": "Unexpected error. Try again.",
+				"resendImpossible": "Resend failed.",
+				"syncingTitle": "Creating your space…",
+				"syncingDescription": "We are syncing your account. This will only take a few seconds.",
+				"resendIn": "Resend code in",
+				"sending": "Sending…",
+				"resend": "Resend code",
+				"editEmail": "Edit email",
+				"back": "Back",
+				"verifying": "Verifying…",
+				"signingIn": "Signing in…",
+				"submit": "Verify and continue"
+			},
+			"pin": {
+				"createTitle": "Choose a PIN code",
+				"confirmTitle": "Confirm your PIN code",
+				"createSubtitle": "A 6-digit code for quick access to your space. Avoid birth dates or obvious sequences (123456, 000000…).",
+				"confirmSubtitle": "Enter the same 6 digits again to confirm.",
+				"ariaCreate": "Enter PIN code",
+				"ariaConfirm": "Confirm PIN code",
+				"mismatch": "Codes do not match.",
+				"restart": "Restart",
+				"confirmed": "PIN confirmed",
+				"info": "This code will be linked to your account for quick access after your first login. It does not replace your password.",
+				"alreadyConfigured": "PIN already set up, moving to the next step…",
+				"verifying": "Checking…",
+				"genericError": "Error while creating the PIN code.",
+				"saving": "Saving…",
+				"back": "Back",
+				"continue": "Continue"
+			},
+			"birth": {
+				"title": "Birth and nationality",
+				"subtitle": "This information must match your birth certificate and passport.",
+				"birthDate": "Date of birth",
+				"birthPlace": "Place of birth",
+				"birthPlacePlaceholder": "Bikélé",
+				"birthCountry": "Country of birth",
+				"gender": "Gender",
+				"selectPlaceholder": "Select",
+				"genderOptions": {
+					"male": "Male",
+					"female": "Female"
+				},
+				"nationality": "Nationality",
+				"nationalityAcquisition": "Nationality acquisition",
+				"acquisitionOptions": {
+					"birth": "Birth",
+					"naturalization": "Naturalisation",
+					"marriage": "Marriage"
+				},
+				"nip": "PIN (Personal Identification Number)",
+				"nipOptional": "— optional",
+				"nipPlaceholder": "Found on your Gabonese ID card",
+				"back": "Back",
+				"continue": "Continue"
+			},
+			"passport": {
+				"title": "Your passport",
+				"subtitle": "Enter the information shown on the identification page of your passport.",
+				"number": "Passport number",
+				"numberPlaceholder": "24PP13071",
+				"issuingAuthority": "Issuing authority",
+				"issuingAuthorityPlaceholder": "DGDI Libreville",
+				"issueDate": "Issued on",
+				"expiryDate": "Expires on",
+				"back": "Back",
+				"finish": "Finish this step"
+			}
+		},
+		"family": {
+			"title": "Family situation",
+			"subtitle": "Indicate your marital status as well as your parents (parentage).",
+			"maritalStatus": {
+				"label": "Marital status",
+				"placeholder": "Select",
+				"options": {
+					"Single": "Single",
+					"Married": "Married",
+					"Divorced": "Divorced",
+					"Widowed": "Widowed",
+					"CivilUnion": "Civil union (PACS)",
+					"Cohabiting": "Cohabiting"
+				}
+			},
+			"spouse": {
+				"title": "Your spouse",
+				"lastName": "Last name",
+				"firstName": "First name"
+			},
+			"filiation": {
+				"title": "Parentage",
+				"father": "Father",
+				"mother": "Mother",
+				"lastName": "Last name",
+				"firstName": "First name",
+				"motherBirthName": "Birth name"
+			}
+		},
+		"contacts": {
+			"title": "Addresses and contacts",
+			"subtitle": "Your residence details and people to contact in case of emergency.",
+			"address": {
+				"street": "Address",
+				"streetPlaceholder": "Start typing for suggestions…",
+				"city": "City",
+				"postalCode": "Postal code",
+				"country": "Country"
+			},
+			"homeland": {
+				"title": "Address in Gabon",
+				"fullLabel": "Full address",
+				"placeholder": "Neighbourhood, street, city",
+				"help": "Reference address in your country of origin."
+			},
+			"emergency": {
+				"title": "Emergency contacts",
+				"description": "At least one person to contact, ideally in the country of residence and in Gabon.",
+				"contactN": "Contact #{{n}}",
+				"firstName": "First name",
+				"lastName": "Last name",
+				"phone": "Phone",
+				"email": "Email",
+				"country": "Contact country",
+				"add": "Add an emergency contact",
+				"removeAria": "Remove contact"
+			}
+		},
+		"profession": {
+			"title": "Professional situation",
+			"subtitle": "Describe your current activity. This information remains confidential.",
+			"workStatus": {
+				"label": "Professional status",
+				"placeholder": "Select",
+				"options": {
+					"Employee": "Employee",
+					"SelfEmployed": "Self-employed",
+					"Entrepreneur": "Entrepreneur",
+					"Student": "Student",
+					"Retired": "Retired",
+					"Unemployed": "Unemployed",
+					"Other": "Other"
+				}
+			},
+			"workTitle": "Job title",
+			"workTitlePlaceholder": "e.g. Developer",
+			"workEmployer": "Employer",
+			"workEmployerPlaceholder": "e.g. Acme Ltd"
+		},
+		"documents": {
+			"title": "Supporting documents",
+			"subtitle": "Upload the documents required for your file.",
+			"subtitleWithAi": "Some documents have already been retrieved from the AI pre-fill.",
+			"docs": {
+				"identityPhoto": {
+					"label": "ID photo"
+				},
+				"passport": {
+					"label": "Passport"
+				},
+				"birthCertificate": {
+					"label": "Birth certificate"
+				},
+				"addressProof": {
+					"label": "Proof of address",
+					"hint": "Less than 3 months old"
+				},
+				"residencePermit": {
+					"label": "Residence permit"
+				}
+			},
+			"buttons": {
+				"upload": "Upload",
+				"removeAria": "Remove document"
+			},
+			"aiPrefilledBadge": "AI pre-filled",
+			"formatLine": "{{formats}} · max {{max}}",
+			"formatLineWithHint": "{{formats}} · max {{max}} · {{hint}}",
+			"tooLarge": "The file exceeds the maximum size ({{max}}).",
+			"footer": "Your documents are stored encrypted and accessible only by authorised consular agents."
+		},
+		"review": {
+			"title": "Review and submit",
+			"subtitle": "Carefully review the information before submitting your file.",
+			"banner": {
+				"strong": "Ready to submit.",
+				"text": "Your file will be transmitted to the consular service for validation. You will receive a notification as soon as your status changes."
+			},
+			"editAction": "Edit",
+			"sections": {
+				"identity": "Identity",
+				"passport": "Passport",
+				"family": "Family",
+				"contacts": "Addresses and contacts",
+				"profession": "Profession",
+				"documents": "Documents ({{filled}}/{{total}})"
+			},
+			"fields": {
+				"fullName": "Full name",
+				"birthDate": "Born on",
+				"birthPlace": "Place of birth",
+				"birthCountry": "Country of birth",
+				"gender": "Gender",
+				"nationality": "Nationality",
+				"email": "Email",
+				"phone": "Phone",
+				"passportNumber": "No.",
+				"passportIssuingAuthority": "Authority",
+				"passportIssueDate": "Issued on",
+				"passportExpiryDate": "Expires on",
+				"maritalStatus": "Status",
+				"father": "Father",
+				"mother": "Mother",
+				"address": "Address",
+				"country": "Country",
+				"homeland": "Gabon address",
+				"emergencyContacts": "Emergency contacts",
+				"workStatus": "Status",
+				"workTitle": "Title",
+				"workEmployer": "Employer"
+			},
+			"gender": {
+				"male": "Male",
+				"female": "Female"
+			},
+			"maritalLabels": {
+				"Single": "Single",
+				"Married": "Married",
+				"Divorced": "Divorced",
+				"Widowed": "Widowed",
+				"CivilUnion": "Civil union",
+				"Cohabiting": "Cohabiting"
+			},
+			"workLabels": {
+				"Employee": "Employee",
+				"SelfEmployed": "Self-employed",
+				"Entrepreneur": "Entrepreneur",
+				"Student": "Student",
+				"Retired": "Retired",
+				"Unemployed": "Unemployed",
+				"Other": "Other"
+			},
+			"emergencyCount": "{{count}} recorded",
+			"docRequired": "Required",
+			"docNotProvided": "Not provided",
+			"consent": "I certify on my honour that the information provided is accurate and I accept the general terms of use.",
+			"submitting": "Submitting…",
+			"submit": "Submit my file"
 		}
 	},
 	"documents": {

@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Delete } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 type NumPadProps = {
 	onDigit: (digit: string) => void;
@@ -40,10 +41,11 @@ export function NumPad({
 	disabled,
 	className,
 }: NumPadProps) {
+	const { t } = useTranslation();
 	return (
 		<div
 			role="group"
-			aria-label="Pavé numérique"
+			aria-label={t("onboarding.numPad.ariaLabel")}
 			className={cn(
 				"grid w-full max-w-[304px] grid-cols-3 gap-2.5",
 				disabled && "pointer-events-none opacity-60",
@@ -67,7 +69,7 @@ export function NumPad({
 							type="button"
 							onClick={onBackspace}
 							disabled={disabled}
-							aria-label="Effacer le dernier chiffre"
+							aria-label={t("onboarding.numPad.backspace")}
 							className="flex size-16 items-center justify-center rounded-xl border border-border bg-card text-foreground transition-all hover:bg-muted active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							<Delete className="size-6" aria-hidden="true" />

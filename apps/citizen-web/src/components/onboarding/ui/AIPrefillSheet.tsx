@@ -16,60 +16,44 @@ import {
 	Upload,
 	X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { OnboardingData } from "../types";
 import { useAIPrefill } from "../lib/useAIPrefill";
 
 type DocKey = "passport" | "addressProof" | "birthCertificate";
 
-const AI_DOCS: Array<{
+const AI_DOC_KEYS: Array<{
 	key: DocKey;
-	label: string;
-	hint: string;
 	icon: typeof IdCard;
 }> = [
-	{
-		key: "passport",
-		label: "Passeport",
-		hint: "Page d'identification",
-		icon: IdCard,
-	},
-	{
-		key: "addressProof",
-		label: "Justificatif de domicile",
-		hint: "Facture, quittance…",
-		icon: Home,
-	},
-	{
-		key: "birthCertificate",
-		label: "Acte de naissance",
-		hint: "Document officiel",
-		icon: FileText,
-	},
+	{ key: "passport", icon: IdCard },
+	{ key: "addressProof", icon: Home },
+	{ key: "birthCertificate", icon: FileText },
 ];
 
-const FIELD_LABELS: Partial<Record<keyof OnboardingData, string>> = {
-	firstName: "Prénom",
-	lastName: "Nom",
-	gender: "Genre",
-	birthDate: "Date de naissance",
-	birthPlace: "Lieu de naissance",
-	birthCountry: "Pays de naissance",
-	nationality: "Nationalité",
-	nip: "NIP",
-	passportNumber: "N° passeport",
-	passportIssueDate: "Délivré le",
-	passportExpiryDate: "Expire le",
-	passportIssuingAuthority: "Autorité de délivrance",
-	maritalStatus: "Statut matrimonial",
-	fatherFirstName: "Prénom du père",
-	fatherLastName: "Nom du père",
-	motherFirstName: "Prénom de la mère",
-	motherLastName: "Nom de la mère",
-	spouseFirstName: "Prénom du conjoint",
-	spouseLastName: "Nom du conjoint",
-	address: "Adresse",
-};
+const FIELD_KEYS: Array<keyof OnboardingData> = [
+	"firstName",
+	"lastName",
+	"gender",
+	"birthDate",
+	"birthPlace",
+	"birthCountry",
+	"nationality",
+	"nip",
+	"passportNumber",
+	"passportIssueDate",
+	"passportExpiryDate",
+	"passportIssuingAuthority",
+	"maritalStatus",
+	"fatherFirstName",
+	"fatherLastName",
+	"motherFirstName",
+	"motherLastName",
+	"spouseFirstName",
+	"spouseLastName",
+	"address",
+];
 
 function formatValue(key: keyof OnboardingData, value: unknown): string {
 	if (key === "address" && value && typeof value === "object") {
@@ -120,9 +104,6 @@ export function AIPrefillSheet({
 		const uploaded = Object.values(files).filter((f): f is File => Boolean(f));
 		runOnFiles(uploaded);
 
-		// Persiste les fichiers dans le state global de l'onboarding pour qu'ils
-		// soient retrouvés à l'étape "Documents". Map des slots AI vers les keys
-		// de DocumentsStep (identiques par convention).
 		if (setFile) {
 			const existingNames: Record<string, string | undefined> = {};
 			(Object.entries(files) as Array<[DocKey, File | undefined]>).forEach(
@@ -151,8 +132,6 @@ export function AIPrefillSheet({
 		handleClose();
 	};
 
-	// BottomSheet en dessous de `lg` (1024px) — desktop wizard apparaît à
-	// partir de cette taille, donc tablet → BottomSheet aussi.
 	const [useSheet, setUseSheet] = useState(false);
 	useEffect(() => {
 		const mql = window.matchMedia("(max-width: 1023px)");
@@ -229,6 +208,7 @@ function UploadStage({
 		Partial<Record<DocKey, HTMLInputElement | null>>
 	>;
 }) {
+	const { t } = useTranslation();
 	return (
 		<div className="flex flex-col gap-5 p-6">
 			<header className="text-left">
@@ -236,19 +216,17 @@ function UploadStage({
 					<div className="flex size-8 items-center justify-center rounded-lg bg-gabon-blue-tint text-gabon-blue">
 						<Sparkles className="size-4" />
 					</div>
-					<h2 className="text-xl font-semibold">
-						Pré-remplir avec mes documents
+					<h2 className="text-xl font-semibold" suppressHydrationWarning>
+						{t("onboarding.aiPrefill.upload.title")}
 					</h2>
 				</div>
-				<p className="text-sm text-muted-foreground">
-					Téléversez ces documents et l'IA remplira automatiquement vos
-					informations d'identité, de passeport et d'adresse. Tous les champs
-					resteront modifiables.
+				<p className="text-sm text-muted-foreground" suppressHydrationWarning>
+					{t("onboarding.aiPrefill.upload.description")}
 				</p>
 			</header>
 
 			<div className="flex flex-col gap-2.5">
-				{AI_DOCS.map((doc) => {
+				{AI_DOC_KEYS.map((doc) => {
 					const file = files[doc.key];
 					const Icon = doc.icon;
 					return (
@@ -292,11 +270,19 @@ function UploadStage({
 									)}
 								</div>
 								<div className="min-w-0 flex-1">
-									<div className="truncate text-sm font-medium">
-										{doc.label}
+									<div
+										className="truncate text-sm font-medium"
+										suppressHydrationWarning
+									>
+										{t(`onboarding.aiPrefill.docs.${doc.key}.label`)}
 									</div>
-									<div className="mt-0.5 truncate text-xs text-muted-foreground">
-										{file ? file.name : doc.hint}
+									<div
+										className="mt-0.5 truncate text-xs text-muted-foreground"
+										suppressHydrationWarning
+									>
+										{file
+											? file.name
+											: t(`onboarding.aiPrefill.docs.${doc.key}.hint`)}
 									</div>
 								</div>
 								{file ? (
@@ -312,9 +298,8 @@ function UploadStage({
 
 			<div className="flex items-start gap-2 rounded-xl border border-border bg-secondary/60 px-3 py-2.5 text-xs text-muted-foreground">
 				<Shield className="mt-0.5 size-3.5 shrink-0" />
-				<span>
-					Vos documents sont chiffrés et utilisés uniquement pour le
-					pré-remplissage. Aucune copie n'est conservée par l'IA.
+				<span suppressHydrationWarning>
+					{t("onboarding.aiPrefill.upload.privacy")}
 				</span>
 			</div>
 
@@ -330,7 +315,9 @@ function UploadStage({
 					onClick={onClose}
 					disabled={busy}
 				>
-					Plus tard
+					<span suppressHydrationWarning>
+						{t("onboarding.aiPrefill.buttons.later")}
+					</span>
 				</Button>
 				<Button
 					type="button"
@@ -341,12 +328,19 @@ function UploadStage({
 					{busy ? (
 						<>
 							<Loader2 className="mr-1.5 size-4 animate-spin" />
-							Préparation…
+							<span suppressHydrationWarning>
+								{t("onboarding.aiPrefill.buttons.preparing")}
+							</span>
 						</>
 					) : (
 						<>
 							<Sparkles className="mr-1.5 size-4" />
-							Analyser ({filledCount}/{AI_DOCS.length})
+							<span suppressHydrationWarning>
+								{t("onboarding.aiPrefill.buttons.analyze", {
+									filled: filledCount,
+									total: AI_DOC_KEYS.length,
+								})}
+							</span>
 						</>
 					)}
 				</Button>
@@ -356,6 +350,7 @@ function UploadStage({
 }
 
 function AnalyzingStage({ files }: { files: Partial<Record<DocKey, File>> }) {
+	const { t } = useTranslation();
 	return (
 		<div className="flex flex-col items-center gap-4 p-10 text-center">
 			<div className="relative size-24">
@@ -371,20 +366,23 @@ function AnalyzingStage({ files }: { files: Partial<Record<DocKey, File>> }) {
 				</div>
 			</div>
 			<div>
-				<h2 className="text-xl font-semibold">Analyse en cours…</h2>
-				<p className="mt-2 text-sm text-muted-foreground">
-					Nous extrayons les informations de vos documents pour pré-remplir le
-					formulaire.
+				<h2 className="text-xl font-semibold" suppressHydrationWarning>
+					{t("onboarding.aiPrefill.analyzing.title")}
+				</h2>
+				<p className="mt-2 text-sm text-muted-foreground" suppressHydrationWarning>
+					{t("onboarding.aiPrefill.analyzing.description")}
 				</p>
 			</div>
 			<div className="flex w-full max-w-[320px] flex-col gap-2">
-				{AI_DOCS.filter((d) => files[d.key]).map((doc) => (
+				{AI_DOC_KEYS.filter((d) => files[d.key]).map((doc) => (
 					<div
 						key={doc.key}
 						className="flex items-center gap-2.5 rounded-xl border border-border bg-secondary/40 px-3 py-2 text-xs"
 					>
 						<Sparkles className="size-3.5 shrink-0 text-gabon-blue" />
-						<span className="flex-1 text-left font-medium">{doc.label}</span>
+						<span className="flex-1 text-left font-medium" suppressHydrationWarning>
+							{t(`onboarding.aiPrefill.docs.${doc.key}.label`)}
+						</span>
 						<span className="truncate text-muted-foreground">
 							{files[doc.key]?.name}
 						</span>
@@ -402,11 +400,20 @@ function DoneStage({
 	patch: Partial<OnboardingData>;
 	onContinue: () => void;
 }) {
+	const { t } = useTranslation();
+	const fieldLabels = useMemo<Partial<Record<keyof OnboardingData, string>>>(() => {
+		const acc: Partial<Record<keyof OnboardingData, string>> = {};
+		for (const k of FIELD_KEYS) {
+			acc[k] = t(`onboarding.aiPrefill.fieldLabels.${k}`);
+		}
+		return acc;
+	}, [t]);
+
 	const entries = (Object.entries(patch) as Array<
 		[keyof OnboardingData, unknown]
 	>)
-		.filter(([k]) => FIELD_LABELS[k])
-		.map(([k, v]) => ({ key: k, label: FIELD_LABELS[k]!, value: formatValue(k, v) }))
+		.filter(([k]) => fieldLabels[k])
+		.map(([k, v]) => ({ key: k, label: fieldLabels[k]!, value: formatValue(k, v) }))
 		.filter((e) => e.value.length > 0);
 
 	return (
@@ -416,10 +423,17 @@ function DoneStage({
 					<Check className="size-5" strokeWidth={3} />
 				</div>
 				<div>
-					<h3 className="text-lg font-semibold">Pré-remplissage réussi</h3>
-					<p className="mt-1 text-sm text-muted-foreground">
-						{entries.length} champ{entries.length > 1 ? "s ont" : " a"} été
-						rempli{entries.length > 1 ? "s" : ""} automatiquement.
+					<h3 className="text-lg font-semibold" suppressHydrationWarning>
+						{t("onboarding.aiPrefill.done.title")}
+					</h3>
+					<p className="mt-1 text-sm text-muted-foreground" suppressHydrationWarning>
+						{entries.length > 1
+							? t("onboarding.aiPrefill.done.descriptionMany", {
+									count: entries.length,
+								})
+							: t("onboarding.aiPrefill.done.descriptionOne", {
+									count: entries.length,
+								})}
 					</p>
 				</div>
 			</div>
@@ -433,15 +447,16 @@ function DoneStage({
 							i > 0 && "border-t border-border",
 						)}
 					>
-						<span className="text-muted-foreground">{e.label}</span>
+						<span className="text-muted-foreground" suppressHydrationWarning>
+							{e.label}
+						</span>
 						<span className="truncate font-medium">{e.value}</span>
 					</div>
 				))}
 			</div>
 
-			<p className="text-xs text-muted-foreground">
-				Vous pourrez vérifier et modifier ces informations dans les prochaines
-				étapes.
+			<p className="text-xs text-muted-foreground" suppressHydrationWarning>
+				{t("onboarding.aiPrefill.done.note")}
 			</p>
 
 			<Button
@@ -449,7 +464,9 @@ function DoneStage({
 				className="h-11 w-full bg-gabon-blue text-white hover:bg-gabon-blue-deep"
 				onClick={onContinue}
 			>
-				Continuer le formulaire
+				<span suppressHydrationWarning>
+					{t("onboarding.aiPrefill.buttons.continue")}
+				</span>
 				<ArrowRight className="ml-1 size-4" />
 			</Button>
 		</div>

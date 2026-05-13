@@ -9,18 +9,20 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import type { OnboardingData } from "../types";
 
 type WorkStatus = NonNullable<OnboardingData["workStatus"]>;
 
-const WORK_OPTIONS: { value: WorkStatus; label: string }[] = [
-	{ value: "Employee", label: "Salarié(e)" },
-	{ value: "SelfEmployed", label: "Indépendant(e)" },
-	{ value: "Entrepreneur", label: "Entrepreneur(e)" },
-	{ value: "Student", label: "Étudiant(e)" },
-	{ value: "Retired", label: "Retraité(e)" },
-	{ value: "Unemployed", label: "Sans emploi" },
-	{ value: "Other", label: "Autre" },
+const WORK_VALUES: WorkStatus[] = [
+	"Employee",
+	"SelfEmployed",
+	"Entrepreneur",
+	"Student",
+	"Retired",
+	"Unemployed",
+	"Other",
 ];
 
 export function ProfessionStep({
@@ -30,6 +32,15 @@ export function ProfessionStep({
 	data: OnboardingData;
 	updateData: (patch: Partial<OnboardingData>) => void;
 }) {
+	const { t } = useTranslation();
+	const workOptions = useMemo(
+		() =>
+			WORK_VALUES.map((value) => ({
+				value,
+				label: t(`onboarding.profession.workStatus.options.${value}`),
+			})),
+		[t],
+	);
 	const showDetails =
 		data.workStatus &&
 		data.workStatus !== "Unemployed" &&
@@ -38,30 +49,35 @@ export function ProfessionStep({
 	return (
 		<div className="flex flex-col gap-5">
 			<header className="flex flex-col gap-2">
-				<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-					Situation professionnelle
+				<h1
+					className="text-2xl font-semibold tracking-tight md:text-3xl"
+					suppressHydrationWarning
+				>
+					{t("onboarding.profession.title")}
 				</h1>
-				<p className="text-sm text-muted-foreground">
-					Décrivez votre activité actuelle. Ces informations restent
-					confidentielles.
+				<p className="text-sm text-muted-foreground" suppressHydrationWarning>
+					{t("onboarding.profession.subtitle")}
 				</p>
 			</header>
 
 			<div className="flex flex-col gap-2">
-				<Label htmlFor="workStatus">
-					Statut professionnel <span className="text-destructive">*</span>
+				<Label htmlFor="workStatus" suppressHydrationWarning>
+					{t("onboarding.profession.workStatus.label")}{" "}
+					<span className="text-destructive">*</span>
 				</Label>
 				<Select
 					value={data.workStatus ?? ""}
 					onValueChange={(v: WorkStatus) => updateData({ workStatus: v })}
 				>
 					<SelectTrigger id="workStatus" className="w-full">
-						<SelectValue placeholder="Sélectionner" />
+						<SelectValue
+							placeholder={t("onboarding.profession.workStatus.placeholder")}
+						/>
 					</SelectTrigger>
 					<SelectContent>
-						{WORK_OPTIONS.map((o) => (
+						{workOptions.map((o) => (
 							<SelectItem key={o.value} value={o.value}>
-								{o.label}
+								<span suppressHydrationWarning>{o.label}</span>
 							</SelectItem>
 						))}
 					</SelectContent>
@@ -71,21 +87,25 @@ export function ProfessionStep({
 			{showDetails && (
 				<div className="grid gap-4 md:grid-cols-2">
 					<div className="flex flex-col gap-2">
-						<Label htmlFor="workTitle">Titre du poste</Label>
+						<Label htmlFor="workTitle" suppressHydrationWarning>
+							{t("onboarding.profession.workTitle")}
+						</Label>
 						<Input
 							id="workTitle"
 							value={data.workTitle ?? ""}
 							onChange={(e) => updateData({ workTitle: e.target.value })}
-							placeholder="ex. Développeuse"
+							placeholder={t("onboarding.profession.workTitlePlaceholder")}
 						/>
 					</div>
 					<div className="flex flex-col gap-2">
-						<Label htmlFor="workEmployer">Employeur</Label>
+						<Label htmlFor="workEmployer" suppressHydrationWarning>
+							{t("onboarding.profession.workEmployer")}
+						</Label>
 						<Input
 							id="workEmployer"
 							value={data.workEmployer ?? ""}
 							onChange={(e) => updateData({ workEmployer: e.target.value })}
-							placeholder="ex. Acme SARL"
+							placeholder={t("onboarding.profession.workEmployerPlaceholder")}
 						/>
 					</div>
 				</div>

@@ -2,8 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 
-const LABELS = ["Très faible", "Faible", "Acceptable", "Bon", "Excellent"] as const;
 const COLORS = [
 	"bg-destructive",
 	"bg-destructive",
@@ -36,6 +36,7 @@ export function PasswordStrength({
 	minLength = 12,
 	className,
 }: PasswordStrengthProps) {
+	const { t } = useTranslation();
 	const score = React.useMemo(() => {
 		if (!password) return 0;
 		let s = 0;
@@ -70,10 +71,10 @@ export function PasswordStrength({
 	const tooShort = password.length > 0 && password.length < minLength;
 	const fill = score;
 	const label = tooShort
-		? `Trop court (minimum ${minLength} caractères)`
+		? t("onboarding.passwordStrength.tooShort", { min: minLength })
 		: password.length === 0
 			? null
-			: LABELS[fill];
+			: t(`onboarding.passwordStrength.levels.${fill}`);
 	const color = COLORS[fill];
 
 	return (
@@ -83,7 +84,7 @@ export function PasswordStrength({
 				aria-valuenow={fill}
 				aria-valuemin={0}
 				aria-valuemax={4}
-				aria-label="Force du mot de passe"
+				aria-label={t("onboarding.passwordStrength.ariaLabel")}
 				aria-live="polite"
 				className="flex gap-1"
 			>
@@ -105,6 +106,7 @@ export function PasswordStrength({
 							? "text-muted-foreground"
 							: "font-medium text-gabon-green",
 					)}
+					suppressHydrationWarning
 				>
 					{label}
 				</p>

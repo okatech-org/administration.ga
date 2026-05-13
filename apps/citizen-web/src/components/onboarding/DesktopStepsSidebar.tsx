@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { OnboardingStepDef } from "./lib/onboardingFlow";
 
 /**
@@ -28,6 +29,7 @@ export function DesktopStepsSidebar({
 	profileTitle: string;
 	onChangeProfile?: () => void;
 }) {
+	const { t } = useTranslation();
 	const total = steps.length;
 	const progress = total > 0 ? ((currentIndex + 1) / total) * 100 : 0;
 
@@ -42,11 +44,14 @@ export function DesktopStepsSidebar({
 					onClick={onChangeProfile}
 				>
 					<ArrowLeft className="mr-1 size-3.5" />
-					Changer de profil
+					<span suppressHydrationWarning>{t("onboarding.shell.nav.changeProfile")}</span>
 				</Button>
 			)}
 
-			<p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+			<p
+				className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground"
+				suppressHydrationWarning
+			>
 				{profileTitle}
 			</p>
 
@@ -87,7 +92,9 @@ export function DesktopStepsSidebar({
 										i + 1
 									)}
 								</span>
-								<span className="truncate">{s.label}</span>
+								<span className="truncate" suppressHydrationWarning>
+									{t(`onboarding.shell.stepLabels.${s.key}`)}
+								</span>
 							</button>
 						</li>
 					);
@@ -95,15 +102,20 @@ export function DesktopStepsSidebar({
 			</ol>
 
 			<div className="mt-2 flex flex-col gap-2 border-t border-border pt-4">
-				<p className="text-xs text-muted-foreground">Progression globale</p>
+				<p className="text-xs text-muted-foreground" suppressHydrationWarning>
+					{t("onboarding.shell.progress.global")}
+				</p>
 				<div className="h-1 w-full overflow-hidden rounded-full bg-muted">
 					<div
 						className="h-full bg-gabon-blue transition-[width] duration-300 ease-out"
 						style={{ width: `${progress}%` }}
 					/>
 				</div>
-				<p className="text-xs text-muted-foreground">
-					Étape {currentIndex + 1} sur {total}
+				<p className="text-xs text-muted-foreground" suppressHydrationWarning>
+					{t("onboarding.shell.progress.stepOf", {
+						current: currentIndex + 1,
+						total,
+					})}
 				</p>
 			</div>
 		</aside>

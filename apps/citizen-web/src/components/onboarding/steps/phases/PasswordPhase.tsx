@@ -16,15 +16,8 @@ import {
 	X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { OnboardingData } from "../../types";
-
-const STRENGTH_LABELS = [
-	"Trop court",
-	"Faible",
-	"Moyen",
-	"Bon",
-	"Excellent",
-] as const;
 
 const STRENGTH_CLASSES = [
 	"bg-destructive",
@@ -53,6 +46,7 @@ export function PasswordPhase({
 	onNext: () => void;
 	onPrev: () => void;
 }) {
+	const { t } = useTranslation();
 	const [show, setShow] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [submitting, setSubmitting] = useState(false);
@@ -92,7 +86,10 @@ export function PasswordPhase({
 				phoneNumber: cleanPhone || undefined,
 			});
 			if (signUp.error) {
-				setError(signUp.error.message || "Inscription impossible.");
+				setError(
+					signUp.error.message ||
+						t("onboarding.identity.password.signupFailed"),
+				);
 				setSubmitting(false);
 				return;
 			}
@@ -111,7 +108,7 @@ export function PasswordPhase({
 			setError(
 				err instanceof Error
 					? err.message
-					: "Une erreur est survenue. Veuillez réessayer.",
+					: t("onboarding.identity.password.genericError"),
 			);
 		} finally {
 			setSubmitting(false);
@@ -121,18 +118,21 @@ export function PasswordPhase({
 	return (
 		<form onSubmit={handleSubmit} className="flex flex-col gap-5">
 			<header className="flex flex-col gap-2">
-				<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-					Créez votre mot de passe
+				<h1
+					className="text-2xl font-semibold tracking-tight md:text-3xl"
+					suppressHydrationWarning
+				>
+					{t("onboarding.identity.password.title")}
 				</h1>
-				<p className="text-sm text-muted-foreground">
-					Il sécurisera l'accès à votre espace consulaire. Choisissez-en un
-					solide, vous l'utiliserez à chaque connexion.
+				<p className="text-sm text-muted-foreground" suppressHydrationWarning>
+					{t("onboarding.identity.password.subtitle")}
 				</p>
 			</header>
 
 			<div className="flex flex-col gap-2">
-				<Label htmlFor="password">
-					Mot de passe <span className="text-destructive">*</span>
+				<Label htmlFor="password" suppressHydrationWarning>
+					{t("onboarding.identity.password.label")}{" "}
+					<span className="text-destructive">*</span>
 				</Label>
 				<div className="relative">
 					<Input
@@ -141,7 +141,7 @@ export function PasswordPhase({
 						value={password}
 						onChange={(e) => updateData({ password: e.target.value })}
 						autoComplete="new-password"
-						placeholder="••••••••••"
+						placeholder={t("onboarding.identity.password.placeholder")}
 						className="pr-11"
 						autoFocus
 					/>
@@ -149,7 +149,9 @@ export function PasswordPhase({
 						type="button"
 						onClick={() => setShow((s) => !s)}
 						aria-label={
-							show ? "Masquer le mot de passe" : "Afficher le mot de passe"
+							show
+								? t("onboarding.identity.password.toggleHide")
+								: t("onboarding.identity.password.toggleShow")
 						}
 						className="absolute right-2 top-1/2 grid -translate-y-1/2 place-items-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 					>
@@ -160,8 +162,8 @@ export function PasswordPhase({
 						)}
 					</button>
 				</div>
-				<p className="text-xs text-muted-foreground">
-					Au moins 10 caractères, une majuscule, un chiffre et un symbole.
+				<p className="text-xs text-muted-foreground" suppressHydrationWarning>
+					{t("onboarding.identity.password.help")}
 				</p>
 			</div>
 
@@ -179,20 +181,25 @@ export function PasswordPhase({
 						))}
 					</div>
 					<div className="flex items-center justify-between text-xs">
-						<span className="text-muted-foreground">Robustesse</span>
-						<span className={cn("font-medium", STRENGTH_TEXT[score])}>
-							{STRENGTH_LABELS[score]}
+						<span className="text-muted-foreground" suppressHydrationWarning>
+							{t("onboarding.identity.password.robustness")}
+						</span>
+						<span
+							className={cn("font-medium", STRENGTH_TEXT[score])}
+							suppressHydrationWarning
+						>
+							{t(`onboarding.identity.password.strength.${score}`)}
 						</span>
 					</div>
 					<ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
 						{(
 							[
-								["length", "10 caractères"],
-								["upper", "Une majuscule"],
-								["digit", "Un chiffre"],
-								["symbol", "Un symbole"],
+								"length",
+								"upper",
+								"digit",
+								"symbol",
 							] as const
-						).map(([k, label]) => {
+						).map((k) => {
 							const ok = checks[k];
 							return (
 								<li
@@ -207,7 +214,9 @@ export function PasswordPhase({
 									) : (
 										<X className="size-3.5" strokeWidth={2.5} />
 									)}
-									{label}
+									<span suppressHydrationWarning>
+										{t(`onboarding.identity.password.requirements.${k}`)}
+									</span>
 								</li>
 							);
 						})}
@@ -216,8 +225,8 @@ export function PasswordPhase({
 			)}
 
 			<div className="flex flex-col gap-2">
-				<Label htmlFor="passwordConfirm">
-					Confirmer le mot de passe{" "}
+				<Label htmlFor="passwordConfirm" suppressHydrationWarning>
+					{t("onboarding.identity.password.confirmLabel")}{" "}
 					<span className="text-destructive">*</span>
 				</Label>
 				<Input
@@ -226,12 +235,15 @@ export function PasswordPhase({
 					value={confirm}
 					onChange={(e) => updateData({ passwordConfirm: e.target.value })}
 					autoComplete="new-password"
-					placeholder="Retapez votre mot de passe"
+					placeholder={t("onboarding.identity.password.confirmPlaceholder")}
 				/>
 				{confirm && !match && (
-					<p className="flex items-center gap-1 text-xs text-destructive">
+					<p
+						className="flex items-center gap-1 text-xs text-destructive"
+						suppressHydrationWarning
+					>
 						<AlertTriangle className="size-3.5" />
-						Les mots de passe ne correspondent pas.
+						{t("onboarding.identity.password.mismatch")}
 					</p>
 				)}
 			</div>
@@ -254,17 +266,23 @@ export function PasswordPhase({
 					disabled={submitting}
 				>
 					<ArrowLeft className="mr-1 size-4" />
-					Retour
+					<span suppressHydrationWarning>
+						{t("onboarding.identity.password.back")}
+					</span>
 				</Button>
 				<Button type="submit" disabled={!canContinue}>
 					{submitting ? (
 						<>
 							<Loader2 className="mr-1 size-4 animate-spin" />
-							Envoi en cours…
+							<span suppressHydrationWarning>
+								{t("onboarding.identity.password.sending")}
+							</span>
 						</>
 					) : (
 						<>
-							Continuer
+							<span suppressHydrationWarning>
+								{t("onboarding.identity.password.continue")}
+							</span>
 							<ArrowRight className="ml-1 size-4" />
 						</>
 					)}

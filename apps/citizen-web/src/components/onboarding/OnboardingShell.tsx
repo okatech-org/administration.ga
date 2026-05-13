@@ -10,10 +10,10 @@ import { useConvex } from "convex/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { DesktopRecapSidebar } from "./DesktopRecapSidebar"
 import { DesktopStepsSidebar } from "./DesktopStepsSidebar"
 import {
-  PROFILE_TITLES,
   STEPS_BY_TYPE,
   type OnboardingStepKey,
 } from "./lib/onboardingFlow"
@@ -67,40 +67,43 @@ function formatHourMinute(d: Date): string {
   ).padStart(2, "0")}`
 }
 
-const STEP_TITLES: Record<
-  OnboardingStepKey,
-  { title: string; description?: string }
-> = {
-  identity: {
-    title: "Identité",
-    description:
-      "Vos nom, coordonnées, mot de passe, code PIN et informations d'état civil.",
-  },
-  family: {
-    title: "Situation familiale",
-    description: "Statut marital et filiation.",
-  },
-  contacts: {
-    title: "Adresses & contacts d'urgence",
-    description: "Vos adresses et les personnes à contacter en cas de besoin.",
-  },
-  profession: {
-    title: "Situation professionnelle",
-    description: "Votre activité actuelle.",
-  },
-  documents: {
-    title: "Pièces justificatives",
-    description: "Téléversez les pièces nécessaires à votre dossier.",
-  },
-  review: {
-    title: "Révision et soumission",
-    description: "Relisez votre dossier avant l'envoi.",
-  },
-}
-
 export function OnboardingShell() {
+  const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  const STEP_TITLES: Record<
+    OnboardingStepKey,
+    { title: string; description?: string }
+  > = useMemo(
+    () => ({
+      identity: {
+        title: t("onboarding.shell.steps.identity.title"),
+        description: t("onboarding.shell.steps.identity.description"),
+      },
+      family: {
+        title: t("onboarding.shell.steps.family.title"),
+        description: t("onboarding.shell.steps.family.description"),
+      },
+      contacts: {
+        title: t("onboarding.shell.steps.contacts.title"),
+        description: t("onboarding.shell.steps.contacts.description"),
+      },
+      profession: {
+        title: t("onboarding.shell.steps.profession.title"),
+        description: t("onboarding.shell.steps.profession.description"),
+      },
+      documents: {
+        title: t("onboarding.shell.steps.documents.title"),
+        description: t("onboarding.shell.steps.documents.description"),
+      },
+      review: {
+        title: t("onboarding.shell.steps.review.title"),
+        description: t("onboarding.shell.steps.review.description"),
+      },
+    }),
+    [t]
+  )
 
   const typeParam = searchParams.get("type")
   const initialType =
@@ -232,12 +235,12 @@ export function OnboardingShell() {
       setSubmitError(
         err instanceof Error
           ? err.message
-          : "Une erreur est survenue lors de la soumission."
+          : t("onboarding.shell.errors.submitGeneric")
       )
     } finally {
       setSubmitting(false)
     }
-  }, [convex, data, files, userType])
+  }, [convex, data, files, userType, t])
 
   if (isSubmitted) {
     return (
@@ -265,7 +268,7 @@ export function OnboardingShell() {
     )
   }
 
-  const profileTitle = PROFILE_TITLES[userType]
+  const profileTitle = t(`onboarding.shell.profileTitles.${userType}`)
   const savedAtLabel = lastSavedAt ? formatHourMinute(lastSavedAt) : undefined
 
   // Étapes qui gèrent leur propre navigation (Prev/Next contextuels).
@@ -362,7 +365,7 @@ export function OnboardingShell() {
       <div className="hidden lg:block">
         <Header />
 
-        <div className="mx-auto grid max-w-[1400px] grid-cols-[260px_1fr_320px] gap-8 px-8 py-8">
+        <div className="mx-auto grid grid-cols-[260px_1fr_320px] gap-8 px-8 py-8">
           <DesktopStepsSidebar
             steps={steps}
             currentIndex={stepIndex}
@@ -384,10 +387,14 @@ export function OnboardingShell() {
                   disabled={!canPrev}
                 >
                   <ArrowLeft className="mr-1 size-4" />
-                  Précédent
+                  <span suppressHydrationWarning>
+                    {t("onboarding.shell.nav.previous")}
+                  </span>
                 </Button>
                 <Button onClick={handleNext} disabled={!canNext}>
-                  Continuer
+                  <span suppressHydrationWarning>
+                    {t("onboarding.shell.nav.continue")}
+                  </span>
                   <ArrowRight className="ml-1 size-4" />
                 </Button>
               </div>

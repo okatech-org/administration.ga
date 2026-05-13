@@ -10,6 +10,7 @@ import {
 	User,
 	Users,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { OnboardingStepDef } from "./lib/onboardingFlow";
 
 const ICONS = {
@@ -31,6 +32,7 @@ export function OnboardingMobileProgressHeader({
 	currentIndex: number;
 	totalSteps: number;
 }) {
+	const { t } = useTranslation();
 	const Icon = ICONS[step.icon] ?? User;
 	const pct = ((currentIndex + 1) / totalSteps) * 100;
 	return (
@@ -40,7 +42,9 @@ export function OnboardingMobileProgressHeader({
 					<Icon className="size-4" />
 				</span>
 				<div className="min-w-0 flex-1">
-					<div className="truncate text-sm font-semibold">{step.label}</div>
+					<div className="truncate text-sm font-semibold" suppressHydrationWarning>
+						{t(`onboarding.shell.stepLabels.${step.key}`)}
+					</div>
 					<div className="text-xs font-mono tabular-nums text-muted-foreground">
 						{String(currentIndex + 1).padStart(2, "0")} /{" "}
 						{String(totalSteps).padStart(2, "0")}
