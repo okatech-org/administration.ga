@@ -15,6 +15,11 @@
 import { v } from "convex/values";
 import { internalQuery } from "../_generated/server";
 import type { Doc } from "../_generated/dataModel";
+import {
+	buildFormalAddress,
+	extractUsualFirstName,
+	extractShortLastName,
+} from "./userIdentity";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -28,13 +33,8 @@ function getTimeOfDayGreeting(date = new Date()): string {
 	return "Bonsoir";
 }
 
-function getUserTitle(user: Doc<"users"> | null): string {
-	if (!user) return "Excellence";
-	const first = user.firstName ?? "";
-	const last = user.lastName ?? "";
-	const fullName = `${first} ${last}`.trim();
-	return fullName ? fullName : "Excellence";
-}
+// (Ancien `getUserTitle` retiré — voir `buildFormalAddress` / `extractUsualFirstName`
+// dans ./userIdentity pour construire un nom court humain au lieu du nom complet brut.)
 
 function moduleListToFR(modules: string[] | undefined): string {
 	if (!modules || modules.length === 0) return "aucun module spécifique";
@@ -56,7 +56,14 @@ function moduleListToFR(modules: string[] | undefined): string {
 		.join(", ");
 }
 
-function describeRole(surface: "agent" | "backoffice", isSuperadmin: boolean, isAdmin: boolean): string {
+function describeRole(
+	surface: "agent" | "backoffice" | "citizen",
+	isSuperadmin: boolean,
+	isAdmin: boolean,
+): string {
+	if (surface === "citizen") {
+		return "Citoyen / résident gabonais (usager du service consulaire)";
+	}
 	if (surface === "backoffice") {
 		if (isSuperadmin) return "Super-Administrateur de la plateforme (accès complet, supervision multi-organisations)";
 		if (isAdmin) return "Administrateur back-office (gestion système, configuration, audit)";
@@ -74,7 +81,7 @@ export const buildPrompt = internalQuery({
 	args: {
 		userId: v.id("users"),
 		orgId: v.optional(v.id("orgs")),
-		surface: v.union(v.literal("agent"), v.literal("backoffice")),
+		surface: v.union(v.literal("agent"), v.literal("backoffice"), v.literal("citizen")),
 		toolNames: v.optional(v.array(v.string())),
 		locale: v.optional(v.string()),
 	},
@@ -82,15 +89,45 @@ export const buildPrompt = internalQuery({
 		const user = await ctx.db.get(userId);
 		const org = orgId ? await ctx.db.get(orgId) : null;
 
+		// Récupère la position de l'utilisateur dans l'org pour pouvoir l'adresser
+		// avec son titre (« Conseiller Bongo ») au lieu du nom complet.
+		let positionTitleFr: string | undefined;
+		if (orgId) {
+			const membership = await ctx.db
+				.query("memberships")
+				.withIndex("by_user_org", (q) =>
+					q.eq("userId", userId).eq("orgId", orgId),
+				)
+				.unique()
+				.catch(() => null);
+			if (membership?.positionId) {
+				const position = await ctx.db.get(membership.positionId);
+				const title = (position as any)?.title;
+				if (title && typeof title === "object") {
+					positionTitleFr = title.fr ?? title.en;
+				} else if (typeof title === "string") {
+					positionTitleFr = title;
+				}
+			}
+		}
+
 		const isSuperadmin = user?.isSuperadmin === true || user?.role === "super_admin";
-		// Note : `isAdmin` est dérivé de la position de l'utilisateur dans son org.
-		// Pour le prompt, on se contente d'un proxy basique via le champ `role`.
 		const isAdmin =
 			user?.role === "admin" ||
 			user?.role === "admin_system" ||
 			user?.role === "sous_admin";
 
-		const title = getUserTitle(user);
+		// ── Identité humaine ─────────────────────────────────────
+		// `usualFirstName` = premier prénom (pour la conversation ordinaire).
+		// `shortLastName` = premier nom (pour l'adresse formelle de session).
+		// `formalAddress` = combinaison titre + nom court pour la salutation.
+		const usualFirstName = extractUsualFirstName(user?.firstName);
+		const shortLastName = extractShortLastName(user?.lastName);
+		const formalAddress = buildFormalAddress({
+			positionTitle: positionTitleFr,
+			firstName: user?.firstName,
+			lastName: user?.lastName,
+		});
 		const greeting = getTimeOfDayGreeting();
 		const roleDescription = describeRole(surface, isSuperadmin, isAdmin);
 		const moduleContext = moduleListToFR((org?.modules as string[] | undefined) ?? []);
@@ -101,35 +138,72 @@ export const buildPrompt = internalQuery({
 			? `\n# OUTILS DISPONIBLES\nVous pouvez invoquer les outils suivants pour exécuter des actions concrètes :\n${toolNames.map((t) => `- \`${t}\``).join("\n")}\n\nUtilisez-les dès que l'utilisateur le demande explicitement. Confirmez toujours brièvement l'action exécutée.`
 			: "";
 
-		// ── Préambule identitaire ─────────────────────────────────
+		// ── Préambule identitaire + ton humain ────────────────────
 		const preamble = `# IDENTITÉ
-Vous êtes **iAsted**, l'agent vocal intelligent de la diplomatie gabonaise.
-Vous assistez les agents diplomatiques et consulaires dans leurs missions
-quotidiennes au service de la République Gabonaise et de ses ressortissants.
+Vous êtes **iAsted**, l'assistant intelligent ${surface === "citizen" ? "du consulat gabonais (côté citoyen)" : "de la diplomatie gabonaise"}.
+${surface === "citizen"
+	? "Vous accompagnez les citoyens et résidents dans leurs démarches consulaires : demandes de documents, prise de rendez-vous, suivi de dossier, informations pratiques."
+	: "Vous assistez les agents diplomatiques et consulaires dans leurs missions quotidiennes au service de la République Gabonaise et de ses ressortissants."}
 
-# TON ET POSTURE
-- Adoptez un registre **formel, protocolaire et bienveillant**.
-- Tutoiement **interdit** ; vouvoiement systématique.
-- Réponses **courtes, précises, structurées** — l'utilisateur est souvent en
-  situation opérationnelle (file d'attente, rendez-vous, traitement de dossier).
-- Pas de digressions politiques. Neutralité diplomatique stricte.
-- En cas de doute juridique, **renvoyez vers la hiérarchie ou la documentation
-  officielle** plutôt que d'inventer.
-- Confidentialité absolue : ne révélez **jamais** d'informations sur d'autres
-  utilisateurs, dossiers ou organisations sans contexte explicite.`;
+# TON ET POSTURE — RÉPONDEZ COMME UN HUMAIN
+- **Parlez comme un collègue de bureau**, pas comme un manuel administratif.
+  Phrases courtes, naturelles. Pas de tournures pompeuses (« Excellence »,
+  « Veuillez agréer mes salutations distinguées »).
+- **Vouvoiement** systématique (contexte diplomatique). Pas de tutoiement.
+- **Adresse à l'utilisateur** :
+  - À l'ouverture de la session UNIQUEMENT : « ${greeting} ${formalAddress} »
+    (titre + nom court) — c'est le seul moment où on emploie un nom long.
+  - Ensuite, dans la conversation : prénom usuel « ${usualFirstName || formalAddress} »
+    si naturel, ou « vous » la plupart du temps.
+  - **JAMAIS** le nom complet de l'état civil avec tous les prénoms. Si
+    l'utilisateur s'appelle « Jean-Pierre Marie Bongo Ondimba », vous ne dites
+    **jamais** « Bonjour Jean-Pierre Marie Bongo Ondimba ». Vous dites
+    « Bonjour ${formalAddress} » puis vous utilisez « ${usualFirstName || "vous"} ».
+- **Format de réponse**:
+  - Par **défaut**, réponses **courtes** : 1 à 3 phrases, ton conversationnel.
+  - **Pas de markdown lourd** (gros titres ###, listes à puces, gras emphatique)
+    sauf si l'utilisateur demande explicitement une synthèse, un rapport ou un
+    document formel.
+  - Si vous devez détailler, faites-le **après** avoir posé la question
+    naturelle (« Vous voulez la version courte ou un récap détaillé ? »).
+- Pas de digressions politiques. Neutralité.
+- Confidentialité : ne révélez **jamais** d'informations sur d'autres
+  utilisateurs ou dossiers sans contexte explicite.
+- En cas de doute juridique ou métier sensible, **dites-le franchement** et
+  renvoyez vers la procédure ou la hiérarchie au lieu d'inventer.`;
 
 		// ── Contexte utilisateur ──────────────────────────────────
 		const userContext = `# UTILISATEUR EN COURS
-- Nom : ${title}
+- Prénom usuel (à employer dans la conversation) : ${usualFirstName || "(non renseigné)"}
+- Adresse formelle (UNE seule fois, à l'ouverture) : ${formalAddress}
+- Nom de famille court : ${shortLastName || "(non renseigné)"}
+- Position : ${positionTitleFr ?? "(non renseignée)"}
 - Rôle : ${roleDescription}
 - Organisation : ${orgName}
 - Modules métier accessibles : ${moduleContext}
 - Locale : ${lang}
 
-Saluez l'utilisateur par "${greeting} ${title}".`;
+À l'ouverture de la session, saluez **UNE seule fois** par
+« ${greeting} ${formalAddress} » puis enchaînez avec une question ouverte
+courte (« Comment puis-je vous aider ? » / « Sur quoi travaillons-nous ? »).
+Ensuite, n'employez plus que « ${usualFirstName || "vous"} » ou « vous ».`;
 
 		// ── Cadre métier diplomatique ─────────────────────────────
-		const businessContext = surface === "agent"
+		const businessContext = surface === "citizen"
+			? `# CADRE MÉTIER (CONSULAT.GA — CITOYEN)
+Vous êtes l'assistant numérique du consulat. Vous aidez les citoyens à :
+- **Constituer une demande consulaire** : passeport, CNI, visa, légalisation,
+  état civil, inscription consulaire, attestation.
+- **Suivre un dossier** : statut courant, prochaine étape, documents manquants.
+- **Prendre un rendez-vous** : créneaux disponibles, dépôt vs retrait.
+- **Trouver une information pratique** : horaires, adresses, frais, contacts.
+
+**Posture** :
+- Patience, bienveillance, langage accessible (pas de jargon administratif).
+- Si la demande dépasse vos capacités, orientez vers l'agent humain en
+  proposant d'ouvrir un chat ou de planifier un rendez-vous.
+- N'exécutez aucune action mutative sans confirmation orale explicite.`
+			: surface === "agent"
 			? `# CADRE MÉTIER (DIPLOMATE.GA)
 Vous opérez sur la plateforme **diplomate.ga**, destinée aux agents
 diplomatiques et consulaires. Vous pouvez aider à :
@@ -237,8 +311,9 @@ visibles changent. Ce bloc décrit :
 
 		return {
 			prompt,
-			greeting: `${greeting} ${title}`,
-			title,
+			greeting: `${greeting} ${formalAddress}`,
+			title: formalAddress,
+			usualFirstName,
 			roleDescription,
 		};
 	},

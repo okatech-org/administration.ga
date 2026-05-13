@@ -29,7 +29,7 @@ export type RealtimeVoice =
 	| "shimmer"
 	| "verse";
 
-export type RealtimeSurface = "agent" | "backoffice";
+export type RealtimeSurface = "agent" | "backoffice" | "citizen";
 
 export interface RealtimeSessionResponse {
 	available: boolean;

@@ -35,7 +35,11 @@ const SUPPORTED_VOICES: ReadonlySet<RealtimeVoice> = new Set<RealtimeVoice>([
 
 export const create = action({
 	args: {
-		surface: v.union(v.literal("agent"), v.literal("backoffice")),
+		surface: v.union(
+			v.literal("agent"),
+			v.literal("backoffice"),
+			v.literal("citizen"),
+		),
 		orgId: v.optional(v.id("orgs")),
 		voice: v.optional(v.string()),
 		locale: v.optional(v.string()),

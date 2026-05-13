@@ -296,11 +296,24 @@ export const getToolsForUser = internalQuery({
 	args: {
 		userId: v.id("users"),
 		orgId: v.optional(v.id("orgs")),
-		surface: v.union(v.literal("agent"), v.literal("backoffice")),
+		surface: v.union(
+			v.literal("agent"),
+			v.literal("backoffice"),
+			v.literal("citizen"),
+		),
 	},
 	handler: async (ctx, { userId, orgId, surface }) => {
 		const user = await ctx.db.get(userId);
 		if (!user) return { tools: [], toolNames: [] };
+
+		// Côté citoyen : aucun business tool exposé (premier jet). Le citoyen
+		// peut uniquement naviguer / ouvrir chat / parler. Les business tools
+		// agent (consult_request, draft_correspondence, etc.) sont strictement
+		// hors-périmètre. Aucun fetch de membership n'est nécessaire ici.
+		if (surface === "citizen") {
+			const tools: RealtimeVoiceTool[] = [...UI_TOOLS];
+			return { tools, toolNames: tools.map((t) => t.name) };
+		}
 
 		// Résoudre les tasks de l'utilisateur sur son org active
 		let resolvedTasks = new Set<string>();

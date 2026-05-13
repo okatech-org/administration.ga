@@ -35,7 +35,11 @@ export const executeRealtimeTool = action({
 		toolName: v.string(),
 		toolArgs: v.any(),
 		orgId: v.optional(v.id("orgs")),
-		surface: v.union(v.literal("agent"), v.literal("backoffice")),
+		surface: v.union(
+			v.literal("agent"),
+			v.literal("backoffice"),
+			v.literal("citizen"),
+		),
 	},
 	handler: async (ctx, { toolName, toolArgs, orgId, surface }): Promise<RealtimeToolResult> => {
 		// ── 1. Auth ───────────────────────────────────────────────
@@ -165,7 +169,7 @@ async function dispatchBusinessTool(
 	ctx: any,
 	toolName: string,
 	args: any,
-	context: { orgId?: string; surface: "agent" | "backoffice" },
+	context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
 ): Promise<RealtimeToolResult> {
 	switch (toolName) {
 		case "consult_request":
