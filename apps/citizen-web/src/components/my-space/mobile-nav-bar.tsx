@@ -123,7 +123,7 @@ export function MobileNavBar() {
   return (
     <>
       <nav className="fixed right-3 bottom-[calc(0.8rem+env(safe-area-inset-bottom,0px))] left-3 z-40 md:hidden">
-        <div className="rounded-2xl bg-secondary backdrop-blur-md">
+        <div className="rounded-2xl bg-background border border-border/60 backdrop-blur-md">
           <div className="flex h-(--mobile-nav-height) items-center justify-around px-2">
             <NavBarItem
               item={mainItems[0]}
@@ -214,7 +214,7 @@ export function MobileNavBar() {
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="flex max-h-[75dvh] flex-col rounded-t-2xl border-none bg-secondary px-4 shadow-2xl"
+          className="flex max-h-[75dvh] flex-col rounded-t-2xl border-t border-border/60 bg-background px-4 shadow-2xl"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>{t("mySpace.nav.navigation")}</SheetTitle>

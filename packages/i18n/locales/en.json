@@ -502,7 +502,8 @@
 			"request": "Request",
 			"expiredDesc": "Your consular card has expired",
 			"notEligible": "Reserved for Gabonese nationals",
-			"pendingDesc": "Request being processed"
+			"pendingDesc": "Request being processed",
+			"noCardYet": "You don't have a consular card yet"
 		},
 		"header": {
 			"managedBy": "Managed by"

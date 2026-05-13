@@ -116,7 +116,7 @@ export function MySpaceSidebar() {
       <Sidebar
         variant="floating"
         collapsible="none"
-        className="border-none bg-secondary shadow-none ring-0"
+        className="border-none bg-background shadow-none ring-0"
       >
         <SidebarHeader className="px-3 pt-3 pb-3">
           <Header />

@@ -82,13 +82,13 @@
   --mobile-nav-height: 60px;
 
   /* Surface tokens citizen (conservés pour my-space)
-     Recalibrés pour fond beige : s1/s4 = blanc (containers/sub-cards),
-     s2/s3 = chips & hover, clairement plus foncés que --background. */
-  --citizen-surface-s1: var(--card);
-  --citizen-surface-s2: oklch(0.94 0.012 85);
-  --citizen-surface-s3: oklch(0.91 0.014 85);
-  --citizen-surface-s4: var(--card);
-  --citizen-surface-card: var(--card);
+     Pattern « shell blanc + cards beige » : s1/s4 = beige (containers),
+     s2/s3 = chips & hover, plus foncés que le beige pour ressortir. */
+  --citizen-surface-s1: var(--background);
+  --citizen-surface-s2: oklch(0.91 0.014 85);
+  --citizen-surface-s3: oklch(0.88 0.016 85);
+  --citizen-surface-s4: var(--background);
+  --citizen-surface-card: var(--background);
 }
 
 .dark {
@@ -287,7 +287,7 @@ body {
 /* ─── Citizen Space Layout ─── */
 
 .citizen-layout {
-  background: var(--background);
+  background: var(--card);
   min-height: 100dvh;
 }
 

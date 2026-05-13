@@ -1268,7 +1268,8 @@
 			"request": "Demander",
 			"expiredDesc": "Votre carte consulaire a expiré",
 			"notEligible": "Réservé aux ressortissants gabonais",
-			"pendingDesc": "Démarche en cours de traitement"
+			"pendingDesc": "Démarche en cours de traitement",
+			"noCardYet": "Vous n'avez pas encore de carte consulaire"
 		},
 		"currentRequest": {
 			"title": "Demande en cours",
