@@ -75,4 +75,14 @@ export interface CircleMenuProps {
 	 * Doit appeler la fermeture de la session vocale (`deactivateVoice`).
 	 */
 	onVoiceHangUp?: () => void;
+	/**
+	 * Mise en page des items autour du trigger :
+	 * - `"corner"` (défaut) : arc quart-de-cercle ouvert vers le haut-gauche.
+	 *   Idéal quand le trigger est ancré au coin bas-droite de l'écran (FAB
+	 *   desktop classique).
+	 * - `"fan"` : arc demi-cercle qui s'ouvre vers le haut, items distribués
+	 *   symétriquement de gauche à droite. Idéal quand le trigger est centré
+	 *   horizontalement (FAB mobile en éventail).
+	 */
+	layout?: "corner" | "fan";
 }

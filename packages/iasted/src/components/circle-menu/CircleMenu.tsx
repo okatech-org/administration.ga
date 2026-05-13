@@ -26,12 +26,30 @@ import type { CircleMenuItemConfig, CircleMenuProps } from "./types";
 
 const C = CIRCLE_MENU;
 
-const pointOnArc = (i: number, n: number, r: number = C.arcRadius) => {
+type ArcLayout = "corner" | "fan";
+
+interface ArcGeometry {
+	start: number;
+	end: number;
+	radius: number;
+}
+
+function resolveArcGeometry(layout: ArcLayout, itemCount: number): ArcGeometry {
+	const preset = C.arcLayouts[layout];
+	// Au-delà de 3 items, on bascule sur les valeurs « wide » pour éviter
+	// le chevauchement visuel et donner de la place aux labels.
+	const wide = itemCount >= 4;
+	return {
+		start: wide ? preset.startWide : preset.start,
+		end: wide ? preset.endWide : preset.end,
+		radius: wide ? preset.radiusWide : preset.radius,
+	};
+}
+
+const pointOnArc = (i: number, n: number, geom: ArcGeometry) => {
 	const theta =
-		n <= 1
-			? (C.arcStart + C.arcEnd) / 2
-			: C.arcStart + ((C.arcEnd - C.arcStart) * i) / (n - 1);
-	return { x: r * Math.cos(theta), y: r * Math.sin(theta) };
+		n <= 1 ? (geom.start + geom.end) / 2 : geom.start + ((geom.end - geom.start) * i) / (n - 1);
+	return { x: geom.radius * Math.cos(theta), y: geom.radius * Math.sin(theta) };
 };
 
 // ─── Goo filter (monté une seule fois par instance) ───
@@ -58,13 +76,15 @@ const ItemBlob = ({
 	totalItems,
 	isOpen,
 	bgClassName,
+	geom,
 }: {
 	index: number;
 	totalItems: number;
 	isOpen: boolean;
 	bgClassName: string;
+	geom: ArcGeometry;
 }) => {
-	const { x, y } = pointOnArc(index, totalItems);
+	const { x, y } = pointOnArc(index, totalItems, geom);
 	return (
 		<motion.div
 			initial={false}
@@ -98,6 +118,7 @@ const ItemOverlay = ({
 	index,
 	totalItems,
 	isOpen,
+	geom,
 }: {
 	icon: ReactNode;
 	label: string;
@@ -105,8 +126,9 @@ const ItemOverlay = ({
 	index: number;
 	totalItems: number;
 	isOpen: boolean;
+	geom: ArcGeometry;
 }) => {
-	const { x, y } = pointOnArc(index, totalItems);
+	const { x, y } = pointOnArc(index, totalItems, geom);
 
 	const handleClick = (e: React.MouseEvent) => {
 		e.preventDefault();
@@ -179,7 +201,12 @@ export const CircleMenu = ({
 	voiceDisabled = false,
 	isVoiceConnected = false,
 	onVoiceHangUp,
+	layout = "corner",
 }: CircleMenuProps) => {
+	// Géométrie d'arc résolue à chaque render — dépend du nombre d'items
+	// (au-delà de 3, on bascule sur les valeurs « wide ») et du mode de
+	// disposition (« corner » desktop ou « fan » mobile).
+	const geom: ArcGeometry = resolveArcGeometry(layout, items.length);
 	const [isOpen, setIsOpen] = useState(false);
 	const triggerAnimate = useAnimationControls();
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -292,22 +319,31 @@ export const CircleMenu = ({
 	}, [isOpen, playCloseAnimation]);
 
 	const is3D = triggerVariant === "3d-organic";
+	// Alignement du trigger dans le conteneur : ancré bas-droite en mode
+	// `corner` (FAB desktop classique), ancré bas-centre en mode `fan`
+	// (FAB mobile, items en éventail symétrique vers le haut).
+	const triggerAlignClass =
+		layout === "fan" ? "items-end justify-center" : "items-end justify-end";
+	const outerAlignClass =
+		layout === "fan"
+			? "relative flex items-end justify-center pointer-events-none"
+			: "relative flex items-end justify-end place-self-end pointer-events-none";
 
 	return (
 		<div
 			ref={containerRef}
 			style={{ width: C.containerSize, height: C.containerSize }}
-			className="relative flex items-end justify-end place-self-end pointer-events-none"
+			className={outerAlignClass}
 		>
 			<GooFilter />
 
 			{/* Couche 1 : disques colorés sous le filtre goo (effet metaball).
-			   Trigger ancré en bas-à-droite ; les items déploient vers le haut-gauche.
+			   Position du trigger selon `layout` ; les items déploient autour.
 			   En mode 3D, on ne rend pas le trigger blob (il est remplacé par
 			   IAstedTrigger3D dans la couche overlay), seuls les item blobs restent. */}
 			<div
 				style={{ filter: `url(#${C.goo.filterId})` }}
-				className="absolute inset-0 flex items-end justify-end"
+				className={cn("absolute inset-0 flex", triggerAlignClass)}
 			>
 				{/* Trigger blob (omis en mode 3D) */}
 				{!is3D && (
@@ -329,12 +365,13 @@ export const CircleMenu = ({
 						totalItems={items.length}
 						isOpen={isOpen}
 						bgClassName={item.className ?? itemClassName ?? "bg-muted"}
+						geom={geom}
 					/>
 				))}
 			</div>
 
 			{/* Couche 2 : icônes/labels nets, au-dessus du goo */}
-			<div className="absolute inset-0 flex items-end justify-end z-10">
+			<div className={cn("absolute inset-0 flex z-10", triggerAlignClass)}>
 				{/* Trigger interactif : variante 3D organique OU disque classique */}
 				{is3D ? (
 					<div className="pointer-events-auto">
@@ -389,6 +426,7 @@ export const CircleMenu = ({
 						index={index}
 						totalItems={items.length}
 						isOpen={isOpen}
+						geom={geom}
 					/>
 				))}
 			</div>

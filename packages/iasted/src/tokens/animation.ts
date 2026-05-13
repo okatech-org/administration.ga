@@ -43,6 +43,34 @@ export const CIRCLE_MENU = {
 	arcEnd: (3 * Math.PI) / 2,
 	/** Distance trigger ↔ centre item (px). */
 	arcRadius: 118,
+	// ── Presets de layout (mai 2026) ──
+	// `corner` : arc quart-de-cercle, trigger ancré bottom-right de l'écran.
+	//   Pour ≥4 items, on étend légèrement l'arc + on augmente le rayon afin
+	//   d'éviter le chevauchement et les labels coupés par le bord d'écran.
+	// `fan`   : arc demi-cercle qui s'ouvre vers le haut, trigger centré
+	//   (typique mobile). Items distribués symétriquement de gauche à droite
+	//   en passant par le haut.
+	arcLayouts: {
+		corner: {
+			start: Math.PI,
+			end: (3 * Math.PI) / 2,
+			radius: 118,
+			// Si plus de 3 items, on étend l'arc de 15° et on agrandit le rayon
+			// pour libérer de l'espace.
+			startWide: Math.PI - Math.PI / 24,
+			endWide: (3 * Math.PI) / 2 + Math.PI / 12,
+			radiusWide: 144,
+		},
+		fan: {
+			// π → 2π = de gauche, à travers le haut, jusqu'à droite
+			start: Math.PI,
+			end: 2 * Math.PI,
+			radius: 130,
+			startWide: Math.PI,
+			endWide: 2 * Math.PI,
+			radiusWide: 145,
+		},
+	},
 	/** Stagger réduit pour deploy organique rapide (s). */
 	organicStagger: 0.05,
 	/** Spring d'émergence des items (overshoot léger, ~+100 ms vs version précédente). */

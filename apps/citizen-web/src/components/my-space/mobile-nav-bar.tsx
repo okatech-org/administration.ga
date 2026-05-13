@@ -31,7 +31,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { CircleMenu } from "@workspace/iasted"
+import {
+  CircleMenu,
+  buildCircleMenuItems,
+  type IAstedTabId,
+} from "@workspace/iasted"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { authClient } from "@/lib/auth-client"
@@ -384,43 +388,20 @@ export function MobileNavBar() {
             >
               <CircleMenu
                 defaultOpen
-                items={[
-                  {
-                    label: "Mr Ray",
-                    icon: <Bot size={20} className="text-white" />,
-                    className: "bg-rose-500 hover:bg-rose-600",
-                    onClick: () => {
-                      setCircleMenuOpen(false)
-                      window.location.href = "/my-space/iasted"
-                    },
+                layout="fan"
+                items={buildCircleMenuItems({
+                  surface: "citizen",
+                  openWithTab: (tab: IAstedTabId) => {
+                    setCircleMenuOpen(false)
+                    window.dispatchEvent(
+                      new CustomEvent("iasted:open", { detail: { tab } })
+                    )
                   },
-                  {
-                    label: "iChat",
-                    icon: <MessageSquare size={18} className="text-white" />,
-                    className: "bg-emerald-600 hover:bg-emerald-500",
-                    onClick: () => {
-                      setCircleMenuOpen(false)
-                      window.dispatchEvent(
-                        new CustomEvent("iasted:open", {
-                          detail: { tab: "ichat" },
-                        })
-                      )
-                    },
+                  expand: () => {
+                    setCircleMenuOpen(false)
+                    window.location.href = "/my-space/iasted"
                   },
-                  {
-                    label: "iAppel",
-                    icon: <Phone size={18} className="text-white" />,
-                    className: "bg-[#0072B9] hover:bg-[#0080D0]",
-                    onClick: () => {
-                      setCircleMenuOpen(false)
-                      window.dispatchEvent(
-                        new CustomEvent("iasted:open", {
-                          detail: { tab: "icall" },
-                        })
-                      )
-                    },
-                  },
-                ]}
+                })}
                 openIcon={<Bot size={22} className="text-white" />}
                 triggerClassName="bg-emerald-600 hover:bg-emerald-500"
                 onCloseComplete={() => setCircleMenuOpen(false)}
