@@ -64,6 +64,7 @@ import type * as ai_securityGuardian from "../ai/securityGuardian.js";
 import type * as ai_streamingChats from "../ai/streamingChats.js";
 import type * as ai_suggestions from "../ai/suggestions.js";
 import type * as ai_tools from "../ai/tools.js";
+import type * as ai_userIdentity from "../ai/userIdentity.js";
 import type * as ai_voice from "../ai/voice.js";
 import type * as assets_sceauGabonBase64 from "../assets/sceauGabonBase64.js";
 import type * as auditif from "../auditif.js";
@@ -452,6 +453,7 @@ declare const fullApi: ApiFromModules<{
   "ai/streamingChats": typeof ai_streamingChats;
   "ai/suggestions": typeof ai_suggestions;
   "ai/tools": typeof ai_tools;
+  "ai/userIdentity": typeof ai_userIdentity;
   "ai/voice": typeof ai_voice;
   "assets/sceauGabonBase64": typeof assets_sceauGabonBase64;
   auditif: typeof auditif;
