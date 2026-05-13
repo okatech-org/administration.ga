@@ -26,6 +26,14 @@ import { useAction } from "convex/react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 import { AIActionPanel, AIActionButton } from "./_shared/AIActionPanel";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
@@ -137,6 +145,47 @@ export default function RapportsPhase() {
 	const extractAction = useAction(
 		api.ai.diplomaticAI.extractPrioritiesFromDocument,
 	);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = (reports ?? []).slice(0, 30).map((r: any) => ({
+		id: r._id,
+		type: "diplomatic-report",
+		label: r.title ?? "Rapport",
+		data: {
+			status: r.status,
+			reportType: r.type,
+			recipient: r.recipient,
+			period: r.period,
+		},
+	}));
+	const pageActions: PageAction[] = [
+		{
+			id: "rapports.open_compile",
+			label: "Compiler un nouveau rapport (IA)",
+			description:
+				"Ouvre le dialogue de compilation IA. params.reportType ∈ ['activity','situation','mission','economic','annual'], params.recipientType ∈ ['president','minister','secretary_general','direction'].",
+			params: {
+				reportType: { type: "string" },
+				recipientType: { type: "string" },
+			},
+		},
+	];
+	usePageContext({
+		module: "diplomatic-rapports",
+		title: "Rapports diplomatiques",
+		summary: `${reports?.length ?? 0} rapport(s).`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("rapports.open_compile", async (params) => {
+		const rt = params?.reportType as string | undefined;
+		const recipientT = params?.recipientType as string | undefined;
+		if (rt) setReportType(rt);
+		if (recipientT) setRecipientType(recipientT);
+		setShowCompileDialog(true);
+		return { success: true };
+	});
 
 	// Dropzone pour import documents reunion
 	const onDrop = useCallback(

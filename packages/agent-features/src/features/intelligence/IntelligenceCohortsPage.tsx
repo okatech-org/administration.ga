@@ -17,6 +17,14 @@ import { useCountryOptions } from "../../hooks/use-country-options";
 import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 const SECTOR_LABELS: Record<string, string> = {
 	energy: "Énergie",
@@ -65,6 +73,54 @@ export default function IntelligenceCohortsPage() {
 					}
 				: "skip",
 		);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = ((matches as any[] | undefined) ?? [])
+		.slice(0, 30)
+		.map((m: any) => ({
+			id: m._id ?? m.profileId ?? m.id,
+			type: "intelligence-cohort-profile",
+			label: m.fullName ?? "Profil",
+			data: {
+				sectors: m.sectors,
+				country: m.country,
+				professionTitle: m.professionTitle,
+			},
+		}));
+	const pageActions: PageAction[] = [
+		{
+			id: "cohorts.set_country",
+			label: "Filtrer par pays de résidence",
+			description: "params.country (ISO-2) ou vide pour tous.",
+			params: { country: { type: "string" } },
+		},
+		{
+			id: "cohorts.select_sector",
+			label: "Sélectionner un secteur stratégique",
+			description:
+				"params.sector ∈ ['energy','defense','it','finance','health','transport','research']. Passer null pour désélectionner.",
+			params: { sector: { type: "string" } },
+		},
+	];
+	usePageContext({
+		module: "intelligence-cohorts",
+		title: "Cohortes stratégiques (TAL)",
+		summary: stats
+			? `${stats.totalMatched} profil(s) classés dans des secteurs sensibles${country ? ` · pays: ${country}` : ""}${selectedSector ? ` · secteur: ${selectedSector}` : ""}.`
+			: "Chargement…",
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("cohorts.set_country", async (params) => {
+		setCountry(String(params?.country ?? ""));
+		return { success: true };
+	});
+	useRegisterPageAction("cohorts.select_sector", async (params) => {
+		const s = params?.sector;
+		setSelectedSector(s == null ? null : String(s));
+		return { success: true };
+	});
 
 	if (!activeOrgId) return null;
 

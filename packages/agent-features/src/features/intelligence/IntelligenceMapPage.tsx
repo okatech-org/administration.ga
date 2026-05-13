@@ -11,6 +11,8 @@ import { Skeleton } from "@workspace/ui/components/skeleton";
 import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
 import { useOrg } from "../../shell/org-provider";
+import { usePageContext } from "../../hooks/use-page-context";
+import type { PageEntity } from "../../stores/page-context-store";
 
 /**
  * Vue cartographique tabulaire (fallback sans Mapbox).
@@ -63,6 +65,25 @@ export default function IntelligenceMapPage() {
 			).length,
 		};
 	}, [points]);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = grouped.slice(0, 30).map((g) => ({
+		id: `country.${g.country}`,
+		type: "map-country",
+		label: g.country,
+		data: {
+			geolocated: g.geolocated,
+			countryOnly: g.countryOnly,
+		},
+	}));
+	usePageContext({
+		module: "intelligence-map",
+		title: "Carte du renseignement",
+		summary: `${totals.total} profil(s) répartis sur ${grouped.length} pays · ${totals.geolocated} géolocalisé(s).`,
+		visibleEntities: pageEntities,
+		availableActions: [],
+		scopedToolNames: [],
+	});
 
 	return (
 		<div className="flex flex-col gap-6 p-4 lg:p-6 overflow-y-auto citizen-scrollbar">

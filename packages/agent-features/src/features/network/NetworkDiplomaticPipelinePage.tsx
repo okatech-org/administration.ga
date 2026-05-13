@@ -25,6 +25,14 @@ import {
 import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 const PHASES = [
 	{ value: "all", label: "Toutes phases" },
@@ -64,6 +72,58 @@ export default function NetworkDiplomaticPipelinePage() {
 		() => new Map(childOrgs.map((o) => [o._id as string, o.name])),
 		[childOrgs],
 	);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = (
+		(data?.targets as any[] | undefined) ?? []
+	)
+		.slice(0, 30)
+		.map((tg: any) => ({
+			id: tg._id,
+			type: "network-target",
+			label: tg.name,
+			data: {
+				pipelinePhase: tg.pipelinePhase,
+				priority: tg.priority,
+				orgId: tg.orgId,
+				orgName: nameByOrg.get(tg.orgId),
+			},
+		}));
+	const pageActions: PageAction[] = [
+		{
+			id: "network-pipeline.filter_org",
+			label: "Filtrer par organisme",
+			description: "params.orgId (string) ou 'all'.",
+			params: { orgId: { type: "string" } },
+		},
+		{
+			id: "network-pipeline.filter_phase",
+			label: "Filtrer par phase pipeline",
+			description:
+				"params.phase ∈ ['all','targeting','strategy','outreach','reporting','project'].",
+			params: { phase: { type: "string" } },
+		},
+	];
+	usePageContext({
+		module: "network-pipeline",
+		title: "Pipeline diplomatique réseau",
+		summary: `${data?.targets?.length ?? 0} cible(s) du réseau${orgFilter !== "all" ? " (filtré par org)" : ""}${phaseFilter !== "all" ? ` (phase: ${phaseFilter})` : ""}.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("network-pipeline.filter_org", async (params) => {
+		const id = params?.orgId as string | undefined;
+		if (!id) throw new Error("orgId requis");
+		setOrgFilter(id);
+		return { success: true };
+	});
+	useRegisterPageAction("network-pipeline.filter_phase", async (params) => {
+		const p = params?.phase as string | undefined;
+		if (!p) throw new Error("phase requise");
+		setPhaseFilter(p);
+		return { success: true };
+	});
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4 max-w-6xl mx-auto w-full">

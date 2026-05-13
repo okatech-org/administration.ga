@@ -39,6 +39,14 @@ import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
 } from "@workspace/api/hooks";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 
 function slugify(text: string): string {
@@ -232,6 +240,74 @@ export default function EditPostPage() {
 			setIsSubmitting(false);
 		}
 	};
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = post
+		? [
+			{
+				id: post._id,
+				type: "post",
+				label: (post.title ?? title) || "Publication",
+				data: {
+					status: post.status,
+					category: post.category,
+					slug: post.slug,
+				},
+			},
+		]
+		: [];
+	const pageActions: PageAction[] = [
+		{
+			id: "posts.set_title",
+			label: "Mettre à jour le titre",
+			description: "params.title (string).",
+			params: { title: { type: "string" } },
+		},
+		{
+			id: "posts.set_excerpt",
+			label: "Mettre à jour le résumé",
+			description: "params.excerpt (string).",
+			params: { excerpt: { type: "string" } },
+		},
+		{
+			id: "posts.set_content",
+			label: "Mettre à jour le contenu",
+			description: "params.content (string, Markdown).",
+			params: { content: { type: "string" } },
+		},
+		{
+			id: "posts.update",
+			label: "Enregistrer les modifications",
+			description: "Met à jour la publication.",
+			requiresConfirmation: true,
+		},
+	];
+	usePageContext({
+		module: "posts",
+		title: "Éditer publication",
+		summary: `Édition de la publication « ${title || (post?.title ?? "—")} » · Catégorie: ${category}${post ? ` · Statut: ${post.status}` : ""}.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("posts.set_title", async (params) => {
+		const v = String(params?.title ?? "");
+		setTitle(v);
+		if (!slug || slug === slugify(title)) setSlug(slugify(v));
+		return { success: true };
+	});
+	useRegisterPageAction("posts.set_excerpt", async (params) => {
+		setExcerpt(String(params?.excerpt ?? ""));
+		return { success: true };
+	});
+	useRegisterPageAction("posts.set_content", async (params) => {
+		setContent(String(params?.content ?? ""));
+		return { success: true };
+	});
+	useRegisterPageAction("posts.update", async () => {
+		await handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+		return { success: true };
+	});
 
 	if (!post) {
 		return (

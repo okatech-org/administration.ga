@@ -38,6 +38,14 @@ import { Label } from "@workspace/ui/components/label";
 import { MultiSelect } from "@workspace/ui/components/multi-select";
 import { Switch } from "@workspace/ui/components/switch";
 import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
+import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
 	useConvexQuery,
@@ -236,6 +244,88 @@ export default function AgentSchedules() {
 			toast.error(t("common.error"));
 		}
 	};
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = [
+		...((agents as any[] | undefined) ?? []).slice(0, 15).map((a: any) => ({
+			id: a._id as string,
+			type: "agent" as const,
+			label: `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim() || "Agent",
+			data: { selected: a._id === selectedAgentId },
+		})),
+		...filteredSchedules.slice(0, 15).map((s: any) => ({
+			id: s._id as string,
+			type: "schedule" as const,
+			label: `Planning ${s.agentName ?? ""}`,
+			data: {
+				agentId: s.agentId,
+				isActive: s.isActive,
+				dayCount: Array.isArray(s.weeklySchedule)
+					? s.weeklySchedule.filter((d: any) =>
+						d.timeRanges?.some((r: any) => r.start),
+					).length
+					: 0,
+				exceptionCount: s.exceptions?.length ?? 0,
+			},
+		})),
+	];
+	const pageActions: PageAction[] = [
+		{
+			id: "agent-schedules.select_agent",
+			label: "Filtrer par agent",
+			description:
+				"Sélectionne un agent pour ne voir que ses plannings. params.agentId (ou vide pour tout afficher).",
+			params: { agentId: { type: "string" } },
+		},
+		{
+			id: "agent-schedules.open_create",
+			label: "Ouvrir la modale de création",
+			description: "Ouvre la fenêtre de création d'un planning.",
+		},
+		{
+			id: "agent-schedules.toggle",
+			label: "Activer/désactiver un planning",
+			description: "params.scheduleId requis.",
+			requiresConfirmation: true,
+			params: { scheduleId: { type: "string" } },
+		},
+		{
+			id: "agent-schedules.delete",
+			label: "Supprimer un planning",
+			description: "params.scheduleId requis.",
+			requiresConfirmation: true,
+			params: { scheduleId: { type: "string" } },
+		},
+	];
+	usePageContext({
+		module: "agent-schedules",
+		title: "Plannings agents",
+		summary: `${(agents as any[] | undefined)?.length ?? 0} agent(s), ${(schedules as any[] | undefined)?.length ?? 0} planning(s)${selectedAgentId ? " (filtré)" : ""}.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("agent-schedules.select_agent", async (params) => {
+		const id = params?.agentId;
+		setSelectedAgentId(id ? String(id) : undefined);
+		return { success: true };
+	});
+	useRegisterPageAction("agent-schedules.open_create", async () => {
+		setIsCreateDialogOpen(true);
+		return { success: true };
+	});
+	useRegisterPageAction("agent-schedules.toggle", async (params) => {
+		const id = params?.scheduleId as Id<"agentSchedules"> | undefined;
+		if (!id) throw new Error("scheduleId requis");
+		await handleToggle(id);
+		return { success: true };
+	});
+	useRegisterPageAction("agent-schedules.delete", async (params) => {
+		const id = params?.scheduleId as Id<"agentSchedules"> | undefined;
+		if (!id) throw new Error("scheduleId requis");
+		await handleDelete(id);
+		return { success: true };
+	});
 
 	// --- Weekly schedule helpers (for create form) ---
 	const updateTimeRange = (

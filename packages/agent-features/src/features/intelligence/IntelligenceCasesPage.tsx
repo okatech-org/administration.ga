@@ -38,6 +38,14 @@ import { cn } from "@workspace/ui/lib/utils";
 import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 type CaseStatus = "open" | "monitoring" | "closed" | "archived";
 type CasePriority = "low" | "medium" | "high" | "critical";
@@ -84,6 +92,44 @@ export default function IntelligenceCasesPage() {
 				}
 			: "skip",
 	);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = ((cases as any[] | undefined) ?? [])
+		.slice(0, 30)
+		.map((c: any) => ({
+			id: c._id,
+			type: "intelligence-case",
+			label: c.title ?? "Dossier",
+			data: {
+				status: c.status,
+				priority: c.priority,
+				classification: c.classification,
+				openedAt: c.openedAt,
+			},
+		}));
+	const pageActions: PageAction[] = [
+		{
+			id: "cases.set_status_filter",
+			label: "Filtrer par statut",
+			description:
+				"params.status ∈ ['all','open','monitoring','closed','archived'].",
+			params: { status: { type: "string" } },
+		},
+	];
+	usePageContext({
+		module: "intelligence-cases",
+		title: "Dossiers d'investigation",
+		summary: `${cases?.length ?? 0} dossier(s)${statusFilter !== "all" ? ` (statut: ${statusFilter})` : ""}.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("cases.set_status_filter", async (params) => {
+		const s = params?.status as CaseStatus | "all" | undefined;
+		if (!s) throw new Error("status requis");
+		setStatusFilter(s);
+		return { success: true };
+	});
 
 	if (!activeOrgId) return null;
 

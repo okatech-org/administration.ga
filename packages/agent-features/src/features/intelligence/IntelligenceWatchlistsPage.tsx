@@ -45,6 +45,14 @@ import { cn } from "@workspace/ui/lib/utils";
 import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 const PAGE_SIZE = 12;
 
@@ -106,6 +114,37 @@ export default function IntelligenceWatchlistsPage() {
 			toast.error("Impossible de créer la liste");
 		}
 	};
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = paginated.slice(0, 30).map((l: any) => ({
+		id: l._id,
+		type: "intelligence-watchlist",
+		label: l.name ?? "Liste",
+		data: {
+			theme: l.theme,
+			visibility: l.visibility,
+			itemCount: l.itemCount,
+		},
+	}));
+	const pageActions: PageAction[] = [
+		{
+			id: "watchlists.open_create",
+			label: "Créer une liste de surveillance",
+			description: "Ouvre la modale de création.",
+		},
+	];
+	usePageContext({
+		module: "intelligence-watchlists",
+		title: "Listes de surveillance",
+		summary: `${lists?.length ?? 0} liste(s) · page ${page}/${totalPages}.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("watchlists.open_create", async () => {
+		setOpen(true);
+		return { success: true };
+	});
 
 	return (
 		<div className="flex flex-col gap-6 p-4 lg:p-6 overflow-y-auto citizen-scrollbar">

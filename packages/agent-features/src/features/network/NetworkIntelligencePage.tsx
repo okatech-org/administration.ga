@@ -14,6 +14,10 @@ import {
 import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+} from "../../hooks/use-page-context";
+import type { PageEntity } from "../../stores/page-context-store";
 
 function KpiCard({
 	label,
@@ -48,6 +52,26 @@ export default function NetworkIntelligencePage() {
 		api.functions.ministry.getMinistryStats,
 		activeOrgId ? { ministryId: activeOrgId } : "skip",
 	);
+
+	// ─── iAsted page context (KPI lecture seule) ──────────────────
+	const pageEntities: PageEntity[] = data
+		? [
+			{ id: "kpi.members", type: "kpi", label: "Agents du réseau", data: { value: data.totals.memberCount } },
+			{ id: "kpi.pending-requests", type: "kpi", label: "Demandes en attente", data: { value: data.totals.pendingRequests } },
+			{ id: "kpi.active-services", type: "kpi", label: "Services actifs", data: { value: data.totals.activeServices } },
+			{ id: "kpi.upcoming-appointments", type: "kpi", label: "RDV à venir", data: { value: data.totals.upcomingAppointments } },
+		]
+		: [];
+	usePageContext({
+		module: "network-intelligence",
+		title: "Intelligence réseau",
+		summary: data
+			? `Réseau : ${data.totals.memberCount} agents, ${data.totals.activeServices} services actifs, ${data.totals.upcomingAppointments} RDV à venir.`
+			: "Chargement des indicateurs réseau…",
+		visibleEntities: pageEntities,
+		availableActions: [],
+		scopedToolNames: [],
+	});
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4 max-w-6xl mx-auto w-full">

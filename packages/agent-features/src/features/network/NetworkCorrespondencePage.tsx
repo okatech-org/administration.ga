@@ -24,6 +24,14 @@ import {
 import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 const STATUSES = [
 	{ value: "all", label: "Tous statuts" },
@@ -62,6 +70,63 @@ export default function NetworkCorrespondencePage() {
 	const nameByOrg = useMemo(
 		() => new Map(childOrgs.map((o) => [o._id as string, o.name])),
 		[childOrgs],
+	);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = ((data?.items as any[] | undefined) ?? [])
+		.slice(0, 30)
+		.map((item: any) => ({
+			id: item._id,
+			type: "network-letter",
+			label: item.subject ?? "Courrier",
+			data: {
+				status: item.status,
+				reference: item.reference,
+				orgId: item.orgId,
+				orgName: nameByOrg.get(item.orgId),
+			},
+		}));
+	const pageActions: PageAction[] = [
+		{
+			id: "network-correspondence.filter_org",
+			label: "Filtrer par organisme",
+			description:
+				"params.orgId (string) ou 'all' pour tous les organismes enfants.",
+			params: { orgId: { type: "string" } },
+		},
+		{
+			id: "network-correspondence.filter_status",
+			label: "Filtrer par statut",
+			description:
+				"params.status ∈ ['all','draft','pending','approved','sent','received','archived'].",
+			params: { status: { type: "string" } },
+		},
+	];
+	usePageContext({
+		module: "network-correspondence",
+		title: "Correspondance réseau",
+		summary: `${data?.items?.length ?? 0} courrier(s) du réseau${orgFilter !== "all" ? " (filtré par org)" : ""}${statusFilter !== "all" ? ` (statut: ${statusFilter})` : ""}.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction(
+		"network-correspondence.filter_org",
+		async (params) => {
+			const id = params?.orgId as string | undefined;
+			if (!id) throw new Error("orgId requis");
+			setOrgFilter(id);
+			return { success: true };
+		},
+	);
+	useRegisterPageAction(
+		"network-correspondence.filter_status",
+		async (params) => {
+			const s = params?.status as string | undefined;
+			if (!s) throw new Error("status requis");
+			setStatusFilter(s);
+			return { success: true };
+		},
 	);
 
 	return (

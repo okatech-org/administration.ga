@@ -41,6 +41,14 @@ import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { useOrg } from "../../shell";
 import { LineFilterDropdown } from "../../components/call-center/LineFilterDropdown";
 import { useRingtoneMutedPref } from "../../hooks/use-ringtone-muted-pref";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 // ─── Onglets ─────────────────────────────────────────────────────────────────
 
@@ -193,6 +201,74 @@ export default function IAstedPage({
 		settings: "Réglages",
 	};
 	const crumbLabel = tabLabelMap[activeTab];
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = [
+		{ id: "tab.ichat", type: "icom-tab", label: "iChat", data: { tabId: "ichat", active: activeTab === "ichat", unread: totalChatUnread } },
+		{ id: "tab.icontact", type: "icom-tab", label: "iContact", data: { tabId: "icontact", active: activeTab === "icontact" } },
+		{ id: "tab.icall", type: "icom-tab", label: "iAppel", data: { tabId: "icall", active: activeTab === "icall", inbound: inboundCount, unreadVoicemail: unreadVm } },
+		{ id: "tab.imeeting", type: "icom-tab", label: "iRéunion", data: { tabId: "imeeting", active: activeTab === "imeeting" } },
+		{ id: "tab.settings", type: "icom-tab", label: "Réglages", data: { tabId: "settings", active: activeTab === "settings" } },
+	];
+	const pageActions: PageAction[] = [
+		{
+			id: "icom.switch_tab",
+			label: "Changer d'onglet iCom",
+			description:
+				"Active un onglet. params.tab ∈ ['ichat','icontact','icall','imeeting','settings'].",
+			params: { tab: { type: "string" } },
+		},
+		{
+			id: "icom.toggle_ringtone_mute",
+			label: "Basculer la sonnerie",
+			description:
+				"Mute/unmute la sonnerie d'appel entrant. params.muted (boolean) optionnel.",
+			params: { muted: { type: "boolean" } },
+		},
+		{
+			id: "icom.toggle_voicemail",
+			label: "Afficher/masquer la messagerie vocale",
+			description:
+				"Visible uniquement dans l'onglet iAppel. params.show (boolean) optionnel.",
+			params: { show: { type: "boolean" } },
+		},
+		{
+			id: "icom.filter_queue_by_line",
+			label: "Filtrer la file par ligne",
+			description: "params.lineId (string ou 'all').",
+			params: { lineId: { type: "string" } },
+		},
+	];
+	usePageContext({
+		module: "icom",
+		title: `iCom — ${crumbLabel}`,
+		summary: `Onglet ${crumbLabel}${totalChatUnread ? ` · ${totalChatUnread} message(s) non lu(s)` : ""}${inboundCount ? ` · ${inboundCount} appel(s) entrant(s)` : ""}${unreadVm ? ` · ${unreadVm} message(s) vocal(s) non lu(s)` : ""}.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("icom.switch_tab", async (params) => {
+		const tab = params?.tab as TabId | undefined;
+		if (!tab || !VALID_TAB_IDS.has(tab)) throw new Error("tab invalide");
+		setActiveTab(tab);
+		return { success: true, tab };
+	});
+	useRegisterPageAction("icom.toggle_ringtone_mute", async (params) => {
+		const next = typeof params?.muted === "boolean" ? params.muted : !ringtoneMuted;
+		if (next !== ringtoneMuted) toggleRingtoneMute();
+		return { success: true, muted: next };
+	});
+	useRegisterPageAction("icom.toggle_voicemail", async (params) => {
+		const next = typeof params?.show === "boolean" ? params.show : !showVoicemail;
+		setShowVoicemail(next);
+		return { success: true };
+	});
+	useRegisterPageAction("icom.filter_queue_by_line", async (params) => {
+		const id = params?.lineId as string | undefined;
+		if (!id) throw new Error("lineId requis");
+		setCallLineFilter(id);
+		return { success: true };
+	});
 
 	return (
 		<div className="flex h-full flex-col overflow-hidden">

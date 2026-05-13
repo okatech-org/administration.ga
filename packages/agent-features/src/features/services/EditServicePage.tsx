@@ -9,6 +9,14 @@ import { useCallback, useId } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { useOrg } from "../../shell/org-provider"
+import {
+  usePageContext,
+  useRegisterPageAction,
+} from "../../hooks/use-page-context"
+import type {
+  PageAction,
+  PageEntity,
+} from "../../stores/page-context-store"
 import { AutoGenerationRulesPanel } from "./components/auto-generation-rules-panel"
 import { Button } from "@workspace/ui/components/button"
 import { FlatCard } from "../../components/my-space/flat-card"
@@ -117,6 +125,73 @@ export default function EditServicePage() {
         toast.error(errorMessage)
       }
     },
+  })
+
+  // ─── iAsted page context ──────────────────────────────
+  const serviceLabel = data?.service?.slug ?? "Service consulaire"
+  const pageEntities: PageEntity[] = data
+    ? [
+      {
+        id: data._id,
+        type: "org-service",
+        label: serviceLabel,
+        data: {
+          isActive: data.isActive,
+          fee: data.pricing?.amount,
+          currency: data.pricing?.currency,
+          estimatedDays: data.estimatedDays,
+          requiresAppointment: data.requiresAppointment,
+          activeTab,
+        },
+      },
+    ]
+    : []
+  const pageActions: PageAction[] = [
+    {
+      id: "service-edit.switch_tab",
+      label: "Changer d'onglet",
+      description:
+        "params.tab ∈ ['general','autoGeneration'].",
+      params: { tab: { type: "string" } },
+    },
+    {
+      id: "service-edit.toggle_active",
+      label: "Activer/désactiver le service",
+      description: "Bascule l'état actif et sauvegarde.",
+      requiresConfirmation: true,
+    },
+    {
+      id: "service-edit.submit",
+      label: "Enregistrer les modifications",
+      description: "Sauvegarde la configuration courante du service.",
+      requiresConfirmation: true,
+    },
+  ]
+  usePageContext({
+    module: "service-edit",
+    title: `Édition — ${serviceLabel}`,
+    summary: data
+      ? `Service « ${serviceLabel} » · ${data.isActive ? "actif" : "inactif"} · ${data.pricing?.amount ?? 0} ${data.pricing?.currency ?? "XAF"}.`
+      : "Chargement du service…",
+    visibleEntities: pageEntities,
+    availableActions: pageActions,
+    scopedToolNames: [],
+  })
+  useRegisterPageAction("service-edit.switch_tab", async (params) => {
+    const tab = params?.tab as string | undefined
+    if (!tab) throw new Error("tab requis")
+    setActiveTab(tab)
+    return { success: true }
+  })
+  useRegisterPageAction("service-edit.toggle_active", async () => {
+    const next = !form.state.values.isActive
+    form.setFieldValue("isActive", next)
+    await form.handleSubmit()
+    return { success: true, isActive: next }
+  })
+  useRegisterPageAction("service-edit.submit", async () => {
+    await form.handleSubmit()
+    return { success: true }
   })
 
   if (!data) {

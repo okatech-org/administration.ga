@@ -36,6 +36,14 @@ import { useCountryOptions } from "../../hooks/use-country-options";
 import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 import { RiskScoreBadge } from "./RiskScoreBadge";
 
@@ -108,6 +116,80 @@ export default function IntelligenceProfilesPage() {
 		setTab(k);
 		setPage(1);
 	};
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = paginated.slice(0, 30).map((r: any) => ({
+		id: `${r.targetType}.${r.targetId}`,
+		type: "intelligence-profile",
+		label: r.label,
+		data: {
+			targetType: r.targetType,
+			targetId: r.targetId,
+			country: r.country,
+		},
+	}));
+	const pageActions: PageAction[] = [
+		{
+			id: "intelligence-profiles.set_search",
+			label: "Rechercher",
+			description: "params.query (string).",
+			params: { query: { type: "string" } },
+		},
+		{
+			id: "intelligence-profiles.set_country",
+			label: "Filtrer par pays",
+			description: "params.country (ISO-2) ou vide.",
+			params: { country: { type: "string" } },
+		},
+		{
+			id: "intelligence-profiles.set_tab",
+			label: "Changer d'onglet de type",
+			description:
+				"params.tab ∈ ['all','profile','child_profile','diplomatic_target','agent'].",
+			params: { tab: { type: "string" } },
+		},
+		{
+			id: "intelligence-profiles.open",
+			label: "Ouvrir une fiche profil",
+			description:
+				"Navigue vers la fiche détaillée. params.targetType + params.targetId requis.",
+			params: {
+				targetType: { type: "string" },
+				targetId: { type: "string" },
+			},
+		},
+	];
+	usePageContext({
+		module: "intelligence-profiles",
+		title: "Profils surveillés",
+		summary: `${results?.length ?? 0} profil(s) — page ${page}/${totalPages}${debouncedSearch ? ` · recherche "${debouncedSearch}"` : ""}${country ? ` · pays ${country}` : ""}.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("intelligence-profiles.set_search", async (params) => {
+		handleSearchChange(String(params?.query ?? ""));
+		return { success: true };
+	});
+	useRegisterPageAction("intelligence-profiles.set_country", async (params) => {
+		setCountry(String(params?.country ?? ""));
+		setPage(1);
+		return { success: true };
+	});
+	useRegisterPageAction("intelligence-profiles.set_tab", async (params) => {
+		const tabKey = params?.tab as string | undefined;
+		if (!tabKey) throw new Error("tab requis");
+		onTabChange(tabKey);
+		return { success: true };
+	});
+	useRegisterPageAction("intelligence-profiles.open", async (params) => {
+		const tt = params?.targetType as string | undefined;
+		const tid = params?.targetId as string | undefined;
+		if (!tt || !tid) throw new Error("targetType et targetId requis");
+		// Convention de routing : /agence/profiles/<type>/<id>
+		router.push(`/agence/profiles/${tt}/${tid}`);
+		return { success: true };
+	});
 
 	return (
 		<div className="flex flex-col gap-6 p-4 lg:p-6 overflow-y-auto citizen-scrollbar">

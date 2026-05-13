@@ -27,6 +27,14 @@ import { useEffect, useState } from "react";
 import { useAction, useMutation } from "convex/react";
 import { toast } from "sonner";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 import { AIActionPanel, AIActionButton } from "./_shared/AIActionPanel";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
@@ -345,6 +353,15 @@ export default function ProjetsPhase() {
 		api.ai.diplomaticAI.structureProject,
 	);
 
+	// Mutations export (réutilisées via les actions iAsted, en plus des
+	// mêmes mutations utilisées par chaque ProjectCard).
+	const requestDocx = useMutation(
+		api.functions.diplomaticAffairs.requestProjectDocxGeneration,
+	);
+	const requestPdf = useMutation(
+		api.functions.diplomaticAffairs.requestProjectPdfGeneration,
+	);
+
 	// Cibles eligibles (phase outreach, reporting, ou strategy — on laisse flexible)
 	const eligibleTargets = targets?.filter(
 		(t) =>
@@ -357,6 +374,71 @@ export default function ProjetsPhase() {
 	const filteredPlans = plans?.filter(
 		(p) => selectedTargetId && p.targetId === selectedTargetId,
 	);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = (projects ?? []).slice(0, 30).map((p: any) => ({
+		id: p._id,
+		type: "diplomatic-project",
+		label: p.title ?? "Projet",
+		data: {
+			status: p.status,
+			projectType: p.projectType,
+			targetId: p.targetId,
+			objectivesCount: Array.isArray(p.objectives) ? p.objectives.length : 0,
+		},
+	}));
+	const pageActions: PageAction[] = [
+		{
+			id: "projets.open_structure",
+			label: "Structurer un nouveau projet (IA)",
+			description:
+				"Ouvre le dialogue de structuration assistée par IA. params.targetId optionnel, params.planId optionnel.",
+			params: {
+				targetId: { type: "string" },
+				planId: { type: "string" },
+			},
+		},
+		{
+			id: "projets.export_docx",
+			label: "Exporter un projet en .docx",
+			description: "params.projectId requis.",
+			params: { projectId: { type: "string" } },
+		},
+		{
+			id: "projets.export_pdf",
+			label: "Exporter un projet en PDF",
+			description: "params.projectId requis.",
+			params: { projectId: { type: "string" } },
+		},
+	];
+	usePageContext({
+		module: "diplomatic-projets",
+		title: "Projets de coopération",
+		summary: `${projects?.length ?? 0} projet(s)${eligibleTargets ? ` · ${eligibleTargets.length} cible(s) éligibles` : ""}.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("projets.open_structure", async (params) => {
+		const tid = params?.targetId as string | undefined;
+		const pid = params?.planId as string | undefined;
+		if (tid) setSelectedTargetId(tid);
+		if (pid) setSelectedPlanId(pid);
+		setShowProjectDialog(true);
+		return { success: true };
+	});
+	useRegisterPageAction("projets.export_docx", async (params) => {
+		const id = params?.projectId as Id<"diplomaticProjects"> | undefined;
+		if (!id) throw new Error("projectId requis");
+		await requestDocx({ projectId: id });
+		return { success: true };
+	});
+	useRegisterPageAction("projets.export_pdf", async (params) => {
+		const id = params?.projectId as Id<"diplomaticProjects"> | undefined;
+		if (!id) throw new Error("projectId requis");
+		await requestPdf({ projectId: id });
+		return { success: true };
+	});
 
 	// Pre-remplir depuis search params
 	useEffect(() => {

@@ -26,6 +26,14 @@ import { Skeleton } from "@workspace/ui/components/skeleton";
 import { FlatCard } from "../../components/my-space/flat-card";
 import { SectionHeader } from "../../components/my-space/section-header";
 import { getLocalizedValue } from "../../lib/i18n-utils";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 function todayISO() {
 	return new Date().toISOString().slice(0, 10);
@@ -65,6 +73,67 @@ export function AgentSupervisionPage() {
 		{ membershipId },
 		{ initialNumItems: 20 },
 	);
+
+	// ─── iAsted page context ──────────────────────────────
+	const memberFullName = detail
+		? `${detail.member.firstName ?? ""} ${detail.member.lastName ?? ""}`.trim()
+		: "";
+	const pageEntities: PageEntity[] = detail
+		? [
+			{
+				id: membershipId,
+				type: "agent-member",
+				label: memberFullName || detail.member.email || "Agent",
+				data: {
+					email: detail.member.email,
+					position: getLocalizedValue(detail.member.positionTitle, lang),
+					assigned: detail.stats?.assigned,
+					completed: detail.stats?.completed,
+					completionRate: detail.stats?.completionRate,
+				},
+			},
+		]
+		: [];
+	const pageActions: PageAction[] = [
+		{
+			id: "team.view_schedule_print",
+			label: "Imprimer le planning hebdomadaire de l'agent",
+			description: "Ouvre la vue impression du planning sur 7 jours.",
+		},
+		{
+			id: "team.load_more_requests",
+			label: "Charger plus de demandes",
+			description:
+				"Charge la page suivante de demandes assignées à cet agent.",
+		},
+		{
+			id: "team.back",
+			label: "Retour à la liste des agents",
+			description: "Navigue vers /team.",
+		},
+	];
+	usePageContext({
+		module: "team-supervision",
+		title: `Supervision — ${memberFullName || "Agent"}`,
+		summary: detail
+			? `${memberFullName} · ${detail.stats?.assigned ?? 0} demande(s) assignée(s), ${detail.stats?.completionRate ?? 0}% complétées.`
+			: "Chargement…",
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("team.view_schedule_print", async () => {
+		window.location.href = `/appointments/print?agentId=${membershipId}&period=week&autoPrint=1`;
+		return { success: true };
+	});
+	useRegisterPageAction("team.load_more_requests", async () => {
+		if (requests.status === "CanLoadMore") requests.loadMore(20);
+		return { success: true };
+	});
+	useRegisterPageAction("team.back", async () => {
+		window.location.href = "/team";
+		return { success: true };
+	});
 
 	if (isPending) {
 		return (

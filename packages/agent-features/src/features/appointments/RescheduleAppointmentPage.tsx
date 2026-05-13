@@ -20,6 +20,14 @@ import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
 } from "@workspace/api/hooks";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 export default function AgentRescheduleAppointmentPage() {
 	const { t } = useTranslation();
@@ -56,6 +64,97 @@ export default function AgentRescheduleAppointmentPage() {
 	const { mutateAsync: rescheduleAppointment } = useConvexMutationQuery(
 		api.functions.slots.rescheduleAppointment,
 	);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = [
+		...(appointment
+			? [
+				{
+					id: appointment._id,
+					type: "appointment-current",
+					label: `RDV courant ${appointment.date} ${appointment.time}`,
+					data: {
+						date: appointment.date,
+						time: appointment.time,
+						status: appointment.status,
+						serviceId: appointment.orgServiceId,
+						appointmentType: appointment.appointmentType,
+					},
+				} as PageEntity,
+			]
+			: []),
+		...((availableSlots as any[] | undefined) ?? [])
+			.slice(0, 20)
+			.map((slot: any) => ({
+				id: `${date}T${slot.startTime}`,
+				type: "available-slot" as const,
+				label: `${date} ${slot.startTime}`,
+				data: {
+					startTime: slot.startTime,
+					selected: slot.startTime === startTime,
+				},
+			})),
+	];
+	const pageActions: PageAction[] = [
+		{
+			id: "appointment-reschedule.set_date",
+			label: "Choisir une nouvelle date",
+			description: "params.date au format YYYY-MM-DD.",
+			params: { date: { type: "string" } },
+		},
+		{
+			id: "appointment-reschedule.select_slot",
+			label: "Choisir un créneau",
+			description: "params.startTime requis (HH:MM).",
+			params: { startTime: { type: "string" } },
+		},
+		{
+			id: "appointment-reschedule.set_reason",
+			label: "Indiquer le motif",
+			description: "params.reason (string).",
+			params: { reason: { type: "string" } },
+		},
+		{
+			id: "appointment-reschedule.submit",
+			label: "Confirmer la reprogrammation",
+			description:
+				"Reprogramme le rendez-vous avec la nouvelle date et le créneau choisis.",
+			requiresConfirmation: true,
+		},
+	];
+	usePageContext({
+		module: "appointment-reschedule",
+		title: "Reprogrammer un rendez-vous",
+		summary: appointment
+			? `RDV du ${appointment.date} ${appointment.time} → ${date || "(nouvelle date)"} ${startTime || ""}${reason ? ` · Motif: « ${reason} »` : ""}.`
+			: "Chargement du rendez-vous…",
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("appointment-reschedule.set_date", async (params) => {
+		const d = params?.date as string | undefined;
+		if (!d) throw new Error("date requise");
+		setDate(d);
+		return { success: true };
+	});
+	useRegisterPageAction(
+		"appointment-reschedule.select_slot",
+		async (params) => {
+			const st = params?.startTime as string | undefined;
+			if (!st) throw new Error("startTime requis");
+			setStartTime(st);
+			return { success: true };
+		},
+	);
+	useRegisterPageAction("appointment-reschedule.set_reason", async (params) => {
+		setReason(String(params?.reason ?? ""));
+		return { success: true };
+	});
+	useRegisterPageAction("appointment-reschedule.submit", async () => {
+		await handleSubmit();
+		return { success: true };
+	});
 
 	if (appointment === undefined) {
 		return (

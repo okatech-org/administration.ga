@@ -1,6 +1,7 @@
 "use client"
 
 import { api } from "@convex/_generated/api"
+import type { Id } from "@convex/_generated/dataModel"
 import { Link } from "@workspace/routing"
 import {
 	ArrowLeft,
@@ -37,6 +38,14 @@ import {
 	useConvexMutationQuery,
 	useConvexQuery,
 } from "@workspace/api/hooks"
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context"
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store"
 
 // biome-ignore lint/suspicious/noExplicitAny: card shape returned by Convex query
 type PrintQueueCard = any
@@ -72,6 +81,51 @@ export default function PrintQueuePage() {
 	}
 
 	const queueCount = printQueue?.page?.length ?? 0
+
+	// ─── iAsted page context ──────────────────────────────
+	const queueCards = (printQueue?.page ?? []) as PrintQueueCard[]
+	const pageEntities: PageEntity[] = queueCards.slice(0, 30).map((c) => ({
+		id: c._id,
+		type: "print-queue-card",
+		label: `Carte ${c.cardNumber ?? "—"}`,
+		data: {
+			cardNumber: c.cardNumber,
+			citizenName: c.profile
+				? `${c.profile.firstName ?? ""} ${c.profile.lastName ?? ""}`.trim()
+				: undefined,
+			expiresAt: c.expiresAt,
+			status: c.status,
+		},
+	}))
+	const pageActions: PageAction[] = [
+		{
+			id: "consular-registry-print.mark_as_printed",
+			label: "Marquer une carte comme imprimée",
+			description:
+				"Indique qu'une carte a été envoyée à EasyCard et est imprimée. params.registrationId requis.",
+			requiresConfirmation: true,
+			params: { registrationId: { type: "string" } },
+		},
+	]
+	usePageContext({
+		module: "consular-registry-print",
+		title: "File d'impression",
+		summary: `${queueCount} carte(s) consulaire(s) en attente d'impression.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	})
+	useRegisterPageAction(
+		"consular-registry-print.mark_as_printed",
+		async (params) => {
+			const id = params?.registrationId as
+				| Id<"consularRegistrations">
+				| undefined
+			if (!id) throw new Error("registrationId requis")
+			await markAsPrinted({ registrationId: id })
+			return { success: true }
+		},
+	)
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4">

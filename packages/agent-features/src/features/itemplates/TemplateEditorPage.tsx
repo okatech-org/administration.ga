@@ -58,6 +58,14 @@ import {
 } from "@workspace/ui/components/select";
 import { BottomSheet } from "@workspace/ui/components/bottom-sheet";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 import { useCanDoTask } from "../../hooks/useCanDoTask";
 import {
 	useAuthenticatedConvexQuery,
@@ -215,6 +223,81 @@ export default function TemplateEditorPage() {
 		setContentRevision((v) => v + 1);
 		toast.success(t("templates.ai.phases.resultTitle"));
 	}
+
+	// ─── iAsted page context ──────────────────────────────
+	// Note : `save` / `saveLayout` / `onSync` sont déclarés en function
+	// expressions plus bas — hissés dans la fonction parente, donc
+	// référençables ici. La capture de leur identifiant n'est pas un
+	// problème car les handlers sont invoqués à la demande.
+	const pageEntities: PageEntity[] = template
+		? [
+			{
+				id: template._id,
+				type: "template",
+				label:
+					template.name?.fr ?? template.name?.en ?? "Modèle de document",
+				data: {
+					templateType: template.templateType,
+					placeholderCount: (placeholders ?? template.placeholders ?? []).length,
+					hasSource: Boolean(sourceStatus),
+				},
+			},
+		]
+		: [];
+	const pageActions: PageAction[] = [
+		{
+			id: "itemplates.save_content",
+			label: "Enregistrer le contenu et les placeholders",
+			description:
+				"Sauvegarde le contenu Tiptap et les placeholders du modèle.",
+			requiresConfirmation: true,
+		},
+		{
+			id: "itemplates.save_layout",
+			label: "Enregistrer la mise en page",
+			description:
+				"Sauvegarde le format de papier, l'orientation et les marges.",
+			requiresConfirmation: true,
+		},
+		{
+			id: "itemplates.sync_from_source",
+			label: "Synchroniser depuis la source",
+			description:
+				"Réimporte le contenu et les placeholders depuis le modèle source. Écrase les modifications locales non sauvegardées.",
+			requiresConfirmation: true,
+		},
+		{
+			id: "itemplates.back",
+			label: "Retour à la liste des modèles",
+			description: "Navigue vers /itemplates.",
+		},
+	];
+	usePageContext({
+		module: "itemplates",
+		title: template?.name?.fr ?? template?.name?.en ?? "Éditeur de modèle",
+		summary: template
+			? `Modèle « ${template.name?.fr ?? template.name?.en ?? "—"} » · ${(placeholders ?? template.placeholders ?? []).length} placeholder(s).`
+			: "Chargement du modèle…",
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("itemplates.save_content", async () => {
+		await save();
+		return { success: true };
+	});
+	useRegisterPageAction("itemplates.save_layout", async () => {
+		await saveLayout();
+		return { success: true };
+	});
+	useRegisterPageAction("itemplates.sync_from_source", async () => {
+		await onSync();
+		return { success: true };
+	});
+	useRegisterPageAction("itemplates.back", async () => {
+		router.push("/itemplates");
+		return { success: true };
+	});
 
 	if (isLoading || !template) {
 		return (

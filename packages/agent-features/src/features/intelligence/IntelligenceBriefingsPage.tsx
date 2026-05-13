@@ -13,6 +13,8 @@ import { Skeleton } from "@workspace/ui/components/skeleton";
 import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
 import { useOrg } from "../../shell/org-provider";
+import { usePageContext } from "../../hooks/use-page-context";
+import type { PageEntity } from "../../stores/page-context-store";
 
 const CLASSIFICATION_LABELS: Record<string, string> = {
 	internal: "Interne",
@@ -36,6 +38,28 @@ export default function IntelligenceBriefingsPage() {
 		api.functions.intelligenceBriefings.listBriefings,
 		activeOrgId ? { orgId: activeOrgId, limit: 100 } : "skip",
 	);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = ((briefings as any[] | undefined) ?? [])
+		.slice(0, 30)
+		.map((b: any) => ({
+			id: b._id,
+			type: "intelligence-briefing",
+			label: b.title ?? "Briefing",
+			data: {
+				targetType: b.targetType,
+				classification: b.classification,
+				generatedAt: b.generatedAt,
+			},
+		}));
+	usePageContext({
+		module: "intelligence-briefings",
+		title: "Briefings IA",
+		summary: `${briefings?.length ?? 0} briefing(s) générés par l'analyste IA.`,
+		visibleEntities: pageEntities,
+		availableActions: [],
+		scopedToolNames: [],
+	});
 
 	if (!activeOrgId) return null;
 

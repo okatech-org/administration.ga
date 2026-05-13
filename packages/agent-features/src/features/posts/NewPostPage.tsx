@@ -36,6 +36,14 @@ import {
 import { Switch } from "@workspace/ui/components/switch";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useConvexMutationQuery } from "@workspace/api/hooks";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 
 function slugify(text: string): string {
@@ -209,6 +217,98 @@ export default function NewPostPage() {
 
 	const isEvent = category === PostCategory.Event;
 	const isCommunique = category === PostCategory.Announcement;
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = [
+		{
+			id: "post-draft.current",
+			type: "post-draft",
+			label: title || "Brouillon en cours",
+			data: {
+				category,
+				slug,
+				hasCover: Boolean(coverImageStorageId),
+				hasDocument: Boolean(documentStorageId),
+				publish,
+			},
+		},
+	];
+	const pageActions: PageAction[] = [
+		{
+			id: "posts.set_title",
+			label: "Mettre à jour le titre",
+			description: "params.title (string).",
+			params: { title: { type: "string" } },
+		},
+		{
+			id: "posts.set_excerpt",
+			label: "Mettre à jour le résumé",
+			description: "params.excerpt (string).",
+			params: { excerpt: { type: "string" } },
+		},
+		{
+			id: "posts.set_content",
+			label: "Mettre à jour le contenu",
+			description: "params.content (string, Markdown).",
+			params: { content: { type: "string" } },
+		},
+		{
+			id: "posts.set_category",
+			label: "Changer la catégorie",
+			description:
+				"params.category ∈ ['News','Event','Announcement','Other'].",
+			params: { category: { type: "string" } },
+		},
+		{
+			id: "posts.save_draft",
+			label: "Enregistrer comme brouillon",
+			description: "Crée le post sans le publier.",
+			requiresConfirmation: true,
+		},
+		{
+			id: "posts.publish",
+			label: "Publier",
+			description:
+				"Crée le post et le publie immédiatement. Confirmation requise.",
+			requiresConfirmation: true,
+		},
+	];
+	usePageContext({
+		module: "posts",
+		title: "Nouvelle publication",
+		summary: `Création de publication · Catégorie: ${category}${title ? ` · « ${title} »` : ""}.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("posts.set_title", async (params) => {
+		handleTitleChange(String(params?.title ?? ""));
+		return { success: true };
+	});
+	useRegisterPageAction("posts.set_excerpt", async (params) => {
+		setExcerpt(String(params?.excerpt ?? ""));
+		return { success: true };
+	});
+	useRegisterPageAction("posts.set_content", async (params) => {
+		setContent(String(params?.content ?? ""));
+		return { success: true };
+	});
+	useRegisterPageAction("posts.set_category", async (params) => {
+		const c = params?.category as string | undefined;
+		if (!c) throw new Error("category requis");
+		setCategory(c as any);
+		return { success: true };
+	});
+	useRegisterPageAction("posts.save_draft", async () => {
+		setPublish(false);
+		await handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+		return { success: true };
+	});
+	useRegisterPageAction("posts.publish", async () => {
+		setPublish(true);
+		await handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+		return { success: true };
+	});
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4">

@@ -22,6 +22,14 @@ import { cn } from "@workspace/ui/lib/utils";
 import { FlatCard } from "../../components/my-space/flat-card";
 import { PageHeader } from "../../components/my-space/page-header";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 type TargetType = "profile" | "child_profile" | "diplomatic_target" | "agent";
 
@@ -72,13 +80,65 @@ export default function IntelligenceGraphPage() {
 			: "skip",
 	);
 
-	if (!activeOrgId) return null;
-
 	const handleSearch = () => {
 		const id = rootId.trim();
 		if (!id) return;
 		setSubmitted({ type: rootType, id, depth });
 	};
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = ((graph?.nodes as any[] | undefined) ?? [])
+		.slice(0, 30)
+		.map((n: any) => ({
+			id: n.id,
+			type: "graph-node",
+			label: n.label ?? n.id,
+			data: { nodeType: n.type, depth: n.depth },
+		}));
+	const pageActions: PageAction[] = [
+		{
+			id: "graph.set_root",
+			label: "Définir la racine du graphe",
+			description:
+				"params.type ∈ ['profile','child_profile','diplomatic_target','agent'] · params.id (string) · params.depth (number 1-4, optionnel, défaut 2).",
+			params: {
+				type: { type: "string" },
+				id: { type: "string" },
+				depth: { type: "number" },
+			},
+		},
+		{
+			id: "graph.traverse",
+			label: "Lancer l'exploration",
+			description:
+				"Démarre la traversée du graphe avec les paramètres courants.",
+		},
+	];
+	usePageContext({
+		module: "intelligence-graph",
+		title: "Graphe relationnel",
+		summary: submitted
+			? `Exploration ${submitted.type} ${submitted.id} (profondeur ${submitted.depth})${graph ? ` · ${graph.nodes?.length ?? 0} nœuds, ${graph.edges?.length ?? 0} liens` : ""}.`
+			: "Choisir une racine puis lancer l'exploration.",
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("graph.set_root", async (params) => {
+		const t = params?.type as TargetType | undefined;
+		const id = params?.id as string | undefined;
+		const d = params?.depth as number | undefined;
+		if (t) setRootType(t);
+		if (id) setRootId(id);
+		if (typeof d === "number") setDepth(Math.max(1, Math.min(4, d)));
+		return { success: true };
+	});
+	useRegisterPageAction("graph.traverse", async () => {
+		handleSearch();
+		return { success: true };
+	});
+
+	if (!activeOrgId) return null;
 
 	return (
 		<div className="flex flex-col gap-6 p-4 lg:p-6 overflow-y-auto citizen-scrollbar">

@@ -5,6 +5,14 @@ import { ArrowLeft } from "lucide-react";
 import { useParams, useRouter } from "@workspace/routing";
 import { useTranslation } from "react-i18next";
 import { Button } from "@workspace/ui/components/button";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 
 /**
  * Props for the ProfileDetailView rendered inside this page.
@@ -37,6 +45,40 @@ export default function ProfileDetailPage({
 	const { profileId } = useParams<{ profileId: string }>();
 	const router = useRouter();
 	const { t } = useTranslation();
+
+	// ─── iAsted page context (contexte minimal — la vue détaillée est
+	// injectée par l'app hôte et peut publier son propre contexte) ──
+	const pageEntities: PageEntity[] = profileId
+		? [
+			{
+				id: profileId,
+				type: "citizen-profile",
+				label: "Profil citoyen",
+				data: { profileId },
+			},
+		]
+		: [];
+	const pageActions: PageAction[] = [
+		{
+			id: "profile-detail.back",
+			label: "Retour à la page précédente",
+			description: "Navigation arrière (router.back).",
+		},
+	];
+	usePageContext({
+		module: "profile-detail",
+		title: t("profileDetail.title"),
+		summary: profileId
+			? `Détail du profil citoyen (id: ${profileId}).`
+			: "Profil citoyen (id manquant).",
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("profile-detail.back", async () => {
+		router.back();
+		return { success: true };
+	});
 
 	return (
 		<div className="flex flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8 max-w-6xl mx-auto w-full">

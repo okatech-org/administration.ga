@@ -8,6 +8,14 @@ import { Printer, RefreshCcw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useOrg } from "../../shell/org-provider";
+import {
+	usePageContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
+import type {
+	PageAction,
+	PageEntity,
+} from "../../stores/page-context-store";
 import { Button } from "@workspace/ui/components/button";
 import { Combobox } from "@workspace/ui/components/combobox";
 import { useCanDoTask } from "../../hooks/useCanDoTask";
@@ -153,6 +161,81 @@ export default function AppointmentsPrintPage() {
 		if (!a) return null;
 		return [a.firstName, a.lastName].filter(Boolean).join(" ") || a.email || "—";
 	}, [agentId, agents]);
+
+	// ─── iAsted page context ──────────────────────────────
+	const pageEntities: PageEntity[] = (appointments ?? [])
+		.slice(0, 30)
+		.map((a: any) => ({
+			id: a._id as string,
+			type: "appointment",
+			label: `${a.date} ${a.time}`,
+			data: {
+				date: a.date,
+				time: a.time,
+				status: a.status,
+				attendeeName: a.attendee
+					? `${a.attendee.firstName ?? ""} ${a.attendee.lastName ?? ""}`.trim()
+					: undefined,
+				serviceId: a.orgServiceId,
+			},
+		}));
+	const pageActions: PageAction[] = [
+		{
+			id: "appointments-print.set_period",
+			label: "Changer la période",
+			description:
+				"params.period ∈ ['day','week','month','custom']. Pour 'custom', spécifier aussi params.from et params.to (YYYY-MM-DD).",
+			params: { period: { type: "string" } },
+		},
+		{
+			id: "appointments-print.set_anchor",
+			label: "Changer la date d'ancrage",
+			description: "params.date au format YYYY-MM-DD.",
+			params: { date: { type: "string" } },
+		},
+		{
+			id: "appointments-print.filter_agent",
+			label: "Filtrer par agent",
+			description:
+				"Filtre les RDV par agent. params.agentId (string) ou vide pour tout.",
+			params: { agentId: { type: "string" } },
+		},
+		{
+			id: "appointments-print.print",
+			label: "Imprimer la vue courante",
+			description: "Ouvre la boîte de dialogue d'impression du navigateur.",
+			requiresConfirmation: true,
+		},
+	];
+	usePageContext({
+		module: "appointments-print",
+		title: "Impression des rendez-vous",
+		summary: `${appointments?.length ?? 0} RDV · Période: ${period}${selectedAgentLabel ? ` · Agent: ${selectedAgentLabel}` : ""}.`,
+		visibleEntities: pageEntities,
+		availableActions: pageActions,
+		scopedToolNames: [],
+	});
+	useRegisterPageAction("appointments-print.set_period", async (params) => {
+		const p = params?.period as Period | undefined;
+		if (!p) throw new Error("period requis");
+		setPeriod(p);
+		return { success: true };
+	});
+	useRegisterPageAction("appointments-print.set_anchor", async (params) => {
+		const d = params?.date as string | undefined;
+		if (!d) throw new Error("date requise");
+		setAnchor(d);
+		return { success: true };
+	});
+	useRegisterPageAction("appointments-print.filter_agent", async (params) => {
+		const id = params?.agentId;
+		setAgentId(id ? String(id) : undefined);
+		return { success: true };
+	});
+	useRegisterPageAction("appointments-print.print", async () => {
+		window.print();
+		return { success: true };
+	});
 
 	// Auto-trigger print dialog once data is loaded (only if requested via URL)
 	const autoPrint = searchParams?.get("autoPrint") === "1";
