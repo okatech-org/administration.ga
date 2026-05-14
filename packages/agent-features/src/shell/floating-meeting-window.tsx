@@ -17,12 +17,15 @@
  * connexion sur reload / deep link.
  */
 
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { LiveKitRoom } from "@livekit/components-react";
 import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 import { Maximize2, Minus, PhoneOff } from "lucide-react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "@workspace/routing";
+import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 import { MeetingStageView } from "../components/meetings-livekit/MeetingStageView";
@@ -51,12 +54,27 @@ export function FloatingMeetingWindow({
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
-	const { state, joinMeeting, leaveMeeting } = useActiveMeetingConnection();
+	const { state, joinMeeting, leaveMeeting, endForAll } =
+		useActiveMeetingConnection();
+
+	// Quand l'utilisateur raccroche, on nettoie l'URL (retire `active`) et on
+	// reset le store. La séquence est asynchrone — on garde un flag pour que
+	// la useEffect de deep-link ci-dessous N'AUTO-REJOIN PAS pendant la
+	// fenêtre où le store est déjà vide mais l'URL pas encore mise à jour.
+	const intentionalLeaveRef = useRef(false);
 
 	// Deep-link → store : si l'URL porte `?active=<id>` mais que le store est
-	// vide (ou sur un autre meeting), déclencher la connexion.
+	// vide (ou sur un autre meeting), déclencher la connexion. Sauf si l'on
+	// vient de raccrocher volontairement (flag ci-dessus).
 	const urlMeetingId = searchParams?.get(activeParamName) ?? null;
 	useEffect(() => {
+		// On retire le flag dès que l'URL est nettoyée (re-render après
+		// router.replace).
+		if (intentionalLeaveRef.current && !urlMeetingId) {
+			intentionalLeaveRef.current = false;
+			return;
+		}
+		if (intentionalLeaveRef.current) return;
 		if (!urlMeetingId) return;
 		if (state.meetingId === urlMeetingId) return;
 		if (state.status === "connecting") return;
@@ -70,6 +88,20 @@ export function FloatingMeetingWindow({
 		: true;
 	const isFullscreen = isHostPage && tabMatches;
 
+	// Meeting doc — pour titre + détection du host (createdBy === me).
+	const { data: meetingDoc } = useAuthenticatedConvexQuery(
+		api.functions.meetings.get,
+		state.meetingId ? { meetingId: state.meetingId as Id<"meetings"> } : "skip",
+	);
+	const { data: me } = useAuthenticatedConvexQuery(
+		api.functions.users.getMe,
+		{},
+	);
+	const isHost =
+		!!meetingDoc &&
+		!!me &&
+		(meetingDoc as any).createdBy === (me as any)?._id;
+
 	const cleanupOnDisconnect = useCallback(() => {
 		void leaveMeeting();
 	}, [leaveMeeting]);
@@ -82,10 +114,28 @@ export function FloatingMeetingWindow({
 		if (state.status === "connecting") reset();
 	}, [state.meetingId, state.status, reset]);
 
+	/** Nettoie le param `active`/`join` de l'URL courante. */
+	const clearActiveFromUrl = useCallback(() => {
+		const params = new URLSearchParams(searchParams?.toString() ?? "");
+		if (!params.has(activeParamName)) return;
+		params.delete(activeParamName);
+		const qs = params.toString();
+		router.replace(qs ? `${pathname}?${qs}` : pathname);
+	}, [activeParamName, pathname, router, searchParams]);
+
 	const handleHangUp = useCallback(() => {
+		intentionalLeaveRef.current = true;
 		markUserHangUp();
+		clearActiveFromUrl();
 		void leaveMeeting();
-	}, [leaveMeeting, markUserHangUp]);
+	}, [clearActiveFromUrl, leaveMeeting, markUserHangUp]);
+
+	const handleEndForAll = useCallback(() => {
+		intentionalLeaveRef.current = true;
+		markUserHangUp();
+		clearActiveFromUrl();
+		void endForAll();
+	}, [clearActiveFromUrl, endForAll, markUserHangUp]);
 
 	const handleMaximize = useCallback(() => {
 		if (!state.meetingId) return;
@@ -109,6 +159,7 @@ export function FloatingMeetingWindow({
 
 	const isMeetingVideo =
 		state.mediaType === "video" || state.mediaType === null;
+	const meetingTitle = (meetingDoc as any)?.title ?? defaultTitle;
 
 	const roomBody = (
 		<LiveKitRoom
@@ -126,8 +177,9 @@ export function FloatingMeetingWindow({
 			{isFullscreen ? (
 				<MeetingStageView
 					meetingId={state.meetingId}
-					meetingTitle={defaultTitle}
+					meetingTitle={meetingTitle}
 					onHangUp={handleHangUp}
+					onEndForAll={isHost ? handleEndForAll : undefined}
 				/>
 			) : (
 				<FloatingMeetingPip

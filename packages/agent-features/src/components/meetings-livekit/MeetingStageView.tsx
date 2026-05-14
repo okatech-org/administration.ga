@@ -35,6 +35,7 @@ import {
 	MicOff,
 	MonitorUp,
 	MonitorX,
+	PhoneOff,
 	UserPlus,
 	Users,
 } from "lucide-react";
@@ -61,6 +62,9 @@ interface MeetingStageViewProps {
 	/** Si fourni, active le bouton « Inviter » qui ouvre un picker et appelle
 	 * `meetings.addParticipant` pour chaque sélection. */
 	meetingId?: Id<"meetings">;
+	/** Si fourni (host uniquement), affiche un bouton « Terminer pour tous »
+	 * dans le header qui ferme la réunion pour tous les participants. */
+	onEndForAll?: () => void;
 	recording?: {
 		isRecording: boolean;
 		isPending?: boolean;
@@ -99,6 +103,7 @@ export function MeetingStageView({
 	meetingTitle,
 	onHangUp,
 	meetingId,
+	onEndForAll,
 	recording,
 }: MeetingStageViewProps) {
 	const { t } = useTranslation();
@@ -265,6 +270,27 @@ export function MeetingStageView({
 						<UserPlus className="h-3.5 w-3.5" />
 						{t("meetings.invite", "Inviter")}
 					</Button>
+					{onEndForAll && (
+						<Button
+							type="button"
+							variant="destructive"
+							size="sm"
+							className="h-7 gap-1.5 text-[12px]"
+							onClick={() => {
+								if (
+									window.confirm(
+										"Terminer la réunion pour tous les participants ?",
+									)
+								) {
+									onEndForAll();
+								}
+							}}
+							title={t("meetings.endForAll", "Terminer pour tous")}
+						>
+							<PhoneOff className="h-3.5 w-3.5" />
+							{t("meetings.endForAll", "Terminer pour tous")}
+						</Button>
+					)}
 				</div>
 			</header>
 
