@@ -45,18 +45,114 @@ export const servicesTable = defineTable({
   // Downloadable form files (public-facing document, e.g. PDF forms)
   formFiles: v.optional(v.array(fileObjectValidator)),
 
-  // Editorial — affiché sur la page publique /services
-  // Étapes du parcours utilisateur (différent du formSchema qui décrit le formulaire).
+  // ────────────────────────────────────────────────────────────────────────
+  // CONTENU ÉDITORIAL — alimente la page publique /services et le détail.
+  // Tous optionnels. Permet aux superadmins d'enrichir progressivement
+  // la fiche de chaque service sans migration.
+  // ────────────────────────────────────────────────────────────────────────
+
+  // Étapes du parcours utilisateur (numérotées 1, 2, 3…). Différent de
+  // `formSchema` qui décrit les sections du formulaire de demande — ici
+  // on raconte le bout-en-bout (préinscription → instruction → délivrance).
   processSteps: v.optional(
     v.array(
       v.object({
         label: localizedStringValidator,
+        description: v.optional(localizedStringValidator),
         icon: v.optional(v.string()),
+        // Badges affichés sous l'étape (durée, sécurité, format, etc.)
+        extras: v.optional(
+          v.array(
+            v.object({
+              label: localizedStringValidator,
+              icon: v.optional(v.string()),
+            }),
+          ),
+        ),
       }),
     ),
   ),
+
   // Validité du titre délivré (ex: « 5 ans (adultes) »)
   titleValidity: v.optional(localizedStringValidator),
+
+  // Public concerné — version humaine d'eligibleProfiles
+  // (ex: « Ressortissants gabonais », « Étrangers en séjour »)
+  audience: v.optional(localizedStringValidator),
+
+  // Délai express en jours ouvrés (affiché dans la sidebar « En bref »)
+  expressDays: v.optional(v.number()),
+
+  // Encart « À noter » dans la section Présentation
+  noteCallout: v.optional(
+    v.object({
+      variant: v.union(
+        v.literal("info"),
+        v.literal("warning"),
+        v.literal("success"),
+      ),
+      body: localizedStringValidator,
+    }),
+  ),
+
+  // Liste « Dans quels cas en avez-vous besoin ? »
+  useCases: v.optional(v.array(localizedStringValidator)),
+
+  // Tarifs détaillés — variantes (standard, express, duplicata, mineurs…).
+  // Chaque entrée porte un `id` stable (slug) pour pouvoir être surchargée
+  // côté orgServices.pricingTableOverrides.
+  pricingTable: v.optional(
+    v.array(
+      v.object({
+        id: v.string(),
+        name: localizedStringValidator,
+        description: v.optional(localizedStringValidator),
+        delay: v.optional(localizedStringValidator),
+        price: v.optional(localizedStringValidator),
+        isFree: v.optional(v.boolean()),
+        variant: v.optional(
+          v.union(
+            v.literal("standard"),
+            v.literal("express"),
+            v.literal("duplicate"),
+            v.literal("reduced"),
+            v.literal("addon"),
+          ),
+        ),
+      }),
+    ),
+  ),
+  legalReference: v.optional(localizedStringValidator),
+  pricingNote: v.optional(localizedStringValidator),
+
+  // Modes de soumission disponibles (en ligne / en personne / postal).
+  availableModes: v.optional(
+    v.array(
+      v.object({
+        mode: v.union(
+          v.literal("online"),
+          v.literal("in_person"),
+          v.literal("postal"),
+        ),
+        title: v.optional(localizedStringValidator),
+        description: localizedStringValidator,
+        delay: v.optional(localizedStringValidator),
+        fee: v.optional(localizedStringValidator),
+        availability: v.optional(localizedStringValidator),
+        recommended: v.optional(v.boolean()),
+      }),
+    ),
+  ),
+
+  // FAQ propre au service (section « Questions fréquentes »).
+  faqs: v.optional(
+    v.array(
+      v.object({
+        question: localizedStringValidator,
+        answer: localizedStringValidator,
+      }),
+    ),
+  ),
 
   // Status
   isActive: v.boolean(),

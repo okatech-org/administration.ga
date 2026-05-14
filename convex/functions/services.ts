@@ -22,6 +22,79 @@ import {
 import { fieldMappingValidator } from "../schemas/orgServices";
 import { fileObjectValidator } from "../schemas/documents";
 
+// ──────────────────────────────────────────────────────────────────────────
+// Editorial validators — réutilisés dans services.create / services.update.
+// Tous optionnels : un service peut être créé sans aucun de ces champs et
+// enrichi progressivement (par tab dans l'UI backoffice).
+// ──────────────────────────────────────────────────────────────────────────
+
+const processStepValidator = v.object({
+  label: localizedStringValidator,
+  description: v.optional(localizedStringValidator),
+  icon: v.optional(v.string()),
+  extras: v.optional(
+    v.array(
+      v.object({
+        label: localizedStringValidator,
+        icon: v.optional(v.string()),
+      }),
+    ),
+  ),
+});
+
+const noteCalloutValidator = v.object({
+  variant: v.union(
+    v.literal("info"),
+    v.literal("warning"),
+    v.literal("success"),
+  ),
+  body: localizedStringValidator,
+});
+
+const pricingItemValidator = v.object({
+  id: v.string(),
+  name: localizedStringValidator,
+  description: v.optional(localizedStringValidator),
+  delay: v.optional(localizedStringValidator),
+  price: v.optional(localizedStringValidator),
+  isFree: v.optional(v.boolean()),
+  variant: v.optional(
+    v.union(
+      v.literal("standard"),
+      v.literal("express"),
+      v.literal("duplicate"),
+      v.literal("reduced"),
+      v.literal("addon"),
+    ),
+  ),
+});
+
+const availableModeValidator = v.object({
+  mode: v.union(
+    v.literal("online"),
+    v.literal("in_person"),
+    v.literal("postal"),
+  ),
+  title: v.optional(localizedStringValidator),
+  description: localizedStringValidator,
+  delay: v.optional(localizedStringValidator),
+  fee: v.optional(localizedStringValidator),
+  availability: v.optional(localizedStringValidator),
+  recommended: v.optional(v.boolean()),
+});
+
+const faqValidator = v.object({
+  question: localizedStringValidator,
+  answer: localizedStringValidator,
+});
+
+const pricingTableOverrideValidator = v.object({
+  itemId: v.string(),
+  price: v.optional(v.string()),
+  delay: v.optional(v.string()),
+  isFree: v.optional(v.boolean()),
+});
+
 // ============================================================================
 // GLOBAL SERVICES CATALOG (Superadmin)
 // ============================================================================
@@ -136,7 +209,12 @@ export const getFeaturedService = query({
 });
 
 /**
- * Get service by slug
+ * Get service by slug.
+ *
+ * Enrichit la réponse pour la page publique de détail :
+ *   - `formFilesWithUrls` : liens signés pour la sidebar « Formulaires »
+ *   - `relatedServices` : 3 autres services actifs de la même catégorie
+ *     (auto, pas de champ schéma — change si on ajoute relatedServiceSlugs)
  */
 export const getBySlug = query({
   args: { slug: v.string() },
@@ -149,13 +227,15 @@ export const getBySlug = query({
     if (!service) return null;
 
     // Resolve formFiles URLs for public download
-    let formFilesWithUrls: Array<{
-      storageId: string;
-      filename: string;
-      mimeType: string;
-      sizeBytes: number;
-      url: string | null;
-    }> | undefined;
+    let formFilesWithUrls:
+      | Array<{
+          storageId: string;
+          filename: string;
+          mimeType: string;
+          sizeBytes: number;
+          url: string | null;
+        }>
+      | undefined;
 
     if (service.formFiles && service.formFiles.length > 0) {
       formFilesWithUrls = await Promise.all(
@@ -169,9 +249,30 @@ export const getBySlug = query({
       );
     }
 
+    // Démarches liées : 3 services actifs de la même catégorie, en excluant
+    // le courant. Pas de scoring — tri sur le slug pour stabilité.
+    const sameCategory = await ctx.db
+      .query("services")
+      .withIndex("by_category_active", (q) =>
+        q.eq("category", service.category).eq("isActive", true),
+      )
+      .take(10);
+
+    const relatedServices = sameCategory
+      .filter((s) => s._id !== service._id)
+      .slice(0, 3)
+      .map((s) => ({
+        _id: s._id,
+        slug: s.slug,
+        name: s.name,
+        category: s.category,
+        icon: s.icon,
+      }));
+
     return {
       ...service,
       formFilesWithUrls,
+      relatedServices,
     };
   },
 });
@@ -205,6 +306,18 @@ export const create = superadminMutation({
     formSchema: v.optional(formSchemaValidator),
     eligibleProfiles: v.optional(eligibleProfilesValidator),
     formFiles: v.optional(v.array(fileObjectValidator)),
+    // Champs éditoriaux pour la page publique de détail
+    processSteps: v.optional(v.array(processStepValidator)),
+    titleValidity: v.optional(localizedStringValidator),
+    audience: v.optional(localizedStringValidator),
+    expressDays: v.optional(v.number()),
+    noteCallout: v.optional(noteCalloutValidator),
+    useCases: v.optional(v.array(localizedStringValidator)),
+    pricingTable: v.optional(v.array(pricingItemValidator)),
+    legalReference: v.optional(localizedStringValidator),
+    pricingNote: v.optional(localizedStringValidator),
+    availableModes: v.optional(v.array(availableModeValidator)),
+    faqs: v.optional(v.array(faqValidator)),
   },
   handler: async (ctx, args) => {
     // Check slug uniqueness
@@ -250,11 +363,25 @@ export const update = superadminMutation({
     icon: v.optional(v.string()),
     estimatedDays: v.optional(v.number()),
     requiresAppointment: v.optional(v.boolean()),
+    requiresPickupAppointment: v.optional(v.boolean()),
+    joinedDocuments: v.optional(v.array(formDocumentValidator)),
     requiredDocuments: v.optional(v.array(formDocumentValidator)),
     formSchema: v.optional(formSchemaValidator),
     eligibleProfiles: v.optional(eligibleProfilesValidator),
     isActive: v.optional(v.boolean()),
     formFiles: v.optional(v.array(fileObjectValidator)),
+    // Champs éditoriaux
+    processSteps: v.optional(v.array(processStepValidator)),
+    titleValidity: v.optional(localizedStringValidator),
+    audience: v.optional(localizedStringValidator),
+    expressDays: v.optional(v.number()),
+    noteCallout: v.optional(noteCalloutValidator),
+    useCases: v.optional(v.array(localizedStringValidator)),
+    pricingTable: v.optional(v.array(pricingItemValidator)),
+    legalReference: v.optional(localizedStringValidator),
+    pricingNote: v.optional(localizedStringValidator),
+    availableModes: v.optional(v.array(availableModeValidator)),
+    faqs: v.optional(v.array(faqValidator)),
   },
   handler: async (ctx, args) => {
     const { serviceId, ...updates } = args;
@@ -508,6 +635,8 @@ export const updateOrgService = authMutation({
     requiresAppointmentForPickup: v.optional(v.boolean()),
     requireAgentValidation: v.optional(v.boolean()),
     isActive: v.optional(v.boolean()),
+    // Surcharge locale du tableau de prix global du service
+    pricingTableOverrides: v.optional(v.array(pricingTableOverrideValidator)),
   },
   handler: async (ctx, args) => {
     const orgService = await ctx.db.get(args.orgServiceId);

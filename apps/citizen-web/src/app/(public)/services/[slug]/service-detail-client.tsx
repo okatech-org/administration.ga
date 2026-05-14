@@ -2,103 +2,35 @@
 
 import { sanitizeHtml } from "@workspace/shared/utils/sanitize"
 import { api } from "@convex/_generated/api"
-import { ServiceCategory } from "@convex/lib/validators"
+import { ArrowLeft, FileText } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import {
-  ArrowLeft,
-  BookOpen,
-  BookOpenCheck,
-  Building2,
-  Calendar,
-  CheckCircle2,
-  Clock,
-  Download,
-  FileCheck,
-  FileText,
-  Globe,
-  Loader2,
-  type LucideIcon,
-  MapPin,
-  ShieldAlert,
-  Users,
-} from "lucide-react"
-import { useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { toast } from "sonner"
 import { usePreloadedQuery, type Preloaded } from "convex/react"
-import { NearbyOrgs } from "@/components/NearbyOrgs"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { useUserCountry } from "@/hooks/useUserCountry"
-import { useConvexQuery } from "@/integrations/convex/hooks"
-import { authClient } from "@/lib/auth-client"
+  CATEGORY_CONFIG,
+  isFullyOnline,
+} from "@/components/services/v2/categories"
+import { ServiceHero } from "@/components/services/v2/detail/hero"
+import {
+  DocumentsSection,
+  FaqSection,
+  ModesSection,
+  PresentationSection,
+  PricingSection,
+  ServiceBreadcrumb,
+  ServiceTOC,
+  StepsSection,
+} from "@/components/services/v2/detail/sections"
+import {
+  FormFilesCard,
+  HelpSidebarCard,
+  InBriefCard,
+  RelatedServicesCard,
+  WhereCard,
+} from "@/components/services/v2/detail/sidebar"
 import { getLocalizedValue } from "@/lib/i18n-utils"
-
-const categoryConfig: Record<
-  string,
-  { icon: LucideIcon; color: string; bgColor: string }
-> = {
-  [ServiceCategory.Identity]: {
-    icon: BookOpenCheck,
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-500/10",
-  },
-  [ServiceCategory.Visa]: {
-    icon: Globe,
-    color: "text-green-600 dark:text-green-400",
-    bgColor: "bg-green-500/10",
-  },
-  [ServiceCategory.CivilStatus]: {
-    icon: FileText,
-    color: "text-yellow-600 dark:text-yellow-400",
-    bgColor: "bg-yellow-500/10",
-  },
-  [ServiceCategory.Registration]: {
-    icon: BookOpen,
-    color: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-500/10",
-  },
-  [ServiceCategory.Certification]: {
-    icon: FileCheck,
-    color: "text-orange-600 dark:text-orange-400",
-    bgColor: "bg-orange-500/10",
-  },
-  [ServiceCategory.Assistance]: {
-    icon: ShieldAlert,
-    color: "text-red-600 dark:text-red-400",
-    bgColor: "bg-red-500/10",
-  },
-  [ServiceCategory.Other]: {
-    icon: FileText,
-    color: "text-gray-600 dark:text-gray-400",
-    bgColor: "bg-gray-500/10",
-  },
-  [ServiceCategory.Declaration]: {
-    icon: Building2,
-    color: "text-indigo-600 dark:text-indigo-400",
-    bgColor: "bg-indigo-500/10",
-  },
-}
-
-const categoryLabels: Record<string, string> = {
-  [ServiceCategory.Identity]: "Passeport",
-  [ServiceCategory.Visa]: "Visa",
-  [ServiceCategory.CivilStatus]: "Etat Civil",
-  [ServiceCategory.Registration]: "Inscription Consulaire",
-  [ServiceCategory.Certification]: "Legalisation",
-  [ServiceCategory.Assistance]: "Assistance d'Urgence",
-  [ServiceCategory.Other]: "Autre",
-  [ServiceCategory.Declaration]: "Declaration",
-}
 
 export function ServiceDetailClient({
   preloaded,
@@ -106,392 +38,243 @@ export function ServiceDetailClient({
   preloaded: Preloaded<typeof api.functions.services.getBySlug>
 }) {
   const { t, i18n } = useTranslation()
-  const router = useRouter()
-  const { data: session } = authClient.useSession()
-  const isSignedIn = !!session
-
+  const lang = i18n.language
   const service = usePreloadedQuery(preloaded)
 
-  const { data: profileResult } = useConvexQuery(
-    api.functions.profiles.getMyProfileSafe,
-    isSignedIn ? {} : "skip",
+  // TOC active section: trivial scroll listener (no IntersectionObserver
+  // because the public layout uses a custom scroll container).
+  const [activeSection, setActiveSection] = useState<string | null>(
+    "presentation",
   )
-  const userType = profileResult?.profile?.userType
 
   useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [])
-
-  const { country: userCountry, isLoading: countryLoading } = useUserCountry()
-
-  const { data: availability } = useConvexQuery(
-    api.functions.services.getServiceAvailabilityByCountry,
-    service && userCountry ? { serviceId: service._id, userCountry } : "skip",
-  )
-
-  const isAvailableOnline = availability?.isAvailable === true
-  const availabilityLoading =
-    countryLoading || (userCountry && availability === undefined)
-
-  const isEligible =
-    !service?.eligibleProfiles ||
-    service.eligibleProfiles.length === 0 ||
-    (userType && service.eligibleProfiles.includes(userType))
-  const notEligible = isSignedIn && userType && !isEligible
-
-  const handleDownloadForm = () => {
-    const files = service?.formFilesWithUrls
-    if (!files || files.length === 0) return
-
-    if (files.length === 1 && files[0].url) {
-      const a = document.createElement("a")
-      a.href = files[0].url
-      a.download = files[0].filename
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-    } else {
-      for (const file of files) {
-        if (!file.url) continue
-        const a = document.createElement("a")
-        a.href = file.url
-        a.download = file.filename
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-      }
-    }
-
-    toast.success(t("services.modal.formDownloaded"), {
-      description: t(
-        "services.modal.formDownloadedDesc",
-        "Le formulaire a ete telecharge avec succes.",
-      ),
-    })
-  }
-
-  const handleCreateRequest = () => {
     if (!service) return
-    router.push(`/services/${service.slug}/new`)
-  }
+    const main = document.getElementById("main-scrollable-area")
+    const root: HTMLElement | Window = main ?? window
+    const onScroll = () => {
+      const ids = ["presentation", "etapes", "pieces", "tarifs", "modes", "faq"]
+      let current: string | null = null
+      for (const id of ids) {
+        const el = document.getElementById(id)
+        if (!el) continue
+        const top = el.getBoundingClientRect().top
+        if (top - 120 < 0) current = id
+      }
+      setActiveSection(current ?? "presentation")
+    }
+    onScroll()
+    root.addEventListener("scroll", onScroll, { passive: true })
+    return () => root.removeEventListener("scroll", onScroll)
+  }, [service])
 
   if (!service) {
-    // Defensive: server-side notFound() normally prevents this path.
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <div className="flex-1 flex items-center justify-center px-6">
-          <div className="text-center">
-            <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">
-              {t("services.notFound")}
-            </h1>
-            <Button asChild>
-              <Link href="/services">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                {t("services.backToServices")}
-              </Link>
-            </Button>
-          </div>
+      <div className="flex min-h-[60dvh] items-center justify-center px-6">
+        <div className="text-center">
+          <FileText className="mx-auto mb-4 size-16 text-[var(--pub-text-muted)]" />
+          <h1 className="mb-2 text-2xl font-bold text-[var(--pub-text)]">
+            {t("services.notFound", "Service introuvable")}
+          </h1>
+          <Button asChild>
+            <Link href="/services">
+              <ArrowLeft className="mr-2 size-4" />
+              {t("services.backToServices", "Retour aux services")}
+            </Link>
+          </Button>
         </div>
       </div>
     )
   }
 
-  const config =
-    categoryConfig[service.category] || categoryConfig[ServiceCategory.Other]
-  const Icon = config.icon
-  const categoryLabel = categoryLabels[service.category] || service.category
-  const serviceName = getLocalizedValue(service.name, i18n.language)
-  const serviceDescription = getLocalizedValue(
-    service.description,
-    i18n.language,
-  )
-  const serviceContent = service.content
-    ? getLocalizedValue(service.content, i18n.language)
+  const categoryConfig = CATEGORY_CONFIG[service.category] ?? CATEGORY_CONFIG.other
+  const categoryLabel = t(categoryConfig!.i18nKey, service.category)
+  const serviceName = getLocalizedValue(service.name, lang)
+  const serviceDescription = getLocalizedValue(service.description, lang)
+  const audience = service.audience
+    ? getLocalizedValue(service.audience, lang)
+    : t("services.detail.audienceFallback", "Ressortissants gabonais")
+  const titleValidity = service.titleValidity
+    ? getLocalizedValue(service.titleValidity, lang)
+    : undefined
+
+  const fullyOnline = isFullyOnline(service)
+
+  // Pricing affiché dans la sidebar / hero — extrait de pricingTable[standard]
+  // ou null si pas de pricingTable. On affichera juste « — » sinon.
+  const standardPricing = useMemo(() => {
+    if (!service.pricingTable || service.pricingTable.length === 0) return null
+    const std =
+      service.pricingTable.find((p) => p.variant === "standard") ??
+      service.pricingTable[0]
+    if (!std) return null
+    if (std.isFree) return t("services.free", "Gratuit")
+    return std.price ? getLocalizedValue(std.price, lang) : null
+  }, [service.pricingTable, lang, t])
+
+  const minorsPricing = useMemo(() => {
+    if (!service.pricingTable) return undefined
+    const minors = service.pricingTable.find((p) => p.variant === "reduced")
+    if (!minors) return undefined
+    if (minors.isFree) return t("services.free", "Gratuit")
+    return minors.price ? getLocalizedValue(minors.price, lang) : undefined
+  }, [service.pricingTable, lang, t])
+
+  const expressDays = (service as { expressDays?: number }).expressDays
+
+  // Hero pills
+  const heroPills: { label: string; tone: "neutral" | "online" | "official" | "express" }[] = [
+    { label: categoryLabel, tone: "neutral" },
+    ...(fullyOnline
+      ? [
+          {
+            label: t("services.cardOnlineRibbon", "100 % en ligne"),
+            tone: "online" as const,
+          },
+        ]
+      : []),
+    {
+      label: t("services.detail.pillOfficial", "Service officiel"),
+      tone: "official" as const,
+    },
+  ]
+
+  const ctaHref = `/services/${service.slug}/new`
+  const serviceContentHtml = service.content
+    ? sanitizeHtml(getLocalizedValue(service.content, lang))
     : null
 
+  // Sections présentes (utilisé pour le TOC)
+  const visibleSections = new Set<string>(["presentation"])
+  if (service.processSteps && service.processSteps.length > 0)
+    visibleSections.add("etapes")
+  if (service.joinedDocuments && service.joinedDocuments.length > 0)
+    visibleSections.add("pieces")
+  if (service.pricingTable && service.pricingTable.length > 0)
+    visibleSections.add("tarifs")
+  if (service.availableModes && service.availableModes.length > 0)
+    visibleSections.add("modes")
+  if (service.faqs && service.faqs.length > 0) visibleSections.add("faq")
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="flex-1">
-        <section className="bg-linear-to-b from-primary/10 to-background py-12 px-6">
-          <div className="max-w-4xl mx-auto">
-            <Button asChild variant="ghost" size="sm" className="mb-6">
-              <Link href="/services">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                {t("services.backToServices")}
-              </Link>
-            </Button>
+    <div className="mx-auto w-full max-w-[1280px] px-8 pb-24">
+      <ServiceBreadcrumb
+        categoryLabel={categoryLabel}
+        serviceName={serviceName}
+      />
 
-            <div className="flex items-start gap-6">
-              <div
-                className={`p-4 rounded-[10px] ${config.bgColor} ${config.color}`}
-              >
-                <Icon className="w-10 h-10" />
-              </div>
-              <div className="flex-1">
-                <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
-                  {serviceName}
-                </h1>
-                <div className="flex flex-wrap gap-2">
-                  <Badge
-                    variant="secondary"
-                    className={`${config.bgColor} ${config.color}`}
-                  >
-                    {categoryLabel}
-                  </Badge>
-                  {service.estimatedDays && (
-                    <Badge variant="outline" className="gap-1">
-                      <Clock className="h-3 w-3" />
-                      {service.estimatedDays}{" "}
-                      {t("services.days", {
-                        count: service.estimatedDays,
-                        defaultValue: "jour(s)",
-                      })}
-                    </Badge>
-                  )}
-                  {service.requiresAppointment && (
-                    <Badge
-                      variant="outline"
-                      className="gap-1 bg-amber-50 text-amber-700 border-amber-200"
-                    >
-                      <Calendar className="h-3 w-3" />
-                      {t("services.appointmentRequired")}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+      <ServiceHero
+        pills={heroPills}
+        title={serviceName}
+        tagline={serviceDescription}
+        category={categoryLabel}
+        estimatedDays={service.estimatedDays}
+        pricingMain={standardPricing ?? undefined}
+        audience={audience}
+        ctaTitle={t(
+          "services.detail.heroCtaTitle",
+          "Demandez votre {{name}} depuis votre espace personnel.",
+          { name: serviceName.toLowerCase() },
+        )}
+        ctaDescription={t(
+          "services.detail.heroCtaBody",
+          "Identité vérifiée par France Connect ou Consulat ID — signature électronique avancée acceptée.",
+        )}
+        ctaHref={ctaHref}
+        secondaryCtaHref="/reps"
+      />
 
-        <section className="py-12 px-6">
-          <div className="max-w-4xl mx-auto space-y-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("services.descriptionTitle")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-foreground leading-relaxed">
-                  {serviceDescription}
-                </p>
-              </CardContent>
-            </Card>
+      <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+        <div>
+          <ServiceTOC visibleIds={visibleSections} active={activeSection} />
 
-            {serviceContent && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("services.detailsTitle")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div
-                    className="prose prose-sm dark:prose-invert max-w-none"
-                    // biome-ignore lint/security/noDangerouslySetInnerHtml: <Needed for the feature>
-                    dangerouslySetInnerHTML={{
-                      __html: sanitizeHtml(serviceContent),
-                    }}
-                  />
-                </CardContent>
-              </Card>
+          <PresentationSection
+            lang={lang}
+            title={serviceName}
+            lede={serviceDescription}
+            noteCallout={
+              service.noteCallout as
+                | {
+                    variant: "info" | "warning" | "success"
+                    body: { fr?: string; en?: string } | string
+                  }
+                | undefined
+            }
+            useCases={
+              service.useCases as
+                | Array<{ fr?: string; en?: string } | string>
+                | undefined
+            }
+            contentHtml={serviceContentHtml}
+          />
+
+          {service.processSteps && service.processSteps.length > 0 && (
+            <StepsSection
+              lang={lang}
+              steps={service.processSteps as never}
+              intro={
+                titleValidity
+                  ? t(
+                      "services.detail.stepsIntroValidity",
+                      "Votre titre sera valide {{validity}}.",
+                      { validity: titleValidity },
+                    )
+                  : undefined
+              }
+            />
+          )}
+
+          {service.joinedDocuments && service.joinedDocuments.length > 0 && (
+            <DocumentsSection
+              lang={lang}
+              docs={service.joinedDocuments as never}
+            />
+          )}
+
+          {service.pricingTable && service.pricingTable.length > 0 && (
+            <PricingSection
+              lang={lang}
+              items={service.pricingTable as never}
+              legalReference={service.legalReference as never}
+              pricingNote={service.pricingNote as never}
+            />
+          )}
+
+          {service.availableModes && service.availableModes.length > 0 && (
+            <ModesSection
+              lang={lang}
+              modes={service.availableModes as never}
+            />
+          )}
+
+          {service.faqs && service.faqs.length > 0 && (
+            <FaqSection lang={lang} faqs={service.faqs as never} />
+          )}
+        </div>
+
+        <aside>
+          <InBriefCard
+            category={categoryLabel}
+            audience={audience}
+            estimatedDays={service.estimatedDays}
+            expressDays={expressDays}
+            pricingMain={standardPricing ?? undefined}
+            pricingMinor={minorsPricing}
+            isFullyOnline={fullyOnline}
+            ctaHref={ctaHref}
+          />
+          <WhereCard />
+          {service.formFilesWithUrls &&
+            service.formFilesWithUrls.length > 0 && (
+              <FormFilesCard files={service.formFilesWithUrls} />
             )}
-
-            {service.eligibleProfiles &&
-              service.eligibleProfiles.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5 text-muted-foreground" />
-                      {t(
-                        "services.modal.eligibleBeneficiaries",
-                        "Beneficiaires eligibles",
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {service.eligibleProfiles.map((profileType: string) => {
-                        const colorMap: Record<string, string> = {
-                          long_stay:
-                            "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-                          short_stay:
-                            "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-                          visa_tourism:
-                            "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-                          visa_business:
-                            "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-                          visa_long_stay:
-                            "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
-                          admin_services:
-                            "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
-                        }
-                        return (
-                          <Badge
-                            key={profileType}
-                            variant="secondary"
-                            className={`gap-1 ${colorMap[profileType] ?? "bg-gray-100 text-gray-700"}`}
-                          >
-                            <CheckCircle2 className="h-3 w-3" />
-                            {t(
-                              `services.modal.profileTypes.${profileType}`,
-                              profileType,
-                            )}
-                          </Badge>
-                        )
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-            {service.joinedDocuments && service.joinedDocuments.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-muted-foreground" />
-                    {t("services.requiredDocuments")} (
-                    {service.joinedDocuments.length})
-                  </CardTitle>
-                  <CardDescription>
-                    {t(
-                      "services.documentsDesc",
-                      "Les documents suivants sont necessaires pour cette demande.",
-                    )}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3">
-                    {service.joinedDocuments.map(
-                      (
-                        doc: {
-                          type: string
-                          label: Record<string, string>
-                          required: boolean
-                        },
-                        index: number,
-                      ) => (
-                        <li
-                          key={`${service.slug}-doc-${index}`}
-                          className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
-                        >
-                          <div className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-medium shrink-0">
-                            {index + 1}
-                          </div>
-                          <span className="flex-1 text-sm font-medium">
-                            {getLocalizedValue(doc.label, i18n.language)}
-                          </span>
-                          {doc.required && (
-                            <Badge
-                              variant="destructive"
-                              className="text-xs shrink-0"
-                            >
-                              {t("services.required")}
-                            </Badge>
-                          )}
-                        </li>
-                      ),
-                    )}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
-
-            <Separator />
-
-            <Card className="border-primary/20 bg-primary/5">
-              <CardHeader>
-                <CardTitle>{t("services.actions")}</CardTitle>
-                <CardDescription>
-                  {t(
-                    "services.actionsDesc",
-                    "Telechargez le formulaire ou faites une demande en ligne.",
-                  )}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  {service.formFilesWithUrls &&
-                    service.formFilesWithUrls.length > 0 && (
-                      <Button
-                        variant="outline"
-                        className="flex-1 gap-2"
-                        onClick={handleDownloadForm}
-                      >
-                        <Download className="h-4 w-4" />
-                        {t(
-                          "services.modal.downloadForm",
-                          "Telecharger le formulaire",
-                        )}
-                      </Button>
-                    )}
-
-                  {availabilityLoading ? (
-                    <Button className="flex-1 gap-2" disabled>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      {t("services.checkingAvailability")}
-                    </Button>
-                  ) : notEligible ? (
-                    <div className="flex-1 flex items-center justify-center gap-2 p-3 rounded-md bg-orange-500/10 text-orange-600 dark:text-orange-400 text-sm text-center">
-                      <ShieldAlert className="h-4 w-4 shrink-0" />
-                      <span>
-                        {t(
-                          "services.notEligible",
-                          "Votre profil n'est pas eligible pour ce service",
-                        )}
-                      </span>
-                    </div>
-                  ) : isAvailableOnline ? (
-                    <Button
-                      className="flex-1 gap-2"
-                      onClick={handleCreateRequest}
-                    >
-                      <FileText className="h-4 w-4" />
-                      {t("services.modal.createRequest")}
-                    </Button>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center gap-2 p-3 rounded-md bg-muted/50 text-muted-foreground text-sm text-center">
-                      <MapPin className="h-4 w-4 shrink-0" />
-                      <span>
-                        {t(
-                          "services.notAvailableOnline",
-                          "Non disponible en ligne pour votre pays",
-                        )}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground mb-2">
-                {t("services.modal.importantInfo")}
-              </p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>
-                  {t(
-                    "services.modal.infoPoints.docs",
-                    "Tous les documents doivent etre en cours de validite.",
-                  )}
-                </li>
-                <li>
-                  {t(
-                    "services.modal.infoPoints.delay",
-                    "Les delais indiques sont donnes a titre indicatif.",
-                  )}
-                </li>
-                <li>
-                  {t(
-                    "services.modal.infoPoints.identity",
-                    "Une piece d'identite sera demandee lors du retrait.",
-                  )}
-                </li>
-              </ul>
-            </div>
-
-            <Separator />
-
-            <NearbyOrgs />
-          </div>
-        </section>
+          {service.relatedServices && service.relatedServices.length > 0 && (
+            <RelatedServicesCard
+              related={service.relatedServices as never}
+              lang={lang}
+            />
+          )}
+          <HelpSidebarCard />
+        </aside>
       </div>
     </div>
   )

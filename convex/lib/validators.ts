@@ -45,6 +45,7 @@ import {
   // Tutorial module
   TutorialCategory,
   TutorialType,
+  TutorialBadge,
   // iBoîte module
   MailType,
   MailFolder,
@@ -79,6 +80,7 @@ export {
   NotificationType,
   TutorialCategory,
   TutorialType,
+  TutorialBadge,
   TicketStatus,
   TicketPriority,
   TicketCategory,
@@ -1096,10 +1098,28 @@ export const orgBrandingValidator = v.object({
 export type OrgBranding = Infer<typeof orgBrandingValidator>;
 
 // Required document definition (label is localized)
+// Les champs `description`, `format` et `group` sont éditoriaux : ils
+// alimentent la liste « Pièces à fournir » de la page publique de détail
+// service. Optionnels — n'impactent pas les usages historiques (formSchema
+// dynamique, orgServices anciennement constitués).
 export const formDocumentValidator = v.object({
   type: detailedDocumentTypeValidator,
   label: localizedStringValidator,
   required: v.boolean(),
+  description: v.optional(localizedStringValidator),
+  format: v.optional(
+    v.union(
+      v.literal("original"),
+      v.literal("copy"),
+      v.literal("digital"),
+      v.literal("certified"),
+    ),
+  ),
+  // Groupe d'affichage : « Obligatoires » vs « Selon votre situation ».
+  // Si absent, on déduit du flag `required` (true → required, false → situational).
+  group: v.optional(
+    v.union(v.literal("required"), v.literal("situational")),
+  ),
 });
 
 export type FormDocument = Infer<typeof formDocumentValidator>;
@@ -1345,6 +1365,11 @@ export const tutorialCategoryValidator = v.union(
   v.literal(TutorialCategory.Entrepreneurship),
   v.literal(TutorialCategory.Travel),
   v.literal(TutorialCategory.PracticalLife),
+  v.literal(TutorialCategory.ConsularProcedures),
+  v.literal(TutorialCategory.CivilStatus),
+  v.literal(TutorialCategory.EducationGrants),
+  v.literal(TutorialCategory.Taxation),
+  v.literal(TutorialCategory.ReturnGabon),
 );
 
 export const tutorialTypeValidator = v.union(
@@ -1352,6 +1377,16 @@ export const tutorialTypeValidator = v.union(
   v.literal(TutorialType.Article),
   v.literal(TutorialType.Guide),
 );
+
+export const tutorialBadgeValidator = v.union(
+  v.literal(TutorialBadge.Updated),
+  v.literal(TutorialBadge.Express),
+  v.literal(TutorialBadge.Essential),
+  v.literal(TutorialBadge.New),
+);
+
+// FAQ categories reuse tutorial categories for unified filtering
+export const faqCategoryValidator = tutorialCategoryValidator;
 
 // ============================================================================
 // NOTIFICATION TYPE VALIDATOR

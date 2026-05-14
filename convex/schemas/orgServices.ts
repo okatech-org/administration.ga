@@ -121,6 +121,21 @@ export const orgServicesTable = defineTable({
   // par la soumission citoyen ou une transition de statut agent.
   autoGenerationRules: v.optional(v.array(autoGenerationRuleValidator)),
 
+  // Surcharge locale du `services.pricingTable`. Chaque entrée référence
+  // l'`id` stable d'un item du tableau de prix global et permet de remplacer
+  // le `price`, le `delay` ou le flag `isFree`. Si une entrée est absente
+  // ici, on applique la valeur globale telle quelle.
+  pricingTableOverrides: v.optional(
+    v.array(
+      v.object({
+        itemId: v.string(), // référence vers services.pricingTable[i].id
+        price: v.optional(v.string()),
+        delay: v.optional(v.string()),
+        isFree: v.optional(v.boolean()),
+      }),
+    ),
+  ),
+
   updatedAt: v.optional(v.number()),
 })
   // Note: by_org_service can be used for "by_org" queries via prefix matching
