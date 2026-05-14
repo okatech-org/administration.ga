@@ -3766,9 +3766,9 @@
 				"title": "Bonjour, comment vous appelez-vous ?",
 				"subtitle": "Ces informations figureront sur votre dossier consulaire. Elles doivent correspondre à votre passeport.",
 				"firstName": "Prénom",
-				"firstNamePlaceholder": "Berny",
+				"firstNamePlaceholder": "Votre prénom",
 				"lastName": "Nom de famille",
-				"lastNamePlaceholder": "Itoutou",
+				"lastNamePlaceholder": "Votre nom de famille",
 				"continue": "Continuer",
 				"aiCard": {
 					"title": "Pré-remplissage par IA",

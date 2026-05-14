@@ -3400,9 +3400,9 @@
 				"title": "Hello, what is your name?",
 				"subtitle": "This information will appear on your consular file. It must match your passport.",
 				"firstName": "First name",
-				"firstNamePlaceholder": "Berny",
+				"firstNamePlaceholder": "Your first name",
 				"lastName": "Last name",
-				"lastNamePlaceholder": "Itoutou",
+				"lastNamePlaceholder": "Your last name",
 				"continue": "Continue",
 				"aiCard": {
 					"title": "AI pre-fill",
