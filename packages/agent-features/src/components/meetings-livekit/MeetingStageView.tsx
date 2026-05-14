@@ -33,6 +33,7 @@ import {
 	MessageSquare,
 	Mic,
 	MicOff,
+	Minimize2,
 	MonitorUp,
 	MonitorX,
 	PhoneOff,
@@ -65,6 +66,9 @@ interface MeetingStageViewProps {
 	/** Si fourni (host uniquement), affiche un bouton « Terminer pour tous »
 	 * dans le header qui ferme la réunion pour tous les participants. */
 	onEndForAll?: () => void;
+	/** Si fourni, affiche un bouton « Réduire » qui sort du plein écran vers
+	 * le PiP flottant SANS quitter la réunion. */
+	onMinimize?: () => void;
 	recording?: {
 		isRecording: boolean;
 		isPending?: boolean;
@@ -104,6 +108,7 @@ export function MeetingStageView({
 	onHangUp,
 	meetingId,
 	onEndForAll,
+	onMinimize,
 	recording,
 }: MeetingStageViewProps) {
 	const { t } = useTranslation();
@@ -258,6 +263,19 @@ export function MeetingStageView({
 						{allParticipants.length}{" "}
 						{allParticipants.length > 1 ? "participants" : "participant"}
 					</span>
+					{onMinimize && (
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon"
+							className="h-7 w-7 bg-white/6 hover:bg-white/12 text-white"
+							onClick={onMinimize}
+							aria-label={t("meetings.minimize", "Réduire")}
+							title={t("meetings.minimize", "Réduire")}
+						>
+							<Minimize2 className="h-3.5 w-3.5" />
+						</Button>
+					)}
 					<Button
 						type="button"
 						variant="ghost"

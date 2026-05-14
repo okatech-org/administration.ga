@@ -145,6 +145,17 @@ export function FloatingMeetingWindow({
 		router.push(`${hostPathname}?${params.toString()}`);
 	}, [activeParamName, hostPathname, hostTab, router, state.meetingId]);
 
+	/** Réduit le plein écran en PiP sans quitter : on retire le discriminant
+	 * de tab (l'`active=<id>` reste, donc la connexion LiveKit persiste, mais
+	 * la condition `isFullscreen` devient false). */
+	const handleMinimize = useCallback(() => {
+		if (!hostTab) return;
+		const params = new URLSearchParams(searchParams?.toString() ?? "");
+		params.delete(hostTab.key);
+		const qs = params.toString();
+		router.replace(qs ? `${pathname}?${qs}` : pathname);
+	}, [hostTab, pathname, router, searchParams]);
+
 	if (!state.meetingId) return null;
 	if (!state.token || !state.wsUrl) {
 		// État de connexion intermédiaire — un loader discret en PiP (en
@@ -179,6 +190,7 @@ export function FloatingMeetingWindow({
 					meetingId={state.meetingId}
 					meetingTitle={meetingTitle}
 					onHangUp={handleHangUp}
+					onMinimize={hostTab ? handleMinimize : undefined}
 					onEndForAll={isHost ? handleEndForAll : undefined}
 				/>
 			) : (
