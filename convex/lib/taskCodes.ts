@@ -139,6 +139,20 @@ export const TaskCode = {
     cases_close: "intelligence.cases.close",
     cases_archive: "intelligence.cases.archive",
   },
+  // Réseau (ministry-only — supervision agrégée des organismes rattachés)
+  // Trois sous-modules : supervision diplomatique (pipeline réseau),
+  // correspondance réseau, et intelligence réseau (KPI agrégés).
+  network: {
+    diplomatic_view: "network.diplomatic.view",
+    diplomatic_export: "network.diplomatic.export",
+    diplomatic_configure: "network.diplomatic.configure",
+    correspondence_view: "network.correspondence.view",
+    correspondence_export: "network.correspondence.export",
+    correspondence_configure: "network.correspondence.configure",
+    intelligence_view: "network.intelligence.view",
+    intelligence_export: "network.intelligence.export",
+    intelligence_configure: "network.intelligence.configure",
+  },
   // Consular services
   consular_registrations: {
     view: "consular_registrations.view",
@@ -367,6 +381,16 @@ export const taskCodeValidator = v.union(
   v.literal(TaskCode.intelligence.cases_edit),
   v.literal(TaskCode.intelligence.cases_close),
   v.literal(TaskCode.intelligence.cases_archive),
+  // Network (ministry-only supervision)
+  v.literal(TaskCode.network.diplomatic_view),
+  v.literal(TaskCode.network.diplomatic_export),
+  v.literal(TaskCode.network.diplomatic_configure),
+  v.literal(TaskCode.network.correspondence_view),
+  v.literal(TaskCode.network.correspondence_export),
+  v.literal(TaskCode.network.correspondence_configure),
+  v.literal(TaskCode.network.intelligence_view),
+  v.literal(TaskCode.network.intelligence_export),
+  v.literal(TaskCode.network.intelligence_configure),
   // Consular Registrations
   v.literal(TaskCode.consular_registrations.view),
   v.literal(TaskCode.consular_registrations.manage),
@@ -526,6 +550,16 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   [TaskCode.intelligence.cases_edit]: "high",
   [TaskCode.intelligence.cases_close]: "high",
   [TaskCode.intelligence.cases_archive]: "critical",
+  // Network supervision — lecture cross-org sur des données opérationnelles agrégées
+  [TaskCode.network.diplomatic_view]: "medium",
+  [TaskCode.network.diplomatic_export]: "high",
+  [TaskCode.network.diplomatic_configure]: "critical",
+  [TaskCode.network.correspondence_view]: "medium",
+  [TaskCode.network.correspondence_export]: "high",
+  [TaskCode.network.correspondence_configure]: "critical",
+  [TaskCode.network.intelligence_view]: "high",
+  [TaskCode.network.intelligence_export]: "critical",
+  [TaskCode.network.intelligence_configure]: "critical",
   // Consular Registrations
   [TaskCode.consular_registrations.view]: "low",
   [TaskCode.consular_registrations.manage]: "high",

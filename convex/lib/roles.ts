@@ -1027,6 +1027,8 @@ export const TASK_CATEGORY_META: Record<TaskCategory, { label: LocalizedString; 
   analytics: { label: { fr: "Statistiques", en: "Analytics" }, icon: "BarChart3" },
   statistics: { label: { fr: "Statistiques", en: "Statistics" }, icon: "LineChart" },
   intelligence: { label: { fr: "Renseignement", en: "Intelligence" }, icon: "ShieldAlert" },
+  // Network supervision (ministry-only)
+  network: { label: { fr: "Réseau diplomatique", en: "Diplomatic Network" }, icon: "Network" },
   // Consular services
   consular_registrations: { label: { fr: "Immatriculations", en: "Consular Registrations" }, icon: "ClipboardList" },
   consular_notifications: { label: { fr: "Signalements", en: "Consular Notifications" }, icon: "Bell" },
