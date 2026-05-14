@@ -60,7 +60,7 @@
   --shadow-lg-proto: 0 18px 50px -22px rgba(20, 19, 15, 0.28);
 
   /* ─── Override des tokens shadcn (héritent dans tous les composants) ── */
-  --background: oklch(0.97 0.01 90); /* #f7f6f2 warm beige */
+  --background: #f7f6f2; /* warm beige — aligné sur --bg */
   --foreground: oklch(0.18 0.01 70); /* #14130f quasi-noir */
   --card: oklch(1 0 0); /* blanc pur */
   --card-foreground: oklch(0.18 0.01 70);

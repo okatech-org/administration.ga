@@ -12,29 +12,27 @@ import {
   Globe,
   LayoutGrid,
   List,
-  Map as MapIcon,
   MapPin,
   Phone,
   Search,
   X,
 } from "lucide-react"
-import { Suspense, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import dynamic from "next/dynamic"
 import { usePreloadedQuery, type Preloaded } from "convex/react"
-import { Skeleton } from "@/components/ui/skeleton"
 import { FlagIcon } from "@/components/ui/flag-icon"
 import { cn } from "@/lib/utils"
 
-const ConsularMap = dynamic(
+const ConsularGlobeHero = dynamic(
   () =>
-    import("@/components/ConsularMap").then((m) => ({
-      default: m.ConsularMap,
+    import("@/components/ConsularGlobeHero").then((m) => ({
+      default: m.ConsularGlobeHero,
     })),
   { ssr: false },
 )
 
-type ViewMode = "map" | "grid" | "list"
+type ViewMode = "grid" | "list"
 type TypeFilter = "all" | "embassy" | "consulate"
 type RegionFilter = "all" | string
 
@@ -159,7 +157,8 @@ export function RepsPageClient({
   const searchParams = useSearchParams()
 
   const queryParam = searchParams.get("query") || ""
-  const viewParam = (searchParams.get("view") as ViewMode) || "grid"
+  const viewQS = searchParams.get("view")
+  const viewParam: ViewMode = viewQS === "list" ? "list" : "grid"
   const typeParam = (searchParams.get("type") as TypeFilter) || "all"
   const regionParam = searchParams.get("region") || "all"
 
@@ -280,15 +279,6 @@ export function RepsPageClient({
     (typeFilter !== "all" ? 1 : 0) + (regionFilter !== "all" ? 1 : 0)
 
   const totalCount = orgs?.length ?? 0
-  const embassyCount =
-    orgs?.filter((r) => r.type === OrganizationType.Embassy).length ?? 0
-  const consulateCount =
-    orgs?.filter(
-      (r) =>
-        r.type === OrganizationType.GeneralConsulate ||
-        r.type === "consulate" ||
-        r.type === "honorary_consulate",
-    ).length ?? 0
 
   const toggleRegion = (id: string) =>
     setExpandedRegions((prev) => {
@@ -360,12 +350,9 @@ export function RepsPageClient({
               </div>
             </div>
 
-            {/* Decorative globe — hidden on mobile */}
+            {/* Interactive globe map — hidden on mobile */}
             <div className="hidden md:block">
-              <HeroGlobe
-                embassyCount={embassyCount}
-                consulateCount={consulateCount}
-              />
+              <ConsularGlobeHero />
             </div>
           </div>
         </section>
@@ -386,12 +373,6 @@ export function RepsPageClient({
                 role="tablist"
                 className="inline-flex bg-[var(--surface,_#fff)] border border-[color:var(--border)] rounded-full p-1 gap-0.5"
               >
-                <ViewTab
-                  active={viewMode === "map"}
-                  onClick={() => handleViewChange("map")}
-                  icon={<MapIcon className="w-4 h-4" />}
-                  label={t("orgs.mapView", "Carte")}
-                />
                 <ViewTab
                   active={viewMode === "grid"}
                   onClick={() => handleViewChange("grid")}
@@ -445,23 +426,7 @@ export function RepsPageClient({
             />
           )}
 
-          {viewMode === "map" && (
-            <div className="mb-14">
-              <Suspense
-                fallback={
-                  <Skeleton className="h-[400px] md:h-[70vh] rounded-2xl" />
-                }
-              >
-                <ConsularMap
-                  searchQuery={searchQuery}
-                  className="h-[400px] md:h-[70vh] rounded-2xl"
-                />
-              </Suspense>
-            </div>
-          )}
-
-          {viewMode !== "map" &&
-            REGIONS.map((region) => {
+          {REGIONS.map((region) => {
               const reps = repsByRegion.get(region.id) ?? []
               if (reps.length === 0) return null
               const expanded = expandedRegions.has(region.id)
@@ -495,10 +460,9 @@ export function RepsPageClient({
               )
             })}
 
-          {viewMode !== "map" &&
-            REGIONS.every(
-              (r) => (repsByRegion.get(r.id) ?? []).length === 0,
-            ) && <EmptyState onReset={() => setSearchQuery("")} />}
+          {REGIONS.every(
+            (r) => (repsByRegion.get(r.id) ?? []).length === 0,
+          ) && <EmptyState onReset={() => setSearchQuery("")} />}
         </section>
 
         {/* CTA */}
@@ -856,171 +820,6 @@ function RepListRow({ rep }: { rep: Rep }) {
   )
 }
 
-function HeroGlobe({
-  embassyCount,
-  consulateCount,
-}: {
-  embassyCount: number
-  consulateCount: number
-}) {
-  // Decorative — markers positioned roughly by continent
-  return (
-    <div
-      aria-hidden
-      className="relative max-w-[520px] w-full aspect-square ml-auto"
-    >
-      <div
-        className="absolute inset-0 rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle at 30% 25%, rgba(255,255,255,.9), rgba(255,255,255,0) 60%), radial-gradient(circle at 70% 80%, rgba(11,79,156,.18), transparent 60%), conic-gradient(from 220deg at 50% 50%, #f7f6f2, #efece4, #e6e2d8, #efece4, #f7f6f2)",
-          boxShadow:
-            "inset -40px -60px 120px rgba(20,19,15,.18), inset 30px 40px 80px rgba(255,255,255,.6), 0 30px 80px -30px rgba(20,19,15,.25)",
-        }}
-      >
-        {/* Grid lines */}
-        <div
-          className="absolute inset-0 rounded-full opacity-70 pointer-events-none"
-          style={{
-            backgroundImage:
-              "radial-gradient(ellipse 100% 1px at 50% 50%, var(--border-strong) 0, var(--border-strong) 1px, transparent 1.5px), radial-gradient(ellipse 100% 1px at 50% 25%, var(--border) 0, var(--border) 1px, transparent 1.5px), radial-gradient(ellipse 100% 1px at 50% 75%, var(--border) 0, var(--border) 1px, transparent 1.5px)",
-          }}
-        >
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{
-              border: "1px solid var(--border)",
-              transform: "scaleX(0.65)",
-            }}
-          />
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{
-              border: "1px solid var(--border)",
-              transform: "scaleX(0.3)",
-            }}
-          />
-        </div>
-        {/* Tilted axis */}
-        <div
-          className="absolute"
-          style={{
-            inset: "-8% 50% -8% 50%",
-            borderLeft: "1px dashed var(--border-strong)",
-            transform: "rotate(-23deg)",
-            opacity: 0.35,
-          }}
-        />
-
-        {/* Markers (ambassades = blue, consulats = green, Libreville = yellow) */}
-        <GlobeMarker top="32%" left="48%" variant="amb" />
-        <GlobeMarker top="36%" left="53%" variant="amb" />
-        <GlobeMarker top="38%" left="45%" />
-        <GlobeMarker top="42%" left="60%" />
-        <GlobeMarker top="62%" left="46%" variant="amb" />
-        <GlobeMarker top="54%" left="52%" />
-        <GlobeMarker top="64%" left="52%" variant="gabon" />
-        <GlobePulse top="64%" left="52%" />
-        <GlobeMarker top="70%" left="58%" />
-        <GlobeMarker top="52%" left="74%" variant="amb" />
-        <GlobeMarker top="60%" left="80%" />
-        <GlobeMarker top="42%" left="25%" variant="amb" />
-        <GlobeMarker top="60%" left="30%" />
-        <GlobeMarker top="80%" left="78%" />
-
-        <GlobeLabel top="64%" left="32%">
-          <b className="text-[var(--gabon-blue-hex)]">•</b> Libreville · siège
-        </GlobeLabel>
-        <GlobeLabel top="30%" left="75%">
-          <b className="text-[var(--gabon-blue-hex)]">{embassyCount || 32}</b>{" "}
-          ambassades
-        </GlobeLabel>
-        <GlobeLabel top="78%" left="25%">
-          <b className="text-[var(--gabon-blue-hex)]">{consulateCount || 14}</b>{" "}
-          consulats
-        </GlobeLabel>
-      </div>
-    </div>
-  )
-}
-
-function GlobeMarker({
-  top,
-  left,
-  variant,
-}: {
-  top: string
-  left: string
-  variant?: "amb" | "gabon"
-}) {
-  const base =
-    "absolute rounded-full -translate-x-1/2 -translate-y-1/2 ring-1 ring-white/70"
-  const styleByVariant: React.CSSProperties =
-    variant === "gabon"
-      ? {
-          width: 16,
-          height: 16,
-          background: "var(--gabon-yellow-hex)",
-          boxShadow:
-            "0 0 0 6px rgba(241,197,49,.25), 0 0 0 1px rgba(0,0,0,.1) inset",
-        }
-      : variant === "amb"
-        ? {
-            width: 14,
-            height: 14,
-            background: "var(--gabon-blue-hex)",
-            boxShadow:
-              "0 0 0 4px rgba(11,79,156,.18), 0 0 0 1px rgba(255,255,255,.7) inset",
-          }
-        : {
-            width: 12,
-            height: 12,
-            background: "var(--gabon-green-hex)",
-            boxShadow:
-              "0 0 0 4px rgba(10,138,59,.18), 0 0 0 1px rgba(255,255,255,.7) inset",
-          }
-  return <span className={base} style={{ top, left, ...styleByVariant }} />
-}
-
-function GlobePulse({ top, left }: { top: string; left: string }) {
-  return (
-    <span
-      className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
-      style={{
-        top,
-        left,
-        width: 16,
-        height: 16,
-        border: "2px solid var(--gabon-yellow-hex)",
-        animation: "reps-pulse 2.4s ease-out infinite",
-      }}
-    >
-      <style>{`@keyframes reps-pulse {
-        0% { opacity: .8; transform: translate(-50%,-50%) scale(1); }
-        100% { opacity: 0; transform: translate(-50%,-50%) scale(4); }
-      }`}</style>
-    </span>
-  )
-}
-
-function GlobeLabel({
-  top,
-  left,
-  children,
-}: {
-  top: string
-  left: string
-  children: React.ReactNode
-}) {
-  return (
-    <div
-      className="absolute -translate-x-1/2 -translate-y-1/2 bg-[var(--surface,_#fff)] border border-[color:var(--border)] rounded-full px-2.5 py-1 text-[11px] font-medium text-[color:var(--foreground)] shadow-sm whitespace-nowrap pointer-events-none"
-      style={{ top, left }}
-    >
-      {children}
-    </div>
-  )
-}
 
 function EmptyState({ onReset }: { onReset: () => void }) {
   const { t } = useTranslation()
