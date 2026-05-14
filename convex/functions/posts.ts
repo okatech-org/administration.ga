@@ -34,7 +34,7 @@ export const list = query({
         paginatedResult.page.filter((p) => p.category === args.category)
       : paginatedResult.page;
 
-    // Get cover image URLs for current page
+    // Get cover image URLs + author/org names for current page
     const postsWithImages = await Promise.all(
       filtered.map(async (post) => {
         const coverImageUrl =
@@ -46,10 +46,17 @@ export const list = query({
             await ctx.storage.getUrl(post.documentStorageId)
           : null;
 
+        const author = await ctx.db.get(post.authorId);
+        const authorName = author?.name ?? null;
+        const org = post.orgId ? await ctx.db.get(post.orgId) : null;
+        const orgName = org?.name ?? null;
+
         return {
           ...post,
           coverImageUrl,
           documentUrl,
+          authorName,
+          orgName,
         };
       }),
     );
