@@ -40,6 +40,7 @@ import {
   documentsByOwnerExpiry,
   missedCallsByOrgStatus,
   missedCallsByOrgReason,
+  requestsByOrgService,
 } from "../lib/aggregates";
 
 // Small batch size to stay well under 16MB read limit
@@ -122,6 +123,14 @@ export const backfillRequestsGlobal = internalMutation({
   handler: async (ctx, args) => {
     await chainedBackfill(ctx, "requests", requestsGlobal,
       internal.migrations.backfillAggregates.backfillRequestsGlobal, args.cursor);
+  },
+});
+
+export const backfillRequestsByOrgService = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "requests", requestsByOrgService,
+      internal.migrations.backfillAggregates.backfillRequestsByOrgService, args.cursor);
   },
 });
 
@@ -321,6 +330,7 @@ export const backfillAll = internalMutation({
       internal.migrations.backfillAggregates.backfillDocumentsByExpiry,
       internal.migrations.backfillAggregates.backfillMissedCallsStatus,
       internal.migrations.backfillAggregates.backfillMissedCallsReason,
+      internal.migrations.backfillAggregates.backfillRequestsByOrgService,
     ];
 
     // Stagger starts by 5 seconds each to avoid concurrent batches

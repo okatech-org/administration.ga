@@ -1,149 +1,70 @@
 "use client"
 
 import { api } from "@convex/_generated/api"
-import { ServiceCategory } from "@convex/lib/constants"
+import { Search } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
-import {
-  BookOpen,
-  BookOpenCheck,
-  Building2,
-  FileCheck,
-  FileText,
-  Globe,
-  LayoutGrid,
-  type LucideIcon,
-  Search,
-  ShieldAlert,
-} from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { usePreloadedQuery, type Preloaded } from "convex/react"
-import { ServiceCard } from "@/components/home/ServiceCard"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import {
+  CATEGORY_CONFIG,
+  isFullyOnline,
+} from "@/components/services/v2/categories"
+import { CatalogHeader, type SortKey, type ViewMode } from "@/components/services/v2/CatalogHeader"
+import {
+  FeaturedServiceCard,
+  type FeaturedService,
+} from "@/components/services/v2/FeaturedServiceCard"
+import { HelpBand } from "@/components/services/v2/HelpBand"
+import { PublicChatLauncher } from "@/components/services/v2/PublicChatLauncher"
+import {
+  ServiceCardV2,
+  ServiceRowV2,
+  type ServiceCardData,
+} from "@/components/services/v2/ServiceCardV2"
+import { ServicesFilterBand, type TransverseFilter } from "@/components/services/v2/ServicesFilterBand"
+import { ServicesHero } from "@/components/services/v2/ServicesHero"
+import { ServicesPagination } from "@/components/services/v2/ServicesPagination"
 import { getLocalizedValue } from "@/lib/i18n-utils"
-import { cn } from "@/lib/utils"
+
+const PAGE_SIZE = 12
 
 export function ServicesPageClient({
-  preloaded,
+  preloadedServices,
+  preloadedStats,
+  preloadedFeatured,
 }: {
-  preloaded: Preloaded<typeof api.functions.services.listCatalog>
+  preloadedServices: Preloaded<typeof api.functions.services.listCatalog>
+  preloadedStats: Preloaded<typeof api.functions.services.getCatalogStats>
+  preloadedFeatured: Preloaded<typeof api.functions.services.getFeaturedService>
 }) {
   const { t, i18n } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
 
+  const services = usePreloadedQuery(preloadedServices)
+  const stats = usePreloadedQuery(preloadedStats)
+  const featured = usePreloadedQuery(preloadedFeatured)
+
   const searchQuery$ = searchParams.get("query") || ""
   const selectedCategory = searchParams.get("category") || null
 
-  const services = usePreloadedQuery(preloaded)
-
-  const categoryConfig: Record<
-    string,
-    {
-      icon: LucideIcon
-      color: string
-      bgColor: string
-      label: string
-      slug: string
-    }
-  > = useMemo(
-    () => ({
-      [ServiceCategory.Passport]: {
-        icon: BookOpenCheck,
-        color: "text-blue-600 dark:text-blue-400",
-        bgColor: "bg-blue-500/10",
-        label: t("services.category.passport"),
-        slug: ServiceCategory.Passport,
-      },
-      [ServiceCategory.Visa]: {
-        icon: Globe,
-        color: "text-green-600 dark:text-green-400",
-        bgColor: "bg-green-500/10",
-        label: t(`services.categoriesMap.${ServiceCategory.Visa}`),
-        slug: ServiceCategory.Visa,
-      },
-      [ServiceCategory.CivilStatus]: {
-        icon: FileText,
-        color: "text-yellow-600 dark:text-yellow-400",
-        bgColor: "bg-yellow-500/10",
-        label: t(`services.categoriesMap.${ServiceCategory.CivilStatus}`),
-        slug: ServiceCategory.CivilStatus,
-      },
-      [ServiceCategory.Registration]: {
-        icon: BookOpen,
-        color: "text-purple-600 dark:text-purple-400",
-        bgColor: "bg-purple-500/10",
-        label: t(`services.categoriesMap.${ServiceCategory.Registration}`),
-        slug: ServiceCategory.Registration,
-      },
-      [ServiceCategory.Certification]: {
-        icon: FileCheck,
-        color: "text-orange-600 dark:text-orange-400",
-        bgColor: "bg-orange-500/10",
-        label: t(`services.categoriesMap.${ServiceCategory.Certification}`),
-        slug: ServiceCategory.Certification,
-      },
-      [ServiceCategory.Assistance]: {
-        icon: ShieldAlert,
-        color: "text-red-600 dark:text-red-400",
-        bgColor: "bg-red-500/10",
-        label: t(`services.categoriesMap.${ServiceCategory.Assistance}`),
-        slug: ServiceCategory.Assistance,
-      },
-      [ServiceCategory.Other]: {
-        icon: FileText,
-        color: "text-gray-600 dark:text-gray-400",
-        bgColor: "bg-gray-500/10",
-        label: t(`services.categoriesMap.${ServiceCategory.Other}`),
-        slug: ServiceCategory.Other,
-      },
-      [ServiceCategory.Declaration]: {
-        icon: Building2,
-        color: "text-indigo-600 dark:text-indigo-400",
-        bgColor: "bg-indigo-500/10",
-        label: t("services.category.declaration"),
-        slug: ServiceCategory.Declaration,
-      },
-    }),
-    [t],
-  )
-
   const [searchQuery, setSearchQuery] = useState(searchQuery$)
-
-  const categoryFilterConfig: {
-    value: string | null
-    key: string
-    icon: LucideIcon
-    label: string
-  }[] = useMemo(
-    () => [
-      {
-        value: null,
-        key: "all",
-        icon: LayoutGrid,
-        label: t("services.allCategories"),
-      },
-      ...Object.entries(categoryConfig).map(([key, config]) => ({
-        value: key,
-        key: config.slug,
-        icon: config.icon,
-        label: config.label,
-      })),
-    ],
-    [categoryConfig, t],
+  const [transverse, setTransverse] = useState<Set<TransverseFilter>>(
+    () => new Set(),
   )
+  const [sort, setSort] = useState<SortKey>("frequency")
+  const [view, setView] = useState<ViewMode>("grid")
+  const [page, setPage] = useState(1)
+  const [chatOpen, setChatOpen] = useState(false)
 
   const updateFilters = useCallback(
-    (updates: { query?: string; category?: string }) => {
+    (updates: { query?: string; category?: string | null }) => {
       const params = new URLSearchParams(searchParams.toString())
-      for (const [key, value] of Object.entries(updates)) {
-        if (value) {
-          params.set(key, value)
-        } else {
-          params.delete(key)
-        }
+      for (const [k, v] of Object.entries(updates)) {
+        if (v) params.set(k, v as string)
+        else params.delete(k)
       }
       const qs = params.toString()
       router.replace(qs ? `/services?${qs}` : "/services")
@@ -151,196 +72,196 @@ export function ServicesPageClient({
     [router, searchParams],
   )
 
-  const handleServiceClick = (slug: string) => {
-    router.push(`/services/${slug}`)
-  }
-
+  // Debounced search → URL
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchQuery !== searchQuery$) {
         updateFilters({
           query: searchQuery || undefined,
-          category: selectedCategory || undefined,
         })
       }
     }, 300)
     return () => clearTimeout(timer)
-  }, [searchQuery, searchQuery$, selectedCategory, updateFilters])
+  }, [searchQuery, searchQuery$, updateFilters])
 
-  const selectCategory = (cat: string | null) => {
-    updateFilters({
-      query: searchQuery || undefined,
-      category: cat || undefined,
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1)
+  }, [searchQuery$, selectedCategory, transverse, sort])
+
+  const toggleTransverse = (f: TransverseFilter) => {
+    setTransverse((prev) => {
+      const next = new Set(prev)
+      if (next.has(f)) next.delete(f)
+      else next.add(f)
+      return next
     })
   }
 
-  const filteredServices = services?.filter((service) => {
-    const serviceName = getLocalizedValue(service.name, i18n.language)
-    const serviceDesc = getLocalizedValue(service.description, i18n.language)
-    const matchesQuery =
-      !searchQuery$ ||
-      serviceName.toLowerCase().includes(searchQuery$.toLowerCase()) ||
-      serviceDesc.toLowerCase().includes(searchQuery$.toLowerCase())
+  const lang = i18n.language
 
-    const matchesCategory =
-      !selectedCategory || selectedCategory === service.category
+  const filtered = useMemo(() => {
+    if (!services) return []
+    const q = searchQuery$.toLowerCase()
+    return services.filter((s) => {
+      const name = getLocalizedValue(s.name, lang).toLowerCase()
+      const desc = getLocalizedValue(s.description, lang).toLowerCase()
+      if (q && !name.includes(q) && !desc.includes(q)) return false
+      if (selectedCategory && s.category !== selectedCategory) return false
+      if (transverse.has("online") && !isFullyOnline(s)) return false
+      if (transverse.has("express") && s.estimatedDays > 3) return false
+      // "free" filter — no global price, so we treat it as a no-op for now.
+      // Backlogged: ajouter indicativePricing au schéma services.
+      return true
+    })
+  }, [services, lang, searchQuery$, selectedCategory, transverse])
 
-    return matchesQuery && matchesCategory
+  const sorted = useMemo(() => {
+    const copy = [...filtered]
+    switch (sort) {
+      case "name":
+        return copy.sort((a, b) =>
+          getLocalizedValue(a.name, lang).localeCompare(
+            getLocalizedValue(b.name, lang),
+          ),
+        )
+      case "delay":
+        return copy.sort((a, b) => a.estimatedDays - b.estimatedDays)
+      case "category":
+        return copy.sort((a, b) => a.category.localeCompare(b.category))
+      case "frequency":
+      default:
+        // Pas d'info de fréquence par service côté client; on remonte le
+        // service phare en tête, puis un ordre stable par catégorie.
+        return copy.sort((a, b) => {
+          if (featured?._id === a._id) return -1
+          if (featured?._id === b._id) return 1
+          return a.category.localeCompare(b.category)
+        })
+    }
+  }, [filtered, sort, lang, featured?._id])
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
+  const pageItems = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  const cards: ServiceCardData[] = pageItems.map((s) => {
+    const cfg = CATEGORY_CONFIG[s.category] ?? CATEGORY_CONFIG.other
+    return {
+      slug: s.slug,
+      name: getLocalizedValue(s.name, lang),
+      description: getLocalizedValue(s.description, lang),
+      categoryLabel: t(cfg!.i18nKey, s.category),
+      estimatedDays: s.estimatedDays,
+      isFullyOnline: isFullyOnline(s),
+      icon: cfg!.icon,
+      tint: cfg!.tint,
+    }
   })
+
+  const featuredService: FeaturedService | null = featured
+    ? {
+        _id: featured._id,
+        slug: featured.slug,
+        name: featured.name,
+        description: featured.description,
+        category: featured.category,
+        estimatedDays: featured.estimatedDays,
+        processSteps: featured.processSteps as FeaturedService["processSteps"],
+        titleValidity: featured.titleValidity as FeaturedService["titleValidity"],
+        requestsLast30d: featured.requestsLast30d,
+      }
+    : null
 
   const clearFilters = () => {
     setSearchQuery("")
+    setTransverse(new Set())
     updateFilters({ query: undefined, category: undefined })
   }
 
-  const activeFiltersCount =
-    (searchQuery$ ? 1 : 0) + (selectedCategory ? 1 : 0)
-
   return (
-    <div className="min-h-screen bg-background">
-      <section className="bg-background py-16 px-6">
-        <div className="max-w-7xl mx-auto text-center">
-          <Badge
-            variant="secondary"
-            className="mb-4 bg-primary/10 text-primary"
-          >
-            {t("services.badge")}
-          </Badge>
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            {t("services.pageTitle")}
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            {t(
-              "services.pageDescription",
-              "Decouvrez l'ensemble des services consulaires proposes par la Republique Gabonaise pour ses citoyens a l'etranger.",
-            )}
-          </p>
+    <>
+      <ServicesHero
+        total={stats?.total ?? services?.length ?? 0}
+        onlineCount={stats?.onlineCount ?? 0}
+        avgDays={stats?.avgDays ?? 0}
+        satisfactionPct={stats?.satisfactionPct ?? 96}
+      />
 
-          <div className="max-w-2xl mx-auto relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-            <Input
-              className="h-14 pl-12 pr-4 rounded-2xl bg-background shadow-lg border-primary/10 text-lg placeholder:text-muted-foreground/50 focus-visible:ring-primary/20"
-              placeholder={t(
-                "services.searchPlaceholder",
-                "Rechercher un service...",
+      <ServicesFilterBand
+        search={searchQuery}
+        onSearchChange={setSearchQuery}
+        selectedCategory={selectedCategory}
+        onCategoryChange={(c) =>
+          updateFilters({ query: searchQuery$ || undefined, category: c })
+        }
+        byCategory={stats?.byCategory ?? {}}
+        total={stats?.total ?? services?.length ?? 0}
+        transverse={transverse}
+        onTransverseToggle={toggleTransverse}
+      />
+
+      <div className="mx-auto max-w-[1280px] px-8 pb-24">
+        {featuredService && <FeaturedServiceCard service={featuredService} />}
+
+        <CatalogHeader
+          totalCount={sorted.length}
+          visibleCount={pageItems.length}
+          sort={sort}
+          onSortChange={setSort}
+          view={view}
+          onViewChange={setView}
+        />
+
+        {pageItems.length === 0 ? (
+          <div className="rounded-[14px] border-2 border-dashed border-[var(--pub-border)] bg-[var(--pub-surface-2)] py-12 text-center">
+            <div className="mx-auto mb-4 grid size-16 place-items-center rounded-full border border-[var(--pub-border)] bg-[var(--pub-surface)]">
+              <Search
+                className="size-8 text-[var(--pub-text-muted)]"
+                aria-hidden="true"
+              />
+            </div>
+            <h3 className="mb-2 text-lg font-semibold text-[var(--pub-text)]">
+              {t("services.empty.title", "Aucun service trouvé")}
+            </h3>
+            <p className="mb-4 text-[var(--pub-text-muted)]">
+              {t(
+                "services.empty.body",
+                "Essayez de modifier vos filtres ou votre recherche.",
               )}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            </p>
+            <Button onClick={clearFilters} variant="outline">
+              {t("services.empty.cta", "Voir tous les services")}
+            </Button>
           </div>
-        </div>
-      </section>
-
-      <section className="sticky top-0 bg-background/50 backdrop-blur-sm z-10 border-b">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex gap-2 py-3 overflow-x-auto">
-            {categoryFilterConfig.map((cat) => {
-              const Icon = cat.icon
-              const isActive =
-                selectedCategory === cat.value ||
-                (!selectedCategory && cat.value === null)
-              return (
-                <Button
-                  variant="ghost"
-                  key={cat.key}
-                  onClick={() => selectCategory(cat.value)}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap",
-                    isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted hover:bg-muted/80 text-muted-foreground",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {cat.label}
-                </Button>
-              )
-            })}
+        ) : view === "grid" ? (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {cards.map((c) => (
+              <ServiceCardV2 key={c.slug} service={c} />
+            ))}
           </div>
-        </div>
-      </section>
-
-      <section className="py-12 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-xl font-semibold">
-              {filteredServices
-                ? `${filteredServices.length} service${filteredServices.length > 1 ? "s" : ""}`
-                : "Chargement..."}
-            </h2>
-            {activeFiltersCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-foreground"
-                onClick={clearFilters}
-              >
-                {t("services.clearAll")}
-              </Button>
-            )}
+        ) : (
+          <div className="flex flex-col gap-3">
+            {cards.map((c) => (
+              <ServiceRowV2 key={c.slug} service={c} />
+            ))}
           </div>
+        )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredServices?.length === 0 ? (
-              <div className="col-span-full py-12 text-center rounded-xl bg-muted/30 border-2 border-dashed">
-                <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4 border">
-                  <Search className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">
-                  Aucun service trouve
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  Essayez de modifier vos filtres ou votre recherche.
-                </p>
-                <Button onClick={clearFilters} variant="outline">
-                  Voir tous les services
-                </Button>
-              </div>
-            ) : (
-              filteredServices?.map((service) => {
-                const config =
-                  categoryConfig[service.category] ||
-                  categoryConfig[ServiceCategory.Other]
-                const suffix =
-                  service.category === ServiceCategory.Identity
-                    ? "passport"
-                    : service.category === ServiceCategory.Certification
-                      ? "legalization"
-                      : service.category === ServiceCategory.Assistance
-                        ? "emergency"
-                        : service.category
-                const categoryLabel = t(`services.categoriesMap.${suffix}`)
-                const serviceName = getLocalizedValue(
-                  service.name,
-                  i18n.language,
-                )
-                const serviceDesc = getLocalizedValue(
-                  service.description,
-                  i18n.language,
-                )
+        <ServicesPagination
+          page={page}
+          pageCount={totalPages}
+          total={sorted.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+        />
 
-                return (
-                  <ServiceCard
-                    key={service._id}
-                    icon={config.icon}
-                    title={serviceName}
-                    description={serviceDesc}
-                    color={config.color}
-                    badge={categoryLabel}
-                    price={t("services.free")}
-                    delay={
-                      service.estimatedDays
-                        ? `${service.estimatedDays} ${t("services.days", { count: service.estimatedDays, defaultValue: "jour(s)" })}`
-                        : undefined
-                    }
-                    onClick={() => handleServiceClick(service.slug)}
-                  />
-                )
-              })
-            )}
-          </div>
-        </div>
-      </section>
-    </div>
+        <HelpBand onOpenChat={() => setChatOpen(true)} />
+      </div>
+
+      <PublicChatLauncher
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+      />
+    </>
   )
 }

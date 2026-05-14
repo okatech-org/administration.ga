@@ -39,4 +39,8 @@ app.use(aggregate, { name: "documentsByOwnerExpiry" });
 app.use(aggregate, { name: "missedCallsByOrgStatus" });
 app.use(aggregate, { name: "missedCallsByOrgReason" });
 
+// Public services catalog — featured service computation
+// Namespace: orgServiceId, sortKey: _creationTime → window queries on requests
+app.use(aggregate, { name: "requestsByOrgService" });
+
 export default app;

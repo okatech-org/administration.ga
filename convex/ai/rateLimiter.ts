@@ -18,6 +18,23 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
     capacity: 5,
   },
 
+  // Chat public (page /services & autres pages publiques) — visiteurs anonymes.
+  // 1 question / 24h par sessionId. Au-delà → invitation à se connecter.
+  aiChatPublicGuest: {
+    kind: "fixed window",
+    rate: 1,
+    period: 24 * HOUR,
+    capacity: 1,
+  },
+
+  // Chat public — utilisateurs connectés. 10 questions / 24h par userId.
+  aiChatPublicUser: {
+    kind: "fixed window",
+    rate: 10,
+    period: 24 * HOUR,
+    capacity: 10,
+  },
+
   // Inscription pre-fill par invité (avant signup). Coût Gemini ≈ $0.02-0.05
   // par appel, on limite à 5 par heure par sessionId client. Suffit pour 1-2
   // ré-essais en cas de doc mal cadré sans permettre l'abus.

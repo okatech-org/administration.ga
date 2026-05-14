@@ -45,6 +45,19 @@ export const servicesTable = defineTable({
   // Downloadable form files (public-facing document, e.g. PDF forms)
   formFiles: v.optional(v.array(fileObjectValidator)),
 
+  // Editorial — affiché sur la page publique /services
+  // Étapes du parcours utilisateur (différent du formSchema qui décrit le formulaire).
+  processSteps: v.optional(
+    v.array(
+      v.object({
+        label: localizedStringValidator,
+        icon: v.optional(v.string()),
+      }),
+    ),
+  ),
+  // Validité du titre délivré (ex: « 5 ans (adultes) »)
+  titleValidity: v.optional(localizedStringValidator),
+
   // Status
   isActive: v.boolean(),
   updatedAt: v.optional(v.number()),

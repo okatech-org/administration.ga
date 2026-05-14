@@ -54,7 +54,7 @@ export default function PublicLayout({
 
   if (isMobile) {
     return (
-      <div className="flex flex-col min-h-dvh">
+      <div data-public-shell className="flex flex-col min-h-dvh">
         <Header />
         <main className="flex-1">
           {children}
@@ -65,7 +65,7 @@ export default function PublicLayout({
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col">
+    <div data-public-shell className="fixed inset-0 flex flex-col">
       <Header />
       <main
         id="main-scrollable-area"

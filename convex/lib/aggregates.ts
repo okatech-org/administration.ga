@@ -351,3 +351,21 @@ export const missedCallsByOrgReason = new TableAggregate<{
   namespace: (doc) => doc.orgId,
   sortKey: (doc) => [doc.reason, doc.startedAt],
 });
+
+// ---------------------------------------------------------------------------
+// 25. Requests by OrgService — featured service computation (public catalog)
+//     Namespace: orgServiceId
+//     SortKey:   _creationTime
+//     Permet de compter en O(log n) le nombre de demandes créées sur les
+//     N derniers jours par orgService. Le calcul service-level (toutes orgs
+//     confondues) est fait dans la query `getFeaturedService`.
+// ---------------------------------------------------------------------------
+export const requestsByOrgService = new TableAggregate<{
+  Namespace: string; // orgServiceId as string
+  Key: number; // _creationTime
+  DataModel: DataModel;
+  TableName: "requests";
+}>(components.requestsByOrgService, {
+  namespace: (doc) => doc.orgServiceId,
+  sortKey: (doc) => doc._creationTime,
+});

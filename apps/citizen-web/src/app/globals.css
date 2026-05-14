@@ -520,3 +520,64 @@ html {
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   PUBLIC SHELL — Tokens warm-cream maquette « Consulat.ga »
+   Scope: pages publiques (/services, /reps, /news, /ressources…).
+   N'impacte PAS /my-space (Citizen DS v3 reste en place).
+   Source: new-public-pages/project/shared/site.css
+   ══════════════════════════════════════════════════════════════ */
+
+[data-public-shell] {
+  /* Surfaces */
+  --pub-bg: #f7f6f2;
+  --pub-bg-deep: #efece4;
+  --pub-surface: #ffffff;
+  --pub-surface-2: #fbfaf6;
+  --pub-surface-3: #f3efe4;
+  --pub-border: #e6e2d8;
+  --pub-border-strong: #d2cdbf;
+
+  /* Texte */
+  --pub-text: #14130f;
+  --pub-text-muted: #6a665b;
+  --pub-text-faint: #9a9588;
+
+  /* Brand Gabon (palette maquette) */
+  --pub-gabon-blue: #0b4f9c;
+  --pub-gabon-blue-deep: #073871;
+  --pub-gabon-blue-tint: #e7eff9;
+  --pub-gabon-green: #0a8a3b;
+  --pub-gabon-green-tint: #e3f3e9;
+  --pub-gabon-yellow: #f1c531;
+  --pub-gabon-yellow-tint: #fbf2cf;
+
+  /* Statuts */
+  --pub-success: #157a3d;
+  --pub-success-tint: #e3f1e8;
+  --pub-warning: #a16e00;
+  --pub-warning-tint: #faedca;
+  --pub-danger: #b3261e;
+  --pub-danger-tint: #fbe9e7;
+
+  /* Ink (utilisé pour fonds sombres / pills actives) */
+  --pub-ink-900: #0a0907;
+  --pub-ink-800: #14130f;
+
+  /* Radius */
+  --pub-radius-sm: 6px;
+  --pub-radius: 10px;
+  --pub-radius-lg: 14px;
+  --pub-radius-xl: 20px;
+  --pub-radius-2xl: 28px;
+
+  /* Ombres warm */
+  --pub-shadow-sm: 0 1px 0 rgba(20, 19, 15, 0.04),
+    0 1px 2px rgba(20, 19, 15, 0.04);
+  --pub-shadow: 0 1px 0 rgba(20, 19, 15, 0.04),
+    0 6px 20px -10px rgba(20, 19, 15, 0.12);
+  --pub-shadow-lg: 0 18px 50px -22px rgba(20, 19, 15, 0.28);
+
+  background: var(--pub-bg);
+  color: var(--pub-text);
+}

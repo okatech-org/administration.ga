@@ -14,11 +14,20 @@ export const metadata: Metadata = buildMetadata({
 })
 
 export default async function ServicesPage() {
-  const preloaded = await preloadQuery(api.functions.services.listCatalog, {})
+  const [preloadedServices, preloadedStats, preloadedFeatured] =
+    await Promise.all([
+      preloadQuery(api.functions.services.listCatalog, {}),
+      preloadQuery(api.functions.services.getCatalogStats, {}),
+      preloadQuery(api.functions.services.getFeaturedService, {}),
+    ])
 
   return (
     <Suspense fallback={<ServicesLoading />}>
-      <ServicesPageClient preloaded={preloaded} />
+      <ServicesPageClient
+        preloadedServices={preloadedServices}
+        preloadedStats={preloadedStats}
+        preloadedFeatured={preloadedFeatured}
+      />
     </Suspense>
   )
 }

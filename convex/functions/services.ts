@@ -8,6 +8,7 @@ import { MODULE_ACCESS_TASKS } from "../lib/moduleCodes";
 import { error, ErrorCode } from "../lib/errors";
 import { logCortexAction } from "../lib/neocortex";
 import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
+import { requestsByOrgService } from "../lib/aggregates";
 import {
   serviceCategoryValidator,
   localizedStringValidator,
@@ -47,6 +48,90 @@ export const listCatalog = query({
     }
 
     return services;
+  },
+});
+
+/**
+ * Stats agrégées du catalogue public.
+ * Utilisé par le hero de /services pour les KPIs (total, % en ligne, délai
+ * moyen, satisfaction) et pour les compteurs de filter pills par catégorie.
+ */
+export const getCatalogStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const services = await ctx.db
+      .query("services")
+      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .take(200);
+
+    const total = services.length;
+    const onlineCount = services.filter(
+      (s) => !s.requiresAppointment && !s.requiresPickupAppointment,
+    ).length;
+    const expressCount = services.filter((s) => s.estimatedDays <= 3).length;
+    const avgDays = total
+      ? Math.round(services.reduce((a, s) => a + s.estimatedDays, 0) / total)
+      : 0;
+
+    const byCategory: Record<string, number> = {};
+    for (const s of services) {
+      byCategory[s.category] = (byCategory[s.category] ?? 0) + 1;
+    }
+
+    return {
+      total,
+      onlineCount,
+      expressCount,
+      avgDays,
+      satisfactionPct: 96, // TODO: brancher sur une vraie source de feedback
+      byCategory,
+    };
+  },
+});
+
+/**
+ * Service phare = service avec le plus de demandes créées sur les 30 derniers
+ * jours, toutes orgs confondues. Calcul via l'aggregate requestsByOrgService :
+ * pour chaque service actif on somme les counts de ses orgServices et on prend
+ * le max. Acceptable au volume actuel (~28 services × quelques orgs).
+ *
+ * Retourne null si aucune demande n'a été créée sur la période.
+ */
+export const getFeaturedService = query({
+  args: {},
+  handler: async (ctx) => {
+    const since = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+    const services = await ctx.db
+      .query("services")
+      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .take(200);
+
+    let best: { service: Doc<"services">; count: number } | null = null;
+
+    for (const service of services) {
+      const orgServices = await ctx.db
+        .query("orgServices")
+        .withIndex("by_service_active", (q) =>
+          q.eq("serviceId", service._id).eq("isActive", true),
+        )
+        .take(50);
+
+      let total = 0;
+      for (const os of orgServices) {
+        total += await requestsByOrgService.count(ctx, {
+          namespace: os._id,
+          bounds: { lower: { key: since, inclusive: true } },
+        });
+      }
+
+      if (total > 0 && (!best || total > best.count)) {
+        best = { service, count: total };
+      }
+    }
+
+    if (!best) return null;
+    return { ...best.service, requestsLast30d: best.count };
   },
 });
 

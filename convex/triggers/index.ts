@@ -31,6 +31,7 @@ import {
   documentsByOwnerExpiry,
   missedCallsByOrgStatus,
   missedCallsByOrgReason,
+  requestsByOrgService,
 } from "../lib/aggregates";
 import triggers from "../lib/triggerSetup";
 import {
@@ -72,6 +73,9 @@ triggers.register("documents", documentsByOwnerCategory.idempotentTrigger());
 triggers.register("documents", documentsByOwnerExpiry.idempotentTrigger());
 triggers.register("missedCalls", missedCallsByOrgStatus.idempotentTrigger());
 triggers.register("missedCalls", missedCallsByOrgReason.idempotentTrigger());
+
+// Public services catalog — featured service computation
+triggers.register("requests", requestsByOrgService.idempotentTrigger());
 
 // ============================================================================
 // REQUESTS TRIGGERS
