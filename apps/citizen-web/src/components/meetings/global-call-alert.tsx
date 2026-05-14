@@ -67,8 +67,14 @@ export function GlobalCallAlert() {
 	const incomingPersonalMeeting = meetings?.find((m) => {
 		if (m.status !== "active") return false;
 		if (user && m.createdBy === user._id) return false;
-		// Ignore stale calls (> 2 min old)
-		if (Date.now() - m._creationTime > 120_000) return false;
+		// Pour une RÉUNION instantanée (multi-participants), élargir la fenêtre
+		// à 5 min — un invité qui ouvre l'app après le host doit pouvoir
+		// décrocher (avant : 2 min, beaucoup d'invités perdaient la sonnerie).
+		// Une réunion PLANIFIÉE (scheduledAt futur) ne sonne pas.
+		const isMeeting = m.type === "meeting";
+		if (isMeeting && m.scheduledAt && m.scheduledAt > Date.now()) return false;
+		const ringWindowMs = isMeeting ? 5 * 60_000 : 2 * 60_000;
+		if (Date.now() - m._creationTime > ringWindowMs) return false;
 		if (user) {
 			const me = m.participants.find((p) => p.userId === user._id);
 			// Déjà rejoint (en communication) → ce n'est plus un appel entrant.

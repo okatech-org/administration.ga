@@ -154,12 +154,16 @@ function GlobalCallAlertInner({
 		if (m.status !== "active") return false;
 		// Skip calls that are already answered or ended via callStatus
 		if (m.callStatus && m.callStatus !== "ringing" && m.callStatus !== "initiating") return false;
-		if (Date.now() - m._creationTime > 120_000) return false;
-		// Les RÉUNIONS (type="meeting") ne déclenchent PAS de sonnerie côté
-		// agent. L'agent les voit déjà dans iAgenda + iAsted iRéunion ; une
-		// sonnerie audible sur une réunion planifiée est inutilement intrusive.
-		// (Côté citoyen — fichier séparé — la sonnerie est conservée.)
-		if (m.type === "meeting") return false;
+		// Pour une RÉUNION instantanée (type="meeting" sans scheduledAt), la
+		// sonnerie sonne 5 min — fenêtre élargie pour absorber la latence des
+		// invités qui arrivent. Pour un appel 1:1 (type="call"), 2 min suffisent.
+		// Une réunion PLANIFIÉE (scheduledAt > now) ne sonne pas — l'invité a
+		// déjà l'événement dans son agenda + notification ; une sonnerie serait
+		// intrusive plusieurs minutes avant l'heure.
+		const isMeeting = m.type === "meeting";
+		if (isMeeting && m.scheduledAt && m.scheduledAt > Date.now()) return false;
+		const ringWindowMs = isMeeting ? 5 * 60_000 : 2 * 60_000;
+		if (Date.now() - m._creationTime > ringWindowMs) return false;
 		// Un appel que je viens d'initier (je suis `createdBy`) ne doit pas déclencher
 		// la sonnerie chez moi — je suis le caller, pas le callee.
 		if (me?._id && m.createdBy === me._id) return false;

@@ -43,6 +43,7 @@ import {
   type SharedAuthClient,
 } from "./auth-client-provider"
 import { AgentMobileNav } from "./agent-mobile-nav"
+import { FloatingMeetingWindow } from "./floating-meeting-window"
 import { GlobalCallAlert } from "./global-call-alert"
 import { GlobalCallPill } from "./global-call-pill"
 import { GlobalCallRoomHost } from "./global-call-room-host"
@@ -239,6 +240,11 @@ function DashboardLayout({
         />
       )}
       <GlobalCallAlert />
+      <FloatingMeetingWindow
+        hostPathname="/icom"
+        activeParamName="active"
+        hostTab={{ key: "tab", value: "imeeting" }}
+      />
       <GlobalCallPill />
       <GlobalQueuePill />
       {/* Pool LiveKit GLOBAL : maintient la connexion audio à travers les

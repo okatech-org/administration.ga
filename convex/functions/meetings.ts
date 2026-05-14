@@ -459,10 +459,17 @@ export const create = authMutation({
     });
 
     // ── Envoyer des notifications d'invitation aux participants ──
+    // Le lien diffère selon le rôle du destinataire :
+    //   - citoyen → `/my-space/meetings?join=<id>` (citizen-web)
+    //   - agent / backoffice → `/icom?tab=imeeting&active=<id>` (iCom, agent-web)
     const now = Date.now();
     const creatorName = [ctx.user.firstName, ctx.user.lastName].filter(Boolean).join(" ") || ctx.user.email || "Un agent";
     for (const participantId of args.participantIds) {
       if (participantId === ctx.user._id) continue; // Pas de notification au créateur
+      const recipientIsCitizen = await isPublicUser(ctx, participantId);
+      const link = recipientIsCitizen
+        ? `/my-space/meetings?join=${meetingId}`
+        : `/icom?tab=imeeting&active=${meetingId}`;
       await ctx.db.insert("notifications", {
         userId: participantId,
         type: "meeting_invitation" as any,
@@ -470,7 +477,7 @@ export const create = authMutation({
         body: args.type === "meeting"
           ? `${creatorName} vous invite à "${args.title}"`
           : `${creatorName} vous appelle`,
-        link: `/meetings?join=${meetingId}`,
+        link,
         isRead: false,
         relatedId: meetingId as string,
         relatedType: "meeting",
@@ -1452,14 +1459,21 @@ export const addParticipant = authMutation({
       maxParticipants: newMax,
     });
 
-    // Send notification to the new participant
+    // Send notification to the new participant. Lien spécifique au rôle.
     const callerName = [ctx.user.firstName, ctx.user.lastName].filter(Boolean).join(" ") || ctx.user.email || "Un agent";
+    const recipientIsCitizen = await isPublicUser(ctx, args.targetUserId);
+    const link = recipientIsCitizen
+      ? `/my-space/meetings?join=${args.meetingId}`
+      : `/icom?tab=imeeting&active=${args.meetingId}`;
     await ctx.db.insert("notifications", {
       userId: args.targetUserId,
       type: "meeting_invitation" as any,
-      title: "Appel entrant",
-      body: `${callerName} vous ajoute à un appel`,
-      link: `/meetings?join=${args.meetingId}`,
+      title: meeting.type === "meeting" ? "Invitation à une réunion" : "Appel entrant",
+      body:
+        meeting.type === "meeting"
+          ? `${callerName} vous invite à rejoindre une réunion`
+          : `${callerName} vous ajoute à un appel`,
+      link,
       isRead: false,
       relatedId: args.meetingId as string,
       relatedType: "meeting",

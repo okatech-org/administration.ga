@@ -12,6 +12,8 @@
  * Doit être monté À L'INTÉRIEUR d'un <LiveKitRoom>.
  */
 
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import {
 	RoomAudioRenderer,
 	useLocalParticipant,
@@ -36,15 +38,29 @@ import {
 	UserPlus,
 	Users,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { useConvexMutationQuery } from "@workspace/api/hooks";
 import { Button } from "@workspace/ui/components/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@workspace/ui/components/dialog";
 import { cn } from "@workspace/ui/lib/utils";
+import { useOrg } from "../../shell/org-provider";
+import { ParticipantPicker } from "../iasted-host/ParticipantPicker";
 import { MeetingChatPanel } from "./MeetingChatPanel";
 
 interface MeetingStageViewProps {
 	meetingTitle: string;
 	onHangUp: () => void;
+	/** Si fourni, active le bouton « Inviter » qui ouvre un picker et appelle
+	 * `meetings.addParticipant` pour chaque sélection. */
+	meetingId?: Id<"meetings">;
 	recording?: {
 		isRecording: boolean;
 		isPending?: boolean;
@@ -82,12 +98,68 @@ function getInitials(name: string | null | undefined): string {
 export function MeetingStageView({
 	meetingTitle,
 	onHangUp,
+	meetingId,
 	recording,
 }: MeetingStageViewProps) {
 	const { t } = useTranslation();
+	const { activeOrgId } = useOrg();
 	const allParticipants = useParticipants();
 	const remoteParticipants = useRemoteParticipants();
 	const { localParticipant } = useLocalParticipant();
+
+	// ── Invite picker (réunions multi-participants) ─────────────────────
+	const [inviteOpen, setInviteOpen] = useState(false);
+	const [invitePicked, setInvitePicked] = useState<Set<string>>(new Set());
+	const [inviting, setInviting] = useState(false);
+	const { mutateAsync: addParticipant } = useConvexMutationQuery(
+		api.functions.meetings.addParticipant,
+	);
+	const toggleInvitePicked = useCallback((userId: string) => {
+		setInvitePicked((prev) => {
+			const next = new Set(prev);
+			if (next.has(userId)) next.delete(userId);
+			else next.add(userId);
+			return next;
+		});
+	}, []);
+	const handleConfirmInvite = useCallback(async () => {
+		if (!meetingId) return;
+		if (invitePicked.size === 0) {
+			setInviteOpen(false);
+			return;
+		}
+		setInviting(true);
+		let success = 0;
+		let failed = 0;
+		for (const userId of invitePicked) {
+			try {
+				await addParticipant({
+					meetingId,
+					targetUserId: userId as Id<"users">,
+				});
+				success += 1;
+			} catch {
+				failed += 1;
+			}
+		}
+		setInviting(false);
+		setInviteOpen(false);
+		setInvitePicked(new Set());
+		if (success > 0) {
+			toast.success(
+				success === 1
+					? "1 participant invité"
+					: `${success} participants invités`,
+			);
+		}
+		if (failed > 0) {
+			toast.error(
+				failed === 1
+					? "Un invité n'a pas pu être ajouté"
+					: `${failed} invités n'ont pas pu être ajoutés`,
+			);
+		}
+	}, [addParticipant, invitePicked, meetingId]);
 
 	// Active speaker = participant with isSpeaking=true (excl. local), fallback
 	// au premier remote, sinon local.
@@ -186,7 +258,8 @@ export function MeetingStageView({
 						variant="ghost"
 						size="sm"
 						className="h-7 gap-1.5 bg-white/6 hover:bg-white/12 text-white text-[12px]"
-						disabled
+						disabled={!meetingId}
+						onClick={() => setInviteOpen(true)}
 						title={t("meetings.invite", "Inviter")}
 					>
 						<UserPlus className="h-3.5 w-3.5" />
@@ -285,6 +358,56 @@ export function MeetingStageView({
 			</div>
 
 			<RoomAudioRenderer />
+
+			{/* Picker d'invitation pendant une réunion active. */}
+			{meetingId && (
+				<Dialog
+					open={inviteOpen}
+					onOpenChange={(open) => {
+						setInviteOpen(open);
+						if (!open) setInvitePicked(new Set());
+					}}
+				>
+					<DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
+						<DialogHeader className="px-4 py-3 border-b">
+							<DialogTitle className="text-base">
+								{t("meetings.invite", "Inviter")}
+							</DialogTitle>
+						</DialogHeader>
+						<div className="px-4 py-3 max-h-[60vh] overflow-y-auto">
+							<ParticipantPicker
+								activeOrgId={activeOrgId ?? null}
+								selectedParticipants={invitePicked}
+								onToggle={toggleInvitePicked}
+							/>
+						</div>
+						<DialogFooter className="px-4 py-3 border-t bg-card">
+							<span className="text-[11px] text-muted-foreground mr-auto self-center">
+								{invitePicked.size} sélection
+								{invitePicked.size > 1 ? "s" : ""}
+							</span>
+							<Button
+								variant="outline"
+								onClick={() => {
+									setInviteOpen(false);
+									setInvitePicked(new Set());
+								}}
+								disabled={inviting}
+							>
+								Annuler
+							</Button>
+							<Button
+								onClick={handleConfirmInvite}
+								disabled={inviting || invitePicked.size === 0}
+								className="bg-primary hover:bg-primary/90 gap-1.5"
+							>
+								<UserPlus className="h-4 w-4" />
+								Inviter
+							</Button>
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
+			)}
 		</div>
 	);
 }

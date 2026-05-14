@@ -11,6 +11,15 @@ export {
   useShellContextSnapshot,
   PAGE_CONTEXT_LIMITS,
 } from "./page-context-store"
+
+export {
+  activeMeetingStore,
+  useActiveMeetingStore,
+} from "./active-meeting-store"
+export type {
+  ActiveMeetingState,
+  ActiveMeetingStatus,
+} from "./active-meeting-store"
 export type {
   PageContextSnapshot,
   ShellContextSnapshot,

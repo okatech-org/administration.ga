@@ -13,6 +13,7 @@ export { AgentMobileNav } from "./agent-mobile-nav"
 export { IAstedWindow } from "./iasted-window"
 export type { IAstedWindowProps } from "./iasted-window"
 export { GlobalCallAlert } from "./global-call-alert"
+export { FloatingMeetingWindow } from "./floating-meeting-window"
 export { HomeLandingSignIn } from "./home-landing-sign-in"
 export type {
 	HomeLandingSignInProps,

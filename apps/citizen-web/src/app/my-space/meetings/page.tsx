@@ -22,7 +22,7 @@ import {
 	Users,
 	Video,
 } from "lucide-react";
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useConvex } from "convex/react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -54,7 +54,7 @@ const MeetingStageView = dynamic(
 	{ ssr: false },
 );
 
-type ViewState = "prejoin" | "incall" | "empty";
+type ViewState = "connecting" | "incall" | "empty";
 
 function MeetingsPageContent() {
 	const { t } = useTranslation();
@@ -62,8 +62,10 @@ function MeetingsPageContent() {
 	const meetingIdParam = searchParams.get("join") ?? undefined;
 	const meetingId = meetingIdParam as Id<"meetings"> | undefined;
 
-	const [view, setView] = useState<ViewState>(meetingId ? "prejoin" : "empty");
+	const [view, setView] = useState<ViewState>(meetingId ? "connecting" : "empty");
 	const [copiedLink, setCopiedLink] = useState(false);
+	// Garde anti double-connect (StrictMode + re-render).
+	const autoConnectRef = useRef<Id<"meetings"> | null>(null);
 
 	// Donnees reunion
 	const { data: meeting } = useAuthenticatedConvexQuery(
@@ -81,7 +83,7 @@ function MeetingsPageContent() {
 		disconnect,
 	} = useMeeting(meetingId);
 
-	const handleJoin = async () => {
+	const handleJoin = useCallback(async () => {
 		if (!meetingId) return;
 		try {
 			await connect(meetingId);
@@ -89,7 +91,15 @@ function MeetingsPageContent() {
 		} catch (e: any) {
 			toast.error(e?.message ?? t("meetings.unableToJoin"));
 		}
-	};
+	}, [connect, meetingId, t]);
+
+	// Auto-connect dès qu'on arrive avec `?join=<id>` — plus de PreJoin manuel.
+	useEffect(() => {
+		if (!meetingId) return;
+		if (autoConnectRef.current === meetingId) return;
+		autoConnectRef.current = meetingId;
+		void handleJoin();
+	}, [meetingId, handleJoin]);
 
 	const handleLeave = async () => {
 		if (meetingId) await disconnect(meetingId);
@@ -170,61 +180,41 @@ function MeetingsPageContent() {
 		);
 	}
 
-	// -- Vue pre-join --
-	if (view === "prejoin" && meetingId) {
+	// -- Vue connecting -- (auto-join déclenché par useEffect ci-dessus)
+	if (view === "connecting" && meetingId) {
 		return (
 			<div className="p-4 max-w-md mx-auto">
 				<FlatCard>
 					<div className="flex flex-col items-center text-center p-6">
 						<div className="h-16 w-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
-							<Video className="h-8 w-8 text-emerald-500" />
+							<Loader2 className="h-8 w-8 text-emerald-500 animate-spin" />
 						</div>
 						<h2 className="text-lg font-semibold mb-1">
 							{(meeting as any)?.title ?? t("meetings.meeting")}
 						</h2>
-						<p className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
+						<p className="text-sm text-muted-foreground mb-3 flex items-center gap-1">
 							<Users className="h-3.5 w-3.5" />
 							{t("meetings.participants", { count: (meeting as any)?.participants?.length ?? 0 })}
 						</p>
 
-						{/* Lien de partage + export .ics */}
-						<div className="flex items-center gap-3 mb-4">
-							<button
-								type="button"
-								onClick={handleCopyLink}
-								className="text-xs text-primary hover:underline flex items-center gap-1"
-							>
-								{copiedLink ? <Check className="h-3 w-3" /> : <ClipboardCopy className="h-3 w-3" />}
-								{copiedLink ? t("meetings.copied") : t("meetings.copyLink")}
-							</button>
-							<button
-								type="button"
-								onClick={handleExportIcs}
-								className="text-xs text-primary hover:underline flex items-center gap-1"
-							>
-								<CalendarPlus className="h-3 w-3" />
-								{t("meetings.exportIcs", "Ajouter au calendrier")}
-							</button>
-						</div>
+						<p className="text-xs text-muted-foreground">
+							{t("meetings.connecting", "Connexion en cours…")}
+						</p>
 
 						{meetingError && (
-							<p className="text-xs text-destructive bg-destructive/10 px-3 py-1.5 rounded-lg mb-3">
-								{meetingError}
-							</p>
+							<>
+								<p className="text-xs text-destructive bg-destructive/10 px-3 py-1.5 rounded-lg mt-3 mb-3">
+									{meetingError}
+								</p>
+								<Button
+									onClick={handleJoin}
+									disabled={isConnecting}
+									className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+								>
+									<Video className="h-4 w-4" /> {t("meetings.retry", "Réessayer")}
+								</Button>
+							</>
 						)}
-
-						<div className="flex gap-3 mt-2">
-							<Button variant="outline" onClick={() => setView("empty")} disabled={isConnecting}>
-								{t("common.cancel")}
-							</Button>
-							<Button onClick={handleJoin} disabled={isConnecting} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-								{isConnecting ? (
-									<><Loader2 className="h-4 w-4 animate-spin" /> {t("meetings.connecting")}</>
-								) : (
-									<><Video className="h-4 w-4" /> {t("meetings.join")}</>
-								)}
-							</Button>
-						</div>
 					</div>
 				</FlatCard>
 			</div>
