@@ -7,33 +7,24 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   ArrowRight,
-  Building2,
-  ChevronRight,
+  Clock,
+  Filter,
   Globe,
   LayoutGrid,
-  Map,
+  List,
+  Map as MapIcon,
   MapPin,
   Phone,
-  Mail,
   Search,
+  X,
 } from "lucide-react"
 import { Suspense, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import dynamic from "next/dynamic"
 import { usePreloadedQuery, type Preloaded } from "convex/react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FlagIcon } from "@/components/ui/flag-icon"
+import { cn } from "@/lib/utils"
 
 const ConsularMap = dynamic(
   () =>
@@ -43,11 +34,58 @@ const ConsularMap = dynamic(
   { ssr: false },
 )
 
-const CONTINENTS = [
+type ViewMode = "map" | "grid" | "list"
+type TypeFilter = "all" | "embassy" | "consulate"
+type RegionFilter = "all" | string
+
+const TYPE_FILTERS: { id: TypeFilter; label: string; matches: (t: string) => boolean }[] = [
+  { id: "all", label: "Tous types", matches: () => true },
+  {
+    id: "embassy",
+    label: "Ambassades",
+    matches: (type) =>
+      type === OrganizationType.Embassy ||
+      type === OrganizationType.HighRepresentation ||
+      type === OrganizationType.HighCommission ||
+      type === OrganizationType.PermanentMission,
+  },
+  {
+    id: "consulate",
+    label: "Consulats",
+    matches: (type) =>
+      type === OrganizationType.GeneralConsulate ||
+      type === "consulate" ||
+      type === "honorary_consulate",
+  },
+]
+
+type Rep = {
+  _id: string
+  name: string
+  slug: string
+  type: string
+  address: {
+    street: string
+    city: string
+    postalCode: string
+    country: string
+  }
+  phone?: string | null
+  email?: string | null
+}
+
+type Region = {
+  id: string
+  nameKey: string
+  desc: string
+  countries: string[]
+}
+
+const REGIONS: Region[] = [
   {
     id: "africa",
     nameKey: "orgs.continents.africa",
-    emoji: "",
+    desc: "Membre de l'Union Africaine, de la CEEAC et de la CEMAC. Réseau historique.",
     countries: [
       "ZA",
       "DZ",
@@ -74,7 +112,7 @@ const CONTINENTS = [
   {
     id: "europe",
     nameKey: "orgs.continents.europe",
-    emoji: "\u{1F1EA}\u{1F1FA}",
+    desc: "Première diaspora gabonaise. Coopération économique et culturelle dense.",
     countries: [
       "DE",
       "BE",
@@ -90,33 +128,26 @@ const CONTINENTS = [
     ],
   },
   {
-    id: "asia",
-    nameKey: "orgs.continents.asia",
-    emoji: "",
-    countries: ["CN", "IN", "JP", "KR", "TR", "IR"],
-  },
-  {
     id: "americas",
     nameKey: "orgs.continents.americas",
-    emoji: "",
+    desc: "Diplomatie économique et coopération multilatérale (ONU, OEA).",
     countries: ["US", "CA", "BR", "MX", "AR", "CU"],
+  },
+  {
+    id: "asia",
+    nameKey: "orgs.continents.asia",
+    desc: "Partenaires économiques majeurs ; présence Asie-Pacifique en développement.",
+    countries: ["CN", "IN", "JP", "KR", "TR", "IR"],
   },
   {
     id: "middle_east",
     nameKey: "orgs.continents.middle_east",
-    emoji: "",
+    desc: "Coopération avec les États du Golfe et du Levant.",
     countries: ["SA", "AE", "QA", "KW", "LB"],
   },
 ]
 
-const TYPE_COLORS: Record<string, string> = {
-  embassy: "bg-emerald-500 text-white",
-  general_consulate: "bg-blue-500 text-white",
-  consulate: "bg-sky-500 text-white",
-  high_commission: "bg-purple-500 text-white",
-  permanent_mission: "bg-indigo-500 text-white",
-  honorary_consulate: "bg-gray-400 text-white",
-}
+const INITIAL_REGION_LIMIT = 6
 
 export function RepsPageClient({
   preloaded,
@@ -128,30 +159,40 @@ export function RepsPageClient({
   const searchParams = useSearchParams()
 
   const queryParam = searchParams.get("query") || ""
-  const viewParam = (searchParams.get("view") as "map" | "grid") || "map"
+  const viewParam = (searchParams.get("view") as ViewMode) || "grid"
+  const typeParam = (searchParams.get("type") as TypeFilter) || "all"
+  const regionParam = searchParams.get("region") || "all"
 
-  const orgs = usePreloadedQuery(preloaded)
+  const orgs = usePreloadedQuery(preloaded) as Rep[] | undefined
 
   const [searchQuery, setSearchQuery] = useState(queryParam)
-  const [viewMode, setViewMode] = useState<"map" | "grid">(viewParam)
-  const [selectedContinent, setSelectedContinent] = useState<string>("all")
+  const [viewMode, setViewMode] = useState<ViewMode>(viewParam)
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>(typeParam)
+  const [regionFilter, setRegionFilter] = useState<RegionFilter>(regionParam)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [expandedRegions, setExpandedRegions] = useState<Set<string>>(new Set())
 
   const updateFilters = (updates: {
     query?: string
-    view?: "map" | "grid"
+    view?: ViewMode
+    type?: TypeFilter
+    region?: RegionFilter
   }) => {
     const params = new URLSearchParams(searchParams.toString())
     if (updates.query !== undefined) {
-      if (updates.query) {
-        params.set("query", updates.query)
-      } else {
-        params.delete("query")
-      }
+      if (updates.query) params.set("query", updates.query)
+      else params.delete("query")
     }
-    if (updates.view !== undefined) {
-      params.set("view", updates.view)
+    if (updates.view !== undefined) params.set("view", updates.view)
+    if (updates.type !== undefined) {
+      if (updates.type === "all") params.delete("type")
+      else params.set("type", updates.type)
     }
-    router.replace(`/reps?${params.toString()}`)
+    if (updates.region !== undefined) {
+      if (updates.region === "all") params.delete("region")
+      else params.set("region", updates.region)
+    }
+    router.replace(`/reps?${params.toString()}`, { scroll: false })
   }
 
   useEffect(() => {
@@ -164,364 +205,894 @@ export function RepsPageClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, queryParam])
 
-  const handleViewModeChange = (value: string) => {
-    const mode = value as "map" | "grid"
+  const handleViewChange = (mode: ViewMode) => {
     setViewMode(mode)
     updateFilters({ view: mode })
   }
 
-  const orgsByCountry = useMemo(() => {
-    if (!orgs) return {}
-    const grouped: Record<string, typeof orgs> = {}
-    orgs.forEach((org) => {
-      const code = org.address.country || "XX"
-      if (!grouped[code]) grouped[code] = []
-      grouped[code].push(org)
+  const handleTypeChange = (id: TypeFilter) => {
+    setTypeFilter(id)
+    updateFilters({ type: id })
+  }
+
+  const handleRegionChange = (id: RegionFilter) => {
+    setRegionFilter(id)
+    updateFilters({ region: id })
+  }
+
+  const resetFilters = () => {
+    setTypeFilter("all")
+    setRegionFilter("all")
+    setSearchQuery("")
+    updateFilters({ type: "all", region: "all", query: undefined })
+  }
+
+  const matchesQuery = (rep: Rep) => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return true
+    const country = t(
+      `superadmin.countryCodes.${rep.address.country}`,
+      rep.address.country,
+    ).toLowerCase()
+    return (
+      rep.name.toLowerCase().includes(q) ||
+      (rep.address.city || "").toLowerCase().includes(q) ||
+      country.includes(q)
+    )
+  }
+
+  const matchesType = (rep: Rep) => {
+    const f = TYPE_FILTERS.find((t) => t.id === typeFilter)
+    return f ? f.matches(rep.type) : true
+  }
+
+  const matchesRegion = (rep: Rep) => {
+    if (regionFilter === "all") return true
+    const region = REGIONS.find((r) => r.countries.includes(rep.address.country))
+    return (region?.id ?? "other") === regionFilter
+  }
+
+  const repsByRegion = useMemo(() => {
+    const map = new Map<string, Rep[]>()
+    REGIONS.forEach((r) => map.set(r.id, []))
+    map.set("other", [])
+    if (!orgs) return map
+    orgs.forEach((rep) => {
+      if (!matchesQuery(rep)) return
+      if (!matchesType(rep)) return
+      if (!matchesRegion(rep)) return
+      const region = REGIONS.find((r) =>
+        r.countries.includes(rep.address.country),
+      )
+      const bucket = map.get(region?.id ?? "other")
+      bucket?.push(rep)
     })
-    return grouped
-  }, [orgs])
-
-  const getContinentForCountry = (code: string) =>
-    CONTINENTS.find((c) => c.countries.includes(code))
-
-  const filteredCountries = useMemo(() => {
-    const query = searchQuery.toLowerCase()
-    return Object.entries(orgsByCountry)
-      .filter(([code, reps]) => {
-        if (selectedContinent !== "all") {
-          const continent = getContinentForCountry(code)
-          if (continent?.id !== selectedContinent) return false
-        }
-        if (query) {
-          const countryName = t(
-            `superadmin.countryCodes.${code}`,
-            code,
-          ).toLowerCase()
-          const repNames = reps.map((r) => r.name.toLowerCase()).join(" ")
-          const cities = reps
-            .map((r) => r.address.city?.toLowerCase() || "")
-            .join(" ")
-          return (
-            countryName.includes(query) ||
-            repNames.includes(query) ||
-            cities.includes(query)
-          )
-        }
-        return true
-      })
-      .sort((a, b) => {
-        const nameA = t(`superadmin.countryCodes.${a[0]}`, a[0])
-        const nameB = t(`superadmin.countryCodes.${b[0]}`, b[0])
-        return nameA.localeCompare(nameB)
-      })
+    map.forEach((arr) =>
+      arr.sort((a, b) =>
+        (a.address.city || a.name).localeCompare(b.address.city || b.name),
+      ),
+    )
+    return map
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgsByCountry, searchQuery, selectedContinent])
+  }, [orgs, searchQuery, typeFilter, regionFilter])
 
-  const stats = useMemo(
-    () => ({
-      total: orgs?.length ?? 0,
-      countries: Object.keys(orgsByCountry).length,
-      ambassades:
-        orgs?.filter((r) => r.type === OrganizationType.Embassy).length ?? 0,
-    }),
-    [orgs, orgsByCountry],
-  )
+  const activeFilterCount =
+    (typeFilter !== "all" ? 1 : 0) + (regionFilter !== "all" ? 1 : 0)
+
+  const totalCount = orgs?.length ?? 0
+  const embassyCount =
+    orgs?.filter((r) => r.type === OrganizationType.Embassy).length ?? 0
+  const consulateCount =
+    orgs?.filter(
+      (r) =>
+        r.type === OrganizationType.GeneralConsulate ||
+        r.type === "consulate" ||
+        r.type === "honorary_consulate",
+    ).length ?? 0
+
+  const toggleRegion = (id: string) =>
+    setExpandedRegions((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
 
   return (
-    <div className="min-h-screen bg-background">
-      <section className="bg-gradient-to-b from-primary/10 to-background py-10 md:py-16 px-4 md:px-6">
-        <div className="max-w-7xl mx-auto text-center">
-          <Badge
-            variant="secondary"
-            className="mb-4 bg-primary/10 text-primary"
-          >
-            {t("consulates.badge")}
-          </Badge>
-          <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-3 md:mb-4">
-            {t("orgs.pageTitle")}
-          </h1>
-          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-6 md:mb-8">
-            {t(
-              "orgs.pageDescription",
-              "Retrouvez l'ensemble des représentations diplomatiques et consulaires de la République Gabonaise à travers le monde.",
-            )}
-          </p>
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--foreground)] font-sans">
+      <div className="max-w-[1280px] mx-auto px-5 md:px-8">
+        {/* HERO */}
+        <section className="relative py-10 md:py-16 overflow-hidden">
+          <div className="grid md:grid-cols-[1.05fr_1fr] gap-10 lg:gap-16 items-center">
+            <div>
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--gabon-blue-tint,_#e7eff9)] text-[var(--gabon-blue-hex)] text-[13px] font-medium">
+                <Globe className="w-3.5 h-3.5" strokeWidth={2} />
+                {t("orgs.kicker", "Nos représentations")}
+              </span>
+              <h1
+                className="mt-5 font-semibold tracking-[-0.025em] leading-[1]"
+                style={{ fontSize: "clamp(44px, 5.6vw, 72px)" }}
+              >
+                {t("orgs.heroTitlePart1", "Le Gabon, ")}
+                <span className="text-[var(--gabon-blue-hex)]">
+                  {t("orgs.heroTitleAccent", "partout")}
+                </span>
+                {t("orgs.heroTitlePart2", " dans le monde.")}
+              </h1>
+              <p className="mt-6 text-[17px] leading-[1.55] text-[color:var(--muted-foreground)] max-w-[520px]">
+                {totalCount > 0
+                  ? t("orgs.heroLede", {
+                      defaultValue:
+                        "{{count}} ambassades et consulats au service des Gabonais établis hors du territoire national, et de leurs partenaires internationaux.",
+                      count: totalCount,
+                    })
+                  : t(
+                      "orgs.heroLedeFallback",
+                      "Ambassades et consulats au service des Gabonais établis hors du territoire national, et de leurs partenaires internationaux.",
+                    )}
+              </p>
 
-          <div className="max-w-2xl mx-auto relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-            <Input
-              className="h-14 pl-12 pr-4 rounded-2xl bg-background shadow-lg border-primary/10 text-lg placeholder:text-muted-foreground/50 focus-visible:ring-primary/20"
-              placeholder={t(
-                "orgs.searchPlaceholder",
-                "Rechercher une ambassade, un consulat, une ville...",
-              )}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-      </section>
+              {/* Search */}
+              <div className="mt-8 max-w-[560px]">
+                <div className="flex items-center gap-3 bg-[var(--surface,_#fff)] border border-[color:var(--border-strong,_#d2cdbf)] rounded-full pl-5 pr-1.5 py-1.5 focus-within:border-[var(--gabon-blue-hex)] focus-within:shadow-[0_0_0_4px_rgba(11,79,156,0.12)] transition">
+                  <Search
+                    className="w-[18px] h-[18px] text-[color:var(--muted-foreground)] shrink-0"
+                    strokeWidth={2}
+                  />
+                  <input
+                    type="text"
+                    placeholder={t(
+                      "orgs.searchPlaceholderRich",
+                      "Rechercher une ville, un pays, une ambassade…",
+                    )}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex-1 min-w-0 bg-transparent border-0 outline-0 py-3 text-[16px] text-[color:var(--foreground)] placeholder:text-[color:var(--text-faint,_#9a9588)]"
+                  />
+                  <button
+                    type="button"
+                    className="bg-[var(--gabon-blue-hex)] hover:bg-[var(--gabon-blue-deep,_#005a94)] text-white rounded-full px-4 py-2.5 text-[14px] font-medium transition"
+                  >
+                    {t("orgs.searchCta", "Rechercher")}
+                  </button>
+                </div>
 
-      <section className="py-6 md:py-12 px-4 md:px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col gap-4 items-center mb-6 md:mb-8">
-            <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <Building2 className="h-4 w-4" />
-                {stats.total} {t("orgs.representations")}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <MapPin className="h-4 w-4" />
-                {stats.countries} {t("orgs.countries")}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Globe className="h-4 w-4" />
-                {stats.ambassades} {t("map.embassy")}
-              </span>
+              </div>
             </div>
 
-            <Tabs
-              value={viewMode}
-              onValueChange={handleViewModeChange}
-              className="w-full md:w-auto"
-            >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="map" className="gap-2">
-                  <Map className="w-4 h-4" />
-                  {t("orgs.mapView")}
-                </TabsTrigger>
-                <TabsTrigger value="grid" className="gap-2">
-                  <LayoutGrid className="w-4 h-4" />
-                  {t("orgs.gridView")}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            {/* Decorative globe — hidden on mobile */}
+            <div className="hidden md:block">
+              <HeroGlobe
+                embassyCount={embassyCount}
+                consulateCount={consulateCount}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* VIEW SWITCH */}
+        <section>
+          <div className="flex items-end justify-between gap-6 flex-wrap mt-12 mb-6">
+            <div>
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--surface,_#fff)] border border-[color:var(--border)] text-[color:var(--foreground)] text-[13px] font-medium">
+                {t("orgs.directoryKicker", "Annuaire")}
+              </span>
+              <h2 className="mt-3.5 text-[clamp(28px,3vw,40px)] font-semibold tracking-[-0.025em] leading-[1.1]">
+                {t("orgs.byRegion", "Représentations par région")}
+              </h2>
+            </div>
+            <div className="flex items-center gap-4 flex-wrap">
+              <div
+                role="tablist"
+                className="inline-flex bg-[var(--surface,_#fff)] border border-[color:var(--border)] rounded-full p-1 gap-0.5"
+              >
+                <ViewTab
+                  active={viewMode === "map"}
+                  onClick={() => handleViewChange("map")}
+                  icon={<MapIcon className="w-4 h-4" />}
+                  label={t("orgs.mapView", "Carte")}
+                />
+                <ViewTab
+                  active={viewMode === "grid"}
+                  onClick={() => handleViewChange("grid")}
+                  icon={<LayoutGrid className="w-4 h-4" />}
+                  label={t("orgs.gridView", "Grille")}
+                />
+                <ViewTab
+                  active={viewMode === "list"}
+                  onClick={() => handleViewChange("list")}
+                  icon={<List className="w-4 h-4" />}
+                  label={t("orgs.listView", "Liste")}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((v) => !v)}
+                aria-expanded={filtersOpen}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full px-3 py-2 text-[13px] font-medium transition border",
+                  filtersOpen || activeFilterCount > 0
+                    ? "bg-[var(--gabon-blue-tint,_#e7eff9)] border-transparent text-[var(--gabon-blue-hex)]"
+                    : "bg-[var(--surface,_#fff)] border-[color:var(--border)] hover:border-[color:var(--border-strong)] text-[color:var(--foreground)]",
+                )}
+              >
+                <Filter className="w-4 h-4" strokeWidth={2} />
+                {t("orgs.filters", "Filtres")}
+                {activeFilterCount > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--gabon-blue-hex)] text-white text-[11px] font-semibold leading-none">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
+          {filtersOpen && (
+            <FiltersPanel
+              typeFilter={typeFilter}
+              regionFilter={regionFilter}
+              onTypeChange={handleTypeChange}
+              onRegionChange={handleRegionChange}
+              onReset={resetFilters}
+              onClose={() => setFiltersOpen(false)}
+              counts={{
+                total: orgs?.length ?? 0,
+                visible: Array.from(repsByRegion.values()).reduce(
+                  (a, b) => a + b.length,
+                  0,
+                ),
+              }}
+            />
+          )}
+
           {viewMode === "map" && (
-            <div className="max-w-6xl mx-auto">
+            <div className="mb-14">
               <Suspense
                 fallback={
-                  <Skeleton className="h-[400px] md:h-[70vh] rounded-xl md:rounded-2xl" />
+                  <Skeleton className="h-[400px] md:h-[70vh] rounded-2xl" />
                 }
               >
                 <ConsularMap
                   searchQuery={searchQuery}
-                  className="h-[400px] md:h-[70vh] rounded-xl md:rounded-2xl"
+                  className="h-[400px] md:h-[70vh] rounded-2xl"
                 />
               </Suspense>
             </div>
           )}
 
-          {viewMode === "grid" && (
-            <div className="max-w-6xl mx-auto">
-              <Tabs
-                value={selectedContinent}
-                onValueChange={setSelectedContinent}
-                className="mb-6"
-              >
-                <TabsList
-                  className="flex h-auto gap-1.5 md:gap-2 justify-start md:justify-center overflow-x-auto pb-1 w-full"
-                  style={{ scrollbarWidth: "none" }}
-                >
-                  <TabsTrigger
-                    value="all"
-                    className="text-sm whitespace-nowrap shrink-0"
-                  >
-                    {t("orgs.allContinents")} (
-                    {Object.keys(orgsByCountry).length})
-                  </TabsTrigger>
-                  {CONTINENTS.map((c) => {
-                    const count = Object.keys(orgsByCountry).filter((code) =>
-                      c.countries.includes(code),
-                    ).length
-                    if (count === 0) return null
-                    return (
-                      <TabsTrigger
-                        key={c.id}
-                        value={c.id}
-                        className="text-sm whitespace-nowrap shrink-0"
-                      >
-                        {c.emoji} {t(c.nameKey)} ({count})
-                      </TabsTrigger>
-                    )
-                  })}
-                </TabsList>
-              </Tabs>
+          {viewMode !== "map" &&
+            REGIONS.map((region) => {
+              const reps = repsByRegion.get(region.id) ?? []
+              if (reps.length === 0) return null
+              const expanded = expandedRegions.has(region.id)
+              const visible = expanded ? reps : reps.slice(0, INITIAL_REGION_LIMIT)
+              const remaining = reps.length - visible.length
 
-              {filteredCountries.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">
-                    {t("orgs.noResults")}
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    {t(
-                      "orgs.noResultsDesc",
-                      "Essayez de modifier votre recherche.",
-                    )}
-                  </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setSearchQuery("")
-                      setSelectedContinent("all")
-                      updateFilters({ query: undefined })
-                    }}
-                  >
-                    {t("orgs.viewAll")}
-                  </Button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredCountries.map(
-                    ([countryCode, representations], index) => (
-                      <CountryCard
-                        key={countryCode}
-                        countryCode={countryCode}
-                        representations={representations}
-                        index={index}
-                      />
-                    ),
+              return (
+                <RegionBlock
+                  key={region.id}
+                  title={t(region.nameKey)}
+                  description={region.desc}
+                  count={reps.length}
+                  remaining={remaining}
+                  onToggle={() => toggleRegion(region.id)}
+                  expanded={expanded}
+                >
+                  {viewMode === "grid" ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {visible.map((rep) => (
+                        <RepCard key={rep._id} rep={rep} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-[var(--surface,_#fff)] border border-[color:var(--border)] rounded-2xl overflow-hidden divide-y divide-[color:var(--border)]">
+                      {visible.map((rep) => (
+                        <RepListRow key={rep._id} rep={rep} />
+                      ))}
+                    </div>
                   )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
+                </RegionBlock>
+              )
+            })}
+
+          {viewMode !== "map" &&
+            REGIONS.every(
+              (r) => (repsByRegion.get(r.id) ?? []).length === 0,
+            ) && <EmptyState onReset={() => setSearchQuery("")} />}
+        </section>
+
+        {/* CTA */}
+        <CtaBlock />
+      </div>
     </div>
   )
 }
 
-interface CountryCardProps {
-  countryCode: string
-  representations: Array<{
-    _id: string
-    name: string
-    slug: string
-    type: string
-    address: {
-      street: string
-      city: string
-      postalCode: string
-      country: string
-    }
-    phone?: string | null
-    email?: string | null
-  }>
-  index: number
-}
+/* ------------------------------------------------------------------ */
+/* Sub-components                                                      */
+/* ------------------------------------------------------------------ */
 
-function CountryCard({
-  countryCode,
-  representations,
-  index,
-}: CountryCardProps) {
-  const { t } = useTranslation()
-  const [expanded, setExpanded] = useState(false)
-  const mainRep =
-    representations.find((r) => r.type === OrganizationType.Embassy) ||
-    representations[0]
-  const otherReps = representations.filter((r) => r._id !== mainRep._id)
-
-  return (
-    <Card
-      className="overflow-hidden hover:shadow-lg transition-shadow"
-      style={{ animationDelay: `${index * 0.03}s` }}
-    >
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-3">
-          <FlagIcon
-            countryCode={countryCode as CountryCode}
-            size={40}
-            className="w-8 h-auto! rounded-sm"
-          />
-          <div>
-            <CardTitle className="text-lg">
-              {t(`superadmin.countryCodes.${countryCode}`, countryCode)}
-            </CardTitle>
-            <CardDescription>
-              {representations.length} {t("orgs.representations")}
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-3">
-        <RepresentationItem rep={mainRep} isMain />
-
-        {otherReps.length > 0 && (
-          <>
-            {!expanded ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full text-muted-foreground"
-                onClick={() => setExpanded(true)}
-              >
-                +{otherReps.length} {t("orgs.otherRepresentations")}
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            ) : (
-              <div className="space-y-2 pt-2 border-t">
-                {otherReps.map((rep) => (
-                  <RepresentationItem key={rep._id} rep={rep} />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-function RepresentationItem({
-  rep,
-  isMain,
+function FiltersPanel({
+  typeFilter,
+  regionFilter,
+  onTypeChange,
+  onRegionChange,
+  onReset,
+  onClose,
+  counts,
 }: {
-  rep: CountryCardProps["representations"][number]
-  isMain?: boolean
+  typeFilter: TypeFilter
+  regionFilter: RegionFilter
+  onTypeChange: (id: TypeFilter) => void
+  onRegionChange: (id: RegionFilter) => void
+  onReset: () => void
+  onClose: () => void
+  counts: { total: number; visible: number }
 }) {
   const { t } = useTranslation()
   return (
-    <Link href={`/reps/${rep.slug}`} className="block group">
-      <div
-        className={`rounded-lg border p-3 transition-all hover:border-primary/40 hover:shadow-sm ${isMain ? "border-primary/30 bg-primary/5" : ""}`}
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <Badge
-                className={TYPE_COLORS[rep.type] || "bg-gray-500"}
-                variant="secondary"
-              >
-                {t(`superadmin.types.${rep.type}`, rep.type)}
-              </Badge>
-              <span className="text-sm font-medium">{rep.address.city}</span>
-            </div>
-
-            <div className="space-y-1 text-xs text-muted-foreground">
-              {rep.phone && (
-                <div className="flex items-center gap-1">
-                  <Phone className="h-3 w-3" />
-                  <span>{rep.phone}</span>
-                </div>
-              )}
-              {rep.email && (
-                <div className="flex items-center gap-1">
-                  <Mail className="h-3 w-3" />
-                  <span className="truncate">{rep.email}</span>
-                </div>
-              )}
-            </div>
+    <div className="mb-6 bg-[var(--surface,_#fff)] border border-[color:var(--border)] rounded-2xl p-5 md:p-6">
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div>
+          <div className="text-[15px] font-semibold text-[color:var(--foreground)]">
+            {t("orgs.filters", "Filtres")}
           </div>
-          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0 mt-1" />
+          <div className="text-[12px] text-[color:var(--muted-foreground)] mt-0.5">
+            {counts.visible} / {counts.total}{" "}
+            {t("orgs.representations", "représentations")}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onReset}
+            className="text-[13px] font-medium text-[var(--gabon-blue-hex)] hover:underline"
+          >
+            {t("orgs.resetFilters", "Réinitialiser")}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t("common.close", "Fermer")}
+            className="w-7 h-7 inline-flex items-center justify-center rounded-full text-[color:var(--muted-foreground)] hover:bg-[color:var(--surface-2,_#fbfaf6)]"
+          >
+            <X className="w-4 h-4" strokeWidth={2} />
+          </button>
         </div>
       </div>
+
+      <div className="grid md:grid-cols-2 gap-5">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[color:var(--text-faint,_#9a9588)] mb-2.5">
+            {t("orgs.filterByType", "Type")}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {TYPE_FILTERS.map((f) => (
+              <FilterChip
+                key={f.id}
+                active={typeFilter === f.id}
+                onClick={() => onTypeChange(f.id)}
+                label={f.label}
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[color:var(--text-faint,_#9a9588)] mb-2.5">
+            {t("orgs.filterByRegion", "Région")}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <FilterChip
+              active={regionFilter === "all"}
+              onClick={() => onRegionChange("all")}
+              label={t("orgs.allContinents", "Tous")}
+            />
+            {REGIONS.map((r) => (
+              <FilterChip
+                key={r.id}
+                active={regionFilter === r.id}
+                onClick={() => onRegionChange(r.id)}
+                label={t(r.nameKey)}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FilterChip({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center px-3 py-1.5 rounded-full text-[13px] font-medium transition border",
+        active
+          ? "bg-[var(--ink-900,_#0a0907)] text-white border-transparent"
+          : "bg-[var(--surface,_#fff)] border-[color:var(--border)] text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] hover:border-[color:var(--border-strong)]",
+      )}
+    >
+      {label}
+    </button>
+  )
+}
+
+function ViewTab({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium transition",
+        active
+          ? "bg-[var(--ink-900,_#0a0907)] text-white"
+          : "text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)]",
+      )}
+    >
+      {icon}
+      {label}
+    </button>
+  )
+}
+
+function RegionBlock({
+  title,
+  description,
+  count,
+  remaining,
+  expanded,
+  onToggle,
+  children,
+}: {
+  title: string
+  description: string
+  count: number
+  remaining: number
+  expanded: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="mb-14">
+      <div className="flex items-end justify-between gap-6 border-b border-[color:var(--border)] pb-4 mb-6">
+        <h3 className="text-[28px] font-semibold tracking-[-0.02em] flex items-baseline gap-3.5">
+          {title}
+          <span className="font-mono text-[13px] font-normal text-[color:var(--text-faint,_#9a9588)]">
+            {count}{" "}
+            {t("orgs.representations", "représentations")}
+          </span>
+        </h3>
+        <p className="hidden md:block text-[13px] text-[color:var(--muted-foreground)] max-w-[320px] text-right">
+          {description}
+        </p>
+      </div>
+      {children}
+      {remaining > 0 && (
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[var(--gabon-blue-hex)] hover:underline"
+          >
+            {expanded
+              ? t("orgs.showLess", "Réduire")
+              : t("orgs.showMoreRegion", {
+                  defaultValue: "Voir les {{count}} autres représentations",
+                  count: remaining,
+                })}
+            <ArrowRight className="w-3.5 h-3.5" strokeWidth={2} />
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RepTypePill({ type }: { type: string }) {
+  const { t } = useTranslation()
+  const label = t(`superadmin.types.${type}`, type)
+  const isEmbassy =
+    type === OrganizationType.Embassy ||
+    type === OrganizationType.HighRepresentation ||
+    type === OrganizationType.HighCommission ||
+    type === OrganizationType.PermanentMission
+
+  const className = isEmbassy
+    ? "bg-[var(--gabon-blue-tint,_#e7eff9)] text-[var(--gabon-blue-hex)]"
+    : "bg-[var(--status-success-tint,_#e3f1e8)] text-[var(--status-success,_#157a3d)]"
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium",
+        className,
+      )}
+    >
+      {label}
+    </span>
+  )
+}
+
+function RepCard({ rep }: { rep: Rep }) {
+  const { t } = useTranslation()
+  const country = t(
+    `superadmin.countryCodes.${rep.address.country}`,
+    rep.address.country,
+  )
+  const city = rep.address.city || rep.name
+
+  return (
+    <Link
+      href={`/reps/${rep.slug}`}
+      className="group relative flex flex-col gap-3 bg-[var(--surface,_#fff)] border border-[color:var(--border)] rounded-2xl p-5 transition hover:border-[var(--gabon-blue-hex)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_-10px_rgba(20,19,15,0.12)]"
+    >
+      <div className="flex justify-between items-start gap-3">
+        <span className="w-9 h-[26px] rounded-[4px] overflow-hidden ring-1 ring-black/5 shadow-sm shrink-0 bg-[color:var(--surface-2,_#fbfaf6)]">
+          <FlagIcon
+            countryCode={rep.address.country as CountryCode}
+            size={36}
+            className="w-full !h-full object-cover rounded-none"
+          />
+        </span>
+        <RepTypePill type={rep.type} />
+      </div>
+      <div>
+        <h4 className="text-[19px] font-semibold tracking-[-0.015em] leading-tight">
+          {city}
+        </h4>
+        <div className="text-[13px] text-[color:var(--muted-foreground)] mt-1">
+          {country}
+        </div>
+      </div>
+      <div className="flex flex-col gap-1.5 text-[13px] text-[color:var(--muted-foreground)]">
+        {rep.address.street && (
+          <div className="flex items-start gap-2">
+            <MapPin
+              className="w-3.5 h-3.5 mt-0.5 text-[color:var(--text-faint,_#9a9588)] shrink-0"
+              strokeWidth={2}
+            />
+            <span className="truncate">{rep.address.street}</span>
+          </div>
+        )}
+        {rep.phone && (
+          <div className="flex items-start gap-2">
+            <Phone
+              className="w-3.5 h-3.5 mt-0.5 text-[color:var(--text-faint,_#9a9588)] shrink-0"
+              strokeWidth={2}
+            />
+            <span>{rep.phone}</span>
+          </div>
+        )}
+      </div>
+      <div className="mt-auto flex items-center justify-between border-t border-dashed border-[color:var(--border)] pt-3.5 text-[13px] font-medium text-[var(--gabon-blue-hex)]">
+        <span className="inline-flex items-center gap-1.5 text-[12px] text-[color:var(--muted-foreground)]">
+          <Clock
+            className="w-3.5 h-3.5 text-[color:var(--text-faint,_#9a9588)]"
+            strokeWidth={2}
+          />
+          {t("orgs.detailsAvailable", "Voir horaires & services")}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          {t("orgs.view", "Voir")}
+          <ArrowRight
+            className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5"
+            strokeWidth={2}
+          />
+        </span>
+      </div>
     </Link>
+  )
+}
+
+function RepListRow({ rep }: { rep: Rep }) {
+  const { t } = useTranslation()
+  const country = t(
+    `superadmin.countryCodes.${rep.address.country}`,
+    rep.address.country,
+  )
+  return (
+    <Link
+      href={`/reps/${rep.slug}`}
+      className="group flex items-center gap-4 px-5 py-4 hover:bg-[color:var(--surface-2,_#fbfaf6)] transition"
+    >
+      <span className="w-9 h-[26px] rounded-[4px] overflow-hidden ring-1 ring-black/5 shadow-sm shrink-0 bg-[color:var(--surface-2,_#fbfaf6)]">
+        <FlagIcon
+          countryCode={rep.address.country as CountryCode}
+          size={36}
+          className="w-full !h-full object-cover rounded-none"
+        />
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold text-[15px] truncate">
+          {rep.address.city || rep.name}
+        </div>
+        <div className="text-[13px] text-[color:var(--muted-foreground)] truncate">
+          {country}
+          {rep.address.street ? ` · ${rep.address.street}` : ""}
+        </div>
+      </div>
+      <div className="hidden md:flex shrink-0">
+        <RepTypePill type={rep.type} />
+      </div>
+      <div className="hidden lg:flex items-center gap-1.5 shrink-0 text-[13px] text-[color:var(--muted-foreground)]">
+        {rep.phone && (
+          <>
+            <Phone
+              className="w-3.5 h-3.5 text-[color:var(--text-faint,_#9a9588)]"
+              strokeWidth={2}
+            />
+            {rep.phone}
+          </>
+        )}
+      </div>
+      <ArrowRight
+        className="w-4 h-4 text-[color:var(--muted-foreground)] group-hover:translate-x-0.5 transition shrink-0"
+        strokeWidth={2}
+      />
+    </Link>
+  )
+}
+
+function HeroGlobe({
+  embassyCount,
+  consulateCount,
+}: {
+  embassyCount: number
+  consulateCount: number
+}) {
+  // Decorative — markers positioned roughly by continent
+  return (
+    <div
+      aria-hidden
+      className="relative max-w-[520px] w-full aspect-square ml-auto"
+    >
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle at 30% 25%, rgba(255,255,255,.9), rgba(255,255,255,0) 60%), radial-gradient(circle at 70% 80%, rgba(11,79,156,.18), transparent 60%), conic-gradient(from 220deg at 50% 50%, #f7f6f2, #efece4, #e6e2d8, #efece4, #f7f6f2)",
+          boxShadow:
+            "inset -40px -60px 120px rgba(20,19,15,.18), inset 30px 40px 80px rgba(255,255,255,.6), 0 30px 80px -30px rgba(20,19,15,.25)",
+        }}
+      >
+        {/* Grid lines */}
+        <div
+          className="absolute inset-0 rounded-full opacity-70 pointer-events-none"
+          style={{
+            backgroundImage:
+              "radial-gradient(ellipse 100% 1px at 50% 50%, var(--border-strong) 0, var(--border-strong) 1px, transparent 1.5px), radial-gradient(ellipse 100% 1px at 50% 25%, var(--border) 0, var(--border) 1px, transparent 1.5px), radial-gradient(ellipse 100% 1px at 50% 75%, var(--border) 0, var(--border) 1px, transparent 1.5px)",
+          }}
+        >
+          <div
+            className="absolute inset-0 rounded-full"
+            style={{
+              border: "1px solid var(--border)",
+              transform: "scaleX(0.65)",
+            }}
+          />
+          <div
+            className="absolute inset-0 rounded-full"
+            style={{
+              border: "1px solid var(--border)",
+              transform: "scaleX(0.3)",
+            }}
+          />
+        </div>
+        {/* Tilted axis */}
+        <div
+          className="absolute"
+          style={{
+            inset: "-8% 50% -8% 50%",
+            borderLeft: "1px dashed var(--border-strong)",
+            transform: "rotate(-23deg)",
+            opacity: 0.35,
+          }}
+        />
+
+        {/* Markers (ambassades = blue, consulats = green, Libreville = yellow) */}
+        <GlobeMarker top="32%" left="48%" variant="amb" />
+        <GlobeMarker top="36%" left="53%" variant="amb" />
+        <GlobeMarker top="38%" left="45%" />
+        <GlobeMarker top="42%" left="60%" />
+        <GlobeMarker top="62%" left="46%" variant="amb" />
+        <GlobeMarker top="54%" left="52%" />
+        <GlobeMarker top="64%" left="52%" variant="gabon" />
+        <GlobePulse top="64%" left="52%" />
+        <GlobeMarker top="70%" left="58%" />
+        <GlobeMarker top="52%" left="74%" variant="amb" />
+        <GlobeMarker top="60%" left="80%" />
+        <GlobeMarker top="42%" left="25%" variant="amb" />
+        <GlobeMarker top="60%" left="30%" />
+        <GlobeMarker top="80%" left="78%" />
+
+        <GlobeLabel top="64%" left="32%">
+          <b className="text-[var(--gabon-blue-hex)]">•</b> Libreville · siège
+        </GlobeLabel>
+        <GlobeLabel top="30%" left="75%">
+          <b className="text-[var(--gabon-blue-hex)]">{embassyCount || 32}</b>{" "}
+          ambassades
+        </GlobeLabel>
+        <GlobeLabel top="78%" left="25%">
+          <b className="text-[var(--gabon-blue-hex)]">{consulateCount || 14}</b>{" "}
+          consulats
+        </GlobeLabel>
+      </div>
+    </div>
+  )
+}
+
+function GlobeMarker({
+  top,
+  left,
+  variant,
+}: {
+  top: string
+  left: string
+  variant?: "amb" | "gabon"
+}) {
+  const base =
+    "absolute rounded-full -translate-x-1/2 -translate-y-1/2 ring-1 ring-white/70"
+  const styleByVariant: React.CSSProperties =
+    variant === "gabon"
+      ? {
+          width: 16,
+          height: 16,
+          background: "var(--gabon-yellow-hex)",
+          boxShadow:
+            "0 0 0 6px rgba(241,197,49,.25), 0 0 0 1px rgba(0,0,0,.1) inset",
+        }
+      : variant === "amb"
+        ? {
+            width: 14,
+            height: 14,
+            background: "var(--gabon-blue-hex)",
+            boxShadow:
+              "0 0 0 4px rgba(11,79,156,.18), 0 0 0 1px rgba(255,255,255,.7) inset",
+          }
+        : {
+            width: 12,
+            height: 12,
+            background: "var(--gabon-green-hex)",
+            boxShadow:
+              "0 0 0 4px rgba(10,138,59,.18), 0 0 0 1px rgba(255,255,255,.7) inset",
+          }
+  return <span className={base} style={{ top, left, ...styleByVariant }} />
+}
+
+function GlobePulse({ top, left }: { top: string; left: string }) {
+  return (
+    <span
+      className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
+      style={{
+        top,
+        left,
+        width: 16,
+        height: 16,
+        border: "2px solid var(--gabon-yellow-hex)",
+        animation: "reps-pulse 2.4s ease-out infinite",
+      }}
+    >
+      <style>{`@keyframes reps-pulse {
+        0% { opacity: .8; transform: translate(-50%,-50%) scale(1); }
+        100% { opacity: 0; transform: translate(-50%,-50%) scale(4); }
+      }`}</style>
+    </span>
+  )
+}
+
+function GlobeLabel({
+  top,
+  left,
+  children,
+}: {
+  top: string
+  left: string
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      className="absolute -translate-x-1/2 -translate-y-1/2 bg-[var(--surface,_#fff)] border border-[color:var(--border)] rounded-full px-2.5 py-1 text-[11px] font-medium text-[color:var(--foreground)] shadow-sm whitespace-nowrap pointer-events-none"
+      style={{ top, left }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function EmptyState({ onReset }: { onReset: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <div className="text-center py-16">
+      <div className="w-16 h-16 bg-[color:var(--surface-2,_#fbfaf6)] rounded-full flex items-center justify-center mx-auto mb-4 border border-[color:var(--border)]">
+        <Search className="w-7 h-7 text-[color:var(--muted-foreground)]" />
+      </div>
+      <h3 className="text-lg font-semibold mb-2">
+        {t("orgs.noResults", "Aucun résultat trouvé")}
+      </h3>
+      <p className="text-[color:var(--muted-foreground)] mb-4">
+        {t("orgs.noResultsDesc", "Essayez de modifier votre recherche.")}
+      </p>
+      <button
+        onClick={onReset}
+        className="inline-flex items-center gap-2 bg-[var(--surface,_#fff)] border border-[color:var(--border)] hover:border-[color:var(--border-strong)] rounded-full px-4 py-2 text-[14px] font-medium text-[color:var(--foreground)] transition"
+      >
+        {t("orgs.viewAll", "Voir toutes les représentations")}
+      </button>
+    </div>
+  )
+}
+
+function CtaBlock() {
+  const { t } = useTranslation()
+  return (
+    <section
+      className="relative my-14 overflow-hidden rounded-[28px] p-8 md:p-12 text-white"
+      style={{
+        background:
+          "linear-gradient(135deg, var(--gabon-blue-hex) 0%, var(--gabon-blue-deep,_#005a94) 100%)",
+      }}
+    >
+      <div
+        className="absolute pointer-events-none rounded-full"
+        style={{
+          top: "-40%",
+          right: "-30%",
+          width: 460,
+          height: 460,
+          background:
+            "radial-gradient(circle, rgba(255,255,255,.12), transparent 70%)",
+        }}
+      />
+      <div className="relative z-10">
+        <h2 className="text-[28px] md:text-[36px] font-semibold leading-[1.05]">
+          {t("orgs.ctaTitle", "Vous ne trouvez pas votre ville ?")}
+        </h2>
+        <p className="mt-3 text-[16px] leading-[1.55] text-white/80">
+          {t(
+            "orgs.ctaLede",
+            "Les services consulaires sont également accessibles à distance depuis votre espace personnel. Inscrivez-vous au registre consulaire en moins de 10 minutes.",
+          )}
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            href="/register"
+            className="inline-flex items-center gap-2 bg-white text-[var(--gabon-blue-hex)] rounded-full px-5 py-3.5 text-[16px] font-medium hover:bg-white/95 transition"
+          >
+            {t("orgs.ctaStart", "Commencer l'inscription")}
+            <ArrowRight className="w-4 h-4" strokeWidth={2} />
+          </Link>
+          <Link
+            href="/services"
+            className="inline-flex items-center gap-2 bg-white/14 hover:bg-white/22 text-white rounded-full px-5 py-3.5 text-[16px] font-medium transition"
+            style={{ backgroundColor: "rgba(255,255,255,0.14)" }}
+          >
+            {t("orgs.ctaServices", "Voir tous les services")}
+          </Link>
+        </div>
+      </div>
+    </section>
   )
 }
