@@ -201,9 +201,9 @@ export function OnboardingShell() {
     steps: analyticsSteps,
   })
 
-  // Sous-phases de IdentityStep : on émet un step_viewed séparé pour
-  // garder la granularité PIN/OTP dans les funnels. step_name suit le
-  // format `identity_<phase>` (identity_name, identity_contact, …).
+  // Sous-phases de IdentityStep : on émet step_viewed / step_completed /
+  // step_back séparés pour garder la granularité PIN/OTP dans les funnels.
+  // step_name suit le format `identity_<phase>` (identity_name, …).
   const handleIdentityPhaseChange = useCallback(
     (phase: IdentityPhase) => {
       captureEvent("registration_step_viewed", {
@@ -214,6 +214,31 @@ export function OnboardingShell() {
       })
     },
     [flowType, stepIndex, steps.length]
+  )
+
+  const handleIdentityPhaseCompleted = useCallback(
+    (phase: IdentityPhase, durationMs: number) => {
+      captureEvent("registration_step_completed", {
+        flow_type: flowType,
+        step_name: `identity_${phase}`,
+        step_index: stepIndex,
+        total_steps: steps.length,
+        time_on_step_ms: durationMs,
+      })
+    },
+    [flowType, stepIndex, steps.length]
+  )
+
+  const handleIdentityPhaseBack = useCallback(
+    (from: IdentityPhase, to: IdentityPhase) => {
+      captureEvent("registration_step_back", {
+        flow_type: flowType,
+        from_step: `identity_${from}`,
+        to_step: `identity_${to}`,
+        from_step_index: stepIndex,
+      })
+    },
+    [flowType, stepIndex]
   )
 
   const handleDocumentUploaded = useCallback(
@@ -335,6 +360,8 @@ export function OnboardingShell() {
             onComplete={handleNext}
             setFile={setFile}
             onPhaseChange={handleIdentityPhaseChange}
+            onPhaseCompleted={handleIdentityPhaseCompleted}
+            onPhaseBack={handleIdentityPhaseBack}
             onScanSuccess={analytics.trackAiScanUsed}
             onScanFailed={analytics.trackAiScanFailed}
           />

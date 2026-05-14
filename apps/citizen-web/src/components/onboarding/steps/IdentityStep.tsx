@@ -39,6 +39,8 @@ export function IdentityStep({
 	onComplete,
 	setFile,
 	onPhaseChange,
+	onPhaseCompleted,
+	onPhaseBack,
 	onScanSuccess,
 	onScanFailed,
 }: {
@@ -47,6 +49,10 @@ export function IdentityStep({
 	onComplete: () => void;
 	setFile?: (key: string, file: File) => void;
 	onPhaseChange?: (phase: IdentityPhase) => void;
+	/** Fired when user advances away from `phase` (Continue clicked). */
+	onPhaseCompleted?: (phase: IdentityPhase, durationMs: number) => void;
+	/** Fired when user navigates back from `from` to `to`. */
+	onPhaseBack?: (from: IdentityPhase, to: IdentityPhase) => void;
 	onScanSuccess?: (props: AIScanSuccessProps) => void;
 	onScanFailed?: (props: AIScanFailedProps) => void;
 }) {
@@ -78,15 +84,20 @@ export function IdentityStep({
 	const phaseIndex = phases.indexOf(phase);
 
 	// Notify analytics on every phase entry (including the initial one).
+	// Also resets the per-phase timer so onPhaseCompleted gets accurate durations.
 	const lastPhaseRef = useRef<IdentityPhase | null>(null);
+	const phaseEnteredAtRef = useRef<number>(Date.now());
 	useEffect(() => {
 		if (lastPhaseRef.current === phase) return;
 		lastPhaseRef.current = phase;
+		phaseEnteredAtRef.current = Date.now();
 		onPhaseChange?.(phase);
 	}, [phase, onPhaseChange]);
 
 	const handleNext = useCallback(() => {
 		const i = phases.indexOf(phase);
+		const durationMs = Date.now() - phaseEnteredAtRef.current;
+		onPhaseCompleted?.(phase, durationMs);
 		if (i < phases.length - 1) {
 			let nextIdx = i + 1;
 			while (
@@ -102,7 +113,7 @@ export function IdentityStep({
 		} else {
 			onComplete();
 		}
-	}, [phase, phases, verified, onComplete, updateData]);
+	}, [phase, phases, verified, onComplete, onPhaseCompleted, updateData]);
 
 	const handlePrev = useCallback(() => {
 		const i = phases.indexOf(phase);
@@ -116,10 +127,11 @@ export function IdentityStep({
 				prevIdx--;
 			}
 			const prev = phases[prevIdx];
+			onPhaseBack?.(phase, prev);
 			setPhase(prev);
 			updateData({ _identityPhase: prev });
 		}
-	}, [phase, phases, verified, updateData]);
+	}, [phase, phases, verified, onPhaseBack, updateData]);
 
 	return (
 		<div className="flex flex-col gap-6">
