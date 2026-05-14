@@ -47,6 +47,8 @@ export { childProfilesTable } from "./childProfiles";
 export { auditLogTable } from "./auditLog";
 export { notificationsTable } from "./notifications";
 export { tutorialsTable } from "./tutorials";
+export { tutorialProgressTable } from "./tutorialProgress";
+export { faqsTable } from "./faqs";
 export { communityEventsTable } from "./communityEvents";
 export { digitalMailTable } from "./digitalMail";
 export { deliveryPackagesTable } from "./deliveryPackages";
@@ -149,3 +151,6 @@ export { aiActivityLogTable } from "./aiActivityLog";
 export { userAIPreferencesTable } from "./userAIPreferences";
 export { aiAgentPresenceTable } from "./aiAgentPresence";
 export { aiCapabilityConfigTable } from "./aiCapabilityConfig";
+
+// Public — abonnements newsletter
+export { newsletterSubscriptionsTable } from "./newsletterSubscriptions";

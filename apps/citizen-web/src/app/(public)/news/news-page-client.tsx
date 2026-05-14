@@ -11,8 +11,10 @@ import {
   ArrowRight,
   Calendar,
   CalendarDays,
+  Check,
   FileText,
   LayoutGrid,
+  Loader2,
   Mail,
   Megaphone,
   Newspaper,
@@ -20,8 +22,15 @@ import {
 } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { usePreloadedQuery, type Preloaded } from "convex/react"
-import { usePaginatedConvexQuery } from "@/integrations/convex/hooks"
+import {
+  useMutation,
+  usePreloadedQuery,
+  useQuery,
+  type Preloaded,
+} from "convex/react"
+import {
+  usePaginatedConvexQuery,
+} from "@/integrations/convex/hooks"
 import { cn } from "@/lib/utils"
 
 type UrlCategory = "news" | "event" | "communique"
@@ -355,10 +364,13 @@ export function NewsPageClient({
               </section>
             )}
 
-            {/* AGENDA + newsletter */}
+            {/* AGENDA + side stack (newsletter + stats) */}
             <section className="grid lg:grid-cols-[1.4fr_1fr] gap-6 mb-16">
               <Agenda events={events} />
-              <NewsletterCard />
+              <div className="flex flex-col gap-4">
+                <NewsletterCard />
+                <StatsCard />
+              </div>
             </section>
           </>
         )}
@@ -701,7 +713,46 @@ function EventRow({ event, first }: { event: Post; first: boolean }) {
 }
 
 function NewsletterCard() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const subscribe = useMutation(api.functions.newsletter.subscribe)
+  const [email, setEmail] = useState("")
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "success" | "already" | "error"
+  >("idle")
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (status === "loading") return
+    const trimmed = email.trim()
+    if (!trimmed) return
+    setStatus("loading")
+    setErrorMsg(null)
+    try {
+      const result = await subscribe({
+        email: trimmed,
+        source: "news_page",
+        language: (i18n.language?.startsWith("en") ? "en" : "fr") as
+          | "fr"
+          | "en",
+      })
+      if (result.alreadySubscribed) {
+        setStatus("already")
+      } else {
+        setStatus("success")
+      }
+      setEmail("")
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setStatus("error")
+      setErrorMsg(
+        msg.includes("INVALID_EMAIL")
+          ? t("news.newsletterInvalid", "Adresse email invalide.")
+          : t("news.newsletterError", "Échec de l'abonnement, réessayez."),
+      )
+    }
+  }
+
   return (
     <div className="bg-[var(--surface,_#fff)] border border-[color:var(--border)] rounded-2xl p-6">
       <div className="w-10 h-10 rounded-[10px] bg-[var(--gabon-blue-tint,_#e7eff9)] text-[var(--gabon-blue-hex)] grid place-items-center mb-3.5">
@@ -716,22 +767,120 @@ function NewsletterCard() {
           "Recevez chaque vendredi l'essentiel de l'actualité du réseau consulaire — 4 minutes de lecture.",
         )}
       </p>
-      <form
-        onSubmit={(e) => e.preventDefault()}
-        className="mt-4 flex gap-2"
-      >
-        <input
-          type="email"
-          placeholder="votre@email.com"
-          className="flex-1 min-w-0 bg-[color:var(--surface-2,_#fbfaf6)] border border-[color:var(--border-strong,_#d2cdbf)] rounded-full px-4 py-2.5 text-[13px] text-[color:var(--foreground)] outline-none focus:border-[var(--gabon-blue-hex)] focus:shadow-[0_0_0_4px_rgba(11,79,156,.12)]"
-        />
-        <button
-          type="submit"
-          className="inline-flex items-center bg-[var(--gabon-blue-hex)] hover:bg-[var(--gabon-blue-deep,_#005a94)] text-white rounded-full px-4 py-2.5 text-[13px] font-medium transition"
+      {status === "success" || status === "already" ? (
+        <div
+          role="status"
+          className="mt-4 flex items-start gap-2 rounded-[14px] border border-[color:var(--status-success-tint,_#e3f1e8)] bg-[color:var(--status-success-tint,_#e3f1e8)] text-[var(--status-success,_#157a3d)] px-3 py-2.5 text-[13px]"
         >
-          {t("news.newsletterCta", "S'abonner")}
-        </button>
-      </form>
+          <Check className="w-4 h-4 mt-0.5 shrink-0" strokeWidth={2.5} />
+          <span>
+            {status === "success"
+              ? t(
+                  "news.newsletterSuccess",
+                  "Inscription confirmée — merci, vous recevrez le prochain numéro vendredi.",
+                )
+              : t(
+                  "news.newsletterAlready",
+                  "Cette adresse est déjà abonnée.",
+                )}
+          </span>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="mt-4 flex gap-2" noValidate>
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="votre@email.com"
+            aria-label={t("news.newsletterEmailLabel", "Adresse email")}
+            disabled={status === "loading"}
+            className="flex-1 min-w-0 bg-[color:var(--surface-2,_#fbfaf6)] border border-[color:var(--border-strong,_#d2cdbf)] rounded-full px-4 py-2.5 text-[13px] text-[color:var(--foreground)] outline-none focus:border-[var(--gabon-blue-hex)] focus:shadow-[0_0_0_4px_rgba(11,79,156,.12)] disabled:opacity-60"
+          />
+          <button
+            type="submit"
+            disabled={status === "loading" || !email.trim()}
+            className="inline-flex items-center gap-1.5 bg-[var(--gabon-blue-hex)] hover:bg-[var(--gabon-blue-deep,_#005a94)] disabled:opacity-60 text-white rounded-full px-4 py-2.5 text-[13px] font-medium transition"
+          >
+            {status === "loading" && (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            )}
+            {t("news.newsletterCta", "S'abonner")}
+          </button>
+        </form>
+      )}
+      {status === "error" && errorMsg && (
+        <p
+          role="alert"
+          className="mt-2 text-[12px] text-[var(--status-danger,_#b3261e)]"
+        >
+          {errorMsg}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function StatsCard() {
+  const { t } = useTranslation()
+  const stats = useQuery(api.functions.publicStats.newsStats, {})
+
+  if (!stats) {
+    return (
+      <div className="bg-[var(--surface,_#fff)] border border-[color:var(--border)] rounded-2xl p-6">
+        <div className="h-5 w-40 rounded bg-[color:var(--surface-2,_#fbfaf6)] animate-pulse" />
+        <div className="mt-3 h-3 w-32 rounded bg-[color:var(--surface-2,_#fbfaf6)] animate-pulse" />
+        <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i}>
+              <div className="h-6 w-14 rounded bg-[color:var(--surface-2,_#fbfaf6)] animate-pulse" />
+              <div className="mt-2 h-3 w-24 rounded bg-[color:var(--surface-2,_#fbfaf6)] animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const items = [
+    {
+      value: stats.representations,
+      label: t("news.statsRepresentations", "Représentations actives"),
+    },
+    {
+      value: stats.news,
+      label: t("news.statsNewsPublished", "Articles publiés"),
+    },
+    {
+      value: stats.upcomingEvents,
+      label: t("news.statsUpcomingEvents", "Événements à venir"),
+    },
+    {
+      value: stats.announcements,
+      label: t("news.statsAnnouncements", "Communiqués officiels"),
+    },
+  ]
+
+  return (
+    <div className="bg-[var(--surface,_#fff)] border border-[color:var(--border)] rounded-2xl p-6">
+      <h3 className="text-[15px] font-semibold">
+        {t("news.numbersTitle", "Le réseau en chiffres.")}
+      </h3>
+      <p className="mt-1 text-[12px] text-[color:var(--muted-foreground)]">
+        {t("news.numbersSub", "Indicateurs publics, mis à jour en temps réel.")}
+      </p>
+      <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4">
+        {items.map((s) => (
+          <div key={s.label}>
+            <div className="text-[22px] font-semibold tracking-[-0.02em] text-[var(--gabon-blue-hex)] leading-none">
+              {s.value.toLocaleString("fr-FR")}
+            </div>
+            <div className="mt-1.5 text-[11px] uppercase tracking-[0.06em] text-[color:var(--muted-foreground)] leading-[1.3]">
+              {s.label}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

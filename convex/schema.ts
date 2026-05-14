@@ -43,6 +43,8 @@ import {
   auditLogTable,
   notificationsTable,
   tutorialsTable,
+  tutorialProgressTable,
+  faqsTable,
   communityEventsTable,
   digitalMailTable,
   deliveryPackagesTable,
@@ -112,6 +114,7 @@ import {
   userAIPreferencesTable,
   aiAgentPresenceTable,
   aiCapabilityConfigTable,
+  newsletterSubscriptionsTable,
 } from "./schemas";
 
 export default defineSchema({
@@ -158,6 +161,8 @@ export default defineSchema({
   auditLog: auditLogTable,
   notifications: notificationsTable,
   tutorials: tutorialsTable,
+  tutorialProgress: tutorialProgressTable,
+  faqs: faqsTable,
   communityEvents: communityEventsTable,
   digitalMail: digitalMailTable,
   deliveryPackages: deliveryPackagesTable,
@@ -241,4 +246,5 @@ export default defineSchema({
   userAIPreferences: userAIPreferencesTable,
   aiAgentPresence: aiAgentPresenceTable,
   aiCapabilityConfig: aiCapabilityConfigTable,
+  newsletterSubscriptions: newsletterSubscriptionsTable,
 });
