@@ -156,9 +156,12 @@ export const callAvailability = query({
       // Schéma indispo / index manquant → offline
     }
 
-    // Pas d'estimation d'attente : on n'a rien de fiable pour la calculer.
-    const status: "available" | "busy" | "offline" =
-      onlineCount === 0 ? "offline" : onlineCount >= 2 ? "available" : "busy";
+    // 2 états seulement, basés sur agentPresence.status === "online".
+    // Pas de seuil arbitraire : dès qu'au moins 1 agent est online, la rep
+    // est joignable. L'état "busy" individuel d'un agent (en appel) est
+    // déjà géré côté routage d'appel — pas la peine de l'agréger ici.
+    const status: "available" | "offline" =
+      onlineCount === 0 ? "offline" : "available";
 
     return { status, agentsOnline: onlineCount };
   },

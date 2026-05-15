@@ -1354,7 +1354,7 @@ function CallWidget({
 }: {
   callAvail:
     | {
-        status: "available" | "busy" | "offline"
+        status: "available" | "offline"
         agentsOnline: number
       }
     | undefined
@@ -1371,7 +1371,6 @@ function CallWidget({
   isAuthenticated: boolean
 }) {
   const isOnline = callAvail?.status === "available"
-  const isBusy = callAvail?.status === "busy"
   const hasLines = Array.isArray(lines) && lines.length > 0
 
   return (
@@ -1403,11 +1402,7 @@ function CallWidget({
           <span
             className={cn(
               "w-1.5 h-1.5 rounded-full",
-              isOnline
-                ? "bg-[#4cc47a]"
-                : isBusy
-                  ? "bg-[var(--gabon-yellow-hex)]"
-                  : "bg-white/60",
+              isOnline ? "bg-[#4cc47a]" : "bg-white/60",
             )}
             style={
               isOnline
@@ -1415,7 +1410,7 @@ function CallWidget({
                 : undefined
             }
           />
-          {isOnline ? "Disponible" : isBusy ? "Occupé" : "Hors ligne"}
+          {isOnline ? "Disponible" : "Hors ligne"}
         </span>
       </div>
       <h3 className="relative z-10 text-[18px] font-semibold tracking-[-0.01em] leading-[1.25]">
