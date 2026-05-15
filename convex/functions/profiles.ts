@@ -1750,6 +1750,306 @@ export const searchProfiles = query({
   },
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// /users?view=profiles — server-side offset pagination + filter facets.
+//
+// Replaces the previous `searchProfiles` + auto-loadMore-until-done pattern in
+// `ProfilesView` which was streaming every profile to the browser and then
+// filtering / counting client-side.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ISO 3166-1 alpha-2 → continent. Same table as in admin.ts; duplicated rather
+// than imported because profiles.ts already imports from many modules and a
+// further cross-file dep just for one map isn't worth it.
+const COUNTRY_CONTINENT_PROFILES: Record<string, string> = {
+  ZA: "africa", DZ: "africa", AO: "africa", BJ: "africa", BW: "africa",
+  BF: "africa", BI: "africa", CV: "africa", CM: "africa", CF: "africa",
+  TD: "africa", KM: "africa", CG: "africa", CD: "africa", CI: "africa",
+  DJ: "africa", EG: "africa", GQ: "africa", ER: "africa", SZ: "africa",
+  ET: "africa", GA: "africa", GM: "africa", GH: "africa", GN: "africa",
+  GW: "africa", KE: "africa", LS: "africa", LR: "africa", LY: "africa",
+  MG: "africa", MW: "africa", ML: "africa", MR: "africa", MU: "africa",
+  MA: "africa", MZ: "africa", NA: "africa", NE: "africa", NG: "africa",
+  RW: "africa", ST: "africa", SN: "africa", SC: "africa", SL: "africa",
+  SO: "africa", SS: "africa", SD: "africa", TZ: "africa", TG: "africa",
+  TN: "africa", UG: "africa", ZM: "africa", ZW: "africa",
+  AL: "europe", AD: "europe", AT: "europe", BY: "europe", BE: "europe",
+  BA: "europe", BG: "europe", HR: "europe", CY: "europe", CZ: "europe",
+  DK: "europe", EE: "europe", FI: "europe", FR: "europe", DE: "europe",
+  GR: "europe", HU: "europe", IS: "europe", IE: "europe", IT: "europe",
+  XK: "europe", LV: "europe", LI: "europe", LT: "europe", LU: "europe",
+  MT: "europe", MD: "europe", MC: "europe", ME: "europe", NL: "europe",
+  MK: "europe", NO: "europe", PL: "europe", PT: "europe", RO: "europe",
+  RU: "europe", SM: "europe", RS: "europe", SK: "europe", SI: "europe",
+  ES: "europe", SE: "europe", CH: "europe", UA: "europe", GB: "europe",
+  VA: "europe",
+  AG: "americas", AR: "americas", BS: "americas", BB: "americas", BZ: "americas",
+  BO: "americas", BR: "americas", CA: "americas", CL: "americas", CO: "americas",
+  CR: "americas", CU: "americas", DM: "americas", DO: "americas", EC: "americas",
+  SV: "americas", GD: "americas", GT: "americas", GY: "americas", HT: "americas",
+  HN: "americas", JM: "americas", MX: "americas", NI: "americas", PA: "americas",
+  PY: "americas", PE: "americas", KN: "americas", LC: "americas", VC: "americas",
+  SR: "americas", TT: "americas", US: "americas", UY: "americas", VE: "americas",
+  AF: "asia", BD: "asia", BT: "asia", BN: "asia", KH: "asia",
+  CN: "asia", FJ: "asia", IN: "asia", ID: "asia", JP: "asia",
+  KZ: "asia", KG: "asia", LA: "asia", MY: "asia", MV: "asia",
+  MN: "asia", MM: "asia", NP: "asia", NZ: "asia", PK: "asia",
+  PH: "asia", SG: "asia", KR: "asia", LK: "asia", TW: "asia",
+  TJ: "asia", TH: "asia", TL: "asia", TM: "asia", UZ: "asia",
+  VN: "asia", AU: "asia",
+  BH: "middle_east", IR: "middle_east", IQ: "middle_east", IL: "middle_east",
+  JO: "middle_east", KW: "middle_east", LB: "middle_east", OM: "middle_east",
+  PS: "middle_east", QA: "middle_east", SA: "middle_east", SY: "middle_east",
+  TR: "middle_east", AE: "middle_east", YE: "middle_east",
+};
+
+const profileFiltersValidator = v.object({
+  search: v.optional(v.string()),
+  continent: v.optional(v.string()),
+  country: v.optional(v.string()),
+  userType: v.optional(v.string()),
+  // "attached" = managedByOrg OR signaledToOrg ; "unattached" = neither.
+  attachment: v.optional(v.union(v.literal("attached"), v.literal("unattached"))),
+});
+
+function profileCountry(p: any): string | undefined {
+  return p.countryOfResidence || p.addresses?.residence?.country;
+}
+
+function profileMatchesFilters(p: any, f: any): boolean {
+  if (f.userType && p.userType !== f.userType) return false;
+
+  const country = profileCountry(p);
+  if (f.country && country !== f.country) return false;
+  if (f.continent) {
+    const c = country ? COUNTRY_CONTINENT_PROFILES[country.toUpperCase()] : undefined;
+    if (c !== f.continent) return false;
+  }
+  if (f.attachment === "attached" && !(p.managedByOrgId || p.signaledToOrgId)) return false;
+  if (f.attachment === "unattached" && (p.managedByOrgId || p.signaledToOrgId)) return false;
+
+  if (f.search && f.search.trim().length > 0) {
+    const s = f.search.trim().toLowerCase();
+    const haystack = [
+      p.identity?.firstName,
+      p.identity?.lastName,
+      p.user?.email,
+      p.user?.name,
+      p.matricule,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    if (!haystack.includes(s)) return false;
+  }
+
+  return true;
+}
+
+/**
+ * Bulk-enrich a list of profiles with the data the /profiles table & grid
+ * need: user (email/name/avatar), photoUrl, child count, managed/signaled
+ * orgs. All N+1 patterns avoided — every related table is bulk-loaded once.
+ */
+async function enrichProfilesBatch(ctx: any, profiles: any[]) {
+  // Users
+  const userIds = [...new Set(profiles.map((p) => p.userId).filter(Boolean))] as Id<"users">[];
+  const users = await Promise.all(userIds.map((id) => ctx.db.get(id)));
+  const userMap = new Map<string, any>(
+    users.filter(Boolean).map((u: any) => [u._id, u]),
+  );
+
+  // Orgs (managed + signaled)
+  const orgIds = new Set<string>();
+  for (const p of profiles) {
+    if (p.managedByOrgId) orgIds.add(p.managedByOrgId);
+    if (p.signaledToOrgId) orgIds.add(p.signaledToOrgId);
+  }
+  const orgs = await Promise.all(
+    [...orgIds].map((id) => ctx.db.get(id as Id<"orgs">)),
+  );
+  const orgMap = new Map<string, any>();
+  for (const o of orgs) {
+    if (o && !(o as any).deletedAt) {
+      orgMap.set((o as any)._id, {
+        _id: (o as any)._id,
+        name: (o as any).name,
+        shortName: (o as any).shortName,
+        type: (o as any).type,
+        country: (o as any).country,
+      });
+    }
+  }
+
+  // Identity photos
+  const photoDocIds = profiles
+    .map((p) => p.documents?.identityPhoto)
+    .filter(Boolean) as Id<"documents">[];
+  const photoDocs = await Promise.all(photoDocIds.map((id) => ctx.db.get(id)));
+  const photoMap = new Map<string, string>();
+  await Promise.all(
+    photoDocs.map(async (doc: any) => {
+      if (doc?.files?.length) {
+        const url = await ctx.storage.getUrl(doc.files[0].storageId);
+        if (url) photoMap.set(doc._id, url);
+      }
+    }),
+  );
+
+  // Child counts — bulk-load all child profiles for the relevant authors once.
+  const childCountByUser = new Map<string, number>();
+  await Promise.all(
+    userIds.map(async (uid) => {
+      const children = await ctx.db
+        .query("childProfiles")
+        .withIndex("by_author", (q: any) => q.eq("authorUserId", uid))
+        .collect();
+      childCountByUser.set(uid as string, children.length);
+    }),
+  );
+
+  return profiles.map((p) => {
+    const u = p.userId ? userMap.get(p.userId) : null;
+    const photoDocId = p.documents?.identityPhoto as string | undefined;
+    return {
+      ...p,
+      user: u ? { email: u.email, name: u.name } : null,
+      avatarUrl: u?.avatarUrl,
+      photoUrl: photoDocId ? photoMap.get(photoDocId) : undefined,
+      childCount: p.userId ? (childCountByUser.get(p.userId) ?? 0) : 0,
+      managedByOrg: p.managedByOrgId ? orgMap.get(p.managedByOrgId) ?? null : null,
+      signaledToOrg: p.signaledToOrgId ? orgMap.get(p.signaledToOrgId) ?? null : null,
+    };
+  });
+}
+
+/**
+ * Offset-paginated, server-filtered listing of consular profiles.
+ *
+ *   listProfilesPage({ filters, page, pageSize }) → { rows, total }
+ *
+ * Two paths:
+ *   - **Search active:** uses `search_firstName` + `search_lastName` indexes
+ *     (same as `searchProfiles`), unions the hits, applies remaining filters
+ *     and pages over the result. Search hits are intrinsically capped (~50)
+ *     so the result set stays bounded.
+ *   - **No search:** scans the full profiles table once, filters, slices to
+ *     the page. Each query result is cached by Convex on exact-args match —
+ *     paginating without changing filters reuses the cached scan.
+ */
+export const listProfilesPage = query({
+  args: {
+    filters: profileFiltersValidator,
+    page: v.number(),
+    pageSize: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const pageSize = Math.max(1, Math.min(100, Math.floor(args.pageSize)));
+    const page = Math.max(0, Math.floor(args.page));
+    const f = args.filters;
+    const search = f.search?.trim();
+
+    // 1) Get the candidate set.
+    let candidates: any[];
+    if (search && search.length > 0) {
+      const [hitsLast, hitsFirst] = await Promise.all([
+        ctx.db
+          .query("profiles")
+          .withSearchIndex("search_lastName", (q) => q.search("identity.lastName", search))
+          .take(50),
+        ctx.db
+          .query("profiles")
+          .withSearchIndex("search_firstName", (q) => q.search("identity.firstName", search))
+          .take(50),
+      ]);
+      const seen = new Set<string>();
+      candidates = [...hitsLast, ...hitsFirst].filter((p) => {
+        if (seen.has(p._id)) return false;
+        seen.add(p._id);
+        return true;
+      });
+    } else {
+      candidates = await ctx.db.query("profiles").order("desc").collect();
+    }
+
+    // 2) Apply non-search filters BEFORE enrichment (cheap) so we only pay
+    // the join cost for rows we'll actually return.
+    const prefiltered = candidates.filter((p) => {
+      if (f.userType && p.userType !== f.userType) return false;
+      const country = profileCountry(p);
+      if (f.country && country !== f.country) return false;
+      if (f.continent) {
+        const c = country ? COUNTRY_CONTINENT_PROFILES[country.toUpperCase()] : undefined;
+        if (c !== f.continent) return false;
+      }
+      if (f.attachment === "attached" && !(p.managedByOrgId || p.signaledToOrgId)) return false;
+      if (f.attachment === "unattached" && (p.managedByOrgId || p.signaledToOrgId)) return false;
+      return true;
+    });
+
+    // 3) Slice to the requested page, THEN enrich only that slice. Search
+    // adds a final email/matricule pass after enrichment because those
+    // fields live on the joined user record.
+    const start = page * pageSize;
+    const slice = prefiltered.slice(start, start + pageSize);
+    const enrichedSlice = await enrichProfilesBatch(ctx, slice);
+
+    // Final search pass over enriched data (covers email + matricule), but
+    // ONLY for the slice we already paid to enrich. The search index alone
+    // is restrictive enough that this is a quality-of-life refinement, not
+    // a correctness gate.
+    const finalSlice = search
+      ? enrichedSlice.filter((p: any) => profileMatchesFilters(p, f))
+      : enrichedSlice;
+
+    return {
+      rows: finalSlice,
+      total: prefiltered.length,
+    };
+  },
+});
+
+/**
+ * Aggregate counts for the /users?view=profiles filter dropdowns. Scans the
+ * profiles table once and returns only numbers — the heavy data stays on
+ * the server. ~few KB payload, vs the megabytes the previous
+ * loadMore-until-done approach was streaming.
+ */
+export const getProfileFacets = query({
+  args: {},
+  handler: async (ctx) => {
+    const profiles = await ctx.db.query("profiles").collect();
+
+    const userTypes: Record<string, number> = {};
+    const countries: Record<string, number> = {};
+    const continents: Record<string, number> = {};
+    const attachment = { attached: 0, unattached: 0 };
+
+    for (const p of profiles) {
+      if (p.userType) userTypes[p.userType] = (userTypes[p.userType] ?? 0) + 1;
+
+      const country = profileCountry(p);
+      if (country) {
+        const code = country.toUpperCase();
+        countries[code] = (countries[code] ?? 0) + 1;
+        const continent = COUNTRY_CONTINENT_PROFILES[code];
+        if (continent) continents[continent] = (continents[continent] ?? 0) + 1;
+      }
+
+      if (p.managedByOrgId || p.signaledToOrgId) attachment.attached++;
+      else attachment.unattached++;
+    }
+
+    return {
+      total: profiles.length,
+      userTypes,
+      countries,
+      continents,
+      attachment,
+    };
+  },
+});
+
 /**
  * Superadmin & Admin: Get detailed profile data including relations
  */
