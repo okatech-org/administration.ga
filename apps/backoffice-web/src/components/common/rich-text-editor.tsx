@@ -23,8 +23,14 @@ import {
   Redo,
   Quote,
   Minus,
+  Megaphone,
+  Hash,
+  Info,
+  AlertTriangle,
+  CheckCircle2,
 } from "lucide-react"
 import { toast } from "sonner"
+import { EDITORIAL_NODES } from "@/components/common/editor-nodes"
 
 interface RichTextEditorProps {
   content: string
@@ -191,6 +197,89 @@ function MenuBar({ editor }: { editor: Editor | null }) {
       >
         <Minus className="h-4 w-4" />
       </Button>
+
+      {/* Editorial blocks (Article.html / Guide.html maquettes) */}
+      <div className="w-px h-6 bg-border mx-1 self-center" />
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        title="Chiffres clés"
+        onClick={() => {
+          const raw = window.prompt(
+            "Chiffres clés (format : valeur|libellé, un par ligne) :",
+            "4 200|Ressortissants recensés\n7 États|Couverture juridictionnelle\n12 agents|Équipe diplomatique",
+          )
+          if (!raw) return
+          const facts = raw
+            .split("\n")
+            .map((l) => l.split("|").map((s) => s.trim()))
+            .filter((p) => p[0] && p[1])
+            .slice(0, 4)
+            .map(([value, label]) => ({ value, label }))
+          if (facts.length === 0) return
+          editor.chain().focus().insertKeyFacts(facts).run()
+        }}
+      >
+        <Hash className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        title="Citation mise en avant"
+        onClick={() => {
+          const quote = window.prompt("Citation :")
+          if (!quote) return
+          const cite = window.prompt("Attribution (optionnelle) :") ?? undefined
+          editor.chain().focus().insertPullquote(quote, cite || undefined).run()
+        }}
+      >
+        <Megaphone className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        title="Encadré info"
+        onClick={() => {
+          const title = window.prompt("Titre de l'encadré :", "Bon à savoir")
+          if (!title) return
+          const body = window.prompt("Contenu :") ?? ""
+          editor.chain().focus().insertCallout("info", title, body).run()
+        }}
+      >
+        <Info className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        title="Encadré succès"
+        onClick={() => {
+          const title = window.prompt("Titre :", "À retenir")
+          if (!title) return
+          const body = window.prompt("Contenu :") ?? ""
+          editor.chain().focus().insertCallout("ok", title, body).run()
+        }}
+      >
+        <CheckCircle2 className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        title="Encadré avertissement"
+        onClick={() => {
+          const title = window.prompt("Titre :", "Attention")
+          if (!title) return
+          const body = window.prompt("Contenu :") ?? ""
+          editor.chain().focus().insertCallout("warn", title, body).run()
+        }}
+      >
+        <AlertTriangle className="h-4 w-4" />
+      </Button>
+
       <div className="flex-1" />
       <Button
         type="button"
@@ -239,6 +328,7 @@ export function RichTextEditor({
           class: "text-primary underline",
         },
       }),
+      ...EDITORIAL_NODES,
     ],
     content,
     editable,
@@ -300,6 +390,42 @@ export function RichTextRenderer({
         "[&_ol]:list-decimal [&_ol]:pl-6",
         "[&_blockquote]:border-l-4 [&_blockquote]:border-primary/30 [&_blockquote]:pl-4 [&_blockquote]:italic",
         "[&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg",
+        // Editorial blocks (Article.html / Guide.html maquettes)
+        // keyFacts grid
+        "[&_.keyfacts]:grid [&_.keyfacts]:grid-cols-1 sm:[&_.keyfacts]:grid-cols-3",
+        "[&_.keyfacts]:gap-4 [&_.keyfacts]:my-8 [&_.keyfacts]:not-prose",
+        "[&_.kf]:rounded-xl [&_.kf]:border [&_.kf]:bg-[var(--surface)] [&_.kf]:p-5",
+        "[&_.kf-v]:text-3xl [&_.kf-v]:font-bold [&_.kf-v]:text-[var(--gabon-blue-hex)]",
+        "[&_.kf-v]:leading-tight [&_.kf-v]:mb-1",
+        "[&_.kf-l]:text-xs [&_.kf-l]:uppercase [&_.kf-l]:tracking-wider",
+        "[&_.kf-l]:text-muted-foreground",
+        // Pullquote
+        "[&_.pullquote]:border-l-4 [&_.pullquote]:border-[var(--gabon-blue-hex)]",
+        "[&_.pullquote]:bg-[var(--gabon-blue-tint)] [&_.pullquote]:p-5 [&_.pullquote]:my-6",
+        "[&_.pullquote]:rounded-r-lg [&_.pullquote]:not-italic",
+        "[&_.pullquote_p]:text-lg [&_.pullquote_p]:font-medium [&_.pullquote_p]:m-0",
+        "[&_.pullquote_cite]:block [&_.pullquote_cite]:mt-3 [&_.pullquote_cite]:text-sm",
+        "[&_.pullquote_cite]:text-muted-foreground [&_.pullquote_cite]:not-italic",
+        "[&_.pullquote_cite]:before:content-['—_']",
+        // Callouts
+        "[&_.callout]:rounded-xl [&_.callout]:p-4 [&_.callout]:my-5 [&_.callout]:not-prose",
+        "[&_.callout_h4]:font-semibold [&_.callout_h4]:mb-1.5 [&_.callout_h4]:text-sm",
+        "[&_.callout_p]:text-sm [&_.callout_p]:m-0 [&_.callout_p]:leading-relaxed",
+        "[&_.callout[data-variant=info]]:bg-[var(--gabon-blue-tint)]",
+        "[&_.callout[data-variant=info]]:text-[var(--gabon-blue-hex)]",
+        "[&_.callout[data-variant=ok]]:bg-[var(--success-tint)]",
+        "[&_.callout[data-variant=ok]]:text-emerald-700",
+        "[&_.callout[data-variant=warn]]:bg-[var(--warning-tint)]",
+        "[&_.callout[data-variant=warn]]:text-amber-800",
+        // Figure
+        "[&_.figure]:relative [&_.figure]:my-6 [&_.figure]:not-prose",
+        "[&_.figure_img]:rounded-xl [&_.figure_img]:w-full [&_.figure_img]:h-auto",
+        "[&_.figure_figcaption]:mt-2 [&_.figure_figcaption]:text-xs",
+        "[&_.figure_figcaption]:text-muted-foreground [&_.figure_figcaption]:italic",
+        "[&_.figure_.credit]:absolute [&_.figure_.credit]:bottom-3 [&_.figure_.credit]:right-3",
+        "[&_.figure_.credit]:bg-black/60 [&_.figure_.credit]:text-white [&_.figure_.credit]:text-[10px]",
+        "[&_.figure_.credit]:px-2 [&_.figure_.credit]:py-1 [&_.figure_.credit]:rounded",
+        "[&_.figure_.credit]:uppercase [&_.figure_.credit]:tracking-wide",
         className
       )}
       dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}

@@ -187,8 +187,17 @@ export function PostDetailClient({
     post.subCategoryI18n ?? post.subCategory,
     lang,
   )
-  const authorName = post.authorName ?? null
-  const authorRole = post.authorRole ?? null
+  // Publisher = origin de la publication (toujours derive de l'org ou de
+  // la plateforme). Les champs `authorName` / `authorRole` du post ne
+  // servent que d'override editorial explicite quand ils sont renseignes,
+  // mais ne fabriquent jamais un faux auteur par defaut.
+  const publisherName =
+    post.authorName ?? post.org?.name ?? "Consulat.ga"
+  const publisherRole =
+    post.authorRole ??
+    (post.org ? "Service de communication" : "Plateforme officielle")
+  const publisherHref = post.org ? `/reps/${post.org.slug}` : "/"
+  const publisherLogoUrl = post.org?.logoUrl ?? null
 
   const isEvent = post.category === PostCategory.Event
   const isCommunique = post.category === PostCategory.Announcement
@@ -198,8 +207,8 @@ export function PostDetailClient({
   const activeId = useActiveSection(toc.map((t) => t.id))
   const progress = useScrollProgress()
 
-  const initials = (authorName ?? "Direction de la Communication")
-    .split(" ")
+  const initials = publisherName
+    .split(/[\s—-]+/)
     .map((w) => w[0])
     .filter(Boolean)
     .slice(0, 2)
@@ -272,33 +281,46 @@ export function PostDetailClient({
             )}
           </div>
 
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-5">
+          <h1 className="article-headline text-3xl md:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-5">
             {title}
           </h1>
 
           {(lede || excerpt) && (
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-4xl mb-6">
+            <p className="article-summary text-lg md:text-xl text-muted-foreground leading-relaxed max-w-4xl mb-6">
               {lede || excerpt}
             </p>
           )}
 
           {/* Meta row */}
           <div className="flex flex-wrap items-center gap-4 pt-5 border-t">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-[var(--gabon-blue-tint)] text-[var(--gabon-blue-hex)] grid place-items-center text-xs font-semibold">
-                {initials}
+            <Link
+              href={publisherHref}
+              className="flex items-center gap-3 group"
+            >
+              <div className="h-10 w-10 rounded-full bg-[var(--gabon-blue-tint)] text-[var(--gabon-blue-hex)] grid place-items-center text-xs font-semibold overflow-hidden">
+                {publisherLogoUrl ? (
+                  <Image
+                    src={publisherLogoUrl}
+                    alt={publisherName}
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 object-cover"
+                  />
+                ) : (
+                  initials
+                )}
               </div>
               <div>
-                <div className="text-sm font-medium">
-                  {authorName ?? "Direction de la Communication"}
+                <div className="text-sm font-medium group-hover:text-[var(--gabon-blue-hex)]">
+                  {publisherName}
                 </div>
-                {authorRole && (
+                {publisherRole && (
                   <div className="text-xs text-muted-foreground">
-                    {authorRole}
+                    {publisherRole}
                   </div>
                 )}
               </div>
-            </div>
+            </Link>
 
             <span className="h-6 w-px bg-border" />
 
@@ -569,28 +591,50 @@ export function PostDetailClient({
               </div>
             )}
 
-            {/* Author bio */}
+            {/* Publisher card — derive de post.org (ou plateforme Consulat.ga) */}
             <div className="mt-8 p-5 rounded-xl border bg-[var(--surface)] flex items-start gap-4">
-              <div className="h-14 w-14 rounded-full bg-[var(--gabon-blue-tint)] text-[var(--gabon-blue-hex)] grid place-items-center text-base font-semibold shrink-0">
-                {initials}
-              </div>
+              <Link
+                href={publisherHref}
+                className="h-14 w-14 rounded-full bg-[var(--gabon-blue-tint)] text-[var(--gabon-blue-hex)] grid place-items-center text-base font-semibold shrink-0 overflow-hidden"
+                aria-label={publisherName}
+              >
+                {publisherLogoUrl ? (
+                  <Image
+                    src={publisherLogoUrl}
+                    alt={publisherName}
+                    width={56}
+                    height={56}
+                    className="h-14 w-14 object-cover"
+                  />
+                ) : (
+                  initials
+                )}
+              </Link>
               <div className="flex-1 min-w-0">
                 <h4 className="font-semibold">
-                  {authorName ?? "Direction de la Communication"}
+                  <Link
+                    href={publisherHref}
+                    className="hover:text-[var(--gabon-blue-hex)]"
+                  >
+                    {publisherName}
+                  </Link>
                 </h4>
-                {authorRole && (
+                {publisherRole && (
                   <div className="text-sm text-muted-foreground">
-                    {authorRole}
+                    {publisherRole}
                   </div>
                 )}
-                <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                  Service institutionnel publiant communiqués officiels, dossiers
-                  de presse et reportages sur l'activité du réseau diplomatique
-                  gabonais.
-                </p>
               </div>
               <Button asChild variant="outline" size="sm" className="shrink-0">
-                <Link href="/news">Tous les articles</Link>
+                <Link
+                  href={
+                    post.org
+                      ? `/news?org=${post.org.slug}`
+                      : "/news"
+                  }
+                >
+                  {post.org ? "Voir ses articles" : "Tous les articles"}
+                </Link>
               </Button>
             </div>
           </article>
@@ -677,23 +721,8 @@ export function PostDetailClient({
               </div>
             </div>
 
-            {/* Contact presse */}
-            <div className="rounded-xl border bg-[var(--gabon-blue-tint)] p-4">
-              <h4 className="text-sm font-semibold text-[var(--gabon-blue-hex)] mb-2">
-                Contact presse
-              </h4>
-              <p className="text-sm text-foreground/80 leading-relaxed">
-                Pour toute demande d'interview ou de complément d'information sur
-                cet article.
-              </p>
-              <a
-                href="mailto:presse@diplomatie.ga"
-                className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-[var(--gabon-blue-hex)] hover:underline"
-              >
-                presse@diplomatie.ga
-                <ChevronRight className="h-3.5 w-3.5" />
-              </a>
-            </div>
+            {/* Contact presse — masque pour l'instant (l'org doit exposer
+                un email presse configurable avant de l'activer). */}
           </aside>
         </div>
 

@@ -270,6 +270,7 @@ import type * as migrations_addDocumentsAiGenerationToHighRanks from "../migrati
 import type * as migrations_addDocumentsTasksToHighRanks from "../migrations/addDocumentsTasksToHighRanks.js";
 import type * as migrations_auditDocumentsAccessForHighRanks from "../migrations/auditDocumentsAccessForHighRanks.js";
 import type * as migrations_backfillAggregates from "../migrations/backfillAggregates.js";
+import type * as migrations_backfillArticlesGuidesI18n from "../migrations/backfillArticlesGuidesI18n.js";
 import type * as migrations_backfillCopyOwnerOrgId from "../migrations/backfillCopyOwnerOrgId.js";
 import type * as migrations_backfillEmptyFormData from "../migrations/backfillEmptyFormData.js";
 import type * as migrations_backfillProfessionSkills from "../migrations/backfillProfessionSkills.js";
@@ -397,6 +398,7 @@ import type * as seeds_seedFromJson from "../seeds/seedFromJson.js";
 import type * as seeds_seedOrgDetails from "../seeds/seedOrgDetails.js";
 import type * as seeds_seedOrgPublicDocs from "../seeds/seedOrgPublicDocs.js";
 import type * as seeds_seedPosts from "../seeds/seedPosts.js";
+import type * as seeds_seedShowcaseArticle from "../seeds/seedShowcaseArticle.js";
 import type * as seeds_seedUsers from "../seeds/seedUsers.js";
 import type * as seeds_serviceFormSchemas from "../seeds/serviceFormSchemas.js";
 import type * as seeds_staffAccounts from "../seeds/staffAccounts.js";
@@ -677,6 +679,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/addDocumentsTasksToHighRanks": typeof migrations_addDocumentsTasksToHighRanks;
   "migrations/auditDocumentsAccessForHighRanks": typeof migrations_auditDocumentsAccessForHighRanks;
   "migrations/backfillAggregates": typeof migrations_backfillAggregates;
+  "migrations/backfillArticlesGuidesI18n": typeof migrations_backfillArticlesGuidesI18n;
   "migrations/backfillCopyOwnerOrgId": typeof migrations_backfillCopyOwnerOrgId;
   "migrations/backfillEmptyFormData": typeof migrations_backfillEmptyFormData;
   "migrations/backfillProfessionSkills": typeof migrations_backfillProfessionSkills;
@@ -804,6 +807,7 @@ declare const fullApi: ApiFromModules<{
   "seeds/seedOrgDetails": typeof seeds_seedOrgDetails;
   "seeds/seedOrgPublicDocs": typeof seeds_seedOrgPublicDocs;
   "seeds/seedPosts": typeof seeds_seedPosts;
+  "seeds/seedShowcaseArticle": typeof seeds_seedShowcaseArticle;
   "seeds/seedUsers": typeof seeds_seedUsers;
   "seeds/serviceFormSchemas": typeof seeds_serviceFormSchemas;
   "seeds/staffAccounts": typeof seeds_staffAccounts;

@@ -6,9 +6,105 @@ import {
   tutorialTypeValidator,
   tutorialBadgeValidator,
   postStatusValidator,
+  localizedStringValidator,
 } from "../lib/validators";
 import { requireBackOfficeAccess } from "../lib/auth";
 import { error, ErrorCode } from "../lib/errors";
+
+// ────────────────────────────────────────────────────────────────────────
+// Editorial extension validators (Guide.html maquette)
+// ────────────────────────────────────────────────────────────────────────
+const requirementV = v.union(
+  v.literal("required"),
+  v.literal("optional"),
+  v.literal("ifAvailable"),
+);
+const speedV = v.union(
+  v.literal("fast"),
+  v.literal("standard"),
+  v.literal("long"),
+);
+
+const procedureSummaryArg = v.object({
+  steps: v.optional(v.string()),
+  stepsI18n: v.optional(localizedStringValidator),
+  delay: v.optional(v.string()),
+  delayI18n: v.optional(localizedStringValidator),
+  fees: v.optional(v.string()),
+  feesI18n: v.optional(localizedStringValidator),
+  location: v.optional(v.string()),
+  locationI18n: v.optional(localizedStringValidator),
+});
+
+const prerequisiteArg = v.object({
+  title: v.string(),
+  titleI18n: v.optional(localizedStringValidator),
+  description: v.optional(v.string()),
+  descriptionI18n: v.optional(localizedStringValidator),
+  requirement: requirementV,
+});
+
+const guideStepArg = v.object({
+  number: v.number(),
+  title: v.string(),
+  titleI18n: v.optional(localizedStringValidator),
+  durationLabel: v.optional(v.string()),
+  durationLabelI18n: v.optional(localizedStringValidator),
+  locationLabel: v.optional(v.string()),
+  locationLabelI18n: v.optional(localizedStringValidator),
+  body: v.optional(v.string()),
+  bodyI18n: v.optional(localizedStringValidator),
+});
+
+const feeRowArg = v.object({
+  label: v.string(),
+  labelI18n: v.optional(localizedStringValidator),
+  description: v.optional(v.string()),
+  descriptionI18n: v.optional(localizedStringValidator),
+  delay: v.optional(v.string()),
+  delayI18n: v.optional(localizedStringValidator),
+  amount: v.string(),
+  badge: v.optional(v.string()),
+});
+
+const delayRowArg = v.object({
+  region: v.string(),
+  label: v.string(),
+  labelI18n: v.optional(localizedStringValidator),
+  description: v.string(),
+  descriptionI18n: v.optional(localizedStringValidator),
+  speed: speedV,
+});
+
+const guideFaqArg = v.object({
+  question: v.string(),
+  questionI18n: v.optional(localizedStringValidator),
+  answer: v.string(),
+  answerI18n: v.optional(localizedStringValidator),
+});
+
+const tutorialSourceArg = v.object({
+  label: v.string(),
+  url: v.string(),
+});
+
+const tutorialEditorialExtraArgs = {
+  titleI18n: v.optional(localizedStringValidator),
+  excerptI18n: v.optional(localizedStringValidator),
+  contentI18n: v.optional(localizedStringValidator),
+  durationI18n: v.optional(localizedStringValidator),
+  lede: v.optional(v.string()),
+  ledeI18n: v.optional(localizedStringValidator),
+  procedureSummary: v.optional(procedureSummaryArg),
+  prerequisites: v.optional(v.array(prerequisiteArg)),
+  steps: v.optional(v.array(guideStepArg)),
+  fees: v.optional(v.array(feeRowArg)),
+  delays: v.optional(v.array(delayRowArg)),
+  faqItems: v.optional(v.array(guideFaqArg)),
+  relatedServiceId: v.optional(v.id("services")),
+  sources: v.optional(v.array(tutorialSourceArg)),
+  availableLocales: v.optional(v.array(v.string())),
+} as const;
 
 // ============================================================================
 // PUBLIC QUERIES
@@ -350,6 +446,9 @@ export const create = mutation({
     videoUrl: v.optional(v.string()),
     coverImageStorageId: v.optional(v.id("_storage")),
     publish: v.optional(v.boolean()),
+
+    // Editorial extensions (Guide.html maquette)
+    ...tutorialEditorialExtraArgs,
   },
   handler: async (ctx, args) => {
     const user = await requireBackOfficeAccess(ctx);
@@ -368,24 +467,13 @@ export const create = mutation({
 
     const now = Date.now();
     const status = args.publish ? PostStatus.Published : PostStatus.Draft;
+    const { publish: _publish, ...rest } = args;
 
     const tutorialId = await ctx.db.insert("tutorials", {
-      title: args.title,
-      slug: args.slug,
-      excerpt: args.excerpt,
-      content: args.content,
-      category: args.category,
-      type: args.type,
-      duration: args.duration,
-      readingMinutes: args.readingMinutes,
-      stepCount: args.stepCount,
-      badges: args.badges,
-      featured: args.featured,
-      countryCode: args.countryCode,
-      videoUrl: args.videoUrl,
-      coverImageStorageId: args.coverImageStorageId,
+      ...rest,
+      stepCount: rest.stepCount ?? rest.steps?.length,
       status,
-      publishedAt: args.publish ? now : undefined,
+      publishedAt: _publish ? now : undefined,
       createdAt: now,
       updatedAt: now,
       authorId: user._id,
@@ -415,6 +503,9 @@ export const update = mutation({
     countryCode: v.optional(v.string()),
     videoUrl: v.optional(v.string()),
     coverImageStorageId: v.optional(v.id("_storage")),
+
+    // Editorial extensions (Guide.html maquette)
+    ...tutorialEditorialExtraArgs,
   },
   handler: async (ctx, args) => {
     await requireBackOfficeAccess(ctx);

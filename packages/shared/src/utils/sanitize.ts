@@ -19,6 +19,7 @@ export function sanitizeHtml(dirty: string): string {
       // (keyFact, pullquote, callout, figure, details/summary)
       "figure", "figcaption",
       "details", "summary",
+      "cite",
       "hr", "sub", "sup",
     ],
     ALLOWED_ATTR: [
