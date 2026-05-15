@@ -560,9 +560,7 @@ export function OrgDetailClient({
                   ? undefined
                   : callAvail?.status === "offline"
                     ? t("orgs.detail.noAgent", "0 en ligne")
-                    : callAvail?.estimatedWaitMinutes != null
-                      ? `~ ${callAvail.estimatedWaitMinutes} min`
-                      : undefined
+                    : undefined
               }
               disabled={
                 !isAuthenticated || callAvail?.status === "offline"
@@ -1358,7 +1356,6 @@ function CallWidget({
     | {
         status: "available" | "busy" | "offline"
         agentsOnline: number
-        estimatedWaitMinutes: number | null
       }
     | undefined
   phoneMain?: string
@@ -1368,7 +1365,6 @@ function CallWidget({
         label: string
         description: string | null
         agentsOnline: number
-        totalAgents: number
         isDefault: boolean
       }>
     | undefined
@@ -1434,12 +1430,6 @@ function CallWidget({
             {callAvail.agentsOnline}
           </strong>{" "}
           agent{callAvail.agentsOnline > 1 ? "s" : ""} en ligne
-          {callAvail.estimatedWaitMinutes != null && (
-            <span className="text-white/60">
-              {" "}
-              · attente ~ {callAvail.estimatedWaitMinutes} min
-            </span>
-          )}
         </div>
       )}
 
@@ -1492,9 +1482,6 @@ function CallWidget({
                         {line.description}
                       </span>
                     )}
-                  </span>
-                  <span className="text-[11px] font-mono text-white/70 shrink-0">
-                    {line.agentsOnline}/{line.totalAgents}
                   </span>
                   <Phone
                     className={cn(

@@ -130,7 +130,7 @@ export const callAvailability = query({
   handler: async (ctx, args) => {
     const org = await ctx.db.get(args.orgId);
     if (!org || isIntelligenceAgency(org)) {
-      return { status: "offline" as const, agentsOnline: 0, estimatedWaitMinutes: null };
+      return { status: "offline" as const, agentsOnline: 0 };
     }
 
     // Récupère les agents présents sur cette org via la table agentPresence.
@@ -156,12 +156,11 @@ export const callAvailability = query({
       // Schéma indispo / index manquant → offline
     }
 
-    // Estimation simple : 2 min par agent si dispo, sinon null
-    const estimatedWaitMinutes = onlineCount > 0 ? 2 : null;
+    // Pas d'estimation d'attente : on n'a rien de fiable pour la calculer.
     const status: "available" | "busy" | "offline" =
       onlineCount === 0 ? "offline" : onlineCount >= 2 ? "available" : "busy";
 
-    return { status, agentsOnline: onlineCount, estimatedWaitMinutes };
+    return { status, agentsOnline: onlineCount };
   },
 });
 
@@ -225,7 +224,6 @@ export const publicCallLines = query({
           color: line.color ?? null,
           priority: line.priority,
           isDefault: line.isDefault === true,
-          totalAgents: line.membershipIds.length,
           agentsOnline: onlineCount,
         };
       }),
