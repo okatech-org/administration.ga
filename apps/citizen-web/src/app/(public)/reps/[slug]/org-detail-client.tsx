@@ -14,7 +14,6 @@ import {
   MapPin,
   Phone,
   Route,
-  Send,
   Shield,
   Users,
 } from "lucide-react"
@@ -574,18 +573,6 @@ export function OrgDetailClient({
             />
             <ActionBtn
               icon={
-                <Send
-                  className="w-4 h-4 text-[var(--gabon-blue-hex)]"
-                  strokeWidth={2}
-                />
-              }
-              label={t("orgs.detail.writeTo", "Écrire à la représentation")}
-              href={isAuthenticated ? "/my-space/messages" : undefined}
-              disabled={!isAuthenticated}
-              authRequired={!isAuthenticated}
-            />
-            <ActionBtn
-              icon={
                 <Shield
                   className="w-4 h-4 text-[var(--gabon-blue-hex)]"
                   strokeWidth={2}
@@ -600,7 +587,7 @@ export function OrgDetailClient({
                 <span>
                   {t(
                     "orgs.detail.loginRequiredHint",
-                    "Connexion requise pour appeler, prendre rendez-vous ou écrire à la représentation.",
+                    "Connexion requise pour appeler ou prendre rendez-vous.",
                   )}{" "}
                   <Link
                     href="/auth"
