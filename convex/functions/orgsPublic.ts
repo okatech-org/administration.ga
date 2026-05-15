@@ -10,7 +10,6 @@
  */
 import { v } from "convex/values";
 import { query } from "../_generated/server";
-import { RequestStatus } from "../lib/constants";
 import { isIntelligenceAgency } from "../lib/intelligenceAgencyVisibility";
 import {
   getOrgSchedule,
@@ -201,8 +200,16 @@ export const publicDocuments = query({
 });
 
 /**
- * Stats publiques pour le bloc « L'ambassade en chiffres ».
- * Toutes valeurs dérivées de la DB — pas de valeur fictive.
+ * Stats publiques pour le bloc « La représentation en chiffres ».
+ *
+ * Métriques choisies pour leur lisibilité / stabilité (pas dépendantes de
+ * volumes annuels qui peuvent être à zéro) :
+ *  - citizensAttached : nombre total de citoyens rattachés à cette org
+ *    (inscriptions consulaires non supprimées, tous statuts confondus —
+ *    inclut Requested, Active, Expired). Reflète l'ancrage local.
+ *  - servicesOffered : nombre de services actifs proposés par l'org.
+ *  - onlineServices  : sous-ensemble end-to-end en ligne (pas de RDV requis).
+ *  - publishedNews   : posts publiés par cette org.
  */
 export const publicOrgStats = query({
   args: { orgId: v.id("orgs") },
@@ -210,59 +217,46 @@ export const publicOrgStats = query({
     const org = await ctx.db.get(args.orgId);
     if (!org || isIntelligenceAgency(org)) return null;
 
-    // Inscriptions consulaires actives sur cette org
+    // Citoyens rattachés à l'org (toutes inscriptions consulaires non
+    // supprimées — Requested + Active + Expired).
     const registrations = await ctx.db
       .query("consularRegistrations")
       .filter((q) => q.eq(q.field("orgId"), args.orgId))
       .collect();
-    const registrationsCount = registrations.filter(
-      (r) => r.status === "active",
+    const citizensAttached = registrations.filter(
+      (r) => !(r as { deletedAt?: number }).deletedAt,
     ).length;
 
-    // Requests par catégorie (année courante).
-    // On joint requests → orgServices → services pour récupérer la catégorie.
-    const currentYear = new Date().getFullYear();
-    const yearStart = new Date(currentYear, 0, 1).getTime();
-    const requests = await ctx.db
-      .query("requests")
-      .withIndex("by_org_status", (q) => q.eq("orgId", args.orgId))
+    // Services proposés (actifs) + services en ligne (pas de RDV requis).
+    const orgServices = await ctx.db
+      .query("orgServices")
+      .filter((q) => q.eq(q.field("orgId"), args.orgId))
       .collect();
-
-    const inYearAndCompleted = requests.filter(
-      (r) =>
-        r.status === RequestStatus.Completed &&
-        typeof r.completedAt === "number" &&
-        r.completedAt >= yearStart,
+    const activeOrgServices = orgServices.filter(
+      (os) => os.isActive !== false,
     );
 
-    // Cache local des catégories par orgServiceId pour éviter les fetches répétés.
-    const categoryByOrgService = new Map<string, string>();
-    for (const r of inYearAndCompleted) {
-      const key = r.orgServiceId as unknown as string;
-      if (categoryByOrgService.has(key)) continue;
-      const orgService = await ctx.db.get(r.orgServiceId);
-      if (!orgService) continue;
-      const service = await ctx.db.get(orgService.serviceId);
+    let onlineServices = 0;
+    for (const os of activeOrgServices) {
+      const service = await ctx.db.get(os.serviceId);
       if (!service) continue;
-      categoryByOrgService.set(key, service.category);
+      if (service.requiresAppointment === false) onlineServices++;
     }
 
-    const catCount = (cats: string[]) =>
-      inYearAndCompleted.filter((r) => {
-        const c = categoryByOrgService.get(r.orgServiceId as unknown as string);
-        return c !== undefined && cats.includes(c);
-      }).length;
-
-    const passports = catCount(["passport", "travel_document"]);
-    const civilStatus = catCount(["civil_status", "transcript"]);
-    const visas = catCount(["visa"]);
+    // Actualités publiées par cette org.
+    const orgPosts = await ctx.db
+      .query("posts")
+      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .collect();
+    const publishedNews = orgPosts.filter(
+      (p) => p.status === "published",
+    ).length;
 
     return {
-      registrations: registrationsCount,
-      passportsYear: passports,
-      civilStatusYear: civilStatus,
-      visasYear: visas,
-      currentYear,
+      citizensAttached,
+      servicesOffered: activeOrgServices.length,
+      onlineServices,
+      publishedNews,
     };
   },
 });

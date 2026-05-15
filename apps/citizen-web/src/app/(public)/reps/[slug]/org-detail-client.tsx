@@ -17,11 +17,16 @@ import {
   Send,
   Shield,
   Users,
-  Video,
 } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { usePreloadedQuery, useQuery, type Preloaded } from "convex/react"
+import {
+  useConvexAuth,
+  usePreloadedQuery,
+  useQuery,
+  type Preloaded,
+} from "convex/react"
+import { Lock } from "lucide-react"
 import { FlagIcon } from "@/components/ui/flag-icon"
 import type { CountryCode } from "@convex/lib/constants"
 import { cn } from "@/lib/utils"
@@ -327,6 +332,7 @@ export function OrgDetailClient({
   preloaded: Preloaded<typeof api.functions.orgsPublic.publicDetails>
 }) {
   const { t } = useTranslation()
+  const { isAuthenticated } = useConvexAuth()
   const org = usePreloadedQuery(preloaded) as PublicDetails | null
 
   const orgIdArg = org ? { orgId: org._id } : "skip"
@@ -551,7 +557,8 @@ export function OrgDetailClient({
                   ? `~ ${callAvail.estimatedWaitMinutes} min`
                   : undefined
               }
-              disabled={callAvail?.status === "offline"}
+              disabled={!isAuthenticated || callAvail?.status === "offline"}
+              authRequired={!isAuthenticated}
             />
             <ActionBtn
               icon={
@@ -561,7 +568,9 @@ export function OrgDetailClient({
                 />
               }
               label={t("orgs.detail.bookAppointment", "Prendre rendez-vous")}
-              href="/my-space/appointments"
+              href={isAuthenticated ? "/my-space/appointments" : undefined}
+              disabled={!isAuthenticated}
+              authRequired={!isAuthenticated}
             />
             <ActionBtn
               icon={
@@ -571,8 +580,37 @@ export function OrgDetailClient({
                 />
               }
               label={t("orgs.detail.writeTo", "Écrire à la représentation")}
-              href={org.email ? `mailto:${org.email}` : "/my-space/messages"}
+              href={isAuthenticated ? "/my-space/messages" : undefined}
+              disabled={!isAuthenticated}
+              authRequired={!isAuthenticated}
             />
+            <ActionBtn
+              icon={
+                <Shield
+                  className="w-4 h-4 text-[var(--gabon-blue-hex)]"
+                  strokeWidth={2}
+                />
+              }
+              label={t("orgs.detail.viewServices", "Voir les services proposés")}
+              href="#services"
+            />
+            {!isAuthenticated && (
+              <p className="text-[11px] text-[color:var(--muted-foreground)] leading-[1.4] mt-1 inline-flex items-start gap-1.5">
+                <Lock className="w-3 h-3 mt-0.5 shrink-0" strokeWidth={2} />
+                <span>
+                  {t(
+                    "orgs.detail.loginRequiredHint",
+                    "Connexion requise pour appeler, prendre rendez-vous ou écrire à la représentation.",
+                  )}{" "}
+                  <Link
+                    href="/auth"
+                    className="text-[var(--gabon-blue-hex)] hover:underline font-medium"
+                  >
+                    {t("orgs.detail.signIn", "Se connecter")}
+                  </Link>
+                </span>
+              </p>
+            )}
             {org._derived.address.coordinates && (
               <a
                 href={`https://www.google.com/maps/dir/?api=1&destination=${org._derived.address.coordinates.lat},${org._derived.address.coordinates.lng}`}
@@ -624,17 +662,19 @@ export function OrgDetailClient({
               />
             </PCard>
 
-            <PCard
-              icon={<Shield className="w-4 h-4" />}
-              title={t("orgs.detail.services", "Services proposés")}
-              count={services?.length}
-              link={{
-                href: "/services",
-                label: t("orgs.detail.allServices", "Tous les services"),
-              }}
-            >
-              <ServicesGrid services={services} />
-            </PCard>
+            <div id="services" className="scroll-mt-24">
+              <PCard
+                icon={<Shield className="w-4 h-4" />}
+                title={t("orgs.detail.services", "Services proposés")}
+                count={services?.length}
+                link={{
+                  href: "/services",
+                  label: t("orgs.detail.allServices", "Tous les services"),
+                }}
+              >
+                <ServicesGrid services={services} />
+              </PCard>
+            </div>
 
             {staff && staff.length > 0 && (
               <PCard
@@ -717,6 +757,7 @@ function ActionBtn({
   primary,
   href,
   disabled,
+  authRequired,
 }: {
   icon: React.ReactNode
   label: string
@@ -724,30 +765,80 @@ function ActionBtn({
   primary?: boolean
   href?: string
   disabled?: boolean
+  authRequired?: boolean
 }) {
+  const isDisabled = disabled === true
+  const isAnchor = href?.startsWith("#")
   const className = cn(
     "inline-flex items-center justify-start gap-2 rounded-full px-4 py-3 text-[14px] font-medium transition min-h-[48px]",
     primary
-      ? "bg-[var(--gabon-blue-hex)] hover:bg-[var(--gabon-blue-deep,_#005a94)] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+      ? "bg-[var(--gabon-blue-hex)] hover:bg-[var(--gabon-blue-deep,_#005a94)] text-white"
       : "bg-[var(--surface,_#fff)] border border-[color:var(--border)] hover:border-[color:var(--border-strong)] text-[color:var(--foreground)]",
+    isDisabled && "opacity-50 cursor-not-allowed pointer-events-none",
   )
+  const right = suffix ? (
+    <span
+      className={cn(
+        "ml-auto px-2 py-0.5 rounded-full text-[11px] font-medium",
+        primary ? "bg-white/20" : "bg-[color:var(--surface-2,_#fbfaf6)]",
+      )}
+    >
+      {suffix}
+    </span>
+  ) : authRequired ? (
+    <span
+      className={cn(
+        "ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium",
+        primary ? "bg-white/20 text-white" : "bg-[color:var(--surface-2,_#fbfaf6)] text-[color:var(--muted-foreground)]",
+      )}
+      title="Connexion requise"
+    >
+      <Lock className="w-2.5 h-2.5" strokeWidth={2.5} />
+    </span>
+  ) : null
   const content = (
     <>
       {icon}
       {label}
-      {suffix && (
-        <span
-          className={cn(
-            "ml-auto px-2 py-0.5 rounded-full text-[11px] font-medium",
-            primary ? "bg-white/20" : "bg-[color:var(--surface-2,_#fbfaf6)]",
-          )}
-        >
-          {suffix}
-        </span>
-      )}
+      {right}
     </>
   )
-  if (href) {
+  if (href && !isDisabled) {
+    if (isAnchor) {
+      // Smooth scroll to in-page anchor — tient compte du conteneur de scroll
+      // custom (#main-scrollable-area) utilisé par PublicLayout desktop.
+      return (
+        <a
+          href={href}
+          onClick={(e) => {
+            const target = document.querySelector(href) as HTMLElement | null
+            if (!target) return
+            e.preventDefault()
+            const scrollContainer =
+              document.getElementById("main-scrollable-area") ??
+              document.scrollingElement ??
+              document.documentElement
+            const containerRect = scrollContainer.getBoundingClientRect()
+            const targetRect = target.getBoundingClientRect()
+            const offsetTop =
+              scrollContainer.scrollTop + targetRect.top - containerRect.top - 96 // 96px = scroll-mt-24
+            // Double-scroll : assignement direct (immédiat) puis scrollTo
+            // smooth en cas d'interception. Le first hit pose la position ;
+            // le second peut animer s'il est supporté.
+            if (scrollContainer === document.documentElement || scrollContainer === document.scrollingElement) {
+              window.scrollTo({ top: offsetTop, behavior: "smooth" })
+            } else {
+              ;(scrollContainer as HTMLElement).scrollTop = offsetTop
+              ;(scrollContainer as HTMLElement).scrollTo?.({ top: offsetTop, behavior: "smooth" })
+            }
+            history.replaceState(null, "", href)
+          }}
+          className={className}
+        >
+          {content}
+        </a>
+      )
+    }
     return (
       <Link href={href} className={className}>
         {content}
@@ -755,7 +846,7 @@ function ActionBtn({
     )
   }
   return (
-    <button type="button" disabled={disabled} className={className}>
+    <button type="button" disabled={isDisabled} className={className}>
       {content}
     </button>
   )
@@ -1306,18 +1397,10 @@ function CallWidget({
         <button
           type="button"
           disabled={!isOnline}
-          className="flex-1 inline-flex items-center justify-center gap-2 bg-white text-[var(--gabon-blue-hex)] rounded-full px-5 py-3.5 text-[15px] font-semibold hover:bg-[#fcfaf2] disabled:opacity-60 disabled:cursor-not-allowed transition"
+          className="w-full inline-flex items-center justify-center gap-2 bg-white text-[var(--gabon-blue-hex)] rounded-full px-5 py-3.5 text-[15px] font-semibold hover:bg-[#fcfaf2] disabled:opacity-60 disabled:cursor-not-allowed transition"
         >
           <Phone className="w-4 h-4" strokeWidth={2} />
           Lancer l'appel
-        </button>
-        <button
-          type="button"
-          disabled={!isOnline}
-          aria-label="Appel vidéo"
-          className="w-12 h-12 rounded-full bg-white/20 border border-white/25 text-white hover:bg-white/30 disabled:opacity-50 grid place-items-center transition"
-        >
-          <Video className="w-[18px] h-[18px]" strokeWidth={2} />
         </button>
       </div>
       <div className="relative z-10 mt-3.5 pt-3.5 border-t border-white/15 text-[11px] text-white/60 leading-[1.45] flex items-start gap-2">
@@ -1367,21 +1450,17 @@ function QuickStats({
   stats,
 }: {
   stats: {
-    registrations: number
-    passportsYear: number
-    civilStatusYear: number
-    visasYear: number
-    currentYear: number
+    citizensAttached: number
+    servicesOffered: number
+    onlineServices: number
+    publishedNews: number
   }
 }) {
   const rows = [
-    { label: "Gabonais inscrits", value: stats.registrations },
-    {
-      label: `Passeports délivrés (${stats.currentYear})`,
-      value: stats.passportsYear,
-    },
-    { label: "Actes d'état civil", value: stats.civilStatusYear },
-    { label: "Visas (entrants)", value: stats.visasYear },
+    { label: "Citoyens rattachés", value: stats.citizensAttached },
+    { label: "Services proposés", value: stats.servicesOffered },
+    { label: "Démarches en ligne", value: stats.onlineServices },
+    { label: "Actualités publiées", value: stats.publishedNews },
   ]
   return (
     <div className="bg-[var(--surface,_#fff)] border border-[color:var(--border)] rounded-2xl p-5">
