@@ -52,8 +52,6 @@ export function PinPhase({
 		isAuthenticated ? {} : "skip",
 	);
 	const createPin = useMutation(api.functions.pin.createPin);
-	const markOtpVerified = useMutation(api.functions.pin.markOtpVerified);
-	const otpRefreshedRef = useRef(false);
 	const autoAdvancedRef = useRef(false);
 
 	useEffect(() => {
@@ -63,15 +61,6 @@ export function PinPhase({
 			onNext();
 		}
 	}, [pinStatus, onNext, updateData]);
-
-	useEffect(() => {
-		if (!isAuthenticated || otpRefreshedRef.current) return;
-		if (pinStatus?.hasPin) return;
-		otpRefreshedRef.current = true;
-		markOtpVerified({}).catch((err) => {
-			console.error("markOtpVerified failed:", err);
-		});
-	}, [isAuthenticated, markOtpVerified, pinStatus]);
 
 	const [stage, setStage] = useState<Stage>(() =>
 		(data.pin?.length ?? 0) === PIN_LENGTH ? "confirm" : "create",

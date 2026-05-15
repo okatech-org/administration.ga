@@ -2,8 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
-import { api } from "@convex/_generated/api";
-import { useMutation } from "convex/react";
 import {
 	AlertTriangle,
 	ArrowLeft,
@@ -34,7 +32,6 @@ export function OtpPhase({
 }) {
 	const { t } = useTranslation();
 	const { waitForSync } = useAuthSyncWait();
-	const markOtpVerified = useMutation(api.functions.pin.markOtpVerified);
 	const [otp, setOtp] = useState<string>(data.otp ?? "");
 	const [error, setError] = useState<string | null>(null);
 	const [stage, setStage] = useState<UiStage>("idle");
@@ -105,8 +102,6 @@ export function OtpPhase({
 			console.time("ensure-user-sync");
 			await waitForSync({ timeoutMs: 8000 });
 			console.timeEnd("ensure-user-sync");
-
-			await markOtpVerified({});
 
 			updateData({ _authState: "verified", otp: undefined });
 			setStage("done");

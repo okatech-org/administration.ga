@@ -168,6 +168,9 @@ const clientSessionPlugin = (): BetterAuthPlugin => ({
 const OTP_VERIFIED_PATHS = new Set<string>([
   "/sign-in/email-otp",
   "/phone-number/verify",
+  // Inscription : verifyEmail ne crée pas de session — on retrouve l'utilisateur
+  // par email dans le handler ci-dessous.
+  "/email-otp/verify-email",
 ]);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ctx wraps multiple Convex contexts
@@ -180,7 +183,22 @@ const otpVerifiedPlugin = (ctx: any): BetterAuthPlugin => ({
         handler: createAuthMiddleware(async (hookCtx) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const target: any = hookCtx.context.newSession ?? hookCtx.context.session;
-          const authId: string | undefined = target?.user?.id;
+          let authId: string | undefined = target?.user?.id;
+
+          // /email-otp/verify-email ne crée pas forcément de session
+          // (autoSignInAfterVerification désactivé). On retrouve l'utilisateur
+          // par email transmis dans le body.
+          if (!authId) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const email: string | undefined = (hookCtx as any).body?.email
+              ?.toLowerCase?.();
+            if (!email) return;
+            const found = await hookCtx.context.internalAdapter.findUserByEmail(
+              email,
+            );
+            authId = found?.user?.id;
+          }
+
           if (!authId) return;
           try {
             await ctx.runMutation(
