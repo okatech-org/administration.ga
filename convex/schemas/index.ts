@@ -49,6 +49,7 @@ export { notificationsTable } from "./notifications";
 export { tutorialsTable } from "./tutorials";
 export { tutorialProgressTable } from "./tutorialProgress";
 export { faqsTable } from "./faqs";
+export { orgPublicDocumentsTable } from "./orgPublicDocuments";
 export { communityEventsTable } from "./communityEvents";
 export { digitalMailTable } from "./digitalMail";
 export { deliveryPackagesTable } from "./deliveryPackages";

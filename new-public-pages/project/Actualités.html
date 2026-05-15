@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Actualités — Consulat.ga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/site.css" />
+<style>
+  /* ===== Hero — same vocabulary as Inscription Consulaire ===== */
+  .hero {
+    padding: 56px 0 32px;
+  }
+  .hero h1 {
+    font-size: clamp(40px, 5.2vw, 64px);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    margin-top: 18px;
+  }
+  .hero h1 .accent { color: var(--gabon-blue); }
+  .hero .lede {
+    margin-top: 18px;
+    color: var(--text-muted);
+    font-size: 17px;
+    line-height: 1.55;
+    max-width: 620px;
+  }
+  .hero-meta-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .hero-meta-line b { color: var(--text); font-weight: 600; }
+  .hero-meta-line .sep { width: 4px; height: 4px; border-radius: 100px; background: var(--border-strong); }
+
+  /* Tabs (same vocabulary as filter pills) */
+  .tab-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 12px 0 32px;
+  }
+  .tab {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 100px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    transition: background 120ms, color 120ms, border-color 120ms;
+  }
+  .tab:hover { color: var(--text); border-color: var(--border-strong); }
+  .tab.active {
+    background: var(--gabon-blue);
+    color: #fff;
+    border-color: var(--gabon-blue);
+  }
+  .tab .count { font-family: var(--mono); font-size: 11px; opacity: 0.6; }
+
+  /* Featured + side rail layout */
+  .top-row {
+    display: grid;
+    grid-template-columns: 1.45fr 1fr;
+    gap: 24px;
+    margin-bottom: 56px;
+  }
+
+  .featured {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  /* Gabon stripe top (like IC card.stripe-top) */
+  .featured::before {
+    content: "";
+    display: block;
+    height: 3px;
+    background: linear-gradient(to right,
+      var(--gabon-green) 0%, var(--gabon-green) 33%,
+      var(--gabon-yellow) 33%, var(--gabon-yellow) 66%,
+      var(--gabon-blue) 66%, var(--gabon-blue) 100%);
+  }
+  .featured-art {
+    aspect-ratio: 16/9;
+    background: var(--surface-3);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    background-image:
+      linear-gradient(135deg, rgba(11,79,156,.04), rgba(10,138,59,.04)),
+      repeating-linear-gradient(45deg, var(--surface-2) 0 8px, var(--surface-3) 8px 16px);
+  }
+  .featured-art .placeholder-mono {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    background: var(--surface);
+    padding: 4px 10px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+  }
+  .featured-art .ribbon {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: var(--gabon-blue);
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .featured-art .ribbon::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 100px;
+    background: var(--gabon-yellow);
+  }
+  .featured-body {
+    padding: 28px 32px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .meta-row .pill { font-size: 11px; padding: 3px 9px; }
+  .meta-row .dot { width: 3px; height: 3px; border-radius: 100px; background: var(--text-faint); }
+  .featured h2 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .featured h2 a { color: inherit; text-decoration: none; }
+  .featured h2 a:hover { color: var(--gabon-blue); }
+  .featured .excerpt {
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1.55;
+    max-width: 620px;
+  }
+  .featured-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border);
+    padding-top: 18px;
+    margin-top: 4px;
+  }
+  .author {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+  }
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 100px;
+    background: var(--gabon-blue-tint);
+    color: var(--gabon-blue);
+    display: grid;
+    place-items: center;
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .author .name { font-weight: 500; }
+  .author .org { color: var(--text-muted); font-size: 12px; }
+
+  /* Side rail — communiqués */
+  .side {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .side-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .side-head h3 { font-size: 15px; font-weight: 600; letter-spacing: -0.005em; }
+  .side-head .all {
+    color: var(--gabon-blue);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .commune {
+    padding: 14px 0;
+    border-bottom: 1px dashed var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-decoration: none;
+    color: inherit;
+  }
+  .commune:last-of-type { border-bottom: 0; }
+  .commune-meta {
+    font-size: 11px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .commune-meta .ref { color: var(--gabon-blue); font-weight: 600; }
+  .commune-title { font-size: 14px; line-height: 1.4; font-weight: 500; }
+  .commune:hover .commune-title { color: var(--gabon-blue); }
+
+  /* Section heading (matches IC pattern) */
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 24px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .section-head h2 {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .section-head h2 .count {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-faint);
+    font-weight: 400;
+  }
+  .section-head .all {
+    color: var(--gabon-blue);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Article grid */
+  .articles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 64px;
+  }
+  .article {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 160ms, transform 160ms, box-shadow 160ms;
+  }
+  .article:hover {
+    border-color: var(--gabon-blue);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+  .article-art {
+    aspect-ratio: 16/9;
+    background: var(--surface-3);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    color: var(--text-muted);
+  }
+  .article-art .ic { width: 36px; height: 36px; opacity: 0.45; }
+  .article-art.tone-blue { background: linear-gradient(135deg, var(--gabon-blue-tint), var(--surface-3)); color: var(--gabon-blue); }
+  .article-art.tone-green { background: linear-gradient(135deg, var(--gabon-green-tint), var(--surface-3)); color: var(--gabon-green); }
+  .article-art.tone-yellow { background: linear-gradient(135deg, var(--gabon-yellow-tint), var(--surface-3)); color: #a07c00; }
+  .article-art.tone-warm { background: linear-gradient(135deg, var(--warning-tint), var(--surface-3)); color: var(--warning); }
+  .article-art .placeholder-mono {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    background: var(--surface);
+    padding: 3px 8px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+  }
+  .article-body {
+    padding: 18px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+  }
+  .article h3 {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    line-height: 1.35;
+  }
+  .article .excerpt {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .article .cta {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .article .cta .read { color: var(--gabon-blue); font-weight: 500; }
+
+  /* Agenda — same card style as IC */
+  .agenda-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 24px;
+    margin-bottom: 64px;
+  }
+  .agenda {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .agenda-list {
+    display: flex;
+    flex-direction: column;
+  }
+  .event {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    gap: 18px;
+    padding: 20px 24px;
+    border-top: 1px solid var(--border);
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    transition: background 120ms;
+  }
+  .event:first-of-type { border-top: 0; }
+  .event:hover { background: var(--surface-2); }
+  .event-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 0 10px;
+    line-height: 1;
+    background: var(--surface-2);
+  }
+  .event-date .month {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gabon-blue);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .event-date .day {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .event-body h4 { font-size: 15px; font-weight: 600; line-height: 1.3; }
+  .event-body .where {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .event-body .where .dot { width: 3px; height: 3px; border-radius: 100px; background: var(--text-faint); }
+  .event-cta {
+    font-size: 12px;
+    color: var(--gabon-blue);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  /* Side panel: subscribe + numbers */
+  .side-stack { display: flex; flex-direction: column; gap: 16px; }
+  .news-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+  }
+  .news-card .icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: var(--gabon-blue-tint);
+    color: var(--gabon-blue);
+    display: grid;
+    place-items: center;
+    margin-bottom: 14px;
+  }
+  .news-card h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+  .news-card p { color: var(--text-muted); font-size: 13px; line-height: 1.55; margin-top: 8px; margin-bottom: 16px; }
+  .news-form {
+    display: flex;
+    gap: 8px;
+  }
+  .news-form input {
+    flex: 1;
+    min-width: 0;
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
+    border-radius: 100px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    color: var(--text);
+  }
+  .news-form input:focus { border-color: var(--gabon-blue); }
+
+  .nums-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+  }
+  .nums-card h3 { font-size: 15px; font-weight: 600; }
+  .nums-card .sub { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
+  .nums {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 24px;
+  }
+  .num .v {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--gabon-blue);
+    line-height: 1;
+  }
+  .num .l {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1.3;
+  }
+
+  @media (max-width: 960px) {
+    .top-row { grid-template-columns: 1fr; }
+    .articles { grid-template-columns: 1fr; }
+    .agenda-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body data-page="actus">
+
+<div id="site-header-slot"></div>
+
+<main class="container">
+  <!-- Hero -->
+  <section class="hero" data-screen-label="01 Actualités — Hero">
+    <div class="gabon-stripe">
+      <span class="g1"></span><span class="g2"></span><span class="g3"></span>
+    </div>
+    <span class="kicker" style="margin-top:18px;">Informations &amp; actualités</span>
+    <h1>Actualités du <span class="accent">réseau consulaire.</span></h1>
+    <p class="lede">
+      Dernières nouvelles, événements à venir et communiqués officiels du Ministère des Affaires étrangères et des représentations diplomatiques de la République Gabonaise.
+    </p>
+    <div class="hero-meta-line">
+      <span><b>12</b> articles cette semaine</span>
+      <span class="sep"></span>
+      <span><b>5</b> événements à venir</span>
+      <span class="sep"></span>
+      <span><b>3</b> communiqués officiels</span>
+      <span class="sep"></span>
+      <span>Mise à jour : <b>14 mai 2026</b></span>
+    </div>
+  </section>
+
+  <!-- Tabs -->
+  <div class="tab-bar" data-screen-label="02 Actualités — Filtres">
+    <button class="tab active">
+      <svg class="ic ic-14" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Toutes <span class="count">20</span>
+    </button>
+    <button class="tab">
+      <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+      Actualités <span class="count">12</span>
+    </button>
+    <button class="tab">
+      <svg class="ic ic-14" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Événements <span class="count">5</span>
+    </button>
+    <button class="tab">
+      <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M3 11l18-5v12L3 14v-3z"/></svg>
+      Communiqués <span class="count">3</span>
+    </button>
+  </div>
+
+  <!-- Featured + side rail -->
+  <section class="top-row" data-screen-label="03 Actualités — Une & communiqués">
+    <article class="featured">
+      <div class="featured-art">
+        <span class="placeholder-mono">[ photographie officielle · 16:9 ]</span>
+        <span class="ribbon">À la une</span>
+      </div>
+      <div class="featured-body">
+        <div class="meta-row">
+          <span class="pill pill-info">Actualité</span>
+          <span class="pill" style="background:var(--surface-2);">Diplomatie</span>
+          <span class="dot"></span>
+          <span>12 mai 2026</span>
+          <span class="dot"></span>
+          <span>Lecture 4 min</span>
+        </div>
+        <h2><a href="#">Ouverture officielle du nouveau Consulat général de la République Gabonaise à Houston, Texas.</a></h2>
+        <p class="excerpt">
+          À l'occasion de la mission diplomatique conduite par le Ministre des Affaires étrangères, le Gabon inaugure sa quatrième représentation aux États-Unis. La nouvelle structure desservira les ressortissants de la région du Golfe du Mexique et facilitera les démarches consulaires pour près de 4 200 Gabonais établis dans le sud-ouest américain.
+        </p>
+        <div class="featured-foot">
+          <div class="author">
+            <div class="avatar">DC</div>
+            <div>
+              <div class="name">Direction de la Communication</div>
+              <div class="org">Ministère des Affaires étrangères</div>
+            </div>
+          </div>
+          <a href="#" class="btn btn-ghost btn-sm">
+            Lire l'article
+            <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+    </article>
+
+    <aside class="side">
+      <div class="side-head">
+        <h3>Communiqués officiels</h3>
+        <a href="#" class="all">Tous <svg class="ic ic-14" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
+      </div>
+
+      <a class="commune" href="#">
+        <span class="commune-meta"><span class="ref">N° 2026-118</span> · 13 mai · MAEAI</span>
+        <span class="commune-title">Suspension temporaire de la délivrance des visas long-séjour pour la République Centrafricaine.</span>
+      </a>
+      <a class="commune" href="#">
+        <span class="commune-meta"><span class="ref">N° 2026-115</span> · 11 mai · MAEAI</span>
+        <span class="commune-title">Réorganisation administrative du Consulat de Casablanca — création d'une cellule biométrique.</span>
+      </a>
+      <a class="commune" href="#">
+        <span class="commune-meta"><span class="ref">N° 2026-112</span> · 08 mai · MAEAI</span>
+        <span class="commune-title">Nomination de Madame Yvette Mboumba aux fonctions de Consul général à Pointe-Noire.</span>
+      </a>
+      <a class="commune" href="#">
+        <span class="commune-meta"><span class="ref">N° 2026-108</span> · 06 mai · CMI</span>
+        <span class="commune-title">Tarifs consulaires 2026 — actualisation des frais de chancellerie en zone euro.</span>
+      </a>
+    </aside>
+  </section>
+
+  <!-- Articles grid -->
+  <section data-screen-label="04 Actualités — Articles">
+    <div class="section-head">
+      <h2>Dernières publications <span class="count">12 cette semaine</span></h2>
+      <a href="#" class="all">Tout voir <svg class="ic ic-14" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
+    </div>
+
+    <div class="articles">
+      <a class="article" href="#">
+        <div class="article-art tone-green">
+          <span class="placeholder-mono">[ visuel 16:9 ]</span>
+          <svg class="ic" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        </div>
+        <div class="article-body">
+          <div class="meta-row">
+            <span class="pill pill-success">Coopération</span>
+            <span class="dot"></span>
+            <span>10 mai 2026</span>
+          </div>
+          <h3>Accord bilatéral avec le Sénégal sur la mobilité étudiante.</h3>
+          <p class="excerpt">800 bourses croisées sur cinq ans, premier programme post-CEEAC d'envergure régionale.</p>
+          <div class="cta"><span>3 min de lecture</span><span class="read">Lire →</span></div>
+        </div>
+      </a>
+
+      <a class="article" href="#">
+        <div class="article-art tone-yellow">
+          <span class="placeholder-mono">[ visuel 16:9 ]</span>
+          <svg class="ic" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+        </div>
+        <div class="article-body">
+          <div class="meta-row">
+            <span class="pill pill-warning">Service public</span>
+            <span class="dot"></span>
+            <span>9 mai 2026</span>
+          </div>
+          <h3>Renouvellement de passeport : délais réduits à 7 jours en Europe.</h3>
+          <p class="excerpt">Nouveau circuit logistique opéré depuis Paris pour l'ensemble des consulats de l'espace Schengen.</p>
+          <div class="cta"><span>5 min de lecture</span><span class="read">Lire →</span></div>
+        </div>
+      </a>
+
+      <a class="article" href="#">
+        <div class="article-art tone-blue">
+          <span class="placeholder-mono">[ visuel 16:9 ]</span>
+          <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a14.5 14.5 0 0 1 0 20 14.5 14.5 0 0 1 0-20"/></svg>
+        </div>
+        <div class="article-body">
+          <div class="meta-row">
+            <span class="pill pill-info">International</span>
+            <span class="dot"></span>
+            <span>7 mai 2026</span>
+          </div>
+          <h3>Le Gabon élu vice-président du Conseil exécutif de l'Union Africaine.</h3>
+          <p class="excerpt">Une responsabilité de deux ans pour porter l'agenda climatique et migratoire du continent.</p>
+          <div class="cta"><span>4 min de lecture</span><span class="read">Lire →</span></div>
+        </div>
+      </a>
+
+      <a class="article" href="#">
+        <div class="article-art tone-warm">
+          <span class="placeholder-mono">[ visuel 16:9 ]</span>
+          <svg class="ic" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+        </div>
+        <div class="article-body">
+          <div class="meta-row">
+            <span class="pill pill-warning">Sécurité</span>
+            <span class="dot"></span>
+            <span>5 mai 2026</span>
+          </div>
+          <h3>Avis aux voyageurs : situation sécuritaire au Sahel — recommandations actualisées.</h3>
+          <p class="excerpt">Mise à jour des conseils aux ressortissants gabonais en mission ou en transit.</p>
+          <div class="cta"><span>2 min de lecture</span><span class="read">Lire →</span></div>
+        </div>
+      </a>
+
+      <a class="article" href="#">
+        <div class="article-art tone-green">
+          <span class="placeholder-mono">[ visuel 16:9 ]</span>
+          <svg class="ic" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+        </div>
+        <div class="article-body">
+          <div class="meta-row">
+            <span class="pill pill-success">Diaspora</span>
+            <span class="dot"></span>
+            <span>3 mai 2026</span>
+          </div>
+          <h3>Rencontres de la diaspora : 4 villes, 4 dialogues — programme 2026.</h3>
+          <p class="excerpt">Paris, Bruxelles, Montréal, Washington — cycle de consultations citoyennes du Ministre.</p>
+          <div class="cta"><span>6 min de lecture</span><span class="read">Lire →</span></div>
+        </div>
+      </a>
+
+      <a class="article" href="#">
+        <div class="article-art tone-blue">
+          <span class="placeholder-mono">[ visuel 16:9 ]</span>
+          <svg class="ic" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        </div>
+        <div class="article-body">
+          <div class="meta-row">
+            <span class="pill pill-info">Numérique</span>
+            <span class="dot"></span>
+            <span>30 avril 2026</span>
+          </div>
+          <h3>Consulat.ga v3 — l'identité consulaire entièrement dématérialisée.</h3>
+          <p class="excerpt">Pré-remplissage IA, suivi de dossier temps réel, signature électronique : tour d'horizon.</p>
+          <div class="cta"><span>7 min de lecture</span><span class="read">Lire →</span></div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Agenda + side stack -->
+  <section class="agenda-grid" data-screen-label="05 Actualités — Agenda">
+    <div class="agenda">
+      <div class="side-head" style="padding: 20px 24px 16px; margin-bottom: 0;">
+        <h3 style="font-size:17px;">Agenda &amp; événements <span style="color:var(--text-faint);font-family:var(--mono);font-size:12px;font-weight:400;">· 5 à venir</span></h3>
+        <a href="#" class="all">Tout voir <svg class="ic ic-14" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
+      </div>
+      <div class="agenda-list">
+        <a class="event" href="#">
+          <div class="event-date">
+            <span class="month">Mai</span>
+            <span class="day">22</span>
+          </div>
+          <div class="event-body">
+            <h4>Fête nationale — réception officielle.</h4>
+            <div class="where">
+              <svg class="ic ic-14" viewBox="0 0 24 24" style="color:var(--text-faint)"><path d="M20 10c0 7-8 12-8 12s-8-5-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Ambassade · Paris</span>
+              <span class="dot"></span>
+              <span>19h00 — sur invitation</span>
+            </div>
+          </div>
+          <span class="event-cta">S'inscrire →</span>
+        </a>
+        <a class="event" href="#">
+          <div class="event-date">
+            <span class="month">Mai</span>
+            <span class="day">28</span>
+          </div>
+          <div class="event-body">
+            <h4>Atelier : nouvelle procédure de passeport biométrique.</h4>
+            <div class="where">
+              <svg class="ic ic-14" viewBox="0 0 24 24" style="color:var(--text-faint)"><path d="M20 10c0 7-8 12-8 12s-8-5-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Consulat · Bruxelles</span>
+              <span class="dot"></span>
+              <span>14h30</span>
+              <span class="pill pill-info" style="font-size:10px;padding:1px 7px;">En ligne</span>
+            </div>
+          </div>
+          <span class="event-cta">S'inscrire →</span>
+        </a>
+        <a class="event" href="#">
+          <div class="event-date">
+            <span class="month">Juin</span>
+            <span class="day">04</span>
+          </div>
+          <div class="event-body">
+            <h4>Forum économique Gabon — Belgique.</h4>
+            <div class="where">
+              <svg class="ic ic-14" viewBox="0 0 24 24" style="color:var(--text-faint)"><path d="M20 10c0 7-8 12-8 12s-8-5-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Cercle de Lorraine · Bruxelles</span>
+              <span class="dot"></span>
+              <span>09h00</span>
+            </div>
+          </div>
+          <span class="event-cta">S'inscrire →</span>
+        </a>
+        <a class="event" href="#">
+          <div class="event-date">
+            <span class="month">Juin</span>
+            <span class="day">12</span>
+          </div>
+          <div class="event-body">
+            <h4>Dialogue citoyen — édition Amériques.</h4>
+            <div class="where">
+              <svg class="ic ic-14" viewBox="0 0 24 24" style="color:var(--text-faint)"><path d="M20 10c0 7-8 12-8 12s-8-5-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Ambassade · Washington D.C.</span>
+              <span class="dot"></span>
+              <span>17h00</span>
+            </div>
+          </div>
+          <span class="event-cta">S'inscrire →</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="side-stack">
+      <div class="news-card">
+        <div class="icon">
+          <svg class="ic ic-20" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+        </div>
+        <h3>L'hebdomadaire diplomatique.</h3>
+        <p>Recevez chaque vendredi l'essentiel de l'actualité du réseau consulaire — 4 minutes de lecture.</p>
+        <form class="news-form" onsubmit="event.preventDefault();">
+          <input type="email" placeholder="votre@email.com" />
+          <button type="submit" class="btn btn-primary btn-sm">S'abonner</button>
+        </form>
+      </div>
+
+      <div class="nums-card">
+        <h3>L'année consulaire en bref.</h3>
+        <p class="sub">1<sup>er</sup> semestre 2026 — données provisoires.</p>
+        <div class="nums">
+          <div class="num"><div class="v">12 480</div><div class="l">Inscriptions consulaires</div></div>
+          <div class="num"><div class="v">8 620</div><div class="l">Passeports délivrés</div></div>
+          <div class="num"><div class="v">142</div><div class="l">Missions d'assistance</div></div>
+          <div class="num"><div class="v">96 %</div><div class="l">Satisfaction usagers</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="site-footer-slot"></div>
+
+<script src="shared/site.js"></script>
+</body>
+</html>

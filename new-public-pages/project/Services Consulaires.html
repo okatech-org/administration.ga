@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Services Consulaires — Consulat.ga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/site.css" />
+<style>
+  /* Hero */
+  .hero {
+    padding: 64px 0 48px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+  }
+  .hero-inner {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 48px;
+    align-items: end;
+  }
+  .hero h1 {
+    font-weight: 600;
+    font-size: clamp(44px, 5.4vw, 68px);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin-top: 20px;
+  }
+  .hero h1 em { font-style: normal; color: var(--gabon-blue); }
+  .hero .lede {
+    margin-top: 24px;
+    font-size: 18px;
+    line-height: 1.55;
+    color: var(--text-muted);
+    max-width: 540px;
+  }
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+  .hero-stats .s {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+  }
+  .hero-stats .v {
+    font-weight: 600;
+    font-size: 32px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .hero-stats .v small {
+    font-family: var(--font);
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .hero-stats .l {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* Search & filters band */
+  .search-band {
+    background: var(--bg);
+    position: sticky;
+    top: 64px;
+    z-index: 20;
+    padding: 28px 0 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .search-band .search { max-width: 100%; }
+  .search-band .search input { font-size: 15px; padding: 12px 0; }
+
+  .filters-row {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+  .filters-row::-webkit-scrollbar { height: 6px; }
+  .filters-row::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 100px; }
+
+  .fpill {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 100px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: background 120ms, color 120ms, border-color 120ms;
+    font-family: inherit;
+  }
+  .fpill:hover { color: var(--text); border-color: var(--border-strong); }
+  .fpill.active {
+    background: var(--ink-900);
+    color: #fff;
+    border-color: var(--ink-900);
+  }
+  .fpill .ic { color: inherit; }
+  .fpill .count {
+    font-family: var(--mono);
+    font-size: 11px;
+    opacity: 0.6;
+    margin-left: 2px;
+  }
+
+  /* Results header */
+  .results-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    margin: 56px 0 24px;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .results-head .left {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .results-head h2 {
+    font-weight: 600;
+    font-size: 26px;
+    letter-spacing: -0.02em;
+  }
+  .results-head h2 em { font-style: normal; color: var(--gabon-blue); }
+  .results-head .sublabel { color: var(--text-muted); font-size: 14px; }
+  .sort-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .view-seg {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 4px;
+  }
+  .view-seg button {
+    border: 0;
+    background: transparent;
+    width: 36px; height: 32px;
+    border-radius: 100px;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+  }
+  .view-seg button.active { background: var(--ink-900); color: #fff; }
+
+  /* Featured service (big card) */
+  .featured-service {
+    margin-top: 12px;
+    background: linear-gradient(135deg, var(--gabon-blue) 0%, var(--gabon-blue-deep) 100%);
+    color: #fff;
+    border-radius: var(--radius-2xl);
+    padding: 40px 44px;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 40px;
+    align-items: stretch;
+    overflow: hidden;
+    position: relative;
+  }
+  .featured-service::before {
+    content: "";
+    position: absolute;
+    inset: -50% -20% auto auto;
+    width: 460px; height: 460px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(241,197,49,.35), transparent 65%);
+  }
+  .featured-service .body { position: relative; z-index: 1; }
+  .featured-service .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.2);
+    color: #fff;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .featured-service h3 {
+    font-weight: 600;
+    font-size: 30px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-top: 16px;
+  }
+  .featured-service .desc {
+    margin-top: 14px;
+    color: rgba(255,255,255,.8);
+    font-size: 15px;
+    line-height: 1.55;
+    max-width: 480px;
+  }
+  .featured-service .steps {
+    margin-top: 24px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .featured-service .steps .step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255,255,255,.85);
+    font-size: 13px;
+  }
+  .featured-service .steps .n {
+    width: 22px; height: 22px;
+    border-radius: 100px;
+    background: rgba(255,255,255,.15);
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .featured-service .cta-row {
+    margin-top: 32px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .featured-service .btn-light {
+    background: #fff;
+    color: var(--gabon-blue);
+    border-color: #fff;
+    padding: 12px 22px;
+    min-height: 46px;
+  }
+  .featured-service .btn-soft {
+    background: rgba(255,255,255,.14);
+    color: #fff;
+    border-color: transparent;
+    padding: 12px 22px;
+    min-height: 46px;
+  }
+  .featured-service .meta-side {
+    position: relative;
+    z-index: 1;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    backdrop-filter: blur(8px);
+    align-self: center;
+  }
+  .featured-service .meta-side h4 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,.6);
+    margin-bottom: 16px;
+  }
+  .featured-service .meta-side dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .featured-service .meta-side .row-dl {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+  }
+  .featured-service .meta-side .row-dl:last-child { border-bottom: 0; padding-bottom: 0; }
+  .featured-service .meta-side .row-dl dt { color: rgba(255,255,255,.6); }
+  .featured-service .meta-side .row-dl dd { margin: 0; font-weight: 500; }
+
+  /* Service cards grid */
+  .services {
+    margin-top: 32px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .service {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: border-color 160ms, transform 160ms, box-shadow 160ms;
+    position: relative;
+    overflow: hidden;
+  }
+  .service:hover {
+    border-color: var(--gabon-blue);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+  }
+  .service::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    height: 3px;
+    width: 0;
+    background: var(--gabon-blue);
+    transition: width 160ms;
+  }
+  .service:hover::before { width: 100%; }
+
+  .service-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .service-ic {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .service-ic.t-blue { background: var(--gabon-blue-tint); color: var(--gabon-blue); }
+  .service-ic.t-green { background: var(--gabon-green-tint); color: var(--gabon-green); }
+  .service-ic.t-yellow { background: var(--gabon-yellow-tint); color: #8a6b00; }
+  .service-ic.t-warm { background: var(--warning-tint); color: var(--warning); }
+  .service-ic.t-danger { background: var(--danger-tint); color: var(--danger); }
+  .service-cat {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+  }
+
+  .service h3 {
+    font-size: 20px;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+  }
+  .service-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .service-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px dashed var(--border);
+    padding-top: 16px;
+    margin-top: auto;
+  }
+  .service-info {
+    display: flex;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .service-info .line {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .service-info .ic { color: var(--text-faint); }
+  .service-info b { color: var(--text); font-weight: 500; }
+  .service-info .free { color: var(--success); font-weight: 600; }
+  .service-cta {
+    color: var(--gabon-blue);
+    font-weight: 500;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Online badge */
+  .ribbon-online {
+    position: absolute;
+    top: 14px; right: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    background: var(--gabon-blue-tint);
+    color: var(--gabon-blue);
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .ribbon-online::before {
+    content: "";
+    width: 6px; height: 6px;
+    background: var(--gabon-blue);
+    border-radius: 100px;
+  }
+
+  /* Pagination */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: 48px;
+  }
+  .pagination button {
+    width: 38px; height: 38px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .pagination button:hover { background: var(--surface-2); }
+  .pagination button.active {
+    background: var(--ink-900);
+    color: #fff;
+    border-color: var(--ink-900);
+  }
+  .pagination .label {
+    padding: 0 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* Help band */
+  .help-band {
+    margin-top: 96px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .help-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-2xl);
+    padding: 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .help-card.dark {
+    background: var(--ink-900);
+    color: #fff;
+    border-color: var(--ink-900);
+    position: relative;
+    overflow: hidden;
+  }
+  .help-card.dark::before {
+    content: "";
+    position: absolute;
+    inset: auto -30% -50% auto;
+    width: 360px; height: 360px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(241,197,49,.25), transparent 60%);
+  }
+  .help-card h3 {
+    font-weight: 600;
+    font-size: 24px;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+    position: relative; z-index: 1;
+  }
+  .help-card p { color: var(--text-muted); font-size: 15px; line-height: 1.55; max-width: 44ch; position: relative; z-index: 1; }
+  .help-card.dark p { color: rgba(255,255,255,.7); }
+  .help-card .actions { margin-top: auto; padding-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; position: relative; z-index: 1; }
+  .help-card.dark .btn-soft { background: rgba(255,255,255,.14); color: #fff; border-color: transparent; }
+  .help-card.dark .btn-soft:hover { background: rgba(255,255,255,.22); }
+  .help-card .number {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  @media (max-width: 960px) {
+    .hero-inner { grid-template-columns: 1fr; }
+    .featured-service { grid-template-columns: 1fr; padding: 28px; }
+    .services { grid-template-columns: 1fr; }
+    .help-band { grid-template-columns: 1fr; }
+    .hero-stats { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body data-page="services">
+
+<div id="site-header-slot"></div>
+
+<main>
+  <!-- HERO -->
+  <section class="hero" data-screen-label="01 Services — Hero">
+    <div class="container">
+      <div class="hero-inner">
+        <div>
+          <span class="kicker">Nos services</span>
+          <h1>
+            Vingt-huit services<br />
+            <em>au service</em> des Gabonais.
+          </h1>
+          <p class="lede">
+            L'ensemble des démarches consulaires proposées par les représentations diplomatiques de la République Gabonaise — disponibles en ligne, sur place, ou en circuit accéléré.
+          </p>
+        </div>
+        <div class="hero-stats">
+          <div class="s">
+            <div class="v">28<small>services</small></div>
+            <div class="l">Démarches officielles disponibles dans le réseau consulaire.</div>
+          </div>
+          <div class="s">
+            <div class="v">19</div>
+            <div class="l">Réalisables intégralement en ligne, depuis votre espace personnel.</div>
+          </div>
+          <div class="s">
+            <div class="v">5j<small>moy.</small></div>
+            <div class="l">Délai moyen de traitement, hors procédures spécifiques.</div>
+          </div>
+          <div class="s">
+            <div class="v">96 %</div>
+            <div class="l">Taux de satisfaction des usagers (enquête T1 2026).</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Search & filters band -->
+  <div class="search-band">
+    <div class="container">
+      <div class="search">
+        <svg class="ic ic-18" viewBox="0 0 24 24" style="color:var(--text-muted)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" placeholder="Rechercher un service par nom — passeport, mariage, fiscalité, certification…" />
+        <button class="btn btn-primary search-cta">Rechercher</button>
+      </div>
+      <div class="filters-row">
+        <button class="fpill active">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Tous <span class="count">28</span>
+        </button>
+        <button class="fpill">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+          Passeports <span class="count">5</span>
+        </button>
+        <button class="fpill">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a14.5 14.5 0 0 1 0 20 14.5 14.5 0 0 1 0-20"/></svg>
+          Visas <span class="count">4</span>
+        </button>
+        <button class="fpill">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          État civil <span class="count">6</span>
+        </button>
+        <button class="fpill">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Inscription <span class="count">3</span>
+        </button>
+        <button class="fpill">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+          Certification <span class="count">4</span>
+        </button>
+        <button class="fpill">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+          Assistance <span class="count">3</span>
+        </button>
+        <button class="fpill">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>
+          Déclarations <span class="count">3</span>
+        </button>
+        <span style="display:inline-block;width:1px;background:var(--border);align-self:stretch;margin:0 4px;"></span>
+        <button class="fpill">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+          100 % en ligne
+        </button>
+        <button class="fpill">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><polygon points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Express &lt; 3 jours
+        </button>
+        <button class="fpill">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Gratuit
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Featured service -->
+    <section class="featured-service" data-screen-label="02 Services — Service en vedette">
+      <div class="body">
+        <span class="badge">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Service phare · 6 200 demandes ce mois-ci
+        </span>
+        <h3>Demande de passeport biométrique gabonais.</h3>
+        <p class="desc">
+          Première délivrance ou renouvellement, depuis votre lieu de résidence à l'étranger. Inscription numérique, prise des biométries au consulat, livraison sécurisée — circuit complet, à votre rythme.
+        </p>
+        <div class="steps">
+          <div class="step"><span class="n">1</span> Préinscription en ligne</div>
+          <div class="step"><span class="n">2</span> RDV biométrique</div>
+          <div class="step"><span class="n">3</span> Paiement &amp; suivi</div>
+          <div class="step"><span class="n">4</span> Réception du titre</div>
+        </div>
+        <div class="cta-row">
+          <a class="btn btn-light" href="Inscription Consulaire.html">
+            Démarrer la demande
+            <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+          <a class="btn btn-soft" href="#">Documents requis</a>
+        </div>
+      </div>
+      <div class="meta-side">
+        <h4>En bref</h4>
+        <dl>
+          <div class="row-dl"><dt>Catégorie</dt><dd>Passeports</dd></div>
+          <div class="row-dl"><dt>Délai standard</dt><dd>21 jours ouvrés</dd></div>
+          <div class="row-dl"><dt>Délai express</dt><dd>7 jours <span style="color:#f1c531;">★</span></dd></div>
+          <div class="row-dl"><dt>Frais</dt><dd>60 € (express : +60 €)</dd></div>
+          <div class="row-dl"><dt>Validité du titre</dt><dd>5 ans (adultes)</dd></div>
+          <div class="row-dl"><dt>Public</dt><dd>Ressortissants gabonais</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- Catalog -->
+    <div class="results-head" data-screen-label="03 Services — Catalogue">
+      <div class="left">
+        <h2>Catalogue <em>complet.</em></h2>
+        <span class="sublabel">28 services · triés par fréquence d'utilisation</span>
+      </div>
+      <div class="sort-bar">
+        <button class="btn btn-soft btn-sm">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M7 12h10"/><path d="M11 18h2"/></svg>
+          Trier : fréquence
+          <svg class="ic ic-14" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="view-seg">
+          <button class="active" aria-label="Grille"><svg class="ic ic-16" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button>
+          <button aria-label="Liste"><svg class="ic ic-16" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="services">
+      <!-- 9 service cards -->
+      <a class="service" href="Inscription Consulaire.html">
+        <span class="ribbon-online">100 % en ligne</span>
+        <div class="service-top">
+          <div class="service-ic t-blue">
+            <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          </div>
+          <span class="service-cat">Inscription consulaire</span>
+        </div>
+        <div>
+          <h3>Inscription au registre consulaire</h3>
+          <p class="service-desc">Inscription obligatoire pour tout Gabonais résidant à l'étranger plus de six mois.</p>
+        </div>
+        <div class="service-foot">
+          <div class="service-info">
+            <span class="line"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <b>7 j</b></span>
+            <span class="line free">Gratuit</span>
+          </div>
+          <span class="service-cta">En savoir plus →</span>
+        </div>
+      </a>
+
+      <a class="service" href="#">
+        <span class="ribbon-online">100 % en ligne</span>
+        <div class="service-top">
+          <div class="service-ic t-yellow">
+            <svg class="ic ic-20" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+          </div>
+          <span class="service-cat">Passeports</span>
+        </div>
+        <div>
+          <h3>Passeport biométrique</h3>
+          <p class="service-desc">Première demande ou renouvellement — biométrique, valable 5 ans.</p>
+        </div>
+        <div class="service-foot">
+          <div class="service-info">
+            <span class="line"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <b>21 j</b></span>
+            <span class="line"><b>60 €</b></span>
+          </div>
+          <span class="service-cta">En savoir plus →</span>
+        </div>
+      </a>
+
+      <a class="service" href="#">
+        <div class="service-top">
+          <div class="service-ic t-blue">
+            <svg class="ic ic-20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a14.5 14.5 0 0 1 0 20 14.5 14.5 0 0 1 0-20"/></svg>
+          </div>
+          <span class="service-cat">Visas</span>
+        </div>
+        <div>
+          <h3>Demande de visa (étrangers)</h3>
+          <p class="service-desc">Tout ressortissant étranger souhaitant se rendre au Gabon pour raisons professionnelles ou personnelles.</p>
+        </div>
+        <div class="service-foot">
+          <div class="service-info">
+            <span class="line"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <b>7 j</b></span>
+            <span class="line"><b>dès 35 €</b></span>
+          </div>
+          <span class="service-cta">En savoir plus →</span>
+        </div>
+      </a>
+
+      <a class="service" href="#">
+        <span class="ribbon-online">100 % en ligne</span>
+        <div class="service-top">
+          <div class="service-ic t-blue">
+            <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          </div>
+          <span class="service-cat">Inscription consulaire</span>
+        </div>
+        <div>
+          <h3>Carte consulaire</h3>
+          <p class="service-desc">Document d'identification des ressortissants gabonais résidant à l'étranger. Obligatoire pour tout Gabonais inscrit.</p>
+        </div>
+        <div class="service-foot">
+          <div class="service-info">
+            <span class="line"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <b>7 j</b></span>
+            <span class="line free">Gratuit</span>
+          </div>
+          <span class="service-cta">En savoir plus →</span>
+        </div>
+      </a>
+
+      <a class="service" href="#">
+        <div class="service-top">
+          <div class="service-ic t-green">
+            <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+          </div>
+          <span class="service-cat">État civil</span>
+        </div>
+        <div>
+          <h3>Acte de naissance</h3>
+          <p class="service-desc">Délivrance d'un acte de naissance gabonais et transcription d'un acte de naissance étranger.</p>
+        </div>
+        <div class="service-foot">
+          <div class="service-info">
+            <span class="line"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <b>5 j</b></span>
+            <span class="line free">Gratuit</span>
+          </div>
+          <span class="service-cta">En savoir plus →</span>
+        </div>
+      </a>
+
+      <a class="service" href="#">
+        <div class="service-top">
+          <div class="service-ic t-green">
+            <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M11 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M11 9V2.5"/><path d="m18 16-2-1.5"/><path d="m6 16 2-1.5"/><path d="M11 17v4"/></svg>
+          </div>
+          <span class="service-cat">État civil</span>
+        </div>
+        <div>
+          <h3>Transcription de mariage</h3>
+          <p class="service-desc">Reconnaissance et inscription au registre gabonais d'un mariage célébré à l'étranger.</p>
+        </div>
+        <div class="service-foot">
+          <div class="service-info">
+            <span class="line"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <b>14 j</b></span>
+            <span class="line"><b>20 €</b></span>
+          </div>
+          <span class="service-cta">En savoir plus →</span>
+        </div>
+      </a>
+
+      <a class="service" href="#">
+        <div class="service-top">
+          <div class="service-ic t-yellow">
+            <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+          </div>
+          <span class="service-cat">Certification</span>
+        </div>
+        <div>
+          <h3>Légalisation de document</h3>
+          <p class="service-desc">Certification de l'authenticité d'un document gabonais destiné à un usage à l'étranger.</p>
+        </div>
+        <div class="service-foot">
+          <div class="service-info">
+            <span class="line"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <b>3 j</b></span>
+            <span class="line"><b>15 €</b></span>
+          </div>
+          <span class="service-cta">En savoir plus →</span>
+        </div>
+      </a>
+
+      <a class="service" href="#">
+        <div class="service-top">
+          <div class="service-ic t-warm">
+            <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+          </div>
+          <span class="service-cat">Assistance</span>
+        </div>
+        <div>
+          <h3>Assistance consulaire d'urgence</h3>
+          <p class="service-desc">Décès, hospitalisation, perte de documents, situation de détresse — accompagnement consulaire.</p>
+        </div>
+        <div class="service-foot">
+          <div class="service-info">
+            <span class="line"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <b>24/7</b></span>
+            <span class="line free">Gratuit</span>
+          </div>
+          <span class="service-cta">En savoir plus →</span>
+        </div>
+      </a>
+
+      <a class="service" href="#">
+        <span class="ribbon-online">100 % en ligne</span>
+        <div class="service-top">
+          <div class="service-ic t-blue">
+            <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <span class="service-cat">Inscription consulaire</span>
+        </div>
+        <div>
+          <h3>Signalement de passage</h3>
+          <p class="service-desc">Pour Gabonais en séjour temporaire (moins de 6 mois) — facilite l'assistance en cas d'urgence.</p>
+        </div>
+        <div class="service-foot">
+          <div class="service-info">
+            <span class="line"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <b>3 j</b></span>
+            <span class="line free">Gratuit</span>
+          </div>
+          <span class="service-cta">En savoir plus →</span>
+        </div>
+      </a>
+
+      <a class="service" href="#">
+        <div class="service-top">
+          <div class="service-ic t-yellow">
+            <svg class="ic ic-20" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+          </div>
+          <span class="service-cat">Passeports</span>
+        </div>
+        <div>
+          <h3>Laissez-passer consulaire</h3>
+          <p class="service-desc">Titre de voyage d'urgence en cas de perte ou vol du passeport — pour retour au Gabon uniquement.</p>
+        </div>
+        <div class="service-foot">
+          <div class="service-info">
+            <span class="line"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <b>48 h</b></span>
+            <span class="line"><b>40 €</b></span>
+          </div>
+          <span class="service-cta">En savoir plus →</span>
+        </div>
+      </a>
+
+      <a class="service" href="Certificat de Nationalité.html">
+        <span class="ribbon-online">100 % en ligne</span>
+        <div class="service-top">
+          <div class="service-ic t-green">
+            <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+          </div>
+          <span class="service-cat">État civil</span>
+        </div>
+        <div>
+          <h3>Certificat de nationalité</h3>
+          <p class="service-desc">Document officiel attestant la nationalité gabonaise — exigé pour concours, fonction publique, succession.</p>
+        </div>
+        <div class="service-foot">
+          <div class="service-info">
+            <span class="line"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <b>10 j</b></span>
+            <span class="line"><b>25 €</b></span>
+          </div>
+          <span class="service-cta">En savoir plus →</span>
+        </div>
+      </a>
+
+      <a class="service" href="#">
+        <span class="ribbon-online">100 % en ligne</span>
+        <div class="service-top">
+          <div class="service-ic t-yellow">
+            <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+          </div>
+          <span class="service-cat">Certification</span>
+        </div>
+        <div>
+          <h3>Certification conforme</h3>
+          <p class="service-desc">Copie certifiée conforme d'un document original gabonais ou étranger.</p>
+        </div>
+        <div class="service-foot">
+          <div class="service-info">
+            <span class="line"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <b>2 j</b></span>
+            <span class="line"><b>10 €</b></span>
+          </div>
+          <span class="service-cta">En savoir plus →</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Pagination -->
+    <nav class="pagination" aria-label="Pagination">
+      <button aria-label="Précédent"><svg class="ic ic-14" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+      <button class="active">1</button>
+      <button>2</button>
+      <button>3</button>
+      <span class="label">12 sur 28 affichés</span>
+      <button aria-label="Suivant"><svg class="ic ic-14" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+    </nav>
+
+    <!-- Help band -->
+    <section class="help-band" data-screen-label="04 Services — Aide">
+      <div class="help-card">
+        <span class="kicker" style="background:var(--surface-2);color:var(--text);border:1px solid var(--border);">Vous ne savez pas par où commencer ?</span>
+        <h3>Un assistant pour identifier la démarche qu'il vous faut.</h3>
+        <p>Répondez à 5 questions sur votre situation — nationalité, lieu de résidence, type de demande — et nous vous orientons vers le service adapté avec la liste précise des pièces à fournir.</p>
+        <div class="actions">
+          <a href="#" class="btn btn-primary">
+            <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M9.5 3.5 11 7l3.5 1.5L11 10l-1.5 3.5L8 10l-3.5-1.5L8 7Z"/><path d="M18 13v4"/><path d="M16 15h4"/></svg>
+            Démarrer l'assistant
+          </a>
+          <a href="Ressources.html" class="btn btn-ghost">Consulter les guides</a>
+        </div>
+      </div>
+      <div class="help-card dark">
+        <span class="kicker" style="background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.15);">Urgence consulaire</span>
+        <h3>Permanence d'assistance, 24h/24, 7j/7.</h3>
+        <p>Pour les ressortissants gabonais en situation de détresse à l'étranger : décès, hospitalisation, arrestation, perte de documents en zone à risque.</p>
+        <div class="actions" style="align-items:center;">
+          <span class="number">+241 11 70 25 25</span>
+          <a href="#" class="btn btn-soft">
+            <svg class="ic ic-16" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+            urgence@maeai.ga
+          </a>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div id="site-footer-slot"></div>
+
+<script src="shared/site.js"></script>
+</body>
+</html>

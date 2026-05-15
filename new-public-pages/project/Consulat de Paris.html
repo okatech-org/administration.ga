@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ambassade · Paris — Consulat.ga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/site.css" />
+<style>
+  /* ===== Breadcrumb ===== */
+  .breadcrumb {
+    margin: 24px 0 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  .breadcrumb a { color: var(--text-muted); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--text); text-decoration: underline; }
+  .breadcrumb .sep { opacity: 0.5; }
+  .breadcrumb .here { color: var(--text); font-weight: 500; }
+
+  /* ===== Hero ===== */
+  .hero {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 32px;
+    padding: 8px 0 32px;
+    align-items: end;
+    margin-bottom: 24px;
+  }
+  .hero-meta-pills {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .flag-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 6px 14px 6px 6px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .flag {
+    width: 28px; height: 20px;
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.08);
+    display: flex;
+  }
+  .flag > span { flex: 1; }
+  .flag.fr > span:nth-child(1) { background: #002654; }
+  .flag.fr > span:nth-child(2) { background: #fff; }
+  .flag.fr > span:nth-child(3) { background: #ed2939; }
+
+  .hero h1 {
+    font-size: clamp(36px, 4.6vw, 56px);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    margin-top: 16px;
+  }
+  .hero h1 .sub { color: var(--text-muted); font-weight: 400; display: block; font-size: 0.55em; letter-spacing: -0.01em; margin-top: 8px; }
+  .hero-address {
+    margin-top: 18px;
+    font-size: 15px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.5;
+  }
+  .hero-address svg { color: var(--gabon-blue); margin-top: 3px; flex-shrink: 0; }
+  .hero-status-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .status-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--success);
+    font-weight: 600;
+  }
+  .status-open::before {
+    content: "";
+    width: 8px; height: 8px;
+    border-radius: 100px;
+    background: var(--success);
+    box-shadow: 0 0 0 3px var(--success-tint);
+  }
+
+  /* Hero right — actions */
+  .hero-actions {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .hero-actions .btn { justify-content: flex-start; padding: 12px 16px; min-height: 48px; }
+  .hero-actions .btn-primary svg { color: #fff; }
+
+  /* ===== Map placeholder ===== */
+  .map {
+    height: 260px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background:
+      linear-gradient(135deg, rgba(11,79,156,.05), rgba(10,138,59,.04)),
+      repeating-linear-gradient(0deg, var(--surface-2) 0 1px, transparent 1px 56px),
+      repeating-linear-gradient(90deg, var(--surface-2) 0 1px, transparent 1px 56px),
+      var(--surface-3);
+    position: relative;
+    margin-bottom: 32px;
+  }
+  .map::before {
+    /* Seine river */
+    content: "";
+    position: absolute;
+    inset: 60% 0 30% 0;
+    background: linear-gradient(90deg, transparent, rgba(11,79,156,.18) 20%, rgba(11,79,156,.22) 40%, rgba(11,79,156,.18) 60%, transparent);
+    transform: skewY(-2deg);
+  }
+  .map .pin {
+    position: absolute;
+    top: 42%;
+    left: 36%;
+    transform: translate(-50%, -100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .map .pin-marker {
+    width: 36px; height: 36px;
+    border-radius: 50% 50% 50% 0;
+    background: var(--gabon-blue);
+    transform: rotate(-45deg);
+    display: grid;
+    place-items: center;
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(11,79,156,.45);
+    border: 2.5px solid #fff;
+  }
+  .map .pin-marker .ic { transform: rotate(45deg); }
+  .map .pin-label {
+    margin-top: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    box-shadow: var(--shadow-sm);
+  }
+  .map .map-controls {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .map .map-controls button {
+    width: 32px; height: 32px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 8px;
+    color: var(--text);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+  }
+  .map .map-overlay {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: var(--shadow-sm);
+  }
+  .map .map-overlay .ic { color: var(--gabon-blue); }
+
+  /* ===== Layout ===== */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 32px;
+    align-items: start;
+  }
+
+  /* Card */
+  .pcard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+  }
+  .pcard + .pcard { margin-top: 16px; }
+  .pcard-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    margin-bottom: 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .pcard-head h2 { font-size: 18px; font-weight: 600; letter-spacing: -0.005em; display: flex; align-items: center; gap: 10px; }
+  .pcard-head h2 .ic-bg {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--gabon-blue-tint);
+    color: var(--gabon-blue);
+    display: grid;
+    place-items: center;
+  }
+  .pcard-head .all {
+    color: var(--gabon-blue);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Coordonnées grid */
+  .coord-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .coord {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .coord .l { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 500; }
+  .coord .v { font-size: 14px; font-weight: 500; word-break: break-word; }
+  .coord .v.mono { font-family: var(--mono); }
+  .coord a { color: var(--gabon-blue); text-decoration: none; }
+  .coord a:hover { text-decoration: underline; }
+  .coord .copy {
+    align-self: flex-end;
+    font-size: 11px;
+    color: var(--text-faint);
+    padding: 2px 8px;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    background: var(--surface-2);
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 4px;
+  }
+
+  /* Horaires */
+  .hours {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .hour-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .hour-row:nth-last-child(-n+2) { border-bottom: 0; }
+  .hour-row.today { color: var(--gabon-blue); font-weight: 600; }
+  .hour-row .d { font-weight: 500; }
+  .hour-row .t { color: var(--text-muted); font-family: var(--mono); font-size: 13px; }
+  .hour-row.today .t { color: var(--gabon-blue); }
+  .hour-row.closed .t { color: var(--text-faint); }
+  .hours > .hour-row:nth-child(odd) { padding-right: 24px; }
+  .hours > .hour-row:nth-child(even) { padding-left: 24px; border-left: 1px solid var(--border); }
+
+  .hours-note {
+    background: var(--warning-tint);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--warning);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .hours-note svg { flex-shrink: 0; margin-top: 2px; }
+
+  /* Services chips */
+  .svc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .svc {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 120ms, background 120ms;
+  }
+  .svc:hover { border-color: var(--gabon-blue); background: var(--surface-2); }
+  .svc-ic {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--text);
+    display: grid;
+    place-items: center;
+  }
+  .svc h4 { font-size: 14px; font-weight: 600; line-height: 1.2; }
+  .svc .sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .svc .arrow { color: var(--text-faint); }
+  .svc:hover .arrow { color: var(--gabon-blue); }
+
+  /* Staff */
+  .staff-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .staff {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .staff-avatar {
+    width: 44px; height: 44px;
+    border-radius: 100px;
+    background: var(--gabon-blue-tint);
+    color: var(--gabon-blue);
+    display: grid;
+    place-items: center;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .staff h4 { font-size: 14px; font-weight: 600; }
+  .staff .role { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* News items */
+  .news-row {
+    display: grid;
+    grid-template-columns: 80px 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+    text-decoration: none;
+    color: inherit;
+  }
+  .news-row:first-of-type { border-top: 0; }
+  .news-row .date {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 8px;
+    text-align: center;
+    line-height: 1;
+  }
+  .news-row .date .m { font-size: 10px; color: var(--gabon-blue); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+  .news-row .date .d { font-size: 18px; font-weight: 600; margin-top: 4px; letter-spacing: -0.02em; }
+  .news-row h4 { font-size: 14px; font-weight: 500; line-height: 1.4; }
+  .news-row .ck { color: var(--text-faint); }
+  .news-row:hover h4 { color: var(--gabon-blue); }
+
+  /* ===== Call widget (online calling) ===== */
+  .call-card {
+    background: linear-gradient(135deg, var(--gabon-blue) 0%, var(--gabon-blue-deep) 100%);
+    color: #fff;
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .call-card::before {
+    content: "";
+    position: absolute;
+    inset: -40% -20% auto auto;
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(241,197,49,.25), transparent 70%);
+    pointer-events: none;
+  }
+  .call-card > * { position: relative; z-index: 1; }
+  .call-card .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .call-card .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,.7);
+    font-weight: 500;
+  }
+  .call-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,.15);
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .call-status::before {
+    content: "";
+    width: 7px; height: 7px;
+    border-radius: 100px;
+    background: #4cc47a;
+    box-shadow: 0 0 0 3px rgba(76,196,122,.3);
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+  @keyframes pulse-soft { 50% { box-shadow: 0 0 0 6px rgba(76,196,122,0); } }
+
+  .call-card h3 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .call-card .meta {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 13px;
+    color: rgba(255,255,255,.75);
+  }
+  .call-card .meta .item { display: inline-flex; align-items: center; gap: 6px; }
+  .call-card .meta b { color: #fff; font-weight: 500; }
+
+  .call-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 8px;
+  }
+  .btn-call {
+    flex: 1;
+    background: #fff;
+    color: var(--gabon-blue);
+    border: 0;
+    border-radius: 100px;
+    padding: 14px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: inherit;
+    transition: background 120ms;
+  }
+  .btn-call:hover { background: #fcfaf2; }
+  .btn-call-video {
+    width: 48px; height: 48px;
+    background: rgba(255,255,255,.18);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 100px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    font-family: inherit;
+  }
+  .btn-call-video:hover { background: rgba(255,255,255,.28); }
+
+  .call-foot {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,.15);
+    font-size: 11px;
+    color: rgba(255,255,255,.6);
+    line-height: 1.45;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .call-foot .ic { color: rgba(255,255,255,.6); }
+  .call-foot .alt {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: rgba(255,255,255,.75);
+  }
+  .call-foot .alt a { color: #fff; text-decoration: none; font-family: var(--mono); font-weight: 500; }
+
+  /* Aside card variants */
+  .side-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+  }
+  .side-card + .side-card { margin-top: 16px; }
+  .side-card h3 { font-size: 15px; font-weight: 600; }
+  .side-card p { font-size: 13px; color: var(--text-muted); margin-top: 8px; line-height: 1.55; }
+  .side-card .actions { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .side-card .actions .btn { width: 100%; }
+
+  /* Inscription invite */
+  .invite-card {
+    background: var(--gabon-blue-tint);
+    border: 1px solid transparent;
+    border-radius: var(--radius-lg);
+    padding: 20px;
+  }
+  .invite-card h3 { color: var(--gabon-blue); font-size: 15px; font-weight: 600; }
+  .invite-card p { font-size: 13px; color: var(--text); margin-top: 8px; line-height: 1.5; }
+  .invite-card .btn { width: 100%; margin-top: 14px; }
+
+  /* Quick stats card */
+  .qstats {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+  }
+  .qstats h3 { font-size: 15px; font-weight: 600; margin-bottom: 14px; }
+  .qstat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .qstat-row:first-of-type { border-top: 0; }
+  .qstat-row .l { color: var(--text-muted); }
+  .qstat-row .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* Documents */
+  .doc-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px dashed var(--border);
+    font-size: 13px;
+    text-decoration: none;
+    color: inherit;
+  }
+  .doc-row:first-of-type { border-top: 0; padding-top: 0; }
+  .doc-row .ic { color: var(--gabon-blue); }
+  .doc-row .name { flex: 1; font-weight: 500; }
+  .doc-row .size { color: var(--text-faint); font-family: var(--mono); font-size: 11px; }
+  .doc-row:hover .name { color: var(--gabon-blue); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: 1fr; }
+    .hero { grid-template-columns: 1fr; }
+    .coord-grid { grid-template-columns: 1fr; }
+    .hours { grid-template-columns: 1fr; }
+    .hours > .hour-row:nth-child(even) { padding-left: 0; border-left: 0; }
+    .hours > .hour-row:nth-child(odd) { padding-right: 0; }
+    .svc-grid, .staff-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body data-page="reseau">
+
+<div id="site-header-slot"></div>
+
+<main class="container">
+  <nav class="breadcrumb" aria-label="Fil d'Ariane">
+    <a href="Inscription Consulaire.html">Accueil</a>
+    <span class="sep">›</span>
+    <a href="Réseau Mondial.html">Réseau mondial</a>
+    <span class="sep">›</span>
+    <a href="#">Europe</a>
+    <span class="sep">›</span>
+    <a href="#">France</a>
+    <span class="sep">›</span>
+    <span class="here">Ambassade · Paris</span>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" data-screen-label="01 Paris — Hero">
+    <div>
+      <div class="hero-meta-pills">
+        <span class="flag-card">
+          <span class="flag fr"><span></span><span></span><span></span></span>
+          France
+        </span>
+        <span class="pill pill-info">Ambassade · plein exercice</span>
+        <span class="pill" style="background:var(--gabon-yellow-tint);color:#8a6b00;border-color:transparent;">Siège régional · Europe</span>
+      </div>
+      <h1>
+        Ambassade de la République Gabonaise à Paris
+        <span class="sub">Compétence : France métropolitaine, DROM-COM, Monaco, Andorre.</span>
+      </h1>
+      <div class="hero-address">
+        <svg class="ic ic-18" viewBox="0 0 24 24"><path d="M20 10c0 7-8 12-8 12s-8-5-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+        <span>26 bis, Avenue Raphaël · 75016 Paris, France<br />
+        <span style="color:var(--text-faint);font-size:13px;">Métro Ranelagh (ligne 9) · 8 min à pied</span></span>
+      </div>
+      <div class="hero-status-row">
+        <span class="status-open">Ouvert</span>
+        <span>· ferme à 16:00</span>
+        <span style="opacity:.4">•</span>
+        <span>Téléphone : <b style="color:var(--text);font-family:var(--mono);font-weight:500;">+33 1 42 24 79 60</b></span>
+        <span style="opacity:.4">•</span>
+        <span>Effectif : <b style="color:var(--text);font-weight:500;">28 agents</b></span>
+      </div>
+    </div>
+
+    <aside class="hero-actions">
+      <span class="kicker" style="margin-bottom: 4px;">Actions rapides</span>
+      <button class="btn btn-primary">
+        <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Appeler en ligne
+        <span style="margin-left:auto;font-size:11px;background:rgba(255,255,255,.18);padding:2px 8px;border-radius:100px;font-weight:500;">~ 2 min</span>
+      </button>
+      <button class="btn btn-soft">
+        <svg class="ic ic-16" viewBox="0 0 24 24" style="color:var(--gabon-blue)"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Prendre rendez-vous
+      </button>
+      <button class="btn btn-soft">
+        <svg class="ic ic-16" viewBox="0 0 24 24" style="color:var(--gabon-blue)"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+        Écrire à l'ambassade
+      </button>
+      <button class="btn btn-text btn-sm" style="margin-top:4px;">
+        <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        Itinéraire &amp; transports
+      </button>
+    </aside>
+  </section>
+
+  <!-- Map -->
+  <section data-screen-label="02 Paris — Carte">
+    <div class="map">
+      <div class="map-controls">
+        <button aria-label="Zoom in"><svg class="ic ic-14" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        <button aria-label="Zoom out"><svg class="ic ic-14" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      </div>
+      <div class="pin">
+        <div class="pin-marker">
+          <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M3 9.5L12 2l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9 21V12h6v9"/></svg>
+        </div>
+        <span class="pin-label">Ambassade du Gabon</span>
+      </div>
+      <span class="map-overlay">
+        <svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a14.5 14.5 0 0 1 0 20 14.5 14.5 0 0 1 0-20"/></svg>
+        OpenStreetMap · 48.8588° N, 2.2664° E
+      </span>
+    </div>
+  </section>
+
+  <!-- Main grid -->
+  <div class="layout">
+    <div>
+      <!-- Coordonnées -->
+      <section class="pcard" data-screen-label="03 Paris — Coordonnées">
+        <div class="pcard-head">
+          <h2>
+            <span class="ic-bg"><svg class="ic ic-16" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
+            Coordonnées
+          </h2>
+        </div>
+        <div class="coord-grid">
+          <div class="coord">
+            <span class="l">Standard</span>
+            <span class="v mono">+33 1 42 24 79 60</span>
+            <button class="copy">Copier</button>
+          </div>
+          <div class="coord">
+            <span class="l">Urgences (24/7)</span>
+            <span class="v mono">+33 6 47 88 02 12</span>
+            <button class="copy">Copier</button>
+          </div>
+          <div class="coord">
+            <span class="l">Email — accueil</span>
+            <span class="v"><a href="mailto:contact@ambassade-gabon.fr">contact@ambassade-gabon.fr</a></span>
+          </div>
+          <div class="coord">
+            <span class="l">Email — visas</span>
+            <span class="v"><a href="mailto:visas@ambassade-gabon.fr">visas@ambassade-gabon.fr</a></span>
+          </div>
+          <div class="coord">
+            <span class="l">Site officiel</span>
+            <span class="v"><a href="#">www.ambassade-gabon.fr</a></span>
+          </div>
+          <div class="coord">
+            <span class="l">Réseaux sociaux</span>
+            <span class="v" style="display:flex;gap:8px;flex-wrap:wrap;">
+              <a href="#" class="pill" style="border-color:var(--border);">Facebook</a>
+              <a href="#" class="pill" style="border-color:var(--border);">X / Twitter</a>
+              <a href="#" class="pill" style="border-color:var(--border);">LinkedIn</a>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Horaires -->
+      <section class="pcard" data-screen-label="04 Paris — Horaires">
+        <div class="pcard-head">
+          <h2>
+            <span class="ic-bg"><svg class="ic ic-16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+            Horaires d'ouverture au public
+          </h2>
+          <span class="text-muted text-xs" style="font-size:12px;">Fuseau Europe/Paris (CET)</span>
+        </div>
+        <div class="hours">
+          <div class="hour-row"><span class="d">Lundi</span><span class="t">09:30 – 16:00</span></div>
+          <div class="hour-row"><span class="d">Mardi</span><span class="t">09:30 – 16:00</span></div>
+          <div class="hour-row"><span class="d">Mercredi</span><span class="t">09:30 – 13:00</span></div>
+          <div class="hour-row today"><span class="d">Jeudi · aujourd'hui</span><span class="t">09:30 – 16:00</span></div>
+          <div class="hour-row"><span class="d">Vendredi</span><span class="t">09:30 – 16:00</span></div>
+          <div class="hour-row closed"><span class="d">Samedi</span><span class="t">Fermé</span></div>
+          <div class="hour-row closed"><span class="d">Dimanche</span><span class="t">Fermé</span></div>
+        </div>
+        <div class="hours-note">
+          <svg class="ic ic-16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          <div>
+            <strong>Fermeture exceptionnelle</strong> — 22 mai 2026 (Fête nationale gabonaise). Réouverture le 23 mai à 09:30.
+            La permanence d'urgence reste joignable 24/7 au +33 6 47 88 02 12.
+          </div>
+        </div>
+      </section>
+
+      <!-- Services proposés -->
+      <section class="pcard" data-screen-label="05 Paris — Services">
+        <div class="pcard-head">
+          <h2>
+            <span class="ic-bg"><svg class="ic ic-16" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+            Services proposés <span style="font-family:var(--mono);font-size:12px;color:var(--text-faint);font-weight:400;margin-left:4px;">24 / 28</span>
+          </h2>
+          <a href="Services Consulaires.html" class="all">Tous les services <svg class="ic ic-14" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
+        </div>
+        <div class="svc-grid">
+          <a class="svc" href="#">
+            <div class="svc-ic"><svg class="ic ic-18" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg></div>
+            <div><h4>Passeport biométrique</h4><div class="sub">Express 7j disponible · 60 €</div></div>
+            <svg class="ic ic-14 arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+          </a>
+          <a class="svc" href="#">
+            <div class="svc-ic"><svg class="ic ic-18" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+            <div><h4>Inscription consulaire</h4><div class="sub">100 % en ligne · gratuit</div></div>
+            <svg class="ic ic-14 arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+          </a>
+          <a class="svc" href="#">
+            <div class="svc-ic"><svg class="ic ic-18" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+            <div><h4>Acte de naissance / mariage</h4><div class="sub">Délivrance &amp; transcription</div></div>
+            <svg class="ic ic-14 arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+          </a>
+          <a class="svc" href="Certificat de Nationalité.html">
+            <div class="svc-ic"><svg class="ic ic-18" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg></div>
+            <div><h4>Certificat de nationalité</h4><div class="sub">10 j · 25 €</div></div>
+            <svg class="ic ic-14 arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+          </a>
+          <a class="svc" href="#">
+            <div class="svc-ic"><svg class="ic ic-18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a14.5 14.5 0 0 1 0 20 14.5 14.5 0 0 1 0-20"/></svg></div>
+            <div><h4>Visa pour le Gabon</h4><div class="sub">Étrangers · 7 j</div></div>
+            <svg class="ic ic-14 arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+          </a>
+          <a class="svc" href="#">
+            <div class="svc-ic"><svg class="ic ic-18" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg></div>
+            <div><h4>Certification &amp; légalisation</h4><div class="sub">3 j · 15 € / document</div></div>
+            <svg class="ic ic-14 arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+          </a>
+        </div>
+      </section>
+
+      <!-- Personnel -->
+      <section class="pcard" data-screen-label="06 Paris — Personnel">
+        <div class="pcard-head">
+          <h2>
+            <span class="ic-bg"><svg class="ic ic-16" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+            Personnel diplomatique
+          </h2>
+          <span class="text-muted text-xs" style="font-size:12px;">Mis à jour le 1er avril 2026</span>
+        </div>
+        <div class="staff-grid">
+          <div class="staff">
+            <div class="staff-avatar">RM</div>
+            <div>
+              <h4>S.E.M. Rodrigue Mboumba</h4>
+              <div class="role">Ambassadeur extraordinaire et plénipotentiaire</div>
+            </div>
+          </div>
+          <div class="staff">
+            <div class="staff-avatar">CN</div>
+            <div>
+              <h4>Carole Nzamba Ondo</h4>
+              <div class="role">Première conseillère · cheffe de la section consulaire</div>
+            </div>
+          </div>
+          <div class="staff">
+            <div class="staff-avatar">DB</div>
+            <div>
+              <h4>Didier Bissielou</h4>
+              <div class="role">Conseiller économique et commercial</div>
+            </div>
+          </div>
+          <div class="staff">
+            <div class="staff-avatar">YI</div>
+            <div>
+              <h4>Yvette Issembe</h4>
+              <div class="role">Attachée culturelle &amp; affaires sociales</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Actualités locales -->
+      <section class="pcard" data-screen-label="07 Paris — Actualités">
+        <div class="pcard-head">
+          <h2>
+            <span class="ic-bg"><svg class="ic ic-16" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></span>
+            Actualités locales
+          </h2>
+          <a href="Actualités.html" class="all">Toutes les actualités <svg class="ic ic-14" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
+        </div>
+        <a class="news-row" href="#">
+          <div class="date"><div class="m">Mai</div><div class="d">22</div></div>
+          <div>
+            <h4>Réception officielle pour la Fête nationale — invitations envoyées la semaine prochaine.</h4>
+            <div class="text-muted" style="font-size:12px;margin-top:4px;">Événement</div>
+          </div>
+          <svg class="ic ic-14 ck" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        <a class="news-row" href="#">
+          <div class="date"><div class="m">Mai</div><div class="d">12</div></div>
+          <div>
+            <h4>Ouverture du nouveau circuit accéléré « passeport en 7 jours » à compter du 18 mai.</h4>
+            <div class="text-muted" style="font-size:12px;margin-top:4px;">Actualité</div>
+          </div>
+          <svg class="ic ic-14 ck" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        <a class="news-row" href="#">
+          <div class="date"><div class="m">Avr</div><div class="d">30</div></div>
+          <div>
+            <h4>Permanences mensuelles à Lyon — prochaine session le 14 juin (sur rendez-vous).</h4>
+            <div class="text-muted" style="font-size:12px;margin-top:4px;">Communiqué</div>
+          </div>
+          <svg class="ic ic-14 ck" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+      </section>
+    </div>
+
+    <!-- ===== Side rail ===== -->
+    <aside>
+      <!-- Call widget -->
+      <div class="call-card" data-screen-label="08 Paris — Appel en ligne">
+        <div class="top">
+          <span class="label">Appel en ligne</span>
+          <span class="call-status">Disponible</span>
+        </div>
+        <h3>Joignez le standard depuis votre navigateur.</h3>
+        <div class="meta">
+          <span class="item">
+            <svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Attente <b>~ 2 min</b>
+          </span>
+          <span class="item">
+            <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <b>3</b> agents en ligne
+          </span>
+        </div>
+        <div class="call-actions">
+          <button class="btn-call">
+            <svg class="ic ic-18" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Lancer l'appel
+          </button>
+          <button class="btn-call-video" aria-label="Appel vidéo">
+            <svg class="ic ic-18" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect width="15" height="14" x="1" y="5" rx="2" ry="2"/></svg>
+          </button>
+        </div>
+        <div class="call-foot">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+          Appel chiffré de bout en bout via Consulat.ga — gratuit depuis n'importe quel pays.
+        </div>
+        <div class="call-foot alt" style="border-top:0;padding-top:0;">
+          Ou par téléphone : <a href="tel:+33142247960">+33 1 42 24 79 60</a>
+        </div>
+      </div>
+
+      <!-- Inscription invite -->
+      <div class="invite-card">
+        <h3>Vous résidez dans cette circonscription ?</h3>
+        <p>L'inscription consulaire vous donne accès à l'assistance, au vote et à la délivrance simplifiée de documents officiels.</p>
+        <a href="Inscription Consulaire.html" class="btn btn-primary">
+          Commencer mon inscription
+          <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+
+      <!-- Quick stats -->
+      <div class="qstats">
+        <h3>L'ambassade en chiffres</h3>
+        <div class="qstat-row"><span class="l">Gabonais inscrits</span><span class="v">8 240</span></div>
+        <div class="qstat-row"><span class="l">Passeports délivrés (2025)</span><span class="v">2 180</span></div>
+        <div class="qstat-row"><span class="l">Actes d'état civil</span><span class="v">1 350</span></div>
+        <div class="qstat-row"><span class="l">Visas (entrants)</span><span class="v">4 720</span></div>
+        <div class="qstat-row"><span class="l">Satisfaction usagers</span><span class="v" style="color:var(--success)">97 %</span></div>
+      </div>
+
+      <!-- Documents -->
+      <div class="side-card">
+        <h3>Documents à télécharger</h3>
+        <p style="margin-bottom:14px;">Formulaires officiels, brochures et listes de pièces à fournir.</p>
+        <a class="doc-row" href="#">
+          <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="name">Liste des pièces — passeport</span>
+          <span class="size">PDF · 124 ko</span>
+        </a>
+        <a class="doc-row" href="#">
+          <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="name">Formulaire d'inscription consulaire</span>
+          <span class="size">PDF · 87 ko</span>
+        </a>
+        <a class="doc-row" href="#">
+          <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="name">Tarifs consulaires 2026</span>
+          <span class="size">PDF · 62 ko</span>
+        </a>
+        <a class="doc-row" href="#">
+          <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="name">Plan d'accès &amp; transports</span>
+          <span class="size">PDF · 410 ko</span>
+        </a>
+      </div>
+
+      <!-- Other reps in France -->
+      <div class="side-card">
+        <h3>Autres représentations en France</h3>
+        <p style="margin-bottom:14px;">Consulats honoraires et antennes régionales.</p>
+        <a class="doc-row" href="#" style="border-top:1px solid var(--border);padding-top:10px;">
+          <svg class="ic ic-16" viewBox="0 0 24 24" style="color:var(--text-faint)"><path d="M20 10c0 7-8 12-8 12s-8-5-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+          <span class="name">Consulat honoraire · Marseille</span>
+          <svg class="ic ic-12" viewBox="0 0 24 24" style="color:var(--text-faint)"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        <a class="doc-row" href="#">
+          <svg class="ic ic-16" viewBox="0 0 24 24" style="color:var(--text-faint)"><path d="M20 10c0 7-8 12-8 12s-8-5-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+          <span class="name">Consulat honoraire · Lyon</span>
+          <svg class="ic ic-12" viewBox="0 0 24 24" style="color:var(--text-faint)"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        <a class="doc-row" href="#">
+          <svg class="ic ic-16" viewBox="0 0 24 24" style="color:var(--text-faint)"><path d="M20 10c0 7-8 12-8 12s-8-5-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+          <span class="name">Antenne · Bordeaux</span>
+          <svg class="ic ic-12" viewBox="0 0 24 24" style="color:var(--text-faint)"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<div id="site-footer-slot"></div>
+
+<script src="shared/site.js"></script>
+</body>
+</html>

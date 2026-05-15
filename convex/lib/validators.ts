@@ -981,6 +981,9 @@ export const orgIdentityExtendedValidator = v.object({
   status: v.optional(orgStatusValidator),
   openedAt: v.optional(v.number()), // date d'ouverture
   closedAt: v.optional(v.number()), // date de fermeture
+  operationalMode: v.optional(v.string()),
+  regionalRole: v.optional(v.string()),
+  tags: v.optional(v.array(v.string())),
 });
 
 export type OrgIdentityExtended = Infer<typeof orgIdentityExtendedValidator>;
@@ -1093,6 +1096,18 @@ export const orgBrandingValidator = v.object({
   signerName: v.optional(v.string()), // ex : "Jean-Pierre NZOGHE-NGUEMA"
   signerTitle: v.optional(v.string()), // ex : "Conseiller chargé des Affaires Consulaires"
   cityName: v.optional(v.string()), // ex : "Paris" → remplace "Madrid" hérité
+  // Infos d'accès affichées sur la page publique de la représentation
+  accessInfo: v.optional(
+    v.object({
+      accessibilityNotesFr: v.optional(v.string()),
+      accessibilityNotesEn: v.optional(v.string()),
+      transportFr: v.optional(v.string()),
+      transportEn: v.optional(v.string()),
+      parkingNotesFr: v.optional(v.string()),
+      parkingNotesEn: v.optional(v.string()),
+      walkingTimeMinutes: v.optional(v.number()),
+    }),
+  ),
 });
 
 export type OrgBranding = Infer<typeof orgBrandingValidator>;
@@ -1335,6 +1350,9 @@ export const professionValidator = v.object({
   status: v.optional(professionStatusValidator),
   title: v.optional(v.string()),
   employer: v.optional(v.string()),
+  category: v.optional(v.string()),
+  aiEnrichedAt: v.optional(v.number()),
+  aiSuggestedSkills: v.optional(v.array(v.string())),
 });
 
 export type Profession = Infer<typeof professionValidator>;

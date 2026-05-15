@@ -1,9 +1,10 @@
 import { v } from "convex/values";
 import { query, mutation } from "../_generated/server";
-import { PostStatus } from "../lib/constants";
+import { PostStatus, TutorialCategory } from "../lib/constants";
 import {
   tutorialCategoryValidator,
   tutorialTypeValidator,
+  tutorialBadgeValidator,
   postStatusValidator,
 } from "../lib/validators";
 import { requireBackOfficeAccess } from "../lib/auth";
@@ -88,6 +89,115 @@ export const getBySlug = query({
   },
 });
 
+/**
+ * List featured tutorials (for the "Vos guides personnalisés" section)
+ */
+export const listFeatured = query({
+  args: {
+    countryCode: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 6;
+
+    const featured = await ctx.db
+      .query("tutorials")
+      .withIndex("by_featured_status", (q) =>
+        q.eq("featured", true).eq("status", PostStatus.Published),
+      )
+      .collect();
+
+    const filtered = args.countryCode
+      ? featured.filter(
+          (t) =>
+            !t.countryCode ||
+            t.countryCode === "WORLD" ||
+            t.countryCode === args.countryCode,
+        )
+      : featured;
+
+    const sliced = filtered
+      .sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0))
+      .slice(0, limit);
+
+    return Promise.all(
+      sliced.map(async (tutorial) => {
+        const coverImageUrl = tutorial.coverImageStorageId
+          ? await ctx.storage.getUrl(tutorial.coverImageStorageId)
+          : null;
+        return { ...tutorial, coverImageUrl };
+      }),
+    );
+  },
+});
+
+/**
+ * Count published tutorials grouped by category
+ */
+export const countByCategory = query({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db
+      .query("tutorials")
+      .withIndex("by_status", (q) => q.eq("status", PostStatus.Published))
+      .collect();
+
+    const counts: Record<string, number> = {
+      [TutorialCategory.Administrative]: 0,
+      [TutorialCategory.Entrepreneurship]: 0,
+      [TutorialCategory.Travel]: 0,
+      [TutorialCategory.PracticalLife]: 0,
+      [TutorialCategory.ConsularProcedures]: 0,
+      [TutorialCategory.CivilStatus]: 0,
+      [TutorialCategory.EducationGrants]: 0,
+      [TutorialCategory.Taxation]: 0,
+      [TutorialCategory.ReturnGabon]: 0,
+    };
+
+    for (const t of all) {
+      counts[t.category] = (counts[t.category] ?? 0) + 1;
+    }
+
+    return { total: all.length, byCategory: counts };
+  },
+});
+
+/**
+ * Full-text search across published tutorials
+ */
+export const search = query({
+  args: {
+    q: v.string(),
+    category: v.optional(tutorialCategoryValidator),
+    type: v.optional(tutorialTypeValidator),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 20;
+    const q = args.q.trim();
+    if (!q) return [];
+
+    const results = await ctx.db
+      .query("tutorials")
+      .withSearchIndex("search_content", (b) => {
+        let expr = b.search("title", q).eq("status", PostStatus.Published);
+        if (args.category) expr = expr.eq("category", args.category);
+        if (args.type) expr = expr.eq("type", args.type);
+        return expr;
+      })
+      .take(limit);
+
+    return Promise.all(
+      results.map(async (tutorial) => {
+        const coverImageUrl = tutorial.coverImageStorageId
+          ? await ctx.storage.getUrl(tutorial.coverImageStorageId)
+          : null;
+        return { ...tutorial, coverImageUrl };
+      }),
+    );
+  },
+});
+
 // ============================================================================
 // SUPERADMIN QUERIES
 // ============================================================================
@@ -153,6 +263,11 @@ export const create = mutation({
     category: tutorialCategoryValidator,
     type: tutorialTypeValidator,
     duration: v.optional(v.string()),
+    readingMinutes: v.optional(v.number()),
+    stepCount: v.optional(v.number()),
+    badges: v.optional(v.array(tutorialBadgeValidator)),
+    featured: v.optional(v.boolean()),
+    countryCode: v.optional(v.string()),
     videoUrl: v.optional(v.string()),
     coverImageStorageId: v.optional(v.id("_storage")),
     publish: v.optional(v.boolean()),
@@ -160,7 +275,6 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const user = await requireBackOfficeAccess(ctx);
 
-    // Check slug uniqueness
     const existing = await ctx.db
       .query("tutorials")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
@@ -184,11 +298,17 @@ export const create = mutation({
       category: args.category,
       type: args.type,
       duration: args.duration,
+      readingMinutes: args.readingMinutes,
+      stepCount: args.stepCount,
+      badges: args.badges,
+      featured: args.featured,
+      countryCode: args.countryCode,
       videoUrl: args.videoUrl,
       coverImageStorageId: args.coverImageStorageId,
       status,
       publishedAt: args.publish ? now : undefined,
       createdAt: now,
+      updatedAt: now,
       authorId: user._id,
     });
 
@@ -209,6 +329,11 @@ export const update = mutation({
     category: v.optional(tutorialCategoryValidator),
     type: v.optional(tutorialTypeValidator),
     duration: v.optional(v.string()),
+    readingMinutes: v.optional(v.number()),
+    stepCount: v.optional(v.number()),
+    badges: v.optional(v.array(tutorialBadgeValidator)),
+    featured: v.optional(v.boolean()),
+    countryCode: v.optional(v.string()),
     videoUrl: v.optional(v.string()),
     coverImageStorageId: v.optional(v.id("_storage")),
   },
@@ -220,7 +345,6 @@ export const update = mutation({
       throw error(ErrorCode.TUTORIAL_NOT_FOUND, "Tutoriel non trouvé");
     }
 
-    // If slug is changing, check uniqueness
     if (args.slug && args.slug !== tutorial.slug) {
       const existing = await ctx.db
         .query("tutorials")
@@ -239,6 +363,7 @@ export const update = mutation({
 
     await ctx.db.patch(tutorialId, {
       ...updates,
+      updatedAt: Date.now(),
     });
 
     return tutorialId;

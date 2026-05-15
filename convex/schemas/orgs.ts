@@ -117,6 +117,21 @@ export const orgsTable = defineTable({
   // Branding & page publique (logo Storage, couleurs, photos, réseaux sociaux)
   branding: v.optional(orgBrandingValidator),
 
+  // Canaux de contact (téléphones, emails) — page publique de la représentation
+  contacts: v.optional(
+    v.object({
+      channels: v.array(
+        v.object({
+          kind: v.string(),
+          value: v.string(),
+          label: v.optional(v.string()),
+          available247: v.optional(v.boolean()),
+          order: v.number(),
+        }),
+      ),
+    }),
+  ),
+
   // ──────────────────────────────────────────────────────────────
   // Modèles de documents explicitement attribués à cette représentation
   // ──────────────────────────────────────────────────────────────

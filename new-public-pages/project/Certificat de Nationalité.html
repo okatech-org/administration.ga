@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Certificat de nationalité — Consulat.ga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/site.css" />
+<style>
+  /* ===== Breadcrumb ===== */
+  .breadcrumb {
+    margin: 24px 0 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  .breadcrumb a { color: var(--text-muted); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--text); text-decoration: underline; }
+  .breadcrumb .sep { opacity: 0.5; }
+  .breadcrumb .here { color: var(--text); font-weight: 500; }
+
+  /* ===== Hero ===== */
+  .hero {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 32px;
+    padding: 8px 0 32px;
+    align-items: end;
+    margin-bottom: 24px;
+  }
+  .hero-pills {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .hero h1 {
+    font-size: clamp(36px, 4.4vw, 56px);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    margin-top: 16px;
+  }
+  .hero .tagline {
+    color: var(--text-muted);
+    font-size: 17px;
+    line-height: 1.55;
+    margin-top: 18px;
+    max-width: 60ch;
+  }
+  .hero-info-grid {
+    margin-top: 26px;
+    padding-top: 22px;
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+  }
+  .hero-info .l { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 500; }
+  .hero-info .v { font-size: 16px; font-weight: 600; margin-top: 6px; letter-spacing: -0.005em; }
+  .hero-info .v.free { color: var(--success); }
+
+  /* Hero right — CTA card */
+  .hero-cta {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-cta::before {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(to right,
+      var(--gabon-green) 0%, var(--gabon-green) 33%,
+      var(--gabon-yellow) 33%, var(--gabon-yellow) 66%,
+      var(--gabon-blue) 66%, var(--gabon-blue) 100%);
+  }
+  .hero-cta h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.005em; margin-top: 4px; }
+  .hero-cta p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .hero-cta .btn { width: 100%; justify-content: center; padding: 14px 18px; min-height: 50px; font-size: 15px; }
+  .hero-cta .meta-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+  }
+  .hero-cta .meta-line .check {
+    color: var(--success);
+    width: 14px; height: 14px;
+    display: inline-grid;
+    place-items: center;
+  }
+
+  /* ===== Layout ===== */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 32px;
+    align-items: start;
+  }
+
+  /* Card (re-used IC pattern) */
+  .pcard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+  }
+  .pcard + .pcard { margin-top: 16px; }
+  .pcard h2 { font-size: 22px; font-weight: 600; letter-spacing: -0.015em; }
+  .pcard .pcard-lede { color: var(--text-muted); margin-top: 8px; font-size: 15px; line-height: 1.55; max-width: 70ch; }
+
+  /* ===== Steps ===== */
+  .steps {
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .step-row {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 18px;
+    padding: 18px 0;
+    border-top: 1px solid var(--border);
+  }
+  .step-row:first-child { border-top: 0; padding-top: 0; }
+  .step-n {
+    width: 32px;
+    height: 32px;
+    border-radius: 100px;
+    background: var(--gabon-blue);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 600;
+    font-size: 14px;
+    font-family: var(--mono);
+  }
+  .step-row h4 { font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
+  .step-row p { color: var(--text-muted); font-size: 14px; line-height: 1.55; margin-top: 6px; }
+  .step-row .extras {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .step-row .extras .item { display: inline-flex; align-items: center; gap: 6px; }
+  .step-row .extras .item svg { color: var(--text-faint); }
+
+  /* ===== Documents requis ===== */
+  .docs-list {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+  }
+  .doc-item {
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    gap: 14px;
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+    align-items: center;
+  }
+  .doc-item:first-of-type { border-top: 0; padding-top: 4px; }
+  .doc-item .check-ic {
+    width: 20px; height: 20px;
+    border-radius: 100px;
+    background: var(--success-tint);
+    color: var(--success);
+    display: grid;
+    place-items: center;
+  }
+  .doc-item.optional .check-ic { background: var(--surface-2); color: var(--text-faint); border: 1px dashed var(--border-strong); }
+  .doc-item h4 { font-size: 14px; font-weight: 600; letter-spacing: -0.005em; }
+  .doc-item .sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; line-height: 1.45; }
+  .doc-item .pill { font-size: 10px; padding: 2px 8px; }
+
+  /* ===== Tariff table ===== */
+  .pricing {
+    margin-top: 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .price-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 16px;
+    padding: 14px 18px;
+    border-top: 1px solid var(--border);
+    align-items: center;
+  }
+  .price-row:first-of-type { border-top: 0; background: var(--surface-2); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 600; }
+  .price-row .name { font-size: 14px; font-weight: 500; }
+  .price-row .name .sub { font-weight: 400; color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+  .price-row .delay { font-family: var(--mono); font-size: 13px; color: var(--text-muted); }
+  .price-row .price { font-weight: 600; font-size: 14px; font-family: var(--mono); }
+  .price-row .price.free { color: var(--success); }
+
+  /* ===== Mode picker (in-person vs online) ===== */
+  .modes {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .mode {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--surface);
+    position: relative;
+  }
+  .mode.preferred {
+    border-color: var(--gabon-blue);
+    background: var(--gabon-blue-tint);
+  }
+  .mode-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .mode-ic {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--text);
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+  }
+  .mode.preferred .mode-ic { background: var(--surface); color: var(--gabon-blue); border-color: transparent; }
+  .mode h4 { font-size: 15px; font-weight: 600; }
+  .mode p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .mode .mode-meta {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .mode.preferred .mode-meta { border-top-color: rgba(11,79,156,.15); }
+  .mode.preferred .mode-meta b { color: var(--gabon-blue); }
+
+  /* ===== FAQ ===== */
+  .faq-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+  .faq-item {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 0;
+    cursor: pointer;
+  }
+  .faq-item summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+    list-style: none;
+    cursor: pointer;
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary .q {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    line-height: 1.4;
+    flex: 1;
+  }
+  .faq-item summary .toggle {
+    width: 28px; height: 28px;
+    border-radius: 100px;
+    border: 1px solid var(--border-strong);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: transform 160ms, background 160ms, color 160ms;
+  }
+  .faq-item[open] summary .toggle {
+    transform: rotate(45deg);
+    background: var(--gabon-blue);
+    border-color: var(--gabon-blue);
+    color: #fff;
+  }
+  .faq-item .a {
+    margin-top: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    font-size: 14px;
+    max-width: 70ch;
+  }
+
+  /* ===== Sidebar ===== */
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    position: sticky;
+    top: 96px;
+  }
+  .info-card + .side-card { margin-top: 16px; }
+  .info-card h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .info-row:first-of-type { padding-top: 8px; }
+  .info-row .l { color: var(--text-muted); }
+  .info-row .v { font-weight: 600; text-align: right; }
+  .info-row .v.free { color: var(--success); }
+
+  .side-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+  }
+  .side-card + .side-card { margin-top: 16px; }
+  .side-card h3 { font-size: 15px; font-weight: 600; }
+  .side-card p { font-size: 13px; color: var(--text-muted); margin-top: 8px; line-height: 1.55; }
+  .side-card .btn { width: 100%; margin-top: 14px; }
+
+  .doc-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px dashed var(--border);
+    font-size: 13px;
+    text-decoration: none;
+    color: inherit;
+  }
+  .doc-link:first-of-type { border-top: 0; padding-top: 0; }
+  .doc-link .ic { color: var(--gabon-blue); }
+  .doc-link .name { flex: 1; font-weight: 500; }
+  .doc-link .size { color: var(--text-faint); font-family: var(--mono); font-size: 11px; }
+  .doc-link:hover .name { color: var(--gabon-blue); }
+
+  .rel-row {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    text-decoration: none;
+    color: inherit;
+    align-items: center;
+  }
+  .rel-row:first-of-type { border-top: 0; padding-top: 0; }
+  .rel-ic {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: var(--surface-2);
+    color: var(--text);
+    display: grid;
+    place-items: center;
+  }
+  .rel-row:hover .name { color: var(--gabon-blue); }
+
+  /* In-page TOC */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 22px;
+    margin-bottom: 16px;
+  }
+  .toc h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .toc ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .toc a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .toc a:hover { background: var(--surface-2); color: var(--text); }
+  .toc a.active { color: var(--gabon-blue); background: var(--gabon-blue-tint); }
+  .toc a .n {
+    font-family: var(--mono);
+    font-size: 11px;
+    width: 18px;
+    text-align: center;
+    color: var(--text-faint);
+  }
+  .toc a.active .n { color: var(--gabon-blue); }
+
+  /* Public chip row in hero info */
+  .public-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: 1fr; }
+    .hero { grid-template-columns: 1fr; }
+    .hero-info-grid { grid-template-columns: 1fr 1fr; }
+    .info-card { position: static; }
+    .modes { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body data-page="services">
+
+<div id="site-header-slot"></div>
+
+<main class="container">
+  <nav class="breadcrumb" aria-label="Fil d'Ariane">
+    <a href="Inscription Consulaire.html">Accueil</a>
+    <span class="sep">›</span>
+    <a href="Services Consulaires.html">Services consulaires</a>
+    <span class="sep">›</span>
+    <a href="#">État civil &amp; nationalité</a>
+    <span class="sep">›</span>
+    <span class="here">Certificat de nationalité</span>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" data-screen-label="01 Service — Hero">
+    <div>
+      <div class="hero-pills">
+        <span class="pill pill-info">État civil &amp; nationalité</span>
+        <span class="pill" style="background:var(--gabon-green-tint);color:var(--gabon-green);border-color:transparent;">100 % en ligne</span>
+        <span class="pill" style="background:var(--surface);">Service officiel</span>
+      </div>
+      <h1>Certificat de nationalité gabonaise.</h1>
+      <p class="tagline">
+        Document officiel attestant qu'une personne possède la nationalité gabonaise — délivré par le consulat ou l'ambassade compétent pour son lieu de résidence à l'étranger.
+        Il est exigé pour de nombreuses démarches : concours, fonction publique, mariage, succession.
+      </p>
+      <div class="hero-info-grid">
+        <div class="hero-info">
+          <div class="l">Catégorie</div>
+          <div class="v">État civil</div>
+        </div>
+        <div class="hero-info">
+          <div class="l">Délai standard</div>
+          <div class="v">10 jours ouvrés</div>
+        </div>
+        <div class="hero-info">
+          <div class="l">Frais de chancellerie</div>
+          <div class="v">25 €</div>
+        </div>
+        <div class="hero-info">
+          <div class="l">Public concerné</div>
+          <div class="v" style="font-size:14px;">Ressortissants gabonais</div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="hero-cta">
+      <span class="kicker">Démarche en ligne</span>
+      <h3>Demandez votre certificat depuis votre espace personnel.</h3>
+      <p>Identité vérifiée par France Connect ou Consulat ID — signature électronique avancée acceptée.</p>
+      <a href="Inscription Consulaire.html" class="btn btn-primary">
+        Démarrer la démarche
+        <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </a>
+      <a href="#" class="btn btn-soft">
+        <svg class="ic ic-14" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+        Prendre rendez-vous au consulat
+      </a>
+      <div class="meta-line">
+        <span class="check"><svg class="ic ic-14" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+        Vous avez déjà commencé ? <a href="#" style="color:var(--gabon-blue);text-decoration:none;font-weight:500;margin-left:auto;">Reprendre</a>
+      </div>
+    </aside>
+  </section>
+
+  <!-- Main grid -->
+  <div class="layout">
+    <div>
+      <!-- TOC -->
+      <div class="toc" data-screen-label="02 Service — Sommaire">
+        <h3>Sur cette page</h3>
+        <ol>
+          <li><a href="#presentation" class="active"><span class="n">01</span> Présentation</a></li>
+          <li><a href="#etapes"><span class="n">02</span> Étapes de la procédure</a></li>
+          <li><a href="#pieces"><span class="n">03</span> Pièces à fournir</a></li>
+          <li><a href="#tarifs"><span class="n">04</span> Tarifs &amp; délais</a></li>
+          <li><a href="#modes"><span class="n">05</span> En ligne ou en personne ?</a></li>
+          <li><a href="#faq"><span class="n">06</span> Questions fréquentes</a></li>
+        </ol>
+      </div>
+
+      <!-- Présentation -->
+      <section class="pcard" id="presentation" data-screen-label="03 Service — Présentation">
+        <h2>Qu'est-ce que le certificat de nationalité ?</h2>
+        <p class="pcard-lede">
+          Le certificat de nationalité gabonaise est un acte authentique délivré par les autorités consulaires gabonaises à l'étranger.
+          Il constitue la preuve juridique unique et incontestable de la nationalité gabonaise d'une personne, conformément au Code de la nationalité du 11 mai 1998.
+        </p>
+        <div style="margin-top:24px;padding:16px 18px;background:var(--gabon-blue-tint);border-radius:10px;display:flex;gap:12px;align-items:flex-start;">
+          <svg class="ic ic-18" viewBox="0 0 24 24" style="color:var(--gabon-blue);flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          <div style="font-size:14px;color:var(--text);line-height:1.55;">
+            <strong>À noter :</strong> ce certificat se distingue du passeport et de la carte consulaire — ces derniers ne valent pas preuve de nationalité au sens juridique. Pour les démarches officielles (concours, fonction publique, naturalisation à l'étranger), seul le certificat fait foi.
+          </div>
+        </div>
+        <h3 style="font-size:16px;font-weight:600;margin-top:28px;margin-bottom:10px;">Dans quels cas en avez-vous besoin ?</h3>
+        <ul style="margin:0;padding-left:20px;color:var(--text-muted);font-size:14px;line-height:1.8;">
+          <li>Inscription à un concours administratif gabonais ou recrutement dans la fonction publique.</li>
+          <li>Constitution d'un dossier de succession au Gabon ou à l'étranger.</li>
+          <li>Mariage avec un ressortissant étranger lorsque l'officier d'état civil l'exige.</li>
+          <li>Demande de naturalisation dans un pays étranger (dossier de double nationalité).</li>
+          <li>Procédures judiciaires nécessitant la preuve formelle de la nationalité.</li>
+        </ul>
+      </section>
+
+      <!-- Étapes -->
+      <section class="pcard" id="etapes" data-screen-label="04 Service — Étapes">
+        <h2>Étapes de la procédure</h2>
+        <p class="pcard-lede">La demande s'effectue intégralement en ligne. Comptez environ 25 minutes pour constituer le dossier, puis 10 jours ouvrés pour la délivrance.</p>
+
+        <div class="steps">
+          <div class="step-row">
+            <div class="step-n">1</div>
+            <div>
+              <h4>Pré-inscription &amp; vérification d'identité</h4>
+              <p>Connectez-vous à votre espace Consulat.ga. Si vous n'avez pas de compte, vous pouvez en créer un en quelques minutes avec France Connect, Consulat ID ou votre numéro NIP.</p>
+              <div class="extras">
+                <span class="item"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 5 minutes</span>
+                <span class="item"><svg class="ic ic-14" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg> Authentification forte</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <div class="step-n">2</div>
+            <div>
+              <h4>Renseignement du formulaire</h4>
+              <p>Indiquez vos informations d'état civil, le motif précis de la demande et l'autorité destinataire du certificat. Les champs marqués en rouge sont obligatoires.</p>
+              <div class="extras">
+                <span class="item"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 10 minutes</span>
+                <span class="item"><svg class="ic ic-14" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Sauvegarde automatique</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <div class="step-n">3</div>
+            <div>
+              <h4>Téléversement des pièces justificatives</h4>
+              <p>Joignez les copies numériques des documents listés ci-dessous. Les fichiers acceptés sont PDF, JPG et PNG ; chaque pièce doit peser moins de 5 Mo.</p>
+              <div class="extras">
+                <span class="item"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 5 minutes</span>
+                <span class="item"><svg class="ic ic-14" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> 3 à 5 documents</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <div class="step-n">4</div>
+            <div>
+              <h4>Paiement en ligne sécurisé</h4>
+              <p>Réglez les frais de chancellerie (25 €) par carte bancaire, virement SEPA ou Apple/Google Pay. Une facture officielle est envoyée par e-mail dans les minutes qui suivent.</p>
+              <div class="extras">
+                <span class="item"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 2 minutes</span>
+                <span class="item"><svg class="ic ic-14" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg> 3D Secure</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <div class="step-n">5</div>
+            <div>
+              <h4>Instruction du dossier</h4>
+              <p>Votre dossier est transmis à la section consulaire. Vous êtes notifié à chaque étape (réception, validation, signature). Délai moyen : 8 jours ouvrés.</p>
+              <div class="extras">
+                <span class="item"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 8 jours ouvrés</span>
+                <span class="item"><svg class="ic ic-14" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-10 5L2 7"/></svg> Notifications e-mail &amp; SMS</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <div class="step-n">6</div>
+            <div>
+              <h4>Délivrance du certificat</h4>
+              <p>Vous recevez par recommandé l'original signé et scellé. Une version PDF signée électroniquement est également disponible dans votre espace personnel — opposable juridiquement.</p>
+              <div class="extras">
+                <span class="item"><svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Sous 48 h après instruction</span>
+                <span class="item"><svg class="ic ic-14" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Signature eIDAS</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pièces -->
+      <section class="pcard" id="pieces" data-screen-label="05 Service — Pièces">
+        <h2>Pièces à fournir</h2>
+        <p class="pcard-lede">Liste des documents requis. Les pièces optionnelles peuvent accélérer le traitement de votre dossier.</p>
+
+        <h3 style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-top:24px;">Obligatoires</h3>
+        <div class="docs-list">
+          <div class="doc-item">
+            <div class="check-ic"><svg class="ic ic-14" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div>
+              <h4>Acte de naissance gabonais</h4>
+              <div class="sub">De moins de trois mois. Si l'acte original est étranger, fournir la transcription consulaire ou une apostille.</div>
+            </div>
+            <span class="pill pill-info">Original</span>
+          </div>
+          <div class="doc-item">
+            <div class="check-ic"><svg class="ic ic-14" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div>
+              <h4>Pièce d'identité gabonaise en cours de validité</h4>
+              <div class="sub">Carte nationale d'identité ou passeport gabonais — copie couleur de la page d'identité.</div>
+            </div>
+            <span class="pill">Copie</span>
+          </div>
+          <div class="doc-item">
+            <div class="check-ic"><svg class="ic ic-14" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div>
+              <h4>Justificatif de domicile à l'étranger</h4>
+              <div class="sub">Facture d'énergie, bail de location ou avis d'imposition de moins de trois mois.</div>
+            </div>
+            <span class="pill">Copie</span>
+          </div>
+          <div class="doc-item">
+            <div class="check-ic"><svg class="ic ic-14" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div>
+              <h4>Photo d'identité aux normes ICAO</h4>
+              <div class="sub">Photo récente (moins de 6 mois) sur fond clair, tête nue, sans lunettes.</div>
+            </div>
+            <span class="pill">Numérique</span>
+          </div>
+        </div>
+
+        <h3 style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-top:24px;">Selon votre situation</h3>
+        <div class="docs-list">
+          <div class="doc-item optional">
+            <div class="check-ic"><svg class="ic ic-14" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+            <div>
+              <h4>Acte de naissance des parents</h4>
+              <div class="sub">Demandé si vous êtes né(e) après le 17 août 1960 et que la nationalité s'établit par filiation.</div>
+            </div>
+            <span class="pill" style="background:var(--surface-2);color:var(--text-muted);">Optionnel</span>
+          </div>
+          <div class="doc-item optional">
+            <div class="check-ic"><svg class="ic ic-14" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+            <div>
+              <h4>Décret de naturalisation</h4>
+              <div class="sub">À fournir si la nationalité a été acquise par naturalisation et non par filiation.</div>
+            </div>
+            <span class="pill" style="background:var(--surface-2);color:var(--text-muted);">Optionnel</span>
+          </div>
+          <div class="doc-item optional">
+            <div class="check-ic"><svg class="ic ic-14" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+            <div>
+              <h4>Lettre de motivation</h4>
+              <div class="sub">Précisant l'autorité destinataire et l'usage prévu du certificat (concours, fonction publique, etc.).</div>
+            </div>
+            <span class="pill" style="background:var(--surface-2);color:var(--text-muted);">Optionnel</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tarifs -->
+      <section class="pcard" id="tarifs" data-screen-label="06 Service — Tarifs">
+        <h2>Tarifs &amp; délais</h2>
+        <p class="pcard-lede">Frais fixés par arrêté ministériel n° 2026-007 du 12 janvier 2026 — révisable annuellement.</p>
+        <div class="pricing">
+          <div class="price-row">
+            <span>Prestation</span>
+            <span>Délai</span>
+            <span>Tarif</span>
+          </div>
+          <div class="price-row">
+            <div class="name">Certificat de nationalité — délivrance standard
+              <div class="sub">Original signé + version PDF dans votre espace personnel</div>
+            </div>
+            <span class="delay">10 jours</span>
+            <span class="price">25 €</span>
+          </div>
+          <div class="price-row">
+            <div class="name">Procédure express
+              <div class="sub">Pour les ressortissants ayant un dossier consulaire à jour</div>
+            </div>
+            <span class="delay">5 jours</span>
+            <span class="price">45 €</span>
+          </div>
+          <div class="price-row">
+            <div class="name">Duplicata
+              <div class="sub">Délivré sur présentation de l'original</div>
+            </div>
+            <span class="delay">7 jours</span>
+            <span class="price">15 €</span>
+          </div>
+          <div class="price-row">
+            <div class="name">Traduction officielle (FR ↔ EN)
+              <div class="sub">Par traducteur assermenté agréé</div>
+            </div>
+            <span class="delay">+ 3 jours</span>
+            <span class="price">+ 30 €</span>
+          </div>
+          <div class="price-row">
+            <div class="name">Mineurs (moins de 16 ans)
+              <div class="sub">Délivrance gratuite sur demande d'un représentant légal</div>
+            </div>
+            <span class="delay">10 jours</span>
+            <span class="price free">Gratuit</span>
+          </div>
+        </div>
+        <p class="text-muted" style="font-size:12px;margin-top:12px;line-height:1.5;">
+          Le paiement est exigible au dépôt du dossier. Les frais ne sont pas remboursés en cas de retrait volontaire de la demande ; ils le sont en cas de refus motivé par l'administration.
+        </p>
+      </section>
+
+      <!-- Modes -->
+      <section class="pcard" id="modes" data-screen-label="07 Service — Modes">
+        <h2>En ligne ou en personne ?</h2>
+        <p class="pcard-lede">Le service est disponible selon deux modalités. Nous recommandons la procédure en ligne, plus rapide et accessible 24h/24.</p>
+        <div class="modes">
+          <div class="mode preferred">
+            <div class="mode-top">
+              <div class="mode-ic">
+                <svg class="ic ic-20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+              </div>
+              <span class="pill" style="background:var(--gabon-blue);color:#fff;border-color:transparent;">Recommandé</span>
+            </div>
+            <h4>En ligne — espace personnel</h4>
+            <p>Constituez votre dossier depuis chez vous, signature électronique acceptée, suivi temps réel. Le certificat est envoyé par recommandé et disponible immédiatement en PDF signé eIDAS.</p>
+            <div class="mode-meta">
+              <span>Délai : <b>10 jours</b></span>
+              <span>Frais : <b>25 €</b></span>
+              <span>Disponible 24/7</span>
+            </div>
+          </div>
+          <div class="mode">
+            <div class="mode-top">
+              <div class="mode-ic">
+                <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M3 9.5L12 2l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg>
+              </div>
+            </div>
+            <h4>En personne — au consulat</h4>
+            <p>Prenez rendez-vous auprès de votre représentation consulaire. Apportez les originaux : la copie certifiée conforme est faite sur place. Paiement en espèces ou par carte.</p>
+            <div class="mode-meta">
+              <span>Délai : 14 jours</span>
+              <span>Frais : 25 €</span>
+              <span>Sur rendez-vous</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section class="pcard" id="faq" data-screen-label="08 Service — FAQ">
+        <h2>Questions fréquentes</h2>
+        <ul class="faq-list">
+          <details class="faq-item" open>
+            <summary>
+              <span class="q">Le certificat délivré en ligne a-t-il la même valeur que la version papier ?</span>
+              <span class="toggle"><svg class="ic ic-14" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            </summary>
+            <p class="a">Oui. La version PDF signée électroniquement avec un certificat eIDAS qualifié a la même valeur juridique que l'original papier dans tous les pays de l'Union Européenne, et est reconnue par la plupart des administrations gabonaises. L'original papier reste recommandé pour les démarches judiciaires complexes.</p>
+          </details>
+          <details class="faq-item">
+            <summary>
+              <span class="q">Combien de temps le certificat est-il valable ?</span>
+              <span class="toggle"><svg class="ic ic-14" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            </summary>
+            <p class="a">Le certificat n'a pas de date de péremption au sens strict. Cependant, la plupart des administrations exigent un document de moins de 3 mois pour leurs procédures. Si vous en avez besoin pour plusieurs démarches, demandez plusieurs exemplaires en une fois.</p>
+          </details>
+          <details class="faq-item">
+            <summary>
+              <span class="q">Puis-je demander le certificat pour un mineur ?</span>
+              <span class="toggle"><svg class="ic ic-14" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            </summary>
+            <p class="a">Oui, en tant que représentant légal, vous pouvez demander un certificat pour votre enfant mineur de nationalité gabonaise. Pour les enfants de moins de 16 ans, la délivrance est gratuite. Le formulaire en ligne propose une option dédiée « Demande pour un mineur ».</p>
+          </details>
+          <details class="faq-item">
+            <summary>
+              <span class="q">Je suis double national, dois-je le préciser ?</span>
+              <span class="toggle"><svg class="ic ic-14" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            </summary>
+            <p class="a">Oui, la double nationalité doit être renseignée dans le formulaire. Le certificat atteste uniquement de la nationalité gabonaise, mais l'administration a besoin de connaître votre situation complète pour vérifier les éventuelles déclarations d'option ou de répudiation.</p>
+          </details>
+          <details class="faq-item">
+            <summary>
+              <span class="q">Que faire si ma demande est rejetée ?</span>
+              <span class="toggle"><svg class="ic ic-14" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            </summary>
+            <p class="a">En cas de rejet, vous recevez une notification motivée. Vous disposez d'un délai de deux mois pour former un recours gracieux auprès du Ministre de la Justice ou un recours contentieux devant la Chambre administrative de la Cour de cassation gabonaise. Les frais sont alors intégralement remboursés.</p>
+          </details>
+        </ul>
+      </section>
+    </div>
+
+    <!-- Sidebar -->
+    <aside data-screen-label="09 Service — Sidebar">
+      <div class="info-card">
+        <h3>En bref</h3>
+        <div class="info-row"><span class="l">Catégorie</span><span class="v">État civil</span></div>
+        <div class="info-row"><span class="l">Public</span><span class="v">Ressortissants gabonais</span></div>
+        <div class="info-row"><span class="l">Délai standard</span><span class="v">10 jours</span></div>
+        <div class="info-row"><span class="l">Délai express</span><span class="v">5 jours</span></div>
+        <div class="info-row"><span class="l">Frais</span><span class="v">25 €</span></div>
+        <div class="info-row"><span class="l">Mineurs</span><span class="v free">Gratuit</span></div>
+        <div class="info-row"><span class="l">100 % en ligne</span><span class="v" style="color:var(--success);">✓ Oui</span></div>
+        <a href="Inscription Consulaire.html" class="btn btn-primary" style="margin-top:18px;width:100%;">
+          Démarrer la démarche
+          <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+
+      <div class="side-card">
+        <h3>Où faire cette démarche ?</h3>
+        <p>Le certificat est délivré par votre représentation consulaire de rattachement, déterminée par votre pays de résidence.</p>
+        <a href="Consulat de Paris.html" class="btn btn-soft">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M20 10c0 7-8 12-8 12s-8-5-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+          Trouver ma représentation
+        </a>
+      </div>
+
+      <div class="side-card">
+        <h3>Formulaires &amp; documents</h3>
+        <p style="margin-bottom:14px;">Téléchargez les modèles officiels et le guide pas-à-pas.</p>
+        <a class="doc-link" href="#">
+          <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="name">Formulaire CERFA-GA-208</span>
+          <span class="size">PDF · 96 ko</span>
+        </a>
+        <a class="doc-link" href="#">
+          <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="name">Guide pas-à-pas</span>
+          <span class="size">PDF · 412 ko</span>
+        </a>
+        <a class="doc-link" href="#">
+          <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="name">Notice — pièces à fournir</span>
+          <span class="size">PDF · 84 ko</span>
+        </a>
+        <a class="doc-link" href="#">
+          <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="name">Code de la nationalité (extrait)</span>
+          <span class="size">PDF · 1.2 Mo</span>
+        </a>
+      </div>
+
+      <div class="side-card">
+        <h3>Démarches liées</h3>
+        <a class="rel-row" href="#">
+          <div class="rel-ic"><svg class="ic ic-14" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+          <span class="name">Acte de naissance</span>
+          <svg class="ic ic-12" viewBox="0 0 24 24" style="color:var(--text-faint)"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        <a class="rel-row" href="#">
+          <div class="rel-ic"><svg class="ic ic-14" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg></div>
+          <span class="name">Passeport biométrique</span>
+          <svg class="ic ic-12" viewBox="0 0 24 24" style="color:var(--text-faint)"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        <a class="rel-row" href="#">
+          <div class="rel-ic"><svg class="ic ic-14" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+          <span class="name">Carte consulaire</span>
+          <svg class="ic ic-12" viewBox="0 0 24 24" style="color:var(--text-faint)"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        <a class="rel-row" href="#">
+          <div class="rel-ic"><svg class="ic ic-14" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg></div>
+          <span class="name">Légalisation de document</span>
+          <svg class="ic ic-12" viewBox="0 0 24 24" style="color:var(--text-faint)"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+      </div>
+
+      <div class="side-card" style="background:var(--surface-2);">
+        <h3>Besoin d'aide ?</h3>
+        <p>Un agent peut vous accompagner par téléphone ou par chat pour constituer votre dossier.</p>
+        <a href="Consulat de Paris.html" class="btn btn-soft" style="background:var(--surface);">
+          <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          Contacter mon consulat
+        </a>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<div id="site-footer-slot"></div>
+
+<script src="shared/site.js"></script>
+</body>
+</html>

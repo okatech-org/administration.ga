@@ -5,6 +5,8 @@ import { api } from "@convex/_generated/api"
 import Image from "next/image"
 import Link from "next/link"
 import { useParams } from "next/navigation"
+import { useEffect, useRef } from "react"
+import { useConvexAuth, useMutation } from "convex/react"
 import {
   ArrowLeft,
   BookOpen,
@@ -42,6 +44,47 @@ export function TutorialDetailClient() {
     api.functions.tutorials.getBySlug,
     { slug: params.slug },
   )
+
+  const { isAuthenticated } = useConvexAuth()
+  const updateProgress = useMutation(
+    api.functions.tutorialProgress.updateProgress,
+  )
+
+  const startedRef = useRef(false)
+  const halfwayRef = useRef(false)
+  const completedRef = useRef(false)
+  useEffect(() => {
+    if (!isAuthenticated || !tutorial?._id) return
+
+    if (!startedRef.current) {
+      startedRef.current = true
+      void updateProgress({ tutorialId: tutorial._id, percent: 10 }).catch(
+        () => {},
+      )
+    }
+
+    const onScroll = () => {
+      const winH = window.innerHeight
+      const docH = document.documentElement.scrollHeight
+      const scrolled = window.scrollY + winH
+      const ratio = scrolled / docH
+
+      if (ratio >= 0.5 && !halfwayRef.current) {
+        halfwayRef.current = true
+        void updateProgress({ tutorialId: tutorial._id, percent: 50 }).catch(
+          () => {},
+        )
+      }
+      if (ratio >= 0.95 && !completedRef.current) {
+        completedRef.current = true
+        void updateProgress({ tutorialId: tutorial._id, percent: 100 }).catch(
+          () => {},
+        )
+      }
+    }
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [isAuthenticated, tutorial?._id, updateProgress])
 
   if (isLoading) {
     return (
