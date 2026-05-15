@@ -199,6 +199,439 @@ export const listAllUsersChunk = backofficeQuery({
   },
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// /users page — server-side paginated + faceted user listing.
+//
+// Replaces the previous "fetch ALL users in a while-loop then filter/count in
+// the browser" pattern. Two queries:
+//
+//   listUsersPaged(filters, paginationOpts) → enriched, filtered, paginated
+//   getUserFacets()                         → counts only (small payload)
+//
+// Filtering happens AFTER enrichment because population/country require joins
+// with profiles + memberships. The page can be smaller than `numItems` when
+// filters reject rows — that's expected with cursor pagination, the client
+// just calls loadMore until it has enough.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const BACKOFFICE_ROLES_FOR_FILTER = ["super_admin", "admin_system", "admin", "sous_admin"] as const;
+const AGENT_ROLES_FOR_FILTER = ["intel_agent", "education_agent"] as const;
+
+type Population = "all" | "backoffice" | "corps" | "agents" | "users" | "inactive";
+
+function populationOfUser(
+  role: string | undefined,
+  isActive: boolean,
+  deletedAt: number | undefined | null,
+  hasMembership: boolean,
+): Exclude<Population, "all"> {
+  if (!isActive && !deletedAt) return "inactive";
+  if (role && (BACKOFFICE_ROLES_FOR_FILTER as readonly string[]).includes(role)) return "backoffice";
+  if (role && (AGENT_ROLES_FOR_FILTER as readonly string[]).includes(role)) return "agents";
+  if (hasMembership) return "corps";
+  return "users";
+}
+
+// ISO 3166-1 alpha-2 → continent. Mirrors the client-side map in
+// apps/backoffice-web/src/lib/country-utils.ts so the back-end can derive
+// continent filters without a client round-trip.
+const COUNTRY_CONTINENT_SERVER: Record<string, string> = {
+  ZA: "africa", DZ: "africa", AO: "africa", BJ: "africa", BW: "africa",
+  BF: "africa", BI: "africa", CV: "africa", CM: "africa", CF: "africa",
+  TD: "africa", KM: "africa", CG: "africa", CD: "africa", CI: "africa",
+  DJ: "africa", EG: "africa", GQ: "africa", ER: "africa", SZ: "africa",
+  ET: "africa", GA: "africa", GM: "africa", GH: "africa", GN: "africa",
+  GW: "africa", KE: "africa", LS: "africa", LR: "africa", LY: "africa",
+  MG: "africa", MW: "africa", ML: "africa", MR: "africa", MU: "africa",
+  MA: "africa", MZ: "africa", NA: "africa", NE: "africa", NG: "africa",
+  RW: "africa", ST: "africa", SN: "africa", SC: "africa", SL: "africa",
+  SO: "africa", SS: "africa", SD: "africa", TZ: "africa", TG: "africa",
+  TN: "africa", UG: "africa", ZM: "africa", ZW: "africa",
+  AL: "europe", AD: "europe", AT: "europe", BY: "europe", BE: "europe",
+  BA: "europe", BG: "europe", HR: "europe", CY: "europe", CZ: "europe",
+  DK: "europe", EE: "europe", FI: "europe", FR: "europe", DE: "europe",
+  GR: "europe", HU: "europe", IS: "europe", IE: "europe", IT: "europe",
+  XK: "europe", LV: "europe", LI: "europe", LT: "europe", LU: "europe",
+  MT: "europe", MD: "europe", MC: "europe", ME: "europe", NL: "europe",
+  MK: "europe", NO: "europe", PL: "europe", PT: "europe", RO: "europe",
+  RU: "europe", SM: "europe", RS: "europe", SK: "europe", SI: "europe",
+  ES: "europe", SE: "europe", CH: "europe", UA: "europe", GB: "europe",
+  VA: "europe",
+  AG: "americas", AR: "americas", BS: "americas", BB: "americas", BZ: "americas",
+  BO: "americas", BR: "americas", CA: "americas", CL: "americas", CO: "americas",
+  CR: "americas", CU: "americas", DM: "americas", DO: "americas", EC: "americas",
+  SV: "americas", GD: "americas", GT: "americas", GY: "americas", HT: "americas",
+  HN: "americas", JM: "americas", MX: "americas", NI: "americas", PA: "americas",
+  PY: "americas", PE: "americas", KN: "americas", LC: "americas", VC: "americas",
+  SR: "americas", TT: "americas", US: "americas", UY: "americas", VE: "americas",
+  AF: "asia", BD: "asia", BT: "asia", BN: "asia", KH: "asia",
+  CN: "asia", FJ: "asia", IN: "asia", ID: "asia", JP: "asia",
+  KZ: "asia", KG: "asia", LA: "asia", MY: "asia", MV: "asia",
+  MN: "asia", MM: "asia", NP: "asia", NZ: "asia", PK: "asia",
+  PH: "asia", SG: "asia", KR: "asia", LK: "asia", TW: "asia",
+  TJ: "asia", TH: "asia", TL: "asia", TM: "asia", UZ: "asia",
+  VN: "asia", AU: "asia",
+  BH: "middle_east", IR: "middle_east", IQ: "middle_east", IL: "middle_east",
+  JO: "middle_east", KW: "middle_east", LB: "middle_east", OM: "middle_east",
+  PS: "middle_east", QA: "middle_east", SA: "middle_east", SY: "middle_east",
+  TR: "middle_east", AE: "middle_east", YE: "middle_east",
+};
+
+const filtersValidator = v.object({
+  population: v.optional(v.union(
+    v.literal("all"),
+    v.literal("backoffice"),
+    v.literal("corps"),
+    v.literal("agents"),
+    v.literal("users"),
+    v.literal("inactive"),
+  )),
+  role: v.optional(v.string()),
+  continent: v.optional(v.string()),
+  country: v.optional(v.string()),
+  status: v.optional(v.union(v.literal("active"), v.literal("inactive"))),
+  search: v.optional(v.string()),
+});
+
+// Enrich a single user with profile + first membership + derived fields.
+// Pulled out so both the fast (aggregate) and the slow (filtered scan) paths
+// produce identical row shapes.
+async function enrichUserForListing(ctx: any, user: any) {
+  const profile = await ctx.db
+    .query("profiles")
+    .withIndex("by_user", (q: any) => q.eq("userId", user._id))
+    .unique();
+
+  const memberships = await ctx.db
+    .query("memberships")
+    .withIndex("by_user_org", (q: any) => q.eq("userId", user._id))
+    .collect();
+  const activeMemberships = memberships.filter((m: any) => !m.deletedAt);
+
+  let membershipInfo: any = null;
+  if (activeMemberships.length > 0) {
+    const m = activeMemberships[0];
+    const org = await ctx.db.get(m.orgId);
+    let positionTitle: string | null = null;
+    if (m.positionId) {
+      const position = await ctx.db.get(m.positionId);
+      if (position && (position as any).title) {
+        const title = (position as any).title;
+        positionTitle = typeof title === "string"
+          ? title
+          : title.fr || title.en || null;
+      }
+    }
+    membershipInfo = {
+      orgName: (org as any)?.name ?? "—",
+      orgSlug: (org as any)?.slug,
+      orgCountry: (org as any)?.country,
+      positionTitle,
+      totalMemberships: activeMemberships.length,
+    };
+  }
+
+  return {
+    ...user,
+    role: getEffectiveRole(user),
+    phone: profile?.contacts?.phone,
+    nationality: profile?.identity?.nationality,
+    countryOfResidence: profile?.countryOfResidence,
+    residenceCountry:
+      profile?.countryOfResidence ||
+      profile?.addresses?.residence?.country ||
+      profile?.identity?.nationality ||
+      membershipInfo?.orgCountry,
+    createdAt: user._creationTime,
+    isVerified: !!user.authId,
+    profileId: profile?._id,
+    hasMembership: activeMemberships.length > 0,
+    membershipInfo,
+    deletedAt: (user as any).deletedAt ?? null,
+  };
+}
+
+function matchesFilters(u: any, f: any): boolean {
+  if (f.population && f.population !== "all") {
+    const pop = populationOfUser(u.role, u.isActive, u.deletedAt, u.hasMembership);
+    if (pop !== f.population) return false;
+  }
+  if (f.role && u.role !== f.role) return false;
+
+  const country: string | undefined =
+    u.membershipInfo?.orgCountry || u.residenceCountry;
+  if (f.country && country !== f.country) return false;
+  if (f.continent) {
+    const c = country ? COUNTRY_CONTINENT_SERVER[country.toUpperCase()] : undefined;
+    if (c !== f.continent) return false;
+  }
+
+  if (f.status === "active" && !u.isActive) return false;
+  if (f.status === "inactive" && (u.isActive || u.deletedAt)) return false;
+
+  if (f.search && f.search.trim().length > 0) {
+    const s = f.search.trim().toLowerCase();
+    const haystack = [u.name, u.email, u.phone, u.firstName, u.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    if (!haystack.includes(s)) return false;
+  }
+
+  return true;
+}
+
+/**
+ * Offset-based paginated user listing for the /users page Comptes view.
+ *
+ * Returns `{ rows, total }` so the table can show a real "Page N sur M"
+ * pagination with jump-to-page.
+ *
+ * Two paths:
+ *   - **Unfiltered:** uses the `globalCounts` TableAggregate for an O(log n)
+ *     total + boundary lookup (no full scan). Then `take(pageSize)` from the
+ *     users table using the by_creation_time index. Page change cost:
+ *     `O(log n + pageSize)` reads, regardless of table size.
+ *
+ *   - **Filtered:** scans every user once (filters depend on profile +
+ *     membership joins that aren't covered by aggregates today), enriches,
+ *     filters, slices to the page. Cost: `O(n)` per query — acceptable
+ *     because Convex caches by exact args, and filtered views narrow data
+ *     significantly.
+ *
+ * @see https://stack.convex.dev/efficient-count-sum-max-with-the-aggregate-component
+ * @see https://docs.convex.dev/database/pagination
+ */
+export const listUsersPage = backofficeQuery({
+  args: {
+    filters: filtersValidator,
+    page: v.number(),     // 0-indexed
+    pageSize: v.number(), // bounded client-side; server clamps to [1, 100]
+  },
+  handler: async (ctx, args) => {
+    const pageSize = Math.max(1, Math.min(100, Math.floor(args.pageSize)));
+    const page = Math.max(0, Math.floor(args.page));
+    const f = args.filters;
+
+    const hasFilters =
+      (!!f.population && f.population !== "all") ||
+      !!f.role ||
+      !!f.country ||
+      !!f.continent ||
+      !!f.status ||
+      !!(f.search && f.search.trim().length > 0);
+
+    // ─── Fast path: no filters → aggregate-driven O(log n) pagination ───
+    if (!hasFilters) {
+      const total = await globalCounts.count(ctx, {});
+      const start = page * pageSize;
+      if (start >= total) {
+        return { rows: [], total };
+      }
+
+      // Aggregate sortKey is _creationTime ascending. We display descending
+      // (most recent first), so the i-th displayed row corresponds to
+      // aggregate offset `-1 - i` (negative offsets count from the end —
+      // `at(-1)` is the largest key, i.e. the most recent user).
+      const startItem = await globalCounts.at(ctx, -1 - start, {});
+      const boundaryTime = startItem.key as number;
+
+      // Take the page starting at the boundary creation time, descending.
+      // Tie-breaking on identical _creationTime is best-effort here — the
+      // built-in by_creation_time index orders by (_creationTime, _id) and
+      // ms-precision collisions are rare in practice.
+      const docs = await ctx.db
+        .query("users")
+        .withIndex("by_creation_time", (q) =>
+          q.lte("_creationTime", boundaryTime),
+        )
+        .order("desc")
+        .take(pageSize);
+
+      const rows = await Promise.all(docs.map((d) => enrichUserForListing(ctx, d)));
+      return { rows, total };
+    }
+
+    // ─── Slow path: filters active → scan + filter + slice ───
+    // Bulk-load memberships + orgs + profiles once, then enrich users
+    // without the per-user round-trips of `enrichUserForListing`.
+    const [users, memberships, profiles] = await Promise.all([
+      ctx.db.query("users").order("desc").collect(),
+      ctx.db.query("memberships").collect(),
+      ctx.db.query("profiles").collect(),
+    ]);
+
+    const activeMembs = memberships.filter((m: any) => !m.deletedAt);
+    const firstMembershipByUser = new Map<string, any>();
+    const membershipCountByUser = new Map<string, number>();
+    for (const m of activeMembs) {
+      if (!firstMembershipByUser.has(m.userId)) firstMembershipByUser.set(m.userId, m);
+      membershipCountByUser.set(m.userId, (membershipCountByUser.get(m.userId) ?? 0) + 1);
+    }
+
+    const orgIds = new Set<string>(activeMembs.map((m: any) => m.orgId));
+    const positionIds = new Set<string>(
+      activeMembs.filter((m: any) => m.positionId).map((m: any) => m.positionId!),
+    );
+    const [orgs, positions] = await Promise.all([
+      Promise.all(Array.from(orgIds).map((id) => ctx.db.get(id as any))),
+      Promise.all(Array.from(positionIds).map((id) => ctx.db.get(id as any))),
+    ]);
+    const orgsMap = new Map<string, any>(
+      (orgs.filter(Boolean) as any[]).map((o) => [o._id, o]),
+    );
+    const posMap = new Map<string, any>(
+      (positions.filter(Boolean) as any[]).map((p) => [p._id, p]),
+    );
+
+    const profileByUser = new Map<string, any>();
+    for (const p of profiles) profileByUser.set(p.userId, p);
+
+    const enriched = users.map((user: any) => {
+      const profile = profileByUser.get(user._id);
+      const m = firstMembershipByUser.get(user._id);
+      const totalMemberships = membershipCountByUser.get(user._id) ?? 0;
+
+      let membershipInfo: any = null;
+      if (m) {
+        const org = orgsMap.get(m.orgId);
+        let positionTitle: string | null = null;
+        if (m.positionId) {
+          const position = posMap.get(m.positionId);
+          if (position?.title) {
+            positionTitle = typeof position.title === "string"
+              ? position.title
+              : position.title.fr || position.title.en || null;
+          }
+        }
+        membershipInfo = {
+          orgName: org?.name ?? "—",
+          orgSlug: org?.slug,
+          orgCountry: org?.country,
+          positionTitle,
+          totalMemberships,
+        };
+      }
+
+      return {
+        ...user,
+        role: getEffectiveRole(user),
+        phone: profile?.contacts?.phone,
+        nationality: profile?.identity?.nationality,
+        countryOfResidence: profile?.countryOfResidence,
+        residenceCountry:
+          profile?.countryOfResidence ||
+          profile?.addresses?.residence?.country ||
+          profile?.identity?.nationality ||
+          membershipInfo?.orgCountry,
+        createdAt: user._creationTime,
+        isVerified: !!user.authId,
+        profileId: profile?._id,
+        hasMembership: totalMemberships > 0,
+        membershipInfo,
+        deletedAt: (user as any).deletedAt ?? null,
+      };
+    });
+
+    const filtered = enriched.filter((u: any) => matchesFilters(u, f));
+    const total = filtered.length;
+    const start = page * pageSize;
+    return { rows: filtered.slice(start, start + pageSize), total };
+  },
+});
+
+/**
+ * Aggregate counts for the /users page filter dropdowns. Scans users +
+ * profiles + memberships server-side, returns only numbers. Previously these
+ * counts were computed in the browser after transferring every user record —
+ * this query keeps the heavy data on the server and ships ~few KB instead.
+ *
+ * Future optimization: replace the full scan with TableAggregates
+ * (usersByRole, usersByCountry) for O(log n) counts — requires denormalizing
+ * country onto the users table + triggers when profile.countryOfResidence
+ * changes.
+ *
+ * @see https://www.convex.dev/components/aggregate
+ */
+export const getUserFacets = backofficeQuery({
+  args: {},
+  handler: async (ctx) => {
+    const [users, memberships, profiles] = await Promise.all([
+      ctx.db.query("users").collect(),
+      ctx.db.query("memberships").collect(),
+      ctx.db.query("profiles").collect(),
+    ]);
+
+    const activeMemberships = memberships.filter((m: any) => !m.deletedAt);
+    const userHasMembership = new Set<string>();
+    const firstMembershipByUser = new Map<string, any>();
+    for (const m of activeMemberships) {
+      userHasMembership.add(m.userId);
+      if (!firstMembershipByUser.has(m.userId)) {
+        firstMembershipByUser.set(m.userId, m);
+      }
+    }
+
+    // Resolve orgs only for those that have at least one membership.
+    const orgIds = new Set<string>(activeMemberships.map((m: any) => m.orgId));
+    const orgs = await Promise.all(
+      Array.from(orgIds).map((id) => ctx.db.get(id as any)),
+    );
+    const orgsMap = new Map<string, any>(
+      (orgs.filter(Boolean) as any[]).map((o) => [o._id, o]),
+    );
+
+    const profileByUser = new Map<string, any>();
+    for (const p of profiles) profileByUser.set(p.userId, p);
+
+    const populations: Record<Exclude<Population, "all">, number> = {
+      backoffice: 0, corps: 0, agents: 0, users: 0, inactive: 0,
+    };
+    const roles: Record<string, number> = {};
+    const countries: Record<string, number> = {};
+    const continents: Record<string, number> = {};
+    const statuses = { active: 0, inactive: 0 };
+
+    for (const u of users) {
+      const role = getEffectiveRole(u);
+      const has = userHasMembership.has(u._id);
+      const deletedAt = (u as any).deletedAt ?? null;
+
+      const pop = populationOfUser(role, u.isActive, deletedAt, has);
+      populations[pop]++;
+
+      if (role) roles[role] = (roles[role] ?? 0) + 1;
+
+      if (u.isActive) statuses.active++;
+      else if (!deletedAt) statuses.inactive++;
+
+      const profile = profileByUser.get(u._id);
+      const m = firstMembershipByUser.get(u._id);
+      const orgCountry = m ? orgsMap.get(m.orgId)?.country : undefined;
+      const country: string | undefined =
+        orgCountry ||
+        profile?.countryOfResidence ||
+        profile?.addresses?.residence?.country ||
+        profile?.identity?.nationality;
+      if (country) {
+        const code = country.toUpperCase();
+        countries[code] = (countries[code] ?? 0) + 1;
+        const continent = COUNTRY_CONTINENT_SERVER[code];
+        if (continent) continents[continent] = (continents[continent] ?? 0) + 1;
+      }
+    }
+
+    return {
+      total: users.length,
+      populations,
+      roles,
+      countries,
+      continents,
+      statuses,
+    };
+  },
+});
+
 /**
  * Fetch users in chunks with their profession + CV skills, for the
  * /users?view=skills back-office aggregation. Aggregation happens client-side

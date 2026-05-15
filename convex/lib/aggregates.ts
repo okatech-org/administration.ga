@@ -353,6 +353,101 @@ export const missedCallsByOrgReason = new TableAggregate<{
 });
 
 // ---------------------------------------------------------------------------
+// 26. Users by Role — count users per platform role (O(log n))
+//     Namespace: role (string). Users without a role default to "user".
+//     SortKey:   _creationTime
+//
+//     Powers the role dropdown counts on /users:
+//       usersByRole.count(ctx, { namespace: "admin" })
+//     For population buckets that aggregate several roles (backoffice =
+//     super_admin + admin_system + admin + sous_admin), sum the per-role
+//     counts client-side or use `countBatch`.
+// ---------------------------------------------------------------------------
+export const usersByRole = new TableAggregate<{
+  Namespace: string; // role
+  Key: number; // _creationTime
+  DataModel: DataModel;
+  TableName: "users";
+}>(components.usersByRole, {
+  namespace: (doc) => doc.role ?? "user",
+  sortKey: (doc) => doc._creationTime,
+});
+
+// ---------------------------------------------------------------------------
+// 27. Users by Status — active / inactive / deleted
+//     Namespace: "active" | "inactive" | "deleted"
+//     SortKey:   _creationTime
+//
+//     Powers the Statut dropdown counts on /users. "deleted" is the
+//     soft-delete bucket (deletedAt set); we keep it separate so callers
+//     never confuse trash with inactive accounts.
+// ---------------------------------------------------------------------------
+export const usersByStatus = new TableAggregate<{
+  Namespace: "active" | "inactive" | "deleted";
+  Key: number;
+  DataModel: DataModel;
+  TableName: "users";
+}>(components.usersByStatus, {
+  namespace: (doc) =>
+    doc.deletedAt ? "deleted" : doc.isActive ? "active" : "inactive",
+  sortKey: (doc) => doc._creationTime,
+});
+
+// ---------------------------------------------------------------------------
+// 28. Users by Country — count profiles per country of residence
+//     Namespace: ISO 3166-1 alpha-2 (UPPER-case), or "__none__" when the
+//                profile has no resolvable country.
+//     SortKey:   _creationTime
+//     TableName: "profiles" — country lives on the profile, not on users.
+//                A user without a profile contributes nothing here; counts
+//                represent profiled users, which matches the /users page UX.
+//
+//     Continent counts are derived client-side by mapping country → continent
+//     and summing.
+// ---------------------------------------------------------------------------
+export const usersByCountry = new TableAggregate<{
+  Namespace: string; // country code or "__none__"
+  Key: number;
+  DataModel: DataModel;
+  TableName: "profiles";
+}>(components.usersByCountry, {
+  namespace: (doc) => {
+    const c =
+      doc.countryOfResidence ||
+      doc.addresses?.residence?.country ||
+      doc.identity?.nationality;
+    return c ? String(c).toUpperCase() : "__none__";
+  },
+  sortKey: (doc) => doc._creationTime,
+});
+
+// ---------------------------------------------------------------------------
+// 29. Memberships by User — "does this user belong to any org?"
+//     Namespace: userId
+//     SortKey:   [isDeleted (0|1), _creationTime]
+//
+//     Active memberships only: bound the count to keys with isDeleted = 0.
+//
+//       const activeCount = await membershipsByUser.count(ctx, {
+//         namespace: userId,
+//         bounds: { upper: { key: [0, Number.MAX_SAFE_INTEGER], inclusive: true } },
+//       });
+//       const hasMembership = activeCount > 0;
+//
+//     This complements `membershipsByOrg` (counts members per org) — same
+//     source table, different namespace orientation.
+// ---------------------------------------------------------------------------
+export const membershipsByUser = new TableAggregate<{
+  Namespace: string; // userId
+  Key: [number, number]; // [isDeleted, _creationTime]
+  DataModel: DataModel;
+  TableName: "memberships";
+}>(components.membershipsByUser, {
+  namespace: (doc) => doc.userId,
+  sortKey: (doc) => [doc.deletedAt ? 1 : 0, doc._creationTime],
+});
+
+// ---------------------------------------------------------------------------
 // 25. Requests by OrgService — featured service computation (public catalog)
 //     Namespace: orgServiceId
 //     SortKey:   _creationTime
@@ -369,3 +464,83 @@ export const requestsByOrgService = new TableAggregate<{
   namespace: (doc) => doc.orgServiceId,
   sortKey: (doc) => doc._creationTime,
 });
+
+// ---------------------------------------------------------------------------
+// 30. Profils par catégorie de métier — alimente la tab Catégories
+//     (count par catégorie) et le ratio "profils catégorisés / total".
+//     Namespace: ProfessionCategory ("tech" | "health" | ... | "other")
+//                ou "__none__" si le profil n'a pas de profession.title.
+//     SortKey:   _creationTime
+// ---------------------------------------------------------------------------
+export const profilesByCategory = new TableAggregate<{
+  Namespace: string;
+  Key: number;
+  DataModel: DataModel;
+  TableName: "profiles";
+}>(components.profilesByCategory, {
+  namespace: (doc) => doc.profession?.category ?? "__none__",
+  sortKey: (doc) => doc._creationTime,
+});
+
+// ---------------------------------------------------------------------------
+// 31. Profils par statut professionnel — donut "Statut professionnel"
+//     de la tab Overview.
+//     Namespace: ProfessionStatus ("employee" | "self_employed" | ... )
+//                ou "__none__" si non renseigné.
+//     SortKey:   _creationTime
+// ---------------------------------------------------------------------------
+export const profilesByProfessionStatus = new TableAggregate<{
+  Namespace: string;
+  Key: number;
+  DataModel: DataModel;
+  TableName: "profiles";
+}>(components.profilesByProfessionStatus, {
+  namespace: (doc) => doc.profession?.status ?? "__none__",
+  sortKey: (doc) => doc._creationTime,
+});
+
+// ---------------------------------------------------------------------------
+// 32. Profils par statut d'enrichissement IA — alimente les jauges de la
+//     tab Santé + le compteur "X profils en attente".
+//     Namespace: "no_title" (pas de profession.title)
+//                "pending"  (title renseigné, aiEnrichedAt absent)
+//                "enriched" (aiEnrichedAt présent, au moins 1 skill suggérée)
+//                "ai_failed" (aiEnrichedAt présent mais category=other ou
+//                             aucune skill suggérée — l'IA a échoué).
+//     SortKey:   _creationTime
+// ---------------------------------------------------------------------------
+export const profilesByEnrichmentStatus = new TableAggregate<{
+  Namespace: string;
+  Key: number;
+  DataModel: DataModel;
+  TableName: "profiles";
+}>(components.profilesByEnrichmentStatus, {
+  namespace: (doc) => {
+    const title = doc.profession?.title?.trim();
+    if (!title) return "no_title";
+    if (!doc.profession?.aiEnrichedAt) return "pending";
+    const suggested = doc.profession?.aiSuggestedSkills ?? [];
+    const cat = doc.profession?.category;
+    if (suggested.length === 0 || cat === "other") return "ai_failed";
+    return "enriched";
+  },
+  sortKey: (doc) => doc._creationTime,
+});
+
+// ---------------------------------------------------------------------------
+// 33. Items cv.skills par niveau — distribution globale des niveaux
+//     (tab Overview "Niveaux des compétences"). Pour la distribution
+//     par skill, on lit `skillCatalogStats.byLevel` (précalculé).
+//     Namespace: SkillLevel ("beginner" | "intermediate" | "advanced" | "expert")
+//     SortKey:   _creationTime
+// ---------------------------------------------------------------------------
+export const cvSkillItemsByLevel = new TableAggregate<{
+  Namespace: string;
+  Key: number;
+  DataModel: DataModel;
+  TableName: "cvSkillItems";
+}>(components.cvSkillItemsByLevel, {
+  namespace: (doc) => doc.level,
+  sortKey: (doc) => doc._creationTime,
+});
+

@@ -43,4 +43,17 @@ app.use(aggregate, { name: "missedCallsByOrgReason" });
 // Namespace: orgServiceId, sortKey: _creationTime → window queries on requests
 app.use(aggregate, { name: "requestsByOrgService" });
 
+// /users page facets — O(log n) counts for dropdown filters
+app.use(aggregate, { name: "usersByRole" });
+app.use(aggregate, { name: "usersByStatus" });
+app.use(aggregate, { name: "usersByCountry" });
+app.use(aggregate, { name: "membershipsByUser" });
+
+// /skills page — aggregates O(log n) pour les compteurs par catégorie,
+// statut professionnel, statut d'enrichissement IA, niveau CV.
+app.use(aggregate, { name: "profilesByCategory" });
+app.use(aggregate, { name: "profilesByProfessionStatus" });
+app.use(aggregate, { name: "profilesByEnrichmentStatus" });
+app.use(aggregate, { name: "cvSkillItemsByLevel" });
+
 export default app;

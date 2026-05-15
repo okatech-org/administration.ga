@@ -2,19 +2,16 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { useConvex } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { DataTable } from "@/components/ui/data-table";
 import { columns, corpsAdminColumns } from "@/components/admin/users-columns";
 import dynamic from "next/dynamic";
 import { ProfilesView } from "@/components/admin/profiles-view";
 import { DiplomaticProfilesView } from "@/components/admin/diplomatic-profiles-view";
-import { SkillsView } from "@/components/admin/skills-view";
-import { Badge } from "@/components/ui/badge";
 
 // Mapbox-GL touches `window` / WebGL at module load and breaks Next's SSR
-// analysis even from a "use client" file — load the map view client-only,
-// same pattern as citizen-web's WorldMapSection (apps/citizen-web/src/app/(public)/page.tsx:12).
+// analysis even from a "use client" file — load the map view client-only.
 const UsersMapView = dynamic(
   () =>
     import("@/components/admin/users-map-view").then((m) => ({
@@ -29,14 +26,14 @@ const UsersMapView = dynamic(
     ),
   },
 );
-import { Crown, Map as MapIcon, Shield, Sparkles, Users as UsersIcon, X } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import { Crown, Map as MapIcon, Shield, Users as UsersIcon, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { PaginationState } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 import {
   getCountryFlag,
   getCountryName,
   getContinent,
-  getActiveContinents,
   CONTINENT_META,
   type Continent,
 } from "@/lib/country-utils";
@@ -45,273 +42,303 @@ import { TabSwitcher } from "@/components/design-system/tab-switcher";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { Combobox, type ComboboxOption } from "@workspace/ui/components/combobox";
 import { Button } from "@workspace/ui/components/button";
+import { useDebounce } from "@/hooks/use-debounce";
 
-type ViewMode = "accounts" | "profiles" | "diplomatic" | "map" | "skills";
+type ViewMode = "accounts" | "profiles" | "diplomatic" | "map";
 
 type UserTab = "all" | "backoffice" | "corps" | "agents" | "users" | "inactive";
 
-const TABS: { id: UserTab; label: string; emoji: string }[] = [
-  { id: "all", label: "Tous", emoji: "" },
-  { id: "backoffice", label: "Back-Office", emoji: "" },
-  { id: "corps", label: "Corps Administratif", emoji: "" },
-  { id: "agents", label: "Agents Spéciaux", emoji: "" },
-  { id: "users", label: "Utilisateurs", emoji: "" },
-  { id: "inactive", label: "Inactifs", emoji: "" },
+const POPULATION_LABELS: Record<UserTab, string> = {
+  all: "Tous",
+  backoffice: "Back-Office",
+  corps: "Corps Administratif",
+  agents: "Agents Spéciaux",
+  users: "Utilisateurs",
+  inactive: "Inactifs",
+};
+
+const POPULATION_ORDER: UserTab[] = [
+  "all", "backoffice", "corps", "agents", "users", "inactive",
 ];
 
-const BACKOFFICE_ROLES = ["super_admin", "admin_system", "admin", "sous_admin"] as const;
-const AGENT_ROLES = ["intel_agent", "education_agent"] as const;
-const PRIVILEGED_ROLES = [...BACKOFFICE_ROLES, ...AGENT_ROLES] as const;
-
-const ROLE_META: Record<string, { label: string; emoji: string; color: string }> = {
-  super_admin: { label: "Super Admin", emoji: "", color: "bg-amber-500/10 text-amber-700 border-amber-300 dark:text-amber-400" },
-  admin_system: { label: "Admin Système", emoji: "", color: "bg-violet-500/10 text-violet-700 border-violet-300 dark:text-violet-400" },
-  admin: { label: "Admin", emoji: "", color: "bg-blue-500/10 text-blue-700 border-blue-300 dark:text-blue-400" },
-  sous_admin: { label: "Sous-Admin", emoji: "", color: "bg-cyan-500/10 text-cyan-700 border-cyan-300 dark:text-cyan-400" },
-  intel_agent: { label: "Agent Intel", emoji: "", color: "bg-emerald-500/10 text-emerald-700 border-emerald-300 dark:text-emerald-400" },
-  education_agent: { label: "Agent Éducation", emoji: "", color: "bg-teal-500/10 text-teal-700 border-teal-300 dark:text-teal-400" },
+const ROLE_LABELS: Record<string, string> = {
+  super_admin: "Super Admin",
+  admin_system: "Admin Système",
+  admin: "Admin",
+  sous_admin: "Sous-Admin",
+  intel_agent: "Agent Intel",
+  education_agent: "Agent Éducation",
+  user: "Utilisateur",
 };
+
+const ALL_ROLES = [
+  "super_admin", "admin_system", "admin", "sous_admin",
+  "intel_agent", "education_agent", "user",
+] as const;
 
 const VIEW_MODES: { id: ViewMode; label: string; icon: React.ElementType }[] = [
   { id: "accounts", label: "Comptes", icon: UsersIcon },
   { id: "profiles", label: "Profils Consulaires", icon: Crown },
   { id: "diplomatic", label: "Corps Diplomatique", icon: Shield },
-  { id: "skills", label: "Compétences", icon: Sparkles },
   { id: "map", label: "Carte des utilisateurs", icon: MapIcon },
+];
+
+// Must match one of the values offered by DataTablePagination's page-size
+// select (packages/ui/src/components/data-table-pagination.tsx).
+const DEFAULT_PAGE_SIZE = 20;
+
+// URL search-param keys. Kept short so the address bar stays readable.
+const PARAM = {
+  view: "view",
+  pop: "pop",
+  role: "role",
+  continent: "continent",
+  country: "country",
+  status: "status",
+  q: "q",
+  page: "page",         // 1-indexed in URL, 0-indexed in TanStack
+  pageSize: "pageSize",
+} as const;
+
+// Keys owned by the "accounts" view — wiped when switching to another view so
+// stale filters don't leak across tabs.
+const ACCOUNTS_ONLY_KEYS = [
+  PARAM.pop, PARAM.role, PARAM.continent, PARAM.country, PARAM.status,
+  PARAM.q, PARAM.page, PARAM.pageSize,
 ];
 
 export default function UsersPage() {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const view = (searchParams.get("view") as ViewMode) || "accounts";
-  const convex = useConvex();
+  const view = (searchParams.get(PARAM.view) as ViewMode) || "accounts";
 
-  // ── Filter state (Comptes view) ────────────────────────────────
-  // Five independent filters now drive the table — replaces the previous
-  // population / continent / country / org navigation bars.
-  const [activeTab, setActiveTab] = useState<UserTab>("all");
-  const [activeRole, setActiveRole] = useState<string | null>(null);
-  const [activeContinent, setActiveContinent] = useState<Continent | null>(null);
-  const [activeCountry, setActiveCountry] = useState<string | null>(null);
-  const [activeStatus, setActiveStatus] = useState<"active" | "inactive" | null>(null);
+  // ── URL is the source of truth for every Comptes filter + pagination ──
+  const activeTab = (searchParams.get(PARAM.pop) as UserTab) || "all";
+  const activeRole = searchParams.get(PARAM.role);
+  const activeContinent = searchParams.get(PARAM.continent) as Continent | null;
+  const activeCountry = searchParams.get(PARAM.country);
+  const activeStatus = searchParams.get(PARAM.status) as "active" | "inactive" | null;
+  const urlSearch = searchParams.get(PARAM.q) ?? "";
+  const urlPage = Math.max(
+    0,
+    Number.parseInt(searchParams.get(PARAM.page) ?? "1", 10) - 1,
+  );
+  const urlPageSize = (() => {
+    const raw = Number.parseInt(
+      searchParams.get(PARAM.pageSize) ?? String(DEFAULT_PAGE_SIZE),
+      10,
+    );
+    return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_PAGE_SIZE;
+  })();
 
-  const [users, setUsers] = useState<any[] | undefined>(undefined);
-  const [isPending, setIsPending] = useState(true);
+  // Search input keeps a local mirror so keystrokes don't wait on the URL
+  // round-trip. It debounces into the URL, and the URL → input direction is
+  // synced for back/forward navigation.
+  const [searchInput, setSearchInput] = useState(urlSearch);
+  const debouncedSearch = useDebounce(searchInput, 300);
 
-  // Fetch all users in chunks to avoid Convex 4096 read limit
   useEffect(() => {
-    let active = true;
-    async function fetchAll() {
-      try {
-        let cursor = null;
-        let isDone = false;
-        const all: any[] = [];
+    setSearchInput(urlSearch);
+  }, [urlSearch]);
 
-        while (!isDone && active) {
-          const res: { page: any[]; continueCursor: string; isDone: boolean } = await convex.query(api.functions.admin.listAllUsersChunk, { cursor });
-          all.push(...res.page);
-          cursor = res.continueCursor;
-          isDone = res.isDone;
-
-          // Optimistically update UI so user sees progress
-          if (active) {
-            setUsers([...all]);
-          }
-        }
-
-        if (active) {
-          setIsPending(false);
-        }
-      } catch (e) {
-        console.error("Failed to load users", e);
-        if (active) setIsPending(false);
+  // ── URL writer — `router.replace` is shallow (no reload, no scroll jump).
+  // Setting a value to null/empty drops the key entirely so the URL stays
+  // clean when filters are at their default.
+  const updateParams = useCallback(
+    (updates: Record<string, string | null>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const [k, v] of Object.entries(updates)) {
+        if (v === null || v === "") params.delete(k);
+        else params.set(k, v);
       }
+      const qs = params.toString();
+      router.replace(qs ? `/users?${qs}` : "/users", { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  // Push debounced search to URL. Resets pagination to page 1.
+  useEffect(() => {
+    if (debouncedSearch !== urlSearch) {
+      updateParams({ [PARAM.q]: debouncedSearch || null, [PARAM.page]: null });
     }
+  }, [debouncedSearch, urlSearch, updateParams]);
 
-    // reset state before fetching
-    setIsPending(true);
-    fetchAll();
+  const filters = useMemo(
+    () => ({
+      population: activeTab,
+      role: activeRole ?? undefined,
+      continent: activeContinent ?? undefined,
+      country: activeCountry ?? undefined,
+      status: activeStatus ?? undefined,
+      search: urlSearch.trim() || undefined,
+    }),
+    [activeTab, activeRole, activeContinent, activeCountry, activeStatus, urlSearch],
+  );
 
-    return () => { active = false; };
-  }, [convex]);
+  const skip = view !== "accounts";
 
-  // Rang hierarchique pour le tri par role
-  const ROLE_RANK: Record<string, number> = {
-    super_admin: 4, admin_system: 3, admin: 2, sous_admin: 1, user: 0,
-    intel_agent: 1, education_agent: 1,
-  };
+  const pageData = useQuery(
+    api.functions.admin.listUsersPage,
+    skip ? "skip" : { filters, page: urlPage, pageSize: urlPageSize },
+  );
 
-  // ── Helper: classify a user into a population bucket ─────────
-  // Mirrors what the previous "Tous / Back-Office / Corps / Agents / Utilisateurs / Inactifs"
-  // navigation bar encoded.
-  const populationOf = (u: any): UserTab => {
-    if (!u.isActive && !u.deletedAt) return "inactive";
-    if (BACKOFFICE_ROLES.includes(u.role)) return "backoffice";
-    if (AGENT_ROLES.includes(u.role)) return "agents";
-    if (u.hasMembership) return "corps";
-    return "users";
-  };
+  const facets = useQuery(
+    api.functions.admin.getUserFacets,
+    skip ? "skip" : {},
+  );
 
-  // Pick the country to use for geo filters. For corps members we prefer the
-  // org country (where they're posted); otherwise residenceCountry.
-  const countryOf = (u: any): string | undefined =>
-    u.membershipInfo?.orgCountry || u.residenceCountry;
+  // ── Keep last rendered rows visible while the next query is in flight.
+  // `useQuery` returns `undefined` whenever its args change, which would
+  // otherwise empty the table and trigger a layout shift on every page click.
+  // The ref retains the previous payload; the DataTable's existing
+  // `isPageTransitioning` overlay dims it to signal loading.
+  const lastSnapshotRef = useRef<{ rows: any[]; total: number }>({
+    rows: [],
+    total: 0,
+  });
+  if (pageData !== undefined) {
+    lastSnapshotRef.current = { rows: pageData.rows, total: pageData.total };
+  }
+  const rows = lastSnapshotRef.current.rows;
+  const total = lastSnapshotRef.current.total;
 
-  // ── Filter chain ────────────────────────────────────────────
-  // Apply filters sequentially. Each filter narrows the result.
-  const filteredUsers = useMemo(() => {
-    if (!users) return [];
-    let out: any[] = users;
-    if (activeTab !== "all") out = out.filter((u) => populationOf(u) === activeTab);
-    if (activeRole) out = out.filter((u: any) => u.role === activeRole);
-    if (activeContinent) {
-      out = out.filter((u: any) => {
-        const c = countryOf(u);
-        return c ? getContinent(c) === activeContinent : false;
+  const isInitialLoad = !skip && pageData === undefined && rows.length === 0;
+  const isPageTransitioning = !skip && pageData === undefined && rows.length > 0;
+
+  // ── Filter setters (each one writes through to the URL) ─────────────
+  const setPagination = useCallback(
+    (updater: PaginationState | ((s: PaginationState) => PaginationState)) => {
+      const current: PaginationState = { pageIndex: urlPage, pageSize: urlPageSize };
+      const next = typeof updater === "function" ? updater(current) : updater;
+      updateParams({
+        // page in URL is 1-indexed; omit when it's 1 to keep ?-less URLs clean
+        [PARAM.page]: next.pageIndex === 0 ? null : String(next.pageIndex + 1),
+        [PARAM.pageSize]:
+          next.pageSize === DEFAULT_PAGE_SIZE ? null : String(next.pageSize),
       });
-    }
-    if (activeCountry) out = out.filter((u: any) => countryOf(u) === activeCountry);
-    if (activeStatus === "active") out = out.filter((u: any) => u.isActive);
-    if (activeStatus === "inactive") out = out.filter((u: any) => !u.isActive && !u.deletedAt);
+    },
+    [urlPage, urlPageSize, updateParams],
+  );
 
-    // Smart sort: backoffice → role hierarchy; corps → org name; else creation order
-    if (activeTab === "backoffice") {
-      out = [...out].sort((a, b) => (ROLE_RANK[b.role] ?? 0) - (ROLE_RANK[a.role] ?? 0));
-    } else if (activeTab === "corps") {
-      out = [...out].sort((a, b) =>
-        (a.membershipInfo?.orgName ?? "").localeCompare(b.membershipInfo?.orgName ?? "", "fr"),
-      );
-    }
-    return out;
-  }, [users, activeTab, activeRole, activeContinent, activeCountry, activeStatus]);
+  const setActiveTab = (v: UserTab) => {
+    updateParams({
+      [PARAM.pop]: v === "all" ? null : v,
+      // Population implies a role family, so clear any conflicting role.
+      [PARAM.role]: null,
+      [PARAM.page]: null,
+    });
+  };
 
-  // ── Counts per filter option (computed against the FULL user list) ──
-  const populationCounts = useMemo(() => {
-    const result: Record<UserTab, number> = {
-      all: users?.length ?? 0,
-      backoffice: 0,
-      corps: 0,
-      agents: 0,
-      users: 0,
-      inactive: 0,
+  const setActiveRole = (v: string | null) => {
+    updateParams({ [PARAM.role]: v, [PARAM.page]: null });
+  };
+
+  const setActiveContinent = (v: Continent | null) => {
+    const updates: Record<string, string | null> = {
+      [PARAM.continent]: v,
+      [PARAM.page]: null,
     };
-    for (const u of users ?? []) result[populationOf(u)]++;
-    return result;
-  }, [users]);
-
-  const roleCounts = useMemo(() => {
-    const result: Record<string, number> = {};
-    for (const u of users ?? []) {
-      if (!u.role) continue;
-      result[u.role] = (result[u.role] ?? 0) + 1;
+    // Drop the country filter if it doesn't belong to the new continent.
+    if (activeCountry && v && getContinent(activeCountry) !== v) {
+      updates[PARAM.country] = null;
     }
-    return result;
-  }, [users]);
+    updateParams(updates);
+  };
 
-  const continentData = useMemo(() => {
-    const codes = (users ?? [])
-      .map((u: any) => countryOf(u))
-      .filter(Boolean) as string[];
-    const continents = getActiveContinents(codes);
-    const counts = {} as Record<Continent, number>;
-    for (const code of codes) {
-      const c = getContinent(code);
-      if (c) counts[c] = (counts[c] ?? 0) + 1;
-    }
-    return { continents, counts };
-  }, [users]);
+  const setActiveCountry = (v: string | null) => {
+    updateParams({ [PARAM.country]: v, [PARAM.page]: null });
+  };
 
-  // Country options follow the active continent (cascading filter UX).
-  const countryOptions = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const u of users ?? []) {
-      const c = countryOf(u);
-      if (!c) continue;
-      if (activeContinent && getContinent(c) !== activeContinent) continue;
-      map.set(c, (map.get(c) ?? 0) + 1);
-    }
-    return [...map.entries()]
-      .map(([code, count]) => ({
-        value: code,
-        label: `${getCountryFlag(code)} ${getCountryName(code)}`,
-        count,
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [users, activeContinent]);
+  const setActiveStatus = (v: "active" | "inactive" | null) => {
+    updateParams({ [PARAM.status]: v, [PARAM.page]: null });
+  };
 
-  const statusCounts = useMemo(() => {
-    const result = { active: 0, inactive: 0 };
-    for (const u of users ?? []) {
-      if (u.isActive) result.active++;
-      else if (!u.deletedAt) result.inactive++;
-    }
-    return result;
-  }, [users]);
+  // Clear every filter the Comptes view owns, but keep view=accounts in URL.
+  const resetAllFilters = () => {
+    setSearchInput("");
+    const params = new URLSearchParams();
+    params.set(PARAM.view, "accounts");
+    router.replace(`/users?${params.toString()}`, { scroll: false });
+  };
 
-  // True when at least one filter narrows the data — used to render a "Reset" button.
+  // Tab switch (Comptes / Profils / Diplomatique / Carte): strip all
+  // accounts-specific params so they don't leak into the next view.
+  const onViewChange = (key: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const k of ACCOUNTS_ONLY_KEYS) params.delete(k);
+    params.set(PARAM.view, key);
+    router.replace(`/users?${params.toString()}`, { scroll: false });
+  };
+
+  // ── Filter option lists (driven by facets) ──────────────────
+  const populationOptions: ComboboxOption<UserTab>[] = POPULATION_ORDER.map((id) => {
+    const count =
+      id === "all"
+        ? facets?.total ?? 0
+        : facets?.populations?.[id as Exclude<UserTab, "all">] ?? 0;
+    return { value: id, label: `${POPULATION_LABELS[id]} (${count})` };
+  });
+
+  const roleOptions: ComboboxOption<string>[] = ALL_ROLES
+    .filter((r) => (facets?.roles?.[r] ?? 0) > 0)
+    .map((r) => ({
+      value: r,
+      label: `${ROLE_LABELS[r] ?? r} (${facets?.roles?.[r] ?? 0})`,
+    }));
+
+  const continentOptions: ComboboxOption<Continent>[] = facets
+    ? (Object.entries(facets.continents) as [Continent, number][])
+        .sort(
+          ([a], [b]) =>
+            (CONTINENT_META[a]?.order ?? 99) - (CONTINENT_META[b]?.order ?? 99),
+        )
+        .map(([c, n]) => ({
+          value: c,
+          label: `${CONTINENT_META[c]?.label ?? c} (${n})`,
+        }))
+    : [];
+
+  const countryOptions: ComboboxOption<string>[] = facets
+    ? Object.entries(facets.countries)
+        .filter(([code]) =>
+          activeContinent ? getContinent(code) === activeContinent : true,
+        )
+        .map(([code, count]) => ({
+          value: code,
+          label: `${getCountryFlag(code)} ${getCountryName(code)} (${count})`,
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label))
+    : [];
+
   const hasActiveFilter =
     activeTab !== "all" ||
     activeRole !== null ||
     activeContinent !== null ||
     activeCountry !== null ||
-    activeStatus !== null;
-
-  // Reset country if its continent no longer matches.
-  useEffect(() => {
-    if (activeCountry && activeContinent && getContinent(activeCountry) !== activeContinent) {
-      setActiveCountry(null);
-    }
-  }, [activeContinent, activeCountry]);
+    activeStatus !== null ||
+    urlSearch.length > 0;
 
   const activeColumns = activeTab === "corps" ? corpsAdminColumns : columns;
 
-  // Construire le sous-titre dynamique selon la vue active
   const subtitleByView: Record<ViewMode, string> = {
     accounts: "Gestion des comptes de la plateforme",
     profiles: "Profils consulaires des citoyens et ressortissants",
     diplomatic: "Profils diplomatiques du corps administratif",
-    skills: "Recherche et répartition des compétences et métiers",
     map: "Vision géographique : citoyens et agents répartis dans le monde",
   };
 
-  // Tabs pour le switcher de vue principale
   const viewModeTabs = VIEW_MODES.map((mode) => ({
     key: mode.id as string,
     label: mode.label,
     icon: mode.icon as import("lucide-react").LucideIcon,
   }));
 
-  // ── Filter row options (with counts) ────────────────────────
-  const populationOptions: ComboboxOption<UserTab>[] = TABS.map((tab) => ({
-    value: tab.id,
-    label: `${tab.label} (${populationCounts[tab.id]})`,
-  }));
-
-  const allRoles = [
-    "super_admin", "admin_system", "admin", "sous_admin",
-    "intel_agent", "education_agent", "user",
-  ] as const;
-  const roleOptions: ComboboxOption<string>[] = allRoles
-    .filter((r) => (roleCounts[r] ?? 0) > 0)
-    .map((r) => ({
-      value: r,
-      label: `${ROLE_META[r]?.label ?? r} (${roleCounts[r] ?? 0})`,
-    }));
-
-  const continentOptions: ComboboxOption<Continent>[] = continentData.continents.map(
-    (c) => ({
-      value: c,
-      label: `${CONTINENT_META[c].label} (${continentData.counts[c] ?? 0})`,
-    }),
-  );
-
-  const countryComboboxOptions: ComboboxOption<string>[] = countryOptions.map(
-    (opt) => ({
-      value: opt.value,
-      label: `${opt.label} (${opt.count})`,
-    }),
-  );
+  const pagination: PaginationState = {
+    pageIndex: urlPage,
+    pageSize: urlPageSize,
+  };
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
@@ -321,162 +348,145 @@ export default function UsersPage() {
         subtitle={subtitleByView[view]}
       />
 
-      {/* ── View Toggle (3 vues principales) ── */}
       <TabSwitcher
         tabs={viewModeTabs}
         activeTab={view}
-        onTabChange={(key) => router.push(`/users?view=${key}`)}
+        onTabChange={onViewChange}
         className="w-fit"
       />
 
-      {/* ── Vue Profils Consulaires ── */}
       {view === "profiles" && <ProfilesView />}
-
-      {/* ── Vue Corps Diplomatique ── */}
       {view === "diplomatic" && <DiplomaticProfilesView />}
-
-      {/* ── Vue Compétences (agrégation skills + métiers) ── */}
-      {view === "skills" && <SkillsView />}
-
-      {/* ── Vue Carte (répartition géographique) ── */}
       {view === "map" && <UsersMapView />}
 
-      {/* ── Vue Comptes (existant) ── */}
-      {view === "accounts" && <>
+      {view === "accounts" && (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
+            <FilterField label="Population">
+              <Combobox
+                options={populationOptions.map((o) => ({
+                  value: o.value,
+                  label: o.label,
+                }))}
+                value={activeTab}
+                onValueChange={(v) => setActiveTab(v as UserTab)}
+                placeholder="Population"
+                searchPlaceholder="Filtrer…"
+                emptyText="Aucune option."
+                className="h-9"
+              />
+            </FilterField>
 
-      {/* Filter row — single Combobox primitive used for all 5 filters so
-          they share the exact same trigger button, height, padding, hover
-          and chevron styling. The "all" sentinel is the first option in each
-          list and clears the filter when picked. */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
-        <FilterField label="Population">
-          <Combobox
-            options={[
-              {
-                value: "__all__",
-                label: `Tous (${populationCounts.all})`,
-              },
-              ...populationOptions
-                .filter((o) => o.value !== "all")
-                .map((o) => ({ value: o.value, label: o.label })),
-            ]}
-            value={activeTab === "all" ? "__all__" : activeTab}
-            onValueChange={(v) => {
-              setActiveTab(v === "__all__" ? "all" : (v as UserTab));
-              setActiveRole(null);
-            }}
-            placeholder="Population"
-            searchPlaceholder="Filtrer…"
-            emptyText="Aucune option."
-            className="h-9"
-          />
-        </FilterField>
+            <FilterField label="Rôle">
+              <Combobox
+                options={[
+                  { value: "__all__", label: `Tous les rôles (${facets?.total ?? 0})` },
+                  ...roleOptions,
+                ]}
+                value={activeRole ?? "__all__"}
+                onValueChange={(v) => setActiveRole(v === "__all__" ? null : v)}
+                placeholder="Tous les rôles"
+                searchPlaceholder="Filtrer…"
+                emptyText="Aucun rôle."
+                className="h-9"
+              />
+            </FilterField>
 
-        <FilterField label="Rôle">
-          <Combobox
-            options={[
-              { value: "__all__", label: `Tous les rôles (${users?.length ?? 0})` },
-              ...roleOptions,
-            ]}
-            value={activeRole ?? "__all__"}
-            onValueChange={(v) => setActiveRole(v === "__all__" ? null : v)}
-            placeholder="Tous les rôles"
-            searchPlaceholder="Filtrer…"
-            emptyText="Aucun rôle."
-            className="h-9"
-          />
-        </FilterField>
+            <FilterField label="Continent">
+              <Combobox
+                options={[
+                  { value: "__all__", label: "Tous les continents" },
+                  ...continentOptions,
+                ]}
+                value={activeContinent ?? "__all__"}
+                onValueChange={(v) =>
+                  setActiveContinent(v === "__all__" ? null : (v as Continent))
+                }
+                placeholder="Tous les continents"
+                searchPlaceholder="Filtrer…"
+                emptyText="Aucun continent."
+                className="h-9"
+              />
+            </FilterField>
 
-        <FilterField label="Continent">
-          <Combobox
-            options={[
-              { value: "__all__", label: "Tous les continents" },
-              ...continentOptions,
-            ]}
-            value={activeContinent ?? "__all__"}
-            onValueChange={(v) =>
-              setActiveContinent(v === "__all__" ? null : (v as Continent))
-            }
-            placeholder="Tous les continents"
-            searchPlaceholder="Filtrer…"
-            emptyText="Aucun continent."
-            className="h-9"
-          />
-        </FilterField>
+            <FilterField label="Pays">
+              <Combobox
+                options={[
+                  { value: "__all__", label: "Tous les pays" },
+                  ...countryOptions,
+                ]}
+                value={activeCountry ?? "__all__"}
+                onValueChange={(v) => setActiveCountry(v === "__all__" ? null : v)}
+                placeholder="Tous les pays"
+                searchPlaceholder="Rechercher un pays…"
+                emptyText="Aucun pays."
+                className="h-9"
+              />
+            </FilterField>
 
-        <FilterField label="Pays">
-          <Combobox
-            options={[
-              { value: "__all__", label: "Tous les pays" },
-              ...countryComboboxOptions,
-            ]}
-            value={activeCountry ?? "__all__"}
-            onValueChange={(v) => setActiveCountry(v === "__all__" ? null : v)}
-            placeholder="Tous les pays"
-            searchPlaceholder="Rechercher un pays…"
-            emptyText="Aucun pays."
-            className="h-9"
-          />
-        </FilterField>
+            <FilterField label="Statut">
+              <Combobox
+                options={[
+                  { value: "__all__", label: "Tous statuts" },
+                  {
+                    value: "active",
+                    label: `Actif (${facets?.statuses.active ?? 0})`,
+                  },
+                  {
+                    value: "inactive",
+                    label: `Inactif (${facets?.statuses.inactive ?? 0})`,
+                  },
+                ]}
+                value={activeStatus ?? "__all__"}
+                onValueChange={(v) =>
+                  setActiveStatus(
+                    v === "__all__" ? null : (v as "active" | "inactive"),
+                  )
+                }
+                placeholder="Tous statuts"
+                searchPlaceholder="Filtrer…"
+                emptyText="—"
+                className="h-9"
+              />
+            </FilterField>
 
-        <FilterField label="Statut">
-          <Combobox
-            options={[
-              { value: "__all__", label: "Tous statuts" },
-              { value: "active", label: `Actif (${statusCounts.active})` },
-              { value: "inactive", label: `Inactif (${statusCounts.inactive})` },
-            ]}
-            value={activeStatus ?? "__all__"}
-            onValueChange={(v) =>
-              setActiveStatus(
-                v === "__all__" ? null : (v as "active" | "inactive"),
-              )
-            }
-            placeholder="Tous statuts"
-            searchPlaceholder="Filtrer…"
-            emptyText="—"
-            className="h-9"
-          />
-        </FilterField>
+            <FilterField label={hasActiveFilter ? "Action" : " "}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-full font-normal"
+                disabled={!hasActiveFilter}
+                onClick={resetAllFilters}
+              >
+                <X className="mr-1.5 h-3.5 w-3.5" />
+                Réinitialiser
+              </Button>
+            </FilterField>
+          </div>
 
-        <FilterField label={hasActiveFilter ? "Action" : " "}>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 w-full font-normal"
-            disabled={!hasActiveFilter}
-            onClick={() => {
-              setActiveTab("all");
-              setActiveRole(null);
-              setActiveContinent(null);
-              setActiveCountry(null);
-              setActiveStatus(null);
-            }}
-          >
-            <X className="mr-1.5 h-3.5 w-3.5" />
-            Réinitialiser
-          </Button>
-        </FilterField>
-      </div>
-
-      <FlatCard>
-        <div className="p-3 lg:p-4">
-          <DataTable
-            columns={activeColumns}
-            data={filteredUsers}
-            searchKeys={["name", "email", "phone", "residenceCountry"]}
-            searchPlaceholder={t("superadmin.users.filters.searchPlaceholder")}
-            isLoading={isPending}
-          />
-        </div>
-      </FlatCard>
-
-      </>}
+          <FlatCard>
+            <div className="p-3 lg:p-4">
+              <DataTable
+                columns={activeColumns}
+                data={rows as any[]}
+                searchKeys={["name", "email", "phone", "residenceCountry"]}
+                searchPlaceholder={t("superadmin.users.filters.searchPlaceholder")}
+                searchValue={searchInput}
+                onSearchChange={setSearchInput}
+                isLoading={isInitialLoad}
+                isPageTransitioning={isPageTransitioning}
+                totalRowCount={total}
+                pagination={pagination}
+                onPaginationChange={setPagination}
+              />
+            </div>
+          </FlatCard>
+        </>
+      )}
     </div>
   );
 }
 
-/** Small label + control wrapper used by the Comptes filter row. */
 function FilterField({
   label,
   className,

@@ -374,6 +374,7 @@ import type * as schemas_requests from "../schemas/requests.js";
 import type * as schemas_roleConfig from "../schemas/roleConfig.js";
 import type * as schemas_security from "../schemas/security.js";
 import type * as schemas_services from "../schemas/services.js";
+import type * as schemas_skillsAggregation from "../schemas/skillsAggregation.js";
 import type * as schemas_streamingChats from "../schemas/streamingChats.js";
 import type * as schemas_supervisionSessions from "../schemas/supervisionSessions.js";
 import type * as schemas_tickets from "../schemas/tickets.js";
@@ -408,6 +409,7 @@ import type * as testDumpRecords from "../testDumpRecords.js";
 import type * as testQuery from "../testQuery.js";
 import type * as testUser from "../testUser.js";
 import type * as triggers_index from "../triggers/index.js";
+import type * as triggers_skillsAggregation from "../triggers/skillsAggregation.js";
 import type * as visuel from "../visuel.js";
 
 import type {
@@ -783,6 +785,7 @@ declare const fullApi: ApiFromModules<{
   "schemas/roleConfig": typeof schemas_roleConfig;
   "schemas/security": typeof schemas_security;
   "schemas/services": typeof schemas_services;
+  "schemas/skillsAggregation": typeof schemas_skillsAggregation;
   "schemas/streamingChats": typeof schemas_streamingChats;
   "schemas/supervisionSessions": typeof schemas_supervisionSessions;
   "schemas/tickets": typeof schemas_tickets;
@@ -817,6 +820,7 @@ declare const fullApi: ApiFromModules<{
   testQuery: typeof testQuery;
   testUser: typeof testUser;
   "triggers/index": typeof triggers_index;
+  "triggers/skillsAggregation": typeof triggers_skillsAggregation;
   visuel: typeof visuel;
 }>;
 
@@ -874,4 +878,12 @@ export declare const components: {
   missedCallsByOrgStatus: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"missedCallsByOrgStatus">;
   missedCallsByOrgReason: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"missedCallsByOrgReason">;
   requestsByOrgService: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"requestsByOrgService">;
+  usersByRole: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"usersByRole">;
+  usersByStatus: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"usersByStatus">;
+  usersByCountry: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"usersByCountry">;
+  membershipsByUser: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"membershipsByUser">;
+  profilesByCategory: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"profilesByCategory">;
+  profilesByProfessionStatus: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"profilesByProfessionStatus">;
+  profilesByEnrichmentStatus: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"profilesByEnrichmentStatus">;
+  cvSkillItemsByLevel: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"cvSkillItemsByLevel">;
 };
