@@ -74,10 +74,30 @@ function formatHourMinute(d: Date): string {
   ).padStart(2, "0")}`
 }
 
+/**
+ * Track whether the viewport is desktop-sized (lg breakpoint = 1024px). We
+ * render only ONE of the two layouts at a time — otherwise both trees mount
+ * and keep their own per-instance state (e.g. IdentityStep's `phase`), which
+ * causes the mobile tree to stay frozen at the initial sub-phase while the
+ * desktop one progresses, and vice-versa.
+ */
+function useIsLargeViewport() {
+  const [isLarge, setIsLarge] = useState(false)
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)")
+    const update = () => setIsLarge(mql.matches)
+    update()
+    mql.addEventListener("change", update)
+    return () => mql.removeEventListener("change", update)
+  }, [])
+  return isLarge
+}
+
 export function OnboardingShell() {
   const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const isLargeViewport = useIsLargeViewport()
 
   const STEP_TITLES: Record<
     OnboardingStepKey,
@@ -461,34 +481,38 @@ export function OnboardingShell() {
 
   return (
     <div className="onboarding-root">
-      {/* Mobile / tablet */}
-      <div className="flex min-h-svh flex-col lg:hidden">
-        <OnboardingMobileHeader
-          onBack={canPrev ? handlePrev : handleRestart}
-          savedAt={savedAtLabel}
-        />
-        {currentStep && (
-          <OnboardingMobileProgressHeader
-            step={currentStep}
-            currentIndex={stepIndex}
-            totalSteps={steps.length}
+      {/* Mobile / tablet — only mounted when viewport < lg, otherwise the
+          desktop tree below holds the active component state. */}
+      {!isLargeViewport && (
+        <div className="flex min-h-svh flex-col">
+          <OnboardingMobileHeader
+            onBack={canPrev ? handlePrev : handleRestart}
+            savedAt={savedAtLabel}
           />
-        )}
-        <main className="onboarding-mobile-main flex flex-1 flex-col px-4 py-5">
-          {stepBody}
-        </main>
-        {!selfNav && (
-          <OnboardingMobileActionBar
-            onPrev={handlePrev}
-            onNext={handleNext}
-            canPrev={canPrev}
-            canNext={canNext}
-          />
-        )}
-      </div>
+          {currentStep && (
+            <OnboardingMobileProgressHeader
+              step={currentStep}
+              currentIndex={stepIndex}
+              totalSteps={steps.length}
+            />
+          )}
+          <main className="onboarding-mobile-main flex flex-1 flex-col px-4 py-5">
+            {stepBody}
+          </main>
+          {!selfNav && (
+            <OnboardingMobileActionBar
+              onPrev={handlePrev}
+              onNext={handleNext}
+              canPrev={canPrev}
+              canNext={canNext}
+            />
+          )}
+        </div>
+      )}
 
       {/* Desktop */}
-      <div className="hidden lg:block">
+      {isLargeViewport && (
+        <div>
         <Header />
 
         <div className="mx-auto grid grid-cols-[260px_1fr_320px] gap-8 px-8 py-8">
@@ -534,7 +558,8 @@ export function OnboardingShell() {
             files={files}
           />
         </div>
-      </div>
+        </div>
+      )}
     </div>
   )
 }
