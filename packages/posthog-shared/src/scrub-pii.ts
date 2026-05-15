@@ -74,6 +74,16 @@ function stripUrlQuery(value: string): string {
 	}
 }
 
+function isPlainObject(value: object): boolean {
+	// On ne récursive que sur des objets « plain » (literals). Tout autre objet
+	// (Date, Map, Set, RegExp, instances de classes, etc.) est préservé tel
+	// quel — sinon `Object.entries(new Date())` retourne `[]` et l'objet est
+	// transformé en `{}`, ce qui casse le `timestamp` du CaptureResult PostHog
+	// et fait rejeter l'event à l'ingestion (400 « failed to parse »).
+	const proto = Object.getPrototypeOf(value);
+	return proto === null || proto === Object.prototype;
+}
+
 function scrubValue(key: string, value: unknown, depth: number): unknown {
 	if (depth > 6) return MASK;
 
@@ -89,7 +99,7 @@ function scrubValue(key: string, value: unknown, depth: number): unknown {
 		return value.map((item) => scrubValue(key, item, depth + 1));
 	}
 
-	if (typeof value === "object") {
+	if (typeof value === "object" && isPlainObject(value as object)) {
 		return scrubObject(value as AnyRecord, depth + 1);
 	}
 
