@@ -1,4 +1,5 @@
 import type { PublicUserType } from "@convex/lib/constants";
+import { getCountryName } from "@/lib/country-utils";
 import type { AuthState, IdentityPhase, PinPhase } from "./lib/onboardingFlow";
 
 export type EmergencyContact = {
@@ -37,7 +38,7 @@ export function formatAddressDisplay(
 		address.street,
 		[address.postalCode, address.city].filter(Boolean).join(" ").trim() ||
 			undefined,
-		address.country,
+		address.country ? getCountryName(address.country) : undefined,
 	]
 		.filter((s): s is string => Boolean(s && s.trim().length > 0))
 		.join(", ");

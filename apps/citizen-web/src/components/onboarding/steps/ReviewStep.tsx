@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { getCountryName } from "@/lib/country-utils";
 import { cn } from "@/lib/utils";
 import { PublicUserType } from "@convex/lib/constants";
 import {
@@ -241,9 +242,15 @@ export function ReviewStep({
 				<Row label={t("onboarding.review.fields.fullName")} value={fullName} />
 				<Row label={t("onboarding.review.fields.birthDate")} value={data.birthDate} />
 				<Row label={t("onboarding.review.fields.birthPlace")} value={data.birthPlace} />
-				<Row label={t("onboarding.review.fields.birthCountry")} value={data.birthCountry} />
+				<Row
+					label={t("onboarding.review.fields.birthCountry")}
+					value={data.birthCountry ? getCountryName(data.birthCountry) : undefined}
+				/>
 				<Row label={t("onboarding.review.fields.gender")} value={genderLabel} />
-				<Row label={t("onboarding.review.fields.nationality")} value={data.nationality} />
+				<Row
+					label={t("onboarding.review.fields.nationality")}
+					value={data.nationality ? getCountryName(data.nationality) : undefined}
+				/>
 				<Row label={t("onboarding.review.fields.email")} value={data.email} />
 				<Row label={t("onboarding.review.fields.phone")} value={data.phone} />
 			</ReviewSection>
@@ -299,7 +306,14 @@ export function ReviewStep({
 					label={t("onboarding.review.fields.address")}
 					value={formatAddressDisplay(data.address)}
 				/>
-				<Row label={t("onboarding.review.fields.country")} value={data.address?.country} />
+				<Row
+					label={t("onboarding.review.fields.country")}
+					value={
+						data.address?.country
+							? getCountryName(data.address.country)
+							: undefined
+					}
+				/>
 				{isLongStay && (
 					<Row
 						label={t("onboarding.review.fields.homeland")}
