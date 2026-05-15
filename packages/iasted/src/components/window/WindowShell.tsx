@@ -76,6 +76,14 @@ export interface WindowShellProps {
 	 */
 	layout?: "floating" | "side-panel";
 
+	/**
+	 * Si `true`, la barre `TabsNav` n'est pas rendue : la fenêtre devient
+	 * mono-fonction. Utile quand les options ont déjà été détachées en
+	 * éventail (cf. `IAstedFanMenu`) — la TabsNav serait alors redondante.
+	 * Défaut : `false` (mode multi-onglets historique).
+	 */
+	hideTabs?: boolean;
+
 	className?: string;
 }
 
@@ -100,6 +108,7 @@ export function WindowShell({
 	tabDefinitions,
 	resolveLabel,
 	layout = "floating",
+	hideTabs = false,
 	className,
 }: WindowShellProps) {
 	const reduced = useReducedMotion();
@@ -250,7 +259,9 @@ export function WindowShell({
 						{tabContent[currentTab] ?? <DefaultEmptyContent tabId={currentTab} />}
 					</div>
 
-					{tabsNavNode}
+					{/* Mode mono-fonction (éventail) : on masque la TabsNav.
+					    Mode multi-onglets historique : on l'affiche. */}
+					{!hideTabs && tabsNavNode}
 				</motion.aside>
 			)}
 		</AnimatePresence>

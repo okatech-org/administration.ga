@@ -126,8 +126,11 @@ export interface UseRealtimeVoiceResult {
 // Constantes
 // ─────────────────────────────────────────────────────────────
 
-const OPENAI_REALTIME_BASE_URL = "https://api.openai.com/v1/realtime";
-const DEFAULT_MODEL = "gpt-4o-realtime-preview-2024-12-17";
+// OpenAI Realtime GA (août 2025) :
+//   - endpoint client SDP exchange : `POST /v1/realtime/calls?model=...`
+//   - modèle : `gpt-realtime` (remplace `gpt-4o-realtime-preview-*` déprécié).
+const OPENAI_REALTIME_BASE_URL = "https://api.openai.com/v1/realtime/calls";
+const DEFAULT_MODEL = "gpt-realtime";
 const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_BACKOFF_MS = [1000, 2500, 5000];
 

@@ -128,6 +128,166 @@ interface GatedTool {
 }
 
 const BUSINESS_TOOLS: GatedTool[] = [
+	// ───────────────────────────────────────────────────────────
+	// Communication & Orchestration (Phase 1 — Mode God)
+	// ───────────────────────────────────────────────────────────
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "find_contact_by_name",
+			description:
+				"Recherche un ou plusieurs contacts par nom (prénom, nom, ou les deux) dans l'organisation active. " +
+				"À utiliser AVANT toute action ciblant un utilisateur (appel, message, réunion) pour résoudre l'identifiant exact. " +
+				"Retourne jusqu'à 5 candidats — si plusieurs résultats, l'agent doit demander à l'utilisateur de préciser.",
+			parameters: {
+				type: "object",
+				properties: {
+					name: {
+						type: "string",
+						description: "Nom partiel ou complet à rechercher (ex : 'Sophie', 'Mbeng', 'Marc Loussou').",
+					},
+					orgId: {
+						type: "string",
+						description: "ID Convex de l'organisation à scoper (optionnel — par défaut l'org active).",
+					},
+				},
+				required: ["name"],
+			},
+		},
+	},
+	{
+		requiredTask: "meetings.create",
+		tool: {
+			type: "function",
+			name: "launch_call_with_contact",
+			description:
+				"Lance un appel audio ou vidéo avec un contact identifié. Action attendue (pas de confirmation). " +
+				"Le destinataire reçoit une notification d'appel entrant et le tonneau LiveKit s'ouvre.",
+			parameters: {
+				type: "object",
+				properties: {
+					targetUserId: {
+						type: "string",
+						description: "ID Convex du contact à appeler (obtenu via find_contact_by_name).",
+					},
+					mediaType: {
+						type: "string",
+						description: "'audio' (par défaut) ou 'video'.",
+					},
+				},
+				required: ["targetUserId"],
+			},
+		},
+	},
+	{
+		requiredTask: "meetings.create",
+		tool: {
+			type: "function",
+			name: "create_instant_meeting",
+			description:
+				"Crée et démarre immédiatement une réunion multi-participants (LiveKit). Demander confirmation orale avant exécution si > 2 participants.",
+			parameters: {
+				type: "object",
+				properties: {
+					title: {
+						type: "string",
+						description: "Titre de la réunion (défaut : 'Réunion instantanée').",
+					},
+					participantIds: {
+						type: "array",
+						description: "Liste des userIds des participants à inviter.",
+						items: { type: "string" },
+					},
+					mediaType: {
+						type: "string",
+						description: "'audio' ou 'video' (défaut : 'video').",
+					},
+				},
+				required: ["participantIds"],
+			},
+		},
+	},
+	{
+		requiredTask: "meetings.create",
+		tool: {
+			type: "function",
+			name: "schedule_meeting",
+			description:
+				"Planifie une réunion dans le futur (statut 'scheduled'). Les participants reçoivent une notification de calendrier. " +
+				"Demander confirmation orale (titre + horaire + participants) avant exécution.",
+			parameters: {
+				type: "object",
+				properties: {
+					title: {
+						type: "string",
+						description: "Titre de la réunion.",
+					},
+					participantIds: {
+						type: "array",
+						description: "Liste des userIds invités.",
+						items: { type: "string" },
+					},
+					scheduledAt: {
+						type: "string",
+						description: "Horaire ISO (ex : '2026-05-16T15:00:00Z') ou expression relative résolue par l'agent.",
+					},
+					mediaType: {
+						type: "string",
+						description: "'audio' ou 'video' (défaut : 'video').",
+					},
+				},
+				required: ["title", "participantIds", "scheduledAt"],
+			},
+		},
+	},
+	{
+		requiredTask: "chats.send",
+		tool: {
+			type: "function",
+			name: "send_quick_message",
+			description:
+				"Envoie un message texte rapide à un contact (P2P chat). " +
+				"RÈGLE STRICTE : avant l'appel, relire le contenu à voix haute et attendre 'oui' / 'confirmé' / 'envoie' de l'utilisateur. " +
+				"Si le contenu est ambigu (mention de personnes / chiffres / dates), demander précision.",
+			parameters: {
+				type: "object",
+				properties: {
+					targetUserId: {
+						type: "string",
+						description: "ID Convex du destinataire (obtenu via find_contact_by_name).",
+					},
+					content: {
+						type: "string",
+						description: "Contenu du message à envoyer.",
+					},
+				},
+				required: ["targetUserId", "content"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "open_conversation_with_user",
+			description: "Ouvre la fenêtre de chat texte sur un contact spécifique (UI-only, pas d'envoi).",
+			parameters: {
+				type: "object",
+				properties: {
+					targetUserId: {
+						type: "string",
+						description: "ID Convex du contact dont la conversation doit être ouverte.",
+					},
+				},
+				required: ["targetUserId"],
+			},
+		},
+	},
+
+	// ───────────────────────────────────────────────────────────
+	// Outils métier originaux (consultation, correspondance, etc.)
+	// ───────────────────────────────────────────────────────────
 	{
 		requiredTask: "requests.view",
 		tool: {
@@ -184,15 +344,74 @@ const BUSINESS_TOOLS: GatedTool[] = [
 		requiredTask: null,
 		tool: {
 			type: "function",
-			name: "query_diplomatic_kb",
+			name: "query_platform_knowledge",
 			description:
-				"Interroge la base de connaissance diplomatique (procédures, conventions, réglementations, accords bilatéraux). Renvoie un résumé sourcé.",
+				"Recherche sémantique (RAG) dans la base de connaissance de la plateforme : organisations, services, FAQ, procédures, documents publiés. " +
+				"Renvoie jusqu'à 5 extraits avec sources citables (sourceType + sourceId). " +
+				"RÈGLE : citer toujours les sources à voix haute (ex : « selon la FAQ de l'ambassade de Paris... »).",
 			parameters: {
 				type: "object",
 				properties: {
-					query: { type: "string", description: "Question ou mots-clés (ex : 'procédure légalisation acte de naissance')." },
+					query: {
+						type: "string",
+						description:
+							"Question ou mots-clés (ex : 'procédure légalisation acte naissance', 'services consulaires Madrid').",
+					},
+					sourceTypes: {
+						type: "array",
+						description:
+							"Restreindre la recherche à certains types : 'org', 'position', 'service', 'workflow', 'doc', 'faq', 'intel_brief', 'procedure'.",
+						items: { type: "string" },
+					},
 				},
 				required: ["query"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "who_is_working_on",
+			description:
+				"Identifie qui travaille actuellement sur une entité métier (dossier, correspondance, cible diplomatique). " +
+				"Retourne les memberships actifs avec position + dernière action.",
+			parameters: {
+				type: "object",
+				properties: {
+					entityType: {
+						type: "string",
+						description: "'request' / 'correspondance' / 'diplomatic_target'.",
+					},
+					entityId: {
+						type: "string",
+						description: "ID Convex de l'entité ou numéro lisible.",
+					},
+				},
+				required: ["entityType", "entityId"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "status_of",
+			description:
+				"Snapshot rapide de l'état d'une entité (statut workflow + prochaine étape + intervenants).",
+			parameters: {
+				type: "object",
+				properties: {
+					entityType: {
+						type: "string",
+						description: "'request' / 'correspondance' / 'meeting' / 'appointment'.",
+					},
+					entityId: {
+						type: "string",
+						description: "ID Convex de l'entité.",
+					},
+				},
+				required: ["entityType", "entityId"],
 			},
 		},
 	},
@@ -231,7 +450,141 @@ const BUSINESS_TOOLS: GatedTool[] = [
 		},
 	},
 
-	// ─── Tools backoffice exclusifs ───
+	// ───────────────────────────────────────────────────────────
+	// Administration plateforme (Phase 2 — Mode God complet)
+	// Tools superadmin/admin pour piloter la plateforme à la voix.
+	// Toutes les mutations Convex sous-jacentes appliquent déjà :
+	//   - self-action guard (CANNOT_REMOVE_SELF)
+	//   - SuperAdmin guard (impossible de modifier un SuperAdmin)
+	//   - rank hierarchy (caller must outrank target)
+	// L'agent vocal DOIT demander confirmation orale (récap) avant exécution.
+	// ───────────────────────────────────────────────────────────
+	{
+		requiredTask: null,
+		superadminOnly: false, // backofficeMutation suffit, pas besoin d'être superadmin
+		surfaceOnly: "backoffice",
+		tool: {
+			type: "function",
+			name: "find_org_by_name",
+			description:
+				"Recherche une organisation par nom (ex : 'Ambassade Paris', 'Consulat Madrid'). " +
+				"Retourne jusqu'à 5 candidats. À utiliser AVANT toute action ciblant une org.",
+			parameters: {
+				type: "object",
+				properties: {
+					name: {
+						type: "string",
+						description: "Nom partiel ou complet à rechercher.",
+					},
+				},
+				required: ["name"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		superadminOnly: false,
+		surfaceOnly: "backoffice",
+		tool: {
+			type: "function",
+			name: "assign_role_to_user",
+			description:
+				"Modifie le rôle d'un utilisateur (user / sous_admin / admin / admin_system). " +
+				"Le caller doit avoir un rang strictement supérieur au rôle cible. " +
+				"RÈGLE : récapituler oralement (utilisateur cible + ancien rôle + nouveau rôle) et obtenir confirmation 'oui' avant exécution.",
+			parameters: {
+				type: "object",
+				properties: {
+					userId: {
+						type: "string",
+						description: "ID Convex de l'utilisateur (obtenu via find_contact_by_name).",
+					},
+					role: {
+						type: "string",
+						description: "Nouveau rôle : 'user', 'sous_admin', 'admin' ou 'admin_system'.",
+					},
+				},
+				required: ["userId", "role"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		superadminOnly: false,
+		surfaceOnly: "backoffice",
+		tool: {
+			type: "function",
+			name: "suspend_user",
+			description:
+				"Désactive un utilisateur (compte suspendu, ne peut plus se connecter). " +
+				"RÈGLE STRICTE : double confirmation orale obligatoire — récap initial + récap final.",
+			parameters: {
+				type: "object",
+				properties: {
+					userId: {
+						type: "string",
+						description: "ID Convex de l'utilisateur.",
+					},
+					reason: {
+						type: "string",
+						description: "Motif de la suspension (sera enregistré dans l'audit log).",
+					},
+				},
+				required: ["userId", "reason"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		superadminOnly: false,
+		surfaceOnly: "backoffice",
+		tool: {
+			type: "function",
+			name: "reactivate_user",
+			description:
+				"Réactive un utilisateur précédemment suspendu. " +
+				"Confirmation simple (récap utilisateur + 'confirmez la réactivation ?').",
+			parameters: {
+				type: "object",
+				properties: {
+					userId: {
+						type: "string",
+						description: "ID Convex de l'utilisateur.",
+					},
+				},
+				required: ["userId"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		superadminOnly: false,
+		surfaceOnly: "backoffice",
+		tool: {
+			type: "function",
+			name: "update_user_modules",
+			description:
+				"Met à jour la liste des modules accessibles à un utilisateur. " +
+				"RÈGLE : récapituler oralement les modules ajoutés/retirés avant exécution.",
+			parameters: {
+				type: "object",
+				properties: {
+					userId: {
+						type: "string",
+						description: "ID Convex de l'utilisateur.",
+					},
+					modules: {
+						type: "array",
+						description: "Liste complète des codes de modules autorisés (ex : ['correspondance', 'documents']).",
+						items: { type: "string" },
+					},
+				},
+				required: ["userId", "modules"],
+			},
+		},
+	},
+
+	// ─── Tools superadmin (read-only redirect — phases ultérieures pour exécution réelle) ───
 	{
 		requiredTask: null,
 		superadminOnly: true,

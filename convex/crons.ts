@@ -244,4 +244,13 @@ crons.interval(
   internal.functions.migrations.syncLegacyOrgFields,
 );
 
+// --- Phase 3 : ré-indexation RAG iAsted (quotidienne) ---
+// Re-calcule les embeddings des orgs, FAQ, services et procédures publiées.
+// Coût estimé : ~$0.05/jour pour 5K entités. Skip silencieux si pas de clé OpenAI.
+crons.daily(
+  "iasted-rag-refresh",
+  { hourUTC: 3, minuteUTC: 0 }, // 3h UTC = 4h Paris (créneau calme)
+  (internal as any).ai.rag.indexer.refreshAll,
+);
+
 export default crons;

@@ -1,9 +1,10 @@
 "use client";
 
-import { useConvexAuth } from "convex/react";
+import { useConvexAuth, useMutation } from "convex/react";
+import { api } from "@convex/_generated/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Loader2, ShieldX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -17,17 +18,39 @@ export function SuperadminGuard({ children }: SuperadminGuardProps) {
 	const { t } = useTranslation();
 	const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
 	const { userData, isBackOffice, isPending } = useSuperAdminData();
+	const ensureUser = useMutation(api.functions.users.ensureUser);
+	const hasEnsuredRef = useRef(false);
 	const router = useRouter();
 
-	// Sticky auth — `useConvexAuth` peut briefly retourner (isLoading=false,
-	// isAuthenticated=false) avant que le JWT Convex soit fetché, ce qui
-	// déclencherait un redirect prématuré vers /sign-in.
+	// Force ensureUser dès que l'utilisateur est authentifié — patch le rôle
+	// pour les comptes DEV (admin_system, admin) avant que le guard ne
+	// décide "non autorisé" sur la base d'un userData incomplet.
+	useEffect(() => {
+		if (isAuthenticated && !hasEnsuredRef.current) {
+			hasEnsuredRef.current = true;
+			ensureUser({}).catch(() => {
+				// ignore — le user sera créé/patché à la prochaine query
+			});
+		}
+		if (!isAuthenticated) {
+			hasEnsuredRef.current = false;
+		}
+	}, [isAuthenticated, ensureUser]);
+
+	// Sticky auth — `useConvexAuth` peut briefly retourner (loading=false,
+	// isAuthenticated=false) avant que le JWT Convex soit appliqué au WS.
+	// Pattern identique à citizen-web et agent-web : on attend une résolution
+	// stable, et une fois `true` on n'y revient plus.
 	const [resolvedAuth, setResolvedAuth] = useState<boolean | null>(null);
 	useEffect(() => {
 		if (isAuthLoading) return;
-		if (isAuthenticated) setResolvedAuth(true);
-		else if (resolvedAuth === null) setResolvedAuth(false);
-	}, [isAuthLoading, isAuthenticated, resolvedAuth]);
+		setResolvedAuth((prev) => {
+			if (prev === true) return prev;
+			if (isAuthenticated) return true;
+			if (prev === null) return false;
+			return prev;
+		});
+	}, [isAuthLoading, isAuthenticated]);
 
 	useEffect(() => {
 		if (resolvedAuth === false) {

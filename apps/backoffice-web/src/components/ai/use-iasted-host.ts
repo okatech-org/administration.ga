@@ -32,7 +32,10 @@ const MODULE_ROUTES: Record<string, string> = {
 	consular_affairs: "/affaires-consulaires",
 	calendar: "/iagenda",
 	documents: "/idocument",
+	messaging: "/icom?tab=ichat",
 	team: "/profiles",
+	users: "/users",
+	orgs: "/orgs",
 	settings: "/settings",
 	monitoring: "/monitoring",
 	audit_logs: "/audit-logs",
@@ -85,6 +88,36 @@ export function useIAstedHost({ orgId }: UseIAstedHostOptions = {}): IAstedVoice
 					} else if (action === "toggle_theme") {
 						document.documentElement.classList.toggle("dark");
 					}
+					break;
+				}
+				// ─── UI actions de la Phase 1 (Mode God — orchestration) ───
+				case "open_active_call": {
+					// Bascule sur l'onglet iAppel pour afficher la modale active call.
+					window.dispatchEvent(
+						new CustomEvent("iasted:open", { detail: { tab: "icall" } }),
+					);
+					break;
+				}
+				case "open_meeting_prejoin": {
+					// Bascule sur l'onglet iRéunion pour la salle d'attente / prejoin.
+					window.dispatchEvent(
+						new CustomEvent("iasted:open", { detail: { tab: "imeeting" } }),
+					);
+					break;
+				}
+				case "open_conversation": {
+					// Ouvre l'onglet iChat avec le contact présélectionné.
+					const targetUserId = uiAction.payload?.targetUserId as string | undefined;
+					if (targetUserId) {
+						window.dispatchEvent(
+							new CustomEvent("iasted:select-contact", {
+								detail: { userId: targetUserId },
+							}),
+						);
+					}
+					window.dispatchEvent(
+						new CustomEvent("iasted:open", { detail: { tab: "ichat" } }),
+					);
 					break;
 				}
 				default:
@@ -152,11 +185,13 @@ export function useIAstedHost({ orgId }: UseIAstedHostOptions = {}): IAstedVoice
 				setAvailable(false);
 				setUnavailableReason(reason);
 				hasCheckedRef.current = true;
-				toast.warning(
+				const message =
 					reason === "NOT_CONFIGURED"
 						? "Mode vocal indisponible — clé OpenAI non configurée."
-						: `Mode vocal indisponible (${reason}).`,
-				);
+						: reason === "OPENAI_BETA_DISABLED"
+						? "Mode vocal indisponible — la Beta OpenAI Realtime est désactivée sur cette clé OpenAI. Migrez le compte vers la GA API dans le dashboard OpenAI."
+						: `Mode vocal indisponible (${reason}).`;
+				toast.warning(message);
 				return;
 			}
 			await voice.connect({
@@ -187,6 +222,15 @@ export function useIAstedHost({ orgId }: UseIAstedHostOptions = {}): IAstedVoice
 
 	return useMemo<IAstedVoiceController>(
 		() => ({
+			providerId: "openai-realtime",
+			providerLabel: "OpenAI Realtime",
+			capabilities: {
+				pageContextUpdate: true,
+				toolCalling: true,
+				voiceSelection: true,
+				speechRateControl: true,
+				realTimeTranscription: true,
+			},
 			available,
 			unavailableReason,
 			voiceState: voice.voiceState,
@@ -194,6 +238,14 @@ export function useIAstedHost({ orgId }: UseIAstedHostOptions = {}): IAstedVoice
 			isConnected: voice.isConnected,
 			activateVoice,
 			deactivateVoice,
+			messages: voice.messages,
+			clearMessages: voice.clearMessages,
+			setSpeechRate: voice.setSpeechRate,
+			updatePageContext: (text: string) =>
+				voice.updateSession({ pageContext: text }),
+			// Confirmation par la voix (décision UX) : pas de carte modale.
+			// L'IA demande oralement, l'utilisateur répond, l'IA exécute.
+			pendingConfirmation: null,
 		}),
 		[
 			available,
@@ -203,6 +255,10 @@ export function useIAstedHost({ orgId }: UseIAstedHostOptions = {}): IAstedVoice
 			voice.isConnected,
 			activateVoice,
 			deactivateVoice,
+			voice.messages,
+			voice.clearMessages,
+			voice.setSpeechRate,
+			voice.updateSession,
 		],
 	);
 }

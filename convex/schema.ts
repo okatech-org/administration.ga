@@ -116,6 +116,11 @@ import {
   aiCapabilityConfigTable,
   newsletterSubscriptionsTable,
 } from "./schemas";
+// Phase 3 — RAG iAsted (schema knowledge + mémoires long terme)
+import { iastedKnowledgeTable } from "./schemas/iastedKnowledge";
+import { iastedMemoriesTable } from "./schemas/iastedMemories";
+// Phase 4 — Préférences voix iAsted per-user (refonte Settings)
+import { userIastedVoicePrefsTable } from "./schemas/userIastedVoicePrefs";
 
 export default defineSchema(
   {
@@ -248,6 +253,11 @@ export default defineSchema(
   aiAgentPresence: aiAgentPresenceTable,
   aiCapabilityConfig: aiCapabilityConfigTable,
   newsletterSubscriptions: newsletterSubscriptionsTable,
+  // Phase 3 — RAG iAsted
+  iastedKnowledge: iastedKnowledgeTable,
+  iastedMemories: iastedMemoriesTable,
+  // Phase 4 — Préférences voix iAsted per-user
+  userIastedVoicePrefs: userIastedVoicePrefsTable,
   },
   { schemaValidation: false },
 );

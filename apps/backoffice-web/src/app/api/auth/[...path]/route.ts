@@ -61,13 +61,21 @@ async function proxyToConvex(req: NextRequest): Promise<NextResponse> {
       headers.set(key, value)
     })
 
-    // Rewrite cookies for dev: strip __Secure- prefix and Secure flag
+    // Rewrite cookies for dev (HTTP localhost) :
+    //   1. Strip `__Secure-` prefix (cookie name)
+    //   2. Strip `Secure` flag (set by Convex on HTTPS)
+    //   3. Convert `SameSite=None` → `SameSite=Lax` (Chrome refuse SameSite=None
+    //      sans Secure, donc le cookie n'est jamais persisté en localhost).
+    //      Lax est sûr pour notre cas : navigation top-level + same-origin XHR.
     const setCookies = (upstream.headers as any).getSetCookie?.() as
       | string[]
       | undefined
     if (setCookies && setCookies.length > 0) {
       const rewritten = setCookies.map((cookie: string) =>
-        cookie.replaceAll("__Secure-", "").replace(/;\s*Secure/gi, "")
+        cookie
+          .replaceAll("__Secure-", "")
+          .replace(/;\s*Secure/gi, "")
+          .replace(/SameSite=None/gi, "SameSite=Lax")
       )
       for (const cookie of rewritten) {
         headers.append("set-cookie", cookie)

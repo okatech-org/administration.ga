@@ -68,9 +68,14 @@ export {
 	CircleMenuAnimated,
 	CircleMenuReducedMotion,
 	IAstedTrigger3D,
+	IAstedButtonFull,
+	IAstedFanMenu,
 	type CircleMenuItemConfig,
 	type CircleMenuProps,
 	type IAstedTrigger3DProps,
+	type IAstedButtonFullProps,
+	type IAstedFanMenuItem,
+	type IAstedFanMenuProps,
 } from "./components/circle-menu";
 
 // Types — Realtime voice (consumés par CircleMenu, IAstedTrigger3D et le hook use-realtime-voice)
@@ -206,6 +211,34 @@ export type {
 	UseDraftAutosaveOptions,
 	UseDraftAutosaveResult,
 } from "./hooks/use-draft-autosave";
+
+// Consciousness (port depuis mairie.ga) — Soul, MotorCortex, SocialProtocol
+export {
+	iAstedSoul,
+	derivePersonaFromRole,
+	useIAstedSoul,
+	SocialProtocolAdapter,
+	prefixWithProtocol,
+	getTimeGreeting,
+	mapConvexRoleToIAsted,
+	MotorSynapse,
+	IAstedCursor,
+} from "./consciousness";
+export type {
+	IAstedRole,
+	FormalityLevel,
+	EmotionalState,
+	Persona,
+	SpatialAwareness,
+	ConversationContext,
+	KnownUser,
+	SoulState,
+	UseIAstedSoulOptions,
+	MotorCommand,
+	CursorEmotion,
+	PulseIntensity,
+	IAstedCursorProps,
+} from "./consciousness";
 
 // Presets
 export {

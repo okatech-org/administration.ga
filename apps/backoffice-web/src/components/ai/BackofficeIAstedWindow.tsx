@@ -14,16 +14,25 @@
 
 "use client";
 
-import { Shield } from "lucide-react";
-import { useRouter } from "next/navigation";
+import {
+	Contact,
+	MessageSquare,
+	Mic,
+	Phone,
+	Settings as SettingsIcon,
+	Shield,
+	Video,
+} from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-	CircleMenu,
+	IAstedCursor,
+	IAstedFanMenu,
+	IAstedVoiceContext,
+	VoiceTab,
 	WindowShell,
 	backofficePreset,
-	buildCircleMenuItems,
-	defaultTriggerClassName,
-	defaultTriggerIcon,
+	type IAstedFanMenuItem,
 	type IAstedTabId,
 } from "@workspace/iasted";
 import { useOrgSelector } from "@/hooks/use-org-selector";
@@ -46,17 +55,40 @@ const FULLSCREEN_ROUTES: Partial<Record<IAstedTabId, string>> = {
 	icontact: "/ai/contacts",
 };
 
+/**
+ * En mode mono-fonction (hideTabs=true), on n'a plus la TabsNav pour indiquer
+ * l'option active. Le subtitle du header rappelle alors la fonction courante.
+ */
+function tabSubtitleForBackoffice(tab: IAstedTabId): string {
+	switch (tab) {
+		case "ichat":
+			return "iChat — Messagerie";
+		case "icontact":
+			return "iContact — Annuaire";
+		case "icall":
+			return "iAppel — Téléphonie";
+		case "imeeting":
+			return "iRéunion — Visioconférence";
+		case "ivoice":
+			return "Assistant Vocal";
+		case "isettings":
+			return "Réglages";
+		default:
+			return "Administration";
+	}
+}
+
 export function BackofficeIAstedWindow() {
 	const router = useRouter();
+	const pathname = usePathname();
 	const [open, setOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<IAstedTabId>("ichat");
 
 	// Org selector (remplace OrgProvider côté backoffice)
 	const { activeOrgId, OrgSelector } = useOrgSelector();
 
-	// Dérivation du rôle effectif (pour les items CircleMenu admin-only)
+	// Dérivation du rôle effectif (pour gating UI)
 	const { isSuperAdmin, isBackOffice } = useSuperAdminData();
-	const role = isSuperAdmin ? "super_admin" : isBackOffice ? "admin" : "agent";
 
 	// Garde-fou UI : un utilisateur sans rôle admin/superadmin ne doit pas voir
 	// la fenêtre iAsted backoffice (le backend `realtimeToken.create` re-vérifie
@@ -71,6 +103,12 @@ export function BackofficeIAstedWindow() {
 
 	// Chat IA
 	const chat = useBackofficeAIChat(activeOrgId);
+
+	// ── Conscience iAsted (port depuis mairie.ga) ──
+	// TEMPORAIREMENT DÉSACTIVÉ : boucle infinie React à investiguer.
+	// Réactiver une fois la cause profonde identifiée (dans useIAstedSoul).
+	// const soulInitialUser = useMemo(...);
+	// useIAstedSoul({ ... });
 
 	const openWithTab = useCallback((tab: IAstedTabId) => {
 		setActiveTab(tab);
@@ -87,11 +125,50 @@ export function BackofficeIAstedWindow() {
 		return () => window.removeEventListener("iasted:open", handler);
 	}, [openWithTab]);
 
-	const menuItems = buildCircleMenuItems({
-		surface: "backoffice",
-		role,
-		openWithTab,
-	});
+	// Items de l'éventail iAsted — 6 fonctions séparées qui rayonnent
+	// autour du bouton central. Chaque item correspond à un onglet de
+	// la fenêtre flottante (ouvert via openWithTab).
+	const fanMenuItems: IAstedFanMenuItem[] = useMemo(
+		() => [
+			{
+				id: "ichat",
+				label: "iChat",
+				icon: <MessageSquare className="h-4 w-4" />,
+				className: "bg-emerald-600",
+			},
+			{
+				id: "icontact",
+				label: "iContact",
+				icon: <Contact className="h-4 w-4" />,
+				className: "bg-primary",
+			},
+			{
+				id: "icall",
+				label: "iAppel",
+				icon: <Phone className="h-4 w-4" />,
+				className: "bg-blue-500",
+			},
+			{
+				id: "imeeting",
+				label: "iRéunion",
+				icon: <Video className="h-4 w-4" />,
+				className: "bg-rose-500",
+			},
+			{
+				id: "ivoice",
+				label: "Vocal",
+				icon: <Mic className="h-4 w-4" />,
+				className: "bg-violet-600",
+			},
+			{
+				id: "isettings",
+				label: "Réglages",
+				icon: <SettingsIcon className="h-4 w-4" />,
+				className: "bg-slate-600",
+			},
+		],
+		[],
+	);
 
 	// Handler d'expansion : navigue vers la route fullscreen de l'onglet courant
 	// si une route est définie ; sinon retourne undefined (masque le bouton).
@@ -102,32 +179,53 @@ export function BackofficeIAstedWindow() {
 	}, [activeTab, router]);
 
 	return (
-		<>
-			{/* CircleMenu FAB — desktop only */}
-			{!open && (
-				<div
-					suppressHydrationWarning
-					className="fixed bottom-[62px] right-[62px] z-40 hidden lg:block pointer-events-none"
-				>
-					<CircleMenu
-						items={menuItems}
-						openIcon={defaultTriggerIcon("backoffice")}
-						triggerClassName={defaultTriggerClassName("backoffice")}
-						triggerVariant={hasBackofficeAccess ? "3d-organic" : "default"}
-						voiceState={voiceController.voiceState}
-						audioLevel={voiceController.audioLevel}
-						voiceDisabled={!hasBackofficeAccess || !voiceController.available}
-						onLongPress={
-							hasBackofficeAccess ? voiceController.activateVoice : undefined
+		<IAstedVoiceContext.Provider value={voiceController}>
+			{/* Curseur orbe iAsted — port depuis mairie.ga, anime l'attention */}
+			{hasBackofficeAccess && voiceController.isConnected && (
+				<IAstedCursor enabled={true} size={28} />
+			)}
+
+			{/* Bouton iAsted + menu éventail (logique repensée).
+			    Single click → mode conversationnel direct (active la voix).
+			                   Si une session vocale est en cours, raccroche.
+			    Double click → ouvre/ferme l'éventail des 6 options détachées.
+			    Clic sur item → ouvre la fenêtre en mode MONO-FONCTION (hideTabs).
+			    Drag → repositionnable, persisté en localStorage. */}
+			{!open && hasBackofficeAccess && (
+				<IAstedFanMenu
+					size="md"
+					layout="corner"
+					positionStorageKey="iasted-button-position-backoffice"
+					voiceListening={voiceController.voiceState === "listening"}
+					voiceSpeaking={voiceController.voiceState === "speaking"}
+					voiceProcessing={
+						voiceController.voiceState === "thinking" ||
+						voiceController.voiceState === "processing" ||
+						voiceController.voiceState === "connecting"
+					}
+					audioLevel={voiceController.audioLevel}
+					isVoiceConnected={voiceController.isConnected}
+					items={fanMenuItems}
+					onItemSelect={(item) => {
+						const tab = item.id as IAstedTabId;
+						openWithTab(tab);
+					}}
+					onSingleClick={() => {
+						// Mode conversationnel direct : active la voix
+						// (ou raccroche si session en cours).
+						if (voiceController.isConnected) {
+							void voiceController.deactivateVoice();
+						} else if (voiceController.available) {
+							void voiceController.activateVoice();
 						}
-					/>
-				</div>
+					}}
+				/>
 			)}
 
 			<WindowShell
 				preset={backofficePreset}
 				title="iAsted"
-				subtitle="Administration"
+				subtitle={tabSubtitleForBackoffice(activeTab)}
 				headerIcon={<Shield />}
 				subHeaderSlot={
 					<div className="px-3 py-1.5">
@@ -140,14 +238,18 @@ export function BackofficeIAstedWindow() {
 				onActiveTabChange={setActiveTab}
 				onClose={() => setOpen(false)}
 				onExpand={handleExpand}
+				/* Mode MONO-FONCTION : les onglets sont détachés dans l'éventail
+				   du bouton iAsted, donc la barre TabsNav devient redondante. */
+				hideTabs={true}
 				tabContent={{
 					ichat: <BackofficeChatTab orgId={activeOrgId} chat={chat} />,
 					icontact: <BackofficeContactTab orgId={activeOrgId} />,
 					icall: <BackofficeCallTab orgId={activeOrgId} />,
 					imeeting: <BackofficeMeetingTab orgId={activeOrgId} />,
+					ivoice: <VoiceTab />,
 					isettings: <BackofficeSettingsTab />,
 				}}
 			/>
-		</>
+		</IAstedVoiceContext.Provider>
 	);
 }
