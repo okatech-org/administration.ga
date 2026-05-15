@@ -187,6 +187,15 @@ export function useIAstedHost({ orgId }: UseIAstedHostOptions = {}): IAstedVoice
 
 	return useMemo<IAstedVoiceController>(
 		() => ({
+			providerId: "openai-realtime",
+			providerLabel: "OpenAI Realtime",
+			capabilities: {
+				pageContextUpdate: true,
+				toolCalling: true,
+				voiceSelection: true,
+				speechRateControl: true,
+				realTimeTranscription: true,
+			},
 			available,
 			unavailableReason,
 			voiceState: voice.voiceState,
@@ -194,6 +203,12 @@ export function useIAstedHost({ orgId }: UseIAstedHostOptions = {}): IAstedVoice
 			isConnected: voice.isConnected,
 			activateVoice,
 			deactivateVoice,
+			messages: voice.messages,
+			clearMessages: voice.clearMessages,
+			setSpeechRate: voice.setSpeechRate,
+			updatePageContext: (text: string) =>
+				voice.updateSession({ pageContext: text }),
+			pendingConfirmation: null,
 		}),
 		[
 			available,
@@ -203,6 +218,10 @@ export function useIAstedHost({ orgId }: UseIAstedHostOptions = {}): IAstedVoice
 			voice.isConnected,
 			activateVoice,
 			deactivateVoice,
+			voice.messages,
+			voice.clearMessages,
+			voice.setSpeechRate,
+			voice.updateSession,
 		],
 	);
 }

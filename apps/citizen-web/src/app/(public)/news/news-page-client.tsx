@@ -102,7 +102,9 @@ function urlCategoryToPostCategory(
   return PostCategory.News
 }
 
-function categoryLabel(t: (k: string, d?: string) => string, cat: string) {
+type TLike = (k: string, d?: string) => string
+
+function categoryLabel(t: TLike, cat: string) {
   if (cat === PostCategory.News) return t("news.categories.news", "Actualité")
   if (cat === PostCategory.Event) return t("news.categories.event", "Événement")
   if (cat === PostCategory.Announcement)
@@ -450,7 +452,7 @@ function Featured({ post }: { post: Post }) {
       <div className="p-7 md:p-8 flex flex-col gap-3.5">
         <div className="flex flex-wrap items-center gap-2.5 text-[12px] text-[color:var(--muted-foreground)]">
           <Pill className={CATEGORY_PILL[post.category]}>
-            {categoryLabel(t, post.category)}
+            {categoryLabel(t as unknown as TLike, post.category)}
           </Pill>
           {dateLabel && (
             <>
@@ -591,7 +593,7 @@ function ArticleCard({
       <div className="flex-1 p-5 flex flex-col gap-2.5">
         <div className="flex flex-wrap items-center gap-2 text-[12px] text-[color:var(--muted-foreground)]">
           <Pill className={CATEGORY_PILL[post.category]}>
-            {categoryLabel(t, post.category)}
+            {categoryLabel(t as unknown as TLike, post.category)}
           </Pill>
           {dateLabel && (
             <>
