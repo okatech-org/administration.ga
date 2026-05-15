@@ -556,7 +556,7 @@ export function OrgDetailClient({
                   ? `~ ${callAvail.estimatedWaitMinutes} min`
                   : undefined
               }
-              disabled={!isAuthenticated || callAvail?.status === "offline"}
+              disabled={!isAuthenticated}
               authRequired={!isAuthenticated}
             />
             <ActionBtn
@@ -567,7 +567,7 @@ export function OrgDetailClient({
                 />
               }
               label={t("orgs.detail.bookAppointment", "Prendre rendez-vous")}
-              href={isAuthenticated ? "/my-space/appointments" : undefined}
+              href={isAuthenticated ? "/my-space/iagenda" : undefined}
               disabled={!isAuthenticated}
               authRequired={!isAuthenticated}
             />
