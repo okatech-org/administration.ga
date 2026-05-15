@@ -93,22 +93,25 @@
 
 .dark {
   /* ─── Surfaces warm sombres ──────────────────────────────────────── */
-  --background: oklch(0.16 0.005 70); /* #1c1a17 — fond très sombre warm */
-  --foreground: oklch(0.95 0.005 80); /* #f0eee8 — texte off-white warm */
-  --card: oklch(0.2 0.005 70); /* #252220 — cartes légèrement plus claires */
-  --card-foreground: oklch(0.95 0.005 80);
-  --popover: oklch(0.2 0.005 70);
-  --popover-foreground: oklch(0.95 0.005 80);
+  /* Hex direct pour garantir que --background == --bg == --pub-bg
+     (les conversions oklch antérieures rendaient --background plus sombre
+     que --bg, créant un gap noir visible entre les wrappers de page). */
+  --background: #1c1a17; /* fond très sombre warm */
+  --foreground: #f0eee8; /* texte off-white warm */
+  --card: #252220; /* cartes légèrement plus claires */
+  --card-foreground: #f0eee8;
+  --popover: #252220;
+  --popover-foreground: #f0eee8;
   --primary: #2e7cd6; /* Gabon-blue éclairci pour contraste dark */
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.23 0.005 70);
-  --secondary-foreground: oklch(0.85 0.005 80);
-  --muted: oklch(0.23 0.005 70);
-  --muted-foreground: oklch(0.65 0.005 80); /* contraste 5.5:1 sur fond dark */
-  --accent: oklch(0.23 0.005 70);
-  --accent-foreground: oklch(0.95 0.005 80);
-  --border: oklch(0.28 0.005 70); /* #3a3733 — visible warm */
-  --input: oklch(0.28 0.005 70);
+  --primary-foreground: #ffffff;
+  --secondary: #2a2725;
+  --secondary-foreground: #d9d6cf;
+  --muted: #2a2725;
+  --muted-foreground: #a8a397; /* contraste ~5.5:1 sur fond dark */
+  --accent: #2a2725;
+  --accent-foreground: #f0eee8;
+  --border: #3a3733; /* visible warm */
+  --input: #3a3733;
   --ring: #2e7cd6;
 
   /* Tokens prototype en dark */
@@ -540,10 +543,10 @@ html {
   --pub-text-muted: #6a665b;
   --pub-text-faint: #9a9588;
 
-  /* Brand Gabon (palette maquette) */
-  --pub-gabon-blue: #0b4f9c;
-  --pub-gabon-blue-deep: #073871;
-  --pub-gabon-blue-tint: #e7eff9;
+  /* Brand Gabon (aligné sur --primary / --gabon-blue-hex de la charte) */
+  --pub-gabon-blue: #0072b9;
+  --pub-gabon-blue-deep: #005a94;
+  --pub-gabon-blue-tint: rgba(0, 114, 185, 0.08);
   --pub-gabon-green: #0a8a3b;
   --pub-gabon-green-tint: #e3f3e9;
   --pub-gabon-yellow: #f1c531;
@@ -575,6 +578,52 @@ html {
     0 6px 20px -10px rgba(20, 19, 15, 0.12);
   --pub-shadow-lg: 0 18px 50px -22px rgba(20, 19, 15, 0.28);
 
-  background: var(--pub-bg);
-  color: var(--pub-text);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Dark mode — redéfinit les tokens --pub-* pour la coquille publique.
+   Sans ce bloc, les pages /services (qui consomment var(--pub-*)) resteraient
+   claires en dark mode. */
+.dark [data-public-shell] {
+  /* Surfaces — warm dark, cohérent avec --background / --card du thème */
+  --pub-bg: #1c1a17;
+  --pub-bg-deep: #14130f;
+  --pub-surface: #252220;
+  --pub-surface-2: #2a2725;
+  --pub-surface-3: #2f2c29;
+  --pub-border: #3a3733;
+  --pub-border-strong: #45413c;
+
+  /* Texte */
+  --pub-text: #f0eee8;
+  --pub-text-muted: #a8a397;
+  --pub-text-faint: #6a665b;
+
+  /* Brand Gabon — versions éclaircies (alignées sur --gabon-*-hex dark) */
+  --pub-gabon-blue: #2e7cd6;
+  --pub-gabon-blue-deep: #4b8cd9;
+  --pub-gabon-blue-tint: rgba(46, 124, 214, 0.18);
+  --pub-gabon-green: #2eb05f;
+  --pub-gabon-green-tint: rgba(46, 176, 95, 0.15);
+  --pub-gabon-yellow: #f5d048;
+  --pub-gabon-yellow-tint: rgba(245, 208, 72, 0.12);
+
+  /* Statuts — versions éclaircies pour fond sombre */
+  --pub-success: #4cae6b;
+  --pub-success-tint: rgba(76, 174, 107, 0.15);
+  --pub-warning: #d4a017;
+  --pub-warning-tint: rgba(212, 160, 23, 0.15);
+  --pub-danger: #e0625b;
+  --pub-danger-tint: rgba(224, 98, 91, 0.15);
+
+  /* Ink — devient clair en dark (utilisé pour pills actives sur fonds sombres) */
+  --pub-ink-900: #f0eee8;
+  --pub-ink-800: #e0ddd5;
+
+  /* Ombres — plus marquées en dark pour garder la silhouette */
+  --pub-shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.4);
+  --pub-shadow: 0 1px 0 rgba(0, 0, 0, 0.4),
+    0 6px 20px -10px rgba(0, 0, 0, 0.6);
+  --pub-shadow-lg: 0 18px 50px -22px rgba(0, 0, 0, 0.8);
 }
